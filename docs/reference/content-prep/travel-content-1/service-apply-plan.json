@@ -8,7 +8,7 @@
     {
       "target_path": "content/services/travel/admission-evidence/evidence-00000-00194.json",
       "staged_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json",
-      "sha256": "2dd5c91a20ea54f576e62529a7cdde1eb80b7a81680805a4e81abddb6dc948b5"
+      "sha256": "d53ebf5a98caf4eba05f5d42cb15290b152eec44a9458c66c405f9e4467be7a4"
     },
     {
       "target_path": "content/services/travel/admission-evidence/index.json",
@@ -36,5 +36,25 @@
     "World Bundle pins and deterministic bundle",
     "required exact-head validators"
   ],
-  "data_completeness": "ALL_OTERYN_PARAMETER_VALUES_POPULATED"
+  "data_completeness": "SOURCE_RECONCILED_REFERENCE_WITH_EXPLICIT_DONOR_AND_NATIVE_MAPPING_LIMITS",
+  "route_source_correction": {
+    "source_check": "docs/reference/content-prep/travel-content-1/source-correction-check.json",
+    "record_count": 195,
+    "npc_scripts": 56,
+    "correction_counts": {
+      "minimum_level": 195,
+      "destination_coordinates": 195,
+      "premium_required": 195,
+      "quest_requirements": 195,
+      "origin": 24,
+      "travel_guard_conditions": 7,
+      "fare_gold": 5
+    },
+    "route_evidence_counts": {
+      "PROVEN": 589,
+      "DERIVED": 1253
+    },
+    "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+    "universal_level8_removed": true
+  }
 }

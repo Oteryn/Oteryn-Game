@@ -2507,6 +2507,1961 @@
       "file_sha256": "2fb0292bfc81dc46bc7ac7e43047ebac8d7598dce27971b03f6a354ca8e38caa",
       "source_class": "OTS_HYPOTHESIS_ONLY",
       "selection": "Explicit project reuse choice; native binding and Global identity are not asserted."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data/npclib/npc_system/modules.lua:195": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data/npclib/npc_system/modules.lua",
+      "line": 195,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/npclib/npc_system/modules.lua#L195",
+      "file_sha256": "13b3fa5e827d592bc8ce6c81e64b41ac2ae528fceac305e7a8e08d566a4cb024",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "community:wiki-br:travel-source-correction:20261019": {
+      "title": "Wiki BR NPC and Magic Carpet targeted cross-check",
+      "url": "https://www.tibiawiki.com.br/wiki/Tapete_M%C3%A1gico",
+      "fetched_at": "2026-10-19T09:10:02.961191+00:00",
+      "source_class": "COMMUNITY_REFERENCE",
+      "retained_observations": "docs/reference/content-prep/travel-content-1/source-correction-check.json",
+      "qualification": "Targeted facts cross-checked against retained NPC pages; individual URLs/selectors accompany observations."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/anderson.lua:84": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/anderson.lua",
+      "line": 84,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/anderson.lua#L84",
+      "file_sha256": "f350d8ccb9b6dfd932e804e903172abae9424d508d5256f2bfa07a97548704ba",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/anderson.lua:82": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/anderson.lua",
+      "line": 82,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/anderson.lua#L82",
+      "file_sha256": "f350d8ccb9b6dfd932e804e903172abae9424d508d5256f2bfa07a97548704ba",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/anderson.lua:83": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/anderson.lua",
+      "line": 83,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/anderson.lua#L83",
+      "file_sha256": "f350d8ccb9b6dfd932e804e903172abae9424d508d5256f2bfa07a97548704ba",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/brodrosch.lua:131": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/brodrosch.lua",
+      "line": 131,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/brodrosch.lua#L131",
+      "file_sha256": "5bb9cb767aa898153af041dba8364246d0b7b1cc7d9b74e10e840447886c9c64",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_bluebear.lua:76": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_bluebear.lua",
+      "line": 76,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_bluebear.lua#L76",
+      "file_sha256": "8586fb9d2c7268aa3061ee2184d11d9cd59b2afa804911223df5f4caddb870e2",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_bluebear.lua:77": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_bluebear.lua",
+      "line": 77,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_bluebear.lua#L77",
+      "file_sha256": "8586fb9d2c7268aa3061ee2184d11d9cd59b2afa804911223df5f4caddb870e2",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_bluebear.lua:87": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_bluebear.lua",
+      "line": 87,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_bluebear.lua#L87",
+      "file_sha256": "8586fb9d2c7268aa3061ee2184d11d9cd59b2afa804911223df5f4caddb870e2",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_bluebear.lua:82": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_bluebear.lua",
+      "line": 82,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_bluebear.lua#L82",
+      "file_sha256": "8586fb9d2c7268aa3061ee2184d11d9cd59b2afa804911223df5f4caddb870e2",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_bluebear.lua:86": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_bluebear.lua",
+      "line": 86,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_bluebear.lua#L86",
+      "file_sha256": "8586fb9d2c7268aa3061ee2184d11d9cd59b2afa804911223df5f4caddb870e2",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_bluebear.lua:79": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_bluebear.lua",
+      "line": 79,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_bluebear.lua#L79",
+      "file_sha256": "8586fb9d2c7268aa3061ee2184d11d9cd59b2afa804911223df5f4caddb870e2",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_bluebear.lua:80": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_bluebear.lua",
+      "line": 80,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_bluebear.lua#L80",
+      "file_sha256": "8586fb9d2c7268aa3061ee2184d11d9cd59b2afa804911223df5f4caddb870e2",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_bluebear.lua:81": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_bluebear.lua",
+      "line": 81,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_bluebear.lua#L81",
+      "file_sha256": "8586fb9d2c7268aa3061ee2184d11d9cd59b2afa804911223df5f4caddb870e2",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_bluebear.lua:78": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_bluebear.lua",
+      "line": 78,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_bluebear.lua#L78",
+      "file_sha256": "8586fb9d2c7268aa3061ee2184d11d9cd59b2afa804911223df5f4caddb870e2",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_breezelda.lua:61": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_breezelda.lua",
+      "line": 61,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_breezelda.lua#L61",
+      "file_sha256": "27147aaa5fb3524b3cebb2ffe885486ffc20da2d7b7e69e227a0a2338ee51f51",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_breezelda.lua:60": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_breezelda.lua",
+      "line": 60,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_breezelda.lua#L60",
+      "file_sha256": "27147aaa5fb3524b3cebb2ffe885486ffc20da2d7b7e69e227a0a2338ee51f51",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_breezelda.lua:62": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_breezelda.lua",
+      "line": 62,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_breezelda.lua#L62",
+      "file_sha256": "27147aaa5fb3524b3cebb2ffe885486ffc20da2d7b7e69e227a0a2338ee51f51",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_chelop.lua:61": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_chelop.lua",
+      "line": 61,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_chelop.lua#L61",
+      "file_sha256": "b0661cd63a39d82d2eb4906cc2d7b152bbadfe15228696b52ed6a2b2ec2ef21a",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_cookie.lua:59": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_cookie.lua",
+      "line": 59,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_cookie.lua#L59",
+      "file_sha256": "1bbab19f009c8ed089c0966ad8971071d473ebde1d5641c62b33e10a8a3f7efd",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_corsarah.lua:67": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_corsarah.lua",
+      "line": 67,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_corsarah.lua#L67",
+      "file_sha256": "2010a7bb0d69b06a70a08256496e6df75af918b0c1c8253496128292b9c15ace",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_fearless.lua:74": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_fearless.lua",
+      "line": 74,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_fearless.lua#L74",
+      "file_sha256": "5b035a2491bbeb2ef39a9de2ba4236606490b03ad1aa1265aa93e32b6b5fcf73",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_fearless.lua:82": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_fearless.lua",
+      "line": 82,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_fearless.lua#L82",
+      "file_sha256": "5b035a2491bbeb2ef39a9de2ba4236606490b03ad1aa1265aa93e32b6b5fcf73",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_fearless.lua:72": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_fearless.lua",
+      "line": 72,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_fearless.lua#L72",
+      "file_sha256": "5b035a2491bbeb2ef39a9de2ba4236606490b03ad1aa1265aa93e32b6b5fcf73",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_fearless.lua:75": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_fearless.lua",
+      "line": 75,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_fearless.lua#L75",
+      "file_sha256": "5b035a2491bbeb2ef39a9de2ba4236606490b03ad1aa1265aa93e32b6b5fcf73",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_fearless.lua:73": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_fearless.lua",
+      "line": 73,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_fearless.lua#L73",
+      "file_sha256": "5b035a2491bbeb2ef39a9de2ba4236606490b03ad1aa1265aa93e32b6b5fcf73",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_fearless.lua:83": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_fearless.lua",
+      "line": 83,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_fearless.lua#L83",
+      "file_sha256": "5b035a2491bbeb2ef39a9de2ba4236606490b03ad1aa1265aa93e32b6b5fcf73",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_fearless.lua:71": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_fearless.lua",
+      "line": 71,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_fearless.lua#L71",
+      "file_sha256": "5b035a2491bbeb2ef39a9de2ba4236606490b03ad1aa1265aa93e32b6b5fcf73",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_fearless.lua:78": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_fearless.lua",
+      "line": 78,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_fearless.lua#L78",
+      "file_sha256": "5b035a2491bbeb2ef39a9de2ba4236606490b03ad1aa1265aa93e32b6b5fcf73",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_fearless.lua:76": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_fearless.lua",
+      "line": 76,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_fearless.lua#L76",
+      "file_sha256": "5b035a2491bbeb2ef39a9de2ba4236606490b03ad1aa1265aa93e32b6b5fcf73",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_fearless.lua:77": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_fearless.lua",
+      "line": 77,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_fearless.lua#L77",
+      "file_sha256": "5b035a2491bbeb2ef39a9de2ba4236606490b03ad1aa1265aa93e32b6b5fcf73",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_fearless.lua:70": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_fearless.lua",
+      "line": 70,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_fearless.lua#L70",
+      "file_sha256": "5b035a2491bbeb2ef39a9de2ba4236606490b03ad1aa1265aa93e32b6b5fcf73",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_greyhound.lua:65": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_greyhound.lua",
+      "line": 65,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_greyhound.lua#L65",
+      "file_sha256": "602d5d1e76783306bef3a922799aa29f3689648021ffbfc674990e9587d89994",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_greyhound.lua:66": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_greyhound.lua",
+      "line": 66,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_greyhound.lua#L66",
+      "file_sha256": "602d5d1e76783306bef3a922799aa29f3689648021ffbfc674990e9587d89994",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_greyhound.lua:68": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_greyhound.lua",
+      "line": 68,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_greyhound.lua#L68",
+      "file_sha256": "602d5d1e76783306bef3a922799aa29f3689648021ffbfc674990e9587d89994",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_greyhound.lua:64": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_greyhound.lua",
+      "line": 64,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_greyhound.lua#L64",
+      "file_sha256": "602d5d1e76783306bef3a922799aa29f3689648021ffbfc674990e9587d89994",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_greyhound.lua:67": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_greyhound.lua",
+      "line": 67,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_greyhound.lua#L67",
+      "file_sha256": "602d5d1e76783306bef3a922799aa29f3689648021ffbfc674990e9587d89994",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_gulliver.lua:68": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_gulliver.lua",
+      "line": 68,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_gulliver.lua#L68",
+      "file_sha256": "99a203608d14e410d133b2b3cf6aa0bd9c40a7237d80bb2ec791d60929d1ab0d",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_gulliver.lua:67": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_gulliver.lua",
+      "line": 67,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_gulliver.lua#L67",
+      "file_sha256": "99a203608d14e410d133b2b3cf6aa0bd9c40a7237d80bb2ec791d60929d1ab0d",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_gulliver.lua:66": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_gulliver.lua",
+      "line": 66,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_gulliver.lua#L66",
+      "file_sha256": "99a203608d14e410d133b2b3cf6aa0bd9c40a7237d80bb2ec791d60929d1ab0d",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_harava.lua:70": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_harava.lua",
+      "line": 70,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_harava.lua#L70",
+      "file_sha256": "58fe2007fccc69407260e5071d0f94ece294765b7388aeb35a9e6d59a967e3a4",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_harava.lua:73": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_harava.lua",
+      "line": 73,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_harava.lua#L73",
+      "file_sha256": "58fe2007fccc69407260e5071d0f94ece294765b7388aeb35a9e6d59a967e3a4",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_harava.lua:72": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_harava.lua",
+      "line": 72,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_harava.lua#L72",
+      "file_sha256": "58fe2007fccc69407260e5071d0f94ece294765b7388aeb35a9e6d59a967e3a4",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_harava.lua:71": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_harava.lua",
+      "line": 71,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_harava.lua#L71",
+      "file_sha256": "58fe2007fccc69407260e5071d0f94ece294765b7388aeb35a9e6d59a967e3a4",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_jack.lua:54": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_jack.lua",
+      "line": 54,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_jack.lua#L54",
+      "file_sha256": "48732866d24fdd4f5d06f13270c3b234aabd27e8d0d64f7dc2e664e0549b2dcd",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_max_calassa.lua:60": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_max_calassa.lua",
+      "line": 60,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_max_calassa.lua#L60",
+      "file_sha256": "5f033e9539e78ac35ca67b5418f65b96e179c22f26f61a0e1e387a6851745be0",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_pelagia.lua:72": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_pelagia.lua",
+      "line": 72,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_pelagia.lua#L72",
+      "file_sha256": "23aaee631637a41645356f0aa7d3967eedbf54fdd806dd8dc4b9667610892012",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_pelagia.lua:70": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_pelagia.lua",
+      "line": 70,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_pelagia.lua#L70",
+      "file_sha256": "23aaee631637a41645356f0aa7d3967eedbf54fdd806dd8dc4b9667610892012",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_pelagia.lua:74": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_pelagia.lua",
+      "line": 74,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_pelagia.lua#L74",
+      "file_sha256": "23aaee631637a41645356f0aa7d3967eedbf54fdd806dd8dc4b9667610892012",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_pelagia.lua:71": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_pelagia.lua",
+      "line": 71,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_pelagia.lua#L71",
+      "file_sha256": "23aaee631637a41645356f0aa7d3967eedbf54fdd806dd8dc4b9667610892012",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_pelagia.lua:73": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_pelagia.lua",
+      "line": 73,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_pelagia.lua#L73",
+      "file_sha256": "23aaee631637a41645356f0aa7d3967eedbf54fdd806dd8dc4b9667610892012",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_pelagia.lua:69": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_pelagia.lua",
+      "line": 69,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_pelagia.lua#L69",
+      "file_sha256": "23aaee631637a41645356f0aa7d3967eedbf54fdd806dd8dc4b9667610892012",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_seagull.lua:65": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_seagull.lua",
+      "line": 65,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_seagull.lua#L65",
+      "file_sha256": "59a3a071a035c780793063b4e46dbca306644956c368f1ef2d149d467a1ace79",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_seagull.lua:67": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_seagull.lua",
+      "line": 67,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_seagull.lua#L67",
+      "file_sha256": "59a3a071a035c780793063b4e46dbca306644956c368f1ef2d149d467a1ace79",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_seagull.lua:66": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_seagull.lua",
+      "line": 66,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_seagull.lua#L66",
+      "file_sha256": "59a3a071a035c780793063b4e46dbca306644956c368f1ef2d149d467a1ace79",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_seagull.lua:64": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_seagull.lua",
+      "line": 64,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_seagull.lua#L64",
+      "file_sha256": "59a3a071a035c780793063b4e46dbca306644956c368f1ef2d149d467a1ace79",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_seagull.lua:68": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_seagull.lua",
+      "line": 68,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_seagull.lua#L68",
+      "file_sha256": "59a3a071a035c780793063b4e46dbca306644956c368f1ef2d149d467a1ace79",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_seahorse.lua:68": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_seahorse.lua",
+      "line": 68,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_seahorse.lua#L68",
+      "file_sha256": "fb220b0c810293487591f47f9e1b0d6e0ac99fa2a37a30505c56645d4a4e0d01",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_seahorse.lua:72": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_seahorse.lua",
+      "line": 72,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_seahorse.lua#L72",
+      "file_sha256": "fb220b0c810293487591f47f9e1b0d6e0ac99fa2a37a30505c56645d4a4e0d01",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_seahorse.lua:66": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_seahorse.lua",
+      "line": 66,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_seahorse.lua#L66",
+      "file_sha256": "fb220b0c810293487591f47f9e1b0d6e0ac99fa2a37a30505c56645d4a4e0d01",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_seahorse.lua:73": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_seahorse.lua",
+      "line": 73,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_seahorse.lua#L73",
+      "file_sha256": "fb220b0c810293487591f47f9e1b0d6e0ac99fa2a37a30505c56645d4a4e0d01",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_seahorse.lua:69": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_seahorse.lua",
+      "line": 69,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_seahorse.lua#L69",
+      "file_sha256": "fb220b0c810293487591f47f9e1b0d6e0ac99fa2a37a30505c56645d4a4e0d01",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_seahorse.lua:67": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_seahorse.lua",
+      "line": 67,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_seahorse.lua#L67",
+      "file_sha256": "fb220b0c810293487591f47f9e1b0d6e0ac99fa2a37a30505c56645d4a4e0d01",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_seahorse.lua:71": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_seahorse.lua",
+      "line": 71,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_seahorse.lua#L71",
+      "file_sha256": "fb220b0c810293487591f47f9e1b0d6e0ac99fa2a37a30505c56645d4a4e0d01",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_seahorse.lua:70": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_seahorse.lua",
+      "line": 70,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_seahorse.lua#L70",
+      "file_sha256": "fb220b0c810293487591f47f9e1b0d6e0ac99fa2a37a30505c56645d4a4e0d01",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_seahorse.lua:65": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_seahorse.lua",
+      "line": 65,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_seahorse.lua#L65",
+      "file_sha256": "fb220b0c810293487591f47f9e1b0d6e0ac99fa2a37a30505c56645d4a4e0d01",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_sinbeard.lua:100": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_sinbeard.lua",
+      "line": 100,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_sinbeard.lua#L100",
+      "file_sha256": "e5b27bda7f029d8279611633bf016ad3a52a05518064b22dab6f10f84df97158",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_sinbeard.lua:96": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_sinbeard.lua",
+      "line": 96,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_sinbeard.lua#L96",
+      "file_sha256": "e5b27bda7f029d8279611633bf016ad3a52a05518064b22dab6f10f84df97158",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_sinbeard.lua:99": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_sinbeard.lua",
+      "line": 99,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_sinbeard.lua#L99",
+      "file_sha256": "e5b27bda7f029d8279611633bf016ad3a52a05518064b22dab6f10f84df97158",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_sinbeard.lua:98": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_sinbeard.lua",
+      "line": 98,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_sinbeard.lua#L98",
+      "file_sha256": "e5b27bda7f029d8279611633bf016ad3a52a05518064b22dab6f10f84df97158",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_sinbeard.lua:97": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_sinbeard.lua",
+      "line": 97,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_sinbeard.lua#L97",
+      "file_sha256": "e5b27bda7f029d8279611633bf016ad3a52a05518064b22dab6f10f84df97158",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/captain_waverider_island.lua:54": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/captain_waverider_island.lua",
+      "line": 54,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/captain_waverider_island.lua#L54",
+      "file_sha256": "acb1ab905919b1b5e3de8381460bc127cec97f0f2c283c94ca8f0687ed3e3d7a",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/carlson.lua:62": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/carlson.lua",
+      "line": 62,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/carlson.lua#L62",
+      "file_sha256": "6696ece2e766dd15372609dfd33766069fd360e5f5b3019560642e8e8dae011c",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/carlson.lua:61": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/carlson.lua",
+      "line": 61,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/carlson.lua#L61",
+      "file_sha256": "6696ece2e766dd15372609dfd33766069fd360e5f5b3019560642e8e8dae011c",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/carlson.lua:60": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/carlson.lua",
+      "line": 60,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/carlson.lua#L60",
+      "file_sha256": "6696ece2e766dd15372609dfd33766069fd360e5f5b3019560642e8e8dae011c",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/cornell.lua:67": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/cornell.lua",
+      "line": 67,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/cornell.lua#L67",
+      "file_sha256": "68f34e935e1ad28639e208524ad9bc477325e85f157ddb6e1797fea81e3a4310",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/cornell.lua:66": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/cornell.lua",
+      "line": 66,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/cornell.lua#L66",
+      "file_sha256": "68f34e935e1ad28639e208524ad9bc477325e85f157ddb6e1797fea81e3a4310",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/ferryman_kamil.lua:55": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/ferryman_kamil.lua",
+      "line": 55,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/ferryman_kamil.lua#L55",
+      "file_sha256": "94436665fe12c52fe067b99efdc4f6a3f0c7afe49b3360229470cb8df6d7f68a",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/ferryman_kamil_meluna.lua:54": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/ferryman_kamil_meluna.lua",
+      "line": 54,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/ferryman_kamil_meluna.lua#L54",
+      "file_sha256": "8d9b6467a86adf0a16da177fa4050ab1ed90b821d85fa414e2855ac1577aef24",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/gewen.lua:110": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/gewen.lua",
+      "line": 110,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/gewen.lua#L110",
+      "file_sha256": "fae3a400470026ef84a213cb4ebe45f1a5380c5a107eea73a744b4383f6f5a65",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/gewen.lua:113": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/gewen.lua",
+      "line": 113,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/gewen.lua#L113",
+      "file_sha256": "fae3a400470026ef84a213cb4ebe45f1a5380c5a107eea73a744b4383f6f5a65",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/gewen.lua:112": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/gewen.lua",
+      "line": 112,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/gewen.lua#L112",
+      "file_sha256": "fae3a400470026ef84a213cb4ebe45f1a5380c5a107eea73a744b4383f6f5a65",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/gewen.lua:114": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/gewen.lua",
+      "line": 114,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/gewen.lua#L114",
+      "file_sha256": "fae3a400470026ef84a213cb4ebe45f1a5380c5a107eea73a744b4383f6f5a65",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/gewen.lua:115": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/gewen.lua",
+      "line": 115,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/gewen.lua#L115",
+      "file_sha256": "fae3a400470026ef84a213cb4ebe45f1a5380c5a107eea73a744b4383f6f5a65",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/gewen.lua:116": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/gewen.lua",
+      "line": 116,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/gewen.lua#L116",
+      "file_sha256": "fae3a400470026ef84a213cb4ebe45f1a5380c5a107eea73a744b4383f6f5a65",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/gewen.lua:111": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/gewen.lua",
+      "line": 111,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/gewen.lua#L111",
+      "file_sha256": "fae3a400470026ef84a213cb4ebe45f1a5380c5a107eea73a744b4383f6f5a65",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/gurbasch.lua:90": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/gurbasch.lua",
+      "line": 90,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/gurbasch.lua#L90",
+      "file_sha256": "0f3a5531d3070db1efb9c5734be4312f7236909da3a01b0213c2939010df93e1",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/gurbasch.lua:89": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/gurbasch.lua",
+      "line": 89,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/gurbasch.lua#L89",
+      "file_sha256": "0f3a5531d3070db1efb9c5734be4312f7236909da3a01b0213c2939010df93e1",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/harlow_vengoth.lua:54": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/harlow_vengoth.lua",
+      "line": 54,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/harlow_vengoth.lua#L54",
+      "file_sha256": "25ee2a79a96c2df5f803445e7e916aa3a437e32adf9a387d43a4d18442e74ff5",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/hawkhurst.lua:61": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/hawkhurst.lua",
+      "line": 61,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/hawkhurst.lua#L61",
+      "file_sha256": "45942cc19d76b88815e6c974a470e854faf963236e819757233136cb21f5625e",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/hawkhurst_ingol.lua:61": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/hawkhurst_ingol.lua",
+      "line": 61,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/hawkhurst_ingol.lua#L61",
+      "file_sha256": "8120bdd53937db6c3af711d1a4406d6f9b3e2bea9e3270e2f8522f14cb227565",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/imbul.lua:61": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/imbul.lua",
+      "line": 61,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/imbul.lua#L61",
+      "file_sha256": "70c98616c970365317ab159f6990da1b0658b49d1fa6e8f04c08cbfcd5ba98aa",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/imbul.lua:60": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/imbul.lua",
+      "line": 60,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/imbul.lua#L60",
+      "file_sha256": "70c98616c970365317ab159f6990da1b0658b49d1fa6e8f04c08cbfcd5ba98aa",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/iyad.lua:79": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/iyad.lua",
+      "line": 79,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/iyad.lua#L79",
+      "file_sha256": "84fa9e93d18186cb09178a8947ec63e907119d98831f28638b530926f602b271",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/iyad.lua:78": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/iyad.lua",
+      "line": 78,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/iyad.lua#L78",
+      "file_sha256": "84fa9e93d18186cb09178a8947ec63e907119d98831f28638b530926f602b271",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/iyad.lua:84": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/iyad.lua",
+      "line": 84,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/iyad.lua#L84",
+      "file_sha256": "84fa9e93d18186cb09178a8947ec63e907119d98831f28638b530926f602b271",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/iyad.lua:82": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/iyad.lua",
+      "line": 82,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/iyad.lua#L82",
+      "file_sha256": "84fa9e93d18186cb09178a8947ec63e907119d98831f28638b530926f602b271",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/iyad.lua:83": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/iyad.lua",
+      "line": 83,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/iyad.lua#L83",
+      "file_sha256": "84fa9e93d18186cb09178a8947ec63e907119d98831f28638b530926f602b271",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/iyad.lua:85": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/iyad.lua",
+      "line": 85,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/iyad.lua#L85",
+      "file_sha256": "84fa9e93d18186cb09178a8947ec63e907119d98831f28638b530926f602b271",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/iyad.lua:81": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/iyad.lua",
+      "line": 81,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/iyad.lua#L81",
+      "file_sha256": "84fa9e93d18186cb09178a8947ec63e907119d98831f28638b530926f602b271",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/iyad.lua:80": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/iyad.lua",
+      "line": 80,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/iyad.lua#L80",
+      "file_sha256": "84fa9e93d18186cb09178a8947ec63e907119d98831f28638b530926f602b271",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/iyad.lua:86": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/iyad.lua",
+      "line": 86,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/iyad.lua#L86",
+      "file_sha256": "84fa9e93d18186cb09178a8947ec63e907119d98831f28638b530926f602b271",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/jack_fate.lua:80": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/jack_fate.lua",
+      "line": 80,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/jack_fate.lua#L80",
+      "file_sha256": "f9a1c019f021ec0b9f95c0f5ae3f3366951e861db734b895ffd7cc193fb6c323",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/jack_fate.lua:79": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/jack_fate.lua",
+      "line": 79,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/jack_fate.lua#L79",
+      "file_sha256": "f9a1c019f021ec0b9f95c0f5ae3f3366951e861db734b895ffd7cc193fb6c323",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/jack_fate.lua:76": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/jack_fate.lua",
+      "line": 76,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/jack_fate.lua#L76",
+      "file_sha256": "f9a1c019f021ec0b9f95c0f5ae3f3366951e861db734b895ffd7cc193fb6c323",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/jack_fate.lua:78": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/jack_fate.lua",
+      "line": 78,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/jack_fate.lua#L78",
+      "file_sha256": "f9a1c019f021ec0b9f95c0f5ae3f3366951e861db734b895ffd7cc193fb6c323",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/jack_fate.lua:77": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/jack_fate.lua",
+      "line": 77,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/jack_fate.lua#L77",
+      "file_sha256": "f9a1c019f021ec0b9f95c0f5ae3f3366951e861db734b895ffd7cc193fb6c323",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/junkar_mines.lua:62": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/junkar_mines.lua",
+      "line": 62,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/junkar_mines.lua#L62",
+      "file_sha256": "4bcccb2dde2e93c3fb144e6019e63f7df66cc9e6bf761f5d18c6a6312643839d",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/junkar_mines.lua:64": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/junkar_mines.lua",
+      "line": 64,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/junkar_mines.lua#L64",
+      "file_sha256": "4bcccb2dde2e93c3fb144e6019e63f7df66cc9e6bf761f5d18c6a6312643839d",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/junkar_mines.lua:63": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/junkar_mines.lua",
+      "line": 63,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/junkar_mines.lua#L63",
+      "file_sha256": "4bcccb2dde2e93c3fb144e6019e63f7df66cc9e6bf761f5d18c6a6312643839d",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/junkar_robsons.lua:62": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/junkar_robsons.lua",
+      "line": 62,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/junkar_robsons.lua#L62",
+      "file_sha256": "222e4cf31e55eaec23e2a453efc2a3c79e93e987e06826fd06ac05d888adb9cb",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/junkar_robsons.lua:64": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/junkar_robsons.lua",
+      "line": 64,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/junkar_robsons.lua#L64",
+      "file_sha256": "222e4cf31e55eaec23e2a453efc2a3c79e93e987e06826fd06ac05d888adb9cb",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/junkar_robsons.lua:63": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/junkar_robsons.lua",
+      "line": 63,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/junkar_robsons.lua#L63",
+      "file_sha256": "222e4cf31e55eaec23e2a453efc2a3c79e93e987e06826fd06ac05d888adb9cb",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/junkar_thais.lua:62": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/junkar_thais.lua",
+      "line": 62,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/junkar_thais.lua#L62",
+      "file_sha256": "73694ebf321032076366ff91ad3e40180fce39f63c94e0bf55b7e4f0cbdb5197",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/junkar_thais.lua:64": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/junkar_thais.lua",
+      "line": 64,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/junkar_thais.lua#L64",
+      "file_sha256": "73694ebf321032076366ff91ad3e40180fce39f63c94e0bf55b7e4f0cbdb5197",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/junkar_thais.lua:63": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/junkar_thais.lua",
+      "line": 63,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/junkar_thais.lua#L63",
+      "file_sha256": "73694ebf321032076366ff91ad3e40180fce39f63c94e0bf55b7e4f0cbdb5197",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/kendra.lua:70": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/kendra.lua",
+      "line": 70,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/kendra.lua#L70",
+      "file_sha256": "13d8d3385affdca7d40dc5d5e55af9bcbb2f72b42f0c4451e2ce4cb46d5ff788",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/kendra_thais.lua:70": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/kendra_thais.lua",
+      "line": 70,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/kendra_thais.lua#L70",
+      "file_sha256": "2b205a2b4422c3945a9a5ba0b2ad27d45eecc4bb7cdcbfda7d8a31114d22bf0e",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/lorek.lua:65": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/lorek.lua",
+      "line": 65,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/lorek.lua#L65",
+      "file_sha256": "67eb4a73e33b63a77871281fef3104a7b13c40b76b1d026b5801a26dd4caac60",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/lorek.lua:63": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/lorek.lua",
+      "line": 63,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/lorek.lua#L63",
+      "file_sha256": "67eb4a73e33b63a77871281fef3104a7b13c40b76b1d026b5801a26dd4caac60",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/lorek.lua:64": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/lorek.lua",
+      "line": 64,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/lorek.lua#L64",
+      "file_sha256": "67eb4a73e33b63a77871281fef3104a7b13c40b76b1d026b5801a26dd4caac60",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/lorek.lua:62": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/lorek.lua",
+      "line": 62,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/lorek.lua#L62",
+      "file_sha256": "67eb4a73e33b63a77871281fef3104a7b13c40b76b1d026b5801a26dd4caac60",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/maris.lua:79": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/maris.lua",
+      "line": 79,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/maris.lua#L79",
+      "file_sha256": "3ef386f74034fdcebf6875ebef9d1c2191f54e2f42c855fd6b0539af9d702908",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/maris.lua:80": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/maris.lua",
+      "line": 80,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/maris.lua#L80",
+      "file_sha256": "3ef386f74034fdcebf6875ebef9d1c2191f54e2f42c855fd6b0539af9d702908",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/maris_fenrock.lua:61": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/maris_fenrock.lua",
+      "line": 61,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/maris_fenrock.lua#L61",
+      "file_sha256": "76f18123be49687ee1a785d4d05f13af39dc88ab39ea9dcdd50a8c21fe8fefba",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/maris_fenrock.lua:60": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/maris_fenrock.lua",
+      "line": 60,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/maris_fenrock.lua#L60",
+      "file_sha256": "76f18123be49687ee1a785d4d05f13af39dc88ab39ea9dcdd50a8c21fe8fefba",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/maris_mistrock.lua:61": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/maris_mistrock.lua",
+      "line": 61,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/maris_mistrock.lua#L61",
+      "file_sha256": "4bcd7342494cb23d49db54e1dfd0026034a8df39e445aefb16f3a185d91d97b1",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/maris_mistrock.lua:60": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/maris_mistrock.lua",
+      "line": 60,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/maris_mistrock.lua#L60",
+      "file_sha256": "4bcd7342494cb23d49db54e1dfd0026034a8df39e445aefb16f3a185d91d97b1",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/melian.lua:61": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/melian.lua",
+      "line": 61,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/melian.lua#L61",
+      "file_sha256": "4dcd70baefa8969b37d02b2e1dad51ded08eaedaac9c31aa0db7ab994a2286df",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/melian.lua:60": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/melian.lua",
+      "line": 60,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/melian.lua#L60",
+      "file_sha256": "4dcd70baefa8969b37d02b2e1dad51ded08eaedaac9c31aa0db7ab994a2286df",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/melian.lua:65": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/melian.lua",
+      "line": 65,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/melian.lua#L65",
+      "file_sha256": "4dcd70baefa8969b37d02b2e1dad51ded08eaedaac9c31aa0db7ab994a2286df",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/melian.lua:63": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/melian.lua",
+      "line": 63,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/melian.lua#L63",
+      "file_sha256": "4dcd70baefa8969b37d02b2e1dad51ded08eaedaac9c31aa0db7ab994a2286df",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/melian.lua:64": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/melian.lua",
+      "line": 64,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/melian.lua#L64",
+      "file_sha256": "4dcd70baefa8969b37d02b2e1dad51ded08eaedaac9c31aa0db7ab994a2286df",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/melian.lua:68": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/melian.lua",
+      "line": 68,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/melian.lua#L68",
+      "file_sha256": "4dcd70baefa8969b37d02b2e1dad51ded08eaedaac9c31aa0db7ab994a2286df",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/melian.lua:67": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/melian.lua",
+      "line": 67,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/melian.lua#L67",
+      "file_sha256": "4dcd70baefa8969b37d02b2e1dad51ded08eaedaac9c31aa0db7ab994a2286df",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/melian.lua:66": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/melian.lua",
+      "line": 66,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/melian.lua#L66",
+      "file_sha256": "4dcd70baefa8969b37d02b2e1dad51ded08eaedaac9c31aa0db7ab994a2286df",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/melian.lua:69": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/melian.lua",
+      "line": 69,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/melian.lua#L69",
+      "file_sha256": "4dcd70baefa8969b37d02b2e1dad51ded08eaedaac9c31aa0db7ab994a2286df",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/melian.lua:62": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/melian.lua",
+      "line": 62,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/melian.lua#L62",
+      "file_sha256": "4dcd70baefa8969b37d02b2e1dad51ded08eaedaac9c31aa0db7ab994a2286df",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/nielson.lua:84": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/nielson.lua",
+      "line": 84,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/nielson.lua#L84",
+      "file_sha256": "c6a01b321214b2a9de8f38c92bb35b7c15fb807299cf2800535fa32c1e092812",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/nielson.lua:83": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/nielson.lua",
+      "line": 83,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/nielson.lua#L83",
+      "file_sha256": "c6a01b321214b2a9de8f38c92bb35b7c15fb807299cf2800535fa32c1e092812",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/nielson.lua:82": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/nielson.lua",
+      "line": 82,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/nielson.lua#L82",
+      "file_sha256": "c6a01b321214b2a9de8f38c92bb35b7c15fb807299cf2800535fa32c1e092812",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/old_adall.lua:60": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/old_adall.lua",
+      "line": 60,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/old_adall.lua#L60",
+      "file_sha256": "ae0a6ef67e9d1f27ba168ac4e5f42e83dce98b1c089a55500740f1c2474a0812",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/old_adall.lua:61": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/old_adall.lua",
+      "line": 61,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/old_adall.lua#L61",
+      "file_sha256": "ae0a6ef67e9d1f27ba168ac4e5f42e83dce98b1c089a55500740f1c2474a0812",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/pemaret.lua:92": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/pemaret.lua",
+      "line": 92,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/pemaret.lua#L92",
+      "file_sha256": "7860edb917cf36e43f2f675b9a2f9b8bbbc0821051ef20e4a9443cf04649489c",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/pemaret.lua:93": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/pemaret.lua",
+      "line": 93,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/pemaret.lua#L93",
+      "file_sha256": "7860edb917cf36e43f2f675b9a2f9b8bbbc0821051ef20e4a9443cf04649489c",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/petros.lua:105": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/petros.lua",
+      "line": 105,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/petros.lua#L105",
+      "file_sha256": "5418dc87464693a92ddba1378140a507b9e3da84de603fe485196faa1d4ebb2c",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/pino.lua:78": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/pino.lua",
+      "line": 78,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/pino.lua#L78",
+      "file_sha256": "ed254a66b6c9dc4a6f23e672ee550dc6447bcd190a900594240904ace681e497",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/pino.lua:77": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/pino.lua",
+      "line": 77,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/pino.lua#L77",
+      "file_sha256": "ed254a66b6c9dc4a6f23e672ee550dc6447bcd190a900594240904ace681e497",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/pino.lua:81": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/pino.lua",
+      "line": 81,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/pino.lua#L81",
+      "file_sha256": "ed254a66b6c9dc4a6f23e672ee550dc6447bcd190a900594240904ace681e497",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/pino.lua:82": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/pino.lua",
+      "line": 82,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/pino.lua#L82",
+      "file_sha256": "ed254a66b6c9dc4a6f23e672ee550dc6447bcd190a900594240904ace681e497",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/pino.lua:84": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/pino.lua",
+      "line": 84,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/pino.lua#L84",
+      "file_sha256": "ed254a66b6c9dc4a6f23e672ee550dc6447bcd190a900594240904ace681e497",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/pino.lua:80": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/pino.lua",
+      "line": 80,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/pino.lua#L80",
+      "file_sha256": "ed254a66b6c9dc4a6f23e672ee550dc6447bcd190a900594240904ace681e497",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/pino.lua:79": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/pino.lua",
+      "line": 79,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/pino.lua#L79",
+      "file_sha256": "ed254a66b6c9dc4a6f23e672ee550dc6447bcd190a900594240904ace681e497",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/pino.lua:85": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/pino.lua",
+      "line": 85,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/pino.lua#L85",
+      "file_sha256": "ed254a66b6c9dc4a6f23e672ee550dc6447bcd190a900594240904ace681e497",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/pino.lua:83": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/pino.lua",
+      "line": 83,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/pino.lua#L83",
+      "file_sha256": "ed254a66b6c9dc4a6f23e672ee550dc6447bcd190a900594240904ace681e497",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/sebastian.lua:101": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/sebastian.lua",
+      "line": 101,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/sebastian.lua#L101",
+      "file_sha256": "922efb07cad205cb69c1fbcbcfd02553d3e902e2d7806068a54253d53ea4a2e9",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/sebastian.lua:70": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/sebastian.lua",
+      "line": 70,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/sebastian.lua#L70",
+      "file_sha256": "922efb07cad205cb69c1fbcbcfd02553d3e902e2d7806068a54253d53ea4a2e9",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/sebastian_nargor.lua:60": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/sebastian_nargor.lua",
+      "line": 60,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/sebastian_nargor.lua#L60",
+      "file_sha256": "97df5b8ff2261f09ccc7038770ec7a40ef0cbf4d107c7f6f7b08355a75c90a54",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/sebastian_nargor.lua:61": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/sebastian_nargor.lua",
+      "line": 61,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/sebastian_nargor.lua#L61",
+      "file_sha256": "97df5b8ff2261f09ccc7038770ec7a40ef0cbf4d107c7f6f7b08355a75c90a54",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/svenson.lua:88": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/svenson.lua",
+      "line": 88,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/svenson.lua#L88",
+      "file_sha256": "389b66408fbecbc8323ec976b81c41e45fe7a459374b596a3b9759c1ad50fbac",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/svenson.lua:87": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/svenson.lua",
+      "line": 87,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/svenson.lua#L87",
+      "file_sha256": "389b66408fbecbc8323ec976b81c41e45fe7a459374b596a3b9759c1ad50fbac",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/svenson.lua:89": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/svenson.lua",
+      "line": 89,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/svenson.lua#L89",
+      "file_sha256": "389b66408fbecbc8323ec976b81c41e45fe7a459374b596a3b9759c1ad50fbac",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/tanyt.lua:78": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/tanyt.lua",
+      "line": 78,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/tanyt.lua#L78",
+      "file_sha256": "4e04046dca61ade02c22fc7591d7af791c2f66f018483701deeb4a7b1ff7c6ac",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/tanyt.lua:77": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/tanyt.lua",
+      "line": 77,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/tanyt.lua#L77",
+      "file_sha256": "4e04046dca61ade02c22fc7591d7af791c2f66f018483701deeb4a7b1ff7c6ac",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/tanyt.lua:84": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/tanyt.lua",
+      "line": 84,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/tanyt.lua#L84",
+      "file_sha256": "4e04046dca61ade02c22fc7591d7af791c2f66f018483701deeb4a7b1ff7c6ac",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/tanyt.lua:81": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/tanyt.lua",
+      "line": 81,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/tanyt.lua#L81",
+      "file_sha256": "4e04046dca61ade02c22fc7591d7af791c2f66f018483701deeb4a7b1ff7c6ac",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/tanyt.lua:82": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/tanyt.lua",
+      "line": 82,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/tanyt.lua#L82",
+      "file_sha256": "4e04046dca61ade02c22fc7591d7af791c2f66f018483701deeb4a7b1ff7c6ac",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/tanyt.lua:80": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/tanyt.lua",
+      "line": 80,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/tanyt.lua#L80",
+      "file_sha256": "4e04046dca61ade02c22fc7591d7af791c2f66f018483701deeb4a7b1ff7c6ac",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/tanyt.lua:79": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/tanyt.lua",
+      "line": 79,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/tanyt.lua#L79",
+      "file_sha256": "4e04046dca61ade02c22fc7591d7af791c2f66f018483701deeb4a7b1ff7c6ac",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/tanyt.lua:85": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/tanyt.lua",
+      "line": 85,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/tanyt.lua#L85",
+      "file_sha256": "4e04046dca61ade02c22fc7591d7af791c2f66f018483701deeb4a7b1ff7c6ac",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/tanyt.lua:83": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/tanyt.lua",
+      "line": 83,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/tanyt.lua#L83",
+      "file_sha256": "4e04046dca61ade02c22fc7591d7af791c2f66f018483701deeb4a7b1ff7c6ac",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/thorgrin.lua:62": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/thorgrin.lua",
+      "line": 62,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/thorgrin.lua#L62",
+      "file_sha256": "4a4a7c8eabb61d67e397e5fbec60e6d9fb1f0222582aea006ff1528c7e1ba7a3",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/thorgrin.lua:63": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/thorgrin.lua",
+      "line": 63,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/thorgrin.lua#L63",
+      "file_sha256": "4a4a7c8eabb61d67e397e5fbec60e6d9fb1f0222582aea006ff1528c7e1ba7a3",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/thorgrin.lua:61": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/thorgrin.lua",
+      "line": 61,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/thorgrin.lua#L61",
+      "file_sha256": "4a4a7c8eabb61d67e397e5fbec60e6d9fb1f0222582aea006ff1528c7e1ba7a3",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/tonar.lua:100": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/tonar.lua",
+      "line": 100,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/tonar.lua#L100",
+      "file_sha256": "a0d99e88cb4d07a7a48e954172bf0635631c4b48d139dfb13d860cf3c9193b4d",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/tonar_oskayaat.lua:100": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/tonar_oskayaat.lua",
+      "line": 100,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/tonar_oskayaat.lua#L100",
+      "file_sha256": "67bd1a6eb670b52d1428b035407eef9fb40c01a5f2540d3a9875de4fd8bbe098",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/urks_the_mute.lua:70": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/urks_the_mute.lua",
+      "line": 70,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/urks_the_mute.lua#L70",
+      "file_sha256": "931aef8a391e651834e9f42f1c9d777d39bcaa5ae7cfe1ec6aa5d6fd68452e3f",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/urks_the_mute.lua:69": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/urks_the_mute.lua",
+      "line": 69,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/urks_the_mute.lua#L69",
+      "file_sha256": "931aef8a391e651834e9f42f1c9d777d39bcaa5ae7cfe1ec6aa5d6fd68452e3f",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/uzon.lua:86": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/uzon.lua",
+      "line": 86,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/uzon.lua#L86",
+      "file_sha256": "825271d379876103e47f78413d0a8872b1ef10cd1e160b5367833237ba529268",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/uzon.lua:85": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/uzon.lua",
+      "line": 85,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/uzon.lua#L85",
+      "file_sha256": "825271d379876103e47f78413d0a8872b1ef10cd1e160b5367833237ba529268",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/uzon.lua:80": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/uzon.lua",
+      "line": 80,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/uzon.lua#L80",
+      "file_sha256": "825271d379876103e47f78413d0a8872b1ef10cd1e160b5367833237ba529268",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/uzon.lua:90": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/uzon.lua",
+      "line": 90,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/uzon.lua#L90",
+      "file_sha256": "825271d379876103e47f78413d0a8872b1ef10cd1e160b5367833237ba529268",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/uzon.lua:89": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/uzon.lua",
+      "line": 89,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/uzon.lua#L89",
+      "file_sha256": "825271d379876103e47f78413d0a8872b1ef10cd1e160b5367833237ba529268",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/uzon.lua:88": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/uzon.lua",
+      "line": 88,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/uzon.lua#L88",
+      "file_sha256": "825271d379876103e47f78413d0a8872b1ef10cd1e160b5367833237ba529268",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/uzon.lua:87": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/uzon.lua",
+      "line": 87,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/uzon.lua#L87",
+      "file_sha256": "825271d379876103e47f78413d0a8872b1ef10cd1e160b5367833237ba529268",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/uzon_back.lua:71": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/uzon_back.lua",
+      "line": 71,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/uzon_back.lua#L71",
+      "file_sha256": "b9d4cf8db310b790d2351d7219c838984238df1296794654e398e8aba38d1aa4",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/ziyad.lua:78": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/ziyad.lua",
+      "line": 78,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/ziyad.lua#L78",
+      "file_sha256": "2fb0292bfc81dc46bc7ac7e43047ebac8d7598dce27971b03f6a354ca8e38caa",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/ziyad.lua:77": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/ziyad.lua",
+      "line": 77,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/ziyad.lua#L77",
+      "file_sha256": "2fb0292bfc81dc46bc7ac7e43047ebac8d7598dce27971b03f6a354ca8e38caa",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/ziyad.lua:84": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/ziyad.lua",
+      "line": 84,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/ziyad.lua#L84",
+      "file_sha256": "2fb0292bfc81dc46bc7ac7e43047ebac8d7598dce27971b03f6a354ca8e38caa",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/ziyad.lua:81": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/ziyad.lua",
+      "line": 81,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/ziyad.lua#L81",
+      "file_sha256": "2fb0292bfc81dc46bc7ac7e43047ebac8d7598dce27971b03f6a354ca8e38caa",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/ziyad.lua:82": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/ziyad.lua",
+      "line": 82,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/ziyad.lua#L82",
+      "file_sha256": "2fb0292bfc81dc46bc7ac7e43047ebac8d7598dce27971b03f6a354ca8e38caa",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/ziyad.lua:85": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/ziyad.lua",
+      "line": 85,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/ziyad.lua#L85",
+      "file_sha256": "2fb0292bfc81dc46bc7ac7e43047ebac8d7598dce27971b03f6a354ca8e38caa",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/ziyad.lua:80": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/ziyad.lua",
+      "line": 80,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/ziyad.lua#L80",
+      "file_sha256": "2fb0292bfc81dc46bc7ac7e43047ebac8d7598dce27971b03f6a354ca8e38caa",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/ziyad.lua:79": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/ziyad.lua",
+      "line": 79,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/ziyad.lua#L79",
+      "file_sha256": "2fb0292bfc81dc46bc7ac7e43047ebac8d7598dce27971b03f6a354ca8e38caa",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "ots:travel-source-correction:ddb493002b87b814e13453873e7db9a795933ac1:data-global/npc/ziyad.lua:83": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/npc/ziyad.lua",
+      "line": 83,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc/ziyad.lua#L83",
+      "file_sha256": "2fb0292bfc81dc46bc7ac7e43047ebac8d7598dce27971b03f6a354ca8e38caa",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "qualification": "Exact scoped donor observation, not independent proof of current Global behavior."
+    },
+    "research:travel-source-correction:20261019": {
+      "title": "Route-by-route travel source reconciliation",
+      "url": "https://github.com/zimbadev/crystalserver/tree/ddb493002b87b814e13453873e7db9a795933ac1/data-global/npc",
+      "source_class": "RESEARCH_DERIVATION",
+      "retained_observations": "docs/reference/content-prep/travel-content-1/source-correction-check.json",
+      "qualification": "Scoped reference reconciliation; no runtime or controlled Global measurement."
     }
   }
 }

@@ -55,5 +55,25 @@
     "CONFLICT": 4
   },
   "counting_scope": "Active fields only; archived original Global evidence is excluded from active-field counts.",
-  "pending_index_metadata": []
+  "pending_index_metadata": [],
+  "route_source_correction": {
+    "source_check": "docs/reference/content-prep/travel-content-1/source-correction-check.json",
+    "record_count": 195,
+    "npc_scripts": 56,
+    "correction_counts": {
+      "minimum_level": 195,
+      "destination_coordinates": 195,
+      "premium_required": 195,
+      "quest_requirements": 195,
+      "origin": 24,
+      "travel_guard_conditions": 7,
+      "fare_gold": 5
+    },
+    "route_evidence_counts": {
+      "PROVEN": 589,
+      "DERIVED": 1253
+    },
+    "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+    "universal_level8_removed": true
+  }
 }
