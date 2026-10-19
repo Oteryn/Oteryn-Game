@@ -1,0 +1,420 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_PROPOSALS/v1",
+  "task": "PREY-CONTENT-1",
+  "reference_only": true,
+  "runtime_switch_authorized": false,
+  "status": "PROPOSED_NOT_ACCEPTED",
+  "global_evidence_policy": "Preserve original Tibia UNKNOWN/CONFLICT fields and source limitations. This file supplies Oteryn choices, not reclassified Global facts.",
+  "owner_authorization": {
+    "quote": "Przygotuj propozycje Oteryn z jawnymi założeniami",
+    "scope": "Authorize preparing proposals only; individual new values are not yet accepted."
+  },
+  "predecessor_sha": "8c4dd321dc85a30048e42aab56d920a80eb4cad0",
+  "original_field_list_sha256": "f33088986a34ade507a2648d9a54c2688b730bf0753b114f6533ba93da1b9e62",
+  "coverage": {
+    "held_fields": 17,
+    "proposals": 17,
+    "uncovered": 0,
+    "original_classifications": {
+      "CONFLICT": 6,
+      "UNKNOWN": 11
+    }
+  },
+  "shared_policies": {},
+  "source_observations": [
+    {
+      "source_id": "crystalserver-summer",
+      "key": "prey.reroll_upgrade",
+      "value": {
+        "star_update": "rarity>=9 -> 10; otherwise uniform integer in [rarity+1,10]",
+        "max_rarity_bonus_type_reroll": "repeat uniform bonus-type roll until type differs from previous"
+      },
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+        "path": "src/io/ioprey.cpp",
+        "line": 49,
+        "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/io/ioprey.cpp#L49",
+        "file_sha256": "33189a28e0e354773b183fe885dfbeb0c38a6f69e65bb7d9556522b2a9fe372d"
+      },
+      "evidence_scope": "UPSTREAM_IMPLEMENTATION_ONLY",
+      "limitation": "OTS algorithm; source distribution is not official probability evidence."
+    }
+  ],
+  "proposals": [
+    {
+      "original_field_path": "rulesets/progression/prey/reference-evidence.json/records/40/facts/reroll_upgrade",
+      "subject": "prey.costs",
+      "original_classification": "CONFLICT",
+      "proposed_value": {
+        "star_update": "rarity>=9 -> 10; otherwise uniform integer in [rarity+1,10]",
+        "max_rarity_bonus_type_reroll": "repeat uniform bonus-type roll until type differs from previous"
+      },
+      "basis": {
+        "kind": "UPSTREAM_ADAPTATION",
+        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "original_source_urls": [
+          "https://tibia.fandom.com/w/index.php?oldid=1168706",
+          "https://www.tibia.com/gameguides/?subtopic=manual&section=combat"
+        ],
+        "observation_refs": [
+          {
+            "source_id": "crystalserver-summer",
+            "observation_key": "prey.reroll_upgrade"
+          }
+        ],
+        "donor_selection": null
+      },
+      "assumptions": [
+        "Select this documented value for Oteryn; not a claim of current official server behavior."
+      ],
+      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+    },
+    {
+      "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/0/facts/selection_pool",
+      "subject": "prey.creature.acid_blob",
+      "original_classification": "CONFLICT",
+      "proposed_value": "free_or_gold",
+      "basis": {
+        "kind": "DESIGN_CHOICE",
+        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "original_source_urls": [
+          "https://tibia.fandom.com/w/index.php?oldid=1090711"
+        ],
+        "observation_refs": [],
+        "donor_selection": null
+      },
+      "assumptions": [
+        "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
+      ],
+      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+    },
+    {
+      "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/90/facts/selection_pool",
+      "subject": "prey.creature.damaged_worker_golem",
+      "original_classification": "CONFLICT",
+      "proposed_value": "free_or_gold",
+      "basis": {
+        "kind": "DESIGN_CHOICE",
+        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "original_source_urls": [
+          "https://tibia.fandom.com/w/index.php?oldid=1090711"
+        ],
+        "observation_refs": [],
+        "donor_selection": null
+      },
+      "assumptions": [
+        "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
+      ],
+      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+    },
+    {
+      "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/157/facts/selection_pool",
+      "subject": "prey.creature.flamingo",
+      "original_classification": "CONFLICT",
+      "proposed_value": "free_or_gold",
+      "basis": {
+        "kind": "DESIGN_CHOICE",
+        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "original_source_urls": [
+          "https://tibia.fandom.com/w/index.php?oldid=1090711"
+        ],
+        "observation_refs": [],
+        "donor_selection": null
+      },
+      "assumptions": [
+        "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
+      ],
+      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+    },
+    {
+      "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/173/facts/selection_pool",
+      "subject": "prey.creature.gazer",
+      "original_classification": "CONFLICT",
+      "proposed_value": "free_or_gold",
+      "basis": {
+        "kind": "DESIGN_CHOICE",
+        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "original_source_urls": [
+          "https://tibia.fandom.com/w/index.php?oldid=1090711"
+        ],
+        "observation_refs": [],
+        "donor_selection": null
+      },
+      "assumptions": [
+        "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
+      ],
+      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+    },
+    {
+      "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/374/facts/selection_pool",
+      "subject": "prey.creature.silver_rabbit",
+      "original_classification": "CONFLICT",
+      "proposed_value": "free_or_gold",
+      "basis": {
+        "kind": "DESIGN_CHOICE",
+        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "original_source_urls": [
+          "https://tibia.fandom.com/w/index.php?oldid=1090711"
+        ],
+        "observation_refs": [],
+        "donor_selection": null
+      },
+      "assumptions": [
+        "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
+      ],
+      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+    },
+    {
+      "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/480/facts/native_creature_binding",
+      "subject": "prey.creature.berrypest",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+        "source_creature_name": "Berrypest",
+        "create_native_identity": false
+      },
+      "basis": {
+        "kind": "DESIGN_CHOICE",
+        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "original_source_urls": [],
+        "observation_refs": [],
+        "donor_selection": null
+      },
+      "assumptions": [
+        "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+      ],
+      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+    },
+    {
+      "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/488/facts/native_creature_binding",
+      "subject": "prey.creature.cake_golem",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+        "source_creature_name": "Cake Golem",
+        "create_native_identity": false
+      },
+      "basis": {
+        "kind": "DESIGN_CHOICE",
+        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "original_source_urls": [],
+        "observation_refs": [],
+        "donor_selection": null
+      },
+      "assumptions": [
+        "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+      ],
+      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+    },
+    {
+      "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/520/facts/native_creature_binding",
+      "subject": "prey.creature.elder_forest_fury",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+        "source_creature_name": "Elder Forest Fury",
+        "create_native_identity": false
+      },
+      "basis": {
+        "kind": "DESIGN_CHOICE",
+        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "original_source_urls": [],
+        "observation_refs": [],
+        "donor_selection": null
+      },
+      "assumptions": [
+        "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+      ],
+      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+    },
+    {
+      "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/534/facts/native_creature_binding",
+      "subject": "prey.creature.furious_fire_elemental",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+        "source_creature_name": "Furious Fire Elemental",
+        "create_native_identity": false
+      },
+      "basis": {
+        "kind": "DESIGN_CHOICE",
+        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "original_source_urls": [],
+        "observation_refs": [],
+        "donor_selection": null
+      },
+      "assumptions": [
+        "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+      ],
+      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+    },
+    {
+      "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/585/facts/native_creature_binding",
+      "subject": "prey.creature.nightslayer",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+        "source_creature_name": "Nightslayer",
+        "create_native_identity": false
+      },
+      "basis": {
+        "kind": "DESIGN_CHOICE",
+        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "original_source_urls": [],
+        "observation_refs": [],
+        "donor_selection": null
+      },
+      "assumptions": [
+        "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+      ],
+      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+    },
+    {
+      "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/635/facts/native_creature_binding",
+      "subject": "prey.creature.undead_jester",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+        "source_creature_name": "Undead Jester",
+        "create_native_identity": false
+      },
+      "basis": {
+        "kind": "DESIGN_CHOICE",
+        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "original_source_urls": [],
+        "observation_refs": [],
+        "donor_selection": null
+      },
+      "assumptions": [
+        "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+      ],
+      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json/records/0/facts/experience_reward",
+      "subject": "task_board.beginner",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "expression": "floor(assigned_kill_count*creature_base_xp*0.10)",
+        "rate_multiplier": 1,
+        "award_on": "completed_task_claim_once"
+      },
+      "basis": {
+        "kind": "DESIGN_CHOICE",
+        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "original_source_urls": [],
+        "observation_refs": [],
+        "donor_selection": null
+      },
+      "assumptions": [
+        "Bonus10% of assigned baseline kill XP; unmodified baseXP; zero-XP creatures yield0. This is a bounty-task proposal, not Hunting Task Points or a Global XP formula."
+      ],
+      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json/records/1/facts/experience_reward",
+      "subject": "task_board.adept",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "expression": "floor(assigned_kill_count*creature_base_xp*0.10)",
+        "rate_multiplier": 1,
+        "award_on": "completed_task_claim_once"
+      },
+      "basis": {
+        "kind": "DESIGN_CHOICE",
+        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "original_source_urls": [],
+        "observation_refs": [],
+        "donor_selection": null
+      },
+      "assumptions": [
+        "Bonus10% of assigned baseline kill XP; unmodified baseXP; zero-XP creatures yield0. This is a bounty-task proposal, not Hunting Task Points or a Global XP formula."
+      ],
+      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json/records/2/facts/experience_reward",
+      "subject": "task_board.expert",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "expression": "floor(assigned_kill_count*creature_base_xp*0.10)",
+        "rate_multiplier": 1,
+        "award_on": "completed_task_claim_once"
+      },
+      "basis": {
+        "kind": "DESIGN_CHOICE",
+        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "original_source_urls": [],
+        "observation_refs": [],
+        "donor_selection": null
+      },
+      "assumptions": [
+        "Bonus10% of assigned baseline kill XP; unmodified baseXP; zero-XP creatures yield0. This is a bounty-task proposal, not Hunting Task Points or a Global XP formula."
+      ],
+      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json/records/3/facts/experience_reward",
+      "subject": "task_board.master",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "expression": "floor(assigned_kill_count*creature_base_xp*0.10)",
+        "rate_multiplier": 1,
+        "award_on": "completed_task_claim_once"
+      },
+      "basis": {
+        "kind": "DESIGN_CHOICE",
+        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "original_source_urls": [],
+        "observation_refs": [],
+        "donor_selection": null
+      },
+      "assumptions": [
+        "Bonus10% of assigned baseline kill XP; unmodified baseXP; zero-XP creatures yield0. This is a bounty-task proposal, not Hunting Task Points or a Global XP formula."
+      ],
+      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json/records/4/facts/weekly_experience_candidate",
+      "subject": "task_board.current_system",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "delivery_piecewise": [
+          {
+            "level_max": 82,
+            "experience": "25*L^2-75*L+100"
+          },
+          {
+            "level_min_exclusive": 82,
+            "level_max_exclusive": 1000,
+            "experience": "ROUND(1994.008*L)"
+          },
+          {
+            "level_min": 1000,
+            "experience": "2*L^2-6*L+8"
+          }
+        ],
+        "kill_task_caps": {
+          "beginner": 200000,
+          "adept": 800000,
+          "expert": 3000000,
+          "master": null
+        }
+      },
+      "basis": {
+        "kind": "DESIGN_CHOICE",
+        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "original_source_urls": [
+          "https://tibia.fandom.com/w/index.php?oldid=1187430"
+        ],
+        "observation_refs": [],
+        "donor_selection": null
+      },
+      "assumptions": [
+        "Adopt retained community weekly-delivery model as a project choice; use floor(x+0.5) for positive ROUND and do not conflate delivery XP with creature bounty rewards."
+      ],
+      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+    }
+  ]
+}
