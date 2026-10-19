@@ -15,7 +15,7 @@ Koordynacja: [#1622](https://github.com/Oteryn/Oteryn-Game/issues/1622). [Wstrzy
 ## Źródła
 
 - CrystalServer `9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d`, zachowany w `tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz`. Mapa Oteryn ma odrębne bindingi mapy z rewizji `00ce02a57ca5a12e48f32a3476e37471167e4c3f`; katalog NPC deklaruje także `ff7ede593c69d4c658b382c97443e8155926924a`. Nie zakładać identyczności tych rewizji.
-- Film: https://www.youtube.com/watch?v=Jp_L0jbfsao, 33:16. Poniżej zachowano wcześniejszą rekonstrukcję: 28 zdarzeń, 101 wystąpień tekstu, 1941 próbek OCR co sekundę od 00:55 do 33:15 i odczyty kluczowych okien. W tym audycie nie wykonano ponownego oglądania. To indeks obserwacji, bez dowodu braku komunikatów krótszych niż sekundę.
+- Film: https://www.youtube.com/watch?v=Jp_L0jbfsao, 33:16. Poniżej zachowano wcześniejszą rekonstrukcję: 28 zdarzeń, 101 wystąpień tekstu, 1941 próbek OCR co sekundę od 00:55 do 33:15 i odczyty kluczowych okien. Następnie wykonano nowy odczyt w Chrome na podłączonym laptopie: 238 unikalnych punktów czasu, siatka 15 s przez całą długość i gęstsze próbkowanie kluczowych przejść; korekty poniżej. Dawne 28 zdarzeń / 101 tekstów to indeks historycznej rekonstrukcji, nie liczba niezależnie ponownie potwierdzonych komunikatów ani dowód kompletności.
 - OTClient `53d3a8ac2a091c12a445ec16b7ea8ada613acee0`, `modules/game_tutorial/{controller/tutorial_controller.lua,const/vocations.lua,template/html/tutorial.html}`. Wcześniej sprawdzony kontroler obsługuje ID 2, pozostałe numery nie są kompletną implementacją.
 - Snapshot pozycji NPC: `imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json`. Pozycja obserwowana/wiki nie jest nieruchomym punktem spawnu.
 - Wcześniej zbadany katalog tekstów klienta Tibia `15.33.9d148f`, SHA-256 `ea8d9fc576f3cad4b2976f1fa8d52a599ad74c951252c814a6e50e99d0ab3808`. Inna wersja niż film: obecność klucza tłumaczenia nie ustala jego wyzwalacza.
@@ -272,7 +272,7 @@ Wspólne sloty: i3355 head, i3561 armor, i3559 legs, i3552 feet, i34017 ammo; pl
 | UNKNOWN | Dokładna kratka lądowania Thais Peninsula | Film nie pokazuje współrzędnych. Pozycja Hectora nie ustala lądowania. Historyczny wariant Anny (32310,32210,6) także nie został potwierdzony. |
 | CONFLICT | Hint polowania | Crystal wywołuje stałe ID 3; enumeracja OTClient: Knight=3, Paladin=4. Film jest ścieżką Paladina. |
 | CONFLICT | Komentarz arrival Targuna | movements_main_continent_hint.lua opisuje ID 7, ale wykonuje sendTutorial(13). To inna trasa niż nagrany Thais. |
-| UNKNOWN | Czas i próg bannerów | Film pokazuje Managing your riches i Off to New Shores, ale nie dowodzi dokładnego warunku/timera. |
+| PROVEN / UNKNOWN | Czas i próg bannerów | Obserwowane przejście do Managing your riches zawężono do (1379.033333,1379.266666] s. Próg/reguła pozostaje nieznana. Off to New Shores nie potwierdzono ponownie w przypisanym oknie filmu; zachować jako tekst katalogu klienta. |
 | UNKNOWN | Zliczanie Muglexów i źródło książki | Nie znaleziono producenta przyrostu newhavenMuglexKillCount w zachowanych Lua/XML; samo zerowanie i odczyt u Gustavo nie wystarczają. Brak powiązania otrzymania książki i44774. |
 | PROVEN / UNKNOWN | Geometria źródłowa i grafika | Porównanie całego prostokąta OTBM→B3 oraz zależności graficznych zamknięto w ostatniej sekcji. Nadal brak testu dojść i porównania wizualnego w kliencie. |
 
@@ -291,11 +291,11 @@ Poniższe zakresy są propozycją kolejności i kryteriów, **nie nowymi przydzi
 
 ## Obserwowany przebieg i teksty z filmu
 
-Poniższe dane przeniesiono z wcześniejszej rekonstrukcji, bez ponownego oglądania. Czasy są obserwacjami z dokładnością około sekundy; nie timestampami pakietów. `PROVEN_VIDEO` w oryginalnym materiale oznacza wcześniejszą obserwację filmu; pozycje są ustalane osobno ze źródeł, a nie z minimapy. Błędy pisowni/formatowania zachowano zgodnie z rekonstrukcją.
+Poniższy indeks pochodzi z wcześniejszej rekonstrukcji i został skorygowany nowym odczytem klatek z 2026-10-19. Tylko jawnie opisane ponowne odczyty mają świeże potwierdzenie. Pozostałe czasy są wcześniejszymi obserwacjami z dokładnością około sekundy; nie timestampami pakietów. `PROVEN_VIDEO` w oryginalnym materiale oznacza wcześniejszą obserwację filmu; pozycje są ustalane osobno ze źródeł, a nie z minimapy. Błędy pisowni/formatowania zachowano zgodnie z rekonstrukcją.
 
-### 00:59 — Wysepka startowa (`start`)
+### 01:05.75 — Wysepka startowa (`start`; korekta wcześniejszego 00:59)
 
-Początek pokazanego fragmentu gry; postacie stoją na małej wyspie.
+Pierwsza wyraźna klatka wysepki w gęstym próbkowaniu: żądane 65.75 s, przedstawiony obraz 65.766666 s. Przy 59–65 s film pokazuje jeszcze Thais/Alia; 65.25–65.5 s to przejście montażowe. Nie utożsamiać początku filmu z pierwszym logowaniem.
 
 Pozycja źródłowa: `[32534, 32513, 7]`.
 
@@ -431,7 +431,7 @@ Pozycja źródłowa: `[32554, 32505, 7]`.
 
 > Of course, take a look and see what might interest you.
 
-### 07:22 — Combat Basics — Paladin (`combat`)
+### 07:22.5 — Combat Basics — Paladin (`combat`; korekta zaokrąglonego czasu)
 
 Wyjście na północ z osady, obok Gustavo; wejście na pole samouczka walki.
 
@@ -477,6 +477,8 @@ Pozycja źródłowa: `[32561, 32485, 7]`.
 
 > Ok
 
+Nowy odczyt: przy przedstawionym 442.266666 s okno jest nieobecne, przy 442.533333 s jest otwarte. To przedział pojawienia się na nagraniu, nie zegar serwera.
+
 Uwaga: Dopuszczalne pole wyzwalające ze skryptu: (32561,32485,7) lub (32562,32485,7), gdy flaga hunting > 0; po pokazaniu jest czyszczona.
 
 Uwaga: Grafika hint_04_vocationpaladin.png z OTClient odpowiada oknu filmu. W tabeli OTClient Paladin ma ID 4; badany CrystalServer wysyła stałe 3, dlatego nie wolno utożsamiać ich bez korekty.
@@ -499,7 +501,7 @@ Atak dystansowy na cel stojący obok postaci.
 
 > You are using a ranged auto-attack at melee distance.
 
-Uwaga: Ostrzeżenie powtarza się przy podobnym położeniu celu.
+Uwaga: Ostrzeżenie powtarza się przy podobnym położeniu celu. W tej samej świeżo odczytanej klatce 487 s widnieje też osobny komunikat odmowy PvP: `You are not allowed to attack this player because one of you didn't reach level 8 yet!`. Nie jest to tekst bannera Target Too Close ani instrukcja obowiązkowej walki z graczem.
 
 ### 08:18 — Poziom 3 (`level3`)
 
@@ -571,7 +573,7 @@ W trakcie dalszej gry zmienia się panel Player Guide.
 
 > Managing your riches
 
-Uwaga: Film pokazuje ten stan panelu; nie ustala dokładnego progu złota ani reguły wyzwolenia. Nie należy wymyślać progu na podstawie samego ujęcia.
+Nowy odczyt zawęża zmianę: przy 1379.033333 s panel jeszcze pokazuje Level 9 / Magic Rope, przy 1379.266666 s już Congratulations! / Milestone unlocked: / Managing your riches. Film nie ustala dokładnego progu złota ani globalnej reguły wyzwolenia.
 
 ### 23:24 — Distance Fighting 23 (`distance23`)
 
@@ -579,15 +581,15 @@ Dalszy awans w trakcie polowania.
 
 > You advanced to distance fighting level 23.
 
-### 23:27 — Przypomnienie o wypłynięciu (`new-shores`)
+### Bez potwierdzonego czasu filmu — tekst katalogu (`new-shores`; dawniej 23:27)
 
-Poziom 9, podczas wychodzenia z rejonu polowania; pokazuje się przypomnienie.
+**UNKNOWN_VIDEO / SOURCE_ONLY:** dawny wpis przypisywał pojawienie się do 1407 s. Nowy odczyt tego punktu oraz próbek co 0.25 s w oknie 1406.25–1409 s pokazuje nadal Managing your riches. Nie potwierdzono tam poniższego tekstu. Nie traktować go jako zaobserwowanego kroku ani wyzwalacza.
 
 > Off to New Shores
 
 > Leave the village and set sail to start your real adventure.
 
-Uwaga: Treść jest zgodna z katalogiem oficjalnego klienta. Film nie ujawnia dokładnego timera przypomnienia.
+Uwaga: Treść zachowano jako referencję katalogu oficjalnego klienta. Brak w sprawdzonych klatkach nie dowodzi nieobecności w każdej klatce całego filmu; wcześniejsza etykieta PROVEN_VIDEO i czas 1407 s zostają wycofane.
 
 ### 26:17 — Rozmowa z Anną (`anna-hi`)
 
@@ -639,7 +641,7 @@ Wybranie yes po ponowionej ofercie, przy poziomie co najmniej 8.
 
 > Very well, I'll take you to the Thais Peninsula then. Don't forget to talk to Hector at the port for directions!
 
-Uwaga: Dłuższa wersja zdania z at the port jest potwierdzona historycznym skryptem Anny i odczytami OCR filmu. Ujęcie należy zachować do kontroli tekstu.
+Uwaga: Dłuższą wersję zdania z at the port odczytano ponownie bezpośrednio z czatu na klatce 1605 s. Odpowiedzi passage / no / passage / yes oraz cel Thais Peninsula są widoczne w zachowanym czacie.
 
 Uwaga: Miejsce docelowe w filmie to Thais Peninsula. Nowszy donor kieruje do Targuny; starszy donor podaje (32310,32210,6), które nie pasuje do mapy filmu. Żadnej z tych kratek nie przyjmujemy jako poprawnego lądowania z nagrania.
 
@@ -678,9 +680,9 @@ Uwaga: Grafika hint_08_arrivalmainpaladin.jpg z OTClient odpowiada oknu w filmie
 
 Uwaga: Mapa wskazuje położenie gracza, port, handel, naukę zaklęć i Wolf Den. Nie zawiera liczbowych współrzędnych.
 
-### 27:06 — Hector the Mentor (`hector`)
+### 28:00 — Hector the Mentor (`hector`; potwierdzona klatka, nie pierwszy moment)
 
-Postać przechodzi przy Hectorze, którego wskazała Anna.
+Postać przechodzi przy Hectorze, którego wskazała Anna. Świeża klatka 1680 s pokazuje nazwę Hector The Mentor nad NPC i w Battle List. Dawne 1626 s to rozmyte przejście montażowe na pomoście; wycofano tę dokładną etykietę czasu. Nie ustalono pierwszej klatki pojawienia się Hectora.
 
 Pozycja źródłowa: `[32474, 32288, 7]`.
 
@@ -844,9 +846,65 @@ Część tych numerów jest już w zwykłych tabelach lootu Oteryn: corrupted gh
 
 ### Pozostałe blokady pełnego potwierdzenia
 
-- Lista urządzeń Desktop Commander w czasie kontroli pokazała **Molehill-PC Offline**, ostatnio widziany około 9 godzin wcześniej. Nie odczytano zapisanych klatek ani zainstalowanego klienta i nie wykonano nowego oglądu filmu. Nie oznaczać 101 tekstów jako gwarantowanej pełnej listy każdej klatki.
-- Nadal nie ustalono dokładnego timera/warunków dwóch bannerów ani dokładnej kratki lądowania Thais Peninsula. Źródłowa Anna i nowszy snapshot prowadzą do Targuny, co nie potwierdza historycznej ścieżki filmu.
+- Historyczna kontrola Molehill-PC wykazała offline. Ten brak dostępu do filmu został później usunięty: na podłączonym laptopie otwarto YouTube w Chrome i wykonano nowy odczyt opisany poniżej. Nie odczytano instalacji klienta z offline PC. Nadal nie oznaczać dawnej liczby 101 jako kompletnej listy każdej klatki.
+- Nadal nie ustalono globalnego progu/reguły Managing your riches, filmowego wystąpienia Off to New Shores ani autorytatywnej kratki lądowania Thais Peninsula. Źródłowa Anna i nowszy snapshot prowadzą do Targuny, co nie potwierdza historycznej ścieżki filmu.
 - Obecny main nie ma kompletnego wykonania tutoriala Newhaven; quest czeka na lowering, a potrzebni NPC nie są rozmieszczeni. Nie można zaliczyć przejścia E2E niezaimplementowanej ścieżki. Ten audyt nie przydziela jej implementacji.
 - Brak testu gry obejmującego inne profesje, zadania poboczne, śmierć, reconnect i restart. Obecność ogólnych testów teleportu i poprawnych plików nie jest takim testem.
 
-Zamknięte: porównanie źródłowej geometrii i stosów w całym prostokącie, źródłowy katalog spawnów z wykluczeniami, przestrzenny katalog NPC, zależności graficzne/arkusze i szczegółowe konflikty ID. Otwarte: dowody filmu, dokładne zachowanie klienta i pełne wykonanie w grze. Koordynator zachowuje decyzję o przydziale napraw.
+Zamknięte: porównanie źródłowej geometrii i stosów w całym prostokącie, źródłowy katalog spawnów z wykluczeniami, przestrzenny katalog NPC, zależności graficzne/arkusze i szczegółowe konflikty ID. Uzupełnione: bezpośredni ponowny odczyt kluczowych scen filmu. Otwarte: pełna kompletność krótkich komunikatów, dokładne reguły klienta, autorytatywne lądowanie i wykonanie w grze. Koordynator zachowuje decyzję o przydziale napraw.
+
+
+## Ponowny odczyt filmu w Chrome na laptopie — 2026-10-19
+
+**PROVEN — dostęp i metoda:** użyto autoryzowanego przez właściciela, podłączonego laptopa. YouTube odtwarzano w Chrome w osobnym tymczasowym profilu; odczytywano rzeczywisty obraz odtwarzacza 2560×1440. Nie pobierano pliku filmu. Długość odtwarzacza: 1995.581 s. Zachowano 238 unikalnych punktów czasu: siatkę 0..1995 s co 15 s, punkty dawnego indeksu i gęste okna (do 0.25 s) przy zmianach. Dla 233 punktów zapisano też `requestVideoFrameCallback.mediaTime`; pięć wcześniejszych klatek ma tylko stan odtwarzacza. OCR 35 wybranych punktów jest materiałem pomocniczym, nie źródłem bezbłędnej transkrypcji. Wykonano także szersze lokalne odczyty regionów obrazu. Obraz kontrolowano ręcznie przy rozbieżnościach (np. 16, nie błędnie rozpoznane 18).
+
+Napisy YouTube i panel transkrypcji nie dostarczyły użytecznej pełnej transkrypcji; nie twierdzimy, że ją uzyskano. Napisy narratora nie zastępują odczytu komunikatów gry. To ponowny ogląd próbek i kluczowych scen, bez gwarancji obejrzenia każdej klatki lub wszystkich chwilowych komunikatów.
+
+### Wynik korekty obserwacji
+
+| Scena | Bezpośrednia obserwacja / skutek |
+| --- | --- |
+| Początek wysepki | 59 s pokazuje jeszcze Thais. Wysepka wyraźna w 65.766666 s, po przejściu montażowym. Start świata (32534,32513,7) pozostaje dowodem skryptowym. |
+| Wybór profesji | W 156.033333 s gracz na wysepce; klatka 157 s pokazuje okno wyboru. Nie dowodzi osobnego Confirm ani pełnego tworzenia postaci. |
+| Walka Paladina | Okno nieobecne 442.266666 s, obecne 442.533333 s; wejście na północ od wioski. Pozycje warunkowe pochodzą ze skryptu. |
+| Skill i ostrzeżenia | Odczytano Distance Fighting 16 w 471 s. W 487 s równocześnie Target Too Close oraz oddzielną odmowę PvP poniżej poziomu 8. |
+| Managing your riches | Zmiana panelu w przedziale (1379.033333,1379.266666] s. Brak dowodu dokładnego progu złota lub globalnego warunku. |
+| Off to New Shores | Niepotwierdzone w przypisanym dawniej czasie; wpis przeniesiony do referencji katalogu klienta. |
+| Anna / Thais | Zachowany czat na 1605 s potwierdza ofertę, odmowę, ponowienie i zgodę oraz dokładne końcowe zdanie z `at the port`. W 1598 s widoczne Arrival in Thais. |
+| Hector | Nazwa widoczna na 1680 s. Nie dopisywać nieodbytej rozmowy ani traktować 1626 s jako momentu spotkania. |
+| Koniec filmu | Po Newhaven pokazano okolice portu, Player Guide / Compendium (1725 s), drogę przez Thais i świątynię Alia. Nie utożsamiać widocznych Loose Ends z obowiązkowymi zadaniami Newhaven. |
+
+Dodatkowe odczytane komunikaty po lądowaniu, poza dawnymi 101 wystąpieniami:
+
+- 1650 s i 1680 s: `Sorry, not possible.` — komunikat ogólny, film nie daje jednoznacznego producenta dla każdej odmowy.
+- 1665 s i nadal 1680 s: `Only rightful pilgrims of the Three-Fold Path and the Merudri themselves can use this shrine.` — widoczny tekst po użyciu okolicznego obiektu; nie przypisywać go dialogowi Hectora.
+- 487 s: `You are not allowed to attack this player because one of you didn't reach level 8 yet!` — odmowa ataku na drugiego gracza; osobna od ostrzeżenia dystansu.
+
+### Dopasowanie pomostu — nadal DERIVED
+
+Obraz lądowania 1605/1620 s dopasowano do charakterystycznego pomostu w lokalnym B3: drewniane pola x=32475..32477, y=32292..32295, z=7; beczka i2519 w (32476,32295,7), skrzynia i8745 w (32477,32295,7), elementy łodzi na południu. Kandydat pozycji gracza to **(32476,32293,7)**, wywnioskowany z położenia względem beczki i skrzyni. To dopasowanie obrazu z przesunięciami sprite'ów, a nie współrzędne odczytane z klienta ani źródłowy cel teleportu. Dokładny cel pozostaje **UNKNOWN** do potwierdzenia zapisem historycznej Anny, telemetrią lub kontrolowaną kalibracją mapy. Nie implementować kandydata jako zatwierdzonego celu. Kotwica Hectora z XML mapy wynosi (32473,32288,7), inna niż obserwowany punkt wiki (32474,32288,7).
+
+### Manifest ponownego odczytu
+
+Lokalny artefakt sesji `/workspace/artifacts/tutorial-2186/browser-review-2026-10-19.json` zawiera 238 czasów, stan odtwarzacza, hashe PNG oraz 35 odczytów OCR wybranych obszarów. SHA-256 pliku: `a68e539728b2f8d5f982756a8a76bbc336af15b46513444e9b301de22c54a0c5`. Obrazy pozostają w tymczasowym katalogu `codex-newhaven-review` na laptopie; nie zostały dodane do repo. Poniższe hashe i odnośniki czasu umożliwiają identyfikację kluczowych obserwacji, ale nie zastępują samych klatek.
+
+| Żądany czas (s) | Przedstawiony mediaTime (s) | SHA-256 PNG |
+| --- | --- | --- |
+| [65.25](https://www.youtube.com/watch?v=Jp_L0jbfsao&t=65s) | 65.266666 | `7acd8b78ca768ccdaaa0717725f205d5261620b50abc633910a8184a8de46b31` |
+| [65.5](https://www.youtube.com/watch?v=Jp_L0jbfsao&t=65s) | 65.533333 | `3a8bcfdd72af0b445669272f5c2c7fb13076a67845e2869187c59584dccf265c` |
+| [65.75](https://www.youtube.com/watch?v=Jp_L0jbfsao&t=65s) | 65.766666 | `33dd37b25d245b8460266302ea4f4b5bd13b7e9f5b36ab42ab64020d7b89a117` |
+| [156](https://www.youtube.com/watch?v=Jp_L0jbfsao&t=156s) | 156.033333 | `fd007175146cee6f45f421a5e79569d94cf2118b97675173f19a3e227a6e0963` |
+| [157](https://www.youtube.com/watch?v=Jp_L0jbfsao&t=157s) | nie zapisano | `ef91edbc3a9d0d63a0a6f2db3843fb30fa3b6c7b446493363b4418c2aeb26153` |
+| [442.25](https://www.youtube.com/watch?v=Jp_L0jbfsao&t=442s) | 442.266666 | `02baa13629c05585924bc6e040fa78ed3de371afb10665cae46347aa6a8fd613` |
+| [442.5](https://www.youtube.com/watch?v=Jp_L0jbfsao&t=442s) | 442.533333 | `10672fb6fc3594e012777038d5faa44e74180289481e99e3d49a6c560137d53f` |
+| [487](https://www.youtube.com/watch?v=Jp_L0jbfsao&t=487s) | 487.033333 | `1a8ba6afcb23a9b243b2ed5269da76f3d0c208ce4d1f7f5088611605cabb7bd1` |
+| [1379](https://www.youtube.com/watch?v=Jp_L0jbfsao&t=1379s) | 1379.033333 | `4d4cac46f2ef1dfcc23a48b67ab374b6b3c8bd0995731aeb2693fff45de3c5fc` |
+| [1379.25](https://www.youtube.com/watch?v=Jp_L0jbfsao&t=1379s) | 1379.266666 | `5dd591ce081c7c512ed7ae8155d1dbb53e6e97b0ab49c1f7208498b7b629e2bd` |
+| [1407](https://www.youtube.com/watch?v=Jp_L0jbfsao&t=1407s) | 1407.033333 | `1f601523a27e538dcbf848e66de93930f73ca7ad2a748dcd17eec0c813605465` |
+| [1598](https://www.youtube.com/watch?v=Jp_L0jbfsao&t=1598s) | 1598.033333 | `09fda9a020db6a69161c553f77829c4f14561092f8cead8cdb0a76339f8bdf1b` |
+| [1605](https://www.youtube.com/watch?v=Jp_L0jbfsao&t=1605s) | 1605.033333 | `1324d2e8975e1336a1ca32f18f2bed3d66980a7093a9d50007a8517ca99a6d56` |
+| [1626](https://www.youtube.com/watch?v=Jp_L0jbfsao&t=1626s) | 1626.033333 | `029d63e6d74ce8acda222111c10ce0b8f346fc0353a7248aeb27b8f567f80762` |
+| [1650](https://www.youtube.com/watch?v=Jp_L0jbfsao&t=1650s) | 1650.033333 | `ce3ce9098b7572261a4b07106028f5c640578e7005e5bce2cc3dfbbe816bcafe` |
+| [1665](https://www.youtube.com/watch?v=Jp_L0jbfsao&t=1665s) | 1665.033333 | `21653d2be6ed853184e94a2dcadcb82c5add9ab8d632b7578e69d2e8723724de` |
+| [1680](https://www.youtube.com/watch?v=Jp_L0jbfsao&t=1680s) | 1680.033333 | `c00b7ab9edc78b56bf70cc9a11499da2a341600f47355cb84056832ee5d7512a` |
+| [1995](https://www.youtube.com/watch?v=Jp_L0jbfsao&t=1995s) | 1995.033333 | `229d3b5e0b10068b1bd7799cccbd85a59d6e08232096abde46922d9d83551967` |
