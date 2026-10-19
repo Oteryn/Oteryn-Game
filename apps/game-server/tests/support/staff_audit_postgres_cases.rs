@@ -2503,7 +2503,7 @@ fn staff_pg_activation_waits_for_the_pending_mutation_receipt() -> TestResult {
 mod executor {
     use super::*;
     use crate::durability::staff_moderation::{
-        ItemTextReport, MAX_MUTE_MS, OPEN_SNAPSHOTS_PER_WORLD, REPORT_RETENTION_MS,
+        ItemTextReport, MAX_MUTE_MS, OPEN_SNAPSHOTS_PER_WORLD, REPORT_RETENTION_MS, RESTORE_BATCH,
         ReportAdmission, RestoreError, RestoreKind, RestoreStep, RetainedLink, StaffNode,
     };
     use crate::staff::live::{self, KickResult, StaffDesk};
@@ -4157,6 +4157,115 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
         })
     }
 
+    /// One hourly expiry pass drains a backlog larger than its transaction
+    /// batch, returning all account and World quotas to their starting values.
+    #[test]
+    fn staff_pg_report_expiry_drains_all_batches_in_one_call() -> TestResult {
+        exec_case("reportdrain", Some("ADMIN"), async |e| {
+            // Extend the same Character/account seed for two more reporters;
+            // every report still goes through the runtime admission writer.
+            let extra = [
+                "00000000-0000-7000-8000-000000000004",
+                "00000000-0000-7000-8000-000000000005",
+            ];
+            let mut tx = e.f.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            for (reporter, name) in extra.into_iter().zip(["Dara", "Elin"]) {
+                sqlx::query(
+                    "INSERT INTO game_character_account_guards(account_id) VALUES($1::uuid)",
+                )
+                .bind(reporter)
+                .execute(&mut *tx)
+                .await?;
+                sqlx::query(
+                    "INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,\
+                     character_revision,profile_revision,ruleset_revision,content_revision,\
+                     starter_template_revision,name) SELECT $1::uuid,$1::uuid,world_id,lifecycle,\
+                     character_revision,profile_revision,ruleset_revision,content_revision,\
+                     starter_template_revision,$3 FROM game_character_roots \
+                     WHERE character_id=$2::uuid",
+                )
+                .bind(reporter)
+                .bind(REPORTER)
+                .bind(name)
+                .execute(&mut *tx)
+                .await?;
+            }
+            tx.commit().await?;
+            let counters = || async {
+                Ok::<_, Box<dyn std::error::Error>>((
+                    e.scalar(
+                        "SELECT COALESCE(sum(open_reports),0)::bigint FROM game_item_text_report_accounts",
+                    )
+                    .await?,
+                    e.scalar(
+                        "SELECT COALESCE(sum(open_snapshots),0)::bigint FROM game_item_text_report_worlds",
+                    )
+                    .await?,
+                ))
+            };
+            let before = counters().await?;
+            assert_eq!(before, (0, 0));
+            for (index, reporter) in [TARGET, REPORTER, extra[0], extra[1]]
+                .into_iter()
+                .enumerate()
+            {
+                let count = if index == 3 { 10 } else { 20 };
+                for n in 0..count {
+                    let mut report = reported(n);
+                    report.reporter_character = id(reporter);
+                    let admission = e
+                        .root
+                        .create_item_text_report(
+                            report,
+                            REPORTED + u64::from(n / 10) * HOUR,
+                            OPEN_SNAPSHOTS_PER_WORLD,
+                        )
+                        .await
+                        .map_err(debug)?;
+                    assert!(matches!(
+                        admission,
+                        ReportAdmission::Open { first: true, .. }
+                    ));
+                }
+            }
+            assert_eq!(counters().await?, (70, 70));
+            let now = REPORTED + HOUR + u64::try_from(REPORT_RETENTION_MS)?;
+            assert_eq!(
+                e.root.expire_item_text_reports(now).await.map_err(debug)?,
+                70
+            );
+            assert_eq!(counters().await?, before);
+            assert_eq!(
+                e.scalar(
+                    "SELECT count(*) FROM game_item_text_report_accounts WHERE open_reports<>0",
+                )
+                .await?,
+                0
+            );
+            assert_eq!(
+                e.scalar("SELECT count(*) FROM game_item_text_reports WHERE state='EXPIRED'")
+                    .await?,
+                70
+            );
+            assert_eq!(
+                e.scalar(
+                    "SELECT count(*) FROM game_item_text_reports WHERE snapshot_text IS NOT NULL",
+                )
+                .await?,
+                0
+            );
+            assert_eq!(
+                e.root.expire_item_text_reports(now).await.map_err(debug)?,
+                0
+            );
+            assert_eq!(counters().await?, before);
+            Ok(())
+        })
+    }
+
     /// REPORTS_LIST pages by a signed `(entry_seq, report_id)` keyset cursor:
     /// more than one page of reports is read in order, each exactly once, and
     /// the answer bound ends a page early without losing a report.
@@ -4838,6 +4947,158 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
             );
             assert_eq!(head_of(e).await?, top);
             assert_eq!(sanctions(e, REPORTER).await?, 0);
+            Ok(())
+        })
+    }
+
+    /// A fully verified tail commits in bounded transactions. Prefix retries
+    /// and retries after an apply failure reach the same durable state.
+    #[test]
+    fn staff_pg_restore_batches_commit_and_retry_idempotently() -> TestResult {
+        // Compare all semantic state in this bounded fixture (ten operations,
+        // nine sanctions and receipts), excluding generated sanction IDs and
+        // the physical transaction IDs that necessarily differ across runs.
+        async fn state(e: &Exec) -> TestResult<String> {
+            Ok(sqlx::query_scalar(
+                "SELECT jsonb_build_object(\
+                 'operations',(SELECT jsonb_agg(to_jsonb(o)-'created_xact_id' ORDER BY control_seq) \
+                   FROM game_staff_operations o),\
+                 'sanctions',(SELECT jsonb_agg(to_jsonb(s)-'sanction_id' ORDER BY mute_action_id) \
+                   FROM game_character_sanctions s),\
+                 'receipts',(SELECT jsonb_agg(to_jsonb(r)-'created_xact_id' ORDER BY control_seq) \
+                   FROM game_staff_action_receipts r),\
+                 'head',(SELECT to_jsonb(h) FROM game_staff_control_heads h \
+                   WHERE environment='alpha-test'))::text",
+            )
+            .fetch_one(&e.f.pool)
+            .await?)
+        }
+        async fn verify(e: &Exec, top: &(u64, String)) -> TestResult {
+            assert_eq!(head_of(e).await?, *top);
+            let mut cursor = e.f.history.cursor();
+            let mut after = 0;
+            loop {
+                let rows = e
+                    .root
+                    .staff_evidence_page(e.f.trust.environment().into(), after, top.0)
+                    .await
+                    .map_err(debug)?;
+                if rows.is_empty() {
+                    break;
+                }
+                for row in rows {
+                    after = row.link.sequence;
+                    if let signature::VerifiedLink::Request(request) =
+                        cursor.push(&row.link).map_err(debug)?
+                    {
+                        owner::verify_request_evidence(
+                            &e.f.history,
+                            Contract::registered().map_err(debug)?,
+                            &request,
+                            row.operation.as_ref(),
+                            false,
+                            signature::synchronized_now_ms,
+                        )
+                        .map_err(debug)?;
+                    }
+                }
+            }
+            cursor.finish(top.0, &top.1).map_err(debug)?;
+            assert!(
+                !e.root
+                    .staff_evidence_has_orphans(e.f.trust.environment().into(), top.0)
+                    .await
+                    .map_err(debug)?
+            );
+            Ok(())
+        }
+        exec_case("restorebatches", Some("GM"), async |e| {
+            let base = (e.sequence, e.head.clone());
+            // Nine dispatched mutes and their receipts, followed by a read:
+            // batch two applies a mute before its final link can fail.
+            for _ in 0..9 {
+                assert_eq!(
+                    of(&e.send(mute(TARGET, 60_000)).await.map_err(debug)?),
+                    COMMITTED
+                );
+            }
+            assert_eq!(
+                of(&e.send(inspect(REPORTER)).await.map_err(debug)?),
+                COMMITTED
+            );
+            let top = (e.sequence, e.head.clone());
+            let top_counts = e.f.counts().await?;
+            let retained = e.retained.clone();
+            assert_eq!(retained.len(), RESTORE_BATCH + 3);
+            let expected_kinds: Vec<_> = (0..9)
+                .flat_map(|_| [RestoreKind::Replayed, RestoreKind::Receipt])
+                .chain([RestoreKind::Recorded])
+                .collect();
+            let expected_sequences: Vec<_> = (base.0 + 1..=top.0).collect();
+            e.restore_to(base.0, &base.1).await?;
+            let full = e.replay(retained.clone()).await.map_err(debug)?;
+            assert_eq!(kinds(&full), expected_kinds);
+            assert_eq!(
+                full.iter().map(|step| step.sequence).collect::<Vec<_>>(),
+                expected_sequences
+            );
+            assert_eq!(e.f.counts().await?, top_counts);
+            assert_eq!(sanctions(e, TARGET).await?, 9);
+            verify(e, &top).await?;
+            let complete = state(e).await?;
+            assert!(e.replay(retained.clone()).await.map_err(debug)?.is_empty());
+            assert_eq!(state(e).await?, complete);
+
+            // A gapless retained prefix models stopping after batch one.
+            e.restore_to(base.0, &base.1).await?;
+            let prefix = e
+                .replay(retained[..RESTORE_BATCH].to_vec())
+                .await
+                .map_err(debug)?;
+            assert_eq!(prefix, full[..RESTORE_BATCH]);
+            let prefix_head = head_of(e).await?;
+            let prefix_counts = e.f.counts().await?;
+            let prefix_state = state(e).await?;
+            assert_eq!(prefix_head.0, base.0 + u64::try_from(RESTORE_BATCH)?);
+            assert_eq!(sanctions(e, TARGET).await?, 8);
+            verify(e, &prefix_head).await?;
+            let rest = e.replay(retained.clone()).await.map_err(debug)?;
+            assert_eq!(rest, full[RESTORE_BATCH..]);
+            assert_eq!(state(e).await?, complete);
+            verify(e, &top).await?;
+
+            // Use the existing audit-failure fixture pattern, at the last
+            // request only, so the mute in batch two must roll back with it.
+            e.restore_to(base.0, &base.1).await?;
+            assert_eq!(top.0, 20);
+            sqlx::raw_sql(
+                "CREATE FUNCTION staff_fixture_fail() RETURNS trigger LANGUAGE plpgsql AS $$ \
+                 BEGIN RAISE EXCEPTION 'fixture restore failure' USING ERRCODE='23514'; END $$; \
+                 CREATE TRIGGER staff_fixture_fail BEFORE INSERT ON game_staff_operations \
+                 FOR EACH ROW WHEN (NEW.control_seq=20) EXECUTE FUNCTION staff_fixture_fail()",
+            )
+            .execute(&e.f.pool)
+            .await?;
+            let failed = e.replay(retained.clone()).await;
+            assert!(
+                matches!(failed, Err(RestoreError::Staff(StaffError::Database(_)))),
+                "{failed:?}"
+            );
+            assert_eq!(head_of(e).await?, prefix_head);
+            assert_eq!(e.f.counts().await?, prefix_counts);
+            assert_eq!(state(e).await?, prefix_state);
+            assert_eq!(sanctions(e, TARGET).await?, 8);
+            verify(e, &prefix_head).await?;
+            sqlx::query("DROP TRIGGER staff_fixture_fail ON game_staff_operations")
+                .execute(&e.f.pool)
+                .await?;
+            let rest = e.replay(retained.clone()).await.map_err(debug)?;
+            assert_eq!(rest, full[RESTORE_BATCH..]);
+            assert_eq!(state(e).await?, complete);
+            assert_eq!(e.f.counts().await?, top_counts);
+            verify(e, &top).await?;
+            assert!(e.replay(retained).await.map_err(debug)?.is_empty());
+            assert_eq!(state(e).await?, complete);
             Ok(())
         })
     }

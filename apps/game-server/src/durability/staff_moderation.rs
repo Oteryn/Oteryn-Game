@@ -36,8 +36,10 @@ pub const OPEN_REPORTS_PER_ACCOUNT: i16 = 20;
 pub const OPEN_SNAPSHOTS_PER_WORLD: i32 = 100_000;
 /// Most reports one list answer names.
 pub const REPORT_PAGE: i64 = 32;
-/// Most OPEN reports one expiry run ends, one transaction each.
+/// OPEN reports per expiry batch, one transaction each.
 pub const REPORT_EXPIRY_BATCH: u32 = 64;
+/// Retained links applied in one restore transaction.
+pub const RESTORE_BATCH: usize = 16;
 const HOUR_MS: i64 = 3_600_000;
 const MAX_REVISION: u64 = u64::MAX;
 
@@ -1134,37 +1136,82 @@ impl DurabilityRoot {
     }
 
     /// WRITE0 §6 expiry: each OPEN report past WRITE0-RL-03 expires in its own
-    /// transaction (the close lock order); then ended snapshots past it are
-    /// deleted and hourly rows of finished hours removed. Returns reports expired.
+    /// transaction (the close lock order), repeating batches until none remain
+    /// at `now`. Ended snapshots past retention are cleared in batches until
+    /// none remain, then hourly rows of finished hours are removed. Returns
+    /// the total reports expired.
     /// Retention ends at the earlier of `now` and the database clock, which
     /// migration 0134 enforces on every snapshot removal.
     pub async fn expire_item_text_reports(&self, now: u64) -> Result<u64, StaffError> {
         let now = i64::try_from(now).map_err(|_| Error::Clock)?;
         let mut expired = 0_u64;
-        for _ in 0..REPORT_EXPIRY_BATCH {
-            let ended = self
+        'reports: loop {
+            for _ in 0..REPORT_EXPIRY_BATCH {
+                let ended = self
+                    .try_issue_semantic_pass()?
+                    .run(move |holder, deadline| {
+                        Box::pin(async move {
+                            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                            let result = async {
+                                let row = sqlx::query(
+                                    "SELECT report_id::text,reporter_account_id::text,world_id::text \
+                                     FROM game_item_text_reports WHERE state='OPEN' AND expires_at<=\
+                                     LEAST($1,floor(extract(epoch FROM clock_timestamp())*1000)::bigint) \
+                                     ORDER BY expires_at,report_id LIMIT 1",
+                                )
+                                .bind(now)
+                                .fetch_optional(&mut *tx)
+                                .await?;
+                                let Some(row) = row else {
+                                    return Ok(None);
+                                };
+                                let (report, account, world): (String, String, String) =
+                                    (row.try_get(0)?, row.try_get(1)?, row.try_get(2)?);
+                                let ended =
+                                    end_report(&mut tx, &report, &account, &world, now, None).await?;
+                                Ok::<_, StaffError>(Some(ended))
+                            }
+                            .await;
+                            if result.is_ok() {
+                                commit_semantic_transaction(tx, deadline).await?;
+                            }
+                            Ok(result)
+                        })
+                    })
+                    .await??;
+                match ended {
+                    None => break 'reports,
+                    Some(true) => expired = expired.saturating_add(1),
+                    Some(false) => {}
+                }
+            }
+        }
+        loop {
+            let cleared = self
                 .try_issue_semantic_pass()?
                 .run(move |holder, deadline| {
                     Box::pin(async move {
                         let mut tx = begin_semantic_transaction(holder, deadline).await?;
                         let result = async {
-                            let row = sqlx::query(
-                                "SELECT report_id::text,reporter_account_id::text,world_id::text \
-                                 FROM game_item_text_reports WHERE state='OPEN' AND expires_at<=\
-                                 LEAST($1,floor(extract(epoch FROM clock_timestamp())*1000)::bigint) \
-                                 ORDER BY expires_at,report_id LIMIT 1",
+                            let cleared = sqlx::query(
+                                "UPDATE game_item_text_reports SET snapshot_text=NULL WHERE report_id IN \
+                                 (SELECT report_id FROM game_item_text_reports WHERE state<>'OPEN' \
+                                  AND snapshot_text IS NOT NULL AND expires_at<=LEAST($1,\
+                                  floor(extract(epoch FROM clock_timestamp())*1000)::bigint) LIMIT 1024)",
                             )
                             .bind(now)
-                            .fetch_optional(&mut *tx)
-                            .await?;
-                            let Some(row) = row else {
-                                return Ok(None);
-                            };
-                            let (report, account, world): (String, String, String) =
-                                (row.try_get(0)?, row.try_get(1)?, row.try_get(2)?);
-                            Ok::<_, StaffError>(Some(
-                                end_report(&mut tx, &report, &account, &world, now, None).await?,
-                            ))
+                            .execute(&mut *tx)
+                            .await?
+                            .rows_affected();
+                            if cleared == 0 {
+                                sqlx::query(
+                                    "DELETE FROM game_item_text_report_hourly WHERE hour<$1",
+                                )
+                                .bind(now.div_euclid(HOUR_MS))
+                                .execute(&mut *tx)
+                                .await?;
+                            }
+                            Ok::<_, StaffError>(cleared)
                         }
                         .await;
                         if result.is_ok() {
@@ -1174,40 +1221,10 @@ impl DurabilityRoot {
                     })
                 })
                 .await??;
-            match ended {
-                None => break,
-                Some(true) => expired = expired.saturating_add(1),
-                Some(false) => {}
+            if cleared == 0 {
+                break;
             }
         }
-        self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
-                Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    let result = async {
-                        sqlx::query(
-                            "UPDATE game_item_text_reports SET snapshot_text=NULL WHERE report_id IN \
-                             (SELECT report_id FROM game_item_text_reports WHERE state<>'OPEN' \
-                              AND snapshot_text IS NOT NULL AND expires_at<=LEAST($1,\
-                              floor(extract(epoch FROM clock_timestamp())*1000)::bigint) LIMIT 1024)",
-                        )
-                        .bind(now)
-                        .execute(&mut *tx)
-                        .await?;
-                        sqlx::query("DELETE FROM game_item_text_report_hourly WHERE hour<$1")
-                            .bind(now.div_euclid(HOUR_MS))
-                            .execute(&mut *tx)
-                            .await?;
-                        Ok::<_, StaffError>(())
-                    }
-                    .await;
-                    if result.is_ok() {
-                        commit_semantic_transaction(tx, deadline).await?;
-                    }
-                    Ok(result)
-                })
-            })
-            .await??;
         Ok(expired)
     }
 }
@@ -1397,7 +1414,10 @@ impl DurabilityRoot {
     /// COMMITTED mute is re-run through its own checks at its recorded time
     /// (no freshness), a refusal is stored, and no unmute, kick or report
     /// transition is re-run. Any request without a verifying receipt stops the
-    /// replay with nothing applied. A second run is a no-op.
+    /// replay with nothing applied. The verified plan is applied in bounded
+    /// transactions; an apply failure preserves earlier committed batches,
+    /// and a retry applies only the remaining links. A second complete run
+    /// is a no-op.
     pub async fn staff_restore_replay(
         &self,
         trust: Arc<VerifierTrust>,
@@ -1583,26 +1603,45 @@ impl DurabilityRoot {
         if !ambiguous.is_empty() {
             return Err(RestoreError::Ambiguous(ambiguous));
         }
-        let applied = self
-            .try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
-                Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    let result =
-                        restore_in_transaction(&mut tx, &trust, contract, &head, planned).await;
-                    if result.is_ok() {
-                        commit_semantic_transaction(tx, deadline).await?;
-                    }
-                    Ok(result)
+        let mut expected = head;
+        let mut planned = planned.into_iter();
+        let mut applied = Vec::new();
+        loop {
+            let batch: Vec<_> = planned.by_ref().take(RESTORE_BATCH).collect();
+            if batch.is_empty() {
+                break;
+            }
+            let trust = Arc::clone(&trust);
+            let (steps, head) = self
+                .try_issue_semantic_pass()?
+                .run(move |holder, deadline| {
+                    Box::pin(async move {
+                        let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                        let result = async {
+                            let steps =
+                                restore_in_transaction(&mut tx, &trust, contract, &expected, batch)
+                                    .await?;
+                            let head = super::staff_action::lock_head(&mut tx, trust.environment())
+                                .await?;
+                            Ok::<_, StaffError>((steps, head))
+                        }
+                        .await;
+                        if result.is_ok() {
+                            commit_semantic_transaction(tx, deadline).await?;
+                        }
+                        Ok(result)
+                    })
                 })
-            })
-            .await?;
-        Ok(applied?)
+                .await??;
+            applied.extend(steps);
+            expected = head;
+        }
+        Ok(applied)
     }
 }
 
-/// The apply half of the restore replay, in one transaction under the head
-/// lock: the head must still be the one verified, and the retained links are
+/// One batch of the restore replay, in one transaction under the head lock:
+/// the head must still be the expected head, and the retained links are
 /// written in chain order through the same participant as live requests.
 async fn restore_in_transaction(
     connection: &mut PgConnection,

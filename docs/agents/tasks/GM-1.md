@@ -115,23 +115,49 @@ Second pre-push review round (lock order, cross-node mutes, kick):
 - Both PostgreSQL tests run in the `durability_postgres` job in
   `pr-postgres-harness.yml` and `merge-group-gate.yml`.
 
+Third pre-push review round (CP-approved, bounded batches):
+
+- Report expiry no longer stops after 64 reports. One hourly
+  `expire_item_text_reports` call loops over batches of
+  `REPORT_EXPIRY_BATCH` (each report in its own transaction) until none is
+  left, then clears expired snapshots in statements of at most 1024 rows
+  until none is left. Test:
+  `staff_pg_report_expiry_drains_all_batches_in_one_call` (70 reports).
+- Restore no longer applies the whole retained tail in one transaction
+  under the two-second deadline. A fully verified tail is applied in
+  batches of `RESTORE_BATCH` (16), each in its own transaction that checks
+  the head left by the previous batch. A retry after a stop or a failed
+  batch skips what committed and applies the rest. Test:
+  `staff_pg_restore_batches_commit_and_retry_idempotently` (19 links, a
+  prefix retry and a failure in batch two that rolls back only that batch).
+- Both tests run in the `durability_postgres` job in
+  `pr-postgres-harness.yml` and `merge-group-gate.yml`.
+
 Wiring is unchanged. Production staff requests reach the executor through
 `control_loop`, then `ControlInput::Staff`, then `serve_staff_control`. The
 e2e case is `staff_pg_executor_mute_inspect_unmute_and_kick_follow_the_committed_audit`,
 run by the `durability_postgres` job (`pr-postgres-harness.yml` and
 `merge-group-gate.yml`). There is no protocol or wire change.
 
-Open owner and CP questions, carried forward. Until they are decided the
-code fails closed.
+CP decisions (2026-10-19):
 
-- Roster provisioning: moderation writes need a `game_staff_rosters` row
-  for the active roster, and only the owner can insert it.
-- D1161: the four integration-test wrapper re-export lines need a CP note.
-- Kick of an in-fight session. An immediate StaffKick that ignores the combat lock needs
-  TerminalRelease::StaffKick and wire code 1201 (A7) — a protocol change
-  outside GM-1. Options: (a) keep D1437 fenced-logout kick with IN_FIGHT
-  answer for alpha; (b) allocate a follow-up packet with protocol review.
-  Recommendation: (a) now, (b) before external players.
+- Roster provisioning: accepted. Moderation writes need a
+  `game_staff_rosters` row for the active roster, and only the owner can
+  insert it. Until the owner bootstrap inserts those rows, moderation
+  fails closed.
+- D1161: CP-granted D1161 note 2026-10-19, for the four integration-test
+  wrapper re-export lines.
+- Kick: alpha keeps the D1437 fenced-logout kick, which answers IN_FIGHT
+  for an in-fight session. This PR has no protocol change.
+
+Open owner question:
+
+- Kick of an in-fight session. An immediate StaffKick that ignores the
+  combat lock needs TerminalRelease::StaffKick and wire code 1201 (A7), a
+  protocol change outside GM-1. Options: (a) keep the D1437 fenced-logout
+  kick with the IN_FIGHT answer for alpha; (b) allocate a follow-up packet
+  with protocol review. Recommendation: (a) now, (b) before external
+  players.
 
 ## Previous checkpoint — merge-up, Codex review of `4b23100d`, renumbering to 0133/0134 (2026-10-18)
 
