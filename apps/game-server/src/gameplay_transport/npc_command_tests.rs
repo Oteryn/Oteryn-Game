@@ -940,3 +940,33 @@ fn an_earlier_walk_away_line_keeps_the_window_of_the_current_conversation() {
         .expect("update");
     assert_eq!(ended.window, Some(NpcTradeWindow::default()));
 }
+
+#[test]
+fn runtime_item_look_names_a_visible_npc_and_refuses_stale_or_out_of_view_targets() {
+    use crate::gameplay_transport::item_look::{RuntimeLook, runtime_look_creature};
+    use oteryn_protocol_oteryn::item_look::{ItemLookRefusal, ItemLookResult};
+    let (mut runtime, actor, _, npc) = fixture(2);
+    let npcs = book();
+    let looked = runtime_look_creature(&mut runtime, Some(&npcs), actor, npc)
+        .expect("a visible NPC can be examined");
+    assert!(
+        matches!(looked, RuntimeLook::Text(ItemLookResult::Text(text)) if text == "You see Alice.")
+    );
+    assert!(matches!(
+        runtime_look_creature(
+            &mut runtime,
+            Some(&npcs),
+            actor,
+            EntityRef {
+                generation: npc.generation + 1,
+                ..npc
+            }
+        ),
+        Err(ItemLookRefusal::NotVisible)
+    ));
+    let (mut runtime, actor, _, npc) = fixture(10);
+    assert!(matches!(
+        runtime_look_creature(&mut runtime, Some(&npcs), actor, npc),
+        Err(ItemLookRefusal::NotVisible)
+    ));
+}

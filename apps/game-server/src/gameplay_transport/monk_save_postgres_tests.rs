@@ -15,6 +15,9 @@ mod logout_e2e;
 #[path = "map_bundle_domain_postgres_tests.rs"]
 mod map_bundle_domain;
 
+#[path = "item_look_postgres_tests.rs"]
+mod item_look;
+
 #[path = "weather_wire_postgres_tests.rs"]
 mod weather_wire;
 

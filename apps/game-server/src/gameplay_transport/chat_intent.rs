@@ -830,7 +830,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// The speaker name, CharacterId and level of `session`'s Character from the durable root,
     /// read once per session. A Character without a progression row is level 1; a failed read
     /// leaves the session unadmitted, so its next open reads again.
-    async fn chat_speaker_name(&self, session: GameSessionId) -> Option<(String, [u8; 16], u32)> {
+    pub(super) async fn chat_speaker_name(
+        &self,
+        session: GameSessionId,
+    ) -> Option<(String, [u8; 16], u32)> {
         let store = FreshAdmissionStore::from_root(self.root.clone());
         let (current, _) = store.current_session_at(session).await.ok()?;
         let character = *current.commit().character_id().as_bytes();

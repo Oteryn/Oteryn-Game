@@ -12324,6 +12324,29 @@
         "apps/game-server/src/node/serve.rs (boot binding before readiness)"
       ],
       "notes": "ADMIT0 \u00a73.1. The configured value is the operator's declared list, not a tunable cap: 0..16 IDs. The bound applies to the declaration only; the mandatory floor and registry requires are added by the closure afterwards and are bounded separately."
+    },
+    {
+      "id": "ITEMLOOK1-RL-01",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md",
+      "resource": "ITEM_LOOK_INTENT commands (command type 30) of one GameSession",
+      "unit": "commands per second",
+      "hard_maximum": 10,
+      "configurable_range": {
+        "minimum": 10,
+        "maximum": 10
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "A per-GameSession sliding window of at most 10 command instants in any 1 s, carried in session continuity across reconnect, resume and transfer. Admission precedes payload decoding; a malformed payload spends a slot. A refused admission changes no slot and performs no owner read. Over-rate commands return Accepted with Refused(RateLimited).",
+      "client_visible": true,
+      "boundary_tests": [
+        "item_look_e2e_command_30_answers_visible_targets_and_refuses_hidden_stale_and_over_rate",
+        "the_look_window_admits_10_per_sliding_second"
+      ],
+      "consumers": [
+        "apps/game-server/src/gameplay_transport/item_look.rs LookWindow",
+        "apps/game-server/src/gameplay_transport/connection.rs command type 30"
+      ],
+      "notes": "CP D1143: 10 LOOK commands per sliding second per GameSession, including resume and transfer; LOOK-2 runtime handler."
     }
   ]
 }

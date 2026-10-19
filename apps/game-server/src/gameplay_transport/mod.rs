@@ -20,10 +20,6 @@ mod container_view;
 mod equipment_move;
 pub(crate) mod fresh_evidence;
 mod input_gate;
-#[allow(
-    dead_code,
-    reason = "ITEM-LOOK-1 read-only examine helper is native-tested; command 30 dispatch, rate limiting and capability 28 offer remain a separate integration gate"
-)]
 mod item_look;
 mod item_move;
 mod item_ref_admission;
@@ -122,6 +118,9 @@ use connection::{
 pub use fresh_evidence::FreshEvidenceSource;
 use kill_reward::{KillRelease, KillReleaseMark, ReleaseEnd};
 use oteryn_foundation::CancellationToken;
+use oteryn_protocol_oteryn::item_look::ItemLookResult;
+use oteryn_protocol_oteryn::item_view::ItemHandle;
+use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 mod condition_snapshots;
 use std::future::{Future, poll_fn};
 use std::pin::{Pin, pin};
@@ -4463,6 +4462,28 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 crate::foundation::CommandRef::new(command.game_session_id, command_id),
             )
             .await
+    }
+
+    /// LOOK-2: examine a freshly observed item admitted by the session's handle table.
+    async fn look_item(
+        &self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        fence: Option<CurrentCharacterItemFence>,
+        views: &item_view::SessionItemView,
+        target: ItemHandle,
+    ) -> ItemLookResult {
+        item_look::look_item(self, actor, game_session_id, fence, views, target).await
+    }
+
+    /// LOOK-2: examine a current visible actor incarnation.
+    async fn look_creature(
+        &self,
+        actor: ExactActorRef,
+        _game_session_id: GameSessionId,
+        target: EntityRef,
+    ) -> ItemLookResult {
+        item_look::look_creature(self, actor, target).await
     }
 
     /// MAP-ITEM-REF-1 Part B: a bound corpse's durable contents for `USE` (domain 11).

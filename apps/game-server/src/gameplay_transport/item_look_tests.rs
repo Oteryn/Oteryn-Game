@@ -1,4 +1,4 @@
-#![allow(clippy::unwrap_used)]
+#![allow(clippy::unwrap_used, clippy::panic)]
 
 use super::super::item_view::{InventoryItems, ItemKey};
 use super::*;
@@ -328,4 +328,188 @@ fn observed_target_requires_live_handle_exact_binding_and_current_pin() {
         examine_observed_item(&pinned, Some(generation), &views, target, observe()),
         ItemLookOutcome::Unavailable
     );
+}
+
+// LOOK-2 (CP D1143, ITEMLOOK1-RL-01): 10 looks per second per GameSession, a sliding window.
+#[test]
+fn the_look_window_admits_10_per_sliding_second() {
+    let start = Instant::now();
+    let mut window = LookWindow::EMPTY;
+    for n in 0..10_u64 {
+        assert!(
+            window.admit(start + Duration::from_millis(n * 10)),
+            "look {n}"
+        );
+    }
+    // The 11th within the second, and again just before the first slot frees.
+    assert!(!window.admit(start + Duration::from_millis(100)));
+    assert!(!window.admit(start + Duration::from_millis(999)));
+    // One second after the first look its slot is free again, and only that one.
+    assert!(window.admit(start + Duration::from_millis(1_000)));
+    assert!(!window.admit(start + Duration::from_millis(1_005)));
+    // After the second look's second.
+    assert!(window.admit(start + Duration::from_millis(1_010)));
+    // A refused look spends nothing: a full second later the whole window is free.
+    let later = start + Duration::from_secs(3);
+    for n in 0..10_u64 {
+        assert!(window.admit(later + Duration::from_millis(n)), "look {n}");
+    }
+    assert!(!window.admit(later + Duration::from_millis(10)));
+    assert_eq!(ITEM_LOOK_COMMANDS_PER_SECOND, 10);
+}
+
+// LOOK-2: an actor is examined only within the reference view (VIS-1: 18 x 14, the observer
+// at x offset 8 and y offset 6), never from a cached session viewport.
+#[test]
+fn an_actor_is_in_view_only_within_the_reference_window() {
+    let me = ActorPosition {
+        x: 100,
+        y: 100,
+        floor: 7,
+    };
+    let at = |x: i32, y: i32| ActorPosition { x, y, floor: 7 };
+    for visible in [
+        at(100, 100),
+        at(92, 94),
+        at(109, 107),
+        at(92, 107),
+        at(109, 94),
+    ] {
+        assert!(in_view(me, visible), "{visible:?}");
+    }
+    for hidden in [at(91, 100), at(110, 100), at(100, 93), at(100, 108)] {
+        assert!(!in_view(me, hidden), "{hidden:?}");
+    }
+}
+
+// LOOK-2: the actor texts. A refusal names nothing; a text is never empty and never over the
+// 512-byte result bound.
+#[test]
+fn actor_texts_name_the_actor_and_stay_within_512_bytes() {
+    use oteryn_protocol_oteryn::item_look::MAX_ITEM_LOOK_TEXT_BYTES;
+    let text = |looked: Looked<'_>| match look_text(looked) {
+        ItemLookResult::Text(text) => text,
+        refused => panic!("refused {refused:?}"),
+    };
+    assert_eq!(text(Looked::Creature { name: "a rat" }), "You see a rat.");
+    assert_eq!(
+        text(Looked::Player {
+            name: "Mole",
+            level: 8,
+            vocation: Some("knight"),
+        }),
+        "You see Mole (Level 8, knight)."
+    );
+    assert_eq!(
+        text(Looked::Player {
+            name: "Mole",
+            level: 1,
+            vocation: None,
+        }),
+        "You see Mole (Level 1)."
+    );
+    assert_eq!(
+        text(Looked::Yourself {
+            level: 8,
+            vocation: Some("knight"),
+        }),
+        "You see yourself (Level 8, knight)."
+    );
+    assert_eq!(
+        text(Looked::Yourself {
+            level: 3,
+            vocation: None,
+        }),
+        "You see yourself (Level 3)."
+    );
+    for blank in ["", " ", "\n"] {
+        assert_eq!(
+            look_text(Looked::Creature { name: blank }),
+            ItemLookResult::Refused(ItemLookRefusal::NotAvailable)
+        );
+        assert_eq!(
+            look_text(Looked::Player {
+                name: blank,
+                level: 1,
+                vocation: None,
+            }),
+            ItemLookResult::Refused(ItemLookRefusal::NotAvailable)
+        );
+    }
+    // An over-long name is cut on a character boundary at the bound.
+    let long = "é".repeat(MAX_ITEM_LOOK_TEXT_BYTES);
+    let cut = text(Looked::Creature { name: &long });
+    assert!(cut.len() <= MAX_ITEM_LOOK_TEXT_BYTES);
+    assert!(cut.len() >= MAX_ITEM_LOOK_TEXT_BYTES - 1);
+    assert!(cut.starts_with("You see é"));
+}
+
+// LOOK-2: every vocation has its display name, lower case as the look text shows it.
+#[test]
+fn every_vocation_has_a_look_name() {
+    use crate::spell::Vocation;
+    let names = [
+        (Vocation::Druid, "druid"),
+        (Vocation::ElderDruid, "elder druid"),
+        (Vocation::Sorcerer, "sorcerer"),
+        (Vocation::MasterSorcerer, "master sorcerer"),
+        (Vocation::Knight, "knight"),
+        (Vocation::EliteKnight, "elite knight"),
+        (Vocation::Paladin, "paladin"),
+        (Vocation::RoyalPaladin, "royal paladin"),
+        (Vocation::Monk, "monk"),
+        (Vocation::ExaltedMonk, "exalted monk"),
+    ];
+    for (vocation, name) in names {
+        assert_eq!(vocation_name(vocation), name);
+    }
+}
+
+// LOOK-2: a map item's wire `item_definition_ref` names its typed definition back, so a map
+// entry is examined from the same pinned index that numbered it.
+#[test]
+fn a_definition_ref_names_its_typed_definition_back() {
+    let world = activated_with_item_keys(None)
+        .active()
+        .unwrap()
+        .identity()
+        .world_id();
+    let (controller, _) = activated_with_loot_tables(world, None);
+    let generation = controller.active().unwrap();
+    let pinned = runtime(generation, true);
+    let index = pinned_index(&pinned, Some(generation)).unwrap();
+    let reference = index
+        .definition_ref("Item", "oteryn:item.tibia.i3607", "definition-r1")
+        .unwrap();
+    assert_eq!(
+        typed_definition(index, reference),
+        Some(TypedDefinitionRef {
+            family: "Item".into(),
+            production_key: "oteryn:item.tibia.i3607".into(),
+            revision_ref: "definition-r1".into(),
+        })
+    );
+    assert_eq!(typed_definition(index, NonZeroU32::MAX), None);
+}
+
+#[test]
+fn item_look_window_matches_its_registered_resource_limit() {
+    let registry: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json"
+    ))
+    .unwrap();
+    let row = registry["entries"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|row| row["id"] == "ITEMLOOK1-RL-01")
+        .unwrap();
+    assert_eq!(
+        row["hard_maximum"].as_u64(),
+        Some(ITEM_LOOK_COMMANDS_PER_SECOND as u64)
+    );
+    assert_eq!(row["configurable_range"]["minimum"], row["hard_maximum"]);
+    assert_eq!(row["configurable_range"]["maximum"], row["hard_maximum"]);
+    assert_eq!(row["failure_category"], "CAPACITY_EXCEEDED");
+    assert_eq!(row["client_visible"], true);
 }

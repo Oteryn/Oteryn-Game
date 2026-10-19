@@ -1684,3 +1684,37 @@ fn chase_holds_next_to_the_rat_and_under_reentry_protection() {
     );
     assert!(owner.searched(T0 + 4_000_000).is_some());
 }
+
+#[test]
+fn item_look_reads_the_runtime_creature_name_and_requires_current_generation_and_view() {
+    use crate::gameplay_transport::item_look::{RuntimeLook, runtime_look_creature};
+    use oteryn_protocol_oteryn::item_look::{ItemLookRefusal, ItemLookResult};
+    let mut owner = owner();
+    assert!(
+        matches!(runtime_look_creature(&mut owner.runtime, None, owner.player, owner.rat),
+        Ok(RuntimeLook::Text(ItemLookResult::Text(text))) if text == "You see fixture Rat.")
+    );
+    assert!(matches!(
+        runtime_look_creature(
+            &mut owner.runtime,
+            None,
+            owner.player,
+            EntityRef {
+                generation: owner.rat.generation + 1,
+                ..owner.rat
+            }
+        ),
+        Err(ItemLookRefusal::NotVisible)
+    ));
+    let mut owner = owner_at(
+        OPEN_PLAYER,
+        MovementLocalPosition {
+            x: OPEN_PLAYER.x + 10,
+            ..OPEN_RAT
+        },
+    );
+    assert!(matches!(
+        runtime_look_creature(&mut owner.runtime, None, owner.player, owner.rat),
+        Err(ItemLookRefusal::NotVisible)
+    ));
+}

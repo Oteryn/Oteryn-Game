@@ -63,8 +63,8 @@ pub(crate) use runtime_actor_carrier::{
     NativeSummonAdmissionSpec, NativeSummonDeath, NativeSummonMovementOutcome, NativeSummonOrigin,
     OwnerDamageCommand, OwnerDamageResult, PlayerActorReservation, RationalSpeedRange,
     RumBarrelDeathLedger, RumBarrelDeathResult, RuntimeCorpseProjection, SpeedRange, StatusKind,
-    TickFacts, TickKind, WelterConsumeError, WelterConsumeLedger, WelterConsumeResult, WelterPrey,
-    WelterSourceRegistration,
+    TickFacts, TickKind, VisibleRuntimeCorpse, WelterConsumeError, WelterConsumeLedger,
+    WelterConsumeResult, WelterPrey, WelterSourceRegistration,
 };
 #[cfg(test)]
 #[allow(unused_imports)] // Each path-included Foundation test crate uses only some fixtures.
