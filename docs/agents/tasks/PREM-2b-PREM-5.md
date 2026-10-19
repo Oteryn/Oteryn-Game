@@ -716,6 +716,10 @@ transaction that holds its own current fence:
 - Wheel: `WheelChangeFacts` no longer carries `promoted`;
   `commit_character_wheel` reads the durable promotion.
 - Bestiary Charm: `BestiaryCharmFacts::promoted` reads the durable promotion.
+- NPC purchases (Codex P2 on d83f9206): the promotion and blessing purchases
+  re-read their facts in the revision slot but keep the fence the command
+  started under; a session fence that moved while the command waited (a
+  successor connection generation, lease or scope) refuses the command.
 
 Tests (PostgreSQL 17.6, locally):
 - `character_authority_postgres` (CI-registered, `pr-postgres-harness`):

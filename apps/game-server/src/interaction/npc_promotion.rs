@@ -340,6 +340,18 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                 if facts.fence.character_id != character {
                     return Err(PromotionPurchaseError::InvalidInput);
                 }
+                // The command keeps the fence it started under (Codex P2 on d83f9206): a session
+                // fence that moved while the command waited for the slot (a successor connection
+                // generation, lease or scope) refuses the command, never lends it its own.
+                if (CurrentCharacterGameplayFence {
+                    expected_character_revision: fence.expected_character_revision,
+                    ..facts.fence
+                }) != fence
+                {
+                    return Err(PromotionPurchaseError::Current(
+                        CharacterProgressionError::AuthorityRejected,
+                    ));
+                }
                 let offer = admitted_promotion_offer(catalogue, &facts.npc_key)
                     .ok_or(PromotionPurchaseError::InvalidInput)?;
                 let id = |tag: &[u8]| promotion_command_id(tag, command, npc);
@@ -376,10 +388,7 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                 };
                 let operation = PromotionGateOp {
                     owner,
-                    fence: CurrentCharacterGameplayFence {
-                        expected_character_revision: fence.expected_character_revision,
-                        ..facts.fence
-                    },
+                    fence,
                     request,
                 };
                 match self.with_promotion_gate(facts.account, operation).await {
@@ -437,6 +446,18 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                 if facts.fence.character_id != character {
                     return Err(BlessingPurchaseError::InvalidInput);
                 }
+                // The command keeps the fence it started under (Codex P2 on d83f9206): a session
+                // fence that moved while the command waited for the slot (a successor connection
+                // generation, lease or scope) refuses the command, never lends it its own.
+                if (CurrentCharacterGameplayFence {
+                    expected_character_revision: fence.expected_character_revision,
+                    ..facts.fence
+                }) != fence
+                {
+                    return Err(BlessingPurchaseError::Current(
+                        CharacterProgressionError::AuthorityRejected,
+                    ));
+                }
                 let offer = admitted_blessing_offer(catalogue, &facts.npc_key, service)
                     .ok_or(BlessingPurchaseError::InvalidInput)?;
                 let id = |tag: &[u8]| promotion_command_id(tag, command, npc);
@@ -479,10 +500,7 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                 };
                 let operation = BlessingGateOp {
                     owner,
-                    fence: CurrentCharacterGameplayFence {
-                        expected_character_revision: fence.expected_character_revision,
-                        ..facts.fence
-                    },
+                    fence,
                     request,
                 };
                 // Exactly one ordinary Premium gate for this command; the status stays inside it
