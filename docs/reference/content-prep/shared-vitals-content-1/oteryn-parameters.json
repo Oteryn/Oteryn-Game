@@ -3,7 +3,7 @@
   "task": "SHARED-VITALS-CONTENT-1",
   "reference_only": true,
   "runtime_switch_authorized": false,
-  "status": "SOURCE_REFERENCE_WITH_CONTROLLED_DRUID_MONK_OBSERVATIONS",
+  "status": "SOURCE_REFERENCE_WITH_CONTROLLED_DRUID_MONK_PALADIN_OBSERVATIONS",
   "owner_instruction_source": "owner:oteryn-data-completion:2026-10-19",
   "filled_fields": 3,
   "normalized_companion_fields": 0,
@@ -12,21 +12,22 @@
   "source_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json",
   "shared_policies": {},
   "selection_policy": "Controlled observations and source-backed candidates only; no universal or native runtime formula selected.",
-  "remaining_unresolved_source_fields": 18,
+  "remaining_unresolved_source_fields": 16,
   "source_repair": {
     "source_check": "docs/reference/content-prep/shared-vitals-content-1/gameplay-source-reconciliation.json",
-    "remaining_unresolved_source_fields": 18,
+    "remaining_unresolved_source_fields": 16,
     "selected_for_native_runtime": false,
-    "summary": "Controlled Global observations establish unpromoted Druid HP2 and MP4, and unpromoted Monk HP3 and MP3, each in hungry and fed states. HP periods are approximately4s/3s fed; mana6s/5s fed.16vocation/promotion amount fields, exact party activity timeout and initial stamina debit remain unresolved. Withdrawn fractional accumulators remain withdrawn; Food facts and owner-selected event-food values are preserved."
+    "summary": "Controlled observations establish normal Druid HP2/MP4, normal Monk HP3/MP3 and normal Paladin HP3/MP3 in both hungry and fed states. Approximate HP intervals4s/3s fed and mana6s/5s fed match official intervals. Fourteen regeneration fields, party activity timeout and initial stamina debit remain unresolved; no extrapolation or runtime selection. Food observations and owner choices are preserved."
   },
   "live_client_measurements": {
     "probe_document": "docs/reference/content-prep/shared-vitals-content-1/live-client-regeneration-probe.json",
-    "active_fields_resolved": 4,
-    "hungry_fed_observations": 8,
-    "qualified_recordings": 6,
+    "active_fields_resolved": 6,
+    "hungry_fed_observations": 12,
+    "qualified_recordings": 8,
     "vocations": [
       "Druid",
-      "Monk"
+      "Monk",
+      "Paladin"
     ],
     "active_promotion": false,
     "selected_for_native_runtime": false

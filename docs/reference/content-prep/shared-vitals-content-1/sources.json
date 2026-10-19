@@ -2872,6 +2872,16 @@
       "evidence_role": "SCOPED_CURRENT_CLIENT_MEASUREMENT",
       "retained_scope": "Reviewed numeric observations, timestamps and SHA256 digests. Original videos/screenshots remain private; no original game assets redistributed.",
       "qualification": "Observed vocation, hunger state and equipment only; no extrapolation to promotions, other vocations or native runtime admission. Client display timestamps have capture/network jitter; no server telemetry."
+    },
+    "controlled-global:regeneration:paladin:20261019": {
+      "title": "Controlled official-client regeneration: Paladin without active promotion",
+      "source_class": "CONTROLLED_GLOBAL_CLIENT_OBSERVATION",
+      "observed_at": "2026-10-19",
+      "evidence_document": "docs/reference/content-prep/shared-vitals-content-1/live-client-regeneration-probe.json",
+      "selector": "Paladin",
+      "evidence_role": "SCOPED_CURRENT_CLIENT_MEASUREMENT",
+      "retained_scope": "Reviewed numbers, frame timestamps and SHA256; original media retained privately.",
+      "qualification": "Anzaa self-Look reports Paladin. Fixed safe positions outside PZ, regenerative equipment slots empty. No extrapolation to Royal Paladin or runtime admission; approximate client display periods, no server telemetry."
     }
   }
 }

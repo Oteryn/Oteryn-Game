@@ -2,9 +2,9 @@
   "task": "SHARED-VITALS-CONTENT-1",
   "review_date": "2026-10-19",
   "scope": "SOURCE_REFERENCE_AND_SCOPED_CONTROLLED_GLOBAL_OBSERVATIONS",
-  "research_status": "DRUID_MONK_NORMAL_MEASURED_OTHER_BRANCHES_UNQUALIFIED",
+  "research_status": "DRUID_MONK_PALADIN_NORMAL_MEASURED_OTHER_BRANCHES_UNQUALIFIED",
   "runtime_admission": "BLOCKED",
-  "coverage": "Controlled Global observations establish unpromoted Druid HP2 and MP4, and unpromoted Monk HP3 and MP3, each in hungry and fed states. HP periods are approximately4s/3s fed; mana6s/5s fed.16vocation/promotion amount fields, exact party activity timeout and initial stamina debit remain unresolved. Withdrawn fractional accumulators remain withdrawn; Food facts and owner-selected event-food values are preserved.",
+  "coverage": "Controlled observations establish normal Druid HP2/MP4, normal Monk HP3/MP3 and normal Paladin HP3/MP3 in both hungry and fed states. Approximate HP intervals4s/3s fed and mana6s/5s fed match official intervals. Fourteen regeneration fields, party activity timeout and initial stamina debit remain unresolved; no extrapolation or runtime selection. Food observations and owner choices are preserved.",
   "source_registry": "sources.json",
   "record_counts": {
     "rulesets/party/shared-experience/reference-evidence.json": 1,
@@ -15,8 +15,8 @@
   },
   "evidence_field_counts": {
     "DERIVED": 149,
-    "PROVEN": 36,
-    "UNKNOWN": 18
+    "PROVEN": 38,
+    "UNKNOWN": 16
   },
   "unresolved_fields": [
     {
@@ -41,14 +41,6 @@
     },
     {
       "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/promoted_mana",
-      "classification": "UNKNOWN"
-    },
-    {
-      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/normal_hp",
-      "classification": "UNKNOWN"
-    },
-    {
-      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/normal_mana",
       "classification": "UNKNOWN"
     },
     {
@@ -159,22 +151,23 @@
       "reason": "Do not edit overlapping open PR files; coordinator applies metadata only with native qualification."
     }
   ],
-  "remaining_unresolved_source_fields": 18,
+  "remaining_unresolved_source_fields": 16,
   "source_repair": {
     "source_check": "docs/reference/content-prep/shared-vitals-content-1/gameplay-source-reconciliation.json",
-    "remaining_unresolved_source_fields": 18,
+    "remaining_unresolved_source_fields": 16,
     "selected_for_native_runtime": false,
-    "summary": "Controlled Global observations establish unpromoted Druid HP2 and MP4, and unpromoted Monk HP3 and MP3, each in hungry and fed states. HP periods are approximately4s/3s fed; mana6s/5s fed.16vocation/promotion amount fields, exact party activity timeout and initial stamina debit remain unresolved. Withdrawn fractional accumulators remain withdrawn; Food facts and owner-selected event-food values are preserved."
+    "summary": "Controlled observations establish normal Druid HP2/MP4, normal Monk HP3/MP3 and normal Paladin HP3/MP3 in both hungry and fed states. Approximate HP intervals4s/3s fed and mana6s/5s fed match official intervals. Fourteen regeneration fields, party activity timeout and initial stamina debit remain unresolved; no extrapolation or runtime selection. Food observations and owner choices are preserved."
   },
   "counting_correction": "Includes the unchanged top-level non_regenerative_food_reference observation in addition to record facts.",
   "live_client_measurements": {
     "probe_document": "docs/reference/content-prep/shared-vitals-content-1/live-client-regeneration-probe.json",
-    "active_fields_resolved": 4,
-    "hungry_fed_observations": 8,
-    "qualified_recordings": 6,
+    "active_fields_resolved": 6,
+    "hungry_fed_observations": 12,
+    "qualified_recordings": 8,
     "vocations": [
       "Druid",
-      "Monk"
+      "Monk",
+      "Paladin"
     ],
     "active_promotion": false,
     "selected_for_native_runtime": false
