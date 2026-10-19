@@ -39,6 +39,9 @@ impl Signer {
     }
     /// GM-1 (D1437): `role` names the roster role line of the one signer.
     fn with_role(role: Option<&str>) -> Self {
+        Self::with_role_and_alias(role, None)
+    }
+    fn with_role_and_alias(role: Option<&str>, alias: Option<&str>) -> Self {
         use std::os::unix::fs::DirBuilderExt;
         let nonce = node::operator_files::random_bytes::<32>().expect("fixture nonce");
         let path =
@@ -66,13 +69,25 @@ impl Signer {
             .take(2)
             .collect::<Vec<_>>()
             .join(" ");
-        let role = role.map_or_else(String::new, |role| {
+        let role_line = role.map_or_else(String::new, |role| {
             format!("{}operator {role}\n", signature::ROLE_PREFIX)
         });
         signer.roster = format!(
-            "{role}operator namespaces=\"{REQUEST_NAMESPACE},{RECEIPT_NAMESPACE}\" {key}\n"
+            "{role_line}operator namespaces=\"{REQUEST_NAMESPACE},{RECEIPT_NAMESPACE}\" {key}\n"
         )
         .into_bytes();
+        if let Some(alias) = alias {
+            // Request dispatch validates roles for every rostered principal,
+            // even though receipt signature verification does not use roles.
+            if let Some(role) = role {
+                signer.roster.extend_from_slice(
+                    format!("{}{alias} {role}\n", signature::ROLE_PREFIX).as_bytes(),
+                );
+            }
+            signer.roster.extend_from_slice(
+                format!("{alias} namespaces=\"{RECEIPT_NAMESPACE}\" {key}\n").as_bytes(),
+            );
+        }
         signer.write("allowed_signers", &signer.roster);
         signer
     }
@@ -251,6 +266,13 @@ impl Fixture {
         Self::create_as(tag, None).await
     }
     async fn create_as(tag: &str, role: Option<&str>) -> TestResult<Option<Self>> {
+        Self::create_as_with_alias(tag, role, None).await
+    }
+    async fn create_as_with_alias(
+        tag: &str,
+        role: Option<&str>,
+        alias: Option<&str>,
+    ) -> TestResult<Option<Self>> {
         let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
             eprintln!(
                 "PRE-ROUTING / NONCANONICAL: staff PG cases were not executed; missing OTERYN_TEST_POSTGRES_ADMIN_URL"
@@ -296,7 +318,7 @@ impl Fixture {
             .await?;
         assert!(installed, "staff migration 0133 must be installed");
         sqlx::raw_sql("CREATE TABLE staff_fixture_domain(operation_id text PRIMARY KEY); GRANT SELECT,INSERT ON staff_fixture_domain TO oteryn_game_runtime").execute(&pool).await?;
-        let signer = Signer::with_role(role);
+        let signer = Signer::with_role_and_alias(role, alias);
         let (trust, activation) = signer.activation();
         let checked = trust.verify_request(activation.clone()).map_err(debug)?;
         let mut tx = pool.begin().await?;
@@ -2583,8 +2605,12 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
         retained: Vec<RetainedLink>,
     }
     impl Exec {
-        async fn create(tag: &str, role: Option<&str>) -> TestResult<Option<Self>> {
-            let Some(f) = Fixture::create_as(tag, role).await? else {
+        async fn create(
+            tag: &str,
+            role: Option<&str>,
+            alias: Option<&str>,
+        ) -> TestResult<Option<Self>> {
+            let Some(f) = Fixture::create_as_with_alias(tag, role, alias).await? else {
                 return Ok(None);
             };
             let nonce = f.name.rsplit('_').next().ok_or("fixture name")?.to_owned();
@@ -2877,8 +2903,17 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
         role: Option<&'static str>,
         case: impl AsyncFnOnce(&mut Exec) -> TestResult,
     ) -> TestResult {
+        exec_case_with_alias(tag, role, None, case)
+    }
+
+    fn exec_case_with_alias(
+        tag: &'static str,
+        role: Option<&'static str>,
+        alias: Option<&'static str>,
+        case: impl AsyncFnOnce(&mut Exec) -> TestResult,
+    ) -> TestResult {
         runtime()?.block_on(async move {
-            let Some(mut exec) = Exec::create(tag, role).await? else {
+            let Some(mut exec) = Exec::create(tag, role, alias).await? else {
                 return Ok(());
             };
             let result = case(&mut exec).await;
@@ -3301,7 +3336,7 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
         exec_case("muterefresh", Some("GM"), async |e| {
             let target = id(TARGET);
             let desk_b = StaffDesk::for_environment(Some(e.f.trust.environment()));
-            let _guard_b = desk_b.register(target, id(ACCOUNT), Some(target));
+            let guard_b = desk_b.register(target, id(ACCOUNT), Some(target));
             assert_eq!(e.desk.session_for_character(&target), None);
             assert_eq!(desk_b.session_for_character(&target), Some(target));
 
@@ -3314,6 +3349,17 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
                 .ok_or("sanction id")?
                 .to_owned();
             assert_eq!(desk_b.mute_seconds(&target, NOW), None);
+            assert_eq!(
+                e.root
+                    .refresh_staff_mutes(&desk_b, NOW)
+                    .await
+                    .map_err(debug)?,
+                1
+            );
+            assert_eq!(desk_b.mute_seconds(&target, NOW), Some(60));
+
+            drop(guard_b);
+            assert_eq!(desk_b.session_for_character(&target), None);
             assert_eq!(
                 e.root
                     .refresh_staff_mutes(&desk_b, NOW)
@@ -4947,6 +4993,106 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
             );
             assert_eq!(head_of(e).await?, top);
             assert_eq!(sanctions(e, REPORTER).await?, 0);
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn staff_pg_restore_refuses_a_receipt_from_another_signer_before_any_batch_commits()
+    -> TestResult {
+        exec_case_with_alias("restorealias", Some("GM"), Some("alias"), async |e| {
+            let base = (e.sequence, e.head.clone());
+            for _ in 0..9 {
+                assert_eq!(
+                    of(&e.send(mute(TARGET, 60_000)).await.map_err(debug)?),
+                    COMMITTED
+                );
+            }
+            let retained = e.retained.clone();
+            assert_eq!(retained.len(), 18);
+            let mut changed = retained.clone();
+            let ControlMessage::Request(request) = &retained[16].message else {
+                return Err("ninth mute request".into());
+            };
+            let request = e.f.trust.verify_request(request.clone()).map_err(debug)?;
+            let ControlMessage::Receipt(receipt) = &mut changed[17].message else {
+                return Err("ninth mute receipt".into());
+            };
+            receipt.principal = "alias".into();
+            let verified = e.f.trust.verify_receipt(receipt.clone()).map_err(debug)?;
+            assert_eq!(verified.signed().principal, "alias");
+            assert_ne!(verified.signed().principal, request.signed().principal);
+            assert_eq!(verified.fingerprint(), request.fingerprint());
+            e.restore_to(base.0, &base.1).await?;
+            let before = e.f.counts().await?;
+            let replayed = e.replay(changed).await;
+            assert!(
+                matches!(
+                    replayed,
+                    Err(RestoreError::Staff(StaffError::Rejected(Error::Receipt)))
+                ),
+                "{replayed:?}"
+            );
+            assert_eq!(head_of(e).await?, base);
+            assert_eq!(e.f.counts().await?, before);
+            assert_eq!(sanctions(e, TARGET).await?, 0);
+            let steps = e.replay(retained).await.map_err(debug)?;
+            assert_eq!(steps.len(), 18);
+            assert_eq!(
+                kinds(&steps),
+                (0..9)
+                    .flat_map(|_| [RestoreKind::Replayed, RestoreKind::Receipt])
+                    .collect::<Vec<_>>()
+            );
+            assert_eq!(sanctions(e, TARGET).await?, 9);
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn staff_pg_restore_keeps_a_mutation_and_its_receipt_in_the_same_batch() -> TestResult {
+        exec_case("restorepair", Some("GM"), async |e| {
+            let base = (e.sequence, e.head.clone());
+            assert_eq!(
+                of(&e.send(inspect(REPORTER)).await.map_err(debug)?),
+                COMMITTED
+            );
+            for _ in 0..8 {
+                assert_eq!(
+                    of(&e.send(mute(TARGET, 60_000)).await.map_err(debug)?),
+                    COMMITTED
+                );
+            }
+            let retained = e.retained.clone();
+            assert_eq!(retained.len(), RESTORE_BATCH + 1);
+            e.restore_to(base.0, &base.1).await?;
+            let before = e.f.counts().await?;
+            // The eighth mute is step 16; its receipt at step 17 must be in
+            // the same transaction even though the minimum batch size is 16.
+            sqlx::raw_sql(
+                "CREATE FUNCTION staff_fixture_fail() RETURNS trigger LANGUAGE plpgsql AS $$ \
+                 BEGIN RAISE EXCEPTION 'fixture receipt failure' USING ERRCODE='23514'; END $$; \
+                 CREATE TRIGGER staff_fixture_fail BEFORE INSERT ON game_staff_action_receipts \
+                 FOR EACH ROW WHEN (NEW.control_seq=18) EXECUTE FUNCTION staff_fixture_fail()",
+            )
+            .execute(&e.f.pool)
+            .await?;
+            let replayed = e.replay(retained.clone()).await;
+            assert!(
+                matches!(replayed, Err(RestoreError::Staff(StaffError::Database(_)))),
+                "{replayed:?}"
+            );
+            assert_eq!(head_of(e).await?, base);
+            assert_eq!(e.f.counts().await?, before);
+            assert_eq!(sanctions(e, TARGET).await?, 0);
+            sqlx::query("DROP TRIGGER staff_fixture_fail ON game_staff_action_receipts")
+                .execute(&e.f.pool)
+                .await?;
+            assert_eq!(
+                e.replay(retained).await.map_err(debug)?.len(),
+                RESTORE_BATCH + 1
+            );
+            assert_eq!(sanctions(e, TARGET).await?, 8);
             Ok(())
         })
     }

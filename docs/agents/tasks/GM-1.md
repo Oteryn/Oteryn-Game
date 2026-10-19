@@ -133,6 +133,28 @@ Third pre-push review round (CP-approved, bounded batches):
 - Both tests run in the `durability_postgres` job in
   `pr-postgres-harness.yml` and `merge-group-gate.yml`.
 
+Fourth pre-push review round (receipt signer, disconnected mutes):
+
+- Restore checks, before any batch commits, that each mutation's receipt
+  binds the trust's environment and roster and is signed by the request's
+  principal and key; `receipt_in_transaction` would otherwise reject it in a
+  later batch after the mute had committed. A batch also ends only where
+  every mutation in it has its receipt. Tests:
+  `staff_pg_restore_refuses_a_receipt_from_another_signer_before_any_batch_commits`
+  and `staff_pg_restore_keeps_a_mutation_and_its_receipt_in_the_same_batch`.
+- The mute re-sync no longer evicts the mute of a Character whose
+  connection dropped. A same-session resume does not reload the durable
+  mute, because chat still knows the session, so the eviction let a muted
+  Character chat. The desk now keeps a cached mute until it ends, and the
+  re-sync also covers cached, non-live Characters, so a mute lifted on
+  another node is cleared. The cache holds only unexpired mutes. Unit test:
+  `mute_refresh_keeps_a_disconnected_mute_until_it_ends_or_lifts` (it
+  replaces `mute_refresh_drops_non_live_entries`, which asserted the
+  eviction); the PostgreSQL case
+  `staff_pg_mute_refresh_resyncs_other_nodes_and_scopes_the_environment`
+  now drops desk_b's connection before the refresh and the unmute.
+- The PostgreSQL tests run in the `durability_postgres` job.
+
 Wiring is unchanged. Production staff requests reach the executor through
 `control_loop`, then `ControlInput::Staff`, then `serve_staff_control`. The
 e2e case is `staff_pg_executor_mute_inspect_unmute_and_kick_follow_the_committed_audit`,

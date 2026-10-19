@@ -57,8 +57,9 @@ struct Live {
     kick: mpsc::Sender<KickRequest>,
 }
 
-/// The live Characters of one desk mute refresh, with the desk sequence it
-/// was taken at.
+/// The live and cached muted Characters of one desk refresh, with their latest
+/// mute sequences and the desk sequence it was taken at. Cached mutes are
+/// unexpired sanctions this node has seen.
 pub struct MuteSnapshot {
     taken: u64,
     characters: HashMap<[u8; 16], u64>,
@@ -78,7 +79,8 @@ impl MuteSnapshot {
 pub struct StaffDesk {
     live: Mutex<HashMap<[u8; 16], Live>>,
     /// CharacterId to the end (Unix ms) of its longest active staff mute and
-    /// the desk sequence of the write that recorded it.
+    /// the desk sequence of the write that recorded it. Refresh prunes expired
+    /// entries, bounding the cache by active sanctions this node has seen.
     mutes: Mutex<HashMap<[u8; 16], (u64, u64)>>,
     next: AtomicU64,
     /// The staff environment whose durable sanctions apply on this node; a
@@ -241,8 +243,10 @@ impl StaffDesk {
         }
     }
 
-    /// Snapshot only live Characters. Each sequence changes on a local mute
-    /// update or a new registration, never on another Character's chat open.
+    /// Snapshot live Characters and cached unexpired mutes, including offline
+    /// Characters. Use the maximum live or cached sequence for each Character.
+    /// Each sequence changes on a local mute update or a new registration,
+    /// never on another Character's chat open.
     /// Taking a snapshot consumes one desk sequence, so every later write is
     /// newer than it.
     pub fn snapshot_mutes(&self) -> MuteSnapshot {
@@ -260,14 +264,24 @@ impl StaffDesk {
                 *sequence = (*sequence).max(entry.mute_sequence);
             }
         }
+        if let Ok(mutes) = self.mutes.lock() {
+            for (character, (_, cached_sequence)) in mutes.iter() {
+                let sequence = characters.entry(*character).or_insert(*cached_sequence);
+                *sequence = (*sequence).max(*cached_sequence);
+            }
+        }
         MuteSnapshot { taken, characters }
     }
 
-    /// Apply database truth only to unchanged live Characters, and discard
-    /// cached mutes with no live registration that were written before the
-    /// snapshot. A mute chat admission loads before its connection registers
-    /// is newer than the snapshot and stays.
-    pub fn apply_mutes(&self, snapshot: &MuteSnapshot, answers: &HashMap<[u8; 16], u64>) -> usize {
+    /// Apply database truth only to unchanged live or cached Characters. Keep
+    /// unexpired mutes through disconnects and admission before registration;
+    /// prune expired entries so only active sanctions this node has seen remain.
+    pub fn apply_mutes(
+        &self,
+        snapshot: &MuteSnapshot,
+        answers: &HashMap<[u8; 16], u64>,
+        now_ms: u64,
+    ) -> usize {
         let Ok(live) = self.live.lock() else {
             return 0;
         };
@@ -281,9 +295,10 @@ impl StaffDesk {
                 *sequence = (*sequence).max(entry.mute_sequence);
             }
         }
-        mutes.retain(|character, (_, sequence)| {
-            current.contains_key(character) || *sequence > snapshot.taken
-        });
+        for (character, (_, cached_sequence)) in mutes.iter() {
+            let sequence = current.entry(*character).or_insert(*cached_sequence);
+            *sequence = (*sequence).max(*cached_sequence);
+        }
         let mut synced = 0;
         for (character, sequence) in &snapshot.characters {
             if current.get(character) != Some(sequence) {
@@ -299,6 +314,7 @@ impl StaffDesk {
             }
             synced += 1;
         }
+        mutes.retain(|_, (ends, _)| *ends > now_ms);
         synced
     }
 
@@ -360,11 +376,14 @@ mod tests {
         // Busy chat admission for a different Character cannot starve this one.
         desk.set_mute([5; 16], None);
         assert_eq!(
-            desk.apply_mutes(&snapshot, &HashMap::from([([3; 16], 10_500)])),
+            desk.apply_mutes(&snapshot, &HashMap::from([([3; 16], 10_500)]), 10_000),
             1
         );
         assert_eq!(desk.mute_seconds(&[3; 16], 10_000), Some(1));
-        assert_eq!(desk.apply_mutes(&desk.snapshot_mutes(), &HashMap::new()), 2);
+        assert_eq!(
+            desk.apply_mutes(&desk.snapshot_mutes(), &HashMap::new(), 10_000),
+            2
+        );
         assert_eq!(desk.mute_seconds(&[3; 16], 10_000), None);
     }
 
@@ -374,37 +393,61 @@ mod tests {
         let _guard = desk.register([1; 16], [2; 16], Some([3; 16]));
         let snapshot = desk.snapshot_mutes();
         desk.set_mute([3; 16], Some(10_500));
-        assert_eq!(desk.apply_mutes(&snapshot, &HashMap::new()), 0);
+        assert_eq!(desk.apply_mutes(&snapshot, &HashMap::new(), 10_000), 0);
         assert_eq!(desk.mute_seconds(&[3; 16], 10_000), Some(1));
         let snapshot = desk.snapshot_mutes();
         desk.set_mute([3; 16], None);
         assert_eq!(
-            desk.apply_mutes(&snapshot, &HashMap::from([([3; 16], 10_500)])),
+            desk.apply_mutes(&snapshot, &HashMap::from([([3; 16], 10_500)]), 10_000),
             0
         );
         assert_eq!(desk.mute_seconds(&[3; 16], 10_000), None);
     }
 
     #[test]
-    fn mute_refresh_drops_non_live_entries() {
+    fn mute_refresh_keeps_a_disconnected_mute_until_it_ends_or_lifts() {
         let desk = StaffDesk::new();
         let guard = desk.register([1; 16], [2; 16], Some([3; 16]));
         desk.set_mute([3; 16], Some(10_500));
         let snapshot = desk.snapshot_mutes();
         drop(guard);
         assert_eq!(
-            desk.apply_mutes(&snapshot, &HashMap::from([([3; 16], 10_500)])),
-            0
+            desk.apply_mutes(&snapshot, &HashMap::from([([3; 16], 10_500)]), 10_000),
+            1
         );
+        assert_eq!(desk.mute_seconds(&[3; 16], 10_000), Some(1));
+        assert_eq!(
+            desk.snapshot_mutes()
+                .characters()
+                .copied()
+                .collect::<Vec<_>>(),
+            [[3; 16]]
+        );
+        assert_eq!(
+            desk.apply_mutes(&desk.snapshot_mutes(), &HashMap::new(), 10_000),
+            1
+        );
+        assert_eq!(desk.mute_seconds(&[3; 16], 10_000), None);
         assert!(desk.mutes.lock().expect("mutes").is_empty());
         assert!(desk.snapshot_mutes().is_empty());
         // Reconnecting the same Character does not revive an old snapshot.
         let _newer = desk.register([1; 16], [2; 16], Some([3; 16]));
         assert_eq!(
-            desk.apply_mutes(&snapshot, &HashMap::from([([3; 16], 10_500)])),
+            desk.apply_mutes(&snapshot, &HashMap::from([([3; 16], 10_500)]), 10_000),
             0
         );
         assert_eq!(desk.mute_seconds(&[3; 16], 10_000), None);
+        desk.set_mute([4; 16], Some(10_500));
+        assert_eq!(
+            desk.apply_mutes(
+                &desk.snapshot_mutes(),
+                &HashMap::from([([4; 16], 10_500)]),
+                10_500,
+            ),
+            2
+        );
+        assert_eq!(desk.mute_seconds(&[4; 16], 10_500), None);
+        assert!(desk.mutes.lock().expect("mutes").is_empty());
     }
 
     #[test]
@@ -413,16 +456,23 @@ mod tests {
         let desk = StaffDesk::new();
         let snapshot = desk.snapshot_mutes();
         desk.set_mute([3; 16], Some(10_500));
-        assert_eq!(desk.apply_mutes(&snapshot, &HashMap::new()), 0);
+        assert_eq!(desk.apply_mutes(&snapshot, &HashMap::new(), 10_000), 0);
         let guard = desk.register([1; 16], [2; 16], Some([3; 16]));
         assert_eq!(desk.mute_seconds(&[3; 16], 10_000), Some(1));
-        // A refreshed mute is dropped by the first refresh after it goes offline.
+        // A refreshed mute can also be lifted after its connection goes offline.
         assert_eq!(
-            desk.apply_mutes(&desk.snapshot_mutes(), &HashMap::from([([3; 16], 10_500)])),
+            desk.apply_mutes(
+                &desk.snapshot_mutes(),
+                &HashMap::from([([3; 16], 10_500)]),
+                10_000,
+            ),
             1
         );
         drop(guard);
-        assert_eq!(desk.apply_mutes(&desk.snapshot_mutes(), &HashMap::new()), 0);
+        assert_eq!(
+            desk.apply_mutes(&desk.snapshot_mutes(), &HashMap::new(), 10_000),
+            1
+        );
         assert!(desk.mutes.lock().expect("mutes").is_empty());
     }
 

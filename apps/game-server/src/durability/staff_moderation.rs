@@ -38,7 +38,8 @@ pub const OPEN_SNAPSHOTS_PER_WORLD: i32 = 100_000;
 pub const REPORT_PAGE: i64 = 32;
 /// OPEN reports per expiry batch, one transaction each.
 pub const REPORT_EXPIRY_BATCH: u32 = 64;
-/// Retained links applied in one restore transaction.
+/// Minimum retained links per restore transaction; a batch ends only where
+/// every mutation in it has its receipt. The final batch takes the remainder.
 pub const RESTORE_BATCH: usize = 16;
 const HOUR_MS: i64 = 3_600_000;
 const MAX_REVISION: u64 = u64::MAX;
@@ -1053,7 +1054,7 @@ impl DurabilityRoot {
             .await?
     }
 
-    /// Re-sync this node's live Characters from staff-environment truth.
+    /// Re-sync this node's live and cached muted Characters from staff-environment truth.
     /// Reads are bounded to 256 Characters per statement; chat stays a lookup.
     pub async fn refresh_staff_mutes(
         &self,
@@ -1065,9 +1066,9 @@ impl DurabilityRoot {
         };
         let snapshot = desk.snapshot_mutes();
         if snapshot.is_empty() {
-            return Ok(desk.apply_mutes(&snapshot, &HashMap::new()));
+            return Ok(desk.apply_mutes(&snapshot, &HashMap::new(), now));
         }
-        let now = i64::try_from(now).map_err(|_| Error::Clock)?;
+        let query_now = i64::try_from(now).map_err(|_| Error::Clock)?;
         let environment = environment.to_owned();
         let characters: Vec<String> = snapshot.characters().map(uuid).collect();
         let answers = self
@@ -1085,7 +1086,7 @@ impl DurabilityRoot {
                                  GROUP BY character_id",
                             )
                             .bind(chunk)
-                            .bind(now)
+                            .bind(query_now)
                             .bind(&environment)
                             .fetch_all(&mut *tx)
                             .await?;
@@ -1103,7 +1104,7 @@ impl DurabilityRoot {
                 })
             })
             .await??;
-        Ok(desk.apply_mutes(&snapshot, &answers))
+        Ok(desk.apply_mutes(&snapshot, &answers, now))
     }
 
     /// WRITE0 §6 report admission in one transaction. The caller's fence
@@ -1415,7 +1416,8 @@ impl DurabilityRoot {
     /// (no freshness), a refusal is stored, and no unmute, kick or report
     /// transition is re-run. Any request without a verifying receipt stops the
     /// replay with nothing applied. The verified plan is applied in bounded
-    /// transactions; an apply failure preserves earlier committed batches,
+    /// transactions; a batch ends only where every mutation in it has its
+    /// receipt. An apply failure preserves earlier committed batches,
     /// and a retry applies only the remaining links. A second complete run
     /// is a no-op.
     pub async fn staff_restore_replay(
@@ -1579,7 +1581,14 @@ impl DurabilityRoot {
                     ambiguous.push(candidate.operation_id.clone());
                     continue;
                 };
-                if receipt.receipt().outcome_sha256 != signature::sha256(&bytes)
+                if receipt.receipt().environment != trust.environment()
+                    || receipt.receipt().roster_sha256 != trust.roster_digest()
+                {
+                    return Err(Error::Binding.into());
+                }
+                if receipt.signed().principal != request.signed().principal
+                    || receipt.fingerprint() != request.fingerprint()
+                    || receipt.receipt().outcome_sha256 != signature::sha256(&bytes)
                     || receipt.receipt().disposition != outcome.disposition
                 {
                     return Err(Error::Receipt.into());
@@ -1607,7 +1616,28 @@ impl DurabilityRoot {
         let mut planned = planned.into_iter();
         let mut applied = Vec::new();
         loop {
-            let batch: Vec<_> = planned.by_ref().take(RESTORE_BATCH).collect();
+            let mut batch = Vec::new();
+            let mut pending = std::collections::HashSet::new();
+            for step in planned.by_ref() {
+                match &step.1 {
+                    Planned::Request { request, kind, .. } if *kind != RestoreKind::Recorded => {
+                        pending.insert(
+                            crate::node::uuid_bytes(&request.request().operation_id)
+                                .ok_or(Error::Invalid)?,
+                        );
+                    }
+                    Planned::Receipt(receipt) => {
+                        let operation = crate::node::uuid_bytes(&receipt.receipt().operation_id)
+                            .ok_or(Error::Invalid)?;
+                        pending.remove(&operation);
+                    }
+                    _ => {}
+                }
+                batch.push(step);
+                if batch.len() >= RESTORE_BATCH && pending.is_empty() {
+                    break;
+                }
+            }
             if batch.is_empty() {
                 break;
             }
