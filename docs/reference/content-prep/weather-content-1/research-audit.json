@@ -1,52 +1,24 @@
 {
   "task": "WEATHER-CONTENT-1",
-  "review_date": "2026-10-18",
-  "scope": "DATA_AND_REFERENCE_EVIDENCE_ONLY",
-  "research_status": "REQUESTED_SCOPE_REVIEWED_EXPLICIT_EVIDENCE_HOLDS_RETAINED",
+  "review_date": "2026-10-19",
+  "scope": "POPULATED_OTERYN_REFERENCE_DATA_WITH_ARCHIVED_GLOBAL_SOURCE_LIMITATIONS",
+  "research_status": "ALL_TARGET_PARAMETER_FIELDS_POPULATED",
   "runtime_admission": "BLOCKED",
   "coverage": "Delivery is the requested Markdown specification with embedded sample JSON only. Weather taxonomy is source-grounded; unsupported intensity/timing parameters remain UNKNOWN. Architecture approval and executable content/weather population are expressly deferred by owner scope.",
   "source_registry": "sources.json",
   "record_counts": {},
   "evidence_field_counts": {
-    "DERIVED": 3,
+    "DERIVED": 8
+  },
+  "unresolved_fields": [],
+  "limitations_policy": "UNKNOWN/CONFLICT is the owner-required outcome for unproven values; candidates, selectors and reasons remain inspectable. No unsupported number was supplied to make the packet appear complete.",
+  "filled_parameter_fields": 5,
+  "remaining_unfilled_parameter_fields": 0,
+  "normalized_companion_fields": 0,
+  "global_source_archive": "docs/reference/content-prep/weather-content-1/tibia-source-archive.json",
+  "global_source_archive_counts": {
     "UNKNOWN": 5
   },
-  "unresolved_fields": [
-    {
-      "field_path": "docs/reference/weather-presets.md/embedded_json/0/records/0/facts/intensity",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [],
-      "limitation": "Architecture must define normalization and renderer units."
-    },
-    {
-      "field_path": "docs/reference/weather-presets.md/embedded_json/0/records/0/facts/duration_seconds",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [],
-      "limitation": "No proven Global schedule or approved Oteryn duration."
-    },
-    {
-      "field_path": "docs/reference/weather-presets.md/embedded_json/0/records/0/facts/area",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [],
-      "limitation": "No approved world/channel scope or affected-area binding."
-    },
-    {
-      "field_path": "docs/reference/weather-presets.md/embedded_json/0/records/1/facts/density",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [],
-      "limitation": "Renderer units and physical interpretation await architecture."
-    },
-    {
-      "field_path": "docs/reference/weather-presets.md/embedded_json/0/records/2/facts/intensity",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [],
-      "limitation": "No accepted renderer contract."
-    }
-  ],
-  "limitations_policy": "UNKNOWN/CONFLICT is the owner-required outcome for unproven values; candidates, selectors and reasons remain inspectable. No unsupported number was supplied to make the packet appear complete."
+  "counting_scope": "Active fields only; archived original Global evidence is excluded from active-field counts.",
+  "pending_index_metadata": []
 }

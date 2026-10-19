@@ -18,6 +18,14 @@
       "description": "User-supplied content preparation task 13: proposal-only weather presets, architecture ruling pending.",
       "attachment": "Pasted text.txt / task 13",
       "sha256": "95105831f6c7388e05f5696630b98ec0f588c25d30fc05075ef5b9b6930a2243"
+    },
+    "owner:oteryn-data-completion:2026-10-19": {
+      "source_class": "OWNER_AUTHORIZED_OTERYN_WORKING_PARAMETERS",
+      "instruction": "No to uzupełnij te dane bo piszę ci to5raz",
+      "prior_instruction": "Przygotuj propozycje Oteryn z jawnymi założeniami",
+      "parameter_document": "docs/reference/content-prep/weather-content-1/oteryn-parameters.json",
+      "selection_actor": "assistant completing owner-authorized reference/data task",
+      "scope": "Populate working Oteryn data defaults, keeping evidence limits explicit; no runtime or architectural acceptance is implied."
     }
   }
 }

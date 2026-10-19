@@ -1,3 +1,5 @@
+<!-- Current completion: actual target fields have been populated with DERIVED Oteryn working values. Original Global UNKNOWN/CONFLICT observations are archived, not reclassified as official proof. Earlier source-only sections below are historical context. -->
+
 # WEATHER-CONTENT-1
 
 ```yaml
@@ -59,3 +61,7 @@ No external paid review triggered. Data-only draft Reference packets do not auth
 Delivery is the requested Markdown specification with embedded sample JSON only. Weather taxonomy is source-grounded; unsupported intensity/timing parameters remain UNKNOWN. Architecture approval and executable content/weather population are expressly deferred by owner scope.
 
 Task status `ready` refers only to the data/docs handoff. The PR remains draft; runtime admission and protected integration remain blocked. Complete candidate validation and exact remote-blob verification are recorded in the canonical draft PR.
+
+## Working-data completion —2026-10-19
+
+Populated5 previously held fields directly in target records;0 active unfilled fields. See [parameter register](../../reference/content-prep/weather-content-1/oteryn-parameters.json). Runtime admission and protected integration remain blocked.

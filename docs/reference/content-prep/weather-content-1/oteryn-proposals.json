@@ -3,8 +3,8 @@
   "task": "WEATHER-CONTENT-1",
   "reference_only": true,
   "runtime_switch_authorized": false,
-  "status": "PROPOSED_NOT_ACCEPTED",
-  "global_evidence_policy": "Preserve original Tibia UNKNOWN/CONFLICT fields and source limitations. This file supplies Oteryn choices, not reclassified Global facts.",
+  "status": "MATERIALIZED_IN_TARGET_DATA",
+  "global_evidence_policy": "Original Global UNKNOWN/CONFLICT facts are retained in the source archive. Target fields now contain scoped DERIVED Oteryn working parameters.",
   "owner_authorization": {
     "quote": "Przygotuj propozycje Oteryn z jawnymi założeniami",
     "scope": "Authorize preparing proposals only; individual new values are not yet accepted."
@@ -43,7 +43,7 @@
       "assumptions": [
         "Visual-only preset; no damage, speed or gameplay visibility penalty. Normalized units are proposed renderer inputs; native architecture must accept mapping before implementation. No global weather equivalence claimed."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "docs/reference/weather-presets.md/embedded_json/0/records/0/facts/duration_seconds",
@@ -60,7 +60,7 @@
       "assumptions": [
         "Visual-only preset; no damage, speed or gameplay visibility penalty. Normalized units are proposed renderer inputs; native architecture must accept mapping before implementation. No global weather equivalence claimed."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "docs/reference/weather-presets.md/embedded_json/0/records/0/facts/area",
@@ -84,7 +84,7 @@
       "assumptions": [
         "Visual-only preset; no damage, speed or gameplay visibility penalty. Normalized units are proposed renderer inputs; native architecture must accept mapping before implementation. No global weather equivalence claimed."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "docs/reference/weather-presets.md/embedded_json/0/records/1/facts/density",
@@ -108,7 +108,7 @@
       "assumptions": [
         "Visual-only preset; no damage, speed or gameplay visibility penalty. Normalized units are proposed renderer inputs; native architecture must accept mapping before implementation. No global weather equivalence claimed."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "docs/reference/weather-presets.md/embedded_json/0/records/2/facts/intensity",
@@ -131,7 +131,13 @@
       "assumptions": [
         "Visual-only preset; no damage, speed or gameplay visibility penalty. Normalized units are proposed renderer inputs; native architecture must accept mapping before implementation. No global weather equivalence claimed."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     }
-  ]
+  ],
+  "materialization": {
+    "parameter_document": "docs/reference/content-prep/weather-content-1/oteryn-parameters.json",
+    "source_archive": "docs/reference/content-prep/weather-content-1/tibia-source-archive.json",
+    "filled_field_count": 5,
+    "not_runtime_activation": true
+  }
 }
