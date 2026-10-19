@@ -1,7 +1,8 @@
 name: PR PostgreSQL harness
 
 # Early signal only: runs the Merge Queue PostgreSQL harness on pull requests
-# that touch game-server persistence, so its failures show before the queue.
+# that can change what it runs (the game-server crate and its path
+# dependencies), so its failures show before the queue.
 # It is not the PR gate (merge-gate.yml) and not a required check; the Merge
 # Queue (merge-group-gate.yml) keeps the exact-candidate qualification and
 # runs the full workspace suite and every PostgreSQL lane once (D1471). The
@@ -11,26 +12,23 @@ on:
   pull_request:
     branches:
       - main
-    # Game-server persistence: the sources the registered PostgreSQL targets
-    # compile in (#[path] modules), the library PostgreSQL tests, migrations,
-    # the shared PostgreSQL test support, the Cargo inputs and this lane.
+    # Everything the game-server PostgreSQL targets link: the targets and the
+    # library PostgreSQL tests exercise game-server code well beyond
+    # durability/** (combat, pickup, transport, interaction, catalogues), so
+    # the whole crate and its workspace path dependencies are in scope. The
+    # lane is skipped only for PRs that cannot change what it runs.
     paths:
-      - 'apps/game-server/src/durability/**'
-      - 'apps/game-server/src/foundation/**'
-      - 'apps/game-server/src/native_admission_source/**'
-      - 'apps/game-server/src/premium/**'
-      - 'apps/game-server/src/character_bootstrap_intent.rs'
-      - 'apps/game-server/src/character_recovery_fence.rs'
-      - 'apps/game-server/src/**/*postgres*'
-      - 'apps/game-server/src/**/*postgres*/**'
-      - 'apps/game-server/migrations/**'
-      - 'apps/game-server/tests/durability_postgres.rs'
-      - 'apps/game-server/tests/character_authority_postgres.rs'
-      - 'apps/game-server/tests/runtime_scope_assignment_postgres.rs'
-      - 'apps/game-server/tests/native_admission_source_postgres.rs'
-      - 'apps/game-server/tests/support/**'
-      - 'apps/game-server/Cargo.toml'
-      - 'apps/game-server/build.rs'
+      - 'apps/game-server/**'
+      - 'crates/error-codes/**'
+      - 'crates/foundation/**'
+      - 'crates/ntp-clock/**'
+      - 'crates/protocol-oteryn/**'
+      - 'crates/session/**'
+      - 'crates/session-tcp/**'
+      - 'crates/simulation-determinism/**'
+      - 'crates/world-bundle/**'
+      - 'tools/dev-client/**'
+      - 'tools/world-bundle-compiler/**'
       - 'Cargo.toml'
       - 'Cargo.lock'
       - 'rust-toolchain.toml'
