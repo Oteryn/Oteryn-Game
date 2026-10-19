@@ -1,0 +1,137 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_PROPOSALS/v1",
+  "task": "WEATHER-CONTENT-1",
+  "reference_only": true,
+  "runtime_switch_authorized": false,
+  "status": "PROPOSED_NOT_ACCEPTED",
+  "global_evidence_policy": "Preserve original Tibia UNKNOWN/CONFLICT fields and source limitations. This file supplies Oteryn choices, not reclassified Global facts.",
+  "owner_authorization": {
+    "quote": "Przygotuj propozycje Oteryn z jawnymi założeniami",
+    "scope": "Authorize preparing proposals only; individual new values are not yet accepted."
+  },
+  "predecessor_sha": "fa53839a2177f7b0080dedef5fd4e3533f1f3193",
+  "original_field_list_sha256": "66ebf37f2596355af5082655fe076fd7ed815eb8b83356614d172e61e29e1c95",
+  "coverage": {
+    "held_fields": 5,
+    "proposals": 5,
+    "uncovered": 0,
+    "original_classifications": {
+      "UNKNOWN": 5
+    }
+  },
+  "shared_policies": {},
+  "source_observations": [],
+  "proposals": [
+    {
+      "original_field_path": "docs/reference/weather-presets.md/embedded_json/0/records/0/facts/intensity",
+      "subject": "proposal.weather.rain",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "normalized_intensity": 0.35,
+        "range": [
+          0,
+          1
+        ]
+      },
+      "basis": {
+        "kind": "DESIGN_CHOICE",
+        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "original_source_urls": [],
+        "observation_refs": [],
+        "donor_selection": null
+      },
+      "assumptions": [
+        "Visual-only preset; no damage, speed or gameplay visibility penalty. Normalized units are proposed renderer inputs; native architecture must accept mapping before implementation. No global weather equivalence claimed."
+      ],
+      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+    },
+    {
+      "original_field_path": "docs/reference/weather-presets.md/embedded_json/0/records/0/facts/duration_seconds",
+      "subject": "proposal.weather.rain",
+      "original_classification": "UNKNOWN",
+      "proposed_value": 900,
+      "basis": {
+        "kind": "DESIGN_CHOICE",
+        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "original_source_urls": [],
+        "observation_refs": [],
+        "donor_selection": null
+      },
+      "assumptions": [
+        "Visual-only preset; no damage, speed or gameplay visibility penalty. Normalized units are proposed renderer inputs; native architecture must accept mapping before implementation. No global weather equivalence claimed."
+      ],
+      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+    },
+    {
+      "original_field_path": "docs/reference/weather-presets.md/embedded_json/0/records/0/facts/area",
+      "subject": "proposal.weather.rain",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "selector": "OUTDOOR_WALKABLE_TILES_IN_INVOKING_WORLD_AND_CHANNEL",
+        "exclude": [
+          "indoor",
+          "underground"
+        ],
+        "geometry": "existing native tile-area tags"
+      },
+      "basis": {
+        "kind": "DESIGN_CHOICE",
+        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "original_source_urls": [],
+        "observation_refs": [],
+        "donor_selection": null
+      },
+      "assumptions": [
+        "Visual-only preset; no damage, speed or gameplay visibility penalty. Normalized units are proposed renderer inputs; native architecture must accept mapping before implementation. No global weather equivalence claimed."
+      ],
+      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+    },
+    {
+      "original_field_path": "docs/reference/weather-presets.md/embedded_json/0/records/1/facts/density",
+      "subject": "proposal.weather.fog",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "normalized_density": 0.3,
+        "range": [
+          0,
+          1
+        ],
+        "interpretation": "linear visual-only renderer input"
+      },
+      "basis": {
+        "kind": "DESIGN_CHOICE",
+        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "original_source_urls": [],
+        "observation_refs": [],
+        "donor_selection": null
+      },
+      "assumptions": [
+        "Visual-only preset; no damage, speed or gameplay visibility penalty. Normalized units are proposed renderer inputs; native architecture must accept mapping before implementation. No global weather equivalence claimed."
+      ],
+      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+    },
+    {
+      "original_field_path": "docs/reference/weather-presets.md/embedded_json/0/records/2/facts/intensity",
+      "subject": "proposal.weather.snow",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "normalized_intensity": 0.25,
+        "range": [
+          0,
+          1
+        ]
+      },
+      "basis": {
+        "kind": "DESIGN_CHOICE",
+        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "original_source_urls": [],
+        "observation_refs": [],
+        "donor_selection": null
+      },
+      "assumptions": [
+        "Visual-only preset; no damage, speed or gameplay visibility penalty. Normalized units are proposed renderer inputs; native architecture must accept mapping before implementation. No global weather equivalence claimed."
+      ],
+      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+    }
+  ]
+}
