@@ -13,7 +13,7 @@ category = "foundation"
 release-role = "production"
 
 [target.'cfg(target_os = "linux")'.dependencies]
-libc = { version = "=0.2.189", default-features = false }
+libc = { version = "=0.2.190", default-features = false }
 
 # Owner decision 2026-10-14, PREMIUM-1 #2110, isolated FFI: this crate alone denies rather than
 # forbids `unsafe_code`, so the one kernel read can allow it locally. The other lints are the
