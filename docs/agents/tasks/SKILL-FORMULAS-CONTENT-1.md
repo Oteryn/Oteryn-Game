@@ -1,3 +1,5 @@
+<!-- Current completion: actual target fields have been populated with DERIVED Oteryn working values. Original Global UNKNOWN/CONFLICT observations are archived, not reclassified as official proof. Earlier source-only sections below are historical context. -->
+
 # SKILL-FORMULAS-CONTENT-1
 
 ```yaml
@@ -67,3 +69,7 @@ Task status `ready` refers only to the data/docs handoff. The PR remains draft; 
 combat.critical/intrinsic_chance; combat.critical/intrinsic_extra_damage.
 
 Only explicit sourced values are selected. Wiki omissions and unsupported exact gameplay formulas remain held. Primary news retrieved from indexed official publications is labelled with the direct HTTP403 limitation. Runtime activation and integration remain blocked.
+
+## Working-data completion —2026-10-19
+
+Populated19 previously held fields directly in target records;0 active unfilled fields. See [parameter register](../../reference/content-prep/skill-formulas-content-1/oteryn-parameters.json). Runtime admission and protected integration remain blocked.

@@ -3,8 +3,8 @@
   "task": "SKILL-FORMULAS-CONTENT-1",
   "reference_only": true,
   "runtime_switch_authorized": false,
-  "status": "PROPOSED_NOT_ACCEPTED",
-  "global_evidence_policy": "Preserve original Tibia UNKNOWN/CONFLICT fields and source limitations. This file supplies Oteryn choices, not reclassified Global facts.",
+  "status": "MATERIALIZED_IN_TARGET_DATA",
+  "global_evidence_policy": "Original Global UNKNOWN/CONFLICT facts are retained in the source archive. Target fields now contain scoped DERIVED Oteryn working parameters.",
   "owner_authorization": {
     "quote": "Przygotuj propozycje Oteryn z jawnymi założeniami",
     "scope": "Authorize preparing proposals only; individual new values are not yet accepted."
@@ -393,7 +393,7 @@
       "assumptions": [
         "Select this documented value for Oteryn; not a claim of current official server behavior."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "rulesets/character/skills/reference-evidence.json/records/1/facts/mana_formula",
@@ -420,7 +420,7 @@
       "assumptions": [
         "Select this documented value for Oteryn; not a claim of current official server behavior."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "rulesets/character/skills/reference-evidence.json/records/1/facts/damage_prey",
@@ -439,7 +439,7 @@
       "assumptions": [
         "Exclude Prey bonus damage from leech damage basis as an explicit project choice."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "rulesets/character/skills/reference-evidence.json/records/2/facts/skill_advance",
@@ -513,7 +513,7 @@
       "assumptions": [
         "Select this documented value for Oteryn; not a claim of current official server behavior."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "rulesets/character/skills/reference-evidence.json/records/2/facts/magic_advance",
@@ -577,7 +577,7 @@
       "assumptions": [
         "Select this documented value for Oteryn; not a claim of current official server behavior."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "rulesets/character/skills/reference-evidence.json/records/3/facts/skill_advance",
@@ -651,7 +651,7 @@
       "assumptions": [
         "Select this documented value for Oteryn; not a claim of current official server behavior."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "rulesets/character/skills/reference-evidence.json/records/3/facts/magic_advance",
@@ -715,7 +715,7 @@
       "assumptions": [
         "Select this documented value for Oteryn; not a claim of current official server behavior."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "rulesets/character/skills/reference-evidence.json/records/4/facts/skill_advance",
@@ -789,7 +789,7 @@
       "assumptions": [
         "Select this documented value for Oteryn; not a claim of current official server behavior."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "rulesets/character/skills/reference-evidence.json/records/4/facts/magic_advance",
@@ -853,7 +853,7 @@
       "assumptions": [
         "Select this documented value for Oteryn; not a claim of current official server behavior."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "rulesets/character/skills/reference-evidence.json/records/5/facts/skill_advance",
@@ -927,7 +927,7 @@
       "assumptions": [
         "Select this documented value for Oteryn; not a claim of current official server behavior."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "rulesets/character/skills/reference-evidence.json/records/5/facts/magic_advance",
@@ -991,7 +991,7 @@
       "assumptions": [
         "Select this documented value for Oteryn; not a claim of current official server behavior."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "rulesets/character/skills/reference-evidence.json/records/6/facts/skill_advance",
@@ -1065,7 +1065,7 @@
       "assumptions": [
         "Select this documented value for Oteryn; not a claim of current official server behavior."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "rulesets/character/skills/reference-evidence.json/records/6/facts/magic_advance",
@@ -1129,7 +1129,7 @@
       "assumptions": [
         "Select this documented value for Oteryn; not a claim of current official server behavior."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "rulesets/character/skills/reference-evidence.json/records/7/facts/next_level_points",
@@ -1166,7 +1166,7 @@
       "assumptions": [
         "Select this documented value for Oteryn; not a claim of current official server behavior."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "rulesets/character/skills/reference-evidence.json/records/7/facts/cumulative_points",
@@ -1188,7 +1188,7 @@
       "assumptions": [
         "Sum individually rounded level costs; do not use rounded geometric shortcut."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "rulesets/character/skills/reference-evidence.json/records/7/facts/skill_constants",
@@ -1218,7 +1218,7 @@
       "assumptions": [
         "Select this documented value for Oteryn; not a claim of current official server behavior."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "rulesets/character/skills/reference-evidence.json/records/7/facts/vocation_constants",
@@ -1335,7 +1335,7 @@
       "assumptions": [
         "Select this documented value for Oteryn; not a claim of current official server behavior."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "rulesets/character/skills/reference-evidence.json/records/7/facts/offset",
@@ -1358,7 +1358,7 @@
       "assumptions": [
         "Select this documented value for Oteryn; not a claim of current official server behavior."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "rulesets/character/skills/reference-evidence.json/records/8/facts/mana_per_target",
@@ -1385,7 +1385,13 @@
       "assumptions": [
         "Select this documented value for Oteryn; not a claim of current official server behavior."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     }
-  ]
+  ],
+  "materialization": {
+    "parameter_document": "docs/reference/content-prep/skill-formulas-content-1/oteryn-parameters.json",
+    "source_archive": "docs/reference/content-prep/skill-formulas-content-1/tibia-source-archive.json",
+    "filled_field_count": 19,
+    "not_runtime_activation": true
+  }
 }

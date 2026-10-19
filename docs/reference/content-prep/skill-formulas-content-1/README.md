@@ -1,19 +1,13 @@
-# SKILL-FORMULAS-CONTENT-1: Critical hit, leech and skill formula evidence
+# SKILL-FORMULAS-CONTENT-1: populated reference data
 
-No community consensus or OTS implementation is promoted into a proven gameplay formula. Current Wiki and official sources are pinned for later controlled qualification.
+All 19 previously held parameter fields now contain explicit Oteryn working values in their target records. They are classified DERIVED and scoped OTERYN_REFERENCE_PARAMETER; source-backed facts retain their existing evidence classification. No runtime activation is authorized.
 
-Source registry: [sources.json](sources.json). Facts link to exact revision IDs or immutable repository blobs. `PROVEN` means the cited source states the fact; `DERIVED` means the stated transformation is reproducible; `UNKNOWN` and `CONFLICT` must remain held. Community evidence is not controlled Global telemetry. Where cited, the official characters/combat/trading manual was re-read live on 2026-10-18; exact response digests and current URLs are in the source registry.
+The [working parameter register](oteryn-parameters.json) records completion and shared policies. The [decision rationale](oteryn-proposals.json) retains every field path, source and assumption, and is marked materialized. Original unresolved Tibia observations are retained verbatim in the [Global source archive](tibia-source-archive.json), rather than being passed off as official facts.
 
-These files prepare Reference data for CP. They add no runtime admission, Rust change, generated content regeneration, or interaction/world-pin mutation. `POPULATED` describes the evidence packet, not complete gameplay readiness. The packet schema is an evidence envelope, not a newly accepted runtime schema.
+Active evidence counts: {"DERIVED": 19, "PROVEN": 4}. Remaining unfilled active parameter fields:0. [Field audit](research-audit.json); [source registry](sources.json).
 
-## Research completion and coverage
+The owner's instruction is to populate the data using explicit project assumptions. These are working reference defaults for native implementation; accepted architecture, concrete world/native bindings and gameplay activation remain coordinator responsibilities. OTS observations are pinned and labelled OTS_HYPOTHESIS_ONLY. Project choices do not establish current Global behavior.
 
-The live official qualitative critical/leech behavior and the complete community skill-advance candidates, constants and vocation multipliers are retained. Numeric critical, multi-target leech, rounding and skill formulas lack official or controlled evidence and remain held. No OTS implementation is promoted into proof.
+Some service payloads remain under target-files with a service-apply-plan because World Bundle pins and generated slots cannot be changed in this task. Index metadata owned by another open PR is recorded in coordinator-index-updates.json where necessary. The target record values themselves are populated.
 
-The requested data/evidence preparation is delivered with explicit evidence holds, as required by the owner instruction “If a value cannot be proven, write it with classification UNKNOWN and a note.” A held fact is not runtime-ready. [research-audit.json](research-audit.json) enumerates every UNKNOWN/CONFLICT field path, observed candidate, source and limitation so CP can distinguish unavailable evidence from a missing packet. No runtime admission or integration is authorized.
-
-## Full outstanding-field source sweep —2026-10-18
-
-combat.critical/intrinsic_chance; combat.critical/intrinsic_extra_damage.
-
-Only explicit sourced values are selected. Wiki omissions and unsupported exact gameplay formulas remain held. Primary news retrieved from indexed official publications is labelled with the direct HTTP403 limitation. Runtime activation and integration remain blocked.
+Validation and the frozen remote candidate are recorded in the draft PR. No Rust, Cargo, migrations, protocol, CI, apps, generated slots, merge or ready transition.
