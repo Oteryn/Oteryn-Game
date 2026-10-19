@@ -4,12 +4,12 @@
 task_id: ITEM-LOOK-1
 title: "ITEM-LOOK-1: look/examine message and handler (LOOK-2 runtime wiring)"
 mode: IMPLEMENT
-status: in_progress
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: look-2
 issue: 2052
-pr: 2182
+pr: 2260
 base_sha: 5742f30f3
 plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4 Epic 2 ITEM-LOOK-1 (row 75); wave 1"
 class: "impl"
@@ -164,10 +164,10 @@ Reference look text format (Tibia 'You see ...'), item description promotion mod
 
 ```yaml
 last_progress: LOOK-2 (2026-10-19) installs the command 30 handler, the ITEMLOOK1-RL-01 rate window, the capability 28 bundle-world offer and runtime Creature/name binding
-status: authoring
+status: completed
 branch: look-2
 blocker: none
-next_action: lead reads exact-head CI and the Codex review of the LOOK-2 PR
+next_action: lead reads exact-head CI and the Codex review of #2260, then queues it
 ```
 
 ## Local preparation packet (proposed, 2026-10-15)
@@ -565,3 +565,13 @@ Branch `look-2` from main c8fa84de7, issue #2052, one PR. The protocol codec is 
   `ComposedFreshAdmission` over a bundle map. Unit tests cover `LookWindow` max vs max+1,
   `SessionVisibility::shows`, `map_look_target`, `ItemDefinitionIndex::definition_at`, and the
   runtime creature/NPC look.
+
+## Closeout
+
+- PR: #2260 (draft, branch `look-2`), the last PR of this task; the skeleton history above
+  ran on #2182.
+- Validation: the `## Validation` results above, on the LOOK-2 candidate tree; the local
+  prepush gate passed (static checks, Clippy, focused tests, local Codex review CLEAN).
+- Review state: exact-head CI and the PR's Codex review are pending at archive time.
+- Frozen head: the FREEZE_SHA entry on #2260.
+- merge commit/result: squash merge of #2260
