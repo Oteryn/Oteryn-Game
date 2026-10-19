@@ -1,19 +1,27 @@
 {
   "task": "FORGE-CONTENT-1",
   "review_date": "2026-10-19",
-  "scope": "POPULATED_OTERYN_REFERENCE_DATA_WITH_ARCHIVED_GLOBAL_SOURCE_LIMITATIONS",
-  "research_status": "ALL_TARGET_PARAMETER_FIELDS_POPULATED",
+  "scope": "SOURCE_REFERENCE_AND_CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATIONS",
+  "research_status": "LIVE_UI_CORROBORATED_WITH_EXPLICIT_UNMEASURED_DISTRIBUTION",
   "runtime_admission": "BLOCKED",
-  "coverage": "Classes 1–4, caps, normal/convergence fusion and transfer tables, success probabilities, currencies/conversions and dust capacity upgrades are captured. Four regular tier-7–10 transfer core counts are explicitly unknown in the source itself; no convergence count is substituted. Unpublished lucky-effect probability distribution remains held.",
+  "coverage": "53source reference rows plus one live-client configuration record. Official client tooltips and labels corroborate class caps, regular fusion configuration, convergence modes, resource conversions and the first dust-limit step. No transaction performed; high-tier core costs, maximum dust limit and lucky bonus distribution are not newly proven by this probe.",
   "source_registry": "sources.json",
   "record_counts": {
-    "rulesets/items/exaltation-forge/reference-evidence.json": 53
+    "rulesets/items/exaltation-forge/reference-evidence.json": 53,
+    "docs/reference/content-prep/forge-content-1/live-client-forge-evidence.json": 1
   },
   "evidence_field_counts": {
-    "PROVEN": 330,
-    "DERIVED": 8
+    "PROVEN": 337,
+    "DERIVED": 7,
+    "UNKNOWN": 1
   },
-  "unresolved_fields": [],
+  "unresolved_fields": [
+    {
+      "path": "rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/bonus_distribution",
+      "classification": "UNKNOWN",
+      "source_candidate": "Pinned donor model retained; not selected as current Global."
+    }
+  ],
   "limitations_policy": "UNKNOWN/CONFLICT is the owner-required outcome for unproven values; candidates, selectors and reasons remain inspectable. No unsupported number was supplied to make the packet appear complete.",
   "complete_source_sweep": {
     "review_date": "2026-10-18",
@@ -27,7 +35,7 @@
     ],
     "qualification": "Reference only. No unsupported absence→false conversion, invented random distribution, arrival coordinate or architecture decision. Exact source fetches and failed direct primary fetches remain auditable."
   },
-  "filled_parameter_fields": 4,
+  "filled_parameter_fields": 3,
   "remaining_unfilled_parameter_fields": 0,
   "normalized_companion_fields": 0,
   "global_source_archive": "docs/reference/content-prep/forge-content-1/tibia-source-archive.json",
@@ -58,5 +66,21 @@
     "conflicting_secondary_value": 65,
     "conflicting_url": "https://tibiopedia.pl/articles/22,Exaltation-Forge-Kuznia-Wzniesienia",
     "qualification": "Secondary calculator corroborates60 cores for both transfer steps; Tibiopedia65 remains an explicitly retained source discrepancy. Fusion resources needed to create the donor are separate."
+  },
+  "remaining_unresolved_source_fields": 1,
+  "live_client_probe": {
+    "client_version": "15.33.9d148f",
+    "source": "official-client:forge-ui:15.33.9d148f:20261019",
+    "probe_document": "docs/reference/content-prep/forge-content-1/live-client-forge-probe.json",
+    "ui_evidence": "docs/reference/content-prep/forge-content-1/live-client-forge-evidence.json",
+    "configuration_observations": 7,
+    "executed_transactions": 0,
+    "remaining_global_distribution_field": "rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/bonus_distribution",
+    "not_observed": [
+      "ordinaryT10→T9corecount",
+      "convergenceT9corecount",
+      "general dust upgrade cost/cap",
+      "stochastic lucky bonus distribution"
+    ]
   }
 }

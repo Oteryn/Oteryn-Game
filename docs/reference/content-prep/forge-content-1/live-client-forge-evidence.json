@@ -1,0 +1,150 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_EVIDENCE/v1",
+  "task": "FORGE-CONTENT-1",
+  "target_cut": "2026-10-19",
+  "reference_only": true,
+  "runtime_switch_authorized": false,
+  "runtime_admission": "BLOCKED_PENDING_CP_QUALIFICATION",
+  "records": [
+    {
+      "key": "forge.live_ui.configuration",
+      "facts": {
+        "classification_tier_caps": {
+          "value": {
+            "1": 1,
+            "2": 2,
+            "3": 3,
+            "4": 10
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-19",
+          "continuity": "CURRENT_OFFICIAL_CLIENT_UI_VISUALLY_OBSERVED",
+          "evidence_scope": "OFFICIAL_CLIENT_DISPLAY_AND_HELP_TEXT_NOT_EXECUTED_TRANSACTION",
+          "sources": [
+            {
+              "source": "official-client:forge-ui:15.33.9d148f:20261019",
+              "selector": "forge-class-info.png"
+            }
+          ],
+          "note": "All four caps explicitly listed in the official client tooltip; no operation performed."
+        },
+        "regular_fusion_display": {
+          "value": {
+            "dust": 100,
+            "success_percent": 50,
+            "success_with_core_percent": 65,
+            "success_core_count": 1,
+            "tier_loss_percent": 100,
+            "protected_tier_loss_percent": 50,
+            "protection_core_count": 1
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-19",
+          "continuity": "CURRENT_OFFICIAL_CLIENT_UI_VISUALLY_OBSERVED",
+          "evidence_scope": "OFFICIAL_CLIENT_DISPLAY_AND_HELP_TEXT_NOT_EXECUTED_TRANSACTION",
+          "sources": [
+            {
+              "source": "official-client:forge-ui:15.33.9d148f:20261019",
+              "selector": "forge-window-01.png, forge-core-info.png"
+            }
+          ],
+          "note": "Generic unselected-item mode labels and official help. Success and protection use separate cores; this is not a measured trial frequency."
+        },
+        "convergence_fusion_display": {
+          "value": {
+            "dust": 130,
+            "success_percent": 100,
+            "lucky_bonus_effects": false,
+            "required_classification": 4
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-19",
+          "continuity": "CURRENT_OFFICIAL_CLIENT_UI_VISUALLY_OBSERVED",
+          "evidence_scope": "OFFICIAL_CLIENT_DISPLAY_AND_HELP_TEXT_NOT_EXECUTED_TRANSACTION",
+          "sources": [
+            {
+              "source": "official-client:forge-ui:15.33.9d148f:20261019",
+              "selector": "forge-convergence.png"
+            }
+          ],
+          "note": "Dust label and all three rules explicitly displayed before item selection. No transaction or gold-cost observation."
+        },
+        "regular_transfer_display": {
+          "value": {
+            "dust": 100,
+            "minimum_donor_tier": 2,
+            "receiver_tier": "donor tier minus one",
+            "same_classification": true
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-19",
+          "continuity": "CURRENT_OFFICIAL_CLIENT_UI_VISUALLY_OBSERVED",
+          "evidence_scope": "OFFICIAL_CLIENT_DISPLAY_AND_HELP_TEXT_NOT_EXECUTED_TRANSACTION",
+          "sources": [
+            {
+              "source": "official-client:forge-ui:15.33.9d148f:20261019",
+              "selector": "forge-transfer.png"
+            }
+          ],
+          "note": "Official transfer help and dust label. Tier-specific core/gold labels remain question marks without eligible item selection."
+        },
+        "convergence_transfer_display": {
+          "value": {
+            "dust": 160,
+            "minimum_donor_tier": 1,
+            "receiver_tier": "same as donor tier",
+            "required_classification": 4
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-19",
+          "continuity": "CURRENT_OFFICIAL_CLIENT_UI_VISUALLY_OBSERVED",
+          "evidence_scope": "OFFICIAL_CLIENT_DISPLAY_AND_HELP_TEXT_NOT_EXECUTED_TRANSACTION",
+          "sources": [
+            {
+              "source": "official-client:forge-ui:15.33.9d148f:20261019",
+              "selector": "forge-transfer-convergence.png"
+            }
+          ],
+          "note": "Official convergence transfer help and dust label. Does not verify the disputed high-tier core counts."
+        },
+        "resource_conversion_display": {
+          "value": {
+            "dust_input": 60,
+            "sliver_output": 3,
+            "sliver_input": 50,
+            "core_output": 1
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-19",
+          "continuity": "CURRENT_OFFICIAL_CLIENT_UI_VISUALLY_OBSERVED",
+          "evidence_scope": "OFFICIAL_CLIENT_DISPLAY_AND_HELP_TEXT_NOT_EXECUTED_TRANSACTION",
+          "sources": [
+            {
+              "source": "official-client:forge-ui:15.33.9d148f:20261019",
+              "selector": "forge-conversion.png"
+            }
+          ],
+          "note": "Conversion labels only; no currency exchanged."
+        },
+        "observed_first_limit_step": {
+          "value": {
+            "current_limit": 100,
+            "next_limit": 120,
+            "dust_cost": 25
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-19",
+          "continuity": "CURRENT_OFFICIAL_CLIENT_UI_VISUALLY_OBSERVED",
+          "evidence_scope": "OFFICIAL_CLIENT_DISPLAY_AND_HELP_TEXT_NOT_EXECUTED_TRANSACTION",
+          "sources": [
+            {
+              "source": "official-client:forge-ui:15.33.9d148f:20261019",
+              "selector": "forge-conversion.png, forge-limit-hover.png"
+            }
+          ],
+          "note": "Only the displayed100to120step is corroborated. The general upgrade formula,4600maximum and total cost are not proven by this single state."
+        }
+      }
+    }
+  ]
+}

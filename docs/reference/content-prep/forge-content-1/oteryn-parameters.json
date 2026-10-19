@@ -3,9 +3,9 @@
   "task": "FORGE-CONTENT-1",
   "reference_only": true,
   "runtime_switch_authorized": false,
-  "status": "MATERIALIZED_IN_TARGET_DATA",
+  "status": "SOURCE_QUALIFIED_WITH_EXPLICIT_GLOBAL_DISTRIBUTION_GAP",
   "owner_instruction_source": "owner:oteryn-data-completion:2026-10-19",
-  "filled_fields": 4,
+  "filled_fields": 3,
   "normalized_companion_fields": 0,
   "remaining_unfilled_fields": 0,
   "originating_proposals": "docs/reference/content-prep/forge-content-1/oteryn-proposals.json",
@@ -37,5 +37,21 @@
     "conflicting_secondary_value": 65,
     "conflicting_url": "https://tibiopedia.pl/articles/22,Exaltation-Forge-Kuznia-Wzniesienia",
     "qualification": "Secondary calculator corroborates60 cores for both transfer steps; Tibiopedia65 remains an explicitly retained source discrepancy. Fusion resources needed to create the donor are separate."
+  },
+  "remaining_unresolved_source_fields": 1,
+  "live_client_probe": {
+    "client_version": "15.33.9d148f",
+    "source": "official-client:forge-ui:15.33.9d148f:20261019",
+    "probe_document": "docs/reference/content-prep/forge-content-1/live-client-forge-probe.json",
+    "ui_evidence": "docs/reference/content-prep/forge-content-1/live-client-forge-evidence.json",
+    "configuration_observations": 7,
+    "executed_transactions": 0,
+    "remaining_global_distribution_field": "rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/bonus_distribution",
+    "not_observed": [
+      "ordinaryT10→T9corecount",
+      "convergenceT9corecount",
+      "general dust upgrade cost/cap",
+      "stochastic lucky bonus distribution"
+    ]
   }
 }

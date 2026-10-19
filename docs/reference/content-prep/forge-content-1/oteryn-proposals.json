@@ -3,7 +3,7 @@
   "task": "FORGE-CONTENT-1",
   "reference_only": true,
   "runtime_switch_authorized": false,
-  "status": "MATERIALIZED_IN_TARGET_DATA",
+  "status": "SOURCE_REFERENCE_WITH_LIVE_UI_AND_UNSELECTED_DISTRIBUTION",
   "global_evidence_policy": "Original Global UNKNOWN/CONFLICT facts are retained in the source archive. Target fields now contain scoped DERIVED Oteryn working parameters.",
   "owner_authorization": {
     "quote": "Przygotuj propozycje Oteryn z jawnymi założeniami",
@@ -283,109 +283,217 @@
       "subject": "forge.resources",
       "original_classification": "UNKNOWN",
       "proposed_value": {
-        "draw_inclusive": [
-          0,
-          10000
-        ],
-        "outcomes": [
-          {
-            "bonus_id": 0,
-            "inclusive_range": [
-              0,
-              7399
-            ],
-            "probability_numerator": 7400,
-            "probability_denominator": 10001
-          },
-          {
-            "bonus_id": 1,
-            "inclusive_range": [
-              7400,
-              8999
-            ],
-            "probability_numerator": 1600,
-            "probability_denominator": 10001
-          },
-          {
-            "bonus_id": 2,
-            "inclusive_range": [
-              9000,
-              9499
-            ],
-            "probability_numerator": 500,
-            "probability_denominator": 10001
-          },
-          {
-            "bonus_id": 3,
-            "inclusive_range": [
-              9500,
-              9524
-            ],
-            "probability_numerator": 25,
-            "probability_denominator": 10001
-          },
-          {
-            "bonus_id": 4,
-            "inclusive_range": [
-              9525,
-              9549
-            ],
-            "probability_numerator": 25,
-            "probability_denominator": 10001
-          },
-          {
-            "bonus_id": 5,
-            "inclusive_range": [
-              9550,
-              9949
-            ],
-            "probability_numerator": 400,
-            "probability_denominator": 10001
-          },
-          {
-            "bonus_id": 6,
-            "inclusive_range": [
-              9950,
-              9974
-            ],
-            "probability_numerator": 25,
-            "probability_denominator": 10001
-          },
-          {
-            "bonus_id": 7,
-            "inclusive_range": [
-              9975,
-              10000
-            ],
-            "probability_numerator": 26,
-            "probability_denominator": 10001
-          }
-        ],
-        "application": "regular fusion; convergence forces bonus 0; success/failure path further constrains effects"
+        "status": "CURRENT_GLOBAL_LUCKY_BONUS_PROBABILITIES_UNMEASURED",
+        "pinned_donor_candidate": {
+          "draw_inclusive": [
+            0,
+            10000
+          ],
+          "outcomes": [
+            {
+              "bonus_id": 0,
+              "inclusive_range": [
+                0,
+                7399
+              ],
+              "probability_numerator": 7400,
+              "probability_denominator": 10001
+            },
+            {
+              "bonus_id": 1,
+              "inclusive_range": [
+                7400,
+                8999
+              ],
+              "probability_numerator": 1600,
+              "probability_denominator": 10001
+            },
+            {
+              "bonus_id": 2,
+              "inclusive_range": [
+                9000,
+                9499
+              ],
+              "probability_numerator": 500,
+              "probability_denominator": 10001
+            },
+            {
+              "bonus_id": 3,
+              "inclusive_range": [
+                9500,
+                9524
+              ],
+              "probability_numerator": 25,
+              "probability_denominator": 10001
+            },
+            {
+              "bonus_id": 4,
+              "inclusive_range": [
+                9525,
+                9549
+              ],
+              "probability_numerator": 25,
+              "probability_denominator": 10001
+            },
+            {
+              "bonus_id": 5,
+              "inclusive_range": [
+                9550,
+                9949
+              ],
+              "probability_numerator": 400,
+              "probability_denominator": 10001
+            },
+            {
+              "bonus_id": 6,
+              "inclusive_range": [
+                9950,
+                9974
+              ],
+              "probability_numerator": 25,
+              "probability_denominator": 10001
+            },
+            {
+              "bonus_id": 7,
+              "inclusive_range": [
+                9975,
+                10000
+              ],
+              "probability_numerator": 26,
+              "probability_denominator": 10001
+            }
+          ],
+          "application": "regular fusion; convergence forces bonus 0; success/failure path further constrains effects"
+        },
+        "convergence_has_no_lucky_bonus_in_official_help": true,
+        "selected_for_native_runtime": false
       },
       "basis": {
-        "kind": "UPSTREAM_ADAPTATION",
-        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-        "original_source_urls": [],
-        "observation_refs": [
+        "kind": "PINNED_DONOR_CANDIDATE_WITH_UNMEASURED_GLOBAL_DISTRIBUTION",
+        "source_refs": [
           {
-            "source_id": "crystalserver-summer",
-            "observation_key": "forge.bonus_distribution"
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:forge.bonus_distribution",
+            "selector": "forge.bonus_distribution"
+          },
+          {
+            "source": "official-client:forge-ui:15.33.9d148f:20261019",
+            "selector": "forge-convergence.png; no lucky effects for convergence; inspected UI contains no ordinary-fusion probability table"
           }
         ],
-        "donor_selection": null
+        "rationale": "Pinned donor probability model retained as an unselected candidate. Inspected official screens/help do not provide its exact ordinary-fusion outcome probabilities; empty history and zero executed trials cannot establish them. No probability table is promoted to Global proof."
       },
-      "assumptions": [
-        "Preserve inclusive10001-outcome distribution and caller-dependent success/failure restrictions; convergence yields no lucky bonus."
-      ],
-      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      "assumptions": [],
+      "acceptance_status": "UNSELECTED_SOURCE_CANDIDATE_GLOBAL_UNRESOLVED",
+      "superseded_working_default": {
+        "original_field_path": "rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/bonus_distribution",
+        "subject": "forge.resources",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "draw_inclusive": [
+            0,
+            10000
+          ],
+          "outcomes": [
+            {
+              "bonus_id": 0,
+              "inclusive_range": [
+                0,
+                7399
+              ],
+              "probability_numerator": 7400,
+              "probability_denominator": 10001
+            },
+            {
+              "bonus_id": 1,
+              "inclusive_range": [
+                7400,
+                8999
+              ],
+              "probability_numerator": 1600,
+              "probability_denominator": 10001
+            },
+            {
+              "bonus_id": 2,
+              "inclusive_range": [
+                9000,
+                9499
+              ],
+              "probability_numerator": 500,
+              "probability_denominator": 10001
+            },
+            {
+              "bonus_id": 3,
+              "inclusive_range": [
+                9500,
+                9524
+              ],
+              "probability_numerator": 25,
+              "probability_denominator": 10001
+            },
+            {
+              "bonus_id": 4,
+              "inclusive_range": [
+                9525,
+                9549
+              ],
+              "probability_numerator": 25,
+              "probability_denominator": 10001
+            },
+            {
+              "bonus_id": 5,
+              "inclusive_range": [
+                9550,
+                9949
+              ],
+              "probability_numerator": 400,
+              "probability_denominator": 10001
+            },
+            {
+              "bonus_id": 6,
+              "inclusive_range": [
+                9950,
+                9974
+              ],
+              "probability_numerator": 25,
+              "probability_denominator": 10001
+            },
+            {
+              "bonus_id": 7,
+              "inclusive_range": [
+                9975,
+                10000
+              ],
+              "probability_numerator": 26,
+              "probability_denominator": 10001
+            }
+          ],
+          "application": "regular fusion; convergence forces bonus 0; success/failure path further constrains effects"
+        },
+        "basis": {
+          "kind": "UPSTREAM_ADAPTATION",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [],
+          "observation_refs": [
+            {
+              "source_id": "crystalserver-summer",
+              "observation_key": "forge.bonus_distribution"
+            }
+          ],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Preserve inclusive10001-outcome distribution and caller-dependent success/failure restrictions; convergence yields no lucky bonus."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
     }
   ],
   "materialization": {
     "parameter_document": "docs/reference/content-prep/forge-content-1/oteryn-parameters.json",
     "source_archive": "docs/reference/content-prep/forge-content-1/tibia-source-archive.json",
-    "filled_field_count": 4,
-    "not_runtime_activation": true
+    "filled_field_count": 3,
+    "not_runtime_activation": true,
+    "remaining_unresolved_source_fields": 1
   },
   "transfer_source_correction": {
     "fields": [
@@ -398,5 +506,20 @@
     "conflicting_secondary_value": 65,
     "conflicting_url": "https://tibiopedia.pl/articles/22,Exaltation-Forge-Kuznia-Wzniesienia",
     "qualification": "Secondary calculator corroborates60 cores for both transfer steps; Tibiopedia65 remains an explicitly retained source discrepancy. Fusion resources needed to create the donor are separate."
+  },
+  "live_client_probe": {
+    "client_version": "15.33.9d148f",
+    "source": "official-client:forge-ui:15.33.9d148f:20261019",
+    "probe_document": "docs/reference/content-prep/forge-content-1/live-client-forge-probe.json",
+    "ui_evidence": "docs/reference/content-prep/forge-content-1/live-client-forge-evidence.json",
+    "configuration_observations": 7,
+    "executed_transactions": 0,
+    "remaining_global_distribution_field": "rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/bonus_distribution",
+    "not_observed": [
+      "ordinaryT10→T9corecount",
+      "convergenceT9corecount",
+      "general dust upgrade cost/cap",
+      "stochastic lucky bonus distribution"
+    ]
   }
 }

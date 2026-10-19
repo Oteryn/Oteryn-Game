@@ -175,6 +175,16 @@
       "retained_observations": "docs/reference/content-prep/forge-content-1/source-correction-check.json",
       "qualification": "Secondary calculator corroborates60 cores for both transfer steps; Tibiopedia65 remains an explicitly retained source discrepancy. Fusion resources needed to create the donor are separate.",
       "retrieval": "Executed exported constant module60073 and actual regular/convergence route selectors with downstream total-route calculation replaced by capture. Proves selected transfer fees/resources only; no browser UI or game execution claimed."
+    },
+    "official-client:forge-ui:15.33.9d148f:20261019": {
+      "title": "Logged-in official Tibia client Forge interface",
+      "source_class": "CIPSOFT_OFFICIAL_CLIENT",
+      "evidence_role": "CONTROLLED_UI_OBSERVATION_ONLY",
+      "client_version": "15.33.9d148f",
+      "observed_at": "2026-10-19T11:35:48.685952+00:00",
+      "evidence_document": "docs/reference/content-prep/forge-content-1/live-client-forge-probe.json",
+      "retained_scope": "Paraphrased interface observations and screenshot SHA256; original screenshots retained privately by owner, not redistributed.",
+      "qualification": "No fusion, transfer, conversion or limit upgrade performed. Displayed configuration/tooltips do not prove stochastic event probabilities or completed transaction behavior."
     }
   }
 }

@@ -31,6 +31,10 @@
             {
               "source": "wiki:95592:1205481",
               "selector": "Classification / Tier Limit"
+            },
+            {
+              "source": "official-client:forge-ui:15.33.9d148f:20261019",
+              "selector": "forge-class-info.png; explicit class1cap"
             }
           ],
           "note": "Reference evidence; runtime admission is separate."
@@ -162,6 +166,10 @@
             {
               "source": "wiki:95592:1205481",
               "selector": "Classification / Tier Limit"
+            },
+            {
+              "source": "official-client:forge-ui:15.33.9d148f:20261019",
+              "selector": "forge-class-info.png; explicit class2cap"
             }
           ],
           "note": "Reference evidence; runtime admission is separate."
@@ -506,6 +514,10 @@
             {
               "source": "wiki:95592:1205481",
               "selector": "Classification / Tier Limit"
+            },
+            {
+              "source": "official-client:forge-ui:15.33.9d148f:20261019",
+              "selector": "forge-class-info.png; explicit class3cap"
             }
           ],
           "note": "Reference evidence; runtime admission is separate."
@@ -1063,6 +1075,10 @@
             {
               "source": "wiki:95592:1205481",
               "selector": "Classification / Tier Limit"
+            },
+            {
+              "source": "official-client:forge-ui:15.33.9d148f:20261019",
+              "selector": "forge-class-info.png; explicit class4cap"
             }
           ],
           "note": "Reference evidence; runtime admission is separate."
@@ -4870,6 +4886,10 @@
             {
               "source": "wiki:95592:1205481",
               "selector": "Dust, Slivers, and Exalted Cores"
+            },
+            {
+              "source": "official-client:forge-ui:15.33.9d148f:20261019",
+              "selector": "forge-conversion.png; displayed configuration/help, no executed trial"
             }
           ],
           "note": "Reference evidence; runtime admission is separate."
@@ -4883,6 +4903,10 @@
             {
               "source": "wiki:95592:1205481",
               "selector": "Dust, Slivers, and Exalted Cores"
+            },
+            {
+              "source": "official-client:forge-ui:15.33.9d148f:20261019",
+              "selector": "forge-conversion.png; displayed configuration/help, no executed trial"
             }
           ],
           "note": "Reference evidence; runtime admission is separate."
@@ -4896,6 +4920,10 @@
             {
               "source": "wiki:95592:1205481",
               "selector": "Dust, Slivers, and Exalted Cores"
+            },
+            {
+              "source": "official-client:forge-ui:15.33.9d148f:20261019",
+              "selector": "forge-conversion.png; displayed configuration/help, no executed trial"
             }
           ],
           "note": "Reference evidence; runtime admission is separate."
@@ -4909,6 +4937,10 @@
             {
               "source": "wiki:95592:1205481",
               "selector": "Fusion"
+            },
+            {
+              "source": "official-client:forge-ui:15.33.9d148f:20261019",
+              "selector": "forge-window-01.png; displayed configuration/help, no executed trial"
             }
           ],
           "note": "Reference evidence; runtime admission is separate."
@@ -4922,6 +4954,10 @@
             {
               "source": "wiki:95592:1205481",
               "selector": "Fusion"
+            },
+            {
+              "source": "official-client:forge-ui:15.33.9d148f:20261019",
+              "selector": "forge-window-01.png; displayed configuration/help, no executed trial"
             }
           ],
           "note": "Reference evidence; runtime admission is separate."
@@ -4935,110 +4971,117 @@
             {
               "source": "wiki:95592:1205481",
               "selector": "Fusion"
+            },
+            {
+              "source": "official-client:forge-ui:15.33.9d148f:20261019",
+              "selector": "forge-core-info.png; displayed configuration/help, no executed trial"
             }
           ],
           "note": "Reference evidence; runtime admission is separate."
         },
         "bonus_distribution": {
           "value": {
-            "draw_inclusive": [
-              0,
-              10000
-            ],
-            "outcomes": [
-              {
-                "bonus_id": 0,
-                "inclusive_range": [
-                  0,
-                  7399
-                ],
-                "probability_numerator": 7400,
-                "probability_denominator": 10001
-              },
-              {
-                "bonus_id": 1,
-                "inclusive_range": [
-                  7400,
-                  8999
-                ],
-                "probability_numerator": 1600,
-                "probability_denominator": 10001
-              },
-              {
-                "bonus_id": 2,
-                "inclusive_range": [
-                  9000,
-                  9499
-                ],
-                "probability_numerator": 500,
-                "probability_denominator": 10001
-              },
-              {
-                "bonus_id": 3,
-                "inclusive_range": [
-                  9500,
-                  9524
-                ],
-                "probability_numerator": 25,
-                "probability_denominator": 10001
-              },
-              {
-                "bonus_id": 4,
-                "inclusive_range": [
-                  9525,
-                  9549
-                ],
-                "probability_numerator": 25,
-                "probability_denominator": 10001
-              },
-              {
-                "bonus_id": 5,
-                "inclusive_range": [
-                  9550,
-                  9949
-                ],
-                "probability_numerator": 400,
-                "probability_denominator": 10001
-              },
-              {
-                "bonus_id": 6,
-                "inclusive_range": [
-                  9950,
-                  9974
-                ],
-                "probability_numerator": 25,
-                "probability_denominator": 10001
-              },
-              {
-                "bonus_id": 7,
-                "inclusive_range": [
-                  9975,
-                  10000
-                ],
-                "probability_numerator": 26,
-                "probability_denominator": 10001
-              }
-            ],
-            "application": "regular fusion; convergence forces bonus 0; success/failure path further constrains effects"
-          },
-          "classification": "DERIVED",
-          "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
-          "sources": [
-            {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/forge-content-1/oteryn-parameters.json / field rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/bonus_distribution"
+            "status": "CURRENT_GLOBAL_LUCKY_BONUS_PROBABILITIES_UNMEASURED",
+            "pinned_donor_candidate": {
+              "draw_inclusive": [
+                0,
+                10000
+              ],
+              "outcomes": [
+                {
+                  "bonus_id": 0,
+                  "inclusive_range": [
+                    0,
+                    7399
+                  ],
+                  "probability_numerator": 7400,
+                  "probability_denominator": 10001
+                },
+                {
+                  "bonus_id": 1,
+                  "inclusive_range": [
+                    7400,
+                    8999
+                  ],
+                  "probability_numerator": 1600,
+                  "probability_denominator": 10001
+                },
+                {
+                  "bonus_id": 2,
+                  "inclusive_range": [
+                    9000,
+                    9499
+                  ],
+                  "probability_numerator": 500,
+                  "probability_denominator": 10001
+                },
+                {
+                  "bonus_id": 3,
+                  "inclusive_range": [
+                    9500,
+                    9524
+                  ],
+                  "probability_numerator": 25,
+                  "probability_denominator": 10001
+                },
+                {
+                  "bonus_id": 4,
+                  "inclusive_range": [
+                    9525,
+                    9549
+                  ],
+                  "probability_numerator": 25,
+                  "probability_denominator": 10001
+                },
+                {
+                  "bonus_id": 5,
+                  "inclusive_range": [
+                    9550,
+                    9949
+                  ],
+                  "probability_numerator": 400,
+                  "probability_denominator": 10001
+                },
+                {
+                  "bonus_id": 6,
+                  "inclusive_range": [
+                    9950,
+                    9974
+                  ],
+                  "probability_numerator": 25,
+                  "probability_denominator": 10001
+                },
+                {
+                  "bonus_id": 7,
+                  "inclusive_range": [
+                    9975,
+                    10000
+                  ],
+                  "probability_numerator": 26,
+                  "probability_denominator": 10001
+                }
+              ],
+              "application": "regular fusion; convergence forces bonus 0; success/failure path further constrains effects"
             },
+            "convergence_has_no_lucky_bonus_in_official_help": true,
+            "selected_for_native_runtime": false
+          },
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-19",
+          "continuity": "DONOR_MODEL_RETAINED_GLOBAL_DISTRIBUTION_UNMEASURED",
+          "evidence_scope": "SOURCE_BACKED_OTS_CANDIDATE_NOT_CURRENT_GLOBAL_PROOF",
+          "sources": [
             {
               "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:forge.bonus_distribution",
               "selector": "forge.bonus_distribution"
+            },
+            {
+              "source": "official-client:forge-ui:15.33.9d148f:20261019",
+              "selector": "forge-convergence.png; no lucky effects for convergence; inspected UI contains no ordinary-fusion probability table"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-          "assumptions": [
-            "Preserve inclusive10001-outcome distribution and caller-dependent success/failure restrictions; convergence yields no lucky bonus."
-          ],
+          "note": "Pinned donor probability model retained as an unselected candidate. Inspected official screens/help do not provide its exact ordinary-fusion outcome probabilities; empty history and zero executed trials cannot establish them. No probability table is promoted to Global proof.",
+          "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/forge-content-1/tibia-source-archive.json#rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/bonus_distribution",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         }

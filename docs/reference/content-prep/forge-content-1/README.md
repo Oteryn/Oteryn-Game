@@ -1,29 +1,9 @@
-# Forge transfer source corroboration
+# Forge source reference and live client observations
 
-Regular class4 transferT10→T9 and convergence transfer toT9 each retain60Exalted Cores. The actual TibiaWatch calculator route selectors corroborate both costs. Regular transfer costs100dust and15billiongp; convergence costs160dust and100billiongp, excluding donor creation. Tibiopedia’s65cores remains a conflicting secondary observation. See [source check](source-correction-check.json). No controlled Global transfer or runtime activation is claimed.
+The official15.33.9d148fclient interface was inspected on2026-10-19. Seven scoped configuration observations corroborate class tier caps, regular fusion labels, convergence fusion/transfer rules, resource conversions and the first dust-limit upgrade. [Controlled UI facts](live-client-forge-evidence.json) and [capture hashes/method](live-client-forge-probe.json).
 
-## Superseded materialization report
+No fusion, transfer, conversion or upgrade was executed. The character had no eligible fusible items and no dust/slivers/cores. UI labels are not measured outcome frequencies. The disputed high-tier core counts and4600dust maximum were not newly verified by this probe.
 
-The following earlier report is retained as history; the source correction above takes precedence.
+The ordinary-fusion lucky bonus model remains an inspectable pinned-donor candidate with classificationUNKNOWN, unselected for native runtime. Existing secondary support for dust cap/cost rules and60core transfer candidates is preserved, including the conflicting65secondary claim. Active fields:337PROVEN,7DERIVED,1UNKNOWN.
 
-# Forge source correction
-
-Tibiopedia explicitly documents the dust cap4600, initial limit100, increments20, upgrade costs25 through249, and total30825. These values remain unchanged, but the three dust fields now cite the article as secondary corroboration instead of describing a newly invented project cap. See [source check](forge-dust-source-check.json).
-
-The exact fusion-bonus distribution still comes from the pinned Crystal implementation and remains an Oteryn working assumption without current Global confirmation. No runtime activation is authorized. Original source limitations and the previous decision rationale remain preserved as history.
-
-## Earlier materialization report
-
-# FORGE-CONTENT-1: populated reference data
-
-All 4 previously held parameter fields now contain explicit Oteryn working values in their target records. They are classified DERIVED and scoped OTERYN_REFERENCE_PARAMETER; source-backed facts retain their existing evidence classification. No runtime activation is authorized.
-
-The [working parameter register](oteryn-parameters.json) records completion and shared policies. The [decision rationale](oteryn-proposals.json) retains every field path, source and assumption, and is marked materialized. Original unresolved Tibia observations are retained verbatim in the [Global source archive](tibia-source-archive.json), rather than being passed off as official facts.
-
-Active evidence counts: {"DERIVED": 8, "PROVEN": 330}. Remaining unfilled active parameter fields:0. [Field audit](research-audit.json); [source registry](sources.json).
-
-The owner's instruction is to populate the data using explicit project assumptions. These are working reference defaults for native implementation; accepted architecture, concrete world/native bindings and gameplay activation remain coordinator responsibilities. OTS observations are pinned and labelled OTS_HYPOTHESIS_ONLY. Project choices do not establish current Global behavior.
-
-Some service payloads remain under target-files with a service-apply-plan because World Bundle pins and generated slots cannot be changed in this task. Index metadata owned by another open PR is recorded in coordinator-index-updates.json where necessary. The target record values themselves are populated.
-
-Validation and the frozen remote candidate are recorded in the draft PR. No Rust, Cargo, migrations, protocol, CI, apps, generated slots, merge or ready transition.
+The original screenshots remain in the owner's private archive; only hashes and paraphrased observations are redistributed. Reference/data only; no code, pins, runtime admission or merge.

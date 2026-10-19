@@ -1,0 +1,374 @@
+{
+  "task": "FORGE-CONTENT-1",
+  "observed_at": "2026-10-19T11:35:48.685952+00:00",
+  "client_version": "15.33.9d148f",
+  "reference_only": true,
+  "runtime_switch_authorized": false,
+  "method": "Owner-authorized logged-in official client; visual screenshot inspection after selecting UI tabs/tooltips. No modified client, packet injection or transaction.",
+  "captures": [
+    {
+      "name": "forge-window-01.png",
+      "sha256": "f9136cb952d9006f5fd6ef9caddef55afb58aabf9382651da5b0378ad6e56cd3",
+      "bytes": 729516,
+      "captured_at": "2026-10-19T11:26:53+00:00"
+    },
+    {
+      "name": "forge-fusion-info.png",
+      "sha256": "ff359e44f181822b3b1ae46ccd16ae57b92b962ff616ce1eeccf18768701b499",
+      "bytes": 707673,
+      "captured_at": "2026-10-19T11:27:35+00:00"
+    },
+    {
+      "name": "forge-convergence.png",
+      "sha256": "594a4e6d1038d5a10c250ea31e789f912d0c25ba8e0c2361682f0205b2128a48",
+      "bytes": 728572,
+      "captured_at": "2026-10-19T11:27:52+00:00"
+    },
+    {
+      "name": "forge-transfer.png",
+      "sha256": "31f57a544f63bd1f8b05d1147561521f172073e45a7cbfb58fb35f6677bf433f",
+      "bytes": 728303,
+      "captured_at": "2026-10-19T11:28:17+00:00"
+    },
+    {
+      "name": "forge-transfer-convergence.png",
+      "sha256": "b929c0c55f91783856440532487d529c305917fef85f07f4fb07106bc50710d0",
+      "bytes": 727147,
+      "captured_at": "2026-10-19T11:29:08+00:00"
+    },
+    {
+      "name": "forge-conversion.png",
+      "sha256": "5f568acd46878511da7a7e5b9ad548c4027ff9a2490296e3c3d02f9e6bda3a97",
+      "bytes": 707308,
+      "captured_at": "2026-10-19T11:31:04+00:00"
+    },
+    {
+      "name": "forge-limit-hover.png",
+      "sha256": "33e7c62d60374c82cfc59ea00358f6e7d495a26cc63aa1af4f5aad7a30827daf",
+      "bytes": 711445,
+      "captured_at": "2026-10-19T11:31:28+00:00"
+    },
+    {
+      "name": "forge-history.png",
+      "sha256": "3a6c79f5124a32bd0aba10052a96965d16712fe2d02de6fcb61686ae014abb4d",
+      "bytes": 672528,
+      "captured_at": "2026-10-19T11:31:39+00:00"
+    },
+    {
+      "name": "forge-lucky-info.png",
+      "sha256": "25a5d17d48d8011ebcf3bf81790efefc0ff80e7558175520ace2cdd39b5dfb8b",
+      "bytes": 709211,
+      "captured_at": "2026-10-19T11:32:19+00:00"
+    },
+    {
+      "name": "forge-core-info.png",
+      "sha256": "303a52980aaaf5c55edaa960764ae9fc35377286968fd8339a17999143ba99bf",
+      "bytes": 722344,
+      "captured_at": "2026-10-19T11:33:41+00:00"
+    },
+    {
+      "name": "forge-class-info.png",
+      "sha256": "da595e10c00619066bcd6f723f7edb4dc66680f830a0fd075fa71210201a3b3f",
+      "bytes": 725404,
+      "captured_at": "2026-10-19T11:34:00+00:00"
+    },
+    {
+      "name": "forge-reopened.png",
+      "sha256": "078e87118f89f0565237c8c936c7ea24e416b4022fb3bf31b253c63e21d60156",
+      "bytes": 725646,
+      "captured_at": "2026-10-19T11:30:41+00:00"
+    },
+    {
+      "name": "forge-safe-turn.png",
+      "sha256": "37b7e7872134386dcea11732b6832a06a8093ac52f6ff2d26ceb508787d00e0f",
+      "bytes": 790376,
+      "captured_at": "2026-10-19T11:29:31+00:00"
+    },
+    {
+      "name": "forge-ui-after.png",
+      "sha256": "091e304af1e01284fbf7c2866673da5152849196ae1594f8190bd52f6a2414e1",
+      "bytes": 790836,
+      "captured_at": "2026-10-19T11:34:37+00:00"
+    },
+    {
+      "name": "forge-ui-final.png",
+      "sha256": "a38bab6efac497df954ea2aa0684cc710a417dcfbf1d7b8d0ba9d14b5091ed4f",
+      "bytes": 729311,
+      "captured_at": "2026-10-19T11:36:37+00:00"
+    }
+  ],
+  "screenshots_redistributed": false,
+  "private_capture_archive_retained": true,
+  "egress_gate": {
+    "warp_on": true,
+    "game_and_nas_public_ips_different": true
+  },
+  "ui_evidence": "docs/reference/content-prep/forge-content-1/live-client-forge-evidence.json",
+  "observations": {
+    "classification_tier_caps": {
+      "value": {
+        "1": 1,
+        "2": 2,
+        "3": 3,
+        "4": 10
+      },
+      "classification": "PROVEN",
+      "target_cut": "2026-10-19",
+      "continuity": "CURRENT_OFFICIAL_CLIENT_UI_VISUALLY_OBSERVED",
+      "evidence_scope": "OFFICIAL_CLIENT_DISPLAY_AND_HELP_TEXT_NOT_EXECUTED_TRANSACTION",
+      "sources": [
+        {
+          "source": "official-client:forge-ui:15.33.9d148f:20261019",
+          "selector": "forge-class-info.png"
+        }
+      ],
+      "note": "All four caps explicitly listed in the official client tooltip; no operation performed."
+    },
+    "regular_fusion_display": {
+      "value": {
+        "dust": 100,
+        "success_percent": 50,
+        "success_with_core_percent": 65,
+        "success_core_count": 1,
+        "tier_loss_percent": 100,
+        "protected_tier_loss_percent": 50,
+        "protection_core_count": 1
+      },
+      "classification": "PROVEN",
+      "target_cut": "2026-10-19",
+      "continuity": "CURRENT_OFFICIAL_CLIENT_UI_VISUALLY_OBSERVED",
+      "evidence_scope": "OFFICIAL_CLIENT_DISPLAY_AND_HELP_TEXT_NOT_EXECUTED_TRANSACTION",
+      "sources": [
+        {
+          "source": "official-client:forge-ui:15.33.9d148f:20261019",
+          "selector": "forge-window-01.png, forge-core-info.png"
+        }
+      ],
+      "note": "Generic unselected-item mode labels and official help. Success and protection use separate cores; this is not a measured trial frequency."
+    },
+    "convergence_fusion_display": {
+      "value": {
+        "dust": 130,
+        "success_percent": 100,
+        "lucky_bonus_effects": false,
+        "required_classification": 4
+      },
+      "classification": "PROVEN",
+      "target_cut": "2026-10-19",
+      "continuity": "CURRENT_OFFICIAL_CLIENT_UI_VISUALLY_OBSERVED",
+      "evidence_scope": "OFFICIAL_CLIENT_DISPLAY_AND_HELP_TEXT_NOT_EXECUTED_TRANSACTION",
+      "sources": [
+        {
+          "source": "official-client:forge-ui:15.33.9d148f:20261019",
+          "selector": "forge-convergence.png"
+        }
+      ],
+      "note": "Dust label and all three rules explicitly displayed before item selection. No transaction or gold-cost observation."
+    },
+    "regular_transfer_display": {
+      "value": {
+        "dust": 100,
+        "minimum_donor_tier": 2,
+        "receiver_tier": "donor tier minus one",
+        "same_classification": true
+      },
+      "classification": "PROVEN",
+      "target_cut": "2026-10-19",
+      "continuity": "CURRENT_OFFICIAL_CLIENT_UI_VISUALLY_OBSERVED",
+      "evidence_scope": "OFFICIAL_CLIENT_DISPLAY_AND_HELP_TEXT_NOT_EXECUTED_TRANSACTION",
+      "sources": [
+        {
+          "source": "official-client:forge-ui:15.33.9d148f:20261019",
+          "selector": "forge-transfer.png"
+        }
+      ],
+      "note": "Official transfer help and dust label. Tier-specific core/gold labels remain question marks without eligible item selection."
+    },
+    "convergence_transfer_display": {
+      "value": {
+        "dust": 160,
+        "minimum_donor_tier": 1,
+        "receiver_tier": "same as donor tier",
+        "required_classification": 4
+      },
+      "classification": "PROVEN",
+      "target_cut": "2026-10-19",
+      "continuity": "CURRENT_OFFICIAL_CLIENT_UI_VISUALLY_OBSERVED",
+      "evidence_scope": "OFFICIAL_CLIENT_DISPLAY_AND_HELP_TEXT_NOT_EXECUTED_TRANSACTION",
+      "sources": [
+        {
+          "source": "official-client:forge-ui:15.33.9d148f:20261019",
+          "selector": "forge-transfer-convergence.png"
+        }
+      ],
+      "note": "Official convergence transfer help and dust label. Does not verify the disputed high-tier core counts."
+    },
+    "resource_conversion_display": {
+      "value": {
+        "dust_input": 60,
+        "sliver_output": 3,
+        "sliver_input": 50,
+        "core_output": 1
+      },
+      "classification": "PROVEN",
+      "target_cut": "2026-10-19",
+      "continuity": "CURRENT_OFFICIAL_CLIENT_UI_VISUALLY_OBSERVED",
+      "evidence_scope": "OFFICIAL_CLIENT_DISPLAY_AND_HELP_TEXT_NOT_EXECUTED_TRANSACTION",
+      "sources": [
+        {
+          "source": "official-client:forge-ui:15.33.9d148f:20261019",
+          "selector": "forge-conversion.png"
+        }
+      ],
+      "note": "Conversion labels only; no currency exchanged."
+    },
+    "observed_first_limit_step": {
+      "value": {
+        "current_limit": 100,
+        "next_limit": 120,
+        "dust_cost": 25
+      },
+      "classification": "PROVEN",
+      "target_cut": "2026-10-19",
+      "continuity": "CURRENT_OFFICIAL_CLIENT_UI_VISUALLY_OBSERVED",
+      "evidence_scope": "OFFICIAL_CLIENT_DISPLAY_AND_HELP_TEXT_NOT_EXECUTED_TRANSACTION",
+      "sources": [
+        {
+          "source": "official-client:forge-ui:15.33.9d148f:20261019",
+          "selector": "forge-conversion.png, forge-limit-hover.png"
+        }
+      ],
+      "note": "Only the displayed100to120step is corroborated. The general upgrade formula,4600maximum and total cost are not proven by this single state."
+    }
+  },
+  "probe_state": {
+    "fusible_items_present": false,
+    "dust": 0,
+    "slivers": 0,
+    "cores": 0,
+    "visible_history_rows": 0
+  },
+  "executed_transactions": {
+    "fusion": 0,
+    "transfer": 0,
+    "conversion": 0,
+    "dust_limit_upgrade": 0
+  },
+  "wallet_and_resources_unchanged": true,
+  "probability_estimate_produced": false,
+  "superseded_distribution_fact": {
+    "value": {
+      "draw_inclusive": [
+        0,
+        10000
+      ],
+      "outcomes": [
+        {
+          "bonus_id": 0,
+          "inclusive_range": [
+            0,
+            7399
+          ],
+          "probability_numerator": 7400,
+          "probability_denominator": 10001
+        },
+        {
+          "bonus_id": 1,
+          "inclusive_range": [
+            7400,
+            8999
+          ],
+          "probability_numerator": 1600,
+          "probability_denominator": 10001
+        },
+        {
+          "bonus_id": 2,
+          "inclusive_range": [
+            9000,
+            9499
+          ],
+          "probability_numerator": 500,
+          "probability_denominator": 10001
+        },
+        {
+          "bonus_id": 3,
+          "inclusive_range": [
+            9500,
+            9524
+          ],
+          "probability_numerator": 25,
+          "probability_denominator": 10001
+        },
+        {
+          "bonus_id": 4,
+          "inclusive_range": [
+            9525,
+            9549
+          ],
+          "probability_numerator": 25,
+          "probability_denominator": 10001
+        },
+        {
+          "bonus_id": 5,
+          "inclusive_range": [
+            9550,
+            9949
+          ],
+          "probability_numerator": 400,
+          "probability_denominator": 10001
+        },
+        {
+          "bonus_id": 6,
+          "inclusive_range": [
+            9950,
+            9974
+          ],
+          "probability_numerator": 25,
+          "probability_denominator": 10001
+        },
+        {
+          "bonus_id": 7,
+          "inclusive_range": [
+            9975,
+            10000
+          ],
+          "probability_numerator": 26,
+          "probability_denominator": 10001
+        }
+      ],
+      "application": "regular fusion; convergence forces bonus 0; success/failure path further constrains effects"
+    },
+    "classification": "DERIVED",
+    "target_cut": "2026-10-19",
+    "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+    "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+    "sources": [
+      {
+        "source": "owner:oteryn-data-completion:2026-10-19",
+        "selector": "docs/reference/content-prep/forge-content-1/oteryn-parameters.json / field rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/bonus_distribution"
+      },
+      {
+        "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:forge.bonus_distribution",
+        "selector": "forge.bonus_distribution"
+      }
+    ],
+    "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+    "assumptions": [
+      "Preserve inclusive10001-outcome distribution and caller-dependent success/failure restrictions; convergence yields no lucky bonus."
+    ],
+    "global_evidence_archive": "docs/reference/content-prep/forge-content-1/tibia-source-archive.json#rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/bonus_distribution",
+    "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+  },
+  "remaining_limits": [
+    "ordinaryT10→T9corecount",
+    "convergenceT9corecount",
+    "general dust upgrade cost/cap",
+    "stochastic lucky bonus distribution"
+  ],
+  "qualification": "Official UI descriptions/configuration are primary client observations. No claimed empirical frequency, successful/failed fusion result, high-tier quote or complete stochastic distribution.",
+  "active_evidence_counts": {
+    "PROVEN": 337,
+    "DERIVED": 7,
+    "UNKNOWN": 1
+  }
+}
