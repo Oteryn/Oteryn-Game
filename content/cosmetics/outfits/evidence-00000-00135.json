@@ -93,25 +93,41 @@
               "addon": 1,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             },
             {
               "addon": 2,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             }
           ],
           "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/0/facts/addon_specific_requirements"
+            },
             {
               "source": "wiki:110024:1181120",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/0/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -575,25 +591,41 @@
               "addon": 1,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             },
             {
               "addon": 2,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             }
           ],
           "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/3/facts/addon_specific_requirements"
+            },
             {
               "source": "wiki:95376:1181101",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/3/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -918,25 +950,41 @@
               "addon": 1,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             },
             {
               "addon": 2,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             }
           ],
           "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/5/facts/addon_specific_requirements"
+            },
             {
               "source": "wiki:102596:1181107",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/5/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -1472,25 +1520,41 @@
               "addon": 1,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             },
             {
               "addon": 2,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             }
           ],
           "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/8/facts/addon_specific_requirements"
+            },
             {
               "source": "wiki:109375:1197404",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/8/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -1982,25 +2046,41 @@
               "addon": 1,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             },
             {
               "addon": 2,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             }
           ],
           "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/11/facts/addon_specific_requirements"
+            },
             {
               "source": "wiki:107089:1181113",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/11/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -2295,25 +2375,41 @@
               "addon": 1,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             },
             {
               "addon": 2,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             }
           ],
           "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/13/facts/addon_specific_requirements"
+            },
             {
               "source": "wiki:104921:1181112",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/13/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -2447,25 +2543,41 @@
               "addon": 1,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             },
             {
               "addon": 2,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             }
           ],
           "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/14/facts/addon_specific_requirements"
+            },
             {
               "source": "wiki:89087:1181086",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/14/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -3098,25 +3210,41 @@
               "addon": 1,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             },
             {
               "addon": 2,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             }
           ],
           "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/18/facts/addon_specific_requirements"
+            },
             {
               "source": "wiki:104624:1181111",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/18/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -4525,25 +4653,41 @@
               "addon": 1,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             },
             {
               "addon": 2,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             }
           ],
           "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/26/facts/addon_specific_requirements"
+            },
             {
               "source": "wiki:103265:1181108",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/26/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount."
+          ]
         },
         "addon_account_eligibility": {
           "value": "Free Account",
@@ -5619,25 +5763,41 @@
               "addon": 1,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             },
             {
               "addon": 2,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             }
           ],
           "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/33/facts/addon_specific_requirements"
+            },
             {
               "source": "wiki:104525:1181110",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/33/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -5938,25 +6098,41 @@
               "addon": 1,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             },
             {
               "addon": 2,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             }
           ],
           "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/35/facts/addon_specific_requirements"
+            },
             {
               "source": "wiki:95054:1181100",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/35/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -7459,25 +7635,41 @@
               "addon": 1,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             },
             {
               "addon": 2,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             }
           ],
           "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/44/facts/addon_specific_requirements"
+            },
             {
               "source": "wiki:98954:1181104",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/44/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -7934,25 +8126,41 @@
               "addon": 1,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             },
             {
               "addon": 2,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             }
           ],
           "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/47/facts/addon_specific_requirements"
+            },
             {
               "source": "wiki:108239:1181114",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/47/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -8412,25 +8620,41 @@
               "addon": 1,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             },
             {
               "addon": 2,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             }
           ],
           "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/50/facts/addon_specific_requirements"
+            },
             {
               "source": "wiki:103383:1181109",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/50/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount."
+          ]
         },
         "addon_account_eligibility": {
           "value": "Free Account",
@@ -8551,25 +8775,41 @@
               "addon": 1,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             },
             {
               "addon": 2,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             }
           ],
           "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/51/facts/addon_specific_requirements"
+            },
             {
               "source": "wiki:93802:1181099",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/51/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -8862,25 +9102,41 @@
               "addon": 1,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             },
             {
               "addon": 2,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             }
           ],
           "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/53/facts/addon_specific_requirements"
+            },
             {
               "source": "wiki:101790:1181106",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/53/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -9014,25 +9270,41 @@
               "addon": 1,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             },
             {
               "addon": 2,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             }
           ],
           "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/54/facts/addon_specific_requirements"
+            },
             {
               "source": "wiki:96342:1181102",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/54/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -9696,25 +9968,41 @@
               "addon": 1,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             },
             {
               "addon": 2,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             }
           ],
           "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/58/facts/addon_specific_requirements"
+            },
             {
               "source": "wiki:87770:1181077",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/58/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -10198,25 +10486,41 @@
               "addon": 1,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             },
             {
               "addon": 2,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             }
           ],
           "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/61/facts/addon_specific_requirements"
+            },
             {
               "source": "wiki:90004:1181088",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/61/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -11304,25 +11608,41 @@
               "addon": 1,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             },
             {
               "addon": 2,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             }
           ],
           "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/68/facts/addon_specific_requirements"
+            },
             {
               "source": "wiki:92044:1181092",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/68/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -12347,25 +12667,41 @@
               "addon": 1,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             },
             {
               "addon": 2,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             }
           ],
           "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/74/facts/addon_specific_requirements"
+            },
             {
               "source": "wiki:108420:1181116",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/74/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -12499,25 +12835,41 @@
               "addon": 1,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             },
             {
               "addon": 2,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             }
           ],
           "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/75/facts/addon_specific_requirements"
+            },
             {
               "source": "wiki:84840:1181068",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/75/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -12651,25 +13003,41 @@
               "addon": 1,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             },
             {
               "addon": 2,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             }
           ],
           "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/76/facts/addon_specific_requirements"
+            },
             {
               "source": "wiki:93217:1181096",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/76/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -12785,17 +13153,39 @@
           "note": "Exact linked acquisition-quest titles. Does not assert separate addon recipe steps."
         },
         "addon_specific_requirements": {
-          "value": null,
-          "classification": "UNKNOWN",
-          "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
+          "value": {
+            "addon_1": {
+              "gold": 100000,
+              "items": []
+            },
+            "addon_2": {
+              "gold": 200000,
+              "items": []
+            },
+            "premium_required": true,
+            "requires_base_outfit": true,
+            "unlock_scope": "character_permanent"
+          },
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / field content/cosmetics/outfits/evidence-00000-00135.json/records/77/facts/addon_specific_requirements"
+            },
             {
               "source": "wiki:108263:1102608",
               "selector": "Infobox Outfit / addons (empty)"
             }
           ],
-          "note": "Current Monk outfit infobox has no addon declaration. No explicit availability or acquisition proof was found; empty source field is not treated as absence."
+          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "assumptions": [
+            "New Oteryn gold-sink purchase alternative because actual Monk addon item requirements are unproven; no claimed Global quest recipe."
+          ],
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/77/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -12930,25 +13320,41 @@
               "addon": 1,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             },
             {
               "addon": 2,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             }
           ],
           "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/78/facts/addon_specific_requirements"
+            },
             {
               "source": "wiki:111142:1196363",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/78/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount."
+          ]
         },
         "addon_account_eligibility": {
           "value": "Free Account",
@@ -13069,25 +13475,41 @@
               "addon": 1,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             },
             {
               "addon": 2,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             }
           ],
           "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/79/facts/addon_specific_requirements"
+            },
             {
               "source": "wiki:92515:1181094",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/79/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -13221,25 +13643,41 @@
               "addon": 1,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             },
             {
               "addon": 2,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             }
           ],
           "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/80/facts/addon_specific_requirements"
+            },
             {
               "source": "wiki:109386:1181117",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/80/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -13842,25 +14280,41 @@
               "addon": 1,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             },
             {
               "addon": 2,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             }
           ],
           "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/84/facts/addon_specific_requirements"
+            },
             {
               "source": "wiki:96791:1181103",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/84/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -14490,25 +14944,41 @@
               "addon": 1,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             },
             {
               "addon": 2,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             }
           ],
           "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/88/facts/addon_specific_requirements"
+            },
             {
               "source": "wiki:87543:1181075",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/88/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -15162,25 +15632,41 @@
               "addon": 1,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             },
             {
               "addon": 2,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             }
           ],
           "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/92/facts/addon_specific_requirements"
+            },
             {
               "source": "wiki:109962:1197407",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/92/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -15661,25 +16147,41 @@
               "addon": 1,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             },
             {
               "addon": 2,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             }
           ],
           "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/95/facts/addon_specific_requirements"
+            },
             {
               "source": "wiki:86577:1181073",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/95/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -16488,30 +16990,31 @@
           "note": "Exact linked acquisition-quest titles. Does not assert separate addon recipe steps."
         },
         "addon_specific_requirements": {
-          "value": [
+          "value": [],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+          "sources": [
             {
-              "addon": 1,
-              "method": "STORE",
-              "offer": "individual addon offer",
-              "individual_price": null
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/100/facts/addon_specific_requirements"
             },
             {
-              "addon": 2,
-              "method": "STORE",
-              "offer": "individual addon offer",
-              "individual_price": null
-            }
-          ],
-          "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
-          "sources": [
+              "source": "wiki:80937:1181059",
+              "selector": "Infobox Outfit / addons=unavailable; baseoutfitprice=870"
+            },
             {
               "source": "wiki:80937:1181059",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/100/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -16527,34 +17030,66 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "addon_account_eligibility": {
-          "value": "unavailable",
-          "classification": "PROVEN",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "value": {
+            "status": "NOT_APPLICABLE",
+            "reason": "THIS_OUTFIT_HAS_NO_ADDONS"
+          },
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/100/facts/addon_account_eligibility"
+            },
+            {
+              "source": "wiki:80937:1181059",
+              "selector": "Infobox Outfit / addons=unavailable; baseoutfitprice=870"
+            },
             {
               "source": "wiki:80937:1181059",
               "selector": "Infobox Outfit / addons"
             }
           ],
-          "note": "Reference evidence; runtime admission is separate."
+          "note": "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/100/facts/addon_account_eligibility",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons."
+          ]
         },
         "base_acquisition": {
           "value": {
             "method": "STORE",
             "currency": "Tibia Coins",
-            "bundle_includes_addons": false
+            "bundle_includes_addons": false,
+            "price": 870
           },
-          "classification": "PROVEN",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/100/facts/base_acquisition"
+            },
+            {
+              "source": "wiki:80937:1181059",
+              "selector": "Infobox Outfit / addons=unavailable; baseoutfitprice=870"
+            },
             {
               "source": "wiki:80937:1181059",
               "selector": "Infobox Outfit / store, fulloutfitprice"
             }
           ],
-          "note": "Current source observation; native/runtime qualification remains separate."
+          "note": "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/100/facts/base_acquisition",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons."
+          ]
         }
       }
     },
@@ -16640,30 +17175,31 @@
           "note": "Exact linked acquisition-quest titles. Does not assert separate addon recipe steps."
         },
         "addon_specific_requirements": {
-          "value": [
+          "value": [],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+          "sources": [
             {
-              "addon": 1,
-              "method": "STORE",
-              "offer": "individual addon offer",
-              "individual_price": null
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/101/facts/addon_specific_requirements"
             },
             {
-              "addon": 2,
-              "method": "STORE",
-              "offer": "individual addon offer",
-              "individual_price": null
-            }
-          ],
-          "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
-          "sources": [
+              "source": "wiki:80935:1181057",
+              "selector": "Infobox Outfit / addons=unavailable; baseoutfitprice=870"
+            },
             {
               "source": "wiki:80935:1181057",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/101/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -16679,34 +17215,66 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "addon_account_eligibility": {
-          "value": "unavailable",
-          "classification": "PROVEN",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "value": {
+            "status": "NOT_APPLICABLE",
+            "reason": "THIS_OUTFIT_HAS_NO_ADDONS"
+          },
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/101/facts/addon_account_eligibility"
+            },
+            {
+              "source": "wiki:80935:1181057",
+              "selector": "Infobox Outfit / addons=unavailable; baseoutfitprice=870"
+            },
             {
               "source": "wiki:80935:1181057",
               "selector": "Infobox Outfit / addons"
             }
           ],
-          "note": "Reference evidence; runtime admission is separate."
+          "note": "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/101/facts/addon_account_eligibility",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons."
+          ]
         },
         "base_acquisition": {
           "value": {
             "method": "STORE",
             "currency": "Tibia Coins",
-            "bundle_includes_addons": false
+            "bundle_includes_addons": false,
+            "price": 870
           },
-          "classification": "PROVEN",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/101/facts/base_acquisition"
+            },
+            {
+              "source": "wiki:80935:1181057",
+              "selector": "Infobox Outfit / addons=unavailable; baseoutfitprice=870"
+            },
             {
               "source": "wiki:80935:1181057",
               "selector": "Infobox Outfit / store, fulloutfitprice"
             }
           ],
-          "note": "Current source observation; native/runtime qualification remains separate."
+          "note": "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/101/facts/base_acquisition",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons."
+          ]
         }
       }
     },
@@ -16792,30 +17360,31 @@
           "note": "Exact linked acquisition-quest titles. Does not assert separate addon recipe steps."
         },
         "addon_specific_requirements": {
-          "value": [
+          "value": [],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+          "sources": [
             {
-              "addon": 1,
-              "method": "STORE",
-              "offer": "individual addon offer",
-              "individual_price": null
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/102/facts/addon_specific_requirements"
             },
             {
-              "addon": 2,
-              "method": "STORE",
-              "offer": "individual addon offer",
-              "individual_price": null
-            }
-          ],
-          "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
-          "sources": [
+              "source": "wiki:80934:1181056",
+              "selector": "Infobox Outfit / addons=unavailable; baseoutfitprice=870"
+            },
             {
               "source": "wiki:80934:1181056",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/102/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -16831,34 +17400,66 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "addon_account_eligibility": {
-          "value": "unavailable",
-          "classification": "PROVEN",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "value": {
+            "status": "NOT_APPLICABLE",
+            "reason": "THIS_OUTFIT_HAS_NO_ADDONS"
+          },
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/102/facts/addon_account_eligibility"
+            },
+            {
+              "source": "wiki:80934:1181056",
+              "selector": "Infobox Outfit / addons=unavailable; baseoutfitprice=870"
+            },
             {
               "source": "wiki:80934:1181056",
               "selector": "Infobox Outfit / addons"
             }
           ],
-          "note": "Reference evidence; runtime admission is separate."
+          "note": "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/102/facts/addon_account_eligibility",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons."
+          ]
         },
         "base_acquisition": {
           "value": {
             "method": "STORE",
             "currency": "Tibia Coins",
-            "bundle_includes_addons": false
+            "bundle_includes_addons": false,
+            "price": 870
           },
-          "classification": "PROVEN",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/102/facts/base_acquisition"
+            },
+            {
+              "source": "wiki:80934:1181056",
+              "selector": "Infobox Outfit / addons=unavailable; baseoutfitprice=870"
+            },
             {
               "source": "wiki:80934:1181056",
               "selector": "Infobox Outfit / store, fulloutfitprice"
             }
           ],
-          "note": "Current source observation; native/runtime qualification remains separate."
+          "note": "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/102/facts/base_acquisition",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons."
+          ]
         }
       }
     },
@@ -16944,30 +17545,31 @@
           "note": "Exact linked acquisition-quest titles. Does not assert separate addon recipe steps."
         },
         "addon_specific_requirements": {
-          "value": [
+          "value": [],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+          "sources": [
             {
-              "addon": 1,
-              "method": "STORE",
-              "offer": "individual addon offer",
-              "individual_price": null
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/103/facts/addon_specific_requirements"
             },
             {
-              "addon": 2,
-              "method": "STORE",
-              "offer": "individual addon offer",
-              "individual_price": null
-            }
-          ],
-          "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
-          "sources": [
+              "source": "wiki:80936:1181053",
+              "selector": "Infobox Outfit / addons=unavailable; baseoutfitprice=870"
+            },
             {
               "source": "wiki:80936:1181053",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/103/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -16983,34 +17585,66 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "addon_account_eligibility": {
-          "value": "unavailable",
-          "classification": "PROVEN",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "value": {
+            "status": "NOT_APPLICABLE",
+            "reason": "THIS_OUTFIT_HAS_NO_ADDONS"
+          },
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/103/facts/addon_account_eligibility"
+            },
+            {
+              "source": "wiki:80936:1181053",
+              "selector": "Infobox Outfit / addons=unavailable; baseoutfitprice=870"
+            },
             {
               "source": "wiki:80936:1181053",
               "selector": "Infobox Outfit / addons"
             }
           ],
-          "note": "Reference evidence; runtime admission is separate."
+          "note": "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/103/facts/addon_account_eligibility",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons."
+          ]
         },
         "base_acquisition": {
           "value": {
             "method": "STORE",
             "currency": "Tibia Coins",
-            "bundle_includes_addons": false
+            "bundle_includes_addons": false,
+            "price": 870
           },
-          "classification": "PROVEN",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/103/facts/base_acquisition"
+            },
+            {
+              "source": "wiki:80936:1181053",
+              "selector": "Infobox Outfit / addons=unavailable; baseoutfitprice=870"
+            },
             {
               "source": "wiki:80936:1181053",
               "selector": "Infobox Outfit / store, fulloutfitprice"
             }
           ],
-          "note": "Current source observation; native/runtime qualification remains separate."
+          "note": "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/103/facts/base_acquisition",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons."
+          ]
         }
       }
     },
@@ -17096,30 +17730,31 @@
           "note": "Exact linked acquisition-quest titles. Does not assert separate addon recipe steps."
         },
         "addon_specific_requirements": {
-          "value": [
+          "value": [],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+          "sources": [
             {
-              "addon": 1,
-              "method": "STORE",
-              "offer": "individual addon offer",
-              "individual_price": null
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/104/facts/addon_specific_requirements"
             },
             {
-              "addon": 2,
-              "method": "STORE",
-              "offer": "individual addon offer",
-              "individual_price": null
-            }
-          ],
-          "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
-          "sources": [
+              "source": "wiki:80998:1181052",
+              "selector": "Infobox Outfit / addons=unavailable; baseoutfitprice=870"
+            },
             {
               "source": "wiki:80998:1181052",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/104/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -17135,34 +17770,66 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "addon_account_eligibility": {
-          "value": "unavailable",
-          "classification": "PROVEN",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "value": {
+            "status": "NOT_APPLICABLE",
+            "reason": "THIS_OUTFIT_HAS_NO_ADDONS"
+          },
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/104/facts/addon_account_eligibility"
+            },
+            {
+              "source": "wiki:80998:1181052",
+              "selector": "Infobox Outfit / addons=unavailable; baseoutfitprice=870"
+            },
             {
               "source": "wiki:80998:1181052",
               "selector": "Infobox Outfit / addons"
             }
           ],
-          "note": "Reference evidence; runtime admission is separate."
+          "note": "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/104/facts/addon_account_eligibility",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons."
+          ]
         },
         "base_acquisition": {
           "value": {
             "method": "STORE",
             "currency": "Tibia Coins",
-            "bundle_includes_addons": false
+            "bundle_includes_addons": false,
+            "price": 870
           },
-          "classification": "PROVEN",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/104/facts/base_acquisition"
+            },
+            {
+              "source": "wiki:80998:1181052",
+              "selector": "Infobox Outfit / addons=unavailable; baseoutfitprice=870"
+            },
             {
               "source": "wiki:80998:1181052",
               "selector": "Infobox Outfit / store, fulloutfitprice"
             }
           ],
-          "note": "Current source observation; native/runtime qualification remains separate."
+          "note": "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/104/facts/base_acquisition",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons."
+          ]
         }
       }
     },
@@ -17248,30 +17915,31 @@
           "note": "Exact linked acquisition-quest titles. Does not assert separate addon recipe steps."
         },
         "addon_specific_requirements": {
-          "value": [
+          "value": [],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+          "sources": [
             {
-              "addon": 1,
-              "method": "STORE",
-              "offer": "individual addon offer",
-              "individual_price": null
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/105/facts/addon_specific_requirements"
             },
             {
-              "addon": 2,
-              "method": "STORE",
-              "offer": "individual addon offer",
-              "individual_price": null
-            }
-          ],
-          "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
-          "sources": [
+              "source": "wiki:80997:1181048",
+              "selector": "Infobox Outfit / addons=unavailable; baseoutfitprice=870"
+            },
             {
               "source": "wiki:80997:1181048",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/105/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -17287,34 +17955,66 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "addon_account_eligibility": {
-          "value": "unavailable",
-          "classification": "PROVEN",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "value": {
+            "status": "NOT_APPLICABLE",
+            "reason": "THIS_OUTFIT_HAS_NO_ADDONS"
+          },
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/105/facts/addon_account_eligibility"
+            },
+            {
+              "source": "wiki:80997:1181048",
+              "selector": "Infobox Outfit / addons=unavailable; baseoutfitprice=870"
+            },
             {
               "source": "wiki:80997:1181048",
               "selector": "Infobox Outfit / addons"
             }
           ],
-          "note": "Reference evidence; runtime admission is separate."
+          "note": "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/105/facts/addon_account_eligibility",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons."
+          ]
         },
         "base_acquisition": {
           "value": {
             "method": "STORE",
             "currency": "Tibia Coins",
-            "bundle_includes_addons": false
+            "bundle_includes_addons": false,
+            "price": 870
           },
-          "classification": "PROVEN",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/105/facts/base_acquisition"
+            },
+            {
+              "source": "wiki:80997:1181048",
+              "selector": "Infobox Outfit / addons=unavailable; baseoutfitprice=870"
+            },
             {
               "source": "wiki:80997:1181048",
               "selector": "Infobox Outfit / store, fulloutfitprice"
             }
           ],
-          "note": "Current source observation; native/runtime qualification remains separate."
+          "note": "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/105/facts/base_acquisition",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons."
+          ]
         }
       }
     },
@@ -17400,30 +18100,31 @@
           "note": "Exact linked acquisition-quest titles. Does not assert separate addon recipe steps."
         },
         "addon_specific_requirements": {
-          "value": [
+          "value": [],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+          "sources": [
             {
-              "addon": 1,
-              "method": "STORE",
-              "offer": "individual addon offer",
-              "individual_price": null
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/106/facts/addon_specific_requirements"
             },
             {
-              "addon": 2,
-              "method": "STORE",
-              "offer": "individual addon offer",
-              "individual_price": null
-            }
-          ],
-          "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
-          "sources": [
+              "source": "wiki:80996:1181042",
+              "selector": "Infobox Outfit / addons=unavailable; baseoutfitprice=870"
+            },
             {
               "source": "wiki:80996:1181042",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/106/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -17439,34 +18140,66 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "addon_account_eligibility": {
-          "value": "unavailable",
-          "classification": "PROVEN",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "value": {
+            "status": "NOT_APPLICABLE",
+            "reason": "THIS_OUTFIT_HAS_NO_ADDONS"
+          },
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/106/facts/addon_account_eligibility"
+            },
+            {
+              "source": "wiki:80996:1181042",
+              "selector": "Infobox Outfit / addons=unavailable; baseoutfitprice=870"
+            },
             {
               "source": "wiki:80996:1181042",
               "selector": "Infobox Outfit / addons"
             }
           ],
-          "note": "Reference evidence; runtime admission is separate."
+          "note": "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/106/facts/addon_account_eligibility",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons."
+          ]
         },
         "base_acquisition": {
           "value": {
             "method": "STORE",
             "currency": "Tibia Coins",
-            "bundle_includes_addons": false
+            "bundle_includes_addons": false,
+            "price": 870
           },
-          "classification": "PROVEN",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/106/facts/base_acquisition"
+            },
+            {
+              "source": "wiki:80996:1181042",
+              "selector": "Infobox Outfit / addons=unavailable; baseoutfitprice=870"
+            },
             {
               "source": "wiki:80996:1181042",
               "selector": "Infobox Outfit / store, fulloutfitprice"
             }
           ],
-          "note": "Current source observation; native/runtime qualification remains separate."
+          "note": "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/106/facts/base_acquisition",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Pinned own-outfit Wiki explicitly says addons unavailable and baseoutfitprice870. Retro outfits are base-only purchases, not two individually sold addons."
+          ]
         }
       }
     },
@@ -18570,25 +19303,41 @@
               "addon": 1,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             },
             {
               "addon": 2,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             }
           ],
           "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/113/facts/addon_specific_requirements"
+            },
             {
               "source": "wiki:93405:1181098",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/113/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -19104,25 +19853,41 @@
               "addon": 1,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             },
             {
               "addon": 2,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             }
           ],
           "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/116/facts/addon_specific_requirements"
+            },
             {
               "source": "wiki:100677:1181105",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/116/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -19632,25 +20397,41 @@
               "addon": 1,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             },
             {
               "addon": 2,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             }
           ],
           "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/119/facts/addon_specific_requirements"
+            },
             {
               "source": "wiki:85977:1181070",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/119/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -20527,25 +21308,41 @@
               "addon": 1,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             },
             {
               "addon": 2,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             }
           ],
           "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/124/facts/addon_specific_requirements"
+            },
             {
               "source": "wiki:90684:1181090",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/124/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -20870,25 +21667,41 @@
               "addon": 1,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             },
             {
               "addon": 2,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             }
           ],
           "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/126/facts/addon_specific_requirements"
+            },
             {
               "source": "wiki:110512:1185011",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/126/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -21022,25 +21835,41 @@
               "addon": 1,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             },
             {
               "addon": 2,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             }
           ],
           "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/127/facts/addon_specific_requirements"
+            },
             {
               "source": "wiki:88318:1189996",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/127/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -21174,25 +22003,41 @@
               "addon": 1,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             },
             {
               "addon": 2,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             }
           ],
           "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/128/facts/addon_specific_requirements"
+            },
             {
               "source": "wiki:88317:1189997",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/128/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -21853,25 +22698,41 @@
               "addon": 1,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             },
             {
               "addon": 2,
               "method": "STORE",
               "offer": "full outfit bundle",
-              "individual_price": null
+              "individual_price": {
+                "status": "NOT_SOLD_SEPARATELY",
+                "included_in": "full outfit bundle"
+              }
             }
           ],
           "classification": "DERIVED",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / companion field content/cosmetics/outfits/evidence-00000-00135.json/records/132/facts/addon_specific_requirements"
+            },
             {
               "source": "wiki:108233:1181115",
               "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
             }
           ],
-          "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+          "note": "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount.",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/132/facts/addon_specific_requirements",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+          "assumptions": [
+            "Bundle-only addons have no individual offer; preserve full bundle price instead of inventing an addon amount."
+          ]
         },
         "base_account_eligibility": {
           "value": "Free Account",
@@ -22473,5 +23334,6 @@
     "start": 0,
     "end": 135,
     "count": 136
-  }
+  },
+  "evidence_scope": "SOURCE_OBSERVATIONS_WITH_EXPLICIT_OTERYN_WORKING_DEFAULTS"
 }

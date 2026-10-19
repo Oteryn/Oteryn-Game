@@ -1,0 +1,1584 @@
+{
+  "schema": "OTERYN_GLOBAL_SOURCE_ARCHIVE/v1",
+  "task": "OUTFITS-CONTENT-1",
+  "scope": "ARCHIVED_GLOBAL_EVIDENCE_NOT_ACTIVE_OTERYN_PARAMETER_FIELDS",
+  "reference_only": true,
+  "runtime_switch_authorized": false,
+  "predecessor": "b55f78f63292a9c5be6a47db9e3bbd1acddcd5bc",
+  "explanation": "Original Tibia evidence is retained verbatim here. Active target fields now contain explicitly scoped Oteryn working values; no Global fact has been proven by a design choice.",
+  "records": [
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/77/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "NOT_ESTABLISHED",
+        "sources": [
+          {
+            "source": "wiki:108263:1102608",
+            "selector": "Infobox Outfit / addons (empty)"
+          }
+        ],
+        "note": "Current Monk outfit infobox has no addon declaration. No explicit availability or acquisition proof was found; empty source field is not treated as absence."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/0/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:110024:1181120",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/3/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:95376:1181101",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/5/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:102596:1181107",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/8/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:109375:1197404",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/11/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:107089:1181113",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/13/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:104921:1181112",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/14/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:89087:1181086",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/18/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:104624:1181111",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/26/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:103265:1181108",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/33/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:104525:1181110",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/35/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:95054:1181100",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/44/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:98954:1181104",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/47/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:108239:1181114",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/50/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:103383:1181109",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/51/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:93802:1181099",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/53/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:101790:1181106",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/54/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:96342:1181102",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/58/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:87770:1181077",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/61/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:90004:1181088",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/68/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:92044:1181092",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/74/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:108420:1181116",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/75/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:84840:1181068",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/76/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:93217:1181096",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/78/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:111142:1196363",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/79/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:92515:1181094",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/80/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:109386:1181117",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/84/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:96791:1181103",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/88/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:87543:1181075",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/92/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:109962:1197407",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/95/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:86577:1181073",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/100/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "individual addon offer",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "individual addon offer",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:80937:1181059",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/100/facts/addon_account_eligibility",
+      "original_global_fact": {
+        "value": "unavailable",
+        "classification": "PROVEN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:80937:1181059",
+            "selector": "Infobox Outfit / addons"
+          }
+        ],
+        "note": "Reference evidence; runtime admission is separate."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/100/facts/base_acquisition",
+      "original_global_fact": {
+        "value": {
+          "method": "STORE",
+          "currency": "Tibia Coins",
+          "bundle_includes_addons": false
+        },
+        "classification": "PROVEN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:80937:1181059",
+            "selector": "Infobox Outfit / store, fulloutfitprice"
+          }
+        ],
+        "note": "Current source observation; native/runtime qualification remains separate."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/101/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "individual addon offer",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "individual addon offer",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:80935:1181057",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/101/facts/addon_account_eligibility",
+      "original_global_fact": {
+        "value": "unavailable",
+        "classification": "PROVEN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:80935:1181057",
+            "selector": "Infobox Outfit / addons"
+          }
+        ],
+        "note": "Reference evidence; runtime admission is separate."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/101/facts/base_acquisition",
+      "original_global_fact": {
+        "value": {
+          "method": "STORE",
+          "currency": "Tibia Coins",
+          "bundle_includes_addons": false
+        },
+        "classification": "PROVEN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:80935:1181057",
+            "selector": "Infobox Outfit / store, fulloutfitprice"
+          }
+        ],
+        "note": "Current source observation; native/runtime qualification remains separate."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/102/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "individual addon offer",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "individual addon offer",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:80934:1181056",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/102/facts/addon_account_eligibility",
+      "original_global_fact": {
+        "value": "unavailable",
+        "classification": "PROVEN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:80934:1181056",
+            "selector": "Infobox Outfit / addons"
+          }
+        ],
+        "note": "Reference evidence; runtime admission is separate."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/102/facts/base_acquisition",
+      "original_global_fact": {
+        "value": {
+          "method": "STORE",
+          "currency": "Tibia Coins",
+          "bundle_includes_addons": false
+        },
+        "classification": "PROVEN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:80934:1181056",
+            "selector": "Infobox Outfit / store, fulloutfitprice"
+          }
+        ],
+        "note": "Current source observation; native/runtime qualification remains separate."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/103/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "individual addon offer",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "individual addon offer",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:80936:1181053",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/103/facts/addon_account_eligibility",
+      "original_global_fact": {
+        "value": "unavailable",
+        "classification": "PROVEN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:80936:1181053",
+            "selector": "Infobox Outfit / addons"
+          }
+        ],
+        "note": "Reference evidence; runtime admission is separate."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/103/facts/base_acquisition",
+      "original_global_fact": {
+        "value": {
+          "method": "STORE",
+          "currency": "Tibia Coins",
+          "bundle_includes_addons": false
+        },
+        "classification": "PROVEN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:80936:1181053",
+            "selector": "Infobox Outfit / store, fulloutfitprice"
+          }
+        ],
+        "note": "Current source observation; native/runtime qualification remains separate."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/104/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "individual addon offer",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "individual addon offer",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:80998:1181052",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/104/facts/addon_account_eligibility",
+      "original_global_fact": {
+        "value": "unavailable",
+        "classification": "PROVEN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:80998:1181052",
+            "selector": "Infobox Outfit / addons"
+          }
+        ],
+        "note": "Reference evidence; runtime admission is separate."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/104/facts/base_acquisition",
+      "original_global_fact": {
+        "value": {
+          "method": "STORE",
+          "currency": "Tibia Coins",
+          "bundle_includes_addons": false
+        },
+        "classification": "PROVEN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:80998:1181052",
+            "selector": "Infobox Outfit / store, fulloutfitprice"
+          }
+        ],
+        "note": "Current source observation; native/runtime qualification remains separate."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/105/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "individual addon offer",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "individual addon offer",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:80997:1181048",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/105/facts/addon_account_eligibility",
+      "original_global_fact": {
+        "value": "unavailable",
+        "classification": "PROVEN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:80997:1181048",
+            "selector": "Infobox Outfit / addons"
+          }
+        ],
+        "note": "Reference evidence; runtime admission is separate."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/105/facts/base_acquisition",
+      "original_global_fact": {
+        "value": {
+          "method": "STORE",
+          "currency": "Tibia Coins",
+          "bundle_includes_addons": false
+        },
+        "classification": "PROVEN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:80997:1181048",
+            "selector": "Infobox Outfit / store, fulloutfitprice"
+          }
+        ],
+        "note": "Current source observation; native/runtime qualification remains separate."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/106/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "individual addon offer",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "individual addon offer",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:80996:1181042",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/106/facts/addon_account_eligibility",
+      "original_global_fact": {
+        "value": "unavailable",
+        "classification": "PROVEN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:80996:1181042",
+            "selector": "Infobox Outfit / addons"
+          }
+        ],
+        "note": "Reference evidence; runtime admission is separate."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/106/facts/base_acquisition",
+      "original_global_fact": {
+        "value": {
+          "method": "STORE",
+          "currency": "Tibia Coins",
+          "bundle_includes_addons": false
+        },
+        "classification": "PROVEN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:80996:1181042",
+            "selector": "Infobox Outfit / store, fulloutfitprice"
+          }
+        ],
+        "note": "Current source observation; native/runtime qualification remains separate."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/113/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:93405:1181098",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/116/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:100677:1181105",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/119/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:85977:1181070",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/124/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:90684:1181090",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/126/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:110512:1185011",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/127/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:88318:1189996",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/128/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:88317:1189997",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    },
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/132/facts/addon_specific_requirements",
+      "original_global_fact": {
+        "value": [
+          {
+            "addon": 1,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          },
+          {
+            "addon": 2,
+            "method": "STORE",
+            "offer": "full outfit bundle",
+            "individual_price": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:108233:1181115",
+            "selector": "Infobox Outfit / store, addons, notes; linked quest reward stages"
+          }
+        ],
+        "note": "Separate addon acquisition routes; required_items contains only explicit equipment lists, not inferred full quest costs. Referenced quest/stage requirements remain applicable."
+      }
+    }
+  ]
+}

@@ -1,8 +1,8 @@
 {
   "task": "OUTFITS-CONTENT-1",
-  "review_date": "2026-10-18",
-  "scope": "DATA_AND_REFERENCE_EVIDENCE_ONLY",
-  "research_status": "SUPPLEMENTAL_SOURCES_EXTRACTED_REMAINING_FIELDS_EXPLICIT",
+  "review_date": "2026-10-19",
+  "scope": "POPULATED_OTERYN_REFERENCE_DATA_WITH_ARCHIVED_GLOBAL_SOURCE_LIMITATIONS",
+  "research_status": "ALL_TARGET_PARAMETER_FIELDS_POPULATED",
   "runtime_admission": "BLOCKED",
   "coverage": "All 136 real outfit records remain covered. Required items and separately numbered male/female addon sprite images now resolve Afflicted Plague Mask=addon 1, Plague Bell=addon 2, Captains Sabre=addon 1 and Captains Hat=addon 2. Image page revids, asset SHA1s and direct visual-inspection method are retained. Monk addon availability/account eligibility remain UNKNOWN; an empty source field is not proof of absence.",
   "source_registry": "sources.json",
@@ -10,24 +10,10 @@
     "content/cosmetics/outfits/evidence-00000-00135.json": 136
   },
   "evidence_field_counts": {
-    "PROVEN": 1044,
-    "DERIVED": 319,
-    "UNKNOWN": 1
+    "PROVEN": 1030,
+    "DERIVED": 334
   },
-  "unresolved_fields": [
-    {
-      "field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/77/facts/addon_specific_requirements",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:108263:1102608",
-          "selector": "Infobox Outfit / addons (empty)"
-        }
-      ],
-      "limitation": "Current Monk outfit infobox has no addon declaration. No explicit availability or acquisition proof was found; empty source field is not treated as absence."
-    }
-  ],
+  "unresolved_fields": [],
   "limitations_policy": "Unknown values and conflicting source statements remain visible. Positive source observations, inferred projections and server-controlled facts remain distinct; no count is relabeled merely to claim completion.",
   "complete_source_sweep": {
     "review_date": "2026-10-18",
@@ -36,5 +22,14 @@
       "oteryn:content.outfit.monk_outfits/addon_account_eligibility"
     ],
     "qualification": "Reference only. No unsupported absence→false conversion, invented random distribution, arrival coordinate or architecture decision. Exact source fetches and failed direct primary fetches remain auditable."
-  }
+  },
+  "filled_parameter_fields": 1,
+  "remaining_unfilled_parameter_fields": 0,
+  "normalized_companion_fields": 59,
+  "global_source_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json",
+  "global_source_archive_counts": {
+    "UNKNOWN": 1
+  },
+  "counting_scope": "Active fields only; archived original Global evidence is excluded from active-field counts.",
+  "pending_index_metadata": []
 }

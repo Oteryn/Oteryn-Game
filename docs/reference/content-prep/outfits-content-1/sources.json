@@ -2706,6 +2706,14 @@
       "supported_claim": "Base outfit is free; addons require Premium.",
       "revid": 423805,
       "revision_url": "https://www.tibiawiki.com.br/index.php?title=Monk_Outfits&oldid=423805"
+    },
+    "owner:oteryn-data-completion:2026-10-19": {
+      "source_class": "OWNER_AUTHORIZED_OTERYN_WORKING_PARAMETERS",
+      "instruction": "No to uzupełnij te dane bo piszę ci to5raz",
+      "prior_instruction": "Przygotuj propozycje Oteryn z jawnymi założeniami",
+      "parameter_document": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json",
+      "selection_actor": "assistant completing owner-authorized reference/data task",
+      "scope": "Populate working Oteryn data defaults, keeping evidence limits explicit; no runtime or architectural acceptance is implied."
     }
   }
 }

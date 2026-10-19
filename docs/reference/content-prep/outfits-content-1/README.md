@@ -1,21 +1,13 @@
-# OUTFITS-CONTENT-1: Current outfit look types and acquisition evidence
+# OUTFITS-CONTENT-1: populated reference data
 
-There are 136 real outfit records: 69 Store outfits, 59 quest outfits and 8 special outfits. The template itself and navigation page are excluded. Both look types and explicit Premium flags are captured. Separate acquisition stages retain quantities, items, ranks/quests and sex-dependent addon numbers; Yalaharian choices are mutually exclusive. Store bundles and special/event methods are distinct. Separate male/female addon images resolve the Afflicted and Captains addon numbers. Monk addon availability and account eligibility remain held where current sources do not establish them.
+All 1 previously held parameter fields now contain explicit Oteryn working values in their target records. They are classified DERIVED and scoped OTERYN_REFERENCE_PARAMETER; source-backed facts retain their existing evidence classification. No runtime activation is authorized.
 
-Source registry: [sources.json](sources.json). Facts link to exact revision IDs or immutable repository blobs. `PROVEN` means the cited source states the fact; `DERIVED` means the stated transformation is reproducible; `UNKNOWN` and `CONFLICT` must remain held. Community evidence is not controlled Global telemetry. Official characters/combat/trading manual sources, where cited, were re-read live on 2026-10-18 and retain response digests. Pinned client assets carry their own version/continuity qualification.
+The [working parameter register](oteryn-parameters.json) records completion and shared policies. The [decision rationale](oteryn-proposals.json) retains every field path, source and assumption, and is marked materialized. Original unresolved Tibia observations are retained verbatim in the [Global source archive](tibia-source-archive.json), rather than being passed off as official facts.
 
-These files prepare Reference data for CP. They add no runtime admission, Rust change, generated content regeneration, or interaction/world-pin mutation. `POPULATED` describes the evidence packet, not complete gameplay readiness. The packet schema is an evidence envelope, not a newly accepted runtime schema.
+Active evidence counts: {"DERIVED": 334, "PROVEN": 1030}. Remaining unfilled active parameter fields:0. [Field audit](research-audit.json); [source registry](sources.json).
 
-- The fresh Category:Outfits inventory had 137 members; only pages with an actual Infobox Outfit become records. Category navigation/history pages are not outfits. No look-type absence is converted into zero or guessed from neighboring IDs.
+The owner's instruction is to populate the data using explicit project assumptions. These are working reference defaults for native implementation; accepted architecture, concrete world/native bindings and gameplay activation remain coordinator responsibilities. OTS observations are pinned and labelled OTS_HYPOTHESIS_ONLY. Project choices do not establish current Global behavior.
 
-## Supplemental source research — 2026-10-18
+Some service payloads remain under target-files with a service-apply-plan because World Bundle pins and generated slots cannot be changed in this task. Index metadata owned by another open PR is recorded in coordinator-index-updates.json where necessary. The target record values themselves are populated.
 
-All 136 real outfit records remain covered. Required items and separately numbered male/female addon sprite images now resolve Afflicted Plague Mask=addon 1, Plague Bell=addon 2, Captains Sabre=addon 1 and Captains Hat=addon 2. Image page revids, asset SHA1s and direct visual-inspection method are retained. Monk addon availability/account eligibility remain UNKNOWN; an empty source field is not proof of absence.
-
-This is a sourced reference handoff, not a claim of complete gameplay knowledge. The field-level [research audit](research-audit.json) enumerates all remaining UNKNOWN/CONFLICT fields. Runtime admission stays blocked pending CP qualification.
-
-## Full outstanding-field source sweep —2026-10-18
-
-oteryn:content.outfit.monk_outfits/addon_account_eligibility.
-
-Only explicit sourced values are selected. Wiki omissions and unsupported exact gameplay formulas remain held. Primary news retrieved from indexed official publications is labelled with the direct HTTP403 limitation. Runtime activation and integration remain blocked.
+Validation and the frozen remote candidate are recorded in the draft PR. No Rust, Cargo, migrations, protocol, CI, apps, generated slots, merge or ready transition.
