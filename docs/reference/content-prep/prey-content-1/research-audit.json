@@ -26,5 +26,16 @@
     "UNKNOWN": 11
   },
   "counting_scope": "Active fields only; archived original Global evidence is excluded from active-field counts.",
-  "pending_index_metadata": []
+  "pending_index_metadata": [],
+  "selection_pool_source_correction": {
+    "fields": [
+      "rulesets/progression/prey/creature-eligibility.json/records/0/facts/selection_pool",
+      "rulesets/progression/prey/creature-eligibility.json/records/90/facts/selection_pool",
+      "rulesets/progression/prey/creature-eligibility.json/records/157/facts/selection_pool",
+      "rulesets/progression/prey/creature-eligibility.json/records/173/facts/selection_pool",
+      "rulesets/progression/prey/creature-eligibility.json/records/374/facts/selection_pool"
+    ],
+    "source_check": "docs/reference/content-prep/prey-content-1/source-correction-check.json",
+    "qualification": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed."
+  }
 }

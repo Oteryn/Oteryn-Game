@@ -23,24 +23,20 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "selection_pool": {
-          "value": "free_or_gold",
+          "value": "wildcard_only",
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "PINNED_DONOR_REFERENCE_CORRECTION",
+          "evidence_scope": "OTS_HYPOTHESIS_ONLY",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json / field rulesets/progression/prey/creature-eligibility.json/records/0/facts/selection_pool"
-            },
-            {
-              "source": "wiki:86349:1090711",
-              "selector": "Creatures that can be rolled for free/gold"
+              "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:prey-exclusive:slimes/acid_blob.lua",
+              "selector": "isPreyExclusive = true; line66"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "note": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed.",
           "assumptions": [
-            "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
+            "Use the explicit exclusive flag from the pinned donor, replacing the unsourced normal-pool override. Current Global continuity remains unmeasured."
           ],
           "global_evidence_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json#rulesets/progression/prey/creature-eligibility.json/records/0/facts/selection_pool",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
@@ -3993,24 +3989,20 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "selection_pool": {
-          "value": "free_or_gold",
+          "value": "wildcard_only",
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "PINNED_DONOR_REFERENCE_CORRECTION",
+          "evidence_scope": "OTS_HYPOTHESIS_ONLY",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json / field rulesets/progression/prey/creature-eligibility.json/records/90/facts/selection_pool"
-            },
-            {
-              "source": "wiki:86349:1090711",
-              "selector": "Creatures that can be rolled for free/gold"
+              "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:prey-exclusive:constructs/damaged_worker_golem.lua",
+              "selector": "isPreyExclusive = true; line63"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "note": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed.",
           "assumptions": [
-            "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
+            "Use the explicit exclusive flag from the pinned donor, replacing the unsourced normal-pool override. Current Global continuity remains unmeasured."
           ],
           "global_evidence_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json#rulesets/progression/prey/creature-eligibility.json/records/90/facts/selection_pool",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
@@ -6951,24 +6943,20 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "selection_pool": {
-          "value": "free_or_gold",
+          "value": "wildcard_only",
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "PINNED_DONOR_REFERENCE_CORRECTION",
+          "evidence_scope": "OTS_HYPOTHESIS_ONLY",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json / field rulesets/progression/prey/creature-eligibility.json/records/157/facts/selection_pool"
-            },
-            {
-              "source": "wiki:86349:1090711",
-              "selector": "Creatures that can be rolled for free/gold"
+              "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:prey-exclusive:birds/flamingo.lua",
+              "selector": "isPreyExclusive = true; line63"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "note": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed.",
           "assumptions": [
-            "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
+            "Use the explicit exclusive flag from the pinned donor, replacing the unsourced normal-pool override. Current Global continuity remains unmeasured."
           ],
           "global_evidence_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json#rulesets/progression/prey/creature-eligibility.json/records/157/facts/selection_pool",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
@@ -7665,24 +7653,20 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "selection_pool": {
-          "value": "free_or_gold",
+          "value": "wildcard_only",
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "PINNED_DONOR_REFERENCE_CORRECTION",
+          "evidence_scope": "OTS_HYPOTHESIS_ONLY",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json / field rulesets/progression/prey/creature-eligibility.json/records/173/facts/selection_pool"
-            },
-            {
-              "source": "wiki:86349:1090711",
-              "selector": "Creatures that can be rolled for free/gold"
+              "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:prey-exclusive:magicals/gazer.lua",
+              "selector": "isPreyExclusive = true; line63"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "note": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed.",
           "assumptions": [
-            "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
+            "Use the explicit exclusive flag from the pinned donor, replacing the unsourced normal-pool override. Current Global continuity remains unmeasured."
           ],
           "global_evidence_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json#rulesets/progression/prey/creature-eligibility.json/records/173/facts/selection_pool",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
@@ -16536,24 +16520,20 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "selection_pool": {
-          "value": "free_or_gold",
+          "value": "wildcard_only",
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "PINNED_DONOR_REFERENCE_CORRECTION",
+          "evidence_scope": "OTS_HYPOTHESIS_ONLY",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json / field rulesets/progression/prey/creature-eligibility.json/records/374/facts/selection_pool"
-            },
-            {
-              "source": "wiki:86349:1090711",
-              "selector": "Creatures that can be rolled for free/gold"
+              "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:prey-exclusive:mammals/silver_rabbit.lua",
+              "selector": "isPreyExclusive = true; line63"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "note": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed.",
           "assumptions": [
-            "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
+            "Use the explicit exclusive flag from the pinned donor, replacing the unsourced normal-pool override. Current Global continuity remains unmeasured."
           ],
           "global_evidence_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json#rulesets/progression/prey/creature-eligibility.json/records/374/facts/selection_pool",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"

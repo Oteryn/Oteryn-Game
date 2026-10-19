@@ -134,6 +134,61 @@
         "max_rarity_bonus_type_reroll": "repeat uniform bonus-type roll until type differs from previous"
       },
       "qualification": "Reference implementation adapted as a working Oteryn design choice, not current official Tibia proof."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:prey-exclusive:slimes/acid_blob.lua": {
+      "title": "slimes/acid_blob.lua",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/monster/slimes/acid_blob.lua#L66",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/monster/slimes/acid_blob.lua",
+      "line": 66,
+      "sha256": "f99c93ff21dd2b8deba10da50820b9507e76bfd1322dfab9870f5d68d69b5742",
+      "supported_claim": "isPreyExclusive = true",
+      "qualification": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:prey-exclusive:constructs/damaged_worker_golem.lua": {
+      "title": "constructs/damaged_worker_golem.lua",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/monster/constructs/damaged_worker_golem.lua#L63",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/monster/constructs/damaged_worker_golem.lua",
+      "line": 63,
+      "sha256": "18dc5cf87b95fff7523c85ad277c8c93451ae486a3c2d54ea585b6a785cd514e",
+      "supported_claim": "isPreyExclusive = true",
+      "qualification": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:prey-exclusive:birds/flamingo.lua": {
+      "title": "birds/flamingo.lua",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/monster/birds/flamingo.lua#L63",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/monster/birds/flamingo.lua",
+      "line": 63,
+      "sha256": "44825e4a07597790fddfdf911d81afcbe753c6d48f4e5fe6338e175e17e9acc0",
+      "supported_claim": "isPreyExclusive = true",
+      "qualification": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:prey-exclusive:magicals/gazer.lua": {
+      "title": "magicals/gazer.lua",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/monster/magicals/gazer.lua#L63",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/monster/magicals/gazer.lua",
+      "line": 63,
+      "sha256": "a22430e5afeafee859ef2a51e47344adcee855aa948a496bcdeaad31f6628c2f",
+      "supported_claim": "isPreyExclusive = true",
+      "qualification": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:prey-exclusive:mammals/silver_rabbit.lua": {
+      "title": "mammals/silver_rabbit.lua",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/monster/mammals/silver_rabbit.lua#L63",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/monster/mammals/silver_rabbit.lua",
+      "line": 63,
+      "sha256": "619d02cc7518f2cb7fa5b0371beecaf8499fd4e6954730a5f3ab9a54e935d5c6",
+      "supported_claim": "isPreyExclusive = true",
+      "qualification": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed."
     }
   }
 }

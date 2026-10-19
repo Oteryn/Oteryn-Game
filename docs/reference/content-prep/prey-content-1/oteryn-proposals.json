@@ -74,96 +74,186 @@
       "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/0/facts/selection_pool",
       "subject": "prey.creature.acid_blob",
       "original_classification": "CONFLICT",
-      "proposed_value": "free_or_gold",
+      "proposed_value": "wildcard_only",
       "basis": {
-        "kind": "DESIGN_CHOICE",
-        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "kind": "PINNED_DONOR_SOURCE_CORRECTION",
+        "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:prey-exclusive:slimes/acid_blob.lua",
         "original_source_urls": [
-          "https://tibia.fandom.com/w/index.php?oldid=1090711"
+          "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/monster/slimes/acid_blob.lua#L66"
         ],
-        "observation_refs": [],
-        "donor_selection": null
+        "rationale": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed."
       },
       "assumptions": [
-        "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
+        "Use the explicit exclusive flag from the pinned donor, replacing the unsourced normal-pool override. Current Global continuity remains unmeasured."
       ],
-      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      "acceptance_status": "MATERIALIZED_DERIVED_DONOR_REFERENCE_RUNTIME_UNQUALIFIED",
+      "superseded_decision": {
+        "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/0/facts/selection_pool",
+        "subject": "prey.creature.acid_blob",
+        "original_classification": "CONFLICT",
+        "proposed_value": "free_or_gold",
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1090711"
+          ],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
     },
     {
       "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/90/facts/selection_pool",
       "subject": "prey.creature.damaged_worker_golem",
       "original_classification": "CONFLICT",
-      "proposed_value": "free_or_gold",
+      "proposed_value": "wildcard_only",
       "basis": {
-        "kind": "DESIGN_CHOICE",
-        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "kind": "PINNED_DONOR_SOURCE_CORRECTION",
+        "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:prey-exclusive:constructs/damaged_worker_golem.lua",
         "original_source_urls": [
-          "https://tibia.fandom.com/w/index.php?oldid=1090711"
+          "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/monster/constructs/damaged_worker_golem.lua#L63"
         ],
-        "observation_refs": [],
-        "donor_selection": null
+        "rationale": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed."
       },
       "assumptions": [
-        "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
+        "Use the explicit exclusive flag from the pinned donor, replacing the unsourced normal-pool override. Current Global continuity remains unmeasured."
       ],
-      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      "acceptance_status": "MATERIALIZED_DERIVED_DONOR_REFERENCE_RUNTIME_UNQUALIFIED",
+      "superseded_decision": {
+        "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/90/facts/selection_pool",
+        "subject": "prey.creature.damaged_worker_golem",
+        "original_classification": "CONFLICT",
+        "proposed_value": "free_or_gold",
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1090711"
+          ],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
     },
     {
       "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/157/facts/selection_pool",
       "subject": "prey.creature.flamingo",
       "original_classification": "CONFLICT",
-      "proposed_value": "free_or_gold",
+      "proposed_value": "wildcard_only",
       "basis": {
-        "kind": "DESIGN_CHOICE",
-        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "kind": "PINNED_DONOR_SOURCE_CORRECTION",
+        "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:prey-exclusive:birds/flamingo.lua",
         "original_source_urls": [
-          "https://tibia.fandom.com/w/index.php?oldid=1090711"
+          "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/monster/birds/flamingo.lua#L63"
         ],
-        "observation_refs": [],
-        "donor_selection": null
+        "rationale": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed."
       },
       "assumptions": [
-        "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
+        "Use the explicit exclusive flag from the pinned donor, replacing the unsourced normal-pool override. Current Global continuity remains unmeasured."
       ],
-      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      "acceptance_status": "MATERIALIZED_DERIVED_DONOR_REFERENCE_RUNTIME_UNQUALIFIED",
+      "superseded_decision": {
+        "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/157/facts/selection_pool",
+        "subject": "prey.creature.flamingo",
+        "original_classification": "CONFLICT",
+        "proposed_value": "free_or_gold",
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1090711"
+          ],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
     },
     {
       "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/173/facts/selection_pool",
       "subject": "prey.creature.gazer",
       "original_classification": "CONFLICT",
-      "proposed_value": "free_or_gold",
+      "proposed_value": "wildcard_only",
       "basis": {
-        "kind": "DESIGN_CHOICE",
-        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "kind": "PINNED_DONOR_SOURCE_CORRECTION",
+        "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:prey-exclusive:magicals/gazer.lua",
         "original_source_urls": [
-          "https://tibia.fandom.com/w/index.php?oldid=1090711"
+          "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/monster/magicals/gazer.lua#L63"
         ],
-        "observation_refs": [],
-        "donor_selection": null
+        "rationale": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed."
       },
       "assumptions": [
-        "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
+        "Use the explicit exclusive flag from the pinned donor, replacing the unsourced normal-pool override. Current Global continuity remains unmeasured."
       ],
-      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      "acceptance_status": "MATERIALIZED_DERIVED_DONOR_REFERENCE_RUNTIME_UNQUALIFIED",
+      "superseded_decision": {
+        "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/173/facts/selection_pool",
+        "subject": "prey.creature.gazer",
+        "original_classification": "CONFLICT",
+        "proposed_value": "free_or_gold",
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1090711"
+          ],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
     },
     {
       "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/374/facts/selection_pool",
       "subject": "prey.creature.silver_rabbit",
       "original_classification": "CONFLICT",
-      "proposed_value": "free_or_gold",
+      "proposed_value": "wildcard_only",
       "basis": {
-        "kind": "DESIGN_CHOICE",
-        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "kind": "PINNED_DONOR_SOURCE_CORRECTION",
+        "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:prey-exclusive:mammals/silver_rabbit.lua",
         "original_source_urls": [
-          "https://tibia.fandom.com/w/index.php?oldid=1090711"
+          "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/monster/mammals/silver_rabbit.lua#L63"
         ],
-        "observation_refs": [],
-        "donor_selection": null
+        "rationale": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed."
       },
       "assumptions": [
-        "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
+        "Use the explicit exclusive flag from the pinned donor, replacing the unsourced normal-pool override. Current Global continuity remains unmeasured."
       ],
-      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      "acceptance_status": "MATERIALIZED_DERIVED_DONOR_REFERENCE_RUNTIME_UNQUALIFIED",
+      "superseded_decision": {
+        "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/374/facts/selection_pool",
+        "subject": "prey.creature.silver_rabbit",
+        "original_classification": "CONFLICT",
+        "proposed_value": "free_or_gold",
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1090711"
+          ],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
     },
     {
       "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/480/facts/native_creature_binding",

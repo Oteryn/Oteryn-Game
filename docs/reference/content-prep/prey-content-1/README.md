@@ -1,3 +1,11 @@
+# Prey exclusive-pool source correction
+
+Acid Blob, Damaged Worker Golem, Flamingo, Gazer and Silver Rabbit now use wildcard_only, following explicit isPreyExclusive=true flags in the pinned donor. The previous normal-pool overrides are withdrawn. This is DERIVED donor-reference evidence, with conflicting wiki history retained; no official-server pool measurement is claimed. See [source check](source-correction-check.json). Runtime admission remains blocked.
+
+## Superseded materialization report
+
+The following earlier report is retained as history; the source correction above takes precedence.
+
 # PREY-CONTENT-1: populated reference data
 
 All 17 previously held parameter fields now contain explicit Oteryn working values in their target records. They are classified DERIVED and scoped OTERYN_REFERENCE_PARAMETER; source-backed facts retain their existing evidence classification. No runtime activation is authorized.
