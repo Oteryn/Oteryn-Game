@@ -71,12 +71,12 @@ from the pre-push Codex review, all accepted:
   replay now re-syncs the desk from database truth:
   - Mute and Unmute set the live mute to the latest ACTIVE sanction end.
     This is idempotent and needs no clock.
-  - Kick re-kicks the current session only while the signed request is
-    still inside its freshness window, so a stale retry never kicks a later
-    session.
+  - Kick applies nothing on replay. A kick is bound to the session present
+    at first execution, so a retry never kicks a reconnected session. A lost
+    kick needs a fresh signed request.
   - A refused replay applies nothing.
 
-  Test: `staff_pg_executor_identical_retries_reapply_committed_mute_unmute_and_kick_effects`.
+  Test: `staff_pg_executor_identical_retries_resync_committed_mutes_and_never_rekick`.
 - P2 `staff_action.rs` outbox retention: envelopes carried `expires_at` but
   nothing ever deleted them. Migration 0133 adds the SECURITY DEFINER
   `game_staff_expire_action_audit(p_batch)`, modelled on

@@ -209,12 +209,14 @@ fn kick_session(
     })
 }
 
+/// The live effect of an identical retry of a COMMITTED request: a mute or an
+/// unmute re-syncs the desk to database truth. A kick is bound to the session
+/// present at its first execution, so its replay applies nothing and never
+/// kicks a reconnected session; a lost kick needs a fresh signed request.
 async fn replay_effect(
     connection: &mut PgConnection,
     trust: &VerifierTrust,
-    desk: &StaffDesk,
     action: &Action,
-    fresh: bool,
 ) -> Result<Effect, StaffError> {
     let character = match action {
         Action::Mute { character_id, .. } => Some(character_id.clone()),
@@ -227,11 +229,6 @@ async fn replay_effect(
             .bind(trust.environment())
             .fetch_optional(&mut *connection)
             .await?
-        }
-        Action::Kick { target } if fresh => {
-            return Ok(
-                kick_session(desk, trust.environment(), target)?.map_or(Effect::None, Effect::Kick)
-            );
         }
         _ => return Ok(Effect::None),
     };
@@ -944,23 +941,11 @@ impl DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     let result: Result<Executed, StaffError> = async {
                         let action = request.request().action.clone();
-                        let retry = request.request().clone();
                         match begin_at(&mut tx, &trust, &history, request, now).await? {
                             Begin::Replay(stored) => {
                                 let effect = if stored.outcome.disposition == Disposition::Committed
                                 {
-                                    let fresh = if matches!(action, Action::Kick { .. }) {
-                                        #[cfg(test)]
-                                        let clock =
-                                            now.map_or_else(signature::synchronized_now_ms, Ok);
-                                        #[cfg(not(test))]
-                                        let clock = signature::synchronized_now_ms();
-                                        signature::check_freshness(&retry, clock).is_ok()
-                                    } else {
-                                        false
-                                    };
-                                    replay_effect(&mut tx, &trust, &worker_desk, &action, fresh)
-                                        .await?
+                                    replay_effect(&mut tx, &trust, &action).await?
                                 } else {
                                     Effect::None
                                 };

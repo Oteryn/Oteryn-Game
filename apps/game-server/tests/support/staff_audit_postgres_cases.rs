@@ -3066,8 +3066,7 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
     }
 
     #[test]
-    fn staff_pg_executor_identical_retries_reapply_committed_mute_unmute_and_kick_effects()
-    -> TestResult {
+    fn staff_pg_executor_identical_retries_resync_committed_mutes_and_never_rekick() -> TestResult {
         exec_case("retryeffects", Some("GM"), async |e| {
             let target = id(TARGET);
             let muted = e.send(mute(TARGET, 60_000)).await.map_err(debug)?;
@@ -3110,27 +3109,22 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
             let signed = last_request(e)?;
             let stored = e.last.as_ref().ok_or("kick outcome")?.2.clone();
             drop(serving.await?);
-            let mut guard = e.desk.register([0x62; 16], id(ACCOUNT), Some(target));
-            let serving = tokio::spawn(async move {
-                guard.next_kick().await.answer(KickResult::Released);
-                guard
-            });
-            let answer = retry(e, signed.clone(), NOW).await?;
-            let mut expected = stored.clone();
-            expected.extend_from_slice(b"\n{\"kick\":\"RELEASED\"}");
-            assert_eq!(answer, expected);
-            drop(serving.await?);
-            let mut guard = e.desk.register([0x63; 16], id(ACCOUNT), Some(target));
-            assert_eq!(
-                retry(e, signed, NOW + signature::EXECUTION_WINDOW_MS + 1).await?,
-                stored
-            );
-            assert!(
-                tokio::time::timeout(std::time::Duration::from_millis(20), guard.next_kick())
-                    .await
-                    .is_err()
-            );
-            drop(guard);
+            // A kick is bound to the session present at its first execution: an
+            // identical retry, inside or after the signed window, never kicks the
+            // reconnected session.
+            for (session, at) in [
+                (0x62, NOW),
+                (0x63, NOW + signature::EXECUTION_WINDOW_MS + 1),
+            ] {
+                let mut guard = e.desk.register([session; 16], id(ACCOUNT), Some(target));
+                assert_eq!(retry(e, signed.clone(), at).await?, stored);
+                assert!(
+                    tokio::time::timeout(std::time::Duration::from_millis(20), guard.next_kick())
+                        .await
+                        .is_err()
+                );
+                drop(guard);
+            }
 
             let refused = e.send(by_character()).await.map_err(debug)?;
             assert_eq!(
