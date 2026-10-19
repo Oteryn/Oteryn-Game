@@ -1617,13 +1617,13 @@ async fn run_native_movement_steps(
         let master = runtime
             .native_summon_role(actor)?
             .map(|master| (master, ai.state(master).and_then(|state| state.target())));
-        let following_master = master.is_some_and(|(master, target)| {
-            target.is_none()
-                && goal
-                    == G::Chase {
-                        target: master,
-                        distance: 1,
-                    }
+        // The think chose this follow goal; a master that targets something the summon cannot
+        // sense (for example an invisible player) must not cancel it.
+        let following_master = master.is_some_and(|(master, _)| {
+            goal == G::Chase {
+                target: master,
+                distance: 1,
+            }
         });
         if let Some((_, target)) = master
             && !following_master
