@@ -36,6 +36,7 @@ use super::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence, assert_gameplay_fence, numeric_u64,
     state_matches_root, uuid_text,
 };
+use super::character_promotion::read_durable_promotion;
 use super::character_revision_sequencer::CharacterRevisionSequencer;
 use super::db::{
     begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
@@ -698,11 +699,11 @@ pub struct WheelChangeRequest {
     pub slots: WheelSlots,
 }
 
-/// Runtime facts read at the change: the Character's promotion (PREM-2; `false` until a durable
-/// promotion owner exists) and whether it stands where points may be removed (§7.3).
+/// Runtime facts read at the change: whether the Character stands where points may be removed
+/// (§7.3). Its promotion is not a caller fact: the change reads the durable promotion in its
+/// own transaction (#2256).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct WheelChangeFacts {
-    pub promoted: bool,
     pub at_temple: bool,
 }
 
@@ -865,7 +866,10 @@ impl DurabilityRoot {
                         return refuse(WheelRefusal::NoChange);
                     }
                     let vocation = read_vocation(&mut tx, fence.character_id).await?;
-                    if let Err(reason) = eligibility(&ruleset, &vocation, level, facts.promoted) {
+                    // §6.1 (#2256): the durable promotion under the root lock the fence took. The
+                    // Premium condition is not applied until Premium is delivered (W1 a).
+                    let promoted = read_durable_promotion(&mut tx, fence.character_id).await?;
+                    if let Err(reason) = eligibility(&ruleset, &vocation, level, promoted) {
                         return refuse(WheelRefusal::NotEligible(reason));
                     }
                     if let Err(refusal) = ruleset.validate(

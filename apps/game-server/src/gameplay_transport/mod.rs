@@ -1176,15 +1176,27 @@ fn ends_session<E>(outcome: &Result<ExpiredLossReleaseV1, E>) -> bool {
     )
 }
 
-/// PREM-1b (D476): the sessions of this node holding each account's Premium registration.
+/// PREM-1b (D476): the sessions of this node holding each account's Premium registration, and
+/// (#2256, A4.2/D73) the promotion each session's login chose to show.
 #[derive(Default)]
 pub(crate) struct PremiumSessions(
     std::collections::HashMap<[u8; 16], std::collections::HashSet<GameSessionId>>,
+    std::collections::HashMap<GameSessionId, bool>,
 );
 
 impl PremiumSessions {
     fn admit(&mut self, account_id: [u8; 16], session: GameSessionId) {
         self.0.entry(account_id).or_default().insert(session);
+    }
+
+    /// The promotion `session`'s login chose to show; `None` before its login read concluded.
+    fn shown_promotion(&self, session: GameSessionId) -> Option<bool> {
+        self.1.get(&session).copied()
+    }
+
+    /// Records the login choice once: a resumed session keeps the choice of its login (D73).
+    fn show_promotion(&mut self, session: GameSessionId, promoted: bool) {
+        self.1.entry(session).or_insert(promoted);
     }
 
     /// Drops `session`'s registration. True only when it held one and was the account's last,
@@ -1197,6 +1209,7 @@ impl PremiumSessions {
     }
 
     fn release(&mut self, account_id: [u8; 16], session: GameSessionId) -> bool {
+        self.1.remove(&session);
         let Some(sessions) = self.0.get_mut(&account_id) else {
             return false;
         };
@@ -1811,8 +1824,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(held_blessings) = self.death_held_blessings(fence, death.occurrence).await else {
             return (DeathCommit::Unavailable, None);
         };
+        // D76 (#2256): this attempt's Premium evaluation from the account's gate; the death
+        // transaction reads the durable promotion (and, before delivery, the latch) itself.
+        let premium = match self.session_account(session) {
+            Some(account) => match self
+                .with_premium_gate(account, |status, _| {
+                    Box::pin(async move { premium_promotion::death_premium(&status) })
+                })
+                .await
+            {
+                Ok(premium) => premium,
+                Err(_) => return (DeathCommit::Unavailable, None),
+            },
+            None => crate::durability::character_death::DeathPremium::NotCurrent,
+        };
         let request = crate::durability::character_death::CharacterDeathRequest {
             held_blessings,
+            premium,
             ..player_death_request(
                 progression,
                 (self.world_id, self.channel_id),
@@ -2019,6 +2047,83 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         self.refresh_quest_session(admitted.game_session_id, true)
             .await;
         self.admit_wheel_session(admitted.game_session_id).await;
+        self.admit_promotion(admitted.game_session_id).await;
+    }
+
+    /// PREMIUM_ACTIVATION A4.2 / D73 (#2256): the promotion `session` shows, chosen once at its
+    /// login from the durable promotion read under the session's current fence in the
+    /// Character's revision slot, and the account's Premium gate. A resumed session keeps the
+    /// choice of its login. A read that does not conclude shows the base vocation and is tried
+    /// again at the next resume; it never refuses the login.
+    pub(crate) async fn admit_promotion(&self, session: GameSessionId) {
+        if self.shown_promotion(session).is_some() {
+            return;
+        }
+        let Some(promoted) = self.login_promotion(session).await else {
+            return;
+        };
+        self.premium_sessions
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .show_promotion(session, promoted);
+    }
+
+    async fn login_promotion(&self, session: GameSessionId) -> Option<bool> {
+        let Some(account) = self.session_account(session) else {
+            return Some(false);
+        };
+        let fence = self.current_quest_fence(session).await.ok()??;
+        let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
+        let durable = slot
+            .commit_npc_purchase(
+                self.root,
+                self.character,
+                self.holder,
+                fence,
+                |owner, fence| async move {
+                    owner
+                        .commit(
+                            crate::durability::character_promotion::DurablePromotionRead { fence },
+                        )
+                        .await
+                },
+            )
+            .await;
+        drop(slot);
+        let crate::durability::character_promotion::DurablePromotion(durable) = durable.ok()?;
+        if !durable {
+            return Some(false);
+        }
+        self.with_premium_gate(account, move |status, _| {
+            Box::pin(
+                async move { premium_promotion::effective_promotion_at_login(durable, &status) },
+            )
+        })
+        .await
+        .ok()
+    }
+
+    /// The promotion `session`'s login chose to show; `None` before that choice concluded.
+    pub(crate) fn shown_promotion(&self, session: GameSessionId) -> Option<bool> {
+        self.premium_sessions
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .shown_promotion(session)
+    }
+
+    /// The vocation key `session` shows for its Character's base `vocation` (A4.2): the promoted
+    /// vocation when its login chose to show the promotion, otherwise `vocation` itself. The
+    /// title is the shown vocation's name.
+    #[allow(
+        dead_code,
+        reason = "no client wire field carries the shown vocation or title yet (#2256 owner question)"
+    )]
+    pub(crate) fn shown_vocation<'v>(&self, session: GameSessionId, vocation: &'v str) -> &'v str {
+        let promoted: Option<&'v str> = match self.shown_promotion(session) {
+            Some(true) => premium_promotion::promoted_vocation(vocation),
+            Some(false) | None => None,
+        };
+        promoted.unwrap_or(vocation)
     }
 
     /// WHEEL-0 §4 "Wheel reset" and "Load": the admission Wheel reset in the Character's
@@ -5478,6 +5583,7 @@ fn player_death_request<const N: usize>(
             map_revision: format!("map:{map}"),
         },
         respawn_position: cell_bytes(respawn),
+        premium: crate::durability::character_death::DeathPremium::NotCurrent,
     }
 }
 
@@ -7571,6 +7677,7 @@ mod death_ml_loss_postgres {
                 map_revision: "map-1".into(),
             },
             respawn_position: b"temple:thais".to_vec(),
+            premium: crate::durability::character_death::DeathPremium::NotCurrent,
         })
     }
 

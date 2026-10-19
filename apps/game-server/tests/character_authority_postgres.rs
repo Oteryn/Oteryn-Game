@@ -2450,6 +2450,7 @@ mod monk_state_postgres_cases {
                 map_revision: "map-1".into(),
             },
             respawn_position: b"temple:thais".to_vec(),
+            premium: crate::durability::character_death::DeathPremium::NotCurrent,
         })
     }
 

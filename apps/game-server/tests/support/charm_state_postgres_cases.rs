@@ -1513,6 +1513,44 @@ fn bestiary_kill_counters_earn_points_and_admit_assignments() -> TestResult {
             .map_err(debug)?;
         assert_eq!(retained.bestiary_counts[&race("rat")], 5);
         assert_eq!(retained.balance, view.balance);
+        // #2256: the Bestiary facts read the durable promotion row (migration 0137) in the read's
+        // own transaction: it adds the 100 promotion Minor Charm Echoes and nothing else. The
+        // row is seeded without its purchase receipt, with triggers off; the purchase chain has
+        // its own cases.
+        let mut promote = harness.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role = replica")
+            .execute(&mut *promote)
+            .await?;
+        sqlx::query(
+            "INSERT INTO game_character_promotions \
+             (character_id, promoted, purchase_occurrence_id) \
+             VALUES (encode($1,'hex')::uuid, true, encode($2,'hex')::uuid)",
+        )
+        .bind(id(CHARACTER).as_slice())
+        .bind(id(0x7e).as_slice())
+        .execute(&mut *promote)
+        .await?;
+        promote.commit().await?;
+        let promoted = harness
+            .root
+            .read_character_charm_progression(
+                &authority,
+                &harness.node,
+                fence(10)?,
+                read_request(),
+                facts.clone(),
+            )
+            .await
+            .map_err(debug)?;
+        assert_eq!(
+            promoted.balance.available(CharmCurrency::MinorCharmEchoes),
+            retained.balance.available(CharmCurrency::MinorCharmEchoes) + 100
+        );
+        assert_eq!(
+            promoted.balance.available(CharmCurrency::CharmPoints),
+            retained.balance.available(CharmCurrency::CharmPoints)
+        );
+        assert_eq!(promoted.bestiary_counts, retained.bestiary_counts);
         let before_replacement = snapshot(&harness.pool).await?;
         // Independently replace the live connection generation. The already-bound port must
         // reject its old evidence rather than reconstructing current authority from storage.

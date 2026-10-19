@@ -20,13 +20,33 @@
 
 use super::fixture::{Harness, debug, id, run};
 use super::{TestResult, prepare_current_session};
+use crate::ability::creature_bite::CreatureBiteVitals;
+use crate::content::native_gameplay::{NativeGameplayInput, PinnedGameplayBytes};
+use crate::content::{
+    ContentActivationController, NativeEntryActivationIssuance, NativeEntryContentPin,
+    NodeBootQuiescence, activate_native_entry_room_with_gameplay,
+};
 use crate::domain::currency::Coin;
+use crate::durability::character_build::{
+    BuildCause, BuildChangeRequest, BuildCommitOutcome, BuildFormula, BuildOccurrence,
+    DurableBuildState, convert_vocation,
+};
+use crate::durability::character_progression::{
+    CurrentCharacterGameplayFence, ExperienceAwardRequest, ExperienceCommitOutcome,
+    ExperienceRewardOccurrence,
+};
+use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
+use crate::foundation::{
+    AuthenticatedTransportRefV1, CharacterId, CharacterLease, CommandId, CommandRef,
+};
 use crate::foundation::{
     ChannelContentPin, ChannelId, ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementFacing,
     MovementLocalPosition, NodeId, NpcPlacement, NpcPlacementTable, NpcPlacements, WorldId,
 };
-use crate::foundation::{CommandId, CommandRef};
-use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
+use crate::gameplay_transport::connection::{
+    AdmittedSession, ControllerBinding, FirstEntryOutcome, FreshAdmissionAuthority,
+    SessionContinuity, UseCommand,
+};
 use crate::gameplay_transport::npc_promotion::{
     BLESSING_OCCURRENCE_TAG, PROMOTION_OCCURRENCE_TAG, PremiumReconcile, promotion_command_id,
 };
@@ -39,8 +59,10 @@ use crate::gameplay_transport::spell_premium_coordinator::{
 };
 use crate::gameplay_transport::{ComposedFreshAdmission, NpcTalkBook, NpcTalkOwners};
 use crate::premium::{IngestOutcome, PremiumConsumer, TrustedNow};
+use crate::spell::cast::CharacterCastFacts;
 use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
+use oteryn_simulation_determinism::ExactI64;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
@@ -73,6 +95,11 @@ const CONTENT_REVISION: &str = "content-1";
 /// One intent per step stays well inside the `NPC0-RL-05` window of four per second.
 const STEP: Duration = Duration::from_millis(400);
 const SCENARIO_STACK_BYTES: usize = 64 << 20;
+/// The pinned World source of the NPC cases (the backpack policy and the start position).
+const CANARY_WORLD: &[u8] =
+    include_bytes!("../../../../tools/content-schema/native-gameplay/canary-thalom-world.json");
+/// The production experience table's level 20 floor: the promotion's minimum level.
+const LEVEL_20_EXPERIENCE: i64 = 98_800;
 const BACKPACK: u8 = 60;
 const CRYSTAL: u8 = 63;
 
@@ -83,12 +110,14 @@ enum Case {
     Blessing,
     /// Blood of the Mountain by a Character with no equipped backpack, paid from the bank.
     BankBlessing,
+    /// #2256: the promotion bought at the NPC is shown at the next login and prices the death.
+    PromotionDeath,
 }
 
 impl Case {
     const fn npc_key(self) -> &'static str {
         match self {
-            Self::Promotion => NPC_KEY,
+            Self::Promotion | Self::PromotionDeath => NPC_KEY,
             Self::Blessing | Self::BankBlessing => BLESSING_NPC_KEY,
         }
     }
@@ -221,6 +250,16 @@ fn blessing_without_backpack_is_paid_from_the_bank() -> TestResult {
     on_scenario_stack("bank-blessing-npc-e2e", Case::BankBlessing)
 }
 
+/// #2256 (D76, A4.2) end to end: a level 20 sorcerer admitted through the production ADMIT
+/// steps buys the promotion at the NPC through command-7 dispatch before Premium delivery; its
+/// Premium registration is released and the session admitted again, whose login read shows the
+/// promoted vocation; a real lethal creature hit then commits a death whose experience loss is
+/// the promoted one.
+#[test]
+fn promotion_bought_at_the_npc_shows_at_login_and_prices_the_death() -> TestResult {
+    on_scenario_stack("promotion-death-npc-e2e", Case::PromotionDeath)
+}
+
 fn on_scenario_stack(name: &str, case: Case) -> TestResult {
     std::thread::Builder::new()
         .name(name.into())
@@ -238,10 +277,14 @@ fn scenario(case: Case) -> TestResult {
             Case::Promotion => "promotion_npc_e2e",
             Case::Blessing => "blessing_npc_e2e",
             Case::BankBlessing => "bank_blessing_npc_e2e",
+            Case::PromotionDeath => "promotion_death_npc_e2e",
         };
-        let harness = Harness::create_with_admission_seed(admin, name, true, false).await?;
+        // The death case binds and initializes its progression through the production
+        // admission step, as a fresh Character does.
+        let initialized = case != Case::PromotionDeath;
+        let harness = Harness::create_with_admission_seed(admin, name, initialized, false).await?;
         prepare_current_session(&harness).await?;
-        {
+        if initialized {
             let mut tx = harness.pool.begin().await?;
             sqlx::raw_sql(sqlx::AssertSqlSafe(vocation_choice()))
                 .execute(&mut *tx)
@@ -258,12 +301,14 @@ fn scenario(case: Case) -> TestResult {
         let world = WorldId::decode(&id(42)).map_err(debug)?;
         let channel = ChannelId::decode(&id(43)).map_err(debug)?;
         let session = GameSessionId::decode(&id(50)).map_err(debug)?;
-        let (controller, pin) = crate::content::native_gameplay::tests::activated_with_loot_tables(
-            world,
-            Some(include_bytes!(
-                "../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
-            )),
-        );
+        let (controller, pin) = if case == Case::PromotionDeath {
+            death_generation(world)?
+        } else {
+            crate::content::native_gameplay::tests::activated_with_loot_tables(
+                world,
+                Some(CANARY_WORLD),
+            )
+        };
         let active = controller.active().expect("activated generation");
         let native = active.native_gameplay().expect("native gameplay state");
         let index = native
@@ -421,7 +466,7 @@ fn scenario(case: Case) -> TestResult {
         // The promotion: before Premium delivery, the WHEEL-0 §6.2 exception through the real
         // latch. A blessing has no such exception: it needs a Current Premium.
         let premium_gate = match case {
-            Case::Promotion => {
+            Case::Promotion | Case::PromotionDeath => {
                 SpellPremiumCoordinator::new(Arc::default(), None, None, Some(harness.root.clone()))
             }
             Case::Blessing | Case::BankBlessing => current_premium(&harness).await?,
@@ -494,7 +539,15 @@ fn scenario(case: Case) -> TestResult {
                         &runtime,
                         actor,
                         session,
-                        crate::gameplay_transport::actor_spell::tests::FACTS,
+                        if case == Case::PromotionDeath {
+                            // The level the death case's progression reaches before it buys.
+                            CharacterCastFacts {
+                                level: 20,
+                                ..crate::gameplay_transport::actor_spell::tests::FACTS
+                            }
+                        } else {
+                            crate::gameplay_transport::actor_spell::tests::FACTS
+                        },
                         (0, 0),
                         owner.owner_now(),
                     )
@@ -506,7 +559,7 @@ fn scenario(case: Case) -> TestResult {
         owner.chat.admit(session, "Fixture Hero", owner.owner_now());
         owner.chat.set_npc_service(session);
         let (npc_name, declared, offers): (_, &[&str], _) = match case {
-            Case::Promotion => ("King Tibianus", &[SERVICE_KEY], (1, 0)),
+            Case::Promotion | Case::PromotionDeath => ("King Tibianus", &[SERVICE_KEY], (1, 0)),
             Case::Blessing | Case::BankBlessing => ("Kais", &BLESSING_SERVICE_KEYS, (1, 1)),
         };
         let services = SourcePremiumNpcCatalogue::embedded(
@@ -523,7 +576,9 @@ fn scenario(case: Case) -> TestResult {
         }));
 
         let before = revision(&harness).await?;
-        assert_eq!(before, 2);
+        if initialized {
+            assert_eq!(before, 2);
+        }
         let seeded = if case == Case::BankBlessing { 0 } else { 3 };
         assert_eq!(crystals(&harness).await?, seeded);
         let at = (actor, session, npc);
@@ -531,6 +586,7 @@ fn scenario(case: Case) -> TestResult {
             Case::Promotion => promotion_steps(&harness, &mut owner, at, before).await?,
             Case::Blessing => blessing_steps(&harness, &mut owner, at, before).await?,
             Case::BankBlessing => bank_blessing_steps(&harness, &mut owner, at, before).await?,
+            Case::PromotionDeath => promotion_death_steps(&harness, &mut owner, at).await?,
         }
 
         drop(owner);
@@ -541,6 +597,221 @@ fn scenario(case: Case) -> TestResult {
 }
 
 type At = (ExactActorRef, GameSessionId, EntityRef);
+
+/// The production manifest's generation over the NPC cases' World source, with its training
+/// section interpreted under the fixture Character root's Content revision (as the composed
+/// death cases do), so the death writer prices the build loss with the active formula.
+fn death_generation(
+    world: WorldId,
+) -> TestResult<(ContentActivationController, NativeEntryContentPin)> {
+    use sha2::Digest as _;
+    let manifest =
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content/spells.manifest.json");
+    let mut supplied = NativeGameplayInput::from_manifest(&manifest).map_err(debug)?;
+    supplied.source_world = Some(PinnedGameplayBytes {
+        bytes: CANARY_WORLD.to_vec(),
+        sha256: hex(&sha2::Sha256::digest(CANARY_WORLD)),
+    });
+    supplied
+        .build_training
+        .as_mut()
+        .ok_or("the manifest pins build training")?
+        .content_revision = CONTENT_REVISION.into();
+    let room =
+        crate::content::qualify_selected_native_gameplay_room(world, &supplied).map_err(debug)?;
+    let issuance = NativeEntryActivationIssuance {
+        world_id: world,
+        activation_sequence: 1,
+        server_artifact_digest: room.compiled().server_digest(),
+        client_artifact_digest: room.compiled().client_digest(),
+        frame_binding_digest: room.frame_binding().digest(),
+    };
+    let mut controller = ContentActivationController::new();
+    let pin = activate_native_entry_room_with_gameplay(
+        &mut controller,
+        &NodeBootQuiescence::before_channel_runtime(),
+        world,
+        &issuance,
+        &supplied,
+    )
+    .map_err(debug)?;
+    Ok((controller, pin))
+}
+
+async fn current_fence(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    session: GameSessionId,
+) -> TestResult<CurrentCharacterGameplayFence> {
+    Ok(owner
+        .current_quest_fence(session)
+        .await
+        .map_err(|()| "fence read")?
+        .ok_or("terminal session")?)
+}
+
+/// The production ADMIT steps of the fixture session that the promotion reads: the account's
+/// Premium registration, the progression binding (which initializes a fresh Character) and the
+/// quest step, which reads the durable promotion under the session's current fence.
+async fn admit(owner: &ComposedFreshAdmission<'_, '_, '_>, admitted: &mut AdmittedSession) {
+    owner.admit_premium(id(40), admitted.game_session_id);
+    owner.admit_progression_session(admitted).await;
+    owner.admit_quest_session(admitted).await;
+}
+
+/// #2256 (D76, A4.2): login shows the base vocation, the promotion is bought at the NPC through
+/// dispatch, the next admission shows the promoted vocation, and a real lethal hit commits the
+/// promoted death loss.
+#[allow(
+    clippy::too_many_lines,
+    reason = "one end-to-end scenario: login, purchase, login again and the death"
+)]
+async fn promotion_death_steps(
+    harness: &Harness,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    at: At,
+) -> TestResult {
+    let (actor, session, _) = at;
+    let mut admitted = AdmittedSession {
+        game_session_id: session,
+        world_id: owner.world_id,
+        channel_id: owner.channel_id,
+        runtime_actor: Some(actor),
+        first_entry: FirstEntryOutcome::NotApplicable,
+        controller: Some(ControllerBinding {
+            transport: AuthenticatedTransportRefV1::decode(&[9; 16]).map_err(debug)?,
+            account_id: id(40),
+        }),
+        continuity: SessionContinuity::FRESH,
+        item_fence: None,
+    };
+
+    // The first login: nothing durable is promoted, so the base vocation shows.
+    admit(owner, &mut admitted).await;
+    assert_eq!(owner.shown_promotion(session), Some(false));
+    assert_eq!(owner.shown_vocation(session, "sorcerer"), "sorcerer");
+    let progression = owner
+        .progression_binding(session)
+        .ok_or("the session binds the generation's progression")?;
+    let formula = owner
+        .active_generation
+        .and_then(|active| active.native_gameplay())
+        .and_then(|native| native.training_formula())
+        .ok_or("the generation's training formula")?;
+    let table: &dyn BuildFormula = formula;
+
+    // Setup through the durable root under the session's current fences: the sorcerer choice
+    // and the level 20 experience the promotion requires.
+    let sorcerer =
+        convert_vocation(table, &DurableBuildState::default(), "sorcerer").map_err(debug)?;
+    let chosen = owner
+        .root
+        .commit_character_build(
+            owner.character,
+            owner.holder,
+            current_fence(owner, session).await?,
+            BuildChangeRequest {
+                occurrence: BuildOccurrence::from_bytes(id(90)).map_err(debug)?,
+                cause: BuildCause::VocationChoice,
+                before: DurableBuildState::default(),
+                after: sorcerer,
+                pruned_stance: None,
+            },
+            table,
+        )
+        .await
+        .map_err(debug)?;
+    assert!(matches!(chosen, BuildCommitOutcome::Committed(_)));
+    let award = owner
+        .root
+        .commit_character_experience(
+            owner.character,
+            owner.holder,
+            current_fence(owner, session).await?,
+            ExperienceAwardRequest {
+                occurrence: ExperienceRewardOccurrence::from_bytes(id(91)).map_err(debug)?,
+                amount: ExactI64::new(LEVEL_20_EXPERIENCE),
+                context: progression.context.clone(),
+                policy_revision: progression.policy_revision.clone(),
+                reward_revision: progression.reward_revision.clone(),
+                policy: progression.policy.clone(),
+            },
+        )
+        .await
+        .map_err(debug)?;
+    assert!(matches!(award, ExperienceCommitOutcome::Committed(_)));
+    // The owner's revision writer starts after the setup writes, as after an admission, and the
+    // admitted actor holds its Character lease, as first entry leaves it.
+    owner.revision_sequencer = CharacterRevisionSequencer::new();
+    owner
+        .runtime
+        .lock()
+        .await
+        .bind_attacker_lease(
+            actor,
+            session,
+            CharacterLease::new(CharacterId::decode(&id(41)).map_err(debug)?, 2).map_err(debug)?,
+        )
+        .map_err(debug)?;
+
+    // The purchase through command-7 dispatch, before Premium delivery (WHEEL-0 §6.2).
+    talk(owner, at, 1, "hello").await;
+    talk(owner, at, 2, "promotion").await;
+    let (bought, changed) = talk(owner, at, 3, "yes").await;
+    assert_eq!(
+        bought,
+        vec!["Congratulations! You are now promoted.".to_owned()]
+    );
+    assert!(changed);
+    assert_eq!(promotion_receipts(harness).await?, 1);
+    // The running session keeps the choice of its login (D73).
+    assert_eq!(owner.shown_promotion(session), Some(false));
+
+    // The Premium registration is released and the session admitted again: the login read
+    // takes the durable promotion under the current fence and shows the promoted vocation.
+    owner.release_premium(id(40), session);
+    assert_eq!(owner.shown_promotion(session), None);
+    admit(owner, &mut admitted).await;
+    assert_eq!(owner.shown_promotion(session), Some(true));
+    assert_eq!(owner.shown_vocation(session, "sorcerer"), "master_sorcerer");
+
+    // A real lethal creature hit records the death; the composed respawn commits it.
+    let death = {
+        let mut runtime = owner.runtime.lock().await;
+        let mut states = owner.spell_states.lock().await;
+        let now = crate::foundation::owner_timer::SemanticTimeMicros::from_micros(
+            owner.owner_now().get(),
+        );
+        let hit = states
+            .apply_creature_damage(&mut runtime, actor, session, 100_000, now)
+            .ok_or("the hit lands")?;
+        assert_eq!(hit.damage.health_after, 0);
+        states
+            .player_death(&runtime, actor, session)
+            .ok_or("the lethal hit records the death")?
+    };
+    owner
+        .respawn_after_death(actor, session, death)
+        .await
+        .ok_or("the death settles and the actor respawns")?;
+
+    // D76: the death transaction read the durable promotion and, before delivery, the empty
+    // latch, so the loss is the promoted one, not the full one.
+    let (experience_before, experience_lost): (i64, i64) = sqlx::query_as(
+        "SELECT experience_before, experience_lost FROM game_character_death_receipts \
+          WHERE character_id = encode($1,'hex')::uuid",
+    )
+    .bind(id(41).as_slice())
+    .fetch_one(&harness.pool)
+    .await?;
+    assert_eq!(experience_before, LEVEL_20_EXPERIENCE);
+    let promoted =
+        i64::try_from(crate::domain::death::death_experience_loss(20, 0, true).map_err(debug)?)?;
+    let full =
+        i64::try_from(crate::domain::death::death_experience_loss(20, 0, false).map_err(debug)?)?;
+    assert!(promoted < full);
+    assert_eq!(experience_lost, promoted);
+    Ok(())
+}
 
 /// The promotion through dispatch, its replay, its reconcile after a lost outcome and its refusal.
 async fn promotion_steps(
@@ -882,7 +1153,7 @@ async fn receipt_binds_its_command(
     command_id: u64,
 ) -> TestResult {
     let (tag, stored, copy, insert, constraint) = match case {
-        Case::Promotion => (
+        Case::Promotion | Case::PromotionDeath => (
             PROMOTION_OCCURRENCE_TAG,
             "SELECT game_session_id = encode($1,'hex')::uuid, command_id::text \
                FROM game_character_promotion_receipts",

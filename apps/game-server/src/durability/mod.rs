@@ -32,6 +32,7 @@ pub mod character_last_position;
 pub mod character_proficiency;
 pub mod character_proficiency_modification;
 pub mod character_progression;
+pub(crate) mod character_promotion;
 pub mod character_revision_sequencer;
 pub mod character_stance;
 pub mod character_vitals_soul;

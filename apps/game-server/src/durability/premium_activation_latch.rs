@@ -254,6 +254,17 @@ impl DurabilityRoot {
     }
 }
 
+/// #2256 (D76): a writer that applies the pre-delivery promotion exception in its own
+/// transaction takes the shared lock as that transaction's first statement after `BEGIN` and
+/// reads the latch on it. `false` (empty table) holds until the transaction ends: a latch commit
+/// waits for it, so the writer's commit is ordered before delivery.
+pub(crate) async fn latched_under_shared_lock(
+    tx: &mut PremiumGateTx<'_>,
+) -> Result<bool, DurabilityError> {
+    lock_shared(tx).await?;
+    Ok(read_latch(tx).await?.is_some())
+}
+
 /// The gate's first statement after `BEGIN` (PREMIUM-ACTIVATION-0 §1.2, one global lock order).
 async fn lock_shared(tx: &mut PremiumGateTx<'_>) -> Result<(), DurabilityError> {
     sqlx::query("SELECT pg_advisory_xact_lock_shared($1)")

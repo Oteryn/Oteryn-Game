@@ -77,6 +77,7 @@ fn death(tag: u8, blessings: &[&str]) -> TestResult<CharacterDeathRequest<10>> {
             map_revision: "map-1".into(),
         },
         respawn_position: b"temple:thais".to_vec(),
+        premium: crate::durability::character_death::DeathPremium::NotCurrent,
     })
 }
 
@@ -1415,6 +1416,222 @@ fn a_restart_before_the_placement_keeps_the_respawn_and_loses_experience_once() 
             drop(again_authority);
             drop(again_seal);
             drop(again);
+            harness.cleanup().await
+        })
+    })
+}
+
+/// #2256: the durable promotion row the D1106 purchase writes (migration 0137), seeded without
+/// its purchase receipt and with triggers off. The purchase chain has its own cases; here only
+/// the death writer's and the login read's own reads of the row are under test.
+async fn promote(pool: &sqlx::PgPool) -> TestResult {
+    let mut tx = pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query(
+        "INSERT INTO game_character_promotions (character_id, promoted, purchase_occurrence_id) \
+         VALUES (encode($1,'hex')::uuid, true, encode($2,'hex')::uuid)",
+    )
+    .bind(id(41).as_slice())
+    .bind(id(0x7e).as_slice())
+    .execute(&mut *tx)
+    .await?;
+    tx.commit().await?;
+    Ok(())
+}
+
+fn loss(promoted: bool) -> TestResult<i64> {
+    let loss = crate::domain::death::death_experience_loss(9, 0, promoted)
+        .map_err(|error| format!("{error:?}"))?;
+    Ok(i64::try_from(loss)?)
+}
+
+/// #2256 (D76): the death writer reads the durable promotion in its own transaction. The 30%
+/// promotion reduction applies only to a promoted Character whose attempt found Premium current
+/// or not yet delivered; an unpromoted Character and a non-current Premium lose in full.
+#[test]
+fn the_durable_promotion_reduces_the_death_loss_only_with_current_premium() -> TestResult {
+    use crate::durability::character_death::DeathPremium;
+    run(|admin| {
+        Box::pin(async move {
+            // Level 9: 0.59 × 50 × 44 = 1298 in full, −30% with the promotion: 908.6 → 908.
+            assert_eq!((loss(false)?, loss(true)?), (1298, 908));
+            for (case, promoted, premium, lost) in [
+                (
+                    "unpromoted current",
+                    false,
+                    DeathPremium::Current,
+                    loss(false)?,
+                ),
+                (
+                    "unpromoted pre-delivery",
+                    false,
+                    DeathPremium::PreDelivery,
+                    loss(false)?,
+                ),
+                (
+                    "promoted not current",
+                    true,
+                    DeathPremium::NotCurrent,
+                    loss(false)?,
+                ),
+                ("promoted current", true, DeathPremium::Current, loss(true)?),
+                (
+                    "promoted pre-delivery",
+                    true,
+                    DeathPremium::PreDelivery,
+                    loss(true)?,
+                ),
+            ] {
+                let tag = format!("death_promo_{}", case.replace([' ', '-'], "_"));
+                let harness = create(admin.clone(), &tag, &[]).await?;
+                if promoted {
+                    promote(&harness.pool).await?;
+                }
+                let seal = harness
+                    .recovery
+                    .seal_current()
+                    .map_err(|error| format!("{error:?}"))?;
+                let authority = harness
+                    .root
+                    .open_character_authority(&seal)
+                    .await
+                    .map_err(|error| format!("{error:?}"))?;
+                let mut request = death(97, &[])?;
+                request.premium = premium;
+                let first = committed(
+                    harness
+                        .root
+                        .commit_character_death(
+                            &authority,
+                            &harness.node,
+                            fence(1)?,
+                            request.clone(),
+                        )
+                        .await
+                        .map_err(|error| format!("{case}: {error:?}"))?,
+                )?;
+                assert_eq!(first.experience_lost.get(), lost, "{case}");
+                assert_eq!(first.experience_after.get(), 6500 - lost, "{case}");
+                // The evaluation is retry-local: a replay under another evaluation returns the
+                // first receipt unchanged.
+                request.premium = match premium {
+                    DeathPremium::NotCurrent => DeathPremium::Current,
+                    DeathPremium::Current | DeathPremium::PreDelivery => DeathPremium::NotCurrent,
+                };
+                assert_eq!(
+                    harness
+                        .root
+                        .commit_character_death(&authority, &harness.node, fence(1)?, request)
+                        .await
+                        .map_err(|error| format!("{case}: {error:?}"))?,
+                    CharacterDeathOutcome::AlreadyCommitted(first),
+                    "{case}"
+                );
+                drop(authority);
+                drop(seal);
+                harness.cleanup().await?;
+            }
+            Ok(())
+        })
+    })
+}
+
+/// #2256 (D76, WHEEL-0 §6.2): a pre-delivery attempt takes the latch's shared lock first and reads
+/// the latch itself. A promoted Character's death after delivery latched is refused before any
+/// write; the retry with a fresh, current evaluation commits the promoted loss.
+#[test]
+fn a_pre_delivery_death_after_the_latch_is_refused_writing_nothing() -> TestResult {
+    use crate::durability::character_death::DeathPremium;
+    run(|admin| {
+        Box::pin(async move {
+            let harness = create(admin, "death_promo_latched", &[]).await?;
+            promote(&harness.pool).await?;
+            harness
+                .root
+                .latch_premium_activation("activation-1", 0, 0)
+                .await
+                .map_err(|error| format!("{error:?}"))?;
+            let seal = harness
+                .recovery
+                .seal_current()
+                .map_err(|error| format!("{error:?}"))?;
+            let authority = harness
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(|error| format!("{error:?}"))?;
+            let before = snapshot(&harness.pool).await?;
+            let mut request = death(98, &[])?;
+            request.premium = DeathPremium::PreDelivery;
+            assert!(matches!(
+                harness
+                    .root
+                    .commit_character_death(&authority, &harness.node, fence(1)?, request.clone())
+                    .await,
+                Err(CharacterProgressionError::AuthorityRejected)
+            ));
+            assert_eq!(snapshot(&harness.pool).await?, before);
+            request.premium = DeathPremium::Current;
+            let first = committed(
+                harness
+                    .root
+                    .commit_character_death(&authority, &harness.node, fence(1)?, request)
+                    .await
+                    .map_err(|error| format!("{error:?}"))?,
+            )?;
+            assert_eq!(first.experience_lost.get(), loss(true)?);
+            drop(authority);
+            drop(seal);
+            harness.cleanup().await
+        })
+    })
+}
+
+/// #2256 (A4.2): the login read takes the durable promotion through the NPC purchase owner, in
+/// the Character's revision slot, under the exact current gameplay fence; a stale fence reads
+/// nothing.
+#[test]
+fn the_login_read_takes_the_durable_promotion_under_the_current_fence() -> TestResult {
+    use crate::durability::character_promotion::{DurablePromotion, DurablePromotionRead};
+    run(|admin| {
+        Box::pin(async move {
+            let harness = create(admin, "login_promo_read", &[]).await?;
+            let seal = harness
+                .recovery
+                .seal_current()
+                .map_err(|error| format!("{error:?}"))?;
+            let authority = harness
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(|error| format!("{error:?}"))?;
+            let sequencer = CharacterRevisionSequencer::new();
+            let character =
+                CharacterId::from_bytes(id(41)).map_err(|error| format!("{error:?}"))?;
+            let read = async |fence| {
+                let mut slot = sequencer.acquire(character).await;
+                slot.commit_npc_purchase(
+                    &harness.root,
+                    &authority,
+                    &harness.node,
+                    fence,
+                    |owner, fence| async move { owner.commit(DurablePromotionRead { fence }).await },
+                )
+                .await
+            };
+            let before = snapshot(&harness.pool).await?;
+            assert!(matches!(read(fence(1)?).await, Ok(DurablePromotion(false))));
+            promote(&harness.pool).await?;
+            assert!(matches!(read(fence(1)?).await, Ok(DurablePromotion(true))));
+            let mut stale = fence(1)?;
+            stale.connection_generation =
+                ConnectionGeneration::new(9).map_err(|error| format!("{error:?}"))?;
+            assert!(read(stale).await.is_err());
+            assert_eq!(snapshot(&harness.pool).await?, before);
+            drop(authority);
+            drop(seal);
             harness.cleanup().await
         })
     })

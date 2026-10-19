@@ -4,15 +4,18 @@
 //! pre-delivery exception. Callers borrow the native PremiumStatus inside the gate
 //! closure once per command/use; the exception retains its native PreDelivery witness.
 //! No entitlement classification or reusable authority is constructed here. The NPC
-//! conversation (`npc_promotion`) is the only caller; migration 0137 installs the schema.
+//! conversation (`npc_promotion`) is the only purchase caller; migration 0137 installs the
+//! schema. #2256 adds the login projection and the death writer's Premium evaluation.
 
 use crate::content::{ProjectV2DefinitionRef, ProjectV2Family};
 use crate::domain::premium::{PremiumRefusal, PremiumStatus, require_promotion_premium};
 use crate::domain::{CharacterId, CharacterRevision};
 use crate::durability::DurabilityError;
+use crate::durability::character_death::DeathPremium;
 use crate::durability::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence,
 };
+use crate::durability::character_promotion::read_durable_promotion;
 use crate::durability::character_revision_sequencer::{SequencedError, SequencedOutcome};
 use crate::durability::item_fee_burn::{
     FeeBurnCause, FeeBurnError, FeeBurnOutcome, FeeBurnRequest, burn_fee_in_transaction,
@@ -86,18 +89,41 @@ pub(crate) fn check_promotion_eligibility(
 
 /// The promoted name/title projection chosen at login (§4.2 D73/D76). It is not a gameplay
 /// permission: benefits re-read the native rule at each use, and a lapse never clears durable
-/// promotion. Vocation/title selection and login composition stay with their existing owners.
-/// The login/ADMIT caller is a later child outside this allocation, tracked in #2256.
-#[allow(
-    dead_code,
-    reason = "Pending CP login projection caller (#2256) retains this API."
-)]
+/// promotion. Its caller is the session admission (`ComposedFreshAdmission::admit_promotion`,
+/// #2256), which reads the durable promotion under the session's current fence.
 #[must_use]
 pub(crate) const fn effective_promotion_at_login(
     durable_promoted: bool,
     premium: &PremiumStatus<'_>,
 ) -> bool {
     durable_promoted && require_promotion_premium(premium).is_ok()
+}
+
+/// D76 (#2256): the death writer's Premium evaluation from the account's gate status. The death
+/// transaction combines it with the durable promotion it reads; before delivery it also reads
+/// the latch itself.
+#[must_use]
+pub(crate) const fn death_premium(premium: &PremiumStatus<'_>) -> DeathPremium {
+    match premium {
+        PremiumStatus::Current => DeathPremium::Current,
+        PremiumStatus::NotActivated(_) => DeathPremium::PreDelivery,
+        PremiumStatus::NotCurrent => DeathPremium::NotCurrent,
+    }
+}
+
+/// The promoted vocation key of a base vocation (PREMIUM_ACTIVATION §4.2), shown as the
+/// vocation and title of a promoted Character at login. `None` for a vocation that has no
+/// promotion (including no vocation) or is already promoted.
+#[must_use]
+pub(crate) fn promoted_vocation(base: &str) -> Option<&'static str> {
+    match base {
+        "druid" => Some("elder_druid"),
+        "knight" => Some("elite_knight"),
+        "monk" => Some("exalted_monk"),
+        "paladin" => Some("royal_paladin"),
+        "sorcerer" => Some("master_sorcerer"),
+        _ => None,
+    }
 }
 
 /// Server-resolved NPC/service provenance, retained by the source receipt.
@@ -336,8 +362,7 @@ async fn apply_promotion_purchase(
         .await?;
     let level: i64 = sqlx::query_scalar("SELECT level FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
         .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut ***tx).await?;
-    let promoted: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_promotions WHERE character_id=encode($1,'hex')::uuid AND promoted)")
-        .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut ***tx).await?;
+    let promoted = read_durable_promotion(tx, fence.character_id).await?;
     let quoted = promotion_coin_fee_quote(
         u32::try_from(level).map_err(|_| DurabilityError::InvalidStoredState)?,
         promoted,
@@ -387,10 +412,10 @@ async fn apply_promotion_purchase(
     if inserted.rows_affected() != 1 {
         return Err(DurabilityError::InvalidStoredState.into());
     }
-    // The durable promotion row. Its gameplay readers (death D76, login/ADMIT A4.2, Wheel and
-    // Bestiary facts) are later children outside this allocation, tracked in #2256. Here it
-    // only refuses a repeat purchase. Production offers no promotion before the slot-only
-    // content step declares the Service, so no Character pays before those readers exist.
+    // The durable promotion row. Its gameplay readers (#2256) take it through
+    // `durability::character_promotion` under their own current fence: the death writer (D76),
+    // the login projection (A4.2), the Wheel change and the Bestiary Charm facts. Here it
+    // refuses a repeat purchase.
     sqlx::query("INSERT INTO game_character_promotions(character_id,promoted,purchase_occurrence_id) VALUES(encode($1,'hex')::uuid,true,encode($2,'hex')::uuid)")
         .bind(fence.character_id.as_bytes().as_slice()).bind(request.occurrence.as_slice()).execute(&mut ***tx).await?;
     let updated = sqlx::query(

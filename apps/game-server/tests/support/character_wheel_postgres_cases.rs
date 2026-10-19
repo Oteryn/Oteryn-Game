@@ -70,14 +70,11 @@ fn request(seed: u8, expected: u64, points: &[(usize, u16)]) -> TestResult<Wheel
     })
 }
 
-const ELIGIBLE: WheelChangeFacts = WheelChangeFacts {
-    promoted: true,
-    at_temple: false,
-};
-const AT_TEMPLE: WheelChangeFacts = WheelChangeFacts {
-    promoted: true,
-    at_temple: true,
-};
+const ELIGIBLE: WheelChangeFacts = WheelChangeFacts { at_temple: false };
+const AT_TEMPLE: WheelChangeFacts = WheelChangeFacts { at_temple: true };
+
+/// The seed of the durable promotion's purchase occurrence.
+const PROMOTION: u8 = 0x7e;
 
 async fn commit(
     harness: &Harness,
@@ -240,8 +237,8 @@ fn choose_vocation(occurrence: u8, vocation: &str) -> String {
     )
 }
 
-/// Character 41 at level 60, `sorcerer`, revision 3.
-async fn eligible(pool: &sqlx::PgPool) -> TestResult {
+/// Character 41 at level 60, `sorcerer`, revision 3, not promoted.
+async fn level_and_vocation(pool: &sqlx::PgPool) -> TestResult {
     expect_committed(
         pool,
         "setup XP r2",
@@ -249,6 +246,32 @@ async fn eligible(pool: &sqlx::PgPool) -> TestResult {
     )
     .await?;
     expect_committed(pool, "setup vocation r3", &choose_vocation(91, "sorcerer")).await
+}
+
+/// #2256: the durable promotion row the D1106 purchase writes (migration 0137), seeded without
+/// its purchase receipt and with triggers off. The purchase chain is covered by the promotion
+/// purchase cases; here only the Wheel writer's own read of the row is under test.
+async fn promote(pool: &sqlx::PgPool) -> TestResult {
+    let mut tx = pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query(
+        "INSERT INTO game_character_promotions (character_id, promoted, purchase_occurrence_id) \
+         VALUES (encode($1,'hex')::uuid, true, encode($2,'hex')::uuid)",
+    )
+    .bind(id(CHARACTER).as_slice())
+    .bind(id(PROMOTION).as_slice())
+    .execute(&mut *tx)
+    .await?;
+    tx.commit().await?;
+    Ok(())
+}
+
+/// Character 41 at level 60, `sorcerer`, revision 3, with a durable promotion.
+async fn eligible(pool: &sqlx::PgPool) -> TestResult {
+    level_and_vocation(pool).await?;
+    promote(pool).await
 }
 
 /// Register a later ruleset revision with the first revision's capacities.
@@ -441,7 +464,27 @@ fn wheel_changes_commit_replay_and_refuse_writing_nothing() -> TestResult {
             )))
         );
         assert_eq!(snapshot(pool).await?, before);
-        eligible(pool).await?;
+        level_and_vocation(pool).await?;
+
+        // #2256: eligibility reads the durable promotion row, not a caller fact. Without the
+        // row the change is refused and nothing is written.
+        let before = snapshot(pool).await?;
+        assert_eq!(
+            commit(
+                harness,
+                &authority,
+                fence(3)?,
+                request(1, 0, &[(15, 10)])?,
+                &r1,
+                AT_TEMPLE
+            )
+            .await,
+            Ok(WheelCommitOutcome::Refused(WheelRefusal::NotEligible(
+                WheelIneligibility::NotPromoted
+            )))
+        );
+        assert_eq!(snapshot(pool).await?, before);
+        promote(pool).await?;
 
         // r4: the first change writes the state row pinned to the active revision.
         let first = committed(
@@ -512,15 +555,6 @@ fn wheel_changes_commit_replay_and_refuse_writing_nothing() -> TestResult {
                 request(2, 1, &[(15, 10)])?,
                 ELIGIBLE,
                 WheelRefusal::NoChange,
-            ),
-            (
-                "not promoted",
-                request(2, 1, &[(15, 9)])?,
-                WheelChangeFacts {
-                    promoted: false,
-                    at_temple: true,
-                },
-                WheelRefusal::NotEligible(WheelIneligibility::NotPromoted),
             ),
             (
                 "capacity",

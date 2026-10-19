@@ -16,6 +16,7 @@ use super::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence, assert_gameplay_fence, numeric_u64,
     state_matches_root, uuid_text, valid_revision,
 };
+use super::character_promotion::read_durable_promotion;
 use super::db::{
     begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
 };
@@ -111,8 +112,9 @@ pub struct BestiaryCharmEntry {
 /// Production [`CharmFacts`] over the CHARM-2 kill counters (`game_character_bestiary_progress`),
 /// read in the Charm command's transaction. Every counter writer advances the CharacterRevision
 /// under the same root lock, so the counters read here are current. A counter of a race missing
-/// from `entries` earns nothing and admits no assignment. No durable promotion or slot
-/// entitlement exists yet: `promoted` is `false` and the entitlement `Free` until one does.
+/// from `entries` earns nothing and admits no assignment. `promoted` reads the durable
+/// promotion (#2256) in the same transaction, under the same root lock. No durable slot
+/// entitlement exists yet: the entitlement is `Free` until one does.
 #[derive(Debug, Clone)]
 pub struct BestiaryCharmFacts {
     entries: Arc<BTreeMap<String, BestiaryCharmEntry>>,
@@ -203,10 +205,10 @@ impl CharmFacts for BestiaryCharmFacts {
 
     async fn promoted(
         &self,
-        _connection: &mut PgConnection,
-        _character: CharacterId,
+        connection: &mut PgConnection,
+        character: CharacterId,
     ) -> std::result::Result<bool, DurabilityError> {
-        Ok(false)
+        read_durable_promotion(connection, character).await
     }
 
     async fn slot_entitlement(

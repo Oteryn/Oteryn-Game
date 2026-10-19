@@ -18,7 +18,7 @@ registry: maybe
 owner: "Codex family lead: Rozwój postaci i trening; policy worker /root/training_review"
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
-updated_at: 2026-10-18
+updated_at: 2026-10-19
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/domain/premium.rs
@@ -43,6 +43,22 @@ owned_paths:
   - apps/game-server/src/node/serve.rs (production Premium NPC service install; CP authorization 2026-10-18)
   - rulesets/character/blessings/ (from #2237 BLESSINGS-CONTENT-1; owner pricing ruling 2026-10-18 edits)
   - docs/reference/content-prep/blessings-content-1/ (from #2237 BLESSINGS-CONTENT-1; owner pricing ruling 2026-10-18 edits)
+  - apps/game-server/src/durability/character_promotion.rs (new; #2256 durable promotion read)
+  - apps/game-server/src/durability/character_death.rs (#2256 D76 promotion and Premium inputs only)
+  - apps/game-server/src/durability/character_wheel.rs (#2256 durable promotion read only)
+  - apps/game-server/src/durability/charm_state.rs (#2256 BestiaryCharmFacts promotion read only)
+  - apps/game-server/src/durability/premium_activation_latch.rs (#2256 shared-lock latch read for the death writer)
+  - apps/game-server/src/durability/mod.rs (#2256 own-module `character_promotion` registration line only)
+  - apps/game-server/src/gameplay_transport/mod.rs (#2256 death Premium gate, login promotion and PremiumSessions hunks)
+  - apps/game-server/tests/character_authority_postgres.rs (#2256 death request literal only)
+  - apps/game-server/tests/support/character_death_writer_postgres_cases.rs (#2256 cases and request literals)
+  - apps/game-server/tests/support/character_wheel_postgres_cases.rs (#2256 durable promotion seed and case)
+  - apps/game-server/tests/support/character_wheel_cast_postgres_cases.rs (#2256 durable promotion seed)
+  - apps/game-server/tests/support/charm_state_postgres_cases.rs (#2256 durable promotion case)
+  - apps/game-server/tests/support/character_last_position_postgres_cases.rs (#2256 death request literal only)
+  - apps/game-server/tests/support/character_progression_admission_postgres_cases.rs (#2256 death request literal only)
+  - apps/game-server/tests/support/character_revision_sequencer_postgres_cases.rs (#2256 death request literal only)
+  - apps/game-server/tests/support/item_transfer_postgres_cases.rs (#2256 death request literal only)
 slot_only_paths:
   - apps/game-server/src/lib.rs (premium module registration after #2197)
   - migration number
@@ -662,10 +678,50 @@ the bank debit, the zero burn, the balance, the held blessing and idempotent
 reconcile.
 
 Deferred review findings (tracked, outside this allocation):
-- #2256: the durable promotion has no gameplay reader yet (death D76,
-  login/ADMIT A4.2, Wheel, Bestiary). Those are the later children named
-  above. No player can pay for it before then: production offers no
-  promotion until the slot-only content step declares the Service.
+- #2256: done in this PR (CP decision 2026-10-19); see the section below.
 - #2257: CI runs no lib-registered PostgreSQL e2e (including this PR's
   `promotion_npc_postgres_tests`). The fix is in `.github/workflows`. Locally,
   all 3 `promotion_npc` e2e tests pass against PostgreSQL 17.6.
+
+## 2026-10-19 — #2256: gameplay readers of the durable promotion
+
+CP decided that #2256 lands in this PR: without a reader, a player who buys the
+promotion pays the fee and gets nothing. Every reader takes the
+`game_character_promotions` row through its owner
+(`durability::character_promotion::read_durable_promotion`), on the
+transaction that holds its own current fence:
+
+- Death (D76): `CharacterDeathRequest::premium` carries the attempt's Premium
+  evaluation (`premium_promotion::death_premium`: `Current`, `PreDelivery` or
+  `NotCurrent`). The death transaction reads the durable promotion after its
+  fence and held-blessings checks and binds `promoted_with_current_premium`
+  from it. Before delivery it first takes the latch's shared advisory lock
+  (`latched_under_shared_lock`) as its first statement; a latch that has
+  committed meanwhile refuses the attempt with nothing written, and the next
+  cadence retries it under the delivered status. A replay returns the first
+  receipt whatever the new evaluation.
+- Login/ADMIT (A4.2, D73): `admit_quest_session` calls `admit_promotion`, which
+  reads the promotion with `DurablePromotionRead` under the session's current
+  fence in the Character's revision slot and applies
+  `effective_promotion_at_login` with the account's Premium gate. The choice is
+  kept per session in `PremiumSessions` until the session's Premium release;
+  `shown_vocation` gives the promoted vocation (and title) key.
+- Wheel: `WheelChangeFacts` no longer carries `promoted`;
+  `commit_character_wheel` reads the durable promotion.
+- Bestiary Charm: `BestiaryCharmFacts::promoted` reads the durable promotion.
+
+Tests (PostgreSQL 17.6, locally):
+- `character_authority_postgres` (CI-registered, `pr-postgres-harness`):
+  the death writer's five promotion and Premium combinations and their replay,
+  the pre-delivery death refused after the latch, the fenced login read, the
+  Wheel change refused before the promotion, and the Charm echoes after it.
+- Lib e2e
+  `promotion_bought_at_the_npc_shows_at_login_and_prices_the_death`
+  (`promotion_npc_postgres_tests`): login shows the base vocation, the
+  purchase goes through command-7 dispatch, the next admission shows
+  `master_sorcerer`, and a real lethal hit commits the promoted loss (7546,
+  not 10780, at level 20). Like the other lib PostgreSQL e2e, CI does not run
+  it until #2257 (and #2164) give the lib tests an admin URL.
+
+Open (owner question): no client wire field carries the shown vocation or
+title yet, so `shown_vocation` has no wire caller.

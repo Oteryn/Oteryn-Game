@@ -290,6 +290,7 @@ fn death(tag: u8) -> TestResult<CharacterDeathRequest<10>> {
             map_revision: "map-1".into(),
         },
         respawn_position: vec![0, 0, 0, 1, 0, 0, 0, 2, 0, 7],
+        premium: crate::durability::character_death::DeathPremium::NotCurrent,
     })
 }
 

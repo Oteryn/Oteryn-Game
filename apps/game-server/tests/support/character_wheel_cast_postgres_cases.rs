@@ -351,6 +351,21 @@ async fn allocate(
     recovery: &ReconciledCharacterAuthority<'_, '_>,
     rules: &Arc<WheelRuleset>,
 ) -> TestResult {
+    // #2256: the Wheel writer reads the durable promotion row (migration 0137) itself. Seeded
+    // without its purchase receipt, with triggers off; the purchase chain has its own cases.
+    let mut promote = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *promote)
+        .await?;
+    sqlx::query(
+        "INSERT INTO game_character_promotions (character_id, promoted, purchase_occurrence_id) \
+         VALUES (encode($1,'hex')::uuid, true, encode($2,'hex')::uuid)",
+    )
+    .bind(id(CHARACTER).as_slice())
+    .bind(id(0x7e).as_slice())
+    .execute(&mut *promote)
+    .await?;
+    promote.commit().await?;
     let mut points = [0; WHEEL_SLOTS];
     for (index, slot) in rules.slots().iter().enumerate() {
         if slot.domain == WheelDomain::Green {
@@ -369,10 +384,7 @@ async fn allocate(
                 slots: WheelSlots::new(points).map_err(debug)?,
             },
             Arc::clone(rules),
-            WheelChangeFacts {
-                promoted: true,
-                at_temple: false,
-            },
+            WheelChangeFacts { at_temple: false },
         )
         .await
         .map_err(debug)?;

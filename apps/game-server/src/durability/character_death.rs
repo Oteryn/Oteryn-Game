@@ -8,8 +8,9 @@
 //! recorded position, and empties the monk Harmony and remaining forced Serene
 //! time (SPELL-D8 §8.2 cross-owner item, migration 0026).  It writes Character
 //! state only.  Until DEATH-3 a death selects no Amulet of Loss and loses no
-//! item; no durable promotion or Premium state exists yet, so the D66
-//! promotion reduction never applies.
+//! item.  The D66 promotion reduction (D76, #2256) applies when the durable
+//! promotion read in this transaction holds and the session's Premium is
+//! current for the death (see [`DeathPremium`]).
 //!
 //! DEATH-2 adds the consumption of the pending respawn (DEATH-0 §3.4) and the
 //! sequenced settlement the Channel owner runs off its lane for one runtime
@@ -33,10 +34,12 @@ use super::character_progression::{
     assert_gameplay_fence, numeric_u64, policy_digest, state_matches_root, stored_context_matches,
     uuid_text, valid_revision,
 };
+use super::character_promotion::read_durable_promotion;
 use super::character_revision_sequencer::{CharacterRevisionSequencer, RevisionSlot};
 use super::db::{
     begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
 };
+use super::premium_activation_latch::latched_under_shared_lock;
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use crate::domain::death::calculate_death_build_family_loss;
@@ -85,9 +88,28 @@ pub struct DeathCell {
     pub map_revision: String,
 }
 
+/// The Premium evaluation of one death attempt (D76, #2256), taken from the account's Premium
+/// gate just before the death commits. It is retry-local, like the session fence: it is not in
+/// the command binding, and a retained receipt replays whatever its first commit applied.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum DeathPremium {
+    /// Premium is not current (or the session holds no Premium registration): a promoted
+    /// Character loses as an unpromoted one.
+    #[default]
+    NotCurrent,
+    /// The gate found the account's Premium current after delivery.
+    Current,
+    /// The gate found Premium not yet delivered (WHEEL-0 §6.2 pre-delivery exception). The death
+    /// transaction takes the latch's shared lock first and reads the latch itself: if delivery
+    /// has latched since, a promoted Character's death is refused before any write and the
+    /// caller retries with a fresh gate status.
+    PreDelivery,
+}
+
 /// Complete semantic input of one death.  `held_blessings` is the intent's
 /// view of the held set in strictly ascending byte order; it must equal the
-/// durable set when a new death commits.
+/// durable set when a new death commits.  `premium` is the attempt's Premium
+/// evaluation; the durable promotion is read in the death transaction.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CharacterDeathRequest<const N: usize> {
     pub occurrence: PlayerDeathOccurrence,
@@ -98,6 +120,7 @@ pub struct CharacterDeathRequest<const N: usize> {
     pub held_blessings: Vec<String>,
     pub death_cell: DeathCell,
     pub respawn_position: Vec<u8>,
+    pub premium: DeathPremium,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -205,6 +228,13 @@ impl DurabilityRoot {
             .run_with_context(&mut formula, move |holder, deadline, formula| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    // D76 pre-delivery: the latch's shared lock is the first statement after
+                    // BEGIN (PREMIUM-ACTIVATION-0 §1.2 lock order); an empty latch then holds
+                    // until this transaction ends.
+                    let latched = match request.premium {
+                        DeathPremium::PreDelivery => latched_under_shared_lock(&mut tx).await?,
+                        DeathPremium::NotCurrent | DeathPremium::Current => false,
+                    };
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
 
@@ -300,6 +330,19 @@ impl DurabilityRoot {
                     if held != request.held_blessings {
                         return Ok(Err(CharacterProgressionError::HeldBlessingsMismatch));
                     }
+                    // D76 (#2256): the durable promotion, read under the root lock the fence
+                    // took, with the Premium evaluation of this attempt.
+                    let promoted = read_durable_promotion(&mut tx, fence.character_id).await?;
+                    let promoted_with_current_premium = match request.premium {
+                        DeathPremium::NotCurrent => false,
+                        DeathPremium::Current => promoted,
+                        // Delivered since the gate decided: the exception no longer holds and
+                        // this attempt cannot tell whether Premium is current.
+                        DeathPremium::PreDelivery if promoted && latched => {
+                            return Ok(Err(CharacterProgressionError::AuthorityRejected));
+                        }
+                        DeathPremium::PreDelivery => promoted,
+                    };
 
                     let level = u32::try_from(state.try_get::<i64, _>("level")?)
                         .map_err(|_| DurabilityError::InvalidStoredState)?;
@@ -322,7 +365,7 @@ impl DurabilityRoot {
                             .declared_difference_revision
                             .clone(),
                         regular_blessings,
-                        promoted_with_current_premium: false,
+                        promoted_with_current_premium,
                     };
                     let staged = match calculate_progression(
                         &snapshot,
@@ -1250,8 +1293,10 @@ fn push_bytes(semantic: &mut Vec<u8>, bytes: &[u8]) -> Result<()> {
 
 /// Digest of the complete death intent (0016 §3.1): character, original
 /// revision, occurrence, policy contents and revisions, blessings held, the
-/// promotion and Premium evaluation, the item-effect inputs and the death
-/// cell and respawn position.  Retry-local session authority is excluded.
+/// item-effect inputs and the death cell and respawn position.  Retry-local
+/// session authority is excluded, and so is the promotion and Premium
+/// evaluation (#2256): it is durable state and a gate status read for each
+/// attempt, and the receipt's `experience_lost` records what it applied.
 fn command_binding<const N: usize>(
     fence: &CurrentCharacterGameplayFence,
     request: &CharacterDeathRequest<N>,
@@ -1273,7 +1318,8 @@ fn command_binding<const N: usize>(
     for blessing in &request.held_blessings {
         push_bytes(&mut semantic, blessing.as_bytes())?;
     }
-    // Promotion with current Premium: not evaluable before Premium activation.
+    // The promotion and Premium evaluation is read per attempt, not bound (#2256); the byte
+    // keeps every retained binding stable.
     semantic.push(0);
     // Amulet of Loss state, equipment/backpack snapshot and RNG stream: none
     // until DEATH-3 (death decision §4.4 delivery gap).
@@ -1639,6 +1685,7 @@ mod tests {
                 map_revision: "map-1".into(),
             },
             respawn_position: b"temple:thais".to_vec(),
+            premium: crate::durability::character_death::DeathPremium::NotCurrent,
         }
     }
 
@@ -2239,6 +2286,7 @@ mod death_build_postgres {
                 map_revision: "map-1".into(),
             },
             respawn_position: b"temple:thais".to_vec(),
+            premium: crate::durability::character_death::DeathPremium::NotCurrent,
         })
     }
 

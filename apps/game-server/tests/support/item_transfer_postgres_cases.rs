@@ -3335,6 +3335,7 @@ fn derived_capacity_follows_real_level_award_and_death_receipts() -> TestResult 
                         map_revision: "map-1".into(),
                     },
                     respawn_position: b"fixture:temple".to_vec(),
+                    premium: crate::durability::character_death::DeathPremium::NotCurrent,
                 },
             )
             .await
