@@ -841,9 +841,17 @@ The prepush Stage C review of `7b8a05d1` made three findings:
   does not block is still written, and domain 21 frames keep the stricter `write_vip_frame`.
   Only a session that selected capability 31 is bounded. The bounded write is boxed, so it does
   not grow the session future.
+- Round 5 finding, fixed (VIP0 §8.2): a command 31 is bounded by the same deadline, because the
+  presence timer does not run while it executes. A command cut at the deadline has an unknown
+  outcome, so the connection ends and the resend replays the receipt.
 - Round 4 finding, fixed: a session keeps two full consent views of retired handle bindings
   (`2 * (MAX_VIP_INVITATIONS + MAX_VIP_WATCHERS)`), so a reconnect from a full view keeps every
   binding a resend can name.
+- Cross-domain finding (REPORT_ONLY): the listener-down dispatch scenario in
+  `durability/vip_tests.rs` builds `ComposedFreshAdmission` with `SeamRooms::new(None, None)`.
+  The BUNDLE-GATES-1 inventory test (`bundle_gates_tests::a_bundle_world_seam_has_no_qualified_room`)
+  needs the entry `("durability/vip_tests.rs", 1)` in `CONSTRUCTIONS`. That file is outside
+  owned_paths, so the entry is left to CP.
 - F2, deferred: when admission refuses the VIP snapshot, the session fails closed (no VIP state).
   A mid-session snapshot retry would need a new client-visible step (a wire and CP decision). The
   client recovers by reconnecting.
@@ -858,8 +866,9 @@ Tests:
   handle-less replay case.
 - The listener-down dispatch scenario, which now also covers the locked receipt lookup that
   answers unknown.
-- `vip_wire::a_stalled_command_result_ends_the_connection_at_the_confirmation_deadline`, through
-  the real `serve_admitted` dispatch.
+- `vip_wire::a_stalled_command_result_ends_the_connection_at_the_confirmation_deadline` and
+  `vip_wire::a_command_outliving_the_confirmation_deadline_ends_the_connection`, through the real
+  `serve_admitted` dispatch.
 
 These passed locally on PostgreSQL 17.6:
 - lib `vip`: 90 passed;

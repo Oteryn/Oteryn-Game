@@ -1880,7 +1880,9 @@ mod chat_wire {
                 )
                 .await
             };
-            let (hearing, missing, speaking) = join3(hearing, missing, speaking).await;
+            // Boxed: three debug-build session futures do not fit the default 2 MiB test stack.
+            let (hearing, missing, speaking) =
+                join3(Box::pin(hearing), Box::pin(missing), Box::pin(speaking)).await;
             let (near_end, near_frames) = hearing?;
             let (far_end, far_frames) = missing?;
             let (_, speaker_frames) = speaking?;
@@ -2516,6 +2518,8 @@ mod vip_wire {
         deltas: Vec<VipDelta>,
         unknown: bool,
         write_bound: Option<Duration>,
+        /// How long `vip_intent` runs after recording the intent.
+        intent_delay: Duration,
     }
 
     impl VipAuthority {
@@ -2530,6 +2534,7 @@ mod vip_wire {
                 deltas: Vec::new(),
                 unknown: false,
                 write_bound: Some(Duration::from_secs(1)),
+                intent_delay: Duration::ZERO,
             }
         }
     }
@@ -2591,6 +2596,9 @@ mod vip_wire {
                 command.command_id,
                 intent,
             ));
+            if !self.intent_delay.is_zero() {
+                tokio::time::sleep(self.intent_delay).await;
+            }
             (
                 VipCommandOutcome {
                     result: self.result,
@@ -2844,10 +2852,15 @@ mod vip_wire {
             assert!(deltas(&frames)?.is_empty());
             let calls = authority.calls.lock().expect("calls");
             assert_eq!(calls.intents, vec![(session_id, 1, intent)]);
-            // The result write is bounded too, but it does not block, so it is written.
+            // The command and its result write are bounded too, but neither blocks, so the
+            // result is written; the entry delta is not.
             assert_eq!(
                 calls.delivery,
-                vec![("bound", session_id), ("bound", session_id)]
+                vec![
+                    ("bound", session_id),
+                    ("bound", session_id),
+                    ("bound", session_id)
+                ]
             );
             Ok(())
         })
@@ -2895,6 +2908,39 @@ mod vip_wire {
             let calls = authority.calls.lock().expect("calls");
             assert_eq!(calls.intents, vec![(session_id, 1, intent)]);
             assert!(!calls.delivery.iter().any(|(call, _)| *call == "delivered"));
+            Ok(())
+        })
+    }
+
+    /// VIP0 §8.2: while an entry is shown ONLINE, a command that outlives the confirmation
+    /// deadline ends the connection with no result, so the client stops showing the status.
+    #[test]
+    fn a_command_outliving_the_confirmation_deadline_ends_the_connection()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            let mut authority = VipAuthority::new();
+            authority.write_bound = Some(Duration::from_millis(100));
+            authority.intent_delay = Duration::from_secs(3);
+            let session = admitted(&[CAPABILITY_VIP_V1])?;
+            let session_id = session.game_session_id;
+            let intent = VipIntent::Add {
+                name: "Bryn".to_owned(),
+            };
+            let payload = encode_vip_intent(&intent).map_err(|e| format!("{e:?}"))?;
+            let started = tokio::time::Instant::now();
+            let (end, frames) = serve_open(
+                &authority,
+                session,
+                &[command(1, COMMAND_TYPE_VIP_INTENT, &payload)],
+                Duration::from_secs(1),
+            )
+            .await?;
+            assert!(started.elapsed() < Duration::from_secs(3));
+            assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
+            assert!(results(&frames)?.is_empty());
+            assert!(deltas(&frames)?.is_empty());
+            let calls = authority.calls.lock().expect("calls");
+            assert_eq!(calls.intents, vec![(session_id, 1, intent)]);
             Ok(())
         })
     }

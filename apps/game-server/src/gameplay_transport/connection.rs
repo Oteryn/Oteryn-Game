@@ -3075,16 +3075,19 @@ where
         } else if command.command_type == COMMAND_TYPE_VIP_INTENT {
             // VIP-2: a malformed intent is REJECTED (VIP_RESULT_CODE_REJECTED). An unknown store
             // outcome ends the connection before the result, so the resend replays the receipt.
-            let (outcome, deltas) = authority
-                .vip_intent(
-                    UseCommand {
-                        game_session_id: admitted.game_session_id,
-                        command_id: command.command_id,
-                        item_fence: admitted.item_fence,
-                    },
-                    command.payload,
-                )
-                .await;
+            let ran = bounded_vip_intent(
+                authority,
+                UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: command.command_id,
+                    item_fence: admitted.item_fence,
+                },
+                command.payload,
+            )
+            .await;
+            let Some((outcome, deltas)) = ran else {
+                return ConnectionEnd::AdmittedThenDisconnected(admitted);
+            };
             if outcome.unknown {
                 return ConnectionEnd::AdmittedThenDisconnected(admitted);
             }
@@ -4186,6 +4189,28 @@ where
             Some(left) => tokio::time::timeout(left, write_frame(stream, frame))
                 .await
                 .unwrap_or_else(|_| Err(std::io::ErrorKind::TimedOut.into())),
+        }
+    })
+}
+
+/// VIP0 §8.2: while an entry is shown ONLINE, command 31 may not outlive its confirmation
+/// deadline, because the session's presence timer does not run meanwhile. `None`: the command was
+/// cut at the deadline, so its outcome is unknown. The connection then ends, the client stops
+/// showing the status, and the resend replays the receipt. Boxed like `write_bounded`.
+fn bounded_vip_intent<'a, A>(
+    authority: &'a A,
+    command: UseCommand,
+    payload: &'a [u8],
+) -> std::pin::Pin<Box<impl Future<Output = Option<(VipCommandOutcome, Vec<VipDelta>)>> + 'a>>
+where
+    A: FreshAdmissionAuthority,
+{
+    Box::pin(async move {
+        let session = command.game_session_id;
+        let intent = authority.vip_intent(command, payload);
+        match authority.vip_write_bound(session).await {
+            Some(left) => tokio::time::timeout(left, intent).await.ok(),
+            None => Some(intent.await),
         }
     })
 }

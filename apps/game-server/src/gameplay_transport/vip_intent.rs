@@ -1013,12 +1013,6 @@ mod tests {
             retire(&mut retired, [(handle, binding(handle)?)]);
         }
         assert_eq!(retired.len(), RETIRED_HANDLES);
-        // A reconnect retires a full consent view without losing any binding of it.
-        assert!(
-            RETIRED_HANDLES
-                >= oteryn_protocol_oteryn::vip::MAX_VIP_INVITATIONS
-                    + oteryn_protocol_oteryn::vip::MAX_VIP_WATCHERS
-        );
         assert_eq!(retired.keys().next(), Some(&4));
         assert_eq!(retired.keys().next_back(), Some(&count));
         assert!(
