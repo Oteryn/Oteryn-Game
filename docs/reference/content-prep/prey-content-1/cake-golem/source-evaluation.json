@@ -1,0 +1,221 @@
+{
+  "source_scope": "OTS_HYPOTHESIS_ONLY",
+  "method": "Executed exact NPC-independent monster source with existing importer mock registration; second run supplies only CakeQuest.Items copied from its source config, without launching game or quest callbacks.",
+  "monster_sha256": "48471262a6d87ca938218890cc10f3839bd072dbf9f71301e63df155933595cf",
+  "config_sha256": "044d68d0ed8a6b73b860365f6c7e917de62e249c7e176aa575788a0de51f4da9",
+  "items_table": "CakeQuest.Items = {\n\tCakeCabinetKit = 14756, -- cake cabinet kit\n\tCakeBackpack = 20347, -- cake backpack\n\tCakeTapestry = 20350, -- cake tapestry\n\tCupcakeBlueberry = 28484, -- blueberry cupcake\n\tCupcakeStrawberry = 28485, -- strawberry cupcake\n\tCupcakeLemon = 28486, -- lemon cupcake\n\n\tCakeEdibleIds = { 12085, 12086 },\n\n\tUpperFloorCakeIds = { 12147, 12148 },\n\n\tCakeBorderIds = { 12152, 12153, 12154, 12155 },\n\n\tCakeBaseIds = { 12090, 12091, 12092, 12093, 12094, 12095 },\n\n\tSweetAndSugarySubstance = 12143,\n}",
+  "runs": [
+    {
+      "with_source_items": false,
+      "error": "[string \"<python>\"]:73: attempt to index field 'Items' (a nil value)",
+      "registered": null
+    },
+    {
+      "with_source_items": true,
+      "registered": "Cake Golem",
+      "field_count": 21,
+      "monster": {
+        "speed": 95,
+        "manaCost": 0,
+        "changeTarget": {
+          "chance": 8,
+          "interval": 4000
+        },
+        "strategiesTarget": {
+          "nearest": 100
+        },
+        "flags": {
+          "summonable": false,
+          "attackable": true,
+          "hostile": true,
+          "convinceable": true,
+          "pushable": true,
+          "rewardBoss": false,
+          "illusionable": false,
+          "canPushItems": false,
+          "canPushCreatures": false,
+          "staticAttackChance": 90,
+          "targetDistance": 1,
+          "runHealth": 0,
+          "healthHidden": false,
+          "isBlockable": false,
+          "canWalkOnEnergy": true,
+          "canWalkOnFire": true,
+          "canWalkOnPoison": true,
+          "isPreyExclusive": false
+        },
+        "description": "a cake golem",
+        "experience": 100,
+        "outfit": {
+          "lookTypeEx": 6393
+        },
+        "raceId": 680,
+        "Bestiary": {
+          "class": "Construct",
+          "race": "@BESTY_RACE_CONSTRUCT",
+          "toKill": 5,
+          "FirstUnlock": 2,
+          "SecondUnlock": 3,
+          "CharmsPoints": 30,
+          "Stars": 2,
+          "Occurrence": 3,
+          "Locations": "Thais, Carlin, Edron, Darashia and Liberty Bay during the world quest A Piece of Cake."
+        },
+        "race": "venom",
+        "immunities": [
+          {
+            "condition": false,
+            "type": "paralyze"
+          },
+          {
+            "condition": false,
+            "type": "outfit"
+          },
+          {
+            "condition": true,
+            "type": "invisible"
+          },
+          {
+            "condition": false,
+            "type": "bleed"
+          }
+        ],
+        "defenses": {
+          "armor": 8,
+          "mitigation": 0.41,
+          "defense": 8,
+          "_list": [
+            {
+              "maxDamage": 250,
+              "target": false,
+              "effect": "@CONST_ME_MAGIC_BLUE",
+              "interval": 2000,
+              "chance": 15,
+              "name": "combat",
+              "type": "@COMBAT_HEALING",
+              "minDamage": 180
+            }
+          ]
+        },
+        "elements": [
+          {
+            "percent": 20,
+            "type": "@COMBAT_PHYSICALDAMAGE"
+          },
+          {
+            "percent": 85,
+            "type": "@COMBAT_DEATHDAMAGE"
+          },
+          {
+            "percent": 95,
+            "type": "@COMBAT_HOLYDAMAGE"
+          },
+          {
+            "percent": 95,
+            "type": "@COMBAT_ICEDAMAGE"
+          },
+          {
+            "percent": 85,
+            "type": "@COMBAT_FIREDAMAGE"
+          },
+          {
+            "percent": 90,
+            "type": "@COMBAT_ENERGYDAMAGE"
+          },
+          {
+            "percent": 95,
+            "type": "@COMBAT_EARTHDAMAGE"
+          },
+          {
+            "percent": 0,
+            "type": "@COMBAT_DROWNDAMAGE"
+          },
+          {
+            "percent": 0,
+            "type": "@COMBAT_HEALINGDAMAGE"
+          },
+          {
+            "percent": 0,
+            "type": "@COMBAT_LIFEDRAIN"
+          },
+          {
+            "percent": 0,
+            "type": "@COMBAT_MANADRAIN"
+          },
+          {
+            "percent": 0,
+            "type": "@COMBAT_DROWNDAMAGE"
+          }
+        ],
+        "attacks": [
+          {
+            "maxDamage": -45,
+            "interval": 2000,
+            "chance": 100,
+            "name": "melee",
+            "minDamage": 0
+          },
+          {
+            "interval": 2000,
+            "chance": 15,
+            "name": "combat",
+            "minDamage": 0,
+            "maxDamage": -40,
+            "range": 7,
+            "shootEffect": "@CONST_ANI_CAKE",
+            "effect": "@CONST_ME_POISONAREA",
+            "target": true
+          },
+          {
+            "duration": 8000,
+            "range": 7,
+            "interval": 2000,
+            "chance": 60,
+            "name": "drunk",
+            "shootEffect": "@CONST_ANI_CAKE",
+            "target": true
+          }
+        ],
+        "light": {
+          "color": 0,
+          "level": 0
+        },
+        "loot": [
+          {
+            "chance": 50000,
+            "maxCount": 1,
+            "id": 12143,
+            "minCount": 1
+          }
+        ],
+        "voices": {
+          "chance": 10,
+          "interval": 5000,
+          "_list": [
+            {
+              "yell": false,
+              "text": "Must... reach... the machine..."
+            },
+            {
+              "yell": true,
+              "text": "Sugary rage!"
+            }
+          ]
+        },
+        "maxHealth": 444,
+        "health": 444,
+        "corpse": 12141
+      }
+    }
+  ],
+  "source_commits_verified": [
+    "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+    "ddb493002b87b814e13453873e7db9a795933ac1"
+  ],
+  "monster_source": "data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+  "monster_blob_sha": "d95b96f4ed3c5e47d9219a3112c6065ea5de1e2d",
+  "config_source": "data-global/scripts/lib/a_piece_of_cake_config.lua",
+  "config_blob_sha": "b8291626b473b91916cdac2fe5727323c1367c6d",
+  "resolved_import_blocker": "CakeQuest.Items exists in the same pinned source; loading the exact table lets the complete source reach mock registration.",
+  "remaining_qualification": "No native admission, runtime activation, full converter readiness or Global parity is claimed. Cake Golem source isPreyExclusive=false differs from retained wildcard-only secondary reference. Native admission must preserve and resolve that discrepancy."
+}

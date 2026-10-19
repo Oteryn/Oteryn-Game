@@ -1,3 +1,7 @@
+# Cake Golem source recovery
+
+A [Cake Golem data bundle](cake-golem/README.md) now recovers all21 source fields using the exact quest Items dependency. Structural/semantic/declared-reference validation passes. Import readiness correctly remains blocked on one attack with omitted combat type; the raw attack and source/wiki discrepancies are retained. This resolves the historical missing-configuration preparation failure, without claiming native admission or current Global parity.
+
 # Prey creature identity reconciliation
 
 All649source-listed creatures are checked against the current1863-definition native catalogue.643bindings resolve with no dangling or duplicate keys. Source identities for the remaining six are now explicit: Berrypest691, Cake Golem680, Elder Forest Fury1157, Furious Fire Elemental1000, Nightslayer579 and Undead Jester388. These are client-source creature IDs, not Oteryn ProductionKeys.
