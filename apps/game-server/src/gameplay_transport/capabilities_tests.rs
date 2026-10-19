@@ -256,7 +256,7 @@ fn selection_keeps_a_capability_only_with_all_its_requires() {
 }
 
 #[test]
-fn the_production_set_selects_only_capabilities_6_7_13_17_and_19_whatever_the_client_supports()
+fn the_production_set_selects_only_capabilities_6_7_9_13_17_19_and_21_whatever_the_client_supports()
 -> Result<(), Box<dyn Error>> {
     let mut everything: Vec<u32> = Vec::new();
     for capability in registry_capabilities()? {
@@ -269,14 +269,14 @@ fn the_production_set_selects_only_capabilities_6_7_13_17_and_19_whatever_the_cl
         SelectedCapabilities::select(PRODUCTION_OFFERED_CAPABILITIES, &everything)
             .as_ref()
             .map(SelectedCapabilities::as_slice),
-        Some(&[6, 7, 13, 17, 19, 21, 26][..])
+        Some(&[6, 7, 9, 13, 17, 19, 21, 26][..])
     );
     // MAP-ITEM-REF-1: the not-yet-offered Item view set adds 4, which requires 6.
     assert_eq!(
         SelectedCapabilities::select(ITEM_VIEW_OFFERED_CAPABILITIES, &everything)
             .as_ref()
             .map(SelectedCapabilities::as_slice),
-        Some(&[4, 6, 7, 13, 17, 19, 21, 26][..])
+        Some(&[4, 6, 7, 9, 13, 17, 19, 21, 26][..])
     );
     assert_eq!(
         SelectedCapabilities::select(ITEM_VIEW_OFFERED_CAPABILITIES, &[4, 13])

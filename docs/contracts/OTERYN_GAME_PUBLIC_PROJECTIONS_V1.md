@@ -216,8 +216,12 @@ different content, `429` rate limited, `503` unavailable.
   vocation by its §4.0 id 1..5, HIGHSCORES-0 §5). Every row of a base-vocation filter carries
   that `vocation`; Game refuses a list that does not.
 - `computed_at` is the snapshot's `computed_at`. `rows` are the snapshot's rows for that filter in
-  `position` order: 0..1,000 rows (`HIGHSCORES0-RL-02`). `rank` is the competition rank (1, 2, 2,
-  4). `character_id` is the row's character, at most once per snapshot. It is an internal join
+  `position` order: 0..1,000 rows (`HIGHSCORES0-RL-02`). Under filter 0, `rank` is the competition
+  rank of the list (1, 2, 2, 4). Under a base-vocation filter each row keeps its World competition
+  rank over all eligible characters (HIGHSCORES-0 §5): ranks are non-decreasing, may start above 1
+  and skip, and a rank after a tie run of n rows at rank r is at least r + n. Rank 0 is refused.
+  Game refuses any other rank sequence.
+  `character_id` is the row's character, at most once per snapshot. It is an internal join
   key and never appears on a public page (§7.3). `name` is the name read at the cut. `value` is
   the category value; `0` is allowed.
 - A row carries no `AccountId` or position. Category 10 (Achievement Points)
