@@ -835,6 +835,17 @@ impl NativeSummonMap<'_, '_, '_> {
             }
             let blocked = cells.index().lookup(cells.scope(), cell)
                 == Ok(crate::content::CollisionClass::Blocked);
+            // Item projectile flags apply to every tile, including movement-blocked ones.
+            let address =
+                crate::spell::world_items_execution::SpellGroundTarget::for_native_tile_read(
+                    self.room, runtime, position,
+                )
+                .ok()?;
+            let items =
+                item_tx::read_creature_scope_tile_in_transaction(self.tx, self.authority, &address)
+                    .await
+                    .ok()?;
+            let item_projectile_clear = !items.items.iter().any(|item| item.blocks_projectile);
             let terrain =
                 crate::spell::world_execution::qualified_creature_source_tile_in_transaction(
                     self.tx,
@@ -853,16 +864,17 @@ impl NativeSummonMap<'_, '_, '_> {
                 return blocked.then(|| CurrentNativeTile {
                     // The qualified spell index retains the source world's projectile flag
                     // even when the combat tile reader rejects its movement obstacle.
-                    projectile_clear: cells
-                        .spell_tiles()
-                        .lookup(cells.scope(), cell)
-                        .is_ok_and(|tile| !tile.flags().block_projectile),
+                    projectile_clear: item_projectile_clear
+                        && cells
+                            .spell_tiles()
+                            .lookup(cells.scope(), cell)
+                            .is_ok_and(|tile| !tile.flags().block_projectile),
                     ..refused
                 });
             };
             if blocked {
                 return Some(CurrentNativeTile {
-                    projectile_clear: !terrain.block_projectile(),
+                    projectile_clear: item_projectile_clear && !terrain.block_projectile(),
                     ..refused
                 });
             }
@@ -886,20 +898,11 @@ impl NativeSummonMap<'_, '_, '_> {
                     ),
                 ),
             };
-            let address =
-                crate::spell::world_items_execution::SpellGroundTarget::for_native_tile_read(
-                    self.room, runtime, position,
-                )
-                .ok()?;
-            let items =
-                item_tx::read_creature_scope_tile_in_transaction(self.tx, self.authority, &address)
-                    .await
-                    .ok()?;
             tile.walkable &= !items
                 .items
                 .iter()
                 .any(|item| item.blocks_movement || item.immovable_block_solid);
-            tile.projectile_clear &= !items.items.iter().any(|item| item.blocks_projectile);
+            tile.projectile_clear &= item_projectile_clear;
             Some(tile)
         }
         .await;
