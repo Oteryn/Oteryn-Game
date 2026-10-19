@@ -8,14 +8,14 @@ Audyt na polecenie właściciela, dla koordynatora. Sprawdzony Oteryn-Game `main
 
 Klasyfikacja: **PROVEN** = bezpośrednio odczytany plik/rekord; **DERIVED** = wniosek z danych i kodu; **CONFLICT** = źródła różnią się; **UNKNOWN** = brak wystarczającego dowodu. Są to klasy dowodów, nie zgoda na zmianę produktu.
 
-Zakres obejmuje wszystkie pliki z `newhaven` w ścieżce, sześć lokalnych NPC, wszystkie referencje tekstowe Newhaven w zachowanych plikach Lua/XML przypiętego korpusu, powiązane katalogi Oteryn, wszystkie shard-y spawnów oraz regiony B3 przecinające wskazany prostokąt. Po rozszerzeniu audytu porównano wszystkie źródłowe kratki wskazanego prostokąta z przypiętym OTBM oraz zweryfikowano zależności graficzne i dekodowanie użytych arkuszy. Nie przeprowadzono sesji E2E ani wizualnego porównania całego klienta z filmem; szczegóły w ostatniej sekcji. Podziemny prostokąt może zawierać inne obszary; jego statystyk nie należy utożsamiać z granicami Newhaven.
+Zakres obejmuje wszystkie pliki z `newhaven` w ścieżce, sześć lokalnych NPC, wszystkie referencje tekstowe Newhaven w zachowanych plikach Lua/XML przypiętego korpusu, powiązane katalogi Oteryn, wszystkie shard-y spawnów oraz regiony B3 przecinające wskazany prostokąt. Po rozszerzeniu audytu porównano wszystkie źródłowe kratki wskazanego prostokąta z przypiętym OTBM oraz zweryfikowano zależności graficzne i dekodowanie użytych arkuszy. Nie przeprowadzono sesji E2E ani wizualnego porównania uruchomionego klienta Oteryn z filmem; szczegóły w ostatniej sekcji. Podziemny prostokąt może zawierać inne obszary; jego statystyk nie należy utożsamiać z granicami Newhaven.
 
 Koordynacja: [#1622](https://github.com/Oteryn/Oteryn-Game/issues/1622). [Wstrzymanie #2186](https://github.com/Oteryn/Oteryn-Game/pull/2186#issuecomment-6254969126) pozostaje w mocy: brak nowych ramek/hintów/pushy do tego PR. Raport jest oddzielnym materiałem do decyzji koordynatora.
 
 ## Źródła
 
 - CrystalServer `9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d`, zachowany w `tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz`. Mapa Oteryn ma odrębne bindingi mapy z rewizji `00ce02a57ca5a12e48f32a3476e37471167e4c3f`; katalog NPC deklaruje także `ff7ede593c69d4c658b382c97443e8155926924a`. Nie zakładać identyczności tych rewizji.
-- Film: https://www.youtube.com/watch?v=Jp_L0jbfsao, 33:16. Poniżej zachowano wcześniejszą rekonstrukcję: 28 zdarzeń, 101 wystąpień tekstu, 1941 próbek OCR co sekundę od 00:55 do 33:15 i odczyty kluczowych okien. Następnie wykonano nowy odczyt w Chrome na podłączonym laptopie: 238 unikalnych punktów czasu, siatka 15 s przez całą długość i gęstsze próbkowanie kluczowych przejść; korekty poniżej. Dawne 28 zdarzeń / 101 tekstów to indeks historycznej rekonstrukcji, nie liczba niezależnie ponownie potwierdzonych komunikatów ani dowód kompletności.
+- Film: https://www.youtube.com/watch?v=Jp_L0jbfsao, 33:16. Poniżej zachowano wcześniejszą rekonstrukcję: 28 zdarzeń, 101 wystąpień tekstu, 1941 próbek OCR co sekundę od 00:55 do 33:15 i odczyty kluczowych okien. Następnie wykonano odczyt w Chrome na podłączonym laptopie: najpierw 238 punktów, później pełny indeks każdej całkowitej sekundy 0..1995 oraz dodatkowe klatki graniczne. Ostateczny zbiór ma 2047 punktów, w tym 1996 punktów całkowitosekundowych, i 1996 odczytów sześciu obszarów UI; wyniki oraz granice dowodu poniżej. Dawne 28 zdarzeń / 101 tekstów to indeks historycznej rekonstrukcji, nie liczba niezależnie ponownie potwierdzonych komunikatów ani dowód kompletności.
 - OTClient `53d3a8ac2a091c12a445ec16b7ea8ada613acee0`, `modules/game_tutorial/{controller/tutorial_controller.lua,const/vocations.lua,template/html/tutorial.html}`. Wcześniej sprawdzony kontroler obsługuje ID 2, pozostałe numery nie są kompletną implementacją.
 - Snapshot pozycji NPC: `imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json`. Pozycja obserwowana/wiki nie jest nieruchomym punktem spawnu.
 - Wcześniej zbadany katalog tekstów klienta Tibia `15.33.9d148f`, SHA-256 `ea8d9fc576f3cad4b2976f1fa8d52a599ad74c951252c814a6e50e99d0ab3808`. Inna wersja niż film: obecność klucza tłumaczenia nie ustala jego wyzwalacza.
@@ -272,7 +272,7 @@ Wspólne sloty: i3355 head, i3561 armor, i3559 legs, i3552 feet, i34017 ammo; pl
 | UNKNOWN | Dokładna kratka lądowania Thais Peninsula | Film nie pokazuje współrzędnych. Pozycja Hectora nie ustala lądowania. Historyczny wariant Anny (32310,32210,6) także nie został potwierdzony. |
 | CONFLICT | Hint polowania | Crystal wywołuje stałe ID 3; enumeracja OTClient: Knight=3, Paladin=4. Film jest ścieżką Paladina. |
 | CONFLICT | Komentarz arrival Targuna | movements_main_continent_hint.lua opisuje ID 7, ale wykonuje sendTutorial(13). To inna trasa niż nagrany Thais. |
-| PROVEN / UNKNOWN | Czas i próg bannerów | Obserwowane przejście do Managing your riches zawężono do (1379.033333,1379.266666] s. Próg/reguła pozostaje nieznana. Off to New Shores nie potwierdzono ponownie w przypisanym oknie filmu; zachować jako tekst katalogu klienta. |
+| PROVEN / UNKNOWN | Dwa niezależne elementy UI | Player Guide zmienia się na Managing your riches w (1379.033333,1379.266666] s. Osobny górny baner Off to New Shores jest w pełni czytelny około 1406.5 s i w 1407 s. Oba współistnieją. Globalnych progów/timerów nie ustala sam zapis obrazu. |
 | UNKNOWN | Zliczanie Muglexów i źródło książki | Nie znaleziono producenta przyrostu newhavenMuglexKillCount w zachowanych Lua/XML; samo zerowanie i odczyt u Gustavo nie wystarczają. Brak powiązania otrzymania książki i44774. |
 | PROVEN / UNKNOWN | Geometria źródłowa i grafika | Porównanie całego prostokąta OTBM→B3 oraz zależności graficznych zamknięto w ostatniej sekcji. Nadal brak testu dojść i porównania wizualnego w kliencie. |
 
@@ -315,11 +315,13 @@ Autor otwiera Options → Controls i stosuje ustawienia.
 
 Uwaga: To ręczna konfiguracja autora filmu. Nie jest dowodem obowiązkowego etapu samouczka.
 
-### 02:37 — Portal i wybór profesji (`vocation-window`)
+### 02:36.5 — Portal i wybór profesji (`vocation-window`)
 
 Wejście w portal na wysepce; pojawia się okno wyboru oraz informacja o rozpoczęciu questa.
 
 Pozycja źródłowa: `[32544, 32515, 7]`.
+
+Wcześniejszy indeks zawierał również poniższe dwa teksty; **nie potwierdzono ponownie ich osobnego bannera w badanym obrazie po cięciu**. Potwierdzone są aktywny tracker i okno wyboru. Zachowano je jako historię rekonstrukcji, nie dowód zaobserwowanej animacji:
 
 > Quest started
 
@@ -387,9 +389,9 @@ Uwaga: Portal: (32538,32514,7); punkt przybycia: (32544,32515,7), według skrypt
 
 Uwaga: Gear i Spells pokazują się w rozwijanym panelu karty po najechaniu.
 
-### 04:13 — Wybranie Paladyna (`paladin`)
+### 04:12.5–04:14 — Wybranie Paladyna (`paladin`)
 
-Wybór Paladin; okno znika, zmienia się wyposażenie i zestaw hotkeyów.
+W 252.25 s okno jest jeszcze otwarte, w 252.5 s już zamknięte; w 254 s czytelne są poniższe dwa komunikaty i zmienione wyposażenie. To rozdziela akcję wyboru od odczytu jej skutków.
 
 Pozycja źródłowa: `[32544, 32515, 7]`.
 
@@ -511,6 +513,16 @@ Zdobycie doświadczenia w walce.
 
 > You gained hit points, mana, and capacity.
 
+### 11:18–11:22 — Distance Fighting 17 (`distance17`)
+
+Dalsze ataki dystansowe; jest to awans umiejętności, a nie osobny etap questa.
+
+> Distance Fighting
+
+> Your skill has advanced to level 17
+
+> You advanced to distance fighting level 17.
+
 ### 11:47 — Poziom 5 (`level5`)
 
 Zdobycie doświadczenia w walce.
@@ -519,7 +531,7 @@ Zdobycie doświadczenia w walce.
 
 > You gained hit points, mana, and capacity.
 
-### 15:21 — Distance Fighting 19 (`distance19`)
+### 15:15 — Distance Fighting 19 (`distance19`; banner widoczny przed dawnym 15:21)
 
 Kolejny awans podczas polowania.
 
@@ -535,7 +547,7 @@ Zdobycie doświadczenia w walce.
 
 > You gained hit points, mana, and capacity.
 
-### 18:32 — Distance Fighting 20 (`distance20`)
+### 18:30 — Distance Fighting 20 (`distance20`; komunikat widoczny przed dawnym 18:32)
 
 Kolejny awans podczas polowania.
 
@@ -575,21 +587,21 @@ W trakcie dalszej gry zmienia się panel Player Guide.
 
 Nowy odczyt zawęża zmianę: przy 1379.033333 s panel jeszcze pokazuje Level 9 / Magic Rope, przy 1379.266666 s już Congratulations! / Milestone unlocked: / Managing your riches. Film nie ustala dokładnego progu złota ani globalnej reguły wyzwolenia.
 
-### 23:24 — Distance Fighting 23 (`distance23`)
+### 23:17.5 — Distance Fighting 23 (`distance23`; wcześniejsza obserwacja niż dawne 23:24)
 
-Dalszy awans w trakcie polowania.
+Dalszy awans w trakcie polowania; pełna klatka 1397.5 s już pokazuje komunikat i Distance 23 w panelu umiejętności. Dawne 1404 s było późniejszym ujęciem tego samego stanu.
 
 > You advanced to distance fighting level 23.
 
-### Bez potwierdzonego czasu filmu — tekst katalogu (`new-shores`; dawniej 23:27)
+### 23:26–23:26.5 — Przypomnienie o wypłynięciu (`new-shores`)
 
-**UNKNOWN_VIDEO / SOURCE_ONLY:** dawny wpis przypisywał pojawienie się do 1407 s. Nowy odczyt tego punktu oraz próbek co 0.25 s w oknie 1406.25–1409 s pokazuje nadal Managing your riches. Nie potwierdzono tam poniższego tekstu. Nie traktować go jako zaobserwowanego kroku ani wyzwalacza.
+**PROVEN_VIDEO:** górny baner pojawia się podczas dalszego polowania i wychodzenia z obozu. W 1405.75 s jest nieobecny, w 1406 s widać początek animacji, około 1406.5 s jest rozwinięty, a pełna klatka 1407 s jednoznacznie potwierdza oba teksty poniżej. Równocześnie boczny Player Guide nadal pokazuje Managing your riches.
 
 > Off to New Shores
 
 > Leave the village and set sail to start your real adventure.
 
-Uwaga: Treść zachowano jako referencję katalogu oficjalnego klienta. Brak w sprawdzonych klatkach nie dowodzi nieobecności w każdej klatce całego filmu; wcześniejsza etykieta PROVEN_VIDEO i czas 1407 s zostają wycofane.
+Kontrola całej klatki przywraca PROVEN_VIDEO. W poprzedniej rewizji błędnie oceniono tylko boczny panel zamiast górnego bannera. Nagranie ustala położenie i kontekst obserwacji, nie globalny timer ani próg warunku.
 
 ### 26:17 — Rozmowa z Anną (`anna-hi`)
 
@@ -680,7 +692,7 @@ Uwaga: Grafika hint_08_arrivalmainpaladin.jpg z OTClient odpowiada oknu w filmie
 
 Uwaga: Mapa wskazuje położenie gracza, port, handel, naukę zaklęć i Wolf Den. Nie zawiera liczbowych współrzędnych.
 
-### 28:00 — Hector the Mentor (`hector`; potwierdzona klatka, nie pierwszy moment)
+### 27:56–28:00 — Hector the Mentor (`hector`; widoczność, nie rozmowa)
 
 Postać przechodzi przy Hectorze, którego wskazała Anna. Świeża klatka 1680 s pokazuje nazwę Hector The Mentor nad NPC i w Battle List. Dawne 1626 s to rozmyte przejście montażowe na pomoście; wycofano tę dokładną etykietę czasu. Nie ustalono pierwszej klatki pojawienia się Hectora.
 
@@ -740,7 +752,7 @@ Właściciel poprosił o sprawdzenie, czy zbadano wszystko. **Nie ma podstaw do 
 
 | Pytanie właściciela | Stan dowodu |
 | --- | --- |
-| Każdy komunikat słowo w słowo, bez żadnego pominięcia | 101 wystąpień w zachowanej rekonstrukcji; skan co sekundę nie wyklucza krótszych komunikatów ani pominięć OCR. Nie wykonano ponownej kontroli wszystkich klatek. |
+| Teksty i przebieg pokazanej ścieżki | Uzupełniono pełny indeks 1996 sekund i kontrolę sześciu obszarów UI; literalne instrukcje, rozmowy i uzupełnienia zapisano w tym raporcie. OCR pozostaje pomocniczy. Materiał montowany i próbki 1 s nie dowodzą każdej pojedynczej ramki ani treści niewidocznej w filmie. |
 | Dokładnie po jakiej akcji i z jakim opóźnieniem | Część reguł ze skryptów ustalona; dokładne timery i progi dwóch bannerów nadal nieustalone. |
 | Cała kolejność, również inne profesje i odgałęzienia | Nagranie dokumentuje ścieżkę Paladina. Inne profesje, Rookgaard i zadania poboczne nie mają pełnego nagranego przejścia. |
 | Wszystkie pozycje i dojścia | Start, portal i wskazane POI ustalone źródłowo; dokładna kratka lądowania Thais Peninsula nadal nieznana. Dojścia nie zostały przegrane. |
@@ -847,7 +859,7 @@ Część tych numerów jest już w zwykłych tabelach lootu Oteryn: corrupted gh
 ### Pozostałe blokady pełnego potwierdzenia
 
 - Historyczna kontrola Molehill-PC wykazała offline. Ten brak dostępu do filmu został później usunięty: na podłączonym laptopie otwarto YouTube w Chrome i wykonano nowy odczyt opisany poniżej. Nie odczytano instalacji klienta z offline PC. Nadal nie oznaczać dawnej liczby 101 jako kompletnej listy każdej klatki.
-- Nadal nie ustalono globalnego progu/reguły Managing your riches, filmowego wystąpienia Off to New Shores ani autorytatywnej kratki lądowania Thais Peninsula. Źródłowa Anna i nowszy snapshot prowadzą do Targuny, co nie potwierdza historycznej ścieżki filmu.
+- Nadal nie ustalono globalnych progów/reguł Managing your riches i Off to New Shores ani autorytatywnej kratki lądowania Thais Peninsula. Oba elementy UI są natomiast potwierdzone w obrazie. Źródłowa Anna i nowszy snapshot prowadzą do Targuny, co nie potwierdza historycznej ścieżki filmu.
 - Obecny main nie ma kompletnego wykonania tutoriala Newhaven; quest czeka na lowering, a potrzebni NPC nie są rozmieszczeni. Nie można zaliczyć przejścia E2E niezaimplementowanej ścieżki. Ten audyt nie przydziela jej implementacji.
 - Brak testu gry obejmującego inne profesje, zadania poboczne, śmierć, reconnect i restart. Obecność ogólnych testów teleportu i poprawnych plików nie jest takim testem.
 
@@ -869,10 +881,10 @@ Napisy YouTube i panel transkrypcji nie dostarczyły użytecznej pełnej transkr
 | Walka Paladina | Okno nieobecne 442.266666 s, obecne 442.533333 s; wejście na północ od wioski. Pozycje warunkowe pochodzą ze skryptu. |
 | Skill i ostrzeżenia | Odczytano Distance Fighting 16 w 471 s. W 487 s równocześnie Target Too Close oraz oddzielną odmowę PvP poniżej poziomu 8. |
 | Managing your riches | Zmiana panelu w przedziale (1379.033333,1379.266666] s. Brak dowodu dokładnego progu złota lub globalnego warunku. |
-| Off to New Shores | Niepotwierdzone w przypisanym dawniej czasie; wpis przeniesiony do referencji katalogu klienta. |
+| Off to New Shores | Potwierdzone na całej klatce jako osobny górny toast; 1405.75 s nieobecny, około 1406–1406.5 s rozwijany. Równoczesny boczny milestone nie dowodzi nieobecności toasta. |
 | Anna / Thais | Zachowany czat na 1605 s potwierdza ofertę, odmowę, ponowienie i zgodę oraz dokładne końcowe zdanie z `at the port`. W 1598 s widoczne Arrival in Thais. |
 | Hector | Nazwa widoczna na 1680 s. Nie dopisywać nieodbytej rozmowy ani traktować 1626 s jako momentu spotkania. |
-| Koniec filmu | Po Newhaven pokazano okolice portu, Player Guide / Compendium (1725 s), drogę przez Thais i świątynię Alia. Nie utożsamiać widocznych Loose Ends z obowiązkowymi zadaniami Newhaven. |
+| Koniec filmu | Po Hectorze są cięcia scen, Compendium: Exaltation Forge (1725 s), Alia (1815 s) i Liane (1905 s). Źródłowe pozycje Alii i Liane wskazują Carlin. Czat zachowuje poprzednie odpowiedzi; nie przypisywać starego tekstu Alii aktualnie widocznej Liane ani zakładać ciągłej drogi przez Thais. |
 
 Dodatkowe odczytane komunikaty po lądowaniu, poza dawnymi 101 wystąpieniami:
 
@@ -908,3 +920,67 @@ Lokalny artefakt sesji `/workspace/artifacts/tutorial-2186/browser-review-2026-1
 | [1665](https://www.youtube.com/watch?v=Jp_L0jbfsao&t=1665s) | 1665.033333 | `21653d2be6ed853184e94a2dcadcb82c5add9ab8d632b7578e69d2e8723724de` |
 | [1680](https://www.youtube.com/watch?v=Jp_L0jbfsao&t=1680s) | 1680.033333 | `c00b7ab9edc78b56bf70cc9a11499da2a341600f47355cb84056832ee5d7512a` |
 | [1995](https://www.youtube.com/watch?v=Jp_L0jbfsao&t=1995s) | 1995.033333 | `229d3b5e0b10068b1bd7799cccbd85a59d6e08232096abde46922d9d83551967` |
+
+
+## Domknięcie odczytu całej osi filmu
+
+**PROVEN — pełny zakres próbkowania:** zapisano klatkę dla każdej całkowitej sekundy **0..1995 (1996/1996, zero luk)** oraz dodatkowe punkty graniczne; łącznie **2047**. Każdy zapis ma źródłowe 2560×1440, czas przedstawionej klatki z `requestVideoFrameCallback`, odchylenie od żądanego punktu nie większe niż 0.12 s, długość właściwego filmu 1995.581 s i brak reklamy. Dla każdego z 1996 punktów wykonano odczyt Player Guide, Quest Tracker, czatu, górnego bannera, komunikatu środkowego i dolnego. Dekodowanie PNG oraz świeżość odczytów sprawdzono przed eksportem. To obejmuje całą oś nagrania; nie jest deklaracją próbkowania wszystkich 30 klatek każdej sekundy.
+
+Zamknięte w tej pracy: rekonstrukcja **pokazanej ścieżki Paladina**, literalny indeks instrukcji i odpowiedzi w tym raporcie, ich kolejność/kontekst, źródłowe pozycje startu/portalu/NPC oraz porównanie mapy. Implementację i kwalifikację uruchomionego Oteryn rozdziela koordynator. Materiał nie pokazuje całego tworzenia postaci ani wszystkich alternatywnych profesji i zadań; tych scen nie dopisano jako zaobserwowanych.
+
+### Uzupełnienia tekstów i czasów
+
+| Punkt obrazu | Akcja / obszar UI | Literalny tekst lub istotny szczegół |
+| --- | --- | --- |
+| 156.25 → 156.5 s | Cięcie wysepka → okno profesji | Przy 156.25 s nadal wysepka; przy 156.5 s pięć kart profesji i `Your goal: Reach level 8 and head for the main continent.` |
+| 252.25 → 252.5 s; 254 s | Wybór Paladina → potwierdzenia | Okno znika między pierwszymi dwoma punktami. W 254 s: `Your vocation has been set to Paladin.` w grze i `Switched to hotkey preset 'Paladin'.` na dole. |
+| 299 → 300 s | Powtórzenie rozmowy handlowej | `trade` pojawia się w czacie przed ponowną odpowiedzią `Of course, take a look and see what might interest you.`; nie mylić jej z wcześniejszą, nadal widoczną odpowiedzią. |
+| 471 s | System umiejętności, środek obrazu | Oprócz bannera z 16 jest `You advanced to distance fighting level 16.` |
+| 678–682 s | Kolejny awans Distance | `Distance Fighting` / `Your skill has advanced to level 17`; komunikat systemowy `You advanced to distance fighting level 17.`. To uzupełnienie dawnego indeksu, nie etap zadania. |
+| 915–918 s | Awans Distance 19 | Górny banner jest czytelny już w tych klatkach; dawne 921 s było późniejszą obserwacją komunikatu. |
+| 1110 s | Awans Distance 20 | Widoczny komunikat `You advanced to distance fighting level 20.`; dawne 1112 s było późniejszym odczytem. |
+| 498 / 707 / 968 s | Animacja w Player Guide | Grafika `Level up!` z liczbami odpowiednio 3 / 5 / 7, odrębna od górnego `Level N` i tekstu o hit points/mana/capacity. |
+| 1365 s | Player Guide po awansie | `Level up!` / `9` / `New spells available:` / `Magic Rope`. |
+| 1379.033333 → 1379.266666 s | Zmiana prawego panelu | `Congratulations!` / `Milestone unlocked:` / `Managing your riches`. |
+| 1397.5 s | Awans Distance 23 | Już czytelne `You advanced to distance fighting level 23.`; nie ustawiać początku na dawne 1404 s. |
+| 1405.75 → 1406–1406.5 s | Górny toast, niezależny od prawego panelu | `Off to New Shores` / `Leave the village and set sail to start your real adventure.` |
+| 1597.75 → 1598–1599 s | Zgoda na przeprawę → przybycie | Przy 1597.75 s `yes` jest już wpisane, gracz nadal u Anny; następne ujęcia pokazują przejazd, Arrival in Thais i końcowe zdanie Anny. `Quest completed` / `You have finished "Welcome to Newhaven (completed)".` jest czytelne w górnym toastcie. |
+| 1662–1680 s | Próba użycia przydrożnego obiektu | `Only rightful pilgrims of the Three-Fold Path and the Merudri themselves can use this shrine.`; to nie odpowiedź dialogowa Hectora. |
+| 1676 / 1680 s | Podejście w okolice mentora | Hector jest już widoczny w ujęciu 1676, jednoznacznie nazwany w 1680; nie odtwarzać dawnego 1626 jako rozmowy. |
+
+`Quest started` i `You have begun "Welcome to Newhaven".` pozostają w historycznym indeksie, ale ich osobnego bannera nie potwierdzono ponownie z całych badanych ujęć początku. W 156.5 s bezpośrednio widać już aktywny tracker i cel zadania po cięciu. Nie używać tych dwóch dawnych wpisów jako dowodu pokazanej animacji startowej. Inaczej niż w przypadku Off to New Shores nie uzyskano tu odczytu całej klatki potwierdzającego banner.
+
+### Ogólne komunikaty mechanik widoczne w nagraniu
+
+Poniższe teksty opisują działanie gry podczas tej ścieżki; wartości zależą od rozgrywki i nie są stałymi instrukcjami questa:
+
+- `You are not allowed to attack this player because one of you didn't reach level 8 yet!` — próba ataku na drugiego gracza, widoczna obok ostrzeżenia dystansu (487 s).
+- `Sorry, not possible.` — wielokrotne odrzucone akcje, również po Newhaven.
+- `No loot. (1 corpse)` — przeszukanie pustych zwłok (np. 1407 s).
+- `You looted 11 gold.` / `You looted the complete 13 gold and 1 item.` — przykłady widocznych wyników lootu w tej samej sekwencji.
+- `Loot of a muglex clan assassin: 11 gold coins.` — przykład wpisu logu; ilości i rodzaj zwłok są parametrami, a nie krokiem samouczka.
+- `You advanced from Level 2 to Level 3.` i analogiczne komunikaty późniejszych awansów — środkowy tekst, odrębny od bannera i prawego Player Guide.
+
+### Dalsze sceny i pozycje poza Newhaven
+
+W 1683→1684 s obraz zmienia się z okolicy Hectora na wnętrze jasnego budynku; dalej są kolejne skróty montażowe. Nie ma podstaw do dopisania rozmowy z Hectorem ani konkretnej, niewidocznej komendy transportu. W 1725 s czat wciąż zachowuje rozmowę z Anną.
+
+| NPC / miejsce | Zapis źródłowy `(x,y,z)` | Co odczytano |
+| --- | --- | --- |
+| Hector The Mentor | (32473,32288,7), XML mapy; wiki (32474,32288,7) | Nazwa i podejście, bez potwierdzonej rozmowy w nagraniu. |
+| Alia, Carlin | (32361,31782,7), XML; wiki (32360,31782,7) | Widoczna w 1815 s. Słowa `temple` i `Tibia` oraz odpowiedzi poniżej. |
+| Liane, Carlin | (32333,31786,7), XML; wiki (32333,31785,7) | Widoczna przy ladzie w 1905 s i na Battle List. Czat zachowuje wcześniejszą Alię; nie przypisywać jej słów Liane. |
+
+Odpowiedzi Alii czytelne w zachowanym czacie:
+
+> I'm a nun, serving the gods of Tibia in this temple. I also heal wounded adventurers.
+
+> That's where we are. Tibia is our world.
+
+Gracz wpisuje również `adventure stone` i `hi`; nie dopisywać niepokazanej nagrody ani odpowiedzi na błędny/nieobsłużony keyword. W 1725 s autor otwiera **Compendium → Player Guide → Gameplay: Expert → Exaltation Forge**, klikając element prawego Player Guide. Widoczne są ogólne objaśnienia forge, położenie na północ od Adventurers' Guild, Influenced Creatures i dust. Jest to dodatkowa informacja interfejsu po głównej trasie; nie przydział wdrożenia Forge. Również widoczne Loose Ends dotyczą innych miejsc świata.
+
+### Zapisany korpus i kwalifikacja
+
+Ostateczny manifest `/workspace/artifacts/tutorial-2186/continuation/full-capture-manifest.json` ma **SHA-256 `c49122b04bc92b09ce1a2bc79ebd1448ab3442044066410de54a5b6aa4e2d139`** i 694832 bajty. Zawiera czasy, wymiary źródła i SHA-256 każdego z 2047 PNG. Trzy pliki `full-messages-a/b/c.json` zachowują wszystkie 1996 odczytów sześciu obszarów; dokładne hashe są w lokalnym pakiecie. Raw OCR jest materiałem pomocniczym, a literalny indeks powyżej wynika z kontroli obrazu. Późniejszy manifest zastępuje wcześniejsze hashe klatek, które ponownie przechwycono; wcześniejszy plik 238 obserwacji pozostaje historią odczytu.
+
+Film jest montowany, więc czas filmu nie jest czasem serwera, a cięcie nie dowodzi konkretnej niewidocznej akcji. Reguły portalu `(32538,32514,7) → (32544,32515,7)` i start `(32534,32513,7)` ustalono niezależnie w skryptach/mapie. Pozostałe UNKNOWN dotyczą ukrytych reguł, niewidocznych odgałęzień i działania Oteryn w grze; nie wstrzymują przekazania odtworzonej, widocznej ścieżki koordynatorowi.
