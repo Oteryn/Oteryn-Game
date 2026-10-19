@@ -1,13 +1,7 @@
-# SHARED-VITALS-CONTENT-1: populated reference data
+# SHARED-VITALS-CONTENT-1 source reconciliation
 
-All 25 previously held parameter fields now contain explicit Oteryn working values in their target records. They are classified DERIVED and scoped OTERYN_REFERENCE_PARAMETER; source-backed facts retain their existing evidence classification. No runtime activation is authorized.
+Official regeneration intervals, party bonuses and soul policy are sourced.20current point amounts, exact party activity timeout and initial stamina debit remain explicitly unqualified. Invented fractional accumulators are withdrawn. Food facts and owner-authorized event-food choices are preserved.
 
-The [working parameter register](oteryn-parameters.json) records completion and shared policies. The [decision rationale](oteryn-proposals.json) retains every field path, source and assumption, and is marked materialized. Original unresolved Tibia observations are retained verbatim in the [Global source archive](tibia-source-archive.json), rather than being passed off as official facts.
+Active classifications: 149 DERIVED, 31 PROVEN, 22 UNKNOWN.
 
-Active evidence counts: {"DERIVED": 173, "PROVEN": 30}. Remaining unfilled active parameter fields:0. [Field audit](research-audit.json); [source registry](sources.json).
-
-The owner's instruction is to populate the data using explicit project assumptions. These are working reference defaults for native implementation; accepted architecture, concrete world/native bindings and gameplay activation remain coordinator responsibilities. OTS observations are pinned and labelled OTS_HYPOTHESIS_ONLY. Project choices do not establish current Global behavior.
-
-Some service payloads remain under target-files with a service-apply-plan because World Bundle pins and generated slots cannot be changed in this task. Index metadata owned by another open PR is recorded in coordinator-index-updates.json where necessary. The target record values themselves are populated.
-
-Validation and the frozen remote candidate are recorded in the draft PR. No Rust, Cargo, migrations, protocol, CI, apps, generated slots, merge or ready transition.
+[Exact source observations and changes](gameplay-source-reconciliation.json). URLs, revisions, hashes and classification selectors are in [sources.json](sources.json). Source code being available does not satisfy the original requirement for official or controlled gameplay evidence. No new runtime formula is selected.

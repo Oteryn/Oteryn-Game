@@ -2764,6 +2764,94 @@
         }
       },
       "qualification": "Reference implementation adapted as a working Oteryn design choice, not current official Tibia proof."
+    },
+    "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml": {
+      "repository": "opentibiabr/canary",
+      "commit": "52550d5e3c0ffe565f4bd1014f4e5575abf1059b",
+      "path": "data/XML/vocations.xml",
+      "blob_sha": "57c014e720bbe8d7f83501970c2b89976598cc3d",
+      "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14",
+      "url": "https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/data/XML/vocations.xml",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp": {
+      "repository": "opentibiabr/canary",
+      "commit": "52550d5e3c0ffe565f4bd1014f4e5575abf1059b",
+      "path": "src/creatures/players/grouping/party.cpp",
+      "blob_sha": "c3493c962548bffa5e393adc3359137b200b6384",
+      "sha256": "005f0e482dced6dace0507d2f847b65b44125dc73fe589893551199afdecb46e",
+      "url": "https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/src/creatures/players/grouping/party.cpp",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:gameplay-recheck:canary:52550d5:config.lua.dist": {
+      "repository": "opentibiabr/canary",
+      "commit": "52550d5e3c0ffe565f4bd1014f4e5575abf1059b",
+      "path": "config.lua.dist",
+      "blob_sha": "55ccf0802351aa84a98bfe59e176a5f98f94a56b",
+      "sha256": "5ad741b00ff26c0200a9d0c3a4f056801647be5a59a45b0ef687c87887a762d3",
+      "url": "https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/config.lua.dist",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data/XML/vocations.xml",
+      "blob_sha": "eed5290955fd7a988acab73672dc5356ed0e0ba8",
+      "sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/XML/vocations.xml",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/creatures/players/grouping/party.cpp",
+      "blob_sha": "fcd5da96b80237b256933f40ac4be7f7ba512568",
+      "sha256": "ef20ad81d4da214ab47e1dd77c208a42dda1c9a726d69ea1812c1f4d80c502c5",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/creatures/players/grouping/party.cpp",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "config.lua.dist",
+      "blob_sha": "f215fa6e4612bd8f500e859c504935ef649e3e00",
+      "sha256": "93f50fc744c9e5f1bc39165ea2ea037f5f56131a3768f1b127ebb23be4b6a544",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/config.lua.dist",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    "official:regen-recheck:8543:20261019": {
+      "url": "https://www.tibia.com/news/?id=8543&subtopic=newsarchive",
+      "source_class": "CIPSOFT_OFFICIAL",
+      "fetched_at": "2026-10-19",
+      "retrieval": "Indexed primary announcement; confirms intervals, not complete point table",
+      "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+    },
+    "community:regen-recheck:reddit:1pnillt": {
+      "url": "https://www.reddit.com/r/TibiaMMO/comments/1pnillt/new_mana_and_health_regeneration_values/",
+      "source_class": "UNCONTROLLED_COMMUNITY_REPORT",
+      "fetched_at": "2026-10-19",
+      "selector": "Post and correcting comment; inconsistent intervals/mage mana claims",
+      "limitation": "Not owner-controlled evidence; missing Paladin/Monk and conflicting HP timing. No reported values adopted."
+    },
+    "official:party-recheck:91:20261019": {
+      "url": "https://www.tibia.com/support/?entryid=91&subtopic=gethelp",
+      "source_class": "CIPSOFT_OFFICIAL",
+      "fetched_at": "2026-10-19",
+      "retrieval": "Fresh indexed primary support entry",
+      "selector": "SharedXPbonuses20/30/60/100%; base monsterXP>=20"
+    },
+    "official:soul-recheck:76:20261019": {
+      "url": "https://www.tibia.com/support/?entryid=76&subtopic=gethelp",
+      "source_class": "CIPSOFT_OFFICIAL",
+      "fetched_at": "2026-10-19",
+      "retrieval": "Fresh indexed primary support entry",
+      "selector": "Normal100/promoted200; normal120s/promoted15s"
     }
   }
 }

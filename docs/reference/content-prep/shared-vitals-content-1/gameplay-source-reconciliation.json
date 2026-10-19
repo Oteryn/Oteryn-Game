@@ -1,0 +1,2425 @@
+{
+  "task": "SHARED-VITALS-CONTENT-1",
+  "checked_at": "2026-10-19T10:46:56.838295+00:00",
+  "reference_only": true,
+  "runtime_switch_authorized": false,
+  "source_files": [
+    {
+      "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+      "repository": "opentibiabr/canary",
+      "commit": "52550d5e3c0ffe565f4bd1014f4e5575abf1059b",
+      "path": "data/XML/vocations.xml",
+      "blob_sha": "57c014e720bbe8d7f83501970c2b89976598cc3d",
+      "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14",
+      "url": "https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/data/XML/vocations.xml",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    {
+      "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+      "repository": "opentibiabr/canary",
+      "commit": "52550d5e3c0ffe565f4bd1014f4e5575abf1059b",
+      "path": "src/creatures/players/grouping/party.cpp",
+      "blob_sha": "c3493c962548bffa5e393adc3359137b200b6384",
+      "sha256": "005f0e482dced6dace0507d2f847b65b44125dc73fe589893551199afdecb46e",
+      "url": "https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/src/creatures/players/grouping/party.cpp",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    {
+      "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+      "repository": "opentibiabr/canary",
+      "commit": "52550d5e3c0ffe565f4bd1014f4e5575abf1059b",
+      "path": "config.lua.dist",
+      "blob_sha": "55ccf0802351aa84a98bfe59e176a5f98f94a56b",
+      "sha256": "5ad741b00ff26c0200a9d0c3a4f056801647be5a59a45b0ef687c87887a762d3",
+      "url": "https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/config.lua.dist",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    {
+      "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data/XML/vocations.xml",
+      "blob_sha": "eed5290955fd7a988acab73672dc5356ed0e0ba8",
+      "sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/XML/vocations.xml",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    {
+      "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/creatures/players/grouping/party.cpp",
+      "blob_sha": "fcd5da96b80237b256933f40ac4be7f7ba512568",
+      "sha256": "ef20ad81d4da214ab47e1dd77c208a42dda1c9a726d69ea1812c1f4d80c502c5",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/creatures/players/grouping/party.cpp",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    {
+      "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "config.lua.dist",
+      "blob_sha": "f215fa6e4612bd8f500e859c504935ef649e3e00",
+      "sha256": "93f50fc744c9e5f1bc39165ea2ea037f5f56131a3768f1b127ebb23be4b6a544",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/config.lua.dist",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    }
+  ],
+  "source_findings": {
+    "fractional_regeneration": "20unsupported average-preservation values withdrawn; official intervals retained.",
+    "community_report": "Partial mage/knight report contains differentHPintervals and a correcting mana comment; not controlled evidence.",
+    "party_bonus": "Primary20/30/60/100resolved.",
+    "soul": "Primary normal100/promoted200resolved.",
+    "deferred_test": "Owner postponed Global regeneration measurement; no game launch or new measurement claimed."
+  },
+  "changes": [
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/normal_hp",
+      "before": {
+        "value": {
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": {
+            "numerator": 4,
+            "denominator": 6
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 1,
+            "denominator": 6
+          }
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/shared-vitals-content-1/oteryn-parameters.json / field docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/normal_hp"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Knight",
+            "selector": "vocation.Knight"
+          },
+          {
+            "source": "wiki:794:1192367",
+            "selector": "Regeneration / normal and promoted vocation"
+          },
+          {
+            "source": "official:news:8543:20261018",
+            "selector": "Unified post-Newhaven intervals supersede historical tick timings"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/normal_hp",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "note": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/normal_hp",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/normal_mana",
+      "before": {
+        "value": {
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": {
+            "numerator": 12,
+            "denominator": 6
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 2,
+            "denominator": 6
+          }
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/shared-vitals-content-1/oteryn-parameters.json / field docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/normal_mana"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Knight",
+            "selector": "vocation.Knight"
+          },
+          {
+            "source": "wiki:794:1192367",
+            "selector": "Regeneration / normal and promoted vocation"
+          },
+          {
+            "source": "official:news:8543:20261018",
+            "selector": "Unified post-Newhaven intervals supersede historical tick timings"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/normal_mana",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "note": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/normal_mana",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/promoted_hp",
+      "before": {
+        "value": {
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": {
+            "numerator": 4,
+            "denominator": 4
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 1,
+            "denominator": 4
+          }
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/shared-vitals-content-1/oteryn-parameters.json / field docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/promoted_hp"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Elite Knight",
+            "selector": "vocation.Elite Knight"
+          },
+          {
+            "source": "wiki:794:1192367",
+            "selector": "Regeneration / normal and promoted vocation"
+          },
+          {
+            "source": "official:news:8543:20261018",
+            "selector": "Unified post-Newhaven intervals supersede historical tick timings"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/promoted_hp",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "note": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/promoted_hp",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/promoted_mana",
+      "before": {
+        "value": {
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": {
+            "numerator": 12,
+            "denominator": 6
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 2,
+            "denominator": 6
+          }
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/shared-vitals-content-1/oteryn-parameters.json / field docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/promoted_mana"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Elite Knight",
+            "selector": "vocation.Elite Knight"
+          },
+          {
+            "source": "wiki:794:1192367",
+            "selector": "Regeneration / normal and promoted vocation"
+          },
+          {
+            "source": "official:news:8543:20261018",
+            "selector": "Unified post-Newhaven intervals supersede historical tick timings"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/promoted_mana",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "note": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/promoted_mana",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/normal_hp",
+      "before": {
+        "value": {
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": {
+            "numerator": 4,
+            "denominator": 8
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 1,
+            "denominator": 8
+          }
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/shared-vitals-content-1/oteryn-parameters.json / field docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/normal_hp"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Paladin",
+            "selector": "vocation.Paladin"
+          },
+          {
+            "source": "wiki:1414:1121343",
+            "selector": "Regeneration / normal and promoted vocation"
+          },
+          {
+            "source": "official:news:8543:20261018",
+            "selector": "Unified post-Newhaven intervals supersede historical tick timings"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/normal_hp",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "note": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/normal_hp",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/normal_mana",
+      "before": {
+        "value": {
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": {
+            "numerator": 12,
+            "denominator": 4
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 2,
+            "denominator": 4
+          }
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/shared-vitals-content-1/oteryn-parameters.json / field docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/normal_mana"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Paladin",
+            "selector": "vocation.Paladin"
+          },
+          {
+            "source": "wiki:1414:1121343",
+            "selector": "Regeneration / normal and promoted vocation"
+          },
+          {
+            "source": "official:news:8543:20261018",
+            "selector": "Unified post-Newhaven intervals supersede historical tick timings"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/normal_mana",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "note": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/normal_mana",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/promoted_hp",
+      "before": {
+        "value": {
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": {
+            "numerator": 4,
+            "denominator": 6
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 1,
+            "denominator": 6
+          }
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/shared-vitals-content-1/oteryn-parameters.json / field docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/promoted_hp"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Royal Paladin",
+            "selector": "vocation.Royal Paladin"
+          },
+          {
+            "source": "wiki:1414:1121343",
+            "selector": "Regeneration / normal and promoted vocation"
+          },
+          {
+            "source": "official:news:8543:20261018",
+            "selector": "Unified post-Newhaven intervals supersede historical tick timings"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/promoted_hp",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "note": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/promoted_hp",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/promoted_mana",
+      "before": {
+        "value": {
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": {
+            "numerator": 12,
+            "denominator": 3
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 2,
+            "denominator": 3
+          }
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/shared-vitals-content-1/oteryn-parameters.json / field docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/promoted_mana"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Royal Paladin",
+            "selector": "vocation.Royal Paladin"
+          },
+          {
+            "source": "wiki:1414:1121343",
+            "selector": "Regeneration / normal and promoted vocation"
+          },
+          {
+            "source": "official:news:8543:20261018",
+            "selector": "Unified post-Newhaven intervals supersede historical tick timings"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/promoted_mana",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "note": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/promoted_mana",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/normal_hp",
+      "before": {
+        "value": {
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": {
+            "numerator": 4,
+            "denominator": 12
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 1,
+            "denominator": 12
+          }
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/shared-vitals-content-1/oteryn-parameters.json / field docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/normal_hp"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Druid",
+            "selector": "vocation.Druid"
+          },
+          {
+            "source": "wiki:1397:1179121",
+            "selector": "Regeneration / normal and promoted vocation"
+          },
+          {
+            "source": "official:news:8543:20261018",
+            "selector": "Unified post-Newhaven intervals supersede historical tick timings"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/normal_hp",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "note": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/normal_hp",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/normal_mana",
+      "before": {
+        "value": {
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": {
+            "numerator": 12,
+            "denominator": 3
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 2,
+            "denominator": 3
+          }
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/shared-vitals-content-1/oteryn-parameters.json / field docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/normal_mana"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Druid",
+            "selector": "vocation.Druid"
+          },
+          {
+            "source": "wiki:1397:1179121",
+            "selector": "Regeneration / normal and promoted vocation"
+          },
+          {
+            "source": "official:news:8543:20261018",
+            "selector": "Unified post-Newhaven intervals supersede historical tick timings"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/normal_mana",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "note": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/normal_mana",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/promoted_hp",
+      "before": {
+        "value": {
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": {
+            "numerator": 4,
+            "denominator": 12
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 1,
+            "denominator": 12
+          }
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/shared-vitals-content-1/oteryn-parameters.json / field docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/promoted_hp"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Elder Druid",
+            "selector": "vocation.Elder Druid"
+          },
+          {
+            "source": "wiki:1397:1179121",
+            "selector": "Regeneration / normal and promoted vocation"
+          },
+          {
+            "source": "official:news:8543:20261018",
+            "selector": "Unified post-Newhaven intervals supersede historical tick timings"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/promoted_hp",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "note": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/promoted_hp",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/promoted_mana",
+      "before": {
+        "value": {
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": {
+            "numerator": 12,
+            "denominator": 2
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 2,
+            "denominator": 2
+          }
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/shared-vitals-content-1/oteryn-parameters.json / field docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/promoted_mana"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Elder Druid",
+            "selector": "vocation.Elder Druid"
+          },
+          {
+            "source": "wiki:1397:1179121",
+            "selector": "Regeneration / normal and promoted vocation"
+          },
+          {
+            "source": "official:news:8543:20261018",
+            "selector": "Unified post-Newhaven intervals supersede historical tick timings"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/promoted_mana",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "note": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/promoted_mana",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/normal_hp",
+      "before": {
+        "value": {
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": {
+            "numerator": 4,
+            "denominator": 12
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 1,
+            "denominator": 12
+          }
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/shared-vitals-content-1/oteryn-parameters.json / field docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/normal_hp"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Sorcerer",
+            "selector": "vocation.Sorcerer"
+          },
+          {
+            "source": "wiki:1068:1121345",
+            "selector": "Regeneration / normal and promoted vocation"
+          },
+          {
+            "source": "official:news:8543:20261018",
+            "selector": "Unified post-Newhaven intervals supersede historical tick timings"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/normal_hp",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "note": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/normal_hp",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/normal_mana",
+      "before": {
+        "value": {
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": {
+            "numerator": 12,
+            "denominator": 3
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 2,
+            "denominator": 3
+          }
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/shared-vitals-content-1/oteryn-parameters.json / field docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/normal_mana"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Sorcerer",
+            "selector": "vocation.Sorcerer"
+          },
+          {
+            "source": "wiki:1068:1121345",
+            "selector": "Regeneration / normal and promoted vocation"
+          },
+          {
+            "source": "official:news:8543:20261018",
+            "selector": "Unified post-Newhaven intervals supersede historical tick timings"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/normal_mana",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "note": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/normal_mana",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/promoted_hp",
+      "before": {
+        "value": {
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": {
+            "numerator": 4,
+            "denominator": 12
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 1,
+            "denominator": 12
+          }
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/shared-vitals-content-1/oteryn-parameters.json / field docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/promoted_hp"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Master Sorcerer",
+            "selector": "vocation.Master Sorcerer"
+          },
+          {
+            "source": "wiki:1068:1121345",
+            "selector": "Regeneration / normal and promoted vocation"
+          },
+          {
+            "source": "official:news:8543:20261018",
+            "selector": "Unified post-Newhaven intervals supersede historical tick timings"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/promoted_hp",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "note": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/promoted_hp",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/promoted_mana",
+      "before": {
+        "value": {
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": {
+            "numerator": 12,
+            "denominator": 2
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 2,
+            "denominator": 2
+          }
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/shared-vitals-content-1/oteryn-parameters.json / field docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/promoted_mana"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Master Sorcerer",
+            "selector": "vocation.Master Sorcerer"
+          },
+          {
+            "source": "wiki:1068:1121345",
+            "selector": "Regeneration / normal and promoted vocation"
+          },
+          {
+            "source": "official:news:8543:20261018",
+            "selector": "Unified post-Newhaven intervals supersede historical tick timings"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/promoted_mana",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "note": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/promoted_mana",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/normal_hp",
+      "before": {
+        "value": {
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": {
+            "numerator": 4,
+            "denominator": 7
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 1,
+            "denominator": 7
+          }
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/shared-vitals-content-1/oteryn-parameters.json / field docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/normal_hp"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Monk",
+            "selector": "vocation.Monk"
+          },
+          {
+            "source": "wiki:107879:1207320",
+            "selector": "Regeneration / normal and promoted vocation"
+          },
+          {
+            "source": "official:news:8543:20261018",
+            "selector": "Unified post-Newhaven intervals supersede historical tick timings"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/normal_hp",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "note": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/normal_hp",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/normal_mana",
+      "before": {
+        "value": {
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": {
+            "numerator": 12,
+            "denominator": 4
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 2,
+            "denominator": 4
+          }
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/shared-vitals-content-1/oteryn-parameters.json / field docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/normal_mana"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Monk",
+            "selector": "vocation.Monk"
+          },
+          {
+            "source": "wiki:107879:1207320",
+            "selector": "Regeneration / normal and promoted vocation"
+          },
+          {
+            "source": "official:news:8543:20261018",
+            "selector": "Unified post-Newhaven intervals supersede historical tick timings"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/normal_mana",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "note": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/normal_mana",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/promoted_hp",
+      "before": {
+        "value": {
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": {
+            "numerator": 4,
+            "denominator": 5
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 1,
+            "denominator": 5
+          }
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/shared-vitals-content-1/oteryn-parameters.json / field docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/promoted_hp"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Exalted Monk",
+            "selector": "vocation.Exalted Monk"
+          },
+          {
+            "source": "wiki:107879:1207320",
+            "selector": "Regeneration / normal and promoted vocation"
+          },
+          {
+            "source": "official:news:8543:20261018",
+            "selector": "Unified post-Newhaven intervals supersede historical tick timings"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/promoted_hp",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "note": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/promoted_hp",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/promoted_mana",
+      "before": {
+        "value": {
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": {
+            "numerator": 12,
+            "denominator": 3
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 2,
+            "denominator": 3
+          }
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/shared-vitals-content-1/oteryn-parameters.json / field docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/promoted_mana"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Exalted Monk",
+            "selector": "vocation.Exalted Monk"
+          },
+          {
+            "source": "wiki:107879:1207320",
+            "selector": "Regeneration / normal and promoted vocation"
+          },
+          {
+            "source": "official:news:8543:20261018",
+            "selector": "Unified post-Newhaven intervals supersede historical tick timings"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/promoted_mana",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "note": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/promoted_mana",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "rulesets/party/shared-experience/reference-evidence.json/records/0/facts/bonus_source_disagreement",
+      "before": {
+        "value": {
+          "distinct_professions_1": 20,
+          "distinct_professions_2": 30,
+          "distinct_professions_3": 60,
+          "distinct_professions_4_plus": 100
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/shared-vitals-content-1/oteryn-parameters.json / field rulesets/party/shared-experience/reference-evidence.json/records/0/facts/bonus_source_disagreement"
+          },
+          {
+            "source": "wiki:3582:1189634",
+            "selector": "Conflicting statements identified in note"
+          },
+          {
+            "source": "official:manual:combat:2026-10-18",
+            "selector": "Conflicting statements identified in note"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Select this documented value for Oteryn; not a claim of current official server behavior."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#rulesets/party/shared-experience/reference-evidence.json/records/0/facts/bonus_source_disagreement",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "distinct_professions_1": 20,
+          "distinct_professions_2": 30,
+          "distinct_professions_3": 60,
+          "distinct_professions_4_plus": 100,
+          "minimum_creature_base_xp": 20
+        },
+        "classification": "PROVEN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "official:party-recheck:91:20261019",
+            "selector": "SharedXPbonuses20/30/60/100%; base monsterXP>=20"
+          }
+        ],
+        "note": "Resolved by primary official support; not an invented Oteryn bonus table. Exact activity timeout remains separately unqualified.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#rulesets/party/shared-experience/reference-evidence.json/records/0/facts/bonus_source_disagreement",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "rulesets/party/shared-experience/reference-evidence.json/records/0/facts/activity_timeout",
+      "before": {
+        "value": 120,
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/shared-vitals-content-1/oteryn-parameters.json / field rulesets/party/shared-experience/reference-evidence.json/records/0/facts/activity_timeout"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:party.activity_timeout",
+            "selector": "party.activity_timeout"
+          },
+          {
+            "source": "wiki:3582:1189634",
+            "selector": "Requirements to Share Experience"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Select this documented value for Oteryn; not a claim of current official server behavior."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#rulesets/party/shared-experience/reference-evidence.json/records/0/facts/activity_timeout",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "EXACT_GLOBAL_TIMEOUT_UNQUALIFIED",
+          "donor_distributed_default_seconds": 120,
+          "donor_runtime_parameter": "IN_FIGHT_DURATION configurable milliseconds",
+          "official_requirement": "recent participation",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "official:party-recheck:91:20261019",
+            "selector": "SharedXPbonuses20/30/60/100%; base monsterXP>=20"
+          }
+        ],
+        "note": "120seconds is a known donor configuration default. Official text says recent activity without establishing this exact numeric timeout; withdraw the selected project timeout.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#rulesets/party/shared-experience/reference-evidence.json/records/0/facts/activity_timeout",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "rulesets/character/soul/reference-evidence.json/records/0/facts/cap_source_disagreement",
+      "before": {
+        "value": {
+          "normal": 100,
+          "promoted": 200,
+          "premium_affects_cap": false
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/shared-vitals-content-1/oteryn-parameters.json / field rulesets/character/soul/reference-evidence.json/records/0/facts/cap_source_disagreement"
+          },
+          {
+            "source": "wiki:4560:1204055",
+            "selector": "Introduction"
+          },
+          {
+            "source": "official:manual:characters:2026-10-18",
+            "selector": "5.1.4"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Select this documented value for Oteryn; not a claim of current official server behavior."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#rulesets/character/soul/reference-evidence.json/records/0/facts/cap_source_disagreement",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "normal": 100,
+          "promoted": 200,
+          "eligibility_basis": "promotion; current primary source takes precedence over community Free/Premium shorthand"
+        },
+        "classification": "PROVEN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "official:soul-recheck:76:20261019",
+            "selector": "Normal100/promoted200; normal120s/promoted15s"
+          }
+        ],
+        "note": "Promotion-based caps are explicit official policy; do not invent a Premium-only cap rule from wiki shorthand. Other vocation-specific exceptions require separate evidence.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#rulesets/character/soul/reference-evidence.json/records/0/facts/cap_source_disagreement",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "rulesets/character/stamina/reference-evidence.json/records/0/facts/initial_combat_drain_minutes",
+      "before": {
+        "value": 2,
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/shared-vitals-content-1/oteryn-parameters.json / field rulesets/character/stamina/reference-evidence.json/records/0/facts/initial_combat_drain_minutes"
+          },
+          {
+            "source": "wiki:8516:1071529",
+            "selector": "Before Regenerating Stamina"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Use retained community opening drain as project rule; once per transition from inactive to active hunting."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#rulesets/character/stamina/reference-evidence.json/records/0/facts/initial_combat_drain_minutes",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "COMMUNITY_OBSERVATION_GLOBAL_MEASUREMENT_UNQUALIFIED",
+          "reported_minimum_initial_minutes": 2,
+          "trigger": "first XP-yielding monster kill after inactive combat period",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "wiki:8516:1071529",
+            "selector": "Stamina initial two-minute drain"
+          }
+        ],
+        "note": "The2minute value exists on wiki and is retained as a reported candidate. This review found no primary numeric confirmation; do not treat an assistant-selected default as controlled gameplay evidence.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#rulesets/character/stamina/reference-evidence.json/records/0/facts/initial_combat_drain_minutes",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/5/facts/cap_seconds",
+      "before": {
+        "value": 1200,
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/shared-vitals-content-1/oteryn-parameters.json / field docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/5/facts/cap_seconds"
+          },
+          {
+            "source": "wiki:5494:1141317",
+            "selector": "Overview"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Food queue20minute project cap; do not derive from hunger saturation threshold."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/5/facts/cap_seconds",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": 1200,
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "wiki:5494:1141317",
+            "selector": "Food maximum portion20minutes"
+          }
+        ],
+        "note": "Community food cap retained as source-backed reference, not an owner-invented limit or a new controlled measurement. Existing owner-selected event-food values remain unchanged.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/5/facts/cap_seconds",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    }
+  ],
+  "extracted_donor_functions": [],
+  "active_evidence_counts": {
+    "DERIVED": 149,
+    "PROVEN": 31,
+    "UNKNOWN": 22
+  },
+  "remaining": [
+    {
+      "path": "rulesets/party/shared-experience/reference-evidence.json/records/0/facts/activity_timeout",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "rulesets/character/stamina/reference-evidence.json/records/0/facts/initial_combat_drain_minutes",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/normal_hp",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/normal_mana",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/promoted_hp",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/promoted_mana",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/normal_hp",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/normal_mana",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/promoted_hp",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/promoted_mana",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/normal_hp",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/normal_mana",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/promoted_hp",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/promoted_mana",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/normal_hp",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/normal_mana",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/promoted_hp",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/promoted_mana",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/normal_hp",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/normal_mana",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/promoted_hp",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/promoted_mana",
+      "classification": "UNKNOWN"
+    }
+  ],
+  "retrieval_limits": [
+    "Pinned donor files verified against exact Git blobs; donor code is OTS_HYPOTHESIS_ONLY.",
+    "Fresh web checks used indexed primary/community text where direct pages were blocked. Retained Fandom revision hashes remain explicit.",
+    "No current Global gameplay measurement or native runtime admission is claimed."
+  ]
+}

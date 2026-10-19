@@ -3,13 +3,20 @@
   "task": "SHARED-VITALS-CONTENT-1",
   "reference_only": true,
   "runtime_switch_authorized": false,
-  "status": "MATERIALIZED_IN_TARGET_DATA",
+  "status": "SOURCE_RECONCILED_WITH_EXPLICIT_QUALIFICATION_GAPS",
   "owner_instruction_source": "owner:oteryn-data-completion:2026-10-19",
-  "filled_fields": 25,
+  "filled_fields": 3,
   "normalized_companion_fields": 0,
   "remaining_unfilled_fields": 0,
   "originating_proposals": "docs/reference/content-prep/shared-vitals-content-1/oteryn-proposals.json",
   "source_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json",
   "shared_policies": {},
-  "selection_policy": "Source-backed observations where available; explicit Oteryn working choices otherwise. Native activation and accepted architecture remain outside this data task."
+  "selection_policy": "Source-backed observations/candidates only. Unsupported project defaults withdrawn; no new Global/runtime formula selected.",
+  "remaining_unresolved_source_fields": 22,
+  "source_repair": {
+    "source_check": "docs/reference/content-prep/shared-vitals-content-1/gameplay-source-reconciliation.json",
+    "remaining_unresolved_source_fields": 22,
+    "selected_for_native_runtime": false,
+    "summary": "Official regeneration intervals, party bonuses and soul policy are sourced.20current point amounts, exact party activity timeout and initial stamina debit remain explicitly unqualified. Invented fractional accumulators are withdrawn. Food facts and owner-authorized event-food choices are preserved."
+  }
 }

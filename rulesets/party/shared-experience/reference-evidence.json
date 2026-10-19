@@ -36,29 +36,49 @@
           "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
         },
         "activity_timeout": {
-          "value": 120,
-          "classification": "DERIVED",
+          "value": {
+            "status": "EXACT_GLOBAL_TIMEOUT_UNQUALIFIED",
+            "donor_distributed_default_seconds": 120,
+            "donor_runtime_parameter": "IN_FIGHT_DURATION configurable milliseconds",
+            "official_requirement": "recent participation",
+            "selected_for_native_runtime": false
+          },
+          "classification": "UNKNOWN",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+          "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/shared-vitals-content-1/oteryn-parameters.json / field rulesets/party/shared-experience/reference-evidence.json/records/0/facts/activity_timeout"
+              "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
             },
             {
-              "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:party.activity_timeout",
-              "selector": "party.activity_timeout"
+              "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
             },
             {
-              "source": "wiki:3582:1189634",
-              "selector": "Requirements to Share Experience"
+              "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "official:party-recheck:91:20261019",
+              "selector": "SharedXPbonuses20/30/60/100%; base monsterXP>=20"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-          "assumptions": [
-            "Select this documented value for Oteryn; not a claim of current official server behavior."
-          ],
+          "note": "120seconds is a known donor configuration default. Official text says recent activity without establishing this exact numeric timeout; withdraw the selected project timeout.",
+          "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#rulesets/party/shared-experience/reference-evidence.json/records/0/facts/activity_timeout",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
@@ -113,30 +133,21 @@
             "distinct_professions_1": 20,
             "distinct_professions_2": 30,
             "distinct_professions_3": 60,
-            "distinct_professions_4_plus": 100
+            "distinct_professions_4_plus": 100,
+            "minimum_creature_base_xp": 20
           },
-          "classification": "DERIVED",
+          "classification": "PROVEN",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+          "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/shared-vitals-content-1/oteryn-parameters.json / field rulesets/party/shared-experience/reference-evidence.json/records/0/facts/bonus_source_disagreement"
-            },
-            {
-              "source": "wiki:3582:1189634",
-              "selector": "Conflicting statements identified in note"
-            },
-            {
-              "source": "official:manual:combat:2026-10-18",
-              "selector": "Conflicting statements identified in note"
+              "source": "official:party-recheck:91:20261019",
+              "selector": "SharedXPbonuses20/30/60/100%; base monsterXP>=20"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-          "assumptions": [
-            "Select this documented value for Oteryn; not a claim of current official server behavior."
-          ],
+          "note": "Resolved by primary official support; not an invented Oteryn bonus table. Exact activity timeout remains separately unqualified.",
+          "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#rulesets/party/shared-experience/reference-evidence.json/records/0/facts/bonus_source_disagreement",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         }

@@ -114,25 +114,24 @@
           "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
         },
         "initial_combat_drain_minutes": {
-          "value": 2,
-          "classification": "DERIVED",
+          "value": {
+            "status": "COMMUNITY_OBSERVATION_GLOBAL_MEASUREMENT_UNQUALIFIED",
+            "reported_minimum_initial_minutes": 2,
+            "trigger": "first XP-yielding monster kill after inactive combat period",
+            "selected_for_native_runtime": false
+          },
+          "classification": "UNKNOWN",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+          "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/shared-vitals-content-1/oteryn-parameters.json / field rulesets/character/stamina/reference-evidence.json/records/0/facts/initial_combat_drain_minutes"
-            },
-            {
               "source": "wiki:8516:1071529",
-              "selector": "Before Regenerating Stamina"
+              "selector": "Stamina initial two-minute drain"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-          "assumptions": [
-            "Use retained community opening drain as project rule; once per transition from inactive to active hunting."
-          ],
+          "note": "The2minute value exists on wiki and is retained as a reported candidate. This review found no primary numeric confirmation; do not treat an assistant-selected default as controlled gameplay evidence.",
+          "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#rulesets/character/stamina/reference-evidence.json/records/0/facts/initial_combat_drain_minutes",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },

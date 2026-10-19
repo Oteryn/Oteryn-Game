@@ -120,30 +120,20 @@
           "value": {
             "normal": 100,
             "promoted": 200,
-            "premium_affects_cap": false
+            "eligibility_basis": "promotion; current primary source takes precedence over community Free/Premium shorthand"
           },
-          "classification": "DERIVED",
+          "classification": "PROVEN",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+          "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/shared-vitals-content-1/oteryn-parameters.json / field rulesets/character/soul/reference-evidence.json/records/0/facts/cap_source_disagreement"
-            },
-            {
-              "source": "wiki:4560:1204055",
-              "selector": "Introduction"
-            },
-            {
-              "source": "official:manual:characters:2026-10-18",
-              "selector": "5.1.4"
+              "source": "official:soul-recheck:76:20261019",
+              "selector": "Normal100/promoted200; normal120s/promoted15s"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-          "assumptions": [
-            "Select this documented value for Oteryn; not a claim of current official server behavior."
-          ],
+          "note": "Promotion-based caps are explicit official policy; do not invent a Premium-only cap rule from wiki shorthand. Other vocation-specific exceptions require separate evidence.",
+          "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#rulesets/character/soul/reference-evidence.json/records/0/facts/cap_source_disagreement",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         }

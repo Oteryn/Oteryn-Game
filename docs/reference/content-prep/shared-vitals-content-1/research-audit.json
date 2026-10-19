@@ -1,10 +1,10 @@
 {
   "task": "SHARED-VITALS-CONTENT-1",
   "review_date": "2026-10-19",
-  "scope": "POPULATED_OTERYN_REFERENCE_DATA_WITH_ARCHIVED_GLOBAL_SOURCE_LIMITATIONS",
-  "research_status": "ALL_TARGET_PARAMETER_FIELDS_POPULATED",
+  "scope": "SOURCE_RECONCILED_WITH_EXPLICIT_GAMEPLAY_QUALIFICATION_GAPS",
+  "research_status": "SOURCE_REPAIRED_RUNTIME_UNQUALIFIED",
   "runtime_admission": "BLOCKED",
-  "coverage": "The current rendered Food page contains 146 regenerative rows and 42 separately listed non-regenerative items. Every regenerative row is reconciled to its own current item-page revision. The duration packet now contains 140 existing-native-ID records and six explicitly source-only records (four IDs absent from native definitions and two multi-state cake pages). 143 numeric nutrition durations are retained from own-item Wiki data. The owner selected three additional DERIVED reference defaults: Cake (Item)240s, Cake with a Cherry240s, and Cheese Cookie24s copied from ordinary Cookie3598. All146 reference rows now have numeric durations; these three defaults are not exact-item source measurements. Five ordinary foods were spot-checked from an explicit hungry baseline using one item and a fresh official Food tooltip: brown mushroom 264 s, blueberry 12 s, cherry 12 s, raspberry 12 s, banana 96 s. These five checks agree with Wiki; no other row is claimed individually measured. The 42 non-regenerative names are retained separately without inventing zero-duration values. HP/MP regeneration rates, the food cap and other behaviour-sensitive formulas retain their existing evidence holds. No original binary, screenshot, character identity or balance is published.",
+  "coverage": "Official regeneration intervals, party bonuses and soul policy are sourced.20current point amounts, exact party activity timeout and initial stamina debit remain explicitly unqualified. Invented fractional accumulators are withdrawn. Food facts and owner-authorized event-food choices are preserved.",
   "source_registry": "sources.json",
   "record_counts": {
     "rulesets/party/shared-experience/reference-evidence.json": 1,
@@ -14,10 +14,100 @@
     "docs/reference/content-prep/shared-vitals-content-1/food-durations.json": 146
   },
   "evidence_field_counts": {
-    "DERIVED": 173,
-    "PROVEN": 30
+    "DERIVED": 149,
+    "PROVEN": 31,
+    "UNKNOWN": 22
   },
-  "unresolved_fields": [],
+  "unresolved_fields": [
+    {
+      "path": "rulesets/party/shared-experience/reference-evidence.json/records/0/facts/activity_timeout",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "rulesets/character/stamina/reference-evidence.json/records/0/facts/initial_combat_drain_minutes",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/normal_hp",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/normal_mana",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/promoted_hp",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/promoted_mana",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/normal_hp",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/normal_mana",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/promoted_hp",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/promoted_mana",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/normal_hp",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/normal_mana",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/promoted_hp",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/promoted_mana",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/normal_hp",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/normal_mana",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/promoted_hp",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/promoted_mana",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/normal_hp",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/normal_mana",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/promoted_hp",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/promoted_mana",
+      "classification": "UNKNOWN"
+    }
+  ],
   "limitations_policy": "Unproven external facts remain UNKNOWN/CONFLICT. Three Food fields use owner-authorized DERIVED reference defaults with original source limitations retained; they are not claimed as measured or official Tibia mechanics.",
   "owner_selected_reference_defaults": [
     {
@@ -47,7 +137,7 @@
     ],
     "qualification": "Reference only. No unsupported absence→false conversion, invented random distribution, arrival coordinate or architecture decision. Exact source fetches and failed direct primary fetches remain auditable."
   },
-  "filled_parameter_fields": 25,
+  "filled_parameter_fields": 3,
   "remaining_unfilled_parameter_fields": 0,
   "normalized_companion_fields": 0,
   "global_source_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json",
@@ -73,16 +163,23 @@
         "notes": "Party/shared-EXP rules.",
         "runtime_admission": "BLOCKED",
         "runtime_switch_authorized": false,
-        "evidence_completeness": "COMPLETE_OTERYN_WORKING_PARAMETERS_GLOBAL_SOURCE_ARCHIVED",
+        "evidence_completeness": "SOURCE_RECONCILED_WITH_EXPLICIT_GAMEPLAY_QUALIFICATION_GAPS",
         "source_snapshot_target": "current-at-fetch-2026-10-18",
         "payloads": [
           {
             "path": "rulesets/party/shared-experience/reference-evidence.json",
-            "sha256": "4c649f47c6c1f9af858430fb035f3dea809cd26ac9e73ae5caec637d5afcbedf"
+            "sha256": "ceb906444a17f51daf0720d175b6d7261ce6d8f8a05bbc8e985b9be5d1f0355e"
           }
         ]
       },
       "reason": "Do not edit overlapping open PR files; coordinator applies metadata only with native qualification."
     }
-  ]
+  ],
+  "remaining_unresolved_source_fields": 22,
+  "source_repair": {
+    "source_check": "docs/reference/content-prep/shared-vitals-content-1/gameplay-source-reconciliation.json",
+    "remaining_unresolved_source_fields": 22,
+    "selected_for_native_runtime": false,
+    "summary": "Official regeneration intervals, party bonuses and soul policy are sourced.20current point amounts, exact party activity timeout and initial stamina debit remain explicitly unqualified. Invented fractional accumulators are withdrawn. Food facts and owner-authorized event-food choices are preserved."
+  }
 }
