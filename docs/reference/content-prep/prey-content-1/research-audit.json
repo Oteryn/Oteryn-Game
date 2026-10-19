@@ -4,7 +4,7 @@
   "scope": "POPULATED_OTERYN_REFERENCE_DATA_WITH_ARCHIVED_GLOBAL_SOURCE_LIMITATIONS",
   "research_status": "ALL_TARGET_PARAMETER_FIELDS_POPULATED",
   "runtime_admission": "BLOCKED",
-  "coverage": "649source-listed Prey creatures are retained.643bindings resolve to current native definitions with no dangling or duplicate bindings. Six externally identified creatures await native definition admission; invented launch exclusions are withdrawn.13native exclusive flags differ from source pool references and have an explicit coordinator handoff. Existing five donor-based pool corrections are retained with historical secondary corroboration. Bounty/Weekly XP repair remains separate.",
+  "coverage": "649source-listed Prey creatures retain643unique existing native bindings and six pending native admissions. Five missing-creature profiles now include two complete supplementary TFS source definitions and three wiki-sourced partial profiles. All13native exclusive flags match donor defaults: preserve13source-precedence conflicts, not an automatic correction plan. No native or runtime admission is claimed. Bounty/Weekly correction remains separate.",
   "source_registry": "sources.json",
   "record_counts": {
     "rulesets/progression/prey/reference-evidence.json": 41,
@@ -55,5 +55,17 @@
       "DERIVED": 1425,
       "PROVEN": 683
     }
-  }
+  },
+  "five_creature_source_reconciliation": {
+    "profiles": 5,
+    "full_supplementary_tfs_definitions": 2,
+    "partial_profiles": 3,
+    "profile_index": "docs/reference/content-prep/prey-content-1/creature-source-profiles/README.md",
+    "source_scope": "REFERENCE_ONLY_NO_NATIVE_ADMISSION",
+    "pool_source_reconciliation": "docs/reference/content-prep/prey-content-1/native-pool-source-reconciliation.json",
+    "pool_conflicts": 13,
+    "proven_native_import_errors": 0,
+    "supersedes_automatic_thirteen_flag_change_plan": true
+  },
+  "prior_pool_diagnosis_coverage": "649source-listed Prey creatures are retained.643bindings resolve to current native definitions with no dangling or duplicate bindings. Six externally identified creatures await native definition admission; invented launch exclusions are withdrawn.13native exclusive flags differ from source pool references and have an explicit coordinator handoff. Existing five donor-based pool corrections are retained with historical secondary corroboration. Bounty/Weekly XP repair remains separate."
 }

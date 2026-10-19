@@ -110,7 +110,20 @@
       "required_action": "Admit a proper native Creature definition with existing creature-authoring qualification, then bind this Prey row. Preserve wildcard-only membership; no substitute ID or permanent exclusion."
     }
   ],
-  "native_pool_flag_corrections": [
+  "coordinator_requirements": [
+    "Refresh exact native catalogue identity and path ownership before applying any change.",
+    "Validate full native creature definitions and associated authoring/presentation/behavior dependencies; do not substitute another creature.",
+    "Resolve13donor-default/community-pool conflicts before native activation; do not apply the superseded correction list automatically.",
+    "Apply generated World Bundle and native wiring only in their owning implementation task."
+  ],
+  "not_applied": [
+    "Native Creature definitions",
+    "Native eligibility flags",
+    "Rust",
+    "Generated indexes or World Bundle pins",
+    "Runtime activation"
+  ],
+  "superseded_native_pool_flag_correction_proposals": [
     {
       "native_key": "oteryn:creature.bride_of_night",
       "native_path": "content/creatures/definitions/creatures-00000-00499.json",
@@ -307,17 +320,187 @@
       ]
     }
   ],
-  "coordinator_requirements": [
-    "Refresh exact native catalogue identity and path ownership before applying any change.",
-    "Validate full native creature definitions and associated authoring/presentation/behavior dependencies; do not substitute another creature.",
-    "Reconcile13exclusive flags against source reference before runtime admission.",
-    "Apply generated World Bundle and native wiring only in their owning implementation task."
+  "native_pool_flag_reconciliations": [
+    {
+      "native_key": "oteryn:creature.bride_of_night",
+      "native_path": "content/creatures/definitions/creatures-00000-00499.json",
+      "record": 167,
+      "native_value": false,
+      "donor_effective_value": false,
+      "reference_pool": "wildcard_only",
+      "classification": "CONFLICT",
+      "automatic_change_authorized": false,
+      "source_check": "docs/reference/content-prep/prey-content-1/native-pool-source-reconciliation.json"
+    },
+    {
+      "native_key": "oteryn:creature.blue_butterfly",
+      "native_path": "content/creatures/definitions/creatures-00000-00499.json",
+      "record": 133,
+      "native_value": false,
+      "donor_effective_value": false,
+      "reference_pool": "wildcard_only",
+      "classification": "CONFLICT",
+      "automatic_change_authorized": false,
+      "source_check": "docs/reference/content-prep/prey-content-1/native-pool-source-reconciliation.json"
+    },
+    {
+      "native_key": "oteryn:creature.purple_butterfly",
+      "native_path": "content/creatures/definitions/creatures-01000-01499.json",
+      "record": 267,
+      "native_value": false,
+      "donor_effective_value": false,
+      "reference_pool": "wildcard_only",
+      "classification": "CONFLICT",
+      "automatic_change_authorized": false,
+      "source_check": "docs/reference/content-prep/prey-content-1/native-pool-source-reconciliation.json"
+    },
+    {
+      "native_key": "oteryn:creature.red_butterfly",
+      "native_path": "content/creatures/definitions/creatures-01000-01499.json",
+      "record": 311,
+      "native_value": false,
+      "donor_effective_value": false,
+      "reference_pool": "wildcard_only",
+      "classification": "CONFLICT",
+      "automatic_change_authorized": false,
+      "source_check": "docs/reference/content-prep/prey-content-1/native-pool-source-reconciliation.json"
+    },
+    {
+      "native_key": "oteryn:creature.doomsday_cultist",
+      "native_path": "content/creatures/definitions/creatures-00000-00499.json",
+      "record": 417,
+      "native_value": false,
+      "donor_effective_value": false,
+      "reference_pool": "wildcard_only",
+      "classification": "CONFLICT",
+      "automatic_change_authorized": false,
+      "source_check": "docs/reference/content-prep/prey-content-1/native-pool-source-reconciliation.json"
+    },
+    {
+      "native_key": "oteryn:creature.fish",
+      "native_path": "content/creatures/definitions/creatures-00500-00999.json",
+      "record": 76,
+      "native_value": false,
+      "donor_effective_value": false,
+      "reference_pool": "wildcard_only",
+      "classification": "CONFLICT",
+      "automatic_change_authorized": false,
+      "source_check": "docs/reference/content-prep/prey-content-1/native-pool-source-reconciliation.json"
+    },
+    {
+      "native_key": "oteryn:creature.brown_horse",
+      "native_path": "content/creatures/definitions/creatures-00000-00499.json",
+      "record": 179,
+      "native_value": false,
+      "donor_effective_value": false,
+      "reference_pool": "wildcard_only",
+      "classification": "CONFLICT",
+      "automatic_change_authorized": false,
+      "source_check": "docs/reference/content-prep/prey-content-1/native-pool-source-reconciliation.json"
+    },
+    {
+      "native_key": "oteryn:creature.grey_horse",
+      "native_path": "content/creatures/definitions/creatures-00500-00999.json",
+      "record": 213,
+      "native_value": false,
+      "donor_effective_value": false,
+      "reference_pool": "wildcard_only",
+      "classification": "CONFLICT",
+      "automatic_change_authorized": false,
+      "source_check": "docs/reference/content-prep/prey-content-1/native-pool-source-reconciliation.json"
+    },
+    {
+      "native_key": "oteryn:creature.horse",
+      "native_path": "content/creatures/definitions/creatures-00500-00999.json",
+      "record": 267,
+      "native_value": false,
+      "donor_effective_value": false,
+      "reference_pool": "wildcard_only",
+      "classification": "CONFLICT",
+      "automatic_change_authorized": false,
+      "source_check": "docs/reference/content-prep/prey-content-1/native-pool-source-reconciliation.json"
+    },
+    {
+      "native_key": "oteryn:creature.midnight_warrior",
+      "native_path": "content/creatures/definitions/creatures-01000-01499.json",
+      "record": 21,
+      "native_value": false,
+      "donor_effective_value": false,
+      "reference_pool": "wildcard_only",
+      "classification": "CONFLICT",
+      "automatic_change_authorized": false,
+      "source_check": "docs/reference/content-prep/prey-content-1/native-pool-source-reconciliation.json"
+    },
+    {
+      "native_key": "oteryn:creature.nomad_blue",
+      "native_path": "content/creatures/definitions/creatures-01000-01499.json",
+      "record": 128,
+      "native_value": false,
+      "donor_effective_value": false,
+      "reference_pool": "wildcard_only",
+      "classification": "CONFLICT",
+      "automatic_change_authorized": false,
+      "source_check": "docs/reference/content-prep/prey-content-1/native-pool-source-reconciliation.json"
+    },
+    {
+      "native_key": "oteryn:creature.nomad_female",
+      "native_path": "content/creatures/definitions/creatures-01000-01499.json",
+      "record": 129,
+      "native_value": false,
+      "donor_effective_value": false,
+      "reference_pool": "wildcard_only",
+      "classification": "CONFLICT",
+      "automatic_change_authorized": false,
+      "source_check": "docs/reference/content-prep/prey-content-1/native-pool-source-reconciliation.json"
+    },
+    {
+      "native_key": "oteryn:creature.northern_pike",
+      "native_path": "content/creatures/definitions/creatures-01000-01499.json",
+      "record": 135,
+      "native_value": false,
+      "donor_effective_value": false,
+      "reference_pool": "wildcard_only",
+      "classification": "CONFLICT",
+      "automatic_change_authorized": false,
+      "source_check": "docs/reference/content-prep/prey-content-1/native-pool-source-reconciliation.json"
+    }
   ],
-  "not_applied": [
-    "Native Creature definitions",
-    "Native eligibility flags",
-    "Rust",
-    "Generated indexes or World Bundle pins",
-    "Runtime activation"
+  "native_pool_flag_status": "13_SOURCE_PRECEDENCE_CONFLICTS_ZERO_PROVEN_IMPORT_ERRORS",
+  "source_creature_profiles": [
+    {
+      "name": "Berrypest",
+      "path": "docs/reference/content-prep/prey-content-1/creature-source-profiles/berrypest.json",
+      "wiki_revision": 444987,
+      "source_definition": "Wiki-sourced partial profile; complete monster registration not recovered",
+      "native_admission": false
+    },
+    {
+      "name": "Elder Forest Fury",
+      "path": "docs/reference/content-prep/prey-content-1/creature-source-profiles/elder_forest_fury.json",
+      "wiki_revision": 441194,
+      "source_definition": "TFS1.6 parsed XML",
+      "native_admission": false
+    },
+    {
+      "name": "Furious Fire Elemental",
+      "path": "docs/reference/content-prep/prey-content-1/creature-source-profiles/furious_fire_elemental.json",
+      "wiki_revision": 441304,
+      "source_definition": "Wiki-sourced partial profile; complete monster registration not recovered",
+      "native_admission": false
+    },
+    {
+      "name": "Nightslayer",
+      "path": "docs/reference/content-prep/prey-content-1/creature-source-profiles/nightslayer.json",
+      "wiki_revision": 445018,
+      "source_definition": "Wiki-sourced partial profile; complete monster registration not recovered",
+      "native_admission": false
+    },
+    {
+      "name": "Undead Jester",
+      "path": "docs/reference/content-prep/prey-content-1/creature-source-profiles/undead_jester.json",
+      "wiki_revision": 440797,
+      "source_definition": "TFS1.6 parsed XML",
+      "native_admission": false
+    }
   ]
 }

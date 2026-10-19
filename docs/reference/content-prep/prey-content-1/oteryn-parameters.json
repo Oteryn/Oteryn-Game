@@ -33,5 +33,16 @@
     "native_flag_disagreements": 13,
     "invented_launch_exclusions_removed": 6,
     "runtime_admission": "BLOCKED"
+  },
+  "five_creature_source_reconciliation": {
+    "profiles": 5,
+    "full_supplementary_tfs_definitions": 2,
+    "partial_profiles": 3,
+    "profile_index": "docs/reference/content-prep/prey-content-1/creature-source-profiles/README.md",
+    "source_scope": "REFERENCE_ONLY_NO_NATIVE_ADMISSION",
+    "pool_source_reconciliation": "docs/reference/content-prep/prey-content-1/native-pool-source-reconciliation.json",
+    "pool_conflicts": 13,
+    "proven_native_import_errors": 0,
+    "supersedes_automatic_thirteen_flag_change_plan": true
   }
 }

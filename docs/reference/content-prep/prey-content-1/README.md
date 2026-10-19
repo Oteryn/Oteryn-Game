@@ -1,3 +1,11 @@
+# Five creature profiles and13pool conflicts
+
+[Five sourced creature profiles](creature-source-profiles/README.md) now retain current wiki observations and explicit discrepancies. Complete pinned TFS1.6 source definitions were recovered for Elder Forest Fury and Undead Jester; the other three remain sourced partial profiles. They are not admitted native definitions.
+
+The [13flag source checks](native-pool-source-reconciliation.json) correct the earlier diagnosis: native false values match their donor's omitted flag and engine defaultfalse. The automatic correction list is withdrawn. Existing wildcard-only reference membership is preserved as DERIVED; these13cases require source-precedence reconciliation before native activation. [Updated handoff](native-prey-handoff.json).
+
+The reports below are retained as history and must not be read as an active instruction to flip13flags.
+
 # Cake Golem source recovery
 
 A [Cake Golem data bundle](cake-golem/README.md) now recovers all21 source fields using the exact quest Items dependency. Structural/semantic/declared-reference validation passes. Import readiness correctly remains blocked on one attack with omitted combat type; the raw attack and source/wiki discrepancies are retained. This resolves the historical missing-configuration preparation failure, without claiming native admission or current Global parity.
