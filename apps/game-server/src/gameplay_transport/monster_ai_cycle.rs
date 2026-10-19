@@ -653,9 +653,7 @@ fn admit_native_creature_ai(
     else {
         return Err(CarrierError::ProfileMissing);
     };
-    if !behavior.targeting.hostile || !behavior.targeting.can_target {
-        return Err(CarrierError::ProfileInvalid);
-    }
+    // Non-hostile children still need admission; projection below validates the profile.
     let mut projected = behavior.clone();
     projected.attacks.clear();
     projected.defenses.clear();
@@ -1293,6 +1291,14 @@ async fn prepare_native_movement_path(
                 prepared.goal = G::Stand;
                 return prepared;
             };
+            // An adjacent attacker need not enter the target's tile (for example a door).
+            if distance == 1
+                && from.position().floor == target_at.position().floor
+                && crate::movement::path_search::chebyshev(from.position(), target_at.position())
+                    == 1
+            {
+                return prepared;
+            }
             if distance > 1
                 && map
                     .local_distance_step(runtime, actor, target, distance, false)
@@ -2797,6 +2803,115 @@ mod tests {
 
     #[test]
     #[allow(clippy::expect_used)]
+    fn current_owner_summon_admits_non_hostile_profile_and_rejects_invalid_profile() {
+        use crate::content::native_gameplay::{NativeGameplayInput, PinnedGameplayBytes};
+        use sha2::{Digest, Sha256};
+
+        let fixture = current_owner_summon_fixture(8, true);
+        let mut profiles = fixture.content.creature_profiles().clone();
+        let authored: crate::content::native_gameplay::CreatureProfilesDocument =
+            serde_json::from_slice(include_bytes!(
+                "../../../../content/creatures/definitions/spell-native-profiles.json"
+            ))
+            .expect("authored profiles");
+        let chicken = authored
+            .records
+            .iter()
+            .find(|record| record.profile.target.key == "oteryn:creature.chicken")
+            .expect("authored chicken");
+        let Some(ProjectV2AuthoringProfileData::Behavior(chicken_behavior)) =
+            chicken.behavior.as_ref().map(|profile| &profile.data)
+        else {
+            unreachable!("authored chicken behavior");
+        };
+        let Some(ProjectV2AuthoringProfileData::Behavior(behavior)) = profiles.records[0]
+            .behavior
+            .as_mut()
+            .map(|profile| &mut profile.data)
+        else {
+            unreachable!("fixture behavior");
+        };
+        behavior.targeting = chicken_behavior.targeting;
+        assert!(!behavior.targeting.hostile);
+        let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../tools/content-schema/native-gameplay/manifest.json");
+        let mut input = NativeGameplayInput::from_manifest(&manifest).expect("fixture manifest");
+        let bytes = serde_json::to_vec(&profiles).expect("fixture profiles");
+        input.creature_profiles = PinnedGameplayBytes {
+            sha256: format!("{:x}", Sha256::digest(&bytes)),
+            bytes,
+        };
+        let source = crate::content::production::test_source(3).expect("fixture source");
+        let baseline = crate::content::production::compile_first_production(
+            &source,
+            crate::content::production::FirstProductionCompileTarget::OrdinaryRelease,
+        )
+        .expect("fixture baseline");
+        let compiled = crate::content::native_gameplay::compile_native_gameplay(&baseline, &input)
+            .expect("non-hostile summon content");
+        let content = crate::content::native_gameplay::decode(&compiled.server_artifact)
+            .expect("decoded content")
+            .state;
+        let pin = crate::foundation::ChannelContentPin::from_activation(
+            source.world_id,
+            1,
+            content.source_digest(),
+            [2; 32],
+            [3; 32],
+            [4; 32],
+            (100, 100, 7),
+        );
+        let mut fixture =
+            current_owner_summon_fixture_with_content(8, true, content, fixture.parent, pin);
+        let mut states = ChannelSpellStates::default();
+        let receipt = execute_current_owner_summon_fixture(&mut fixture, &mut states, 17)
+            .expect("non-hostile child admitted through the summon owner");
+        let ai = &mut states.monster_melee.creature_ai;
+        let mut wrong_revision = fixture.proposal.creature.clone();
+        wrong_revision.revision.push_str("-invalid");
+        assert_eq!(
+            register_native_summon_child(
+                &mut fixture.runtime,
+                ai,
+                &fixture.content,
+                receipt.child,
+                &wrong_revision,
+                18,
+            ),
+            Err(CarrierError::CreatureTargetMismatch)
+        );
+        let mut invalid = ai
+            .state(receipt.child)
+            .expect("child AI")
+            .profile()
+            .behavior()
+            .clone();
+        assert!(!invalid.targeting.hostile);
+        assert_eq!(
+            fixture.runtime.native_summon_role(receipt.child),
+            Ok(Some(fixture.proposal.occurrence.actor))
+        );
+        invalid
+            .summons
+            .as_mut()
+            .expect("fixture summons")
+            .max_summons = 0;
+        ai.remove(receipt.child);
+        assert_eq!(
+            ai.admit_creature_with_summons(
+                &fixture.runtime,
+                receipt.child,
+                Some(&invalid),
+                &BTreeMap::new(),
+                18
+            ),
+            Err(CarrierError::ProfileInvalid)
+        );
+        assert!(ai.state(receipt.child).is_none());
+    }
+
+    #[test]
+    #[allow(clippy::expect_used)]
     fn activated_outer_source_summon_rejects_inner_catalog_and_registers_once() {
         use crate::foundation::{ChannelContentPin, WorldId};
         use crate::monster_summon::SummonError;
@@ -4069,6 +4184,85 @@ mod tests {
                         assert_eq!(cached.projectile_clear, tile.projectile_clear);
                     }
                     assert_eq!(map.tiles.len(), 2);
+                    // Water is known but creature-blocked; an adjacent attacker keeps its chase.
+                    let actor = runtime
+                        .admit_monster_lab_creature(
+                            MovementLocalPosition {
+                                x: 2,
+                                y: 0,
+                                floor: 7,
+                            },
+                            "test:creature",
+                            20,
+                        )
+                        .map_err(debug)?;
+                    let target = runtime
+                        .admit_monster_lab_creature(
+                            MovementLocalPosition {
+                                x: 3,
+                                y: 0,
+                                floor: 7,
+                            },
+                            "test:creature",
+                            20,
+                        )
+                        .map_err(debug)?;
+                    let goal = crate::ai_think::NativeCreatureGoal::Chase {
+                        target,
+                        distance: 1,
+                    };
+                    let revisions = crate::ability::RevisionSet::new(
+                        "rules-r1",
+                        "content-r1",
+                        "world-r1",
+                        "formula-r1",
+                        "sim-r1",
+                    )
+                    .map_err(debug)?;
+                    let mut budget = crate::combat_attack::ChaseSearchBudget::default();
+                    let prepared = prepare_native_movement_path(
+                        &mut map,
+                        &runtime,
+                        actor,
+                        goal,
+                        1,
+                        1,
+                        None,
+                        &revisions,
+                        &mut budget,
+                        0,
+                        false,
+                    )
+                    .await;
+                    assert_eq!(prepared.goal, goal);
+                    assert!(!prepared.searched);
+                    let root = GameplayDecisionRoot::from_bytes([1; 32]);
+                    assert_eq!(
+                        choose_native_goal_step(
+                            &mut map,
+                            &runtime,
+                            actor,
+                            prepared.goal,
+                            prepared.path.as_ref(),
+                            crate::ai_think::ThinkOccurrence { actor, sequence: 0 },
+                            &root,
+                            1_000_000,
+                        )
+                        .await,
+                        Some(None)
+                    );
+                    assert_eq!(
+                        map.read_tile(
+                            &runtime,
+                            MovementLocalPosition {
+                                x: 3,
+                                y: 0,
+                                floor: 7
+                            }
+                        )
+                        .await,
+                        Some(false)
+                    );
                 }
                 tx.rollback().await?;
                 Ok(())
