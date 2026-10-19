@@ -1327,10 +1327,13 @@ async fn prepare_native_movement_path(
     prepared.searched = true;
     // Cache target facts for sight checks; a distance chase never enters the target cell.
     let target_walkable = map.read_tile(runtime, target_position).await;
-    if map.read_tile(runtime, from.position()).await != Some(true)
-        || (distance.is_none() && target_walkable != Some(true))
-    {
+    let from_walkable = map.read_tile(runtime, from.position()).await;
+    if from_walkable == Some(false) || (distance.is_none() && target_walkable == Some(false)) {
         prepared.goal = G::Stand;
+        return prepared;
+    }
+    if from_walkable.is_none() || target_walkable.is_none() {
+        prepared.search_pending = true;
         return prepared;
     }
     let steps: Option<Vec<crate::movement::CardinalStep>> = {
@@ -4860,17 +4863,24 @@ mod tests {
     #[test]
     fn current_owner_spawn_home_walkback_and_leash_use_actual_source_cell()
     -> crate::bestiary_postgres_harness::TestResult {
-        current_owner_spawn_home_walkback(false)
+        current_owner_spawn_home_walkback(false, false)
     }
 
     #[test]
     fn current_owner_walkback_retries_after_route_cell_is_vacated()
     -> crate::bestiary_postgres_harness::TestResult {
-        current_owner_spawn_home_walkback(true)
+        current_owner_spawn_home_walkback(true, false)
+    }
+
+    #[test]
+    fn current_owner_walkback_retries_after_tile_read_error()
+    -> crate::bestiary_postgres_harness::TestResult {
+        current_owner_spawn_home_walkback(false, true)
     }
 
     fn current_owner_spawn_home_walkback(
         block_route: bool,
+        read_error: bool,
     ) -> crate::bestiary_postgres_harness::TestResult {
         use crate::bestiary_postgres_harness::{Harness, configured_admin, debug, id};
         use crate::foundation::{ChannelContentPin, ChannelId, NodeId, WorldId};
@@ -4879,7 +4889,9 @@ mod tests {
             return Ok(());
         };
         let executor = crate::bestiary_postgres_harness::runtime()?;
-        let label = if block_route {
+        let label = if read_error {
+            "native_home_tile_read_retry"
+        } else if block_route {
             "native_home_blocker_retry"
         } else {
             "native_source_home"
@@ -5044,6 +5056,10 @@ mod tests {
                 )
                 .map_err(debug)?;
                 let mut budget = crate::combat_attack::ChaseSearchBudget::default();
+                if read_error {
+                    sqlx::query("SAVEPOINT tile_read_error").execute(&mut *tx).await?;
+                    assert!(sqlx::query("SELECT 1/0").execute(&mut *tx).await.is_err());
+                }
                 let (chosen, next) = run_current_native_monster_thinks(
                     &mut runtime,
                     &mut states.monster_melee.creature_ai,
@@ -5069,7 +5085,7 @@ mod tests {
                     "walk-back remains awake despite no perceived player"
                 );
                 assert_eq!(chosen[0].1.step, None);
-                assert_eq!(next, Some(0));
+                assert_eq!(next, Some(if read_error { next_search_window(0) } else { 0 }));
                 let movement = states
                     .monster_melee
                     .creature_ai
@@ -5080,6 +5096,43 @@ mod tests {
                     movement.goal,
                     crate::ai_think::NativeCreatureGoal::WalkBack { home }
                 );
+                if read_error {
+                    assert!(movement.search_pending);
+                    assert!(movement.path.is_none());
+                    let think_due = states.monster_melee.creature_ai.due(actor)
+                        .ok_or("walk-back think deadline after read error")?;
+                    let now = next_search_window(0);
+                    run_current_native_monster_thinks(
+                        &mut runtime, &mut states.monster_melee.creature_ai,
+                        &mut states.native_summons, content, now, &|| now, &root,
+                        &revisions, &[], room, &objects, &mut tx, &authority,
+                        &mut budget, false,
+                    ).await.map_err(debug)?;
+                    let movement = states.monster_melee.creature_ai.native_movement(actor)
+                        .ok_or("deferred walk-back")?;
+                    assert_eq!(movement.goal, crate::ai_think::NativeCreatureGoal::WalkBack { home });
+                    assert!(movement.search_pending);
+                    assert!(movement.path.is_none());
+                    assert_eq!(states.monster_melee.creature_ai.due(actor), Some(think_due));
+                    assert_eq!(runtime.read_actor_position(actor).map_err(debug)?.position(), start);
+                    let retry_due = states.monster_melee.creature_ai.earliest_native_step_due()
+                        .ok_or("walk-back read retry deadline")?;
+                    assert_eq!(retry_due, next_search_window(now));
+                    sqlx::query("ROLLBACK TO SAVEPOINT tile_read_error")
+                        .execute(&mut *tx).await?;
+                    run_current_native_monster_thinks(
+                        &mut runtime, &mut states.monster_melee.creature_ai,
+                        &mut states.native_summons, content, retry_due, &|| retry_due, &root,
+                        &revisions, &[], room, &objects, &mut tx, &authority,
+                        &mut budget, false,
+                    ).await.map_err(debug)?;
+                    assert_eq!(runtime.read_actor_position(actor).map_err(debug)?.position(), cell(3, 12));
+                    assert_eq!(states.monster_melee.creature_ai.due(actor), Some(think_due));
+                    assert!(!states.monster_melee.creature_ai.native_movement(actor)
+                        .ok_or("recovered walk-back")?.search_pending);
+                    tx.rollback().await?;
+                    return Ok(());
+                }
                 assert_eq!(
                     movement
                         .path
