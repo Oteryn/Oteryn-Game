@@ -396,11 +396,11 @@ fn negotiated_capability28_is_registered_without_inferred_requirements_and_29_is
     assert_eq!(crate::validate_acceptance_value(1, 1, 1, &[28]), Ok(()));
     assert_eq!(crate::validate_acceptance_value(1, 1, 1, &[]), Ok(()));
     assert_eq!(
-        crate::validate_acceptance_value(1, 1, 1, &[31]),
+        crate::validate_acceptance_value(1, 1, 1, &[32]),
         Err(crate::FoundationProtocolError::CapabilityMismatch)
     );
     assert_eq!(
-        crate::validate_acceptance_value(1, 1, 1, &[28, 31]),
+        crate::validate_acceptance_value(1, 1, 1, &[28, 32]),
         Err(crate::FoundationProtocolError::CapabilityMismatch)
     );
     assert_eq!(

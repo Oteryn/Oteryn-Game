@@ -1,0 +1,15 @@
+{
+  "schema": "OTERYN_WEATHER_INDEX/v1",
+  "family": "Weather",
+  "kind": "static_content",
+  "owner": "Weather",
+  "population_state": "POPULATED",
+  "design_status": "OTERYN_DESIGN",
+  "revision": "oteryn-weather-design-r1",
+  "slot_ms": 900000,
+  "files": {
+    "climates": "climates.json",
+    "areas": "areas.json"
+  },
+  "notes": "CP D1448: Oteryn designs its own weather. Each area draws its own independent deterministic weather (kind and intensity by climate weights, 15-45 minute periods aligned to 15-minute slots). Visual only. A later task may bind an area to live real-world weather through the WeatherSource seam; that is not implemented."
+}

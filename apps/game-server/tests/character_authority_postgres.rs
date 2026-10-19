@@ -2322,6 +2322,11 @@ mod bestiary_progress_postgres_cases;
 #[path = "../src/durability/ground_cell_limit_tests.rs"]
 mod ground_cell_limit_tests;
 
+// RANK-1 HS-1 World highscore snapshots (migration 0129): the job, its 11 categories and the
+// reader, on the CHARM-2 harness included above; HS-WIRE-1's query handler runs against them.
+#[path = "support/highscores_postgres_cases.rs"]
+mod highscores_postgres_cases;
+
 // ACHIEVEMENT step 3 account facts (migration 0021) share their cases with the
 // focused standalone target through the same protected lane, on the CHARM-2
 // harness included above.

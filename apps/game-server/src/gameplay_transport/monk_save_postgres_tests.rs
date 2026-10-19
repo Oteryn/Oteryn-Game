@@ -15,6 +15,9 @@ mod logout_e2e;
 #[path = "map_bundle_domain_postgres_tests.rs"]
 mod map_bundle_domain;
 
+#[path = "weather_wire_postgres_tests.rs"]
+mod weather_wire;
+
 use super::{ComposedFreshAdmission, MonkSave};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::fresh_admission::FreshAdmissionStore;
