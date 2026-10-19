@@ -5,7 +5,8 @@
 --   * `game_world_highscore_snapshots`: one immutable header per published (World, category)
 --     cut, categories 1..=11;
 --   * `game_world_highscore_rows`: the ranked rows of a snapshot, one list per vocation filter
---     (0 all, 1 knight .. 5 monk), at most 1000 positions each, immutable once written;
+--     (0 all, else the base vocation by its public projection id: 1 druid, 2 knight, 3 monk,
+--     4 paladin, 5 sorcerer), at most 1000 positions each, immutable once written;
 --   * `game_world_highscore_heads`: the current and previous snapshot of each (World, category).
 --     A reader pages the current snapshot or, by its token, the previous one;
 --   * the guards: a header and a row never change; a published snapshot never acquires rows;

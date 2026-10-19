@@ -26,14 +26,18 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-/// Private persisted filter order, not a new protocol-number allocation.
+/// The stored `filter` of `game_world_highscore_rows`: 0 all, otherwise the base vocation by its
+/// public §4.0 id (druid 1, knight 2, monk 3, paladin 4, sorcerer 5), the numbering the public
+/// projection producer reads (`OTERYN_GAME_PUBLIC_PROJECTIONS_V1` §11, "Highscores ids"). The
+/// HS-WIRE-1 query numbers its vocations differently; [`reply::QUERY_VOCATIONS`] maps it, and the
+/// store resolves a list by its vocation key, never by a query number.
 pub(crate) const FILTERS: [Option<&str>; 6] = [
     None,
+    Some("druid"),
     Some("knight"),
+    Some("monk"),
     Some("paladin"),
     Some("sorcerer"),
-    Some("druid"),
-    Some("monk"),
 ];
 const PAGE_ROWS: u64 = 50;
 const SNAPSHOT_INTERVAL_MS: i64 = 30 * 60 * 1000;
@@ -58,6 +62,10 @@ impl CutLimits {
     };
     /// Fixture-only tighter bounds, or `None` above a registered maximum or for an empty page.
     #[cfg(test)]
+    #[allow(
+        dead_code,
+        reason = "fixture entry point of the PostgreSQL integration targets that path-load this module"
+    )]
     pub(crate) fn tighter(characters_max: usize, page_rows: usize) -> Option<Self> {
         (characters_max <= CUT_CHARACTERS_MAX && (1..=CUT_SOURCE_PAGE_ROWS).contains(&page_rows))
             .then_some(Self {
@@ -269,6 +277,10 @@ impl DurabilityRoot {
     /// Fixture-only planned-reset cut under tighter `limits`, crossing page boundaries and
     /// the World bound with a handful of Characters.
     #[cfg(test)]
+    #[allow(
+        dead_code,
+        reason = "fixture entry point of the PostgreSQL integration targets that path-load this module"
+    )]
     pub(crate) async fn refresh_highscore_world_within(
         &self,
         world: WorldId,
@@ -600,6 +612,10 @@ fn materialize(source: &[Source], category: usize) -> Result<Vec<StoredRow>> {
 /// Fixture-only publication with owning catalogues inside the caller's transaction, so the
 /// PostgreSQL suite can exercise a stale cut's publication conflict.
 #[cfg(test)]
+#[allow(
+    dead_code,
+    reason = "fixture entry point of the PostgreSQL integration targets that path-load this module"
+)]
 pub(crate) async fn publish_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     world: WorldId,

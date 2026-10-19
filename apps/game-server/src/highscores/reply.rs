@@ -12,7 +12,7 @@
 //! gameplay transport dispatches, including durable resolution of the current session.
 
 use super::super::fresh_admission::FreshAdmissionStore;
-use super::{DurabilityRoot, FILTERS, SnapshotError, SnapshotPage, SnapshotRow, served_categories};
+use super::{DurabilityRoot, SnapshotError, SnapshotPage, SnapshotRow, served_categories};
 use crate::foundation::{
     CharacterId, FoundationProtocolError, GameSessionId, GameSessionState, WorldId,
 };
@@ -54,6 +54,18 @@ pub(crate) async fn answer_session_highscores(
     answer_highscores(root, world, current.commit().character_id(), query).await
 }
 
+/// `HighscoresQueryV1.vocation` (`highscores_v1.proto`): 0 all, 1 knight, 2 paladin, 3 sorcerer,
+/// 4 druid, 5 monk. The stored lists number their filters by the public ids instead
+/// ([`super::FILTERS`]); a query names its list by this vocation key.
+pub(crate) const QUERY_VOCATIONS: [Option<&str>; 6] = [
+    None,
+    Some("knight"),
+    Some("paladin"),
+    Some("sorcerer"),
+    Some("druid"),
+    Some("monk"),
+];
+
 /// Answer `query` for `character` of `world` from the persisted snapshots.
 pub(crate) async fn answer_highscores(
     root: &DurabilityRoot,
@@ -71,7 +83,7 @@ pub(crate) async fn answer_highscores(
     };
     let Some(vocation) = usize::try_from(query.vocation)
         .ok()
-        .and_then(|index| FILTERS.get(index))
+        .and_then(|index| QUERY_VOCATIONS.get(index))
     else {
         return HighscoresReply::Rejected;
     };

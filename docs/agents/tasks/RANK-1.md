@@ -734,3 +734,11 @@ The new PostgreSQL case is
 The committed-session positive path through `answer_session_highscores` needs a real fresh
 admission fixture (`postgres::fresh::Source`), which exists only in the `durability_postgres`
 target, outside owned paths. Status remains `NOT_FULLY_QUALIFIED`.
+
+2026-10-19 public projection alignment: the stored `filter` now uses the public §4.0 ids
+(`OTERYN_GAME_PUBLIC_PROJECTIONS_V1` §11: 1 druid, 2 knight, 3 monk, 4 paladin, 5 sorcerer);
+the HS-WIRE-1 query keeps its own numbering (`reply::QUERY_VOCATIONS`), so no wire change.
+Open: HIGHSCORES-0 §5 keeps the global rank in every filtered list, while the public producer's
+`encode_highscores` accepts only list-relative competition ranks, so filters 1..5 refuse to
+publish. The fix belongs to the producer or the contract text, outside owned paths (owner
+question).

@@ -325,6 +325,22 @@ fn filtered_list_is_capped_after_filtering_and_keeps_global_rank_below_all_cap()
         assert!(all.own_row.is_none());
         assert!(page(h, 1, None, 21, token).await?.rows.is_empty());
         assert!(page(h, 1, Some("knight"), 20, token).await?.rows.len() == 50);
+        // The stored filter is the public §4.0 id (knight 2, paladin 4) the public projection
+        // producer reads, and each base-vocation list holds only that vocation.
+        let stored: Vec<(i16, String, i64)> = sqlx::query_as(
+            "SELECT r.filter, r.vocation, count(*) FROM game_world_highscore_rows r \
+             WHERE r.snapshot_id=$1 AND r.filter>0 GROUP BY r.filter, r.vocation ORDER BY 1, 2",
+        )
+        .bind(i64::try_from(token)?)
+        .fetch_all(&h.pool)
+        .await?;
+        assert_eq!(
+            stored,
+            [
+                (2, "elite_knight".to_owned(), 1000),
+                (4, "royal_paladin".to_owned(), 1),
+            ]
+        );
         assert_eq!(h.root_revision().await?, "2");
         Ok(())
     })

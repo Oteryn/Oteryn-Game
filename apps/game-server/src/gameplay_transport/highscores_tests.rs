@@ -130,3 +130,30 @@ fn the_achievement_catalogue_owns_category_10_points() {
         crate::achievement_catalogue::AchievementCatalogue::embedded().expect("embedded catalogue");
     assert_eq!(catalogue.total_points(&[]), Some(0));
 }
+
+#[test]
+fn stored_filters_use_the_public_ids_and_the_query_keeps_its_own_numbering() {
+    use crate::durability::highscore_snapshot::{FILTERS, reply::QUERY_VOCATIONS};
+    use crate::native_admission_source::public_projections::HIGHSCORE_FILTERS;
+    // The public projection producer reads the stored filter as the base vocation's §4.0 id.
+    for (name, id) in HIGHSCORE_FILTERS {
+        let stored = FILTERS.get(usize::from(id)).expect("stored filter");
+        assert_eq!(stored.unwrap_or("all"), name);
+    }
+    // HighscoresQueryV1.vocation: 0 all, 1 knight, 2 paladin, 3 sorcerer, 4 druid, 5 monk.
+    assert_eq!(
+        QUERY_VOCATIONS,
+        [
+            None,
+            Some("knight"),
+            Some("paladin"),
+            Some("sorcerer"),
+            Some("druid"),
+            Some("monk"),
+        ]
+    );
+    // Every query vocation names exactly one stored list.
+    for vocation in QUERY_VOCATIONS {
+        assert_eq!(FILTERS.iter().filter(|f| **f == vocation).count(), 1);
+    }
+}
