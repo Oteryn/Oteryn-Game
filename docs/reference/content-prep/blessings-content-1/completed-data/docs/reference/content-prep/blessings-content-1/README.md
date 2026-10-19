@@ -2,7 +2,7 @@
 
 All 4 previously held parameter fields now contain explicit Oteryn working values in their target records. They are classified DERIVED and scoped OTERYN_REFERENCE_PARAMETER; source-backed facts retain their existing evidence classification. No runtime activation is authorized.
 
-The [working parameter register](oteryn-parameters.json) records completion and shared policies. The [decision rationale](oteryn-proposals.json) retains every field path, source and assumption, and is marked materialized. Original unresolved Tibia observations are retained verbatim in the [Global source archive](tibia-source-archive.json), rather than being passed off as official facts.
+The [working parameter register](https://github.com/Oteryn/Oteryn-Game/blob/content-prep/blessings-content-1/docs/reference/content-prep/blessings-content-1/oteryn-parameters.json) records completion and shared policies. The [decision rationale](https://github.com/Oteryn/Oteryn-Game/blob/content-prep/blessings-content-1/docs/reference/content-prep/blessings-content-1/oteryn-proposals.json) retains every field path, source and assumption, and is marked materialized. Original unresolved Tibia observations are retained verbatim in the [Global source archive](https://github.com/Oteryn/Oteryn-Game/blob/content-prep/blessings-content-1/docs/reference/content-prep/blessings-content-1/tibia-source-archive.json), rather than being passed off as official facts.
 
 Active evidence counts: {"DERIVED": 28, "PROVEN": 65}. Remaining unfilled active parameter fields:0. [Field audit](research-audit.json); [source registry](sources.json).
 
