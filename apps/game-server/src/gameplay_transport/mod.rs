@@ -4153,7 +4153,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 .ok()
                 .map(|(current, _)| *current.commit().character_id().as_bytes()),
         };
-        Some(desk.register(*admitted.game_session_id.as_bytes(), account, character))
+        let guard = desk.register(*admitted.game_session_id.as_bytes(), account, character);
+        // GM-1: a session without chat state never runs chat_open, so load its durable mute here.
+        if let Some(character) = character
+            && let Some(environment) = desk.environment()
+            && let Ok(until) = self
+                .root
+                .staff_active_mute_until(environment, character, crate::staff::live::wall_ms())
+                .await
+        {
+            desk.set_mute(character, until);
+        }
+        Some(guard)
     }
 
     async fn expire_control_loss(&self, admitted: AdmittedSession) -> GraceExpiryResult {

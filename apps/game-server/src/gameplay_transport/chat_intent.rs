@@ -603,15 +603,21 @@ impl ChatRuntime {
 
     /// Whether `session` is muted at `now`.
     fn is_muted(&self, session: GameSessionId, now: SemanticTimeMicros) -> bool {
-        self.sessions
-            .lock()
-            .ok()
-            .and_then(|sessions| {
-                sessions
-                    .get(&session)
-                    .map(|s| s.limiter.is_muted(now) || self.staff_muted(s.character).is_some())
-            })
-            .unwrap_or(false)
+        let state = self.sessions.lock().ok().and_then(|sessions| {
+            sessions
+                .get(&session)
+                .map(|s| (s.limiter.is_muted(now), s.character))
+        });
+        if let Some((limited, character)) = state {
+            return limited || self.staff_muted(character).is_some();
+        }
+        // GM-1: a session without chat state (no CHAT_V1 or NPC_SERVICE_V1) is still
+        // bound by a staff mute of the Character its connection serves. The CHAT-0
+        // limiter mute only exists for sessions with chat state.
+        self.staff
+            .get()
+            .and_then(|desk| desk.character_for_session(session.as_bytes()))
+            .is_some_and(|character| self.staff_muted(Some(character)).is_some())
     }
 }
 
@@ -1221,6 +1227,28 @@ mod tests {
             ChatDisposition::Ok
         );
         assert_eq!(chat.drain(second.1).len(), 1);
+    }
+
+    #[test]
+    fn a_staff_mute_holds_a_cast_of_a_session_without_chat() {
+        // GM-1: a client with neither CHAT_V1 nor NPC_SERVICE_V1 has no chat state; the staff
+        // mute of the Character its connection serves still refuses its casts.
+        let chat = ChatRuntime::default();
+        let session = session_of(0x41);
+        let character = [0x56; 16];
+        let desk = crate::staff::live::StaffDesk::new();
+        chat.install_staff(Arc::clone(&desk));
+        let _live = desk.register(*session.as_bytes(), [0x57; 16], Some(character));
+        assert!(chat.muted_cast(session, BASE).is_none());
+        desk.set_mute(character, Some(crate::staff::live::wall_ms() + 86_400_000));
+        let outcome = chat.muted_cast(session, BASE).expect("muted cast");
+        assert_eq!(
+            outcome.disposition,
+            oteryn_protocol_oteryn::actor_spell::SpellCastDisposition::Rejected
+        );
+        assert!(chat.muted_cast(session_of(0x42), BASE).is_none());
+        desk.set_mute(character, None);
+        assert!(chat.muted_cast(session, BASE).is_none());
     }
 
     #[test]

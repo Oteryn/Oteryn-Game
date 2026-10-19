@@ -206,6 +206,13 @@ Sixth review round (Codex threads on `a4af837c`):
   and `staff_pg_restore_records_each_unapplied_effect_and_stays_verifiable`.
   The test `restore_to` helper now also reverts report closes, text clears
   and lifts made above the restored head, as a point-in-time restore would.
+- The local pre-push review found that a staff mute did not hold a spell
+  cast from a client with neither CHAT_V1 nor NPC_SERVICE_V1. Such a
+  session has no chat state, so the cast gate never saw the mute. The gate
+  now falls back to the staff desk's Character for the session's live
+  connection. The desk registration (`staff_presence`) also loads the
+  durable mute, because such a session never runs `chat_open`. Unit test:
+  `a_staff_mute_holds_a_cast_of_a_session_without_chat`.
 - The PostgreSQL tests run in the `durability_postgres` job. There is no
   protocol or wire change.
 

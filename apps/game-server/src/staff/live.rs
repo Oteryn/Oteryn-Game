@@ -185,6 +185,11 @@ impl StaffDesk {
             .map(|(session, _)| *session)
     }
 
+    /// The Character served by the live connection of `session`, when it names one.
+    pub fn character_for_session(&self, session: &[u8; 16]) -> Option<[u8; 16]> {
+        self.live.lock().ok()?.get(session)?.character
+    }
+
     pub fn session_for_account_ref(&self, environment: &str, wanted: &str) -> Option<[u8; 16]> {
         let live = self.live.lock().ok()?;
         live.iter()
