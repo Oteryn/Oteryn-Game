@@ -12614,10 +12614,17 @@
       "allocation_impact": "One timestamp per watched target in node memory; an older confirmation is shown as UNCONFIRMED.",
       "client_visible": true,
       "boundary_tests": [
-        "apps/game-server/src/vip/presence_tests.rs an ONLINE older than 10 s without confirmation is downgraded"
+        "apps/game-server/src/vip/presence_tests.rs an ONLINE older than 10 s without confirmation is downgraded",
+        "crates/protocol-oteryn/src/vip_tests.rs an_online_status_carries_its_confirmation_and_no_other_status_does",
+        "crates/protocol-oteryn/src/vip_tests.rs client_confirmations_clear_an_online_at_its_deadline",
+        "crates/session/src/lib.rs an_unconfirmed_online_clears_at_its_client_deadline",
+        "apps/game-server/src/gameplay_transport/logout_postgres_tests.rs vip_online_confirmations_reach_the_client_on_schedule_through_dispatch"
       ],
       "consumers": [
-        "apps/game-server/src/vip/presence.rs CONFIRM_MS"
+        "apps/game-server/src/vip/presence.rs CONFIRM_MS",
+        "crates/protocol-oteryn/src/vip.rs MAX_VIP_CONFIRM_MS and VipConfirmations client deadlines",
+        "crates/session/src/lib.rs vip_confirmations and SessionEvent::VipExpired",
+        "apps/game-server/src/gameplay_transport/vip_intent.rs vip_follow remaining confirmation"
       ],
       "notes": "VIP0 \u00a711. Registered by VIP-2 under CP D1444 (#2164). The oteryn-protocol-oteryn test vip::tests::the_registries_bind_the_vip_constants binds the wire rows to their constants. Architect ruling R4."
     },

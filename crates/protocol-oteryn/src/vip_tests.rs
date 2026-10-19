@@ -218,11 +218,13 @@ fn snapshots_and_deltas_round_trip() {
             entry_no: 1,
             status: VipStatus::Online,
             announce: true,
+            confirmed_for_ms: 1,
         }),
         VipDelta::Status(VipStatusUpdate {
             entry_no: 1,
             status: VipStatus::Unconfirmed,
             announce: false,
+            confirmed_for_ms: 0,
         }),
         VipDelta::Consent(snapshot.consent.clone()),
     ] {
@@ -254,8 +256,9 @@ fn worst_cases_fill_their_bounds() {
         (
             VipDelta::Status(VipStatusUpdate {
                 entry_no: u64::MAX,
-                status: VipStatus::Unconfirmed,
+                status: VipStatus::Online,
                 announce: true,
+                confirmed_for_ms: MAX_VIP_CONFIRM_MS,
             }),
             MAX_VIP_STATUS_BYTES,
         ),
@@ -747,6 +750,7 @@ fn vip_snapshot_apply_removes_updates_status_and_replaces_groups_and_consent() {
         entry_no: 1,
         status: VipStatus::Online,
         announce: true,
+        confirmed_for_ms: MAX_VIP_CONFIRM_MS,
     });
     snapshot.apply(&missing).expect("missing status");
     assert_eq!(snapshot, VipSnapshot::default());
@@ -774,4 +778,229 @@ fn vip_snapshot_apply_removes_updates_status_and_replaces_groups_and_consent() {
         .apply(&VipDelta::Consent(VipConsentView::default()))
         .expect("replace consent");
     assert_eq!(snapshot, VipSnapshot::default());
+}
+
+fn listed(entry_no: u64, status: VipStatus) -> VipEntry {
+    VipEntry {
+        entry_no,
+        name: name(b'B'),
+        description: String::new(),
+        icon: 0,
+        notify: false,
+        groups: VipGroupSet::default(),
+        status,
+    }
+}
+
+fn status(entry_no: u64, status: VipStatus, confirmed_for_ms: u32) -> VipDelta {
+    VipDelta::Status(VipStatusUpdate {
+        entry_no,
+        status,
+        announce: false,
+        confirmed_for_ms,
+    })
+}
+
+/// VIP0 §8.2, VIP0-RL-16 (owner wire sign-off 2026-10-19): an ONLINE status names how long the
+/// client may show it, at most 10 s; every other status names no time.
+#[test]
+fn an_online_status_carries_its_confirmation_and_no_other_status_does() {
+    assert_eq!(MAX_VIP_CONFIRM_MS, 10_000);
+    // entry 2, status ONLINE, confirmed_for_ms 10 000.
+    let online = [0x08, 0x02, 0x10, 0x02, 0x20, 0x90, 0x4e];
+    let delta = status(2, VipStatus::Online, MAX_VIP_CONFIRM_MS);
+    assert_eq!(encode_vip_delta(&delta).expect("online"), online);
+    assert_eq!(
+        decode_vip_delta(DELTA_TYPE_VIP_STATUS_V1, &online).expect("online"),
+        delta
+    );
+    // entry 2, status OFFLINE, announce.
+    let offline = [0x08, 0x02, 0x10, 0x01, 0x18, 0x01];
+    let delta = VipDelta::Status(VipStatusUpdate {
+        entry_no: 2,
+        status: VipStatus::Offline,
+        announce: true,
+        confirmed_for_ms: 0,
+    });
+    assert_eq!(encode_vip_delta(&delta).expect("offline"), offline);
+    assert_eq!(
+        decode_vip_delta(DELTA_TYPE_VIP_STATUS_V1, &offline).expect("offline"),
+        delta
+    );
+    for (value, confirmed_for_ms) in [
+        (VipStatus::Online, 0),
+        (VipStatus::Online, MAX_VIP_CONFIRM_MS + 1),
+        (VipStatus::Offline, 1),
+        (VipStatus::Unconfirmed, 1),
+    ] {
+        assert!(
+            encode_vip_delta(&status(2, value, confirmed_for_ms)).is_err(),
+            "{value:?} {confirmed_for_ms}"
+        );
+    }
+    for payload in [
+        raw(&[(1, 2), (2, 2)]),
+        raw(&[(1, 2), (2, 2), (4, 0)]),
+        raw(&[(1, 2), (2, 2), (4, u64::from(MAX_VIP_CONFIRM_MS) + 1)]),
+        raw(&[(1, 2), (2, 2), (4, 5), (4, 5)]),
+        raw(&[(1, 2), (2, 1), (4, 5)]),
+        raw(&[(1, 2), (2, 3), (4, 5)]),
+    ] {
+        assert!(
+            decode_vip_delta(DELTA_TYPE_VIP_STATUS_V1, &payload).is_err(),
+            "{payload:?}"
+        );
+    }
+    let worst = VipDelta::Status(VipStatusUpdate {
+        entry_no: u64::MAX,
+        status: VipStatus::Online,
+        announce: true,
+        confirmed_for_ms: MAX_VIP_CONFIRM_MS,
+    });
+    assert_eq!(MAX_VIP_STATUS_BYTES, 18);
+    assert_eq!(
+        encode_vip_delta(&worst).expect("worst status").len(),
+        MAX_VIP_STATUS_BYTES
+    );
+}
+
+/// VIP0 §8.2, VIP0-RL-16: the client shows an ONLINE until the deadline its last confirmation
+/// named, and UNCONFIRMED after it; an ONLINE it holds no confirmation for is UNCONFIRMED.
+#[test]
+fn client_confirmations_clear_an_online_at_its_deadline() {
+    use std::time::{Duration, Instant};
+    let ms = Duration::from_millis;
+    let start = Instant::now();
+    let mut store = VipSnapshot {
+        entries: vec![
+            listed(1, VipStatus::Unconfirmed),
+            listed(2, VipStatus::Unconfirmed),
+        ],
+        ..VipSnapshot::default()
+    };
+    let mut shown = VipConfirmations::default();
+    let receive = |shown: &mut VipConfirmations<Instant>,
+                   store: &mut VipSnapshot,
+                   delta: &VipDelta,
+                   at: Instant| {
+        store.apply(delta).expect("apply");
+        shown.observe(delta, at);
+        shown.settle(store, at)
+    };
+    assert!(
+        receive(
+            &mut shown,
+            &mut store,
+            &status(1, VipStatus::Online, 300),
+            start
+        )
+        .is_empty()
+    );
+    assert!(
+        receive(
+            &mut shown,
+            &mut store,
+            &status(2, VipStatus::Online, 100),
+            start
+        )
+        .is_empty()
+    );
+    let statuses = |store: &VipSnapshot| {
+        store
+            .entries
+            .iter()
+            .map(|entry| entry.status)
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(statuses(&store), [VipStatus::Online, VipStatus::Online]);
+    assert_eq!(shown.next_deadline(), Some(start + ms(100)));
+    assert!(shown.settle(&mut store, start + ms(99)).is_empty());
+    assert_eq!(shown.settle(&mut store, start + ms(100)), [2]);
+    assert_eq!(
+        statuses(&store),
+        [VipStatus::Online, VipStatus::Unconfirmed]
+    );
+    assert_eq!(shown.next_deadline(), Some(start + ms(300)));
+    // A confirmation renews the deadline; an entry upsert keeps it.
+    assert!(
+        receive(
+            &mut shown,
+            &mut store,
+            &status(1, VipStatus::Online, 300),
+            start + ms(200)
+        )
+        .is_empty()
+    );
+    let mut renamed = listed(1, VipStatus::Online);
+    renamed.name = name(b'C');
+    assert!(
+        receive(
+            &mut shown,
+            &mut store,
+            &VipDelta::Entry(renamed),
+            start + ms(250)
+        )
+        .is_empty()
+    );
+    assert_eq!(shown.next_deadline(), Some(start + ms(500)));
+    assert!(shown.settle(&mut store, start + ms(499)).is_empty());
+    assert_eq!(shown.settle(&mut store, start + ms(500)), [1]);
+    assert_eq!(shown.next_deadline(), None);
+    // An ONLINE without a confirmation is shown UNCONFIRMED at once.
+    let fresh = VipDelta::Entry(listed(3, VipStatus::Online));
+    assert_eq!(
+        receive(&mut shown, &mut store, &fresh, start + ms(600)),
+        [3]
+    );
+    assert_eq!(store.entries[2].status, VipStatus::Unconfirmed);
+    // Another status or a removal ends the deadline.
+    assert!(
+        receive(
+            &mut shown,
+            &mut store,
+            &status(1, VipStatus::Online, 300),
+            start + ms(700)
+        )
+        .is_empty()
+    );
+    let offline = status(1, VipStatus::Offline, 0);
+    assert!(receive(&mut shown, &mut store, &offline, start + ms(710)).is_empty());
+    assert!(
+        receive(
+            &mut shown,
+            &mut store,
+            &status(2, VipStatus::Online, 300),
+            start + ms(800)
+        )
+        .is_empty()
+    );
+    let removed = VipDelta::EntryRemoved { entry_no: 2 };
+    assert!(receive(&mut shown, &mut store, &removed, start + ms(810)).is_empty());
+    assert_eq!(shown.next_deadline(), None);
+    assert!(shown.settle(&mut store, start + ms(5_000)).is_empty());
+    assert_eq!(
+        statuses(&store),
+        [VipStatus::Offline, VipStatus::Unconfirmed]
+    );
+    // A snapshot replaces the store; its ONLINE entries hold no confirmation.
+    let mut snapshot = VipSnapshot {
+        entries: vec![listed(4, VipStatus::Online), listed(5, VipStatus::Offline)],
+        ..VipSnapshot::default()
+    };
+    assert!(
+        receive(
+            &mut shown,
+            &mut store,
+            &status(1, VipStatus::Online, 300),
+            start + ms(900)
+        )
+        .is_empty()
+    );
+    shown.clear();
+    assert_eq!(shown.next_deadline(), None);
+    assert_eq!(shown.settle(&mut snapshot, start + ms(900)), [4]);
+    assert_eq!(
+        statuses(&snapshot),
+        [VipStatus::Unconfirmed, VipStatus::Offline]
+    );
 }

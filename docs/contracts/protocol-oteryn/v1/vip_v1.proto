@@ -153,11 +153,14 @@ message VipGroupsV1 {
 }
 
 // Delta type 4. announce is set only for a confirmed login or logout of an entry with notify.
-// At most 15 bytes.
+// At most 18 bytes.
 message VipStatusV1 {
   uint64 entry_no = 1;
   VipStatus status = 2;
   bool announce = 3;
+  // VIP0 §8.2, VIP0-RL-16: client ONLINE deadline after receipt, required 1..=10000 ms
+  // for ONLINE only; absent (0) for every other status. Never repeated or explicitly zero.
+  uint32 confirmed_for_ms = 4;
 }
 
 message VipInvitationV1 {

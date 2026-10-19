@@ -802,3 +802,302 @@ fn vip_listener_down_scenario() -> TestResult {
         harness.cleanup().await
     })
 }
+
+/// How long the confirmation scenario watches the connection: past one full VIP0-RL-16 window,
+/// so at least one confirmation must replace the first ONLINE before its 10 s deadline.
+const VIP_CONFIRM_WATCH: std::time::Duration = std::time::Duration::from_millis(11_500);
+
+/// VIP0 §8.2, VIP0-RL-16 (owner wire sign-off 2026-10-19) through the real composed owner, the
+/// real presence owner and `serve_admitted` on PostgreSQL: the session's character 41 lists the
+/// online character 60. The client receives the first ONLINE and then confirmations on schedule,
+/// each naming a deadline of at most 10 s and arriving before the deadline the previous one
+/// named, so the client-side deadline never clears the ONLINE and no other status is shown.
+#[test]
+fn vip_online_confirmations_reach_the_client_on_schedule_through_dispatch() -> TestResult {
+    std::thread::Builder::new()
+        .name("vip-dispatch-confirm".into())
+        .stack_size(VIP_DISPATCH_STACK_BYTES)
+        .spawn(|| vip_confirmation_scenario().map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "VIP dispatch confirmation thread panicked")?
+        .map_err(Into::into)
+}
+
+/// Polls both futures to completion on the current task.
+async fn join_both<A: Future, B: Future>(a: A, b: B) -> (A::Output, B::Output) {
+    let (mut a, mut b) = (std::pin::pin!(a), std::pin::pin!(b));
+    let (mut x, mut y) = (None, None);
+    std::future::poll_fn(|context| {
+        if x.is_none()
+            && let std::task::Poll::Ready(value) = a.as_mut().poll(context)
+        {
+            x = Some(value);
+        }
+        if y.is_none()
+            && let std::task::Poll::Ready(value) = b.as_mut().poll(context)
+        {
+            y = Some(value);
+        }
+        if x.is_some() && y.is_some() {
+            std::task::Poll::Ready(())
+        } else {
+            std::task::Poll::Pending
+        }
+    })
+    .await;
+    (x.expect("first"), y.expect("second"))
+}
+
+fn vip_confirmation_scenario() -> TestResult {
+    use crate::durability::item_transfer::CurrentCharacterItemFence;
+    use crate::foundation::MessageType;
+    use crate::gameplay_transport::capabilities::{OfferedCapability, SelectedCapabilities};
+    use crate::gameplay_transport::connection::{
+        AdmittedSession, ConnectionEnd, FirstEntryOutcome, IDLE_LIVENESS, SessionContinuity,
+        serve_admitted,
+    };
+    use crate::gameplay_transport::vip_intent::durability_vip_tests::{
+        insert_vip_character, insert_vip_invitation,
+    };
+    use oteryn_protocol_oteryn::vip::{
+        CAPABILITY_VIP_V1, MAX_VIP_CONFIRM_MS, STATE_DOMAIN_VIP, VipConfirmations, VipDelta,
+        VipSnapshot, VipStatus, decode_vip_delta, decode_vip_snapshot,
+    };
+    use oteryn_protocol_oteryn::{decode_snapshot_chunk, decode_state_delta, decode_wire_envelope};
+    use std::time::Duration;
+    use tokio::io::{AsyncReadExt as _, AsyncWriteExt as _, DuplexStream};
+    use tokio::time::Instant;
+
+    async fn read_one(client: &mut DuplexStream) -> TestResult<Vec<u8>> {
+        let mut length = [0_u8; 4];
+        client.read_exact(&mut length).await?;
+        let mut frame = vec![0_u8; u32::from_be_bytes(length) as usize];
+        client.read_exact(&mut frame).await?;
+        Ok(frame)
+    }
+
+    run(async |admin| {
+        reset();
+        let harness =
+            Harness::create_with_admission_seed(admin, "logout_vip_confirm", true, false).await?;
+        prepare_current_session(&harness).await?;
+        // The session's character 41 (account 40) in World 42 lists character 60 (account 70),
+        // whose consent is accepted; character 60 is online.
+        insert_vip_character(&harness.pool, id(41), [id(60), id(70), id(42)], 60).await?;
+        insert_vip_invitation(
+            &harness.pool,
+            [id(40), id(42), id(41), id(60)],
+            VIP_CONSENT_ACCEPTED,
+        )
+        .await?;
+        vip_target_online(&harness, id(60)).await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let dependencies = Dependencies::new()?;
+        let owner = dependencies.owner(&harness, &authority);
+        enter(&owner, &dependencies).await?;
+        let presence = std::sync::Arc::new(
+            crate::durability::vip_presence::PresenceOwner::new(
+                harness.root.clone(),
+                owner.world_id,
+                1,
+            )
+            .map_err(debug)?,
+        );
+        presence.listener_reconnected().map_err(debug)?;
+        assert!(
+            owner
+                .chat
+                .vip
+                .install_presence(std::sync::Arc::clone(&presence))
+        );
+        let session = dependencies.admitted.game_session_id;
+        let gameplay = fence(1)?;
+        let lease: String = sqlx::query_scalar(
+            "SELECT character_lease_generation::text FROM game_durability_reconnect_sessions \
+             WHERE game_session_id=encode($1,'hex')::uuid",
+        )
+        .bind(session.as_bytes().as_slice())
+        .fetch_one(&harness.pool)
+        .await?;
+        let item = CurrentCharacterItemFence {
+            character_id: gameplay.character_id,
+            game_session_id: session,
+            connection_generation: gameplay.connection_generation,
+            character_lease_generation: lease.parse()?,
+            runtime_scope: gameplay.runtime_scope,
+            scope_ownership_generation: gameplay.scope_ownership_generation,
+        };
+        let admitted = AdmittedSession {
+            first_entry: FirstEntryOutcome::Positioned,
+            controller: None,
+            continuity: SessionContinuity {
+                selected_capabilities: SelectedCapabilities::select(
+                    &[OfferedCapability {
+                        id: CAPABILITY_VIP_V1,
+                        requires: &[],
+                    }],
+                    &[CAPABILITY_VIP_V1],
+                )
+                .ok_or("VIP capability selection")?,
+                ..SessionContinuity::FRESH
+            },
+            item_fence: Some(item),
+            ..dependencies.admitted
+        };
+        let (mut server, mut client) = tokio::io::duplex(1 << 20);
+        let serving_owner = &owner;
+        let serving = async move {
+            let end = serve_admitted(&mut server, admitted, serving_owner, IDLE_LIVENESS).await;
+            drop(server);
+            end
+        };
+        // The client: its store, its deadlines and every status it was sent, with receipt time.
+        let watching = async {
+            let started = Instant::now();
+            let until = started + VIP_CONFIRM_WATCH;
+            let mut store: Option<VipSnapshot> = None;
+            let mut shown = VipConfirmations::<Instant>::default();
+            let mut statuses = Vec::new();
+            let mut expired = Vec::new();
+            loop {
+                let wake = shown
+                    .next_deadline()
+                    .map_or(until, |deadline| deadline.min(until));
+                let read = tokio::time::timeout_at(wake, read_one(&mut client)).await;
+                let at = Instant::now();
+                let frame = match read {
+                    Ok(frame) => frame?,
+                    Err(_) => {
+                        if let Some(vip) = store.as_mut() {
+                            expired.extend(shown.settle(vip, at));
+                        }
+                        if at >= until {
+                            break;
+                        }
+                        continue;
+                    }
+                };
+                let envelope = decode_wire_envelope(&frame)?;
+                match envelope.message_type() {
+                    MessageType::SnapshotChunk => {
+                        let (_, domains) = decode_snapshot_chunk(envelope.payload())?;
+                        for domain in domains {
+                            if domain.domain_id == STATE_DOMAIN_VIP {
+                                let mut snapshot =
+                                    decode_vip_snapshot(domain.payload).map_err(debug)?;
+                                shown.clear();
+                                expired.extend(shown.settle(&mut snapshot, at));
+                                store = Some(snapshot);
+                            }
+                        }
+                    }
+                    MessageType::StateDelta => {
+                        let delta = decode_state_delta(envelope.payload())?;
+                        if delta.domain_id == STATE_DOMAIN_VIP {
+                            let value =
+                                decode_vip_delta(delta.delta_type, delta.payload).map_err(debug)?;
+                            let vip = store.as_mut().ok_or("VIP snapshot first")?;
+                            vip.apply(&value).map_err(debug)?;
+                            shown.observe(&value, at);
+                            expired.extend(shown.settle(vip, at));
+                            if let VipDelta::Status(status) = value {
+                                statuses.push((at, status));
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            client.shutdown().await?;
+            let mut rest = Vec::new();
+            client.read_to_end(&mut rest).await?;
+            TestResult::Ok((started, store.ok_or("VIP snapshot")?, statuses, expired))
+        };
+        let (end, watched) = join_both(serving, watching).await;
+        let (started, store, statuses, expired) = watched?;
+        assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
+        assert!(
+            expired.is_empty(),
+            "the client deadline cleared {expired:?}"
+        );
+        assert!(
+            statuses.len() >= 2,
+            "the first ONLINE and at least one confirmation: {statuses:?}"
+        );
+        assert!(
+            statuses[0].0 - started < Duration::from_millis(MAX_VIP_CONFIRM_MS.into()),
+            "the first ONLINE came late"
+        );
+        for (at, status) in &statuses {
+            assert_eq!(
+                (status.entry_no, status.status),
+                (1, VipStatus::Online),
+                "only ONLINE for the online target, at {:?}",
+                *at - started
+            );
+            assert!((1..=MAX_VIP_CONFIRM_MS).contains(&status.confirmed_for_ms));
+        }
+        for pair in statuses.windows(2) {
+            let (previous_at, previous) = &pair[0];
+            let (at, _) = &pair[1];
+            assert!(
+                *at < *previous_at + Duration::from_millis(previous.confirmed_for_ms.into()),
+                "a confirmation came after the previous deadline: {:?} then {:?}",
+                *previous_at - started,
+                *at - started
+            );
+        }
+        let (last_at, last) = statuses.last().ok_or("a status")?;
+        assert!(
+            *last_at + Duration::from_millis(last.confirmed_for_ms.into())
+                > started + VIP_CONFIRM_WATCH,
+            "the shown ONLINE outlives the watch"
+        );
+        assert_eq!(store.entries.len(), 1);
+        assert_eq!(store.entries[0].status, VipStatus::Online);
+        println!(
+            "VIP0-RL-16 confirmations through dispatch (receipt ms after admission, confirmed ms): {:?}",
+            statuses
+                .iter()
+                .map(|(at, status)| ((*at - started).as_millis(), status.confirmed_for_ms))
+                .collect::<Vec<_>>()
+        );
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+/// The `game_vip_consents.consent` value of an accepted invitation.
+const VIP_CONSENT_ACCEPTED: i16 = 2;
+
+/// Makes `character` online for VIP presence as the production writers leave it: a current
+/// durable session of that character in this World, as the presence owner reads it.
+async fn vip_target_online(harness: &Harness, character: [u8; 16]) -> TestResult {
+    sqlx::query(
+        "INSERT INTO game_durability_reconnect_sessions (\
+            game_session_id, account_id, character_id, world_id, runtime_scope_kind, \
+            runtime_scope_world_id, runtime_scope_channel_id, control_loss_epoch, \
+            original_grace_deadline, predecessor_generation, character_lease_generation, \
+            scope_ownership_generation, current_generation, session_state\
+         ) VALUES (\
+            encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, \
+            encode($4,'hex')::uuid, 1, encode($4,'hex')::uuid, encode($5,'hex')::uuid, \
+            1, extract(epoch FROM clock_timestamp())::bigint + 60, 1, 1, 1, 1, 1\
+         )",
+    )
+    .bind(id(91).as_slice())
+    .bind(id(70).as_slice())
+    .bind(character.as_slice())
+    .bind(id(42).as_slice())
+    .bind(id(43).as_slice())
+    .execute(&harness.pool)
+    .await?;
+    Ok(())
+}

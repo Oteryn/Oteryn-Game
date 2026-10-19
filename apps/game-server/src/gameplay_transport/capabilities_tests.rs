@@ -2520,6 +2520,8 @@ mod vip_wire {
         write_bound: Option<Duration>,
         /// How long `vip_intent` runs after recording the intent.
         intent_delay: Duration,
+        /// How long `step` runs: a slow handler of another domain.
+        step_delay: Duration,
     }
 
     impl VipAuthority {
@@ -2535,6 +2537,7 @@ mod vip_wire {
                 unknown: false,
                 write_bound: Some(Duration::from_secs(1)),
                 intent_delay: Duration::ZERO,
+                step_delay: Duration::ZERO,
             }
         }
     }
@@ -2566,6 +2569,9 @@ mod vip_wire {
         }
 
         async fn step(&self, _actor: ExactActorRef, _direction: StepDirection) -> StepOutcome {
+            if !self.step_delay.is_zero() {
+                tokio::time::sleep(self.step_delay).await;
+            }
             StepOutcome {
                 disposition: StepDisposition::Blocked,
                 moved_to: None,
@@ -2765,6 +2771,7 @@ mod vip_wire {
                     entry_no: 2,
                     status: VipStatus::Online,
                     announce: false,
+                    confirmed_for_ms: 10_000,
                 }),
             ];
             let session = admitted(&[CAPABILITY_VIP_V1])?;
@@ -2977,6 +2984,7 @@ mod vip_wire {
                 entry_no: 1,
                 status: VipStatus::Online,
                 announce: false,
+                confirmed_for_ms: 10_000,
             });
             authority.calls.lock().expect("calls").next = Some(status.clone());
             let session = admitted(&[CAPABILITY_VIP_V1])?;
@@ -3008,6 +3016,140 @@ mod vip_wire {
                     .iter()
                     .all(|(_, session)| *session == session_id)
             );
+            Ok(())
+        })
+    }
+
+    /// VIP0 §8.2, VIP0-RL-16 (gate round 7 P1, owner wire sign-off 2026-10-19): a slow handler
+    /// of another domain stalls the connection, so no VIP confirmation can be written; the
+    /// client still clears the shown ONLINE at the deadline the last confirmation named, before
+    /// the stalled command's result arrives.
+    #[test]
+    fn a_slow_handler_of_another_domain_lets_the_client_deadline_clear_online()
+    -> Result<(), Box<dyn Error>> {
+        use oteryn_protocol_oteryn::vip::VipConfirmations;
+        use tokio::time::Instant;
+        async fn read_one(client: &mut DuplexStream) -> Result<Vec<u8>, Box<dyn Error>> {
+            let mut length = [0_u8; 4];
+            client.read_exact(&mut length).await?;
+            let mut frame = vec![0_u8; u32::from_be_bytes(length) as usize];
+            client.read_exact(&mut frame).await?;
+            Ok(frame)
+        }
+        run(async {
+            let mut authority = VipAuthority::new();
+            authority.write_bound = None;
+            authority.step_delay = Duration::from_millis(900);
+            let online = VipDelta::Status(VipStatusUpdate {
+                entry_no: 1,
+                status: VipStatus::Online,
+                announce: false,
+                confirmed_for_ms: 300,
+            });
+            authority.calls.lock().expect("calls").next = Some(online.clone());
+            let session = admitted(&[CAPABILITY_VIP_V1])?;
+            let (mut server, mut client): (DuplexStream, DuplexStream) = tokio::io::duplex(1 << 20);
+            let serving_authority = &authority;
+            let serving = async move {
+                let end =
+                    serve_admitted(&mut server, session, serving_authority, IDLE_LIVENESS).await;
+                drop(server);
+                end
+            };
+            let watching = async {
+                let mut store: Option<VipSnapshot> = None;
+                let mut shown = VipConfirmations::<Instant>::default();
+                let mut online_at = None;
+                // Admission, the snapshot, then the pushed ONLINE.
+                while online_at.is_none() {
+                    let frame = read_one(&mut client).await?;
+                    let at = Instant::now();
+                    let envelope = decode_wire_envelope(&frame)?;
+                    match envelope.message_type() {
+                        MessageType::SnapshotChunk => {
+                            let (_, domains) = decode_snapshot_chunk(envelope.payload())?;
+                            for domain in domains {
+                                if domain.domain_id == STATE_DOMAIN_VIP {
+                                    let mut snapshot = decode_vip_snapshot(domain.payload)
+                                        .map_err(|e| format!("{e:?}"))?;
+                                    shown.clear();
+                                    shown.settle(&mut snapshot, at);
+                                    store = Some(snapshot);
+                                }
+                            }
+                        }
+                        MessageType::StateDelta => {
+                            let delta = decode_state_delta(envelope.payload())?;
+                            assert_eq!(delta.domain_id, STATE_DOMAIN_VIP);
+                            let value = decode_vip_delta(delta.delta_type, delta.payload)
+                                .map_err(|e| format!("{e:?}"))?;
+                            assert_eq!(value, online);
+                            let vip = store.as_mut().ok_or("snapshot first")?;
+                            vip.apply(&value).map_err(|e| format!("{e:?}"))?;
+                            shown.observe(&value, at);
+                            assert!(shown.settle(vip, at).is_empty());
+                            online_at = Some(at);
+                        }
+                        _ => {}
+                    }
+                }
+                let online_at = online_at.ok_or("online")?;
+                let mut store = store.ok_or("snapshot")?;
+                assert_eq!(store.entries[0].status, VipStatus::Online);
+                // A step: the fake handler holds the connection for 900 ms.
+                let step =
+                    oteryn_protocol_oteryn::world_spatial::encode_step_intent(StepDirection::North);
+                let frame = command(1, 1, &step);
+                let mut framed = (frame.len() as u32).to_be_bytes().to_vec();
+                framed.extend_from_slice(&frame);
+                client.write_all(&framed).await?;
+                let mut expired_at = None;
+                let result_at = loop {
+                    let deadline = shown.next_deadline();
+                    let read = match deadline {
+                        Some(deadline) => {
+                            match tokio::time::timeout_at(deadline, read_one(&mut client)).await {
+                                Ok(frame) => Some(frame?),
+                                Err(_) => None,
+                            }
+                        }
+                        None => Some(read_one(&mut client).await?),
+                    };
+                    let at = Instant::now();
+                    let Some(frame) = read else {
+                        assert_eq!(shown.settle(&mut store, at), [1]);
+                        expired_at = Some(at);
+                        continue;
+                    };
+                    let envelope = decode_wire_envelope(&frame)?;
+                    match envelope.message_type() {
+                        MessageType::CommandResult => {
+                            assert_eq!(decode_command_result(envelope.payload())?.command_id, 1);
+                            break at;
+                        }
+                        MessageType::StateDelta => {
+                            let delta = decode_state_delta(envelope.payload())?;
+                            assert_ne!(
+                                delta.domain_id, STATE_DOMAIN_VIP,
+                                "no VIP delta while stalled"
+                            );
+                        }
+                        _ => {}
+                    }
+                };
+                let expired_at = expired_at.ok_or("the client deadline never fired")?;
+                assert!(expired_at - online_at >= Duration::from_millis(300));
+                assert!(expired_at < result_at);
+                assert!(result_at - online_at >= Duration::from_millis(900));
+                assert_eq!(store.entries[0].status, VipStatus::Unconfirmed);
+                client.shutdown().await?;
+                let mut rest = Vec::new();
+                client.read_to_end(&mut rest).await?;
+                Ok::<_, Box<dyn Error>>(())
+            };
+            let (end, watched) = join2(serving, watching).await;
+            watched?;
+            assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
             Ok(())
         })
     }

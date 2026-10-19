@@ -880,3 +880,48 @@ These passed locally on PostgreSQL 17.6:
 - lib `capabilities`: 65 passed;
 - the whole lib, without PostgreSQL: 3639 passed;
 - `durability_postgres vip`: 33 passed.
+
+## ONLINE confirmations on the wire — 2026-10-19 (owner Q1)
+
+Round 7 found a P1 (VIP0 §8.2, VIP0-RL-16): the server only bounded its own writes, so a
+client kept showing ONLINE after the server stopped confirming it. The owner chose option (a)
+and signed off the wire change on 2026-10-19. Capability 31 is new in this PR, so the change is
+not breaking.
+- Wire: `VipStatusV1` gains field 4 `confirmed_for_ms` (`vip_v1.proto`). ONLINE requires
+  1..=`MAX_VIP_CONFIRM_MS` (10 000); every other status leaves it absent. Encode and decode both
+  fail closed on a missing, zero, repeated or out-of-range value. `MAX_VIP_STATUS_BYTES` and the
+  registry bound go from 15 to 18. Golden vectors: ONLINE `08 02 10 02 20 90 4e`, OFFLINE with
+  announce `08 02 10 01 18 01`.
+- Server: `presence.rs` re-enqueues an unchanged fresh ONLINE read as a confirmation (no
+  announce) on the 5 s confirmation cadence. `vip_follow` writes the remaining write bound as
+  `confirmed_for_ms`, clamped to 1..=10 000, and sends no ONLINE whose bound is already zero.
+- Client: `VipConfirmations` (protocol-oteryn) holds one deadline per shown ONLINE. The session
+  settles it at admission (a snapshot ONLINE shows UNCONFIRMED at once), in liveness waits (which
+  wake at the next deadline) and at the end of every public operation. Each expiry queues
+  `SessionEvent::VipExpired` without changing the domain revision. The synthetic client renders
+  it as UNCONFIRMED.
+- RL-16 in `RESOURCE_LIMITS_REGISTRY.json` lists the new consumers and boundary tests.
+- Updated legacy assertion: `hiding_unhiding_consent_and_reconcile_never_create_false_login`
+  now expects one confirmation (ONLINE, no announce) for an unchanged ONLINE read, and then
+  nothing more. Its point, no false login and no duplicate, still holds.
+- Q2: the CI step that passes the PostgreSQL URL to the VIP dispatch tests is commit 72ff0a33c.
+  The merge-queue workflow pin is left to the CP.
+- Q3 and F2 stay deferred.
+
+Tests:
+- `an_online_status_carries_its_confirmation_and_no_other_status_does` and
+  `client_confirmations_clear_an_online_at_its_deadline`, in `vip_tests.rs`.
+- `an_unconfirmed_online_clears_at_its_client_deadline`, in the session crate.
+- `vip_wire::a_slow_handler_of_another_domain_lets_the_client_deadline_clear_online`, through
+  the real `serve_admitted` dispatch with a 900 ms handler from another domain.
+- `logout_e2e::vip_online_confirmations_reach_the_client_on_schedule_through_dispatch`, through
+  the real presence owner and `serve_admitted` on PostgreSQL. Over 11.5 s, every confirmation
+  arrives before the previous deadline.
+- The synthetic client's VIP pane test covers `VipExpired`.
+
+These passed locally on PostgreSQL 17.6:
+- lib `vip` plus `logout_e2e`: 100 passed;
+- lib `capabilities`: 66 passed;
+- protocol-oteryn `vip`: 11 passed;
+- session: 66 passed;
+- synthetic client `vip`: 2 passed.

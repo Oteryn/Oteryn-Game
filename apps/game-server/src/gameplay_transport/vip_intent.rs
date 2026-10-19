@@ -18,9 +18,9 @@ use std::future::Future;
 use std::sync::{Arc, Mutex, OnceLock};
 
 use oteryn_protocol_oteryn::vip::{
-    VipConsentView, VipDelta, VipEntry, VipGroup, VipGroupSet, VipIntent, VipIntentResult,
-    VipInvitation, VipResultCode, VipSnapshot, VipStatus, VipStatusUpdate, VipVisibility,
-    VipWatcher, decode_vip_intent,
+    MAX_VIP_CONFIRM_MS, VipConsentView, VipDelta, VipEntry, VipGroup, VipGroupSet, VipIntent,
+    VipIntentResult, VipInvitation, VipResultCode, VipSnapshot, VipStatus, VipStatusUpdate,
+    VipVisibility, VipWatcher, decode_vip_intent,
 };
 
 use super::ComposedFreshAdmission;
@@ -912,10 +912,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if s.fence != fence {
             return None;
         }
+        let confirmed_for_ms = if update.status() == Status::Online {
+            let left = presence.write_bound(&update)?;
+            if left.is_zero() {
+                return None;
+            }
+            u32::try_from(left.as_millis())
+                .unwrap_or(u32::MAX)
+                .clamp(1, MAX_VIP_CONFIRM_MS)
+        } else {
+            0
+        };
         let delta = VipDelta::Status(VipStatusUpdate {
             entry_no: update.entry(),
             status: wire_status(update.status()),
             announce: update.announce(),
+            confirmed_for_ms,
         });
         s.inflight = Some(update);
         Some(delta)

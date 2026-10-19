@@ -969,7 +969,7 @@
           "id": 4,
           "name": "VIP_STATUS_DELTA_V1",
           "payload_schema": "docs/contracts/protocol-oteryn/v1/vip_v1.proto#VipStatusV1",
-          "max_payload_bytes": 15
+          "max_payload_bytes": 18
         },
         {
           "id": 5,

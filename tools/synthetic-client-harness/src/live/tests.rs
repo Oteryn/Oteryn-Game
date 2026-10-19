@@ -2100,6 +2100,7 @@ fn the_vip_pane_follows_entry_status_and_removal_deltas() {
     let entry = event(VipDelta::Entry(vip_pane_entry()));
     assert_eq!(plain.apply_events(std::slice::from_ref(&entry)), plain);
     let added = plain
+        .clone()
         .with_vip(&VipSnapshot::default())
         .apply_events(&[entry]);
     assert_eq!(
@@ -2110,15 +2111,27 @@ fn the_vip_pane_follows_entry_status_and_removal_deltas() {
         entry_no: 1,
         status: VipStatus::Online,
         announce: false,
+        confirmed_for_ms: 10_000,
     }))]);
     assert_eq!(
         render_text(view(), &online),
         format!("{base}vip [1/100]\n  Ana Lis: ONLINE\n")
     );
+    // VIP0-RL-16: the session's client deadline passed without a confirmation.
+    let expired = online.apply_events(&[SessionEvent::VipExpired { entry_no: 1 }]);
+    assert_eq!(
+        render_text(view(), &expired),
+        format!("{base}vip [1/100]\n  Ana Lis: UNCONFIRMED\n")
+    );
+    assert_eq!(
+        plain.apply_events(&[SessionEvent::VipExpired { entry_no: 1 }]),
+        plain
+    );
     let offline = online.apply_events(&[event(VipDelta::Status(VipStatusUpdate {
         entry_no: 1,
         status: VipStatus::Offline,
         announce: false,
+        confirmed_for_ms: 0,
     }))]);
     assert_eq!(
         render_text(view(), &offline),

@@ -15,6 +15,10 @@
 //! `decode_liveness_probe`, and the `world_spatial`/`world_object` domain codecs): this crate
 //! holds no codec of its own, only the glue that ties one admission to its join-snapshot decode
 //! and its command/sequence discipline. Every admission or codec error fails closed.
+//!
+//! [`Session::vip`] shows ONLINE only while its received confirmation lasts (VIP0 §8.2,
+//! VIP0-RL-16). I/O operations settle the store before returning; idle callers must run
+//! [`Session::service_liveness`] to process confirmations and their local expiry events.
 
 use oteryn_protocol_oteryn::actor_spell::{self, SpellCastIntent};
 /// Spell types a client names when it casts and draws vitals: re-exported so the client needs no
@@ -44,6 +48,7 @@ pub use oteryn_protocol_oteryn::item_view::{
 use oteryn_protocol_oteryn::logout;
 /// The capability-21 logout result a client reads, re-exported so it needs no protocol import.
 pub use oteryn_protocol_oteryn::logout::LogoutResult;
+use oteryn_protocol_oteryn::vip::VipConfirmations;
 /// VIP-2 (CP D1444) list, consent and presence types of capability 31 `VIP_V1`: the command goes
 /// through the gated table (`Session::gated_command`), the domain-21 snapshot and deltas apply to
 /// the typed store (`Session::vip`, `SessionEvent::Vip`). Re-exported with their codecs so a
@@ -717,6 +722,10 @@ pub enum SessionEvent {
     /// Domain 21 `VIP` (capability 31): one entry, removal, group set, status or consent view.
     /// [`Session::vip`] already holds the result.
     Vip(AppliedDelta<VipDelta>),
+    /// Domain 21: the client deadline of a shown ONLINE passed without a confirmation
+    /// (VIP0 §8.2, VIP0-RL-16). [`Session::vip`] already shows it UNCONFIRMED; the domain
+    /// revision is unchanged.
+    VipExpired { entry_no: u64 },
 }
 
 impl SessionEvent {
@@ -732,7 +741,7 @@ impl SessionEvent {
             Self::ChatLine(_) | Self::ChatRooms(_) => STATE_DOMAIN_CHAT,
             Self::Inventory(_) => STATE_DOMAIN_CHARACTER_INVENTORY,
             Self::OpenContainer(_) => STATE_DOMAIN_OPEN_CONTAINER,
-            Self::Vip(_) => STATE_DOMAIN_VIP,
+            Self::Vip(_) | Self::VipExpired { .. } => STATE_DOMAIN_VIP,
         }
     }
 }
@@ -966,6 +975,7 @@ pub struct Session<S> {
     chat: Option<ChatLog>,
     /// `Some` exactly when capability 31 is selected and the server sent its domain-21 snapshot.
     vip: Option<VipSnapshot>,
+    vip_confirmations: VipConfirmations<tokio::time::Instant>,
 }
 
 /// A duplicate-status `CommandResult` (FND-02 §13.2) for an earlier `CommandId` of this session:
@@ -1329,7 +1339,7 @@ impl<S: SessionStream> Session<S> {
             }
         }
 
-        let vip = match gated_snapshots
+        let mut vip = match gated_snapshots
             .iter()
             .find(|snapshot| snapshot.domain_id == STATE_DOMAIN_VIP)
         {
@@ -1348,6 +1358,12 @@ impl<S: SessionStream> Session<S> {
             }
             None => None,
         };
+        let mut vip_confirmations = VipConfirmations::default();
+        vip_confirmations.clear();
+        if let Some(store) = vip.as_mut() {
+            // Snapshot ONLINE has no received confirmation; admission emits no expiry events.
+            let _ = vip_confirmations.settle(store, tokio::time::Instant::now());
+        }
         if attack_selected && combat_state.is_none() {
             return Err(SessionError::MissingDomain(
                 attack::STATE_DOMAIN_ACTOR_COMBAT_STATE,
@@ -1395,6 +1411,7 @@ impl<S: SessionStream> Session<S> {
             open_container,
             chat,
             vip,
+            vip_confirmations,
         })
     }
 
@@ -1492,7 +1509,9 @@ impl<S: SessionStream> Session<S> {
     }
 
     /// The VIP list, groups and consent view after every domain-21 delta applied so far; `Some`
-    /// exactly when capability 31 is selected and the server sent its snapshot.
+    /// exactly when capability 31 is selected and the server sent its snapshot. ONLINE requires
+    /// an unexpired received confirmation (VIP0 §8.2, VIP0-RL-16). I/O operations settle expired
+    /// entries before returning; run [`Self::service_liveness`] while idle.
     pub fn vip(&self) -> Option<&VipSnapshot> {
         self.vip.as_ref()
     }
@@ -1522,6 +1541,8 @@ impl<S: SessionStream> Session<S> {
         let delta = decode_vip_delta(delta_type, payload).map_err(vip_refused)?;
         if let Some(store) = self.vip.as_mut() {
             store.apply(&delta).map_err(vip_refused)?;
+            self.vip_confirmations
+                .observe(&delta, tokio::time::Instant::now());
         }
         Ok(delta)
     }
@@ -1581,7 +1602,9 @@ impl<S: SessionStream> Session<S> {
 
     /// Keeps an otherwise idle session alive: for up to `duration`, reads frames, answers each
     /// `LivenessProbe` with a `LivenessAck` (last applied `server_sequence`) and applies each
-    /// pushed `StateDelta`, queueing it for `take_events`. Returns `Ok` when
+    /// pushed `StateDelta`, queueing it for `take_events`. Also wakes at VIP confirmation
+    /// deadlines to settle ONLINE and queue [`SessionEvent::VipExpired`] (VIP0 §8.2, RL-16).
+    /// Returns `Ok` when
     /// the time elapses. Any other frame, a failed validation, a closed connection or an I/O
     /// error fails closed and makes the session unusable. Runs on the caller's task only.
     pub async fn service_liveness(&mut self, duration: Duration) -> Result<(), SessionError> {
@@ -1596,6 +1619,7 @@ impl<S: SessionStream> Session<S> {
         until: tokio::time::Instant,
     ) -> Result<(), SessionError> {
         loop {
+            self.settle_vip()?;
             // Tokio may poll a ready read before an expired timeout. A continuously
             // readable peer must not extend the caller's idle window indefinitely.
             if tokio::time::Instant::now() >= until {
@@ -1605,8 +1629,12 @@ impl<S: SessionStream> Session<S> {
             // consumes nothing), so the idle window can end without losing part of a frame; the
             // rest of a started frame is then read under the ordinary per-frame deadline.
             let mut first = [0_u8; 1];
-            match tokio::time::timeout_at(until, self.stream.read(&mut first)).await {
-                Err(_elapsed) => return Ok(()),
+            let wake = self
+                .vip_confirmations
+                .next_deadline()
+                .map_or(until, |at| at.min(until));
+            match tokio::time::timeout_at(wake, self.stream.read(&mut first)).await {
+                Err(_elapsed) => continue,
                 Ok(Err(error)) => return Err(error.into()),
                 Ok(Ok(0)) => return Err(io::Error::from(io::ErrorKind::UnexpectedEof).into()),
                 Ok(Ok(_)) => {}
@@ -1949,15 +1977,30 @@ impl<S: SessionStream> Session<S> {
         })
     }
 
-    fn ensure_usable(&self) -> Result<(), SessionError> {
-        if self.unusable {
+    fn ensure_usable(&mut self) -> Result<(), SessionError> {
+        let outcome = if self.unusable {
             Err(SessionError::SessionUnusable)
         } else {
             Ok(())
+        };
+        self.poison_on_error(outcome)
+    }
+
+    fn settle_vip(&mut self) -> Result<(), SessionError> {
+        if let Some(store) = self.vip.as_mut() {
+            for entry_no in self
+                .vip_confirmations
+                .settle(store, tokio::time::Instant::now())
+            {
+                self.queue_event(SessionEvent::VipExpired { entry_no })?;
+            }
         }
+        Ok(())
     }
 
     fn poison_on_error<T>(&mut self, outcome: Result<T, SessionError>) -> Result<T, SessionError> {
+        let settled = self.settle_vip();
+        let outcome = outcome.and_then(|value| settled.map(|()| value));
         if outcome.is_err() {
             self.unusable = true;
         }
@@ -4071,7 +4114,8 @@ mod tests {
     fn a_vip_client_adds_an_entry_and_reads_its_online_and_offline_status() -> Result<(), BoxError>
     {
         use oteryn_protocol_oteryn::vip::{
-            decode_vip_intent, encode_vip_delta, encode_vip_intent_result, encode_vip_snapshot,
+            MAX_VIP_CONFIRM_MS, decode_vip_intent, encode_vip_delta, encode_vip_intent_result,
+            encode_vip_snapshot,
         };
         fn entry(status: VipStatus) -> VipEntry {
             VipEntry {
@@ -4125,11 +4169,13 @@ mod tests {
                         entry_no: 1,
                         status: VipStatus::Online,
                         announce: false,
+                        confirmed_for_ms: MAX_VIP_CONFIRM_MS,
                     }),
                     VipDelta::Status(VipStatusUpdate {
                         entry_no: 1,
                         status: VipStatus::Offline,
                         announce: true,
+                        confirmed_for_ms: 0,
                     }),
                 ]) {
                     let revision = 4 + offset;
@@ -4214,6 +4260,7 @@ mod tests {
                             entry_no: 1,
                             status: VipStatus::Online,
                             announce: false,
+                            confirmed_for_ms: MAX_VIP_CONFIRM_MS,
                         })
                     ),
                     (
@@ -4222,10 +4269,160 @@ mod tests {
                             entry_no: 1,
                             status: VipStatus::Offline,
                             announce: true,
+                            confirmed_for_ms: 0,
                         })
                     ),
                 ]
             );
+            Ok(())
+        })?
+    }
+
+    /// VIP0 §8.2, VIP0-RL-16 (owner wire sign-off 2026-10-19): the client shows an ONLINE only
+    /// until the deadline its confirmation named. A snapshot ONLINE holds no confirmation; an
+    /// expired one becomes UNCONFIRMED in the store while the session idles or waits for a
+    /// command result, and is reported as `VipExpired` without moving the domain revision.
+    #[test]
+    fn an_unconfirmed_online_clears_at_its_client_deadline() -> Result<(), BoxError> {
+        use oteryn_protocol_oteryn::vip::{
+            encode_vip_delta, encode_vip_intent_result, encode_vip_snapshot,
+        };
+        fn entry(entry_no: u64, status: VipStatus) -> VipEntry {
+            VipEntry {
+                entry_no,
+                name: format!("Ada{entry_no}"),
+                description: String::new(),
+                icon: 0,
+                notify: false,
+                groups: VipGroupSet::default(),
+                status,
+            }
+        }
+        fn wire<T>(value: Result<T, VipWireError>) -> Result<T, BoxError> {
+            value.map_err(|error| format!("{error:?}").into())
+        }
+        fn online(entry_no: u64, confirmed_for_ms: u32) -> VipDelta {
+            VipDelta::Status(VipStatusUpdate {
+                entry_no,
+                status: VipStatus::Online,
+                announce: false,
+                confirmed_for_ms,
+            })
+        }
+        fn statuses(session: &Session<DuplexStream>) -> Option<Vec<VipStatus>> {
+            session
+                .vip()
+                .map(|vip| vip.entries.iter().map(|entry| entry.status).collect())
+        }
+        block_on(async {
+            let snapshot = wire(encode_vip_snapshot(&VipSnapshot {
+                entries: vec![entry(1, VipStatus::Online), entry(2, VipStatus::Offline)],
+                ..VipSnapshot::default()
+            }))?;
+            let (client, mut server) = tokio::io::duplex(64 * 1024);
+            let peer = tokio::spawn(async move {
+                join_peer_with(
+                    &mut server,
+                    &[13, CAPABILITY_VIP_V1],
+                    &[13, CAPABILITY_VIP_V1],
+                    &[],
+                    (SNAPSHOT_TYPE_WORLD_SPATIAL_V1, spatial(0)),
+                    &[(STATE_DOMAIN_VIP, 4, SNAPSHOT_TYPE_VIP_V1, snapshot)],
+                )
+                .await?;
+                let push = |sequence: u64, revision: u64, delta: VipDelta| {
+                    encode_state_delta(
+                        1,
+                        sequence,
+                        STATE_DOMAIN_VIP,
+                        revision,
+                        revision + 1,
+                        delta.delta_type(),
+                        &wire(encode_vip_delta(&delta))?,
+                    )
+                    .map_err(BoxError::from)
+                };
+                write_frame(&mut server, &push(41, 4, online(1, 150))?).await?;
+                // A command whose result comes after the pushed ONLINE's deadline.
+                let frame = read_frame(&mut server).await?;
+                let command = decode_wire_envelope(&frame)?.client_command(1)?;
+                assert_eq!(command.command_type, COMMAND_TYPE_VIP_INTENT);
+                write_frame(&mut server, &push(42, 5, online(2, 100))?).await?;
+                tokio::time::sleep(Duration::from_millis(400)).await;
+                let ok = wire(encode_vip_intent_result(VipIntentResult::of(
+                    VipResultCode::Ok,
+                )))?;
+                write_frame(
+                    &mut server,
+                    &encode_command_result(1, 43, 7, CommandStatus::Accepted, &ok)?,
+                )
+                .await?;
+                let mut rest = Vec::new();
+                let _ = server.read_to_end(&mut rest).await;
+                Ok::<(), BoxError>(())
+            });
+            let mut session =
+                Session::admit(client, admission_with(&[13, CAPABILITY_VIP_V1])?).await?;
+            // The snapshot's ONLINE has no confirmation: shown UNCONFIRMED at once.
+            assert_eq!(
+                statuses(&session),
+                Some(vec![VipStatus::Unconfirmed, VipStatus::Offline])
+            );
+            assert!(session.take_events().is_empty());
+
+            let started = tokio::time::Instant::now();
+            session.service_liveness(Duration::from_millis(600)).await?;
+            assert!(started.elapsed() >= Duration::from_millis(600));
+            assert_eq!(
+                session.take_events(),
+                vec![
+                    SessionEvent::Vip(AppliedDelta {
+                        server_sequence: 41,
+                        base_revision: 4,
+                        new_revision: 5,
+                        value: online(1, 150),
+                    }),
+                    SessionEvent::VipExpired { entry_no: 1 },
+                ]
+            );
+            assert_eq!(
+                statuses(&session),
+                Some(vec![VipStatus::Unconfirmed, VipStatus::Offline])
+            );
+            // The expiry is the client's own: the domain revision stays where the server put it.
+            assert_eq!(session.gated_revision(STATE_DOMAIN_VIP), 5);
+            assert_eq!(
+                SessionEvent::VipExpired { entry_no: 1 }.domain_id(),
+                STATE_DOMAIN_VIP
+            );
+
+            let add = wire(encode_vip_intent(&VipIntent::Add {
+                name: "Bryn".to_owned(),
+            }))?;
+            let result = session
+                .gated_command(CAPABILITY_VIP_V1, COMMAND_TYPE_VIP_INTENT, &add)
+                .await?;
+            assert_eq!(result.status, CommandStatus::Accepted);
+            // The ONLINE pushed before the result expired while the session waited for it.
+            assert_eq!(
+                statuses(&session),
+                Some(vec![VipStatus::Unconfirmed, VipStatus::Unconfirmed])
+            );
+            assert_eq!(
+                session.take_events(),
+                vec![
+                    SessionEvent::Vip(AppliedDelta {
+                        server_sequence: 42,
+                        base_revision: 5,
+                        new_revision: 6,
+                        value: online(2, 100),
+                    }),
+                    SessionEvent::VipExpired { entry_no: 2 },
+                ]
+            );
+            assert_eq!(session.gated_revision(STATE_DOMAIN_VIP), 6);
+            drop(session);
+            peer.await??;
             Ok(())
         })?
     }

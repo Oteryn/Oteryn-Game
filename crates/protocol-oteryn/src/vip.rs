@@ -14,6 +14,10 @@
 //! their byte bound, and unknown or repeated fields all fail closed. Trimming, control characters
 //! and the name grammar are the server's rules (VIP-0 §5).
 
+use std::collections::{BTreeMap, BTreeSet};
+use std::ops::Add;
+use std::time::Duration;
+
 pub use crate::charm_wire::CyclopediaWireError as VipWireError;
 use crate::charm_wire::{
     WireResult, push_message_field, push_nonzero_varint_field, push_varint_field, read_bytes,
@@ -65,6 +69,8 @@ pub const MAX_VIP_WAIT_SECONDS: u32 = 3;
 pub const MAX_VIP_INVITATIONS: usize = 20;
 /// `VIP0-RL-15`: accepted watchers per target.
 pub const MAX_VIP_WATCHERS: usize = 100;
+/// `VIP0-RL-16`: maximum client confirmation for a shown ONLINE (VIP0 §8.2).
+pub const MAX_VIP_CONFIRM_MS: u32 = 10_000;
 
 /// An edit: oneof tag 1 + length 2, entry 11, description 515, icon 2, notify 2, groups 3.
 pub const MAX_VIP_INTENT_BYTES: usize = 536;
@@ -76,8 +82,8 @@ pub const MAX_VIP_ENTRY_BYTES: usize = 566;
 pub const MAX_VIP_ENTRY_REMOVED_BYTES: usize = 11;
 /// Five groups of 1 + 1 + (number 2, name 102).
 pub const MAX_VIP_GROUPS_BYTES: usize = 530;
-/// Entry 11, status 2, announce 2.
-pub const MAX_VIP_STATUS_BYTES: usize = 15;
+/// Entry 11, status 2, announce 2, confirmation 3.
+pub const MAX_VIP_STATUS_BYTES: usize = 18;
 /// 20 invitations of 1 + 1 + 53, 100 watchers of 1 + 1 + 42, visibility 2.
 pub const MAX_VIP_CONSENT_BYTES: usize = 5_502;
 /// `VIP0-RL-08`: groups 530, 100 entries of 1 + 2 + 566 and the consent view 1 + 2 + 5,502.
@@ -277,6 +283,9 @@ pub struct VipStatusUpdate {
     pub entry_no: u64,
     pub status: VipStatus,
     pub announce: bool,
+    /// How long the client may show this ONLINE after receipt (VIP0 §8.2, VIP0-RL-16);
+    /// 1..=MAX_VIP_CONFIRM_MS for ONLINE, 0 and absent for every other status.
+    pub confirmed_for_ms: u32,
 }
 
 /// `VipInvitationV1`.
@@ -353,6 +362,80 @@ impl VipSnapshot {
             VipDelta::Consent(consent) => self.consent.clone_from(consent),
         }
         Ok(())
+    }
+}
+
+/// Client deadlines for shown ONLINE entries (VIP0 §8.2, VIP0-RL-16).
+/// Observe each applied delta, clear on a snapshot, and settle before showing the store.
+/// Both standard and Tokio monotonic instants can be used.
+#[derive(Debug, Clone)]
+pub struct VipConfirmations<I> {
+    until: BTreeMap<u64, I>,
+}
+
+impl<I> Default for VipConfirmations<I> {
+    fn default() -> Self {
+        Self {
+            until: BTreeMap::new(),
+        }
+    }
+}
+
+impl<I: Copy + Ord + Add<Duration, Output = I>> VipConfirmations<I> {
+    /// Records the receipt deadline of an ONLINE; other statuses and removal end it
+    /// (VIP0 §8.2, VIP0-RL-16). Entry metadata, groups and consent keep existing deadlines.
+    pub fn observe(&mut self, delta: &VipDelta, at: I) {
+        match delta {
+            VipDelta::Status(update) if update.status == VipStatus::Online => {
+                self.until.insert(
+                    update.entry_no,
+                    at + Duration::from_millis(u64::from(update.confirmed_for_ms)),
+                );
+            }
+            VipDelta::Status(VipStatusUpdate { entry_no, .. })
+            | VipDelta::EntryRemoved { entry_no } => {
+                self.until.remove(entry_no);
+            }
+            VipDelta::Entry(_) | VipDelta::Groups(_) | VipDelta::Consent(_) => {}
+        }
+    }
+
+    /// A snapshot has no ONLINE confirmations (VIP0 §8.2, VIP0-RL-16).
+    pub fn clear(&mut self) {
+        self.until.clear();
+    }
+
+    /// Downgrades each ONLINE without a future confirmation to UNCONFIRMED and returns its
+    /// entry number in store order (VIP0 §8.2, VIP0-RL-16). Discards expired and removed entries.
+    pub fn settle(&mut self, store: &mut VipSnapshot, now: I) -> Vec<u64> {
+        let entries: BTreeSet<_> = store.entries.iter().map(|entry| entry.entry_no).collect();
+        self.until
+            .retain(|entry_no, until| *until > now && entries.contains(entry_no));
+        let mut expired = Vec::new();
+        for entry in &mut store.entries {
+            if entry.status == VipStatus::Online && !self.until.contains_key(&entry.entry_no) {
+                entry.status = VipStatus::Unconfirmed;
+                expired.push(entry.entry_no);
+            }
+        }
+        expired
+    }
+
+    /// The next kept confirmation deadline (VIP0 §8.2, VIP0-RL-16).
+    #[must_use]
+    pub fn next_deadline(&self) -> Option<I> {
+        self.until.values().copied().min()
+    }
+}
+
+fn check_confirmation(status: VipStatus, confirmed_for_ms: u32) -> WireResult<()> {
+    if match status {
+        VipStatus::Online => (1..=MAX_VIP_CONFIRM_MS).contains(&confirmed_for_ms),
+        VipStatus::Offline | VipStatus::Unconfirmed => confirmed_for_ms == 0,
+    } {
+        Ok(())
+    } else {
+        Err(VipWireError::Malformed)
     }
 }
 
@@ -976,10 +1059,12 @@ pub fn encode_vip_delta(delta: &VipDelta) -> WireResult<Vec<u8>> {
             (output, MAX_VIP_GROUPS_BYTES)
         }
         VipDelta::Status(update) => {
+            check_confirmation(update.status, update.confirmed_for_ms)?;
             let mut output = Vec::new();
             push_varint_field(&mut output, 1, check_nonzero(update.entry_no)?);
             push_varint_field(&mut output, 2, update.status as u64);
             push_nonzero_varint_field(&mut output, 3, u64::from(update.announce));
+            push_nonzero_varint_field(&mut output, 4, u64::from(update.confirmed_for_ms));
             (output, MAX_VIP_STATUS_BYTES)
         }
         VipDelta::Consent(view) => (encode_consent(view)?, MAX_VIP_CONSENT_BYTES),
@@ -1028,7 +1113,7 @@ pub fn decode_vip_delta(delta_type: u32, payload: &[u8]) -> WireResult<VipDelta>
         }
         DELTA_TYPE_VIP_STATUS_V1 => {
             check_bound(payload, MAX_VIP_STATUS_BYTES)?;
-            let (mut entry, mut status, mut announce) = (None, None, None);
+            let (mut entry, mut status, mut announce, mut confirmation) = (None, None, None, None);
             read_fields(payload, |number, wire, input, cursor| {
                 match (number, wire) {
                     (1, 0) => set_once(&mut entry, read_varint(input, cursor)?),
@@ -1037,12 +1122,23 @@ pub fn decode_vip_delta(delta_type: u32, payload: &[u8]) -> WireResult<VipDelta>
                         VipStatus::from_wire(read_uint32(input, cursor)?)?,
                     ),
                     (3, 0) => set_once(&mut announce, read_bool(input, cursor)?),
+                    (4, 0) => {
+                        let value = read_uint32(input, cursor)?;
+                        if value == 0 {
+                            return Err(VipWireError::Malformed);
+                        }
+                        set_once(&mut confirmation, value)
+                    }
                     _ => Err(VipWireError::Malformed),
                 }
             })?;
+            let status = status.ok_or(VipWireError::Malformed)?;
+            let confirmed_for_ms = confirmation.unwrap_or(0);
+            check_confirmation(status, confirmed_for_ms)?;
             Ok(VipDelta::Status(VipStatusUpdate {
                 entry_no: check_nonzero(entry.unwrap_or(0))?,
-                status: status.ok_or(VipWireError::Malformed)?,
+                status,
+                confirmed_for_ms,
                 announce: announce.unwrap_or(false),
             }))
         }

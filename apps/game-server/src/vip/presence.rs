@@ -4,7 +4,8 @@
 //! listener state through `gameplay_transport::chat_relay`.
 //! Read observations and queued updates are DATA, never continuing delivery authority.
 //! `gameplay_transport::vip_intent` registers each VIP_V1 session's watcher and delivers its
-//! status updates as domain 21 deltas (CP D1444).
+//! status updates as domain 21 deltas (CP D1444). Shown ONLINE is re-read after 5 s and
+//! re-confirmed with the remaining 10 s deadline from that fresh read (VIP0 §8.2, RL-16).
 //! House (Instance-scope) watchers fail closed: every read refuses a non-Channel session scope
 //! until HOUSE-RUNTIME-1b (#2165) gives House sessions a native scope proof.
 #![allow(
@@ -30,7 +31,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Mutex;
 
 const LIST_MAX: usize = 100; // Accepted VIP0-RL-08; no registry mutation here.
-const CONFIRM_MS: u64 = 10_000;
+const CONFIRM_MS: u64 = oteryn_protocol_oteryn::vip::MAX_VIP_CONFIRM_MS as u64;
 /// The per-session follow path re-reads a shown ONLINE at half its confirmation age, so a
 /// healthy re-read finishes inside the bound and a stalled one leaves time to withdraw.
 const CONFIRM_LEAD_MS: u64 = CONFIRM_MS / 2;
@@ -772,6 +773,22 @@ impl State {
                 } else if announce && let Some(p) = w.pending.get_mut(&entry) {
                     p.announce = true;
                 }
+            } else if status == Status::Online
+                && old_sent == Some(Status::Online)
+                && !represented_inflight
+            {
+                // A fresh unchanged ONLINE also renews the client's deadline. The 5 s
+                // confirmation cadence leaves time inside RL-16 for the read and delivery.
+                Self::enqueue(
+                    w,
+                    session,
+                    entry,
+                    Status::Online,
+                    false,
+                    epoch,
+                    serial,
+                    started,
+                )?;
             } else {
                 w.pending.remove(&entry);
             }

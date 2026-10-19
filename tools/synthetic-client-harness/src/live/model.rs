@@ -647,6 +647,14 @@ impl RenderModel {
                         let _ = vip.apply(&delta.value);
                     }
                 }
+                SessionEvent::VipExpired { entry_no } => {
+                    if let Some(vip) = next.vip.as_mut()
+                        && let Some(entry) =
+                            vip.entries.iter_mut().find(|e| e.entry_no == *entry_no)
+                    {
+                        entry.status = VipStatus::Unconfirmed;
+                    }
+                }
                 SessionEvent::Inventory(delta) => {
                     if let Some(items) = next.items.as_mut() {
                         items.backpack = delta.value.clone();

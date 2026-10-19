@@ -350,6 +350,11 @@ fn hiding_unhiding_consent_and_reconcile_never_create_false_login() {
             online: false,
         },
     );
+    // VIP0 §8.2, RL-16: an unchanged ONLINE read re-confirms the shown ONLINE (a fresh client
+    // deadline), never as a second login notice, and queues nothing more.
+    let confirmation = acknowledge(&mut s, 105);
+    assert_eq!(confirmation.status, Status::Online);
+    assert!(!confirmation.announce);
     assert!(
         s.next(item_fence().expect("fence").game_session_id, 105)
             .expect("no duplicate")
@@ -2079,6 +2084,12 @@ fn native_vip_add_accept_and_presence_reach_the_watcher_client_end_to_end() -> T
                     Status::Unconfirmed => VipStatus::Unconfirmed,
                 },
                 announce: update.announce(),
+                // The connection names the confirmation an ONLINE carries (VIP0-RL-16).
+                confirmed_for_ms: if update.status() == Status::Online {
+                    10_000
+                } else {
+                    0
+                },
             });
             let payload = encode_vip_delta(&delta).map_err(debug)?;
             match decode_vip_delta(delta.delta_type(), &payload).map_err(debug)? {
@@ -2112,7 +2123,12 @@ fn native_vip_add_accept_and_presence_reach_the_watcher_client_end_to_end() -> T
                 VipStatusUpdate {
                     entry_no,
                     status,
-                    announce: true
+                    announce: true,
+                    confirmed_for_ms: if status == VipStatus::Online {
+                        10_000
+                    } else {
+                        0
+                    },
                 }
             );
             owner.delivered(&update).map_err(debug)?;
