@@ -6,7 +6,106 @@
 //! SIM-DETERMINISM-01 §15); only `now_utc_ms` reads the wall clock, once per process. The wire
 //! payload is `oteryn_protocol_oteryn::world_clock`.
 
+use crate::foundation::WorldId;
+use crate::node::secure_file::{self, FileClass, FileError};
 use oteryn_protocol_oteryn::world_clock::{TIBIAN_MINUTES_PER_DAY, WorldClock};
+use oteryn_simulation_determinism::GameplayDecisionRoot;
+
+/// D1190: retained World-config input, never current session/owner authority. The only
+/// constructor reads the actual checked Secret file; there is no raw-seed/default constructor.
+/// Intentionally non-Clone, with no secret-bearing Debug implementation.
+pub(crate) struct RetainedWorldConfig {
+    world: WorldId,
+    root: GameplayDecisionRoot,
+    clock_identity: String,
+    clock: WorldClockSource,
+    policy_revision: String,
+}
+
+impl std::fmt::Debug for RetainedWorldConfig {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("RetainedWorldConfig")
+            .field("world", &self.world)
+            .field("seed", &"<redacted>")
+            .field("clock_identity", &self.clock_identity)
+            .field("clock", &self.clock)
+            .field("policy_revision", &self.policy_revision)
+            .finish()
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum WorldConfigError {
+    SeedFile(FileError),
+    SeedLength,
+    ClockIdentity,
+    ClockEpoch,
+    PolicyRevision,
+}
+
+/// Borrowed read data for exactly one retained World. It never proves current ownership,
+/// policy liveness, clock-fact provenance or permission to offer/publish weather.
+pub(crate) struct WorldConfigRead<'a> {
+    pub(crate) root: &'a GameplayDecisionRoot,
+    pub(crate) clock_identity: &'a str,
+    pub(crate) clock: WorldClockSource,
+    pub(crate) policy_revision: &'a str,
+}
+
+impl RetainedWorldConfig {
+    /// Called by the node composition with `[world]` and the single existing
+    /// `readiness.world_policy_revision`. Ownership is checked against the current process UID.
+    pub(crate) fn load_checked_secret(
+        world: WorldId,
+        seed_file: &std::path::Path,
+        clock_identity: &str,
+        clock_epoch_utc_ms: u64,
+        policy_revision: &str,
+    ) -> Result<Self, WorldConfigError> {
+        let token = |value: &str| {
+            !value.is_empty()
+                && value.len() <= 128
+                && value
+                    .bytes()
+                    .all(|byte| byte.is_ascii_alphanumeric() || b"._:-".contains(&byte))
+        };
+        if !token(clock_identity) {
+            return Err(WorldConfigError::ClockIdentity);
+        }
+        if !clock_epoch_utc_ms.is_multiple_of(3_600_000) {
+            return Err(WorldConfigError::ClockEpoch);
+        }
+        if !token(policy_revision) {
+            return Err(WorldConfigError::PolicyRevision);
+        }
+        let bytes = secure_file::read_checked(
+            seed_file,
+            FileClass::Secret,
+            secure_file::effective_uid(),
+            32,
+        )
+        .map_err(WorldConfigError::SeedFile)?;
+        let seed: [u8; 32] = bytes.try_into().map_err(|_| WorldConfigError::SeedLength)?;
+        Ok(Self {
+            world,
+            root: GameplayDecisionRoot::from_bytes(seed),
+            clock_identity: clock_identity.to_owned(),
+            clock: WorldClockSource::new(clock_epoch_utc_ms),
+            policy_revision: policy_revision.to_owned(),
+        })
+    }
+
+    /// D1190: another World cannot read this seed/clock/policy binding.
+    pub(crate) fn read(&self, world: WorldId) -> Option<WorldConfigRead<'_>> {
+        (self.world == world).then_some(WorldConfigRead {
+            root: &self.root,
+            clock_identity: &self.clock_identity,
+            clock: self.clock,
+            policy_revision: &self.policy_revision,
+        })
+    }
+}
 
 /// `WORLDINT0-RL-16`: real milliseconds per Tibian minute.
 pub(crate) const TIBIAN_MINUTE_MS: u64 = 2_500;
@@ -97,9 +196,19 @@ impl WorldClockSource {
         Self { epoch_utc_ms }
     }
 
+    /// Read the absolute elapsed time from this clock's retained epoch. Unlike the Tibian
+    /// minute, this value does not wrap at midnight. The caller supplies the recorded UTC
+    /// fact; no wall clock or fallback epoch is consulted here.
+    ///
+    /// This arithmetic read does not prove World-config provenance. In particular, the
+    /// legacy epoch-zero clock at the transport caller is not a weather binding (D1025).
+    pub(crate) fn absolute_elapsed_ms(&self, recorded_utc_ms: u64) -> Option<u64> {
+        recorded_utc_ms.checked_sub(self.epoch_utc_ms)
+    }
+
     /// §11.2: `floor((t - epoch) / 2,500 ms) mod 1,440`. `None` before the epoch.
     pub(crate) fn tibian_minute(&self, now_utc_ms: u64) -> Option<u32> {
-        let elapsed = now_utc_ms.checked_sub(self.epoch_utc_ms)?;
+        let elapsed = self.absolute_elapsed_ms(now_utc_ms)?;
         u32::try_from((elapsed / TIBIAN_MINUTE_MS) % u64::from(TIBIAN_MINUTES_PER_DAY)).ok()
     }
 
@@ -163,6 +272,13 @@ mod tests {
     #[test]
     fn minute_is_a_pure_function_of_the_epoch() {
         let source = WorldClockSource::new(5 * HOUR_MS);
+        assert_eq!(source.absolute_elapsed_ms(5 * HOUR_MS - 1), None);
+        assert_eq!(source.absolute_elapsed_ms(5 * HOUR_MS), Some(0));
+        assert_eq!(source.absolute_elapsed_ms(6 * HOUR_MS), Some(HOUR_MS));
+        assert_eq!(
+            source.absolute_elapsed_ms(u64::MAX),
+            Some(u64::MAX - 5 * HOUR_MS)
+        );
         assert_eq!(source.tibian_minute(5 * HOUR_MS - 1), None);
         assert_eq!(source.tibian_minute(5 * HOUR_MS), Some(0));
         assert_eq!(source.tibian_minute(5 * HOUR_MS + 2_499), Some(0));
@@ -252,3 +368,7 @@ mod tests {
         assert!(pacer.due(&source, at(368)).is_some());
     }
 }
+
+#[cfg(test)]
+#[path = "world_clock_world_config_tests.rs"]
+mod world_config_tests;
