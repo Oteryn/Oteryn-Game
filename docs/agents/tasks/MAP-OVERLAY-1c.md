@@ -107,6 +107,10 @@ merge_authority: CP_ONLY (builder never marks ready)
   `SHARE` on the job table so a concurrent publication either counts the Channel or the
   insert sees the job. A remint of an existing scope stays open. The publication case
   asserts the refusal.
+- CP decision on Q2 (epoch map revision), 2026-10-19: option A. The epoch keeps the
+  content-scope map revision, and the retirement commit leaves the runtime guard's map
+  revision unchecked (the commit above). Option B, one revision namespace for the guard and
+  the epoch so the commit can compare them, is a follow-up and is not implemented here.
 
 ## Completion and wiring — 2026-10-18 (D1436)
 
