@@ -161,3 +161,35 @@ GRANT SELECT ON game_staff_control_heads TO oteryn_game_runtime,oteryn_game_cont
 GRANT UPDATE(control_seq,link_sha256) ON game_staff_control_heads TO oteryn_game_runtime,oteryn_game_control;
 REVOKE ALL ON FUNCTION game_staff_immutable(),game_staff_operation_has_audit(),game_staff_link_extends_head(),game_staff_link_has_outcome() FROM PUBLIC;
 REVOKE ALL ON FUNCTION game_staff_receipt_has_link(),game_staff_head_advances() FROM PUBLIC;
+
+-- Only envelopes expire. Operations, links and receipts remain immutable chain
+-- evidence. Neither runtime nor control receives DELETE on the outbox.
+CREATE FUNCTION game_staff_expire_action_audit(p_batch INTEGER) RETURNS BIGINT
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+    v_deleted BIGINT;
+BEGIN
+    IF p_batch IS NULL OR p_batch < 1 OR p_batch > 64 THEN
+        RAISE EXCEPTION 'Staff audit expiry batch is out of bounds' USING ERRCODE = '22023';
+    END IF;
+    -- issued_at <= occurred_at + FUTURE_SKEW_MS; absent unreceipted
+    -- evidence is valid only after issued_at + EXECUTION_WINDOW_MS + retention.
+    -- 900000 = EXECUTION_WINDOW_MS (600000) + FUTURE_SKEW_MS (300000).
+    WITH deleted AS (
+        DELETE FROM game_staff_action_outbox WHERE event_id IN (
+            SELECT a.event_id FROM game_staff_action_outbox a
+            JOIN game_staff_operations o USING (environment, operation_id)
+            WHERE floor(extract(epoch FROM clock_timestamp())*1000)::bigint >= a.expires_at + 900000
+              AND NOT (o.requires_receipt AND NOT EXISTS (
+                  SELECT 1 FROM game_staff_action_receipts r
+                  WHERE r.environment=o.environment AND r.operation_id=o.operation_id))
+            ORDER BY a.expires_at, a.event_id LIMIT p_batch FOR UPDATE OF a)
+        RETURNING 1)
+    SELECT count(*) INTO v_deleted FROM deleted;
+    RETURN v_deleted;
+END; $$;
+DO $$ BEGIN
+    EXECUTE format('ALTER FUNCTION game_staff_expire_action_audit(integer) SET search_path = %I, pg_temp', current_schema());
+END $$;
+REVOKE ALL ON FUNCTION game_staff_expire_action_audit(INTEGER) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION game_staff_expire_action_audit(INTEGER) TO oteryn_game_runtime;

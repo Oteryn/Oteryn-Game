@@ -48,7 +48,7 @@ pub struct StaffNode {
 }
 
 /// One served request: the stored outcome, data for the operator and the
-/// live effect to apply after commit. A replay carries neither.
+/// live effect to apply after commit. A committed replay re-syncs live effects.
 struct Executed {
     stored: StoredOutcome,
     data: Option<Value>,
@@ -177,6 +177,72 @@ async fn active_mute_until(
     until.map(ms).transpose()
 }
 
+/// Database truth for replay, including ended mutes so no clock is needed.
+async fn latest_active_mute_end(
+    connection: &mut PgConnection,
+    environment: &str,
+    character: &str,
+) -> Result<Option<u64>, StaffError> {
+    let until: Option<i64> = sqlx::query_scalar(
+        "SELECT max(ends_at) FROM game_character_sanctions \
+         WHERE character_id=$1::uuid AND kind='MUTE' AND status='ACTIVE' AND environment=$2",
+    )
+    .bind(character)
+    .bind(environment)
+    .fetch_one(&mut *connection)
+    .await?;
+    until.map(ms).transpose()
+}
+
+fn kick_session(
+    desk: &StaffDesk,
+    environment: &str,
+    target: &Target,
+) -> Result<Option<[u8; 16]>, StaffError> {
+    Ok(match target {
+        Target::Character { character_id } => {
+            let bytes = crate::node::uuid_bytes(character_id).ok_or(Error::Invalid)?;
+            desk.session_for_character(&bytes)
+        }
+        Target::Account { account_ref } => desk.session_for_account_ref(environment, account_ref),
+        _ => return Err(Error::Invalid.into()),
+    })
+}
+
+async fn replay_effect(
+    connection: &mut PgConnection,
+    trust: &VerifierTrust,
+    desk: &StaffDesk,
+    action: &Action,
+    fresh: bool,
+) -> Result<Effect, StaffError> {
+    let character = match action {
+        Action::Mute { character_id, .. } => Some(character_id.clone()),
+        Action::Unmute { sanction_id } => sqlx::query_scalar::<_, String>(
+            "SELECT character_id::text FROM game_character_sanctions \
+             WHERE sanction_id=$1::uuid AND environment=$2",
+        )
+        .bind(sanction_id)
+        .bind(trust.environment())
+        .fetch_optional(&mut *connection)
+        .await?,
+        Action::Kick { target } if fresh => {
+            return Ok(
+                kick_session(desk, trust.environment(), target)?.map_or(Effect::None, Effect::Kick)
+            );
+        }
+        _ => return Ok(Effect::None),
+    };
+    let Some(character) = character else {
+        return Ok(Effect::None);
+    };
+    let until = latest_active_mute_end(connection, trust.environment(), &character).await?;
+    Ok(Effect::Mute {
+        character: crate::node::uuid_bytes(&character).ok_or(Error::Invalid)?,
+        until,
+    })
+}
+
 /// The target Character if it lives in this node's World.
 async fn character_in_world(
     connection: &mut PgConnection,
@@ -253,16 +319,7 @@ async fn decide(
             })
         }
         Action::Kick { target } => {
-            let session = match target {
-                Target::Character { character_id } => {
-                    let bytes = crate::node::uuid_bytes(character_id).ok_or(Error::Invalid)?;
-                    desk.session_for_character(&bytes)
-                }
-                Target::Account { account_ref } => {
-                    desk.session_for_account_ref(trust.environment(), account_ref)
-                }
-                _ => return Err(Error::Invalid.into()),
-            };
+            let session = kick_session(desk, trust.environment(), target)?;
             Ok(match session {
                 Some(session) => Decision {
                     result: ResultCode::Ok,
@@ -884,12 +941,30 @@ impl DurabilityRoot {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     let result: Result<Executed, StaffError> = async {
+                        let action = request.request().action.clone();
+                        let retry = request.request().clone();
                         match begin_at(&mut tx, &trust, &history, request, now).await? {
-                            Begin::Replay(stored) => Ok(Executed {
-                                stored,
-                                data: None,
-                                effect: Effect::None,
-                            }),
+                            Begin::Replay(stored) => {
+                                let effect = if stored.outcome.disposition == Disposition::Committed {
+                                    let fresh = if matches!(action, Action::Kick { .. }) {
+                                        #[cfg(test)]
+                                        let clock = now.map_or_else(signature::synchronized_now_ms, Ok);
+                                        #[cfg(not(test))]
+                                        let clock = signature::synchronized_now_ms();
+                                        signature::check_freshness(&retry, clock).is_ok()
+                                    } else {
+                                        false
+                                    };
+                                    replay_effect(&mut tx, &trust, &worker_desk, &action, fresh).await?
+                                } else {
+                                    Effect::None
+                                };
+                                Ok(Executed {
+                                    stored,
+                                    data: None,
+                                    effect,
+                                })
+                            }
                             Begin::Fresh(pending) => {
                                 let action_id = new_id()?;
                                 let transaction_id = new_id()?;
@@ -938,7 +1013,7 @@ impl DurabilityRoot {
                 })
             })
             .await??;
-        // Only a committed audit reaches here: the live effect follows it.
+        // The transaction committed: apply the audited effect or its replay re-sync.
         let mut data = executed.data;
         match executed.effect {
             Effect::None => {}
@@ -1259,7 +1334,8 @@ impl DurabilityRoot {
     /// The restored chain is verified from its first activation to its head
     /// before anything is applied. Retained links above the head must extend
     /// it gaplessly under the current activation; a gap, fork or changed link
-    /// stops the replay. A mutation applies only with its verifying receipt: a
+    /// stops the replay, including a retained link past a gap without an
+    /// outcome. A mutation applies only with its verifying receipt: a
     /// COMMITTED mute is re-run through its own checks at its recorded time
     /// (no freshness), a refusal is stored, and no unmute, kick or report
     /// transition is re-run. Any request without a verifying receipt stops the
@@ -1372,6 +1448,15 @@ impl DurabilityRoot {
         if pool.iter().flatten().any(|c| c.confirmed) {
             // An answered link off the chain: a gap, a fork or a changed link.
             return Err(Error::Chain.into());
+        }
+        let disconnected: Vec<String> = pool
+            .iter()
+            .flatten()
+            .filter(|candidate| candidate.link.sequence > sequence)
+            .map(|candidate| candidate.operation_id.clone())
+            .collect();
+        if !disconnected.is_empty() {
+            return Err(RestoreError::Ambiguous(disconnected));
         }
         let mut ambiguous = Vec::new();
         let mut planned = Vec::new();

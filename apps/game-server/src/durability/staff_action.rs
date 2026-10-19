@@ -593,6 +593,30 @@ pub(crate) async fn receipt_in_transaction(
 }
 
 impl DurabilityRoot {
+    /// Delete a bounded batch of expired staff envelopes using the database clock.
+    /// Immutable operations, links and receipts remain available for verification.
+    pub async fn expire_staff_action_audit(&self, batch: u32) -> Result<u64, StaffError> {
+        if !(1..=64).contains(&batch) {
+            return Err(Error::Bounds.into());
+        }
+        let batch = i32::try_from(batch).map_err(|_| Error::Bounds)?;
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let deleted: i64 = sqlx::query_scalar("SELECT game_staff_expire_action_audit($1)")
+                        .bind(batch)
+                        .fetch_one(&mut *tx)
+                        .await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(
+                        u64::try_from(deleted).map_err(|_| DurabilityError::InvalidStoredState)?
+                    ))
+                })
+            })
+            .await?
+    }
+
     /// A bounded historical SELECT, never a fallback execution route. The
     /// cursor sealed this request only after checking the independently reviewed
     /// roster activations and the complete retained chain through its head.
@@ -815,4 +839,26 @@ fn stored_operation(row: &sqlx::postgres::PgRow) -> Result<audit::StoredOperatio
         requires_receipt: row.try_get(11)?,
         occurred_at: row.try_get(12)?,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::signature;
+
+    #[test]
+    fn staff_audit_expiry_grace_matches_signature_window() -> Result<(), Box<dyn std::error::Error>> {
+        let migration = include_str!("../../migrations/0133_staff_audit.sql");
+        let grace: u64 = migration
+            .split("a.expires_at + ")
+            .nth(1)
+            .and_then(|tail| tail.split_whitespace().next())
+            .ok_or("SQL expiry grace")?
+            .parse()?;
+        assert_eq!(grace, 900_000);
+        assert_eq!(
+            grace,
+            signature::EXECUTION_WINDOW_MS + signature::FUTURE_SKEW_MS
+        );
+        Ok(())
+    }
 }

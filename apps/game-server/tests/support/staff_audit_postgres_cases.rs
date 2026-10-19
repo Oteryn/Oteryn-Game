@@ -3039,6 +3039,261 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
         })
     }
 
+    /// Retry the exact signed request with the same fixture dispatch and clock.
+    async fn retry(e: &Exec, signed: signature::SignedBytes, now: u64) -> TestResult<Vec<u8>> {
+        e.root
+            .fixture_serve_staff_request(
+                Arc::clone(&e.f.trust),
+                Arc::clone(&e.f.history),
+                Arc::clone(&e.desk),
+                here(),
+                signed,
+                now,
+            )
+            .await
+            .map_err(debug)
+    }
+
+    fn last_request(e: &Exec) -> TestResult<signature::SignedBytes> {
+        e.retained
+            .iter()
+            .rev()
+            .find_map(|link| match &link.message {
+                ControlMessage::Request(signed) => Some(signed.clone()),
+                _ => None,
+            })
+            .ok_or_else(|| "retained request".into())
+    }
+
+    #[test]
+    fn staff_pg_executor_identical_retries_reapply_committed_mute_unmute_and_kick_effects()
+    -> TestResult {
+        exec_case("retryeffects", Some("GM"), async |e| {
+            let target = id(TARGET);
+            let muted = e.send(mute(TARGET, 60_000)).await.map_err(debug)?;
+            assert_eq!(of(&muted), COMMITTED);
+            let sanction = muted.data.as_ref().ok_or("mute data")?["sanction_id"]
+                .as_str()
+                .ok_or("sanction id")?
+                .to_owned();
+            let signed = last_request(e)?;
+            let stored = e.last.as_ref().ok_or("mute outcome")?.2.clone();
+            e.desk.set_mute(target, None);
+            assert_eq!(retry(e, signed, NOW).await?, stored);
+            assert_eq!(e.desk.mute_seconds(&target, NOW), Some(60));
+
+            let lifted = e
+                .send(Action::Unmute {
+                    sanction_id: sanction,
+                })
+                .await
+                .map_err(debug)?;
+            assert_eq!(of(&lifted), COMMITTED);
+            let signed = last_request(e)?;
+            let stored = e.last.as_ref().ok_or("unmute outcome")?.2.clone();
+            e.desk.set_mute(target, Some(NOW + MAX_MUTE_MS));
+            assert_eq!(retry(e, signed, NOW).await?, stored);
+            assert_eq!(e.desk.mute_seconds(&target, NOW), None);
+
+            let by_character = || {
+                kick(Target::Character {
+                    character_id: TARGET.into(),
+                })
+            };
+            let mut guard = e.desk.register([0x61; 16], id(ACCOUNT), Some(target));
+            let serving = tokio::spawn(async move {
+                guard.next_kick().await.answer(KickResult::Released);
+                guard
+            });
+            let kicked = e.send(by_character()).await.map_err(debug)?;
+            assert_eq!(of(&kicked), COMMITTED);
+            let signed = last_request(e)?;
+            let stored = e.last.as_ref().ok_or("kick outcome")?.2.clone();
+            drop(serving.await?);
+            let mut guard = e.desk.register([0x62; 16], id(ACCOUNT), Some(target));
+            let serving = tokio::spawn(async move {
+                guard.next_kick().await.answer(KickResult::Released);
+                guard
+            });
+            let answer = retry(e, signed.clone(), NOW).await?;
+            let mut expected = stored.clone();
+            expected.extend_from_slice(b"\n{\"kick\":\"RELEASED\"}");
+            assert_eq!(answer, expected);
+            drop(serving.await?);
+            let mut guard = e.desk.register([0x63; 16], id(ACCOUNT), Some(target));
+            assert_eq!(
+                retry(e, signed, NOW + signature::EXECUTION_WINDOW_MS + 1).await?,
+                stored
+            );
+            assert!(
+                tokio::time::timeout(std::time::Duration::from_millis(20), guard.next_kick())
+                    .await
+                    .is_err()
+            );
+            drop(guard);
+
+            let refused = e.send(by_character()).await.map_err(debug)?;
+            assert_eq!(
+                of(&refused),
+                (Disposition::Refused, ResultCode::TargetNotInChannel)
+            );
+            let signed = last_request(e)?;
+            let stored = e.last.as_ref().ok_or("refused outcome")?.2.clone();
+            let mut guard = e.desk.register([0x64; 16], id(ACCOUNT), Some(target));
+            assert_eq!(retry(e, signed, NOW).await?, stored);
+            assert!(
+                tokio::time::timeout(std::time::Duration::from_millis(20), guard.next_kick())
+                    .await
+                    .is_err()
+            );
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn staff_pg_staff_audit_envelopes_expire_after_retention_and_verification_still_passes()
+    -> TestResult {
+        exec_case("auditexpiry", Some("GM"), async |e| {
+            let now = signature::synchronized_now_ms().map_err(debug)?;
+            let old = now - u64::try_from(staff::audit::RETENTION_MS)? - 86_400_000;
+            let mut operations = Vec::new();
+            let mut pending = None;
+            for (action, time, receipted) in [
+                (inspect(TARGET), old, false),
+                (mute(TARGET, 60_000), old, true),
+                (inspect(TARGET), now, false),
+                // Last: the receipt fence intentionally keeps this mutation pending.
+                (mute(REPORTER, 60_000), old, false),
+            ] {
+                e.operation += 1;
+                let mut request = e.f.signer.request(e.operation, e.sequence + 1, &e.head);
+                request.action = action;
+                request.issued_at = Decimal(time);
+                let operation = request.operation_id.clone();
+                let signed = e
+                    .f
+                    .signer
+                    .sign(request.canonical_bytes().map_err(debug)?, REQUEST_NAMESPACE);
+                let digest = signature::sha256(&signed.bytes);
+                let answer = retry(e, signed, time).await?;
+                let stored = answer.split(|byte| *byte == b'\n').next().ok_or("outcome")?;
+                let outcome: Outcome = serde_json::from_slice(stored)?;
+                assert_eq!((outcome.disposition, outcome.result), COMMITTED);
+                e.sequence += 1;
+                e.head = digest.clone();
+                if !request.action.kind().is_read() && !receipted {
+                    pending = Some((operation.clone(), digest.clone(), stored.to_vec()));
+                }
+                if receipted {
+                    e.receipt(operation.clone(), digest, stored, outcome.disposition)
+                        .await
+                        .map_err(debug)?;
+                }
+                operations.push(operation);
+            }
+            let before = e.f.counts().await?;
+            let receipts = e
+                .scalar("SELECT count(*) FROM game_staff_action_receipts")
+                .await?;
+            for batch in [0, 65] {
+                assert!(matches!(
+                    e.root.expire_staff_action_audit(batch).await,
+                    Err(StaffError::Rejected(Error::Bounds))
+                ));
+            }
+            let mut member = e.member("expiry", "oteryn_game_runtime").await?;
+            for batch in [0, 65] {
+                let error = sqlx::query("SELECT game_staff_expire_action_audit($1)")
+                    .bind(batch)
+                    .execute(&mut member)
+                    .await
+                    .expect_err("invalid SQL batch");
+                assert_eq!(
+                    error
+                        .as_database_error()
+                        .and_then(|error| error.code())
+                        .as_deref(),
+                    Some("22023")
+                );
+            }
+            let error = sqlx::query("DELETE FROM game_staff_action_outbox")
+                .execute(&mut member)
+                .await
+                .expect_err("runtime cannot delete envelopes");
+            assert_eq!(
+                error
+                    .as_database_error()
+                    .and_then(|error| error.code())
+                    .as_deref(),
+                Some("42501")
+            );
+            assert_eq!(e.root.expire_staff_action_audit(64).await.map_err(debug)?, 2);
+            assert_eq!(e.root.expire_staff_action_audit(64).await.map_err(debug)?, 0);
+            for (index, operation) in operations.iter().enumerate() {
+                let exists: bool = sqlx::query_scalar(
+                    "SELECT EXISTS(SELECT 1 FROM game_staff_action_outbox WHERE operation_id=$1::uuid)",
+                )
+                .bind(operation)
+                .fetch_one(&e.f.pool)
+                .await?;
+                assert_eq!(exists, index >= 2);
+            }
+            let after = e.f.counts().await?;
+            assert_eq!(
+                (after.0, after.1, after.3, &after.4),
+                (before.0, before.1, before.3, &before.4)
+            );
+            assert_eq!(after.2, before.2 - 2);
+            assert_eq!(
+                e.scalar("SELECT count(*) FROM game_staff_action_receipts")
+                    .await?,
+                receipts
+            );
+            // After proving pending evidence survives expiry, acknowledge it
+            // so the full audit-verify walk requires receipts for every mutation.
+            let (operation, digest, stored) = pending.ok_or("pending mutation")?;
+            e.receipt(operation, digest, &stored, Disposition::Committed)
+                .await
+                .map_err(debug)?;
+            let mut cursor = e.f.history.cursor();
+            let mut after = 0;
+            loop {
+                let rows = e
+                    .root
+                    .staff_evidence_page(e.f.trust.environment().into(), after, e.sequence)
+                    .await
+                    .map_err(debug)?;
+                if rows.is_empty() {
+                    break;
+                }
+                for row in rows {
+                    after = row.link.sequence;
+                    if let signature::VerifiedLink::Request(request) =
+                        cursor.push(&row.link).map_err(debug)?
+                    {
+                        owner::verify_request_evidence(
+                            &e.f.history,
+                            Contract::registered().map_err(debug)?,
+                            &request,
+                            row.operation.as_ref(),
+                            false,
+                            signature::synchronized_now_ms,
+                        )
+                        .map_err(debug)?;
+                    }
+                }
+            }
+            cursor.finish(e.sequence, &e.head).map_err(debug)?;
+            assert!(
+                !e.root
+                    .staff_evidence_has_orphans(e.f.trust.environment().into(), e.sequence)
+                    .await
+                    .map_err(debug)?
+            );
+            Ok(())
+        })
+    }
+
     #[test]
     fn staff_pg_active_mutes_are_scoped_to_the_staff_environment() -> TestResult {
         exec_case("muteenv", Some("GM"), async |e| {
@@ -4310,6 +4565,37 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
             assert_eq!(e.f.counts().await?, before);
             assert_eq!(sanctions(e, TARGET).await?, 0);
             assert_eq!(head_of(e).await?, (base, base_head));
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn staff_pg_restore_refuses_a_retained_tail_past_a_gap_without_outcomes() -> TestResult {
+        exec_case("restoretail", Some("GM"), async |e| {
+            assert_eq!(of(&e.send(inspect(TARGET)).await.map_err(debug)?), COMMITTED);
+            let (base, base_head) = (e.sequence, e.head.clone());
+            assert_eq!(
+                of(&e.send(mute(TARGET, 60_000)).await.map_err(debug)?),
+                COMMITTED
+            );
+            let operation = e.last.as_ref().ok_or("mute operation")?.0.clone();
+            // send retained the request and its signed receipt, as the operator does.
+            let mut links = e.retained[1..].to_vec();
+            assert_eq!(links.len(), 2);
+            for link in &mut links {
+                link.outcome = None;
+            }
+            e.restore_to(base, &base_head).await?;
+            let before = e.f.counts().await?;
+            for retained in [vec![links[1].clone()], links] {
+                match e.replay(retained).await {
+                    Err(RestoreError::Ambiguous(ids)) => assert!(ids.contains(&operation)),
+                    result => return Err(format!("unanswered retained tail: {result:?}").into()),
+                }
+                assert_eq!(e.f.counts().await?, before);
+                assert_eq!(sanctions(e, TARGET).await?, 0);
+                assert_eq!(head_of(e).await?, (base, base_head.clone()));
+            }
             Ok(())
         })
     }

@@ -2105,6 +2105,26 @@ async fn audit_expiry_loop(
             reports.as_ref().map_or(0, |count| *count),
             if reports.is_ok() { "ok" } else { "failed" }
         ));
+        let mut deleted = 0_u64;
+        let mut failed = false;
+        for _ in 0..AUDIT_RUN_CAP {
+            match root.expire_staff_action_audit(u32::from(AUDIT_BATCH)).await {
+                Ok(count) => {
+                    deleted = deleted.saturating_add(count);
+                    if count < u64::from(AUDIT_BATCH) {
+                        break;
+                    }
+                }
+                Err(_) => {
+                    failed = true;
+                    break;
+                }
+            }
+        }
+        event(&format!(
+            "event=staff_audit_expiry deleted={deleted} result={}",
+            if failed { "failed" } else { "ok" }
+        ));
         if first(tokio::time::sleep(AUDIT_INTERVAL), stop.cancelled())
             .await
             .is_none()

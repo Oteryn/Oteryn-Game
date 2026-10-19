@@ -54,7 +54,60 @@ slot_only_paths:
   - "Other handwritten wiring and contract changes require the current CP allocation. D1328 removes exclusive slots for generated Cargo.lock, pins and registries; regenerate those outputs after merge-up."
 ```
 
-## Current checkpoint — merge-up, Codex review of `4b23100d`, renumbering to 0133/0134 (2026-10-18)
+## Current checkpoint — local Codex review of `628415ce`: restore tail, replay effects, staff audit expiry (2026-10-19)
+
+Parent `628415ce`, then `origin/main` merged with a merge commit. Findings
+from the pre-push Codex review, all accepted:
+
+- P1 `staff_moderation.rs` restore: retained links above the restored tip
+  that had no outcome were dropped silently once the chain stopped extending.
+  A link past a gap was lost without an operator decision. Every leftover
+  candidate above the extended tip now returns `RestoreError::Ambiguous`
+  with its operation ids, and nothing is applied. Test:
+  `staff_pg_restore_refuses_a_retained_tail_past_a_gap_without_outcomes`.
+- P2 `staff_moderation.rs` replay: an identical retry of a COMMITTED request
+  returned the stored outcome with no live effect. If the node had lost the
+  effect (for example after a restart), it was never restored. A committed
+  replay now re-syncs the desk from database truth:
+  - Mute and Unmute set the live mute to the latest ACTIVE sanction end.
+    This is idempotent and needs no clock.
+  - Kick re-kicks the current session only while the signed request is
+    still inside its freshness window, so a stale retry never kicks a later
+    session.
+  - A refused replay applies nothing.
+
+  Test: `staff_pg_executor_identical_retries_reapply_committed_mute_unmute_and_kick_effects`.
+- P2 `staff_action.rs` outbox retention: envelopes carried `expires_at` but
+  nothing ever deleted them. Migration 0133 adds the SECURITY DEFINER
+  `game_staff_expire_action_audit(p_batch)`, modelled on
+  `game_character_expire_audit`:
+  - batches are bounded to 1..64 and it reads the database clock;
+  - it deletes only after `expires_at + 900000`, where 900000 is
+    EXECUTION_WINDOW_MS + FUTURE_SKEW_MS (the lib test
+    `staff_audit_expiry_grace_matches_signature_window` pins this);
+  - it never deletes an envelope whose mutation still awaits its receipt.
+
+  Operations, links and receipts are never deleted. Runtime has EXECUTE
+  only, and still no DELETE on the outbox. `DurabilityRoot::expire_staff_action_audit`
+  is called from `serve.rs` `audit_expiry_loop` (`event=staff_audit_expiry`).
+  Test: `staff_pg_staff_audit_envelopes_expire_after_retention_and_verification_still_passes`.
+  It also shows that the full evidence walk and the orphan check still
+  pass after expiry.
+
+Wiring is unchanged. Production staff requests reach the executor through
+`control_loop`, then `ControlInput::Staff`, then `serve_staff_control`. The
+e2e case is `staff_pg_executor_mute_inspect_unmute_and_kick_follow_the_committed_audit`,
+run by the `durability_postgres` job (`pr-postgres-harness.yml` and
+`merge-group-gate.yml`). There is no protocol or wire change.
+
+Open owner and CP questions, carried forward. Until they are decided the
+code fails closed.
+
+- Roster provisioning: moderation writes need a `game_staff_rosters` row
+  for the active roster, and only the owner can insert it.
+- D1161: the four integration-test wrapper re-export lines need a CP note.
+
+## Previous checkpoint — merge-up, Codex review of `4b23100d`, renumbering to 0133/0134 (2026-10-18)
 
 Parent `4b23100d`. In this round:
 
@@ -103,7 +156,7 @@ then `ControlInput::Staff`, then `serve_staff_control`. The e2e case is
 run by the `durability_postgres` job (`pr-postgres-harness.yml` and
 `merge-group-gate.yml`). Follow-ups: DATA-RESTORE-OPS-2 and ARCH-CONTROL-ANCHOR-0.
 
-## Previous checkpoint — Codex review of `7e2f70bc` repairs and staff restore replay, REPORT_ONLY (2026-10-18)
+## Historical checkpoint — Codex review of `7e2f70bc` repairs and staff restore replay, REPORT_ONLY (2026-10-18)
 
 Parent `7e2f70bc`. This round has three parts.
 
