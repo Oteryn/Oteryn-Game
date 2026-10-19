@@ -1906,8 +1906,10 @@ impl FreshAdmissionStore {
             }
             let session_id = evidence.operation.current_session().current_game_session_id();
             let current = store.current_session_locked(&mut tx, session_id).await?;
-            if let Some(node) = &holder_fence {
-                if !retired_holder_fence(&mut tx, node, session_id).await? { return Err(DurabilityError::Unavailable); }
+            if let Some(node) = &holder_fence
+                && !retired_holder_fence(&mut tx, node, session_id).await?
+            {
+                return Err(DurabilityError::Unavailable);
             }
             let mut rows = Vec::with_capacity(2);
             for prior in &evidence.transition.predecessors { rows.push(store.guards.load_locked(&mut tx, &prior.key).await?); }
