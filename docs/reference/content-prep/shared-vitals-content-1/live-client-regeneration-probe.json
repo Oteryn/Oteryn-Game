@@ -1053,6 +1053,252 @@
         "regen-paladin-fed-final-hp-contact.png": "c00e27c5aaf29d30b9df5ddf281e399e79ee9f0a17534010055a2e6ad8663ceb",
         "regen-paladin-fed-final-mana-contact.png": "078694f887f797e0bc166d192c355cefdee326c209dd1ac14f3dfb01a9ae4bc5"
       }
+    },
+    {
+      "id": "regen-knight-hungry",
+      "start_utc": "2026-10-19T17:07:25Z",
+      "end_utc": "2026-10-19T17:07:56Z",
+      "sha256": "e3d12cff11238d942e9ae4be1dd80777e94dd4724abdebefff6d478098cacdf0",
+      "frames": 120,
+      "last_frame_pts_seconds": 29.75,
+      "food_display": "00:00",
+      "hp": {
+        "value": 185,
+        "maximum": 185,
+        "qualification": "No HP regeneration measurement; already at cap."
+      },
+      "mana": {
+        "values_including_initial": [
+          70,
+          72,
+          74,
+          76,
+          78,
+          80
+        ],
+        "change_frame_indices": [
+          16,
+          40,
+          64,
+          88,
+          112
+        ],
+        "change_pts_seconds": [
+          4,
+          10,
+          16,
+          22,
+          28
+        ],
+        "increments": [
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        "inter_event_seconds": [
+          6,
+          6,
+          6,
+          6
+        ]
+      },
+      "contact_sheet_sha256": "d712f12963737eaae01e3caab9cbbad78d725d24980c62688dbb6ee45531af43",
+      "vocation": "Knight",
+      "character": "Quattro Formaggi",
+      "private_video": "regen-knight-hungry.mkv",
+      "private_contact_sheet": "regen-knight-hungry-contact.png"
+    },
+    {
+      "id": "regen-knight-hp-hungry",
+      "start_utc": "2026-10-19T17:11:17Z",
+      "end_utc": "2026-10-19T17:11:38Z",
+      "sha256": "a37f7252b36a6c05e24e2f8cfaf56f6e1cda29f0e3eee2a9f110b60bbe28b505",
+      "frames": 80,
+      "last_frame_pts_seconds": 19.75,
+      "food_display": "00:00",
+      "hp": {
+        "values_including_initial": [
+          118,
+          122,
+          126,
+          130,
+          134,
+          138
+        ],
+        "change_frame_indices": [
+          10,
+          25,
+          41,
+          58,
+          74
+        ],
+        "change_pts_seconds": [
+          2.5,
+          6.25,
+          10.25,
+          14.5,
+          18.5
+        ],
+        "increments": [
+          4,
+          4,
+          4,
+          4,
+          4
+        ],
+        "inter_event_seconds": [
+          3.75,
+          4,
+          4.25,
+          4
+        ]
+      },
+      "mana": {
+        "value": 90,
+        "maximum": 90,
+        "qualification": "At cap; hungry mana is measured in the separate earlier trial."
+      },
+      "contact_sheet_sha256": "0fd79cce47d255c7a0d953fbe0f8471db1d56b7bcb0a9453207a2b5d7a64982c",
+      "vocation": "Knight",
+      "character": "Quattro Formaggi",
+      "private_video": "regen-knight-hp-hungry.mkv",
+      "private_contact_sheet": "regen-knight-hp-hungry-contact.png"
+    },
+    {
+      "id": "regen-knight-fed",
+      "start_utc": "2026-10-19T17:12:20Z",
+      "end_utc": "2026-10-19T17:13:05Z",
+      "sha256": "ba7015cad941d967e1a79b42180aa38a4f3f10891df40933a6c7177183609983",
+      "frames": 177,
+      "last_frame_pts_seconds": 44.75,
+      "food_display": "00:01",
+      "hp": {
+        "value": 185,
+        "maximum": 185,
+        "qualification": "Already full at first frame; no fed HP inference."
+      },
+      "mana": {
+        "values_including_initial": [
+          70,
+          72,
+          74,
+          76,
+          78,
+          80,
+          82,
+          84,
+          86,
+          88
+        ],
+        "change_frame_indices": [
+          2,
+          22,
+          42,
+          62,
+          85,
+          100,
+          120,
+          141,
+          163
+        ],
+        "change_pts_seconds": [
+          0.5,
+          5.5,
+          10.5,
+          15.5,
+          21.25,
+          25.75,
+          30.75,
+          36,
+          41.5
+        ],
+        "increments": [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        "inter_event_seconds": [
+          5,
+          5,
+          5,
+          5.75,
+          4.5,
+          5,
+          5.25,
+          5.5
+        ]
+      },
+      "contact_sheet_sha256": "a753a5a6e8d21572bbb334a76e4f624bc75c45bc51b13d7f0fc0bef578f0a0f7",
+      "vocation": "Knight",
+      "character": "Quattro Formaggi",
+      "private_video": "regen-knight-fed.mkv",
+      "private_contact_sheet": "regen-knight-fed-contact.png"
+    },
+    {
+      "id": "regen-knight-fed-hp-qualified",
+      "start_utc": "2026-10-19T17:24:07Z",
+      "end_utc": "2026-10-19T17:24:53Z",
+      "sha256": "d26346bad3e2827e7d43c86dd0d9276f5425030d30c3a0c472a9fc0516c963a3",
+      "frames": 180,
+      "last_frame_pts_seconds": 44.75,
+      "food_display": "00:01",
+      "hp": {
+        "values_including_initial": [
+          174,
+          178,
+          182
+        ],
+        "change_frame_indices": [
+          6,
+          18
+        ],
+        "change_pts_seconds": [
+          1.5,
+          4.5
+        ],
+        "increments": [
+          4,
+          4
+        ],
+        "inter_event_seconds": [
+          3
+        ],
+        "all_display_values": [
+          174,
+          178,
+          182,
+          185
+        ],
+        "clipped_transition": {
+          "frame": 30,
+          "pts_seconds": 7.5,
+          "before": 182,
+          "after": 185,
+          "displayed_gain": 3,
+          "excluded_from_tick_amount": true
+        },
+        "maximum": 185,
+        "qualification": "SHORT_SERIES: two full +4 gains and one 3-second inter-event interval. Later +3 is clipped by the maximum and excluded. Weaker replication than other trials; official 3s fed interval corroborates timing."
+      },
+      "mana": {
+        "value": 90,
+        "maximum": 90,
+        "qualification": "Full; no mana inference from this recording."
+      },
+      "contact_sheet_sha256": "16479dae906164673e7355f0fb5a1ee0b980313f434aeac5baf578c64fa874e4",
+      "manual_review": "Four HP values visually verified, with capped final transition excluded. Four full-scene samples show the same safe tile outside PZ, no combat or agent movement, unchanged equipment.",
+      "vocation": "Knight",
+      "character": "Quattro Formaggi",
+      "private_video": "regen-knight-fed-hp-qualified.mkv",
+      "private_contact_sheet": "regen-knight-fed-hp-qualified-contact.png"
     }
   ],
   "verified_observations": [
@@ -1187,9 +1433,56 @@
       "vocation": "Paladin",
       "active_promotion": false,
       "target_field": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/normal_mana"
+    },
+    {
+      "key": "knight_current.hungry.hp",
+      "increment_points": 4,
+      "approximate_interval_seconds": 4,
+      "increments_observed": 5,
+      "inter_event_intervals_observed": 4,
+      "source": "controlled-global:regeneration:knight:20261019",
+      "vocation": "Knight",
+      "active_promotion": false,
+      "target_field": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/normal_hp"
+    },
+    {
+      "key": "knight_current.fed.hp",
+      "increment_points": 4,
+      "approximate_interval_seconds": 3,
+      "increments_observed": 2,
+      "inter_event_intervals_observed": 1,
+      "qualification": "SHORT_SERIES_TWO_UNCAPPED_GAINS",
+      "source": "controlled-global:regeneration:knight:20261019",
+      "vocation": "Knight",
+      "active_promotion": false,
+      "target_field": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/normal_hp"
+    },
+    {
+      "key": "knight_current.hungry.mana",
+      "increment_points": 2,
+      "approximate_interval_seconds": 6,
+      "increments_observed": 5,
+      "inter_event_intervals_observed": 4,
+      "source": "controlled-global:regeneration:knight:20261019",
+      "vocation": "Knight",
+      "active_promotion": false,
+      "target_field": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/normal_mana"
+    },
+    {
+      "key": "knight_current.fed.mana",
+      "increment_points": 2,
+      "approximate_interval_seconds": 5,
+      "increments_observed": 9,
+      "inter_event_intervals_observed": 8,
+      "source": "controlled-global:regeneration:knight:20261019",
+      "vocation": "Knight",
+      "active_promotion": false,
+      "target_field": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/normal_mana"
     }
   ],
   "active_field_updates": [
+    "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/normal_hp",
+    "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/normal_mana",
     "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/normal_hp",
     "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/normal_mana",
     "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/normal_hp",
@@ -1199,16 +1492,29 @@
   ],
   "active_evidence_counts": {
     "DERIVED": 149,
-    "PROVEN": 38,
-    "UNKNOWN": 16
+    "PROVEN": 40,
+    "UNKNOWN": 14
   },
-  "remaining_unresolved_fields": 16,
+  "remaining_unresolved_fields": 14,
   "excluded_trials": [
     "PZ control with no regeneration",
     "Initial Druid hungry probe without fully assured exclusive control",
     "Initial fed HP readings at maximum",
     "Monk repeat capture begun while hungry before refeeding",
-    "Initial Paladin fed recording: HP already capped and MP soon capped; retained only in private research, excluded from qualified field proof."
+    "Initial Paladin fed recording: HP already capped and MP soon capped; retained only in private research, excluded from qualified field proof.",
+    "Knight initial fed-HP capture started while hungry; excluded from fed proof. Capped HP in the separate fed mana capture is not used as an HP measurement."
   ],
-  "qualification": "Six active reference facts are proven for the three observed unpromoted branches, each backed by independent hungry/fed readings. Fourteen regeneration fields for other vocations/promotions, party activity timeout and initial stamina debit remain unresolved. No runtime formula selected."
+  "qualification": "Eight active reference facts establish the four observed unpromoted branches. Twelve regeneration fields for unmeasured vocations/promotions plus party activity timeout and initial stamina debit remain unresolved. Knight fed HP has two full gains and one interval before cap; explicitly short replication. No runtime formula selected.",
+  "short_measurement_limits": [
+    {
+      "vocation": "Knight",
+      "state": "fed",
+      "resource": "HP",
+      "full_gains": 2,
+      "inter_event_intervals": 1,
+      "points_per_full_gain": 4,
+      "observed_interval_seconds": 3,
+      "excluded_capped_gain": 3
+    }
+  ]
 }

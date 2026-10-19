@@ -2882,6 +2882,16 @@
       "evidence_role": "SCOPED_CURRENT_CLIENT_MEASUREMENT",
       "retained_scope": "Reviewed numbers, frame timestamps and SHA256; original media retained privately.",
       "qualification": "Anzaa self-Look reports Paladin. Fixed safe positions outside PZ, regenerative equipment slots empty. No extrapolation to Royal Paladin or runtime admission; approximate client display periods, no server telemetry."
+    },
+    "controlled-global:regeneration:knight:20261019": {
+      "title": "Controlled official-client regeneration: Knight without active promotion",
+      "source_class": "CONTROLLED_GLOBAL_CLIENT_OBSERVATION",
+      "observed_at": "2026-10-19",
+      "evidence_document": "docs/reference/content-prep/shared-vitals-content-1/live-client-regeneration-probe.json",
+      "selector": "Knight",
+      "evidence_role": "SCOPED_CURRENT_CLIENT_MEASUREMENT",
+      "retained_scope": "Reviewed numeric series, frame timestamps and SHA256; original media remain private.",
+      "qualification": "Quattro Formaggi self-Look reports Knight, level8. Outside PZ, no combat or agent movement; leather boots have empty imbuement slot. Fed HP has only two full +4 gains and one measured3s interval before cap; weaker replication explicitly retained. No promoted Knight or native runtime admission."
     }
   }
 }

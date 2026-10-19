@@ -3,8 +3,8 @@
   "task": "SHARED-VITALS-CONTENT-1",
   "reference_only": true,
   "runtime_switch_authorized": false,
-  "status": "SOURCE_REFERENCE_WITH_CONTROLLED_DRUID_MONK_PALADIN_OBSERVATIONS",
-  "global_evidence_policy": "Historical Global facts and withdrawn defaults remain archived. Six active regeneration fields now use scoped controlled observations; remaining unqualified fields retain explicit gaps. No runtime selection.",
+  "status": "SOURCE_REFERENCE_WITH_FOUR_MEASURED_NORMAL_VOCATIONS",
+  "global_evidence_policy": "Historical facts and withdrawn defaults remain archived. Eight active regeneration fields use scoped controlled observations; Knight fed HP short-series limitation retained; no runtime selection.",
   "owner_authorization": {
     "quote": "Przygotuj propozycje Oteryn z jawnymi założeniami",
     "scope": "Authorize preparing proposals only; individual new values are not yet accepted."
@@ -723,16 +723,25 @@
       "subject": "regeneration.knight",
       "original_classification": "UNKNOWN",
       "proposed_value": {
-        "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+        "status": "CONTROLLED_CURRENT_GLOBAL_OBSERVATION",
         "interval_seconds": 4,
         "saturated_interval_seconds": 3,
-        "points_per_tick": "NOT_ESTABLISHED",
+        "points_per_tick": 4,
+        "saturated_points_per_tick": 4,
+        "interval_precision": "APPROXIMATE_CLIENT_DISPLAY_PERIOD",
         "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
-        "selected_for_native_runtime": false
+        "active_promotion": false,
+        "observed_character": "Quattro Formaggi",
+        "selected_for_native_runtime": false,
+        "fed_measurement_qualification": "SHORT_SERIES_TWO_FULL_GAINS_ONE_INTERVAL_BEFORE_CAP"
       },
       "basis": {
-        "kind": "SOURCE_QUALIFIED_REFERENCE_OR_EXPLICIT_GAP",
+        "kind": "CONTROLLED_GLOBAL_REFERENCE_OBSERVATION",
         "source_refs": [
+          {
+            "source": "controlled-global:regeneration:knight:20261019",
+            "selector": "Knight / hp / hungry and fed reviewed series"
+          },
           {
             "source": "official:regen-recheck:8543:20261019",
             "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
@@ -766,10 +775,10 @@
             "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
           }
         ],
-        "rationale": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending."
+        "rationale": "Observed on Quattro Formaggi, Knight without active promotion, outside PZ, no combat or movement during captures; leather boots Arm1 with empty imbuement slot, other regenerative equipment slots empty. Hungry/fed values measured independently; no promoted-vocation extrapolation or runtime selection. Fed HP:174→178→182 are two full +4 gains separated by3s;182→185 is capped and excluded. Timing agrees with official fed interval, but replication is weaker than longer trials."
       },
       "assumptions": [],
-      "acceptance_status": "SOURCE_REFERENCE_NOT_RUNTIME_SELECTED",
+      "acceptance_status": "CONTROLLED_MEASURED_REFERENCE_NOT_RUNTIME_SELECTED",
       "superseded_working_default": {
         "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/normal_hp",
         "subject": "regeneration.knight",
@@ -806,6 +815,17 @@
           "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
         ],
         "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      },
+      "superseded_unresolved_candidate": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN"
       }
     },
     {
@@ -813,16 +833,24 @@
       "subject": "regeneration.knight",
       "original_classification": "UNKNOWN",
       "proposed_value": {
-        "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+        "status": "CONTROLLED_CURRENT_GLOBAL_OBSERVATION",
         "interval_seconds": 6,
         "saturated_interval_seconds": 5,
-        "points_per_tick": "NOT_ESTABLISHED",
+        "points_per_tick": 2,
+        "saturated_points_per_tick": 2,
+        "interval_precision": "APPROXIMATE_CLIENT_DISPLAY_PERIOD",
         "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+        "active_promotion": false,
+        "observed_character": "Quattro Formaggi",
         "selected_for_native_runtime": false
       },
       "basis": {
-        "kind": "SOURCE_QUALIFIED_REFERENCE_OR_EXPLICIT_GAP",
+        "kind": "CONTROLLED_GLOBAL_REFERENCE_OBSERVATION",
         "source_refs": [
+          {
+            "source": "controlled-global:regeneration:knight:20261019",
+            "selector": "Knight / mana / hungry and fed reviewed series"
+          },
           {
             "source": "official:regen-recheck:8543:20261019",
             "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
@@ -856,10 +884,10 @@
             "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
           }
         ],
-        "rationale": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending."
+        "rationale": "Observed on Quattro Formaggi, Knight without active promotion, outside PZ, no combat or movement during captures; leather boots Arm1 with empty imbuement slot, other regenerative equipment slots empty. Hungry/fed values measured independently; no promoted-vocation extrapolation or runtime selection."
       },
       "assumptions": [],
-      "acceptance_status": "SOURCE_REFERENCE_NOT_RUNTIME_SELECTED",
+      "acceptance_status": "CONTROLLED_MEASURED_REFERENCE_NOT_RUNTIME_SELECTED",
       "superseded_working_default": {
         "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/normal_mana",
         "subject": "regeneration.knight",
@@ -896,6 +924,17 @@
           "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
         ],
         "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      },
+      "superseded_unresolved_candidate": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN"
       }
     },
     {
@@ -2675,26 +2714,28 @@
     "source_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json",
     "filled_field_count": 3,
     "not_runtime_activation": true,
-    "remaining_unresolved_source_fields": 16
+    "remaining_unresolved_source_fields": 14
   },
   "source_repair": {
     "source_check": "docs/reference/content-prep/shared-vitals-content-1/gameplay-source-reconciliation.json",
-    "remaining_unresolved_source_fields": 16,
+    "remaining_unresolved_source_fields": 14,
     "selected_for_native_runtime": false,
-    "summary": "Controlled observations establish normal Druid HP2/MP4, normal Monk HP3/MP3 and normal Paladin HP3/MP3 in both hungry and fed states. Approximate HP intervals4s/3s fed and mana6s/5s fed match official intervals. Fourteen regeneration fields, party activity timeout and initial stamina debit remain unresolved; no extrapolation or runtime selection. Food observations and owner choices are preserved."
+    "summary": "Controlled observations establish normal Druid HP2/MP4, Monk HP3/MP3, Paladin HP3/MP3 and Knight HP4/MP2 in hungry/fed states. Approximate HP intervals4s/3s fed and mana6s/5s fed match official intervals. Knight fed HP has a short two-full-gain series, with capped gain excluded. Twelve regeneration fields, party activity timeout and initial stamina debit remain unresolved; Food and owner choices unchanged; no runtime selection."
   },
   "live_client_measurements": {
     "probe_document": "docs/reference/content-prep/shared-vitals-content-1/live-client-regeneration-probe.json",
-    "active_fields_resolved": 6,
-    "hungry_fed_observations": 12,
-    "qualified_recordings": 8,
+    "active_fields_resolved": 8,
+    "hungry_fed_observations": 16,
+    "qualified_recordings": 12,
     "vocations": [
       "Druid",
       "Monk",
-      "Paladin"
+      "Paladin",
+      "Knight"
     ],
     "active_promotion": false,
-    "selected_for_native_runtime": false
+    "selected_for_native_runtime": false,
+    "short_series": "Knight fed HP: two uncapped gains and one3s interval"
   },
-  "remaining_unresolved_source_fields": 16
+  "remaining_unresolved_source_fields": 14
 }
