@@ -4,7 +4,7 @@
   "scope": "POPULATED_OTERYN_REFERENCE_DATA_WITH_ARCHIVED_GLOBAL_SOURCE_LIMITATIONS",
   "research_status": "ALL_TARGET_PARAMETER_FIELDS_POPULATED",
   "runtime_admission": "BLOCKED",
-  "coverage": "All ten grades for every bonus, reroll/wildcard costs, 649 source-listed prey creatures and the current Task Board are covered. Native bindings resolve 643 creatures; six have no supported identity among all 1863 existing native definitions. Complete rendered eligibility tables contain Beginner 153, Adept 450, Expert 498 and Master 280 rows. Current weekly limits, points, multipliers and Soulseals are included. Five source pool contradictions remain visible. Bounty XP and unqualified weekly XP formulas remain held.",
+  "coverage": "649source-listed Prey creatures are retained.643bindings resolve to current native definitions with no dangling or duplicate bindings. Six externally identified creatures await native definition admission; invented launch exclusions are withdrawn.13native exclusive flags differ from source pool references and have an explicit coordinator handoff. Existing five donor-based pool corrections are retained with historical secondary corroboration. Bounty/Weekly XP repair remains separate.",
   "source_registry": "sources.json",
   "record_counts": {
     "rulesets/progression/prey/reference-evidence.json": 41,
@@ -12,8 +12,8 @@
     "docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json": 5
   },
   "evidence_field_counts": {
-    "DERIVED": 1425,
-    "PROVEN": 683
+    "PROVEN": 689,
+    "DERIVED": 1425
   },
   "unresolved_fields": [],
   "limitations_policy": "UNKNOWN/CONFLICT is the owner-required outcome for unproven values; candidates, selectors and reasons remain inspectable. No unsupported number was supplied to make the packet appear complete.",
@@ -37,5 +37,23 @@
     ],
     "source_check": "docs/reference/content-prep/prey-content-1/source-correction-check.json",
     "qualification": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed."
+  },
+  "native_binding_source_correction": {
+    "source_check": "docs/reference/content-prep/prey-content-1/creature-identity-source-check.json",
+    "native_handoff": "docs/reference/content-prep/prey-content-1/native-prey-handoff.json",
+    "source_creatures": 649,
+    "existing_native_bindings": 643,
+    "source_identities_resolved": 6,
+    "pending_native_creature_admissions": 6,
+    "native_flag_disagreements": 13,
+    "invented_launch_exclusions_removed": 6,
+    "runtime_admission": "BLOCKED"
+  },
+  "prior_binding_summary": {
+    "coverage": "All ten grades for every bonus, reroll/wildcard costs, 649 source-listed prey creatures and the current Task Board are covered. Native bindings resolve 643 creatures; six have no supported identity among all 1863 existing native definitions. Complete rendered eligibility tables contain Beginner 153, Adept 450, Expert 498 and Master 280 rows. Current weekly limits, points, multipliers and Soulseals are included. Five source pool contradictions remain visible. Bounty XP and unqualified weekly XP formulas remain held.",
+    "evidence_field_counts": {
+      "DERIVED": 1425,
+      "PROVEN": 683
+    }
   }
 }

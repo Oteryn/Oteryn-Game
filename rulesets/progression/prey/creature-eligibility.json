@@ -32,9 +32,13 @@
             {
               "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:prey-exclusive:slimes/acid_blob.lua",
               "selector": "isPreyExclusive = true; line66"
+            },
+            {
+              "source": "community:tibiaqa:prey-wildcard:29235:20261019",
+              "selector": "Historical five-wildcard list; exact creature name"
             }
           ],
-          "note": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed.",
+          "note": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed. Historical TibiaQA independently lists the same creature in the five-wildcard pool; no current controlled measurement is claimed.",
           "assumptions": [
             "Use the explicit exclusive flag from the pinned donor, replacing the unsourced normal-pool override. Current Global continuity remains unmeasured."
           ],
@@ -3998,9 +4002,13 @@
             {
               "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:prey-exclusive:constructs/damaged_worker_golem.lua",
               "selector": "isPreyExclusive = true; line63"
+            },
+            {
+              "source": "community:tibiaqa:prey-wildcard:29235:20261019",
+              "selector": "Historical five-wildcard list; exact creature name"
             }
           ],
-          "note": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed.",
+          "note": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed. Historical TibiaQA independently lists the same creature in the five-wildcard pool; no current controlled measurement is claimed.",
           "assumptions": [
             "Use the explicit exclusive flag from the pinned donor, replacing the unsourced normal-pool override. Current Global continuity remains unmeasured."
           ],
@@ -6952,9 +6960,13 @@
             {
               "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:prey-exclusive:birds/flamingo.lua",
               "selector": "isPreyExclusive = true; line63"
+            },
+            {
+              "source": "community:tibiaqa:prey-wildcard:29235:20261019",
+              "selector": "Historical five-wildcard list; exact creature name"
             }
           ],
-          "note": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed.",
+          "note": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed. Historical TibiaQA independently lists the same creature in the five-wildcard pool; no current controlled measurement is claimed.",
           "assumptions": [
             "Use the explicit exclusive flag from the pinned donor, replacing the unsourced normal-pool override. Current Global continuity remains unmeasured."
           ],
@@ -7662,9 +7674,13 @@
             {
               "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:prey-exclusive:magicals/gazer.lua",
               "selector": "isPreyExclusive = true; line63"
+            },
+            {
+              "source": "community:tibiaqa:prey-wildcard:29235:20261019",
+              "selector": "Historical five-wildcard list; exact creature name"
             }
           ],
-          "note": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed.",
+          "note": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed. Historical TibiaQA independently lists the same creature in the five-wildcard pool; no current controlled measurement is claimed.",
           "assumptions": [
             "Use the explicit exclusive flag from the pinned donor, replacing the unsourced normal-pool override. Current Global continuity remains unmeasured."
           ],
@@ -16529,9 +16545,13 @@
             {
               "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:prey-exclusive:mammals/silver_rabbit.lua",
               "selector": "isPreyExclusive = true; line63"
+            },
+            {
+              "source": "community:tibiaqa:prey-wildcard:29235:20261019",
+              "selector": "Historical five-wildcard list; exact creature name"
             }
           ],
-          "note": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed.",
+          "note": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed. Historical TibiaQA independently lists the same creature in the five-wildcard pool; no current controlled measurement is claimed.",
           "assumptions": [
             "Use the explicit exclusive flag from the pinned donor, replacing the unsourced normal-pool override. Current Global continuity remains unmeasured."
           ],
@@ -21204,26 +21224,65 @@
         },
         "native_creature_binding": {
           "value": {
-            "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+            "status": "PENDING_NATIVE_CREATURE_ADMISSION",
             "source_creature_name": "Berrypest",
-            "create_native_identity": false
+            "source_identity": {
+              "namespace": "cipsoft/staticdata/creature_id",
+              "id": 691,
+              "source_name": "berrypest",
+              "client_version": "15.30"
+            },
+            "native_identity_assigned": false,
+            "preserve_source_prey_membership": true,
+            "requires_native_creature_definition": true
           },
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "SOURCE_IDENTITY_RESOLVED_NATIVE_DEFINITION_ABSENT",
+          "evidence_scope": "NATIVE_ADMISSION_CONSTRAINT",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json / field rulesets/progression/prey/creature-eligibility.json/records/480/facts/native_creature_binding"
+              "source": "repo:prey-native-catalog:466c9142ad41223181f998878fa9b8a633be4b4f",
+              "selector": "No matching definition in1863native Creature records"
+            },
+            {
+              "source": "repo:cipsoft-creature-source:691:466c9142ad41223181f998878fa9b8a633be4b4f",
+              "selector": "/records/51"
+            },
+            {
+              "source": "wiki-br:prey-identity:27061:398928",
+              "selector": "Creature identity"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "note": "The invented launch-exclusion decision is withdrawn. Source identity and wildcard membership are retained; an actual native Creature definition must be admitted before a binding can exist.",
           "assumptions": [
-            "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+            "No native ID, replacement creature or permanent exclusion is invented. Pending native admission is an implementation dependency, not missing source identity."
           ],
           "global_evidence_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json#rulesets/progression/prey/creature-eligibility.json/records/480/facts/native_creature_binding",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+        },
+        "source_creature_identity": {
+          "value": {
+            "namespace": "cipsoft/staticdata/creature_id",
+            "id": 691,
+            "source_name": "berrypest",
+            "client_version": "15.30"
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-19",
+          "continuity": "PINNED_CLIENT_SOURCE_OBSERVATION",
+          "evidence_scope": "CIPSOFT_CLIENT_STATICDATA",
+          "sources": [
+            {
+              "source": "repo:cipsoft-creature-source:691:466c9142ad41223181f998878fa9b8a633be4b4f",
+              "selector": "/records/51/source_id,name"
+            },
+            {
+              "source": "wiki-br:prey-identity:27061:398928",
+              "selector": "Creature identity"
+            }
+          ],
+          "note": "Resolved external source identity; this is not an Oteryn Creature key."
         }
       }
     },
@@ -21566,26 +21625,65 @@
         },
         "native_creature_binding": {
           "value": {
-            "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+            "status": "PENDING_NATIVE_CREATURE_ADMISSION",
             "source_creature_name": "Cake Golem",
-            "create_native_identity": false
+            "source_identity": {
+              "namespace": "cipsoft/staticdata/creature_id",
+              "id": 680,
+              "source_name": "cake golem",
+              "client_version": "15.30"
+            },
+            "native_identity_assigned": false,
+            "preserve_source_prey_membership": true,
+            "requires_native_creature_definition": true
           },
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "SOURCE_IDENTITY_RESOLVED_NATIVE_DEFINITION_ABSENT",
+          "evidence_scope": "NATIVE_ADMISSION_CONSTRAINT",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json / field rulesets/progression/prey/creature-eligibility.json/records/488/facts/native_creature_binding"
+              "source": "repo:prey-native-catalog:466c9142ad41223181f998878fa9b8a633be4b4f",
+              "selector": "No matching definition in1863native Creature records"
+            },
+            {
+              "source": "repo:cipsoft-creature-source:680:466c9142ad41223181f998878fa9b8a633be4b4f",
+              "selector": "/records/50"
+            },
+            {
+              "source": "wiki-br:prey-identity:4010:435808",
+              "selector": "Creature identity"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "note": "The invented launch-exclusion decision is withdrawn. Source identity and wildcard membership are retained; an actual native Creature definition must be admitted before a binding can exist.",
           "assumptions": [
-            "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+            "No native ID, replacement creature or permanent exclusion is invented. Pending native admission is an implementation dependency, not missing source identity."
           ],
           "global_evidence_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json#rulesets/progression/prey/creature-eligibility.json/records/488/facts/native_creature_binding",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+        },
+        "source_creature_identity": {
+          "value": {
+            "namespace": "cipsoft/staticdata/creature_id",
+            "id": 680,
+            "source_name": "cake golem",
+            "client_version": "15.30"
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-19",
+          "continuity": "PINNED_CLIENT_SOURCE_OBSERVATION",
+          "evidence_scope": "CIPSOFT_CLIENT_STATICDATA",
+          "sources": [
+            {
+              "source": "repo:cipsoft-creature-source:680:466c9142ad41223181f998878fa9b8a633be4b4f",
+              "selector": "/records/50/source_id,name"
+            },
+            {
+              "source": "wiki-br:prey-identity:4010:435808",
+              "selector": "Creature identity"
+            }
+          ],
+          "note": "Resolved external source identity; this is not an Oteryn Creature key."
         }
       }
     },
@@ -22984,26 +23082,65 @@
         },
         "native_creature_binding": {
           "value": {
-            "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+            "status": "PENDING_NATIVE_CREATURE_ADMISSION",
             "source_creature_name": "Elder Forest Fury",
-            "create_native_identity": false
+            "source_identity": {
+              "namespace": "cipsoft/staticdata/creature_id",
+              "id": 1157,
+              "source_name": "elder forest fury",
+              "client_version": "15.30"
+            },
+            "native_identity_assigned": false,
+            "preserve_source_prey_membership": true,
+            "requires_native_creature_definition": true
           },
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "SOURCE_IDENTITY_RESOLVED_NATIVE_DEFINITION_ABSENT",
+          "evidence_scope": "NATIVE_ADMISSION_CONSTRAINT",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json / field rulesets/progression/prey/creature-eligibility.json/records/520/facts/native_creature_binding"
+              "source": "repo:prey-native-catalog:466c9142ad41223181f998878fa9b8a633be4b4f",
+              "selector": "No matching definition in1863native Creature records"
+            },
+            {
+              "source": "repo:cipsoft-creature-source:1157:466c9142ad41223181f998878fa9b8a633be4b4f",
+              "selector": "/records/229"
+            },
+            {
+              "source": "wiki-br:prey-identity:36633:441194",
+              "selector": "Creature identity"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "note": "The invented launch-exclusion decision is withdrawn. Source identity and wildcard membership are retained; an actual native Creature definition must be admitted before a binding can exist.",
           "assumptions": [
-            "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+            "No native ID, replacement creature or permanent exclusion is invented. Pending native admission is an implementation dependency, not missing source identity."
           ],
           "global_evidence_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json#rulesets/progression/prey/creature-eligibility.json/records/520/facts/native_creature_binding",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+        },
+        "source_creature_identity": {
+          "value": {
+            "namespace": "cipsoft/staticdata/creature_id",
+            "id": 1157,
+            "source_name": "elder forest fury",
+            "client_version": "15.30"
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-19",
+          "continuity": "PINNED_CLIENT_SOURCE_OBSERVATION",
+          "evidence_scope": "CIPSOFT_CLIENT_STATICDATA",
+          "sources": [
+            {
+              "source": "repo:cipsoft-creature-source:1157:466c9142ad41223181f998878fa9b8a633be4b4f",
+              "selector": "/records/229/source_id,name"
+            },
+            {
+              "source": "wiki-br:prey-identity:36633:441194",
+              "selector": "Creature identity"
+            }
+          ],
+          "note": "Resolved external source identity; this is not an Oteryn Creature key."
         }
       }
     },
@@ -23610,26 +23747,65 @@
         },
         "native_creature_binding": {
           "value": {
-            "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+            "status": "PENDING_NATIVE_CREATURE_ADMISSION",
             "source_creature_name": "Furious Fire Elemental",
-            "create_native_identity": false
+            "source_identity": {
+              "namespace": "cipsoft/staticdata/creature_id",
+              "id": 1000,
+              "source_name": "furious fire elemental",
+              "client_version": "15.30"
+            },
+            "native_identity_assigned": false,
+            "preserve_source_prey_membership": true,
+            "requires_native_creature_definition": true
           },
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "SOURCE_IDENTITY_RESOLVED_NATIVE_DEFINITION_ABSENT",
+          "evidence_scope": "NATIVE_ADMISSION_CONSTRAINT",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json / field rulesets/progression/prey/creature-eligibility.json/records/534/facts/native_creature_binding"
+              "source": "repo:prey-native-catalog:466c9142ad41223181f998878fa9b8a633be4b4f",
+              "selector": "No matching definition in1863native Creature records"
+            },
+            {
+              "source": "repo:cipsoft-creature-source:1000:466c9142ad41223181f998878fa9b8a633be4b4f",
+              "selector": "/records/175"
+            },
+            {
+              "source": "wiki-br:prey-identity:43902:441304",
+              "selector": "Creature identity"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "note": "The invented launch-exclusion decision is withdrawn. Source identity and wildcard membership are retained; an actual native Creature definition must be admitted before a binding can exist.",
           "assumptions": [
-            "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+            "No native ID, replacement creature or permanent exclusion is invented. Pending native admission is an implementation dependency, not missing source identity."
           ],
           "global_evidence_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json#rulesets/progression/prey/creature-eligibility.json/records/534/facts/native_creature_binding",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+        },
+        "source_creature_identity": {
+          "value": {
+            "namespace": "cipsoft/staticdata/creature_id",
+            "id": 1000,
+            "source_name": "furious fire elemental",
+            "client_version": "15.30"
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-19",
+          "continuity": "PINNED_CLIENT_SOURCE_OBSERVATION",
+          "evidence_scope": "CIPSOFT_CLIENT_STATICDATA",
+          "sources": [
+            {
+              "source": "repo:cipsoft-creature-source:1000:466c9142ad41223181f998878fa9b8a633be4b4f",
+              "selector": "/records/175/source_id,name"
+            },
+            {
+              "source": "wiki-br:prey-identity:43902:441304",
+              "selector": "Creature identity"
+            }
+          ],
+          "note": "Resolved external source identity; this is not an Oteryn Creature key."
         }
       }
     },
@@ -25864,26 +26040,65 @@
         },
         "native_creature_binding": {
           "value": {
-            "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+            "status": "PENDING_NATIVE_CREATURE_ADMISSION",
             "source_creature_name": "Nightslayer",
-            "create_native_identity": false
+            "source_identity": {
+              "namespace": "cipsoft/staticdata/creature_id",
+              "id": 579,
+              "source_name": "nightslayer",
+              "client_version": "15.30"
+            },
+            "native_identity_assigned": false,
+            "preserve_source_prey_membership": true,
+            "requires_native_creature_definition": true
           },
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "SOURCE_IDENTITY_RESOLVED_NATIVE_DEFINITION_ABSENT",
+          "evidence_scope": "NATIVE_ADMISSION_CONSTRAINT",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json / field rulesets/progression/prey/creature-eligibility.json/records/585/facts/native_creature_binding"
+              "source": "repo:prey-native-catalog:466c9142ad41223181f998878fa9b8a633be4b4f",
+              "selector": "No matching definition in1863native Creature records"
+            },
+            {
+              "source": "repo:cipsoft-creature-source:579:466c9142ad41223181f998878fa9b8a633be4b4f",
+              "selector": "/records/15"
+            },
+            {
+              "source": "wiki-br:prey-identity:4023:441384",
+              "selector": "Creature identity"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "note": "The invented launch-exclusion decision is withdrawn. Source identity and wildcard membership are retained; an actual native Creature definition must be admitted before a binding can exist.",
           "assumptions": [
-            "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+            "No native ID, replacement creature or permanent exclusion is invented. Pending native admission is an implementation dependency, not missing source identity."
           ],
           "global_evidence_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json#rulesets/progression/prey/creature-eligibility.json/records/585/facts/native_creature_binding",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+        },
+        "source_creature_identity": {
+          "value": {
+            "namespace": "cipsoft/staticdata/creature_id",
+            "id": 579,
+            "source_name": "nightslayer",
+            "client_version": "15.30"
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-19",
+          "continuity": "PINNED_CLIENT_SOURCE_OBSERVATION",
+          "evidence_scope": "CIPSOFT_CLIENT_STATICDATA",
+          "sources": [
+            {
+              "source": "repo:cipsoft-creature-source:579:466c9142ad41223181f998878fa9b8a633be4b4f",
+              "selector": "/records/15/source_id,name"
+            },
+            {
+              "source": "wiki-br:prey-identity:4023:441384",
+              "selector": "Creature identity"
+            }
+          ],
+          "note": "Resolved external source identity; this is not an Oteryn Creature key."
         }
       }
     },
@@ -28074,26 +28289,65 @@
         },
         "native_creature_binding": {
           "value": {
-            "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+            "status": "PENDING_NATIVE_CREATURE_ADMISSION",
             "source_creature_name": "Undead Jester",
-            "create_native_identity": false
+            "source_identity": {
+              "namespace": "cipsoft/staticdata/creature_id",
+              "id": 388,
+              "source_name": "undead jester",
+              "client_version": "15.30"
+            },
+            "native_identity_assigned": false,
+            "preserve_source_prey_membership": true,
+            "requires_native_creature_definition": true
           },
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "SOURCE_IDENTITY_RESOLVED_NATIVE_DEFINITION_ABSENT",
+          "evidence_scope": "NATIVE_ADMISSION_CONSTRAINT",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json / field rulesets/progression/prey/creature-eligibility.json/records/635/facts/native_creature_binding"
+              "source": "repo:prey-native-catalog:466c9142ad41223181f998878fa9b8a633be4b4f",
+              "selector": "No matching definition in1863native Creature records"
+            },
+            {
+              "source": "repo:cipsoft-creature-source:388:466c9142ad41223181f998878fa9b8a633be4b4f",
+              "selector": "/records/208"
+            },
+            {
+              "source": "wiki-br:prey-identity:5908:440797",
+              "selector": "Creature identity"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "note": "The invented launch-exclusion decision is withdrawn. Source identity and wildcard membership are retained; an actual native Creature definition must be admitted before a binding can exist.",
           "assumptions": [
-            "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+            "No native ID, replacement creature or permanent exclusion is invented. Pending native admission is an implementation dependency, not missing source identity."
           ],
           "global_evidence_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json#rulesets/progression/prey/creature-eligibility.json/records/635/facts/native_creature_binding",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+        },
+        "source_creature_identity": {
+          "value": {
+            "namespace": "cipsoft/staticdata/creature_id",
+            "id": 388,
+            "source_name": "undead jester",
+            "client_version": "15.30"
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-19",
+          "continuity": "PINNED_CLIENT_SOURCE_OBSERVATION",
+          "evidence_scope": "CIPSOFT_CLIENT_STATICDATA",
+          "sources": [
+            {
+              "source": "repo:cipsoft-creature-source:388:466c9142ad41223181f998878fa9b8a633be4b4f",
+              "selector": "/records/208/source_id,name"
+            },
+            {
+              "source": "wiki-br:prey-identity:5908:440797",
+              "selector": "Creature identity"
+            }
+          ],
+          "note": "Resolved external source identity; this is not an Oteryn Creature key."
         }
       }
     },

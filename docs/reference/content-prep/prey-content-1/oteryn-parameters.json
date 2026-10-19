@@ -22,5 +22,16 @@
     ],
     "source_check": "docs/reference/content-prep/prey-content-1/source-correction-check.json",
     "qualification": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed."
+  },
+  "native_binding_source_correction": {
+    "source_check": "docs/reference/content-prep/prey-content-1/creature-identity-source-check.json",
+    "native_handoff": "docs/reference/content-prep/prey-content-1/native-prey-handoff.json",
+    "source_creatures": 649,
+    "existing_native_bindings": 643,
+    "source_identities_resolved": 6,
+    "pending_native_creature_admissions": 6,
+    "native_flag_disagreements": 13,
+    "invented_launch_exclusions_removed": 6,
+    "runtime_admission": "BLOCKED"
   }
 }

@@ -260,126 +260,366 @@
       "subject": "prey.creature.berrypest",
       "original_classification": "UNKNOWN",
       "proposed_value": {
-        "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+        "status": "PENDING_NATIVE_CREATURE_ADMISSION",
         "source_creature_name": "Berrypest",
-        "create_native_identity": false
+        "source_identity": {
+          "namespace": "cipsoft/staticdata/creature_id",
+          "id": 691,
+          "source_name": "berrypest",
+          "client_version": "15.30"
+        },
+        "native_identity_assigned": false,
+        "preserve_source_prey_membership": true,
+        "requires_native_creature_definition": true
       },
       "basis": {
-        "kind": "DESIGN_CHOICE",
-        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-        "original_source_urls": [],
-        "observation_refs": [],
-        "donor_selection": null
+        "kind": "SOURCE_IDENTITY_AND_NATIVE_CATALOG_RECONCILIATION",
+        "source_refs": [
+          {
+            "source": "repo:prey-native-catalog:466c9142ad41223181f998878fa9b8a633be4b4f",
+            "selector": "No matching definition in1863native Creature records"
+          },
+          {
+            "source": "repo:cipsoft-creature-source:691:466c9142ad41223181f998878fa9b8a633be4b4f",
+            "selector": "/records/51"
+          },
+          {
+            "source": "wiki-br:prey-identity:27061:398928",
+            "selector": "Creature identity"
+          }
+        ],
+        "rationale": "The invented launch-exclusion decision is withdrawn. Source identity and wildcard membership are retained; an actual native Creature definition must be admitted before a binding can exist."
       },
       "assumptions": [
-        "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+        "No native ID, replacement creature or permanent exclusion is invented. Pending native admission is an implementation dependency, not missing source identity."
       ],
-      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      "acceptance_status": "SOURCE_RESOLVED_PENDING_NATIVE_CREATURE_ADMISSION",
+      "superseded_exclusion_decision": {
+        "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/480/facts/native_creature_binding",
+        "subject": "prey.creature.berrypest",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+          "source_creature_name": "Berrypest",
+          "create_native_identity": false
+        },
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
     },
     {
       "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/488/facts/native_creature_binding",
       "subject": "prey.creature.cake_golem",
       "original_classification": "UNKNOWN",
       "proposed_value": {
-        "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+        "status": "PENDING_NATIVE_CREATURE_ADMISSION",
         "source_creature_name": "Cake Golem",
-        "create_native_identity": false
+        "source_identity": {
+          "namespace": "cipsoft/staticdata/creature_id",
+          "id": 680,
+          "source_name": "cake golem",
+          "client_version": "15.30"
+        },
+        "native_identity_assigned": false,
+        "preserve_source_prey_membership": true,
+        "requires_native_creature_definition": true
       },
       "basis": {
-        "kind": "DESIGN_CHOICE",
-        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-        "original_source_urls": [],
-        "observation_refs": [],
-        "donor_selection": null
+        "kind": "SOURCE_IDENTITY_AND_NATIVE_CATALOG_RECONCILIATION",
+        "source_refs": [
+          {
+            "source": "repo:prey-native-catalog:466c9142ad41223181f998878fa9b8a633be4b4f",
+            "selector": "No matching definition in1863native Creature records"
+          },
+          {
+            "source": "repo:cipsoft-creature-source:680:466c9142ad41223181f998878fa9b8a633be4b4f",
+            "selector": "/records/50"
+          },
+          {
+            "source": "wiki-br:prey-identity:4010:435808",
+            "selector": "Creature identity"
+          }
+        ],
+        "rationale": "The invented launch-exclusion decision is withdrawn. Source identity and wildcard membership are retained; an actual native Creature definition must be admitted before a binding can exist."
       },
       "assumptions": [
-        "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+        "No native ID, replacement creature or permanent exclusion is invented. Pending native admission is an implementation dependency, not missing source identity."
       ],
-      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      "acceptance_status": "SOURCE_RESOLVED_PENDING_NATIVE_CREATURE_ADMISSION",
+      "superseded_exclusion_decision": {
+        "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/488/facts/native_creature_binding",
+        "subject": "prey.creature.cake_golem",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+          "source_creature_name": "Cake Golem",
+          "create_native_identity": false
+        },
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
     },
     {
       "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/520/facts/native_creature_binding",
       "subject": "prey.creature.elder_forest_fury",
       "original_classification": "UNKNOWN",
       "proposed_value": {
-        "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+        "status": "PENDING_NATIVE_CREATURE_ADMISSION",
         "source_creature_name": "Elder Forest Fury",
-        "create_native_identity": false
+        "source_identity": {
+          "namespace": "cipsoft/staticdata/creature_id",
+          "id": 1157,
+          "source_name": "elder forest fury",
+          "client_version": "15.30"
+        },
+        "native_identity_assigned": false,
+        "preserve_source_prey_membership": true,
+        "requires_native_creature_definition": true
       },
       "basis": {
-        "kind": "DESIGN_CHOICE",
-        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-        "original_source_urls": [],
-        "observation_refs": [],
-        "donor_selection": null
+        "kind": "SOURCE_IDENTITY_AND_NATIVE_CATALOG_RECONCILIATION",
+        "source_refs": [
+          {
+            "source": "repo:prey-native-catalog:466c9142ad41223181f998878fa9b8a633be4b4f",
+            "selector": "No matching definition in1863native Creature records"
+          },
+          {
+            "source": "repo:cipsoft-creature-source:1157:466c9142ad41223181f998878fa9b8a633be4b4f",
+            "selector": "/records/229"
+          },
+          {
+            "source": "wiki-br:prey-identity:36633:441194",
+            "selector": "Creature identity"
+          }
+        ],
+        "rationale": "The invented launch-exclusion decision is withdrawn. Source identity and wildcard membership are retained; an actual native Creature definition must be admitted before a binding can exist."
       },
       "assumptions": [
-        "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+        "No native ID, replacement creature or permanent exclusion is invented. Pending native admission is an implementation dependency, not missing source identity."
       ],
-      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      "acceptance_status": "SOURCE_RESOLVED_PENDING_NATIVE_CREATURE_ADMISSION",
+      "superseded_exclusion_decision": {
+        "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/520/facts/native_creature_binding",
+        "subject": "prey.creature.elder_forest_fury",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+          "source_creature_name": "Elder Forest Fury",
+          "create_native_identity": false
+        },
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
     },
     {
       "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/534/facts/native_creature_binding",
       "subject": "prey.creature.furious_fire_elemental",
       "original_classification": "UNKNOWN",
       "proposed_value": {
-        "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+        "status": "PENDING_NATIVE_CREATURE_ADMISSION",
         "source_creature_name": "Furious Fire Elemental",
-        "create_native_identity": false
+        "source_identity": {
+          "namespace": "cipsoft/staticdata/creature_id",
+          "id": 1000,
+          "source_name": "furious fire elemental",
+          "client_version": "15.30"
+        },
+        "native_identity_assigned": false,
+        "preserve_source_prey_membership": true,
+        "requires_native_creature_definition": true
       },
       "basis": {
-        "kind": "DESIGN_CHOICE",
-        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-        "original_source_urls": [],
-        "observation_refs": [],
-        "donor_selection": null
+        "kind": "SOURCE_IDENTITY_AND_NATIVE_CATALOG_RECONCILIATION",
+        "source_refs": [
+          {
+            "source": "repo:prey-native-catalog:466c9142ad41223181f998878fa9b8a633be4b4f",
+            "selector": "No matching definition in1863native Creature records"
+          },
+          {
+            "source": "repo:cipsoft-creature-source:1000:466c9142ad41223181f998878fa9b8a633be4b4f",
+            "selector": "/records/175"
+          },
+          {
+            "source": "wiki-br:prey-identity:43902:441304",
+            "selector": "Creature identity"
+          }
+        ],
+        "rationale": "The invented launch-exclusion decision is withdrawn. Source identity and wildcard membership are retained; an actual native Creature definition must be admitted before a binding can exist."
       },
       "assumptions": [
-        "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+        "No native ID, replacement creature or permanent exclusion is invented. Pending native admission is an implementation dependency, not missing source identity."
       ],
-      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      "acceptance_status": "SOURCE_RESOLVED_PENDING_NATIVE_CREATURE_ADMISSION",
+      "superseded_exclusion_decision": {
+        "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/534/facts/native_creature_binding",
+        "subject": "prey.creature.furious_fire_elemental",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+          "source_creature_name": "Furious Fire Elemental",
+          "create_native_identity": false
+        },
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
     },
     {
       "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/585/facts/native_creature_binding",
       "subject": "prey.creature.nightslayer",
       "original_classification": "UNKNOWN",
       "proposed_value": {
-        "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+        "status": "PENDING_NATIVE_CREATURE_ADMISSION",
         "source_creature_name": "Nightslayer",
-        "create_native_identity": false
+        "source_identity": {
+          "namespace": "cipsoft/staticdata/creature_id",
+          "id": 579,
+          "source_name": "nightslayer",
+          "client_version": "15.30"
+        },
+        "native_identity_assigned": false,
+        "preserve_source_prey_membership": true,
+        "requires_native_creature_definition": true
       },
       "basis": {
-        "kind": "DESIGN_CHOICE",
-        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-        "original_source_urls": [],
-        "observation_refs": [],
-        "donor_selection": null
+        "kind": "SOURCE_IDENTITY_AND_NATIVE_CATALOG_RECONCILIATION",
+        "source_refs": [
+          {
+            "source": "repo:prey-native-catalog:466c9142ad41223181f998878fa9b8a633be4b4f",
+            "selector": "No matching definition in1863native Creature records"
+          },
+          {
+            "source": "repo:cipsoft-creature-source:579:466c9142ad41223181f998878fa9b8a633be4b4f",
+            "selector": "/records/15"
+          },
+          {
+            "source": "wiki-br:prey-identity:4023:441384",
+            "selector": "Creature identity"
+          }
+        ],
+        "rationale": "The invented launch-exclusion decision is withdrawn. Source identity and wildcard membership are retained; an actual native Creature definition must be admitted before a binding can exist."
       },
       "assumptions": [
-        "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+        "No native ID, replacement creature or permanent exclusion is invented. Pending native admission is an implementation dependency, not missing source identity."
       ],
-      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      "acceptance_status": "SOURCE_RESOLVED_PENDING_NATIVE_CREATURE_ADMISSION",
+      "superseded_exclusion_decision": {
+        "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/585/facts/native_creature_binding",
+        "subject": "prey.creature.nightslayer",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+          "source_creature_name": "Nightslayer",
+          "create_native_identity": false
+        },
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
     },
     {
       "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/635/facts/native_creature_binding",
       "subject": "prey.creature.undead_jester",
       "original_classification": "UNKNOWN",
       "proposed_value": {
-        "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+        "status": "PENDING_NATIVE_CREATURE_ADMISSION",
         "source_creature_name": "Undead Jester",
-        "create_native_identity": false
+        "source_identity": {
+          "namespace": "cipsoft/staticdata/creature_id",
+          "id": 388,
+          "source_name": "undead jester",
+          "client_version": "15.30"
+        },
+        "native_identity_assigned": false,
+        "preserve_source_prey_membership": true,
+        "requires_native_creature_definition": true
       },
       "basis": {
-        "kind": "DESIGN_CHOICE",
-        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-        "original_source_urls": [],
-        "observation_refs": [],
-        "donor_selection": null
+        "kind": "SOURCE_IDENTITY_AND_NATIVE_CATALOG_RECONCILIATION",
+        "source_refs": [
+          {
+            "source": "repo:prey-native-catalog:466c9142ad41223181f998878fa9b8a633be4b4f",
+            "selector": "No matching definition in1863native Creature records"
+          },
+          {
+            "source": "repo:cipsoft-creature-source:388:466c9142ad41223181f998878fa9b8a633be4b4f",
+            "selector": "/records/208"
+          },
+          {
+            "source": "wiki-br:prey-identity:5908:440797",
+            "selector": "Creature identity"
+          }
+        ],
+        "rationale": "The invented launch-exclusion decision is withdrawn. Source identity and wildcard membership are retained; an actual native Creature definition must be admitted before a binding can exist."
       },
       "assumptions": [
-        "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+        "No native ID, replacement creature or permanent exclusion is invented. Pending native admission is an implementation dependency, not missing source identity."
       ],
-      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      "acceptance_status": "SOURCE_RESOLVED_PENDING_NATIVE_CREATURE_ADMISSION",
+      "superseded_exclusion_decision": {
+        "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/635/facts/native_creature_binding",
+        "subject": "prey.creature.undead_jester",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+          "source_creature_name": "Undead Jester",
+          "create_native_identity": false
+        },
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
     },
     {
       "original_field_path": "docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json/records/0/facts/experience_reward",
@@ -512,5 +752,16 @@
     "source_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json",
     "filled_field_count": 17,
     "not_runtime_activation": true
+  },
+  "native_binding_source_correction": {
+    "source_check": "docs/reference/content-prep/prey-content-1/creature-identity-source-check.json",
+    "native_handoff": "docs/reference/content-prep/prey-content-1/native-prey-handoff.json",
+    "source_creatures": 649,
+    "existing_native_bindings": 643,
+    "source_identities_resolved": 6,
+    "pending_native_creature_admissions": 6,
+    "native_flag_disagreements": 13,
+    "invented_launch_exclusions_removed": 6,
+    "runtime_admission": "BLOCKED"
   }
 }

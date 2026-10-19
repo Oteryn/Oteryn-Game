@@ -1,0 +1,323 @@
+{
+  "task": "PREY-CONTENT-1",
+  "reference_only": true,
+  "runtime_switch_authorized": false,
+  "status": "SOURCE_DATA_READY_NATIVE_IMPLEMENTATION_PENDING",
+  "expected_native_catalog_main": "466c9142ad41223181f998878fa9b8a633be4b4f",
+  "native_catalog_files": [
+    {
+      "path": "content/creatures/definitions/creatures-00000-00499.json",
+      "blob_sha": "4c0b769f2ede17f26bec00f5e8dec339a2314f28",
+      "records": 500
+    },
+    {
+      "path": "content/creatures/definitions/creatures-00500-00999.json",
+      "blob_sha": "bff114daa38179c74e1405f2d974d718b51a6bfe",
+      "records": 500
+    },
+    {
+      "path": "content/creatures/definitions/creatures-01000-01499.json",
+      "blob_sha": "ad782036ca2387559372cfb16e22c1b66b6e78d7",
+      "records": 500
+    },
+    {
+      "path": "content/creatures/definitions/creatures-01500-01862.json",
+      "blob_sha": "59dcf4ae4aac29eed75b141e79ec687cc72709cb",
+      "records": 363
+    }
+  ],
+  "source_creatures": 649,
+  "existing_native_bindings": 643,
+  "dangling_native_bindings": 0,
+  "duplicate_native_bindings": 0,
+  "missing_native_creature_definitions": [
+    {
+      "key": "prey.creature.berrypest",
+      "name": "Berrypest",
+      "external_identity": {
+        "namespace": "cipsoft/staticdata/creature_id",
+        "id": 691,
+        "source_name": "berrypest",
+        "client_version": "15.30"
+      },
+      "source_pool": "wildcard_only",
+      "source_check": "docs/reference/content-prep/prey-content-1/creature-identity-source-check.json",
+      "required_action": "Admit a proper native Creature definition with existing creature-authoring qualification, then bind this Prey row. Preserve wildcard-only membership; no substitute ID or permanent exclusion."
+    },
+    {
+      "key": "prey.creature.cake_golem",
+      "name": "Cake Golem",
+      "external_identity": {
+        "namespace": "cipsoft/staticdata/creature_id",
+        "id": 680,
+        "source_name": "cake golem",
+        "client_version": "15.30"
+      },
+      "source_pool": "wildcard_only",
+      "source_check": "docs/reference/content-prep/prey-content-1/creature-identity-source-check.json",
+      "required_action": "Admit a proper native Creature definition with existing creature-authoring qualification, then bind this Prey row. Preserve wildcard-only membership; no substitute ID or permanent exclusion."
+    },
+    {
+      "key": "prey.creature.elder_forest_fury",
+      "name": "Elder Forest Fury",
+      "external_identity": {
+        "namespace": "cipsoft/staticdata/creature_id",
+        "id": 1157,
+        "source_name": "elder forest fury",
+        "client_version": "15.30"
+      },
+      "source_pool": "wildcard_only",
+      "source_check": "docs/reference/content-prep/prey-content-1/creature-identity-source-check.json",
+      "required_action": "Admit a proper native Creature definition with existing creature-authoring qualification, then bind this Prey row. Preserve wildcard-only membership; no substitute ID or permanent exclusion."
+    },
+    {
+      "key": "prey.creature.furious_fire_elemental",
+      "name": "Furious Fire Elemental",
+      "external_identity": {
+        "namespace": "cipsoft/staticdata/creature_id",
+        "id": 1000,
+        "source_name": "furious fire elemental",
+        "client_version": "15.30"
+      },
+      "source_pool": "wildcard_only",
+      "source_check": "docs/reference/content-prep/prey-content-1/creature-identity-source-check.json",
+      "required_action": "Admit a proper native Creature definition with existing creature-authoring qualification, then bind this Prey row. Preserve wildcard-only membership; no substitute ID or permanent exclusion."
+    },
+    {
+      "key": "prey.creature.nightslayer",
+      "name": "Nightslayer",
+      "external_identity": {
+        "namespace": "cipsoft/staticdata/creature_id",
+        "id": 579,
+        "source_name": "nightslayer",
+        "client_version": "15.30"
+      },
+      "source_pool": "wildcard_only",
+      "source_check": "docs/reference/content-prep/prey-content-1/creature-identity-source-check.json",
+      "required_action": "Admit a proper native Creature definition with existing creature-authoring qualification, then bind this Prey row. Preserve wildcard-only membership; no substitute ID or permanent exclusion."
+    },
+    {
+      "key": "prey.creature.undead_jester",
+      "name": "Undead Jester",
+      "external_identity": {
+        "namespace": "cipsoft/staticdata/creature_id",
+        "id": 388,
+        "source_name": "undead jester",
+        "client_version": "15.30"
+      },
+      "source_pool": "wildcard_only",
+      "source_check": "docs/reference/content-prep/prey-content-1/creature-identity-source-check.json",
+      "required_action": "Admit a proper native Creature definition with existing creature-authoring qualification, then bind this Prey row. Preserve wildcard-only membership; no substitute ID or permanent exclusion."
+    }
+  ],
+  "native_pool_flag_corrections": [
+    {
+      "native_key": "oteryn:creature.bride_of_night",
+      "native_path": "content/creatures/definitions/creatures-00000-00499.json",
+      "record": 167,
+      "field": "/records/167/authoring/profile/details/system_eligibility/exclusive_prey",
+      "expected_value": false,
+      "source_reference_value": true,
+      "source_creature_key": "prey.creature.bride_of_night",
+      "source_pool": "wildcard_only",
+      "evidence_classification": "DERIVED",
+      "source_refs": [
+        "wiki:86349:1090711",
+        "community:tibiaqa:prey-wildcard:29235:20261019"
+      ]
+    },
+    {
+      "native_key": "oteryn:creature.blue_butterfly",
+      "native_path": "content/creatures/definitions/creatures-00000-00499.json",
+      "record": 133,
+      "field": "/records/133/authoring/profile/details/system_eligibility/exclusive_prey",
+      "expected_value": false,
+      "source_reference_value": true,
+      "source_creature_key": "prey.creature.butterfly_blue",
+      "source_pool": "wildcard_only",
+      "evidence_classification": "DERIVED",
+      "source_refs": [
+        "wiki:86349:1090711",
+        "community:tibiaqa:prey-wildcard:29235:20261019"
+      ]
+    },
+    {
+      "native_key": "oteryn:creature.purple_butterfly",
+      "native_path": "content/creatures/definitions/creatures-01000-01499.json",
+      "record": 267,
+      "field": "/records/267/authoring/profile/details/system_eligibility/exclusive_prey",
+      "expected_value": false,
+      "source_reference_value": true,
+      "source_creature_key": "prey.creature.butterfly_purple",
+      "source_pool": "wildcard_only",
+      "evidence_classification": "DERIVED",
+      "source_refs": [
+        "wiki:86349:1090711",
+        "community:tibiaqa:prey-wildcard:29235:20261019"
+      ]
+    },
+    {
+      "native_key": "oteryn:creature.red_butterfly",
+      "native_path": "content/creatures/definitions/creatures-01000-01499.json",
+      "record": 311,
+      "field": "/records/311/authoring/profile/details/system_eligibility/exclusive_prey",
+      "expected_value": false,
+      "source_reference_value": true,
+      "source_creature_key": "prey.creature.butterfly_red",
+      "source_pool": "wildcard_only",
+      "evidence_classification": "DERIVED",
+      "source_refs": [
+        "wiki:86349:1090711",
+        "community:tibiaqa:prey-wildcard:29235:20261019"
+      ]
+    },
+    {
+      "native_key": "oteryn:creature.doomsday_cultist",
+      "native_path": "content/creatures/definitions/creatures-00000-00499.json",
+      "record": 417,
+      "field": "/records/417/authoring/profile/details/system_eligibility/exclusive_prey",
+      "expected_value": false,
+      "source_reference_value": true,
+      "source_creature_key": "prey.creature.doomsday_cultist",
+      "source_pool": "wildcard_only",
+      "evidence_classification": "DERIVED",
+      "source_refs": [
+        "wiki:86349:1090711",
+        "community:tibiaqa:prey-wildcard:29235:20261019"
+      ]
+    },
+    {
+      "native_key": "oteryn:creature.fish",
+      "native_path": "content/creatures/definitions/creatures-00500-00999.json",
+      "record": 76,
+      "field": "/records/76/authoring/profile/details/system_eligibility/exclusive_prey",
+      "expected_value": false,
+      "source_reference_value": true,
+      "source_creature_key": "prey.creature.fish_creature",
+      "source_pool": "wildcard_only",
+      "evidence_classification": "DERIVED",
+      "source_refs": [
+        "wiki:86349:1090711",
+        "community:tibiaqa:prey-wildcard:29235:20261019"
+      ]
+    },
+    {
+      "native_key": "oteryn:creature.brown_horse",
+      "native_path": "content/creatures/definitions/creatures-00000-00499.json",
+      "record": 179,
+      "field": "/records/179/authoring/profile/details/system_eligibility/exclusive_prey",
+      "expected_value": false,
+      "source_reference_value": true,
+      "source_creature_key": "prey.creature.horse_brown",
+      "source_pool": "wildcard_only",
+      "evidence_classification": "DERIVED",
+      "source_refs": [
+        "wiki:86349:1090711",
+        "community:tibiaqa:prey-wildcard:29235:20261019"
+      ]
+    },
+    {
+      "native_key": "oteryn:creature.grey_horse",
+      "native_path": "content/creatures/definitions/creatures-00500-00999.json",
+      "record": 213,
+      "field": "/records/213/authoring/profile/details/system_eligibility/exclusive_prey",
+      "expected_value": false,
+      "source_reference_value": true,
+      "source_creature_key": "prey.creature.horse_gray",
+      "source_pool": "wildcard_only",
+      "evidence_classification": "DERIVED",
+      "source_refs": [
+        "wiki:86349:1090711",
+        "community:tibiaqa:prey-wildcard:29235:20261019"
+      ]
+    },
+    {
+      "native_key": "oteryn:creature.horse",
+      "native_path": "content/creatures/definitions/creatures-00500-00999.json",
+      "record": 267,
+      "field": "/records/267/authoring/profile/details/system_eligibility/exclusive_prey",
+      "expected_value": false,
+      "source_reference_value": true,
+      "source_creature_key": "prey.creature.horse_taupe",
+      "source_pool": "wildcard_only",
+      "evidence_classification": "DERIVED",
+      "source_refs": [
+        "wiki:86349:1090711",
+        "community:tibiaqa:prey-wildcard:29235:20261019"
+      ]
+    },
+    {
+      "native_key": "oteryn:creature.midnight_warrior",
+      "native_path": "content/creatures/definitions/creatures-01000-01499.json",
+      "record": 21,
+      "field": "/records/21/authoring/profile/details/system_eligibility/exclusive_prey",
+      "expected_value": false,
+      "source_reference_value": true,
+      "source_creature_key": "prey.creature.midnight_warrior",
+      "source_pool": "wildcard_only",
+      "evidence_classification": "DERIVED",
+      "source_refs": [
+        "wiki:86349:1090711",
+        "community:tibiaqa:prey-wildcard:29235:20261019"
+      ]
+    },
+    {
+      "native_key": "oteryn:creature.nomad_blue",
+      "native_path": "content/creatures/definitions/creatures-01000-01499.json",
+      "record": 128,
+      "field": "/records/128/authoring/profile/details/system_eligibility/exclusive_prey",
+      "expected_value": false,
+      "source_reference_value": true,
+      "source_creature_key": "prey.creature.nomad_blue",
+      "source_pool": "wildcard_only",
+      "evidence_classification": "DERIVED",
+      "source_refs": [
+        "wiki:86349:1090711",
+        "community:tibiaqa:prey-wildcard:29235:20261019"
+      ]
+    },
+    {
+      "native_key": "oteryn:creature.nomad_female",
+      "native_path": "content/creatures/definitions/creatures-01000-01499.json",
+      "record": 129,
+      "field": "/records/129/authoring/profile/details/system_eligibility/exclusive_prey",
+      "expected_value": false,
+      "source_reference_value": true,
+      "source_creature_key": "prey.creature.nomad_female",
+      "source_pool": "wildcard_only",
+      "evidence_classification": "DERIVED",
+      "source_refs": [
+        "wiki:86349:1090711",
+        "community:tibiaqa:prey-wildcard:29235:20261019"
+      ]
+    },
+    {
+      "native_key": "oteryn:creature.northern_pike",
+      "native_path": "content/creatures/definitions/creatures-01000-01499.json",
+      "record": 135,
+      "field": "/records/135/authoring/profile/details/system_eligibility/exclusive_prey",
+      "expected_value": false,
+      "source_reference_value": true,
+      "source_creature_key": "prey.creature.northern_pike_creature",
+      "source_pool": "wildcard_only",
+      "evidence_classification": "DERIVED",
+      "source_refs": [
+        "wiki:86349:1090711",
+        "community:tibiaqa:prey-wildcard:29235:20261019"
+      ]
+    }
+  ],
+  "coordinator_requirements": [
+    "Refresh exact native catalogue identity and path ownership before applying any change.",
+    "Validate full native creature definitions and associated authoring/presentation/behavior dependencies; do not substitute another creature.",
+    "Reconcile13exclusive flags against source reference before runtime admission.",
+    "Apply generated World Bundle and native wiring only in their owning implementation task."
+  ],
+  "not_applied": [
+    "Native Creature definitions",
+    "Native eligibility flags",
+    "Rust",
+    "Generated indexes or World Bundle pins",
+    "Runtime activation"
+  ]
+}

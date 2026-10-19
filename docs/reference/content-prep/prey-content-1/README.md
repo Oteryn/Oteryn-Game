@@ -1,3 +1,17 @@
+# Prey creature identity reconciliation
+
+All649source-listed creatures are checked against the current1863-definition native catalogue.643bindings resolve with no dangling or duplicate keys. Source identities for the remaining six are now explicit: Berrypest691, Cake Golem680, Elder Forest Fury1157, Furious Fire Elemental1000, Nightslayer579 and Undead Jester388. These are client-source creature IDs, not Oteryn ProductionKeys.
+
+The invented launch-exclusion decisions are withdrawn. All six retain source wildcard membership and a precise pending-native-admission status. Their absence from the native catalogue is an implementation dependency, not missing wiki/client data. [Identity source check](creature-identity-source-check.json).
+
+The [native handoff](native-prey-handoff.json) lists the six required Creature admissions and13existing exclusive-pool flags that disagree with the source reference, including exact native keys, paths, record indexes and expected values. Native definitions/flags are not modified here. Five earlier exclusive-pool corrections remain preserved and gain historical TibiaQA corroboration; no controlled current Global pool measurement is claimed.
+
+Bounty/Weekly XP formulas in the shared task packet remain a separate correction. This identity repair does not certify those earlier values. Runtime admission, generated World Bundle updates and native wiring stay with the implementation owner.
+
+## Superseded materialization report
+
+This correction takes precedence over the earlier launch-exclusion wording retained below.
+
 # Prey exclusive-pool source correction
 
 Acid Blob, Damaged Worker Golem, Flamingo, Gazer and Silver Rabbit now use wildcard_only, following explicit isPreyExclusive=true flags in the pinned donor. The previous normal-pool overrides are withdrawn. This is DERIVED donor-reference evidence, with conflicting wiki history retained; no official-server pool measurement is claimed. See [source check](source-correction-check.json). Runtime admission remains blocked.
