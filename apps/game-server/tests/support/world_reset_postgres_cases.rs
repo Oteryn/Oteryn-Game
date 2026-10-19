@@ -793,18 +793,6 @@ fn reset_direct_activation_rechecks_drain_digest_and_house_evidence() -> TestRes
         install(&h).await?;
         admit_qualified(&h).await?;
         replace(&h).await?;
-        // Predecessor Channel activation equal to the epoch-0 history digests.
-        sqlx::query("INSERT INTO game_control_scope_grants(control_role,world_id,channel_id,operation) VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4) ON CONFLICT DO NOTHING")
-            .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice()).execute(&h.pool).await?;
-        let previous: Option<String> = sqlx::query_scalar("SELECT max(activation_sequence)::text FROM game_content_activations WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid")
-            .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice()).fetch_one(&h.pool).await?;
-        let previous = previous.map(|value| value.parse::<u64>()).transpose()?;
-        let next = previous.unwrap_or(0).checked_add(1).ok_or("sequence exhausted")?;
-        sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4::text::numeric,$5,$6,$7)")
-            .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice())
-            .bind(next.to_string()).bind(previous.map(|value|value.to_string()))
-            .bind([1_u8;32].as_slice()).bind([2_u8;32].as_slice()).bind([3_u8;32].as_slice())
-            .execute(&h.pool).await?;
         let house_key = "oteryn:content.house.thais_1";
         sqlx::query("INSERT INTO game_house_ownership(world_id,house_key,owner_character_id,ownership_revision,acquisition_receipt_ref) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,1,encode($4,'hex')::uuid)")
             .bind(id(WORLD).as_slice()).bind(house_key).bind(id(crate::item_transfer_postgres_cases::CHARACTER).as_slice()).bind(id(90).as_slice())
@@ -900,11 +888,33 @@ fn qualified_target() -> TestResult<crate::durability::world_reset::WorldResetTa
 /// (Codex P1 4307187667): its House preflight, the job and the Channel cohort commit together.
 async fn admit_qualified(h: &Harness) -> TestResult {
     initialize_epoch(h).await?;
+    record_predecessor_activation(h).await?;
     h.root
         .publish_world_reset(&qualified_target()?, [7; 32], &ResetRunHouses)
         .await
         .map_err(debug)?;
     Ok(())
+}
+
+/// The predecessor Channel content activation, equal to the epoch-0 history digests. A
+/// RETIRING reset fences `game_content_record_activation` (Codex local P2), so it is recorded
+/// before publication. Returns its activation sequence.
+async fn record_predecessor_activation(h: &Harness) -> TestResult<u64> {
+    sqlx::query("INSERT INTO game_control_scope_grants(control_role,world_id,channel_id,operation) VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4) ON CONFLICT DO NOTHING")
+        .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice()).execute(&h.pool).await?;
+    let previous: Option<String> = sqlx::query_scalar("SELECT max(activation_sequence)::text FROM game_content_activations WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid")
+        .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice()).fetch_one(&h.pool).await?;
+    let previous = previous.map(|value| value.parse::<u64>()).transpose()?;
+    let next = previous
+        .unwrap_or(0)
+        .checked_add(1)
+        .ok_or("sequence exhausted")?;
+    sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4::text::numeric,$5,$6,$7)")
+        .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice())
+        .bind(next.to_string()).bind(previous.map(|value| value.to_string()))
+        .bind([1_u8; 32].as_slice()).bind([2_u8; 32].as_slice()).bind([3_u8; 32].as_slice())
+        .execute(&h.pool).await?;
+    Ok(next)
 }
 
 // HOUSE-RUNTIME-1a (#2163) real House custody: the reset census is Channel Ground only, so
@@ -1325,16 +1335,25 @@ async fn initialize_source_map(
     authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
     scope_generation: u64,
 ) -> TestResult<Vec<crate::durability::native_map_items_abi::MaterializedNativeMapItem>> {
+    initialize_source_map_as(h, &h.root, authority, scope_generation).await
+}
+/// [`initialize_source_map`] through `root`, whose recovery `authority` it must be (the
+/// node login's own Root after its boot reset run).
+async fn initialize_source_map_as(
+    h: &Harness,
+    root: &crate::durability::DurabilityRoot,
+    authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+    scope_generation: u64,
+) -> TestResult<Vec<crate::durability::native_map_items_abi::MaterializedNativeMapItem>> {
     let permit = SpellLanePermit::of_fresh_lane(world()?, channel()?).await;
-    h.root
-        .initialize_native_map_current_owner(
-            &permit,
-            authority,
-            &h.node,
-            &reset_source_map(scope_generation)?,
-        )
-        .await
-        .map_err(|error| debug(error).into())
+    root.initialize_native_map_current_owner(
+        &permit,
+        authority,
+        &h.node,
+        &reset_source_map(scope_generation)?,
+    )
+    .await
+    .map_err(|error| debug(error).into())
 }
 /// `(reset_epoch, item)` of every source-map receipt, oldest epoch first.
 async fn source_map_receipts(h: &Harness) -> TestResult<Vec<(String, Vec<u8>)>> {
@@ -1502,18 +1521,6 @@ fn reset_run_resumes_a_crashed_reset_retires_ground_keeps_houses_and_activates()
         replace(&h).await?;
         sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=3 WHERE game_session_id=encode($1,'hex')::uuid AND session_state IN(1,2)")
             .bind(id(61).as_slice()).execute(&h.pool).await?;
-        // The predecessor Channel activation equals the epoch-0 history digests.
-        sqlx::query("INSERT INTO game_control_scope_grants(control_role,world_id,channel_id,operation) VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4) ON CONFLICT DO NOTHING")
-            .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice()).execute(&h.pool).await?;
-        let previous: Option<String> = sqlx::query_scalar("SELECT max(activation_sequence)::text FROM game_content_activations WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid")
-            .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice()).fetch_one(&h.pool).await?;
-        let previous = previous.map(|value| value.parse::<u64>()).transpose()?;
-        let next = previous.unwrap_or(0).checked_add(1).ok_or("sequence exhausted")?;
-        sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4::text::numeric,$5,$6,$7)")
-            .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice())
-            .bind(next.to_string()).bind(previous.map(|value| value.to_string()))
-            .bind([1_u8; 32].as_slice()).bind([2_u8; 32].as_slice()).bind([3_u8; 32].as_slice())
-            .execute(&h.pool).await?;
         // A crash after the first frozen candidate: its lane and process are gone.
         let frozen = {
             let permit = SpellLanePermit::of_fresh_lane(world()?, channel()?).await;
@@ -1933,17 +1940,8 @@ fn reset_operator_command_publishes_retiring_and_the_boot_run_remints_under_n_pl
         // The initializer is exact: the identical re-run replays it.
         assert_eq!(operator(&h.root, &initialize).await.map_err(debug)?, line);
         assert_eq!(h.root.read_retiring_world_reset(world()?).await.map_err(debug)?, None);
-        sqlx::query("INSERT INTO game_control_scope_grants(control_role,world_id,channel_id,operation) VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4) ON CONFLICT DO NOTHING")
-            .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice()).execute(&h.pool).await?;
-        let previous: Option<String> = sqlx::query_scalar("SELECT max(activation_sequence)::text FROM game_content_activations WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid")
-            .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice()).fetch_one(&h.pool).await?;
-        let previous = previous.map(|value| value.parse::<u64>()).transpose()?;
-        let next = previous.unwrap_or(0).checked_add(1).ok_or("sequence exhausted")?;
-        sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4::text::numeric,$5,$6,$7)")
-            .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice())
-            .bind(next.to_string()).bind(previous.map(|value| value.to_string()))
-            .bind([1_u8; 32].as_slice()).bind([2_u8; 32].as_slice()).bind([3_u8; 32].as_slice())
-            .execute(&h.pool).await?;
+        // The predecessor Channel activation, recorded while no reset is RETIRING.
+        let next = record_predecessor_activation(&h).await?;
         // A prepared reconnect still completes while no job is published.
         assert_eq!(readmission_code(&h).await?, "ok");
         // Publication: the job of exactly the qualified target and its binding; admission closes.
@@ -2009,8 +2007,9 @@ fn reset_operator_command_publishes_retiring_and_the_boot_run_remints_under_n_pl
         assert_eq!(admission_codes(&h).await?, admission("23502"));
         assert_eq!(readmission_code(&h).await?, "ok");
         // N+1: the source map comes back once, as a new Item under epoch 1.
+        // The node remints it with its own login's Root, whose recovery authority it holds.
         publish_ready(&h, 2).await?;
-        let restored = initialize_source_map(&h, &authority, 2).await?;
+        let restored = initialize_source_map_as(&h, &node_root, &authority, 2).await?;
         assert_eq!(restored.len(), 1);
         assert!(!restored[0].replayed);
         let restored_item = restored[0].item_instance_id;

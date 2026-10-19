@@ -547,6 +547,10 @@ GRANT MAINTAIN ON game_runtime_scope_assignments,game_item_ground_locations,game
  TO oteryn_game_world_reset;
 GRANT SELECT ON game_world_reset_epoch_history,game_world_reset_active_epochs,game_world_reset_jobs
  TO oteryn_game_world_reset_publisher;
+-- The `[world_reset]` login connects a ready Root (`connect_root`), whose readiness check
+-- reads the migration ledger, as 0006 grants the runtime and control groups; the node login
+-- already reads it as runtime.
+GRANT SELECT ON _sqlx_migrations TO oteryn_game_world_reset_publisher;
 
 CREATE OR REPLACE FUNCTION game_item_decay_retire_consistency_guard() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public, pg_temp AS $$

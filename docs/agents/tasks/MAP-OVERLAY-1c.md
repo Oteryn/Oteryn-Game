@@ -60,6 +60,28 @@ merge_authority: CP_ONLY (builder never marks ready)
   node login only, and `oteryn_game_world_reset_publisher` to the ops `[world_reset]`
   login only.
 
+## PR #2167 repair round — 2026-10-19
+
+- PG case setup after the RETIRING content-activation fence (Codex local P2):
+  `game_content_record_activation` refuses OTR03 while the World has a RETIRING job, so the
+  predecessor Channel activation is now recorded before publication. The shared helper
+  `record_predecessor_activation` is used by `admit_qualified` and by the operator e2e case.
+  The in-test copies recorded after publication are removed.
+- Publisher login readiness: the ops `[world_reset]` login connects through `connect_root`,
+  and its `maintain_ready_once` reads the `_sqlx_migrations` ledger. The publisher
+  capability had no SELECT on the ledger, so `world-reset publish` failed before it reached
+  the owner. The e2e case showed this as `Database(None)` at the publisher login's ready Root.
+  0131 now grants `SELECT ON _sqlx_migrations` to `oteryn_game_world_reset_publisher`, as
+  0006 grants it to the runtime and control groups. The node login already reads the ledger
+  as runtime. The grant is read-only, the unit test that forbids capability writes still
+  holds, and it now pins this grant.
+- The e2e case remints the source map under N+1 through the node login's own Root
+  (`initialize_source_map_as`), because the recovery authority it holds is bound to the Root
+  that recovered it. Using the admin Root was refused with `map recovery authority`.
+- The e2e case `reset_operator_command_publishes_retiring_and_the_boot_run_remints_under_n_plus_one`
+  runs in the `character_authority_postgres` aggregate: the PR PostgreSQL harness and the
+  Merge Queue / Durability PostgreSQL harness.
+
 ## Completion and wiring — 2026-10-18 (D1436)
 
 - CI root cause: the reset PG cases returned `Err` when `OTERYN_TEST_POSTGRES_ADMIN_URL`

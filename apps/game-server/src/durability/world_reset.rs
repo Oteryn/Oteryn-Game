@@ -1536,6 +1536,10 @@ mod reset_activation_source_tests {
         ));
         assert!(sql.contains("GRANT MAINTAIN,SELECT ON game_item_house_interior_locations,game_house_ownership,game_world_house_instances\n TO oteryn_game_world_reset_publisher,oteryn_game_world_reset;"));
         assert!(sql.contains("GRANT SELECT ON game_world_reset_epoch_history,game_world_reset_active_epochs,game_world_reset_jobs\n TO oteryn_game_world_reset_publisher;"));
+        // The publication login connects a ready Root, which reads the migration ledger.
+        assert!(
+            sql.contains("GRANT SELECT ON _sqlx_migrations TO oteryn_game_world_reset_publisher;")
+        );
         for grant in sql.split("GRANT ").skip(1) {
             let statement = grant.split(';').next().unwrap_or_default();
             if statement.contains(" TO oteryn_game_world_reset") {
@@ -2348,4 +2352,8 @@ GRANT MAINTAIN ON game_runtime_scope_assignments,game_item_ground_locations,game
  TO oteryn_game_world_reset;
 GRANT SELECT ON game_world_reset_epoch_history,game_world_reset_active_epochs,game_world_reset_jobs
  TO oteryn_game_world_reset_publisher;
+-- The `[world_reset]` login connects a ready Root (`connect_root`), whose readiness check
+-- reads the migration ledger, as 0006 grants the runtime and control groups; the node login
+-- already reads it as runtime.
+GRANT SELECT ON _sqlx_migrations TO oteryn_game_world_reset_publisher;
 "#;
