@@ -99,7 +99,8 @@ pub const STORE_PASS_GAP: Duration = Duration::from_millis(50);
 pub const FILTERS: usize = 6;
 /// The highscores filters by name (§4.1, §11): 0 is all, 1..5 a base
 /// vocation by its wire vocation id, as the Platform consumer's
-/// `CommunityDataPolicy::highscoreVocationFilter` reads them.
+/// `CommunityDataPolicy::highscoreVocationFilter` reads them. Base-vocation
+/// lists retain World competition ranks (HIGHSCORES-0 §5).
 pub const HIGHSCORE_FILTERS: [(&str, u8); FILTERS] = [
     ("all", 0),
     ("druid", 1),
@@ -380,19 +381,46 @@ fn finish(body: Result<String, serde_json::Error>, bound: usize) -> Result<Strin
     Ok(body)
 }
 
-/// Exact §4.1 body of one filter. Refuses anything outside the contract grammar.
+/// PUBLIC_PROJECTIONS §4.1 and HIGHSCORES-0 §5: filter 0 has exact list competition
+/// ranks; base-vocation lists retain World ranks, including gaps and ties.
+fn competition_ranks_valid(rows: &[HighscoreRow], exact: bool) -> bool {
+    if exact {
+        return rows.iter().enumerate().all(|(index, row)| {
+            let position = u64::try_from(index + 1).unwrap_or(u64::MAX);
+            row.rank == position || (index > 0 && row.rank == rows[index - 1].rank)
+        });
+    }
+    let mut previous_rank: u64 = 0;
+    let mut tie_run = 0;
+    for row in rows {
+        if row.rank == 0 {
+            return false;
+        }
+        if row.rank == previous_rank {
+            tie_run += 1;
+        } else {
+            if previous_rank
+                .checked_add(tie_run)
+                .is_none_or(|minimum| row.rank < minimum)
+            {
+                return false;
+            }
+            previous_rank = row.rank;
+            tie_run = 1;
+        }
+    }
+    true
+}
+
+/// Exact §4.1 body of one filter, preserving World ranks for base-vocation lists.
+/// Refuses anything outside the contract grammar.
 pub fn encode_highscores(
     source_authority: &str,
     snapshot: &HighscoresSnapshot,
 ) -> Result<String, SourceError> {
     let rows = &snapshot.rows;
     let mut seen = HashSet::with_capacity(rows.len());
-    // Competition ranks (1, 2, 2, 4): each row shares the previous rank or
-    // takes its own 1-based position.
-    let ranks = rows.iter().enumerate().all(|(index, row)| {
-        let position = u64::try_from(index + 1).unwrap_or(u64::MAX);
-        row.rank == position || (index > 0 && row.rank == rows[index - 1].rank)
-    });
+    let ranks = competition_ranks_valid(rows, snapshot.filter == 0);
     let valid = envelope_valid(
         source_authority,
         snapshot.projection_epoch,

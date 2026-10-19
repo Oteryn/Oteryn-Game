@@ -29,6 +29,7 @@ use super::chat_intent::CHAT_REFRESH;
 use super::container_view::{
     ContainerObservation, ContainerPlan, ContainerViewState, PendingOpen, ViewCommandWindow,
 };
+use super::highscores::HighscoresReply;
 use super::input_gate::InputPermit;
 use super::item_look::LookWindow;
 use super::item_move::{
@@ -98,6 +99,9 @@ use oteryn_protocol_oteryn::container_tree::{
     decode_container_view_intent, encode_container_view_result,
 };
 use oteryn_protocol_oteryn::encode_command_error_result;
+use oteryn_protocol_oteryn::highscores::{
+    COMMAND_TYPE_HIGHSCORES_QUERY_V1, HighscoresQuery, decode_highscores_query,
+};
 use oteryn_protocol_oteryn::item_look::{
     ItemLookRefusal, ItemLookResult, ItemLookSelection, ItemLookTarget,
     decode_item_look_intent_for, encode_item_look_result_for, known_creature_generation,
@@ -864,6 +868,18 @@ pub(crate) trait FreshAdmissionAuthority {
         _request: AccountAchievementsRequest,
     ) -> impl Future<Output = AccountAchievementsReply> {
         async { AccountAchievementsReply::Rejected }
+    }
+
+    /// RANK-1 (HS-WIRE-1): one `HIGHSCORES_QUERY_V1` page of `world`'s persisted snapshot for
+    /// the Character the admitted `session` controls. The transport passes the session's World
+    /// and GameSession, never values from the payload.
+    fn highscores(
+        &self,
+        _world: WorldId,
+        _session: GameSessionId,
+        _query: HighscoresQuery,
+    ) -> impl Future<Output = HighscoresReply> {
+        async { HighscoresReply::Rejected }
     }
 
     /// The account's achievement watermark for the `ACCOUNT_ACHIEVEMENT_NOTICES` snapshot
@@ -2642,6 +2658,8 @@ where
             Use(UseOutcome),
             Spell(SpellCastOutcome),
             Achievements(AccountAchievementsReply),
+            /// RANK-1 (HS-WIRE-1): command 14, a read of the session's World snapshots.
+            Highscores(HighscoresReply),
             /// ITEM-VIEW-1b: `USE` with an item target; the domain 11 delta follows the result.
             UseItem(OpenDecision, Option<ItemViewDelta>),
             /// BAGS-WIRE-1: command 21; the domain 14 delta follows the result.
@@ -3269,6 +3287,16 @@ where
                 ),
                 _ => Dispatch::Achievements(AccountAchievementsReply::Rejected),
             }
+        } else if command.command_type == COMMAND_TYPE_HIGHSCORES_QUERY_V1 {
+            // HIGHSCORES0 §6: the World and the asking Character are the admitted session's.
+            match decode_highscores_query(command.payload) {
+                Ok(query) => Dispatch::Highscores(
+                    authority
+                        .highscores(admitted.world_id, admitted.game_session_id, query)
+                        .await,
+                ),
+                Err(_) => Dispatch::Highscores(HighscoresReply::Rejected),
+            }
         } else {
             Dispatch::Unregistered
         };
@@ -3436,25 +3464,30 @@ where
                 // The page is written once; move it out instead of copying up to 32 KiB.
                 (CommandStatus::Accepted, std::mem::take(payload))
             }
+            Dispatch::Highscores(HighscoresReply::Result(payload)) => {
+                (CommandStatus::Accepted, std::mem::take(payload))
+            }
             Dispatch::Achievements(
                 AccountAchievementsReply::Terminal(_) | AccountAchievementsReply::Rejected,
             )
+            | Dispatch::Highscores(HighscoresReply::Terminal(_) | HighscoresReply::Rejected)
             | Dispatch::Unregistered => (CommandStatus::Rejected, Vec::new()),
         };
-        let result =
-            if let Dispatch::Achievements(AccountAchievementsReply::Terminal(error)) = &dispatch {
-                // Display contract §3.3, §4.3: fail closed with the registered operation-terminal
-                // error and nothing else.
-                encode_command_error_result(generation, sequence, command.command_id, *error)
-            } else {
-                encode_command_result(
-                    generation,
-                    sequence,
-                    command.command_id,
-                    status,
-                    &result_payload,
-                )
-            };
+        let result = if let Dispatch::Achievements(AccountAchievementsReply::Terminal(error))
+        | Dispatch::Highscores(HighscoresReply::Terminal(error)) = &dispatch
+        {
+            // Display contract §3.3, §4.3 and HIGHSCORES0 §6: fail closed with the registered
+            // operation-terminal error and nothing else.
+            encode_command_error_result(generation, sequence, command.command_id, *error)
+        } else {
+            encode_command_result(
+                generation,
+                sequence,
+                command.command_id,
+                status,
+                &result_payload,
+            )
+        };
         let Ok(result) = result else {
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
         };
@@ -3844,6 +3877,7 @@ where
             | Dispatch::ContainerView(_, None)
             | Dispatch::Look(..)
             | Dispatch::Achievements(_)
+            | Dispatch::Highscores(_)
             | Dispatch::Logout(_)
             | Dispatch::Unregistered => {}
         }
@@ -7200,6 +7234,137 @@ mod tests {
                 );
                 assert_eq!(frames.last(), Some(&terminal), "{error:?}");
                 assert_eq!(*failing.calls.borrow(), [request(0, 1)]);
+            }
+            Ok(())
+        })
+    }
+
+    /// A fixture authority for `HIGHSCORES_QUERY_V1` dispatch: every call is recorded and
+    /// answered with one canned reply.
+    struct HighscoresAuthority {
+        calls: RefCell<Vec<(WorldId, GameSessionId, HighscoresQuery)>>,
+        reply: HighscoresReply,
+    }
+
+    impl FreshAdmissionAuthority for HighscoresAuthority {
+        async fn admit(
+            &self,
+            _attempt: FreshAdmissionAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
+            Err(AdmissionRefusal::Rejected)
+        }
+
+        async fn observe(&self, _actor: ExactActorRef) -> Option<WorldSpatialObservation> {
+            Some(at(0))
+        }
+
+        async fn highscores(
+            &self,
+            world: WorldId,
+            session: GameSessionId,
+            query: HighscoresQuery,
+        ) -> HighscoresReply {
+            self.calls.borrow_mut().push((world, session, query));
+            self.reply.clone()
+        }
+    }
+
+    fn highscores_command(id: u64, query: &[u8]) -> Vec<u8> {
+        let mut payload = Vec::new();
+        scalar(&mut payload, 1, id);
+        scalar(&mut payload, 2, u64::from(COMMAND_TYPE_HIGHSCORES_QUERY_V1));
+        bytes(&mut payload, 4, query);
+        envelope(7, ADMITTED_GENERATION, &payload)
+    }
+
+    /// HIGHSCORES0 §6: command type 14 dispatches only under capability 9, with the admitted
+    /// session's World and GameSession; a malformed query is REJECTED without a read, and the
+    /// snapshot outcomes are FND-02 error results 1200 and 1201 without a payload.
+    #[test]
+    fn highscores_query_reads_only_the_admitted_session_under_capability_9()
+    -> Result<(), Box<dyn Error>> {
+        let selected = |capabilities: &[u32]| -> Result<AdmittedSession, Box<dyn Error>> {
+            let mut admitted = positioned()?;
+            admitted.continuity.selected_capabilities =
+                SelectedCapabilities::select(PRODUCTION_OFFERED_CAPABILITIES, capabilities)
+                    .ok_or("bounded")?;
+            Ok(admitted)
+        };
+        let capability = oteryn_protocol_oteryn::highscores::CAPABILITY_HIGHSCORES_V1;
+        run(async {
+            let admitted = selected(&[capability])?;
+            let (world, session) = (admitted.world_id, admitted.game_session_id);
+            let authority = HighscoresAuthority {
+                calls: RefCell::new(Vec::new()),
+                reply: HighscoresReply::Result(vec![0x08, 0x01]),
+            };
+            let (_end, frames) = drive_session(
+                &authority,
+                admitted,
+                &[
+                    // Category 1, all vocations, page 1, the current snapshot.
+                    highscores_command(1, &[0x08, 0x01, 0x18, 0x01]),
+                    // Page 0 does not decode.
+                    highscores_command(2, &[0x08, 0x01]),
+                ],
+            )
+            .await?;
+            let mut expected = baseline();
+            expected.extend([
+                encode_command_result(
+                    ADMITTED_GENERATION,
+                    1,
+                    1,
+                    CommandStatus::Accepted,
+                    &[0x08, 0x01],
+                )?,
+                encode_command_result(ADMITTED_GENERATION, 2, 2, CommandStatus::Rejected, &[])?,
+            ]);
+            assert_eq!(frames, expected);
+            let query = HighscoresQuery {
+                category: 1,
+                vocation: 0,
+                page: 1,
+                snapshot_id: 0,
+            };
+            assert_eq!(*authority.calls.borrow(), [(world, session, query)]);
+
+            // Not selected: the command is not dispatched.
+            let (_end, frames) = drive_session(
+                &authority,
+                selected(&[])?,
+                &[highscores_command(1, &[0x08, 0x01, 0x18, 0x01])],
+            )
+            .await?;
+            assert_ne!(
+                frames.last(),
+                Some(&encode_command_result(
+                    ADMITTED_GENERATION,
+                    1,
+                    1,
+                    CommandStatus::Accepted,
+                    &[0x08, 0x01]
+                )?)
+            );
+            assert_eq!(authority.calls.borrow().len(), 1);
+
+            for error in [
+                FoundationProtocolError::NotSupported,
+                FoundationProtocolError::SnapshotExpired,
+            ] {
+                let failing = HighscoresAuthority {
+                    calls: RefCell::new(Vec::new()),
+                    reply: HighscoresReply::Terminal(error),
+                };
+                let (_end, frames) = drive_session(
+                    &failing,
+                    selected(&[capability])?,
+                    &[highscores_command(1, &[0x08, 0x0c, 0x18, 0x01])],
+                )
+                .await?;
+                let terminal = encode_command_error_result(ADMITTED_GENERATION, 1, 1, error)?;
+                assert_eq!(frames.last(), Some(&terminal), "{error:?}");
+                assert_eq!(failing.calls.borrow().len(), 1);
             }
             Ok(())
         })
