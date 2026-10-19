@@ -828,6 +828,13 @@ The prepush Stage C review of `7b8a05d1` made three findings:
 - Round 2 finding, fixed (VIP0 §8.2): only an ONLINE read renews an entry's confirmation. While
   the client still shows ONLINE, a HIDDEN, offline or revoked read keeps the shown ONLINE's
   deadline, so the downgrade write is bounded by the original 10 s and is not extended.
+- Round 3 finding, fixed (VIP0 §6): only a handle the session still knows, shown or retired,
+  replays an ending receipt, and its digest is always compared. A handle the session never held
+  names no request: it resolves as a stale view (`NOT_FOUND`) and never returns another
+  request's success.
+- Round 3 finding, fixed: while the listener is down, a receipt lookup that fails leaves the
+  outcome unknown (`unknown=true`). The CommandId is then not sequenced, so a resend can still
+  recover a committed outcome.
 - F2, deferred: when admission refuses the VIP snapshot, the session fails closed (no VIP state).
   A mid-session snapshot retry would need a new client-visible step (a wire and CP decision). The
   client recovers by reconnecting.
@@ -838,6 +845,10 @@ Tests:
 - `logout_e2e::a_recorded_control_loss_releases_the_vip_presence_watcher`, which goes through the
   real composed `lose_control`.
 - `a_negative_read_keeps_the_shown_online_deadline_until_the_downgrade_lands`.
+- `vip_end_replay_matches_the_receipt_binding_of_a_retired_handle`, which replaced the
+  handle-less replay case.
+- The listener-down dispatch scenario, which now also covers the locked receipt lookup that
+  answers unknown.
 
 These passed locally on PostgreSQL 17.6:
 - lib `vip`: 88 passed;

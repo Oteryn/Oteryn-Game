@@ -540,16 +540,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     Vec::new(),
                 );
             };
-            if !matches!(
-                self.root
-                    .vip_receipt_recorded(self.character, fence, list, command_ref)
-                    .await,
-                Ok(true)
-            ) {
-                return (
-                    VipCommandOutcome::answer(VipResultCode::VipUnavailable),
-                    Vec::new(),
-                );
+            match self
+                .root
+                .vip_receipt_recorded(self.character, fence, list, command_ref)
+                .await
+            {
+                Ok(true) => {}
+                // Nothing is recorded, so the refusal changes nothing and is final.
+                Ok(false) => {
+                    return (
+                        VipCommandOutcome::answer(VipResultCode::VipUnavailable),
+                        Vec::new(),
+                    );
+                }
+                // The store could not say whether an earlier attempt committed. The outcome
+                // stays unknown, so the CommandId is not sequenced and a resend can replay it.
+                Err(error) => {
+                    return self
+                        .vip_finish(
+                            command.game_session_id,
+                            list,
+                            &[fence.character_id],
+                            Err(error),
+                        )
+                        .await;
+                }
             }
         }
         let end = match &intent {
@@ -568,7 +583,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         if let Some((kind, handle)) = end {
             // VIP0 §6: a handle this session still knows, shown or retired, names the request
-            // whose digest the receipt must match.
+            // whose digest the receipt must match. A handle it never held names no request, so
+            // it resolves below as a stale view (NOT_FOUND) and never replays a receipt.
             let binding = self
                 .chat
                 .vip
@@ -581,31 +597,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     Vec::new(),
                 );
             };
-            match self
-                .root
-                .replay_vip_end(self.character, fence, list, command_ref, kind, named)
-                .await
-            {
-                Ok(None) => {}
-                Ok(Some(receipt)) => {
-                    return self
-                        .vip_finish(
-                            command.game_session_id,
-                            list,
-                            &[fence.character_id],
-                            Ok(end_code(receipt.result)),
-                        )
-                        .await;
-                }
-                Err(error) => {
-                    return self
-                        .vip_finish(
-                            command.game_session_id,
-                            list,
-                            &[fence.character_id],
-                            Err(error),
-                        )
-                        .await;
+            if let Some(named) = named {
+                match self
+                    .root
+                    .replay_vip_end(self.character, fence, list, command_ref, kind, named)
+                    .await
+                {
+                    Ok(None) => {}
+                    Ok(Some(receipt)) => {
+                        return self
+                            .vip_finish(
+                                command.game_session_id,
+                                list,
+                                &[fence.character_id],
+                                Ok(end_code(receipt.result)),
+                            )
+                            .await;
+                    }
+                    Err(error) => {
+                        return self
+                            .vip_finish(
+                                command.game_session_id,
+                                list,
+                                &[fence.character_id],
+                                Err(error),
+                            )
+                            .await;
+                    }
                 }
             }
         }

@@ -3693,12 +3693,35 @@ fn listener_down_dispatch_scenario() -> TestResult {
             ]
         );
         assert_eq!(footprint(h).await?, before);
+        // A receipt lookup that cannot finish leaves the outcome unknown: the CommandId stays
+        // unsequenced, so a later resend can still replay the committed accept.
+        let mut lock = h.pool.begin().await?;
+        sqlx::query("LOCK TABLE game_vip_command_receipts IN ACCESS EXCLUSIVE MODE")
+            .execute(&mut *lock)
+            .await?;
+        let payload =
+            encode_vip_intent(&VipIntent::Accept { invitation: handle }).map_err(debug)?;
+        let (outcome, deltas) = owner
+            .vip_command(
+                crate::gameplay_transport::connection::UseCommand {
+                    game_session_id: fence.game_session_id,
+                    command_id: 1,
+                    item_fence: Some(fence),
+                },
+                &payload,
+            )
+            .await;
+        lock.rollback().await?;
+        assert!(outcome.unknown);
+        assert_eq!(outcome.result.code, VipResultCode::VipUnavailable);
+        assert!(deltas.is_empty());
+        assert_eq!(footprint(h).await?, before);
         Ok(())
     })
 }
 
 #[test]
-fn vip_end_replay_returns_the_committed_receipt_without_a_handle() -> TestResult {
+fn vip_end_replay_matches_the_receipt_binding_of_a_retired_handle() -> TestResult {
     run("vipendreplay", async |h| {
         fixture_character(h, 60, 70).await?;
         let number = fixture_consent(h, 70, 60, CHARACTER, 1).await?;
@@ -3713,27 +3736,8 @@ fn vip_end_replay_returns_the_committed_receipt_without_a_handle() -> TestResult
             .await
             .map_err(debug)?;
         let fence = harness::item_fence()?;
-        let replay = h
-            .root
-            .replay_vip_end(
-                &authority,
-                fence,
-                req.list,
-                req.command,
-                VipEndKind::Accept,
-                None,
-            )
-            .await
-            .map_err(debug)?
-            .ok_or("missing receipt")?;
-        assert!(replay.replayed);
-        assert_eq!(
-            (replay.result, replay.revision),
-            (committed.result, committed.revision)
-        );
-        assert_eq!(footprint(h).await?, before);
-        // VIP0 §6: a handle that still names the committed binding replays; one that names
-        // another invitation is a different request.
+        // VIP0 §6: a retired handle that still names the committed binding replays; one that
+        // names another invitation is a different request.
         let named = h
             .root
             .replay_vip_end(
@@ -3742,11 +3746,12 @@ fn vip_end_replay_returns_the_committed_receipt_without_a_handle() -> TestResult
                 req.list,
                 req.command,
                 VipEndKind::Accept,
-                Some(req.invitation),
+                req.invitation,
             )
             .await
             .map_err(debug)?
             .ok_or("missing named receipt")?;
+        assert!(named.replayed);
         assert_eq!(
             (named.result, named.revision),
             (committed.result, committed.revision)
@@ -3759,7 +3764,7 @@ fn vip_end_replay_returns_the_committed_receipt_without_a_handle() -> TestResult
                     req.list,
                     req.command,
                     VipEndKind::Accept,
-                    Some(invitation(60, 70, number + 1))
+                    invitation(60, 70, number + 1)
                 )
                 .await,
             Err(VipError::ConflictingCommand)
@@ -3773,7 +3778,7 @@ fn vip_end_replay_returns_the_committed_receipt_without_a_handle() -> TestResult
                     req.list,
                     req.command,
                     VipEndKind::Reject,
-                    None
+                    req.invitation
                 )
                 .await,
             Err(VipError::ConflictingCommand)
@@ -3788,7 +3793,7 @@ fn vip_end_replay_returns_the_committed_receipt_without_a_handle() -> TestResult
                     req.list,
                     unknown,
                     VipEndKind::Accept,
-                    None
+                    req.invitation
                 )
                 .await
                 .map_err(debug)?,
@@ -3804,7 +3809,7 @@ fn vip_end_replay_returns_the_committed_receipt_without_a_handle() -> TestResult
                     req.list,
                     foreign,
                     VipEndKind::Accept,
-                    None
+                    req.invitation
                 )
                 .await,
             Err(VipError::AuthorityRejected)
