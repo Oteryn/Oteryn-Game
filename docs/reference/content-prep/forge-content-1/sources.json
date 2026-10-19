@@ -164,6 +164,17 @@
       "retained_observations": "docs/reference/content-prep/forge-content-1/forge-dust-source-check.json",
       "supported_claim": "Dust cap4600; start100; increment20; upgrade costs25..249; total30825.",
       "qualification": "Secondary source corroborates these dust values. It does not provide exact fusion-bonus probabilities and is not an official or controlled-client measurement."
+    },
+    "community:tibiawatch:forge-transfer:20261019": {
+      "title": "TibiaWatch Forge calculator transfer selectors",
+      "url": "https://tibiawatch.com/calculators/forge",
+      "bundle_url": "https://tibiawatch.com/_next/static/chunks/3819-d89d3fa210dcb359.js",
+      "fetched_at": "2026-10-19T08:49:19.554087+00:00",
+      "retained_response_sha256": "05a960a6120ac8744130dc05789bc96c837e0b08edbb92147bd8c623650fc6e8",
+      "source_class": "COMMUNITY_REFERENCE",
+      "retained_observations": "docs/reference/content-prep/forge-content-1/source-correction-check.json",
+      "qualification": "Secondary calculator corroborates60 cores for both transfer steps; Tibiopedia65 remains an explicitly retained source discrepancy. Fusion resources needed to create the donor are separate.",
+      "retrieval": "Executed exported constant module60073 and actual regular/convergence route selectors with downstream total-route calculation replaced by capture. Proves selected transfer fees/resources only; no browser UI or game execution claimed."
     }
   }
 }

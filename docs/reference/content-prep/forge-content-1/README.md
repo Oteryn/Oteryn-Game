@@ -1,3 +1,11 @@
+# Forge transfer source corroboration
+
+Regular class4 transferT10→T9 and convergence transfer toT9 each retain60Exalted Cores. The actual TibiaWatch calculator route selectors corroborate both costs. Regular transfer costs100dust and15billiongp; convergence costs160dust and100billiongp, excluding donor creation. Tibiopedia’s65cores remains a conflicting secondary observation. See [source check](source-correction-check.json). No controlled Global transfer or runtime activation is claimed.
+
+## Superseded materialization report
+
+The following earlier report is retained as history; the source correction above takes precedence.
+
 # Forge source correction
 
 Tibiopedia explicitly documents the dust cap4600, initial limit100, increments20, upgrade costs25 through249, and total30825. These values remain unchanged, but the three dust fields now cite the article as secondary corroboration instead of describing a newly invented project cap. See [source check](forge-dust-source-check.json).

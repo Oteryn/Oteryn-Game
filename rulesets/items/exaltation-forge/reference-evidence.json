@@ -3032,14 +3032,22 @@
           "value": 60,
           "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
+          "continuity": "MULTIPLE_SECONDARY_REFERENCES_CORROBORATED",
           "sources": [
             {
               "source": "community:tibia-wiki.com:forge:15.20:20261018",
               "selector": "Zwykły transfer / explicit source-tier→target-tier row"
+            },
+            {
+              "source": "community:tibiawatch:forge-transfer:20261019",
+              "selector": "Actual transfer route selector; docs/reference/content-prep/forge-content-1/source-correction-check.json"
             }
           ],
-          "note": "Literal regular-transfer cost from the secondary community table. Other two wikis lack this cell. Reference-only; source version15.20, current official-client continuity remains unmeasured."
+          "note": "60cores corroborated by the TibiaWatch transfer selector and pinned donor implementation. Tibiopedia lists65; the conflicting secondary table is retained explicitly. No controlled Global transfer was performed.",
+          "evidence_scope": "COMMUNITY_GLOBAL_REFERENCE",
+          "assumptions": [
+            "Adopt60 as a derived reference supported by executable calculator logic; retain65 as a secondary-source discrepancy."
+          ]
         },
         "dust": {
           "value": 100,
@@ -4503,14 +4511,22 @@
           "value": 60,
           "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "MULTIPLE_SECONDARY_REFERENCES_CORROBORATED",
           "sources": [
             {
               "source": "wiki:95592:1205481",
               "selector": "Convergence Transfer table"
+            },
+            {
+              "source": "community:tibiawatch:forge-transfer:20261019",
+              "selector": "Actual transfer route selector; docs/reference/content-prep/forge-content-1/source-correction-check.json"
             }
           ],
-          "note": "Reference evidence; runtime admission is separate."
+          "note": "60cores corroborated by the TibiaWatch transfer selector and pinned donor implementation. Tibiopedia lists65; the conflicting secondary table is retained explicitly. No controlled Global transfer was performed.",
+          "evidence_scope": "COMMUNITY_GLOBAL_REFERENCE",
+          "assumptions": [
+            "Adopt60 as a derived reference supported by executable calculator logic; retain65 as a secondary-source discrepancy."
+          ]
         },
         "dust": {
           "value": 160,

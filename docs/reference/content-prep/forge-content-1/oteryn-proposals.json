@@ -386,5 +386,17 @@
     "source_archive": "docs/reference/content-prep/forge-content-1/tibia-source-archive.json",
     "filled_field_count": 4,
     "not_runtime_activation": true
+  },
+  "transfer_source_correction": {
+    "fields": [
+      "rulesets/items/exaltation-forge/reference-evidence.json/records/31/facts/cores",
+      "rulesets/items/exaltation-forge/reference-evidence.json/records/49/facts/cores"
+    ],
+    "unchanged_numeric_values": true,
+    "reference_value": 60,
+    "source": "community:tibiawatch:forge-transfer:20261019",
+    "conflicting_secondary_value": 65,
+    "conflicting_url": "https://tibiopedia.pl/articles/22,Exaltation-Forge-Kuznia-Wzniesienia",
+    "qualification": "Secondary calculator corroborates60 cores for both transfer steps; Tibiopedia65 remains an explicitly retained source discrepancy. Fusion resources needed to create the donor are separate."
   }
 }
