@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "crates/gameplay/encounters",
     "crates/gameplay/spell",
     "crates/gameplay/combat",
     "crates/gameplay/world",

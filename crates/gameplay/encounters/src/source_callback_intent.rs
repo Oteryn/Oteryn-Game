@@ -3,7 +3,7 @@ use crate::creature_auto_attack::AttackError;
 use crate::creature_auto_attack::ProfileAbilityProposal;
 use crate::durability::creature_schedule::ScheduleList;
 use crate::foundation::ChannelRuntimeV1;
-pub(crate) fn validate(
+pub fn validate(
     r: &ChannelRuntimeV1,
     p: &ProfileAbilityProposal,
 ) -> Result<(), AttackError> {

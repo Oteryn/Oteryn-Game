@@ -22,24 +22,24 @@ use oteryn_simulation_determinism::{
 };
 use std::collections::BTreeMap;
 #[derive(serde::Deserialize)]
-pub(crate) struct Witness {
-    pub(crate) cases: Vec<Case>,
+pub struct Witness {
+    pub cases: Vec<Case>,
     profiles: BTreeMap<String, Data>,
     records: Vec<Record>,
     bindings: Vec<ProjectV2SourceIdentityBinding>,
     targets: Vec<String>,
 }
 #[derive(serde::Deserialize)]
-pub(crate) struct Case {
-    pub(crate) caster: String,
+pub struct Case {
+    pub caster: String,
     parent: String,
-    pub(crate) index: usize,
-    pub(crate) phase: String,
-    pub(crate) encounter: String,
+    pub index: usize,
+    pub phase: String,
+    pub encounter: String,
     entry: serde_json::Value,
 }
 #[derive(Debug, Clone)]
-pub(crate) enum SourceSpawnPlacement {
+pub enum SourceSpawnPlacement {
     Subject,
     Offset(u32),
     Relative(i32, i32),
@@ -53,7 +53,7 @@ pub(crate) enum SourceSpawnPlacement {
     },
 }
 /// Current map-owner translation/placement/terrain; None always refuses, never allow-default.
-pub(crate) trait SourceSpawnFacts {
+pub trait SourceSpawnFacts {
     fn source_spawn_position(
         &mut self,
         runtime: &ChannelRuntimeV1,
@@ -79,7 +79,7 @@ pub(crate) trait SourceSpawnFacts {
     ) -> Option<bool>;
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Kind {
+pub enum Kind {
     Gaz,
     GeneratorRelease,
     Tenebris,
@@ -98,22 +98,22 @@ pub(crate) enum Kind {
     Devourer,
 }
 #[derive(Clone)]
-pub(crate) struct Child {
-    pub(crate) creature: Ref,
-    pub(crate) health: i64,
+pub struct Child {
+    pub creature: Ref,
+    pub health: i64,
 }
 #[derive(Clone)]
-pub(crate) struct SourceCallbackSpawn {
-    pub(crate) kind: Kind,
-    pub(crate) creature: String,
-    pub(crate) parent: Ref,
-    pub(crate) index: usize,
-    pub(crate) list: ScheduleList,
-    pub(crate) content: [u8; 32],
-    pub(crate) children: Vec<Child>,
+pub struct SourceCallbackSpawn {
+    pub kind: Kind,
+    pub creature: String,
+    pub parent: Ref,
+    pub index: usize,
+    pub list: ScheduleList,
+    pub content: [u8; 32],
+    pub children: Vec<Child>,
     anchors: Vec<serde_json::Value>,
-    pub(crate) range: u16,
-    pub(crate) magnitude: Option<crate::content::ProjectV2Magnitude>,
+    pub range: u16,
+    pub magnitude: Option<crate::content::ProjectV2Magnitude>,
 }
 fn kind(c: &str, p: &str) -> Option<Kind> {
     Some(match (c, p) {
@@ -136,15 +136,15 @@ fn kind(c: &str, p: &str) -> Option<Kind> {
         _ => return None,
     })
 }
-pub(crate) fn fixture() -> Result<Witness, AttackError> {
-    serde_json::from_str(include_str!("source_callback_spawn_fixture.json"))
+pub fn fixture() -> Result<Witness, AttackError> {
+    serde_json::from_str(include_str!("../../../../apps/game-server/src/source_callback_spawn_fixture.json"))
         .map_err(|_| AttackError::InvalidSource)
 }
 impl SourceCallbackSpawn {
-    pub(crate) fn ability(&self) -> &Ref {
+    pub fn ability(&self) -> &Ref {
         &self.parent
     }
-    pub(crate) fn qualify(
+    pub fn qualify(
         d: &ProjectV2Draft,
         caster: &Ref,
         index: usize,
@@ -353,7 +353,7 @@ impl SourceCallbackSpawn {
     }
 }
 /// Child membership comes from exact source fixture, not a new identity or cloned Draft.
-pub(crate) fn qualified_native_children(d: &ProjectV2Draft) -> Result<Vec<Ref>, AttackError> {
+pub fn qualified_native_children(d: &ProjectV2Draft) -> Result<Vec<Ref>, AttackError> {
     let w = fixture()?;
     let mut refs = std::collections::BTreeSet::new();
     for c in &w.cases {
@@ -445,12 +445,12 @@ enum Admission {
     Intrinsic(NativeSummonAdmissionSpec),
     Masterless(NativeEncounterSpawnSpec),
 }
-pub(crate) struct Pending {
+pub struct Pending {
     token: u64,
     source: SourceCallbackSpawn,
     proposal: ProfileAbilityProposal,
 }
-pub(crate) struct Memo {
+pub struct Memo {
     actor: ExactActorRef,
     ability: Ref,
     sequence: u64,
@@ -460,33 +460,33 @@ pub(crate) struct Memo {
     next_allowed: u64,
 }
 #[derive(Debug)]
-pub(crate) struct SpawnChildReceipt {
-    pub(crate) creature: Ref,
-    pub(crate) result: Result<ExactActorRef, AttackError>,
-    pub(crate) intrinsic: bool,
-    pub(crate) cleanup: Option<Result<(), crate::foundation::CarrierError>>,
+pub struct SpawnChildReceipt {
+    pub creature: Ref,
+    pub result: Result<ExactActorRef, AttackError>,
+    pub intrinsic: bool,
+    pub cleanup: Option<Result<(), crate::foundation::CarrierError>>,
 }
 #[derive(Debug)]
-pub(crate) struct CallbackSpawnReceipt {
-    pub(crate) actor: ExactActorRef,
-    pub(crate) ability: Ref,
-    pub(crate) requested: u32,
-    pub(crate) children: Vec<SpawnChildReceipt>,
-    pub(crate) remove: Option<Result<(), crate::foundation::CarrierError>>,
-    pub(crate) flags: &'static [&'static str],
+pub struct CallbackSpawnReceipt {
+    pub actor: ExactActorRef,
+    pub ability: Ref,
+    pub requested: u32,
+    pub children: Vec<SpawnChildReceipt>,
+    pub remove: Option<Result<(), crate::foundation::CarrierError>>,
+    pub flags: &'static [&'static str],
 }
-pub(crate) struct CallbackSpawnOwner {
+pub struct CallbackSpawnOwner {
     scope: RuntimeScopeRefV1,
     generation: ScopeOwnershipGeneration,
     timers: OwnerTimerLane<Timer, Work>,
-    pub(crate) pending: Vec<Pending>,
-    pub(crate) memos: Vec<Memo>,
+    pub pending: Vec<Pending>,
+    pub memos: Vec<Memo>,
     next: u64,
     speech: Vec<crate::source_callback_cast::CallbackSpeech>,
     speech_errors: Vec<(ExactActorRef, AttackError)>,
 }
 impl CallbackSpawnOwner {
-    pub(crate) fn new(r: &ChannelRuntimeV1, f: &ScopeRuntimeFence) -> Result<Self, AttackError> {
+    pub fn new(r: &ChannelRuntimeV1, f: &ScopeRuntimeFence) -> Result<Self, AttackError> {
         let b = r.binding();
         let scope = RuntimeScopeRefV1::channel(b.world_id(), b.channel_id());
         let generation = b.scope_generation();
@@ -516,12 +516,12 @@ impl CallbackSpawnOwner {
             speech_errors: Vec::new(),
         })
     }
-    pub(crate) fn take_source_speech(
+    pub fn take_source_speech(
         &mut self,
     ) -> Vec<crate::source_callback_cast::CallbackSpeech> {
         std::mem::take(&mut self.speech)
     }
-    pub(crate) fn take_speech_errors(&mut self) -> Vec<(ExactActorRef, AttackError)> {
+    pub fn take_speech_errors(&mut self) -> Vec<(ExactActorRef, AttackError)> {
         std::mem::take(&mut self.speech_errors)
     }
     fn current(
@@ -536,7 +536,7 @@ impl CallbackSpawnOwner {
             && f.is_current_for_scope(self.scope, self.generation)
             && f.accepts_stamp(stamp)
     }
-    pub(crate) fn schedule(
+    pub fn schedule(
         &mut self,
         r: &ChannelRuntimeV1,
         f: &ScopeRuntimeFence,
@@ -975,7 +975,7 @@ impl CallbackSpawnOwner {
         }
         Ok(output)
     }
-    pub(crate) fn drain(
+    pub fn drain(
         &mut self,
         r: &mut ChannelRuntimeV1,
         f: &mut ScopeRuntimeFence,
@@ -1005,6 +1005,6 @@ impl CallbackSpawnOwner {
         Ok(out)
     }
 }
-pub(crate) fn hex(b: [u8; 16]) -> String {
+pub fn hex(b: [u8; 16]) -> String {
     b.iter().map(|x| format!("{x:02x}")).collect()
 }

@@ -4,7 +4,7 @@ use crate::content::{
     ProjectV2Family, ProjectV2FormulaAuthoring, ProjectV2SourceIdentityDisposition,
 };
 #[derive(Debug, Clone)]
-pub(crate) struct QualifiedCreatureSelfHeal {
+pub struct QualifiedCreatureSelfHeal {
     target: String,
     ability: String,
     max_health: u64,
@@ -15,7 +15,7 @@ pub(crate) struct QualifiedCreatureSelfHeal {
     removes_paralysis: bool,
 }
 impl QualifiedCreatureSelfHeal {
-    pub(crate) fn qualify(
+    pub fn qualify(
         draft: &ProjectV2Draft,
         target: &str,
         ability: &str,
@@ -232,16 +232,16 @@ impl QualifiedCreatureSelfHeal {
             removes_paralysis,
         })
     }
-    pub(crate) fn removes_paralysis(&self) -> bool {
+    pub fn removes_paralysis(&self) -> bool {
         self.removes_paralysis
     }
-    pub(crate) fn magnitude_range(&self) -> (u64, u64) {
+    pub fn magnitude_range(&self) -> (u64, u64) {
         (self.minimum, self.maximum)
     }
-    pub(crate) fn source_schedule(&self) -> (u64, u32) {
+    pub fn source_schedule(&self) -> (u64, u32) {
         (self.interval_ms, self.chance_ppm)
     }
-    pub(crate) fn register(
+    pub fn register(
         &self,
         runtime: &crate::foundation::ChannelRuntimeV1,
     ) -> Result<crate::foundation::CreatureSelfHealRegistration, crate::foundation::CarrierError>

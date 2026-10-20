@@ -1,7 +1,7 @@
 // Actual source-specific ChatLine mailbox; no synthetic CHAT_INTENT or durable ledger.
 use crate::durability::chat_text::ChatText;
 use crate::foundation::speech::{ChatPosition, SpeechMode, hears};
-pub(crate) use crate::spell::callback_speech as callback;
+pub use crate::spell::callback_speech as callback;
 use crate::foundation::{
     CarrierError, ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition,
 };
@@ -22,14 +22,14 @@ struct Recipient {
     dropped: bool,
 }
 #[derive(Debug, Default)]
-pub(crate) struct WeakSpotSpeechMailbox {
+pub struct WeakSpotSpeechMailbox {
     welter_delivered: Vec<(ExactActorRef, u64)>,
     recipients: Vec<Recipient>,
     // Ephemeral per physical creature generation; prune with projected death owner state.
     delivered: Vec<ExactActorRef>,
 }
 #[derive(Debug)]
-pub(crate) enum WeakSpotSpeechError {
+pub enum WeakSpotSpeechError {
     Owner(CarrierError),
     Wire(ChatWireError),
 }
@@ -47,7 +47,7 @@ impl WeakSpotSpeechMailbox {
     /// Native sealed death+source gate; recipients are revalidated against current carrier.
     /// Caller invokes once per committed source death under the runtime lock. No subscriber
     /// list grants authority: only exact committed players of this owner are considered.
-    pub(crate) fn publish(
+    pub fn publish(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         actor: ExactActorRef,
@@ -149,7 +149,7 @@ impl WeakSpotSpeechMailbox {
     /// Actual protocol bytes for a current committed recipient. The connection-loop consumer
     /// sends them as existing CHAT delta1 behind capability7; no new protocol id is defined.
     /// Replacement snapshots must call clear_session; queued transient lines are not durable.
-    pub(crate) fn drain(
+    pub fn drain(
         &mut self,
         runtime: &ChannelRuntimeV1,
         actor: ExactActorRef,
@@ -186,14 +186,14 @@ impl WeakSpotSpeechMailbox {
         );
         Ok(payloads)
     }
-    pub(crate) fn clear_session(&mut self, session: GameSessionId) {
+    pub fn clear_session(&mut self, session: GameSessionId) {
         self.recipients.retain(|r| r.session != session);
     }
 }
 impl WeakSpotSpeechMailbox {
     /// Fixed source line already captured under current source occurrence/fence. Recipient
     /// controls, session and hearing are read again; sealed speaker payload survives removal.
-    pub(crate) fn publish_callback(
+    pub fn publish_callback(
         &mut self,
         runtime: &ChannelRuntimeV1,
         line: &callback::CallbackSpeech,
@@ -376,14 +376,14 @@ mod tests {
 }
 /// Native visual outputs retain exact source assets/positions. No invented protocol frame.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct WelterVisualCue {
-    pub(crate) at: MovementLocalPosition,
-    pub(crate) asset_binding: &'static str,
+pub struct WelterVisualCue {
+    pub at: MovementLocalPosition,
+    pub asset_binding: &'static str,
 }
 impl WeakSpotSpeechMailbox {
     /// Consume only the source-bound real native owner receipt, then reuse actual CHAT wire
     /// and egress queue. No caller-supplied text, positions or claimed healing result.
-    pub(crate) fn publish_welter_consume(
+    pub fn publish_welter_consume(
         &mut self,
         runtime: &ChannelRuntimeV1,
         ledger: &crate::foundation::WelterConsumeLedger,
@@ -517,7 +517,7 @@ impl WeakSpotSpeechMailbox {
     }
 }
 #[derive(Debug)]
-pub(crate) enum WelterSpeechError {
+pub enum WelterSpeechError {
     Owner(crate::foundation::WelterConsumeError),
     Wire(ChatWireError),
 }

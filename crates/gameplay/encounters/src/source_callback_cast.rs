@@ -13,32 +13,32 @@ use crate::foundation::{ChannelRuntimeV1, ExactActorRef, RuntimeWorkStamp, Scope
 use crate::player_lethal::PlayerLethalVitals;
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
-pub(crate) type CallbackPulseBatch =
+pub type CallbackPulseBatch =
     Result<Vec<(ExactActorRef, Ref, usize, Result<SpellOutcome, AttackError>)>, AttackError>;
 use crate::content::{ProjectV2Draft, ProjectV2SourceIdentityBinding};
 use crate::foundation::owner_timer::{
     CatchUpPolicy, FamilyPolicy, OwnerClock, OwnerTimerLane, TimerFamily,
 };
 use crate::foundation::{RuntimeScopeRefV1, ScopeOwnershipGeneration};
-pub(crate) use crate::spell::callback_speech::CallbackSpeech;
+pub use crate::spell::callback_speech::CallbackSpeech;
 #[derive(serde::Deserialize)]
-pub(crate) struct Witness {
-    pub(crate) cases: BTreeMap<String, Case>,
+pub struct Witness {
+    pub cases: BTreeMap<String, Case>,
     profiles: BTreeMap<String, Data>,
     records: Vec<ProjectReferenceRecord>,
     bindings: Vec<ProjectV2SourceIdentityBinding>,
 }
 #[derive(serde::Deserialize)]
-pub(crate) struct Case {
-    pub(crate) caster: String,
-    pub(crate) index: usize,
+pub struct Case {
+    pub caster: String,
+    pub index: usize,
     phase: String,
-    pub(crate) encounter: String,
-    pub(crate) casts: Vec<CastWitness>,
+    pub encounter: String,
+    pub casts: Vec<CastWitness>,
     entry: serde_json::Value,
 }
 #[derive(serde::Deserialize)]
-pub(crate) struct CastWitness {
+pub struct CastWitness {
     delay_ms: Delay,
     action: serde_json::Value,
 }
@@ -48,20 +48,20 @@ struct Delay {
     max: u64,
 }
 #[derive(Clone)]
-pub(crate) struct SourceCallbackCast {
+pub struct SourceCallbackCast {
     creature: String,
-    pub(crate) parent: Ref,
-    pub(crate) index: usize,
-    pub(crate) range: u16,
-    pub(crate) magnitude: Option<ProjectV2Magnitude>,
-    pub(crate) content: [u8; 32],
+    pub parent: Ref,
+    pub index: usize,
+    pub range: u16,
+    pub magnitude: Option<ProjectV2Magnitude>,
+    pub content: [u8; 32],
     stages: Vec<(u64, SpellSource)>,
 }
 impl SourceCallbackCast {
-    pub(crate) fn parent(&self) -> &Ref {
+    pub fn parent(&self) -> &Ref {
         &self.parent
     }
-    pub(crate) fn qualify(
+    pub fn qualify(
         d: &ProjectV2Draft,
         creature: &Ref,
         index: usize,
@@ -81,7 +81,7 @@ impl SourceCallbackCast {
         ) {
             return Ok(None);
         }
-        let w: Witness = serde_json::from_str(include_str!("source_callback_cast_fixture.json"))
+        let w: Witness = serde_json::from_str(include_str!("../../../../apps/game-server/src/source_callback_cast_fixture.json"))
             .map_err(|_| AttackError::InvalidSource)?;
         let Some((key, c)) = w
             .cases
@@ -357,7 +357,7 @@ struct Key {
     token: u64,
     stage: u8,
 }
-pub(crate) struct Cast {
+pub struct Cast {
     token: u64,
     source: SourceCallbackCast,
     proposal: ProfileAbilityProposal,
@@ -372,18 +372,18 @@ struct Memo {
     proposal: ProfileAbilityProposal,
 }
 /// Bounded current-owner adapter, source occurrence high-water independent of child stage IDs.
-pub(crate) struct CallbackCastOwner {
+pub struct CallbackCastOwner {
     scope: RuntimeScopeRefV1,
     generation: ScopeOwnershipGeneration,
     timers: OwnerTimerLane<Family, Key>,
-    pub(crate) casts: Vec<Cast>,
+    pub casts: Vec<Cast>,
     memos: Vec<Memo>,
     next: u64,
     speech: Vec<CallbackSpeech>,
     removals: Vec<(ExactActorRef, Result<(), crate::foundation::CarrierError>)>,
 }
 impl CallbackCastOwner {
-    pub(crate) fn new(r: &ChannelRuntimeV1, f: &ScopeRuntimeFence) -> Result<Self, AttackError> {
+    pub fn new(r: &ChannelRuntimeV1, f: &ScopeRuntimeFence) -> Result<Self, AttackError> {
         let b = r.binding();
         let scope = RuntimeScopeRefV1::channel(b.world_id(), b.channel_id());
         let generation = b.scope_generation();
@@ -415,10 +415,10 @@ impl CallbackCastOwner {
             removals: Vec::new(),
         })
     }
-    pub(crate) fn take_source_speech(&mut self) -> Vec<CallbackSpeech> {
+    pub fn take_source_speech(&mut self) -> Vec<CallbackSpeech> {
         std::mem::take(&mut self.speech)
     }
-    pub(crate) fn take_source_removals(
+    pub fn take_source_removals(
         &mut self,
     ) -> Vec<(ExactActorRef, Result<(), crate::foundation::CarrierError>)> {
         std::mem::take(&mut self.removals)
@@ -453,7 +453,7 @@ impl CallbackCastOwner {
             .retain(|c| c.source.current(r, c.proposal.issuer) && !c.done.iter().all(|d| *d));
         self.memos.retain(|m| r.contains_live_creature(m.actor));
     }
-    pub(crate) fn schedule(
+    pub fn schedule(
         &mut self,
         r: &ChannelRuntimeV1,
         f: &ScopeRuntimeFence,
@@ -558,7 +558,7 @@ impl CallbackCastOwner {
         clippy::too_many_arguments,
         reason = "Owner ABI keeps independently qualified source, current fence, exact actor and commit facts explicit"
     )]
-    pub(crate) fn drain(
+    pub fn drain(
         &mut self,
         r: &mut ChannelRuntimeV1,
         f: &mut ScopeRuntimeFence,

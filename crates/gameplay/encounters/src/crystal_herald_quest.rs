@@ -17,19 +17,19 @@ use crate::durability::{
 use crate::foundation::{RuntimeWorkStamp, ScopeRuntimeFence};
 use std::sync::Arc;
 
-pub(crate) const MISSION: &str =
+pub const MISSION: &str =
     "oteryn:quest-progress/crystalserver/quest/u15_24/targuna/burning_heart/mission";
-pub(crate) const KILLED: &str =
+pub const KILLED: &str =
     "oteryn:quest-progress/crystalserver/quest/u15_24/targuna/burning_heart/herald_killed";
-pub(crate) const QUEST: &str = "oteryn:quest.targuna_quest";
-pub(crate) const TRANSITIONS: [&str; 3] = [
+pub const QUEST: &str = "oteryn:quest.targuna_quest";
+pub const TRANSITIONS: [&str; 3] = [
     "oteryn:quest-transition/crystalserver/targuna/herald-death/mission-1",
     "oteryn:quest-transition/crystalserver/targuna/herald-death/mission-2",
     "oteryn:quest-transition/crystalserver/targuna/herald-death/progressed",
 ];
 
 #[derive(Debug)]
-pub(crate) enum HeraldQuestError {
+pub enum HeraldQuestError {
     InvalidCatalogue,
     FenceChanged,
     SourceChanged,
@@ -38,7 +38,7 @@ pub(crate) enum HeraldQuestError {
 
 // Pure source predicate; the SQL writer re-evaluates BOTH tracks under its root lock.
 // Different branch snapshots can refuse, but cannot lower a concurrently advanced mission.
-pub(crate) fn select_transition(
+pub fn select_transition(
     catalogue: &QuestStateCatalogue,
     stored: &std::collections::BTreeMap<String, i64>,
 ) -> Result<Option<&'static str>, HeraldQuestError> {
@@ -98,7 +98,7 @@ pub(crate) fn select_transition(
 /// Prepare under the current physical owner; drop the runtime lock BEFORE acquiring the
 /// Character revision slot or awaiting SQL. Retry THIS request, never reselect its branch.
 #[derive(Debug)]
-pub(crate) struct HeraldQuestRequest {
+pub struct HeraldQuestRequest {
     fence: CurrentCharacterGameplayFence,
     request: QuestTransitionRequest,
     catalogue: Arc<QuestStateCatalogue>,
@@ -123,14 +123,14 @@ impl HeraldQuestRequest {
             source_stamp,
         }
     }
-    pub(crate) const fn selection_policy(&self) -> &'static str {
+    pub const fn selection_policy(&self) -> &'static str {
         "PROJECT_TOP_DAMAGE_CHARACTER_ONLY_NOT_GLOBAL_PARTY_PARITY"
     }
     #[allow(
         clippy::too_many_arguments,
         reason = "Owner ABI keeps independently qualified source, current fence, exact actor and commit facts explicit"
     )]
-    pub(crate) async fn commit(
+    pub async fn commit(
         &self,
         sequencer: &CharacterRevisionSequencer,
         root: &DurabilityRoot,

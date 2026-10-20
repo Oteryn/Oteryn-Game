@@ -781,22 +781,22 @@ pub(crate) use oteryn_gameplay_combat::creature_defense_presentation;
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod crystal_callbacks;
+pub(crate) use oteryn_gameplay_encounters::crystal_callbacks;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod crystal_death_composition;
+pub(crate) use oteryn_gameplay_encounters::crystal_death_composition;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod crystal_herald_quest;
+pub(crate) use oteryn_gameplay_encounters::crystal_herald_quest;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod self_heal_qualification;
+pub(crate) use oteryn_gameplay_encounters::self_heal_qualification;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
@@ -804,9 +804,9 @@ mod self_heal_qualification;
 mod smelly_cheese;
 #[allow(dead_code)]
 mod smelly_encounter_dispatch;
-mod source_callback_intent;
+pub(crate) use oteryn_gameplay_encounters::source_callback_intent;
 #[allow(dead_code)]
-mod source_callback_spawn;
+pub(crate) use oteryn_gameplay_encounters::source_callback_spawn;
 // Source-bound native library callbacks; shipping server activation remains separate.
 #[allow(
     dead_code,
@@ -818,12 +818,12 @@ use oteryn_gameplay_source_critical_baseline as source_critical_baseline;
     dead_code,
     reason = "Private native encounter owner ABI retained for source-qualified library dispatch; shipping AI loop is not activated"
 )]
-mod source_encounter_seven;
+pub(crate) use oteryn_gameplay_encounters::source_encounter_seven;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod source_threshold_heal;
+pub(crate) use oteryn_gameplay_encounters::source_threshold_heal;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
@@ -978,7 +978,7 @@ mod creature_condition_content_gate_tests;
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod source_callback_cast;
+pub(crate) use oteryn_gameplay_encounters::source_callback_cast;
 
 #[cfg(test)]
 #[path = "lifted_tests/creature_damage_spell_tests.rs"]

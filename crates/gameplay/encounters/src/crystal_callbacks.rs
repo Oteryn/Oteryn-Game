@@ -6,7 +6,7 @@ use crate::foundation::{
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum CrystalDeathSource {
+pub enum CrystalDeathSource {
     WeakSpot,
     LordRetro,
     HeraldOfFire,
@@ -23,7 +23,7 @@ impl CrystalDeathSource {
 }
 /// Acknowledgement from a real consuming owner; routing alone never reports a grant.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum CrystalConsumed {
+pub enum CrystalConsumed {
     Applied,
     AlreadyApplied,
     OwnerUnavailable,
@@ -32,7 +32,7 @@ pub(crate) enum CrystalConsumed {
 /// Specific requests carrying the physical owner's unforgeable committed death key.
 /// Appearance and quest consumers own eligibility/fence/idempotency and exact mutation.
 /// No caller-provided outcome string, character identity or HP fact is accepted by dispatch.
-pub(crate) trait CrystalDeathConsumers {
+pub trait CrystalDeathConsumers {
     fn weak_spot_speech(
         &mut self,
         death: CreatureDeathOccurrenceKey,
@@ -55,7 +55,7 @@ pub(crate) trait CrystalDeathConsumers {
 /// A still-live/stale/other-scope actor fails before any consumer call. Repeated dispatch
 /// carries the same sealed key: each real owner must replay its own first outcome.
 /// Missing consumers return OwnerUnavailable, never a synthetic successful grant.
-pub(crate) fn dispatch_crystal_committed_death(
+pub fn dispatch_crystal_committed_death(
     owner: &CurrentOwnerCombatDeath<'_>,
     actor: ExactActorRef,
     consumers: &mut impl CrystalDeathConsumers,

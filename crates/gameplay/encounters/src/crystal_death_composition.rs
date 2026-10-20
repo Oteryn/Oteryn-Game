@@ -5,7 +5,7 @@ use crate::foundation::{
     GameSessionId, RumBarrelDeathLedger, RumBarrelDeathResult, RuntimeScopeRefV1, RuntimeWorkStamp,
     ScopeOwnershipGeneration, ScopeRuntimeFence, WorldId,
 };
-pub(crate) mod speech {
+pub mod speech {
     include!("crystal_death_composition/speech.rs");
 }
 use speech::{WeakSpotSpeechError, WeakSpotSpeechMailbox};
@@ -16,7 +16,7 @@ struct PinnedDeathDefinition {
     binding: ProjectV2SourceIdentityBinding,
 }
 #[derive(Debug)]
-pub(crate) struct QualifiedCrystalDeaths {
+pub struct QualifiedCrystalDeaths {
     entries: Vec<PinnedDeathDefinition>,
     world: WorldId,
     channel: ChannelId,
@@ -28,13 +28,13 @@ pub(crate) struct QualifiedCrystalDeaths {
     map: [u8; 32],
 }
 #[derive(Debug)]
-pub(crate) enum CrystalDeathCompositionError {
+pub enum CrystalDeathCompositionError {
     Source(&'static str),
     Owner(CarrierError),
     Speech(WeakSpotSpeechError),
 }
 #[derive(Debug)]
-pub(crate) enum CrystalDeathApplied {
+pub enum CrystalDeathApplied {
     Boreth(BorethDeathResult),
     RumBarrel(RumBarrelDeathResult),
     WeakSpotSpeech { recipient_lines: usize },
@@ -47,13 +47,13 @@ impl QualifiedCrystalDeaths {
     /// Called by the native boot owner from the actual captured, selected imported project.
     /// Artifact pin only fences a qualification already proved by exact typed profile+binding
     /// membership; no supplied arbitrary digest is accepted as a source-membership proof.
-    pub(crate) fn qualify(
+    pub fn qualify(
         project: &WorldProject,
         runtime: &ChannelRuntimeV1,
         native: &crate::content::native_gameplay::NativeGameplayState,
     ) -> Result<Self, CrystalDeathCompositionError> {
         let rows: Vec<serde_json::Value> =
-            serde_json::from_str(include_str!("pinned-death-registry.json"))
+            serde_json::from_str(include_str!("../../../../apps/game-server/src/pinned-death-registry.json"))
                 .map_err(|_| CrystalDeathCompositionError::Source("invalid pinned registry"))?;
         let expected: Vec<PinnedDeathDefinition> = rows
             .into_iter()
@@ -158,7 +158,7 @@ impl QualifiedCrystalDeaths {
     /// routing; actual consumers retain idempotence. No string callback/member from network input.
     // Keep dispatch ABI explicit: current runtime owner, independent fence/stamp, exact actor/session/source and occurrence/policy facts are separate admission inputs.
     #[allow(clippy::too_many_arguments)]
-    pub(crate) fn dispatch(
+    pub fn dispatch(
         &self,
         runtime: &mut ChannelRuntimeV1,
         fence: &ScopeRuntimeFence,
@@ -397,16 +397,16 @@ mod retained_native_source_tests {
 /// One retained current-Channel composition. Registration comes only from actual loaded project;
 /// no callback metadata creates reward authority. The caller removes the actor only after handling
 /// the returned callback/dependency outcome, and may retry while the native projection is retained.
-pub(crate) struct CrystalDeathOwner {
+pub struct CrystalDeathOwner {
     registry: QualifiedCrystalDeaths,
     boreth: BorethDeathLedger,
     rum: RumBarrelDeathLedger,
     speech: WeakSpotSpeechMailbox,
 }
 #[derive(Debug)]
-pub(crate) struct CrystalSecondaryDeath {
-    pub(crate) actor: ExactActorRef,
-    pub(crate) result: Result<
+pub struct CrystalSecondaryDeath {
+    pub actor: ExactActorRef,
+    pub result: Result<
         (
             crate::foundation::CreatureDeathOccurrenceKey,
             crate::foundation::MovementLocalPosition,
@@ -416,16 +416,16 @@ pub(crate) struct CrystalSecondaryDeath {
     >,
 }
 #[derive(Debug)]
-pub(crate) struct CrystalProjectedDeath {
-    pub(crate) death: crate::foundation::CreatureDeathOccurrenceKey,
-    pub(crate) position: crate::foundation::MovementLocalPosition,
+pub struct CrystalProjectedDeath {
+    pub death: crate::foundation::CreatureDeathOccurrenceKey,
+    pub position: crate::foundation::MovementLocalPosition,
     /// Callback failure after a successful projection remains explicit; it is not rolled back or
     /// confused with a failed lethal transition. Missing durable/map owners remain typed outcomes.
-    pub(crate) callback: Result<CrystalDeathApplied, CrystalDeathCompositionError>,
-    pub(crate) secondary: Vec<CrystalSecondaryDeath>,
+    pub callback: Result<CrystalDeathApplied, CrystalDeathCompositionError>,
+    pub secondary: Vec<CrystalSecondaryDeath>,
 }
 impl CrystalDeathOwner {
-    pub(crate) fn bind(
+    pub fn bind(
         project: &WorldProject,
         runtime: &ChannelRuntimeV1,
         native: &crate::content::native_gameplay::NativeGameplayState,
@@ -439,7 +439,7 @@ impl CrystalDeathOwner {
     }
     /// Existing Combat projection followed immediately by source-qualified native callbacks.
     /// Never removes actors, grants quests/account rewards, or manufactures a Map operation.
-    pub(crate) fn project_and_dispatch(
+    pub fn project_and_dispatch(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         fence: &ScopeRuntimeFence,
@@ -526,7 +526,7 @@ impl CrystalDeathOwner {
     }
     /// Real protocol ChatLine bytes consumed by existing connection transport; current recipients
     /// and audibility are revalidated by the mailbox. No synthetic success or new wire identifiers.
-    pub(crate) fn drain_speech(
+    pub fn drain_speech(
         &mut self,
         runtime: &ChannelRuntimeV1,
         actor: ExactActorRef,
@@ -534,7 +534,7 @@ impl CrystalDeathOwner {
     ) -> Result<Vec<Vec<u8>>, WeakSpotSpeechError> {
         self.speech.drain(runtime, actor, session)
     }
-    pub(crate) fn clear_session(&mut self, session: GameSessionId) {
+    pub fn clear_session(&mut self, session: GameSessionId) {
         self.speech.clear_session(session)
     }
 }
@@ -702,7 +702,7 @@ impl CrystalDeathOwner {
     /// and publisher come from independently current Map owner, never actor metadata.
     // Keep commit_tentacle_source_map ABI explicit: current runtime owner, independent fence/stamp, exact actor/session/source and occurrence/policy facts are separate admission inputs.
     #[allow(clippy::too_many_arguments)]
-    pub(crate) fn commit_tentacle_source_map<E>(
+    pub fn commit_tentacle_source_map<E>(
         &self,
         runtime: &mut ChannelRuntimeV1,
         fence: &ScopeRuntimeFence,
@@ -778,7 +778,7 @@ impl QualifiedCrystalDeaths {
     /// PROJECT: only top-damage Character receives progress, not donor party fan-out.
     // Keep prepare_herald_quest_request ABI explicit: current runtime owner, independent fence/stamp, exact actor/session/source and occurrence/policy facts are separate admission inputs.
     #[allow(clippy::too_many_arguments)]
-    pub(crate) fn prepare_herald_quest_request(
+    pub fn prepare_herald_quest_request(
         &self,
         runtime: &mut ChannelRuntimeV1,
         fence: &ScopeRuntimeFence,
@@ -862,7 +862,7 @@ impl QualifiedCrystalDeaths {
 
 impl CrystalDeathOwner {
     /// Read-only source qualification; does not mint mutation or reward authority.
-    pub(crate) fn qualified_registry(&self) -> &QualifiedCrystalDeaths {
+    pub fn qualified_registry(&self) -> &QualifiedCrystalDeaths {
         &self.registry
     }
 }
@@ -870,7 +870,7 @@ impl CrystalDeathOwner {
 impl QualifiedCrystalDeaths {
     /// Pure current-owner check reused after the async Character slot wait. Full native
     /// activation/server/client/frame/map pins are required, not just a scope generation.
-    pub(crate) fn validate_current_work(
+    pub fn validate_current_work(
         &self,
         runtime: &ChannelRuntimeV1,
         fence: &ScopeRuntimeFence,

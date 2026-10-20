@@ -17,7 +17,7 @@ use oteryn_simulation_determinism::{
 use sha2::{Digest, Sha256};
 const QUALIFICATION: &str = "PROJECT_SOURCE_MARKER_LOCAL;SOURCE_THRESHOLD_RANGE_DELAY_COOLDOWN;GLOBAL_CONDITION88888_INTEROPERABILITY_UNVERIFIED;PROJECT_UNIFORM_DRAW;SPEECH_VFX_NOT_DELIVERED";
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum ThresholdHealError {
+pub enum ThresholdHealError {
     Source,
     Fence,
     Occurrence,
@@ -27,29 +27,29 @@ pub(crate) enum ThresholdHealError {
     Carrier(CarrierError),
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct ThresholdHealOutcome {
-    pub(crate) started: bool,
-    pub(crate) pending: bool,
-    pub(crate) healed: Option<OwnerDamageResult>,
-    pub(crate) qualification: &'static str,
+pub struct ThresholdHealOutcome {
+    pub started: bool,
+    pub pending: bool,
+    pub healed: Option<OwnerDamageResult>,
+    pub qualification: &'static str,
 }
 #[derive(Clone, Debug)]
-pub(crate) struct ThresholdHealSource {
+pub struct ThresholdHealSource {
     caster: Ref,
-    pub(crate) ability: Ref,
-    pub(crate) index: usize,
-    pub(crate) world: String,
-    pub(crate) content: [u8; 32],
-    pub(crate) maximum: u64,
+    pub ability: Ref,
+    pub index: usize,
+    pub world: String,
+    pub content: [u8; 32],
+    pub maximum: u64,
     threshold_ppm: u64,
-    pub(crate) minimum: u64,
-    pub(crate) maximum_draw: u64,
-    pub(crate) delay_us: u64,
-    pub(crate) cooldown_us: u64,
+    pub minimum: u64,
+    pub maximum_draw: u64,
+    pub delay_us: u64,
+    pub cooldown_us: u64,
     fingerprint: [u8; 32],
 }
 impl ThresholdHealSource {
-    pub(crate) fn from_native(
+    pub fn from_native(
         d: &ProjectV2Draft,
         caster: &Ref,
         index: usize,
@@ -176,7 +176,7 @@ impl ThresholdHealSource {
             .ok_or(E::Source)?;
         // Compare actual typed Encounter data, not merely its name/hash; source-specific handlers
         // must be requalified if authoring semantics change. This is a pinned source adapter fixture.
-        let expected:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/encounters/callback18/threshold-heal-expected-encounters.json"))).map_err(|_|E::Source)?;
+        let expected:serde_json::Value=serde_json::from_str(include_str!(concat!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/encounters/callback18/threshold-heal-expected-encounters.json"))).map_err(|_|E::Source)?;
         let expected_data: Data =
             serde_json::from_value(expected[encounter].clone()).map_err(|_| E::Source)?;
         if serde_json::to_value(&ep.data).map_err(|_| E::Source)?
@@ -217,7 +217,7 @@ impl ThresholdHealSource {
             fingerprint,
         })
     }
-    pub(crate) fn ability(&self) -> &Ref {
+    pub fn ability(&self) -> &Ref {
         &self.ability
     }
     fn guard(
@@ -247,24 +247,24 @@ impl ThresholdHealSource {
         Ok(())
     }
 }
-pub(crate) struct Marker {
-    pub(crate) actor: ExactActorRef,
+pub struct Marker {
+    pub actor: ExactActorRef,
     source: [u8; 32],
-    pub(crate) content: [u8; 32],
-    pub(crate) activation: u64,
+    pub content: [u8; 32],
+    pub activation: u64,
     sequence: u64,
     occurrence: String,
     last_us: u64,
     unlock_us: u64,
-    pub(crate) pending: Option<(u64, u64)>,
+    pub pending: Option<(u64, u64)>,
     last: ThresholdHealOutcome,
 }
 #[derive(Default)]
-pub(crate) struct ThresholdHealOwner {
-    pub(crate) markers: Vec<Marker>,
+pub struct ThresholdHealOwner {
+    pub markers: Vec<Marker>,
 }
 impl ThresholdHealOwner {
-    pub(crate) fn cast(
+    pub fn cast(
         &mut self,
         r: &mut ChannelRuntimeV1,
         f: &ScopeRuntimeFence,
@@ -404,7 +404,7 @@ impl ThresholdHealOwner {
     }
     /// Called by the owning AI pulse independently of fresh defense chance/casts. Pending
     /// heal checks live original generation/pin/current fence before HP; it never retargets.
-    pub(crate) fn tick(
+    pub fn tick(
         &mut self,
         r: &mut ChannelRuntimeV1,
         f: &ScopeRuntimeFence,

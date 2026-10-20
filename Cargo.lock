@@ -1981,6 +1981,7 @@ dependencies = [
  "oteryn-gameplay-content",
  "oteryn-gameplay-domain",
  "oteryn-gameplay-durability",
+ "oteryn-gameplay-encounters",
  "oteryn-gameplay-foundation",
  "oteryn-gameplay-native-admission-source",
  "oteryn-gameplay-node-files",
@@ -2088,6 +2089,25 @@ dependencies = [
  "serde_json",
  "sha2 0.11.0",
  "sqlx",
+ "tokio",
+]
+
+[[package]]
+name = "oteryn-gameplay-encounters"
+version = "0.1.0"
+dependencies = [
+ "oteryn-gameplay-combat",
+ "oteryn-gameplay-content",
+ "oteryn-gameplay-domain",
+ "oteryn-gameplay-durability",
+ "oteryn-gameplay-foundation",
+ "oteryn-gameplay-spell",
+ "oteryn-gameplay-world",
+ "oteryn-protocol-oteryn",
+ "oteryn-simulation-determinism",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
  "tokio",
 ]
 

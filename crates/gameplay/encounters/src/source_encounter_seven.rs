@@ -17,11 +17,11 @@ use crate::foundation::{
     WorldId,
 };
 use sha2::{Digest, Sha256};
-pub(crate) const BASE: &str = "oteryn:creature.the_time_guardian";
-pub(crate) const BLAZING: &str = "oteryn:creature.the_blazing_time_guardian";
-pub(crate) const FREEZING: &str = "oteryn:creature.the_freezing_time_guardian";
+pub const BASE: &str = "oteryn:creature.the_time_guardian";
+pub const BLAZING: &str = "oteryn:creature.the_blazing_time_guardian";
+pub const FREEZING: &str = "oteryn:creature.the_freezing_time_guardian";
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum SevenKind {
+pub enum SevenKind {
     BrainHeal,
     Vortex,
     Maxxen,
@@ -31,46 +31,46 @@ pub(crate) enum SevenKind {
     Zamulosh,
 }
 #[derive(serde::Deserialize)]
-pub(crate) struct Witness {
-    pub(crate) cases: Vec<Case>,
+pub struct Witness {
+    pub cases: Vec<Case>,
     profiles: Vec<ProjectV2AuthoringProfile>,
     records: Vec<Record>,
     source_identity_bindings: Vec<ProjectV2SourceIdentityBinding>,
 }
 #[derive(Clone, serde::Deserialize)]
-pub(crate) struct Case {
-    pub(crate) creature: String,
+pub struct Case {
+    pub creature: String,
     ability: String,
-    pub(crate) list: String,
-    pub(crate) index: usize,
-    pub(crate) encounter: String,
+    pub list: String,
+    pub index: usize,
+    pub encounter: String,
 }
 #[derive(Clone)]
-pub(crate) struct SevenSource {
-    pub(crate) case: Case,
+pub struct SevenSource {
+    pub case: Case,
     kind: SevenKind,
-    pub(crate) content: [u8; 32],
+    pub content: [u8; 32],
     profiles: std::sync::Arc<[ProjectV2AuthoringProfile]>,
     records: std::sync::Arc<[Record]>,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct SourceMapWork {
-    pub(crate) actor: ExactActorRef,
-    pub(crate) ability: Ref,
-    pub(crate) sequence: u64,
-    pub(crate) kind: SevenKind,
-    pub(crate) content: [u8; 32],
-    pub(crate) source_frame: &'static str,
+pub struct SourceMapWork {
+    pub actor: ExactActorRef,
+    pub ability: Ref,
+    pub sequence: u64,
+    pub kind: SevenKind,
+    pub content: [u8; 32],
+    pub source_frame: &'static str,
 }
 impl SevenSource {
-    pub(crate) fn qualify(
+    pub fn qualify(
         d: &ProjectV2Draft,
         c: &Ref,
         index: usize,
         list: ScheduleList,
         content: [u8; 32],
     ) -> Result<Option<Self>, AttackError> {
-        let w: Witness = serde_json::from_str(include_str!("source_encounter_seven_fixture.json"))
+        let w: Witness = serde_json::from_str(include_str!("../../../../apps/game-server/src/source_encounter_seven_fixture.json"))
             .map_err(|_| AttackError::InvalidSource)?;
         if w.cases.len() != 7 || w.profiles.len() > 512 || w.records.len() > 512 {
             return Err(AttackError::InvalidSource);
@@ -183,27 +183,27 @@ impl SevenSource {
             records: w.records.into(),
         }))
     }
-    pub(crate) fn ability(&self) -> Ref {
+    pub fn ability(&self) -> Ref {
         Ref {
             family: Family::Ability,
             key: self.case.ability.clone(),
             revision: "definition-r1".into(),
         }
     }
-    pub(crate) fn kind(&self) -> SevenKind {
+    pub fn kind(&self) -> SevenKind {
         self.kind
     }
-    pub(crate) fn phase(&self) -> ScheduleList {
+    pub fn phase(&self) -> ScheduleList {
         if self.case.list == "attacks" {
             ScheduleList::Attack
         } else {
             ScheduleList::Defence
         }
     }
-    pub(crate) fn native_profiles(&self) -> &[ProjectV2AuthoringProfile] {
+    pub fn native_profiles(&self) -> &[ProjectV2AuthoringProfile] {
         &self.profiles
     }
-    pub(crate) fn native_records(&self) -> &[Record] {
+    pub fn native_records(&self) -> &[Record] {
         &self.records
     }
     fn sequence(
@@ -262,7 +262,7 @@ impl SevenSource {
         sequence.parse().map_err(|_| AttackError::InvalidPlan)
     }
     /// Descriptive source work is not a relocation or top-stack grant. Thalom does not contain these quest anchors.
-    pub(crate) fn prepare_map_work(
+    pub fn prepare_map_work(
         &self,
         r: &ChannelRuntimeV1,
         f: &ScopeRuntimeFence,
@@ -283,7 +283,7 @@ impl SevenSource {
         })
     }
 }
-pub(crate) fn hex(v: [u8; 16]) -> String {
+pub fn hex(v: [u8; 16]) -> String {
     v.iter().map(|b| format!("{b:02x}")).collect()
 }
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -321,7 +321,7 @@ struct ReturnKey {
     actor: ExactActorRef,
     token: u64,
 }
-pub(crate) struct Pending {
+pub struct Pending {
     actor: ExactActorRef,
     token: u64,
     epoch: u64,
@@ -330,13 +330,13 @@ pub(crate) struct Pending {
     phase: String,
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) struct TimePhaseOutcome {
-    pub(crate) actor: ExactActorRef,
-    pub(crate) definition: String,
-    pub(crate) health: i64,
-    pub(crate) epoch: u64,
-    pub(crate) returned: bool,
-    pub(crate) qualification: &'static str,
+pub struct TimePhaseOutcome {
+    pub actor: ExactActorRef,
+    pub definition: String,
+    pub health: i64,
+    pub epoch: u64,
+    pub returned: bool,
+    pub qualification: &'static str,
 }
 struct Memo {
     actor: ExactActorRef,
@@ -346,14 +346,14 @@ struct Memo {
     at: SemanticTimeMicros,
     out: TimePhaseOutcome,
 }
-pub(crate) struct TimeGuardianOwner {
+pub struct TimeGuardianOwner {
     timers: OwnerTimerLane<ReturnFamily, ReturnKey>,
-    pub(crate) pending: Vec<Pending>,
+    pub pending: Vec<Pending>,
     memos: Vec<Memo>,
     next: u64,
-    pub(crate) last_time: Option<SemanticTimeMicros>,
+    pub last_time: Option<SemanticTimeMicros>,
 }
-pub(crate) struct PreparedTimeCast {
+pub struct PreparedTimeCast {
     actor: ExactActorRef,
     sequence: u64,
     proof: [u8; 32],
@@ -367,8 +367,8 @@ pub(crate) struct PreparedTimeCast {
     out: TimePhaseOutcome,
     memo_out: TimePhaseOutcome,
 }
-pub(crate) struct DueTimeReturn {
-    pub(crate) actor: ExactActorRef,
+pub struct DueTimeReturn {
+    pub actor: ExactActorRef,
     token: u64,
     source: SevenSource,
     native: PreparedCreatureProfileTransformation,
@@ -376,7 +376,7 @@ pub(crate) struct DueTimeReturn {
     at: SemanticTimeMicros,
 }
 impl TimeGuardianOwner {
-    pub(crate) fn new(r: &ChannelRuntimeV1) -> Result<Self, AttackError> {
+    pub fn new(r: &ChannelRuntimeV1) -> Result<Self, AttackError> {
         let b = r.binding();
         Ok(Self {
             timers: OwnerTimerLane::for_generation(
@@ -398,7 +398,7 @@ impl TimeGuardianOwner {
         })
     }
     /// The aggregate prepares the replacement source/profile bundle BEFORE passing this plan to commit.
-    pub(crate) fn prepare_cast(
+    pub fn prepare_cast(
         &mut self,
         r: &ChannelRuntimeV1,
         f: &ScopeRuntimeFence,
@@ -506,13 +506,13 @@ impl TimeGuardianOwner {
             memo_out,
         }))
     }
-    pub(crate) fn planned_definition(plan: &PreparedTimeCast) -> &str {
+    pub fn planned_definition(plan: &PreparedTimeCast) -> &str {
         &plan.phase
     }
-    pub(crate) fn source_for_cast(plan: &PreparedTimeCast) -> &SevenSource {
+    pub fn source_for_cast(plan: &PreparedTimeCast) -> &SevenSource {
         &plan.source
     }
-    pub(crate) fn commit_cast(
+    pub fn commit_cast(
         &mut self,
         r: &mut ChannelRuntimeV1,
         f: &ScopeRuntimeFence,
@@ -597,7 +597,7 @@ impl TimeGuardianOwner {
         Ok(out)
     }
     /// Current source actor survives phase change; vanished, dead, foreign-content or replaced generations cancel, never teleport a replacement.
-    pub(crate) fn due_returns(
+    pub fn due_returns(
         &mut self,
         r: &ChannelRuntimeV1,
         f: &ScopeRuntimeFence,
@@ -681,13 +681,13 @@ impl TimeGuardianOwner {
         }
         Ok(out)
     }
-    pub(crate) fn returned_actor(plan: &DueTimeReturn) -> ExactActorRef {
+    pub fn returned_actor(plan: &DueTimeReturn) -> ExactActorRef {
         plan.actor
     }
-    pub(crate) fn source_for_return(plan: &DueTimeReturn) -> &SevenSource {
+    pub fn source_for_return(plan: &DueTimeReturn) -> &SevenSource {
         &plan.source
     }
-    pub(crate) fn commit_return(
+    pub fn commit_return(
         &mut self,
         r: &mut ChannelRuntimeV1,
         f: &ScopeRuntimeFence,
