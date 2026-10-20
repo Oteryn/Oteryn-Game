@@ -72,11 +72,7 @@ pub enum CloseTrigger<K> {
 }
 
 /// Whether `trigger` closes the corpse `open` at `position`.
-pub fn closes<K: PartialEq>(
-    open: &K,
-    position: ActorPosition,
-    trigger: &CloseTrigger<K>,
-) -> bool {
+pub fn closes<K: PartialEq>(open: &K, position: ActorPosition, trigger: &CloseTrigger<K>) -> bool {
     match trigger {
         CloseTrigger::Moved { to } => !within_reach(*to, position),
         CloseTrigger::Teleported

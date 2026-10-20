@@ -1,3 +1,4 @@
+#![cfg_attr(not(test), allow(dead_code, unused_imports))]
 #![allow(clippy::unwrap_used)]
 use super::*;
 use crate::foundation::{

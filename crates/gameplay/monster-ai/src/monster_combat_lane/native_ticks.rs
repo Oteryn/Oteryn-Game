@@ -127,6 +127,10 @@ impl NativeRegenerationRegistry {
             entries,
         })
     }
+    #[allow(
+        clippy::len_without_is_empty,
+        reason = "retained registry cardinality probe for qualification"
+    )]
     pub fn len(&self) -> usize {
         self.entries.len()
     }

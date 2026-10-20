@@ -11,11 +11,11 @@ mod domain {
 pub(crate) mod ability_data;
 #[allow(dead_code, unused_imports)]
 #[path = "../../../crates/gameplay/foundation/src/foundation/condition.rs"]
-mod condition;
+pub mod condition;
 #[allow(dead_code)]
 mod foundation {
     pub(crate) use crate::ability_data;
-    pub(crate) use crate::condition;
+    pub use crate::condition;
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub(crate) struct ExactActorRef(pub(crate) u64);
     impl ExactActorRef {

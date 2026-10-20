@@ -24,6 +24,7 @@
 mod test_producer;
 
 use oteryn_game_server::durability::premium_fence::EntitlementState;
+use oteryn_game_server::premium;
 use oteryn_game_server::premium::client::{
     MAX_REQUEST_BYTES, PremiumClientConfig, PremiumSnapshotClient, REQUEST_SCHEMA, SNAPSHOT_PATH,
     request_body,

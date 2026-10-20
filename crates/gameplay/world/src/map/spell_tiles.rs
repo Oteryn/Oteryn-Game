@@ -45,7 +45,7 @@ use super::facts::ItemDefinition;
 use super::overlay::TilePos;
 use super::view::placement_of;
 use crate::content::{NativeSpellTileFlags, QualifiedSpellTile};
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 use crate::map::boot::BundleCollisionIndexExt;
 use oteryn_world_bundle::bundle::{Family, Manifest, Sector, TerrainKind};
 use std::collections::{BTreeSet, HashMap};
@@ -266,8 +266,9 @@ impl SpellTilesBuilder {
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 pub mod tests {
+    #![cfg_attr(not(test), allow(dead_code, unused_imports))]
     #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
     use super::*;
     use crate::content::{LogicalCell, NativeEntryMovementCells, SpellTileLookupError};
@@ -301,11 +302,11 @@ pub mod tests {
 
     /// One row at legacy `z` 7 (native -7); see [`KEYS`] for the palette.
     fn bundle() -> (Vec<u8>, BundlePins) {
-        use oteryn_world_bundle_compiler::bundle::{
-            self, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector, Terrain,
-            TerrainKind,
+        use oteryn_world_bundle::sector::{Attrs, Item, Tile};
+        use oteryn_world_bundle::writer::{
+            self as bundle, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector,
+            Terrain, TerrainKind,
         };
-        use oteryn_world_bundle_compiler::sector::{Attrs, Item, Tile};
         let terrain = |kind, walkable: Option<bool>, speed: Option<u16>| {
             Some(Terrain {
                 kind,
@@ -710,7 +711,11 @@ pub mod tests {
             include_bytes!("../../../../../tools/content-schema/native-gameplay/item-keys.json");
         let path = std::env::var("OTERYN_PINNED_WORLD_BUNDLE").expect("OTERYN_PINNED_WORLD_BUNDLE");
         let data = std::fs::read(path).expect("the pinned artifact");
-        let root = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server")).join("../..");
+        let root = std::path::Path::new(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../apps/game-server"
+        ))
+        .join("../..");
         let pin: serde_json::Value = serde_json::from_slice(
             &std::fs::read(root.join("content/world/pins/oteryn.json")).expect("pin"),
         )

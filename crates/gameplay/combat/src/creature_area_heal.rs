@@ -64,10 +64,7 @@ impl CreatureHealCatalog {
         Ok((key.to_owned(), max))
     }
 
-    pub fn from_native(
-        draft: &ProjectV2Draft,
-        content: [u8; 32],
-    ) -> Result<Self, AreaHealError> {
+    pub fn from_native(draft: &ProjectV2Draft, content: [u8; 32]) -> Result<Self, AreaHealError> {
         let value = draft.core.world_id.as_bytes();
         if value.len() != 32
             || !value
@@ -297,7 +294,7 @@ impl AreaHealSource {
             source_load_magnitude,
         })
     }
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn requires_paralysis_removal(&self) -> bool {
         self.remove_paralysis
     }

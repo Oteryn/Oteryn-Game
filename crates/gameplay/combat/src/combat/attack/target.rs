@@ -254,11 +254,7 @@ impl<T: Copy + Eq, L: Copy> AttackState<T, L> {
             reason = "ATTACK-2 composes weapon melee and creature block, defence and armor; player defence, distance and the scaled defence formula are follow-ups"
         )
     )]
-    pub fn swung_within_interval(
-        &self,
-        now: SemanticTimeMicros,
-        interval_micros: u64,
-    ) -> bool {
+    pub fn swung_within_interval(&self, now: SemanticTimeMicros, interval_micros: u64) -> bool {
         self.next_due(interval_micros).is_some_and(|due| now < due)
     }
 

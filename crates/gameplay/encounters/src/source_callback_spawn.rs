@@ -27,6 +27,10 @@ pub struct Witness {
     profiles: BTreeMap<String, Data>,
     records: Vec<Record>,
     bindings: Vec<ProjectV2SourceIdentityBinding>,
+    #[allow(
+        dead_code,
+        reason = "retained source-qualified metadata; shipping activation remains separate"
+    )]
     targets: Vec<String>,
 }
 #[derive(serde::Deserialize)]
@@ -137,8 +141,10 @@ fn kind(c: &str, p: &str) -> Option<Kind> {
     })
 }
 pub fn fixture() -> Result<Witness, AttackError> {
-    serde_json::from_str(include_str!("../../../../apps/game-server/src/source_callback_spawn_fixture.json"))
-        .map_err(|_| AttackError::InvalidSource)
+    serde_json::from_str(include_str!(
+        "../../../../apps/game-server/src/source_callback_spawn_fixture.json"
+    ))
+    .map_err(|_| AttackError::InvalidSource)
 }
 impl SourceCallbackSpawn {
     pub fn ability(&self) -> &Ref {
@@ -516,9 +522,7 @@ impl CallbackSpawnOwner {
             speech_errors: Vec::new(),
         })
     }
-    pub fn take_source_speech(
-        &mut self,
-    ) -> Vec<crate::source_callback_cast::CallbackSpeech> {
+    pub fn take_source_speech(&mut self) -> Vec<crate::source_callback_cast::CallbackSpeech> {
         std::mem::take(&mut self.speech)
     }
     pub fn take_speech_errors(&mut self) -> Vec<(ExactActorRef, AttackError)> {

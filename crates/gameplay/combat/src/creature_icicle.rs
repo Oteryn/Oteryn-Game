@@ -50,9 +50,10 @@ impl IcicleSource {
         {
             return Err(IcicleError::Source);
         }
-        let expected: serde_json::Value =
-            serde_json::from_str(include_str!("../../../../apps/game-server/src/icicle_source_fixture.json"))
-                .map_err(|_| IcicleError::Source)?;
+        let expected: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../apps/game-server/src/icicle_source_fixture.json"
+        ))
+        .map_err(|_| IcicleError::Source)?;
         let ps =
             serde_json::to_value(&d.state.authoring_profiles).map_err(|_| IcicleError::Source)?;
         let rs = serde_json::to_value(&d.core.records).map_err(|_| IcicleError::Source)?;

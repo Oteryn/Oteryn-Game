@@ -24,24 +24,8 @@ mod achievement_catalogue;
 mod ai;
 #[path = "../../../crates/gameplay/monster-ai/src/ai_monster_melee.rs"]
 mod ai_monster_melee;
-// Ordinary declarations retain the native non-mod.rs implicit child directories. A direct
-// #[path="../../../crates/gameplay/monster-ai/src/ai_think.rs"] would instead search src/ for its implicit children.
-#[path = "../src"]
-mod native_file_modules {
-    #[allow(
-        dead_code,
-        reason = "ai_think has no production caller yet; AI-4/a later wiring task composes it into ChannelRuntimeV1's owner cycle"
-    )]
-    pub(crate) mod ai_think;
-    #[allow(dead_code)]
-    pub(crate) mod monster_combat_lane;
-    #[allow(
-        dead_code,
-        reason = "unactivated local Movement proof awaits the separate production composition lease"
-    )]
-    pub(crate) mod movement;
-}
-use native_file_modules::{ai_think, monster_combat_lane, movement};
+use oteryn_gameplay_monster_ai::{ai_think, monster_combat_lane};
+use oteryn_gameplay_world::movement;
 #[allow(
     dead_code,
     reason = "nonshipping fixed-one-creature Combat proof awaits production composition"

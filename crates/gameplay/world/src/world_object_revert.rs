@@ -771,7 +771,7 @@ impl<I: ScopeOrdinalIssuer> ScopeRevertDriver<I> {
 
 /// Test-only stand-in for the scope's one `ScopeRuntimeFence` (constructible only inside
 /// Foundation): the same `accept_input` contract, plus a count of minted ordinals.
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 #[derive(Debug)]
 pub struct TestIssuer {
     generation: ScopeOwnershipGeneration,
@@ -779,7 +779,7 @@ pub struct TestIssuer {
     minted: u64,
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 impl TestIssuer {
     #[must_use]
     pub const fn new(generation: ScopeOwnershipGeneration) -> Self {
@@ -791,7 +791,7 @@ impl TestIssuer {
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 impl ScopeOrdinalIssuer for TestIssuer {
     fn generation(&self) -> ScopeOwnershipGeneration {
         self.generation

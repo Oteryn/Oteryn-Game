@@ -129,10 +129,7 @@ impl PreparedStance {
     }
 }
 impl PlayerSpellState {
-    pub fn reserve_stance(
-        &mut self,
-        prepared: PreparedStance,
-    ) -> Result<(), SpellCastDisposition> {
+    pub fn reserve_stance(&mut self, prepared: PreparedStance) -> Result<(), SpellCastDisposition> {
         if self.pending_stance.is_some() || self != prepared.before.as_ref() {
             return reject();
         }

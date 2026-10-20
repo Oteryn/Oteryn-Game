@@ -707,10 +707,7 @@ pub enum ThinkOutcome {
     Idle,
 }
 
-pub fn chebyshev_distance(
-    from: MovementLocalPosition,
-    to: MovementLocalPosition,
-) -> Option<i64> {
+pub fn chebyshev_distance(from: MovementLocalPosition, to: MovementLocalPosition) -> Option<i64> {
     if from.floor != to.floor {
         return None;
     }

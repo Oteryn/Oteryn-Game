@@ -33,7 +33,7 @@ impl BlockBudget {
         }
     }
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn blocks(&self) -> u8 {
         self.blocks
     }
@@ -60,11 +60,7 @@ impl BlockBudget {
     }
 
     /// Use one block for a blockable hit at `now`; `false` when the budget is empty.
-    pub fn try_block(
-        &mut self,
-        constants: &BlockConstants,
-        now: SemanticTimeMicros,
-    ) -> bool {
+    pub fn try_block(&mut self, constants: &BlockConstants, now: SemanticTimeMicros) -> bool {
         self.advance_to(constants, now);
         if self.blocks == 0 {
             return false;

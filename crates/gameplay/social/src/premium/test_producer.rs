@@ -235,12 +235,7 @@ async fn read_request<S: tokio::io::AsyncRead + Unpin>(stream: &mut S) -> Option
     }
     let head = String::from_utf8(head).ok()?;
     let mut lines = head.split("\r\n");
-    if lines.next()?
-        != format!(
-            "POST {} HTTP/1.1",
-            crate::premium::client::SNAPSHOT_PATH
-        )
-    {
+    if lines.next()? != format!("POST {} HTTP/1.1", crate::premium::client::SNAPSHOT_PATH) {
         return None;
     }
     let header = |name: &str| {

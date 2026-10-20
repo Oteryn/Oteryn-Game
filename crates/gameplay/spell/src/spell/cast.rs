@@ -32,12 +32,12 @@ macro_rules! starter {
     ($dir:literal) => {
         (
             include_str!(concat!(
-                "../../../../tools/content-schema/spell-authoring/samples/starter-bundles/",
+                "../../../../../tools/content-schema/spell-authoring/samples/starter-bundles/",
                 $dir,
                 "/spell.json"
             )),
             include_str!(concat!(
-                "../../../../tools/content-schema/spell-authoring/samples/starter-bundles/",
+                "../../../../../tools/content-schema/spell-authoring/samples/starter-bundles/",
                 $dir,
                 "/dependencies.json"
             )),
@@ -173,9 +173,7 @@ impl PlayerSpellState {
     pub const fn owned_base_speed(&self) -> u32 {
         self.base_speed
     }
-    pub const fn standard_stance(
-        &self,
-    ) -> Option<super::native_actor_states::StandardStance> {
+    pub const fn standard_stance(&self) -> Option<super::native_actor_states::StandardStance> {
         self.stance
     }
     pub fn durable_stance_key(&self) -> Option<&str> {
@@ -237,11 +235,7 @@ impl PlayerSpellState {
     /// A new runtime actor starts at its maxima (SPELL-D2), with the durable Harmony and remaining
     /// forced Serene time the Character owner loaded (§8.2; both 0 for any other vocation).
     /// Maxima above the SPELL-D8 wire bounds, and corrupt Harmony values, are refused.
-    pub fn new(
-        facts: CharacterCastFacts,
-        harmony: u8,
-        serene_forced_micros: u64,
-    ) -> Option<Self> {
+    pub fn new(facts: CharacterCastFacts, harmony: u8, serene_forced_micros: u64) -> Option<Self> {
         let monk = MonkState::load(facts.vocation, harmony, serene_forced_micros).ok()?;
         // Canary's pinned vocations.xml assigns base speed 110 to every class.
         // The accepted SPEED-1 curve is class base plus (level - 1).
@@ -404,7 +398,7 @@ impl PlayerSpellState {
     }
 
     /// Test only: stages a wounded actor (no damage owner exists yet).
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub const fn set_health_for_test(&mut self, health: u32) {
         self.health = health;
     }
@@ -413,10 +407,7 @@ impl PlayerSpellState {
         self.revision
     }
 
-    pub fn payment_anchor_from(
-        &self,
-        before: &Self,
-    ) -> Option<super::combat_batch::SpellAnchor> {
+    pub fn payment_anchor_from(&self, before: &Self) -> Option<super::combat_batch::SpellAnchor> {
         let anchor = super::combat_batch::SpellAnchor {
             expected_revision: before.revision,
             next_revision: self.revision,
@@ -1760,10 +1751,7 @@ impl PlayerSpellState {
         self.revision = revision;
         Ok(changed)
     }
-    pub fn expire_owner_premium(
-        &mut self,
-        now_micros: u64,
-    ) -> Result<bool, SpellCastDisposition> {
+    pub fn expire_owner_premium(&mut self, now_micros: u64) -> Result<bool, SpellCastDisposition> {
         if self.premium_current
             && self
                 .premium_valid_until_micros

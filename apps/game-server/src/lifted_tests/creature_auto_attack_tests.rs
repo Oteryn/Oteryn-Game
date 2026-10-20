@@ -15,7 +15,22 @@ use crate::player_lethal::PlayerLethalVitals;
 use oteryn_simulation_determinism::GameplayDecisionRoot;
 
 // Positive-only fixture grant; real runtime paths receive the independently current owner fence.
-impl AutoAttackOwner {
+trait AutoAttackOwnerFixtureExt {
+    #[allow(clippy::too_many_arguments)]
+    fn fixture_swing(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        vitals: &mut dyn PlayerLethalVitals,
+        source: &MeleeSource,
+        facts: AttackFacts,
+        sequence: u64,
+        revisions: RevisionSet,
+        root: &GameplayDecisionRoot,
+        now: SemanticTimeMicros,
+    ) -> Result<SwingOutcome, AttackError>;
+}
+
+impl AutoAttackOwnerFixtureExt for AutoAttackOwner {
     #[allow(clippy::too_many_arguments)]
     fn fixture_swing(
         &mut self,

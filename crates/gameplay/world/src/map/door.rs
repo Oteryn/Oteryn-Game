@@ -87,13 +87,7 @@ pub struct DoorBook {
 }
 
 impl DoorBook {
-    pub fn push(
-        &mut self,
-        key: u64,
-        closed_solid: bool,
-        open_solid: bool,
-        open: EntryFacts,
-    ) {
+    pub fn push(&mut self, key: u64, closed_solid: bool, open_solid: bool, open: EntryFacts) {
         self.doors.push(Door {
             key,
             closed_solid,
@@ -193,12 +187,7 @@ impl DoorBook {
 
     /// `entry`, the closed facts of placement `key`, or the open item's facts while the door is
     /// open; the door's state is read from `pinned` when given.
-    pub fn facts(
-        &self,
-        key: u64,
-        entry: EntryFacts,
-        pinned: Option<&DoorStates>,
-    ) -> EntryFacts {
+    pub fn facts(&self, key: u64, entry: EntryFacts, pinned: Option<&DoorStates>) -> EntryFacts {
         match self.state(key, pinned) {
             Some((door, state)) if state % 2 == 1 => EntryFacts {
                 definition: door.open.definition,
@@ -243,12 +232,7 @@ impl DoorBook {
     /// revision. `occupied` is whether an actor stands on the door's tile: it keeps an open door
     /// from closing. The change is one compare-and-swap, so concurrent `USE`s of a revision
     /// commit once. `None` when `key` is no door.
-    pub fn toggle(
-        &self,
-        key: u64,
-        expected_revision: u64,
-        occupied: bool,
-    ) -> Option<DoorUse> {
+    pub fn toggle(&self, key: u64, expected_revision: u64, occupied: bool) -> Option<DoorUse> {
         let door = self.find(key)?;
         let current = door.state.load(Ordering::Acquire);
         if current != expected_revision {

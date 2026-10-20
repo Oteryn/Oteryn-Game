@@ -117,6 +117,7 @@ struct StepKey {
     cast: u64,
     step: u8,
 }
+#[allow(dead_code, reason = "retained source chain presentation metadata")]
 struct Target {
     actor: ExactActorRef,
     session: GameSessionId,
@@ -124,6 +125,7 @@ struct Target {
     from: TilePosition,
     effects: Vec<TilePosition>,
 }
+#[allow(dead_code, reason = "retained source chain occurrence metadata")]
 struct Cast<S: ChainSource> {
     token: u64,
     issuer: ExactActorRef,
@@ -165,10 +167,7 @@ pub struct ChainOwner<S: ChainSource> {
     next_token: u64,
 }
 impl<S: ChainSource> ChainOwner<S> {
-    pub fn new(
-        runtime: &ChannelRuntimeV1,
-        fence: &ScopeRuntimeFence,
-    ) -> Result<Self, AttackError> {
+    pub fn new(runtime: &ChannelRuntimeV1, fence: &ScopeRuntimeFence) -> Result<Self, AttackError> {
         let b = runtime.binding();
         let scope = RuntimeScopeRefV1::channel(b.world_id(), b.channel_id());
         let generation = b.scope_generation();
@@ -664,8 +663,7 @@ fn admit_cast_capacity(
     }
 }
 
-pub type ChainPulseResults<O> =
-    Result<Vec<(u64, usize, Result<O, AttackError>)>, AttackError>;
+pub type ChainPulseResults<O> = Result<Vec<(u64, usize, Result<O, AttackError>)>, AttackError>;
 
 #[allow(clippy::expect_used)]
 #[cfg(test)]

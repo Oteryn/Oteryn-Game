@@ -3,10 +3,7 @@ use crate::creature_auto_attack::AttackError;
 use crate::creature_auto_attack::ProfileAbilityProposal;
 use crate::durability::creature_schedule::ScheduleList;
 use crate::foundation::ChannelRuntimeV1;
-pub fn validate(
-    r: &ChannelRuntimeV1,
-    p: &ProfileAbilityProposal,
-) -> Result<(), AttackError> {
+pub fn validate(r: &ChannelRuntimeV1, p: &ProfileAbilityProposal) -> Result<(), AttackError> {
     let issuer = format!("actor:{}", hex(p.issuer.placement_identity()));
     let target = format!("actor:{}", hex(p.target.placement_identity()));
     if p.intent.proposal_source() != crate::ability::ProposalSource::Ai

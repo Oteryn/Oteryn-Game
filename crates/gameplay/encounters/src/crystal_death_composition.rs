@@ -52,9 +52,10 @@ impl QualifiedCrystalDeaths {
         runtime: &ChannelRuntimeV1,
         native: &crate::content::native_gameplay::NativeGameplayState,
     ) -> Result<Self, CrystalDeathCompositionError> {
-        let rows: Vec<serde_json::Value> =
-            serde_json::from_str(include_str!("../../../../apps/game-server/src/pinned-death-registry.json"))
-                .map_err(|_| CrystalDeathCompositionError::Source("invalid pinned registry"))?;
+        let rows: Vec<serde_json::Value> = serde_json::from_str(include_str!(
+            "../../../../apps/game-server/src/pinned-death-registry.json"
+        ))
+        .map_err(|_| CrystalDeathCompositionError::Source("invalid pinned registry"))?;
         let expected: Vec<PinnedDeathDefinition> = rows
             .into_iter()
             .map(|row| {

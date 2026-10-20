@@ -190,7 +190,11 @@ impl CreatureBiteLedger {
         self.entries.remove(&issuer.placement_identity());
     }
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
+    #[allow(
+        clippy::len_without_is_empty,
+        reason = "test-only ledger cardinality probe"
+    )]
     pub fn len(&self) -> usize {
         self.entries.len()
     }

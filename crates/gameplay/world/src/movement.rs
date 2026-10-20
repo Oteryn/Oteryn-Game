@@ -263,10 +263,7 @@ impl<'a> MovementOwnerTurn<'a> {
         .map(MovementTurnOutcome::Applied)
     }
 
-    pub fn read(
-        &self,
-        actor: ExactActorRef,
-    ) -> Result<MovementPositionSnapshot, CarrierError> {
+    pub fn read(&self, actor: ExactActorRef) -> Result<MovementPositionSnapshot, CarrierError> {
         self.owner.read(actor)
     }
 }
@@ -303,9 +300,7 @@ impl MovementOffer {
         }
     }
 
-    pub const fn completion(
-        &self,
-    ) -> Option<Result<MovementPositionSnapshot, MovementError>> {
+    pub const fn completion(&self) -> Option<Result<MovementPositionSnapshot, MovementError>> {
         self.completion
     }
 }

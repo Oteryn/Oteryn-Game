@@ -430,10 +430,7 @@ fn movement_plan(
     })
 }
 
-pub fn plan(
-    parameters: &Value,
-    facts: &HouseMovementFacts,
-) -> Result<HouseMovementPlan, Error> {
+pub fn plan(parameters: &Value, facts: &HouseMovementFacts) -> Result<HouseMovementPlan, Error> {
     match facts {
         HouseMovementFacts::LocatePlayer {
             caster,

@@ -349,10 +349,7 @@ fn scheduler_delay(p: &Value, raw_ms: i64) -> Result<u32, CompanionError> {
 
 /// Caller must first qualify key and full closed canonical parameters. This
 /// function neither registers an actor nor consumes a stored record as authority.
-pub fn plan(
-    parameters: &Value,
-    facts: &CompanionFacts,
-) -> Result<CompanionPlan, CompanionError> {
+pub fn plan(parameters: &Value, facts: &CompanionFacts) -> Result<CompanionPlan, CompanionError> {
     match facts {
         CompanionFacts::Familiar(f) => familiar(parameters, f).map(CompanionPlan::Familiar),
         CompanionFacts::Haste(f) => haste(parameters, f).map(CompanionPlan::Haste),

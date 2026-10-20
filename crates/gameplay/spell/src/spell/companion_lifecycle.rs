@@ -98,11 +98,7 @@ enum DirectCompanionPhysical {
     Target(crate::foundation::PreparedCompanionAssignment),
 }
 impl DirectCompanionReservation {
-    pub fn qualifies_payment(
-        &self,
-        profile: &CompiledNativeSpell,
-        current_mana: u32,
-    ) -> bool {
+    pub fn qualifies_payment(&self, profile: &CompiledNativeSpell, current_mana: u32) -> bool {
         &self.profile == profile && self.current.mana == u64::from(current_mana)
     }
     pub fn restrictions(&self) -> &AcquisitionOwnerFacts {

@@ -77,11 +77,10 @@ pub type QualifiedCombatTileFact<'owner> = crate::native_world_read::QualifiedCo
     'owner,
     crate::world_runtime::LocalObjectRuntime,
 >;
-pub type QualifiedSourceStepProbe<'owner> =
-    crate::native_world_read::QualifiedSourceStepProbe<
-        'owner,
-        crate::world_runtime::LocalObjectRuntime,
-    >;
+pub type QualifiedSourceStepProbe<'owner> = crate::native_world_read::QualifiedSourceStepProbe<
+    'owner,
+    crate::world_runtime::LocalObjectRuntime,
+>;
 impl<E: Into<crate::world_runtime::WorldRuntimeError>>
     From<crate::native_world_read::NativeWorldReadError<E>> for WorldRelocationError
 {
@@ -120,6 +119,7 @@ fn qualified_static_owner<'owner>(
         .map_err(WorldRelocationError::from)
 }
 
+#[cfg(test)]
 fn tile(
     room: &crate::content::QualifiedNativeEntryRoom,
     position: MovementLocalPosition,

@@ -90,10 +90,7 @@ pub fn check_checkpoint_metadata(
 }
 
 /// Equal heads are necessary, never sufficient for usable challenge evidence.
-pub fn check_applied_head(
-    applied: u64,
-    checkpoint_revision: u64,
-) -> Result<(), PolicyError> {
+pub fn check_applied_head(applied: u64, checkpoint_revision: u64) -> Result<(), PolicyError> {
     if applied != checkpoint_revision {
         return Err(PolicyError::AppliedHeadMismatch);
     }
@@ -129,10 +126,7 @@ pub fn backward_step_exceeds_skew(
 /// Compare observations from the same process monotonic origin. This predicate
 /// does not prove a fetch occurred or authenticate its result. The future owner
 /// must retain its latch and fetch provenance, and recheck all checkpoint rules.
-pub fn check_fetch_after_step(
-    fetched_at: Duration,
-    step_at: Duration,
-) -> Result<(), PolicyError> {
+pub fn check_fetch_after_step(fetched_at: Duration, step_at: Duration) -> Result<(), PolicyError> {
     if fetched_at <= step_at {
         return Err(PolicyError::FetchNotAfterStep);
     }

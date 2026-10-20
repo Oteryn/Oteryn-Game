@@ -1111,8 +1111,11 @@ fn a_bundle_world_protection_zone_casts_heal_and_support_and_refuses_aggression(
         .protection_zone;
     assert!(zone);
 
-    let manifest =
-        std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server")).join("../../content/spells.manifest.json");
+    let manifest = std::path::Path::new(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../apps/game-server"
+    ))
+    .join("../../content/spells.manifest.json");
     let input = crate::content::native_gameplay::NativeGameplayInput::from_manifest(&manifest)
         .expect("canonical manifest");
     let catalog =

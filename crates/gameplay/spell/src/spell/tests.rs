@@ -16,12 +16,12 @@ macro_rules! bundle {
     ($dir:literal) => {
         (
             include_str!(concat!(
-                "../../../../tools/content-schema/spell-authoring/samples/starter-bundles/",
+                "../../../../../tools/content-schema/spell-authoring/samples/starter-bundles/",
                 $dir,
                 "/spell.json"
             )),
             include_str!(concat!(
-                "../../../../tools/content-schema/spell-authoring/samples/starter-bundles/",
+                "../../../../../tools/content-schema/spell-authoring/samples/starter-bundles/",
                 $dir,
                 "/dependencies.json"
             )),

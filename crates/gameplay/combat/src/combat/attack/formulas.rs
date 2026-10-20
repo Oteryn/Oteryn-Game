@@ -219,10 +219,7 @@ pub fn defence_formula(
         reason = "ATTACK-2 composes weapon melee and creature block, defence and armor; player defence, distance and the scaled defence formula are follow-ups"
     )
 )]
-pub fn zero_skill_defence_bounds(
-    constants: &AttackConstants,
-    mode: FightMode,
-) -> (u32, u32) {
+pub fn zero_skill_defence_bounds(constants: &AttackConstants, mode: FightMode) -> (u32, u32) {
     let value = constants.fight_mode(mode).zero_skill_defence;
     (value / 2, value)
 }

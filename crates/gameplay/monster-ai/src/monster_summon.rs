@@ -412,7 +412,8 @@ impl NativeSummonOwner {
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
+#[cfg_attr(not(test), allow(dead_code, unused_imports))]
 #[allow(clippy::expect_used)]
 mod tests {
     use super::*;
@@ -1056,10 +1057,7 @@ mod summon_retirement_regression {
     }
 }
 
-pub fn native_draft_world_matches(
-    runtime: &ChannelRuntimeV1,
-    draft: &ProjectV2Draft,
-) -> bool {
+pub fn native_draft_world_matches(runtime: &ChannelRuntimeV1, draft: &ProjectV2Draft) -> bool {
     let expected = runtime
         .binding()
         .world_id()
@@ -1069,7 +1067,7 @@ pub fn native_draft_world_matches(
         .collect::<String>();
     draft.core.world_id == expected
 }
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 pub fn summon_execution_fixture_for_world(
     world: crate::foundation::WorldId,
 ) -> (

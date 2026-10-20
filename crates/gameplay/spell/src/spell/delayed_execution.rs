@@ -592,10 +592,7 @@ impl SpellTimerOwner {
     }
     /// Immutable due-source proposals, bounded by the actual owner callback
     /// budget. A fresh DB/session/physical owner must qualify every proposal.
-    pub fn due_native_ai_sources(
-        &self,
-        now: SemanticTimeMicros,
-    ) -> Vec<NativeAiTimerSource> {
+    pub fn due_native_ai_sources(&self, now: SemanticTimeMicros) -> Vec<NativeAiTimerSource> {
         let mut pending: Vec<_> = self
             .payloads
             .iter()

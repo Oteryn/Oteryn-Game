@@ -15,8 +15,11 @@ fn at(millis: u64) -> SemanticTimeMicros {
 }
 
 fn book() -> SpellBook {
-    let manifest =
-        std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server")).join("../../content/spells.manifest.json");
+    let manifest = std::path::Path::new(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../apps/game-server"
+    ))
+    .join("../../content/spells.manifest.json");
     let input = crate::content::native_gameplay::NativeGameplayInput::from_manifest(&manifest)
         .expect("canonical manifest");
     let catalog =

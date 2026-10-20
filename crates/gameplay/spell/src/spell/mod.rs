@@ -189,11 +189,7 @@ impl Cooldowns {
     /// rearms the casting spell and its groups. Individual keys absent from
     /// the admitted book are preserved. Group lookups follow the qualified
     /// recipe: an unresolved group clears; a resolved entry uses spender status.
-    pub fn reset_for_focus(
-        &mut self,
-        book: &SpellBook,
-        plan: &native_actor_states::FocusPlan,
-    ) {
+    pub fn reset_for_focus(&mut self, book: &SpellBook, plan: &native_actor_states::FocusPlan) {
         self.spells.retain(|key, _| {
             let Some(spell) = book.spells.iter().find(|spell| &spell.key == key) else {
                 return true;

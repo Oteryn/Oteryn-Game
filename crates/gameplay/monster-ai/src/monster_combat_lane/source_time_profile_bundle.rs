@@ -1,6 +1,6 @@
 // Included in MonsterCombatLane's module: data rebinding preserves existing timer and schedule ownership.
 #[derive(Clone)]
-pub(crate) struct TimeProfileBundle {
+pub struct TimeProfileBundle {
     summons: Option<crate::monster_summon::NativeSummonCatalog>,
     creature: Ref,
     behavior: ProjectV2BehaviorAuthoring,
@@ -13,7 +13,7 @@ pub(crate) struct TimeProfileBundle {
     callback_spawn_sources: Vec<crate::source_callback_spawn::SourceCallbackSpawn>,
 }
 impl TimeProfileBundle {
-    pub(crate) fn prepare(
+    pub fn prepare(
         runtime: &ChannelRuntimeV1,
         source: &crate::source_encounter_seven::SevenSource,
         key: &str,
@@ -190,7 +190,7 @@ impl NativeActor {
         clippy::too_many_arguments,
         reason = "Owner ABI keeps independently qualified source, current fence, exact actor and commit facts explicit"
     )]
-    pub(crate) fn dispatch_time_phase(
+    pub fn dispatch_time_phase(
         &mut self,
         r: &mut ChannelRuntimeV1,
         f: &ScopeRuntimeFence,
@@ -221,7 +221,7 @@ impl NativeActor {
             }
         }
     }
-    pub(crate) fn dispatch_time_return(
+    pub fn dispatch_time_return(
         &mut self,
         r: &mut ChannelRuntimeV1,
         f: &ScopeRuntimeFence,

@@ -127,7 +127,7 @@ pub struct ScopeContentGenerationFence {
 impl ScopeContentGenerationFence {
     // This CW4 child has no production owner-composition authority. Keep construction
     // test-only until the current scope owner supplies this fence at a later allocated seam.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     #[must_use]
     pub fn for_test(
         scope: RuntimeScopeRefV1,
@@ -247,10 +247,7 @@ impl NonAuthoritativeReferenceItemRuntimeView {
     }
 
     #[must_use]
-    pub fn lookup_item(
-        &self,
-        identity: &TypedDefinitionRef,
-    ) -> Option<&ReferenceServerItem> {
+    pub fn lookup_item(&self, identity: &TypedDefinitionRef) -> Option<&ReferenceServerItem> {
         (identity == self.item_identity()).then_some(&self.authoritative_item)
     }
 }

@@ -27,10 +27,7 @@ pub enum PolicyError {
 }
 
 /// A matching role is necessary but proves neither a signature nor authority.
-pub fn check_signer_role(
-    signer: SigningRole,
-    object: SignedObject,
-) -> Result<(), PolicyError> {
+pub fn check_signer_role(signer: SigningRole, object: SignedObject) -> Result<(), PolicyError> {
     match (signer, object) {
         (SigningRole::Release, SignedObject::Manifest)
         | (SigningRole::TrustRoot, SignedObject::TrustRecord | SignedObject::Checkpoint) => Ok(()),

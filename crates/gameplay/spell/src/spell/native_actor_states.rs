@@ -270,10 +270,7 @@ pub fn plan_harmony_gain_healing(
     Ok(healing)
 }
 
-pub fn plan_focus(
-    parameters: &Value,
-    facts: FocusFacts,
-) -> Result<FocusPlan, ActorPlanError> {
+pub fn plan_focus(parameters: &Value, facts: FocusFacts) -> Result<FocusPlan, ActorPlanError> {
     if !flag(parameters, "fill_harmony")? || integer(parameters, "harmony_max")? != 5 {
         return Err(ActorPlanError::InvalidParameters("harmony_max"));
     }

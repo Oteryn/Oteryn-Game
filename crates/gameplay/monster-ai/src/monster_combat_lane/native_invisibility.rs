@@ -73,6 +73,10 @@ pub fn current_position(
 pub struct SelfInvisibleSource {
     pub pin: Pin,
     pub creature: Ref,
+    #[allow(
+        dead_code,
+        reason = "retained source-qualified metadata; shipping activation remains separate"
+    )]
     ability: Ref,
     pub definition: ConditionDefinition,
     interval_ms: u64,

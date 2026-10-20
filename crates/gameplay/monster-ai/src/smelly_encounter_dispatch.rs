@@ -93,8 +93,10 @@ impl SourceSmelly {
                 return Err(AttackError::InvalidSource);
             }
         }
-        let expected: Witness = serde_json::from_str(include_str!("../../../../apps/game-server/src/smelly_encounter_source.json"))
-            .map_err(|_| AttackError::InvalidSource)?;
+        let expected: Witness = serde_json::from_str(include_str!(
+            "../../../../apps/game-server/src/smelly_encounter_source.json"
+        ))
+        .map_err(|_| AttackError::InvalidSource)?;
         for (key, data) in expected.profiles {
             let mut matches = d
                 .state

@@ -212,7 +212,7 @@ impl DelayedOwner {
         self.clock = Some(now);
         Ok((pulses, cancellations))
     }
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn pending_len(&self) -> usize {
         self.timers.pending_len()
     }

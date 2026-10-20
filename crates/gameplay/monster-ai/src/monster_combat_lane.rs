@@ -520,7 +520,7 @@ impl<R: MonsterCombatReader> AreaHealPolicy for AreaHealMapReader<'_, R> {
         self.inner.area_heal_top_creature(r, t, s)
     }
 }
-include!("../../../../apps/game-server/src/source_time_profile_bundle.rs");
+include!("monster_combat_lane/source_time_profile_bundle.rs");
 pub struct NativeActor {
     pub seven_sources: Vec<crate::source_encounter_seven::SevenSource>,
     pub time_profiles: Option<std::sync::Arc<BTreeMap<String, TimeProfileBundle>>>,
@@ -609,8 +609,7 @@ pub struct CombatPulse {
     pub callback_speech_delivery:
         Option<Result<usize, crate::weak_spot_speech::WeakSpotSpeechError>>,
     pub callback_speech_errors: Vec<(ExactActorRef, AttackError)>,
-    pub time_returns:
-        Vec<Result<crate::source_encounter_seven::TimePhaseOutcome, AttackError>>,
+    pub time_returns: Vec<Result<crate::source_encounter_seven::TimePhaseOutcome, AttackError>>,
     pub callback_removals: Vec<(ExactActorRef, Result<(), crate::foundation::CarrierError>)>,
     pub callback_spawn_pulses: Result<
         Vec<Result<crate::source_callback_spawn::CallbackSpawnReceipt, AttackError>>,
@@ -635,8 +634,7 @@ pub struct CombatPulse {
     pub chain_steps:
         crate::creature_chain_attack::ChainPulseResults<crate::creature_damage_spell::SpellOutcome>,
     pub windup_casts: crate::creature_damage_spell::WindupCastResults,
-    pub conditions:
-        Result<Vec<(ExactActorRef, Option<NativeOwnedPlayerTickReceipt>)>, AttackError>,
+    pub conditions: Result<Vec<(ExactActorRef, Option<NativeOwnedPlayerTickReceipt>)>, AttackError>,
 }
 pub struct MonsterCombatLane {
     callback_speech: crate::weak_spot_speech::WeakSpotSpeechMailbox,
@@ -907,7 +905,7 @@ impl MonsterCombatLane {
         });
         Ok(occurrence)
     }
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     #[allow(clippy::too_many_arguments)]
     pub fn register_native(
         &mut self,
@@ -931,7 +929,7 @@ impl MonsterCombatLane {
             due,
         )
     }
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     #[allow(clippy::too_many_arguments)]
     pub fn register_project(
         &mut self,
@@ -3266,6 +3264,10 @@ struct NativeDefenseConditionMemo {
     application: native_conditions::NativeConditionApplication,
 }
 enum NativeSelfConditionSource<'a> {
+    #[allow(
+        dead_code,
+        reason = "retained source-qualified metadata; shipping activation remains separate"
+    )]
     Appearance(&'a [crate::foundation::ConditionDefinition]),
     Invisible(&'a SelfInvisibleSource),
     Speed(&'a SelfSpeedSource),
@@ -3594,7 +3596,7 @@ impl TrustedMonsterConditionTickInputs {
         }
         Self::from_project_definitions(runtime, room, draft, digest)
     }
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn from_test_native_room(
         runtime: &ChannelRuntimeV1,
         room: &crate::content::QualifiedNativeEntryRoom,
@@ -4071,7 +4073,11 @@ mod native_ability_coverage {
     use std::collections::BTreeSet;
     type Key = (String, String);
     fn root() -> std::path::PathBuf {
-        std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server")).join("../../content")
+        std::path::Path::new(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../apps/game-server"
+        ))
+        .join("../../content")
     }
     fn shards(dir: &str) -> Vec<serde_json::Value> {
         let mut paths: Vec<_> = std::fs::read_dir(root().join(dir))

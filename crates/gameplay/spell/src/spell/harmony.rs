@@ -304,10 +304,7 @@ impl MonkState {
 
     /// Focus Serenity's PRIMARY COMMIT (§8.2): Serene is true and forced until `now` + 7000 ms.
     /// Nothing changes on an error.
-    pub fn commit_focus_serenity(
-        &mut self,
-        now: SemanticTimeMicros,
-    ) -> Result<(), MonkStateError> {
+    pub fn commit_focus_serenity(&mut self, now: SemanticTimeMicros) -> Result<(), MonkStateError> {
         self.accept_command()?;
         let until = now
             .checked_add(FOCUS_SERENITY_MICROS)
@@ -333,12 +330,7 @@ impl HarmonyMultiplier {
     /// `m = 1 + B * 2^(c - 1) / 100` for c = `charges` > 0, else 1, with
     /// `B = (7 + 0.005 * level) * V` percent and `V` = 1 without Virtue of Harmony, 1.5 with it,
     /// 2 with it while Serene (news 8944). `None` above [`MAX_HARMONY`] charges.
-    pub fn new(
-        level: u32,
-        charges: u8,
-        virtue_of_harmony: bool,
-        serene: bool,
-    ) -> Option<Self> {
+    pub fn new(level: u32, charges: u8, virtue_of_harmony: bool, serene: bool) -> Option<Self> {
         if charges > MAX_HARMONY {
             return None;
         }

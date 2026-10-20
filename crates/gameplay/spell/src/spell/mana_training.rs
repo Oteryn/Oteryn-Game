@@ -297,7 +297,9 @@ mod tests {
     use super::*;
     fn formula() -> CompiledTrainingFormula {
         CompiledTrainingFormula::from_profile(
-            include_bytes!("../../../../../tools/content-schema/native-gameplay/build-training.json"),
+            include_bytes!(
+                "../../../../../tools/content-schema/native-gameplay/build-training.json"
+            ),
             "actual-content-r1",
         )
         .unwrap()
@@ -1132,11 +1134,7 @@ impl super::cast::PlayerSpellState {
     /// After a replayed receipt merged the hits resolved meanwhile: whether the save must write
     /// them before it reports `Saved`. A level they reach is due at once (SKILLS-0 §3.4); a
     /// forced save (logout, shutdown) also writes tries that reach no level.
-    pub fn training_successor_due(
-        &self,
-        formula: &CompiledTrainingFormula,
-        force: bool,
-    ) -> bool {
+    pub fn training_successor_due(&self, formula: &CompiledTrainingFormula, force: bool) -> bool {
         self.training_checkpoint.is_none()
             && if force {
                 self.has_training_to_flush()

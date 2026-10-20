@@ -70,8 +70,10 @@ impl SevenSource {
         list: ScheduleList,
         content: [u8; 32],
     ) -> Result<Option<Self>, AttackError> {
-        let w: Witness = serde_json::from_str(include_str!("../../../../apps/game-server/src/source_encounter_seven_fixture.json"))
-            .map_err(|_| AttackError::InvalidSource)?;
+        let w: Witness = serde_json::from_str(include_str!(
+            "../../../../apps/game-server/src/source_encounter_seven_fixture.json"
+        ))
+        .map_err(|_| AttackError::InvalidSource)?;
         if w.cases.len() != 7 || w.profiles.len() > 512 || w.records.len() > 512 {
             return Err(AttackError::InvalidSource);
         }

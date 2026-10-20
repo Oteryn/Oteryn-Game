@@ -11,7 +11,11 @@ publish.workspace = true
 category = "gameplay"
 release-role = "production"
 
+[features]
+test-support = ["oteryn-gameplay-content/test-support", "oteryn-gameplay-durability/test-support", "oteryn-gameplay-foundation/test-support"]
+
 [dependencies]
+oteryn-gameplay-source-critical-baseline = { version = "=0.1.0", path = "../source-critical-baseline" }
 oteryn-gameplay-content = { version = "=0.1.0", path = "../content" }
 oteryn-gameplay-domain = { version = "=0.1.0", path = "../domain" }
 oteryn-gameplay-durability = { version = "=0.1.0", path = "../durability" }

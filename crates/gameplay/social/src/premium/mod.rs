@@ -343,7 +343,7 @@ impl PremiumConsumer {
     }
 
     /// Tests outside this module: install `evidence` as proven in this process.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn prove_for_test(&self, evidence: PremiumEvidence) {
         let ticket = self.ticket();
         self.update(evidence.account_id, |view| {

@@ -718,5 +718,5 @@ fn resolve_source_cue(alias: &str) -> Option<Cue> {
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 pub mod tests;

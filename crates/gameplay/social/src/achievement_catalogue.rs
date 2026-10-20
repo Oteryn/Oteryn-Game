@@ -223,6 +223,10 @@ impl AchievementCatalogue {
         }
     }
 
+    #[allow(
+        clippy::len_without_is_empty,
+        reason = "catalogue admission rejects empty catalogues"
+    )]
     pub fn len(&self) -> usize {
         self.entries.len()
     }
@@ -323,6 +327,23 @@ impl AchievementCatalogue {
             log(&integrity_fault_event(request, key));
         }
         answer
+    }
+}
+
+/// HIGHSCORES0 §3 category 10: the activated Achievement catalogue owns the point values; a
+/// retired entry counts 0 and an unknown key or an overflow is `None` (the account is refused,
+/// never ranked on a guess).
+impl crate::durability::highscore_snapshot::AchievementPoints
+    for crate::achievement_catalogue::AchievementCatalogue
+{
+    fn total_points(
+        &self,
+        earned: &[crate::durability::account_achievement::EarnedAchievement],
+    ) -> Option<u32> {
+        // A page past the end carries no rows; `total_points` always sums every fact.
+        self.account_achievements_page(earned, u32::MAX)
+            .ok()
+            .map(|page| page.total_points)
     }
 }
 
@@ -461,8 +482,11 @@ mod tests {
 
     #[test]
     fn the_embedded_shards_are_the_catalogue_directory() {
-        let directory =
-            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server")).join("../../content/achievements");
+        let directory = std::path::Path::new(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../apps/game-server"
+        ))
+        .join("../../content/achievements");
         let mut names: Vec<String> = std::fs::read_dir(&directory)
             .into_iter()
             .flatten()

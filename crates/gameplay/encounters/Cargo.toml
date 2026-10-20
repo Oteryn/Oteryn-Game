@@ -12,6 +12,7 @@ category = "gameplay"
 release-role = "production"
 
 [dependencies]
+oteryn-gameplay-source-critical-baseline = { version = "=0.1.0", path = "../source-critical-baseline" }
 oteryn-gameplay-combat = { version = "=0.1.0", path = "../combat" }
 oteryn-gameplay-content = { version = "=0.1.0", path = "../content" }
 oteryn-gameplay-domain = { version = "=0.1.0", path = "../domain" }

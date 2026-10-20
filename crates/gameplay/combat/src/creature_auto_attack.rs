@@ -1122,7 +1122,7 @@ fn hex(b: &[u8]) -> String {
     b.iter().map(|b| format!("{b:02x}")).collect()
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 impl AutoAttackOwner {
     pub fn has_active_target_test(&self, actor: ExactActorRef) -> bool {
         self.entries.iter().any(|e| e.issuer == actor && e.active)

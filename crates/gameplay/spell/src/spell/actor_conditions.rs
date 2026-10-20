@@ -1267,10 +1267,7 @@ impl PlayerSpellState {
         }
         Ok(effective)
     }
-    pub fn owned_effective_magic_level(
-        &self,
-        now_us: u64,
-    ) -> Result<u32, SpellCastDisposition> {
+    pub fn owned_effective_magic_level(&self, now_us: u64) -> Result<u32, SpellCastDisposition> {
         self.owned_skill_adjustments(now_us)?
             .adjust_magic_level(self.character_facts().magic_level)
             .ok_or(SpellCastDisposition::Rejected)

@@ -371,11 +371,7 @@ pub struct OutgoingLine {
 /// `NOTIFY` text (standard base64 of `key_id || nonce || ciphertext || tag`). The associated data
 /// is the channel name and the `key_id`. A line over the bound is `Oversized`, never truncated or
 /// split. The `message_id` and the nonce are drawn here so no caller can repeat either.
-pub fn seal(
-    ring: &RelayKeyRing,
-    channel: &str,
-    line: OutgoingLine,
-) -> Result<String, RelayError> {
+pub fn seal(ring: &RelayKeyRing, channel: &str, line: OutgoingLine) -> Result<String, RelayError> {
     let line = RelayLine {
         message_id: random_message_id()?,
         sent_at_micros: line.sent_at_micros,
@@ -561,7 +557,7 @@ impl ReplayWindow {
     }
 
     /// A window with `floor` and a lease that never runs out, for the rules tests.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn starting_at(floor_micros: u64) -> Self {
         Self {
             floor: floor_micros,

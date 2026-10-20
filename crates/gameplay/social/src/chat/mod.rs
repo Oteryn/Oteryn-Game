@@ -16,14 +16,10 @@ pub mod spam;
 mod tests;
 
 #[allow(unused_imports)] // Preserve the existing text grammar paths.
-pub use crate::durability::chat_text::{
-    ChatText, TEXT_MAX_BYTES, TEXT_MAX_CHARS, TextError,
-};
+pub use crate::durability::chat_text::{ChatText, TEXT_MAX_BYTES, TEXT_MAX_CHARS, TextError};
 pub use egress::{ChatEgress, EGRESS_MAX_LINES};
 pub use greeting::{GreetingNpc, greeted_npc};
 pub use line::{local_line, local_listeners, private_line, room_line};
 pub use spam::{ChatLimiter, ChatRefusal, YellGate};
 
-pub use crate::foundation::speech::{
-    ChatPosition, Heard, SpeechMode, WHISPER_OBSCURED, hears,
-};
+pub use crate::foundation::speech::{ChatPosition, Heard, SpeechMode, WHISPER_OBSCURED, hears};

@@ -147,10 +147,7 @@ impl OwnedCastFacts {
     pub fn magnitude(&self) -> Option<&super::magnitude_owner::MagnitudeOwnedAttributes> {
         self.access.magnitude.as_ref()
     }
-    pub fn elemental_stance(
-        &self,
-        now: u64,
-    ) -> Option<super::native_combat::ElementalStance> {
+    pub fn elemental_stance(&self, now: u64) -> Option<super::native_combat::ElementalStance> {
         self.access
             .elemental_stance
             .as_ref()

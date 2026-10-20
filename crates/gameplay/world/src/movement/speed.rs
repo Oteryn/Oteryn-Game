@@ -379,11 +379,11 @@ mod tests {
     /// writer: grass (300) at x 1, a non-walkable ground storing 120 at x 2, a plain item without
     /// a ground at x 3, and a non-walkable ground storing 0 at x 4.
     fn map_source() -> MapGroundSpeed {
-        use oteryn_world_bundle_compiler::bundle::{
-            self, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector, Terrain,
-            TerrainKind,
+        use oteryn_world_bundle::sector::{Attrs, Item, Tile};
+        use oteryn_world_bundle::writer::{
+            self as bundle, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector,
+            Terrain, TerrainKind,
         };
-        use oteryn_world_bundle_compiler::sector::{Attrs, Item, Tile};
         let ground = |key: &str, id, walkable, speed| PaletteEntry {
             key: key.into(),
             family: Family::Terrain,

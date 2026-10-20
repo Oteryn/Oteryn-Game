@@ -81,8 +81,10 @@ impl SourceCallbackCast {
         ) {
             return Ok(None);
         }
-        let w: Witness = serde_json::from_str(include_str!("../../../../apps/game-server/src/source_callback_cast_fixture.json"))
-            .map_err(|_| AttackError::InvalidSource)?;
+        let w: Witness = serde_json::from_str(include_str!(
+            "../../../../apps/game-server/src/source_callback_cast_fixture.json"
+        ))
+        .map_err(|_| AttackError::InvalidSource)?;
         let Some((key, c)) = w
             .cases
             .iter()
@@ -363,6 +365,7 @@ pub struct Cast {
     proposal: ProfileAbilityProposal,
     done: Vec<bool>,
 }
+#[allow(dead_code, reason = "retained source callback occurrence metadata")]
 struct Memo {
     actor: ExactActorRef,
     ability: Ref,

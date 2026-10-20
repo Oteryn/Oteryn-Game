@@ -737,7 +737,7 @@ const MINUTE: i64 = 60_000_000;
 macro_rules! fixture {
     ($name:literal) => {
         include_bytes!(concat!(
-            "../../../../tests/fixtures/premium-snapshot-v1/",
+            "../../../../../tests/fixtures/premium-snapshot-v1/",
             $name
         ))
         .as_slice()

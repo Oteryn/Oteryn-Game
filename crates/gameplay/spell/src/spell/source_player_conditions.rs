@@ -66,9 +66,7 @@ fn schedule(value: &source::DamageSchedule) -> native::DamageSchedule {
         },
     }
 }
-pub fn definition(
-    value: &source::ConditionDefinition,
-) -> Option<native::ConditionDefinition> {
+pub fn definition(value: &source::ConditionDefinition) -> Option<native::ConditionDefinition> {
     use native::ConditionValues as N;
     use source::ConditionValues as S;
     let values = match value.values() {
@@ -312,7 +310,7 @@ impl PlayerSpellState {
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 impl PlayerSpellState {
     // Pure typed fixture stage only. No runtime authority and no captured creature numbers.
     pub fn stage_owned_test_conditions(

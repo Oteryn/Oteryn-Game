@@ -136,12 +136,7 @@ impl BundleFacts {
     /// Records the placements, house tiles and doors of one sector of `manifest`, and adds to
     /// `blocked` the tiles one of whose top-level entries is a `wall` Terrain or a solid Item. A
     /// door entry does not block here: [`DoorBook`] answers it by its current state.
-    pub fn push(
-        &mut self,
-        manifest: &Manifest,
-        sector: &Sector,
-        blocked: &mut BTreeSet<TilePos>,
-    ) {
+    pub fn push(&mut self, manifest: &Manifest, sector: &Sector, blocked: &mut BTreeSet<TilePos>) {
         for tile in &sector.tiles {
             let pos = TilePos {
                 x: tile.x,
@@ -597,8 +592,11 @@ mod tests {
     /// `walkable` fact is not KNOWN true.
     #[test]
     fn unwalkable_border_list_matches_content() {
-        let dir =
-            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server")).join("../../content/world/terrain");
+        let dir = std::path::Path::new(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../apps/game-server"
+        ))
+        .join("../../content/world/terrain");
         let (mut found, mut borders) = (Vec::new(), 0);
         for entry in std::fs::read_dir(dir).expect("dir") {
             let path = entry.expect("entry").path();
@@ -635,8 +633,11 @@ mod tests {
     /// The solid list equals the JSON catalogue's `blocks_movement` floor-change objects.
     #[test]
     fn solid_floor_change_list_matches_content() {
-        let dir =
-            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server")).join("../../content/world/objects");
+        let dir = std::path::Path::new(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../apps/game-server"
+        ))
+        .join("../../content/world/objects");
         let mut found = Vec::new();
         for entry in std::fs::read_dir(dir).expect("dir") {
             let path = entry.expect("entry").path();

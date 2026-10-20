@@ -409,7 +409,7 @@ impl BundleWorld {
 
     /// Test only: this World with `table` as its spawn family (a booted bundle carries the
     /// table its `spawn` section decoded to).
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn with_spawns_for_test(mut self, table: oteryn_world_bundle::spawn::Table) -> Self {
         self.spawns = Arc::new(table);
         self
@@ -588,8 +588,9 @@ impl BundleCollisionIndexExt for BundleCollisionIndex {
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 pub mod tests {
+    #![cfg_attr(not(test), allow(dead_code, unused_imports))]
     #![allow(clippy::expect_used)]
     use super::*;
     use crate::foundation::{
@@ -798,11 +799,11 @@ pub mod tests {
         door_house: u32,
         item_grass: Option<(&str, u32)>,
     ) -> (Vec<u8>, BundlePins) {
-        use oteryn_world_bundle_compiler::bundle::{
-            self, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector, Terrain,
-            TerrainKind,
+        use oteryn_world_bundle::sector::{Attrs, Item, Tile};
+        use oteryn_world_bundle::writer::{
+            self as bundle, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector,
+            Terrain, TerrainKind,
         };
-        use oteryn_world_bundle_compiler::sector::{Attrs, Item, Tile};
         let terrain = |key: &str, id, kind, walkable: Option<bool>| PaletteEntry {
             key: key.into(),
             family: Family::Terrain,
@@ -919,11 +920,11 @@ pub mod tests {
     }
 
     fn floor_bundle_of(cycle: bool, teleports: bool) -> (Vec<u8>, BundlePins) {
-        use oteryn_world_bundle_compiler::bundle::{
-            self, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector, Terrain,
-            TerrainKind,
+        use oteryn_world_bundle::sector::{Attrs, Item, Tile};
+        use oteryn_world_bundle::writer::{
+            self as bundle, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector,
+            Terrain, TerrainKind,
         };
-        use oteryn_world_bundle_compiler::sector::{Attrs, Item, Tile};
         let terrain = |key: &str, id| PaletteEntry {
             key: key.into(),
             family: Family::Terrain,
