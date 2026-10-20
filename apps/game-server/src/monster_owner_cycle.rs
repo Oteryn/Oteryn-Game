@@ -12,7 +12,6 @@ use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, GenerationError, RuntimeScopeRefV1, RuntimeWorkStamp,
     ScopeOwnershipGeneration, ScopeRuntimeFence,
 };
-use crate::gameplay_transport::actor_spell::ChannelSpellStates;
 
 const AI01_CREATURES_PER_SCOPE: usize = 64; // Accepted AI decision §4.9:16sources×4population.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -142,15 +141,15 @@ impl MonsterThinkLane {
     /// Consumes due owner inputs once in the existing Foundation deterministic order. The
     /// callback must use actual native AI selection/combat facts; absent facts mean refusal.
     /// It receives the current fence and fresh stamp, never a caller-fabricated grant.
-    pub(crate) fn run_due<R>(
+    pub(crate) fn run_due<R, S>(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
-        states: &mut ChannelSpellStates,
+        states: &mut S,
         current: &mut ScopeRuntimeFence,
         clock: &impl OwnerClock,
         mut consume: impl FnMut(
             &mut ChannelRuntimeV1,
-            &mut ChannelSpellStates,
+            &mut S,
             &ScopeRuntimeFence,
             RuntimeWorkStamp,
             ThinkOccurrence,
@@ -205,6 +204,7 @@ impl MonsterThinkLane {
 mod tests {
     use super::*;
     use crate::foundation::{crystal_timer_fixture, owner_timer::VirtualOwnerClock};
+    use crate::gameplay_transport::actor_spell::ChannelSpellStates;
     fn owner() -> (
         ChannelRuntimeV1,
         ChannelSpellStates,

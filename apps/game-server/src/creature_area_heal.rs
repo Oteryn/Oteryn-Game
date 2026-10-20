@@ -346,6 +346,20 @@ pub(crate) trait AreaHealPolicy {
         stamp: RuntimeWorkStamp,
     ) -> Option<bool>;
 }
+/// Atomic heal/cure publication supplied by the existing Channel spell-state owner.
+pub(crate) trait AreaHealStates {
+    #[allow(clippy::too_many_arguments)]
+    fn commit_source_area_heal_and_paralysis_removal(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        content: [u8; 32],
+        heal: &[(ExactActorRef, String, u64, u64)],
+        cure: &[ExactActorRef],
+        now: u64,
+        fence: &ScopeRuntimeFence,
+        stamp: RuntimeWorkStamp,
+    ) -> Result<Vec<OwnerDamageResult>, crate::foundation::CarrierError>;
+}
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct AreaHealOutcome {
     pub(crate) targets: Vec<(ExactActorRef, OwnerDamageResult)>,
@@ -377,7 +391,7 @@ impl AreaHealOwner {
         source: &AreaHealSource,
         proposal: &ProfileAbilityProposal,
         policy: &mut dyn AreaHealPolicy,
-        states: &mut crate::gameplay_transport::actor_spell::ChannelSpellStates,
+        states: &mut impl AreaHealStates,
         now: u64,
     ) -> Result<AreaHealOutcome, AreaHealError> {
         use AreaHealError as E;

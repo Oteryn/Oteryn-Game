@@ -65,6 +65,10 @@ mod spell_character_facts;
 mod spell_magnitude_facts;
 pub(crate) mod spell_premium_coordinator;
 mod spell_presentation_publisher;
+#[allow(
+    unused_imports,
+    reason = "Retain the original presentation type path during the ADR-0019 carve"
+)]
 pub(crate) use spell_presentations::PreparedPresentation as PreparedSpellPresentation;
 mod tcp_tls;
 mod world_map;
@@ -7491,7 +7495,7 @@ pub(crate) use spell_presentation_publisher::{
 #[cfg(test)]
 pub(crate) use spell_presentations::SpellPresentationOwner;
 
-mod spell_presentations;
+pub(crate) use crate::spell::spell_presentations;
 
 /// DEATH-ML-LOSS-1 (CP D1433, #2193 Codex P1 4304911165) on PostgreSQL 17.6: a trained actor
 /// whose death lowers its build is rebased onto the receipt's post-loss build at respawn, so its
