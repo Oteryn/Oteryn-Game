@@ -92,5 +92,4 @@ impl ItemDefinitionIndex {
 }
 
 #[cfg(test)]
-#[path = "item_ref_tests.rs"]
 mod tests;

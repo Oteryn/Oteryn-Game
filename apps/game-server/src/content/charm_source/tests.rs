@@ -2,8 +2,8 @@ use super::*;
 use serde_json::Value;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
-const INDEX: &[u8] = include_bytes!("../../../../content/charms/index.json");
-const SHARD: &[u8] = include_bytes!("../../../../content/charms/charms-00000-00024.json");
+const INDEX: &[u8] = include_bytes!("../../../../../content/charms/index.json");
+const SHARD: &[u8] = include_bytes!("../../../../../content/charms/charms-00000-00024.json");
 
 #[test]
 fn embedded_server_import_retains_the_complete_canonical_catalogue() -> TestResult {

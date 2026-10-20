@@ -1,7 +1,7 @@
 #![allow(clippy::expect_used)]
-use super::replies::NpcReplyTemplate;
-use super::service::build;
-use super::service::*;
+use crate::content::npc_catalogue::replies::NpcReplyTemplate;
+use crate::content::npc_catalogue::service::build;
+use crate::content::npc_catalogue::service::*;
 use crate::content::{
     ProjectV2CandidateField, ProjectV2Declaration, ProjectV2DefinitionRef, ProjectV2Family,
     ProjectV2Identity, ProjectV2ServiceOffer, ProjectV2ServiceOfferDirection as Dir,
@@ -455,7 +455,7 @@ fn model_is_identical_when_built_twice_and_in_any_record_order() {
 
 #[test]
 fn bank_dialogue_comes_only_from_current_typed_service_and_actual_admitted_messages() {
-    let packet: serde_json::Value = serde_json::from_str(include_str!("../../../../../docs/agents/evidence/OTV2-20261015-npc-bank-services/native-bank-admission.json")).expect("native authored packet");
+    let packet: serde_json::Value = serde_json::from_str(include_str!("../../../../docs/agents/evidence/OTV2-20261015-npc-bank-services/native-bank-admission.json")).expect("native authored packet");
     let mut npc: ProjectV2Declaration =
         serde_json::from_value(packet["before_npc"].clone()).expect("NPC");
     let mut dialogue: ProjectV2Declaration =

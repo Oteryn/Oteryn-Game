@@ -735,7 +735,7 @@ impl QualifiedNativeEntryRoom {
     /// BUNDLE-COMBAT-ENABLE-1: the qualified room as a bundle World's Channel serves it. The
     /// compiled Content (and so the server and client digests) and the door content stay this
     /// room's own; the cells, frame binding, map revision and start are the bundle's, the same
-    /// identities [`crate::map::boot::BundleWorld`] gives the Channel pin. `cells` must be
+    /// identities `BundleWorld` gives the Channel pin. `cells` must be
     /// bundle cells (MAP-CUTOVER-1a) of this room's World and compiled generation, or `None`.
     ///
     /// Every consumer that compares the room with the Channel pin therefore reads the bundle's

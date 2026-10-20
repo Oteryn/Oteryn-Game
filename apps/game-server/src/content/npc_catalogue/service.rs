@@ -317,9 +317,9 @@ type ClassifiedService<'a> = (
     Vec<(&'a ProjectV2ServiceOffer, Option<NpcOfferHeldReason>)>,
 );
 
-pub(super) type Record<'a> = (&'a ProjectV2DefinitionRef, &'a ProjectV2Declaration);
+pub(crate) type Record<'a> = (&'a ProjectV2DefinitionRef, &'a ProjectV2Declaration);
 
-pub(super) fn build(
+pub(crate) fn build(
     records: &[Record<'_>],
     project_revision: &str,
     source_tree_digest: &str,

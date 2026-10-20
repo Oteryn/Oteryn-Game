@@ -165,7 +165,7 @@ fn strict_parse_refuses_profile_violations() {
 #[test]
 fn canonical_vectors_match_producer() {
     let vectors: Value = serde_json::from_str(include_str!(
-        "../../../../tools/content-schema/character-progression/canonical-vectors.json"
+        "../../../../../tools/content-schema/character-progression/canonical-vectors.json"
     ))
     .unwrap();
     for case in vectors["cases"].as_array().unwrap() {
@@ -179,23 +179,23 @@ fn canonical_vectors_match_producer() {
 #[test]
 fn committed_ruleset_files_decode_and_match_producer_revisions() {
     let table = strict_parse(include_bytes!(
-        "../../../../rulesets/character/experience/experience-table.json"
+        "../../../../../rulesets/character/experience/experience-table.json"
     ))
     .unwrap();
     let reward = strict_parse(include_bytes!(
-        "../../../../rulesets/character/experience/reward-policy.json"
+        "../../../../../rulesets/character/experience/reward-policy.json"
     ))
     .unwrap();
     let differences = strict_parse(include_bytes!(
-        "../../../../rulesets/character/experience/declared-differences.json"
+        "../../../../../rulesets/character/experience/declared-differences.json"
     ))
     .unwrap();
     let death = strict_parse(include_bytes!(
-        "../../../../rulesets/character/death/death-policy.json"
+        "../../../../../rulesets/character/death/death-policy.json"
     ))
     .unwrap();
     let evidence = strict_parse(include_bytes!(
-        "../../../../docs/reference/experience-table-20261005/evidence.json"
+        "../../../../../docs/reference/experience-table-20261005/evidence.json"
     ))
     .unwrap();
     let evidence_rev = format!("{PREFIX_EVIDENCE}{}", sha32(&canonical(&evidence).unwrap()));

@@ -893,3 +893,27 @@ mod domain_market_tests;
 mod domain_timed_item_host_tests;
 #[path = "durability/mail_text_policy.rs"]
 mod mail_text_policy;
+
+#[cfg(test)]
+#[path = "lifted_tests/content_executable_catalog_tests.rs"]
+mod content_executable_catalog_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/content_native_spell_tests.rs"]
+mod content_native_spell_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/content_encounter_map_item_tests.rs"]
+mod content_encounter_map_item_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/content_creature_reward_tests.rs"]
+mod content_creature_reward_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/content_charm_source_effect_tests.rs"]
+mod content_charm_source_effect_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/content_npc_service_tests.rs"]
+mod content_npc_service_tests;

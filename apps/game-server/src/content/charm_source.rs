@@ -343,5 +343,4 @@ struct Stage {
 }
 
 #[cfg(test)]
-#[path = "charm_source_tests.rs"]
 mod tests;

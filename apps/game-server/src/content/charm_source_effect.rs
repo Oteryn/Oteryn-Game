@@ -12,7 +12,7 @@ use serde_json::value::RawValue;
 fn invalid() -> ContentError {
     ContentError::InvalidArtifact("invalid Charm source effect")
 }
-fn percent(value: u32) -> Result<CharmPercent, ContentError> {
+pub(crate) fn percent(value: u32) -> Result<CharmPercent, ContentError> {
     CharmPercent::from_hundredths(value).ok_or_else(invalid)
 }
 
@@ -102,7 +102,3 @@ fn damage(members: &mut CharmSourceMembers) -> Result<CharmDamageKind, ContentEr
         reduced_by_armor: take(members, "reduced_by_armor")?,
     })
 }
-
-#[cfg(test)]
-#[path = "charm_source_effect_tests.rs"]
-mod tests;

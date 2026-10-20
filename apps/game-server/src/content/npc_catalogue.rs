@@ -6,8 +6,8 @@ use super::{
     ProjectV2DefinitionRef, ProjectV2Family, ProjectV2Source, ProjectV2SourceIdentityBinding,
     WorldProject, capture_world_project,
 };
-mod replies;
-mod service;
+pub(crate) mod replies;
+pub(crate) mod service;
 #[allow(
     unused_imports,
     reason = "read by NPC talk (NPC-TALK-1), which has no boot caller yet"
@@ -18,8 +18,6 @@ pub(crate) use replies::{NpcGeneratedReplies, NpcReplyLine, NpcReplyTemplate};
     reason = "read by NPC talk (NPC-TALK-1), which has no boot caller yet"
 )]
 pub(crate) use service::{NpcEntry, NpcServiceModel};
-#[cfg(test)]
-mod service_tests;
 
 use sha2::{Digest, Sha256};
 use std::{
