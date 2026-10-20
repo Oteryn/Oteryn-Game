@@ -226,8 +226,9 @@ impl GroundSpeedSource for QualifiedCellGroundSpeed<'_> {
 }
 
 #[cfg(test)]
-#[allow(clippy::expect_used)]
 mod tests {
+    #![allow(clippy::expect_used)]
+
     use super::*;
 
     fn table() -> &'static StepSpeedTable {
@@ -646,8 +647,9 @@ pub(crate) fn creature_step_duration(
 }
 
 #[cfg(test)]
-#[allow(clippy::expect_used, clippy::unwrap_used)]
 mod creature_native_speed_tests {
+    #![allow(clippy::expect_used, clippy::unwrap_used)]
+
     use super::*;
     use crate::foundation::{
         ActorConditionTransition, ApplicationFacts, ConditionDefinition, ConditionSource,

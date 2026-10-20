@@ -41,7 +41,7 @@ pub(crate) fn vocation_choice_request(
     })
 }
 
-// D1103 native owner composition. Register this file below gameplay_transport at the CP slot.
+// D1103 native owner composition in gameplay_transport.
 use crate::domain::CharacterId;
 use crate::durability::DurabilityRoot;
 use crate::durability::character_authority::ReconciledCharacterAuthority;
