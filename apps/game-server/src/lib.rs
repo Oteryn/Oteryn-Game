@@ -917,3 +917,11 @@ mod content_charm_source_effect_tests;
 #[cfg(test)]
 #[path = "lifted_tests/content_npc_service_tests.rs"]
 mod content_npc_service_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/movement_speed_runtime_tests.rs"]
+mod movement_speed_runtime_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/world_clock_world_config_tests.rs"]
+mod world_clock_world_config_tests;
