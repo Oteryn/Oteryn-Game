@@ -67,7 +67,7 @@ impl AuthorityFenceEvidence {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub(crate) enum ParentOccurrenceRef {
+pub enum ParentOccurrenceRef {
     Root(RootSourceOccurrenceRef),
     Child(Box<ChildOccurrenceRef>),
 }
@@ -146,7 +146,7 @@ impl ChildOccurrenceRef {
         }
     }
 
-    pub(crate) fn root(&self) -> &RootSourceOccurrenceRef {
+    pub fn root(&self) -> &RootSourceOccurrenceRef {
         let mut parent = &self.parent;
         loop {
             match parent {
@@ -156,11 +156,11 @@ impl ChildOccurrenceRef {
         }
     }
 
-    pub(crate) fn parent(&self) -> &ParentOccurrenceRef {
+    pub fn parent(&self) -> &ParentOccurrenceRef {
         &self.parent
     }
 
-    pub(crate) fn checked_ancestry_depth(&self) -> Result<usize, InteractionError> {
+    pub fn checked_ancestry_depth(&self) -> Result<usize, InteractionError> {
         let mut depth = 1_usize;
         let mut parent = &self.parent;
         while let ParentOccurrenceRef::Child(child) = parent {

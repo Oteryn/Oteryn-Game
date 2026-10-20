@@ -78,7 +78,7 @@ pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
 mod chat;
 #[path = "../src/content/mod.rs"]
 pub mod content;
-#[path = "../src/domain/mod.rs"]
+#[path = "../../../crates/gameplay/domain/src/domain/mod.rs"]
 pub mod domain;
 #[path = "../src/durability/mod.rs"]
 pub mod durability;
@@ -137,15 +137,15 @@ pub(crate) mod world_runtime;
     dead_code,
     reason = "shared PostgreSQL support; each mount uses a subset"
 )]
-#[path = "../src/../tests/support/bestiary_postgres_harness.rs"]
+#[path = "support/bestiary_postgres_harness.rs"]
 mod bestiary_postgres_harness;
 
 #[cfg(test)]
-#[path = "../src/../tests/support/spell_stance_runtime_postgres_cases.rs"]
+#[path = "support/spell_stance_runtime_postgres_cases.rs"]
 mod spell_stance_runtime_postgres_cases;
 
 #[cfg(test)]
-#[path = "../src/../tests/support/spell_familiar_runtime_postgres_cases.rs"]
+#[path = "support/spell_familiar_runtime_postgres_cases.rs"]
 mod spell_familiar_runtime_postgres_cases;
 
 #[cfg(test)]

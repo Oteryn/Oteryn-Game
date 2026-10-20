@@ -88,7 +88,7 @@ pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
 )]
 mod chat;
 pub mod content;
-pub mod domain;
+pub use oteryn_gameplay_domain::domain;
 pub mod durability;
 pub mod foundation;
 mod gameplay_transport;
@@ -879,5 +879,17 @@ mod creature_source_items;
 #[cfg(test)]
 mod security;
 
+#[cfg(test)]
+#[path = "lifted_tests/domain_death_tests.rs"]
+mod domain_death_tests;
+#[cfg(test)]
+#[path = "durability/forge_tests.rs"]
+mod domain_forge_tests;
+#[cfg(test)]
+#[path = "lifted_tests/domain_market_tests.rs"]
+mod domain_market_tests;
+#[cfg(test)]
+#[path = "lifted_tests/domain_timed_item_host_tests.rs"]
+mod domain_timed_item_host_tests;
 #[path = "durability/mail_text_policy.rs"]
 mod mail_text_policy;

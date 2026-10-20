@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "crates/gameplay/domain",
     "apps/client",
     "apps/game-server",
     "crates/foundation",

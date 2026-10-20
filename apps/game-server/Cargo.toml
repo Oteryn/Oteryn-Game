@@ -13,6 +13,7 @@ category = "app"
 release-role = "production"
 
 [dependencies]
+oteryn-gameplay-domain = { version = "=0.1.0", path = "../../crates/gameplay/domain" }
 aws-lc-rs.workspace = true
 base64.workspace = true
 ed25519-dalek.workspace = true

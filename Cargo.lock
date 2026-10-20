@@ -1977,6 +1977,7 @@ dependencies = [
  "oteryn-foundation",
  "oteryn-gameplay-admission-evidence",
  "oteryn-gameplay-character-recovery-fence",
+ "oteryn-gameplay-domain",
  "oteryn-gameplay-native-admission-source",
  "oteryn-gameplay-node-files",
  "oteryn-gameplay-source-critical-baseline",
@@ -2014,6 +2015,16 @@ name = "oteryn-gameplay-character-recovery-fence"
 version = "0.1.0"
 dependencies = [
  "rustix 1.1.5",
+ "sha2 0.11.0",
+]
+
+[[package]]
+name = "oteryn-gameplay-domain"
+version = "0.1.0"
+dependencies = [
+ "oteryn-simulation-determinism",
+ "serde",
+ "serde_json",
  "sha2 0.11.0",
 ]
 

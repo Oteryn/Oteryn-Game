@@ -164,7 +164,7 @@ mod tests {
     #[test]
     fn ruleset_file_matches_the_implemented_rules() {
         let ruleset: serde_json::Value = serde_json::from_str(include_str!(
-            "../../../../rulesets/progression/bestiary/kill-progress.json"
+            "../../../../../rulesets/progression/bestiary/kill-progress.json"
         ))
         .expect("ruleset json");
         assert_eq!(

@@ -1000,7 +1000,7 @@ mod tests {
 
     fn ruleset() -> serde_json::Value {
         serde_json::from_str(include_str!(
-            "../../../../rulesets/progression/weapon-proficiency/progression.json"
+            "../../../../../rulesets/progression/weapon-proficiency/progression.json"
         ))
         .expect("ruleset json")
     }

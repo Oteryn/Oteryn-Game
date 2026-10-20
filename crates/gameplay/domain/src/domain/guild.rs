@@ -142,12 +142,12 @@ impl GuildState {
 
 /// Accepted GUILD0 §3.3 deadline source. Premium remains a separate daily job.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum GuildDeadlineJob {
+pub enum GuildDeadlineJob {
     Formation,
     ViceDeficit,
 }
 impl GuildDeadlineJob {
-    pub(crate) const fn code(self) -> i16 {
+    pub const fn code(self) -> i16 {
         match self {
             Self::Formation => 1,
             Self::ViceDeficit => 2,
@@ -155,7 +155,7 @@ impl GuildDeadlineJob {
     }
 
     /// Locked facts only; this comparison grants no current World authority.
-    pub(crate) fn due(
+    pub fn due(
         self,
         state: GuildState,
         formation_deadline: i64,

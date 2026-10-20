@@ -18,13 +18,13 @@ pub struct EmptyLatchHeld {
 
 impl EmptyLatchHeld {
     /// Called only after the durable latch read holds the shared lock.
-    pub(crate) const fn inside_gate() -> Self {
+    pub const fn inside_gate() -> Self {
         Self { _private: () }
     }
 
     /// Test-only: a witness for pure status tests that hold no transaction.
     #[cfg(test)]
-    pub(crate) const fn for_test() -> Self {
+    pub const fn for_test() -> Self {
         Self { _private: () }
     }
 }
@@ -88,7 +88,7 @@ impl PremiumGate {
     pub const CLOSED: Self = Self { current: false };
 
     /// For the Premium fence owners only: `current` is their read of current authority.
-    pub(crate) const fn from_fence_read(current: bool) -> Self {
+    pub const fn from_fence_read(current: bool) -> Self {
         Self { current }
     }
 
@@ -120,7 +120,7 @@ pub struct PreDelivery<'g> {
 
 impl<'g> PreDelivery<'g> {
     /// Inside the gate's shared-lock transaction that read an empty latch table.
-    pub(crate) const fn inside_gate(held: &'g EmptyLatchHeld) -> Self {
+    pub const fn inside_gate(held: &'g EmptyLatchHeld) -> Self {
         Self { _held: held }
     }
 }

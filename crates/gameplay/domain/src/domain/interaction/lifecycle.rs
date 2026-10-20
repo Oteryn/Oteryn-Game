@@ -89,7 +89,7 @@ impl<O: DelegatedOperation> ChildLifecycleBook<O> {
         Ok(entry.state)
     }
 
-    pub(crate) fn begin(
+    pub fn begin(
         &mut self,
         child: &ChildOccurrenceRef,
         operation: &O,
@@ -115,7 +115,7 @@ impl<O: DelegatedOperation> ChildLifecycleBook<O> {
         }
     }
 
-    pub(crate) fn apply_proposal(
+    pub fn apply_proposal(
         &mut self,
         child: &ChildOccurrenceRef,
         operation: &O,

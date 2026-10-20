@@ -1,7 +1,7 @@
 // This historical standalone fixture includes Ability's source directly.
 // Its narrow test-only owner shim keeps the typed bridge compiling here;
 // Foundation's focused unit tests exercise the actual carrier and HP slot.
-#[path = "../src/domain/appearance.rs"]
+#[path = "../../../crates/gameplay/domain/src/domain/appearance.rs"]
 mod appearance;
 mod domain {
     pub(crate) use crate::appearance;
