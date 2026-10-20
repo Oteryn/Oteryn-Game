@@ -38,7 +38,9 @@ pub mod character_vitals_soul;
 pub mod character_vitals_stamina;
 pub mod character_wheel;
 pub mod charm_state;
+pub(crate) mod chat_text;
 pub mod content_activation;
+pub(crate) mod creature_schedule;
 mod db;
 pub(crate) mod equipment_policy_abi;
 pub mod forge;
@@ -101,6 +103,7 @@ pub(crate) mod spell_privacy;
 pub(crate) mod spell_wheel_abi;
 pub mod sqlstate_codes;
 pub(crate) mod starter_grant;
+pub(crate) mod uniform_draw;
 pub(crate) mod world_house_instance;
 pub(crate) mod world_party;
 

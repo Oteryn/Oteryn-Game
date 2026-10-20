@@ -111,7 +111,11 @@ impl GuildTextAuditProposal {
             if self.text.chars().count() > 29 || self.text.contains('\0') {
                 return None;
             }
-        } else if crate::chat::ChatText::parse(&self.text).ok()?.as_str() != self.text {
+        } else if crate::durability::chat_text::ChatText::parse(&self.text)
+            .ok()?
+            .as_str()
+            != self.text
+        {
             return None;
         }
         let bytes = serde_json::to_vec(self).ok()?;

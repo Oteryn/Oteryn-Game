@@ -9,12 +9,69 @@
 
 use super::db::{begin_semantic_transaction, commit_semantic_transaction};
 use super::{DurabilityError, DurabilityRoot};
+use crate::domain::premium::PremiumStatus;
 use sqlx::Row;
 use std::future::Future;
 use std::pin::Pin;
 
 /// The gate's transaction: open only before delivery, for a pre-delivery bypass.
 pub type PremiumGateTx<'t> = sqlx::Transaction<'t, sqlx::Postgres>;
+
+/// A Premium gate operation: runs once with the account's status and, for `NotActivated` only,
+/// the gate's transaction (PREMIUM-ACTIVATION-0 §1.2). It owns what it captures.
+pub(crate) trait PremiumGateOperation<T>:
+    for<'g, 't> FnOnce(
+        PremiumStatus<'g>,
+        Option<&'g mut PremiumGateTx<'t>>,
+    ) -> Pin<Box<dyn Future<Output = T> + Send + 'g>>
+    + Send
+    + 'static
+{
+}
+impl<T, F> PremiumGateOperation<T> for F where
+    F: for<'g, 't> FnOnce(
+            PremiumStatus<'g>,
+            Option<&'g mut PremiumGateTx<'t>>,
+        ) -> Pin<Box<dyn Future<Output = T> + Send + 'g>>
+        + Send
+        + 'static
+{
+}
+/// A multi-account Premium gate operation: runs once with one status per account, in order, and,
+/// for `NotActivated` only, the gate's transaction (PREMIUM-ACTIVATION-0 §1.2).
+pub(crate) trait PremiumBatchGateOperation<T>:
+    for<'g, 't> FnOnce(
+        Vec<PremiumStatus<'g>>,
+        Option<&'g mut PremiumGateTx<'t>>,
+    ) -> Pin<Box<dyn Future<Output = T> + Send + 'g>>
+    + Send
+    + 'static
+{
+}
+impl<T, F> PremiumBatchGateOperation<T> for F where
+    F: for<'g, 't> FnOnce(
+            Vec<PremiumStatus<'g>>,
+            Option<&'g mut PremiumGateTx<'t>>,
+        ) -> Pin<Box<dyn Future<Output = T> + Send + 'g>>
+        + Send
+        + 'static
+{
+}
+/// Account-level gate supplied by the current Premium owner. The callback retains
+/// the same transaction and pre-delivery witness as the native gate.
+pub(crate) trait PremiumGateOwner: Sync {
+    fn with_premium_gate<T: Send, F: PremiumGateOperation<T>>(
+        &self,
+        account: [u8; 16],
+        operation: F,
+    ) -> impl Future<Output = Result<T, DurabilityError>> + Send;
+
+    fn with_premium_batch_gate<T: Send, F: PremiumBatchGateOperation<T>>(
+        &self,
+        accounts: &[[u8; 16]],
+        operation: F,
+    ) -> impl Future<Output = Result<T, DurabilityError>> + Send;
+}
 
 /// The one advisory lock key of the latch: `hashtextextended('oteryn:premium-activation', 0)`
 /// would also do, but a constant keeps the key visible next to the code that takes it.

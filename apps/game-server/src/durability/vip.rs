@@ -616,7 +616,7 @@ async fn change_consent(
 
 use crate::domain::character_name::CharacterName;
 use crate::domain::premium::PremiumStatus;
-use crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator;
+use crate::durability::premium_activation_latch::PremiumGateOwner;
 use sqlx::Acquire;
 
 /// Bounded parsed name DATA plus the digest of the exact original name. Invalid grammar is
@@ -732,7 +732,7 @@ impl DurabilityRoot {
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
-        premium: &SpellPremiumCoordinator,
+        premium: &impl PremiumGateOwner,
         request: VipAddRequest,
     ) -> Result<VipAddReceipt> {
         let recovery = authority
@@ -1224,7 +1224,7 @@ impl DurabilityRoot {
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
-        premium: &SpellPremiumCoordinator,
+        premium: &impl PremiumGateOwner,
         request: VipListRequest,
     ) -> Result<VipListReceipt> {
         let recovery = authority

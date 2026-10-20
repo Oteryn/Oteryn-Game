@@ -66,27 +66,7 @@ pub struct ProfileSummonProposal {
     pub maximum_of_creature: u32,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ScheduleList {
-    Attack,
-    Defence,
-}
-
-impl ScheduleList {
-    const fn purpose(self) -> &'static str {
-        match self {
-            Self::Attack => "AI_ATTACK",
-            Self::Defence => "AI_DEFENCE",
-        }
-    }
-
-    const fn atom(self) -> &'static str {
-        match self {
-            Self::Attack => "attack",
-            Self::Defence => "defence",
-        }
-    }
-}
+pub use crate::durability::creature_schedule::ScheduleList;
 
 /// Target facts read by the owner, not coordinates or an actor reconstructed from content IDs.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
