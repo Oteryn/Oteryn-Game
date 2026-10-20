@@ -138,8 +138,16 @@ mod contract_tests {
     const MIGRATION: &str = include_str!(
         "../../../../../apps/game-server/migrations/0001_admission_reconnect_journal.sql"
     );
-    const ADMISSION_RECOVERY: &str =
-        include_str!("../../../foundation/src/foundation/admission_recovery_inner.rs");
+    // Read at run time rather than `include_str!`: the file belongs to oteryn-gameplay-foundation,
+    // and compiling it into this crate's dep-info would count its unit tests as duplicated here.
+    #[allow(clippy::unwrap_used)] // test-only fixture read; a missing file must fail the test
+    static ADMISSION_RECOVERY: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
+        std::fs::read_to_string(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../foundation/src/foundation/admission_recovery_inner.rs"
+        ))
+        .unwrap()
+    });
 
     fn session_schema() -> Option<&'static str> {
         MIGRATION
