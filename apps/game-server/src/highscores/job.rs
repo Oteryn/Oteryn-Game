@@ -138,5 +138,4 @@ fn published(world: WorldId, snapshot: &SnapshotInfo) {
 }
 
 #[cfg(test)]
-#[path = "job_tests.rs"]
-mod tests;
+mod job_tests;

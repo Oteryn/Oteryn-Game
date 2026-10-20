@@ -1,6 +1,6 @@
 //! PostgreSQL qualification of PARTY-1's World party writer: the shared-XP toggle, its
 //! command/flag authority, the scope census and presence reads, consent defaults and
-//! HIDDEN privacy. Mounted from `party` under `cfg(test)`, so only the library test target
+//! HIDDEN privacy. Mounted from the composition root under `cfg(test)`, so only the library test target
 //! compiles and runs these bodies; without OTERYN_TEST_POSTGRES_ADMIN_URL each case
 //! reports PRE-ROUTING / NONCANONICAL and returns (the repository harness convention).
 use crate::bestiary_postgres_harness as harness;

@@ -60,6 +60,13 @@ fn reject<T>(reason: &'static str) -> Result<T, WheelGemDataError> {
     Err(WheelGemDataError(reason))
 }
 
+fn sha256_hex(bytes: &str) -> String {
+    Sha256::digest(bytes.as_bytes())
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
+}
+
 impl WheelGemData {
     pub fn embedded() -> Result<Self, WheelGemDataError> {
         Self::from_files(WHEEL, GEMS, MANIFEST)
@@ -87,7 +94,7 @@ impl WheelGemData {
             ("wheel.json", wheel, "OTERYN_WHEEL_DATA_IMPORT/v1"),
             ("gems.json", gems, "OTERYN_GEM_DATA_IMPORT/v1"),
         ] {
-            let digest = crate::node_files::operator_files::hex(&Sha256::digest(bytes.as_bytes()));
+            let digest = sha256_hex(bytes);
             if manifest.files.get(name) != Some(&digest) {
                 return reject("import file digest mismatch");
             }
@@ -178,9 +185,7 @@ mod tests {
         change(&mut data);
         let data = serde_json::to_string(&data).expect("fixture");
         let mut manifest: Value = serde_json::from_str(MANIFEST).expect("fixture");
-        manifest["files"]["gems.json"] = Value::String(crate::node_files::operator_files::hex(
-            &Sha256::digest(data.as_bytes()),
-        ));
+        manifest["files"]["gems.json"] = Value::String(sha256_hex(&data));
         (data, serde_json::to_string(&manifest).expect("fixture"))
     }
 
