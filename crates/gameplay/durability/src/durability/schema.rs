@@ -142,11 +142,14 @@ mod contract_tests {
     // and compiling it into this crate's dep-info would count its unit tests as duplicated here.
     #[allow(clippy::unwrap_used)] // test-only fixture read; a missing file must fail the test
     static ADMISSION_RECOVERY: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
-        std::fs::read_to_string(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/../foundation/src/foundation/admission_recovery_inner.rs"
-        ))
-        .unwrap()
+        // Resolve from the workspace root: game-server test targets path-include this module,
+        // so the manifest directory is not always this crate's.
+        const SOURCE: &str = "crates/gameplay/foundation/src/foundation/admission_recovery_inner.rs";
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .ancestors()
+            .find(|dir| dir.join(SOURCE).is_file())
+            .unwrap();
+        std::fs::read_to_string(root.join(SOURCE)).unwrap()
     });
 
     fn session_schema() -> Option<&'static str> {
