@@ -106,7 +106,7 @@ pub mod premium;
     dead_code,
     reason = "player spell core (P3a) awaits the cast protocol and runtime state contracts (P3b)"
 )]
-#[path = "../src/spell/mod.rs"]
+#[path = "../../../crates/gameplay/spell/src/spell/mod.rs"]
 mod spell;
 #[path = "../src/wheel_gem_data.rs"]
 pub mod wheel_gem_data;
@@ -210,13 +210,13 @@ mod creature_condition_content;
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-#[path = "../src/creature_damage_spell/mod.rs"]
+#[path = "../../../crates/gameplay/spell/src/creature_damage_spell/mod.rs"]
 mod creature_damage_spell;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-#[path = "../src/creature_damage_spell_delayed.rs"]
+#[path = "../../../crates/gameplay/spell/src/creature_damage_spell_delayed.rs"]
 mod creature_damage_spell_delayed;
 #[allow(
     dead_code,

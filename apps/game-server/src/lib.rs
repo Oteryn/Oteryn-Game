@@ -106,7 +106,7 @@ pub mod premium;
     dead_code,
     reason = "player spell core (P3a) awaits the cast protocol and runtime state contracts (P3b)"
 )]
-mod spell;
+pub(crate) use oteryn_gameplay_spell::spell;
 pub mod wheel_gem_data;
 
 pub use gameplay_transport::{
@@ -766,12 +766,12 @@ pub(crate) use oteryn_gameplay_combat::creature_condition_content;
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod creature_damage_spell;
+pub(crate) use oteryn_gameplay_spell::creature_damage_spell;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod creature_damage_spell_delayed;
+pub(crate) use oteryn_gameplay_spell::creature_damage_spell_delayed;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"

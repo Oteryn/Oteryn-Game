@@ -1985,6 +1985,7 @@ dependencies = [
  "oteryn-gameplay-native-admission-source",
  "oteryn-gameplay-node-files",
  "oteryn-gameplay-source-critical-baseline",
+ "oteryn-gameplay-spell",
  "oteryn-gameplay-weather",
  "oteryn-gameplay-world",
  "oteryn-ntp-clock",
@@ -2136,6 +2137,24 @@ name = "oteryn-gameplay-source-critical-baseline"
 version = "0.1.0"
 dependencies = [
  "oteryn-simulation-determinism",
+]
+
+[[package]]
+name = "oteryn-gameplay-spell"
+version = "0.1.0"
+dependencies = [
+ "oteryn-gameplay-combat",
+ "oteryn-gameplay-content",
+ "oteryn-gameplay-domain",
+ "oteryn-gameplay-durability",
+ "oteryn-gameplay-foundation",
+ "oteryn-gameplay-world",
+ "oteryn-protocol-oteryn",
+ "oteryn-simulation-determinism",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+ "sqlx",
 ]
 
 [[package]]
