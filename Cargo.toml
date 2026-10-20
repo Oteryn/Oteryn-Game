@@ -29,6 +29,7 @@ members = [
     "crates/gameplay/character-recovery-fence",
     "crates/gameplay/admission-evidence",
     "crates/gameplay/native-admission-source",
+    "crates/gameplay/node-files",
     "tests/security/auth",
     "tests/pre-native-client",
     "tools/architecture-check",

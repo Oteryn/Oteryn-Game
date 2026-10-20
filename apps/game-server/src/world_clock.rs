@@ -7,7 +7,7 @@
 //! payload is `oteryn_protocol_oteryn::world_clock`.
 
 use crate::foundation::WorldId;
-use crate::node::secure_file::{self, FileClass, FileError};
+use crate::node_files::secure_file::{self, FileClass, FileError};
 use oteryn_protocol_oteryn::world_clock::{TIBIAN_MINUTES_PER_DAY, WorldClock};
 use oteryn_simulation_determinism::GameplayDecisionRoot;
 

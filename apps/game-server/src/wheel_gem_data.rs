@@ -87,7 +87,7 @@ impl WheelGemData {
             ("wheel.json", wheel, "OTERYN_WHEEL_DATA_IMPORT/v1"),
             ("gems.json", gems, "OTERYN_GEM_DATA_IMPORT/v1"),
         ] {
-            let digest = crate::node::operator_files::hex(&Sha256::digest(bytes.as_bytes()));
+            let digest = crate::node_files::operator_files::hex(&Sha256::digest(bytes.as_bytes()));
             if manifest.files.get(name) != Some(&digest) {
                 return reject("import file digest mismatch");
             }
@@ -178,7 +178,7 @@ mod tests {
         change(&mut data);
         let data = serde_json::to_string(&data).expect("fixture");
         let mut manifest: Value = serde_json::from_str(MANIFEST).expect("fixture");
-        manifest["files"]["gems.json"] = Value::String(crate::node::operator_files::hex(
+        manifest["files"]["gems.json"] = Value::String(crate::node_files::operator_files::hex(
             &Sha256::digest(data.as_bytes()),
         ));
         (data, serde_json::to_string(&manifest).expect("fixture"))

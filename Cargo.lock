@@ -1978,6 +1978,7 @@ dependencies = [
  "oteryn-gameplay-admission-evidence",
  "oteryn-gameplay-character-recovery-fence",
  "oteryn-gameplay-native-admission-source",
+ "oteryn-gameplay-node-files",
  "oteryn-gameplay-source-critical-baseline",
  "oteryn-gameplay-weather",
  "oteryn-ntp-clock",
@@ -2032,6 +2033,15 @@ dependencies = [
  "tokio",
  "tokio-rustls",
  "toml",
+]
+
+[[package]]
+name = "oteryn-gameplay-node-files"
+version = "0.1.0"
+dependencies = [
+ "rustix 1.1.5",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
