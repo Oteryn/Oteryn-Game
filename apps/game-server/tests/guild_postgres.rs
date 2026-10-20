@@ -343,3 +343,11 @@ mod creature_source_items;
 )]
 #[path = "support/item_transfer_postgres_cases.rs"]
 mod item_transfer_postgres_cases;
+
+#[cfg(test)]
+#[path = "../src/lifted_tests/movement_speed_runtime_tests.rs"]
+mod movement_speed_runtime_tests;
+
+#[cfg(test)]
+#[path = "../src/lifted_tests/world_clock_world_config_tests.rs"]
+mod world_clock_world_config_tests;

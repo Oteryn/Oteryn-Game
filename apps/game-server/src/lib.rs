@@ -893,3 +893,11 @@ mod domain_market_tests;
 mod domain_timed_item_host_tests;
 #[path = "durability/mail_text_policy.rs"]
 mod mail_text_policy;
+
+#[cfg(test)]
+#[path = "lifted_tests/movement_speed_runtime_tests.rs"]
+mod movement_speed_runtime_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/world_clock_world_config_tests.rs"]
+mod world_clock_world_config_tests;
