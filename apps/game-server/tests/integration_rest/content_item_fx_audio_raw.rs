@@ -1,6 +1,6 @@
 #![allow(clippy::expect_used)]
 
-#[path = "../examples/support/item_fx_audio_raw_import.rs"]
+#[path = "../../examples/support/item_fx_audio_raw_import.rs"]
 mod raw;
 use oteryn_game_server::content::*;
 use serde_json::Value;

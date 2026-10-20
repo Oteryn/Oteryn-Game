@@ -1,4 +1,4 @@
-#[path = "support/authority_matrix.rs"]
+#[path = "../support/authority_matrix.rs"]
 mod authority_matrix;
 
 #[test]
