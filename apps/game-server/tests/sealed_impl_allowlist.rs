@@ -6,6 +6,8 @@
 //! single-crate layout; this test stops the set of implementers from growing silently.
 //! A follow-up moves the implementations into their owning crates.
 
+#![allow(clippy::panic)]
+
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -110,7 +112,10 @@ fn cross_crate_sealed_impl_sites_match_allowlist() {
     for top in ["crates", "apps"] {
         collect_sources(&root.join(top), &mut files);
     }
-    assert!(!files.is_empty(), "no workspace sources found under {root:?}");
+    assert!(
+        !files.is_empty(),
+        "no workspace sources found under {root:?}"
+    );
     let mut found = Vec::new();
     for file in files {
         let rel = file
