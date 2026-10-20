@@ -103,9 +103,10 @@ def build():
                      "gameplay_qualification": "not_established_by_this_inventory"})
     if len(rows) != 246 or len({row["identity"]["key"] for row in rows}) != 246:
         raise ValueError("incomplete player identity closure")
-    paths = [CATALOG, SELECTION, WIKI, FRESH, "apps/game-server/src/spell/authoring.rs",
-             "apps/game-server/src/spell/mod.rs", "apps/game-server/src/spell/house_execution.rs",
-             "apps/game-server/src/spell/executable_catalog.rs",
+    paths = [CATALOG, SELECTION, WIKI, FRESH, "crates/gameplay/spell/src/spell/authoring.rs",
+             "crates/gameplay/spell/src/spell/mod.rs",
+             "crates/gameplay/spell/src/spell/house_execution.rs",
+             "crates/gameplay/spell/src/spell/executable_catalog.rs",
              "apps/game-server/src/node/serve.rs"]
     paths += ["apps/game-server/src/gameplay_transport/" + route for route in sorted(set(ROUTES.values()))]
     return {"schema": "OTERYN_PLAYER_SPELL_ROUTE_INVENTORY/v1", "sources": [evidence(path) for path in paths],

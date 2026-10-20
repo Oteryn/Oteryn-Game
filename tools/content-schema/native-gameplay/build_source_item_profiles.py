@@ -21,7 +21,7 @@ NA={'state':'NOT_APPLICABLE'};U={'state':'UNKNOWN'}
 # Closed coin table of crates/gameplay/domain/src/domain/currency.rs (CHARACTER-GOLD-FEE-BOUNDARY-V1
 # D175/D176): gold, platinum and crystal, each StackCapable to exactly COIN_STACK_MAXIMUM.
 COIN_IDS=(3031,3035,3043);COIN_STACK_MAXIMUM=100;COINS='coin-item-profiles.json'
-# Plain door pairs of the Game-owned door registry (apps/game-server/src/map/door_registry.rs; closed id C,
+# Plain door pairs of the Game-owned door registry (crates/gameplay/world/src/map/door_registry.rs; closed id C,
 # open id C+1) whose closed door the committed World project places (MAP-DOOR-CONTENT-1). Doorhood is the
 # profile's item_type; the closed item blocks movement and projectiles, its open item neither.
 DOOR_CLOSED=(1629,1632,1638,1640,1642,1644,1651,1654,1656,1658,1660,1662,1669,1672,
