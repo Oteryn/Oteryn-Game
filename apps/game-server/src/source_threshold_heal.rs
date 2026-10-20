@@ -1,11 +1,12 @@
 //! Accepted PROJECT_SOURCE_MARKER_LOCAL. Three pinned boss heal callbacks, not a Lua interpreter.
 //! Native Creature HP; private condition88888-equivalent cooldown. No Global condition interoperability.
-use crate::ai_think::profile_schedule::{ProfileAbilityProposal, ScheduleList};
 use crate::content::{
     ProjectReferenceRecord as Record, ProjectV2AuthoringProfileData as Data,
     ProjectV2DefinitionRef as Ref, ProjectV2Draft, ProjectV2Family as Family,
     ProjectV2SourceIdentityDisposition as Disposition,
 };
+use crate::creature_auto_attack::ProfileAbilityProposal;
+use crate::durability::creature_schedule::ScheduleList;
 use crate::foundation::{
     CarrierError, ChannelRuntimeV1, ExactActorRef, OwnerDamageResult, RuntimeScopeRefV1,
     RuntimeWorkStamp, ScopeRuntimeFence,
@@ -35,16 +36,16 @@ pub(crate) struct ThresholdHealOutcome {
 #[derive(Clone, Debug)]
 pub(crate) struct ThresholdHealSource {
     caster: Ref,
-    ability: Ref,
-    index: usize,
-    world: String,
-    content: [u8; 32],
-    maximum: u64,
+    pub(crate) ability: Ref,
+    pub(crate) index: usize,
+    pub(crate) world: String,
+    pub(crate) content: [u8; 32],
+    pub(crate) maximum: u64,
     threshold_ppm: u64,
-    minimum: u64,
-    maximum_draw: u64,
-    delay_us: u64,
-    cooldown_us: u64,
+    pub(crate) minimum: u64,
+    pub(crate) maximum_draw: u64,
+    pub(crate) delay_us: u64,
+    pub(crate) cooldown_us: u64,
     fingerprint: [u8; 32],
 }
 impl ThresholdHealSource {
@@ -246,21 +247,21 @@ impl ThresholdHealSource {
         Ok(())
     }
 }
-struct Marker {
-    actor: ExactActorRef,
+pub(crate) struct Marker {
+    pub(crate) actor: ExactActorRef,
     source: [u8; 32],
-    content: [u8; 32],
-    activation: u64,
+    pub(crate) content: [u8; 32],
+    pub(crate) activation: u64,
     sequence: u64,
     occurrence: String,
     last_us: u64,
     unlock_us: u64,
-    pending: Option<(u64, u64)>,
+    pub(crate) pending: Option<(u64, u64)>,
     last: ThresholdHealOutcome,
 }
 #[derive(Default)]
 pub(crate) struct ThresholdHealOwner {
-    markers: Vec<Marker>,
+    pub(crate) markers: Vec<Marker>,
 }
 impl ThresholdHealOwner {
     pub(crate) fn cast(
@@ -450,6 +451,3 @@ impl ThresholdHealOwner {
         }))
     }
 }
-#[cfg(test)]
-#[path = "source_threshold_heal_tests.rs"]
-mod tests;

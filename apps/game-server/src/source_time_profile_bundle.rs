@@ -246,8 +246,8 @@ mod time_profile_aggregate_tests {
     use super::*;
     #[test]
     fn actual_schedule_source_profile_phase_and_return_preserve_registered_owner_lineage() {
-        let (mut r, d, a, mut f, stamp) = crate::source_encounter_seven::tests::fixture();
-        let source = crate::source_encounter_seven::tests::source(&r, &d, 0);
+        let (mut r, d, a, mut f, stamp) = crate::source_encounter_seven_tests::fixture();
+        let source = crate::source_encounter_seven_tests::source(&r, &d, 0);
         let creature = Ref {
             family: ProjectV2Family::Creature,
             key: "oteryn:creature.the_time_guardian".into(),

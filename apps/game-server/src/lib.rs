@@ -909,11 +909,12 @@ mod content_npc_service_tests;
 mod movement_speed_runtime_tests;
 
 #[cfg(test)]
-#[path = "lifted_tests/world_clock_world_config_tests.rs"]
-mod world_clock_world_config_tests;
 #[allow(clippy::expect_used)]
 #[path = "lifted_tests/foundation_ability_exact_actor_resolution_tests.rs"]
 mod foundation_ability_exact_actor_resolution_tests;
+#[cfg(test)]
+#[path = "lifted_tests/world_clock_world_config_tests.rs"]
+mod world_clock_world_config_tests;
 
 #[cfg(test)]
 #[allow(clippy::expect_used)]
@@ -939,3 +940,26 @@ mod foundation_movement_static_kernel_structural_tests;
 #[allow(clippy::expect_used)]
 #[path = "lifted_tests/foundation_attacker_fence_tests.rs"]
 mod foundation_attacker_fence_tests;
+
+#[cfg(test)]
+use creature_damage_spell::callback_cast as source_callback_cast;
+
+#[cfg(test)]
+#[path = "lifted_tests/source_callback_speech_tests.rs"]
+mod source_callback_speech_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/source_callback_cast_tests.rs"]
+mod source_callback_cast_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/source_callback_spawn_tests.rs"]
+mod source_callback_spawn_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/source_encounter_seven_tests.rs"]
+mod source_encounter_seven_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/source_threshold_heal_tests.rs"]
+mod source_threshold_heal_tests;

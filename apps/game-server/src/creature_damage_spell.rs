@@ -1,7 +1,7 @@
 //! Existing CREATURE-AI-0 proposal → current Channel HP/condition owner. No new schedule/RNG owner.
 use std::collections::BTreeMap;
 #[path = "source_callback_cast.rs"]
-mod callback_cast;
+pub(crate) mod callback_cast;
 pub(crate) use callback_cast::{
     CallbackCastOwner, CallbackPulseBatch, CallbackSpeech, SourceCallbackCast,
 };
@@ -2160,7 +2160,7 @@ impl DamageSpellOwner {
         Ok(result)
     }
 }
-fn hex(b: &[u8]) -> String {
+pub(crate) fn hex(b: &[u8]) -> String {
     b.iter().map(|b| format!("{b:02x}")).collect()
 }
 #[allow(clippy::expect_used)]

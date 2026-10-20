@@ -1,14 +1,27 @@
 #![allow(clippy::expect_used, clippy::panic)]
-use super::*;
+use crate::content::{
+    ProjectReferenceRecord as Record, ProjectV2AuthoringProfileData as Data,
+    ProjectV2DefinitionRef as Ref, ProjectV2Draft, ProjectV2Family as Family,
+};
+use crate::creature_auto_attack::AttackError;
+use crate::creature_auto_attack::ProfileAbilityProposal;
+use crate::durability::creature_schedule::ScheduleList;
+use crate::foundation::owner_timer::SemanticTimeMicros;
 use crate::foundation::owner_timer::VirtualOwnerClock;
+use crate::foundation::{
+    ChannelRuntimeV1, ExactActorRef, RuntimeScopeRefV1, RuntimeWorkStamp, ScopeRuntimeFence,
+    WorldId,
+};
 use crate::foundation::{
     CompiledCreaturePolicies, CompiledCreaturePolicy, ConditionType, CreatureExactRatio,
     CreatureFlags, CreatureResistance, MovementLocalPosition,
 };
 use crate::gameplay_transport::actor_spell::tests::runtime_with_player;
+use crate::source_encounter_seven::*;
+
 fn draft(r: &ChannelRuntimeV1) -> ProjectV2Draft {
     let v: serde_json::Value =
-        serde_json::from_str(include_str!("source_encounter_seven_fixture.json"))
+        serde_json::from_str(include_str!("../source_encounter_seven_fixture.json"))
             .expect("qualified fixture");
     ProjectV2Draft {
         core: crate::content::ProjectDraft {
@@ -416,7 +429,7 @@ fn distinct_time_source_entries_qualify_and_foreign_owner_source_substitution_ne
 #[test]
 fn exact_seven_descriptors_preserve_map_dependency_and_original_two_actor_rules() {
     let (r, d, _, _, _) = fixture();
-    let w: Witness = serde_json::from_str(include_str!("source_encounter_seven_fixture.json"))
+    let w: Witness = serde_json::from_str(include_str!("../source_encounter_seven_fixture.json"))
         .expect("qualified fixture");
     assert_eq!(w.cases.len(), 7);
     for c in &w.cases {
@@ -443,7 +456,7 @@ fn exact_seven_descriptors_preserve_map_dependency_and_original_two_actor_rules(
         );
     }
     let raw: serde_json::Value =
-        serde_json::from_str(include_str!("source_encounter_seven_fixture.json"))
+        serde_json::from_str(include_str!("../source_encounter_seven_fixture.json"))
             .expect("qualified fixture");
     let cases = raw["cases"].as_array().expect("qualified fixture");
     assert!(cases.iter().filter(|c| c["creature"] == BASE).all(|c| {
