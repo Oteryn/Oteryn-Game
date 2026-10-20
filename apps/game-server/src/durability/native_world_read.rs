@@ -192,9 +192,10 @@ async fn initialized_tile_in_transaction<'owner, E>(
     let world = room
         .source_world()
         .ok_or(NativeWorldReadError::MissingTileMetadata)?;
-    let target =
-        crate::native_world_items::SpellGroundTarget::for_native_tile_read(room, runtime, position)
-            .map_err(NativeWorldReadError::GroundAddress)?;
+    let target = crate::durability::native_world_items::SpellGroundTarget::for_native_tile_read(
+        room, runtime, position,
+    )
+    .map_err(NativeWorldReadError::GroundAddress)?;
     let mut count = 0;
     for placement in world
         .pending_mutable_placements()
@@ -298,9 +299,10 @@ pub(crate) async fn qualified_standing_tile_in_transaction<
     {
         return Err(NativeWorldReadError::AuthorityMismatch);
     }
-    let target =
-        crate::native_world_items::SpellGroundTarget::for_native_tile_read(room, runtime, position)
-            .map_err(NativeWorldReadError::GroundAddress)?;
+    let target = crate::durability::native_world_items::SpellGroundTarget::for_native_tile_read(
+        room, runtime, position,
+    )
+    .map_err(NativeWorldReadError::GroundAddress)?;
     if read.target() != &target {
         return Err(NativeWorldReadError::AuthorityMismatch);
     }
@@ -356,9 +358,10 @@ pub(crate) async fn qualified_source_step_probe_in_transaction<
     {
         return Err(NativeWorldReadError::AuthorityMismatch);
     }
-    let target =
-        crate::native_world_items::SpellGroundTarget::for_native_tile_read(room, runtime, position)
-            .map_err(NativeWorldReadError::GroundAddress)?;
+    let target = crate::durability::native_world_items::SpellGroundTarget::for_native_tile_read(
+        room, runtime, position,
+    )
+    .map_err(NativeWorldReadError::GroundAddress)?;
     if read.target() != &target {
         return Err(NativeWorldReadError::AuthorityMismatch);
     }

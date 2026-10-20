@@ -1228,5 +1228,4 @@ async fn load_trade(
 }
 
 #[cfg(test)]
-#[path = "npc_trade_tests.rs"]
 mod tests;

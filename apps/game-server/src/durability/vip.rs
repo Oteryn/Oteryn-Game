@@ -330,7 +330,7 @@ async fn withdraw_target(
 /// Recovery first, historical receipt next, then current native authority. Root locks precede
 /// all list locks; both roots and Account+World lists are ordered, including reciprocal revokes.
 /// No caller-controlled consent/presence state is accepted.
-async fn end_in_transaction(
+pub(crate) async fn end_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     recovery: &CharacterRecoveryFenceV1,
     node: &NodeIncarnationProof,
@@ -1061,10 +1061,6 @@ async fn add_target(
     Ok((VipAddResult::Ok, Some(entry_no)))
 }
 
-#[cfg(test)]
-#[path = "vip_tests.rs"]
-mod tests;
-
 /// List metadata operations. These values are private SQL proposals, not wire tags.
 #[derive(Clone, Debug)]
 pub(crate) enum VipListOperation {
@@ -1333,7 +1329,7 @@ impl DurabilityRoot {
             .await?
     }
 }
-async fn modify_list_in_transaction(
+pub(crate) async fn modify_list_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     recovery: &CharacterRecoveryFenceV1,
     node: &NodeIncarnationProof,

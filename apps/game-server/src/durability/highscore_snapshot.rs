@@ -4,13 +4,10 @@
 //! [`job::HighscoreWorldJob`] per World and the HS-WIRE-1 handler reads pages through
 //! [`DurabilityRoot::read_highscore_page`]. A Root pass supplies its real connection and deadline;
 //! it does not attest a caller's World or job permission.
-#[path = "../highscores/ranking.rs"]
 pub(crate) mod ranking;
 
-#[path = "../highscores/job.rs"]
 pub(crate) mod job;
 
-#[path = "../highscores/reply.rs"]
 pub(crate) mod reply;
 
 use super::account_achievement::EarnedAchievement;

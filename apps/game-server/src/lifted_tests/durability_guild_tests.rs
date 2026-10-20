@@ -2,13 +2,28 @@
 //! below are NOT a formation/Premium writer or an external membership authority. Every native
 //! Character guard remains enabled, and current authority is independently reconciled afterwards.
 #![allow(clippy::expect_used, clippy::unwrap_used)]
-use super::*;
+use crate::domain::CharacterId;
+use crate::domain::guild::{
+    DEFAULT_RANKS, FORMATION_LIFETIME_MS, GUILD_INVITATIONS_MAX, GuildId, GuildName, GuildRank,
+    GuildState, MEMBERS_MAX, TARGET_INVITATIONS_MAX,
+};
+use crate::domain::premium::PremiumStatus;
+use crate::durability::DurabilityRoot;
+use crate::durability::guild::*;
+use crate::durability::guild_audit::{
+    GuildAuditProposal, GuildDeclineAuditProposal, GuildEditRanksAuditProposal,
+    GuildRankAuditProposal, GuildResignAuditProposal, GuildTextAuditProposal,
+};
+use crate::durability::item_transfer::CurrentCharacterItemFence;
+use crate::foundation::CommandRef;
 use crate::foundation::{CommandId, ConnectionGeneration, GameSessionId, ScopeOwnershipGeneration};
 use crate::item_transfer_postgres_cases::{
     self as fixture, CHARACTER, Harness, TestResult, WORLD, configured_admin, debug, fence, id,
     runtime,
 };
+use sha2::{Digest, Sha256};
 use sqlx::Executor;
+use sqlx::Row;
 
 fn sid(number: u32, kind: u8) -> [u8; 16] {
     let mut bytes = [0_u8; 16];
@@ -973,9 +988,9 @@ fn found_defaults_and_creation_audit_are_closed() -> TestResult {
     wrong = audit;
     wrong.action = 3;
     assert!(wrong.checked_bytes().is_none());
-    assert!(!super::super::bank::fee_payer_is_junior(character(0)));
-    assert!(super::super::bank::is_junior(
-        super::super::bank::StarterIslandFact::OnIsland
+    assert!(!crate::durability::bank::fee_payer_is_junior(character(0)));
+    assert!(crate::durability::bank::is_junior(
+        crate::durability::bank::StarterIslandFact::OnIsland
     ));
     Ok(())
 }
@@ -1131,7 +1146,7 @@ fn native_found_shared_gate_transaction_commits_before_activation_latch() -> Tes
         let coordinator=pre_delivery(&h.root);let req=found_request(1,1,"Founded Before Latch");
         let (created,latched)=fixture::join_two(h.root.commit_guild_found(&authority,&h.node,fence()?,req.clone(),&coordinator),async {
             wait_advisory(&h.pool,901122,false).await?;
-            let latch_key=super::super::premium_activation_latch::PREMIUM_ACTIVATION_LOCK_KEY;
+            let latch_key=crate::durability::premium_activation_latch::PREMIUM_ACTIVATION_LOCK_KEY;
             wait_advisory(&h.pool,latch_key,true).await?;
             let (latched,released)=fixture::join_two(other.latch_premium_activation("guild-found-racing-activation",1,2),async {
                 wait_advisory(&h.pool,latch_key,false).await?;barrier.rollback().await?;Ok::<_,Box<dyn std::error::Error>>(())
@@ -3022,7 +3037,8 @@ fn guild_rank_native_shared_gate_commits_before_activation_latch() -> TestResult
                 .commit_guild_rank(&authority, &h.node, fence()?, req.clone(), &premium),
             async {
                 wait_advisory(&h.pool, 901123, false).await?;
-                let latch_key = super::super::premium_activation_latch::PREMIUM_ACTIVATION_LOCK_KEY;
+                let latch_key =
+                    crate::durability::premium_activation_latch::PREMIUM_ACTIVATION_LOCK_KEY;
                 wait_advisory(&h.pool, latch_key, true).await?;
                 let (latched, released) = fixture::join_two(
                     other.latch_premium_activation("guild-rank-racing-activation", 1, 2),
@@ -4101,7 +4117,8 @@ fn guild_resign_native_batch_gate_commit_precedes_activation_latch() -> TestResu
                 .commit_guild_resign(&authority, &h.node, fence()?, req.clone(), &premium),
             async {
                 wait_advisory(&h.pool, 901124, false).await?;
-                let latch_key = super::super::premium_activation_latch::PREMIUM_ACTIVATION_LOCK_KEY;
+                let latch_key =
+                    crate::durability::premium_activation_latch::PREMIUM_ACTIVATION_LOCK_KEY;
                 wait_advisory(&h.pool, latch_key, true).await?;
                 let (latched, released) = fixture::join_two(
                     other.latch_premium_activation("guild-resign-racing-activation", 1, 2),
@@ -5633,7 +5650,7 @@ fn guild_deadline_native_restart_preserves_pending_step_without_terminalization(
             sqlx::query_scalar("SELECT payload FROM game_guild_job_event_outbox")
                 .fetch_one(&h.pool)
                 .await?;
-        let audit: super::super::guild_audit::GuildJobAuditProposal =
+        let audit: crate::durability::guild_audit::GuildJobAuditProposal =
             serde_json::from_slice(&payload)?;
         assert_eq!(
             (
@@ -5822,9 +5839,9 @@ fn guild_deadline_native_current_authority_required_even_after_checkpoint() -> T
                 .await,
             Err(GuildError::NotCurrent)
         ));
-        let wrong_secret = super::super::runtime_scope_assignment::NodeIncarnationProof::new(
+        let wrong_secret = crate::durability::runtime_scope_assignment::NodeIncarnationProof::new(
             h.node.fact(),
-            super::super::runtime_scope_assignment::BootstrapSecret::from_bytes([99; 32]),
+            crate::durability::runtime_scope_assignment::BootstrapSecret::from_bytes([99; 32]),
         );
         assert!(
             h.root
@@ -5990,7 +6007,7 @@ fn guild_disband_native_leader_start_replay_and_exact_confirmation_binding() -> 
                 sqlx::query_scalar("SELECT payload FROM game_guild_event_outbox")
                     .fetch_one(&h.pool)
                     .await?;
-            let audit: super::super::guild_audit::GuildDisbandAuditProposal =
+            let audit: crate::durability::guild_audit::GuildDisbandAuditProposal =
                 serde_json::from_slice(&payload)?;
             assert_eq!(audit.confirmation, name(1));
             assert_eq!(audit.checked_bytes(), Some(payload));
@@ -6105,9 +6122,9 @@ fn guild_disband_native_current_authority_rejections_write_nothing() -> TestResu
                 .await,
             Err(GuildError::NotCurrent)
         ));
-        let wrong = super::super::runtime_scope_assignment::NodeIncarnationProof::new(
+        let wrong = crate::durability::runtime_scope_assignment::NodeIncarnationProof::new(
             h.node.fact(),
-            super::super::runtime_scope_assignment::BootstrapSecret::from_bytes([99; 32]),
+            crate::durability::runtime_scope_assignment::BootstrapSecret::from_bytes([99; 32]),
         );
         assert!(matches!(
             h.root

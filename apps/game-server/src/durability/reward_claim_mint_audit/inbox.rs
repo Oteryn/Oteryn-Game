@@ -131,5 +131,4 @@ pub(super) fn check_inbox(value: &OneItemRewardClaimMintV1) -> Result<(), AuditE
 }
 
 #[cfg(test)]
-#[path = "reward_claim_inbox_mint_audit_tests.rs"]
 mod tests;

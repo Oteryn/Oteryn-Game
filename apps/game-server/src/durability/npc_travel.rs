@@ -160,7 +160,7 @@ impl DurabilityRoot {
     }
 }
 
-async fn read_fenced(
+pub(crate) async fn read_fenced(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     recovery: &CharacterRecoveryFenceV1,
     node: &NodeIncarnationProof,
@@ -201,7 +201,7 @@ async fn read_fenced(
 
 /// Caller holds the native reconciled authority/recovery seal for this entire transaction.
 /// On ANY error it rolls back the whole transaction. No standalone producer is exposed.
-async fn consume_in_transaction(
+pub(crate) async fn consume_in_transaction(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     recovery: &CharacterRecoveryFenceV1,
     node: &NodeIncarnationProof,
@@ -264,7 +264,3 @@ async fn load_arrival(
     })
     .transpose()
 }
-
-#[cfg(test)]
-#[path = "../../tests/support/npc_travel_postgres_fixture.rs"]
-pub(crate) mod npc_travel_postgres;

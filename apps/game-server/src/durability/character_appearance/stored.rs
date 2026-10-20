@@ -201,5 +201,4 @@ pub(crate) async fn verify_character_appearance_integrity(
 
 #[cfg(test)]
 #[allow(clippy::expect_used)]
-#[path = "character_appearance_tests.rs"]
 mod tests;

@@ -35,7 +35,6 @@
 //! `QUESTSTATE0-RL-01`, `-05`, `-07`, `-08` and `QUESTGATE0-RL-10`; over a bound the load fails
 //! closed.
 
-#[path = "../quest/mod.rs"]
 pub mod quest;
 
 use std::collections::BTreeMap;

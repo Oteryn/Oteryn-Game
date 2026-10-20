@@ -5,7 +5,6 @@
 //! The stored companion owns historical reads/recovery; this registered native writer
 //! compiles unconditionally. Production runtime composition remains a separate owner boundary.
 
-#[path = "character_appearance_stored.rs"]
 pub(crate) mod stored;
 
 pub(crate) use stored::{

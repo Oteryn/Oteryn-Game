@@ -1945,7 +1945,7 @@ pub(super) mod tests {
             sites,
             [
                 "src/durability/character_forge_dust.rs",
-                "src/durability/character_inbox_reward_claim_mint.rs",
+                "src/durability/character_inbox/reward_claim/mint.rs",
                 "src/durability/house_interior.rs",
                 "src/durability/item_decay_retire.rs",
                 "src/durability/item_fee_burn.rs",

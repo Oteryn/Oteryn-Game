@@ -480,5 +480,4 @@ async fn mint_inbox(
 }
 
 #[cfg(test)]
-#[path = "character_inbox_reward_claim_mint_tests.rs"]
 mod tests;

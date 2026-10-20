@@ -5,8 +5,15 @@ const TEST_SCHEMA: &str = "CREATE TABLE game_character_pending_arrivals (
     tile_x INTEGER NOT NULL, tile_y INTEGER NOT NULL, tile_floor SMALLINT NOT NULL
 )";
 
-use super::*;
 use crate::bestiary_postgres_harness::{self as fixture, TestResult, debug, fence, id};
+use crate::domain::CharacterId;
+use crate::durability::character_last_position::{
+    FinalLastPosition, LastPositionCell, LastPositionWrite,
+};
+use crate::durability::character_progression::CharacterProgressionError;
+use crate::durability::npc_travel::*;
+use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
+use crate::foundation::{RuntimeScopeRefV1, WorldId};
 use sqlx::Connection;
 fn occurrence(seed: u8) -> Result<TravelOccurrence, String> {
     TravelOccurrence::from_bytes(id(seed)).map_err(debug)
@@ -14,7 +21,7 @@ fn occurrence(seed: u8) -> Result<TravelOccurrence, String> {
 fn placed(sequence: u64, x: i32) -> TestResult<FinalLastPosition> {
     Ok(FinalLastPosition {
         write_sequence: sequence,
-        record: super::super::character_last_position::LastPositionRecord {
+        record: crate::durability::character_last_position::LastPositionRecord {
             world_id: WorldId::decode(&id(fixture::WORLD)).map_err(debug)?,
             cell: LastPositionCell { x, y: 20, floor: 7 },
             coordinate_frame_digest: [1; 32],

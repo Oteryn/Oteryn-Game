@@ -8,7 +8,7 @@
 //! Ground item ([`DurabilityRoot::freeze_item_transfer`]) in its own
 //! transaction. This component owns durable admission, application,
 //! idempotency and reconciliation of the MINT only. It does not decide
-//! whether the entry is eligible or within reach (`crate::map::overlay::pickup`
+//! whether the entry is eligible or within reach (the map overlay pickup owner
 //! does, from the base map and the live overlay) nor resolve the item facts
 //! from Content: the caller supplies them from the current compatible
 //! Content and the base bundle.

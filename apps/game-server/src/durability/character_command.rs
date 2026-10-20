@@ -672,5 +672,4 @@ async fn commit_create(
 
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
-#[path = "character_command_tests.rs"]
 mod tests;

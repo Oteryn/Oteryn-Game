@@ -37,7 +37,6 @@ use sqlx::{Postgres, Row, Transaction};
 use std::future::Future;
 use std::pin::Pin;
 
-#[path = "character_inbox_reward_claim_mint.rs"]
 mod mint;
 pub use mint::{
     RewardClaimInboxMintCandidate, RewardClaimInboxMintOutput, RewardClaimInboxMintRequest,
@@ -510,5 +509,4 @@ async fn lock_reward_claim_cause(
 }
 
 #[cfg(test)]
-#[path = "character_inbox_reward_claim_tests.rs"]
 mod tests;

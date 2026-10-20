@@ -791,5 +791,4 @@ async fn compensate_boss_cooldowns_data(
 
 #[cfg(test)]
 #[allow(clippy::expect_used)]
-#[path = "boss_encounter_tests.rs"]
 mod tests;

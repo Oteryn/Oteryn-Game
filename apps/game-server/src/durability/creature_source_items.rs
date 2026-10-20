@@ -555,7 +555,7 @@ where
 /// Item reads and the same immutable native field-chain recipe used by Player casts.
 #[allow(clippy::too_many_arguments)]
 async fn prepare_creature_source_fields_in_transaction<
-    O: crate::native_world_read::NativeWorldObjectRead + Sync + ?Sized,
+    O: crate::durability::native_world_read::NativeWorldObjectRead + Sync + ?Sized,
 >(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemScopeAuthority,
@@ -682,17 +682,18 @@ async fn prepare_creature_source_fields_in_transaction<
         return Err(SpellItemError::Rejected("Creature field footprint"));
     }
     // Reuse the actual ordinary cast sight kernel and its exempt endpoint rule.
-    for (ray, exempt) in crate::native_world_read::source_sight_steps(fp, center)
+    for (ray, exempt) in crate::durability::native_world_read::source_sight_steps(fp, center)
         .map_err(|_| SpellItemError::Rejected("Creature field sight geometry"))?
     {
         if exempt {
             continue;
         }
-        let tile = crate::native_world_read::qualified_creature_source_tile_in_transaction(
-            tx, authority, room, runtime, objects, ray,
-        )
-        .await
-        .map_err(|_| SpellItemError::Rejected("Creature field ray Map qualification"))?;
+        let tile =
+            crate::durability::native_world_read::qualified_creature_source_tile_in_transaction(
+                tx, authority, room, runtime, objects, ray,
+            )
+            .await
+            .map_err(|_| SpellItemError::Rejected("Creature field ray Map qualification"))?;
         let address = SpellGroundTarget::for_native_tile_read(room, runtime, ray)
             .map_err(SpellItemError::Rejected)?;
         let items = read_creature_scope_tile_in_transaction(tx, authority, &address).await?;
@@ -705,7 +706,7 @@ async fn prepare_creature_source_fields_in_transaction<
         .ok_or(SpellItemError::Rejected(
             "Creature field Item source absent",
         ))?;
-    if !crate::native_world_items::source_magic_field(policy)? {
+    if !crate::durability::native_world_items::source_magic_field(policy)? {
         return Err(SpellItemError::Rejected(
             "Creature created Item must be source field",
         ));
@@ -717,7 +718,7 @@ async fn prepare_creature_source_fields_in_transaction<
     let projectile = attrs
         .blocks_projectile
         .ok_or(SpellItemError::Rejected("Creature field projectile source"))?;
-    let definition = crate::native_world_items::qualify_source_field_chain(
+    let definition = crate::durability::native_world_items::qualify_source_field_chain(
         native,
         QualifiedItemDefinition::from_native_policy(policy).map_err(SpellItemError::Rejected)?,
     )?;
@@ -738,11 +739,12 @@ async fn prepare_creature_source_fields_in_transaction<
         if !positions.insert((pos.x, pos.y, pos.floor)) {
             return Err(SpellItemError::Rejected("Creature field duplicate tile"));
         }
-        let tile = crate::native_world_read::qualified_creature_source_tile_in_transaction(
-            tx, authority, room, runtime, objects, pos,
-        )
-        .await
-        .map_err(|_| SpellItemError::Rejected("Creature field tile qualification"))?;
+        let tile =
+            crate::durability::native_world_read::qualified_creature_source_tile_in_transaction(
+                tx, authority, room, runtime, objects, pos,
+            )
+            .await
+            .map_err(|_| SpellItemError::Rejected("Creature field tile qualification"))?;
         if !tile.ground_present()
             || tile.block_solid()
             || tile.floor_change()
@@ -750,13 +752,14 @@ async fn prepare_creature_source_fields_in_transaction<
         {
             continue;
         }
-        for (ray, exempt) in crate::native_world_read::source_sight_steps(center, pos)
-            .map_err(|_| SpellItemError::Rejected("Creature field area sight geometry"))?
+        for (ray, exempt) in
+            crate::durability::native_world_read::source_sight_steps(center, pos)
+                .map_err(|_| SpellItemError::Rejected("Creature field area sight geometry"))?
         {
             if exempt {
                 continue;
             }
-            let sight = crate::native_world_read::qualified_creature_source_tile_in_transaction(
+            let sight = crate::durability::native_world_read::qualified_creature_source_tile_in_transaction(
                 tx, authority, room, runtime, objects, ray,
             )
             .await
@@ -779,7 +782,7 @@ async fn prepare_creature_source_fields_in_transaction<
                     &current.definition.revision_ref,
                 )
                 .ok_or(SpellItemError::Rejected("Creature existing Item policy"))?;
-            if crate::native_world_items::source_magic_field(current_policy)? {
+            if crate::durability::native_world_items::source_magic_field(current_policy)? {
                 if current_policy.record().attributes.field_replaceable != Some(true) {
                     return Err(SpellItemError::Rejected(
                         "Creature field replacement policy",
@@ -837,7 +840,7 @@ async fn prepare_creature_source_fields_in_transaction<
 
 #[allow(clippy::too_many_arguments)]
 async fn prepare_creature_source_removals_in_transaction<
-    O: crate::native_world_read::NativeWorldObjectRead + Sync + ?Sized,
+    O: crate::durability::native_world_read::NativeWorldObjectRead + Sync + ?Sized,
 >(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemScopeAuthority,
@@ -912,7 +915,7 @@ async fn prepare_creature_source_removals_in_transaction<
                     .ok_or(SpellItemError::Rejected("Creature removal y"))?,
                 floor: fp.floor,
             };
-            let _tile = crate::native_world_read::qualified_creature_source_tile_in_transaction(
+            let _tile = crate::durability::native_world_read::qualified_creature_source_tile_in_transaction(
                 tx, authority, room, runtime, objects, pos,
             )
             .await
@@ -954,7 +957,7 @@ async fn prepare_creature_source_removals_in_transaction<
 /// Receipt reconciliation precedes re-reading the original mutable Ground.
 #[allow(clippy::too_many_arguments)]
 pub(crate) async fn execute_creature_source_items_in_transaction<
-    O: crate::native_world_read::NativeWorldObjectRead + Sync + ?Sized,
+    O: crate::durability::native_world_read::NativeWorldObjectRead + Sync + ?Sized,
 >(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemScopeAuthority,
@@ -1131,7 +1134,7 @@ impl ScheduledCreatureSourceItems {
 /// the one shared physical owner above; no Player or cost authority is invented.
 #[allow(clippy::too_many_arguments)]
 pub(crate) async fn execute_scheduled_creature_source_items_in_transaction<
-    O: crate::native_world_read::NativeWorldObjectRead + Sync + ?Sized,
+    O: crate::durability::native_world_read::NativeWorldObjectRead + Sync + ?Sized,
 >(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemScopeAuthority,
@@ -1245,7 +1248,7 @@ async fn creature_scope_item_tags_in_transaction(
 
 #[allow(clippy::too_many_arguments)]
 async fn prepare_creature_source_destroy_in_transaction<
-    O: crate::native_world_read::NativeWorldObjectRead + Sync + ?Sized,
+    O: crate::durability::native_world_read::NativeWorldObjectRead + Sync + ?Sized,
 >(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemScopeAuthority,
@@ -1311,7 +1314,7 @@ async fn prepare_creature_source_destroy_in_transaction<
                     .ok_or(SpellItemError::Rejected("Destroy y"))?,
                 floor: origin.floor,
             };
-            let tile = crate::native_world_read::qualified_creature_source_tile_in_transaction(
+            let tile = crate::durability::native_world_read::qualified_creature_source_tile_in_transaction(
                 tx, authority, room, runtime, objects, pos,
             )
             .await
@@ -1504,7 +1507,10 @@ mod conservative_destroy_tests {
 
 /// Borrow the already locked native owners for the existing semantic SQL pass.
 /// No copied fence, fabricated Player cast, or independently running scheduler.
-struct CreatureSourceScopeContext<'a, O: crate::native_world_read::NativeWorldObjectRead + ?Sized> {
+struct CreatureSourceScopeContext<
+    'a,
+    O: crate::durability::native_world_read::NativeWorldObjectRead + ?Sized,
+> {
     permit: &'a crate::durability::spell_owner_commit::SpellLanePermit,
     runtime: &'a crate::foundation::ChannelRuntimeV1,
     fence: &'a crate::foundation::ScopeRuntimeFence,
@@ -1522,7 +1528,7 @@ impl DurabilityRoot {
     /// and the current database assignment inside the pass, never from metadata.
     #[allow(clippy::too_many_arguments)]
     pub(crate) async fn commit_creature_source_items<
-        O: crate::native_world_read::NativeWorldObjectRead + Sync + ?Sized,
+        O: crate::durability::native_world_read::NativeWorldObjectRead + Sync + ?Sized,
     >(
         &self,
         permit: &crate::durability::spell_owner_commit::SpellLanePermit,
