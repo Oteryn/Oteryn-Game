@@ -888,7 +888,7 @@ pub(crate) async fn collect_current_source_step<'room>(
         let Some(position) = requested.get() else {
             return Err(result.err().unwrap_or(MovementError::NotQualified));
         };
-        let target = crate::spell::world_items_execution::SpellGroundTarget::for_native_tile_read(
+        let target = crate::native_world_items::SpellGroundTarget::for_native_tile_read(
             room, runtime, position,
         )
         .map_err(|_| MovementError::NotQualified)?;
@@ -920,7 +920,7 @@ pub(crate) async fn collect_current_source_step<'room>(
                 None
             }
             _ => Some(
-                crate::spell::world_execution::qualified_source_step_probe_in_transaction(
+                crate::native_world_read::qualified_source_step_probe_in_transaction(
                     tx, &read, room, runtime, objects, position,
                 )
                 .await

@@ -6,11 +6,15 @@ mod appearance;
 mod domain {
     pub(crate) use crate::appearance;
 }
+#[allow(dead_code)]
+#[path = "../src/foundation/ability_data/mod.rs"]
+pub(crate) mod ability_data;
 #[allow(dead_code, unused_imports)]
 #[path = "../src/ability/condition.rs"]
 mod condition;
 #[allow(dead_code)]
 mod foundation {
+    pub(crate) use crate::ability_data;
     pub(crate) use crate::condition;
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub(crate) struct ExactActorRef(pub(crate) u64);

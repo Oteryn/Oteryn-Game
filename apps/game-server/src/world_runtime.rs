@@ -3818,3 +3818,36 @@ type TentacleSourceMapRow = (
     u32,
     u32,
 );
+
+impl crate::native_world_read::NativeWorldObjectRead for LocalObjectRuntime {
+    type Error = WorldRuntimeError;
+
+    fn qualify_entry(
+        &self,
+        room: &crate::content::QualifiedNativeEntryRoom,
+        runtime: &crate::foundation::ChannelRuntimeV1,
+    ) -> Result<bool, Self::Error> {
+        self.check_scope_fence(
+            crate::foundation::RuntimeScopeRefV1::Channel {
+                world_id: runtime.binding().world_id(),
+                channel_id: runtime.binding().channel_id(),
+            },
+            runtime.binding().scope_generation(),
+        )?;
+        let cells = room.movement_cells();
+        let door = room.door();
+        Ok(door.world_id == cells.scope().world_id
+            && door.coordinate_frame == cells.scope().coordinate_frame
+            && door.content_lock == cells.scope().content_lock
+            && self.content_generation() == &ReferenceContentGeneration::from_content(door)?)
+    }
+
+    fn blocks_movement(&self, position: crate::foundation::MovementLocalPosition) -> bool {
+        self.blocking_cells()
+            .contains(&crate::content::LogicalCell {
+                x: position.x,
+                y: position.y,
+                z: i32::from(position.floor),
+            })
+    }
+}

@@ -1,5 +1,7 @@
 //! Protocol/runtime authority primitives for the native Oteryn game server.
 
+pub(crate) mod ability_data;
+
 mod admission {
     include!("admission.rs");
     include!("admission_recovery_inner.rs");
@@ -17,6 +19,7 @@ pub mod fnd04_verifier;
 pub(crate) mod condition;
 #[allow(dead_code)]
 pub(crate) mod owner_timer;
+pub(crate) mod profile_schedule;
 mod protocol;
 #[allow(dead_code)]
 mod runtime_actor_carrier;
