@@ -1977,6 +1977,7 @@ dependencies = [
  "oteryn-foundation",
  "oteryn-gameplay-admission-evidence",
  "oteryn-gameplay-character-recovery-fence",
+ "oteryn-gameplay-combat",
  "oteryn-gameplay-content",
  "oteryn-gameplay-domain",
  "oteryn-gameplay-durability",
@@ -2019,6 +2020,21 @@ name = "oteryn-gameplay-character-recovery-fence"
 version = "0.1.0"
 dependencies = [
  "rustix 1.1.5",
+ "sha2 0.11.0",
+]
+
+[[package]]
+name = "oteryn-gameplay-combat"
+version = "0.1.0"
+dependencies = [
+ "oteryn-gameplay-content",
+ "oteryn-gameplay-domain",
+ "oteryn-gameplay-durability",
+ "oteryn-gameplay-foundation",
+ "oteryn-gameplay-world",
+ "oteryn-simulation-determinism",
+ "serde",
+ "serde_json",
  "sha2 0.11.0",
 ]
 

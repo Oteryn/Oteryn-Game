@@ -11,7 +11,7 @@ mod monster_lab;
 
 #[allow(dead_code)]
 #[allow(clippy::duplicate_mod)] // Foundation's standalone tests include Ability source.
-#[path = "../src/ability/mod.rs"]
+#[path = "../../../crates/gameplay/combat/src/ability/mod.rs"]
 mod ability;
 #[path = "../src/achievement_catalogue.rs"]
 mod achievement_catalogue;
@@ -46,26 +46,26 @@ use native_file_modules::{ai_think, monster_combat_lane, movement};
     dead_code,
     reason = "nonshipping fixed-one-creature Combat proof awaits production composition"
 )]
-#[path = "../src/combat/mod.rs"]
+#[path = "../../../crates/gameplay/combat/src/combat/mod.rs"]
 mod combat;
-#[path = "../src/combat/attack/mod.rs"]
+#[path = "../../../crates/gameplay/combat/src/combat/attack/mod.rs"]
 mod combat_attack;
 #[allow(
     dead_code,
     reason = "B3-2 has no production caller yet; a later admission stage wires one"
 )]
-#[path = "../src/combat/pickup.rs"]
+#[path = "../../../crates/gameplay/combat/src/combat/pickup.rs"]
 mod combat_pickup;
 #[allow(
     dead_code,
     reason = "PvP stays off until the PVP-0 go-live gate; PVP-RT-1b wires the legality stage"
 )]
-#[path = "../src/combat/pvp/mod.rs"]
+#[path = "../../../crates/gameplay/combat/src/combat/pvp/mod.rs"]
 mod combat_pvp;
 #[path = "../src/interaction/chest_use.rs"]
 mod interaction_chest_use;
 #[allow(dead_code)] // Preserve the original Ability module lint scope for this native-only adapter.
-#[path = "../src/ability/player_lethal.rs"]
+#[path = "../../../crates/gameplay/combat/src/ability/player_lethal.rs"]
 mod player_lethal;
 
 #[path = "../../../crates/gameplay/durability/src/character_bootstrap_intent.rs"]
@@ -174,37 +174,37 @@ mod bone_phase_registry;
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-#[path = "../src/creature_appearance_content.rs"]
+#[path = "../../../crates/gameplay/combat/src/creature_appearance_content.rs"]
 mod creature_appearance_content;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-#[path = "../src/creature_area_heal.rs"]
+#[path = "../../../crates/gameplay/combat/src/creature_area_heal.rs"]
 mod creature_area_heal;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-#[path = "../src/creature_attack_geometry.rs"]
+#[path = "../../../crates/gameplay/combat/src/creature_attack_geometry.rs"]
 mod creature_attack_geometry;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-#[path = "../src/creature_auto_attack.rs"]
+#[path = "../../../crates/gameplay/combat/src/creature_auto_attack.rs"]
 mod creature_auto_attack;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-#[path = "../src/creature_chain_attack.rs"]
+#[path = "../../../crates/gameplay/combat/src/creature_chain_attack.rs"]
 mod creature_chain_attack;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-#[path = "../src/creature_condition_content.rs"]
+#[path = "../../../crates/gameplay/combat/src/creature_condition_content.rs"]
 mod creature_condition_content;
 #[allow(
     dead_code,
@@ -222,7 +222,7 @@ mod creature_damage_spell_delayed;
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-#[path = "../src/creature_defense_presentation.rs"]
+#[path = "../../../crates/gameplay/combat/src/creature_defense_presentation.rs"]
 mod creature_defense_presentation;
 #[allow(
     dead_code,
@@ -322,7 +322,7 @@ mod monster_summon;
 mod canonical_monster_successor_tests;
 
 #[allow(dead_code)]
-#[path = "../src/creature_icicle.rs"]
+#[path = "../../../crates/gameplay/combat/src/creature_icicle.rs"]
 mod creature_icicle;
 
 #[path = "../../../crates/gameplay/durability/src/durability/creature_source_items.rs"]

@@ -3038,7 +3038,7 @@ mod monk_state_postgres_cases {
 #[path = "support/attack_kill_reward_postgres_cases.rs"]
 mod attack_kill_reward_postgres_cases;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/combat/mod.rs"]
+#[path = "../../../crates/gameplay/combat/src/combat/mod.rs"]
 pub mod combat;
 #[path = "support/combat_death_reward_postgres_cases.rs"]
 mod combat_death_reward_postgres_cases;
@@ -3053,7 +3053,7 @@ mod combat_bestiary_postgres_cases;
 // and D3-4 cases included above. `combat_pickup` is a top-level module and
 // `content` is the test shim for the same reasons as in that target.
 #[allow(dead_code, unused_imports)]
-#[path = "../src/combat/pickup.rs"]
+#[path = "../../../crates/gameplay/combat/src/combat/pickup.rs"]
 pub mod combat_pickup;
 #[path = "support/combat_pickup_postgres_cases.rs"]
 mod combat_pickup_postgres_cases;

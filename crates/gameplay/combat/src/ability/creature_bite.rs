@@ -1,0 +1,383 @@
+//! AI-4 (`GAME-AI-01-ACTION-INTEGRATION-FIRST-CREATURE-SLICE-V1` §4.6, §4.7): one creature bite
+//! through Ability, issued by a typed AI issuer.
+//!
+//! The issuer is the creature's `ExactActorRef` and the occurrence is its think occurrence
+//! `(issuer, think sequence)` (§4.2). The Channel owner revalidates everything at commit: the
+//! issuer is a live creature generation, the target is the committed player of its GameSession,
+//! the two stand one tile apart on one floor, the target is outside the PvE re-entry protection
+//! window and the bite interval has elapsed. The damage goes through an Ability `EffectPlan` with
+//! `ProposalSource::Ai` and lowers the player's runtime-actor-local health (SPELL-D2). DEATH-2
+//! retires D54's floor at 1 (Reference first player death decision §4.1): a hit that takes the
+//! health to 0 is lethal, and the vitals owner mints the `PlayerDeathOccurrence` in the same write
+//! and returns it in the bite's result (§4.2). A dead player is no longer a bite target. The
+//! cooldown is written in the same owner step as the health.
+//!
+//! The first result of an occurrence is kept, accepted or rejected: a retry returns it and never
+//! applies damage twice, and a rejected bite is never buffered for later. AI reads the result only
+//! through its next snapshot.
+
+use std::collections::BTreeMap;
+
+use super::{AbilityIntent, AbilityOccurrence, CommitGroup, Effect, EffectPlan, ProposalSource};
+use super::{RevisionSet, intent::AiAbilityAdapter};
+use crate::foundation::owner_timer::SemanticTimeMicros;
+use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition};
+
+/// Retained bite state per Channel owner: `CREATUREAI0-RL-04`, the creature actors one Channel
+/// admits (Foundation's `CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX`; a Foundation test holds the
+/// two equal). SPAWN-CEILINGS-1 (Codex 4242381779): it replaced the D57 envelope of 16 spawn
+/// sources x 4 creatures (64) this ledger was sized against.
+pub const CREATURE_BITE_LEDGER_MAX: usize = 262_144;
+
+/// The bite's content inputs (§4.8): the interval and the magnitude. Code never invents them.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CreatureBiteDefinition {
+    interval_micros: u64,
+    magnitude: u32,
+}
+
+impl CreatureBiteDefinition {
+    /// `None` for a zero interval or a zero magnitude; content validation rejects
+    /// such a definition before it reaches the owner.
+    pub fn new(interval_micros: u64, magnitude: u32) -> Option<Self> {
+        (interval_micros > 0 && magnitude > 0).then_some(Self {
+            interval_micros,
+            magnitude,
+        })
+    }
+}
+
+/// A typed AI bite proposal (§4.6). Built only by [`AiAbilityAdapter::bite`]; its origin grants no
+/// authority, and the owner resolves both actors again at commit.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct AiBiteIntent {
+    pub(super) issuer: ExactActorRef,
+    pub(super) think_sequence: u64,
+    pub(super) target: ExactActorRef,
+    pub(super) target_session: GameSessionId,
+}
+
+impl AiAbilityAdapter {
+    /// The bite a think occurrence `(issuer, think_sequence)` proposes against `target`.
+    pub fn bite(
+        issuer: ExactActorRef,
+        think_sequence: u64,
+        target: ExactActorRef,
+        target_session: GameSessionId,
+    ) -> AiBiteIntent {
+        AiBiteIntent {
+            issuer,
+            think_sequence,
+            target,
+            target_session,
+        }
+    }
+}
+
+/// The PvE re-entry protection fact of the target (`DISCONNECT_REENTRY_PVE_PROTECTION_OWNER_
+/// DECISION.md`), which the owner reads from the protection owner in the same work item as the
+/// commit: the end of the target's active window, or `None`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ReentryProtection {
+    pub protected_until: Option<SemanticTimeMicros>,
+}
+
+impl ReentryProtection {
+    const fn protects_at(self, now: SemanticTimeMicros) -> bool {
+        match self.protected_until {
+            Some(until) => now.get() < until.get(),
+            None => false,
+        }
+    }
+}
+
+/// The health a creature hit leaves: never below 0, where the hit is lethal (DEATH-2 retires
+/// D54's floor at 1). `applied` is the clamped amount actually removed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CreatureDamage {
+    pub applied: u32,
+    pub health_after: u32,
+}
+
+pub const fn creature_damage(health: u32, magnitude: u32) -> CreatureDamage {
+    let health_after = health.saturating_sub(magnitude);
+    CreatureDamage {
+        applied: health - health_after,
+        health_after,
+    }
+}
+
+/// The D54 names `spell::cast` still imports; they carry no floor any more.
+pub type FlooredDamage = CreatureDamage;
+pub use creature_damage as floor_creature_damage;
+
+/// One committed creature hit on a player's vitals: the applied damage, the resulting vitals
+/// revision and, for a lethal hit, the UUIDv7 `PlayerDeathOccurrence` bytes the vitals owner
+/// minted with it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CreatureHit {
+    pub damage: CreatureDamage,
+    pub vitals_revision: u64,
+    pub death: Option<[u8; 16]>,
+}
+
+/// A committed bite: the requested and applied (clamped) amounts, the target's resulting
+/// vitals revision and, when the bite was lethal, its `PlayerDeathOccurrence` (§4.2).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct AppliedBite {
+    pub requested: u32,
+    pub damage: CreatureDamage,
+    pub vitals_revision: u64,
+    pub death: Option<[u8; 16]>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BiteRejection {
+    /// The issuer is not a live creature generation of this owner.
+    StaleIssuer,
+    /// The target is not the committed player of its GameSession, has no vitals or is dead.
+    StaleTarget,
+    /// The actors are not one tile apart on one floor under one position context.
+    OutOfRange,
+    /// The target is inside its PvE re-entry protection window.
+    TargetProtected,
+    CoolingDown,
+    /// The Ability plan refused the bite.
+    InvalidPlan,
+    /// A retry named another target for the same think occurrence.
+    OccurrenceConflict,
+    /// An older think occurrence of the issuer after a newer one resolved.
+    OccurrenceSuperseded,
+    /// No retained entry could be made for a new issuer.
+    LedgerFull,
+}
+
+/// The Channel owner's vitals of its present player actors (SPELL-D2). The vitals owner
+/// implements it; a bite reaches the player's health only through this one method.
+pub trait CreatureBiteVitals {
+    /// Lower the committed, living player's health by one creature hit in one vitals write; a
+    /// hit to 0 records the player's death with a newly minted occurrence in the same write.
+    /// `None` changes nothing.
+    fn apply_creature_damage(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        target: ExactActorRef,
+        target_session: GameSessionId,
+        magnitude: u32,
+        now: SemanticTimeMicros,
+    ) -> Option<CreatureHit>;
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct BiteEntry {
+    issuer: ExactActorRef,
+    ready_at: SemanticTimeMicros,
+    /// The first result of the latest resolved think occurrence: (sequence, target, result).
+    last: Option<(u64, ExactActorRef, Result<AppliedBite, BiteRejection>)>,
+}
+
+/// The Channel owner's bite cooldowns and occurrence results, beside `ChannelRuntimeV1` and used
+/// only under its lock. Keyed by the issuer's exact generation (`placement_identity`), so a newer
+/// generation in a reused slot never reads a dead one's cooldown or occurrence result.
+#[derive(Debug, Default)]
+pub struct CreatureBiteLedger {
+    entries: BTreeMap<[u8; 16], BiteEntry>,
+}
+
+impl CreatureBiteLedger {
+    /// Drop the issuer's entry on its death or despawn. A no-op for an unknown issuer.
+    pub fn retire(&mut self, issuer: ExactActorRef) {
+        self.entries.remove(&issuer.placement_identity());
+    }
+
+    #[cfg(test)]
+    pub fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    /// The live `issuer`'s entry, made on its first bite. A full ledger first drops the entries
+    /// of dead issuers. The carrier admits at most `CREATUREAI0-RL-04` creatures, and `issuer` is
+    /// one of them without an entry, so the live entries left are fewer than the maximum and a
+    /// live issuer is never refused `LedgerFull`.
+    fn entry(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        issuer: ExactActorRef,
+    ) -> Result<&mut BiteEntry, BiteRejection> {
+        let key = issuer.placement_identity();
+        if !self.entries.contains_key(&key) && self.entries.len() >= CREATURE_BITE_LEDGER_MAX {
+            self.entries
+                .retain(|_, entry| runtime.contains_live_creature(entry.issuer));
+            if self.entries.len() >= CREATURE_BITE_LEDGER_MAX {
+                return Err(BiteRejection::LedgerFull);
+            }
+        }
+        Ok(self.entries.entry(key).or_insert(BiteEntry {
+            issuer,
+            ready_at: SemanticTimeMicros::from_micros(0),
+            last: None,
+        }))
+    }
+}
+
+/// One AI bite as one Channel-owner work item (§4.6, §4.7). A stale issuer is rejected before
+/// anything is read or kept. Otherwise the first result of the think occurrence is kept and
+/// returned for every retry of it.
+#[allow(clippy::too_many_arguments)]
+pub fn commit_ai_bite(
+    ledger: &mut CreatureBiteLedger,
+    runtime: &mut ChannelRuntimeV1,
+    vitals: &mut dyn CreatureBiteVitals,
+    intent: AiBiteIntent,
+    definition: CreatureBiteDefinition,
+    revisions: RevisionSet,
+    protection: ReentryProtection,
+    now: SemanticTimeMicros,
+) -> Result<AppliedBite, BiteRejection> {
+    if !runtime.contains_live_creature(intent.issuer) {
+        return Err(BiteRejection::StaleIssuer);
+    }
+    let entry = *ledger.entry(runtime, intent.issuer)?;
+    if let Some((sequence, target, result)) = entry.last {
+        if intent.think_sequence < sequence {
+            return Err(BiteRejection::OccurrenceSuperseded);
+        }
+        if intent.think_sequence == sequence {
+            return if intent.target == target {
+                result
+            } else {
+                Err(BiteRejection::OccurrenceConflict)
+            };
+        }
+    }
+    let result = resolve_and_apply(
+        runtime, vitals, &entry, intent, definition, revisions, protection, now,
+    );
+    let entry = ledger.entry(runtime, intent.issuer)?;
+    if result.is_ok() {
+        entry.ready_at = now.saturating_add_micros(definition.interval_micros);
+    }
+    entry.last = Some((intent.think_sequence, intent.target, result));
+    result
+}
+
+#[allow(clippy::too_many_arguments)]
+fn resolve_and_apply(
+    runtime: &mut ChannelRuntimeV1,
+    vitals: &mut dyn CreatureBiteVitals,
+    entry: &BiteEntry,
+    intent: AiBiteIntent,
+    definition: CreatureBiteDefinition,
+    revisions: RevisionSet,
+    protection: ReentryProtection,
+    now: SemanticTimeMicros,
+) -> Result<AppliedBite, BiteRejection> {
+    runtime
+        .player_control_facts(intent.target, intent.target_session)
+        .map_err(|_| BiteRejection::StaleTarget)?;
+    let issuer_at = runtime
+        .read_actor_position(intent.issuer)
+        .map_err(|_| BiteRejection::OutOfRange)?;
+    let target_at = runtime
+        .read_actor_position(intent.target)
+        .map_err(|_| BiteRejection::OutOfRange)?;
+    if issuer_at.context() != target_at.context()
+        || !adjacent(issuer_at.position(), target_at.position())
+    {
+        return Err(BiteRejection::OutOfRange);
+    }
+    if protection.protects_at(now) {
+        return Err(BiteRejection::TargetProtected);
+    }
+    if now < entry.ready_at {
+        return Err(BiteRejection::CoolingDown);
+    }
+    let plan = bite_plan(intent, definition, revisions).ok_or(BiteRejection::InvalidPlan)?;
+    let magnitude = match plan.effects() {
+        [Effect::Damage { magnitude, .. }] => {
+            u32::try_from(*magnitude).map_err(|_| BiteRejection::InvalidPlan)?
+        }
+        _ => return Err(BiteRejection::InvalidPlan),
+    };
+    let hit = vitals
+        .apply_creature_damage(
+            runtime,
+            intent.target,
+            intent.target_session,
+            magnitude,
+            now,
+        )
+        .ok_or(BiteRejection::StaleTarget)?;
+    Ok(AppliedBite {
+        requested: magnitude,
+        damage: hit.damage,
+        vitals_revision: hit.vitals_revision,
+        death: hit.death,
+    })
+}
+
+/// Range 1 (§4.6): one tile apart, diagonals included, on one floor.
+fn adjacent(from: MovementLocalPosition, to: MovementLocalPosition) -> bool {
+    let dx = (i64::from(to.x) - i64::from(from.x)).abs();
+    let dy = (i64::from(to.y) - i64::from(from.y)).abs();
+    from.floor == to.floor && dx.max(dy) == 1
+}
+
+/// The bite as one Ability plan: an AI proposal of one damage effect on one resolved target,
+/// committed atomically by the Channel owner under the think occurrence's identity.
+fn bite_plan(
+    intent: AiBiteIntent,
+    definition: CreatureBiteDefinition,
+    revisions: RevisionSet,
+) -> Option<EffectPlan> {
+    let issuer = format!("actor:{}", hex(&intent.issuer.placement_identity()));
+    let target = format!("actor:{}", hex(&intent.target.placement_identity()));
+    let occurrence_id = format!(
+        "ai-bite:{}:{}",
+        hex(&intent.issuer.placement_identity()),
+        intent.think_sequence
+    );
+    let occurrence = AbilityOccurrence::new(&occurrence_id, revisions).ok()?;
+    let proposal =
+        AbilityIntent::resolve(ProposalSource::Ai, &issuer, &[&target], &[&target]).ok()?;
+    let effect = Effect::damage(&target, i64::from(definition.magnitude)).ok()?;
+    let group = CommitGroup::atomic("channel-owner", &occurrence_id).ok()?;
+    EffectPlan::immediate(occurrence, proposal, vec![effect], Vec::new(), group).ok()
+}
+
+fn hex(bytes: &[u8]) -> String {
+    bytes.iter().map(|byte| format!("{byte:02x}")).collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn creature_damage_takes_health_to_zero_and_never_below() {
+        let cases = [
+            (185, 10, 10, 175),
+            (11, 10, 10, 1),
+            (10, 10, 10, 0),
+            (5, u32::MAX, 5, 0),
+            (1, 7, 1, 0),
+            (0, 7, 0, 0),
+        ];
+        for (health, magnitude, applied, health_after) in cases {
+            assert_eq!(
+                creature_damage(health, magnitude),
+                CreatureDamage {
+                    applied,
+                    health_after
+                }
+            );
+        }
+    }
+
+    #[test]
+    fn bite_definition_rejects_zero_inputs() {
+        assert!(CreatureBiteDefinition::new(0, 5).is_none());
+        assert!(CreatureBiteDefinition::new(2_000_000, 0).is_none());
+        assert!(CreatureBiteDefinition::new(2_000_000, 5).is_some());
+    }
+}

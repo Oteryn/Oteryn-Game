@@ -167,7 +167,7 @@ mod foundation {
     }
 }
 
-#[path = "../src/ability/mod.rs"]
+#[path = "../../../crates/gameplay/combat/src/ability/mod.rs"]
 mod ability;
 
 use ability::{

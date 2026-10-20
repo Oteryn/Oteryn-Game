@@ -16,12 +16,12 @@ pub mod character_bootstrap_intent;
 #[allow(dead_code, unused_imports)]
 pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/combat/mod.rs"]
+#[path = "../../../crates/gameplay/combat/src/combat/mod.rs"]
 pub mod combat;
 // A top-level module, not `combat::pickup`: see `src/combat/pickup.rs`'s own header comment for
 // why (`combat.rs` is recompiled standalone in other, Content-free contexts).
 #[allow(dead_code, unused_imports)]
-#[path = "../src/combat/pickup.rs"]
+#[path = "../../../crates/gameplay/combat/src/combat/pickup.rs"]
 pub mod combat_pickup;
 // `support/content_shim.rs` mirrors `src/content/mod.rs`'s own wiring (see its header comment
 // for why it is not a plain `#[path = "../../../crates/gameplay/content/src/content/mod.rs"]` inclusion).

@@ -10,11 +10,11 @@ extern crate self as oteryn_game_server;
 mod monster_lab;
 
 #[allow(dead_code)]
-mod ability;
+pub(crate) use oteryn_gameplay_combat::ability;
 // Native source combat requires the actual Channel/Condition owners; it is
 // intentionally outside the standalone generic Ability fixture facade.
 #[allow(dead_code)] // Preserve the original Ability module lint scope for this native-only adapter.
-#[path = "ability/player_lethal.rs"]
+#[path = "../../../crates/gameplay/combat/src/ability/player_lethal.rs"]
 mod player_lethal;
 // AI-3 (#162; GAME-AI-01-ACTION-INTEGRATION-FIRST-CREATURE-SLICE-V1 §4.4/§5): compiles the
 // bootstrap AI module into the server for the first time (previously only `tests/ai_bootstrap.rs`
@@ -42,7 +42,7 @@ mod ai_think;
     dead_code,
     reason = "nonshipping fixed-one-creature Combat proof awaits production composition"
 )]
-mod combat;
+pub(crate) use oteryn_gameplay_combat::combat;
 // A top-level module, not a submodule of `combat`: `combat.rs` is also recompiled standalone by
 // several PG test binaries that need `combat::death_reward`/`combat::loot_plan` but not
 // Content, so a `crate::content` dependency inside `combat.rs`'s own module tree would force
@@ -54,18 +54,18 @@ mod combat;
     dead_code,
     reason = "B3-2 has no production caller yet; a later admission stage wires one"
 )]
-#[path = "combat/pickup.rs"]
+#[path = "../../../crates/gameplay/combat/src/combat/pickup.rs"]
 mod combat_pickup;
 // ATTACK-1a, top-level for the same reason as `combat_pickup`: it evaluates its formulas with
 // `crate::spell::formula`, which the standalone `combat.rs` inclusions do not carry.
-#[path = "combat/attack/mod.rs"]
+#[path = "../../../crates/gameplay/combat/src/combat/attack/mod.rs"]
 mod combat_attack;
 // PVP-RT-1 (pure half): PvP legality and combat lock; not wired until the PVP-0 §8 go-live gate.
 #[allow(
     dead_code,
     reason = "PvP stays off until the PVP-0 go-live gate; PVP-RT-1b wires the legality stage"
 )]
-#[path = "combat/pvp/mod.rs"]
+#[path = "../../../crates/gameplay/combat/src/combat/pvp/mod.rs"]
 mod combat_pvp;
 // PARTY-1 (CP D1391): the party module and its PostgreSQL cases.
 mod party;
@@ -736,32 +736,32 @@ mod bone_phase_registry;
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod creature_appearance_content;
+pub(crate) use oteryn_gameplay_combat::creature_appearance_content;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod creature_area_heal;
+pub(crate) use oteryn_gameplay_combat::creature_area_heal;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod creature_attack_geometry;
+pub(crate) use oteryn_gameplay_combat::creature_attack_geometry;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod creature_auto_attack;
+pub(crate) use oteryn_gameplay_combat::creature_auto_attack;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod creature_chain_attack;
+pub(crate) use oteryn_gameplay_combat::creature_chain_attack;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod creature_condition_content;
+pub(crate) use oteryn_gameplay_combat::creature_condition_content;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
@@ -776,7 +776,7 @@ mod creature_damage_spell_delayed;
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod creature_defense_presentation;
+pub(crate) use oteryn_gameplay_combat::creature_defense_presentation;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
@@ -861,7 +861,7 @@ mod monster_summon;
 mod canonical_monster_successor_tests;
 
 #[allow(dead_code)]
-mod creature_icicle;
+pub(crate) use oteryn_gameplay_combat::creature_icicle;
 
 pub(crate) use durability::{native_world_items, native_world_read};
 
