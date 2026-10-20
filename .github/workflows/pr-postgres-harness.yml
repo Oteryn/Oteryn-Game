@@ -1,19 +1,39 @@
 name: PR PostgreSQL harness
 
-# Early signal only: runs the Merge Queue PostgreSQL harness and the
-# integration-rest test shard on pull requests, so their failures show before
-# the queue. It is not the PR gate (merge-gate.yml) and not a required check;
-# the Merge Queue keeps the exact-candidate qualification. Job names match the
-# Merge Queue jobs whose steps they mirror.
+# Early signal only: runs the Merge Queue PostgreSQL harness on pull requests
+# that can change what it runs (the game-server crate and its path
+# dependencies), so its failures show before the queue.
+# It is not the PR gate (merge-gate.yml) and not a required check; the Merge
+# Queue (merge-group-gate.yml) keeps the exact-candidate qualification and
+# runs the full workspace suite and every PostgreSQL lane once (D1471). The
+# job name matches the Merge Queue job whose steps it mirrors.
 
 on:
   pull_request:
     branches:
       - main
-    # Same exemptions as the queue's docs-only lane plus task paperwork.
-    paths-ignore:
-      - 'docs/agents/**'
-      - 'docs/architecture/**/*.md'
+    # Everything the game-server PostgreSQL targets link: the targets and the
+    # library PostgreSQL tests exercise game-server code well beyond
+    # durability/** (combat, pickup, transport, interaction, catalogues), so
+    # the whole crate and its workspace path dependencies are in scope. The
+    # lane is skipped only for PRs that cannot change what it runs.
+    paths:
+      - 'apps/game-server/**'
+      - 'crates/error-codes/**'
+      - 'crates/foundation/**'
+      - 'crates/ntp-clock/**'
+      - 'crates/protocol-oteryn/**'
+      - 'crates/session/**'
+      - 'crates/session-tcp/**'
+      - 'crates/simulation-determinism/**'
+      - 'crates/world-bundle/**'
+      - 'tools/dev-client/**'
+      - 'tools/world-bundle-compiler/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'rust-toolchain.toml'
+      - 'tools/repository/normalize_cargo_mtimes.py'
+      - '.github/workflows/pr-postgres-harness.yml'
 
 permissions: {}
 
@@ -22,52 +42,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  rust_linux:
-    name: Merge Queue / Rust Linux workspace
-    runs-on: ubuntu-24.04
-    timeout-minutes: 60
-    permissions:
-      contents: read
-    strategy:
-      matrix:
-        shard: [integration-rest]
-    steps:
-      - name: Check out exact pull request head
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          persist-credentials: false
-
-      - name: Install Rust toolchain
-        run: rustup toolchain install 1.95.0 --profile minimal
-
-      - name: Restore trimmed Cargo cache from protected main
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        with:
-          path: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: rust-linux-v2-1.95.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
-          restore-keys: |
-            rust-linux-v2-1.95.0-${{ hashFiles('Cargo.lock') }}-
-
-      - name: Normalize source mtimes for the restored Cargo cache
-        run: python tools/repository/normalize_cargo_mtimes.py
-
-      - name: Test workspace integration targets
-        shell: bash
-        env:
-          SHARD: ${{ matrix.shard }}
-        run: |
-          set -euo pipefail
-          cargo +1.95.0 metadata --locked --no-deps --format-version 1 > "$RUNNER_TEMP/metadata.json"
-          python tools/repository/plan_rust_test_shards.py "$RUNNER_TEMP/metadata.json" "$SHARD" > "$RUNNER_TEMP/shard-args.txt"
-          mapfile -t shard_args < "$RUNNER_TEMP/shard-args.txt"
-          test "${#shard_args[@]}" -gt 0
-          cargo +1.95.0 test --locked --workspace "${shard_args[@]}"
-
   durability_postgres:
     name: Merge Queue / Durability PostgreSQL harness
     runs-on: ubuntu-24.04
