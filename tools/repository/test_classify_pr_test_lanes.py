@@ -27,8 +27,14 @@ def load_module():
     return module
 
 
-if __name__ != "__main__":
+# Under pytest the `module` argument of the test functions is this fixture; the plain
+# script runner (CI has no pytest) passes the loaded module explicitly from main().
+try:
     import pytest
+except ImportError:  # pragma: no cover - CI runs these regressions without pytest
+    pytest = None
+
+if pytest is not None and __name__ != "__main__":
 
     @pytest.fixture
     def module():
