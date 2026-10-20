@@ -1,11 +1,21 @@
 //! Real native recovery/session checks plus explicitly test-only proposed VIP tables/columns.
 //! The fixture is not an installed migration, SECURITY DEFINER/grant or gameplay consent producer.
 #![allow(clippy::expect_used)]
-use super::*;
 use crate::bestiary_postgres_harness as harness;
+use crate::domain::vip::{
+    AcceptDecision, ConsentEnd, ConsentState, VipRateBucket, accept_consent, can_end_consent,
+    charge_vip_bucket,
+};
+use crate::domain::{AccountId, CharacterId, WorldId};
+use crate::durability::DurabilityRoot;
+use crate::durability::character_authority::uuid_text;
+use crate::durability::item_transfer::CurrentCharacterItemFence;
+use crate::durability::vip::*;
 use crate::foundation::{CommandId, ConnectionGeneration, GameSessionId, ScopeOwnershipGeneration};
+use crate::foundation::{CommandRef, RuntimeScopeRefV1};
 use harness::{CHARACTER, Harness, SESSION, TestResult, WORLD, debug, id};
 use sqlx::Executor;
+use sqlx::Row;
 use std::future::Future;
 use std::task::Poll;
 

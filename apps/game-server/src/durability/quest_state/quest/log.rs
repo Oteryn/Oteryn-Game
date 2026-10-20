@@ -421,5 +421,4 @@ impl QuestLogContent {
 }
 
 #[cfg(test)]
-#[path = "log_tests.rs"]
 mod tests;

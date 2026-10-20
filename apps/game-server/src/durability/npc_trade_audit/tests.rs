@@ -5,7 +5,7 @@ use super::*;
 use serde_json::Value;
 
 const RESOURCE_REGISTRY: &str =
-    include_str!("../../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json");
+    include_str!("../../../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json");
 
 fn uuid(tag: u8) -> Vec<u8> {
     let mut bytes = vec![0; 16];

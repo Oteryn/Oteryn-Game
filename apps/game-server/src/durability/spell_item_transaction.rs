@@ -36,7 +36,6 @@ impl From<sqlx::Error> for SpellItemError {
 }
 type Result<T> = std::result::Result<T, SpellItemError>;
 
-#[path = "spell_item_direct_companion.rs"]
 mod direct_companion;
 pub(crate) use direct_companion::{
     CommittedDirectCompanionAcquisition, DirectCompanionAcquisitionSource, DirectCompanionSource,

@@ -11,7 +11,6 @@
 //! Without a retained declaration, migration history is unavailable. Compatible revision refresh
 //! is unresolved in the contract; training/selection never relax "definition unchanged".
 
-#[path = "character_proficiency_codec.rs"]
 pub(in crate::durability) mod read;
 pub use read::{CommittedProficiencyChange, StoredProficiencyTrack};
 

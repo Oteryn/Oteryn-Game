@@ -68,5 +68,4 @@ pub async fn lock_mail_recipient_root(
     dead_code,
     reason = "PostgreSQL exercises are registered in the canonical PG target; the library unit target has no database"
 )]
-#[path = "mail_tests.rs"]
 pub(crate) mod tests;

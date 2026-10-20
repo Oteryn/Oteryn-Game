@@ -1532,7 +1532,7 @@ async fn insert_entry(
 
 /// Whether a fee payer is junior (BANK-0 §4.4, Q1 b): a junior payer keeps stage 1 and never
 /// pays a fee from the bank (BANK-FEE-0 §3).
-pub(super) fn fee_payer_is_junior(character: CharacterId) -> bool {
+pub(crate) fn fee_payer_is_junior(character: CharacterId) -> bool {
     is_junior(starter_island_fact(character))
 }
 

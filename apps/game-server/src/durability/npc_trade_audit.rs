@@ -568,5 +568,4 @@ pub fn encode_npc_trade_event(
 }
 
 #[cfg(test)]
-#[path = "npc_trade_audit_tests.rs"]
 mod tests;

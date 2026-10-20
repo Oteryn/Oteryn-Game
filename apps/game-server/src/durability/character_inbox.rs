@@ -20,7 +20,6 @@ use super::character_progression::{numeric_u64, uuid_text};
 use sqlx::Row;
 use sqlx::postgres::PgConnection;
 
-#[path = "character_inbox_reward_claim.rs"]
 mod reward_claim;
 
 pub use reward_claim::{

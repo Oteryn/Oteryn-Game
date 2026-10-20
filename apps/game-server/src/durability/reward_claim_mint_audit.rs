@@ -22,7 +22,6 @@ use super::item_transfer_audit::{
 use prost::Message;
 use sha2::{Digest, Sha256};
 
-#[path = "reward_claim_inbox_mint_audit.rs"]
 mod inbox;
 pub use inbox::{
     REWARD_INBOX_ENVELOPE_BYTES_MAX, REWARD_INBOX_ITEMS_MAX, REWARD_INBOX_PAYLOAD_BYTES_MAX,

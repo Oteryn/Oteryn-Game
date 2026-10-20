@@ -124,7 +124,7 @@ const EVENT_TYPE_ID: i64 = mint_audit::EVENT_TYPE_ID as i64;
 pub const ACHIEVEMENT_SOURCE_KIND: &str = "oteryn:reward-claim";
 
 /// The chest's achievement and the caller's lookup of its key in the world's
-/// current catalogue (`crate::achievement_catalogue`).
+/// current catalogue (the runtime Achievement catalogue).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RewardClaimAchievement {
     pub key: String,

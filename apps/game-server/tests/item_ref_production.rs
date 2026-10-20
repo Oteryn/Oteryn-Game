@@ -16,8 +16,11 @@ pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
 #[path = "support/domain_shim.rs"]
 pub mod domain;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/durability/mod.rs"]
-mod durability;
+#[path = "../src/durability"]
+mod durability {
+    // Recompile the shared core; native world adapters use the full library Content context.
+    include!("../src/durability/core_modules.rs");
+}
 #[allow(dead_code, unused_imports)]
 #[path = "../src/foundation/mod.rs"]
 pub mod foundation;

@@ -246,7 +246,7 @@ mod contract_tests {
     #[test]
     fn generic_v1_terminal_reconciliation_is_not_a_production_recovery_api() {
         const ADMISSION_JOURNAL: &str = include_str!("admission_journal.rs");
-        const DURABILITY: &str = include_str!("../durability/mod.rs");
+        const DURABILITY: &str = include_str!("core_modules.rs");
 
         assert!(
             ADMISSION_JOURNAL.contains("pub(crate) async fn reconcile("),

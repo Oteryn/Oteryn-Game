@@ -63,7 +63,7 @@ pub struct ReconciledCharacterAuthority<'f, 's> {
 
 impl ReconciledCharacterAuthority<'_, '_> {
     /// The capability is valid only on the exact root whose database was checked.
-    pub(super) fn record_for(&self, root: &DurabilityRoot) -> Result<CharacterRecoveryFenceV1> {
+    pub(crate) fn record_for(&self, root: &DurabilityRoot) -> Result<CharacterRecoveryFenceV1> {
         if self.root_identity != root.root_identity() || self.root_liveness.strong_count() == 0 {
             return Err(CharacterAuthorityError::Rejected);
         }
@@ -635,7 +635,7 @@ fn stored_predecessor_evidence(
     Ok(row.try_get("predecessor_digest")?)
 }
 
-pub(super) fn uuid_text(value: &str) -> std::result::Result<[u8; 16], DurabilityError> {
+pub(crate) fn uuid_text(value: &str) -> std::result::Result<[u8; 16], DurabilityError> {
     let hex: String = value.chars().filter(|c| *c != '-').collect();
     if hex.len() != 32 {
         return Err(DurabilityError::Unavailable);

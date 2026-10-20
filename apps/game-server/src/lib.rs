@@ -145,7 +145,7 @@ mod spell_stance_runtime_postgres_cases;
 mod spell_familiar_runtime_postgres_cases;
 
 #[cfg(test)]
-#[path = "durability/world_party_tests.rs"]
+#[path = "lifted_tests/durability_world_party_tests.rs"]
 mod world_party_runtime_postgres_cases;
 
 // LIMIT_RAISE value/audit regressions have one source mount; the canonical PG root
@@ -858,19 +858,7 @@ mod canonical_monster_successor_tests;
 #[allow(dead_code)]
 mod creature_icicle;
 
-// Native Content adapters are excluded from standalone Durability path loads.
-#[allow(
-    dead_code,
-    reason = "preserves the spell module's allowance for native adapters awaiting shipping activation"
-)]
-#[path = "durability/native_world_items.rs"]
-mod native_world_items;
-#[allow(
-    dead_code,
-    reason = "preserves the spell module's allowance for native adapters awaiting shipping activation"
-)]
-#[path = "durability/native_world_read.rs"]
-mod native_world_read;
+pub(crate) use durability::{native_world_items, native_world_read};
 
 // Full native Creature callbacks stay outside standalone Durability path loads.
 #[path = "durability/creature_source_items.rs"]

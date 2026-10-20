@@ -117,11 +117,7 @@ pub mod wheel_gem_data;
 #[path = "../src/interaction/mod.rs"]
 mod interaction;
 #[allow(dead_code)] // Preserve the original Spell adapter lint scope.
-#[path = "../src/durability/native_world_items.rs"]
-mod native_world_items;
-#[allow(dead_code)] // Preserve the original Spell adapter lint scope.
-#[path = "../src/durability/native_world_read.rs"]
-mod native_world_read;
+use durability::{native_world_items, native_world_read};
 #[allow(
     dead_code,
     reason = "§7 timed-revert driver awaits its live Channel/Instance scope owner"
@@ -149,7 +145,7 @@ mod spell_stance_runtime_postgres_cases;
 mod spell_familiar_runtime_postgres_cases;
 
 #[cfg(test)]
-#[path = "../src/durability/world_party_tests.rs"]
+#[path = "../src/lifted_tests/durability_world_party_tests.rs"]
 mod world_party_runtime_postgres_cases;
 
 #[cfg(test)]
@@ -343,3 +339,15 @@ mod creature_source_items;
 )]
 #[path = "support/item_transfer_postgres_cases.rs"]
 mod item_transfer_postgres_cases;
+
+#[cfg(test)]
+#[path = "../src/lifted_tests/durability_guild_tests.rs"]
+mod durability_guild_tests;
+
+#[cfg(test)]
+#[path = "../src/lifted_tests/durability_vip_tests.rs"]
+mod durability_vip_tests;
+
+#[cfg(test)]
+#[path = "../src/lifted_tests/durability_guild_disband_terminal_tests.rs"]
+mod durability_guild_disband_terminal_tests;

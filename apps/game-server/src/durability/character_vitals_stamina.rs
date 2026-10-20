@@ -3,7 +3,6 @@
 //! integration bundle and is not part of this module yet.
 
 // One pure arithmetic definition is shared by the native owner and the standalone tests.
-#[path = "character_vitals_stamina_math.rs"]
 mod stamina_math;
 pub use stamina_math::{
     MAX_OFFLINE_SECONDS, MAX_STAMINA_MINUTES, StaminaOutOfRange, regenerate_stamina_minutes,

@@ -30,8 +30,11 @@ mod character_proficiency_modification_postgres_cases;
 #[path = "support/character_revision_sequencer_postgres_cases.rs"]
 mod character_revision_sequencer_postgres_cases;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/durability/mod.rs"]
-mod durability;
+#[path = "../src/durability"]
+mod durability {
+    // Recompile the shared core; native world adapters use the full library Content context.
+    include!("../src/durability/core_modules.rs");
+}
 #[path = "support/highscores_session_postgres_cases.rs"]
 mod highscores_session_postgres_cases;
 #[path = "support/item_timed_postgres_cases.rs"]
