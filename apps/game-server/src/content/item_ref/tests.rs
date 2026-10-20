@@ -9,7 +9,7 @@ use oteryn_world_bundle_compiler::sector::{self, Attrs, Item, Tile};
 use std::path::{Path, PathBuf};
 
 const PRODUCTION_KEYS: &[u8] =
-    include_bytes!("../../../../tools/content-schema/native-gameplay/item-keys.json");
+    include_bytes!("../../../../../tools/content-schema/native-gameplay/item-keys.json");
 
 fn document(records: &[(&str, &str)]) -> Vec<u8> {
     serde_json::to_vec(&serde_json::json!({

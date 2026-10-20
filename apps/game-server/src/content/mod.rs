@@ -79,7 +79,7 @@ pub(crate) mod native_gameplay;
 pub(crate) mod native_items;
 pub(crate) mod native_source_world_carrier;
 pub(crate) mod native_spell_appearances;
-mod npc_catalogue;
+pub(crate) mod npc_catalogue;
 mod production;
 mod project;
 mod project_fs;

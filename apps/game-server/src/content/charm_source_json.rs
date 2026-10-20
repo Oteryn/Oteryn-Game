@@ -97,5 +97,4 @@ pub(crate) fn ensure_empty(members: &CharmSourceMembers) -> Result<(), ContentEr
 }
 
 #[cfg(test)]
-#[path = "charm_source_json_tests.rs"]
 mod tests;

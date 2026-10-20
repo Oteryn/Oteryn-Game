@@ -399,7 +399,3 @@ fn row(
         race,
     })
 }
-
-#[cfg(test)]
-#[path = "creature_reward_tests.rs"]
-mod tests;

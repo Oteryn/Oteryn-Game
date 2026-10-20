@@ -495,5 +495,4 @@ impl AccountUnlocks<String> for NoEarnedUnlocks {
 }
 
 #[cfg(test)]
-#[path = "cosmetics_loader_tests.rs"]
 mod tests;

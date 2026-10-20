@@ -448,5 +448,4 @@ impl CharacterProgressionContent {
 }
 
 #[cfg(test)]
-#[path = "character_progression_content_tests.rs"]
 pub(crate) mod tests;

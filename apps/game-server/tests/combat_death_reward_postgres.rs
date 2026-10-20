@@ -25,6 +25,11 @@ pub mod foundation;
 #[allow(dead_code, unused_imports)]
 pub use oteryn_gameplay_native_admission_source as native_admission_source;
 
+// The path-loaded Durability NPC travel fixture shares the canonical PostgreSQL harness.
+#[allow(dead_code)]
+#[path = "support/bestiary_postgres_harness.rs"]
+mod bestiary_postgres_harness;
+
 #[path = "support/attack_kill_reward_postgres_cases.rs"]
 mod attack_kill_reward_postgres_cases;
 #[path = "support/combat_death_reward_postgres_cases.rs"]

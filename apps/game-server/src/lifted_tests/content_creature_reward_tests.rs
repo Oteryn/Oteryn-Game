@@ -1,14 +1,11 @@
 #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
-
-use std::collections::HashMap;
-
+use crate::content::ProjectV2AuthoringProfileData;
 use oteryn_simulation_determinism::ExactI64;
 use serde_json::{Value, json};
+use std::collections::HashMap;
 
-use super::{
-    CreatureRewardTable, LootTablesSection, NoSettlementReason, ProjectV2AuthoringProfileData,
-};
 use crate::combat::{LootDefinitionRef, LootSelectionAlgorithm};
+use crate::content::creature_reward::{CreatureRewardTable, LootTablesSection, NoSettlementReason};
 use crate::content::native_gameplay::CreatureProfilesDocument;
 use crate::domain::bestiary::BestiaryRace;
 

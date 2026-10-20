@@ -136,7 +136,7 @@ impl QualifiedSpellTile {
             }),
         }
     }
-    /// A world bundle tile (BUNDLE-TILES-1, [`crate::map::spell_tiles`]): `ground` is the
+    /// A world bundle tile (BUNDLE-TILES-1, the Map spell-tile projection): `ground` is the
     /// ground item's source id and stored speed. A bundle has no source step facts, so
     /// [`Self::source_step`], [`Self::no_pvp_zone`] and [`Self::pvp_zone`] stay unknown.
     pub(crate) fn from_bundle(

@@ -26,7 +26,6 @@ use std::{
 };
 
 // D1093 mounts the existing source-bound compiler once, without a shared mod.rs edit.
-#[path = "cosmetics_loader.rs"]
 pub(crate) mod cosmetics_loader;
 
 /// Immutable decoded definitions and sorted identities from this exact native artifact.
