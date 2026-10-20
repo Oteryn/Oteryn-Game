@@ -8,6 +8,11 @@ WorldObject or Terrain catalogue key, else the run fails closed. The source is O
 evidence: only normalized facts are written, never map bytes. Cities and Regions are owned
 by area-authoring; Terrain, objects and placements are out of scope.
 
+A few teleports live in CrystalServer step-in scripts instead of map attributes (the New
+Haven vocation forcefield). `SCRIPT_TELEPORTS` pins each one with its script's sha256; the
+run verifies the script still registers that tile and teleports to that destination, and
+writes the Transition under the `crystalserver/script-step-in-teleport` namespace.
+
     python convert_world_metadata.py --crystal-root /path/to/crystalserver [--check]
 """
 
@@ -28,6 +33,18 @@ SUMMARY = HERE / "samples/source-capture-v1.json"
 ITEM_DEFINITIONS = "content/items/definitions"
 ITEM_KEY = re.compile(r"^oteryn:item\.tibia\.i([1-9][0-9]*)$")
 
+MAP_NAMESPACE = "crystalserver/map-item-position"
+SCRIPT_NAMESPACE = "crystalserver/script-step-in-teleport"
+# Teleports a pinned step-in script performs on a map tile that carries no destination.
+SCRIPT_TELEPORTS = (
+    {
+        "from": (32538, 32514, 7),
+        "item": 37001,
+        "path": "data-global/scripts/quests/newhaven/movement_select_vocation.lua",
+        "sha256": "1d44beffed174b6b3025f0fd4fc00393725445e3bb1a6729a633d9f891ac563b",
+        "to": (32544, 32515, 7),
+    },
+)
 SOURCE = {
     "evidence": "OtsHypothesisOnly",
     "files": [
@@ -35,16 +52,24 @@ SOURCE = {
             "path": "data-global/world/world.otbm",
             "sha256": "dcb735549bd11de526c4bd441bbf62e4490efbb60ff7aa334530f1692345d8d7",
         },
+        *(
+            {"path": path, "sha256": sha256}
+            for path, sha256 in sorted(
+                {(s["path"], s["sha256"]) for s in SCRIPT_TELEPORTS}
+            )
+        ),
     ],
     "ref": "summer-update",
     "repository": "zimbadev/crystalserver",
     "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
     "source_key": "oteryn:source.crystalserver",
 }
+OTBM = "data-global/world/world.otbm"
 COORDINATE_FRAME = "global-target-2026-09-27"
 REVISION = "definition-r1"
 SHARD_SIZE = 500
 MAX_FLOOR = 15
+UNSET = (0, 0, 0)
 CATALOGUES = ("content/world/objects", "content/world/terrain")
 GENERATOR = "tools/content-schema/world-authoring/convert_world_metadata.py"
 
@@ -171,7 +196,7 @@ def item_keys(root: Path = ROOT) -> dict[int, str]:
 def teleport_candidates(facts) -> tuple[list[dict], dict]:
     kept, rejected = [], {"unset_destination": 0, "destination_outside_map": 0}
     for tp in facts.teleports:
-        if tp["to"] == (0, 0, 0):
+        if tp["to"] == UNSET:
             rejected["unset_destination"] += 1
         elif not in_map(facts, *tp["to"]):
             rejected["destination_outside_map"] += 1
@@ -204,6 +229,66 @@ def object_reference(item_id: int, catalogue: dict[str, str], items: dict[int, s
     raise ConvertError(f"teleport item {item_id} has no Item record or catalogue key")
 
 
+SCRIPT_POSITION = re.compile(
+    r":position\(\s*Position\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)\s*\)"
+)
+SCRIPT_TELEPORT_TO = re.compile(
+    r"teleportTo\(\s*Position\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)"
+)
+
+
+def verify_script(entry: dict, data: bytes | None) -> None:
+    """Fail unless `data` is the pinned script of `entry` and still registers its tile
+    and teleports to its destination."""
+    if data is None:
+        raise ConvertError(f"{entry['path']}: script teleport source is not loaded")
+    if hashlib.sha256(data).hexdigest() != entry["sha256"]:
+        raise ConvertError(f"{entry['path']}: sha256 differs from the pinned script")
+    text = data.decode("utf-8")
+    registered = {tuple(map(int, m)) for m in SCRIPT_POSITION.findall(text)}
+    targets = {tuple(map(int, m)) for m in SCRIPT_TELEPORT_TO.findall(text)}
+    if registered != {entry["from"]} or targets != {entry["to"]}:
+        raise ConvertError(
+            f"{entry['path']}: script no longer teleports {entry['from']} -> {entry['to']}"
+        )
+    if entry["from"] == entry["to"]:
+        raise ConvertError(f"{entry['path']}: script teleport to its own tile")
+
+
+def script_candidates(
+    facts, blobs: dict[str, bytes], scripts=SCRIPT_TELEPORTS
+) -> list[dict]:
+    """The pinned script teleports, each verified against its script text and the map.
+
+    The script gives the destination of a map teleport attribute left unset (0, 0, 0) on
+    an item of the pinned id. A script that no longer registers the tile or teleports
+    elsewhere, a position outside the map, or a tile without exactly that one unset
+    attribute fails the run closed.
+    """
+    found = []
+    for entry in scripts:
+        verify_script(entry, blobs.get(entry["path"]))
+        if not (in_map(facts, *entry["from"]) and in_map(facts, *entry["to"])):
+            raise ConvertError(f"{entry['path']}: script teleport outside the map")
+        on_tile = [tp for tp in facts.teleports if tp["from"] == entry["from"]]
+        if [(tp["item"], tp["to"]) for tp in on_tile] != [(entry["item"], UNSET)]:
+            raise ConvertError(
+                f"{entry['path']}: script teleport tile {entry['from']} needs exactly one "
+                f"unset teleport attribute of item {entry['item']}, has {on_tile}"
+            )
+        found.append(
+            {
+                "from": entry["from"],
+                "item": entry["item"],
+                "namespace": SCRIPT_NAMESPACE,
+                "to": entry["to"],
+            }
+        )
+    if len({c["from"] for c in found}) != len(found):
+        raise ConvertError("two script teleports share a tile")
+    return found
+
+
 def teleports(
     candidates: list[dict],
     present: set,
@@ -220,6 +305,10 @@ def teleports(
         key=lambda t: (t["from"][2], t["from"][1], t["from"][0], t["item"], t["to"]),
     ):
         if tp["to"] not in present:
+            if "namespace" in tp:
+                raise ConvertError(
+                    f"script teleport destination {tp['to']} has no tile"
+                )
             rejected["destination_tile_absent"] += 1
             continue
         x, y, z = tp["from"]
@@ -241,7 +330,7 @@ def teleports(
                     binding(
                         "Transition",
                         key,
-                        "crystalserver/map-item-position",
+                        tp.get("namespace", MAP_NAMESPACE),
                         f"{x},{y},{z}:{tp['item']}" + (f"#{n}" if n > 1 else ""),
                     )
                 ],
@@ -299,20 +388,26 @@ def read_source(crystal_root: Path) -> dict[str, bytes]:
     return blobs
 
 
-def build(blobs: dict[str, bytes], root: Path = ROOT) -> dict[str, bytes]:
-    otbm = blobs["data-global/world/world.otbm"]
+def build(
+    blobs: dict[str, bytes], root: Path = ROOT, scripts=SCRIPT_TELEPORTS
+) -> dict[str, bytes]:
+    otbm = blobs[OTBM]
     facts = otbm_reader.read(otbm)
     if facts.unknown_item_attrs:
         raise ConvertError(
             f"unknown OTBM item attributes: {dict(facts.unknown_item_attrs)}"
         )
     candidates, rejected = teleport_candidates(facts)
-    present = otbm_reader.read(otbm, probe={tp["to"] for tp in candidates}).present
+    scripted = script_candidates(facts, blobs, scripts)
+    # a script destination replaces the unset attribute of its tile
+    rejected["unset_destination"] -= len(scripted)
+    probe = {tp["to"] for tp in candidates + scripted}
+    present = otbm_reader.read(otbm, probe=probe).present
     tp_records, object_families = teleports(
-        candidates, present, item_keys(root), rejected, catalogue_keys(root)
+        candidates + scripted, present, item_keys(root), rejected, catalogue_keys(root)
     )
     out = {}
-    out.update(shard_files("Transition.Teleport", tp_records))
+    out.update(shard_files("Transition.Teleport", tp_records, source_of(scripts)))
     summary = {
         "families": {"Transition.Teleport": len(tp_records)},
         "map": {
@@ -327,11 +422,22 @@ def build(blobs: dict[str, bytes], root: Path = ROOT) -> dict[str, bytes]:
             "waypoints": len(facts.waypoints),
         },
         "schema": "OTERYN_WORLD_METADATA_SOURCE_CAPTURE/v1",
-        "source": SOURCE,
+        "script_teleports": len(scripted),
+        "source": source_of(scripts),
         "teleport_object_families": object_families,
     }
     out[str(SUMMARY.relative_to(ROOT))] = canonical(summary)
     return out
+
+
+def source_of(scripts=SCRIPT_TELEPORTS) -> dict:
+    """SOURCE with exactly the script files `scripts` reads (all of them by default)."""
+    otbm = [row for row in SOURCE["files"] if row["path"] == OTBM]
+    rows = sorted({(s["path"], s["sha256"]) for s in scripts})
+    return {
+        **SOURCE,
+        "files": otbm + [{"path": path, "sha256": sha256} for path, sha256 in rows],
+    }
 
 
 def generated_extras(out: dict[str, bytes], root: Path = ROOT) -> list[str]:

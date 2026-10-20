@@ -24,9 +24,13 @@ use oteryn_game_server::content::{
     ReferenceSignedPoints, ReferenceWeaponType, ReimportDecision, ReimportFieldState,
     capture_world_project,
     item_abilities::apply_equip_abilities_v1,
-    item_admission::{apply_item_admission_v1, apply_item_admission_v2},
+    item_admission::{
+        apply_item_admission_v1, apply_item_admission_v2, apply_item_admission_v2_cheese,
+        apply_item_admission_v3,
+    },
     item_bed_promotion::apply_item_bed_promotion_v1,
     item_capacity_promotion::apply_item_capacity_promotion_v1,
+    item_consumption_promotion::apply_item_consumption_promotion_v1,
     item_description_promotion::apply_item_description_promotion_v1,
     item_description_wiki_promotion::apply_item_description_wiki_promotion_v1,
     item_document_promotion::apply_item_document_promotion_v1,
@@ -45,6 +49,7 @@ use oteryn_game_server::content::{
     item_name15_promotion::apply_item_name15_promotion_v1,
     item_numeric_modifier_promotion::apply_item_numeric_modifier_promotion_v1,
     item_physical_promotion::apply_item_physical_promotion_v1,
+    item_ranged_promotion::apply_item_ranged_promotion_v1,
     item_stack_default_promotion::apply_item_stack_default_promotion_v1,
     item_stack_default_successor8_promotion::apply_item_stack_default_successor8_promotion_v1,
     item_stack_false_promotion::apply_item_stack_false_promotion_v1,
@@ -351,6 +356,8 @@ fn enrich_provisional(draft: ProjectV2Draft) -> Result<ProjectV2Draft, Box<dyn s
     finish_provisional(draft)
 }
 
+#[path = "npc_materializer/bank_services.rs"]
+mod npc_bank_services;
 #[path = "npc_materializer/qualified_bounded.rs"]
 mod npc_qualified_bounded;
 #[path = "npc_materializer/qualified_nine.rs"]
@@ -552,6 +559,214 @@ fn admit_corpse_on_reconciled(
     Ok(true)
 }
 
+// D3-8 admits the cheese Item on exactly the corpse-admitted package (tree digest of #1830).
+const CORPSE_ADMITTED_PREDECESSOR: &str =
+    "7353a9ed65d82bb393db172a74f576b699ede2d727ddb6690ec8cc6c50925071";
+/// Revisions are immutable (DUR-04): the cheese-admitted package is a new project revision.
+const CHEESE_ADMITTED_PROJECT_REVISION: &str = "d3-8-cheese-admitted-20261007-r1";
+
+fn admit_cheese_on_corpse_admitted(
+    parent: &Path,
+    name: &std::ffi::OsStr,
+    output: &Path,
+) -> Result<bool, Box<dyn std::error::Error>> {
+    let filesystem = ProjectFilesystemLimits {
+        project: reconciled_limits(),
+        max_entries_per_directory_scan: 32,
+        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11,
+    };
+    let Ok(captured) = capture_world_project(parent, name, filesystem) else {
+        return Ok(false);
+    };
+    let mut draft = captured.migrate_to_v2();
+    let before = CanonicalProjectDocuments::from_v2_draft(draft.clone(), reconciled_limits())?;
+    if document_tree_digest(&before) != CORPSE_ADMITTED_PREDECESSOR {
+        return Ok(false);
+    }
+    let cheese_admitted = apply_item_admission_v2_cheese(&mut draft)?;
+    draft.core.project_revision = CHEESE_ADMITTED_PROJECT_REVISION.to_owned();
+    let documents = CanonicalProjectDocuments::from_v2_draft(draft, reconciled_limits())?;
+    let tree_sha256 = write_documents(output, &documents)?;
+    println!(
+        "cheese_admitted_items={cheese_admitted} tree_sha256={tree_sha256} predecessor_mode=true"
+    );
+    Ok(true)
+}
+
+// ITEM-SEM-USE-2 admits the consumable Items and lowers their consumption on exactly the
+// cheese-admitted package (tree digest of D3-8).
+const CHEESE_ADMITTED_PREDECESSOR: &str =
+    "9765ddf321d887855c381a7dc4d1fb07ceb7186406dc0c129c1b1aadd79383b6";
+/// Revisions are immutable (DUR-04): the consumable package is a new project revision.
+const CONSUMABLES_ADMITTED_PROJECT_REVISION: &str = "item-sem-use-2-consumables-20261013-r1";
+
+fn admit_consumables_on_cheese_admitted(
+    parent: &Path,
+    name: &std::ffi::OsStr,
+    output: &Path,
+) -> Result<bool, Box<dyn std::error::Error>> {
+    let filesystem = ProjectFilesystemLimits {
+        project: reconciled_limits(),
+        max_entries_per_directory_scan: 32,
+        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11,
+    };
+    let Ok(captured) = capture_world_project(parent, name, filesystem) else {
+        return Ok(false);
+    };
+    let mut draft = captured.migrate_to_v2();
+    let before = CanonicalProjectDocuments::from_v2_draft(draft.clone(), reconciled_limits())?;
+    if document_tree_digest(&before) != CHEESE_ADMITTED_PREDECESSOR {
+        return Ok(false);
+    }
+    let admitted = apply_item_admission_v3(&mut draft)?;
+    let (food, potions) = apply_item_consumption_promotion_v1(&mut draft)?;
+    draft.core.project_revision = CONSUMABLES_ADMITTED_PROJECT_REVISION.to_owned();
+    let documents = CanonicalProjectDocuments::from_v2_draft(draft, reconciled_limits())?;
+    let tree_sha256 = write_documents(output, &documents)?;
+    println!(
+        "consumable_admitted_items={admitted} consumption_food={food} consumption_potions={potions} tree_sha256={tree_sha256} predecessor_mode=true"
+    );
+    Ok(true)
+}
+
+// RANGED-CONTENT-1 lowers the distance, throwing, ammunition and wand weapon fields on exactly the
+// consumables package (tree digest of ITEM-SEM-USE-2).
+const CONSUMABLES_ADMITTED_PREDECESSOR: &str =
+    "6a8bd4e00fc81488613131bb8cd1e7191d48e13466e17dc3f862f957ef77fee3";
+/// Revisions are immutable (DUR-04): the ranged package is a new project revision.
+const RANGED_PROJECT_REVISION: &str = "ranged-content-1-20261013-r1";
+
+fn promote_ranged_on_consumables_admitted(
+    parent: &Path,
+    name: &std::ffi::OsStr,
+    output: &Path,
+) -> Result<bool, Box<dyn std::error::Error>> {
+    let filesystem = ProjectFilesystemLimits {
+        project: reconciled_limits(),
+        max_entries_per_directory_scan: 32,
+        max_total_directory_entries_scanned: 144 + 56 + 32,
+    };
+    let Ok(captured) = capture_world_project(parent, name, filesystem) else {
+        return Ok(false);
+    };
+    let mut draft = captured.migrate_to_v2();
+    let before = CanonicalProjectDocuments::from_v2_draft(draft.clone(), reconciled_limits())?;
+    if document_tree_digest(&before) != CONSUMABLES_ADMITTED_PREDECESSOR {
+        return Ok(false);
+    }
+    let applied = apply_item_ranged_promotion_v1(&mut draft)?;
+    draft.core.project_revision = RANGED_PROJECT_REVISION.to_owned();
+    let documents = CanonicalProjectDocuments::from_v2_draft(draft, reconciled_limits())?;
+    let tree_sha256 = write_documents(output, &documents)?;
+    println!(
+        "ranged_fields_set={} ranged_fields_unchanged={} ranged_conflicts={} ranged_quivers_deferred={} tree_sha256={tree_sha256} predecessor_mode=true",
+        applied.fields_set, applied.fields_unchanged, applied.conflicts, applied.quivers_deferred
+    );
+    Ok(true)
+}
+
+fn promote_ranged_from_stage(
+    stage: &Path,
+    output: &Path,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let stage_parent = stage.parent().ok_or("stage parent missing")?;
+    let stage_name = stage.file_name().ok_or("stage basename missing")?;
+    if !promote_ranged_on_consumables_admitted(stage_parent, stage_name, output)? {
+        return Err("consumables-admitted stage is not the ranged predecessor".into());
+    }
+    Ok(())
+}
+
+// NPC-CONTENT-2 stages NPC movement facts and admitted voices on exactly the ranged package (tree
+// digest of RANGED-CONTENT-1); the packet mints its own revision (DUR-04).
+#[path = "npc_materializer/presence.rs"]
+mod npc_presence;
+const NPC_PRESENCE: &[u8] =
+    include_bytes!("../../../docs/agents/evidence/OTV2-20261015-npc-content-2-presence.json");
+const NPC_PRESENCE_SHA256: &str =
+    "233cfa99f690f038606566ab03bf232b0e982cb6a4b3d6ffc5620491d4426978";
+const RANGED_ADMITTED_PREDECESSOR: &str =
+    "71e96ccf1c6b327df60e12abc6faa972f32ff9ff99260b86fcb8a7513a535685";
+
+fn admit_npc_presence_on_ranged_admitted(
+    parent: &Path,
+    name: &std::ffi::OsStr,
+    output: &Path,
+) -> Result<bool, Box<dyn std::error::Error>> {
+    let filesystem = ProjectFilesystemLimits {
+        project: reconciled_limits(),
+        max_entries_per_directory_scan: 32,
+        max_total_directory_entries_scanned: 144 + 56 + 32,
+    };
+    let Ok(captured) = capture_world_project(parent, name, filesystem) else {
+        return Ok(false);
+    };
+    let mut draft = captured.migrate_to_v2();
+    let before = CanonicalProjectDocuments::from_v2_draft(draft.clone(), reconciled_limits())?;
+    if document_tree_digest(&before) != RANGED_ADMITTED_PREDECESSOR {
+        return Ok(false);
+    }
+    let npcs = npc_presence::apply(&mut draft, NPC_PRESENCE, NPC_PRESENCE_SHA256)?;
+    // NPC-ECON-1 admits the one Bank service on top of the NPC presence package (DUR-04).
+    npc_bank_services::apply(&mut draft)?;
+    let documents = CanonicalProjectDocuments::from_v2_draft(draft, reconciled_limits())?;
+    let tree_sha256 = write_documents(output, &documents)?;
+    println!("npc_presence={npcs} tree_sha256={tree_sha256} predecessor_mode=true");
+    Ok(true)
+}
+
+fn admit_npc_presence_from_stage(
+    stage: &Path,
+    output: &Path,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let stage_parent = stage.parent().ok_or("stage parent missing")?;
+    let stage_name = stage.file_name().ok_or("stage basename missing")?;
+    if !admit_npc_presence_on_ranged_admitted(stage_parent, stage_name, output)? {
+        return Err("ranged-admitted stage is not the NPC presence predecessor".into());
+    }
+    Ok(())
+}
+
+/// Ranged package then NPC presence, staging the ranged package beside the output.
+fn promote_ranged_then_presence(
+    consumables_stage: &Path,
+    output: &Path,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let output_name = output
+        .file_name()
+        .ok_or("output basename missing")?
+        .to_string_lossy()
+        .into_owned();
+    let ranged_stage = output.with_file_name(format!(".{output_name}-ranged-stage"));
+    let chained = promote_ranged_from_stage(consumables_stage, &ranged_stage)
+        .and_then(|()| admit_npc_presence_from_stage(&ranged_stage, output));
+    if ranged_stage.exists() {
+        fs::remove_dir_all(&ranged_stage)?;
+    }
+    chained
+}
+
+fn admit_cheese_from_stage(stage: &Path, output: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    let stage_parent = stage.parent().ok_or("stage parent missing")?;
+    let stage_name = stage.file_name().ok_or("stage basename missing")?;
+    if !admit_cheese_on_corpse_admitted(stage_parent, stage_name, output)? {
+        return Err("corpse-admitted stage is not the cheese predecessor".into());
+    }
+    Ok(())
+}
+
+fn admit_consumables_from_stage(
+    stage: &Path,
+    output: &Path,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let stage_parent = stage.parent().ok_or("stage parent missing")?;
+    let stage_name = stage.file_name().ok_or("stage basename missing")?;
+    if !admit_consumables_on_cheese_admitted(stage_parent, stage_name, output)? {
+        return Err("cheese-admitted stage is not the consumables predecessor".into());
+    }
+    Ok(())
+}
+
 fn materialize_from_predecessor(
     source: &Path,
     output: &Path,
@@ -559,8 +774,56 @@ fn materialize_from_predecessor(
     require_fresh_root(output)?;
     let parent = source.parent().ok_or("predecessor parent missing")?;
     let name = source.file_name().ok_or("predecessor basename missing")?;
-    if admit_corpse_on_reconciled(parent, name, output)? {
+    if admit_npc_presence_on_ranged_admitted(parent, name, output)? {
         return Ok(());
+    }
+    let ranged_stage_dir = output.with_file_name(format!(
+        ".{}-ranged-only-stage",
+        output
+            .file_name()
+            .ok_or("output basename missing")?
+            .to_string_lossy()
+    ));
+    if promote_ranged_on_consumables_admitted(parent, name, &ranged_stage_dir)? {
+        let chained = admit_npc_presence_from_stage(&ranged_stage_dir, output);
+        fs::remove_dir_all(&ranged_stage_dir)?;
+        return chained;
+    }
+    // The pinned predecessor predates the admissions: stage each package beside the output and
+    // admit the next one on top of it, so the result is the tracked package.
+    let output_name = output
+        .file_name()
+        .ok_or("output basename missing")?
+        .to_string_lossy()
+        .into_owned();
+    let consumables_stage = output.with_file_name(format!(".{output_name}-consumables-stage"));
+    let cheese_stage = output.with_file_name(format!(".{output_name}-cheese-stage"));
+    if admit_consumables_on_cheese_admitted(parent, name, &consumables_stage)? {
+        let chained = promote_ranged_then_presence(&consumables_stage, output);
+        fs::remove_dir_all(&consumables_stage)?;
+        return chained;
+    }
+    if admit_cheese_on_corpse_admitted(parent, name, &cheese_stage)? {
+        let chained = admit_consumables_from_stage(&cheese_stage, &consumables_stage)
+            .and_then(|()| promote_ranged_then_presence(&consumables_stage, output));
+        fs::remove_dir_all(&cheese_stage)?;
+        if consumables_stage.exists() {
+            fs::remove_dir_all(&consumables_stage)?;
+        }
+        return chained;
+    }
+    let corpse_stage = output.with_file_name(format!(".{output_name}-corpse-stage"));
+    if admit_corpse_on_reconciled(parent, name, &corpse_stage)? {
+        let chained = admit_cheese_from_stage(&corpse_stage, &cheese_stage)
+            .and_then(|()| admit_consumables_from_stage(&cheese_stage, &consumables_stage))
+            .and_then(|()| promote_ranged_then_presence(&consumables_stage, output));
+        fs::remove_dir_all(&corpse_stage)?;
+        for stage in [&cheese_stage, &consumables_stage] {
+            if stage.exists() {
+                fs::remove_dir_all(stage)?;
+            }
+        }
+        return chained;
     }
     let filesystem = ProjectFilesystemLimits {
         project: main_world_limits(),
@@ -2828,6 +3091,74 @@ mod corpse_admission_revision_tests {
         assert!(after.contains(
             "draft.core.project_revision = CORPSE_ADMITTED_PROJECT_REVISION.to_owned();"
         ));
+    }
+}
+
+#[cfg(test)]
+mod cheese_admission_revision_tests {
+    /// DUR-04: changed content is never serialized under an existing revision. The cheese
+    /// admission runs only in `admit_cheese_on_corpse_admitted`, which mints its own revision.
+    #[test]
+    fn cheese_admission_always_mints_the_admitted_revision() {
+        let source = include_str!("materialize_content_world_project_v2.rs");
+        let body = source
+            .split_once("\nfn admit_cheese_on_corpse_admitted(")
+            .and_then(|(_, rest)| rest.split_once("\n}\n"))
+            .map(|(body, _)| body)
+            .expect("admit_cheese_on_corpse_admitted body");
+        let call = ["apply_item_admission_v2_cheese", "(&mut draft)"].concat();
+        assert_eq!(source.matches(call.as_str()).count(), 1);
+        let (_, after) = body.split_once(call.as_str()).expect("admission call");
+        assert!(after.contains(
+            "draft.core.project_revision = CHEESE_ADMITTED_PROJECT_REVISION.to_owned();"
+        ));
+    }
+}
+
+#[cfg(test)]
+mod consumables_admission_revision_tests {
+    /// DUR-04: changed content is never serialized under an existing revision. The consumable
+    /// admission and consumption lowering run only in `admit_consumables_on_cheese_admitted`,
+    /// which mints its own revision.
+    #[test]
+    fn consumables_admission_always_mints_the_admitted_revision() {
+        let source = include_str!("materialize_content_world_project_v2.rs");
+        let body = source
+            .split_once("\nfn admit_consumables_on_cheese_admitted(")
+            .and_then(|(_, rest)| rest.split_once("\n}\n"))
+            .map(|(body, _)| body)
+            .expect("admit_consumables_on_cheese_admitted body");
+        for call in [
+            ["apply_item_admission_v3", "(&mut draft)"].concat(),
+            ["apply_item_consumption_promotion_v1", "(&mut draft)"].concat(),
+        ] {
+            assert_eq!(source.matches(call.as_str()).count(), 1);
+            let (_, after) = body.split_once(call.as_str()).expect("step call");
+            assert!(after.contains(
+                "draft.core.project_revision = CONSUMABLES_ADMITTED_PROJECT_REVISION.to_owned();"
+            ));
+        }
+    }
+}
+
+#[cfg(test)]
+mod ranged_revision_tests {
+    /// DUR-04: changed content is never serialized under an existing revision. The ranged weapon
+    /// promotion runs only in `promote_ranged_on_consumables_admitted`, which mints its own.
+    #[test]
+    fn ranged_promotion_always_mints_the_ranged_revision() {
+        let source = include_str!("materialize_content_world_project_v2.rs");
+        let body = source
+            .split_once("\nfn promote_ranged_on_consumables_admitted(")
+            .and_then(|(_, rest)| rest.split_once("\n}\n"))
+            .map(|(body, _)| body)
+            .expect("promote_ranged_on_consumables_admitted body");
+        let call = ["apply_item_ranged_promotion_v1", "(&mut draft)"].concat();
+        assert_eq!(source.matches(call.as_str()).count(), 1);
+        let (_, after) = body.split_once(call.as_str()).expect("step call");
+        assert!(
+            after.contains("draft.core.project_revision = RANGED_PROJECT_REVISION.to_owned();")
+        );
     }
 }
 

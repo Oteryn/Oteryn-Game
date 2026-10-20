@@ -62,6 +62,15 @@ mod combat_pickup;
 // `crate::spell::formula`, which the standalone `combat.rs` inclusions do not carry.
 #[path = "combat/attack/mod.rs"]
 mod combat_attack;
+// PVP-RT-1 (pure half): PvP legality and combat lock; not wired until the PVP-0 §8 go-live gate.
+#[allow(
+    dead_code,
+    reason = "PvP stays off until the PVP-0 go-live gate; PVP-RT-1b wires the legality stage"
+)]
+#[path = "combat/pvp/mod.rs"]
+mod combat_pvp;
+// PARTY-1 (CP D1391): the party module and its PostgreSQL cases.
+mod party;
 // D39 chest `USE` wiring, top-level for the same reason: `tests/interaction_workflow.rs`
 // recompiles `interaction/mod.rs` without Content or durability. C2 routes `USE_INTENT` to it.
 #[path = "interaction/chest_use.rs"]
@@ -137,6 +146,18 @@ mod spell_familiar_runtime_postgres_cases;
 #[cfg(test)]
 #[path = "durability/world_party_tests.rs"]
 mod world_party_runtime_postgres_cases;
+
+// LIMIT_RAISE value/audit regressions have one source mount; the canonical PG root
+// path-loads durability and must not collect these pure cases a second time.
+#[cfg(test)]
+#[path = "durability/forge_dust_limit_audit_tests.rs"]
+mod forge_dust_limit_audit_tests;
+
+// RANK-1 ranking order has one source mount; the PG roots path-load durability (which owns the
+// ranking leaf) and must not collect these pure cases a second time.
+#[cfg(test)]
+#[path = "highscores/ranking_tests.rs"]
+mod highscore_ranking_tests;
 
 #[cfg(test)]
 #[path = "foundation/recovery_tests.rs"]
@@ -811,6 +832,16 @@ mod weak_spot_speech;
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
 mod welter_consume;
+#[allow(
+    dead_code,
+    reason = "LOOP-CLOCK-1 registers the pure World clock; the WORLD_LIGHT_V1 offer composes it later"
+)]
+mod world_clock;
+#[allow(
+    dead_code,
+    reason = "CP D1448: the WeatherSource seam and the reserved real_world coordinates are an extension point for a later live binding; today only the shipped Oteryn design is consumed"
+)]
+mod world_weather;
 
 #[allow(
     dead_code,
@@ -837,3 +868,10 @@ mod creature_icicle;
 // Full native Creature callbacks stay outside standalone Durability path loads.
 #[path = "durability/creature_source_items.rs"]
 mod creature_source_items;
+
+// D1287: selection-source component tests, without a production runtime caller.
+#[cfg(test)]
+mod world_change;
+
+#[cfg(test)]
+mod security;

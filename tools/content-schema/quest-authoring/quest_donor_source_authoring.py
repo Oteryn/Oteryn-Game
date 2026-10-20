@@ -141,7 +141,7 @@ def assemble(root, scratch):
         target.parent.mkdir(parents=True, exist_ok=True)
         target.symlink_to(manifest_path.parent / safe_path(row['cache_path']))
     subprocess.run([sys.executable, str(here / 'ots_gap_triage.py'),
-                    '--canary', str(roots['canary']), '--crystal', str(roots['crystalserver']),
+                    '--reference-engine', str(roots['canary']), '--crystal', str(roots['crystalserver']),
                     '--out', str(scratch / 'gap-triage.json')], check=True)
     triage = read(scratch / 'gap-triage.json')
     subprocess.run([sys.executable, str(here / 'donor_sources/donor_inventory.py'),

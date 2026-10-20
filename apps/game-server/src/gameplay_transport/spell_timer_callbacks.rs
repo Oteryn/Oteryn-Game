@@ -257,6 +257,9 @@ fn apply_due_under_current_owners(
                 occurrence: (*binding.occurrence).clone().into(),
                 binding: binding.parent_binding.clone(),
                 anchor: None,
+                now_us: Some(
+                    oteryn_simulation_determinism::SemanticTimeMicros::from_micros(due.get()),
+                ),
                 now_ms: due.get() / 1000,
                 effects: vec![effect],
                 deferred: None,
@@ -501,7 +504,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     let content = active
                         .native_gameplay()
                         .ok_or(DurabilityError::Unavailable)?;
-                    let room = owner.qualified_room.ok_or(DurabilityError::Unavailable)?;
+                    let room = owner
+                        .rooms
+                        .gate_combat_timer_continuation()
+                        .ok_or(DurabilityError::Unavailable)?;
                     if !saved.binding.active(owner.spells, runtime)
                         || !saved.current_target(runtime)
                     {
@@ -610,6 +616,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             occurrence: saved.binding.occurrence.clone().into(),
                             binding,
                             anchor: None,
+                            now_us: Some(phase_now),
                             now_ms: phase_now.get() / 1000,
                             effects: vec![crate::spell::combat_batch::OwnerCombatEffect {
                                 target: saved.target,

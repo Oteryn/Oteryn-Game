@@ -1,8 +1,11 @@
 # CONDITIONS-0 Actor conditions
 
 - Decision: `CONDITIONS0-ACTOR-CONDITIONS-V1`
-- Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (combat,
-  determinism and protocol) and protected integration.
+- Status: **ACCEPTED BY THE OWNER 2026-10-14 VIA THE CONTROL PLANE**, recorded by
+  `OTERYN_GAME_ACCEPT_CONDITIONS0_ACCEPTANCE_DECISION_2026-10-14.md` (`ACCEPT-CONDITIONS0-V1`); it takes
+  effect after exact-head validation, independent review (combat, determinism and protocol) and
+  protected integration of that PR. §3.5 is the
+  scope amendment accepted with it.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the control plane's request (#162 5913838260: CONDITIONS-0 next) and the charm lane's
   first priority (5913203231 question 2, architect view a in 5913269950): paralysis, haste and
@@ -27,17 +30,20 @@
 
 | Child | Worker | Builds | Depends on |
 |---|---|---|---|
-| COND-1 | hard (combat), combat and determinism review | the `ConditionInstance` store on the runtime actor, transitions, the tick scheduler, the families of §3, provenance (§3.2), dispel (§5), lifecycle (§6) | this decision |
-| SPEED-1 | impl, movement review | effective speed, the step-speed table and step pacing for players and creatures (§4) | COND-1; the GAME-AI-01 step cadence (§4.3) |
+| COND-1 | hard (combat), combat and determinism review | COND-1a/1b/1c are merged (the store, transitions, tick scheduler, §3 families, provenance, dispel, lifecycle and owner wiring). Remaining: the §3.5 `ConflictKey` values `muted`, `pacified`, `powerless` and `agony`, raising the runtime `COND0_RL_01_INSTANCES_PER_ACTOR` bound (`ability/condition.rs`) from 16 to the `COND0-RL-01` 32 with a test that a 17th distinct key is admitted, the `agony` tick and its §3.5 `AGONY` row policy (replace when the new total is at least the remaining one, a replacement following §3.1, with a test for the equal-total case), the §3.5 admission gates with their precedence and typed server-side reasons, and the `PACIFIED` application-time side effect that clears a running attack target (§3.5, through the ATTACK-0 owner), so pacification stops an attack already in progress | this decision |
+| SPEED-1 | impl, movement review | MERGED (#1715): effective speed, the step-speed table and paced player steps (§4.1, §4.2, §4.3 Players). Remaining in SPEED-1: none. Creature steps at their step duration on the live path (§4.3 Creatures) are the creature step timer that CREATURE-MOVE-1 builds (CREATURE-AI-0 §5.1; the cadence type from #1807 exists) | none (merged) |
 | COND-WIRE-1 | impl, protocol review | the vitals revision with condition icons and the mana shield, and `speed` on VIS-2 entities (§7) | COND-1; SPEED-1; VIS-2 |
 | COND-DUR-1 | hard (persistence), persistence review | the durable remaining food time (§6.3), in the SPELL-D8 H-1 pattern | COND-1; FOOD-REGEN-1 |
 | COND-CONTENT-1 | content lane | `ConditionDefinition` records for the spells, runes, potions, food, fields and monster attacks that use §3 families | this decision |
+| COND-CONTENT-2 | content lane | the §3.5 families in `tools/content-schema/condition-authoring` and their reference-sourced durations and `agony` tick shape (acceptance §1) | this decision; COND-CONTENT-1 (merged) |
+| COND-WIRE-2 | impl, protocol review, registry | condition icons for `muted`, `pacified`, `powerless` and `agony`, and the typed refusal reasons for `pacified` and `powerless` (§7); the spell-cast reasons are new values of the PRESENT-WIRE-1 result `detail` behind its capability revision (SPELL-PRESENT-0 §8), not a second field | COND-1 (§3.5 residual); COND-WIRE-1; PRESENT-WIRE-1 |
+| COND-CLIENT-2 | client lane (client owner) | drawing the §3.5 condition icons and the `pacified` and `powerless` attack and spell refusal texts (§7) | COND-WIRE-2; PRESENT-CLIENT-1 |
 
 FOOD-REGEN-1 (ITEM-USE-0) builds its definition on COND-1. After COND-1, the charm lane wires
 Cleanse and the player-side cases to it. The speed charms (Cripple, Numb, Adrenaline Burst) stay
-failing closed (`CharmMissingSystem::ParalysisCondition` / `HasteCondition`) until SPEED-1 and,
-for creature targets, the GAME-AI-01 step cadence amendment (§4.3) have landed; before that a speed
-condition would change nothing. Their speed values come from one `ConditionDefinition` per charm
+failing closed (`CharmMissingSystem::ParalysisCondition` / `HasteCondition`). SPEED-1 is merged
+(#1715); for creature targets they also wait for the creature step timer that CREATURE-MOVE-1 builds (§4.3),
+since before it a speed condition would change no creature step. Their speed values come from one `ConditionDefinition` per charm
 (`charm.cripple`, `charm.numb`, `charm.adrenaline_burst`, COND-CONTENT-1); the charm variant keeps
 only its `duration_ms` (`charm_effects.rs:153-158`) and names the definition by key.
 
@@ -56,12 +62,22 @@ and show?
   distinct; ticks are deterministic and bounded. Its whole-gate candidate requires
   `RUN_EACH_BOUNDED` catch-up for anything that cannot be skipped (clause 5), explicit
   continuation at every exercised boundary (clause 6), and an explicit rule for an absent source.
-- No condition code exists; `charm_effects.rs` fails closed for paralysis, haste and cleanse.
-- Movement has no speed: `step_cardinal` has no step duration and cardinal steps only;
-  `StepDisposition` is `Moved`, `Blocked`, `Rejected` (`world_spatial.rs:37-41`).
+- At the 2026-09-30 decision no condition code existed and `charm_effects.rs` failed closed for
+  paralysis, haste and cleanse. Status at the 2026-10-14 acceptance: COND-1a (#1405, the
+  `ConditionStore`, `ConflictKey`, transitions and the tick schedule in `ability/condition.rs`),
+  COND-1b (mana shield, dispel, lifecycle) and the COND-1c owner wiring, including bundle-World
+  periodic damage (#2086), are on main, as are SPEED-1 (#1715) and COND-CONTENT-1 (#1400). COND-1's
+  remaining scope is the §3.5 keys, the runtime instance bound raised to 32, the `agony` tick, the §3.5 admission gates and the `PACIFIED`
+  clearing of a running attack target (see the brief).
+- At the 2026-09-30 decision movement had no speed: `step_cardinal` had no step duration and
+  `StepDisposition` was `Moved`, `Blocked`, `Rejected`. Since SPEED-1 (#1715), effective speed and
+  the step-speed table are in `movement/speed.rs`, and a player step is paced by its step duration
+  (`movement/pacing.rs`, `TOO_EARLY` behind `PACED_MOVEMENT_V1`). The creature step cadence type
+  (`CreatureMovementCadence`, #1807) exists; taking every creature step at its step duration on the
+  live path is the remaining creature-movement work (§4.3, the GAME-AI-01 amendment), not COND-1.
 - Creatures think once per 1,000 ms and take at most one step per think (D115, `ai_think.rs`).
 - Vitals are runtime-actor-local (SPELL-D2). `ACTOR_VITALS` is at most 32 bytes and rejects unknown
-  fields (`actor_spell.rs:37`); its worst case is 27 bytes (SPELL-D8).
+  fields (`crates/protocol-oteryn/src/actor_spell.rs:37`); its worst case is 27 bytes (SPELL-D8).
 - ITEM-USE-0 §6.1 (merged) defines `FoodRegeneration` with its own key, `FULL` at 1,200 s, no gain
   in a protection zone, coexisting with Recovery.
 - SPELL-D8 H-1 (#1360) made the remaining forced Serene time durable: a bounded column, a receipt,
@@ -142,13 +158,50 @@ exists per conflict key.
 
 - Each tick is one GAME-ABILITY-01 occurrence and one Effect Plan, committed like any damage:
   resistances, the mana shield (§3.3), death. Offensive charms do not fire on ticks; defensive ones
-  apply as to any damage.
+  apply as to any damage. An Agony tick is the exception: it skips all mitigation and every charm (§3.5).
 - Provenance is frozen at application: source actor id, source kind, definition key and revision.
   At each tick the source is looked up; when it is gone (dead, despawned, logged out, on another
   channel), the tick is dealt with no attacker. Kill and loot credit follow the existing damage
   record (the DEATH and ATTACK-0 owners); an absent-source tick adds no entry to it.
 - A tick is an attack on the target: it refreshes the target's in-fight deadline (ATTACK-0).
 - In a protection zone a damage tick is refused and used up.
+
+### 3.5 Amendment 2026-10-14: gate, restriction and unrecoverable families (MAGIC-COND-1, mechanic 29)
+
+Owner scope amendment through the control plane. Values (durations, tick shape) are content; this
+section fixes keys, policies and gates. Rooted and feared keep their existing keys and movement gate.
+
+| Family | Conflict key | Policy | Gate or effect |
+|---|---|---|---|
+| `MUTED` | `muted` | refresh the duration | refuses starting any spell cast (spoken-word spells); runes are unaffected, and the condition itself does not gate chat (a CHAT-0 §6 mute is a separate rule). Not tagged `negative`: Cleanse (§5) and the `negative` dispel selector never select it and no dispel names its key (§5), so it ends only by duration, death, the §6.3 lifecycle boundaries or an active item's `SUPPRESS` of its key (EQUIP-0 §4, which also refuses its admission while the item is active) |
+| `PACIFIED` | `pacified` | refresh the duration | refuses every offensive action, which is exactly: setting an attack target (melee and distance auto-attack), and every spell or rune whose authored profile has `targeting.aggressive: true` (the same sole predicate as `POWERLESS`; the cooldown group never classifies, so Animate Dead Rune is refused); a running attack target is cleared on application. Non-aggressive spells and runes and non-rune items are unaffected. Not tagged `negative`: Cleanse (§5) and the `negative` dispel selector never select it and no dispel names its key (§5), so it ends only by duration, death, the §6.3 lifecycle boundaries or an active item's `SUPPRESS` of its key (EQUIP-0 §4, which also refuses its admission while the item is active) |
+| `POWERLESS` | `powerless` | refresh the duration | refuses every spell and rune whose authored profile has `targeting.aggressive: true`; that flag is the sole predicate, and the cooldown group never classifies (so Animate Dead Rune, group `support` but aggressive, is refused). A rune is an item resolved through its definition (RUNE-USE-0 §3), so this refusal takes precedence over the item rule. Non-aggressive spells and runes, non-rune items and melee are unaffected. Not tagged `negative`: Cleanse (§5) and the `negative` dispel selector never select it and no dispel names its key (§5), so it ends only by duration, death, the §6.3 lifecycle boundaries or an active item's `SUPPRESS` of its key (EQUIP-0 §4, which also refuses its admission while the item is active) |
+| `AGONY` | `agony` | replace when the new total is at least the remaining one; a replacement follows §3.1 (keeps the current tick timing, deals one tick at once unless the definition is `delayed`, takes the new source as its provenance) | damage over time of an undefined element; not tagged `negative`, so Cleanse and element dispel never select it, and `agony` is valid for no dispel selector (§5), so no dispel removes it; creature and cleanse immunity do not refuse it; its tick skips the whole incoming mitigation pipeline: no block, armour, resistance, damage reduction or mana shield reduces it, and no charm runs on it, so Dodge and Parry neither cancel nor reflect it (explicit exceptions to §3.2 and to CHARM-4 §3 and §4); application is not exempt: a Dodge that cancels the creature attack carrying Agony cancels its application with every other attached condition (CHARM-4 §3 step 1), because the attack never lands, an intentional rule recorded as a declared `PARITY_PENDING` gap (the Reference does not say whether Dodge stops Agony); the exception covers only mitigation and charms, so every other rule of §3.2 applies unchanged: frozen provenance and the source lookup, a tick with no attacker when the source is gone, kill and loot credit through the damage record, the in-fight refresh, death; in a protection zone its tick is refused and used up like any damage tick (§3.2), because a protection zone allows no damage at all and is not a block or a resistance; ends only by duration, death or the V1 lifecycle boundaries of §6.3; `agony` is not a valid `SUPPRESS` key (EQUIP-0 §4), so no item removes it or refuses its admission, because Agony cannot be cured, blocked or resisted (`docs/reference/tibia-manual/characters.md:164`) (logout and fresh admission discard it, a declared `PARITY_PENDING` gap; it is not persisted in V1) |
+| `EXHAUST` | none | not a condition | projection of the GAME-ABILITY-01 cooldown group (the "You are exhausted" refusal); no `ConditionInstance` exists and no key is spent |
+| `INFIGHT` | none | not a condition | projection of the ATTACK-0 60 s in-fight deadline for the client icon only; ATTACK-0 stays its sole owner and the lifecycle (§6.1) is unchanged |
+
+- Gates run at admission of the action, before cost and cooldown, and refuse with a typed reason; a
+  refused action spends nothing and draws nothing.
+- Precedence against the existing admission refusals: the action is first identified (the spell
+  words resolve to a spell, the rune resolves through its item definition, the attack intent names
+  its target id); then the condition gates run before every other existing cast and attack admission
+  check (protection zone, vocation, level, learned, premium, target, range and line of sight
+  included), except the CHAT-0 §6 chat-mute pre-gate of the spell path, which keeps its place
+  before them: a chat-muted actor's cast answers the CHAT-0 refusal and its audit reason whatever
+  conditions it carries, and the condition gates run only when it passes. A gated actor therefore
+  always gets the condition refusal and its §7 disposition, never the protection-zone or another
+  existing disposition (the chat mute above aside), and the audit records that one reason; an
+  action no gate refuses keeps the existing checks in their existing order.
+- When several gates refuse the same action, the first in the order `muted`, `pacified`, `powerless`
+  answers alone (`agony` gates nothing), so a muted actor's attack spell keeps the `MUTED` detail and
+  the audit records that one reason.
+- Worst case, counted exhaustively from the closed `ConflictKey` enum on main (`ability/condition.rs:75-88`), with no mutual exclusion between keys: four `Status` keys (`Invisible`, `Drunk`, `Rooted`, `Feared`), `Speed`, eight `Element` keys (poison, fire, energy, bleeding, drown, freezing, dazzled, cursed), `FoodRegeneration`, `Recovery`, `ManaShield`, `Light`, `Attributes`, `SpellSkills(0..=3)` (`ConditionDefinition::new` accepts sub-ids 0 to 3), `SpellRegeneration(1)` (sub-id 0 maps to `Recovery`, `ability/condition.rs:533-534`), `Invisible` and `Outfit` are 25 keys (`Status(Invisible)` and `Invisible` are distinct keys and both are built in production), plus the four new keys `muted`, `pacified`, `powerless` and `agony`, is 29 simultaneous keys, over 16. `COND0-RL-01` is 32 (29 and headroom for three later keys or sub-ids); a new key or sub-id that would raise the exhaustive count above 32 needs an amendment of this row.
+- Persistence follows §6.3: none of these is durable in V1 (`PARITY_PENDING` until DUR-02). Channel
+  transfer (§6.2) carries `muted`, `pacified`, `powerless` and `agony` with their remaining time.
+- Re-entry protection (§6.1) refuses their application by creature attacks like any other condition,
+  `agony` included: the refusal happens before any instance exists, so it is not a block or a
+  resistance of Agony, and it is an intentional rule recorded as a declared `PARITY_PENDING` gap (the
+  Reference does not say whether re-entry protection stops Agony).
 
 ### 3.3 Mana shield
 
@@ -165,16 +218,17 @@ exists per conflict key.
   **Amendment (pending on acceptance of CREATURE-MOVE-1-PACKET-1; `reviews/OTERYN_GAME_CREATURE_MOVE1_STEPS_PATHS_AND_GOALS_PACKET_2026-10-04.md` §1.2).** No spawn speed draw exists in Canary; a creature's base speed is its content `speed`, and `MONSTER_SPEED_DRAW` is retired.
 - **Tick order.** Ticks due in one simulation tick run in the key `(due tick, actor id, instance
   sequence)`, where the instance sequence is a per-actor monotonic u32 assigned at creation.
-- **Overload.** At most `COND0-RL-03` damage ticks per actor per simulation tick; later ones run in
+- **Overload.** At most `COND0-RL-03` ticks (damage and regeneration, as the store on main already counts them, `ability/condition.rs:40-42`; a wording correction, not a rule change) per actor per simulation tick; later ones run in
   the next simulation ticks in the same order (`RUN_EACH_BOUNDED`); none is dropped.
-- **Instance limit.** One instance per conflict key gives at most 13 today, under `COND0-RL-01`
-  (16); a family that would pass it needs an amendment, and a transition past it is refused.
+- **Instance limit.** One instance per conflict key gives at most 29 today (the exhaustive §3.5
+  count: the 25 keys of the `ConflictKey` enum on main and the four new §3.5 keys), under `COND0-RL-01` (32, §3.5); a family that would pass it needs an amendment, and a transition
+  past it is refused.
 
 ## 4. Speed and steps (SPEED-1)
 
 ### 4.1 Effective speed
 
-- Player base speed = 110 + level − 1 (vocation data); creature base speed is drawn at spawn (§2).
+- Player base speed = 110 + level − 1 (vocation data); creature base speed is its content `speed`, with no draw (CREATURE-MOVE-1-PACKET-1 §1.2).
 - Effective speed = base + the `SPEED` delta + worn-equipment speed (from the item definitions,
   summed by the equipment owner), clamped to `[10, 65,535]`.
 
@@ -210,7 +264,9 @@ exists per conflict key.
 
 - Dispel is a typed action with a closed selector: one conflict key (`exana pox` removes poison),
   or the tag `negative` (damage over time and paralysis; later drunk and similar). A selector names
-  how many it removes (1 or all).
+  how many it removes (1 or all). The §3.5 keys `muted`, `pacified`, `powerless` and `agony` are
+  valid for no selector: no dispel names them and the `negative` tag never selects them, so no
+  dispel removes them; they end only by the paths their §3.5 rows list.
 - **Cleanse** (charm): the candidates are the target's `negative` instances except drowning, in
   instance-sequence order. With none, nothing happens and no draw is made; with one, it is removed
   without a draw; with two or more, one uniform draw through `COND_CLEANSE_PICK` picks the index.
@@ -258,6 +314,7 @@ exists per conflict key.
   `remaining` and `capacity`. Its cap is 48 bytes (worst case about 43: the 27-byte revision, a
   5-byte mask field and two 5-byte values with tags), acknowledged on #162 at allocation; the old
   revision stays at 32 bytes for sessions without the capability.
+- **Wire for §3.5 families.** The `condition_icons` mask above has no bits for `muted`, `pacified`, `powerless` or `agony`, and this acceptance does not extend it. Their condition icons (all four) are routed to a successor wire revision, COND-WIRE-2, with its own #162 allocation and protocol review; until then the server enforces the gates and each refused command answers on its existing disposition: a spell cast refused by `muted`, `pacified` or `powerless` returns `SPELL_CAST_DISPOSITION_REJECTED` (10, `actor_spell_v1.proto`); an attack intent refused by `pacified` returns `ATTACK_INTENT_DISPOSITION_REJECTED` (6, `attack_v1.proto`), not `REENTRY_PROTECTED` (5), which stays the ATTACK-0 re-entry answer; a spell refused by `pacified` or `powerless` shows no refusal smoke, like `MUTED`; an offensive rune use refused by `pacified` or `powerless` answers the existing RUNE-USE-0 §4 `REQUIREMENT_NOT_MET` disposition with the typed reason server-side only, and no condition-specific rune refusal text is sent or drawn (RUNE-USE-0 §6.1 amendment; RUNE-CAST-1 follows COND-1); `agony` gates nothing. A cast refused by `muted` keeps the already accepted SPELL-PRESENT-0 §§6 and 8 result `detail` `MUTED` (no refusal smoke) unchanged. The typed reasons new in §3.5 (`pacified`, `powerless`) stay server-side (audit and log) and reach the client only through the refusal extension that COND-WIRE-2 carries (for a spell cast, new values of the PRESENT-WIRE-1 result `detail` behind its capability revision, SPELL-PRESENT-0 §8; COND-WIRE-2 therefore follows PRESENT-WIRE-1). COND-CLIENT-2 draws those icons and refusal texts in the client. No bit, capability, field or enum value is registered by this decision.
 - In-fight is shown from ATTACK-0 domain 10; the protection-zone block belongs to PARTY-PVP-0 and the
   protection zone to tile state (MAP-WIRE-1). Neither is in this mask.
 - **Other actors.** The VIS-2 `WORLD_SPATIAL_ENTITIES` entry gains `speed` (u16) behind the same
@@ -268,9 +325,9 @@ exists per conflict key.
 
 | Row | Value |
 |---|---|
-| `COND0-RL-01` instances per actor | 16 |
+| `COND0-RL-01` instances per actor | 32 (was 16; §3.5) |
 | `COND0-RL-02` minimum tick interval | 1,000 ms |
-| `COND0-RL-03` damage ticks per actor per simulation tick | 4 |
+| `COND0-RL-03` ticks (damage and regeneration) per actor per simulation tick | 4 |
 
 ## 9. Rejected options
 
@@ -287,7 +344,10 @@ exists per conflict key.
 
 - **Must decide now:** YES. Charms, spells, monster attacks and food need it, and movement needs
   speed.
-- **Minimum sufficient:** six families, closed conflict keys, one dispel selector, runtime
+- **Minimum sufficient:** six families (`SPEED`, `DAMAGE_OVER_TIME`, `FOOD_REGENERATION`, `RECOVERY`,
+  `MANA_SHIELD`, `LIGHT`) and, by the accepted §3.5 amendment, the `muted`, `pacified`, `powerless`
+  and `agony` families with their gates and the `agony` tick, and the `exhaust` and `infight`
+  projections; closed conflict keys, one dispel selector, runtime
   instances except food time, one vitals revision and one entity field.
 - **Superseding evidence:** official tick or refresh rules; DUR-02 durable vitals.
 - **Deliberately not decided:** drunk, invisible, outfit, skill boosts, fear, root; diagonal steps;
@@ -296,7 +356,7 @@ exists per conflict key.
 ## 11. Before-freeze checklist
 
 1. **Contract amendments:** none now; COND-WIRE-1 amends the vitals and spatial wire contracts,
-   SPEED-1 carries the GAME-AI-01 cadence amendment.
+   CREATURE-MOVE-1 carries the GAME-AI-01 cadence amendment (the creature step timer, §4.3).
 2. **Serialization:** transitions and ticks commit on the owning channel runtime in the §3.4 order.
 3. **Restart:** runtime instances end with the actor; food time is durable (§6.3).
 4. **Typed references:** condition definition key and revision, source provenance, actor ids,

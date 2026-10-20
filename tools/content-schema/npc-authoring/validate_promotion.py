@@ -21,7 +21,7 @@ Semantic rules:
   (CONFIRMED with its wikis, or UNCONFIRMED with the stating source; owner 1c), re-derived with the pinned facts,
   and those directions and prices are exactly the ones of the admitted source offer (a direction with
   `origin: 'wiki'` is a D13 offer, not part of it; without the source bundles a relabelled source direction looks
-  the same, so only the rebuild with --canary/--crystal binds an offer's source provenance);
+  the same, so only the rebuild with --reference-engine/--crystal binds an offer's source provenance);
   a WIKI_IMAGE_FIT score is at most 35; rules 'WIKI_IMAGE' / 'OWNER_REVIEW' are exactly the
   DEFINITION_REVIEWED row of that NPC and field (`definition.<field>`), choosing one of two sources, the field holds
   the pinned REVIEWED_VALUES value of the chosen source, and a row with
@@ -105,7 +105,7 @@ WIKI_PRICE_FACT = re.compile(r'trade\.(\d+)(?:x(\d+))?(?:s(-?\d+))?\.(SellToPlay
 
 
 # D16: the value each WIKI_IMAGE / OWNER_REVIEW row selects, read from its chosen source at the pinned revisions;
-# errors() holds the candidate to it without the source bundles, and the rebuild (--canary/--crystal) proves it is
+# errors() holds the candidate to it without the source bundles, and the rebuild (--reference-engine/--crystal) proves it is
 # the source's value. A reviewed row without a pinned value fails.
 REVIEWED_VALUES = {
     ('Ambassador Manop', 'movement'): {'floor_change': False, 'walk_interval_ms': 2000, 'walk_radius': 2},
@@ -868,8 +868,8 @@ def main():
     parser.add_argument('report')
     parser.add_argument('--snapshot', type=Path, help='the pinned Fandom snapshot; checks every WIKI_PRICE row')
     parser.add_argument('--br-facts', type=Path, help='the pinned TibiaWiki BR facts; checks every WIKI_PRICE row')
-    parser.add_argument('--canary', type=Path, help='Canary bundles; with --crystal and every pinned input, rebuild')
-    parser.add_argument('--crystal', type=Path, help='Crystal bundles; with --canary and every pinned input, rebuild')
+    parser.add_argument('--reference-engine', type=Path, help='Canary bundles; with --crystal and every pinned input, rebuild')
+    parser.add_argument('--crystal', type=Path, help='Crystal bundles; with --reference-engine and every pinned input, rebuild')
     parser.add_argument('--crystal-supplement', type=Path, help='the D14 Crystal supplement bundles, for the rebuild')
     parser.add_argument('--item-map', type=Path, help='the pinned item map; checks every WIKI_OFFER row (D13 offers)')
     parser.add_argument('--tibiopedia-facts', type=Path,
@@ -882,8 +882,8 @@ def main():
         parser.error('--tibiopedia-facts checks the D13 evidence with --snapshot and --br-facts')
     if parser_item_map and not args.tibiopedia_facts:
         parser.error('--item-map checks the D13 wiki offers with --tibiopedia-facts')
-    if (args.canary or args.crystal) and not (args.canary and args.crystal and args.item_map):
-        parser.error('--canary and --crystal rebuild the report with every pinned input, --item-map included')
+    if (args.reference_engine or args.crystal) and not (args.reference_engine and args.crystal and args.item_map):
+        parser.error('--reference-engine and --crystal rebuild the report with every pinned input, --item-map included')
     report = json.loads(Path(args.report).read_text(encoding='utf-8'))
     registry_names = registry_item_names()
     all_errors = errors(report) + item_name_errors(report, registry_names)
@@ -891,8 +891,8 @@ def main():
         all_errors += wiki_price_errors(report, args.snapshot.read_bytes(), args.br_facts.read_bytes(), registry_names,
                                         args.tibiopedia_facts.read_bytes() if args.tibiopedia_facts else None,
                                         args.item_map.read_bytes() if args.item_map else None)
-    if args.canary:
-        all_errors += rebuild_errors(report, args.canary, args.crystal, args.snapshot.read_bytes(),
+    if args.reference_engine:
+        all_errors += rebuild_errors(report, args.reference_engine, args.crystal, args.snapshot.read_bytes(),
                                      args.item_map.read_bytes(), args.br_facts.read_bytes(),
                                      args.tibiopedia_facts.read_bytes(), args.crystal_supplement)
 

@@ -16,12 +16,19 @@ use serde_json::Value;
 use std::collections::BTreeMap;
 use std::fmt;
 
-/// The plain RewardClaim shards, embedded as the quest document is. The variant shards are not
-/// served by this reader.
-pub const REWARD_CLAIM_SHARDS: [&str; 3] = [
+/// The RewardClaim shards, embedded as the quest document is: the plain shards, then the authored
+/// variant shards. Of the variants, this reader serves only key rewards (KEY-1); every other
+/// variant is left out.
+pub const REWARD_CLAIM_SHARDS: [&str; 5] = [
     include_str!("../../../../content/interactions/reward_claims/reward-claims-00000-00099.json"),
     include_str!("../../../../content/interactions/reward_claims/reward-claims-00100-00199.json"),
     include_str!("../../../../content/interactions/reward_claims/reward-claims-00200-00230.json"),
+    include_str!(
+        "../../../../content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+    ),
+    include_str!(
+        "../../../../content/interactions/reward_claims/reward-claim-variants-00100-00104.json"
+    ),
 ];
 
 /// Why a placement is not bound (§1.4). Each is exactly one reason.
@@ -42,7 +49,7 @@ pub enum UnboundReason {
 /// Why a record is not a served candidate (§1.5).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum LeftOut {
-    /// An authored variant record.
+    /// An authored variant record other than a key reward.
     Variant,
     /// `readiness` is not `ready` (`WAITING_*`).
     NotReady,
@@ -182,6 +189,7 @@ struct CandidatePlacement {
     item: TypedDefinitionRef,
     count: u32,
     quest_transition: Option<String>,
+    key_number: Option<u16>,
 }
 
 const DEFINITION_FIELDS: [&str; 6] = [
@@ -192,6 +200,17 @@ const DEFINITION_FIELDS: [&str; 6] = [
     "readiness",
     "placements",
 ];
+/// The fields an authored key variant adds to [`DEFINITION_FIELDS`].
+const KEY_VARIANT_FIELDS: [&str; 4] = [
+    "data_holds",
+    "definition_profile",
+    "native_admission",
+    "source_variant",
+];
+/// The one lowering a key variant waits for, which KEY-1 implements.
+const KEY_REWARD_LOWERING: &str = "KEY_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED";
+/// The authored binding of a key reward: `canary:door-key/<decimal number>`.
+const KEY_BINDING_PREFIX: &str = "canary:door-key/";
 const PLACEMENT_FIELDS: [&str; 4] = [
     "appearance_tibia_id",
     "quest_transition",
@@ -210,29 +229,30 @@ fn candidate(
     definition: &serde_json::Map<String, Value>,
     admitted: &dyn Fn(&TypedDefinitionRef) -> bool,
 ) -> Result<Result<Candidate, LeftOut>, ClaimsError> {
-    if definition.contains_key("definition_profile") {
+    let key_variant = definition.contains_key("definition_profile");
+    if key_variant && !waits_only_for_key_lowering(definition) {
         return Ok(Err(LeftOut::Variant));
     }
-    if definition.get("readiness").and_then(Value::as_str) != Some("ready") {
+    if !key_variant && definition.get("readiness").and_then(Value::as_str) != Some("ready") {
         return Ok(Err(LeftOut::NotReady));
     }
     let whole = Value::Object(definition.clone());
     let claim = definition.get("claim");
-    let encoded = definition
-        .keys()
-        .all(|key| DEFINITION_FIELDS.contains(&key.as_str()))
-        && claim.is_some_and(|claim| {
-            only(claim, &["per", "repeat"])
-                && claim.get("per").and_then(Value::as_str) == Some("character")
-                && claim
-                    .get("repeat")
-                    .is_some_and(|repeat| only(repeat, &["kind"]))
-                && claim
-                    .get("repeat")
-                    .and_then(|repeat| repeat.get("kind"))
-                    .and_then(Value::as_str)
-                    == Some("once")
-        });
+    let encoded = definition.keys().all(|key| {
+        DEFINITION_FIELDS.contains(&key.as_str())
+            || (key_variant && KEY_VARIANT_FIELDS.contains(&key.as_str()))
+    }) && claim.is_some_and(|claim| {
+        only(claim, &["per", "repeat"])
+            && claim.get("per").and_then(Value::as_str) == Some("character")
+            && claim
+                .get("repeat")
+                .is_some_and(|repeat| only(repeat, &["kind"]))
+            && claim
+                .get("repeat")
+                .and_then(|repeat| repeat.get("kind"))
+                .and_then(Value::as_str)
+                == Some("once")
+    });
     let placements = whole
         .get("placements")
         .and_then(Value::as_array)
@@ -245,7 +265,7 @@ fn candidate(
     let mut parsed = Vec::with_capacity(placements.len());
     let mut all_encoded = encoded && !placements.is_empty();
     for placement in placements {
-        match candidate_placement(placement)? {
+        match candidate_placement(placement, key_variant)? {
             Some(placement) => parsed.push(placement),
             None => all_encoded = false,
         }
@@ -262,8 +282,47 @@ fn candidate(
     }))
 }
 
-/// `None` for a placement with a field or shape the server artifact does not encode.
-fn candidate_placement(placement: &Value) -> Result<Option<CandidatePlacement>, ClaimsError> {
+/// Whether an authored variant waits for nothing but the key reward lowering: its data is
+/// complete, it holds no data, grants and charges nothing, and its one pending lowering is
+/// [`KEY_REWARD_LOWERING`].
+fn waits_only_for_key_lowering(definition: &serde_json::Map<String, Value>) -> bool {
+    let text =
+        |value: Option<&Value>, expected: &str| value.and_then(Value::as_str) == Some(expected);
+    let empty = |value: Option<&Value>| value.and_then(Value::as_array).is_some_and(Vec::is_empty);
+    let variant = definition.get("source_variant");
+    let field = |name: &str| variant.and_then(|variant| variant.get(name));
+    let lowering = field("native_lowering");
+    text(definition.get("definition_profile"), "authored_variant_v1")
+        && text(definition.get("native_admission"), "WAITING_IMPLEMENTATION")
+        && text(definition.get("readiness"), "waiting_implementation")
+        && empty(definition.get("data_holds"))
+        && empty(field("achievement_grants"))
+        && empty(field("charge_dispositions"))
+        && text(field("source_data").and_then(|data| data.get("status")), "COMPLETE")
+        && text(lowering.and_then(|lowering| lowering.get("status")), "WAITING_IMPLEMENTATION")
+        && lowering
+            .and_then(|lowering| lowering.get("pending_implementation"))
+            .and_then(Value::as_array)
+            .is_some_and(|pending| {
+                matches!(pending.as_slice(), [only] if only.as_str() == Some(KEY_REWARD_LOWERING))
+            })
+}
+
+/// The key number of a `canary:door-key/<number>` binding, in 1..=65,535 (`WORLDINT0-RL-10`).
+fn key_number(binding: &str) -> Option<u16> {
+    let digits = binding.strip_prefix(KEY_BINDING_PREFIX)?;
+    if digits.is_empty() || !digits.bytes().all(|byte| byte.is_ascii_digit()) {
+        return None;
+    }
+    digits.parse::<u16>().ok().filter(|number| *number != 0)
+}
+
+/// `None` for a placement with a field or shape the server artifact does not encode. A key
+/// variant's placement must carry a key binding of one item; no other placement may.
+fn candidate_placement(
+    placement: &Value,
+    key_variant: bool,
+) -> Result<Option<CandidatePlacement>, ClaimsError> {
     let bad = ClaimsError("placement is not in the shard shape");
     if !only(placement, &PLACEMENT_FIELDS) {
         return Ok(None);
@@ -274,9 +333,25 @@ fn candidate_placement(placement: &Value) -> Result<Option<CandidatePlacement>, 
         .ok_or(bad.clone())?;
     let binding = placement.get("source_binding").ok_or(bad.clone())?;
     let reward = placement.get("reward").ok_or(bad.clone())?;
-    if !only(binding, &["legacy_unique_ids", "project_position"]) || !only(reward, &["items"]) {
+    let reward_fields: &[&str] = if key_variant {
+        &["items", "key_binding"]
+    } else {
+        &["items"]
+    };
+    if !only(binding, &["legacy_unique_ids", "project_position"]) || !only(reward, reward_fields) {
         return Ok(None);
     }
+    let key_number = match reward.get("key_binding") {
+        None if key_variant => return Ok(None),
+        None => None,
+        Some(binding) => {
+            let binding = binding.as_str().ok_or(bad.clone())?;
+            let Some(number) = key_number(binding) else {
+                return Ok(None);
+            };
+            Some(number)
+        }
+    };
     let items = reward
         .get("items")
         .and_then(Value::as_array)
@@ -293,6 +368,10 @@ fn candidate_placement(placement: &Value) -> Result<Option<CandidatePlacement>, 
         .and_then(|count| u32::try_from(count).ok())
         .filter(|count| *count > 0)
         .ok_or(bad.clone())?;
+    // A key is one non-stackable item.
+    if key_number.is_some() && count != 1 {
+        return Ok(None);
+    }
     let item = entry.get("item").ok_or(bad.clone())?;
     let text = |field: &str| item.get(field).and_then(Value::as_str).ok_or(bad.clone());
     if text("family")? != "Item" {
@@ -327,6 +406,7 @@ fn candidate_placement(placement: &Value) -> Result<Option<CandidatePlacement>, 
         item,
         count,
         quest_transition,
+        key_number,
     }))
 }
 
@@ -364,6 +444,7 @@ fn bind_candidate(
                     }],
                     achievement: None,
                     quest_transition: placement.quest_transition.clone(),
+                    key_number: placement.key_number,
                 },
                 cell,
                 bundle_placement_key,

@@ -411,17 +411,34 @@
         "role": "weak_soul"
       },
       "delay_ms": 8000,
-      "conditions": [],
+      "conditions": [
+        {
+          "kind": "in_anchor",
+          "subject": {
+            "triggering": true
+          },
+          "anchor": "arena"
+        }
+      ],
       "actions": [
         {
-          "kind": "transform",
-          "role": "weak_soul",
-          "into": {
+          "kind": "spawn",
+          "creature": {
             "family": "Creature",
             "key": "canary:creature/strong_soul",
             "revision": "canary-47dfd51f"
           },
+          "role": "strong_soul",
+          "count": 1,
+          "at": {
+            "anchor": "strong_soul_return"
+          },
+          "owner": "none",
           "health": "full"
+        },
+        {
+          "kind": "remove",
+          "triggering": true
         }
       ]
     },
@@ -432,17 +449,34 @@
         "role": "strong_soul"
       },
       "delay_ms": 8000,
-      "conditions": [],
+      "conditions": [
+        {
+          "kind": "in_anchor",
+          "subject": {
+            "triggering": true
+          },
+          "anchor": "arena"
+        }
+      ],
       "actions": [
         {
-          "kind": "transform",
-          "role": "strong_soul",
-          "into": {
+          "kind": "spawn",
+          "creature": {
             "family": "Creature",
             "key": "canary:creature/powerful_soul",
             "revision": "canary-47dfd51f"
           },
+          "role": "powerful_soul",
+          "count": 1,
+          "at": {
+            "anchor": "powerful_soul_return"
+          },
+          "owner": "none",
           "health": "full"
+        },
+        {
+          "kind": "remove",
+          "triggering": true
         }
       ]
     },
@@ -453,17 +487,19 @@
         "role": "powerful_soul"
       },
       "delay_ms": 8000,
-      "conditions": [],
+      "conditions": [
+        {
+          "kind": "in_anchor",
+          "subject": {
+            "triggering": true
+          },
+          "anchor": "arena"
+        }
+      ],
       "actions": [
         {
-          "kind": "transform",
-          "role": "powerful_soul",
-          "into": {
-            "family": "Creature",
-            "key": "canary:creature/weak_soul",
-            "revision": "canary-47dfd51f"
-          },
-          "health": "full"
+          "kind": "remove",
+          "triggering": true
         },
         {
           "kind": "attribute",

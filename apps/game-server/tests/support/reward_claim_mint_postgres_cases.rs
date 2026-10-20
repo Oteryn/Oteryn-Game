@@ -4,6 +4,8 @@
 // through the real B3-1 TRANSFER path; its definition is the same test-only
 // fixture as the B3-1 cases.
 
+use crate::durability::item_weight_lookup::TEST_WEIGHTS;
+
 use crate::character_recovery_fence::CharacterRecoveryStore;
 use crate::domain::CharacterId;
 use crate::domain::progression::{
@@ -495,7 +497,8 @@ impl Harness {
             item: definition("Item", key),
             quantity,
             ground: GroundPlacement {
-                spatial_position: vec![1, 2, 3],
+                // Canonical 10-byte Ground64 address (x=1, y=2, floor=3).
+                spatial_position: vec![0, 0, 0, 1, 0, 0, 0, 2, 0, 3],
                 corpse_ref: id(3).to_vec(),
                 map_revision: "map-1".into(),
                 content_revision: "content-1".into(),
@@ -534,7 +537,7 @@ impl Harness {
     ) -> Result<ItemTransferOutcome, ItemTransferError> {
         let mut candidate = self
             .root
-            .freeze_item_transfer(authority, &self.node, fence, request)
+            .freeze_item_transfer(authority, &self.node, fence, request, &TEST_WEIGHTS)
             .await?;
         self.root
             .commit_item_transfer(
@@ -543,6 +546,7 @@ impl Harness {
                 &self.node,
                 fence,
                 &mut candidate,
+                &TEST_WEIGHTS,
             )
             .await
     }
@@ -648,6 +652,7 @@ impl Harness {
             "game_item_ground_locations",
             "game_item_container_entries",
             "game_item_audit_outbox",
+            "game_item_keys",
         ] {
             counts.push(self.count(relation).await?);
         }
@@ -716,6 +721,7 @@ fn definition(family: &str, key: &str) -> TypedDefinitionRef {
 
 fn facts(key: &str, stack: ItemStackClass) -> ItemDefinitionFacts {
     ItemDefinitionFacts {
+        weight: Some(1),
         definition: definition("Item", key),
         stack,
         container_capacity: None,
@@ -726,6 +732,7 @@ fn facts(key: &str, stack: ItemStackClass) -> ItemDefinitionFacts {
 /// Test-only backpack: capacity 20 and a complete `container`-slot pattern.
 fn backpack_facts() -> ItemDefinitionFacts {
     ItemDefinitionFacts {
+        weight: Some(1),
         definition: definition("Item", BACKPACK),
         stack: ItemStackClass::NonStackable,
         container_capacity: Some(20),
@@ -746,6 +753,7 @@ fn command(value: u64) -> TestResult<CommandRef> {
 
 fn to_slot(command: CommandRef, item: [u8; 16], facts: ItemDefinitionFacts) -> ItemTransferRequest {
     ItemTransferRequest {
+        weight_generation_digest: [0xD1; 32],
         command,
         source_item_instance_id: item,
         destination: ItemTransferDestination::ContainerSlot,
@@ -798,6 +806,7 @@ fn chest(
         sim_revision: "sim-1".into(),
         achievement: None,
         quest_transition: None,
+        key_number: None,
     }
 }
 
@@ -1678,6 +1687,144 @@ fn database_rejects_unproven_reward_claim_rows() -> TestResult {
     })
 }
 
+#[test]
+fn a_key_claim_records_its_number_once_and_the_database_rejects_any_other_key_row() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "key").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let backpack = harness.equip_backpack(&authority, 1).await?;
+        let key = RewardClaimMintRequest {
+            key_number: Some(10),
+            ..chest(
+                command(2)?,
+                "fixture:chest.key",
+                facts(STONE, ItemStackClass::NonStackable),
+                1,
+            )
+        };
+        let minted = harness.claimed(&authority, key).await?;
+        let row = sqlx::query(
+            "SELECT key_number, minted_transaction_id::text FROM game_item_keys \
+              WHERE item_instance_id = encode($1,'hex')::uuid",
+        )
+        .bind(minted.item_instance_id.as_slice())
+        .fetch_one(&harness.pool)
+        .await?;
+        assert_eq!(row.try_get::<i32, _>("key_number")?, 10);
+        assert_eq!(
+            row.try_get::<String, _>("minted_transaction_id")?,
+            uuid_text(minted.transaction_id)
+        );
+        // The audit MINT carries the number.
+        let envelope: Vec<u8> = sqlx::query_scalar(
+            "SELECT envelope FROM game_item_audit_outbox \
+              WHERE transaction_id = encode($1,'hex')::uuid",
+        )
+        .bind(minted.transaction_id.as_slice())
+        .fetch_one(&harness.pool)
+        .await?;
+        let (_, payload) = audit::decode_reward_claim_mint_envelope(&envelope).map_err(debug)?;
+        assert_eq!(payload.after.ok_or("after")?.key_number, 10);
+        // A claim without a key writes no key row.
+        let coin = harness
+            .claimed(&authority, coins(command(3)?, CLAIM, 3))
+            .await?;
+        assert_eq!(harness.count("game_item_keys").await?, 1);
+        // A key is one non-stackable item: refused before anything is written.
+        let before = harness.footprint().await?;
+        let mut stack = coins(command(4)?, "fixture:chest.key_stack", 1);
+        stack.key_number = Some(11);
+        assert!(matches!(
+            harness.claim(&authority, fence()?, stack).await,
+            Err(RewardClaimMintError::InvalidInput)
+        ));
+        assert_eq!(harness.footprint().await?, before);
+
+        let uuid = uuid_text;
+        let character = uuid(id(CHARACTER));
+        let world = uuid(id(WORLD));
+        let key_row = |item: [u8; 16], tx: [u8; 16], number: i32| {
+            format!(
+                "INSERT INTO game_item_keys(item_instance_id, key_number, minted_transaction_id) \
+                 VALUES ('{}', {number}, '{}')",
+                uuid(item),
+                uuid(tx)
+            )
+        };
+        let mut forged_stack =
+            forge_claim_statements(&character, &world, backpack, 180, 2, 2, true);
+        forged_stack.push(key_row(id(181), id(180), 12));
+        let mut forged_range =
+            forge_claim_statements(&character, &world, backpack, 190, 1, 1, true);
+        forged_range.push(key_row(id(191), id(190), 65_536));
+        let attempts: Vec<Vec<String>> = vec![
+            // A number on an item minted in an earlier transaction.
+            vec![key_row(coin.item_instance_id, coin.transaction_id, 12)],
+            // A number on a minted stack.
+            forged_stack,
+            // A number out of `WORLDINT0-RL-10`.
+            forged_range,
+            // A second number of the key.
+            vec![key_row(minted.item_instance_id, minted.transaction_id, 11)],
+            // The number is immutable and never goes away.
+            vec!["UPDATE game_item_keys SET key_number = 11".into()],
+            vec!["DELETE FROM game_item_keys".into()],
+            vec!["TRUNCATE game_item_keys".into()],
+        ];
+        for statements in attempts {
+            let before = harness.footprint().await?;
+            let mut tx = harness.pool.begin().await?;
+            let applied = async {
+                for statement in &statements {
+                    sqlx::query(sqlx::AssertSqlSafe(statement.clone()))
+                        .execute(&mut *tx)
+                        .await?;
+                }
+                tx.commit().await
+            }
+            .await;
+            assert!(applied.is_err(), "accepted: {statements:?}");
+            assert_eq!(harness.footprint().await?, before, "{statements:?}");
+        }
+        // The positive control: the number with the one-item MINT of its own transaction.
+        let mut tx = harness.pool.begin().await?;
+        let mut statements = forge_claim_statements(&character, &world, backpack, 200, 1, 1, true);
+        statements.push(key_row(id(201), id(200), 12));
+        for statement in statements {
+            sqlx::query(sqlx::AssertSqlSafe(statement))
+                .execute(&mut *tx)
+                .await?;
+        }
+        tx.commit().await?;
+        assert_eq!(harness.count("game_item_keys").await?, 2);
+
+        let grants: Vec<bool> = sqlx::query_scalar(
+            "SELECT unnest(ARRAY[\
+               has_table_privilege('oteryn_game_runtime','game_item_keys','INSERT'),\
+               NOT has_table_privilege('oteryn_game_runtime','game_item_keys','UPDATE'),\
+               NOT has_table_privilege('oteryn_game_runtime','game_item_keys','DELETE'),\
+               has_table_privilege('oteryn_game_control','game_item_keys','SELECT'),\
+               NOT has_table_privilege('oteryn_game_control','game_item_keys','INSERT')])",
+        )
+        .fetch_all(&harness.pool)
+        .await?;
+        assert_eq!(grants.len(), 5);
+        assert!(grants.iter().all(|granted| *granted), "{grants:?}");
+
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
 /// Every row of one reward-claim MINT, forged in raw SQL under transaction
 /// `id(tag)`, event `id(tag + 2)` and item `id(tag + 1)`, with or without its
 /// reservation and with the receipt claiming `receipt_quantity` for an item of
@@ -1922,6 +2069,7 @@ fn concurrent_claims_mint_once_and_serialize_with_pickup_and_xp() -> TestResult 
                     stone,
                     facts(STONE, ItemStackClass::NonStackable),
                 ),
+                &TEST_WEIGHTS,
             )
             .await
             .map_err(debug)?;
@@ -1943,6 +2091,7 @@ fn concurrent_claims_mint_once_and_serialize_with_pickup_and_xp() -> TestResult 
                 &harness.node,
                 fence()?,
                 &mut pickup,
+                &TEST_WEIGHTS,
             ),
             second_root.commit_reward_claim_mint(&second, &harness.node, fence()?, &mut claim),
         )
@@ -2064,7 +2213,7 @@ impl Harness {
 }
 
 /// Character 44 of the same account takes the account's presence on session
-/// 51; session 50 of Character 41 ends.
+/// 51 with its own progression state; session 50 of Character 41 ends.
 async fn switch_to_second_character(pool: &sqlx::PgPool) -> TestResult {
     sqlx::query(
         "INSERT INTO game_character_roots VALUES \
@@ -2074,6 +2223,16 @@ async fn switch_to_second_character(pool: &sqlx::PgPool) -> TestResult {
     .bind(id(SECOND_CHARACTER).as_slice())
     .bind(id(ACCOUNT).as_slice())
     .bind(id(WORLD).as_slice())
+    .execute(pool)
+    .await?;
+    // Use the same native progression fixture as Character 41. The new incoming
+    // capacity check must read Character 44's own level, not a missing-row fallback.
+    sqlx::query(
+        "INSERT INTO game_character_progression_state VALUES \
+         (encode($1,'hex')::uuid,1,50,1000,'profile-1','ruleset-1','content-1',\
+          'simulation-1','evidence-1','declaration-1','policy-1','reward-1')",
+    )
+    .bind(id(SECOND_CHARACTER).as_slice())
     .execute(pool)
     .await?;
     sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state = 3")
@@ -2793,7 +2952,7 @@ mod quest_obligations {
                 harness.footprint().await?,
                 before
                     .iter()
-                    .zip([1, 1, 1, 1, 0, 1, 1])
+                    .zip([1, 1, 1, 1, 0, 1, 1, 0])
                     .map(|(n, d)| n + d)
                     .collect::<Vec<_>>()
             );

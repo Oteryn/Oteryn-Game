@@ -16,18 +16,18 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        412,
-        "89ae95e31152335b2e0f16cb1919ad990d203d4aadaaf0d0cfa5ebb11566a42e",
+        382,
+        "d97c31a937d0df0bdbb018b3085677790145b9bfe22057ee5bf1c9f0073e26a4",
     ),
     (
         "definitions/declarations.json",
-        27275107,
-        "b6c28de9a38da6bf0c5bca39f0936f6ccf69ed59df4d1266a1ff4641116dbe95",
+        27_598_545,
+        "5dff8d3fb6d6fcaea45b77491e68431950d4451e06433e1ab2ace7aca090f87b",
     ),
     (
         "definitions/reference.json",
-        27_238_252,
-        "2b09b38ab63b3b68e6e3244d8ee644c68318f89882faf9f7495a055eab2cc855",
+        27_270_299,
+        "2a49ef4b92c0f893d30d8de0b6c4e032547e4dfa8dbdd1b0242e86d7748117c5",
     ),
     (
         "editor/author.json",
@@ -36,8 +36,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1955,
-        "a3cd7dc5080c65750efd115b69919d0cf4bd3a93d942565e0c2207ac6bf7159a",
+        1945,
+        "664e127424ebb43b2606120490329502b0a29a1be97c6af3dd7af2cd4d1117ab",
     ),
     (
         "presentations/bindings.json",
@@ -46,8 +46,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        406,
-        "2a7af708f61a6f0b63d65d912841b4a2e5e65c7218489805de96ae55087e3440",
+        396,
+        "1b212ef0f57a73eb8b12d83920f9ecc64dad863028bf18bc6214169c4674dff2",
     ),
     (
         "provenance/imports.json",
@@ -93,6 +93,18 @@ fn is_successor_shard(locator: &str) -> bool {
     SHARED_DIRECTORY_SUCCESSOR_SHARDS.contains(&locator)
         || is_unshared_successor_shard(locator)
         || is_spawn_family_file(locator)
+        || is_npc_placement_family_file(locator)
+}
+/// The `Npc.Placement` family (NPC-PLACE-1a): its index, held list and shards sit in
+/// `npc-placements/`, a successor directory that holds no legacy locator.
+/// `convert_placements.py --check` pins their bytes and `validate_materialized_game_tree.py`
+/// pins the index against the files on disk.
+fn is_npc_placement_family_file(locator: &str) -> bool {
+    locator.strip_prefix("npc-placements/").is_some_and(|name| {
+        name == "index.json"
+            || name == "held.json"
+            || (name.starts_with("placements-") && name.ends_with(".json"))
+    })
 }
 /// The `Spawn.Source` family (SPAWN-CONTENT-1; CREATURE-AI-0 section 6.1): its index and shards
 /// sit in `spawns/`, a successor directory that is not a contract tree node and holds no legacy
@@ -125,7 +137,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "7353a9ed65d82bb393db172a74f576b699ede2d727ddb6690ec8cc6c50925071";
+const TREE_SHA256: &str = "3c82124d7271e2e1ec42dce8be29900322e19771515363f622155d98df044f17";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450).
 const ITEMS: usize = 34_043;
@@ -140,7 +152,7 @@ const CREATURE_PROFILES: usize = 25_052;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
 const NPCS: usize = 1282;
 const NPC_RECORDS: usize = 2564;
-const NPC_DECLARATIONS: usize = 2498;
+const NPC_DECLARATIONS: usize = 2499;
 const NPC_DIALOGUES: usize = 836;
 const NPC_BINDINGS: usize = 2747;
 /// Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 §5 slice 4).
@@ -189,7 +201,11 @@ fn filesystem_limits() -> ProjectFilesystemLimits {
         // branch's spell imports the capture scans that sibling twice more: 2 more, measured.
         // The reviewed World pins (`pins/`, WORLD-BUNDLE-CI-1) add one sibling to the package root, seen by
         // each of the 11 locator lookups: 11 more, measured.
-        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11,
+        // The `npc-placements/` family directory (NPC-PLACE-1a) adds one more sibling to the package
+        // root, seen by each of the 11 locator lookups: 11 more, measured.
+        // LOOP-MAP-1 (#2152) adds the `content/cyclopedia/` sibling of `world` under `content/`: +1 (measured, 230).
+        // WEATHER-1 adds the `content/weather/` sibling of `world` under `content/`: +1 (measured, 231).
+        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11 + 11 + 1 + 1,
     }
 }
 
@@ -369,10 +385,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         filesystem_limits(),
     )
     .expect("capture tracked canonical package");
-    assert_eq!(
-        project.project_revision(),
-        "d3-7-corpse-admitted-20261006-r1"
-    );
+    assert_eq!(project.project_revision(), "npc-bank-1-20261015-r1");
     assert_eq!(project.imports().len(), 31);
     let legacy_imports: Vec<_> = project
         .imports()
@@ -673,6 +686,25 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         }
     }
     assert_eq!(expected_provisional_dialogues.len(), 133);
+    let bank_packet_bytes = include_bytes!(
+        "../../../docs/agents/evidence/OTV2-20261015-npc-bank-services/native-bank-admission.json"
+    );
+    assert_eq!(
+        world_project_sha256(bank_packet_bytes),
+        "228797d08e37486f5021e1e97090959681de89c9b6d3a9a464825423efdbe204"
+    );
+    let bank_packet: serde_json::Value =
+        serde_json::from_slice(bank_packet_bytes).expect("closed source-qualified Bank packet");
+    assert_eq!(
+        v2.declarations
+            .iter()
+            .filter(|declaration| matches!(
+                declaration,
+                ProjectV2Declaration::Service { bank: true, .. }
+            ))
+            .count(),
+        1
+    );
 
     assert!(v2.declarations.iter().all(|declaration| {
         match declaration {
@@ -719,12 +751,20 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                 }
             }
             ProjectV2Declaration::Service {
-                recipes, fields, ..
+                bank,
+                recipes,
+                fields,
+                ..
             } => {
-                recipes.is_empty()
-                    && fields
-                        .iter()
-                        .all(|field| field.field_path.starts_with("oteryn:source.npc."))
+                if *bank {
+                    // This one authored Bank row pins its exact callback provenance and fields.
+                    serde_json::to_value(declaration).ok().as_ref() == bank_packet.get("service")
+                } else {
+                    recipes.is_empty()
+                        && fields
+                            .iter()
+                            .all(|field| field.field_path.starts_with("oteryn:source.npc."))
+                }
             }
             ProjectV2Declaration::Encounter { fields, .. } => fields.is_empty(),
             ProjectV2Declaration::Document {
@@ -2087,6 +2127,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     let (mut pickup_fields, mut positive_stacks, mut weight_fields) = (0, 0, 0);
     let (mut movable_true, mut movable_false) = (0, 0);
     let (mut modifier_vectors, mut modifier_atoms) = (0, 0);
+    let (mut consumption_food, mut consumption_potions, mut consumption_requirements) = (0, 0, 0);
     let mantra_packet: serde_json::Value = serde_json::from_slice(
         item_mantra_bond_modifier_promotion::ITEM_MANTRA_BOND_MODIFIER_PACKET,
     )
@@ -2096,6 +2137,18 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         .expect("whole modifier rows");
     assert_eq!(mantra_rows.len(), 49);
     let mut mantra_keys = BTreeSet::new();
+    // ITEM-SEM-USE-2 admits consumables from the pinned v3 packet.
+    let consumable_packet: serde_json::Value =
+        serde_json::from_slice(item_admission::ITEM_ADMISSION_V3_PACKET)
+            .expect("sealed consumable admission packet");
+    let consumable_stack_capable: BTreeSet<&str> = consumable_packet["admissions"]
+        .as_array()
+        .expect("admission rows")
+        .iter()
+        .filter(|row| row["stack_class"] == "STACK_CAPABLE")
+        .map(|row| row["item_key"].as_str().expect("item key"))
+        .collect();
+    assert_eq!(consumable_stack_capable.len(), 144);
     let (mut document_groups, mut readable, mut writeable, mut not_writeable, mut text_lengths) =
         (0, 0, 0, 0, 0);
     for definition in &linked.definitions {
@@ -2123,12 +2176,32 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             movable_true += usize::from(physical.movable == ReferenceItemField::Known(true));
             movable_false += usize::from(physical.movable == ReferenceItemField::Known(false));
         }
+        if let ReferenceItemField::Known(consumption) = &item.semantics.consumption {
+            assert!(item.materializable);
+            match consumption {
+                ReferenceItemConsumption::Food(_) => {
+                    consumption_food += 1;
+                    assert_eq!(item.semantics.use_requirements, ReferenceItemField::Unknown);
+                }
+                ReferenceItemConsumption::Potion(_) => {
+                    consumption_potions += 1;
+                    consumption_requirements += usize::from(matches!(
+                        item.semantics.use_requirements,
+                        ReferenceItemField::Known(_)
+                    ));
+                }
+            }
+        }
         if let ReferenceItemField::Known(stack) = &item.semantics.stack
             && matches!(stack.stackable, ReferenceItemField::Known(true))
         {
             positive_stacks += 1;
             assert_eq!(stack.stack_max, ReferenceItemField::Known(100));
-            let admitted = definition.definition.key().as_str() == "oteryn:item.tibia.i3155";
+            let admitted = matches!(
+                definition.definition.key().as_str(),
+                "oteryn:item.tibia.i3155" | "oteryn:item.tibia.i3607"
+            ) || consumable_stack_capable
+                .contains(definition.definition.key().as_str());
             assert_eq!(item.materializable, admitted);
             assert_eq!(
                 (item.physical_class, item.stack_class),
@@ -2212,9 +2285,21 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             equipment_patterns += patterns.len();
         }
     }
+    // D3-8 admits cheese (i3607) with a Known stack of 100: one more positive stack.
+    // ITEM-SEM-USE-2 adds 144 stack-capable consumables, none of them positive before.
     assert_eq!(
         (pickup_fields, positive_stacks, weight_fields),
-        (6755, 39, 6513 + 4)
+        (6755, 40 + 144, 6513 + 4)
+    );
+    // ITEM-SEM-USE-2 lowers 137 edible foods and 12 restore potions, all on materializable
+    // Items, and the use requirements only on potions.
+    assert_eq!(
+        (
+            consumption_food,
+            consumption_potions,
+            consumption_requirements
+        ),
+        (137, 12, 9)
     );
     // Portal25051 and ten exact Tentacle source Items add eleven immovable facts.
     assert_eq!((movable_true, movable_false), (5691, 11));

@@ -46,11 +46,15 @@ macro_rules! starter {
 }
 
 /// The V1 castable set of §6 among the candidate starter bundles: self heal and condition removal
-/// (`exana pox`, `exura gran`, `exura`).
-const V1_BUNDLES: [(&str, &str); 3] = [
+/// (`exana pox`, `exura gran`, `exura`, `exura infir`). Every member is a plain self-target instant
+/// on the `healing` cooldown group. The stock client bar casts index 1-4 only (`SPELL_SLOTS`), so
+/// `ultimate_healing` and `wound_cleansing` (indices 5-6) and `bruise_bane` (sorts first, shifts
+/// indices 1-3) wait for the client bar and the index-pinned tests.
+const V1_BUNDLES: [(&str, &str); 4] = [
     starter!("instant-cure_poison"),
     starter!("instant-intense_healing"),
     starter!("instant-light_healing"),
+    starter!("instant-magic_patch"),
 ];
 
 /// The V1 spell book, in the canonical SPELL-D1 order. Any bundle that does not load fails the
@@ -97,6 +101,10 @@ pub(crate) struct PlayerSpellState {
     pub(super) health: u32,
     pub(super) field_attack_history: super::field_history::FieldAttackHistory,
     pub(super) mana: u32,
+    /// FOOD-REGEN-1: milliseconds of fed time accumulated toward the next health and mana credit.
+    /// Runtime-only; a fresh actor starts at zero.
+    pub(super) regen_health_ms: u32,
+    pub(super) regen_mana_ms: u32,
     pub(super) soul: u32,
     pub(super) cooldowns: Cooldowns,
     pub(super) revision: u64,
@@ -107,7 +115,7 @@ pub(crate) struct PlayerSpellState {
     pub(super) stance: Option<super::native_actor_states::StandardStance>,
     pub(super) stance_key: Option<String>,
     pub(super) pending_stance: Option<Box<super::stance_execution::PreparedStance>>,
-    owned_skills: Option<[u16; 7]>,
+    pub(super) owned_skills: Option<[u16; 7]>,
     pub(super) training: Option<super::mana_training::LiveManaTraining>,
     pub(super) training_checkpoint: Option<Box<super::mana_training::RetainedTrainingCheckpoint>>,
     pub(super) training_payment: Option<super::mana_training::TrainingPaymentWitness>,
@@ -245,6 +253,8 @@ impl PlayerSpellState {
                 facts,
                 health: facts.max_health,
                 mana: facts.max_mana,
+                regen_health_ms: 0,
+                regen_mana_ms: 0,
                 premium_current: false,
                 premium_valid_until_micros: None,
                 soul: facts.max_soul,
@@ -358,6 +368,41 @@ impl PlayerSpellState {
         Some((next, gained))
     }
 
+    /// CHAR-VITALS-1: the health and mana a last-position write saves, or `None` while both are
+    /// at their maxima (the row then holds none, and the next actor starts at its maxima,
+    /// SPELL-D2).
+    pub(crate) const fn saved_vitals(&self) -> Option<(u32, u32)> {
+        if self.health == self.facts.max_health && self.mana == self.facts.max_mana {
+            None
+        } else {
+            Some((self.health, self.mana))
+        }
+    }
+
+    /// CHAR-VITALS-1: a newly created runtime actor takes the health and mana its Character's
+    /// last-position row saved, each capped at its current maximum, in the owner step that
+    /// creates it, before its first command and before any vitals snapshot is sent. It is the
+    /// actor's initial state, so the `ACTOR_VITALS` revision is unchanged. A health that would be
+    /// zero changes nothing: a saved actor is alive, and the actor keeps its maxima.
+    pub(crate) fn restore_saved_vitals(&mut self, health: u32, mana: u32) {
+        let health = health.min(self.facts.max_health);
+        if health == 0 {
+            return;
+        }
+        self.health = health;
+        self.mana = mana.min(self.facts.max_mana);
+    }
+
+    /// FOOD-REGEN-1 successor: the fed time extended by `regeneration_seconds` under one successor
+    /// revision, so the new condition is published like any other ACTOR_VITALS-revision change.
+    /// `None` when eating is refused (full or unrepresentable) or the revision is exhausted.
+    pub(crate) fn after_food(&self, regeneration_seconds: u16, now_ms: u64) -> Option<Self> {
+        let mut next = self.clone();
+        super::actor_conditions::eat_food(&mut next, regeneration_seconds, now_ms).ok()?;
+        next.revision = next.revision.checked_add(1)?;
+        Some(next)
+    }
+
     /// Test only: stages a wounded actor (no damage owner exists yet).
     #[cfg(test)]
     pub(crate) const fn set_health_for_test(&mut self, health: u32) {
@@ -455,7 +500,7 @@ impl PlayerSpellState {
             vocation: self.facts.vocation,
             level: self.facts.level,
             magic_level: self.facts.magic_level,
-            premium: self.premium_current,
+            premium: super::CasterPremium::from_current(self.premium_current),
             mana: self.mana,
             max_mana: self.facts.max_mana,
             soul: self.soul,
@@ -529,18 +574,51 @@ impl PlayerSpellState {
     }
 }
 
+/// CONDITIONS-0 §3.5: the gate families answer first once the spell is identified, before
+/// every other admission check (protection zone included), cost and cooldown. A rune takes
+/// the rune gate, which `muted` never closes. The typed gate stays server-side (§7).
+pub(crate) fn condition_gate(
+    state: &PlayerSpellState,
+    spell: &SpellDefinition,
+    now: SemanticTimeMicros,
+) -> Result<(), crate::ability::condition::ConditionGate> {
+    store_condition_gate(&state.conditions, spell, now)
+}
+
+/// [`condition_gate`] over any condition store, such as the actor's runtime condition slot.
+pub(crate) fn store_condition_gate<S: Clone>(
+    store: &crate::ability::condition::ConditionStore<S>,
+    spell: &SpellDefinition,
+    now: SemanticTimeMicros,
+) -> Result<(), crate::ability::condition::ConditionGate> {
+    if matches!(spell.carrier, super::Carrier::Rune { .. }) {
+        store.rune_gate(spell.aggressive, now.get())
+    } else {
+        store.spell_cast_gate(spell.aggressive, now.get())
+    }
+}
+/// [`condition_gate`] on the wire: any gate refuses with `REJECTED`.
+pub(crate) fn admit_condition_gates(
+    state: &PlayerSpellState,
+    spell: &SpellDefinition,
+    now: SemanticTimeMicros,
+) -> Result<(), SpellCastDisposition> {
+    condition_gate(state, spell, now).map_err(|_| SpellCastDisposition::Rejected)
+}
+
 pub(crate) fn cast(
     book: &SpellBook,
     state: &PlayerSpellState,
     intent: &SpellCastIntent,
     context: CastContext<'_>,
 ) -> Result<PlayerSpellState, SpellCastDisposition> {
-    if state.pending_stance.is_some() || state.training_checkpoint.is_some() {
-        return Err(SpellCastDisposition::Rejected);
-    }
     let spell = book
         .indexed(intent.spell)
         .ok_or(SpellCastDisposition::Rejected)?;
+    admit_condition_gates(state, spell, context.now)?;
+    if state.pending_stance.is_some() || state.training_checkpoint.is_some() {
+        return Err(SpellCastDisposition::Rejected);
+    }
     cast_resolved(book, state, spell, intent.target, context, None).map(|(next, _)| next)
 }
 fn cast_resolved(
@@ -680,7 +758,11 @@ fn cast_resolved(
     for effect in &plan.side_effects {
         match effect {
             ResolvedEffect::RemoveCondition { condition } => {
-                super::actor_conditions::remove_condition(&mut next, condition)?;
+                super::actor_conditions::remove_condition_at(
+                    &mut next,
+                    condition,
+                    context.now.get(),
+                )?;
             }
             ResolvedEffect::ResolvedOther { profile, .. }
                 if qualified.is_some()
@@ -750,6 +832,7 @@ pub(crate) fn prepare_focus_owner_cast_with_caster(
     qualified_caster: &CasterState,
     context: CastContext<'_>,
 ) -> Result<PaidFocusOwnerCast, SpellCastDisposition> {
+    admit_condition_gates(state, spell, context.now)?;
     let super::Execution::NativeProfile(profile) = &spell.execution else {
         return Err(SpellCastDisposition::Rejected);
     };
@@ -827,6 +910,7 @@ pub(crate) fn prepare_source_self_cast_with_caster(
     qualified_caster: &CasterState,
     context: CastContext<'_>,
 ) -> Result<PaidSourceSelfCast, SpellCastDisposition> {
+    admit_condition_gates(state, spell, context.now)?;
     if let super::Execution::NativeProfile(profile) = &spell.execution {
         if profile.spell()["execution"]["native_behavior"]["key"] != "monk_focus"
             || !book.spells.iter().any(|active| active == spell)
@@ -935,6 +1019,8 @@ pub(crate) struct PaidOrdinaryCast {
     pub(crate) next: PlayerSpellState,
     pub(crate) anchor: super::combat_batch::SpellAnchor,
     pub(crate) resolution: super::CastResolution,
+    pub(crate) harmony_gained: u8,
+    pub(crate) harmony_gain_healing: Option<super::native_actor_states::HealingRollPlan>,
 }
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn prepare_ordinary_owner_cast_with_caster(
@@ -948,6 +1034,7 @@ pub(crate) fn prepare_ordinary_owner_cast_with_caster(
     chain: Option<(&dyn super::chain::ChainWorld, super::chain::ChainStart)>,
     draw: &mut dyn FnMut(i64, i64) -> i64,
 ) -> Result<PaidOrdinaryCast, SpellCastDisposition> {
+    admit_condition_gates(state, spell, now)?;
     if state.pending_stance.is_some()
         || state.training_checkpoint.is_some()
         || !book.spells.contains(spell)
@@ -968,6 +1055,9 @@ pub(crate) fn prepare_ordinary_owner_cast_with_caster(
         return Err(SpellCastDisposition::Rejected);
     }
     super::check_operational_rules(spell, operational, false).map_err(|e| disposition(&e))?;
+    if spell.authored.is_some() && spell.key == "candidate:spell/cancel_magic_shield" {
+        super::actor_conditions::require_active_mana_shield(&state.conditions, now.get())?;
+    }
     let resolution = if matches!(spell.execution, super::Execution::PartyBuff(_)) {
         super::resolve_party_cast(
             spell,
@@ -1013,13 +1103,31 @@ pub(crate) fn prepare_ordinary_owner_cast_with_caster(
         .revision
         .checked_add(1)
         .ok_or(SpellCastDisposition::Rejected)?;
+    let mut harmony_gained = 0;
+    let mut harmony_gain_healing = None;
     if let Some(role) = spell.harmony_role {
         let monk = next.monk.as_mut().ok_or(SpellCastDisposition::Rejected)?;
         match role {
-            HarmonyRole::Builder => monk.commit_builder().map(|_| ()),
-            HarmonyRole::Spender => monk.commit_spender().map(|_| ()),
+            HarmonyRole::Builder => {
+                harmony_gained = monk
+                    .commit_builder()
+                    .map_err(|_| SpellCastDisposition::Rejected)?;
+                if harmony_gained > 0 {
+                    harmony_gain_healing = super::native_actor_states::plan_harmony_gain_healing(
+                        super::actor_execution::harmony_gain_profile()?,
+                        harmony_gained,
+                        next.facts.level,
+                        monk.serene(),
+                        next.stance == Some(super::native_actor_states::StandardStance::Sustain),
+                    )
+                    .map_err(|_| SpellCastDisposition::Rejected)?;
+                }
+            }
+            HarmonyRole::Spender => {
+                monk.commit_spender()
+                    .map_err(|_| SpellCastDisposition::Rejected)?;
+            }
         }
-        .map_err(|_| SpellCastDisposition::Rejected)?;
     }
     let anchor = super::combat_batch::SpellAnchor {
         expected_revision: state.revision,
@@ -1032,6 +1140,8 @@ pub(crate) fn prepare_ordinary_owner_cast_with_caster(
         next,
         anchor,
         resolution,
+        harmony_gained,
+        harmony_gain_healing,
     })
 }
 /// Source chain callbacks obtain a fresh numerical cast from actual due owner
@@ -1127,6 +1237,7 @@ fn prepare_native_owner_cast_impl(
     draw: &mut dyn FnMut(i64, i64) -> i64,
     qualified_caster: Option<&CasterState>,
 ) -> Result<PaidNativeCast, SpellCastDisposition> {
+    admit_condition_gates(state, spell, now)?;
     if state.pending_stance.is_some() || state.training_checkpoint.is_some() {
         return Err(SpellCastDisposition::Rejected);
     }
@@ -1230,6 +1341,7 @@ pub(crate) fn prepare_direct_acquisition_owner_cast_with_caster(
     qualified_caster: &CasterState,
     reservation: &super::companion_lifecycle::DirectCompanionReservation,
 ) -> Result<PaidNativeCallbackCast, SpellCastDisposition> {
+    admit_condition_gates(state, spell, now)?;
     let super::Execution::NativeProfile(profile) = &spell.execution else {
         return Err(SpellCastDisposition::Rejected);
     };
@@ -1282,6 +1394,7 @@ fn prepare_native_callback_owner_cast_core(
     qualified_caster: &CasterState,
     carried: Option<&crate::durability::spell_item_transaction::CarriedSpellTarget>,
 ) -> Result<PaidNativeCallbackCast, SpellCastDisposition> {
+    admit_condition_gates(state, spell, now)?;
     if state.pending_stance.is_some() || state.training_checkpoint.is_some() {
         return Err(SpellCastDisposition::Rejected);
     }
@@ -1368,6 +1481,7 @@ pub(crate) fn prepare_conjure_owner_cast_with_caster(
     now: SemanticTimeMicros,
     qualified_caster: &CasterState,
 ) -> Result<PaidSourceSelfCast, SpellCastDisposition> {
+    admit_condition_gates(state, spell, now)?;
     let super::Execution::Conjure {
         reagent,
         result,
@@ -1484,6 +1598,7 @@ pub(crate) fn prepare_locate_name_failure_owner_cast_with_caster(
     now: SemanticTimeMicros,
     caster: &CasterState,
 ) -> Result<PaidNativeCallbackCast, SpellCastDisposition> {
+    admit_condition_gates(state, spell, now)?;
     let super::Execution::NativeProfile(profile) = &spell.execution else {
         return Err(SpellCastDisposition::Rejected);
     };
@@ -1518,6 +1633,7 @@ pub(crate) fn prepare_named_player_failure_owner_cast_with_caster(
     now: SemanticTimeMicros,
     caster: &CasterState,
 ) -> Result<PaidNativeCallbackCast, SpellCastDisposition> {
+    admit_condition_gates(state, spell, now)?;
     let profile = spell
         .authored
         .as_ref()
@@ -1565,7 +1681,7 @@ pub(crate) fn prepare_named_player_failure_owner_cast_with_caster(
     if (spell.learning_required && !caster.learned.contains(&spell.key))
         || (!spell.learning_required && !spell.vocations.contains(&caster.vocation))
         || (spell.needs_weapon && !caster.melee_weapon)
-        || (spell.premium && !caster.premium)
+        || !caster.premium.admits(spell)
         || (spell.needs_shield && caster.shield_defense.is_none())
     {
         return Err(SpellCastDisposition::Rejected);
@@ -1610,6 +1726,9 @@ fn commit_effect(
     }
 }
 
+#[cfg(test)]
+#[path = "cast_gate_tests.rs"]
+mod gate_tests;
 #[cfg(test)]
 #[path = "cast_tests.rs"]
 mod tests;

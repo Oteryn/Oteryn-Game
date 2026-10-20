@@ -1,19 +1,20 @@
 # Non-secret preproduction topology agreement between Game and Platform
 # (docs/architecture/reviews/OTERYN_GAME_ARCH_PLATFORM_PREPROD_TOPOLOGY_2026-10-06.md, sections 1, 4, 6, 10).
 # It holds no key, no certificate and no address outside the private range. Values in angle brackets are
-# placeholders; a manifest PR fills them from the Platform receipts (rollout step 6). The Game deploy
+# placeholders; the Platform-issued ids, route and channel key are filled (rollout step 6); the Game commit, map
+# digest and bundle path placeholders stay until deploy time. The Game deploy
 # (deploy-ops.sh check-setup) refuses while any placeholder remains and when node.toml, report.toml or
 # scope.env disagree with this file. Root copy: ROOT_BASE/ops/preprod-topology.toml (root, 0644).
 
 [nas]
 # Private LAN address of the Synology host (RFC 1918).
-lan_address = "<NAS_LAN_ADDRESS>"
+lan_address = "192.168.1.2"
 
 [scope]
 # Issued once by the Platform Registry (UUIDv7, lowercase), distinct, permanent (D855).
-world_id = "<WORLD_ID>"
-channel_id = "<CHANNEL_ID>"
-channel_key = "ch1"
+world_id = "01a12cf7-c826-728d-8945-95bf96df3e26"
+channel_id = "01a12cf7-c832-72f0-bb82-109de367acda"
+channel_key = "oteryn-staging-1"
 
 [node]
 # Subject (RFC 4514) of the runtime-status certificate; equals NODE_IDENTITY in scope.env.
@@ -29,22 +30,39 @@ peer_name = "platform-internal.preprod.oteryn.internal"
 
 [route]
 # Descriptor published with game-auth:native-route:publish; version and revision come from its receipt.
-host = "<NAS_LAN_ADDRESS>"
-port = "<GAME_PORT>"
+host = "192.168.1.2"
+port = "7172"
 tls_server_name = "node-1.preprod.oteryn.internal"
-route_version = "<ROUTE_VERSION>"
-route_revision = "<ROUTE_REVISION>"
+route_version = "1"
+route_revision = "rt.1.e96ce705077bfb6fc1c580175115b4c0"
 
 [readiness]
 # Rendered into node.toml [readiness]. Grammar ^[A-Za-z0-9._:-]{1,64}$.
 source_authority = "oteryn:runtime:synology-preprod"
-route_revision = "<ROUTE_REVISION>"
+route_revision = "rt.1.e96ce705077bfb6fc1c580175115b4c0"
 runtime_observation_revision = "obs.1"
 ruleset_revision = "game.<GAME_COMMIT_12HEX>"
 content_revision = "game.<GAME_COMMIT_12HEX>"
-map_revision = "map.<MAP_SHA256_16HEX>"
+map_revision = "0f90e1358f3a92a77541f3920b37d98cde0101d6f867545e9edf9dd0c372c353"  # [world_bundle] enabled: the bare 64-hex bundle digest below (equals the pin digest)
 world_policy_revision = "wp.1"
 offer_revision = "offer.1"
+
+[world_bundle]
+# Opt-in (D246 derived content), enabled for preproduction (owner decision 2026-10-13): `enabled = true` makes the node boot the pinned World Bundle instead of
+# the fixture room. Every value below is `content/world/pins/oteryn.json` (digest, content_revision,
+# project_format_version, world_schema_version, entry_start) and test_pin_check proves they agree. When
+# enabled, [readiness] map_revision is the bare 64-hex digest and node.toml carries the same [world_bundle].
+# The file is the `world-bundle-*` artifact of the World bundle job, staged by the deploy workflow.
+enabled = true
+path = "<BASE>/world/world.otbundle"
+digest = "0f90e1358f3a92a77541f3920b37d98cde0101d6f867545e9edf9dd0c372c353"
+project_format_version = "OTERYN_WORLD_PROJECT_ROOT/v2"
+world_schema_version = "reference-schema-v1"
+content_revision = "npc-bank-1-20261015-r1"
+production = false
+start_x = 32369
+start_y = 32238
+start_floor = -7
 
 [interpretation]
 # The four tokens of `ops character interpretation` and of every character-bootstrap-intent:issue.

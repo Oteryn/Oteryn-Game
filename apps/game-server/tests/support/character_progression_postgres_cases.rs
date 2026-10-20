@@ -1271,3 +1271,8 @@ fn existing_progressed_row_is_never_overwritten() -> TestResult {
 // DEATH-1 death writer cases reuse this harness and run in both wrappers.
 #[path = "character_death_writer_postgres_cases.rs"]
 mod character_death_writer_postgres_cases;
+
+// PROGRESSION-OWNER-1 admission progression step cases reuse this harness and run in both
+// wrappers.
+#[path = "character_progression_admission_postgres_cases.rs"]
+mod character_progression_admission_postgres_cases;

@@ -247,7 +247,7 @@ fn yell_needs_level_20_or_premium_and_never_level_1() {
         limiter.admit_local(SpeechMode::Yell, level_1_premium, at_ms(0)),
         Err(ChatRefusal::LevelTooLow)
     );
-    // A refused yell takes nothing from the bucket; the gate does not apply to say.
+    // The gate does not apply to say; each refused yell took its line, so two are left.
     assert_eq!(limiter.admit_local(SpeechMode::Say, low, at_ms(0)), Ok(()));
     let premium = YellGate {
         level: 2,
@@ -257,6 +257,31 @@ fn yell_needs_level_20_or_premium_and_never_level_1() {
         limiter.admit_local(SpeechMode::Yell, premium, at_ms(0)),
         Ok(())
     );
+    assert!(matches!(
+        limiter.admit_local(SpeechMode::Say, low, at_ms(0)),
+        Err(ChatRefusal::Muted { .. })
+    ));
+}
+
+#[test]
+fn an_under_level_yell_takes_its_line_and_a_yell_beyond_the_bucket_mutes() {
+    let mut limiter = ChatLimiter::new(at_ms(0));
+    let low = YellGate {
+        level: 19,
+        premium_current: false,
+    };
+    for _ in 0..BUCKET_LINES {
+        assert_eq!(
+            limiter.admit_local(SpeechMode::Yell, low, at_ms(0)),
+            Err(ChatRefusal::LevelTooLow)
+        );
+    }
+    // The bucket is checked before the level: the fifth under-level yell is an offence.
+    assert_eq!(
+        limiter.admit_local(SpeechMode::Yell, low, at_ms(0)),
+        Err(ChatRefusal::Muted { seconds: 5 })
+    );
+    assert!(limiter.is_muted(at_ms(4_999)));
 }
 
 #[test]
@@ -578,7 +603,7 @@ fn line_values_carry_the_mode_text_and_position() {
 }
 
 #[test]
-fn a_sent_marker_covers_further_overflow_until_a_line_is_sent() {
+fn a_sent_marker_covers_further_overflow_until_a_line_is_delivered() {
     let mut egress = ChatEgress::new();
     for n in 0..EGRESS_MAX_LINES {
         egress.push(room_text(n));
@@ -587,8 +612,275 @@ fn a_sent_marker_covers_further_overflow_until_a_line_is_sent() {
     assert_eq!(egress.pop(), Some(ChatLine::Dropped));
     egress.push(room_text(101));
     assert_eq!(egress.pop(), Some(room_text(2)));
-    // A line was sent: the next overflow owes a new marker.
+    // A line was delivered: the next overflow owes a new marker.
     egress.push(room_text(102));
     egress.push(room_text(103));
     assert_eq!(egress.pop(), Some(ChatLine::Dropped));
+}
+
+#[test]
+fn the_pre_gate_charges_a_repeated_under_level_yell_a_line_and_mutes_a_flood() {
+    let mut limiter = ChatLimiter::new(at_ms(0));
+    let low = YellGate {
+        level: 19,
+        premium_current: false,
+    };
+    // The first under-level yell reaches the level check of the full path and takes a line.
+    assert_eq!(limiter.pre_gate(SpeechMode::Yell, at_ms(0)), Ok(()));
+    assert_eq!(
+        limiter.admit_local(SpeechMode::Yell, low, at_ms(0)),
+        Err(ChatRefusal::LevelTooLow)
+    );
+    // Repeats inside the recheck window are refused at the gate, each taking a line.
+    for ms in [0, 1_000, 2_000] {
+        assert_eq!(
+            limiter.pre_gate(SpeechMode::Yell, at_ms(ms)),
+            Err(ChatRefusal::LevelTooLow)
+        );
+    }
+    assert!(!limiter.is_muted(at_ms(2_000)));
+    // The bucket is empty: the next yell is an offence at the gate, as a say would be.
+    assert_eq!(
+        limiter.pre_gate(SpeechMode::Yell, at_ms(2_000)),
+        Err(ChatRefusal::Muted { seconds: 5 })
+    );
+    assert!(limiter.is_muted(at_ms(6_999)));
+    assert!(matches!(
+        limiter.pre_gate(SpeechMode::Say, at_ms(2_000)),
+        Err(ChatRefusal::Muted { .. })
+    ));
+    // After the mute (and the window) the full path checks the level again; a level gained is
+    // admitted and clears the recheck.
+    assert_eq!(limiter.pre_gate(SpeechMode::Yell, at_ms(7_000)), Ok(()));
+    assert_eq!(
+        limiter.admit_local(SpeechMode::Yell, LEVEL_20, at_ms(7_000)),
+        Ok(())
+    );
+    assert_eq!(limiter.pre_gate(SpeechMode::Yell, at_ms(40_000)), Ok(()));
+}
+
+#[test]
+fn a_say_after_an_under_level_yell_is_not_refused_by_the_recheck() {
+    let mut limiter = ChatLimiter::new(at_ms(0));
+    let low = YellGate {
+        level: 19,
+        premium_current: false,
+    };
+    assert_eq!(limiter.pre_gate(SpeechMode::Yell, at_ms(0)), Ok(()));
+    assert_eq!(
+        limiter.admit_local(SpeechMode::Yell, low, at_ms(0)),
+        Err(ChatRefusal::LevelTooLow)
+    );
+    // The recheck window holds yells only; the three lines left still pass as says.
+    for _ in 1..BUCKET_LINES {
+        assert_eq!(limiter.pre_gate(SpeechMode::Say, at_ms(0)), Ok(()));
+        assert_eq!(limiter.admit_local(SpeechMode::Say, low, at_ms(0)), Ok(()));
+    }
+    assert!(matches!(
+        limiter.pre_gate(SpeechMode::Say, at_ms(0)),
+        Err(ChatRefusal::Muted { .. })
+    ));
+}
+
+#[test]
+fn the_pre_gate_refuses_a_yell_in_its_cooldown_and_takes_no_line() {
+    let mut limiter = ChatLimiter::new(at_ms(0));
+    let premium = YellGate {
+        level: 20,
+        premium_current: false,
+    };
+    assert_eq!(limiter.pre_gate(SpeechMode::Yell, at_ms(0)), Ok(()));
+    assert_eq!(
+        limiter.admit_local(SpeechMode::Yell, premium, at_ms(0)),
+        Ok(())
+    );
+    assert_eq!(
+        limiter.pre_gate(SpeechMode::Yell, at_ms(1_000)),
+        Err(ChatRefusal::Exhausted { seconds: 29 })
+    );
+    // The cooldown does not block say, and the refused yell took no line.
+    assert_eq!(limiter.pre_gate(SpeechMode::Say, at_ms(1_000)), Ok(()));
+    assert_eq!(limiter.pre_gate(SpeechMode::Yell, at_ms(30_000)), Ok(()));
+}
+
+#[test]
+fn the_pre_gate_mutes_an_empty_bucket_yell_before_the_level_is_known() {
+    let mut limiter = ChatLimiter::new(at_ms(0));
+    let low = YellGate {
+        level: 19,
+        premium_current: false,
+    };
+    for _ in 0..BUCKET_LINES {
+        assert_eq!(limiter.admit_local(SpeechMode::Say, low, at_ms(0)), Ok(()));
+    }
+    // A yell beyond the bucket is an offence at the gate, without the Channel's level.
+    assert_eq!(
+        limiter.pre_gate(SpeechMode::Yell, at_ms(0)),
+        Err(ChatRefusal::Muted { seconds: 5 })
+    );
+    assert!(limiter.is_muted(at_ms(0)));
+}
+
+#[test]
+fn egress_bound_is_the_registered_chat0_rl_11_row() {
+    let registry: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json"
+    ))
+    .expect("resource registry");
+    let rows: Vec<&serde_json::Value> = registry["entries"]
+        .as_array()
+        .expect("entries")
+        .iter()
+        .filter(|entry| entry["id"] == "CHAT0-RL-11")
+        .collect();
+    assert_eq!(rows.len(), 1, "CHAT0-RL-11 registered once");
+    assert_eq!(
+        rows[0]["hard_maximum"].as_u64(),
+        Some(EGRESS_MAX_LINES as u64)
+    );
+}
+
+#[test]
+fn a_line_being_written_counts_against_the_bound_until_delivered() {
+    let mut egress = ChatEgress::new();
+    egress.push(private_line("Alice", &text("first")));
+    for n in 1..EGRESS_MAX_LINES {
+        egress.push(room_text(n));
+    }
+    assert_eq!(
+        egress.next_for_write(),
+        Some(private_line("Alice", &text("first")))
+    );
+    // 63 queued plus the one being written fill the bound: a new room line evicts the oldest
+    // queued room line and owes one marker.
+    egress.push(room_text(100));
+    assert_eq!(egress.len(), EGRESS_MAX_LINES - 1);
+    assert_eq!(egress.next_for_write(), Some(ChatLine::Dropped));
+    assert_eq!(egress.next_for_write(), Some(room_text(2)));
+}
+
+#[test]
+fn the_line_being_written_keeps_its_slot_and_is_never_retracted() {
+    let mut egress = ChatEgress::new();
+    egress.push(room_text(0));
+    for n in 1..EGRESS_MAX_LINES {
+        egress.push(private_line("Alice", &text(&format!("p{n}"))));
+    }
+    assert_eq!(egress.next_for_write(), Some(room_text(0)));
+    // 63 queued plus the one being written fill the bound: an equal-rank private line evicts
+    // the oldest queued private line, so queued plus in-flight never exceed 64.
+    egress.push(private_line("Bob", &text("new")));
+    assert_eq!(egress.len(), EGRESS_MAX_LINES - 1);
+    assert_eq!(egress.next_for_write(), Some(ChatLine::Dropped));
+}
+
+#[test]
+fn a_marker_keeps_covering_overflow_until_a_line_is_delivered() {
+    let mut egress = ChatEgress::new();
+    egress.push(private_line("Alice", &text("first")));
+    for n in 1..EGRESS_MAX_LINES {
+        egress.push(room_text(n));
+    }
+    egress.push(room_text(100));
+    assert_eq!(egress.next_for_write(), Some(ChatLine::Dropped));
+    assert!(egress.next_for_write().is_some());
+    // The line is written but not yet delivered: the marker still covers this overflow.
+    egress.push(room_text(101));
+    assert_eq!(egress.len(), EGRESS_MAX_LINES - 1);
+    egress.delivered();
+    // Delivered: the marker no longer covers later overflow.
+    egress.push(room_text(102));
+    egress.push(room_text(103));
+    assert_eq!(egress.next_for_write(), Some(ChatLine::Dropped));
+}
+
+#[test]
+fn rooms_need_level_20_or_premium_except_help_and_private_needs_level_3() {
+    let gate = |level, premium_current| YellGate {
+        level,
+        premium_current,
+    };
+    for room in [ChatRoom::World, ChatRoom::English, ChatRoom::Advertising] {
+        assert!(!gate(19, false).allows_room(room), "{room:?}");
+        assert!(gate(20, false).allows_room(room), "{room:?}");
+        assert!(gate(2, true).allows_room(room), "{room:?}");
+        assert!(gate(1, true).allows_room(room), "{room:?}");
+    }
+    assert!(gate(1, false).allows_room(ChatRoom::Help));
+    assert!(!gate(2, false).allows_private());
+    assert!(gate(3, false).allows_private());
+}
+
+#[test]
+fn a_relay_line_takes_its_line_at_the_gate_and_an_empty_bucket_mutes() {
+    let mut limiter = ChatLimiter::new(at_ms(0));
+    for _ in 0..BUCKET_LINES {
+        limiter.pre_gate_relay(false, at_ms(0)).expect("line");
+    }
+    assert_eq!(
+        limiter.pre_gate_relay(false, at_ms(0)),
+        Err(ChatRefusal::Muted { seconds: 5 })
+    );
+    // Room and private lines share the bucket and the mute with local speech.
+    assert_eq!(
+        limiter.admit_local(SpeechMode::Say, LEVEL_20, at_ms(1_000)),
+        Err(ChatRefusal::Muted { seconds: 4 })
+    );
+    assert!(limiter.is_muted(at_ms(1_000)));
+    limiter
+        .pre_gate_relay(false, at_ms(5_000))
+        .expect("after the mute");
+}
+
+#[test]
+fn advertising_allows_one_line_per_two_minutes() {
+    let mut limiter = ChatLimiter::new(at_ms(0));
+    limiter.pre_gate_relay(true, at_ms(0)).expect("line");
+    limiter
+        .claim_advertising(at_ms(0))
+        .expect("first advertisement");
+    assert_eq!(
+        limiter.pre_gate_relay(true, at_ms(10_000)),
+        Err(ChatRefusal::Exhausted { seconds: 110 })
+    );
+    // The interval is checked again at the claim: a line racing past the gate is refused.
+    assert_eq!(
+        limiter.claim_advertising(at_ms(10_000)),
+        Err(ChatRefusal::Exhausted { seconds: 110 })
+    );
+    // Other rooms are not held back by it.
+    limiter
+        .pre_gate_relay(false, at_ms(10_000))
+        .expect("world line");
+    limiter.pre_gate_relay(true, at_ms(120_000)).expect("line");
+    limiter
+        .claim_advertising(at_ms(120_000))
+        .expect("second advertisement");
+}
+
+#[test]
+fn a_twenty_first_distinct_recipient_in_ten_minutes_mutes() {
+    let mut limiter = ChatLimiter::new(at_ms(0));
+    for id in 0..20_u8 {
+        limiter
+            .admit_recipient([id; 16], at_ms(0))
+            .expect("recipient");
+    }
+    // A recipient already written to is always admitted.
+    limiter
+        .admit_recipient([3; 16], at_ms(1_000))
+        .expect("known");
+    assert_eq!(
+        limiter.admit_recipient([20; 16], at_ms(1_000)),
+        Err(ChatRefusal::Muted { seconds: 5 })
+    );
+    assert!(limiter.is_muted(at_ms(1_000)));
+    // Ten minutes after the first ones, they leave the window (recipient 3 stays: it was written
+    // to again), so new recipients are admitted.
+    for id in 20..39_u8 {
+        limiter
+            .admit_recipient([id; 16], at_ms(600_000))
+            .expect("new window");
+    }
+    assert!(limiter.admit_recipient([99; 16], at_ms(600_000)).is_err());
 }

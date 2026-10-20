@@ -18,6 +18,28 @@ MAP_IDS={1949,2338,2429,2430,2433,2441,2454,2471,2472,2480,2487,2488,2493,2494,2
 PATHS=('data/items/appearances.dat','data/items/items.xml','src/items/items.hpp','src/items/items.cpp','src/items/item.cpp','src/items/functions/item/item_parse.cpp','src/items/functions/item/item_parse.hpp','src/utils/const.hpp','src/creatures/combat/spells.cpp','src/creatures/combat/combat.cpp','src/items/tile.cpp','src/utils/utils_definitions.hpp','config.lua.dist')
 K=lambda value:{'state':'KNOWN','value':value}
 NA={'state':'NOT_APPLICABLE'};U={'state':'UNKNOWN'}
+# Closed coin table of apps/game-server/src/domain/currency.rs (CHARACTER-GOLD-FEE-BOUNDARY-V1
+# D175/D176): gold, platinum and crystal, each StackCapable to exactly COIN_STACK_MAXIMUM.
+COIN_IDS=(3031,3035,3043);COIN_STACK_MAXIMUM=100;COINS='coin-item-profiles.json'
+# Plain door pairs of the Game-owned door registry (apps/game-server/src/map/door_registry.rs; closed id C,
+# open id C+1) whose closed door the committed World project places (MAP-DOOR-CONTENT-1). Doorhood is the
+# profile's item_type; the closed item blocks movement and projectiles, its open item neither.
+DOOR_CLOSED=(1629,1632,1638,1640,1642,1644,1651,1654,1656,1658,1660,1662,1669,1672,
+ 1674,1676,1683,1685,1689,1692,1694,1698,2177,2179,5082,5084,5098,5100,
+ 5104,5107,5109,5113,5116,5118,5122,5125,5127,5131,5137,5278,5281,5283,
+ 5285,5287,5289,5514,5516,5733,5736,5745,6192,6195,6197,6199,6201,6203,
+ 6249,6252,6254,6256,6258,6260,6892,6894,6898,6901,6903,6907,7036,7040,
+ 7043,7045,7049,7054,7056,7712,7715,7717,7719,7721,7723,7868,8259,8261,
+ 8361,8363,9352,9355,9357,9359,9363,9552,9554,9558,9561,9563,9567,9859,
+ 9865,9868,9874,11141,11239,11248,12033,12035,15687,15890,15892,17561,17563,17570,
+ 17572,17701,17703,17710,17712,20444,20446,20450,20453,20455,20459,22506,22508,24541,
+ 24543,30041,30045,30047,31568,31570,31663,31665,33271,33273,34221,34223,42744,43953,
+ 44916,48496,48500,48529,49681,49687)
+# Open doors outside the C+1 pairs, by the pinned Canary items.xml transformOnUse chain: 43953 opens into 43955
+# (not 43954, which opens back into 43952), and 42629 is an open door the map places by itself (it closes into
+# 42627). Both are walkable DOOR profiles so the placement or the source transform never lands on a profile-less item.
+DOOR_OPEN_EXTRA=(42629,43955)
+DOOR_IDS=tuple(sorted({c for c in DOOR_CLOSED}|{c+1 for c in DOOR_CLOSED}|set(DOOR_OPEN_EXTRA)));DOORS='door-item-profiles.json'
 SECTIONS=('presentation','classification','physical','stack','equipment','weapon','protection','skill_modifiers','charges','temporal','container','imbuement','use_transform','trade_restrictions','fluid','readable_writeable')
 
 def pinned(root,path):return subprocess.check_output(['git','-C',str(root),'show',f'{CANARY_PIN}:{path}'])
@@ -106,7 +128,7 @@ def build(canary,crystal,bundles,out):
  if 'bool replaceable = true;' not in hpp or 'itemType.replaceable = valueAttribute.as_bool();' not in captured['src/items/functions/item/item_parse.cpp'].decode():raise ValueError('source field replacement loader drifted')
  if 'iType.stackable = object.flags().cumulative()' not in cpp:raise ValueError('source stack loader drifted')
  if 'removeChargesFromRunes = true' not in captured['config.lua.dist'].decode() or 'item->getItemCount() - 1' not in captured['src/creatures/combat/spells.cpp'].decode():raise ValueError('source Rune consumption policy changed')
- wanted=set(MAP_IDS)|{2854,3264,3412,3147,3289,3321,25760,40450}
+ wanted=set(MAP_IDS)|{2854,3264,3412,3147,3289,3321,25760,40450}|set(COIN_IDS)|set(DOOR_IDS)
  excluded=[]
  for path in bundles.glob('*/spell.json'):
   doc=json.loads(path.read_bytes());found=set(refs(doc))
@@ -131,6 +153,35 @@ def build(canary,crystal,bundles,out):
   'attributes':{'speed_bonus':0,'blocks_movement':False,'blocks_projectile':False,'immovable_block_solid':False,'has_height':False,'field_replaceable':None,'field_condition':None,'rune_consumption':None},'admission':{k:p[k] for k in ['materializable','stack_class','legal_destinations']}})
  result=bind_profiles({'schema':'OTERYN_NATIVE_ITEM_PROFILES/v1','records':records},bindings,ordinary,generic)
  out.mkdir(parents=True,exist_ok=True);raw=(json.dumps(result,indent=2,ensure_ascii=False)+'\n').encode();(out/'item-profiles.json').write_bytes(raw)
+ coins=[r for r in result['records'] if r['production_definition']['production_key'] in {f'oteryn:item.tibia.i{i}' for i in COIN_IDS}]
+ for r in coins:
+  a=r['admission']
+  if (len(coins)!=len(COIN_IDS) or r['semantics']['stack']!=K({'stackable':K(True),'stack_max':K(COIN_STACK_MAXIMUM)})
+      or a!={'materializable':True,'stack_class':'StackCapable','legal_destinations':['CharacterInventory','Ground']}):
+   raise ValueError('coin profile disagrees with the D175/D176 coin table')
+ # Door overlay (MAP-DOOR-CONTENT-1): every pair profile except the ones the pinned r25 Item provider has
+ # (MAP_IDS). A closed door blocks movement; an open door blocks neither movement nor projectiles. A closed
+ # door the source lets projectiles through (fence gates, one plain door) keeps that source fact and so stays
+ # sealed in the server (it needs blocks_projectile to be a door).
+ door_keys={f'oteryn:item.tibia.i{i}':i for i in DOOR_IDS}
+ doors=[r for r in result['records'] if r['production_definition']['production_key'] in door_keys and door_keys[r['production_definition']['production_key']] not in MAP_IDS]
+ for r in result['records']:
+  i=door_keys.get(r['production_definition']['production_key'])
+  if i is None:continue
+  at=r['attributes'];kind=r['semantics']['classification']['value']['item_type']
+  if i in DOOR_CLOSED:ok=kind==K('DOOR') and at['blocks_movement'] is True
+  else:ok=at['blocks_movement'] is False and at['blocks_projectile'] is False
+  if not ok or r['admission']!={'materializable':True,'stack_class':'NonStackable','legal_destinations':['Ground']}:
+   raise ValueError(f'door profile disagrees with the door registry contract:{i}')
+ if len(doors)!=len(DOOR_IDS)-len(set(DOOR_IDS)&MAP_IDS):raise ValueError('door overlay record set')
+ (out/DOORS).write_bytes((json.dumps({'schema':'OTERYN_NATIVE_DOOR_ITEM_PROFILES/v1','sources':[canary_source,crystal_source],
+  'producer':'tools/content-schema/native-gameplay/build_source_item_profiles.py','item_profiles_sha256':hashlib.sha256(raw).hexdigest(),
+  'closed_door_ids':list(DOOR_CLOSED),'open_door_extra_ids':list(DOOR_OPEN_EXTRA),'records':doors},indent=2,ensure_ascii=False)+'\n').encode())
+ # The overlays register_spell_families.py adds to the pinned r25 Item provider; with them, the
+ # provider is exactly item-profiles.json.
+ (out/COINS).write_bytes((json.dumps({'schema':'OTERYN_NATIVE_COIN_ITEM_PROFILES/v1','sources':[canary_source,crystal_source],
+  'producer':'tools/content-schema/native-gameplay/build_source_item_profiles.py','item_profiles_sha256':hashlib.sha256(raw).hexdigest(),
+  'records':coins},indent=2,ensure_ascii=False)+'\n').encode())
  evidence={'schema':'OTERYN_NATIVE_SOURCE_ITEM_PROFILE_IMPORT/v1','classification':'Explicit local source candidate; not production activation','sources':[canary_source,crystal_source],
   'loader_sources':[{'path':p,'revision':CANARY_PIN,'sha256':hashlib.sha256(b).hexdigest()} for p,b in captured.items()],
   'output_sha256':hashlib.sha256(raw).hexdigest(),'records':len(records),'excluded_zero_count_bundles':excluded,'map_ids':sorted(MAP_IDS),'starter_ids':{'backpack':2854,'sword':3264,'wooden_shield':3412},
@@ -140,4 +191,4 @@ def build(canary,crystal,bundles,out):
   'limitations':'Unsupported XML systems remain UNKNOWN; no ItemDocument authoring operations fabricated. Equipment modifiers requiring source-specialized parser remain unavailable.'}
  (out/'item-profile-source-proof.json').write_text(json.dumps(evidence,indent=2,ensure_ascii=False)+'\n');return evidence
 if __name__=='__main__':
- p=argparse.ArgumentParser(description=__doc__);p.add_argument('--canary',type=Path,default=Path('/workspace/spell-sources/canary'));p.add_argument('--crystal',type=Path,default=Path('/workspace/spell-sources/crystal'));p.add_argument('--bundles',type=Path,default=Path('/workspace/spells-r21-implemented/bundles'));p.add_argument('--out',type=Path,required=True);a=p.parse_args();print(json.dumps({k:v for k,v in build(a.canary,a.crystal,a.bundles,a.out).items() if k in ['records','output_sha256','starter_ids']}))
+ p=argparse.ArgumentParser(description=__doc__);p.add_argument('--reference-engine',type=Path,default=Path('/workspace/spell-sources/canary'));p.add_argument('--crystal',type=Path,default=Path('/workspace/spell-sources/crystal'));p.add_argument('--bundles',type=Path,default=Path('/workspace/spells-r21-implemented/bundles'));p.add_argument('--out',type=Path,required=True);a=p.parse_args();print(json.dumps({k:v for k,v in build(a.reference_engine,a.crystal,a.bundles,a.out).items() if k in ['records','output_sha256','starter_ids']}))

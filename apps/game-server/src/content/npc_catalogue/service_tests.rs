@@ -82,6 +82,7 @@ fn service(
     (
         reference(ProjectV2Family::Service, key),
         ProjectV2Declaration::Service {
+            bank: false,
             identity: identity(key),
             offers,
             recipes: Vec::new(),
@@ -193,7 +194,12 @@ fn charged_and_fluid_count_is_charges() {
     for key in ["oteryn:item.rune", "oteryn:item.fluid"] {
         for (count, held) in [(0, true), (1, false), (65_535, false), (65_536, true)] {
             let o = offer(key, Dir::SellToPlayer, 5, Some(count));
-            let want = held.then_some(NpcOfferHeldReason::CountOutOfRange);
+            // A valid count is still held until NPC-TRADE-3 trades charges and sub-types.
+            let want = Some(if held {
+                NpcOfferHeldReason::CountOutOfRange
+            } else {
+                NpcOfferHeldReason::ChargedOrFluidPending
+            });
             assert_eq!(reason_of(o), want, "{key} count {count}");
         }
     }
@@ -208,7 +214,11 @@ fn timed_count_equals_charges() {
         (None, true),
     ] {
         let o = offer("oteryn:item.timed", Dir::SellToPlayer, 5, count);
-        let want = held.then_some(NpcOfferHeldReason::TimedCountMismatch);
+        let want = Some(if held {
+            NpcOfferHeldReason::TimedCountMismatch
+        } else {
+            NpcOfferHeldReason::ChargedOrFluidPending
+        });
         assert_eq!(reason_of(o), want, "count {count:?}");
     }
 }
@@ -441,4 +451,85 @@ fn model_is_identical_when_built_twice_and_in_any_record_order() {
     assert_eq!(first, model(&records));
     records.reverse();
     assert_eq!(first, model(&records));
+}
+
+#[test]
+fn bank_dialogue_comes_only_from_current_typed_service_and_actual_admitted_messages() {
+    let packet: serde_json::Value = serde_json::from_str(include_str!("../../../../../docs/agents/evidence/OTV2-20261015-npc-bank-services/native-bank-admission.json")).expect("native authored packet");
+    let mut npc: ProjectV2Declaration =
+        serde_json::from_value(packet["before_npc"].clone()).expect("NPC");
+    let mut dialogue: ProjectV2Declaration =
+        serde_json::from_value(packet["before_dialogue"].clone()).expect("Dialogue");
+    let service: ProjectV2Declaration =
+        serde_json::from_value(packet["service"].clone()).expect("typed Bank");
+    let bank = reference(ProjectV2Family::Service, "oteryn:service.bank.paulie");
+    if let ProjectV2Declaration::Npc { services, .. } = &mut npc {
+        services.push(bank.clone());
+    }
+    let records = vec![
+        (
+            reference(ProjectV2Family::Npc, "oteryn:npc.paulie"),
+            npc.clone(),
+        ),
+        (
+            reference(ProjectV2Family::Dialogue, "oteryn:dialogue.npc.paulie"),
+            dialogue.clone(),
+        ),
+        (bank.clone(), service.clone()),
+    ];
+    let missing = model(&records);
+    assert!(
+        crate::gameplay_transport::NpcTalkBook::from_model(&missing)
+            .get("oteryn:npc.paulie")
+            .is_none(),
+        "no fabricated greeting"
+    );
+    if let ProjectV2Declaration::Dialogue {
+        greet, keywords, ..
+    } = &mut dialogue
+    {
+        *greet =
+            serde_json::from_value(packet["original_oteryn_authored_dialogue"]["greet"].clone())
+                .expect("authored greeting");
+        keywords.push(
+            serde_json::from_value(
+                packet["original_oteryn_authored_dialogue"]["bank_keyword"].clone(),
+            )
+            .expect("authored keyword"),
+        );
+    }
+    let mut records = vec![
+        (reference(ProjectV2Family::Npc, "oteryn:npc.paulie"), npc),
+        (
+            reference(ProjectV2Family::Dialogue, "oteryn:dialogue.npc.paulie"),
+            dialogue,
+        ),
+        (bank, service),
+    ];
+    let current = model(&records);
+    assert!(
+        current
+            .npcs()
+            .values()
+            .next()
+            .expect("NPC")
+            .generated_replies
+            .is_none()
+    );
+    assert!(
+        crate::gameplay_transport::NpcTalkBook::from_model(&current)
+            .get("oteryn:npc.paulie")
+            .expect("admitted Dialogue bank")
+            .bank()
+    );
+    if let ProjectV2Declaration::Service { bank, .. } = &mut records[2].1 {
+        *bank = false;
+    }
+    let nonbank = model(&records);
+    assert!(
+        crate::gameplay_transport::NpcTalkBook::from_model(&nonbank)
+            .get("oteryn:npc.paulie")
+            .is_none(),
+        "profession, name and greeting supply no Bank authority"
+    );
 }

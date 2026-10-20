@@ -19,6 +19,7 @@
 
 use oteryn_protocol_oteryn::actor_spell::{ActorSpellError, ActorVitals, SpellTarget};
 use oteryn_protocol_oteryn::item_view::ItemViewWireError;
+use oteryn_protocol_oteryn::logout::LogoutWireError;
 use oteryn_protocol_oteryn::world_object::{self, WorldObjectOverlayEntry};
 use oteryn_protocol_oteryn::world_spatial::{self, StepDirection, WorldSpatialObservation};
 use oteryn_protocol_oteryn::{CharacterId, FoundationProtocolError, MessageType};
@@ -92,6 +93,8 @@ pub enum DevClientError {
     Attack(ChatWireError),
     /// A capability-4 item payload failed its codec.
     ItemView(ItemViewWireError),
+    /// A capability-21 logout result failed its codec.
+    Logout(LogoutWireError),
     /// The server closed, or replied with something other than `ServerAccepted`, before
     /// admission completed.
     NotAdmitted(MessageType),
@@ -223,6 +226,7 @@ impl From<SessionError> for DevClientError {
             SessionError::Chat(error) => Self::Chat(error),
             SessionError::Attack(error) => Self::Attack(error),
             SessionError::ItemView(error) => Self::ItemView(error),
+            SessionError::Logout(error) => Self::Logout(error),
             SessionError::NotAdmitted(message_type) => Self::NotAdmitted(message_type),
             SessionError::AdmissionRefused { code } => Self::AdmissionRefused { code },
             SessionError::UnexpectedMessage { expected, actual } => {
@@ -361,6 +365,7 @@ impl fmt::Display for DevClientError {
             Self::Chat(error) => write!(formatter, "chat codec failed: {error:?}"),
             Self::Attack(error) => write!(formatter, "attack codec failed: {error:?}"),
             Self::ItemView(error) => write!(formatter, "item codec failed: {error:?}"),
+            Self::Logout(error) => write!(formatter, "logout codec failed: {error:?}"),
             Self::WorldSpatial(error) => {
                 write!(formatter, "WORLD_SPATIAL decode failed: {error:?}")
             }
@@ -1624,7 +1629,7 @@ mod tests {
             sequence,
             command_id,
             CommandStatus::Accepted,
-            &world_object::encode_use_result(disposition),
+            &world_object::encode_use_result(disposition).unwrap_or_default(),
         )
     }
 
@@ -1823,6 +1828,7 @@ mod tests {
             result_server_sequence,
             world_spatial_delta: None,
             world_object_overlay_delta: overlay,
+            gate_message_id: None,
         }
     }
 
@@ -1839,6 +1845,7 @@ mod tests {
             result_server_sequence,
             world_spatial_delta: spatial,
             world_object_overlay_delta: None,
+            gate_message_id: None,
         }
     }
 
@@ -2643,7 +2650,7 @@ mod tests {
     #[test]
     fn an_inconsistent_status_and_disposition_pairing_is_rejected() -> Result<(), BoxError> {
         let step = |disposition| world_spatial::encode_step_result(disposition);
-        let use_ = |disposition| world_object::encode_use_result(disposition);
+        let use_ = |disposition| world_object::encode_use_result(disposition).unwrap_or_default();
         for (action, status, payload) in [
             (
                 Action::Step,

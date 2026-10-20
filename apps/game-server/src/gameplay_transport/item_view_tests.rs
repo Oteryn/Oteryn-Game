@@ -31,6 +31,7 @@ fn inventory(entries: &[u16]) -> InventoryItems {
     InventoryItems {
         main_backpack: Some(item(instance(0))),
         entries: entries.iter().map(|n| item(instance(*n))).collect(),
+        equipment: Vec::new(),
     }
 }
 
@@ -266,6 +267,72 @@ fn an_inventory_delta_follows_only_a_change_with_a_monotonic_revision() {
         .expect("fixture");
     assert_eq!((delta.from, delta.to), (2, 3));
     assert_eq!(view.resolve(handle(2)), None);
+}
+
+/// EQUIP-WIRE-1: under capability 12 domain 9 shows the occupied slots, each with a live handle
+/// that an item keeps when it moves between the backpack and a slot.
+#[test]
+fn capability_12_shows_the_equipment_slots_and_an_item_keeps_its_handle_across_them() {
+    let worn = |entries: &[u16], slots: &[(EquipmentSlot, u16)]| InventoryItems {
+        equipment: slots
+            .iter()
+            .map(|(slot, n)| (*slot, item(instance(*n))))
+            .collect(),
+        ..inventory(entries)
+    };
+    let mut view = SessionItemView::resume(ItemViewContinuity::default()).with_equip_drop();
+    assert!(view.equip_drop());
+    let [nine, _] = view
+        .snapshot(
+            worn(
+                &[1, 2],
+                &[(EquipmentSlot::Head, 3), (EquipmentSlot::Feet, 4)],
+            ),
+            None,
+        )
+        .expect("fixture");
+    let shown = oteryn_protocol_oteryn::item_view::decode_character_inventory_with_equip_drop(
+        &nine.payload,
+        true,
+    )
+    .expect("fixture");
+    let slots: Vec<EquipmentSlot> = shown.equipment.iter().map(|worn| worn.slot).collect();
+    assert_eq!(slots, [EquipmentSlot::Head, EquipmentSlot::Feet]);
+    let head = view.table().handle(&instance(3)).expect("live");
+    assert_eq!(shown.equipment[0].item.handle, head);
+    assert_eq!(view.resolve(head), Some(instance(3)));
+    assert!(view.is_main_backpack(&instance(0)));
+    assert!(view.is_backpack_entry(&instance(1)));
+    assert!(!view.is_backpack_entry(&instance(3)));
+    assert_eq!(view.equipped_slot(&instance(4)), Some(EquipmentSlot::Feet));
+    assert_eq!(view.equipped_item(EquipmentSlot::Head), Some(instance(3)));
+    assert_eq!(view.equipped_item(EquipmentSlot::Armor), None);
+    // Unequip 3, equip 1: both keep their handles.
+    let one = view.table().handle(&instance(1)).expect("live");
+    view.inventory_committed(worn(
+        &[2, 3],
+        &[(EquipmentSlot::Armor, 1), (EquipmentSlot::Feet, 4)],
+    ))
+    .expect("fixture")
+    .expect("delta");
+    assert_eq!(view.table().handle(&instance(3)), Some(head));
+    assert_eq!(view.table().handle(&instance(1)), Some(one));
+    assert_eq!(view.equipped_slot(&instance(1)), Some(EquipmentSlot::Armor));
+}
+
+/// Without capability 12 a view with equipment does not encode, is never shown and leaves the
+/// previous one in place.
+#[test]
+fn without_capability_12_equipment_is_never_shown() {
+    let mut view = SessionItemView::resume(ItemViewContinuity::default());
+    assert!(!view.equip_drop());
+    view.snapshot(inventory(&[1]), None).expect("fixture");
+    let mut worn = inventory(&[1]);
+    worn.equipment = vec![(EquipmentSlot::Head, item(instance(3)))];
+    assert_eq!(view.inventory_committed(worn), Err(ItemViewError::Encode));
+    assert_eq!(view.table().handle(&instance(3)), None);
+    assert_eq!(view.equipped_item(EquipmentSlot::Head), None);
+    assert!(view.is_backpack_entry(&instance(1)));
 }
 
 #[test]
@@ -619,6 +686,7 @@ mod connection {
                 disposition: UseDisposition::Committed,
                 committed: None,
                 earned: EarnedNotice::NoneEarned,
+                gate_message_id: None,
             }
         }
 
@@ -685,7 +753,7 @@ mod connection {
             sequence,
             id,
             CommandStatus::Accepted,
-            &encode_use_result(disposition),
+            &encode_use_result(disposition).unwrap_or_default(),
         )
         .expect("result")
     }

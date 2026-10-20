@@ -116,11 +116,23 @@ const fn request_envelope_max(operation: Operation) -> usize {
         Operation::PublishAccountCharactersV1 => {
             super::account_characters::SNAPSHOT_BYTES + REQUEST_HEAD_BYTES
         }
+        // `PUBPROJ-HS-REQUEST-BYTES` and `PUBPROJ-ONLINE-REQUEST-BYTES`.
+        Operation::PublishWorldHighscoresV1 => {
+            super::public_projections::HIGHSCORES_BYTES + REQUEST_HEAD_BYTES
+        }
+        Operation::PublishWorldOnlineV1 => {
+            super::public_projections::ONLINE_BYTES + REQUEST_HEAD_BYTES
+        }
         _ => REQUEST_ENVELOPE_BYTES,
     }
 }
 const _: () = assert!(
     super::account_characters::WATERMARK_BYTES + REQUEST_HEAD_BYTES <= REQUEST_ENVELOPE_BYTES
+);
+const _: () = assert!(
+    super::public_projections::PROFILE_BYTES + REQUEST_HEAD_BYTES <= REQUEST_ENVELOPE_BYTES
+        && super::public_projections::WATERMARK_BYTES + REQUEST_HEAD_BYTES
+            <= REQUEST_ENVELOPE_BYTES
 );
 fn request_head(operation: Operation, host_header: &str, body_len: usize) -> String {
     format!(
@@ -181,9 +193,15 @@ async fn exchange_status(
             .await
         } else if matches!(
             operation,
-            Operation::PublishAccountCharactersV1 | Operation::PublishProjectionWatermarkV1
+            Operation::PublishAccountCharactersV1
+                | Operation::PublishProjectionWatermarkV1
+                | Operation::PublishWorldHighscoresV1
+                | Operation::PublishCharacterProfileV1
+                | Operation::PublishWorldOnlineV1
+                | Operation::PublishPublicProjectionWatermarkV1
         ) {
-            // §3: every projection response, success or empty failure, fits 256 bytes.
+            // §3 (LCFA and public projections): every projection response, success
+            // or empty failure, fits 256 bytes.
             read_response_bounded(
                 &mut tls,
                 require_ok,
@@ -192,6 +210,12 @@ async fn exchange_status(
                 &[],
             )
             .await
+        } else if let Some(body_max) = super::character_commands::response_bytes(operation) {
+            // Character commands (§3): every response, success or empty failure,
+            // fits the operation's bound. An over-bound `200` intent is reported
+            // apart so it is decided invalid rather than retried as unavailable.
+            let oversized_ok = operation == Operation::ReadCharacterCommandIntentV1;
+            read_response_framed(&mut tls, require_ok, body_max, false, &[], oversized_ok).await
         } else if require_ok {
             read_response(&mut tls).await.map(|body| (200, body))
         } else {
@@ -242,6 +266,26 @@ pub(crate) async fn read_response_bounded<S: AsyncRead + Unpin>(
     body_max: usize,
     require_json: bool,
     body_statuses: &[u16],
+) -> Result<(u16, Vec<u8>), SourceError> {
+    read_response_framed(
+        stream,
+        require_ok,
+        body_max,
+        require_json,
+        body_statuses,
+        false,
+    )
+    .await
+}
+/// With `oversized_ok`, a `200` body over `body_max` is `OversizedOk`; every
+/// other over-capacity response stays `CapacityExceeded`.
+pub(crate) async fn read_response_framed<S: AsyncRead + Unpin>(
+    stream: &mut S,
+    require_ok: bool,
+    body_max: usize,
+    require_json: bool,
+    body_statuses: &[u16],
+    oversized_ok: bool,
 ) -> Result<(u16, Vec<u8>), SourceError> {
     if body_max == 0 || body_max > 8192 {
         return Err(SourceError::InvalidInput);
@@ -378,8 +422,13 @@ pub(crate) async fn read_response_bounded<S: AsyncRead + Unpin>(
         stream.read_exact(&mut body).await?;
         Ok(body)
     }
-    .await?;
-    Ok((code, body))
+    .await;
+    match body {
+        Err(SourceError::CapacityExceeded) if oversized_ok && code == 200 => {
+            Err(SourceError::OversizedOk)
+        }
+        body => body.map(|body| (code, body)),
+    }
 }
 async fn read_chunked_bounded<S: AsyncRead + Unpin>(
     stream: &mut S,
@@ -485,7 +534,7 @@ mod tests {
 #[cfg(test)]
 mod envelope_tests {
     use super::*;
-    const OPERATIONS: [Operation; 11] = [
+    const OPERATIONS: [Operation; 18] = [
         Operation::ReadAccountSecurityV1,
         Operation::ReadFreshSigningTrustV1,
         Operation::ReadRecoveryAccountSecurityV2,
@@ -497,9 +546,22 @@ mod envelope_tests {
         Operation::PublishProjectionWatermarkV1,
         Operation::ReportScopeAssignmentV1,
         Operation::ReportScopeRevocationV1,
+        Operation::ListPendingCharacterCommandsV1,
+        Operation::ReadCharacterCommandIntentV1,
+        Operation::PublishCharacterCommandReceiptV1,
+        Operation::PublishWorldHighscoresV1,
+        Operation::PublishCharacterProfileV1,
+        Operation::PublishWorldOnlineV1,
+        Operation::PublishPublicProjectionWatermarkV1,
+    ];
+    /// The operations whose snapshot bound exceeds the shared envelope.
+    const WIDENED: [Operation; 3] = [
+        Operation::PublishAccountCharactersV1,
+        Operation::PublishWorldHighscoresV1,
+        Operation::PublishWorldOnlineV1,
     ];
     #[test]
-    fn every_maximum_body_fits_its_envelope_and_only_the_snapshot_widens_it() {
+    fn every_maximum_body_fits_its_envelope_and_only_the_snapshots_widen_it() {
         let host = "h".repeat(253);
         for operation in OPERATIONS {
             let head = request_head(operation, &host, usize::MAX).len();
@@ -508,13 +570,26 @@ mod envelope_tests {
                 head + operation.request_bytes_max() <= request_envelope_max(operation),
                 "{operation:?}"
             );
-            if operation != Operation::PublishAccountCharactersV1 {
+            if WIDENED.contains(&operation) {
+                assert_eq!(
+                    request_envelope_max(operation),
+                    operation.request_bytes_max() + REQUEST_HEAD_BYTES
+                );
+            } else {
                 assert_eq!(request_envelope_max(operation), REQUEST_ENVELOPE_BYTES);
             }
         }
         assert_eq!(
             request_envelope_max(Operation::PublishAccountCharactersV1),
             super::super::account_characters::SNAPSHOT_BYTES + REQUEST_HEAD_BYTES
+        );
+        assert_eq!(
+            request_envelope_max(Operation::PublishWorldHighscoresV1),
+            262_144 + REQUEST_HEAD_BYTES
+        );
+        assert_eq!(
+            request_envelope_max(Operation::PublishWorldOnlineV1),
+            524_288 + REQUEST_HEAD_BYTES
         );
     }
 }
@@ -554,6 +629,51 @@ mod premium_response_tests {
                 ] {
                     assert!(read(invalid).await.is_err());
                 }
+            });
+    }
+}
+
+#[cfg(test)]
+mod character_command_response_tests {
+    #![allow(clippy::unwrap_used)]
+    use super::*;
+    async fn read(bytes: &[u8], oversized_ok: bool) -> Result<(u16, Vec<u8>), SourceError> {
+        let mut stream = bytes;
+        read_response_framed(&mut stream, false, 4, false, &[], oversized_ok).await
+    }
+    #[test]
+    fn only_an_over_bound_success_is_told_apart() {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap()
+            .block_on(async {
+                let ok = b"HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\n12345";
+                assert!(matches!(
+                    read(ok, true).await,
+                    Err(SourceError::OversizedOk)
+                ));
+                assert!(matches!(
+                    read(ok, false).await,
+                    Err(SourceError::CapacityExceeded)
+                ));
+                let eof = b"HTTP/1.1 200 OK\r\n\r\n12345";
+                assert!(matches!(
+                    read(eof, true).await,
+                    Err(SourceError::OversizedOk)
+                ));
+                let unavailable =
+                    b"HTTP/1.1 503 Service Unavailable\r\nContent-Length: 5\r\n\r\n12345";
+                assert!(matches!(
+                    read(unavailable, true).await,
+                    Err(SourceError::CapacityExceeded)
+                ));
+                assert_eq!(
+                    read(b"HTTP/1.1 200 OK\r\nContent-Length: 4\r\n\r\n1234", true)
+                        .await
+                        .unwrap(),
+                    (200, b"1234".to_vec())
+                );
             });
     }
 }

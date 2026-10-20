@@ -22,6 +22,47 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         force: bool,
     ) -> TrainingSave {
+        let saved = self.save_spell_training_once(actor, session, force).await;
+        if saved != TrainingSave::Saved
+            || !self
+                .spell_training_successor_due(actor, session, force)
+                .await
+        {
+            return saved;
+        }
+        // A replayed receipt merged the hits resolved while it was retained. A level they
+        // reach is written now, never left to the cadence (SKILLS-0 §3.4); a forced save
+        // writes all of them.
+        match self.save_spell_training_once(actor, session, force).await {
+            TrainingSave::NotApplicable => TrainingSave::Saved,
+            other => other,
+        }
+    }
+    async fn spell_training_successor_due(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        force: bool,
+    ) -> bool {
+        let Some(formula) = self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+            .and_then(|native| native.training_formula())
+        else {
+            return false;
+        };
+        let runtime = self.runtime.lock().await;
+        let mut states = self.spell_states.lock().await;
+        states
+            .get_mut(&runtime, actor, session)
+            .is_some_and(|state| state.training_successor_due(formula, force))
+    }
+    async fn save_spell_training_once(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        force: bool,
+    ) -> TrainingSave {
         let formula = self
             .active_generation
             .and_then(|active| active.native_gameplay())
@@ -137,46 +178,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 {
                     Ok(Some(receipt)) => receipt,
                     Ok(None) => {
-                        let Ok(before_root) = self
-                            .root
-                            .read_current_character(self.character, character)
+                        let Some(refreshed) = self
+                            .uncommitted_checkpoint_fence(&store, session, character, &retained)
                             .await
                         else {
                             return TrainingSave::Unknown;
-                        };
-                        let Ok(build) = self
-                            .root
-                            .read_character_build_state(self.character, character)
-                            .await
-                        else {
-                            return TrainingSave::Unknown;
-                        };
-                        let Ok(after_root) = self
-                            .root
-                            .read_current_character(self.character, character)
-                            .await
-                        else {
-                            return TrainingSave::Unknown;
-                        };
-                        let Ok((fresh, _)) = store.current_session_at(session).await else {
-                            return TrainingSave::Unknown;
-                        };
-                        if build != retained.prepared.request.before
-                            || before_root.revision != after_root.revision
-                            || fresh.session_state() == GameSessionState::Terminal
-                        {
-                            return TrainingSave::Unknown;
-                        }
-                        let refreshed = CurrentCharacterGameplayFence {
-                            character_id: character,
-                            game_session_id: session,
-                            connection_generation: fresh.current_connection_generation(),
-                            character_lease_generation: fresh
-                                .current_character_lease()
-                                .generation(),
-                            runtime_scope: fresh.current_runtime_scope(),
-                            scope_ownership_generation: fresh.current_scope_generation(),
-                            expected_character_revision: after_root.revision,
                         };
                         let _ = state.refresh_training_checkpoint_revision(&retained, refreshed);
                         return TrainingSave::Unknown;
@@ -184,10 +190,41 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     Err(_) => return TrainingSave::Unknown,
                 }
             }
-            Err(
-                CharacterProgressionError::AuthorityRejected
-                | CharacterProgressionError::RespawnPending,
-            ) => return TrainingSave::FencedOut,
+            Err(CharacterProgressionError::RespawnPending) => return TrainingSave::FencedOut,
+            Err(CharacterProgressionError::AuthorityRejected) => {
+                // #2193 Codex P1 4307264455: the store refused the retained fence. Without a
+                // receipt for its occurrence nothing committed, and replaying the same immutable
+                // fence would be refused for ever, so a proven-uncommitted checkpoint is
+                // re-fenced to the session's independently resolved current authority (same
+                // occurrence, request and formula) and the next save retries under it. A
+                // receipt is history and takes the post-write authority check below.
+                match self
+                    .root
+                    .reconcile_character_build(self.character, retained.prepared.request.occurrence)
+                    .await
+                {
+                    Ok(Some(receipt)) => receipt,
+                    Ok(None) => {
+                        let Some(current) = self
+                            .uncommitted_checkpoint_fence(&store, session, character, &retained)
+                            .await
+                        else {
+                            return TrainingSave::FencedOut;
+                        };
+                        if current.runtime_scope
+                            != RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id())
+                            || current.scope_ownership_generation != binding.scope_generation()
+                            || state
+                                .refence_uncommitted_training_checkpoint(&retained, current)
+                                .is_err()
+                        {
+                            return TrainingSave::FencedOut;
+                        }
+                        return TrainingSave::Unknown;
+                    }
+                    Err(_) => return TrainingSave::Unknown,
+                }
+            }
             Err(_) => match self
                 .root
                 .reconcile_character_build(self.character, retained.prepared.request.occurrence)
@@ -218,5 +255,49 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return TrainingSave::Unknown;
         }
         TrainingSave::Saved
+    }
+    /// The current gameplay fence for a retained checkpoint the writer proved uncommitted (a
+    /// rollback, or a refusal with no receipt for its occurrence): its build is still the
+    /// durable build, the Character revision is bracketed unchanged around that read, and the
+    /// session is independently resolved and not terminal. `None` on any failed read or a
+    /// moved build, revision or session.
+    async fn uncommitted_checkpoint_fence(
+        &self,
+        store: &FreshAdmissionStore,
+        session: GameSessionId,
+        character: crate::domain::CharacterId,
+        retained: &RetainedTrainingCheckpoint,
+    ) -> Option<CurrentCharacterGameplayFence> {
+        let before_root = self
+            .root
+            .read_current_character(self.character, character)
+            .await
+            .ok()?;
+        let build = self
+            .root
+            .read_character_build_state(self.character, character)
+            .await
+            .ok()?;
+        let after_root = self
+            .root
+            .read_current_character(self.character, character)
+            .await
+            .ok()?;
+        let (fresh, _) = store.current_session_at(session).await.ok()?;
+        if build != retained.prepared.request.before
+            || before_root.revision != after_root.revision
+            || fresh.session_state() == GameSessionState::Terminal
+        {
+            return None;
+        }
+        Some(CurrentCharacterGameplayFence {
+            character_id: character,
+            game_session_id: session,
+            connection_generation: fresh.current_connection_generation(),
+            character_lease_generation: fresh.current_character_lease().generation(),
+            runtime_scope: fresh.current_runtime_scope(),
+            scope_ownership_generation: fresh.current_scope_generation(),
+            expected_character_revision: after_root.revision,
+        })
     }
 }

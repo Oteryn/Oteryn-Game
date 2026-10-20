@@ -1,7 +1,7 @@
 # RUNE-USE-0 Using runes
 
 - Decision: `RUNE-USE0-USING-RUNES-V1`
-- Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (protocol,
+- Status: **ACCEPTED BY THE OWNER 2026-10-14 VIA THE CONTROL PLANE**, recorded by `OTERYN_GAME_ACCEPT_RUNE_USE0_ACCEPTANCE_DECISION_2026-10-14.md` (`ACCEPT-RUNE_USE0-V1`); it takes effect after exact-head independent review, CI and protected integration of that PR. Original acceptance conditions: Acceptance needs exact-head validation, independent review (protocol,
   persistence and combat) and protected integration. It extends ITEM-USE-0, whose item target,
   hotkey form and `ItemUseCause` it reuses, and integrates after it.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
@@ -28,7 +28,7 @@
 | RUNE-WIRE-1 | impl, protocol review | capability `RUNE_USE_V1`, the position arm of field 4, two dispositions (§4) | ITEM-USE-WIRE-1 |
 | RUNE-CONTENT-1 | content lane | rune items as stacks of 100; the rune checks the #162 spell audit left open; lowering of the ready rune bundles (§3, §9) | ITEM-SEM-USE |
 | RUNE-1 | hard, persistence review | the `ItemUseCause::Rune` burn and its audit, the rune slot, holds and ambiguity (§5, §7) | ITEM-USE-1; RUNE-WIRE-1 |
-| RUNE-CAST-1 | spell lane, combat review | rune resolution, the frozen cast and its application through the ability pipeline; the 18 direct runes of §9 (§6, §8) | RUNE-1; SPELL-TARGET-1 (ATTACK-0); VIS-2; CHAR-BUILD-1 |
+| RUNE-CAST-1 | spell lane, combat review | rune resolution, the frozen cast and its application through the ability pipeline; the 18 direct runes of §9 (§6, §8) | RUNE-1; SPELL-TARGET-1 (ATTACK-0); VIS-2; CHAR-BUILD-1; COND-1 (§3.5 residual) |
 | RUNE-CONJ-1 | hard, persistence, combat and protocol review | the `ConjureCause` BURN and MINT with the receipt-recorded mana and soul debit, the holds, two cast dispositions under `RUNE_USE_V1` (§10) | RUNE-1; the instant cast composition (SPELL-D4) |
 | FIELD-1 | hard (combat), combat review | the runtime field overlay, `create_item`, decay, step-in conditions on creatures; no field that affects or blocks a player (§11, `RUNEUSE0-C7`) | COND-1; RUNE-CAST-1 |
 | FIELD-WIRE-1 | impl, protocol review | capability `WORLD_SPATIAL_FIELDS`, the `FIELD` kind in a new `world_spatial_v1` schema revision, the runtime field identity and its delta rules (§11.4) | VIS-2; FIELD-1 |
@@ -177,6 +177,15 @@ committed as cast. The rune cast has three steps.
 4. **Freeze the cast:** the target identity or position, the direction, the area, and the drawn
    magnitudes (the RNG draw bound to the occurrence, derived from the CommandRef).
 5. Place the holds of §7 and reserve S under DUR-03 §7.1. Send the burn.
+
+**Amendment (ACCEPT-CONDITIONS-0, CONDITIONS-0 §3.5).** Between steps 1 and 2 the CONDITIONS-0 §3.5
+condition gates run: once the rune and its spell are resolved, a `pacified` or `powerless` actor's
+aggressive rune cast is refused with that condition's refusal before any step 2 or step 3 check
+(cooldowns, level, magic level, vocation, premium, mana, soul, target), in the §3.5 gate order. RUNE-CAST-1
+builds PREPARE in this order, after COND-1 (§3.5 residual). On the §4 wire such a refusal answers the
+existing `REQUIREMENT_NOT_MET` disposition; the typed `pacified` or `powerless` reason stays server-side
+(audit and log). No condition-specific rune refusal text is sent or drawn: COND-WIRE-2 and COND-CLIENT-2
+carry the attack and spell refusals only.
 
 A refusal in steps 1-3 is answered at once. Nothing is held or burnt.
 

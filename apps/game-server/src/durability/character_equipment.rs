@@ -341,7 +341,7 @@ pub(crate) async fn apply_equipment_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     authority: &EquipmentAuthority,
     expected: &EquipmentSnapshot,
-    content: &impl EquipmentPolicyLookup,
+    content: &impl EquipmentMoveContent,
     intent: &EquipmentIntent,
 ) -> Result<EquipmentReceipt> {
     same_transaction(tx, authority).await?;
@@ -351,14 +351,47 @@ pub(crate) async fn apply_equipment_in_transaction(
     if content.source_digest() != authority.content_digest {
         return Err(rejected("equipment active profile pin"));
     }
-    let binding_bytes=serde_json::to_vec(&json!({"schema":"OTERYN_EQUIPMENT_COMMAND/v1","character":expected.character,"owner_revision":expected.revision,"content_digest":expected.content_digest,"intent":intent})).map_err(|_|rejected("equipment binding"))?;
+    // Preserve every historical one-item binding byte-for-byte. Only an occupied-slot
+    // command binds the second item's independently checked expected owner observation.
+    let displaced = match intent {
+        EquipmentIntent::Move {
+            to_slot: Some(slot),
+            ..
+        } => expected.items.iter().find(|old| old.slot == *slot),
+        _ => None,
+    };
+    let mut envelope = if let Some(old) = displaced {
+        json!({"schema":"OTERYN_EQUIPMENT_COMMAND/v2", "character":expected.character,
+            "owner_revision":expected.revision,"content_digest":expected.content_digest,"intent":intent,
+            "swap":{"item":old.item_instance_id,"state_revision":old.state_revision,
+                "from_slot":old.slot,"to":"MAIN_BACKPACK"}})
+    } else {
+        json!({"schema":"OTERYN_EQUIPMENT_COMMAND/v1","character":expected.character,"owner_revision":expected.revision,"content_digest":expected.content_digest,"intent":intent})
+    };
+    let binding_bytes = serde_json::to_vec(&envelope).map_err(|_| rejected("equipment binding"))?;
     let binding: Vec<u8> = Sha256::digest(&binding_bytes).to_vec();
     let existing=sqlx::query("SELECT transaction_id::text,event_id::text,revision_after::text,binding,intent FROM game_character_equipment_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric(20,0)")
         .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).fetch_optional(&mut **tx).await?;
     if let Some(row) = existing {
-        if row.try_get::<Vec<u8>, _>("binding")? != binding
-            || row.try_get::<Vec<u8>, _>("intent")? != binding_bytes
-        {
+        let stored_bytes: Vec<u8> = row.try_get("intent")?;
+        let stored_binding: Vec<u8> = row.try_get("binding")?;
+        let matches = if displaced.is_some() {
+            // Resolved old locations cannot be read again after a committed swap.
+            // Compare the expected immutable request, and authenticate the entire
+            // persisted event (including its resolved locations/item observations).
+            let mut stored: serde_json::Value = serde_json::from_slice(&stored_bytes)
+                .map_err(|_| rejected("stored equipment swap envelope"))?;
+            let object = stored
+                .as_object_mut()
+                .ok_or(rejected("stored equipment swap envelope"))?;
+            let complete = object.remove("locations").is_some() && object.remove("items").is_some();
+            complete
+                && stored == envelope
+                && Sha256::digest(&stored_bytes).to_vec() == stored_binding
+        } else {
+            stored_binding == binding && stored_bytes == binding_bytes
+        };
+        if !matches {
             return Err(rejected("substituted equipment replay"));
         }
         return Ok(EquipmentReceipt {
@@ -383,6 +416,7 @@ pub(crate) async fn apply_equipment_in_transaction(
     let mut parent = None;
     let mut ordinal = None;
     let mut item_revision = None;
+    let mut swap: Option<(EquippedItem, u64)> = None;
     let operation = match intent {
         EquipmentIntent::SetCombatMode(value) => {
             mode = Some(*value);
@@ -452,6 +486,25 @@ pub(crate) async fn apply_equipment_in_transaction(
                         return Err(rejected("equipment existing profile pin"));
                     }
                     let current = claims(&oldpolicy, old.slot)?;
+                    // The target's occupant leaves in this same receipt. Every other
+                    // occupied hand/group remains a genuine conflict.
+                    if old.slot == *slot {
+                        if oldpolicy.container_capacity().is_some()
+                            || !content.is_plain_item(
+                                &old.definition.production_key,
+                                &old.definition.revision_ref,
+                            )
+                        {
+                            return Err(rejected("equipment swap container semantics"));
+                        }
+                        if content.is_timed_item(
+                            &old.definition.production_key,
+                            &old.definition.revision_ref,
+                        ) {
+                            return Err(rejected("equipment swap timed not hosted"));
+                        }
+                        continue;
+                    }
                     if current
                         .slots
                         .iter()
@@ -469,6 +522,73 @@ pub(crate) async fn apply_equipment_in_transaction(
                 let source=sqlx::query("SELECT placement_ordinal::text FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid AND parent_item_instance_id=encode($3,'hex')::uuid")
                     .bind(identity.as_slice()).bind(authority.fence.character_id.as_bytes().as_slice()).bind(backpack_id.as_slice()).fetch_optional(&mut **tx).await?.ok_or(rejected("equipment source is not direct backpack entry"))?;
                 ordinal = Some(number(source.try_get("placement_ordinal")?)?);
+                if let Some(old) = actual.items.iter().find(|old| old.slot == *slot) {
+                    let key: String = row.try_get("definition_production_key")?;
+                    let revision: String = row.try_get("definition_revision_ref")?;
+                    if policy.container_capacity().is_some()
+                        || !content.is_plain_item(&key, &revision)
+                    {
+                        return Err(rejected("equipment swap container semantics"));
+                    }
+                    if content.is_timed_item(&key, &revision) {
+                        return Err(rejected("equipment swap timed not hosted"));
+                    }
+                    use super::item_transfer::ItemStackClass;
+                    let incoming_class = content.equipment_stack_class(&key, &revision);
+                    let displaced_class = content.equipment_stack_class(
+                        &old.definition.production_key,
+                        &old.definition.revision_ref,
+                    );
+                    let incoming_quantity = u32::try_from(row.try_get::<i64, _>("quantity")?)
+                        .map_err(|_| rejected("equipment item quantity"))?;
+                    if old.definition.production_key == key
+                        && old.definition.revision_ref == revision
+                        && (incoming_class != ItemStackClass::NonStackable
+                            || displaced_class != ItemStackClass::NonStackable
+                            || incoming_quantity != 1
+                            || old.quantity != 1)
+                    {
+                        return Err(rejected("equipment same-definition swap semantics unknown"));
+                    }
+                    let class_name = |class| match class {
+                        ItemStackClass::NonStackable => "NON_STACKABLE",
+                        ItemStackClass::Stackable { .. } => "STACKABLE",
+                        ItemStackClass::Unknown => "UNKNOWN",
+                    };
+                    let maximum: String = sqlx::query_scalar("SELECT COALESCE(max(placement_ordinal),0)::text FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid")
+                        .bind(backpack_id.as_slice()).fetch_one(&mut **tx).await?;
+                    let replacement = number(maximum)?
+                        .checked_add(1)
+                        .ok_or(rejected("equipment backpack ordinal exhausted"))?;
+                    let incoming_revision = number(row.try_get("state_revision")?)?;
+                    let incoming_after = incoming_revision
+                        .checked_add(1)
+                        .ok_or(rejected("equipment item revision exhausted"))?;
+                    let displaced_after = old
+                        .state_revision
+                        .checked_add(1)
+                        .ok_or(rejected("equipment item revision exhausted"))?;
+                    let quantity = u32::try_from(row.try_get::<i64, _>("quantity")?)
+                        .map_err(|_| rejected("equipment item quantity"))?;
+                    let source_ordinal = ordinal.ok_or(rejected("equipment ordinal"))?;
+                    envelope["locations"] = json!([
+                        {"item":identity,"operation":"REMOVE","kind":"MAIN_BACKPACK_ENTRY",
+                            "character":actual.character,"world":authority.world,"parent":backpack_id,"ordinal":source_ordinal},
+                        {"item":identity,"operation":"PLACE","kind":"CHARACTER_EQUIPMENT",
+                            "character":actual.character,"world":authority.world,"slot":slot},
+                        {"item":old.item_instance_id,"operation":"REMOVE","kind":"CHARACTER_EQUIPMENT",
+                            "character":actual.character,"world":authority.world,"slot":slot},
+                        {"item":old.item_instance_id,"operation":"PLACE","kind":"MAIN_BACKPACK_ENTRY",
+                            "character":actual.character,"world":authority.world,"parent":backpack_id,"ordinal":replacement}
+                    ]);
+                    envelope["items"] = json!([
+                        {"item":identity,"definition":{"family":"Item","production_key":key,"revision_ref":revision},
+                            "stack_class":class_name(incoming_class),"quantity":quantity,"state_revision_before":incoming_revision,"state_revision_after":incoming_after},
+                        {"item":old.item_instance_id,"definition":{"family":old.definition.family,"production_key":old.definition.production_key,"revision_ref":old.definition.revision_ref},
+                            "stack_class":class_name(displaced_class),"quantity":old.quantity,"state_revision_before":old.state_revision,"state_revision_after":displaced_after}
+                    ]);
+                    swap = Some((old.clone(), replacement));
+                }
             } else {
                 if !actual
                     .items
@@ -479,7 +599,7 @@ pub(crate) async fn apply_equipment_in_transaction(
                 }
                 // Other legitimate custody writers for this backpack serialize
                 // on the same held Character root before changing its entries.
-                let rows=sqlx::query("SELECT placement_ordinal::text FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid ORDER BY placement_ordinal").bind(backpack_id.as_slice()).fetch_all(&mut **tx).await?;
+                let rows=sqlx::query("SELECT placement_ordinal::text FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid ORDER BY game_item_container_entries.placement_ordinal").bind(backpack_id.as_slice()).fetch_all(&mut **tx).await?;
                 let backpack_policy = content
                     .equipment_policy(
                         &backpack.try_get::<String, _>("definition_production_key")?,
@@ -512,16 +632,67 @@ pub(crate) async fn apply_equipment_in_transaction(
             1_i16
         }
     };
+    // All four resolved location lines and both item successors are now immutable
+    // observations under the held locks; bind the complete event before any write.
+    let binding_bytes = serde_json::to_vec(&envelope).map_err(|_| rejected("equipment binding"))?;
+    let binding: Vec<u8> = Sha256::digest(&binding_bytes).to_vec();
     let ids=sqlx::query("SELECT game_character_uuid_v7()::text AS transaction_id,game_character_uuid_v7()::text AS event_id").fetch_one(&mut **tx).await?;
     let transaction_id = uuid(ids.try_get("transaction_id")?)?;
     let event_id = uuid(ids.try_get("event_id")?)?;
-    sqlx::query("INSERT INTO game_character_equipment_receipts(transaction_id,event_id,character_id,game_session_id,command_id,connection_generation,lease_generation,world_id,channel_id,scope_generation,content_digest,revision_before,revision_after,mode_before,mode_after,operation,item_instance_id,state_revision_before,from_slot,to_slot,backpack_item_instance_id,backpack_ordinal,binding,intent) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,$6::text::numeric,$7::text::numeric,encode($8,'hex')::uuid,encode($9,'hex')::uuid,$10::text::numeric,$11,$12::text::numeric,$13::text::numeric,$14,$15,$16,CASE WHEN $17::bytea IS NULL THEN NULL ELSE encode($17,'hex')::uuid END,$18::text::numeric,$19,$20,CASE WHEN $21::bytea IS NULL THEN NULL ELSE encode($21,'hex')::uuid END,$22::text::numeric,$23,$24)")
-        .bind(transaction_id.as_slice()).bind(event_id.as_slice()).bind(actual.character.as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(authority.fence.connection_generation.get().to_string()).bind(authority.fence.character_lease_generation.to_string()).bind(authority.world.as_slice()).bind(authority.channel.as_slice()).bind(authority.fence.scope_ownership_generation.get().to_string()).bind(authority.content_digest.as_slice()).bind(actual.revision.to_string()).bind(next.to_string()).bind(actual.combat_mode.map(CombatMode::code)).bind(mode.map(CombatMode::code)).bind(operation).bind(item.map(|v|v.to_vec())).bind(item_revision.map(|v|v.to_string())).bind(from.map(i16::from)).bind(to.map(i16::from)).bind(parent.map(|v|v.to_vec())).bind(ordinal.map(|v|v.to_string())).bind(&binding).bind(&binding_bytes).execute(&mut **tx).await?;
+    // Legacy one-item and combat-mode commands retain the original SQL ABI.
+    // Only the new swap shape requires the separately approved additive schema.
+    let statement = if swap.is_some() {
+        "INSERT INTO game_character_equipment_receipts(transaction_id,event_id,character_id,game_session_id,command_id,connection_generation,lease_generation,world_id,channel_id,scope_generation,content_digest,revision_before,revision_after,mode_before,mode_after,operation,item_instance_id,state_revision_before,from_slot,to_slot,backpack_item_instance_id,backpack_ordinal,binding,intent,swap_item_instance_id,swap_state_revision_before,swap_backpack_ordinal) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,$6::text::numeric,$7::text::numeric,encode($8,'hex')::uuid,encode($9,'hex')::uuid,$10::text::numeric,$11,$12::text::numeric,$13::text::numeric,$14,$15,$16,CASE WHEN $17::bytea IS NULL THEN NULL ELSE encode($17,'hex')::uuid END,$18::text::numeric,$19,$20,CASE WHEN $21::bytea IS NULL THEN NULL ELSE encode($21,'hex')::uuid END,$22::text::numeric,$23,$24,CASE WHEN $25::bytea IS NULL THEN NULL ELSE encode($25,'hex')::uuid END,$26::text::numeric,$27::text::numeric)"
+    } else {
+        "INSERT INTO game_character_equipment_receipts(transaction_id,event_id,character_id,game_session_id,command_id,connection_generation,lease_generation,world_id,channel_id,scope_generation,content_digest,revision_before,revision_after,mode_before,mode_after,operation,item_instance_id,state_revision_before,from_slot,to_slot,backpack_item_instance_id,backpack_ordinal,binding,intent) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,$6::text::numeric,$7::text::numeric,encode($8,'hex')::uuid,encode($9,'hex')::uuid,$10::text::numeric,$11,$12::text::numeric,$13::text::numeric,$14,$15,$16,CASE WHEN $17::bytea IS NULL THEN NULL ELSE encode($17,'hex')::uuid END,$18::text::numeric,$19,$20,CASE WHEN $21::bytea IS NULL THEN NULL ELSE encode($21,'hex')::uuid END,$22::text::numeric,$23,$24)"
+    };
+    let query = sqlx::query(statement)
+        .bind(transaction_id.as_slice())
+        .bind(event_id.as_slice())
+        .bind(actual.character.as_slice())
+        .bind(command.game_session_id().as_bytes().as_slice())
+        .bind(command.command_id().get().to_string())
+        .bind(authority.fence.connection_generation.get().to_string())
+        .bind(authority.fence.character_lease_generation.to_string())
+        .bind(authority.world.as_slice())
+        .bind(authority.channel.as_slice())
+        .bind(authority.fence.scope_ownership_generation.get().to_string())
+        .bind(authority.content_digest.as_slice())
+        .bind(actual.revision.to_string())
+        .bind(next.to_string())
+        .bind(actual.combat_mode.map(CombatMode::code))
+        .bind(mode.map(CombatMode::code))
+        .bind(operation)
+        .bind(item.map(|v| v.to_vec()))
+        .bind(item_revision.map(|v| v.to_string()))
+        .bind(from.map(i16::from))
+        .bind(to.map(i16::from))
+        .bind(parent.map(|v| v.to_vec()))
+        .bind(ordinal.map(|v| v.to_string()))
+        .bind(&binding)
+        .bind(&binding_bytes);
+    let query = if let Some((old, replacement)) = &swap {
+        query
+            .bind(old.item_instance_id.as_slice())
+            .bind(old.state_revision.to_string())
+            .bind(replacement.to_string())
+    } else {
+        query
+    };
+    query.execute(&mut **tx).await?;
     if let Some(item) = item {
         if to.is_some() {
             sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid").bind(item.as_slice()).execute(&mut **tx).await?;
         } else {
             sqlx::query("DELETE FROM game_character_equipment_slots WHERE character_id=encode($1,'hex')::uuid AND item_instance_id=encode($2,'hex')::uuid").bind(actual.character.as_slice()).bind(item.as_slice()).execute(&mut **tx).await?;
+        }
+        if let Some((old, replacement)) = &swap {
+            sqlx::query("DELETE FROM game_character_equipment_slots WHERE character_id=encode($1,'hex')::uuid AND slot=$2 AND item_instance_id=encode($3,'hex')::uuid")
+                .bind(actual.character.as_slice()).bind(i16::from(old.slot)).bind(old.item_instance_id.as_slice()).execute(&mut **tx).await?;
+            sqlx::query("UPDATE game_item_instances SET last_transaction_id=encode($1,'hex')::uuid WHERE item_instance_id=encode($2,'hex')::uuid")
+                .bind(transaction_id.as_slice()).bind(old.item_instance_id.as_slice()).execute(&mut **tx).await?;
+            sqlx::query("INSERT INTO game_item_container_entries(character_id,parent_item_instance_id,item_instance_id,world_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,encode($6,'hex')::uuid)")
+                .bind(actual.character.as_slice()).bind(parent.ok_or(rejected("equipment parent"))?.as_slice()).bind(old.item_instance_id.as_slice()).bind(authority.world.as_slice()).bind(replacement.to_string()).bind(transaction_id.as_slice()).execute(&mut **tx).await?;
         }
         sqlx::query("UPDATE game_item_instances SET last_transaction_id=encode($1,'hex')::uuid WHERE item_instance_id=encode($2,'hex')::uuid").bind(transaction_id.as_slice()).bind(item.as_slice()).execute(&mut **tx).await?;
         if let Some(slot) = to {
@@ -854,5 +1025,337 @@ impl DurabilityRoot {
             let equipment=read_equipment_in_transaction(&mut tx,&authority).await.map_err(|error| admission_equipment_unavailable("read", error))?;
             super::db::commit_semantic_transaction(tx,deadline).await?; Ok(equipment)
         })).await.map_err(EquipmentError::from)
+    }
+}
+
+/// EQUIP-WIRE-1 (ITEM-MOVE-WIRE-1 §4): why one live equipment move did not commit. Nothing was
+/// written: the transaction rolled back.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum EquipmentMoveRefusal {
+    /// The item is no longer where the command saw it.
+    Stale,
+    NoBackpack,
+    NoRoom,
+    /// A wrong slot, a hands conflict, a container or unknown equipment semantics.
+    SlotMismatch,
+    /// The level or vocation of the item's pattern.
+    RequirementNotMet,
+    /// Legacy refusal retained for existing wire adapters. Whole different-definition items and
+    /// known non-stackable same-definition items swap; unknown/stack merging stays closed.
+    Occupied,
+    /// The item is timed (duration or charges, or conflicting timed content). An equip makes a
+    /// timed item live in its slot (ITEM-MOVE-WIRE-1 §4, TIMED-ITEM-0B §5.1), and the Game node
+    /// hosts no timed lane yet, so it never enters a slot here.
+    TimedNotHosted,
+    Rejected,
+}
+
+/// The Content an equipment move reads besides the slot claims of [`EquipmentPolicyLookup`].
+pub(crate) trait EquipmentMoveContent: EquipmentPolicyLookup + Sync {
+    /// True only when the definition is known to carry no `container` semantics.
+    fn is_plain_item(&self, production_key: &str, revision_ref: &str) -> bool;
+    /// True unless the definition is known to have no timed field (`temporal` active-time
+    /// budget or `charges`); unknown or conflicting timed content is timed.
+    fn is_timed_item(&self, production_key: &str, revision_ref: &str) -> bool;
+    /// The exact definition's inventory-admitted class in this same Content generation.
+    /// Unknown never permits a same-definition exchange; stacks need the separate merge shape.
+    fn equipment_stack_class(
+        &self,
+        production_key: &str,
+        revision_ref: &str,
+    ) -> super::item_transfer::ItemStackClass;
+}
+
+/// One equip (`to_slot`) or unequip (`from_slot`) of a whole item by durable slot code.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct EquipmentMove {
+    pub(crate) item: [u8; 16],
+    pub(crate) from_slot: Option<u8>,
+    pub(crate) to_slot: Option<u8>,
+}
+
+/// What a committed receipt of one CommandRef says about the equipment owner.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum EquipmentMoveReplay {
+    /// No equipment receipt exists for the CommandRef.
+    Absent,
+    /// The CommandRef committed one item move of this Character.
+    Moved,
+    /// The CommandRef committed something else, or for another Character.
+    Conflicting,
+}
+
+/// The §4 result of a rejection the owner raised inside the transaction.
+fn move_refusal(reason: &'static str) -> EquipmentMoveRefusal {
+    match reason {
+        "stale equipment snapshot"
+        | "equipment actual live item"
+        | "equipment source is not direct backpack entry"
+        | "equipment source exact slot" => EquipmentMoveRefusal::Stale,
+        "equipment requires actual backpack" => EquipmentMoveRefusal::NoBackpack,
+        "equipment backpack capacity" => EquipmentMoveRefusal::NoRoom,
+        "equipment minimum level"
+        | "equipment vocation requirement"
+        | "equipment actual vocation" => EquipmentMoveRefusal::RequirementNotMet,
+        "equipment occupancy conflict" | "equipment swap container semantics" => {
+            EquipmentMoveRefusal::SlotMismatch
+        }
+        "equipment swap timed not hosted" => EquipmentMoveRefusal::TimedNotHosted,
+        _ => EquipmentMoveRefusal::Rejected,
+    }
+}
+
+/// An owner error inside the move transaction: a rejection or an integrity violation is a known
+/// refusal (nothing committed); any other database error leaves the connection's outcome to the
+/// replay, so it is unavailable.
+fn move_error(error: EquipmentError) -> std::result::Result<EquipmentMoveRefusal, DurabilityError> {
+    match error {
+        EquipmentError::Rejected(reason) => Ok(move_refusal(reason)),
+        EquipmentError::Database(sqlx::Error::Database(database))
+            if database.code().is_some_and(|code| code.starts_with("23")) =>
+        {
+            Ok(EquipmentMoveRefusal::Rejected)
+        }
+        EquipmentError::Database(_) => Err(DurabilityError::Unavailable),
+        EquipmentError::Durability(error) => Err(error),
+    }
+}
+
+/// The checks of §4 that the owner's apply does not make, decided on the snapshot and the item
+/// row of the same transaction before it: known plain, non-timed source and displaced items.
+/// Slot claims, requirements and other hand/group conflicts are still checked by apply.
+async fn precheck_move(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &EquipmentAuthority,
+    snapshot: &EquipmentSnapshot,
+    content: &impl EquipmentMoveContent,
+    request: EquipmentMove,
+) -> Result<Option<EquipmentMoveRefusal>> {
+    match (request.from_slot, request.to_slot) {
+        (Some(from), None) => Ok((!snapshot
+            .items
+            .iter()
+            .any(|item| item.item_instance_id == request.item && item.slot == from))
+        .then_some(EquipmentMoveRefusal::Stale)),
+        (None, Some(to)) => {
+            let Some(row) = sqlx::query("SELECT definition_production_key,definition_revision_ref FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND lifecycle=1")
+                .bind(request.item.as_slice()).bind(authority.world.as_slice()).fetch_optional(&mut **tx).await?
+            else {
+                return Ok(Some(EquipmentMoveRefusal::Stale));
+            };
+            let key: String = row.try_get("definition_production_key")?;
+            let revision: String = row.try_get("definition_revision_ref")?;
+            let Some(policy) = content.equipment_policy(&key, &revision) else {
+                return Ok(Some(EquipmentMoveRefusal::SlotMismatch));
+            };
+            if claims(&policy, to).is_err()
+                || policy.container_capacity().is_some()
+                || !content.is_plain_item(&key, &revision)
+            {
+                return Ok(Some(EquipmentMoveRefusal::SlotMismatch));
+            }
+            let contents: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid) OR EXISTS(SELECT 1 FROM game_item_nested_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid)")
+                .bind(request.item.as_slice()).fetch_one(&mut **tx).await?;
+            if contents {
+                return Ok(Some(EquipmentMoveRefusal::SlotMismatch));
+            }
+            if content.is_timed_item(&key, &revision) {
+                return Ok(Some(EquipmentMoveRefusal::TimedNotHosted));
+            }
+            if let Some(old) = snapshot.items.iter().find(|item| item.slot == to) {
+                if !content
+                    .is_plain_item(&old.definition.production_key, &old.definition.revision_ref)
+                {
+                    return Ok(Some(EquipmentMoveRefusal::SlotMismatch));
+                }
+                if content
+                    .is_timed_item(&old.definition.production_key, &old.definition.revision_ref)
+                {
+                    return Ok(Some(EquipmentMoveRefusal::TimedNotHosted));
+                }
+            }
+            Ok(None)
+        }
+        _ => Ok(Some(EquipmentMoveRefusal::Rejected)),
+    }
+}
+
+/// EQUIP-WIRE-1: the per-CommandRef serialization point of the live equipment move writer and
+/// its replay read (the `lock_cause` pattern of `item_transfer.rs`), held to the end of the
+/// transaction.
+async fn lock_equipment_command(
+    tx: &mut Transaction<'_, Postgres>,
+    command: CommandRef,
+) -> std::result::Result<(), sqlx::Error> {
+    let mut key = Vec::with_capacity(24);
+    key.extend_from_slice(command.game_session_id().as_bytes());
+    key.extend_from_slice(&command.command_id().get().to_be_bytes());
+    sqlx::query(
+        "SELECT pg_advisory_xact_lock(hashtextextended(\
+         'oteryn:equipment-move:' || encode($1, 'hex'), 0))",
+    )
+    .bind(key.as_slice())
+    .execute(&mut **tx)
+    .await?;
+    Ok(())
+}
+
+/// The receipt of `command` read under its lock: `None` when absent, the replayed receipt when
+/// it is this Character's same item move, and a refusal when it is anything else.
+async fn committed_move(
+    tx: &mut Transaction<'_, Postgres>,
+    command: CommandRef,
+    character: [u8; 16],
+    intent: &EquipmentIntent,
+) -> Result<Option<std::result::Result<EquipmentReceipt, EquipmentMoveRefusal>>> {
+    let Some(row) = sqlx::query("SELECT transaction_id::text,event_id::text,revision_after::text,character_id::text,operation,intent FROM game_character_equipment_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric(20,0)")
+        .bind(command.game_session_id().as_bytes().as_slice())
+        .bind(command.command_id().get().to_string())
+        .fetch_optional(&mut **tx)
+        .await?
+    else {
+        return Ok(None);
+    };
+    let stored: serde_json::Value = serde_json::from_slice(&row.try_get::<Vec<u8>, _>("intent")?)
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    let same = uuid(row.try_get("character_id")?)? == character
+        && row.try_get::<i16, _>("operation")? == 1
+        && stored.get("character") == Some(&json!(character))
+        && stored.get("intent") == Some(&json!(intent));
+    if !same {
+        return Ok(Some(Err(EquipmentMoveRefusal::Rejected)));
+    }
+    Ok(Some(Ok(EquipmentReceipt {
+        transaction_id: uuid(row.try_get("transaction_id")?)?,
+        event_id: uuid(row.try_get("event_id")?)?,
+        revision_after: number(row.try_get("revision_after")?)?,
+        replayed: true,
+    })))
+}
+
+impl DurabilityRoot {
+    /// EQUIP-WIRE-1: one equip or unequip of command type 9 in one semantic transaction under the
+    /// current item fence of `command` and the active Content `content` pins: the owner's
+    /// authority, its snapshot, the §4 prechecks and [`apply_equipment_in_transaction`], then the
+    /// commit. `Ok(Err(_))` is a refusal that wrote nothing; `Err(_)` leaves the outcome to the
+    /// replay ([`Self::read_equipment_move_receipt`]). `CharacterRevision` never advances.
+    pub(crate) async fn commit_equipment_move<C: EquipmentMoveContent>(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: &CurrentCharacterItemFence,
+        command: CommandRef,
+        content: &C,
+        request: EquipmentMove,
+    ) -> std::result::Result<
+        std::result::Result<EquipmentReceipt, EquipmentMoveRefusal>,
+        DurabilityError,
+    > {
+        let record = recovery
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        let node = node.clone();
+        let fence = *fence;
+        let digest = content.source_digest();
+        let mut context = content;
+        self.try_issue_semantic_pass()?
+            .run_with_context(&mut context, move |holder, deadline, content| {
+                Box::pin(async move {
+                    let content: &C = content;
+                    let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
+                    let attempt: Result<
+                        std::result::Result<EquipmentReceipt, EquipmentMoveRefusal>,
+                    > = async {
+                        let intent = EquipmentIntent::Move {
+                            item: request.item,
+                            from_slot: request.from_slot,
+                            to_slot: request.to_slot,
+                        };
+                        // Replay first under the CommandRef's lock: an attempt of the same
+                        // command that committed first answers with its own receipt.
+                        lock_equipment_command(&mut tx, command).await?;
+                        if let Some(replay) = committed_move(
+                            &mut tx,
+                            command,
+                            *fence.character_id.as_bytes(),
+                            &intent,
+                        )
+                        .await?
+                        {
+                            return Ok(replay);
+                        }
+                        let authority = assert_equipment_fence_in_transaction(
+                            &mut tx, &record, &node, &fence, command, digest,
+                        )
+                        .await?;
+                        let snapshot = read_equipment_in_transaction(&mut tx, &authority).await?;
+                        if let Some(refusal) =
+                            precheck_move(&mut tx, &authority, &snapshot, content, request).await?
+                        {
+                            return Ok(Err(refusal));
+                        }
+                        apply_equipment_in_transaction(
+                            &mut tx, &authority, &snapshot, content, &intent,
+                        )
+                        .await
+                        .map(Ok)
+                    }
+                    .await;
+                    match attempt {
+                        Ok(Ok(receipt)) => {
+                            super::db::commit_semantic_transaction(tx, deadline).await?;
+                            Ok(Ok(receipt))
+                        }
+                        // Dropping the transaction rolls it back: a refusal writes nothing.
+                        Ok(Err(refusal)) => Ok(Err(refusal)),
+                        Err(error) => move_error(error).map(Err),
+                    }
+                })
+            })
+            .await
+    }
+
+    /// EQUIP-WIRE-1 replay first: the equipment receipt of `command`, read by its CommandRef
+    /// alone, so a move that committed before a reconnect answers `MOVED`.
+    pub(crate) async fn read_equipment_move_receipt(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        character_id: crate::domain::CharacterId,
+        command: CommandRef,
+    ) -> std::result::Result<EquipmentMoveReplay, DurabilityError> {
+        let record = recovery
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &record).await?;
+                    // An attempt of the same CommandRef still in flight holds this lock until it
+                    // commits or rolls back, so `Absent` proves no attempt is in flight.
+                    lock_equipment_command(&mut tx, command).await?;
+                    let row = sqlx::query("SELECT character_id::text,operation FROM game_character_equipment_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric(20,0)")
+                        .bind(command.game_session_id().as_bytes().as_slice())
+                        .bind(command.command_id().get().to_string())
+                        .fetch_optional(&mut *tx)
+                        .await?;
+                    let replay = match row {
+                        None => EquipmentMoveReplay::Absent,
+                        Some(row) => {
+                            let owner = uuid(row.try_get("character_id")?)
+                                .map_err(|_| DurabilityError::InvalidStoredState)?;
+                            let operation: i16 = row.try_get("operation")?;
+                            if owner == *character_id.as_bytes() && operation == 1 {
+                                EquipmentMoveReplay::Moved
+                            } else {
+                                EquipmentMoveReplay::Conflicting
+                            }
+                        }
+                    };
+                    super::db::commit_semantic_transaction(tx, deadline).await?;
+                    Ok(replay)
+                })
+            })
+            .await
     }
 }

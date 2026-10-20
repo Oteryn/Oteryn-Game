@@ -44,6 +44,7 @@ fn rat_policy(digest: [u8; 32]) -> CompiledCreaturePolicies {
             mana_cost: None,
             is_familiar: false,
             condition_immunities: vec![],
+            defense: Some(1),
             armor: Some(1),
             mitigation: None,
             resistances: vec![],
@@ -121,6 +122,7 @@ fn hit(f: &mut Fixture, sequence: u64, magnitude: i64) -> CombatBatchReceipt {
         },
         binding: b"source-qualified:due-step".to_vec(),
         anchor: None,
+        now_us: None,
         now_ms: 100,
         effects: vec![OwnerCombatEffect {
             target: f.rat,

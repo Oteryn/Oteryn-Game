@@ -713,6 +713,17 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
         .map_err(|e| format!("{e:?}"))?;
     assert_eq!(facts.oldest_undelivered_ms, None);
 
+    // GAME-PUBLIC-PROJ-PRODUCER-1: the public projections' store reads over the same
+    // bootstrap and reconciled authority.
+    public_projections_postgres_cases::bootstrap_reads(
+        &root,
+        &authority,
+        &pool,
+        &uuid(*first.character_id.as_bytes()),
+        &uuid(id(90)),
+    )
+    .await?;
+
     // A superseded incarnation cannot mutate; its successor can.
     allow(&root, &node, 33).await?;
     let successor = register(&root, 2, Some(1)).await?;
@@ -2223,6 +2234,11 @@ mod character_progression_postgres_cases;
 #[path = "support/item_mint_postgres_cases.rs"]
 mod item_mint_postgres_cases;
 
+// ITEM-USE-1b item use (migration 0083) shares its cases with the focused
+// standalone target through the same protected lane.
+#[path = "support/item_use_postgres_cases.rs"]
+mod item_use_postgres_cases;
+
 // B3-1 TRANSFER (Ground -> container slot / main backpack entries) shares its
 // cases with the focused standalone target through the same protected lane.
 #[path = "support/item_transfer_postgres_cases.rs"]
@@ -2232,6 +2248,11 @@ mod item_transfer_postgres_cases;
 // its cases with the focused standalone target through the same protected lane.
 #[path = "support/corpse_transfer_postgres_cases.rs"]
 mod corpse_transfer_postgres_cases;
+
+// ITEM-LOOP-1 (CP D1438) live item loop: move, nest, split/merge, drop/pickup and the
+// derived-capacity pickup refusal, plus the STARTER-1 grant, through the same protected lane.
+#[path = "support/item_loop_postgres_cases.rs"]
+mod item_loop_postgres_cases;
 
 // D3-6 corpse DECAY_RETIRE (N+1 one-item steps at materialized_at + 60 s,
 // resumable from durable state) shares its cases with the focused standalone
@@ -2296,6 +2317,16 @@ mod bestiary_postgres_harness;
 #[path = "support/bestiary_progress_postgres_cases.rs"]
 mod bestiary_progress_postgres_cases;
 
+// LOOP-GROUND-1 Ground64 same-transaction admission (pure and native PostgreSQL
+// cases) on the CHARM-2 harness included above; its only test mount.
+#[path = "../src/durability/ground_cell_limit_tests.rs"]
+mod ground_cell_limit_tests;
+
+// RANK-1 HS-1 World highscore snapshots (migration 0129): the job, its 11 categories and the
+// reader, on the CHARM-2 harness included above; HS-WIRE-1's query handler runs against them.
+#[path = "support/highscores_postgres_cases.rs"]
+mod highscores_postgres_cases;
+
 // ACHIEVEMENT step 3 account facts (migration 0021) share their cases with the
 // focused standalone target through the same protected lane, on the CHARM-2
 // harness included above.
@@ -2307,10 +2338,18 @@ mod account_achievement_postgres_cases;
 #[path = "support/account_characters_projection_postgres_cases.rs"]
 mod account_characters_projection_postgres_cases;
 
+// GAME-PUBLIC-PROJ-PRODUCER-1 public projections (migration 0091): outboxes, epoch, guards,
+// resync and least privilege, plus the store reads `bootstrap_audit_flow` runs.
+#[path = "support/public_projections_postgres_cases.rs"]
+mod public_projections_postgres_cases;
+
 // PREM-1a Premium consumer fence (migration 0029) runs in the same protected lane, on the
 // CHARM-2 harness included above.
 #[path = "support/premium_fence_postgres_cases.rs"]
 mod premium_fence_postgres_cases;
+// PREM-WIRE-1 Premium activation latch (migration 0085) on the same harness.
+#[path = "support/premium_activation_latch_postgres_cases.rs"]
+mod premium_activation_latch_postgres_cases;
 
 // SCOPE-HANDOFF-1 house scope entry handoff (migration 0074) on the CHARM-2 harness.
 #[path = "support/house_scope_handoff_postgres_cases.rs"]
@@ -2323,6 +2362,13 @@ mod character_build_postgres_cases;
 
 #[path = "support/character_stance_writer_postgres_cases.rs"]
 mod character_stance_writer_postgres_cases;
+
+#[path = "support/character_last_position_postgres_cases.rs"]
+mod character_last_position_postgres_cases;
+
+// PVP-1 PvP state tables, deadline write-ahead and World job (migration 0081).
+#[path = "support/pvp_state_postgres_cases.rs"]
+mod pvp_state_postgres_cases;
 
 #[path = "support/character_familiar_writer_postgres_cases.rs"]
 mod character_familiar_writer_postgres_cases;
@@ -3038,6 +3084,20 @@ mod item_fee_burn_postgres_cases;
 mod bank_postgres_cases;
 #[path = "support/gold_fee_bank_postgres_cases.rs"]
 mod gold_fee_bank_postgres_cases;
+#[path = "support/npc_econ_bank_postgres_cases.rs"]
+mod npc_econ_bank_postgres_cases;
+
+#[path = "support/mail_postgres_cases.rs"]
+mod mail_postgres_cases;
+
+#[path = "support/market_postgres_cases.rs"]
+mod market_postgres_cases;
+
+// NPC-TRADE-1 NPC BUY/SELL commit (migration 0082) on the B3 item-transfer harness.
+#[path = "support/npc_trade_postgres_cases.rs"]
+mod npc_trade_postgres_cases;
+#[path = "support/npc_travel_postgres_cases.rs"]
+mod npc_travel_postgres_cases;
 
 // PG-COVERAGE-1: fails when a standalone `*_postgres.rs` target has cases that
 // no CI-run PostgreSQL target includes. Runs without a database.
@@ -3093,7 +3153,293 @@ fn proficiency_read_public_consumers_reject_current_recovery_provenance_substitu
     })
 }
 
+/// CHAR-CMD-CONSUMER-1: a Platform `CreateCharacter` intent (contract §4.2).
+fn create_intent(
+    operation: u8,
+    account: u8,
+    world: u8,
+    revision: u64,
+    name: &str,
+    (issued, expires): (i64, i64),
+) -> String {
+    format!(
+        r#"{{"contract_version":1,"command":"CreateCharacter","variant":"PLATFORM_USER_CREATE","issuer_authority":"OTERYN_PLATFORM_CHARACTER_AUTHORITY","issuer_decision_id":"0192a000-0000-7000-8000-{revision:012x}","source_revision":"{revision}","operation_id":"{}","account_id":"{}","target_world_id":"{}","requested_name":"{name}","issued_at_source":"{issued}","expires_at_source":"{expires}","audience":"OTERYN_GAME_CHARACTER_AUTHORITY"}}"#,
+        uuid(id(operation)),
+        uuid(id(account)),
+        uuid(id(world)),
+    )
+}
+
+#[test]
+fn character_commands_create_reject_and_republish_exactly() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        eprintln!("PRE-ROUTING / NONCANONICAL: OTERYN_TEST_POSTGRES_ADMIN_URL is not configured");
+        return Ok(());
+    };
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async move {
+            let database = Database::create(admin, "commands").await?;
+            let result = character_commands_flow(&database).await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+async fn character_commands_flow(database: &Database) -> TestResult {
+    use native_admission_source::character_commands::{CREATE_COMMAND, Decision, Input};
+    const SOURCE: &str = "oteryn:character-authority:primary";
+    let root = DurabilityRoot::connect_test_runtime(&database.url)?;
+    assert!(root.maintain_ready_once().await?);
+    let pool = sqlx::PgPool::connect(&database.url).await?;
+    let retained = fence_parent().join(format!("oteryn-character-commands-{}", database.name));
+    let _ = std::fs::remove_dir_all(&retained);
+    std::fs::create_dir(&retained)?;
+    let recovery = CharacterRecoveryStore::open(&retained, "character-primary", "game-ops")
+        .map_err(|e| format!("{e:?}"))?;
+    {
+        let fresh = recovery
+            .authorize_fresh_store(id(11), 100)
+            .map_err(|e| format!("{e:?}"))?;
+        root.admit_fresh_character_recovery(&fresh)
+            .await
+            .map_err(|e| format!("{e:?}"))?;
+    }
+    let fence = recovery.seal_current().map_err(|e| format!("{e:?}"))?;
+    let authority = root
+        .open_character_authority(&fence)
+        .await
+        .map_err(|e| format!("{e:?}"))?;
+    let node = register(&root, 1, None).await?;
+    initialize_s2(&root, &node).await?;
+    assign_world(&pool, &root, &node, 90, 95).await?;
+    configure(&pool, ["profile-1", "ruleset-1", "content-1", "starter-1"]).await?;
+    let now = now_secs()?;
+    let live = (now - 1, now + 120);
+    let decide = async |operation: u8, input: Input<'_>| {
+        root.decide_character_command(
+            &authority,
+            &node,
+            SOURCE,
+            CREATE_COMMAND,
+            &uuid(id(operation)),
+            input,
+        )
+        .await
+    };
+    let code = |decision: &Decision| match decision {
+        Decision::Publish { result_code, .. } => result_code.clone(),
+        other => format!("{other:?}"),
+    };
+
+    // An operator bootstrap and a command never share an operation identity.
+    allow(&root, &node, 31).await?;
+    root.bootstrap_character(&authority, &node, &intent(21, 31, 1)?)
+        .await
+        .map_err(|e| format!("{e:?}"))?;
+    let held = create_intent(21, 31, 90, 1, "Hero Zz", live);
+    assert_eq!(
+        decide(21, Input::Intent(held.as_bytes())).await,
+        Decision::Conflict
+    );
+
+    // A committed create: root, receipt, audit event and projection change together.
+    allow(&root, &node, 41).await?;
+    let raw = create_intent(61, 41, 90, 5, "Hero Ca", live);
+    let committed = decide(61, Input::Intent(raw.as_bytes())).await;
+    assert_eq!(code(&committed), "CHAR_CMD_OK");
+    let Decision::Publish { receipt, .. } = &committed else {
+        return Err("no committed receipt".into());
+    };
+    let receipt = String::from_utf8(receipt.clone())?;
+    assert!(
+        receipt.contains(r#""name":"Hero Ca","character_revision":"1","projection_epoch":"1","#),
+        "{receipt}"
+    );
+    // A retry republishes the stored bytes; another intent under the identity conflicts.
+    assert_eq!(decide(61, Input::Intent(raw.as_bytes())).await, committed);
+    let changed = create_intent(61, 41, 90, 5, "Hero Cb", live);
+    assert_eq!(
+        decide(61, Input::Intent(changed.as_bytes())).await,
+        Decision::Conflict
+    );
+    // A conflict writes nothing, not even the other account's portfolio guard.
+    let guards = "SELECT count(*) FROM game_character_account_guards";
+    let before = count(&pool, guards).await?;
+    let moved = create_intent(61, 47, 90, 5, "Hero Ca", live);
+    assert_eq!(
+        decide(61, Input::Intent(moved.as_bytes())).await,
+        Decision::Conflict
+    );
+    assert_eq!(count(&pool, guards).await?, before);
+    assert!(matches!(
+        root.bootstrap_character(&authority, &node, &intent(61, 41, 9)?)
+            .await,
+        Err(CharacterAuthorityError::Conflict)
+    ));
+    for (table, expected) in [
+        ("SELECT count(*) FROM game_character_roots", 2),
+        ("SELECT count(*) FROM game_character_audit_outbox", 2),
+        ("SELECT count(*) FROM game_character_creation_receipts", 2),
+        ("SELECT count(*) FROM game_character_command_receipts", 1),
+    ] {
+        assert_eq!(count(&pool, table).await?, expected, "{table}");
+    }
+
+    // Deterministic rejections are stored and republished byte for byte.
+    observe_account(&root, &node, 42, false, now).await?;
+    for (operation, raw, expected) in [
+        (
+            62,
+            create_intent(62, 41, 90, 5, "Hero Cc", live),
+            "CHAR_CMD_OPERATION_CONFLICT",
+        ),
+        (
+            63,
+            create_intent(63, 41, 90, 6, "Hero Ca", live),
+            "CHAR_CMD_NAME_UNAVAILABLE",
+        ),
+        (
+            64,
+            create_intent(64, 41, 77, 7, "Hero Cd", live),
+            "CHAR_CMD_WORLD_NOT_ACCEPTED",
+        ),
+        (
+            65,
+            create_intent(65, 41, 90, 8, "Hero Ce", (now - 400, now - 100)),
+            "CHAR_CMD_INTENT_EXPIRED",
+        ),
+        (
+            66,
+            create_intent(66, 42, 90, 9, "Hero Cf", live),
+            "CHAR_CMD_ACCOUNT_NOT_ELIGIBLE",
+        ),
+        (
+            67,
+            create_intent(67, 41, 90, 10, "H", live),
+            "CHAR_CMD_NAME_INVALID",
+        ),
+        (
+            68,
+            create_intent(68, 41, 90, 11, "Hero Cg", (now + 60, now + 120)),
+            "CHAR_CMD_INTENT_INVALID",
+        ),
+        (
+            69,
+            create_intent(61, 41, 90, 12, "Hero Ch", live),
+            "CHAR_CMD_INTENT_INVALID",
+        ),
+    ] {
+        let first = decide(operation, Input::Intent(raw.as_bytes())).await;
+        assert_eq!(code(&first), expected, "{operation}");
+        assert_eq!(
+            decide(operation, Input::Intent(raw.as_bytes())).await,
+            first
+        );
+    }
+    assert_eq!(
+        code(&decide(70, Input::ReadConflict).await),
+        "CHAR_CMD_OPERATION_CONFLICT"
+    );
+    assert_eq!(
+        code(&decide(71, Input::Unsupported).await),
+        "CHAR_CMD_UNSUPPORTED"
+    );
+    let oversized = decide(74, Input::Oversized).await;
+    assert_eq!(code(&oversized), "CHAR_CMD_INTENT_INVALID");
+    assert_eq!(decide(74, Input::Oversized).await, oversized);
+    // A lower revision than one already decided is still decided.
+    let lower = create_intent(72, 41, 90, 2, "Hero Ci", live);
+    assert_eq!(
+        code(&decide(72, Input::Intent(lower.as_bytes())).await),
+        "CHAR_CMD_OK"
+    );
+
+    // Missing account evidence is transient: nothing is stored.
+    let unknown = create_intent(73, 43, 90, 13, "Hero Cj", live);
+    assert_eq!(
+        decide(73, Input::Intent(unknown.as_bytes())).await,
+        Decision::Transient
+    );
+    assert_eq!(
+        count(
+            &pool,
+            "SELECT count(*) FROM game_character_command_receipts"
+        )
+        .await?,
+        13
+    );
+
+    // The 65th listed Character of an account is refused.
+    allow(&root, &node, 44).await?;
+    for seed in 0..64u8 {
+        let raw = create_intent(
+            100 + seed,
+            44,
+            90,
+            100 + u64::from(seed),
+            &name_for(100 + seed),
+            live,
+        );
+        let decision = decide(100 + seed, Input::Intent(raw.as_bytes())).await;
+        assert_eq!(code(&decision), "CHAR_CMD_OK", "{seed}");
+    }
+    let over = create_intent(200, 44, 90, 200, "Hero Over", live);
+    assert_eq!(
+        code(&decide(200, Input::Intent(over.as_bytes())).await),
+        "CHAR_CMD_ACCOUNT_CHARACTER_LIMIT"
+    );
+
+    // Command-created roots satisfy the authority integrity check and read back.
+    drop(authority);
+    let authority = root
+        .open_character_authority(&fence)
+        .await
+        .map_err(|e| format!("{e:?}"))?;
+    let character: String = sqlx::query_scalar(
+        "SELECT character_id::text FROM game_character_command_receipts WHERE outcome = 1 ORDER BY decided_at, operation_id LIMIT 1",
+    )
+    .fetch_one(&pool)
+    .await?;
+    let bytes: Vec<u8> = (0..16)
+        .map(|i| u8::from_str_radix(&character.replace('-', "")[i * 2..i * 2 + 2], 16))
+        .collect::<Result<_, _>>()?;
+    let record = root
+        .read_current_character(
+            &authority,
+            CharacterId::from_bytes(bytes.try_into().map_err(|_| "id")?)
+                .map_err(|e| format!("{e:?}"))?,
+        )
+        .await
+        .map_err(|e| format!("{e:?}"))?;
+    assert_eq!(record.account_id.as_bytes(), &id(41));
+    Ok(())
+}
+
 #[path = "support/character_proficiency_postgres_cases.rs"]
 mod character_proficiency_postgres_cases;
+// Private native LIMIT_RAISE continuation on the actual item-transfer harness.
+#[path = "support/forge_dust_limit_postgres_cases.rs"]
+mod forge_dust_limit_postgres_cases;
+// Private ITEM-FORGE-1 tier schema/read cases (formerly the standalone forge_postgres target).
+#[path = "support/forge_cases.rs"]
+mod forge_cases;
 #[path = "support/item_ref_production_postgres_cases.rs"]
 mod item_ref_production_postgres_cases;
+
+#[path = "support/familiar_versioned_lifecycle_postgres_cases.rs"]
+mod familiar_versioned_lifecycle_postgres_cases;
+#[path = "support/house_interior_postgres_cases.rs"]
+mod house_interior_postgres_cases;
+#[path = "support/house_test_fixture.rs"]
+mod house_test_fixture;
+#[path = "support/pvp_readmission_postgres_cases.rs"]
+mod pvp_readmission_postgres_cases;
+
+// D1112 APP-1 installed storage and native authority cases share their cases with the focused
+// standalone targets through the same protected lane, on the Bestiary harness included above.
+#[path = "support/character_appearance_native_postgres_cases.rs"]
+mod character_appearance_native_postgres_cases;
+#[path = "support/character_appearance_postgres_cases.rs"]
+mod character_appearance_postgres_cases;

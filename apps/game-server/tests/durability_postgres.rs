@@ -33,10 +33,16 @@ mod character_revision_sequencer_postgres_cases;
 #[allow(dead_code, unused_imports)]
 #[path = "../src/durability/mod.rs"]
 mod durability;
+#[path = "support/highscores_session_postgres_cases.rs"]
+mod highscores_session_postgres_cases;
+#[path = "support/item_timed_postgres_cases.rs"]
+mod item_timed_postgres_cases;
 #[path = "support/item_timed_state_postgres_cases.rs"]
 mod item_timed_state_postgres_cases;
 #[path = "support/postgres.rs"]
 mod postgres;
+#[path = "support/world_required_capabilities_postgres_cases.rs"]
+mod world_required_capabilities_postgres_cases;
 use sqlx::Connection;
 
 static PROCESS_ROOT_LEDGER_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
@@ -408,7 +414,38 @@ fn owning_fresh_loss_is_atomic_and_raw_prepare_does_not_supply_authority()
                 ];
                 let rows = guards.load(&keys).await?;
                 assert!(matches!(rows[0].as_ref().map(|row| &row.state), Some(AdmissionAuthorityGuardStateV1::Account { presence: Some(_), .. })));
-                let ExpiredLossReleaseV1::Released { .. } = reloaded.release_capability_mismatch(id, account, epoch).await? else { return Err("capability mismatch was not released".into()); };
+                // CHAR-POSITION-0 §3.2 "At logout": the release writes the final position inside its
+                // own transaction, before the session ends. The Character root it names is seeded
+                // here, under a UUIDv7 account of its own.
+                let crate::foundation::RuntimeScopeRefV1::Channel { world_id, .. } = session.current_runtime_scope() else { return Err("Channel session expected".into()); };
+                sqlx::query("INSERT INTO game_character_interpretations VALUES (1,'profile-1','ruleset-1','content-1','starter-1',1)").execute(&pool).await?;
+                sqlx::query("INSERT INTO game_character_account_guards VALUES ('019a0000-0000-7000-8000-000000000040')").execute(&pool).await?;
+                sqlx::query("INSERT INTO game_character_roots SELECT character_id, '019a0000-0000-7000-8000-000000000040', world_id, 1, 1, 'profile-1', 'ruleset-1', 'content-1', 'starter-1', 'Fixture Hero' FROM game_durability_reconnect_sessions WHERE game_session_id = encode($1,'hex')::uuid").bind(id.as_bytes().as_slice()).execute(&pool).await?;
+                let final_position = durability::character_last_position::FinalLastPosition {
+                    record: durability::character_last_position::LastPositionRecord {
+                        world_id,
+                        cell: durability::character_last_position::LastPositionCell { x: 31, y: 32, floor: 7 },
+                        coordinate_frame_digest: [1; 32], map_revision_digest: [2; 32], server_artifact_digest: [3; 32],
+                        vitals: durability::character_last_position::LastVitals::new(12, 3),
+                    },
+                    write_sequence: 70,
+                };
+                let last_position = || sqlx::query_scalar::<_, String>("SELECT concat_ws('|', tile_x, tile_y, tile_floor, health, mana, character_lease_generation::text, write_sequence::text) FROM game_character_last_positions").fetch_optional(&pool);
+                // CHAR-VITALS-1 atomicity: a release that fails after its final write leaves no
+                // cell and no vitals, and the session RECONNECTABLE.
+                sqlx::query("CREATE TRIGGER reject_test_release_receipt BEFORE INSERT ON game_durability_admission_lifecycle_receipts FOR EACH ROW EXECUTE FUNCTION reject_test_release_receipt()").execute(&pool).await?;
+                assert!(reloaded.with_final_position(final_position).release_capability_mismatch(id, account, epoch).await.is_err());
+                sqlx::query("DROP TRIGGER reject_test_release_receipt ON game_durability_admission_lifecycle_receipts").execute(&pool).await?;
+                assert_eq!(last_position().await?, None);
+                assert_eq!(reloaded.current_session_at(id).await?.0.session_state(), GameSessionState::Reconnectable);
+                let ExpiredLossReleaseV1::Released { .. } = reloaded.with_final_position(final_position).release_capability_mismatch(id, account, epoch).await? else { return Err("capability mismatch was not released".into()); };
+                let lease = session.current_character_lease().generation();
+                // The cell and the vitals commit together, in the release transaction.
+                assert_eq!(last_position().await?, Some(format!("31|32|7|12|3|{lease}|70")));
+                // A replay ends nothing more and writes nothing.
+                let later = durability::character_last_position::FinalLastPosition { write_sequence: 71, ..final_position };
+                assert_eq!(reloaded.with_final_position(later).release_capability_mismatch(id, account, epoch).await?, ExpiredLossReleaseV1::Terminal);
+                assert_eq!(last_position().await?, Some(format!("31|32|7|12|3|{lease}|70")));
                 // Terminal, with no replacement: the session id is unchanged and
                 // the claims are free, while the lease generation is kept.
                 let (released, _) = store.current_session_at(id).await?;

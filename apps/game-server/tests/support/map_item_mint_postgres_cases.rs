@@ -5,6 +5,8 @@
 // equipped through the real B3-1 TRANSFER path; its definition is the same
 // test-only fixture as the B3-1 cases.
 
+use crate::durability::item_weight_lookup::TEST_WEIGHTS;
+
 use crate::character_recovery_fence::CharacterRecoveryStore;
 use crate::domain::CharacterId;
 use crate::durability::DurabilityRoot;
@@ -502,7 +504,8 @@ impl Harness {
             item: definition("Item", BACKPACK),
             quantity: 1,
             ground: GroundPlacement {
-                spatial_position: vec![1, 2, 3],
+                // Canonical 10-byte Ground64 address (x=1, y=2, floor=3).
+                spatial_position: vec![0, 0, 0, 1, 0, 0, 0, 2, 0, 3],
                 corpse_ref: id(3).to_vec(),
                 map_revision: "map-1".into(),
                 content_revision: "content-1".into(),
@@ -532,6 +535,7 @@ impl Harness {
             other => return Err(format!("unexpected MINT outcome {other:?}").into()),
         };
         let request = ItemTransferRequest {
+            weight_generation_digest: [0xD1; 32],
             command: command(command_id)?,
             source_item_instance_id: backpack,
             destination: ItemTransferDestination::ContainerSlot,
@@ -554,7 +558,7 @@ impl Harness {
     ) -> TestResult {
         let mut candidate = self
             .root
-            .freeze_item_transfer(authority, &self.node, fence, request)
+            .freeze_item_transfer(authority, &self.node, fence, request, &TEST_WEIGHTS)
             .await
             .map_err(debug)?;
         match self
@@ -565,6 +569,7 @@ impl Harness {
                 &self.node,
                 fence,
                 &mut candidate,
+                &TEST_WEIGHTS,
             )
             .await
             .map_err(debug)?
@@ -756,6 +761,7 @@ fn definition(family: &str, key: &str) -> TypedDefinitionRef {
 
 fn facts(key: &str, stack: ItemStackClass) -> ItemDefinitionFacts {
     ItemDefinitionFacts {
+        weight: Some(1),
         definition: definition("Item", key),
         stack,
         container_capacity: None,
@@ -766,6 +772,7 @@ fn facts(key: &str, stack: ItemStackClass) -> ItemDefinitionFacts {
 /// Test-only backpack: capacity 20 and a complete `container`-slot pattern.
 fn backpack_facts() -> ItemDefinitionFacts {
     ItemDefinitionFacts {
+        weight: Some(1),
         definition: definition("Item", BACKPACK),
         stack: ItemStackClass::NonStackable,
         container_capacity: Some(20),
@@ -827,6 +834,7 @@ fn pickup(command: CommandRef, key: u64, epoch: u64, quantity: u32) -> MapItemMi
 /// The B3-1 pickup of a minted item from Ground into the main backpack.
 fn into_backpack(command: CommandRef, item: [u8; 16]) -> ItemTransferRequest {
     ItemTransferRequest {
+        weight_generation_digest: [0xD1; 32],
         command,
         source_item_instance_id: item,
         destination: ItemTransferDestination::MainBackpack,
@@ -1181,6 +1189,7 @@ fn map_item_mint_refusals_and_invalid_input_write_nothing() -> TestResult {
                 "not an Item definition",
                 MapItemMintRequest {
                     item: ItemDefinitionFacts {
+                        weight: Some(1),
                         definition: definition("Outfit", COIN),
                         ..facts(COIN, STACKABLE)
                     },
@@ -1461,7 +1470,7 @@ mod map_overlay_pickup {
     use oteryn_world_bundle_compiler::compile::{Input, KeyResolver, Resolution, compile};
     use oteryn_world_bundle_compiler::project::Families;
     use oteryn_world_bundle_compiler::sector::{self, Attrs, Item, Tile};
-    use oteryn_world_bundle_compiler::spawn;
+    use oteryn_world_bundle_compiler::{npc, spawn};
     use production_server::durability::map_item_mint::{CommittedMapItemMint, MapItemPlacement};
     use production_server::foundation::{ChannelId, WorldId};
     use production_server::map::overlay::pickup::{
@@ -1571,14 +1580,16 @@ mod map_overlay_pickup {
         let frame = compress(&raw)?;
         let spawn_raw = spawn::encode(&spawn::Table::default());
         let spawn_frame = compress(&spawn_raw)?;
+        let npc_raw = npc::encode(&npc::Table::default());
+        let npc_frame = compress(&npc_raw)?;
         let u32_of = |value: usize| (value as u32).to_le_bytes();
         let mut out = b"OTWB".to_vec();
-        out.extend_from_slice(&3u16.to_le_bytes());
+        out.extend_from_slice(&4u16.to_le_bytes());
         out.extend_from_slice(&[0, 0]);
         out.extend_from_slice(&u32_of(json.len()));
         out.extend_from_slice(&u32_of(1));
         out.extend_from_slice(&json);
-        let offset = out.len() + 50 + 44;
+        let offset = out.len() + 50 + 44 + 44;
         out.extend_from_slice(&[-7i8 as u8, 0]);
         out.extend_from_slice(&0u16.to_le_bytes());
         out.extend_from_slice(&0u16.to_le_bytes());
@@ -1590,11 +1601,16 @@ mod map_overlay_pickup {
         out.extend_from_slice(&u32_of(spawn_frame.len()));
         out.extend_from_slice(&u32_of(spawn_raw.len()));
         out.extend_from_slice(&Sha256::digest(&spawn_frame));
+        out.extend_from_slice(&u32_of(offset + frame.len() + spawn_frame.len()));
+        out.extend_from_slice(&u32_of(npc_frame.len()));
+        out.extend_from_slice(&u32_of(npc_raw.len()));
+        out.extend_from_slice(&Sha256::digest(&npc_frame));
         out.extend_from_slice(&frame);
         out.extend_from_slice(&spawn_frame);
+        out.extend_from_slice(&npc_frame);
         let body = out.len();
         let digest: [u8; 32] = Sha256::new()
-            .chain_update(b"OTERYN_WORLD_BUNDLE/v3\0")
+            .chain_update(b"OTERYN_WORLD_BUNDLE/v4\0")
             .chain_update(&out)
             .finalize()
             .into();

@@ -6,6 +6,15 @@ name: Synology Game Deploy
 
 on:
   workflow_dispatch:
+    inputs:
+      stage_world_bundle:
+        description: Build the pinned World Bundle and install it as BASE/world/world.otbundle through the root wrapper (needs the one-time sudoers entry for stage-world)
+        type: boolean
+        default: false
+      stage_npc_data:
+        description: Install the pinned NPC catalogue (content/npcs, dialogues, services and the World project) as BASE/run/npc-data and start the node with --npc-data-project/--npc-data-sha256 (no sudoers entry needed); unticked, the directory is removed and the node starts without NPC data
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -32,17 +41,32 @@ jobs:
 
       - name: Test the supervisor registration-gap check
         shell: bash
-        run: bash deploy/synology-game/test-supervisor-gap.sh
+        run: |
+          set -euo pipefail
+          bash deploy/synology-game/test-supervisor-gap.sh
+          bash deploy/synology-game/test-supervisor-npc.sh
+          python3 deploy/synology-game/test_stage_npc_data.py
 
       - name: Build release binaries
         shell: bash
         run: |
           set -euo pipefail
-          rustup toolchain install 1.94.0 --profile minimal
-          cargo +1.94.0 build --release --locked -p oteryn-game-server --bins
+          rustup toolchain install 1.95.0 --profile minimal
+          cargo +1.95.0 build --release --locked -p oteryn-game-server --bins
+
+      - name: Build the pinned World Bundle (opt-in)
+        if: ${{ inputs.stage_world_bundle }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # pin-check fails unless the tree builds twice to exactly the digest of content/world/pins/oteryn.json.
+          cargo +1.95.0 run --locked --release -p oteryn-world-bundle-compiler -- pin-check . "$RUNNER_TEMP/world-bundle"
 
       - name: Stage release bundle
         shell: bash
+        env:
+          STAGE_WORLD_BUNDLE: ${{ inputs.stage_world_bundle }}
+          STAGE_NPC_DATA: ${{ inputs.stage_npc_data }}
         run: |
           set -euo pipefail
           bundle="$RUNNER_TEMP/bundle"
@@ -55,8 +79,18 @@ jobs:
           python3 deploy/synology-game/stage_gameplay.py \
             content/spells.manifest.json "$GITHUB_WORKSPACE" "$bundle/gameplay"
           echo "$GITHUB_SHA" > "$bundle/SOURCE_SHA"
+          if [[ "$STAGE_WORLD_BUNDLE" = true ]]; then
+            pin="$(python3 -c 'import json;print(json.load(open("content/world/pins/oteryn.json"))["digest"])')"
+            mkdir -p "$bundle/world"
+            install -m 0644 "$RUNNER_TEMP/world-bundle/oteryn-$pin.otwb" "$bundle/world/world.otbundle"
+          fi
+          if [[ "$STAGE_NPC_DATA" = true ]]; then
+            # Fails unless the project and catalogue files are exactly the pinned ones (npc-data.pin.json).
+            python3 deploy/synology-game/stage_npc_data.py \
+              deploy/synology-game/npc-data.pin.json "$GITHUB_WORKSPACE" "$bundle/npc-data"
+          fi
           # Every file is in the bundle before the checksums are computed.
-          (cd "$bundle" && find bin gameplay supervisor.sh deploy-ops.sh SOURCE_SHA -type f -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
+          (cd "$bundle" && find bin gameplay $([[ -d world ]] && echo world) $([[ -d npc-data ]] && echo npc-data) supervisor.sh deploy-ops.sh SOURCE_SHA -type f -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -90,7 +124,7 @@ jobs:
           test "$(id -u)" != 0
           test ! -e /var/run/docker.sock
 
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: game-preprod-bundle
           path: ${{ runner.temp }}/bundle
@@ -103,6 +137,29 @@ jobs:
           test "$(cat SOURCE_SHA)" = "$GITHUB_SHA"
           sha256sum --check --strict SHA256SUMS
           test "$(uname -m)" = x86_64
+
+      - name: Stage the World Bundle (opt-in, as root through the wrapper)
+        if: ${{ inputs.stage_world_bundle }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Runs before check-setup, which requires an enabled World Bundle to be staged already.
+          wrapper="$ROOT_BASE/bin/oteryn-game-deploy-ops"
+          test -f "$wrapper" && test ! -L "$wrapper" && test "$(stat -c '%u' "$wrapper")" = 0
+          # Trust boundaries first: nothing below runs sudo until the root-run wrapper, its directory and BASE
+          # are known to be unwritable by this runner user (root ownership alone does not exclude group/ACL write).
+          test ! -w "$wrapper" && test ! -w "$ROOT_BASE/bin" && test "$(stat -c '%u' "$ROOT_BASE/bin")" = 0
+          test "$(stat -c '%u' "$BASE")" = 0 && test ! -w "$BASE"
+          cmp -s "$wrapper" "$RUNNER_TEMP/bundle/deploy-ops.sh" ||
+            { echo "::error::root-installed oteryn-game-deploy-ops does not match this bundle; the owner upgrades it as root, then re-run"; exit 1; }
+          sudo -n -l "$wrapper" stage-world >/dev/null ||
+            { echo "::error::sudoers does not allow: oteryn-game-deploy-ops stage-world (owner one-time ops, see deploy/synology-game/README.md)"; exit 1; }
+          test -d "$BASE/run" && test -f "$RUNNER_TEMP/bundle/world/world.otbundle"
+          # The wrapper takes no path: it reads this fixed runner-writable file, copies it once and verifies
+          # the copy against the pinned digest of the root manifest before an atomic rename into BASE/world.
+          install -m 0644 "$RUNNER_TEMP/bundle/world/world.otbundle" "$BASE/run/world-bundle.incoming"
+          trap 'rm -f "$BASE/run/world-bundle.incoming"' EXIT
+          sudo -n "$wrapper" stage-world
 
       - name: Verify the one-time operator setup exists
         shell: bash
@@ -176,6 +233,34 @@ jobs:
           install -m 0755 "$bundle/supervisor.sh" "$BASE/bin/supervisor.sh.new"
           mv -f "$BASE/bin/supervisor.sh.new" "$BASE/bin/supervisor.sh"
 
+      - name: Install the NPC catalogue (opt-out)
+        shell: bash
+        env:
+          STAGE_NPC_DATA: ${{ inputs.stage_npc_data }}
+        run: |
+          set -euo pipefail
+          bundle="$RUNNER_TEMP/bundle"
+          # BASE/run belongs to the runner user; the node only reads this tree, once, at boot, and checks the
+          # pinned digests itself (it refuses to boot on any difference). supervisor.sh passes the flags exactly
+          # when this directory exists, so removing it is how an unticked deploy starts without NPC data.
+          test -d "$BASE/run"
+          rm -rf "$BASE/run/npc-data.new" "$BASE/run/npc-data.old"
+          if [[ "$STAGE_NPC_DATA" != true ]]; then
+            rm -rf "$BASE/run/npc-data"
+            echo 'NPC_DATA=not staged' >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          test -d "$bundle/npc-data" && test -s "$bundle/npc-data/PROJECT_SHA256"
+          cp -R "$bundle/npc-data" "$BASE/run/npc-data.new"
+          # A partial copy must never be started: verify what is installed against the verified bundle.
+          want="$(cd "$bundle/npc-data" && find . -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1)"
+          got="$(cd "$BASE/run/npc-data.new" && find . -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1)"
+          test "$got" = "$want"
+          [ ! -e "$BASE/run/npc-data" ] || mv -T "$BASE/run/npc-data" "$BASE/run/npc-data.old"
+          mv -T "$BASE/run/npc-data.new" "$BASE/run/npc-data"
+          rm -rf "$BASE/run/npc-data.old"
+          echo "NPC_DATA=staged project_sha256=$(tr -d '\n' < "$BASE/run/npc-data/PROJECT_SHA256") tree_sha256=$want" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Run database migration
         shell: bash
         run: |
@@ -229,7 +314,7 @@ jobs:
           fi
           previous=""
           if [[ -f "$BASE/log/node.log" ]]; then
-            previous="$({ grep 'event=registered' "$BASE/log/node.log" || true; } | tail -n 1 | sed -n 's/.*node_id=\([^ ]*\).*/\1/p')"
+            previous="$({ grep 'event=registered' "$BASE/log/node.log" || true; } | tail -n 1 | sed -n 's/.*node_id=\([0-9a-f-]*\).*/\1/p')"
           fi
           if [[ -z "$previous" && -s "$BASE/run/current-node-id" ]]; then
             previous="$(tr -d '[:space:]' < "$BASE/run/current-node-id")"
@@ -269,6 +354,8 @@ jobs:
 
       - name: Assign the scope to the new node (as root) and wait for ready
         shell: bash
+        env:
+          STAGE_NPC_DATA: ${{ inputs.stage_npc_data }}
         run: |
           set -euo pipefail
           log="$BASE/log/node.log"
@@ -306,6 +393,14 @@ jobs:
             if latest_ready; then
               sleep 5
               if latest_ready; then
+                # A World Bundle that booted without placing its NPCs (no catalogue, or a catalogue the bundle was
+                # not compiled against) is a failed deploy: preprod is the place that must show NPCs.
+                if [[ "$STAGE_NPC_DATA" = true ]] && grep -q 'event=world_bundle state=booted' "$log" &&
+                  ! grep -q 'event=npc_actors state=placed' "$log"; then
+                  grep 'event=npc_actors' "$log" || true
+                  echo "::error::the World Bundle booted without placing its NPC actors (see the npc_actors line above)"
+                  exit 1
+                fi
                 echo ready > "$BASE/run/node-state"
                 {
                   echo 'GAME_PREPRODUCTION_DEPLOY=PASS'

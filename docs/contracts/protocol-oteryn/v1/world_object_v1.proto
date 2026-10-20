@@ -10,6 +10,7 @@ syntax = "proto3";
 
 package oteryn.protocol.v1.world_object;
 
+import "actor_spell_v1.proto";
 import "item_view_v1.proto";
 import "world_spatial_v1.proto";
 
@@ -21,20 +22,43 @@ message WorldObjectTargetV1 {
 }
 
 // ClientCommand.payload of command type 2. At most 529 encoded bytes (ITEMUSE0-RL-03 keeps
-// the bound under capability 15). Field 2, the item target, is ITEM-MOVE-WIRE-0 §4.3 (D212):
+// the bound under capability 15 and RUNEUSE0-RL-04 under capability 22). Field 2, the item target, is ITEM-MOVE-WIRE-0 §4.3 (D212):
 // a handle-bearing item, gated by capability 4 ITEM_VIEW_MOVE_V1; a session that did not
 // select it and sends field 2 fails closed. Fields 4 and 5 are ITEM-USE-0 §3 (ITEM-USE-WIRE-1,
 // D485), gated by capability 15 ITEM_USE_V1 (which requires 4); a session that did not
 // select it and sends either fails closed (REJECTED). Field 4 is valid only with field 2 or
-// 5, at most once, with a 16-byte identity and a non-zero generation. Field 3 stays reserved.
+// 5, at most once; its entity arm carries a 16-byte identity and a non-zero generation, while
+// its capability-11 map_item and map_object arms (UseWithV1 below) carry neither. Field 3
+// stays reserved.
 message UseIntentV1 {
   oneof target {
     WorldObjectTargetV1 world_object = 1;
     oteryn.protocol.v1.item_view.ItemTargetV1 item = 2;
     ItemByDefinitionV1 item_by_definition = 5;
   }
-  oteryn.protocol.v1.world_spatial.EntityRefV1 use_with = 4;
+  UseWithV1 use_with = 4;
   reserved 3;
+}
+
+// Field 4 of UseIntentV1: the entity (EntityRefV1 fields 1 and 2, flat: a 16-byte identity and a
+// non-zero generation) a potion is used on, or, under capability 11 WORLD_INTERACTION_V1
+// (WORLD-INTERACTION-0 §10.1), the map item a tool or key is used on. A handle-bearing map entry
+// (a movable base item, an added or Ground item) is the `map_item` arm, field 3, an ItemTargetV1
+// handle (non-zero). A nonmovable base object, which WORLD_MAP_VIEW publishes as a base ordinal
+// without a handle (a door), is the `map_object` arm, field 4: its placement and observed overlay
+// revision, as UseIntentV1 field 1 names it, with a non-empty placement of at most 496 bytes so
+// the intent stays within 529. Exactly one arm; the entity arm needs capability 15 and the map arms
+// capabilities 15 and 11. Valid only with field 2 or 5, at most once. Under capability 22
+// RUNE_USE_V1 (RUNE-USE-0 §4, RUNE-WIRE-1), the `position` arm, field 5, names the tile a rune is
+// used on, in the SPELL-D7 frame (sint32 x and y, an int16 floor), at most 16 bytes; a session
+// that did not select capability 22 and sends it fails closed (REJECTED), and it is valid only
+// for a rune.
+message UseWithV1 {
+  bytes identity = 1;
+  uint64 generation = 2;
+  oteryn.protocol.v1.item_view.ItemTargetV1 map_item = 3;
+  WorldObjectTargetV1 map_object = 4;
+  oteryn.protocol.v1.actor_spell.SpellTargetPositionV1 position = 5;
 }
 
 // An item named by its 1-based definition index in the active content generation (the
@@ -56,11 +80,26 @@ enum UseDispositionV1 {
   USE_DISPOSITION_EXHAUSTED = 8;
   USE_DISPOSITION_FULL = 9;
   USE_DISPOSITION_NO_TARGET = 10;
+  // 11 to 17 are sent only to a session that selected capability 11 WORLD_INTERACTION_V1.
+  USE_DISPOSITION_LOCKED = 11;
+  USE_DISPOSITION_KEY_MISMATCH = 12;
+  USE_DISPOSITION_SEALED = 13;
+  USE_DISPOSITION_PZ_BLOCKED = 14;
+  USE_DISPOSITION_NOT_MOVABLE = 15;
+  USE_DISPOSITION_NO_ROOM = 16;
+  USE_DISPOSITION_NOT_POSSIBLE = 17;
+  // 18 and 19 are sent only to a session that selected capability 22 RUNE_USE_V1 (RUNE-USE-0 §4).
+  USE_DISPOSITION_TARGET_ILLEGAL = 18;
+  USE_DISPOSITION_PROTECTION_ZONE = 19;
 }
 
 // CommandResult.payload of command type 2: outcome only, never state. At most 4 bytes.
 message UseResultV1 {
   UseDispositionV1 disposition = 1;
+  // Capability 11 only, and only with USE_DISPOSITION_SEALED, which requires it: the gate's
+  // message id, 1 to 127 (a one-byte varint, which keeps the result within 4 bytes). Any other
+  // disposition with this field, and SEALED without it, fail closed.
+  uint32 gate_message_id = 2;
 }
 
 // One world-object overlay entry: the state is a state key, not an Open/Closed enum,

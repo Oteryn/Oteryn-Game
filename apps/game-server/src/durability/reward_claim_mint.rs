@@ -93,9 +93,10 @@ use super::item_mint_audit::{
 };
 use super::item_transfer::{
     BackpackEntry, ContainerEntryPosition, CurrentCharacterItemFence,
-    GAMEITEM01_CONTAINER_ENTRIES_MAX, InventoryItem, ItemDefinitionFacts, ItemTransferError,
-    ItemTransferRefusal, character_item_fence_is_current, definition_message, entry_message,
-    load_entries, load_slot, push_facts, push_text, scope_of, stack_maximum, validate_facts,
+    GAMEITEM01_CONTAINER_ENTRIES_MAX, InventoryItem, ItemDefinitionFacts, ItemStackClass,
+    ItemTransferError, ItemTransferRefusal, character_item_fence_is_current, definition_message,
+    entry_message, load_entries, load_slot, push_facts, push_text, scope_of, stack_maximum,
+    validate_facts,
 };
 use super::item_transfer_audit::{OneItemCommandRefV1, OneItemInventoryV1};
 use super::quest_state::quest::{QUESTSTATE0_RL_07, valid_quest_key};
@@ -116,6 +117,8 @@ type Pass<T> = std::result::Result<std::result::Result<T, RewardClaimMintError>,
 const INTENT_BINDING_VERSION: u8 = 2;
 /// Opens the intent binding's quest transition section.
 const QUEST_TRANSITION_TAG: u8 = 0x51;
+/// Opens the intent binding's key number section.
+const KEY_NUMBER_TAG: u8 = 0x4b;
 const EVENT_TYPE_ID: i64 = mint_audit::EVENT_TYPE_ID as i64;
 /// `source_kind` of the achievement grant requests a reward claim records.
 pub const ACHIEVEMENT_SOURCE_KIND: &str = "oteryn:reward-claim";
@@ -153,6 +156,9 @@ pub struct RewardClaimMintRequest {
     /// The chest's quest transition (an Oteryn key), recorded as a `PENDING`
     /// obligation with the claim; `None` records none.
     pub quest_transition: Option<String>,
+    /// The key number of a key reward (WORLD-INTERACTION-0 §4.4), set once on the minted
+    /// instance; `None` mints an item that is not a key.
+    pub key_number: Option<u16>,
 }
 
 /// Refusal reasons. A refusal writes nothing and the player can retry.
@@ -957,6 +963,7 @@ fn claim_message(
             definition: Some(definition_message(&request.item.definition)),
             quantity: request.quantity,
             lifecycle: ITEM_LIFECYCLE_LIVE,
+            key_number: request.key_number.map_or(0, u32::from),
         }),
         destination: Some(OneItemInventoryV1 {
             character_id: fence.character_id.as_bytes().to_vec(),
@@ -978,6 +985,7 @@ fn claim_message(
             reward_claim: Some(definition_message(&request.claim)),
         }),
         before_semantically_absent: true,
+        inbox: None,
     }
 }
 
@@ -1091,6 +1099,17 @@ async fn apply_claim(
     .bind(committed_at)
     .execute(&mut **tx)
     .await?;
+    if let Some(number) = request.key_number {
+        sqlx::query(
+            "INSERT INTO game_item_keys(item_instance_id, key_number, minted_transaction_id) \
+             VALUES (encode($1,'hex')::uuid, $2, encode($3,'hex')::uuid)",
+        )
+        .bind(item_id)
+        .bind(i32::from(number))
+        .bind(tx_id)
+        .execute(&mut **tx)
+        .await?;
+    }
     if let Some(transition) = &request.quest_transition {
         sqlx::query(
             "INSERT INTO game_character_quest_obligations(claim_game_session_id, \
@@ -1285,6 +1304,16 @@ fn validate_request(request: &RewardClaimMintRequest) -> Result<()> {
     {
         return Err(RewardClaimMintError::InvalidInput);
     }
+    // A key is one non-stackable, non-container item with a number in 1..=65,535
+    // (`WORLDINT0-RL-10`).
+    if request.key_number.is_some_and(|number| {
+        number == 0
+            || request.quantity != 1
+            || request.item.stack != ItemStackClass::NonStackable
+            || request.item.container_capacity.is_some()
+    }) {
+        return Err(RewardClaimMintError::InvalidInput);
+    }
     Ok(())
 }
 
@@ -1314,8 +1343,8 @@ fn achievement_grant(
 /// Version byte plus SHA-256 over the complete intent: the CommandRef, the
 /// fenced Character, the claim, its source placement, the reward item facts
 /// and quantity, the backpack facts, the interpretation revisions and, only
-/// when the chest has one, its achievement and catalogue lookup and its quest
-/// transition (so a claim without them keeps its binding). The connection
+/// when the chest has one, its achievement and catalogue lookup, its quest
+/// transition and its key number (so a claim without them keeps its binding). The connection
 /// generation is not part of the intent (DUR-03 §31).
 fn intent_binding(request: &RewardClaimMintRequest, character_id: CharacterId) -> Result<[u8; 33]> {
     let mut canonical = Vec::new();
@@ -1357,6 +1386,10 @@ fn intent_binding(request: &RewardClaimMintRequest, character_id: CharacterId) -
         canonical.push(QUEST_TRANSITION_TAG);
         push_text(&mut canonical, transition.as_bytes()).map_err(from_transfer_input)?;
     }
+    if let Some(number) = request.key_number {
+        canonical.push(KEY_NUMBER_TAG);
+        canonical.extend_from_slice(&number.to_be_bytes());
+    }
     let mut out = [0_u8; 33];
     out[0] = INTENT_BINDING_VERSION;
     out[1..].copy_from_slice(&Sha256::digest(&canonical));
@@ -1367,7 +1400,6 @@ fn intent_binding(request: &RewardClaimMintRequest, character_id: CharacterId) -
 #[allow(clippy::expect_used)]
 mod tests {
     use super::*;
-    use crate::durability::item_transfer::ItemStackClass;
 
     fn id(seed: u8) -> [u8; 16] {
         [
@@ -1385,6 +1417,7 @@ mod tests {
 
     fn facts(key: &str, stack: ItemStackClass) -> ItemDefinitionFacts {
         ItemDefinitionFacts {
+            weight: None,
             definition: definition(key),
             stack,
             container_capacity: None,
@@ -1394,6 +1427,7 @@ mod tests {
 
     fn backpack_facts(capacity: u32) -> ItemDefinitionFacts {
         ItemDefinitionFacts {
+            weight: None,
             definition: definition("fixture:b3.backpack"),
             stack: ItemStackClass::NonStackable,
             container_capacity: Some(capacity),
@@ -1594,6 +1628,7 @@ mod tests {
                 catalogue,
             }),
             quest_transition: None,
+            key_number: None,
         }
     }
 
@@ -1630,6 +1665,59 @@ mod tests {
         ];
         assert_eq!(bindings[0], bind(&request(None)));
         for (index, binding) in bindings.iter().enumerate() {
+            assert!(bindings[index + 1..].iter().all(|other| other != binding));
+        }
+    }
+
+    #[test]
+    fn the_key_number_is_validated_and_bound_into_the_intent() {
+        let key = |number: Option<u16>| RewardClaimMintRequest {
+            item: facts("fixture:b3.key", ItemStackClass::NonStackable),
+            quantity: 1,
+            key_number: number,
+            ..request(None)
+        };
+        assert!(validate_request(&key(Some(1))).is_ok());
+        assert!(validate_request(&key(Some(u16::MAX))).is_ok());
+        let refused = [
+            key(Some(0)),
+            RewardClaimMintRequest {
+                quantity: 2,
+                ..key(Some(10))
+            },
+            RewardClaimMintRequest {
+                item: facts("fixture:b3.coin", COIN),
+                ..key(Some(10))
+            },
+            RewardClaimMintRequest {
+                item: backpack_facts(8),
+                ..key(Some(10))
+            },
+        ];
+        for request in &refused {
+            assert!(matches!(
+                validate_request(request),
+                Err(RewardClaimMintError::InvalidInput)
+            ));
+        }
+        // `None` appends nothing; each number has its own binding.
+        let character = CharacterId::from_bytes(id(41)).expect("character");
+        let bind =
+            |request: &RewardClaimMintRequest| intent_binding(request, character).expect("binding");
+        let with_quest = |number| RewardClaimMintRequest {
+            quest_transition: Some("oteryn:quest-transition/test.chest".into()),
+            ..key(number)
+        };
+        let bindings = [
+            bind(&key(None)),
+            bind(&key(Some(1))),
+            bind(&key(Some(256))),
+            bind(&key(Some(u16::MAX))),
+            bind(&with_quest(None)),
+            bind(&with_quest(Some(1))),
+        ];
+        for (index, binding) in bindings.iter().enumerate() {
+            assert_eq!(binding[0], INTENT_BINDING_VERSION);
             assert!(bindings[index + 1..].iter().all(|other| other != binding));
         }
     }

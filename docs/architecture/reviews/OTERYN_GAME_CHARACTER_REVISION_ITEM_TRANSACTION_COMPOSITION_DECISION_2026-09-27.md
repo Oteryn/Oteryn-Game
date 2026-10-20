@@ -199,8 +199,9 @@ grant's; no synthetic CommandId is created. Rules 4-6 apply unchanged.
 **Amendment (pending on acceptance of RANGED-0; `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §6.2).** Rule 1
 also covers a weapon swing's DUR-03 transaction (`WeaponUseCause`): it advances no
 `CharacterRevision`. Rules 2 and 3 apply in the server-originated variant above: the cause lock is the
-swing key `(WorldId, ChannelId, scope ownership generation, runtime actor id, actor generation, swing
-sequence, CharacterId)`, and the fence is the actor's current admitted session's
+allocated UUIDv7 TransactionId frozen at PREPARE (RANGED-0 §6.2, R8; no actor generation or swing
+sequence key), with provenance `(WorldId, ChannelId, scope ownership generation, runtime actor id,
+CharacterId)` for audit and the restart read, and the fence is the actor's current admitted session's
 `CurrentCharacterItemFence` without a CommandRef, whose Character and World equal the key's; a Ground
 drop adds the DUR-03 §32 scope fence. Rule 4's lock order applies as extended by ITEM-MOVE-WIRE-1 §7.2
 and BAGS-0 §4.2.
@@ -374,3 +375,42 @@ Such a transaction does not advance `CharacterRevision`. Rules 2-6 apply unchang
 lock order is extended after `character_root`: the items in ItemInstanceId order, the
 container-slot row taken by the deferred `0011` placement check, then the Ground tile row and the
 per-channel counter.
+
+## ITEM-FORGE-1 DustLimit continuation proposal: rule 1 and native composition
+
+This private specialization of the existing FORGE-1a amendment applies only to the
+`ForgeCause::DustLimit` shape described in the ITEM-FORGE-1 continuation proposal in
+`../DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md` (§§15,17,18,39.3), under
+IMBUE-FORGE-0 §§9–10 and
+[D1230](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6226138153).
+
+Rule 1 covers this operation's retained reservation and attempt budget, dust ledger entry,
+balance and unlocked limit, terminal receipt and bounded history. They are DUR-03 value or
+cause records of the acting Character. A successful DustLimit raises the limit by exactly
+20 and burns its bound D1230 cost without advancing `CharacterRevision`; a terminal
+`REVISION_CHANGED` receipt has no gameplay/value/state/event/history effect. Neither path
+writes `game_character_roots`, Character progression or a Character semantic/XP receipt.
+The native audit records the observed CharacterRevision under its existing row lock.
+
+Rules 2 and 3 retain the genuine recovery, cause identity, current session/CommandRef, lease,
+generation, World/Channel, scope ownership, node incarnation and admission fences. The runtime
+owner must still hold the CommandRef pending under FND continuation rules. A retained outcome
+replays under current recovery without reacquiring live session authority, and a changed
+binding conflicts. An absent outcome permits a new effect only after the actual current
+fences and bound Content/formula/simulation revisions have been checked. A terminal revision
+rejection stays terminal even if the old active revision set later returns.
+
+Rule 4 orders this native path as recovery/admission relations, the Character-occurrence
+lock, the existing shared Content-activation lock, current session/scope/node checks, the
+Character root, and then the dust row. The root lock serializes with Character semantic
+writers and other dust causes; it is not a revision update or an expected-CharacterRevision
+authority fence. The authoritative unlocked stage is re-read under that lock, so a competing
+upgrade cannot change the price of a retained quote.
+
+Rule 5 requires the debit, limit/balance successor, immutable ledger, exact receipt, selected
+native type-2 event and successful history row to commit together or all roll back. Retry work
+is bounded in the retained reservation before a value attempt; receipt-first reconciliation
+can still resolve an ambiguous final attempt after that budget is exhausted. Rule 6 and all
+existing Character semantic, XP, bank, equipment, HOUSE and Imbue composition remain unchanged.
+This proposal adds no runtime Forge object, window, pending-command producer, migration
+allocation or production authority.

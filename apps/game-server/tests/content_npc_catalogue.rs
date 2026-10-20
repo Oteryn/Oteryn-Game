@@ -24,17 +24,14 @@ fn repository_import_preserves_all_data_and_approximation_flags() {
         NpcDataCatalogue::from_project(project, npc_catalogue_preproduction_limits().project)
             .expect("data import");
     // Revision and source tree digest measured on the corpse-admitted repository source (main + D3-7).
-    assert_eq!(
-        catalogue.project_revision(),
-        "d3-7-corpse-admitted-20261006-r1"
-    );
+    assert_eq!(catalogue.project_revision(), "npc-bank-1-20261015-r1");
     assert_eq!(
         catalogue.source_tree_digest(),
-        "7353a9ed65d82bb393db172a74f576b699ede2d727ddb6690ec8cc6c50925071"
+        "3c82124d7271e2e1ec42dce8be29900322e19771515363f622155d98df044f17"
     );
     assert_eq!(catalogue.npc_count(), 1282);
     assert_eq!(catalogue.dialogue_count(), 836);
-    assert_eq!(catalogue.service_count(), 380);
+    assert_eq!(catalogue.service_count(), 381);
     assert_eq!(catalogue.sources(), sources);
     assert_eq!(catalogue.source_identity_bindings(), bindings);
     let (reference, imported) = catalogue

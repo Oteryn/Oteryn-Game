@@ -9,7 +9,9 @@
 //! Nothing durable names the bundle; a restart rebuilds an equal World from the same pins.
 
 use super::facts::{BundleFacts, FactsRefusal, ItemDefinition};
+use super::floor::{FloorTable, Ground, palette_mask};
 use super::overlay::{ChannelOverlay, TilePos, map_revision};
+use super::spell_tiles::{BundleSpellTiles, SpellTilesBuilder};
 use super::{BundlePins, LoadError, WorldBase};
 use crate::content::static_cell_engine::{EngineeringStaticCellScope, StaticCellEngineError};
 use crate::content::{
@@ -50,6 +52,13 @@ pub enum BootRefusal {
     StartNotEnterable,
     /// A palette Item key the §1.6 item index lacks or places at another `id`.
     ItemReference,
+    /// The bundle places no door a player can use (MAP-DOOR-1), which a preprod node refuses.
+    NoDoors,
+    /// MAP-FLOOR-1: a floor-change tile whose successive destinations never end.
+    FloorChain(TilePos),
+    /// MAP-FLOOR-1: a served bundle places no tile that changes floors, so its stairs,
+    /// ladders and holes did not resolve against the content catalogue.
+    NoFloorChanges,
 }
 
 impl fmt::Display for BootRefusal {
@@ -61,6 +70,15 @@ impl fmt::Display for BootRefusal {
             Self::ItemReference => {
                 f.write_str("a world bundle palette item does not match the item index")
             }
+            Self::NoDoors => f.write_str("the world bundle places no usable door"),
+            Self::NoFloorChanges => {
+                f.write_str("a world bundle places no tile that changes floors")
+            }
+            Self::FloorChain(tile) => write!(
+                f,
+                "the world bundle floor change at ({}, {}, {}) never reaches a destination",
+                tile.x, tile.y, tile.floor
+            ),
         }
     }
 }
@@ -91,6 +109,7 @@ pub struct BundleWorld {
     map_revision: String,
     start: TilePos,
     blocked: Arc<BTreeSet<TilePos>>,
+    spawns: Arc<oteryn_world_bundle::spawn::Table>,
 }
 
 /// Two boots of the same pins are equal: the same bundle, revision, start, blocked tiles and
@@ -104,6 +123,7 @@ impl PartialEq for BundleWorld {
             && self.map_revision == other.map_revision
             && self.start == other.start
             && self.blocked == other.blocked
+            && self.map.facts.doors().len() == other.map.facts.doors().len()
             && self.map.overlay.world_id() == other.map.overlay.world_id()
             && self.map.overlay.channel_id() == other.map.overlay.channel_id()
             && self.map.overlay.tiles().next().is_none()
@@ -129,7 +149,8 @@ pub fn boot(
 /// bundle loads with its pins, `map_revision` is the bundle's and the start tile's ground is
 /// walkable.
 pub fn check(data: Vec<u8>, pins: BootPins) -> Result<CheckedBundle, BootRefusal> {
-    let base = Arc::new(super::load(&data, &pins.bundle)?);
+    let (base, spawns) = super::load_spawns(&data, &pins.bundle)?;
+    let base = Arc::new(base);
     let revision = map_revision(&base);
     if revision != pins.map_revision {
         return Err(BootRefusal::MapRevision);
@@ -142,6 +163,7 @@ pub fn check(data: Vec<u8>, pins: BootPins) -> Result<CheckedBundle, BootRefusal
         base,
         map_revision: revision,
         start: pins.start,
+        spawns,
     })
 }
 
@@ -152,6 +174,7 @@ pub struct CheckedBundle {
     base: Arc<WorldBase>,
     map_revision: String,
     start: TilePos,
+    spawns: oteryn_world_bundle::spawn::Table,
 }
 
 impl CheckedBundle {
@@ -164,37 +187,76 @@ impl CheckedBundle {
         channel_id: ChannelId,
         item: impl Fn(&str) -> Option<ItemDefinition>,
     ) -> Result<BundleWorld, BootRefusal> {
-        let (facts, blocked) = scan(&self.data, &item)?;
+        let mut spell_tiles = SpellTilesBuilder::new(Arc::clone(&self.base));
+        let (facts, blocked, floors) = scan(&self.data, &item, &mut spell_tiles)?;
+        let spell_tiles = Arc::new(spell_tiles.finish(facts.doors())?);
         let blocked = Arc::new(blocked);
-        if !enterable(&self.base, &blocked, self.start) {
+        if !enterable(&self.base, &blocked, self.start) || facts.doors().blocks(self.start) {
             return Err(BootRefusal::StartNotEnterable);
         }
+        floors
+            .validate(|(x, y, z)| {
+                let pos = u16::try_from(x)
+                    .ok()
+                    .zip(u16::try_from(y).ok())
+                    .zip(i8::try_from(z).ok().filter(|z| (0..=15).contains(z)));
+                match pos {
+                    Some(((x, y), z)) => {
+                        let pos = TilePos { x, y, floor: -z };
+                        if self.base.tile(pos.x, pos.y, pos.floor).is_none() {
+                            Ground::Absent
+                        } else if enterable(&self.base, &blocked, pos) {
+                            Ground::Walkable
+                        } else {
+                            Ground::Blocked
+                        }
+                    }
+                    None => Ground::Absent,
+                }
+            })
+            .map_err(BootRefusal::FloorChain)?;
         Ok(BundleWorld {
             map: Arc::new(BundleMap {
                 overlay: ChannelOverlay::new(Arc::clone(&self.base), world_id, channel_id),
                 facts,
+                floors,
+                spell_tiles,
             }),
             base: self.base,
             map_revision: self.map_revision,
             start: self.start,
             blocked,
+            spawns: Arc::new(self.spawns),
         })
     }
 }
 
-/// The map facts of the bundle, and the walkable-or-not tiles one of whose top-level entries is
-/// a `wall` Terrain or an Item whose definition is solid.
+/// The map facts of the bundle, the walkable-or-not tiles one of whose top-level entries is
+/// a `wall` Terrain or an Item whose definition is solid (a usable door is not among them, since
+/// its state decides: [`BundleFacts::doors`]), and the tiles whose top-level entries carry a
+/// catalogue `floor_change` fact (MAP-FLOOR-1) or a `teleport` attribute (NEWHAVEN-TELEPORT-1).
+/// `spell_tiles` collects the spell tile facts of the same sectors (BUNDLE-TILES-1).
 fn scan(
     data: &[u8],
     item: &impl Fn(&str) -> Option<ItemDefinition>,
-) -> Result<(BundleFacts, BTreeSet<TilePos>), BootRefusal> {
+    spell_tiles: &mut SpellTilesBuilder,
+) -> Result<(BundleFacts, BTreeSet<TilePos>, FloorTable), BootRefusal> {
     let mut facts = None;
+    let mut masks: Vec<u8> = Vec::new();
+    let mut floors = FloorTable::default();
     let mut refused = None;
     let mut blocked = BTreeSet::new();
     let visited = bundle::visit(data, |manifest, sector| {
         if facts.is_none() {
             match BundleFacts::palette(manifest, item) {
-                Ok(palette) => facts = Some(palette),
+                Ok(palette) => {
+                    masks = manifest
+                        .palette
+                        .iter()
+                        .map(|entry| palette_mask(entry.family, &entry.key))
+                        .collect();
+                    facts = Some(palette);
+                }
                 Err(refusal) => {
                     refused = Some(refusal);
                     return Err(oteryn_world_bundle::Error::Format(
@@ -207,20 +269,39 @@ fn scan(
             return Ok(());
         };
         for tile in &sector.tiles {
-            let blocks = tile
+            let mask = tile
                 .items
                 .iter()
                 .filter(|item| item.depth == 0)
-                .any(|item| facts.blocks(item.palette));
-            if blocks {
-                blocked.insert(TilePos {
-                    x: tile.x,
-                    y: tile.y,
-                    floor: sector.floor,
+                .fold(0, |mask, item| {
+                    mask | masks.get(item.palette as usize).copied().unwrap_or(0)
                 });
+            let at = TilePos {
+                x: tile.x,
+                y: tile.y,
+                floor: sector.floor,
+            };
+            floors.add(at, mask);
+            // NEWHAVEN-TELEPORT-1: the teleport attribute of a top-level entry; its floor byte
+            // is the native floor (format document §5), which the reader checked is in the World.
+            if let Some((x, y, floor)) = tile
+                .items
+                .iter()
+                .filter(|item| item.depth == 0)
+                .find_map(|item| item.attrs.teleport)
+            {
+                floors.add_teleport(
+                    at,
+                    TilePos {
+                        x,
+                        y,
+                        floor: i8::from_ne_bytes([floor]),
+                    },
+                );
             }
         }
-        facts.push(manifest, &sector);
+        facts.push(manifest, &sector, &mut blocked);
+        spell_tiles.push(manifest, &sector, &blocked, item, &masks);
         Ok(())
     });
     if let Some(refusal) = refused {
@@ -232,7 +313,7 @@ fn scan(
         None => BundleFacts::palette(&visited.manifest, item)?,
     };
     facts.finish();
-    Ok((facts, blocked))
+    Ok((facts, blocked, floors))
 }
 
 /// The one ground speed switch point of a bundle World (§2.4): the server paces every step with
@@ -260,7 +341,7 @@ fn enterable(base: &WorldBase, blocked: &BTreeSet<TilePos>, pos: TilePos) -> boo
 }
 
 /// The native tile of a movement cell: `z` is legacy `z` in `0..=15`, native floor `-z`.
-fn tile_pos(cell: LogicalCell) -> Option<TilePos> {
+pub(super) fn tile_pos(cell: LogicalCell) -> Option<TilePos> {
     let z = i8::try_from(cell.z).ok().filter(|z| (0..=15).contains(z))?;
     Some(TilePos {
         x: u16::try_from(cell.x).ok()?,
@@ -269,7 +350,79 @@ fn tile_pos(cell: LogicalCell) -> Option<TilePos> {
     })
 }
 
+/// SPAWN-1b (Codex P1 on #1981): one bundle spawn source as the Channel runtime realizes it
+/// (the carrier's `ActivationSpawnSourceFacts`): its points in authored order, each its
+/// placement cell `(x, y, z)`, respawn delay (ms), creature key, initial health and creature
+/// profile `blocked_by_nearby_players`, and the source's occupancy retry interval (ms).
+pub(crate) type BundleSpawnFacts = (Vec<BundleSpawnPointFacts>, u64);
+
+/// SPAWN-1b: one point of a [`BundleSpawnFacts`] (the carrier's `ActivationSpawnPointFacts`).
+pub(crate) type BundleSpawnPointFacts = ((i32, i32, i16), u64, String, u64, bool);
+
+/// CREATURE-AI-0 §6.3: the occupancy retry interval of a bundle spawn (the D116 value).
+pub(crate) const BUNDLE_OCCUPANCY_RETRY_MS: u64 = 5_000;
+
+/// CREATURE-AI-0 §6.1: each bundle source is one runtime source (one `CREATUREAI0-RL-02`
+/// count), in canonical (source key, point ordinal) order, whatever creatures and respawn
+/// delays its points mix. A point whose creature has a period other than `All` is outside the
+/// activation set, and a source left with no point is not activated. `profile` gives a
+/// creature key's initial health and `blocked_by_nearby_players`; a creature it does not serve
+/// refuses the whole family (`None`). The point direction is not realized yet.
+pub(crate) fn table_activation_spawns(
+    table: &oteryn_world_bundle::spawn::Table,
+    profile: impl Fn(&str) -> Option<(u64, bool)>,
+) -> Option<Vec<BundleSpawnFacts>> {
+    use oteryn_world_bundle::spawn::Period;
+    // Each creature's profile is resolved once, on its first active point.
+    let mut profiles: Vec<Option<(u64, bool)>> = vec![None; table.creatures.len()];
+    let mut out = Vec::with_capacity(table.sources.len());
+    for source in &table.sources {
+        let z = i16::from(source.floor).checked_neg()?;
+        let mut points = Vec::with_capacity(source.points.len());
+        for point in &source.points {
+            let index = usize::try_from(point.creature).ok()?;
+            let creature = table.creatures.get(index)?;
+            if creature.period != Period::All {
+                continue;
+            }
+            let resolved = profiles.get_mut(index)?;
+            let (health, blockable) = match *resolved {
+                Some(known) => known,
+                None => *resolved.insert(profile(&creature.key)?),
+            };
+            points.push((
+                (i32::from(point.x), i32::from(point.y), z),
+                u64::from(point.respawn_ms),
+                creature.key.clone(),
+                health,
+                blockable,
+            ));
+        }
+        if !points.is_empty() {
+            out.push((points, BUNDLE_OCCUPANCY_RETRY_MS));
+        }
+    }
+    Some(out)
+}
+
 impl BundleWorld {
+    /// SPAWN-1b (CREATURE-AI-0 §6.1): the bundle's spawn family as activation spawn sources; see
+    /// [`table_activation_spawns`].
+    pub(crate) fn activation_spawns(
+        &self,
+        profile: impl Fn(&str) -> Option<(u64, bool)>,
+    ) -> Option<Vec<BundleSpawnFacts>> {
+        table_activation_spawns(&self.spawns, profile)
+    }
+
+    /// Test only: this World with `table` as its spawn family (a booted bundle carries the
+    /// table its `spawn` section decoded to).
+    #[cfg(test)]
+    pub(crate) fn with_spawns_for_test(mut self, table: oteryn_world_bundle::spawn::Table) -> Self {
+        self.spawns = Arc::new(table);
+        self
+    }
+
     pub fn base(&self) -> &Arc<WorldBase> {
         &self.base
     }
@@ -281,6 +434,11 @@ impl BundleWorld {
     /// The production map facts of the bundle.
     pub fn facts(&self) -> &BundleFacts {
         &self.map.facts
+    }
+
+    /// The tiles of this bundle that change floors (MAP-FLOOR-1).
+    pub fn floors(&self) -> &FloorTable {
+        &self.map.floors
     }
 
     pub fn map_revision(&self) -> &str {
@@ -313,7 +471,7 @@ impl BundleWorld {
 
     /// Whether a player can enter `pos`.
     pub fn enterable(&self, pos: TilePos) -> bool {
-        enterable(&self.base, &self.blocked, pos)
+        enterable(&self.base, &self.blocked, pos) && !self.map.facts.doors().blocks(pos)
     }
 
     /// The ground speed a step onto `pos` uses. This is the one switch point: Engineering 150
@@ -338,7 +496,12 @@ impl BundleWorld {
             blocked: Arc::clone(&self.blocked),
             map: Arc::clone(&self.map),
         };
-        Ok(NativeEntryMovementCells::from_bundle(entry, scope, index))
+        Ok(NativeEntryMovementCells::from_bundle(
+            entry,
+            scope,
+            index,
+            Arc::clone(&self.map.spell_tiles),
+        ))
     }
 }
 
@@ -348,6 +511,9 @@ impl BundleWorld {
 pub(crate) struct BundleMap {
     pub(crate) overlay: ChannelOverlay,
     pub(crate) facts: BundleFacts,
+    pub(crate) floors: FloorTable,
+    /// The spell tile facts of the bundle (BUNDLE-TILES-1).
+    pub(crate) spell_tiles: Arc<BundleSpellTiles>,
 }
 
 /// The collision of a Channel's movement cells over a world bundle: a tile is Walkable when it
@@ -388,11 +554,13 @@ impl BundleCollisionIndex {
         self.base
             .tile(pos.x, pos.y, pos.floor)
             .ok_or(StaticCellEngineError::Absent)?;
-        Ok(if enterable(&self.base, &self.blocked, pos) {
-            CollisionClass::Walkable
-        } else {
-            CollisionClass::Blocked
-        })
+        Ok(
+            if enterable(&self.base, &self.blocked, pos) && !self.map.facts.doors().blocks(pos) {
+                CollisionClass::Walkable
+            } else {
+                CollisionClass::Blocked
+            },
+        )
     }
 }
 
@@ -410,6 +578,154 @@ pub(crate) mod tests {
     use std::error::Error;
     use std::num::NonZeroUsize;
 
+    /// SPAWN-1b (Codex P1 on #1981): a bundle source stays one runtime source whatever its
+    /// points mix; night points and sources left with no point are outside the activation.
+    #[test]
+    fn spawn1b_keeps_each_bundle_source_whole_and_skips_night_creatures() {
+        use oteryn_world_bundle::spawn::{Creature, Direction, Period, Point, Source, Table};
+        let point = |creature, x, respawn_ms| Point {
+            creature,
+            x,
+            y: 5,
+            direction: Direction::South,
+            respawn_ms,
+        };
+        let creature = |key: &str, period| Creature {
+            key: key.into(),
+            period,
+        };
+        let source = |key: &str, floor, points| Source {
+            key: key.into(),
+            floor,
+            x: 3,
+            y: 5,
+            points,
+        };
+        let table = Table {
+            creatures: vec![
+                creature("oteryn:creature.bat", Period::Night),
+                creature("oteryn:creature.rat", Period::All),
+                creature("oteryn:creature.wolf", Period::All),
+            ],
+            sources: vec![
+                source(
+                    "oteryn:spawn/a",
+                    -7,
+                    vec![
+                        point(1, 1, 60_000),
+                        point(0, 2, 60_000),
+                        point(1, 3, 60_000),
+                        point(2, 4, 30_000),
+                        point(1, 5, 30_000),
+                    ],
+                ),
+                source("oteryn:spawn/b", -7, vec![point(0, 6, 60_000)]),
+                source("oteryn:spawn/c", -6, vec![point(2, 7, 45_000)]),
+            ],
+        };
+        let calls = std::cell::Cell::new(0);
+        let profile = |key: &str| {
+            calls.set(calls.get() + 1);
+            match key {
+                "oteryn:creature.rat" => Some((20, false)),
+                "oteryn:creature.wolf" => Some((35, true)),
+                _ => None,
+            }
+        };
+        let facts = table_activation_spawns(&table, profile).expect("facts");
+        let rat = |x, respawn_ms| {
+            (
+                (x, 5, 7),
+                respawn_ms,
+                "oteryn:creature.rat".to_string(),
+                20,
+                false,
+            )
+        };
+        let wolf = |x, z, respawn_ms| {
+            (
+                (x, 5, z),
+                respawn_ms,
+                "oteryn:creature.wolf".to_string(),
+                35,
+                true,
+            )
+        };
+        assert_eq!(
+            facts,
+            vec![
+                (
+                    vec![
+                        rat(1, 60_000),
+                        rat(3, 60_000),
+                        wolf(4, 7, 30_000),
+                        rat(5, 30_000)
+                    ],
+                    BUNDLE_OCCUPANCY_RETRY_MS,
+                ),
+                (vec![wolf(7, 6, 45_000)], BUNDLE_OCCUPANCY_RETRY_MS),
+            ]
+        );
+        // Each served creature's profile is read once; the night creature's never.
+        assert_eq!(calls.get(), 2);
+        // A creature the content does not serve refuses the family.
+        assert!(table_activation_spawns(&table, |_| None).is_none());
+        assert!(
+            table_activation_spawns(&table, |key| (key == "oteryn:creature.rat")
+                .then_some((20, false)))
+            .is_none()
+        );
+        assert_eq!(
+            table_activation_spawns(&Table::default(), profile),
+            Some(vec![])
+        );
+    }
+
+    /// SPAWN-1b: interleaved creatures keep their authored point order inside their source.
+    #[test]
+    fn spawn1b_keeps_point_order_for_interleaved_creatures() {
+        use oteryn_world_bundle::spawn::{Creature, Direction, Period, Point, Source, Table};
+        let point = |creature, x| Point {
+            creature,
+            x,
+            y: 5,
+            direction: Direction::South,
+            respawn_ms: 60_000,
+        };
+        let creature = |key: &str| Creature {
+            key: key.into(),
+            period: Period::All,
+        };
+        let table = Table {
+            creatures: vec![
+                creature("oteryn:creature.bat"),
+                creature("oteryn:creature.rat"),
+            ],
+            sources: vec![Source {
+                key: "oteryn:spawn/a".into(),
+                floor: -7,
+                x: 3,
+                y: 5,
+                points: vec![point(1, 1), point(0, 2), point(1, 3)],
+            }],
+        };
+        let facts = table_activation_spawns(&table, |_| Some((20, false))).expect("facts");
+        assert_eq!(facts.len(), 1);
+        let order: Vec<(&str, i32)> = facts[0]
+            .0
+            .iter()
+            .map(|point| (point.2.as_str(), point.0.0))
+            .collect();
+        assert_eq!(
+            order,
+            vec![
+                ("oteryn:creature.rat", 1),
+                ("oteryn:creature.bat", 2),
+                ("oteryn:creature.rat", 3),
+            ]
+        );
+    }
+
     fn id(n: u8) -> [u8; 16] {
         [1, 0, 0, 0, 0, n, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, n]
     }
@@ -422,6 +738,42 @@ pub(crate) mod tests {
 
     /// [`bundle`] with `boxed` as palette Item id 0 (the solid box) and `coin` as Item id 1.
     pub(crate) fn bundle_with_items(boxed: &str, coin: &str) -> (Vec<u8>, BundlePins) {
+        bundle_with_item_ids((boxed, 0), (coin, 1))
+    }
+
+    /// [`bundle_with_items`] with the compact Item ids the §1.6 index gives the two keys.
+    pub(crate) fn bundle_with_item_ids(
+        (boxed, boxed_id): (&str, u32),
+        (coin, coin_id): (&str, u32),
+    ) -> (Vec<u8>, BundlePins) {
+        bundle_with_house(boxed, boxed_id, coin, coin_id, 0)
+    }
+
+    /// [`bundle_with_item_ids`] with the house marker `door_house` on the tile at x 6.
+    fn bundle_with_house(
+        boxed: &str,
+        boxed_id: u32,
+        coin: &str,
+        coin_id: u32,
+        door_house: u32,
+    ) -> (Vec<u8>, BundlePins) {
+        bundle_with_grass(boxed, boxed_id, coin, coin_id, door_house, None)
+    }
+
+    /// [`bundle`] whose grass is the Item key `item:grass` at Item id 2, routed to its walkable
+    /// `ground` Terrain record, as the real World routes every ground (BOOT_WORLD_BUNDLE_REFUSED).
+    pub(crate) fn bundle_with_item_grass() -> (Vec<u8>, BundlePins) {
+        bundle_with_grass("item:box", 0, "item:coin", 1, 0, Some(("item:grass", 2)))
+    }
+
+    fn bundle_with_grass(
+        boxed: &str,
+        boxed_id: u32,
+        coin: &str,
+        coin_id: u32,
+        door_house: u32,
+        item_grass: Option<(&str, u32)>,
+    ) -> (Vec<u8>, BundlePins) {
         use oteryn_world_bundle_compiler::bundle::{
             self, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector, Terrain,
             TerrainKind,
@@ -463,16 +815,23 @@ pub(crate) mod tests {
                 floors: vec![-7],
             },
             palette: vec![
-                terrain("terrain:grass", 0, TerrainKind::Ground, Some(true)),
+                match item_grass {
+                    Some((key, id)) => PaletteEntry {
+                        family: Family::Item,
+                        ..terrain(key, id, TerrainKind::Ground, Some(true))
+                    },
+                    None => terrain("terrain:grass", 0, TerrainKind::Ground, Some(true)),
+                },
                 terrain("terrain:lava", 1, TerrainKind::Ground, Some(false)),
                 terrain("terrain:wall", 2, TerrainKind::Wall, None),
-                item(boxed, 0),
-                item(coin, 1),
+                item(boxed, boxed_id),
+                item(coin, coin_id),
             ],
             draft_areas: Vec::new(),
             skipped_provisional_keys: Vec::new(),
             dropped_teleports: Vec::new(),
             spawns: Default::default(),
+            npcs: Default::default(),
         };
         let entry = |palette| Item {
             palette,
@@ -483,7 +842,7 @@ pub(crate) mod tests {
             x,
             y: 0,
             flags: 0,
-            house: 0,
+            house: if x == 6 { door_house } else { 0 },
             zones: Vec::new(),
             items: palettes.iter().map(|palette| entry(*palette)).collect(),
         };
@@ -514,6 +873,196 @@ pub(crate) mod tests {
         (bytes, pins)
     }
 
+    /// MAP-FLOOR-1: two floors of one row, whose palette keys are real appearance ids, so the
+    /// content catalogue's `floor_change` facts apply. Legacy `z` 8 (native -8) has grass at
+    /// x 0..=5 and an east stair (`i1950`) on x 1; `z` 7 (native -7) has grass at x 0..=2 (a solid
+    /// box on x 1), a hole (Terrain `i293`, `down`) at x 3 and nothing beyond.
+    pub(crate) fn floor_bundle() -> (Vec<u8>, BundlePins) {
+        floor_bundle_with(false)
+    }
+
+    /// [`floor_bundle`], plus a stair up onto a hole whose floor below leads back to the stair
+    /// (`cycle`): stair `i1947` (north) on `z` 8 at (3, 3) and (3, 2), the hole on `z` 7 at (3, 2).
+    pub(crate) fn floor_bundle_with(cycle: bool) -> (Vec<u8>, BundlePins) {
+        floor_bundle_of(cycle, false)
+    }
+
+    /// NEWHAVEN-TELEPORT-1: [`floor_bundle`], plus a row of teleports (palette Item `i37001`)
+    /// on `z` 8 at `y` 1: (0, 1) to (5, 1), (3, 1) to the missing tile (9, 1) and (4, 1) to (6, 1)
+    /// under a solid box; (5, 1) is plain grass in a protection zone (tile flag bit 0).
+    pub(crate) fn teleport_bundle() -> (Vec<u8>, BundlePins) {
+        floor_bundle_of(false, true)
+    }
+
+    fn floor_bundle_of(cycle: bool, teleports: bool) -> (Vec<u8>, BundlePins) {
+        use oteryn_world_bundle_compiler::bundle::{
+            self, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector, Terrain,
+            TerrainKind,
+        };
+        use oteryn_world_bundle_compiler::sector::{Attrs, Item, Tile};
+        let terrain = |key: &str, id| PaletteEntry {
+            key: key.into(),
+            family: Family::Terrain,
+            id,
+            terrain: Some(Terrain {
+                kind: TerrainKind::Ground,
+                walkable: Some(true),
+                ground_speed: Some(150),
+            }),
+        };
+        let item = |key: &str, id| PaletteEntry {
+            key: key.into(),
+            family: Family::Item,
+            id,
+            terrain: None,
+        };
+        let mut manifest = Manifest {
+            format: bundle::FORMAT.into(),
+            min_reader_version: bundle::VERSION,
+            projection_class: "server".into(),
+            compiler_version: "engineering".into(),
+            build_class: BuildClass::Production,
+            identity: Identity {
+                project_format_version: "OTERYN_WORLD_PROJECT/v2".into(),
+                world_schema_version: "world-schema-1".into(),
+                content_revision: "rev-1".into(),
+                ..Identity::default()
+            },
+            world: Extent {
+                min_x: 0,
+                min_y: 0,
+                max_x: 32,
+                max_y: 32,
+                floors: vec![-8, -7],
+            },
+            palette: vec![
+                terrain("oteryn:terrain.tibia.i100", 0),
+                terrain("oteryn:terrain.tibia.i293", 1),
+                item("oteryn:item.tibia.i1950", 0),
+                item("oteryn:item.tibia.i100", 1),
+                item("oteryn:item.tibia.i1947", 2),
+            ],
+            draft_areas: Vec::new(),
+            skipped_provisional_keys: Vec::new(),
+            dropped_teleports: Vec::new(),
+            spawns: Default::default(),
+            npcs: Default::default(),
+        };
+        let tile = |x, y, palettes: &[u32]| Tile {
+            x,
+            y,
+            flags: 0,
+            house: 0,
+            zones: Vec::new(),
+            items: palettes
+                .iter()
+                .map(|palette| Item {
+                    palette: *palette,
+                    depth: 0,
+                    attrs: Attrs::default(),
+                })
+                .collect(),
+        };
+        // Palette indices: 0 grass, 1 hole, 2 east stair, 3 box, 4 north stair.
+        let mut lower = vec![
+            tile(0, 0, &[0]),
+            tile(1, 0, &[0, 2]),
+            tile(2, 0, &[0]),
+            tile(3, 0, &[0]),
+            tile(4, 0, &[0]),
+            tile(5, 0, &[0]),
+        ];
+        let mut upper = vec![
+            tile(0, 0, &[0]),
+            tile(1, 0, &[0, 3]),
+            tile(2, 0, &[0]),
+            tile(3, 0, &[1]),
+        ];
+        if cycle {
+            lower.push(tile(3, 2, &[0, 4]));
+            lower.push(tile(3, 3, &[0, 4]));
+            upper.push(tile(3, 2, &[1]));
+        }
+        if teleports {
+            // Palette index 5: the New Haven forcefield Item.
+            manifest.palette.push(item("oteryn:item.tibia.i37001", 3));
+            let teleport = |x, to: (u16, u16)| {
+                let mut tile = tile(x, 1, &[0, 5]);
+                tile.items[1].attrs.teleport = Some((to.0, to.1, (-8i8).to_ne_bytes()[0]));
+                tile
+            };
+            lower.extend([
+                teleport(0, (5, 1)),
+                teleport(3, (9, 1)),
+                teleport(4, (6, 1)),
+                Tile {
+                    flags: 1,
+                    ..tile(5, 1, &[0])
+                },
+                tile(6, 1, &[0, 3]),
+            ]);
+        }
+        for tiles in [&mut lower, &mut upper] {
+            tiles.sort_by_key(|tile| (tile.y, tile.x));
+        }
+        let sectors = [
+            Sector {
+                floor: -8,
+                sx: 0,
+                sy: 0,
+                tiles: lower,
+            },
+            Sector {
+                floor: -7,
+                sx: 0,
+                sy: 0,
+                tiles: upper,
+            },
+        ];
+        let bytes =
+            bundle::write(&manifest, &sectors, &Default::default()).expect("written bundle");
+        let digest = bundle::read(&bytes).expect("read bundle").digest;
+        let pins = BundlePins {
+            digest,
+            project_format_version: "OTERYN_WORLD_PROJECT/v2".into(),
+            world_schema_version: "world-schema-1".into(),
+            content_revision: "rev-1".into(),
+            production: false,
+        };
+        (bytes, pins)
+    }
+
+    /// The served definitions of [`floor_bundle`]'s Items: the stairs and the forcefield are
+    /// walkable, the box solid.
+    pub(crate) fn floor_items(key: &str) -> Option<ItemDefinition> {
+        let (reference, solid) = match key {
+            "oteryn:item.tibia.i1950" => (1, Some(false)),
+            "oteryn:item.tibia.i100" => (2, Some(true)),
+            "oteryn:item.tibia.i1947" => (3, Some(false)),
+            "oteryn:item.tibia.i37001" => (4, Some(false)),
+            _ => return None,
+        };
+        Some(ItemDefinition {
+            reference: std::num::NonZeroU32::new(reference)?,
+            solid,
+            blocks_projectile: solid == Some(true),
+            pickupable: false,
+            door: false,
+        })
+    }
+
+    /// [`pins`] for [`floor_bundle`], starting on legacy `z` 8.
+    pub(crate) fn floor_pins(bundle: BundlePins) -> BootPins {
+        BootPins {
+            start: TilePos {
+                x: 0,
+                y: 0,
+                floor: -8,
+            },
+            ..pins(bundle, 0)
+        }
+    }
+
     /// The served definitions of the test bundle's Items: the §1.6 index places `item:box` at
     /// Item id 0 and `item:coin` at 1.
     pub(crate) fn items(key: &str) -> Option<ItemDefinition> {
@@ -527,6 +1076,7 @@ pub(crate) mod tests {
             solid,
             blocks_projectile: solid == Some(true),
             pickupable,
+            door: false,
         })
     }
 
@@ -642,6 +1192,91 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn map_floor_boot_collects_the_catalogue_floor_changes() -> Result<(), Box<dyn Error>> {
+        let (bytes, load) = floor_bundle();
+        let world = boot(
+            &bytes,
+            &floor_pins(load),
+            WorldId::decode(&id(1))?,
+            ChannelId::decode(&id(2))?,
+            floor_items,
+        )?;
+        let at = |x, floor| TilePos { x, y: 0, floor };
+        // The east stair item on z 8 and the `down` hole Terrain on z 7; plain grass, the
+        // solid box and an UNKNOWN catalogue fact are no floor change.
+        assert_eq!(world.floors().count(), 2);
+        assert!(world.floors().contains(at(1, -8)));
+        assert!(world.floors().contains(at(3, -7)));
+        assert!(!world.floors().contains(at(1, -7)));
+        // A fixture bundle without a catalogue key has none.
+        let (bytes, load) = bundle();
+        let flat = boot(
+            &bytes,
+            &pins(load, 1),
+            WorldId::decode(&id(1))?,
+            ChannelId::decode(&id(2))?,
+            items,
+        )?;
+        assert_eq!(flat.floors().count(), 0);
+        Ok(())
+    }
+
+    #[test]
+    fn newhaven_teleport_boot_collects_the_teleport_attributes() -> Result<(), Box<dyn Error>> {
+        let (bytes, load) = teleport_bundle();
+        let world = boot(
+            &bytes,
+            &floor_pins(load),
+            WorldId::decode(&id(1))?,
+            ChannelId::decode(&id(2))?,
+            floor_items,
+        )?;
+        let at = |x, y| TilePos { x, y, floor: -8 };
+        let floors = world.floors();
+        assert_eq!(floors.teleport_count(), 3);
+        // The attribute's floor byte is the native floor.
+        assert_eq!(floors.teleport(at(0, 1)), Some(at(5, 1)));
+        assert_eq!(floors.teleport(at(3, 1)), Some(at(9, 1)));
+        assert_eq!(floors.teleport(at(4, 1)), Some(at(6, 1)));
+        assert_eq!(floors.teleport(at(5, 1)), None);
+        // A teleport is no floor change: the stair and the hole stay the only ones.
+        assert_eq!(floors.count(), 2);
+        assert!(!floors.contains(at(0, 1)));
+        // The bundles without a teleport attribute have none.
+        let (bytes, load) = floor_bundle();
+        let plain = boot(
+            &bytes,
+            &floor_pins(load),
+            WorldId::decode(&id(1))?,
+            ChannelId::decode(&id(2))?,
+            floor_items,
+        )?;
+        assert_eq!(plain.floors().teleport_count(), 0);
+        Ok(())
+    }
+
+    #[test]
+    fn map_floor_boot_refuses_a_floor_change_that_never_ends() -> Result<(), Box<dyn Error>> {
+        let (bytes, load) = floor_bundle_with(true);
+        let refused = boot(
+            &bytes,
+            &floor_pins(load),
+            WorldId::decode(&id(1))?,
+            ChannelId::decode(&id(2))?,
+            floor_items,
+        );
+        assert_eq!(
+            refused,
+            Err(BootRefusal::FloorChain(TilePos {
+                x: 3,
+                y: 2,
+                floor: -7
+            }))
+        );
+        Ok(())
+    }
+
+    #[test]
     fn map_cutover_an_unknown_item_solidity_blocks() -> Result<(), Box<dyn Error>> {
         let (bytes, load) = bundle();
         let world = boot(
@@ -666,6 +1301,41 @@ pub(crate) mod tests {
             y: 0,
             floor: -7
         }));
+        Ok(())
+    }
+
+    /// The real World routes its grounds to Item keys whose served definitions carry no
+    /// solidity fact: such a ground does not block the start, a plain Item without the fact on
+    /// the same ground still blocks and a stated solid Item blocks.
+    #[test]
+    fn an_item_ground_without_a_solidity_fact_is_enterable() -> Result<(), Box<dyn Error>> {
+        let (bytes, load) = bundle_with_item_grass();
+        let world = boot(
+            &bytes,
+            &pins(load, 1),
+            WorldId::decode(&id(1))?,
+            ChannelId::decode(&id(2))?,
+            |key| match key {
+                "item:grass" => Some(ItemDefinition {
+                    reference: std::num::NonZeroU32::new(3)?,
+                    solid: None,
+                    blocks_projectile: false,
+                    pickupable: false,
+                    door: false,
+                }),
+                "item:coin" => items(key).map(|definition| ItemDefinition {
+                    solid: None,
+                    ..definition
+                }),
+                _ => items(key),
+            },
+        )?;
+        let at = |x| TilePos { x, y: 0, floor: -7 };
+        assert!(world.enterable(at(1)), "start on an Item ground");
+        assert!(!world.enterable(at(4)), "lava");
+        assert!(!world.enterable(at(5)), "wall");
+        assert!(!world.enterable(at(6)), "solid box");
+        assert!(!world.enterable(at(7)), "coin without a solidity fact");
         Ok(())
     }
 
@@ -745,6 +1415,285 @@ pub(crate) mod tests {
         assert_eq!(facts.base_entry(at(7), 1, 0), None);
         assert!(!facts.house_tile(at(7)));
         assert_eq!(facts.object_revision(0), 0);
+        Ok(())
+    }
+
+    /// The served definitions of [`door_world`]: the plain closed door 1629 (solid), its open
+    /// item 1630 (not solid) and a loose coin.
+    pub(crate) fn door_items(key: &str) -> Option<ItemDefinition> {
+        let (reference, solid, pickupable) = match key {
+            "oteryn:item.tibia.i1629" => (1, Some(true), false),
+            "oteryn:item.tibia.i1630" => (1631, Some(false), false),
+            "oteryn:item.tibia.i1000" => (2, Some(false), true),
+            _ => return None,
+        };
+        Some(ItemDefinition {
+            reference: std::num::NonZeroU32::new(reference)?,
+            solid,
+            blocks_projectile: solid == Some(true),
+            pickupable,
+            door: key == "oteryn:item.tibia.i1629",
+        })
+    }
+
+    /// The test bundle with the closed door 1629 at x 6 (top-level entry 1 of its tile) and a
+    /// coin at x 7, booted with `item`.
+    pub(crate) fn door_world_with(
+        item: impl Fn(&str) -> Option<ItemDefinition>,
+    ) -> Result<BundleWorld, Box<dyn Error>> {
+        let (bytes, load) = bundle_with_items("oteryn:item.tibia.i1629", "oteryn:item.tibia.i1000");
+        Ok(boot(
+            &bytes,
+            &pins(load, 2),
+            WorldId::decode(&id(1))?,
+            ChannelId::decode(&id(2))?,
+            item,
+        )?)
+    }
+
+    pub(crate) fn door_world() -> Result<BundleWorld, Box<dyn Error>> {
+        door_world_with(door_items)
+    }
+
+    /// The door's tile.
+    pub(crate) const DOOR_AT: TilePos = TilePos {
+        x: 6,
+        y: 0,
+        floor: -7,
+    };
+
+    pub(crate) fn door_key() -> u64 {
+        crate::map::view::placement_key(DOOR_AT, 1).unwrap_or(0)
+    }
+
+    #[test]
+    fn map_door_state_drives_walkability_facts_and_revision() -> Result<(), Box<dyn Error>> {
+        use crate::map::door::DoorUse;
+        use crate::map::view::MapFacts;
+        use oteryn_protocol_oteryn::world_map::MapDefinition;
+        let world = door_world()?;
+        let doors = world.facts().doors();
+        let key = door_key();
+        assert_eq!((doors.len(), doors.sealed()), (1, 0));
+        let room = crate::content::qualify_native_entry_room(WorldId::decode(&id(1))?)?;
+        let cells = world.movement_cells(room.movement_cells())?;
+        let class = || {
+            cells
+                .index()
+                .lookup(cells.scope(), LogicalCell { x: 6, y: 0, z: 7 })
+        };
+
+        // Closed: solid, closed appearance, revision 0.
+        assert!(!world.enterable(DOOR_AT) && class() == Ok(CollisionClass::Blocked));
+        let closed = world.facts().base_entry(DOOR_AT, 1, 0).ok_or("closed")?;
+        assert_eq!(closed.appearance_id, 1629);
+        assert_eq!(world.facts().object_revision(key), 0);
+
+        // Open: walkable (live in the collision index too), the open item's facts, revision 1.
+        assert_eq!(
+            doors.toggle(key, 0, false),
+            Some(DoorUse::Toggled {
+                revision: 1,
+                open: true
+            })
+        );
+        assert!(world.enterable(DOOR_AT) && class() == Ok(CollisionClass::Walkable));
+        let open = world.facts().base_entry(DOOR_AT, 1, 0).ok_or("open")?;
+        assert_eq!(open.appearance_id, 1630);
+        assert_eq!(
+            open.definition,
+            MapDefinition::Item(std::num::NonZeroU32::new(1631).ok_or("ref")?)
+        );
+        assert!(!open.blocks_projectile && !open.pickupable && !open.bound);
+        assert_eq!(world.facts().object_revision(key), 1);
+
+        // A stale revision changes nothing; an occupied open door does not close.
+        assert_eq!(doors.toggle(key, 0, false), Some(DoorUse::Stale));
+        assert_eq!(doors.toggle(key, 1, true), Some(DoorUse::Occupied));
+        assert!(world.enterable(DOOR_AT));
+        assert_eq!(
+            doors.toggle(key, 1, false),
+            Some(DoorUse::Toggled {
+                revision: 2,
+                open: false
+            })
+        );
+        assert!(!world.enterable(DOOR_AT) && class() == Ok(CollisionClass::Blocked));
+
+        // The grass under the door and the coin beside it are no door.
+        let grass = crate::map::view::placement_key(DOOR_AT, 0).ok_or("grass key")?;
+        assert_eq!(doors.toggle(grass, 0, false), None);
+        assert_eq!(world.facts().object_revision(grass), 0);
+        Ok(())
+    }
+
+    /// Codex 4239177726: a map composition reads pinned facts, so a door's appearance and its
+    /// object revision come from one state even when a `USE` commits in between.
+    #[test]
+    fn map_door_pinned_facts_pair_appearance_with_revision() -> Result<(), Box<dyn Error>> {
+        use crate::map::view::MapFacts;
+        let world = door_world()?;
+        let key = door_key();
+        let pinned = world.facts().pinned();
+        assert!(world.facts().doors().toggle(key, 0, false).is_some());
+        // The live facts moved on; the pinned ones still say closed at revision 0.
+        assert_eq!(world.facts().object_revision(key), 1);
+        let live = world.facts().base_entry(DOOR_AT, 1, 0).ok_or("live")?;
+        assert_eq!(live.appearance_id, 1630);
+        let closed = pinned.base_entry(DOOR_AT, 1, 0).ok_or("pinned")?;
+        assert_eq!(
+            (closed.appearance_id, pinned.object_revision(key)),
+            (1629, 0)
+        );
+        // A pin taken after the USE reads the open state with its revision.
+        let after = world.facts().pinned();
+        let open = after.base_entry(DOOR_AT, 1, 0).ok_or("after")?;
+        assert_eq!((open.appearance_id, after.object_revision(key)), (1630, 1));
+        let grass = crate::map::view::placement_key(DOOR_AT, 0).ok_or("grass key")?;
+        assert_eq!(after.object_revision(grass), 0);
+        Ok(())
+    }
+
+    #[test]
+    fn map_door_a_second_boot_starts_closed() -> Result<(), Box<dyn Error>> {
+        let first = door_world()?;
+        assert!(first.facts().doors().toggle(door_key(), 0, false).is_some());
+        assert!(first.enterable(DOOR_AT));
+        let second = door_world()?;
+        assert!(!second.enterable(DOOR_AT));
+        assert_eq!(second.facts().doors().revision(door_key()), 0);
+        assert_eq!(first, second);
+        Ok(())
+    }
+
+    #[test]
+    fn map_door_an_unserved_open_item_keeps_the_door_sealed() -> Result<(), Box<dyn Error>> {
+        let world = door_world_with(|key| door_items(key).filter(|_| !key.ends_with("1630")))?;
+        let doors = world.facts().doors();
+        assert_eq!((doors.len(), doors.sealed()), (0, 1));
+        assert_eq!(doors.toggle(door_key(), 0, false), None);
+        assert!(!world.enterable(DOOR_AT));
+        Ok(())
+    }
+
+    #[test]
+    fn map_door_an_unqualified_open_item_keeps_the_door_sealed() -> Result<(), Box<dyn Error>> {
+        // The open item is described but not as walkable: solid unknown, or it blocks shots.
+        for (solid, shoots) in [
+            (None, true),
+            (None, false),
+            (Some(false), true),
+            (Some(true), false),
+        ] {
+            let world = door_world_with(|key| {
+                door_items(key).map(|mut item| {
+                    if key.ends_with("1630") {
+                        item.solid = solid;
+                        item.blocks_projectile = shoots;
+                    }
+                    item
+                })
+            })?;
+            let doors = world.facts().doors();
+            assert_eq!((doors.len(), doors.sealed()), (0, 1), "{solid:?} {shoots}");
+            assert!(!world.enterable(DOOR_AT));
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn map_door_an_unqualified_closed_item_keeps_the_door_sealed() -> Result<(), Box<dyn Error>> {
+        // The closed item must block both movement and projectiles.
+        for (solid, shoots) in [
+            (Some(false), true),
+            (Some(true), false),
+            (Some(false), false),
+        ] {
+            let world = door_world_with(|key| {
+                door_items(key).map(|mut item| {
+                    if key.ends_with("1629") {
+                        item.solid = solid;
+                        item.blocks_projectile = shoots;
+                    }
+                    item
+                })
+            })?;
+            let doors = world.facts().doors();
+            assert_eq!((doors.len(), doors.sealed()), (0, 1), "{solid:?} {shoots}");
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn a_door_is_the_content_profiles_decision_not_the_appearance_id() -> Result<(), Box<dyn Error>>
+    {
+        // A registry appearance (1629) whose profile is no door is a plain solid item: not a
+        // door, not sealed, and `USE` finds nothing.
+        let world = door_world_with(|key| {
+            door_items(key).map(|item| ItemDefinition {
+                door: false,
+                ..item
+            })
+        })?;
+        let doors = world.facts().doors();
+        assert_eq!((doors.len(), doors.sealed()), (0, 0));
+        assert_eq!(doors.toggle(door_key(), 0, false), None);
+        assert!(!world.enterable(DOOR_AT));
+        // The profile's door on an appearance the Game registry does not pair is a sealed door:
+        // solid, and `USE` refuses it, whatever its id.
+        let unpaired = "oteryn:item.tibia.i1631";
+        let (bytes, load) = bundle_with_items(unpaired, "oteryn:item.tibia.i1000");
+        let world = boot(
+            &bytes,
+            &pins(load, 2),
+            WorldId::decode(&id(1))?,
+            ChannelId::decode(&id(2))?,
+            |key| {
+                if key == unpaired {
+                    Some(ItemDefinition {
+                        reference: std::num::NonZeroU32::MIN,
+                        solid: Some(true),
+                        blocks_projectile: true,
+                        pickupable: false,
+                        door: true,
+                    })
+                } else {
+                    door_items(key)
+                }
+            },
+        )?;
+        let doors = world.facts().doors();
+        assert_eq!((doors.len(), doors.sealed()), (0, 1));
+        assert!(!world.enterable(DOOR_AT));
+        // The profile's door on a registry appearance is the usable pair.
+        let world = door_world()?;
+        assert_eq!(world.facts().doors().len(), 1);
+        Ok(())
+    }
+
+    #[test]
+    fn map_door_a_door_on_a_house_tile_stays_out_of_the_channel_door_book()
+    -> Result<(), Box<dyn Error>> {
+        use crate::map::view::MapFacts;
+        let (bytes, load) = bundle_with_house(
+            "oteryn:item.tibia.i1629",
+            0,
+            "oteryn:item.tibia.i1000",
+            1,
+            7,
+        );
+        let world = boot(
+            &bytes,
+            &pins(load, 2),
+            WorldId::decode(&id(1))?,
+            ChannelId::decode(&id(2))?,
+            door_items,
+        )?;
+        let doors = world.facts().doors();
+        assert_eq!((doors.len(), doors.sealed()), (0, 1));
+        assert_eq!(doors.toggle(door_key(), 0, false), None);
+        assert!(!world.enterable(DOOR_AT));
+        assert!(world.facts().house_tile(DOOR_AT));
         Ok(())
     }
 }

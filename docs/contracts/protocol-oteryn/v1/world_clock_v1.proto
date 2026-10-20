@@ -1,0 +1,24 @@
+// LOOP-CLOCK-1 (WORLD-INTERACTION-0 §10.2 and §11, owner answer 7a): typed payloads of
+// capability 19 WORLD_LIGHT_V1 and state domain 18 WORLD_CLOCK (snapshot type 1, delta type 1).
+// Numbers leased by the #1622 control plane; the capability has no command type and requires
+// capability 6 WORLD_SPATIAL_ENTITIES. FND-02 envelopes own server sequence, domain ID and
+// revisions; this payload never duplicates them. The snapshot and the delta carry the same
+// message. The World keeps one Tibian clock: tibian_minute(t) = floor((t - epoch) / 2,500 ms)
+// mod 1,440, so one Tibian day is one real hour. A snapshot is sent at admission, reconnect and
+// channel transfer; a delta when the light level changes and at each Tibian hour, at most one per
+// 10,000 ms. A delta is never replayed. Unknown fields, repeated singular fields, a
+// tibian_minute of 1,440 or more, and a light_level or light_color above 255 all fail closed.
+syntax = "proto3";
+
+package oteryn.protocol.v1.world_clock;
+
+// StateDomainSnapshot.payload of snapshot type 1 and StateDelta.payload of delta type 1. At most
+// 9 bytes (three tagged varints). Zero values are omitted.
+message WorldClockV1 {
+  // Tibian minute of the day, 0..=1439; 0 is midnight.
+  uint32 tibian_minute = 1;
+  // The World light level at that minute, 0..=255 (night 40, day 250).
+  uint32 light_level = 2;
+  // The World light color, 0..=255 (215).
+  uint32 light_color = 3;
+}

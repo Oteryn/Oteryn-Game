@@ -183,6 +183,13 @@ pub(super) type OwnerRevalidation = Box<
         > + Send,
 >;
 
+/// Admission-owner predicate over independently read, locked CURRENT runtime facts.
+/// Prepared/receipt facts must never be substituted for these callback arguments.
+/// The callback carries immutable build requirements and authenticated support;
+/// it does not supply current scope authority and cannot grant a lease or session.
+pub type CurrentCapabilityCheck =
+    std::sync::Arc<dyn Fn(RuntimeScopeRefV1, u64, &str) -> bool + Send + Sync>;
+
 pub(super) fn envelope_size(length: usize, maximum_bytes: usize) -> Result<usize> {
     let groups = length
         .checked_div(3)
@@ -310,8 +317,38 @@ impl ControlLossCompletionSourceV1 for DurableLossCompletionSource {
 pub struct FreshAdmissionStore {
     guards: AdmissionGuardStore,
     maximum_operation_bytes: usize,
+    /// CHAR-POSITION-0 §3.2 "At logout": the last position the terminal release writes in its
+    /// own transaction, before `session_state` becomes 3. `None` writes nothing.
+    final_position: Option<super::character_last_position::FinalLastPosition>,
 }
 impl FreshAdmissionStore {
+    /// One ADMIT0 predicate at both deciding owners. The caller holds the admission
+    /// relation locks; read the current guard through its full mirror/history validator.
+    /// Neither the prepared operation nor a callback can supply current runtime facts.
+    pub(crate) async fn check_current_runtime_capabilities(
+        &self,
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        scope: RuntimeScopeRefV1,
+        generation: u64,
+        check: &CurrentCapabilityCheck,
+    ) -> Result<bool> {
+        let runtime = self
+            .guards
+            .load_locked(tx, &AdmissionAuthorityGuardKeyV1::Runtime(scope))
+            .await?;
+        let Some(AdmissionAuthorityGuardStateV1::Runtime {
+            ownership_generation,
+            ready: true,
+            world_policy_revision,
+            ..
+        }) = runtime.as_ref().map(|row| &row.state)
+        else {
+            return Ok(false);
+        };
+        Ok(*ownership_generation == generation
+            && check(scope, *ownership_generation, world_policy_revision))
+    }
+
     #[cfg(test)]
     pub async fn connect_runtime(
         url: &str,
@@ -330,11 +367,29 @@ impl FreshAdmissionStore {
         Ok(Self::from_root(root))
     }
 
+    /// CHAR-POSITION-0 §3.2 "At logout": this store with `final_position`, which its terminal
+    /// release (`release_expired_loss`, `release_abandoned_session`,
+    /// `release_capability_mismatch`, `release`) upserts inside the release transaction, before
+    /// the session becomes TERMINAL, under the released session's Character lease key. A
+    /// release of a non-Channel scope, a World other than the record's, a pending respawn or a
+    /// later stored key writes nothing; the release itself is unchanged by it.
+    #[must_use]
+    pub fn with_final_position(
+        &self,
+        final_position: super::character_last_position::FinalLastPosition,
+    ) -> Self {
+        Self {
+            final_position: Some(final_position),
+            ..self.clone()
+        }
+    }
+
     #[must_use]
     pub fn from_root(root: super::DurabilityRoot) -> Self {
         Self {
             guards: AdmissionGuardStore::from_root(root),
             maximum_operation_bytes: super::MAX_FRESH_OPERATION_BYTES,
+            final_position: None,
         }
     }
 
@@ -383,6 +438,9 @@ impl FreshAdmissionStore {
         ))?))
     }
 
+    /// Fixture-only raw write. Production enters through the composed owner,
+    /// which requires current capability revalidation in the deciding transaction.
+    #[cfg(test)]
     pub async fn commit(
         &self,
         request: &FreshAdmissionCommitRequestV1,
@@ -393,7 +451,7 @@ impl FreshAdmissionStore {
     /// Commit with an optional owner revalidation that runs inside the commit
     /// transaction, after relation locks and exact-replay reconciliation. A
     /// `false` result rejects the attempt as stale authority.
-    pub(super) async fn commit_revalidated(
+    pub(crate) async fn commit_revalidated(
         &self,
         request: &FreshAdmissionCommitRequestV1,
         revalidate: Option<OwnerRevalidation>,
@@ -1765,6 +1823,38 @@ impl FreshAdmissionStore {
             .await
     }
 
+    /// CHAR-POSITION-1 (`CHARPOS0-RL-01`): the current session of each of `sessions`, read as
+    /// [`Self::current_session_at`] reads one, but all in one root pass, so a periodic
+    /// last-position write pass reads a bounded number of passes whatever the number of its
+    /// sessions. One entry per session, in order; `None` when that session's read failed. A
+    /// storage error of the pass itself fails all of them.
+    pub async fn current_sessions_at(
+        &self,
+        sessions: Vec<GameSessionId>,
+    ) -> Result<Vec<Option<GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>>>> {
+        if sessions.is_empty() {
+            return Ok(Vec::new());
+        }
+        let store = self.clone();
+        let backend = self.guards.backend.clone();
+        let issued = backend.try_issue_root()?;
+        backend
+            .run_pass(issued, move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx =
+                        super::admission_journal::begin_pass_transaction(holder, deadline).await?;
+                    super::db::lock_admission_relations(&mut tx).await?;
+                    let mut current = Vec::with_capacity(sessions.len());
+                    for session in sessions {
+                        current.push(store.current_session_locked(&mut tx, session).await.ok());
+                    }
+                    super::admission_journal::commit_pass_transaction(tx, deadline).await?;
+                    Ok(current)
+                })
+            })
+            .await
+    }
+
     pub async fn reconcile_lifecycle(
         &self,
         evidence: &AdmissionClaimLifecycleEvidenceV1,
@@ -1811,6 +1901,9 @@ impl FreshAdmissionStore {
             let encoded_successors = evidence.transition.successors.iter().map(|row| encode_guard(row, store.guards.maximum_guard_bytes)).collect::<Result<Vec<_>>>()?;
             let decided_at: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint").fetch_one(&mut *tx).await?;
             let successors = transition.validate_locked(&rows, current, decided_at).map_err(|_| DurabilityError::Unavailable)?;
+            if let Some(final_position) = store.final_position {
+                write_final_position(&mut tx, &current, &final_position).await?;
+            }
             let updated = sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state = 3, current_transport_ref = NULL, prepared_attempt_ref = NULL WHERE game_session_id = encode($1,'hex')::uuid AND current_generation = $2::text::numeric(20,0) AND character_lease_generation = $3::text::numeric(20,0) AND scope_ownership_generation = $4::text::numeric(20,0)")
                 .bind(session_id.as_bytes().as_slice()).bind(current.current_connection_generation().get().to_string()).bind(current.current_character_lease().generation().to_string()).bind(current.current_scope_generation().get().to_string()).execute(&mut *tx).await?;
             if updated.rows_affected() != 1 { return Err(DurabilityError::Unavailable); }
@@ -1823,6 +1916,37 @@ impl FreshAdmissionStore {
             Ok(decided_at)
         })).await
     }
+}
+
+/// CHAR-POSITION-0 §3.2 "At logout": the final last-position upsert of the session being
+/// released, in the release transaction (which holds the admission relation locks and has just
+/// revalidated the session), before `session_state` becomes 3. Only a Channel scope of the
+/// record's World writes; the upsert itself skips a pending respawn and a later stored key.
+async fn write_final_position(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    current: &GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+    final_position: &super::character_last_position::FinalLastPosition,
+) -> Result<()> {
+    let crate::foundation::RuntimeScopeRefV1::Channel { world_id, .. } =
+        current.current_runtime_scope()
+    else {
+        return Ok(());
+    };
+    if world_id != final_position.record.world_id || final_position.write_sequence == 0 {
+        return Ok(());
+    }
+    let lease = current.current_character_lease();
+    super::character_last_position::upsert_last_position(
+        tx,
+        lease.character_id().as_bytes(),
+        super::character_last_position::LastPositionKey {
+            character_lease_generation: lease.generation(),
+            write_sequence: final_position.write_sequence,
+        },
+        &final_position.record,
+    )
+    .await?;
+    Ok(())
 }
 
 /// Outcome of one grace-expiry release attempt for a lost GameSession.
@@ -1927,6 +2051,30 @@ impl FreshAdmissionStore {
         if current.session_state() != GameSessionState::Active
             || current.current_transport() != Some(transport)
             || current.current_control_loss_epoch().is_none()
+        {
+            return Ok(ExpiredLossReleaseV1::NotApplicable);
+        }
+        self.release_current_claims(current, now, account_id).await
+    }
+
+    /// LOGOUT-WIRE-1 (ARCH-KILL-REWARD-LOGOUT-1 §1.6): terminal release of an ACTIVE session's
+    /// own logout, on its exact current controller transport, with or without a control-loss
+    /// epoch. A session on another transport, or one that is not ACTIVE, is not this logout's to
+    /// release. A replay after the commit returns `Terminal`, never a second commit. No
+    /// protection marker is written: a TERMINAL session is never resumed, and PvE re-entry
+    /// protection is granted only on a resume.
+    pub async fn release_logout_session(
+        &self,
+        session: GameSessionId,
+        account_id: &str,
+        transport: AuthenticatedTransportRefV1,
+    ) -> Result<ExpiredLossReleaseV1> {
+        let (current, now) = self.current_session_at(session).await?;
+        if current.session_state() == GameSessionState::Terminal {
+            return Ok(ExpiredLossReleaseV1::Terminal);
+        }
+        if current.session_state() != GameSessionState::Active
+            || current.current_transport() != Some(transport)
         {
             return Ok(ExpiredLossReleaseV1::NotApplicable);
         }
@@ -2061,6 +2209,7 @@ impl FreshAdmissionStore {
                 maximum_guard_bytes: super::MAX_ADMISSION_GUARD_BYTES,
             },
             maximum_operation_bytes: super::MAX_FRESH_OPERATION_BYTES,
+            final_position: None,
         }
     }
     pub(super) async fn replacement_claim_replay(
@@ -2561,9 +2710,15 @@ impl FreshAdmissionStore {
         custody: &super::runtime_scope_assignment::NodeIncarnationProof,
         request: std::sync::Arc<CompleteReconnectRequestV1>,
         source: std::sync::Arc<dyn CompleteReconnectSourceV1 + Send + Sync>,
+        capabilities: CurrentCapabilityCheck,
     ) -> Result<CompleteReconnectOutcomeV1> {
-        self.apply_complete_reconnect_with(Some(custody.clone()), request, source)
-            .await
+        self.apply_complete_reconnect_with(
+            Some(custody.clone()),
+            request,
+            source,
+            Some(capabilities),
+        )
+        .await
     }
 
     /// Test seam: the same decision against the source's own recovery evidence.
@@ -2573,7 +2728,24 @@ impl FreshAdmissionStore {
         request: std::sync::Arc<CompleteReconnectRequestV1>,
         source: std::sync::Arc<dyn CompleteReconnectSourceV1 + Send + Sync>,
     ) -> Result<CompleteReconnectOutcomeV1> {
-        self.apply_complete_reconnect_with(None, request, source)
+        self.apply_complete_reconnect_with(None, request, source, None)
+            .await
+    }
+
+    /// Independent signed-fixture qualification of the same locked ADMIT0 gate.
+    /// Production always uses registered custody and the mandatory callback above.
+    #[cfg(test)]
+    #[allow(
+        dead_code,
+        reason = "the focused PostgreSQL target drives this test-only seam"
+    )]
+    pub(crate) async fn apply_complete_reconnect_with_capabilities(
+        &self,
+        request: std::sync::Arc<CompleteReconnectRequestV1>,
+        source: std::sync::Arc<dyn CompleteReconnectSourceV1 + Send + Sync>,
+        capabilities: CurrentCapabilityCheck,
+    ) -> Result<CompleteReconnectOutcomeV1> {
+        self.apply_complete_reconnect_with(None, request, source, Some(capabilities))
             .await
     }
 
@@ -2582,6 +2754,7 @@ impl FreshAdmissionStore {
         custody: Option<super::runtime_scope_assignment::NodeIncarnationProof>,
         request: std::sync::Arc<CompleteReconnectRequestV1>,
         source: std::sync::Arc<dyn CompleteReconnectSourceV1 + Send + Sync>,
+        capabilities: Option<CurrentCapabilityCheck>,
     ) -> Result<CompleteReconnectOutcomeV1> {
         let store = (*self).clone();
         let issued = store.guards.backend.try_issue_root()?;
@@ -2723,6 +2896,20 @@ impl FreshAdmissionStore {
         let Ok(effect) = decision else {
             return Ok(CompleteReconnectOutcomeV1::Rejected);
         };
+        // ADMIT0: PREPARE and COMMIT both require the independently locked current
+        // runtime binding before any reservation, nonce consumption or session switch.
+        // Exact historical receipts above retain their original outcome; replaying one
+        // is not a fresh authority grant. Only the cfg(test) seam may omit the check.
+        match (&custody, &capabilities) {
+            (_, Some(check)) if custody.is_some() || cfg!(test) => {
+                if !store.check_current_runtime_capabilities(&mut tx,
+                    current.current_runtime_scope(), current.current_scope_generation().get(), check).await? {
+                    return Ok(CompleteReconnectOutcomeV1::Rejected);
+                }
+            }
+            (None, None) if cfg!(test) => {}
+            _ => return Ok(CompleteReconnectOutcomeV1::Rejected),
+        }
         if commit {
             if !store.complete_prepare_exists(&mut tx, identity, epoch, &encoded).await? {
                 return Ok(CompleteReconnectOutcomeV1::Rejected);

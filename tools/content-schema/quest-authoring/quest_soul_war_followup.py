@@ -53,10 +53,28 @@ def _validate_packet(packet):
     }
     if set(stages[1]["targets"]) != expected_bosses:
         raise ValueError("Soul War mini-boss set differs")
+    expected_stages = [
+        ("talk", 1, ["Flickering Soul"], ["s2"]),
+        ("kill", 5, None, ["s3"]),
+        ("explore", 1, ["Megalomania entrance"], ["s4"]),
+        ("kill", 1, ["Goshnar's Megalomania"], ["s5"]),
+        ("complete", 1, ["Flickering Soul", "Soul War reward chest"], []),
+    ]
+    for stage, (kind, count, targets, next_keys) in zip(stages, expected_stages):
+        if ((stage["kind"], stage["count"], stage["next"]) != (kind, count, next_keys)
+                or (targets is not None and stage["targets"] != targets)):
+            raise ValueError("Soul War accepted stage target, count or progression differs")
+    if len(stages[1]["targets"]) != 5:
+        raise ValueError("Soul War mini-boss targets must be distinct")
     rewards = replacement["reward_intents"]
     if ({row["kind"] for row in rewards} != {"item", "outfit"} or len(rewards) != 2
             or any(row["count"] != 1 for row in rewards)):
         raise ValueError("Soul War final reward projection differs")
+    if {row["kind"]: row["name"] for row in rewards} != {
+        "outfit": "Revenant Outfit",
+        "item": "One random item from the Crystal Soul War finalRewards pool",
+    }:
+        raise ValueError("Soul War accepted final reward names differ")
     pool = packet["reward_pool"]
     if len(pool) != 18 or {row["id"] for row in pool} != set(range(34082, 34100)):
         raise ValueError("Soul War final reward pool ids differ")

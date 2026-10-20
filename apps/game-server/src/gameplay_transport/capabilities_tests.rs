@@ -256,7 +256,7 @@ fn selection_keeps_a_capability_only_with_all_its_requires() {
 }
 
 #[test]
-fn the_production_set_selects_only_capabilities_6_7_13_and_17_whatever_the_client_supports()
+fn the_production_set_selects_only_capabilities_6_7_9_13_17_19_and_21_whatever_the_client_supports()
 -> Result<(), Box<dyn Error>> {
     let mut everything: Vec<u32> = Vec::new();
     for capability in registry_capabilities()? {
@@ -269,14 +269,14 @@ fn the_production_set_selects_only_capabilities_6_7_13_and_17_whatever_the_clien
         SelectedCapabilities::select(PRODUCTION_OFFERED_CAPABILITIES, &everything)
             .as_ref()
             .map(SelectedCapabilities::as_slice),
-        Some(&[6, 7, 13, 17][..])
+        Some(&[6, 7, 9, 13, 17, 19, 21, 26][..])
     );
     // MAP-ITEM-REF-1: the not-yet-offered Item view set adds 4, which requires 6.
     assert_eq!(
         SelectedCapabilities::select(ITEM_VIEW_OFFERED_CAPABILITIES, &everything)
             .as_ref()
             .map(SelectedCapabilities::as_slice),
-        Some(&[4, 6, 7, 13, 17][..])
+        Some(&[4, 6, 7, 9, 13, 17, 19, 21, 26][..])
     );
     assert_eq!(
         SelectedCapabilities::select(ITEM_VIEW_OFFERED_CAPABILITIES, &[4, 13])
@@ -312,7 +312,8 @@ fn commands_and_domains_follow_the_selection() {
     }
     // Capability 1: commands 4 and 5, domains 4 and 5. Capability 7: command 13, domain 12.
     // Capability 8: domain 13. Capability 10: domain 15. Capability 16: command 22, domain 16.
-    // Capability 17: commands 11 and 12, domain 10.
+    // Capability 17: commands 11 and 12, domain 10. Capability 19: domain 18. Capability 11: command 15.
+    // Capability 21: command 23. Capability 23: domains 19 and 20.
     for (capability, commands, domains) in [
         (1, &[4, 5][..], &[4, 5][..]),
         (7, &[13][..], &[12][..]),
@@ -320,6 +321,10 @@ fn commands_and_domains_follow_the_selection() {
         (10, &[][..], &[15][..]),
         (16, &[22][..], &[16][..]),
         (17, &[11, 12][..], &[10][..]),
+        (19, &[][..], &[18][..]),
+        (11, &[15][..], &[][..]),
+        (21, &[23][..], &[][..]),
+        (23, &[][..], &[19, 20][..]),
     ] {
         let selected = selection(&[capability]);
         for &command in commands {
@@ -338,6 +343,30 @@ fn commands_and_domains_follow_the_selection() {
     assert!(!selection(&[16]).command_selected(11));
     assert!(!selection(&[16]).command_selected(12));
     assert!(!selection(&[16]).domain_selected(10));
+    // MAP-WIRE-1 §3: one object domain per World. Capability 18 supersedes core domain 2.
+    assert!(!selection(&[4, 6, 18]).domain_selected(2));
+    assert!(selection(&[4, 6, 18]).domain_selected(17));
+    assert!(selection(&[4, 6]).domain_selected(2));
+}
+
+/// A superseding capability is offered only by a bundle World, never by the production or the
+/// fixture item-view set, so a fixture World session keeps the core domain it supersedes. A
+/// superseded domain is a core domain: no capability gates it.
+#[test]
+fn a_superseding_capability_is_bundle_only_and_supersedes_only_core_domains() {
+    let offers = |set: &[OfferedCapability], id: u32| set.iter().any(|offer| offer.id == id);
+    assert!(!SUPERSEDED.is_empty());
+    for (capability, domains) in SUPERSEDED {
+        assert!(offers(BUNDLE_WORLD_OFFERED_CAPABILITIES, *capability));
+        assert!(!offers(PRODUCTION_OFFERED_CAPABILITIES, *capability));
+        assert!(!offers(ITEM_VIEW_OFFERED_CAPABILITIES, *capability));
+        for domain in *domains {
+            assert!(
+                GATED.iter().all(|(_, _, gated)| !gated.contains(domain)),
+                "domain {domain}"
+            );
+        }
+    }
 }
 
 // The production connection path: `admit_frame` and `serve_admitted` with an injected offered
@@ -357,12 +386,23 @@ impl ConnectionIdentifiers for Identifiers {
 /// connection's own refusal is observable. `offered` is `None` for the production set.
 struct NegotiatingAuthority {
     offered: Option<&'static [OfferedCapability]>,
-    /// MAP-CUTOVER-1b: the capability a bundle World requires at fresh admission.
-    required: Option<u32>,
+    /// ADMIT0: the boot-bound requirements this authority checks after its (fixture)
+    /// authentication, as the composed owner does; `None` requires nothing.
+    required: Option<
+        std::sync::Arc<super::super::world_required_capabilities::BoundRequiredCapabilities>,
+    >,
     lost: Cell<Option<AdmittedSession>>,
     steps: Cell<u32>,
     /// ITEM-USE-WIRE-1: what an item USE observes; the backpack it serves under capability 4.
     item_target: RefCell<Option<ItemTargetObservation>>,
+    /// ITEM-USE-1c: whether the backpack holds one direct entry, and the items used.
+    backpack_entry: Cell<bool>,
+    item_uses: RefCell<Vec<ItemKey>>,
+    /// WEATHER-1: whether the shipped weather source is readable now, the authority's UTC time
+    /// fact, and the admitted actor's position.
+    weather_bound: Cell<bool>,
+    clock_ms: Cell<u64>,
+    position: Cell<ActorPosition>,
 }
 
 impl NegotiatingAuthority {
@@ -373,6 +413,15 @@ impl NegotiatingAuthority {
             lost: Cell::new(None),
             steps: Cell::new(0),
             item_target: RefCell::new(None),
+            backpack_entry: Cell::new(false),
+            item_uses: RefCell::new(Vec::new()),
+            weather_bound: Cell::new(true),
+            clock_ms: Cell::new(NOON_UTC_MS),
+            position: Cell::new(ActorPosition {
+                x: 0,
+                y: 0,
+                floor: 0,
+            }),
         }
     }
 }
@@ -398,34 +447,59 @@ fn session(continuity: SessionContinuity) -> Result<AdmittedSession, Box<dyn Err
 impl FreshAdmissionAuthority for NegotiatingAuthority {
     async fn admit(
         &self,
-        _attempt: FreshAdmissionAttempt<'_>,
+        attempt: FreshAdmissionAttempt<'_>,
     ) -> Result<AdmittedSession, AdmissionRefusal> {
+        if let Some(required) = &self.required {
+            required
+                .authenticate_support(attempt.supported_capabilities)
+                .map_err(|error| match error {
+                    super::super::world_required_capabilities::SessionCapabilityError::MissingSupport(_) => {
+                        AdmissionRefusal::Classified(FoundationProtocolError::AdmissionCapabilityRequired)
+                    }
+                    _ => AdmissionRefusal::Unavailable,
+                })?;
+        }
         session(SessionContinuity::FRESH).map_err(|_| AdmissionRefusal::Unavailable)
     }
 
     async fn resume(
         &self,
-        _attempt: ResumeAttempt<'_>,
+        attempt: ResumeAttempt<'_>,
     ) -> Result<AdmittedSession, AdmissionRefusal> {
-        self.lost.get().ok_or(AdmissionRefusal::Rejected)
+        let lost = self.lost.get().ok_or(AdmissionRefusal::Rejected)?;
+        // ADMIT0 §4 / D1084: as the V2 recovery owner, after its (fixture) authentication.
+        if let Some(required) = &self.required {
+            required
+                .authenticate_resume_support(
+                    attempt.supported_capabilities,
+                    lost.continuity.selected_capabilities,
+                )
+                .map_err(|error| match error {
+                    super::super::world_required_capabilities::SessionCapabilityError::MissingSupport(_) => {
+                        AdmissionRefusal::RecoveryCapabilityRequired
+                    }
+                    _ => AdmissionRefusal::Unavailable,
+                })?;
+        }
+        Ok(lost)
     }
 
     fn offered_capabilities(&self) -> &'static [OfferedCapability] {
         self.offered.unwrap_or(PRODUCTION_OFFERED_CAPABILITIES)
     }
 
-    fn required_capability(&self) -> Option<u32> {
-        self.required
+    fn world_clock_utc_ms(&self) -> Option<u64> {
+        Some(self.clock_ms.get())
+    }
+
+    fn world_weather(&self) -> Option<&crate::world_weather::WorldWeatherSource> {
+        crate::world_weather::shipped().filter(|_| self.weather_bound.get())
     }
 
     async fn observe(&self, _actor: ExactActorRef) -> Option<WorldSpatialObservation> {
         Some(WorldSpatialObservation {
             content_generation: [0x5c; 32],
-            actor_position: ActorPosition {
-                x: 0,
-                y: 0,
-                floor: 0,
-            },
+            actor_position: self.position.get(),
         })
     }
 
@@ -449,8 +523,32 @@ impl FreshAdmissionAuthority for NegotiatingAuthority {
                 count: std::num::NonZeroU32::MIN,
                 sub_type: 0,
             }),
-            entries: Vec::new(),
+            entries: self
+                .backpack_entry
+                .get()
+                .then_some(ViewItem {
+                    key: ItemKey::Instance([0xa6; 16]),
+                    item_definition_ref: std::num::NonZeroU32::MIN,
+                    count: std::num::NonZeroU32::MIN,
+                    sub_type: 0,
+                })
+                .into_iter()
+                .collect(),
+            equipment: Vec::new(),
         })
+    }
+
+    async fn use_item(
+        &self,
+        _actor: ExactActorRef,
+        _use: super::super::connection::UseCommand,
+        item: ItemKey,
+    ) -> super::super::connection::UseOutcome {
+        self.item_uses.borrow_mut().push(item);
+        super::super::connection::UseOutcome {
+            disposition: super::super::world_object::UseDisposition::Full,
+            ..super::super::connection::UseOutcome::rejected()
+        }
     }
 
     async fn observe_item_target(
@@ -550,7 +648,7 @@ fn run<F: Future<Output = Result<(), Box<dyn Error>>>>(test: F) -> Result<(), Bo
     tokio::runtime::Builder::new_current_thread()
         .enable_time()
         .build()?
-        .block_on(test)
+        .block_on(Box::pin(test))
 }
 
 /// One entry frame through `admit_frame`: the end (or session) and the frames written.
@@ -638,6 +736,11 @@ fn production_admission_selects_capabilities_6_7_13_and_17_and_nothing_else()
         assert_eq!(accepted_selection(&frames)?, [6, 17]);
         let (_, frames) = admit(&authority, &bootstrap(&[17])?).await?;
         assert_eq!(accepted_selection(&frames)?, Vec::<u32>::new());
+        // CLOCK-1: 19 is selected only with its required 6.
+        let (_, frames) = admit(&authority, &bootstrap(&[6, 19])?).await?;
+        assert_eq!(accepted_selection(&frames)?, [6, 19]);
+        let (_, frames) = admit(&authority, &bootstrap(&[19])?).await?;
+        assert_eq!(accepted_selection(&frames)?, Vec::<u32>::new());
         // CHAT-WIRE-1: 7 requires nothing and is selected alone.
         let (_, frames) = admit(&authority, &bootstrap(&[7])?).await?;
         assert_eq!(accepted_selection(&frames)?, [7]);
@@ -654,29 +757,79 @@ fn production_admission_selects_capabilities_6_7_13_and_17_and_nothing_else()
 }
 
 #[test]
-fn the_bundle_world_offered_set_is_the_item_view_set_plus_18_requiring_4_and_6()
+fn the_bundle_world_offered_set_is_3_the_item_view_set_12_14_and_18_requiring_4_and_6()
 -> Result<(), Box<dyn Error>> {
-    // MAP-CUTOVER-1b: the bundle set is the Item view set (which offers 4) plus 18, whose crate
-    // and registry `requires` stay [4, 6]; the registry keeps 18 `offered: false`.
-    let (last, item_view) = BUNDLE_WORLD_OFFERED_CAPABILITIES
-        .split_last()
-        .ok_or("empty bundle set")?;
-    assert_eq!(item_view, ITEM_VIEW_OFFERED_CAPABILITIES);
-    assert_eq!(last.id, CAPABILITY_WORLD_MAP_VIEW_V1);
-    assert_eq!(last.requires, [4, 6]);
+    // MAP-CUTOVER-1b: the bundle set is the Item view set (which offers 4) with 3 and 18;
+    // ITEM-LOOP-1 (CP D1438) adds 12 (requires 4) and 14 (requires 4 and 12). 18's crate and
+    // registry `requires` stay [4, 6] and the registry keeps 3, 12, 14 and 18 `offered: false`.
+    use oteryn_protocol_oteryn::container_tree::{
+        CAPABILITY_CONTAINER_TREE_V1, CAPABILITY_CONTAINER_TREE_V1_REQUIRES,
+    };
+    use oteryn_protocol_oteryn::item_view::{
+        CAPABILITY_ITEM_EQUIP_DROP_V1, CAPABILITY_ITEM_EQUIP_DROP_V1_REQUIRES,
+    };
+    let bundle_only = [
+        oteryn_protocol_oteryn::npc_service::CAPABILITY_NPC_SERVICE_V1,
+        CAPABILITY_ITEM_EQUIP_DROP_V1,
+        CAPABILITY_CONTAINER_TREE_V1,
+        CAPABILITY_WORLD_MAP_VIEW_V1,
+    ];
+    let shared: Vec<OfferedCapability> = BUNDLE_WORLD_OFFERED_CAPABILITIES
+        .iter()
+        .filter(|offer| !bundle_only.contains(&offer.id))
+        .copied()
+        .collect();
+    assert_eq!(shared, ITEM_VIEW_OFFERED_CAPABILITIES);
+    let requires = |id: u32| {
+        BUNDLE_WORLD_OFFERED_CAPABILITIES
+            .iter()
+            .find(|offer| offer.id == id)
+            .map(|offer| offer.requires)
+    };
+    assert_eq!(requires(bundle_only[0]), Some(&[][..]));
+    assert_eq!(
+        requires(CAPABILITY_ITEM_EQUIP_DROP_V1),
+        Some(CAPABILITY_ITEM_EQUIP_DROP_V1_REQUIRES)
+    );
+    assert_eq!(
+        requires(CAPABILITY_CONTAINER_TREE_V1),
+        Some(CAPABILITY_CONTAINER_TREE_V1_REQUIRES)
+    );
+    assert_eq!(requires(CAPABILITY_WORLD_MAP_VIEW_V1), Some(&[4, 6][..]));
+    // WEATHER-1: the bundle set offers 26 (shared with the Item view set) with its own `requires`.
+    assert_eq!(
+        requires(oteryn_protocol_oteryn::world_weather::CAPABILITY_WORLD_WEATHER_V1),
+        Some(WORLD_WEATHER.requires)
+    );
+    assert_eq!(BUNDLE_WORLD_OFFERED_CAPABILITIES.len(), shared.len() + 4);
     assert!(
         BUNDLE_WORLD_OFFERED_CAPABILITIES
             .windows(2)
             .all(|pair| pair[0].id < pair[1].id)
     );
+    // Every requirement of an offered capability is offered.
+    assert!(BUNDLE_WORLD_OFFERED_CAPABILITIES.iter().all(|offer| {
+        offer
+            .requires
+            .iter()
+            .all(|required| requires(*required).is_some())
+    }));
     assert!(BUNDLE_WORLD_OFFERED_CAPABILITIES.len() <= SELECTED_CAPACITY);
     let registry = registry_capabilities()?;
+    for id in bundle_only {
+        let entry = registry
+            .iter()
+            .find(|capability| capability["id"].as_u64() == Some(u64::from(id)))
+            .ok_or("bundle-only capability")?;
+        assert_eq!(entry["offered"].as_bool(), Some(false));
+        let gate = entry["offer_gate"].as_str().ok_or("offer_gate")?;
+        assert!(gate.contains("BUNDLE_WORLD_OFFERED_CAPABILITIES"), "{id}");
+    }
     let entry = registry
         .iter()
         .find(|capability| capability["id"].as_u64() == Some(18))
         .ok_or("capability 18")?;
     assert_eq!(ids(&entry["requires"])?, [4, 6]);
-    assert_eq!(entry["offered"].as_bool(), Some(false));
     Ok(())
 }
 
@@ -684,8 +837,22 @@ fn the_bundle_world_offered_set_is_the_item_view_set_plus_18_requiring_4_and_6()
 fn a_bundle_world_admits_only_a_client_that_selects_18() -> Result<(), Box<dyn Error>> {
     run(async {
         let mut authority = NegotiatingAuthority::new(Some(BUNDLE_WORLD_OFFERED_CAPABILITIES));
-        authority.required = Some(CAPABILITY_WORLD_MAP_VIEW_V1);
-        let mismatch = encode_protocol_error(FoundationProtocolError::CapabilityMismatch, 0)?;
+        // ADMIT0: a bundle World's floor is 18, so its boot declares 18 (closure 4, 6, 18).
+        authority.required = Some(
+            super::super::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
+                &[CAPABILITY_WORLD_MAP_VIEW_V1],
+                crate::foundation::RuntimeScopeRefV1::channel(
+                    WorldId::decode(&WORLD)?,
+                    ChannelId::decode(&CHANNEL)?,
+                ),
+                1,
+                "capability-transport-fixture",
+                BUNDLE_WORLD_OFFERED_CAPABILITIES,
+            )
+            .map_err(|error| format!("{error:?}"))?,
+        );
+        let required =
+            encode_protocol_error(FoundationProtocolError::AdmissionCapabilityRequired, 0)?;
         // 4, 6 and 18 select 18 with the rest of the production set the client supports.
         let (admitted, frames) = admit(&authority, &bootstrap(&[4, 6, 13, 17, 18])?).await?;
         assert_eq!(accepted_selection(&frames)?, [4, 6, 13, 17, 18]);
@@ -696,18 +863,73 @@ fn a_bundle_world_admits_only_a_client_that_selects_18() -> Result<(), Box<dyn E
                 .selected_capabilities
                 .contains(CAPABILITY_WORLD_MAP_VIEW_V1)
         );
-        // A client without 18, and one selecting 18 without its required 4, are refused with
-        // exactly one CAPABILITY_MISMATCH before the owner admits anything.
-        for supported in [&[4, 6, 13, 17][..], &[6, 13, 17, 18], &[]] {
+        // A client lacking any member of the closure is refused by the owner, after its
+        // authentication, with exactly one ADMISSION_CAPABILITY_REQUIRED (1116).
+        for supported in [&[4, 6, 13, 17][..], &[6, 13, 17, 18], &[4, 13, 17, 18], &[]] {
             let (refused, frames) = admit(&authority, &bootstrap(supported)?).await?;
             assert!(matches!(
                 refused,
                 Err(ConnectionEnd::AdmissionRefused(
-                    AdmissionRefusal::Classified(FoundationProtocolError::CapabilityMismatch)
+                    AdmissionRefusal::Classified(
+                        FoundationProtocolError::AdmissionCapabilityRequired
+                    )
                 ))
             ));
-            assert_eq!(frames, std::slice::from_ref(&mismatch));
+            assert_eq!(frames, std::slice::from_ref(&required));
         }
+        Ok(())
+    })
+}
+
+#[test]
+fn a_bundle_world_recovery_lacking_18_is_refused_with_1118_and_one_frame()
+-> Result<(), Box<dyn Error>> {
+    run(async {
+        let mut authority = NegotiatingAuthority::new(Some(BUNDLE_WORLD_OFFERED_CAPABILITIES));
+        authority.required = Some(
+            super::super::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
+                &[CAPABILITY_WORLD_MAP_VIEW_V1],
+                crate::foundation::RuntimeScopeRefV1::channel(
+                    WorldId::decode(&WORLD)?,
+                    ChannelId::decode(&CHANNEL)?,
+                ),
+                1,
+                "capability-transport-fixture",
+                BUNDLE_WORLD_OFFERED_CAPABILITIES,
+            )
+            .map_err(|error| format!("{error:?}"))?,
+        );
+        let (admitted, _) = admit(&authority, &bootstrap(&[4, 6, 13, 17, 18])?).await?;
+        let admitted = admitted.map_err(|end| format!("{end:?}"))?;
+        authority.lost.set(Some(admitted));
+        // ADMIT0 §5 / D1187: a recovery lacking a required member is answered with exactly
+        // one RECOVERY_CAPABILITY_REQUIRED (1118, OPERATION_TERMINAL), not silently dropped.
+        let required =
+            encode_protocol_error(FoundationProtocolError::RecoveryCapabilityRequired, 0)?;
+        for supported in [&[4, 6, 13, 17][..], &[6, 13, 17, 18], &[]] {
+            let (refused, frames) = admit(&authority, &resume(supported)).await?;
+            assert_eq!(
+                refused.err(),
+                Some(ConnectionEnd::AdmissionRefused(
+                    AdmissionRefusal::RecoveryCapabilityRequired
+                ))
+            );
+            assert_eq!(frames, std::slice::from_ref(&required));
+        }
+        assert_eq!(
+            FoundationProtocolError::RecoveryCapabilityRequired.disposition(),
+            crate::foundation::ProtocolDisposition::OperationTerminal
+        );
+        // The same session, supporting the closure, resumes with its selection.
+        let (resumed, frames) = admit(&authority, &resume(&[4, 6, 13, 17, 18])).await?;
+        let resumed = resumed.map_err(|end| format!("{end:?}"))?;
+        assert!(
+            resumed
+                .continuity
+                .selected_capabilities
+                .contains(CAPABILITY_WORLD_MAP_VIEW_V1)
+        );
+        assert_eq!(frames.len(), 1);
         Ok(())
     })
 }
@@ -721,11 +943,53 @@ fn a_fixture_world_offers_exactly_the_production_set_and_never_18() -> Result<()
             authority.offered_capabilities(),
             PRODUCTION_OFFERED_CAPABILITIES
         );
-        assert_eq!(authority.required_capability(), None);
+        assert!(authority.required.is_none());
         let (admitted, frames) = admit(&authority, &bootstrap(&[4, 6, 13, 17, 18])?).await?;
         let selected = accepted_selection(&frames)?;
         assert!(!selected.contains(&CAPABILITY_WORLD_MAP_VIEW_V1));
         admitted.map_err(|end| format!("{end:?}"))?;
+        Ok(())
+    })
+}
+
+/// Tibian noon (minute 720) of the default epoch: day light 250, color 215.
+const NOON_UTC_MS: u64 = 720 * 2_500;
+
+#[test]
+fn admission_selecting_19_sends_the_domain_18_snapshot_at_the_carried_revision()
+-> Result<(), Box<dyn Error>> {
+    run(async {
+        // CLOCK-1 (§11.3): the snapshot reads the World clock at the authority's time fact.
+        use oteryn_protocol_oteryn::world_clock::{WorldClock, encode_world_clock};
+        let noon = encode_world_clock(WorldClock {
+            tibian_minute: 720,
+            light_level: 250,
+            light_color: 215,
+        })
+        .map_err(|error| format!("{error:?}"))?;
+        let carries_noon = |frames: &[Vec<u8>]| {
+            frames
+                .concat()
+                .windows(noon.len())
+                .any(|w| w == noon.as_slice())
+        };
+        let authority = NegotiatingAuthority::new(None);
+        let (admitted, frames) = admit(&authority, &bootstrap(&[6, 19])?).await?;
+        assert_eq!(accepted_selection(&frames)?, [6, 19]);
+        let mut admitted = admitted.map_err(|end| format!("{end:?}"))?;
+        assert_eq!(admitted.continuity.world_clock_revision, 0);
+        admitted.continuity.world_clock_revision = 7;
+        let (end, frames) = serve(&authority, admitted, &[]).await?;
+        assert!(carries_noon(&frames));
+        // A resume or transfer never winds the revision back.
+        let ConnectionEnd::AdmittedThenDisconnected(served) = end else {
+            return Err(format!("{end:?}").into());
+        };
+        assert_eq!(served.continuity.world_clock_revision, 7);
+        let (admitted, _) = admit(&authority, &bootstrap(&[6])?).await?;
+        let admitted = admitted.map_err(|end| format!("{end:?}"))?;
+        let (_, frames) = serve(&authority, admitted, &[]).await?;
+        assert!(!carries_noon(&frames));
         Ok(())
     })
 }
@@ -979,16 +1243,22 @@ fn item_use_wire_fields_4_and_5_are_rejected_without_capability_15() -> Result<(
         let with = encode_item_use_intent(&UseIntent {
             target: UseTarget::Item(ItemHandle::MIN),
             use_with: creature,
+            use_with_map_item: None,
+            use_with_position: None,
         })
         .map_err(|error| format!("{error:?}"))?;
         let by_definition = encode_item_use_intent(&UseIntent {
             target: UseTarget::ItemByDefinition(NonZeroU32::MIN),
             use_with: None,
+            use_with_map_item: None,
+            use_with_position: None,
         })
         .map_err(|error| format!("{error:?}"))?;
         let by_definition_with = encode_item_use_intent(&UseIntent {
             target: UseTarget::ItemByDefinition(NonZeroU32::MIN),
             use_with: creature,
+            use_with_map_item: None,
+            use_with_position: None,
         })
         .map_err(|error| format!("{error:?}"))?;
         let frames = [
@@ -1010,7 +1280,7 @@ fn item_use_wire_fields_4_and_5_are_rejected_without_capability_15() -> Result<(
         };
         let rejected = (
             CommandStatus::Rejected,
-            encode_use_result(UseDisposition::Rejected),
+            encode_use_result(UseDisposition::Rejected).unwrap_or_default(),
         );
         for selected in [&[][..], &[CAPABILITY_ITEM_VIEW_MOVE_V1]] {
             let continuity = SessionContinuity {
@@ -1037,6 +1307,8 @@ fn item_use_wire_fields_4_and_5_are_rejected_without_capability_15() -> Result<(
         let with_backpack = encode_item_use_intent(&UseIntent {
             target: UseTarget::Item(backpack),
             use_with: creature,
+            use_with_map_item: None,
+            use_with_position: None,
         })
         .map_err(|error| format!("{error:?}"))?;
         let item_use = selection(&[CAPABILITY_ITEM_VIEW_MOVE_V1, CAPABILITY_ITEM_USE_V1]);
@@ -1081,14 +1353,186 @@ fn item_use_wire_fields_4_and_5_are_rejected_without_capability_15() -> Result<(
                     (
                         2,
                         CommandStatus::Accepted,
-                        encode_use_result(UseDisposition::NothingToUse)
+                        encode_use_result(UseDisposition::NothingToUse).unwrap_or_default()
                     ),
                     (3, rejected.0, rejected.1.clone()),
-                    (4, CommandStatus::Accepted, encode_use_result(disposition)),
+                    (
+                        4,
+                        CommandStatus::Accepted,
+                        encode_use_result(disposition).unwrap_or_default()
+                    ),
                 ],
                 "{disposition:?}"
             );
         }
+        Ok(())
+    })
+}
+
+// RUNE-WIRE-1 (RUNE-USE-0 §4): capability 22 RUNE_USE_V1 is registered, not offered before
+// RUNE-CAST-1, and requires 15; the USE position arm is REJECTED with or without it.
+
+/// An injected offered set: 4, 15 requiring 4 and 22 requiring 15.
+const RUNE_USE_OFFERED: &[OfferedCapability] = &[
+    OfferedCapability {
+        id: CAPABILITY_ITEM_VIEW_MOVE_V1,
+        requires: &[],
+    },
+    OfferedCapability {
+        id: CAPABILITY_ITEM_USE_V1,
+        requires: &[CAPABILITY_ITEM_VIEW_MOVE_V1],
+    },
+    OfferedCapability {
+        id: oteryn_protocol_oteryn::world_object::CAPABILITY_RUNE_USE_V1,
+        requires: &[CAPABILITY_ITEM_USE_V1],
+    },
+];
+
+#[test]
+fn rune_wire_capability_21_is_registered_not_offered_and_requires_15() -> Result<(), Box<dyn Error>>
+{
+    use oteryn_protocol_oteryn::world_object::CAPABILITY_RUNE_USE_V1;
+    let entry = registry_capabilities()?
+        .into_iter()
+        .find(|capability| capability["id"] == CAPABILITY_RUNE_USE_V1)
+        .ok_or("capability 22")?;
+    assert_eq!(entry["offered"], false);
+    assert_eq!(ids(&entry["requires"])?, [CAPABILITY_ITEM_USE_V1]);
+    assert!(
+        PRODUCTION_OFFERED_CAPABILITIES
+            .iter()
+            .all(|offered| offered.id != CAPABILITY_RUNE_USE_V1)
+    );
+    // CAP-NEG-1: 22 without 15 (or 15 without 4) is never selected.
+    let select = |supported: &[u32]| {
+        SelectedCapabilities::select(RUNE_USE_OFFERED, supported)
+            .expect("bounded")
+            .as_slice()
+            .to_vec()
+    };
+    assert_eq!(select(&[22]), Vec::<u32>::new());
+    assert_eq!(select(&[4, 22]), [4]);
+    assert_eq!(select(&[15, 22]), Vec::<u32>::new());
+    assert_eq!(select(&[4, 15, 22]), [4, 15, 22]);
+    // It owns no command type or domain.
+    let selected = selection(&[22]);
+    assert!(!selected.command_selected(COMMAND_TYPE_ITEM_MOVE_INTENT));
+    assert!(!selected.domain_selected(STATE_DOMAIN_CHARACTER_INVENTORY));
+    Ok(())
+}
+
+#[test]
+fn rune_wire_the_position_arm_is_rejected_with_or_without_capability_21()
+-> Result<(), Box<dyn Error>> {
+    use super::super::world_object::{
+        COMMAND_TYPE_USE_INTENT, UseDisposition, UseIntent, UseTarget, encode_item_use_intent,
+        encode_use_result,
+    };
+    use crate::foundation::CommandStatus;
+    use oteryn_protocol_oteryn::actor_spell::SpellTargetPosition;
+    use oteryn_protocol_oteryn::decode_command_result;
+    use oteryn_protocol_oteryn::item_view::ItemHandle;
+    use oteryn_protocol_oteryn::world_object::CAPABILITY_RUNE_USE_V1;
+    run(async {
+        let authority = NegotiatingAuthority::new(Some(RUNE_USE_OFFERED));
+        let at_position = encode_item_use_intent(&UseIntent {
+            target: UseTarget::Item(ItemHandle::MIN),
+            use_with: None,
+            use_with_map_item: None,
+            use_with_position: Some(SpellTargetPosition {
+                x: 100,
+                y: -100,
+                floor: 7,
+            }),
+        })
+        .map_err(|error| format!("{error:?}"))?;
+        let frames = [command(1, COMMAND_TYPE_USE_INTENT, &at_position)];
+        let rejected = encode_use_result(UseDisposition::Rejected).unwrap_or_default();
+        // Without 22 the arm is undecodable; under 22 it fails closed until RUNE-CAST-1.
+        for selected in [
+            &[][..],
+            &[CAPABILITY_ITEM_VIEW_MOVE_V1],
+            &[CAPABILITY_ITEM_VIEW_MOVE_V1, CAPABILITY_ITEM_USE_V1],
+            &[
+                CAPABILITY_ITEM_VIEW_MOVE_V1,
+                CAPABILITY_ITEM_USE_V1,
+                CAPABILITY_RUNE_USE_V1,
+            ],
+        ] {
+            let continuity = SessionContinuity {
+                selected_capabilities: selection(selected),
+                ..SessionContinuity::FRESH
+            };
+            let (_, written) = serve(&authority, session(continuity)?, &frames).await?;
+            let mut results = Vec::new();
+            for frame in &written {
+                let envelope = decode_wire_envelope(frame)?;
+                if envelope.message_type() == MessageType::CommandResult {
+                    let result = decode_command_result(envelope.payload())?;
+                    results.push((result.command_id, result.status, result.payload.to_vec()));
+                }
+            }
+            assert_eq!(
+                results,
+                [(1, CommandStatus::Rejected, rejected.clone())],
+                "{selected:?}"
+            );
+        }
+        Ok(())
+    })
+}
+
+/// ITEM-USE-1c: a main backpack entry is used only under capability 15; without it the handle
+/// keeps the corpse path and the use is never reached.
+#[test]
+fn a_backpack_entry_is_used_only_under_capability_15() -> Result<(), Box<dyn Error>> {
+    use super::super::world_object::{COMMAND_TYPE_USE_INTENT, UseDisposition, encode_use_result};
+    use oteryn_protocol_oteryn::decode_command_result;
+    use oteryn_protocol_oteryn::world_object::encode_use_item_intent;
+    run(async {
+        let authority = NegotiatingAuthority::new(Some(ITEM_USE_OFFERED));
+        authority.backpack_entry.set(true);
+        let entry = std::num::NonZeroU64::new(2).ok_or("handle")?;
+        let frames = [command(
+            1,
+            COMMAND_TYPE_USE_INTENT,
+            &encode_use_item_intent(entry),
+        )];
+        for (selected, used, disposition) in [
+            (
+                &[CAPABILITY_ITEM_VIEW_MOVE_V1][..],
+                0,
+                UseDisposition::StaleState,
+            ),
+            (
+                &[CAPABILITY_ITEM_VIEW_MOVE_V1, CAPABILITY_ITEM_USE_V1][..],
+                1,
+                UseDisposition::Full,
+            ),
+        ] {
+            let continuity = SessionContinuity {
+                selected_capabilities: selection(selected),
+                ..SessionContinuity::FRESH
+            };
+            let (_, written) = serve(&authority, session(continuity)?, &frames).await?;
+            let mut payloads = Vec::new();
+            for frame in &written {
+                let envelope = decode_wire_envelope(frame)?;
+                if envelope.message_type() == MessageType::CommandResult {
+                    payloads.push(decode_command_result(envelope.payload())?.payload.to_vec());
+                }
+            }
+            assert_eq!(
+                payloads,
+                [encode_use_result(disposition).unwrap_or_default()],
+                "{selected:?}"
+            );
+            assert_eq!(authority.item_uses.borrow().len(), used, "{selected:?}");
+        }
+        assert_eq!(
+            *authority.item_uses.borrow(),
+            [ItemKey::Instance([0xa6; 16])]
+        );
         Ok(())
     })
 }
@@ -1281,6 +1725,9 @@ mod chat_wire {
             session: GameSessionId,
             intent: ChatIntent,
         ) -> oteryn_protocol_oteryn::chat::ChatIntentResult {
+            if let Some(done) = self.chat.pre_gate(session, &intent, NOW) {
+                return done;
+            }
             chat_in_channel(
                 &self.chat,
                 &self.runtime.borrow(),
@@ -1292,8 +1739,16 @@ mod chat_wire {
             )
         }
 
-        async fn chat_drain(&self, session: GameSessionId) -> Vec<ChatLine> {
-            self.chat.drain(session)
+        async fn chat_next(&self, session: GameSessionId) -> Option<ChatLine> {
+            self.chat.next(session)
+        }
+
+        async fn chat_delivered(&self, session: GameSessionId) {
+            self.chat.delivered(session);
+        }
+
+        async fn chat_rooms_changed(&self, session: GameSessionId) -> Option<ChatRoomSet> {
+            self.chat.take_rooms_change(session)
         }
     }
 
@@ -1469,6 +1924,69 @@ mod chat_wire {
         })
     }
 
+    #[test]
+    fn an_opened_room_follows_its_result_as_one_rooms_delta() -> Result<(), Box<dyn Error>> {
+        use crate::chat::relay::{RelayKey, RelayKeyRing};
+        use oteryn_protocol_oteryn::chat::{ChatRoom, DELTA_TYPE_CHAT_ROOMS_V1, decode_chat_rooms};
+        use std::str::FromStr as _;
+        run(async {
+            let (runtime, actor, session) = runtime_with_capacity(0x71, 3);
+            let authority = ChatAuthority {
+                runtime: RefCell::new(runtime),
+                chat: ChatRuntime::default(),
+                names: vec![(session, "Aela")],
+            };
+            // A configured relay that never connects: opening a room needs no listener.
+            let ring = RelayKeyRing::new(vec![RelayKey::new(1, 0, [1; 32])])
+                .map_err(|e| format!("{e:?}"))?;
+            let options =
+                sqlx::postgres::PgConnectOptions::from_str("postgresql://nobody@127.0.0.1:1/none")?;
+            let world = [0x01, 0x90, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1];
+            let relay = super::super::super::chat_relay::ChatRelay::new(ring, world, options)
+                .map_err(|e| format!("{e:?}"))?;
+            authority.chat.install_relay(std::sync::Arc::new(relay));
+            let open = encode_chat_intent(&ChatIntent::OpenRoom(ChatRoom::Help))
+                .map_err(|e| format!("{e:?}"))?;
+            let (end, frames) = serve_lingering(
+                &authority,
+                admitted(actor, session)?,
+                &[command(1, 13, &open), command(2, 13, &open)],
+                Duration::from_millis(300),
+            )
+            .await?;
+            let mut rooms = Vec::new();
+            let mut results = Vec::new();
+            for frame in &frames {
+                let envelope = decode_wire_envelope(frame)?;
+                match envelope.message_type() {
+                    MessageType::StateDelta => {
+                        let delta = decode_state_delta(envelope.payload())?;
+                        if delta.domain_id == 12 && delta.delta_type == DELTA_TYPE_CHAT_ROOMS_V1 {
+                            rooms.push(
+                                decode_chat_rooms(delta.payload).map_err(|e| format!("{e:?}"))?,
+                            );
+                        }
+                    }
+                    MessageType::CommandResult => {
+                        let result = decode_command_result(envelope.payload())?;
+                        results.push(
+                            decode_chat_intent_result(result.payload)
+                                .map_err(|e| format!("{e:?}"))?
+                                .disposition,
+                        );
+                    }
+                    _ => {}
+                }
+            }
+            assert_eq!(results, vec![ChatDisposition::Ok, ChatDisposition::Ok]);
+            // The second open changes nothing, so it sends no delta.
+            assert_eq!(rooms.len(), 1, "{rooms:?}");
+            assert!(rooms[0].contains(ChatRoom::Help));
+            assert_eq!(end.continuity.chat_revision, 2);
+            Ok(())
+        })
+    }
+
     async fn join3<A: Future, B: Future, C: Future>(
         a: A,
         b: B,
@@ -1500,5 +2018,743 @@ mod chat_wire {
         })
         .await;
         (x.expect("first"), y.expect("second"), z.expect("third"))
+    }
+}
+
+// LOGOUT-WIRE-1 (ARCH-KILL-REWARD-LOGOUT-1 §1.6): command 23 on the connection, behind an
+// authority that answers each logout with a scripted reply.
+
+mod logout_wire {
+    use super::super::super::connection::LogoutReply;
+    use super::*;
+    use crate::foundation::CommandStatus;
+    use oteryn_protocol_oteryn::logout::{
+        LogoutResult, decode_logout_result, encode_logout_intent,
+    };
+    use oteryn_protocol_oteryn::{decode_command_result, decode_protocol_error};
+    use std::time::Duration;
+
+    struct LogoutAuthority {
+        reply: Cell<LogoutReply>,
+        /// How long one logout takes; frames read meanwhile are held.
+        delay: Duration,
+        logouts: Cell<u32>,
+        steps: Cell<u32>,
+        /// SPEED-1: the pace each step records; zero leaves steps unpaced.
+        pace: Duration,
+    }
+
+    impl LogoutAuthority {
+        fn new(reply: LogoutReply) -> Self {
+            Self {
+                reply: Cell::new(reply),
+                delay: Duration::ZERO,
+                logouts: Cell::new(0),
+                steps: Cell::new(0),
+                pace: Duration::ZERO,
+            }
+        }
+    }
+
+    impl FreshAdmissionAuthority for LogoutAuthority {
+        async fn admit(
+            &self,
+            _attempt: FreshAdmissionAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
+            Err(AdmissionRefusal::Unavailable)
+        }
+
+        async fn resume(
+            &self,
+            _attempt: ResumeAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
+            Err(AdmissionRefusal::Rejected)
+        }
+
+        async fn observe(&self, _actor: ExactActorRef) -> Option<WorldSpatialObservation> {
+            Some(WorldSpatialObservation {
+                content_generation: [0x5c; 32],
+                actor_position: ActorPosition {
+                    x: 0,
+                    y: 0,
+                    floor: 0,
+                },
+            })
+        }
+
+        async fn step(&self, _actor: ExactActorRef, _direction: StepDirection) -> StepOutcome {
+            self.steps.set(self.steps.get() + 1);
+            StepOutcome {
+                disposition: StepDisposition::Blocked,
+                moved_to: None,
+            }
+        }
+
+        async fn paced_step(
+            &self,
+            actor: ExactActorRef,
+            _session: GameSessionId,
+            direction: StepDirection,
+        ) -> (StepOutcome, Option<Duration>) {
+            let pace = (!self.pace.is_zero()).then_some(self.pace);
+            (self.step(actor, direction).await, pace)
+        }
+
+        async fn logout(&self, _admitted: AdmittedSession) -> LogoutReply {
+            self.logouts.set(self.logouts.get() + 1);
+            if !self.delay.is_zero() {
+                tokio::time::sleep(self.delay).await;
+            }
+            self.reply.get()
+        }
+    }
+
+    fn admitted(selected: &[u32]) -> Result<AdmittedSession, Box<dyn Error>> {
+        super::session(SessionContinuity {
+            selected_capabilities: super::selection(selected),
+            ..SessionContinuity::FRESH
+        })
+    }
+
+    /// Serves `admitted`; the client writes `frames`, stays open for `linger`, then closes.
+    async fn serve_open(
+        authority: &LogoutAuthority,
+        admitted: AdmittedSession,
+        frames: &[Vec<u8>],
+        linger: Duration,
+    ) -> Result<(ConnectionEnd, Vec<Vec<u8>>), Box<dyn Error>> {
+        let (mut server, mut client): (DuplexStream, DuplexStream) = tokio::io::duplex(1 << 20);
+        for frame in frames {
+            let mut framed = (frame.len() as u32).to_be_bytes().to_vec();
+            framed.extend_from_slice(frame);
+            client.write_all(&framed).await?;
+        }
+        let closing = async {
+            tokio::time::sleep(linger).await;
+            client.shutdown().await?;
+            let mut output = Vec::new();
+            client.read_to_end(&mut output).await?;
+            Ok::<_, std::io::Error>(output)
+        };
+        let serving = async move {
+            let end = serve_admitted(&mut server, admitted, authority, IDLE_LIVENESS).await;
+            drop(server);
+            end
+        };
+        let (mut serving, mut closing) = (std::pin::pin!(serving), std::pin::pin!(closing));
+        let (mut end, mut output) = (None, None);
+        std::future::poll_fn(|context| {
+            if end.is_none()
+                && let std::task::Poll::Ready(value) = serving.as_mut().poll(context)
+            {
+                end = Some(value);
+            }
+            if output.is_none()
+                && let std::task::Poll::Ready(value) = closing.as_mut().poll(context)
+            {
+                output = Some(value);
+            }
+            if end.is_some() && output.is_some() {
+                std::task::Poll::Ready(())
+            } else {
+                std::task::Poll::Pending
+            }
+        })
+        .await;
+        Ok((end.ok_or("end")?, split(&output.ok_or("output")??)?))
+    }
+
+    /// One written command result: (command id, status, payload).
+    type Written = (u64, CommandStatus, Vec<u8>);
+
+    /// The command results written.
+    fn results(frames: &[Vec<u8>]) -> Result<Vec<Written>, Box<dyn Error>> {
+        let mut results = Vec::new();
+        for frame in frames {
+            let envelope = decode_wire_envelope(frame)?;
+            if envelope.message_type() == MessageType::CommandResult {
+                let result = decode_command_result(envelope.payload())?;
+                results.push((result.command_id, result.status, result.payload.to_vec()));
+            }
+        }
+        Ok(results)
+    }
+
+    fn logout_result(
+        results: &[Written],
+        id: u64,
+    ) -> Result<(CommandStatus, LogoutResult), Box<dyn Error>> {
+        let (_, status, payload) = results
+            .iter()
+            .find(|(command, _, _)| *command == id)
+            .ok_or("no logout result")?;
+        Ok((
+            *status,
+            decode_logout_result(payload).map_err(|e| format!("{e:?}"))?,
+        ))
+    }
+
+    fn step() -> Vec<u8> {
+        oteryn_protocol_oteryn::world_spatial::encode_step_intent(StepDirection::North)
+    }
+
+    #[test]
+    fn without_capability_21_a_logout_is_refused_before_the_authority() -> Result<(), Box<dyn Error>>
+    {
+        run(async {
+            let authority = LogoutAuthority::new(LogoutReply::Result(LogoutResult::Accepted));
+            let frames = [command(1, 23, &encode_logout_intent())];
+            let (end, written) =
+                serve_open(&authority, admitted(&[])?, &frames, Duration::ZERO).await?;
+            assert!(
+                matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)),
+                "{end:?}"
+            );
+            assert_eq!(
+                results(&written)?,
+                [(1, CommandStatus::Rejected, Vec::new())]
+            );
+            assert_eq!(authority.logouts.get(), 0);
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn a_non_empty_intent_is_rejected_with_an_empty_payload() -> Result<(), Box<dyn Error>> {
+        run(async {
+            let authority = LogoutAuthority::new(LogoutReply::Result(LogoutResult::Accepted));
+            let frames = [command(1, 23, &[0x08, 0x01])];
+            let (_, written) =
+                serve_open(&authority, admitted(&[21])?, &frames, Duration::ZERO).await?;
+            assert_eq!(
+                results(&written)?,
+                [(1, CommandStatus::Rejected, Vec::new())]
+            );
+            assert_eq!(authority.logouts.get(), 0);
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn accepted_is_written_then_the_connection_closes_without_reading_further()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            let authority = LogoutAuthority::new(LogoutReply::Result(LogoutResult::Accepted));
+            let frames = [
+                command(1, 23, &encode_logout_intent()),
+                command(2, 1, &step()),
+            ];
+            let (end, written) = serve_open(
+                &authority,
+                admitted(&[21])?,
+                &frames,
+                Duration::from_millis(50),
+            )
+            .await?;
+            assert!(matches!(end, ConnectionEnd::AdmittedThenLoggedOut(_)));
+            let results = results(&written)?;
+            assert_eq!(results.len(), 1);
+            assert_eq!(
+                logout_result(&results, 1)?,
+                (CommandStatus::Accepted, LogoutResult::Accepted)
+            );
+            assert_eq!(authority.steps.get(), 0);
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn in_fight_is_rejected_with_its_retry_and_the_session_keeps_playing()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            let authority = LogoutAuthority::new(LogoutReply::Result(LogoutResult::InFight {
+                retry_after_ms: 1_500,
+            }));
+            let frames = [
+                command(1, 23, &encode_logout_intent()),
+                command(2, 1, &step()),
+            ];
+            let (end, written) = serve_open(
+                &authority,
+                admitted(&[21])?,
+                &frames,
+                Duration::from_millis(50),
+            )
+            .await?;
+            assert!(
+                matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)),
+                "{end:?}"
+            );
+            let results = results(&written)?;
+            assert_eq!(
+                logout_result(&results, 1)?,
+                (
+                    CommandStatus::Rejected,
+                    LogoutResult::InFight {
+                        retry_after_ms: 1_500
+                    }
+                )
+            );
+            assert!(results.iter().any(|(id, _, _)| *id == 2));
+            assert_eq!(authority.steps.get(), 1);
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn busy_is_rejected_and_a_step_held_behind_the_logout_runs_after_it()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            let mut authority = LogoutAuthority::new(LogoutReply::Result(LogoutResult::Busy));
+            authority.delay = Duration::from_millis(30);
+            let frames = [
+                command(1, 23, &encode_logout_intent()),
+                command(2, 1, &step()),
+            ];
+            let (_, written) = serve_open(
+                &authority,
+                admitted(&[21])?,
+                &frames,
+                Duration::from_millis(100),
+            )
+            .await?;
+            let results = results(&written)?;
+            assert_eq!(
+                results.iter().map(|(id, _, _)| *id).collect::<Vec<_>>(),
+                [1, 2]
+            );
+            assert_eq!(
+                logout_result(&results, 1)?,
+                (CommandStatus::Rejected, LogoutResult::Busy)
+            );
+            assert_eq!(authority.steps.get(), 1);
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn an_unknown_outcome_writes_no_result_and_ends_as_a_disconnect() -> Result<(), Box<dyn Error>>
+    {
+        run(async {
+            let authority = LogoutAuthority::new(LogoutReply::Unknown);
+            let frames = [
+                command(1, 23, &encode_logout_intent()),
+                command(2, 1, &step()),
+            ];
+            let (end, written) = serve_open(
+                &authority,
+                admitted(&[21])?,
+                &frames,
+                Duration::from_millis(50),
+            )
+            .await?;
+            assert!(
+                matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)),
+                "{end:?}"
+            );
+            assert!(results(&written)?.is_empty());
+            assert_eq!(authority.steps.get(), 0);
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn a_second_logout_before_the_first_result_is_a_protocol_error() -> Result<(), Box<dyn Error>> {
+        run(async {
+            let mut authority = LogoutAuthority::new(LogoutReply::Result(LogoutResult::Busy));
+            authority.delay = Duration::from_millis(30);
+            let frames = [
+                command(1, 23, &encode_logout_intent()),
+                command(2, 23, &encode_logout_intent()),
+            ];
+            let (_, written) = serve_open(
+                &authority,
+                admitted(&[21])?,
+                &frames,
+                Duration::from_millis(100),
+            )
+            .await?;
+            assert_eq!(authority.logouts.get(), 1);
+            let results = results(&written)?;
+            assert_eq!(results.len(), 1);
+            assert_eq!(
+                logout_result(&results, 1)?,
+                (CommandStatus::Rejected, LogoutResult::Busy)
+            );
+            let last = decode_wire_envelope(written.last().ok_or("no frame")?)?;
+            assert_eq!(last.message_type(), MessageType::ProtocolError);
+            assert_eq!(
+                decode_protocol_error(last.payload())?.error_code,
+                FoundationProtocolError::TooManyOutstandingCommands.code()
+            );
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn a_second_logout_before_an_accepted_result_is_a_protocol_error_after_the_logout()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            let mut authority = LogoutAuthority::new(LogoutReply::Result(LogoutResult::Accepted));
+            authority.delay = Duration::from_millis(30);
+            let frames = [
+                command(1, 23, &encode_logout_intent()),
+                command(2, 23, &encode_logout_intent()),
+            ];
+            let (end, written) = serve_open(
+                &authority,
+                admitted(&[21])?,
+                &frames,
+                Duration::from_millis(100),
+            )
+            .await?;
+            assert!(matches!(end, ConnectionEnd::AdmittedThenLoggedOut(_)));
+            assert_eq!(authority.logouts.get(), 1);
+            let results = results(&written)?;
+            assert_eq!(results.len(), 1);
+            assert_eq!(
+                logout_result(&results, 1)?,
+                (CommandStatus::Accepted, LogoutResult::Accepted)
+            );
+            let last = decode_wire_envelope(written.last().ok_or("no frame")?)?;
+            assert_eq!(last.message_type(), MessageType::ProtocolError);
+            assert_eq!(
+                decode_protocol_error(last.payload())?.error_code,
+                FoundationProtocolError::TooManyOutstandingCommands.code()
+            );
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn a_second_logout_held_behind_a_paced_step_is_a_protocol_error() -> Result<(), Box<dyn Error>>
+    {
+        run(async {
+            // Both logouts are read and held while step 2 waits for its pace, so the first one
+            // starts with the second already held (#2127 Codex P2 4279788741).
+            let mut authority = LogoutAuthority::new(LogoutReply::Result(LogoutResult::Busy));
+            authority.pace = Duration::from_millis(30);
+            let frames = [
+                command(1, 1, &step()),
+                command(2, 1, &step()),
+                command(3, 23, &encode_logout_intent()),
+                command(4, 23, &encode_logout_intent()),
+            ];
+            let (_, written) = serve_open(
+                &authority,
+                admitted(&[21])?,
+                &frames,
+                Duration::from_millis(100),
+            )
+            .await?;
+            assert_eq!(authority.steps.get(), 2);
+            assert_eq!(authority.logouts.get(), 1);
+            let results = results(&written)?;
+            assert_eq!(
+                results.iter().map(|(id, _, _)| *id).collect::<Vec<_>>(),
+                [1, 2, 3]
+            );
+            assert_eq!(
+                logout_result(&results, 3)?,
+                (CommandStatus::Rejected, LogoutResult::Busy)
+            );
+            let last = decode_wire_envelope(written.last().ok_or("no frame")?)?;
+            assert_eq!(last.message_type(), MessageType::ProtocolError);
+            assert_eq!(
+                decode_protocol_error(last.payload())?.error_code,
+                FoundationProtocolError::TooManyOutstandingCommands.code()
+            );
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn a_second_logout_after_the_first_result_is_an_ordinary_command() -> Result<(), Box<dyn Error>>
+    {
+        run(async {
+            let authority = LogoutAuthority::new(LogoutReply::Result(LogoutResult::Busy));
+            let frames = [
+                command(1, 23, &encode_logout_intent()),
+                command(2, 23, &encode_logout_intent()),
+            ];
+            let (_, written) = serve_open(
+                &authority,
+                admitted(&[21])?,
+                &frames,
+                Duration::from_millis(50),
+            )
+            .await?;
+            assert_eq!(authority.logouts.get(), 2);
+            assert_eq!(results(&written)?.len(), 2);
+            Ok(())
+        })
+    }
+}
+
+/// WEATHER-1 (D1023..D1026, D1448): capability 26 through the real admission and serve path.
+/// The source is the shipped Oteryn-designed `content/weather` data, exactly what production
+/// loads: production offers 26 once that data loads and fails closed when it does not.
+mod weather_wire {
+    use super::*;
+    use crate::world_weather::{WEATHER_SLOT_MS, shipped};
+
+    use oteryn_protocol_oteryn::world_weather::{
+        CAPABILITY_WORLD_WEATHER_V1, DELTA_TYPE_WORLD_WEATHER_V1, SNAPSHOT_TYPE_WORLD_WEATHER_V1,
+        STATE_DOMAIN_WORLD_WEATHER, WorldWeather, decode_world_weather,
+    };
+    use oteryn_protocol_oteryn::{decode_snapshot_chunk, decode_state_delta};
+    use std::task::Poll;
+    use std::time::Duration;
+
+    const THAIS: ActorPosition = ActorPosition {
+        x: 32369,
+        y: 32241,
+        floor: 7,
+    };
+    const SVARGROND: ActorPosition = ActorPosition {
+        x: 32257,
+        y: 31159,
+        floor: 7,
+    };
+
+    /// The shipped source's observation for a position at the start of an absolute slot.
+    fn expected(position: ActorPosition, slot: u64) -> Result<WorldWeather, Box<dyn Error>> {
+        Ok(shipped()
+            .ok_or("the shipped weather data loads")?
+            .observe(position, slot * WEATHER_SLOT_MS))
+    }
+
+    fn with_position(position: ActorPosition, slot: u64) -> NegotiatingAuthority {
+        let authority = NegotiatingAuthority::new(None);
+        authority.position.set(position);
+        authority.clock_ms.set(slot * WEATHER_SLOT_MS + 17);
+        authority
+    }
+
+    /// Domain 22 in the frames: the snapshot entries `(revision, value)` and the deltas
+    /// `(base, new, value)`; no other domain may carry weather.
+    #[allow(clippy::type_complexity)]
+    fn weather_of(
+        frames: &[Vec<u8>],
+    ) -> Result<(Vec<(u64, WorldWeather)>, Vec<(u64, u64, WorldWeather)>), Box<dyn Error>> {
+        let (mut snapshots, mut deltas) = (Vec::new(), Vec::new());
+        for frame in frames {
+            let envelope = decode_wire_envelope(frame)?;
+            match envelope.message_type() {
+                MessageType::SnapshotChunk => {
+                    let (_, domains) = decode_snapshot_chunk(envelope.payload())?;
+                    for domain in domains {
+                        if domain.domain_id == STATE_DOMAIN_WORLD_WEATHER {
+                            assert_eq!(domain.snapshot_type, SNAPSHOT_TYPE_WORLD_WEATHER_V1);
+                            snapshots.push((
+                                domain.revision,
+                                decode_world_weather(domain.payload)
+                                    .map_err(|e| format!("{e:?}"))?,
+                            ));
+                        }
+                    }
+                }
+                MessageType::StateDelta => {
+                    let delta = decode_state_delta(envelope.payload())?;
+                    if delta.domain_id == STATE_DOMAIN_WORLD_WEATHER {
+                        assert_eq!(delta.delta_type, DELTA_TYPE_WORLD_WEATHER_V1);
+                        deltas.push((
+                            delta.base_revision,
+                            delta.new_revision,
+                            decode_world_weather(delta.payload).map_err(|e| format!("{e:?}"))?,
+                        ));
+                    }
+                }
+                _ => {}
+            }
+        }
+        Ok((snapshots, deltas))
+    }
+
+    #[test]
+    fn production_offers_capability_26_with_the_shipped_data_and_fails_closed_without_it()
+    -> Result<(), Box<dyn Error>> {
+        // D1027 signed off: the static sets list 26 (registry `offered: true`); a connection
+        // keeps it only while its authority exposes a source.
+        for set in [
+            PRODUCTION_OFFERED_CAPABILITIES,
+            ITEM_VIEW_OFFERED_CAPABILITIES,
+            BUNDLE_WORLD_OFFERED_CAPABILITIES,
+        ] {
+            assert!(
+                set.iter()
+                    .any(|capability| capability.id == CAPABILITY_WORLD_WEATHER_V1)
+            );
+            assert_eq!(with_weather_offer(set, true), set);
+            assert!(
+                with_weather_offer(set, false)
+                    .iter()
+                    .all(|capability| capability.id != CAPABILITY_WORLD_WEATHER_V1)
+            );
+            assert_eq!(with_weather_offer(set, true).len(), set.len());
+        }
+        assert!(shipped().is_some());
+        run(async {
+            // The production default authority exposes the shipped data, so 26 is offered
+            // (requiring 6); a client that does not ask for it never gets it.
+            let live = NegotiatingAuthority::new(None);
+            let (admitted, frames) = admit(&live, &bootstrap(&[6, 26])?).await?;
+            assert!(admitted.is_ok());
+            assert_eq!(accepted_selection(&frames)?, [6, 26]);
+            let (admitted, frames) = admit(&live, &bootstrap(&[6])?).await?;
+            assert_eq!(accepted_selection(&frames)?, [6]);
+            let (_, frames) = serve(&live, admitted.map_err(|e| format!("{e:?}"))?, &[]).await?;
+            assert!(weather_of(&frames)?.0.is_empty());
+            // Missing or invalid data (no source) fails closed: not offered, so 6 alone.
+            let closed = NegotiatingAuthority::new(None);
+            closed.weather_bound.set(false);
+            let (admitted, frames) = admit(&closed, &bootstrap(&[6, 26])?).await?;
+            assert!(admitted.is_ok());
+            assert_eq!(accepted_selection(&frames)?, [6]);
+            let (_, frames) = serve(&closed, admitted.map_err(|e| format!("{e:?}"))?, &[]).await?;
+            assert!(weather_of(&frames)?.0.is_empty());
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn admission_sends_the_domain_22_snapshot_of_the_actors_area_and_never_rerolls()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            let authority = with_position(THAIS, 2);
+            let (admitted, _) = admit(&authority, &bootstrap(&[6, 26])?).await?;
+            let mut admitted = admitted.map_err(|e| format!("{e:?}"))?;
+            assert_eq!(admitted.continuity.world_weather_revision, 0);
+            admitted.continuity.world_weather_revision = 5;
+            let (end, frames) = serve(&authority, admitted, &[]).await?;
+            let (snapshots, deltas) = weather_of(&frames)?;
+            assert!(deltas.is_empty());
+            let first = expected(THAIS, 2)?;
+            assert_eq!(snapshots, [(5, first)]);
+            assert!(matches!(first, WorldWeather::Active { .. }));
+            // A resume or transfer never winds the revision back.
+            let ConnectionEnd::AdmittedThenDisconnected(served) = end else {
+                return Err(format!("{end:?}").into());
+            };
+            assert_eq!(served.continuity.world_weather_revision, 5);
+            // Reconnect (later in the same slot) shows the same value: no reroll.
+            let again = with_position(THAIS, 2);
+            again.clock_ms.set(2 * WEATHER_SLOT_MS + 899_000);
+            let (admitted, _) = admit(&again, &bootstrap(&[6, 26])?).await?;
+            let (_, frames) = serve(&again, admitted.map_err(|e| format!("{e:?}"))?, &[]).await?;
+            assert_eq!(weather_of(&frames)?.0, [(0, first)]);
+            // Each area draws independently: a far cold city differs in some slot.
+            let mut differs = None;
+            for slot in 0..200 {
+                if expected(THAIS, slot)? != expected(SVARGROND, slot)? {
+                    differs = Some(slot);
+                    break;
+                }
+            }
+            let slot = differs.ok_or("two areas never differ")?;
+            let cold = with_position(SVARGROND, slot);
+            let (admitted, _) = admit(&cold, &bootstrap(&[6, 26])?).await?;
+            let (_, frames) = serve(&cold, admitted.map_err(|e| format!("{e:?}"))?, &[]).await?;
+            assert_eq!(weather_of(&frames)?.0, [(0, expected(SVARGROND, slot)?)]);
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn a_new_period_a_lost_source_a_returned_source_and_an_area_change_each_send_one_full_replacement()
+    -> Result<(), Box<dyn Error>> {
+        let first_slot = 2_u64;
+        let first = expected(THAIS, first_slot)?;
+        // A later slot inside a different period, then a slot where the two areas differ.
+        let mut next_slot = first_slot;
+        while expected(THAIS, next_slot)? == first {
+            next_slot += 1;
+        }
+        let mut return_slot = next_slot + 20;
+        while expected(THAIS, return_slot)? == expected(SVARGROND, return_slot)? {
+            return_slot += 1;
+        }
+        run(async {
+            let authority = with_position(THAIS, first_slot);
+            let (admitted, _) = admit(&authority, &bootstrap(&[6, 26])?).await?;
+            let mut admitted = admitted.map_err(|e| format!("{e:?}"))?;
+            admitted.continuity.world_weather_revision = 5;
+            let (mut server, mut client): (DuplexStream, DuplexStream) = tokio::io::duplex(1 << 20);
+            let driving = async {
+                let beat = Duration::from_millis(400);
+                // Within the same period nothing is sent.
+                tokio::time::sleep(beat).await;
+                authority.clock_ms.set(next_slot * WEATHER_SLOT_MS + 1);
+                tokio::time::sleep(beat).await;
+                authority.weather_bound.set(false);
+                tokio::time::sleep(beat).await;
+                // Still unavailable in a later slot: nothing more (one Unavailable only).
+                authority.clock_ms.set(return_slot * WEATHER_SLOT_MS);
+                tokio::time::sleep(beat).await;
+                authority.weather_bound.set(true);
+                tokio::time::sleep(beat).await;
+                // The player walks into another area: one more full replacement.
+                authority.position.set(SVARGROND);
+                tokio::time::sleep(beat).await;
+                client.shutdown().await?;
+                let mut output = Vec::new();
+                client.read_to_end(&mut output).await?;
+                Ok::<_, std::io::Error>(output)
+            };
+            let serving = async {
+                let end = serve_admitted(&mut server, admitted, &authority, IDLE_LIVENESS).await;
+                drop(server);
+                end
+            };
+            let (mut serving, mut driving) = (std::pin::pin!(serving), std::pin::pin!(driving));
+            let (mut end, mut output) = (None, None);
+            std::future::poll_fn(|context| {
+                if end.is_none()
+                    && let Poll::Ready(value) = serving.as_mut().poll(context)
+                {
+                    end = Some(value);
+                }
+                if output.is_none()
+                    && let Poll::Ready(value) = driving.as_mut().poll(context)
+                {
+                    output = Some(value);
+                }
+                if end.is_some() && output.is_some() {
+                    Poll::Ready(())
+                } else {
+                    Poll::Pending
+                }
+            })
+            .await;
+            let ConnectionEnd::AdmittedThenDisconnected(served) = end.ok_or("end")? else {
+                return Err("the connection did not end as a disconnect".into());
+            };
+            let frames = split(&output.ok_or("output")??)?;
+            let (snapshots, deltas) = weather_of(&frames)?;
+            assert_eq!(snapshots, [(5, first)]);
+            assert_eq!(
+                deltas,
+                [
+                    (5, 6, expected(THAIS, next_slot)?),
+                    (6, 7, WorldWeather::Unavailable),
+                    (7, 8, expected(THAIS, return_slot)?),
+                    (8, 9, expected(SVARGROND, return_slot)?),
+                ]
+            );
+            assert_eq!(served.continuity.world_weather_revision, 9);
+            // Weather rides its own domain: exactly the four replacements above, no more.
+            let mut weather_deltas = 0;
+            for frame in &frames {
+                let envelope = decode_wire_envelope(frame)?;
+                if envelope.message_type() == MessageType::StateDelta
+                    && decode_state_delta(envelope.payload())?.domain_id
+                        == STATE_DOMAIN_WORLD_WEATHER
+                {
+                    weather_deltas += 1;
+                }
+            }
+            assert_eq!(weather_deltas, 4);
+            Ok(())
+        })
     }
 }

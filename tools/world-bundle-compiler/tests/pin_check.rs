@@ -7,7 +7,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 
-use oteryn_world_bundle_compiler::bundle::{self, Manifest, TerrainKind};
+use oteryn_world_bundle_compiler::bundle::{self, Family, Manifest, TerrainKind};
 use serde_json::{Value, json};
 
 const BIN: &str = env!("CARGO_BIN_EXE_oteryn-world-bundle-compiler");
@@ -48,6 +48,9 @@ impl Scratch {
                 "content/houses",
                 "content/creatures",
                 "content/items",
+                "content/npcs/definitions",
+                "content/dialogues/definitions",
+                "content/services",
                 "tools/world-bundle-compiler",
                 "crates/world-bundle",
                 "Cargo.toml",
@@ -149,7 +152,7 @@ fn pin(inputs: &str, digest: &str) -> Value {
         "world_schema_version": "reference-schema-v1",
         "content_revision": reviewed_revision(),
         "production": false,
-        "entry_start": {"x": 10228, "y": 10032, "floor": 0},
+        "entry_start": {"x": 32369, "y": 32238, "floor": -7},
         "inputs_digest": inputs,
     })
 }
@@ -304,10 +307,18 @@ fn pin_check_accepts_the_reviewed_pin_and_refuses_every_drift() {
         assert!(!dir.check().status.success(), "{bad}");
     }
 
-    // entry_start outside the World bounds fails; so does a cell without walkable ground
-    // and one without a tile, both read from the bundle that was just built.
-    let mut cells = vec![(5, 5, 0), (10228, 10032, 99), (34000, 33000, 0)];
-    let (mut blocked, mut open) = (None, None);
+    // entry_start outside the World bounds fails; so does a cell without walkable ground,
+    // one without a tile and one whose walkable ground holds a plain Item (no Terrain record),
+    // all read from the bundle that was just built. (10228, 10032, 0), the former start, holds
+    // the plain Item i1788: the node refuses it (E2012) because a plain Item without a served
+    // `blocks_movement` blocks.
+    let mut cells = vec![
+        (5, 5, 0),
+        (10228, 10032, 99),
+        (34000, 33000, 0),
+        (10228, 10032, 0),
+    ];
+    let (mut blocked, mut open, mut item) = (None, None, None);
     let visited = bundle::visit(&written, |manifest: &Manifest, sector| {
         for tile in &sector.tiles {
             let terrains: Vec<_> = tile
@@ -333,6 +344,16 @@ fn pin_check_accepts_the_reviewed_pin_and_refuses_every_drift() {
             if open.is_none() && tile.items.is_empty() {
                 open = Some(cell);
             }
+            if item.is_none()
+                && ground.is_some_and(|t| t.walkable == Some(true))
+                && tile.items.iter().any(|entry| {
+                    entry.depth == 0
+                        && manifest.palette[entry.palette as usize].family == Family::Item
+                        && manifest.palette[entry.palette as usize].terrain.is_none()
+                })
+            {
+                item = Some(cell);
+            }
         }
         Ok(())
     })
@@ -340,7 +361,12 @@ fn pin_check_accepts_the_reviewed_pin_and_refuses_every_drift() {
     let extent = visited.manifest.world;
     cells.extend(blocked);
     cells.extend(open);
+    cells.extend(item);
     assert!(blocked.is_some(), "the World holds a blocked cell");
+    assert!(
+        item.is_some(),
+        "the World holds a plain Item on walkable ground"
+    );
     for (x, y, floor) in cells {
         let mut bad = good.clone();
         bad["entry_start"] = json!({"x": x, "y": y, "floor": floor});
@@ -364,4 +390,48 @@ fn pin_check_accepts_the_reviewed_pin_and_refuses_every_drift() {
     dir.write_json(&dir.pin_file(), &pin(&tree, &digest));
     let out = dir.check();
     assert!(!out.status.success() && stderr(&out).contains("identity file"));
+}
+
+/// BUNDLE-BUILD-1: the preproduction topology manifest's `[world_bundle]` table is exactly the
+/// committed World pin, and its readiness `map_revision` rule names the pinned digest.
+#[test]
+fn preprod_manifest_world_bundle_equals_the_pin() {
+    let root = repository_root();
+    let pin: Value = serde_json::from_slice(
+        &fs::read(root.join("content/world/pins/oteryn.json")).expect("pin"),
+    )
+    .expect("pin json");
+    let manifest = fs::read_to_string(root.join("deploy/synology-game/preprod-topology.toml"))
+        .expect("manifest");
+    let table: Vec<&str> = manifest
+        .lines()
+        .skip_while(|line| *line != "[world_bundle]")
+        .skip(1)
+        .take_while(|line| !line.starts_with('['))
+        .collect();
+    let get = |key: &str| -> String {
+        let hits: Vec<&str> = table
+            .iter()
+            .filter_map(|line| line.strip_prefix(key)?.strip_prefix(" = "))
+            .collect();
+        assert_eq!(hits.len(), 1, "[world_bundle] {key}");
+        hits[0].trim_matches('"').to_owned()
+    };
+    for key in [
+        "digest",
+        "project_format_version",
+        "world_schema_version",
+        "content_revision",
+    ] {
+        assert_eq!(get(key), pin[key].as_str().expect(key), "{key}");
+    }
+    for (key, value) in [
+        ("start_x", &pin["entry_start"]["x"]),
+        ("start_y", &pin["entry_start"]["y"]),
+        ("start_floor", &pin["entry_start"]["floor"]),
+    ] {
+        assert_eq!(get(key), value.to_string(), "{key}");
+    }
+    assert_eq!(get("production"), "false");
+    assert_eq!(pin["production"], json!(false));
 }

@@ -5,8 +5,9 @@
     "SoulWarAspectOfPowerDeath": [
       "canary:creature/aspect_of_power"
     ],
-    "SoulWarMegalomaniaDeath": [
-      "canary:creature/goshnar_s_megalomania_purple"
+    "MegalomaniaDeath": [
+      "canary:creature/goshnar_s_megalomania_green",
+      "canary:creature/goshnar_s_megalomania_blue"
     ]
   },
   "sources": [
@@ -128,9 +129,8 @@
         939,
         940
       ],
-      "status": "mapped",
-      "resolution": "Every Aspect death counts while the boss is Purple and schedules a replacement at the boss position after 5 seconds.",
-      "destination": "/encounter/rules"
+      "status": "unresolved_semantics",
+      "resolution": "Unmastered Aspect deaths count only in Purple and schedule a replacement after 5 s. The donor captures the boss position at death; delayed role_position resolves it later and cannot certify that captured-position behavior."
     },
     {
       "source_index": 0,
@@ -151,7 +151,7 @@
       ],
       "status": "mapped",
       "resolution": "The scheduled blue phase lasts 7 seconds before returning Purple.",
-      "destination": "/encounter/rules/4"
+      "destination": "/encounter/rules/5"
     },
     {
       "source_index": 0,
@@ -319,45 +319,24 @@
     {
       "source_index": 2,
       "source_lines": [
-        138,
-        139,
-        140,
-        141,
-        142,
-        143,
-        144,
-        145,
-        146,
-        147,
-        148,
-        149,
-        150,
-        151,
-        152,
-        153,
-        154,
-        155,
-        156,
-        157,
-        158,
-        159,
-        160,
-        161,
-        162,
-        163,
-        164,
-        165,
-        166,
-        167,
-        168,
-        169
+        117,
+        118,
+        119,
+        120,
+        121,
+        122,
+        123,
+        124,
+        125,
+        126
       ],
       "status": "unresolved_semantics",
-      "resolution": "Purple/Green/Blue onThink loops also drive torment, procedural white tiles, defense growth and the custom elemental transformation; these remain separate hard holds."
+      "resolution": "Purple onThink drives torment, procedural white tiles and defense state. These hooks remain separate hard holds; they do not prove elemental spell behavior."
     },
     {
       "source_index": 1,
       "source_lines": [
+        1049,
         1050,
         1051,
         1052,
@@ -369,11 +348,117 @@
         1058,
         1059,
         1060,
-        1061
+        1061,
+        1062,
+        1063,
+        1064
       ],
       "status": "mapped",
-      "resolution": "Megalomania death records the quest kill flag for credited killers; the encounter exposes boss_defeated and leaves persistent quest state to Quest authoring.",
+      "resolution": "MegalomaniaDeath is registered by Green and Blue, not Purple. The core exposes its outcome only outside the Purple phase; persistent flags and final credit remain Quest-owned.",
       "destination": "/encounter/rules/6"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        141,
+        142,
+        143,
+        144,
+        145,
+        146,
+        147,
+        148,
+        149,
+        150
+      ],
+      "status": "unresolved_semantics",
+      "resolution": "Green onThink torment, procedural white tiles and defense behavior remain unqualified in this core."
+    },
+    {
+      "source_index": 4,
+      "source_lines": [
+        130,
+        131,
+        132,
+        133,
+        134,
+        135,
+        136,
+        137,
+        138,
+        139
+      ],
+      "status": "unresolved_semantics",
+      "resolution": "Blue onThink torment, procedural white tiles and defense behavior remain unqualified in this core."
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        71
+      ],
+      "status": "unresolved_semantics",
+      "resolution": "Purple registers the custom elemental transformation spell. Its Ability/native behavior is not represented by the onThink hook; Blue has no such attack registration."
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        112
+      ],
+      "status": "unresolved_semantics",
+      "resolution": "Green also registers the custom elemental transformation spell; its native semantics remain held."
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        1031,
+        1032,
+        1033,
+        1034,
+        1035,
+        1036,
+        1037,
+        1038,
+        1039,
+        1040,
+        1041,
+        1042,
+        1043,
+        1044,
+        1045,
+        1046,
+        1047
+      ],
+      "status": "unresolved_semantics",
+      "resolution": "Necromantic Focus schedules a strength callback after 300 s. Source identifier necromanticRemainsId differs from the declared necromanticRemainsItemId; this source defect and delayed item/strength behavior must be resolved, not guessed."
+    },
+    {
+      "source_index": 0,
+      "source_lines": [
+        1370,
+        1371,
+        1372,
+        1373,
+        1374,
+        1375,
+        1376,
+        1377,
+        1378,
+        1379,
+        1380,
+        1381,
+        1382,
+        1383
+      ],
+      "status": "unresolved_semantics",
+      "resolution": "The delayed Megalomania strength callback depends on item existence and defense state; the source identifier mismatch is not repaired implicitly."
+    },
+    {
+      "source_index": 0,
+      "source_lines": [
+        37
+      ],
+      "status": "unresolved_semantics",
+      "resolution": "The source declares a 70 s Green-only fallback. Its separate callback and gating are not represented by the draft normal 60+7 s timer path."
     }
   ],
   "outcome_evidence": []

@@ -1,7 +1,7 @@
 # CHARM-4 Incoming Charm Effect Order
 
 - Decision: `CHARM4-INCOMING-EFFECT-ORDER-V1`
-- Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (combat and
+- Status: **ACCEPTED**. Accepted by the owner (blakinio) on 2026-10-15, owner accepted via control plane, effective only on exact-head review, CI and protected integration of the acceptance PR (`ACCEPT-BATCH-2026-10-15`, `OTERYN_GAME_ACCEPT_BATCH_2026-10-15_ACCEPTANCE_DECISION.md`); no rule text changes. Original gate: Acceptance needs exact-head validation, independent review (combat and
   determinism) and protected integration.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers:
@@ -153,6 +153,9 @@ Inversion never applies to it.
   damage before the character's mitigation, the commit, and the minor. A tick runs charms only when its frozen
   source is a creature that is still present (§3.2's source lookup), since the race comes from it;
   a tick with no attacker evaluates no charm. Parry's reflection goes to that source creature.
+  An Agony tick skips every §3 step except the commit: steps 1 to 5 and 7 do not run (no charm,
+  block, armour or mitigation), and step 6 commits its full damage, death included, because Agony
+  cannot be blocked or resisted (CONDITIONS-0 §3.5).
 
 ## 5. Rejected options
 

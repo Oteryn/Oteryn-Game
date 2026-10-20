@@ -214,6 +214,8 @@ pub(crate) struct ResolvedChest {
     /// with the claim. Only a placement the lowering bound (CHEST-QUEST-BIND-1) carries one; every
     /// other chest has none and its claim is unchanged.
     pub(crate) quest_transition: Option<String>,
+    /// The key number of a key reward (KEY-1), minted onto the item.
+    pub(crate) key_number: Option<u16>,
 }
 
 fn durable_ref(family: &str, definition: &ContentDefinitionRef) -> TypedDefinitionRef {
@@ -266,6 +268,7 @@ pub(crate) fn resolve_chest(
         quantity: reward.count,
         achievement: entry.achievement.clone(),
         quest_transition: entry.quest_transition.clone(),
+        key_number: entry.key_number,
     })
 }
 
@@ -317,6 +320,7 @@ pub(crate) async fn prepare_chest_use(
         sim_revision: request.sim_revision,
         achievement: chest_achievement(achievements, chest.achievement),
         quest_transition: chest.quest_transition,
+        key_number: chest.key_number,
     };
     Ok((child, mint_request))
 }
@@ -372,13 +376,13 @@ pub(crate) mod entry_chest {
     pub(crate) const CLAIM: &str = "oteryn:reward-claim/entry-chest";
     pub(crate) const DEFINITION_REVISION: &str = "oteryn:rev/entry-chest-r1";
     /// Must equal `content::accepted::REVISIONS[1]` (the entry room's map revision).
-    pub(crate) const MAP_REVISION: &str = "oteryn:map/entry-r1";
+    pub(crate) const MAP_REVISION: &str = "oteryn:map/entry-r2";
     /// The entry room's non-walkable `entry-north` cell (`content::accepted::CELLS[2]`): one step
     /// from the start cell and from the door, so the chest never stands on a walkable cell.
     pub(crate) const CELL: (i32, i32, i32) = (0, -1, 0);
     /// The revisions a chest `USE` is bound to: the entry room's content, ruleset and sim
     /// revisions (`content::accepted::REVISIONS[0]`, `[2]` and `[6]`).
-    pub(crate) const CONTENT_REVISION: &str = "oteryn:content/entry-r1";
+    pub(crate) const CONTENT_REVISION: &str = "oteryn:content/entry-r2";
     pub(crate) const RULESET_REVISION: &str = "oteryn:ruleset/entry-r1";
     pub(crate) const SIM_REVISION: &str = "oteryn:sim/entry-r1";
 }
@@ -471,6 +475,7 @@ pub(crate) fn with_entry_chest(
                 }],
                 achievement: None,
                 quest_transition: None,
+                key_number: None,
             }],
         }),
         client_projection: ClientProjectionClass::ServerOnly,
@@ -615,6 +620,7 @@ mod tests {
             quantity: 1,
             achievement: None,
             quest_transition: None,
+            key_number: None,
         }
     }
 

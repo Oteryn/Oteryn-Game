@@ -31,7 +31,11 @@ mod actor_movement;
 mod familiar_cast;
 #[path = "movement_equipment.rs"]
 mod movement_equipment;
-pub(in crate::gameplay_transport) use familiar_cast::FamiliarLogoutSave;
+pub(in crate::gameplay_transport) use familiar_cast::{FamiliarActorEnd, FamiliarLogoutSave};
+#[cfg(test)]
+pub(in crate::gameplay_transport) use familiar_cast::{
+    FamiliarFenceRead, familiar_end_proven, familiar_end_read,
+};
 #[path = "familiar_defense.rs"]
 mod familiar_defense;
 #[path = "field_step_ingress.rs"]
@@ -98,6 +102,8 @@ pub(crate) struct ChannelSpellStates {
     >,
     pub(crate) pending_familiar_lifecycle: Vec<familiar_cast::PreparedFamiliarLifecycle>,
     pub(crate) pending_familiar_logouts: Vec<familiar_cast::PreparedFamiliarLogout>,
+    /// ITEM-USE-1c: the item-use gate of each present actor (cooldowns, the one use in flight).
+    pub(in crate::gameplay_transport) item_uses: super::item_use::ItemUseGates,
     pub(crate) pending_native: Vec<
         PendingSpellMarker<
             native_combat_cast::NativeMarkerIntent,
@@ -247,6 +253,7 @@ impl Default for ChannelSpellStates {
             pending_familiars: Default::default(),
             pending_familiar_lifecycle: Default::default(),
             pending_familiar_logouts: Default::default(),
+            item_uses: Default::default(),
             pending_native: Default::default(),
             pending_world_items: Default::default(),
             pending_parameters: Default::default(),
@@ -622,13 +629,64 @@ impl ChannelSpellStates {
             .monk_save_values(now)
     }
 
+    /// CHAR-VITALS-1: the (health, mana) a last-position write saves for the committed player
+    /// of `game_session_id`: `Some(None)` when both are at their maxima, and `None` when it has
+    /// no spell state, so the caller keeps the vitals already stored rather than saving the
+    /// maxima. A dead actor is never captured (its caller checks [`Self::is_dead`] first).
+    pub(crate) fn saved_vitals(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+    ) -> Option<Option<(u32, u32)>> {
+        self.get(runtime, actor, game_session_id)
+            .map(PlayerSpellState::saved_vitals)
+    }
+
+    /// CHAR-VITALS-1: [`Self::initialize`] in the first-entry owner step, which also restores the
+    /// `saved` (health, mana) of the Character's last-position row when this call creates the
+    /// actor's state. A state that already existed (a retry, a same-GameSession reconnect) keeps
+    /// its vitals exactly, as [`Self::initialize`] keeps them.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the initialize inputs plus the saved vitals of the admission"
+    )]
+    pub(crate) fn initialize_admitted(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        facts: CharacterCastFacts,
+        monk: (u8, u64),
+        now: SemanticTimeMicros,
+        saved: Option<(u32, u32)>,
+    ) -> Option<&PlayerSpellState> {
+        let created = self.index(actor, game_session_id).is_none();
+        self.initialize(runtime, actor, game_session_id, facts, monk, now)?;
+        let index = self.index(actor, game_session_id)?;
+        if created && let Some((health, mana)) = saved {
+            self.actors
+                .get_mut(index)?
+                .2
+                .restore_saved_vitals(health, mana);
+        }
+        self.actors.get(index).map(|(_, _, state)| state)
+    }
+
+    /// Whether `actor` of `session` holds training state a forced checkpoint would write.
+    pub(crate) fn has_training_to_flush(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+    ) -> bool {
+        self.get(runtime, actor, game_session_id)
+            .is_some_and(|state| state.has_training_to_flush())
+    }
+
     /// Commit a resolved health credit under the Channel owner's runtime lock.
     /// The occurrence owner suppresses replay before calling this method.
     /// Zero/full-pool credit writes nothing; stale bindings and exhaustion refuse.
-    #[allow(
-        dead_code,
-        reason = "prepared native combat credit awaits the owning occurrence caller"
-    )]
     pub(crate) fn apply_health_gain(
         &mut self,
         runtime: &ChannelRuntimeV1,
@@ -652,10 +710,6 @@ impl ChannelSpellStates {
     /// Commit a resolved mana credit under the Channel owner's runtime lock.
     /// The occurrence owner suppresses replay before calling this method.
     /// Zero/full-pool credit writes nothing; stale bindings and exhaustion refuse.
-    #[allow(
-        dead_code,
-        reason = "prepared native combat credit awaits the owning occurrence caller"
-    )]
     pub(crate) fn apply_mana_gain(
         &mut self,
         runtime: &ChannelRuntimeV1,
@@ -674,6 +728,39 @@ impl ChannelSpellStates {
         }
         self.commit(runtime, actor, game_session_id, next)
             .then_some((gained, revision))
+    }
+
+    /// True while no spell commit is pending for the committed player and no durable spell holds
+    /// the actor reserved: nothing then stages a successor of its spell state.
+    pub(in crate::gameplay_transport) fn spell_idle(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+    ) -> bool {
+        !self.has_pending_spell_commit(actor, game_session_id)
+            && runtime.assert_actor_spell_unreserved(actor).is_ok()
+    }
+
+    /// Compare-commit the fed time of one eaten food (ITEM-USE-1c) as the direct successor
+    /// revision. `None` when the actor is dead, stale, or eating is refused; nothing changes then.
+    pub(in crate::gameplay_transport) fn apply_food(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        regeneration_seconds: u16,
+        now_ms: u64,
+    ) -> Option<u64> {
+        if self.is_dead(actor) {
+            return None;
+        }
+        let next = self
+            .get(runtime, actor, game_session_id)?
+            .after_food(regeneration_seconds, now_ms)?;
+        let revision = next.revision();
+        self.commit(runtime, actor, game_session_id, next)
+            .then_some(revision)
     }
 
     /// DEATH-2 §4.2: true from the lethal write until the respawn. A dead player takes no input.
@@ -924,6 +1011,31 @@ pub(crate) fn observe_vitals(
     Some((state.revision(), state.vitals()))
 }
 
+/// CONDITIONS-0 §3.5 at the transport: once the cast's spell is identified, a gate answers
+/// `REJECTED` before every dispatcher pre-check and every SPELL-D1 `resolve_cast` check; only
+/// the CHAT-0 §6 chat-mute pre-gate runs earlier. A gate in the player's spell state or in its
+/// runtime condition slot refuses alike, as at attack admission. The refusal is the typed gate
+/// in §3.5 precedence across both, kept server-side (§7); the caller answers `REJECTED`.
+/// `None` lets the cast go on.
+pub(crate) fn condition_gated_cast(
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    book: &SpellBook,
+    actor: ExactActorRef,
+    game_session_id: GameSessionId,
+    intent: &SpellCastIntent,
+    now: SemanticTimeMicros,
+) -> Option<crate::ability::condition::ConditionGate> {
+    let (spell, _) = book.source_indexed(intent.spell)?;
+    let state = states.get(runtime, actor, game_session_id)?;
+    let slot = runtime
+        .actor_conditions(actor, Some(game_session_id))
+        .ok()
+        .and_then(|store| crate::spell::cast::store_condition_gate(store, spell, now).err());
+    let own = crate::spell::cast::condition_gate(state, spell, now).err();
+    own.into_iter().chain(slot).min()
+}
+
 /// One cast of `intent` by the admitted actor, as one Channel-owner work item under the runtime
 /// lock the caller holds (and `states` beside it): read the actor's state, resolve, plan, and compare-commit the next state
 /// with its anchor payment (SPELL-D3). `command_id` binds the occurrence and its draws, so the
@@ -1023,6 +1135,7 @@ pub(crate) mod tests {
     use std::num::NonZeroU32;
 
     use super::*;
+    use crate::ability::condition::ConditionGate;
     use crate::foundation::{ChannelContentPin, ChannelId, NodeId, WorldId};
     use crate::spell::Vocation;
 
@@ -1117,6 +1230,77 @@ pub(crate) mod tests {
         )
     }
 
+    /// Test only: `gate` (a §3.5 key) for 10 s from time 0 in the player store.
+    fn gate_player(
+        states: &mut ChannelSpellStates,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        gate: &str,
+    ) {
+        use crate::ability::condition::{
+            ApplicationFacts, ConditionDefinition, ConditionSourceKind, ConditionValues,
+        };
+        let root = oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes([5; 32]);
+        let facts = ApplicationFacts {
+            now: 0,
+            base_speed: 220,
+            mana_shield_capacity: 0,
+            target_reentry_protected: false,
+            source_reentry_protected: false,
+            target_is_player: true,
+            decision_root: &root,
+            occurrence: oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes([6; 16]),
+        };
+        let values = ConditionValues::gate(gate, 10_000).expect("gate family");
+        let definition = ConditionDefinition::new("cond.gate", 1, values).expect("definition");
+        let index = states.index(actor, session).expect("present");
+        let state = &mut states.actors[index].2;
+        let before = state.owned_conditions().clone();
+        let mut next = before.clone();
+        next.apply(
+            &definition,
+            Some("creature:test".to_owned()),
+            ConditionSourceKind::Creature,
+            &[],
+            &facts,
+        )
+        .expect("applied");
+        state
+            .apply_batch_conditions(&before, &next)
+            .expect("installed");
+    }
+
+    #[test]
+    fn the_transport_gate_answers_a_gated_cast_before_any_dispatcher() {
+        let book = crate::spell::cast::v1_spell_book().expect("book");
+        let (runtime, actor, session) = runtime_with_player(0x7a);
+        let mut states = ChannelSpellStates::default();
+        states
+            .initialize(&runtime, actor, session, FACTS, (0, 0), now(0))
+            .expect("initialized");
+        let gated = |states: &ChannelSpellStates| {
+            condition_gated_cast(&runtime, states, &book, actor, session, &exura(), now(1))
+        };
+        assert_eq!(gated(&states), None);
+        // `exura` is not aggressive: `pacified` lets it through, `muted` refuses every spell.
+        gate_player(&mut states, actor, session, "pacified");
+        assert_eq!(gated(&states), None);
+        gate_player(&mut states, actor, session, "muted");
+        assert_eq!(gated(&states), Some(ConditionGate::Muted));
+        assert_eq!(
+            condition_gated_cast(
+                &runtime,
+                &states,
+                &book,
+                actor,
+                session,
+                &exura(),
+                now(10_000)
+            ),
+            None
+        );
+    }
+
     #[test]
     fn health_credit_commits_native_vitals_and_preserves_noops() {
         let (runtime, actor, session) = runtime_with_player(0x73);
@@ -1192,6 +1376,41 @@ pub(crate) mod tests {
             Some((0, 4))
         );
         assert_eq!(states.get(&runtime, actor, session), Some(&before));
+    }
+
+    #[test]
+    fn eaten_food_commits_as_the_direct_successor_revision() {
+        let (runtime, actor, session) = runtime_with_player(0x77);
+        let mut states = ChannelSpellStates::default();
+        assert_eq!(states.apply_food(&runtime, actor, session, 30, 0), None);
+        states
+            .initialize(&runtime, actor, session, FACTS, (0, 0), now(0))
+            .expect("initialized");
+        assert!(states.spell_idle(&runtime, actor, session));
+        let before = states
+            .get(&runtime, actor, session)
+            .expect("present")
+            .revision();
+        assert_eq!(
+            states.apply_food(&runtime, actor, session, 30, 0),
+            Some(before + 1)
+        );
+        assert_eq!(
+            states
+                .get(&runtime, actor, session)
+                .expect("present")
+                .revision(),
+            before + 1
+        );
+        let full = states.apply_food(&runtime, actor, session, 1_200, 0);
+        assert_eq!(full, None);
+        assert_eq!(
+            states
+                .get(&runtime, actor, session)
+                .expect("present")
+                .revision(),
+            before + 1
+        );
     }
 
     #[test]
@@ -1351,6 +1570,72 @@ pub(crate) mod tests {
                 vitals: None,
             }
         );
+    }
+
+    /// CHAR-VITALS-1: a newly created actor takes its saved vitals capped at its maxima, with no
+    /// revision; a present actor keeps its own; a saved full actor (`None`) and a zero health
+    /// leave the maxima; the save reads `None` at the maxima and the live values otherwise.
+    #[test]
+    fn an_admitted_actor_restores_its_saved_vitals_only_when_created() {
+        let (runtime, actor, session) = runtime_with_player(0x7a);
+        let mut states = ChannelSpellStates::default();
+        let created = states
+            .initialize_admitted(
+                &runtime,
+                actor,
+                session,
+                FACTS,
+                (0, 0),
+                now(0),
+                Some((40, 500)),
+            )
+            .expect("created")
+            .clone();
+        assert_eq!(
+            (
+                created.revision(),
+                created.vitals().health,
+                created.vitals().mana
+            ),
+            (1, 40, 90)
+        );
+        assert_eq!(
+            states.saved_vitals(&runtime, actor, session),
+            Some(Some((40, 90)))
+        );
+        // A retry or a same-GameSession reconnect keeps the live vitals.
+        wound(&mut states, actor, session, 50);
+        let kept = states
+            .initialize_admitted(
+                &runtime,
+                actor,
+                session,
+                FACTS,
+                (0, 0),
+                now(0),
+                Some((7, 7)),
+            )
+            .expect("kept")
+            .clone();
+        assert_eq!((kept.vitals().health, kept.vitals().mana), (50, 90));
+
+        for (seed, saved) in [(0x7b, None), (0x7c, Some((0, 10)))] {
+            let (runtime, actor, session) = runtime_with_player(seed);
+            let mut states = ChannelSpellStates::default();
+            let fresh = states
+                .initialize_admitted(&runtime, actor, session, FACTS, (0, 0), now(0), saved)
+                .expect("created")
+                .clone();
+            assert_eq!(
+                (fresh.vitals().health, fresh.vitals().mana),
+                (FACTS.max_health, FACTS.max_mana),
+                "{saved:?}"
+            );
+            assert_eq!(states.saved_vitals(&runtime, actor, session), Some(None));
+        }
+        // Another session's actor has no spell state: the stored vitals are kept.
+        let other = GameSessionId::decode(&uuid_v7(0x7d)).expect("session");
+        assert_eq!(states.saved_vitals(&runtime, actor, other), None);
     }
 
     #[test]
@@ -1571,6 +1856,7 @@ pub(crate) mod tests {
             .expect("actual logical reservation");
         assert!(!runtime.actor_spell_reserved(actor));
         assert!(states.has_pending_spell_commit(actor, session));
+        assert!(!states.spell_idle(&runtime, actor, session));
         let before = states
             .get(&runtime, actor, session)
             .expect("before")
@@ -1658,6 +1944,7 @@ pub(crate) mod tests {
                 paid_soul: 0,
                 cooldown_deadlines: vec![],
             }),
+            now_us: None,
             now_ms: 0,
             effects: vec![OwnerCombatEffect {
                 target,
@@ -1921,7 +2208,13 @@ pub(crate) mod tests {
             .expect("death");
         assert_eq!(
             states.monk_save_values(&runtime, actor, session, now(1000)),
-            Some((3, 3_000_000))
+            Some((0, 0))
+        );
+        let (_, dead_vitals) =
+            observe_vitals(&runtime, &states, actor, session).expect("dead vitals");
+        assert_eq!(
+            (dead_vitals.health, dead_vitals.harmony, dead_vitals.serene),
+            (0, 0, false)
         );
         // Control loss detaches the dead monk; only the respawn initializes it again.
         states.detach(&runtime, actor, session);
@@ -1944,7 +2237,15 @@ pub(crate) mod tests {
     fn a_lethal_hit_without_an_occurrence_writes_nothing() {
         use crate::ability::creature_bite::{BiteRejection, CreatureBiteLedger};
 
-        let (mut runtime, mut states, actor, session, creature) = bitten_player(0x34, 8);
+        let (mut runtime, mut states, actor, session, creature) = bitten_actor(
+            0x34,
+            8,
+            CharacterCastFacts {
+                vocation: Vocation::Monk,
+                ..FACTS
+            },
+            (3, 4_000_000),
+        );
         states.mint_death = || None;
         let mut ledger = CreatureBiteLedger::default();
         assert_eq!(
@@ -1961,6 +2262,11 @@ pub(crate) mod tests {
         assert!(!states.is_dead(actor));
         let (revision, vitals) = observe_vitals(&runtime, &states, actor, session).expect("vitals");
         assert_eq!((revision, vitals.health), (1, 8));
+        assert_eq!((vitals.harmony, vitals.serene), (3, true));
+        assert_eq!(
+            states.monk_save_values(&runtime, actor, session, now(1000)),
+            Some((3, 3_000_000))
+        );
     }
 }
 // Reconciled source consumers: the existing ChannelSpellStates remains the only vitals/death owner.
@@ -2917,6 +3223,29 @@ impl ChannelSpellStates {
                 TickKind::Regeneration {
                     suppressed: false, ..
                 } => return None,
+                // CONDITIONS-0 §3.5: the creature provenance of `Damage`; the mana shield never
+                // absorbs agony. A refused occurrence was used up in the protection zone.
+                TickKind::Agony { amount, refused } => {
+                    if !refused {
+                        if tick.provenance.source_kind != ConditionSourceKind::Creature
+                            || !tick
+                                .provenance
+                                .source
+                                .as_deref()
+                                .is_some_and(|s| s.starts_with("creature:"))
+                        {
+                            return None;
+                        }
+                        let (successor, hit) = crate::spell::actor_conditions::stage_agony_hit(
+                            &next,
+                            amount,
+                            now.get(),
+                        )
+                        .ok()?;
+                        damage = damage.checked_add(hit.applied)?;
+                        next = successor;
+                    }
+                }
             }
         }
         let changed = next != *before;
@@ -3118,6 +3447,43 @@ mod owned_source_tick_tests {
                 .is_none()
         );
         assert_eq!(states.player_death(&runtime, actor, session), retained);
+    }
+    #[test]
+    fn actual_lethal_creature_agony_routes_to_the_death_owner() {
+        let (mut runtime, mut states, actor, session) = ready(0xbb);
+        let Some(agony) = ConditionDefinition::new(
+            "test.source.agony",
+            1,
+            ConditionValues::Agony {
+                total_min: 100_000,
+                total_max: 100_000,
+                per_tick: 100_000,
+                interval_ms: 1_000,
+                delayed: true,
+            },
+        ) else {
+            panic!("agony fixture")
+        };
+        install(&mut states, &runtime, actor, session, &[agony]);
+        let now = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(1_000_000);
+        let result = states.tick_current_creature_field_damage(
+            &mut runtime,
+            actor,
+            session,
+            now,
+            TickFacts::default(),
+            None,
+        );
+        assert!(matches!(
+            result,
+            Some(Some((_, ActorVitals { health: 0, .. })))
+        ));
+        assert!(states.player_death(&runtime, actor, session).is_some());
+        assert!(
+            states
+                .get(&runtime, actor, session)
+                .is_some_and(|s| s.owned_conditions().instances().is_empty())
+        );
     }
     #[test]
     fn actual_malformed_creature_field_origin_refuses_without_hp_or_cursor_write() {
@@ -3482,6 +3848,7 @@ mod source_creature_dot_owner_tests {
             mana_cost: None,
             is_familiar: false,
             condition_immunities: vec![],
+            defense: Some(1),
             armor: Some(0),
             mitigation: Some(CreatureExactRatio {
                 numerator: 0,
@@ -3589,6 +3956,7 @@ mod source_creature_dot_owner_tests {
             },
             binding: b"actual-source-wound".to_vec(),
             anchor: None,
+            now_us: None,
             now_ms: 0,
             effects: vec![OwnerCombatEffect {
                 target,
@@ -3813,7 +4181,7 @@ impl ChannelSpellStates {
         session: GameSessionId,
         now_us: u64,
         direction: crate::movement::CardinalStep,
-        blocking: &std::collections::BTreeSet<crate::content::LogicalCell>,
+        blocking: &dyn crate::map::floor::CellBlocker,
         equipment_delta: Option<i32>,
         proof: Option<crate::movement::source_floor_change::SourceStepProof<'_>>,
         contact: Option<CreatureFieldContact>,

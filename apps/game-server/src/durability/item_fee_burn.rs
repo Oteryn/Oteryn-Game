@@ -215,7 +215,12 @@ pub async fn burn_fee_in_transaction(
 /// The bank part of a fee `fee` whose eligible coins are worth `eligible` (BANK-FEE-0 §3): 0 when
 /// the coins pay; otherwise `fee - eligible`, open only under `(2, V2)` to a payer who is not
 /// junior. Whether the balance covers it is checked under the balance lock.
-fn bank_part(fee: u64, eligible: u64, tuple: Type2EventTuple, junior: bool) -> Result<u64> {
+pub(super) fn bank_part(
+    fee: u64,
+    eligible: u64,
+    tuple: Type2EventTuple,
+    junior: bool,
+) -> Result<u64> {
     match fee.checked_sub(eligible) {
         None | Some(0) => Ok(0),
         Some(_) if tuple == Type2EventTuple::V1 || junior => Err(FeeBurnError::InsufficientFunds),
@@ -465,6 +470,7 @@ async fn burn_fee(
         } else {
             ITEM_LIFECYCLE_LIVE
         },
+        key_number: 0,
     };
     let audit_lines = plan
         .lines
@@ -986,6 +992,7 @@ mod tests {
             gold: definition(Coin::Gold.production_key()),
             crystal: definition(Coin::Crystal.production_key()),
             backpack: ItemDefinitionFacts {
+                weight: None,
                 definition: definition("oteryn:item.tibia.i2854"),
                 stack: ItemStackClass::NonStackable,
                 container_capacity: Some(20),

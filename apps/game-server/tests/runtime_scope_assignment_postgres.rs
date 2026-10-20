@@ -22,6 +22,13 @@ pub mod foundation;
 #[path = "../src/native_admission_source/mod.rs"]
 pub mod native_admission_source;
 
+#[allow(
+    dead_code,
+    reason = "shared PostgreSQL support; each mount uses a subset"
+)]
+#[path = "support/bestiary_postgres_harness.rs"]
+mod bestiary_postgres_harness;
+
 use durability::admission_authority_guards::{AdmissionGuardStore, GuardPublicationDisposition};
 use durability::native_admission_source::{DescriptorRegistration, FreshStoreProvenance};
 use durability::runtime_scope_assignment::{

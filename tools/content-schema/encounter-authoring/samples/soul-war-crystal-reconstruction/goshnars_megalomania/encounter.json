@@ -133,6 +133,11 @@
           "kind": "flag",
           "flag": "purple_phase",
           "value": true
+        },
+        {
+          "kind": "has_master",
+          "role": "aspect_of_power",
+          "value": false
         }
       ],
       "actions": [
@@ -151,7 +156,13 @@
         "role": "aspect_of_power"
       },
       "delay_ms": 5000,
-      "conditions": [],
+      "conditions": [
+        {
+          "kind": "has_master",
+          "role": "aspect_of_power",
+          "value": false
+        }
+      ],
       "actions": [
         {
           "kind": "spawn",
@@ -217,6 +228,13 @@
       "conditions": [],
       "actions": [
         {
+          "kind": "teleport",
+          "who": {
+            "role": "goshnars_megalomania"
+          },
+          "to": "boss"
+        },
+        {
           "kind": "transform",
           "role": "goshnars_megalomania",
           "into": {
@@ -264,7 +282,13 @@
         "kind": "creature_died",
         "role": "goshnars_megalomania"
       },
-      "conditions": [],
+      "conditions": [
+        {
+          "kind": "flag",
+          "flag": "purple_phase",
+          "value": false
+        }
+      ],
       "actions": [
         {
           "kind": "emit_outcome",

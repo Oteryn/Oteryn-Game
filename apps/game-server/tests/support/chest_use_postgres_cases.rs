@@ -17,7 +17,7 @@ use crate::content::{
     REFERENCE_PLAYABLE_CAPABILITY_PROFILE, REFERENCE_PLAYABLE_CONTENT_PROFILE_ID,
     ReferenceDefinition, ReferenceDefinitionKind, ReferenceEquipmentPattern,
     ReferenceEquipmentSlot, ReferenceItemContainer, ReferenceItemDefinition,
-    ReferenceItemDestination, ReferenceItemEquipment, ReferenceItemField,
+    ReferenceItemDestination, ReferenceItemEquipment, ReferenceItemField, ReferenceItemPhysical,
     ReferenceItemPhysicalClass, ReferenceItemSemantics, ReferenceItemStack,
     ReferenceItemStackClass, ReferencePlayableContentSource, ReferenceRewardClaimDefinition,
     RewardClaimItem, RewardClaimPlacement, Sha256HexDigest, SpatialAddress,
@@ -85,6 +85,16 @@ fn content_typed(family: DefinitionFamily, key: &str) -> TestResult<ContentTyped
         ProductionKey::new(key)?,
         DefinitionRevisionRef::new("definition-r1")?,
     ))
+}
+
+// Explicit one-centi-ounce weight for the named PG Item fixtures below. The real
+// pickup seam reads these Content facts, not the independent TEST_WEIGHTS helper.
+fn fixture_physical() -> ReferenceItemPhysical {
+    ReferenceItemPhysical {
+        weight: Known(1),
+        movable: Unknown,
+        pickupable: Unknown,
+    }
 }
 
 fn placement(
@@ -165,6 +175,7 @@ fn pg_content() -> TestResult<CanonicalReferencePlayableContent> {
     let coin = plain(
         ReferenceItemStackClass::StackCapable,
         ReferenceItemSemantics {
+            physical: Known(fixture_physical()),
             stack: Known(ReferenceItemStack {
                 stackable: Known(true),
                 stack_max: Known(30),
@@ -175,6 +186,7 @@ fn pg_content() -> TestResult<CanonicalReferencePlayableContent> {
     let backpack = plain(
         ReferenceItemStackClass::NonStackable,
         ReferenceItemSemantics {
+            physical: Known(fixture_physical()),
             container: Known(ReferenceItemContainer {
                 capacity: Known(20),
             }),
@@ -194,7 +206,10 @@ fn pg_content() -> TestResult<CanonicalReferencePlayableContent> {
     );
     let chest = plain(
         ReferenceItemStackClass::NonStackable,
-        ReferenceItemSemantics::default(),
+        ReferenceItemSemantics {
+            physical: Known(fixture_physical()),
+            ..ReferenceItemSemantics::default()
+        },
     );
     let definition = |key: &str, item: ReferenceItemDefinition| -> TestResult<_> {
         Ok(ReferenceDefinition {
@@ -215,6 +230,7 @@ fn pg_content() -> TestResult<CanonicalReferencePlayableContent> {
                     }],
                     achievement: None,
                     quest_transition: None,
+                    key_number: None,
                 })
             })
             .collect::<TestResult<Vec<_>>>()?;
@@ -1100,6 +1116,7 @@ fn a_chest_with_an_achievement_grants_it_and_a_chest_without_one_grants_none() -
                     }],
                     achievement: Some(ABSENT_ACHIEVEMENT.into()),
                     quest_transition: None,
+                    key_number: None,
                 }],
             }),
             client_projection: ClientProjectionClass::ServerOnly,
@@ -1160,6 +1177,32 @@ fn entry_request(command: CommandRef) -> TestResult<ChestUseRequest> {
     })
 }
 
+// Enrich only this test's copy of the three exact entry Item definitions. The
+// production entry-chest source keeps its unknown physical facts unchanged.
+fn entry_pg_content() -> TestResult<CanonicalReferencePlayableContent> {
+    let mut content = with_entry_chest(&pg_content()?).map_err(debug)?;
+    for key in [
+        entry_chest::CHEST_ITEM,
+        entry_chest::REWARD_ITEM,
+        entry_chest::BACKPACK_ITEM,
+    ] {
+        let definition = content
+            .definitions
+            .iter_mut()
+            .find(|definition| {
+                definition.definition.family() == DefinitionFamily::Item
+                    && definition.definition.key().as_str() == key
+                    && definition.definition.revision().as_str() == entry_chest::DEFINITION_REVISION
+            })
+            .ok_or("the exact entry Item fixture is absent")?;
+        let ReferenceDefinitionKind::Item(item) = &mut definition.kind else {
+            return Err("the entry Item fixture has another kind".into());
+        };
+        item.semantics.physical = Known(fixture_physical());
+    }
+    Ok(content)
+}
+
 /// C2: the `USE_INTENT` dispatch of the injected entry chest (`with_entry_chest` +
 /// `use_chest`). Without a main backpack it refuses `NoMainBackpack` (production, until
 /// STARTER-BACKPACK) and without a fence it refuses; neither writes. With a harness-seeded
@@ -1178,7 +1221,7 @@ fn the_entry_chest_use_mints_once_and_refuses_cleanly_otherwise() -> TestResult 
             .open_character_authority(&seal)
             .await
             .map_err(debug)?;
-        let content = with_entry_chest(&pg_content()?).map_err(debug)?;
+        let content = entry_pg_content()?;
         let achievements = catalogue()?;
         let session = DurabilitySession {
             root: &harness.root,

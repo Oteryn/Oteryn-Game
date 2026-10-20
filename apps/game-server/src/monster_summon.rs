@@ -8,7 +8,8 @@ use crate::content::{
     ProjectV2Draft, ProjectV2Family, ProjectV2SourceIdentityDisposition,
 };
 use crate::foundation::{
-    CarrierError, ChannelRuntimeV1, ExactActorRef, MovementLocalPosition,
+    ActorMemoTable, CREATURE_DEFENCE_MEMOS_PER_CHANNEL_MAX, CarrierError, ChannelRuntimeV1,
+    ExactActorRef, MovementLocalPosition, NATIVE_SUMMON_MEMOS_PER_CHANNEL_MAX,
     NativeSummonAdmissionSpec, RuntimeScopeRefV1, RuntimeWorkStamp, ScopeRuntimeFence,
 };
 use oteryn_simulation_determinism::{
@@ -227,15 +228,14 @@ pub(crate) struct SummonReceipt {
     pub(crate) position: MovementLocalPosition,
 }
 struct SummonMemo {
-    parent: ExactActorRef,
-    index: usize,
     sequence: u64,
     binding: [u8; 32],
     result: Result<SummonReceipt, SummonError>,
 }
 #[derive(Default)]
 pub(crate) struct NativeSummonOwner {
-    memos: Vec<SummonMemo>,
+    /// By parent and summon entry (Codex 4243039220).
+    memos: ActorMemoTable<usize, SummonMemo>,
 }
 impl NativeSummonOwner {
     pub(crate) fn execute(
@@ -286,14 +286,11 @@ impl NativeSummonOwner {
             return Err(SummonError::InvalidSource);
         }
         let binding = Sha256::digest(format!("{:?}:{proposal:?}", source).as_bytes()).into();
-        self.memos
-            .retain(|m| runtime.contains_live_creature(m.parent));
-        let index = self
-            .memos
-            .iter()
-            .position(|m| m.parent == proposal.occurrence.actor && m.index == source.index);
-        if let Some(i) = index {
-            let m = &self.memos[i];
+        let parent = proposal.occurrence.actor;
+        // The live parent's slot drops its former occupant's memos; the memos of other dead
+        // parents go only when the table is full (Codex 4243039220).
+        self.memos.evict_stale_at(parent);
+        if let Some(m) = self.memos.get(parent, &source.index) {
             if proposal.occurrence.sequence < m.sequence {
                 return Err(SummonError::Superseded);
             }
@@ -307,27 +304,23 @@ impl NativeSummonOwner {
                     Err(SummonError::ReplayConflict)
                 };
             }
-        }
-        if index.is_none() {
-            if self.memos.len() >= 64 * 8 {
+        } else {
+            // `CREATUREAI0-RL-04` live summoners times `CREATUREAI0-RL-08` entries (Codex
+            // 4242954089): when full, the memos of dead parents are dropped first.
+            if self.memos.len() >= NATIVE_SUMMON_MEMOS_PER_CHANNEL_MAX {
+                self.memos.prune(|a| runtime.contains_live_creature(a));
+            }
+            if self.memos.len() >= NATIVE_SUMMON_MEMOS_PER_CHANNEL_MAX {
                 return Err(SummonError::Capacity);
             }
-            self.memos
-                .try_reserve(1)
-                .map_err(|_| SummonError::Capacity)?;
         }
         let result = self.place(runtime, fence, stamp, source, proposal, policy);
         let memo = SummonMemo {
-            parent: proposal.occurrence.actor,
-            index: source.index,
             sequence: proposal.occurrence.sequence,
             binding,
             result: result.clone(),
         };
-        match index {
-            Some(i) => self.memos[i] = memo,
-            None => self.memos.push(memo),
-        }
+        self.memos.insert(parent, source.index, memo);
         result
     }
     fn place(
@@ -458,6 +451,39 @@ mod tests {
         NativeSummonCatalog,
         ProfileSummonProposal,
     ) {
+        setup_world_with_capacity(world, 128)
+    }
+    /// `setup` on a carrier of `capacity` actor slots.
+    pub(super) fn setup_with_capacity(
+        capacity: usize,
+    ) -> (
+        ChannelRuntimeV1,
+        ScopeRuntimeFence,
+        ExactActorRef,
+        ExactActorRef,
+        NativeSummonCatalog,
+        ProfileSummonProposal,
+    ) {
+        let mut id = [0; 16];
+        id[6] = 0x70;
+        id[8] = 0x80;
+        id[15] = 1;
+        setup_world_with_capacity(
+            WorldId::decode(&id).expect("monster_summon.rs:tests: the fixture world id decodes"),
+            capacity,
+        )
+    }
+    fn setup_world_with_capacity(
+        world: WorldId,
+        capacity: usize,
+    ) -> (
+        ChannelRuntimeV1,
+        ScopeRuntimeFence,
+        ExactActorRef,
+        ExactActorRef,
+        NativeSummonCatalog,
+        ProfileSummonProposal,
+    ) {
         let id = |t: u8| {
             let mut b = [0; 16];
             b[6] = 0x70;
@@ -485,7 +511,7 @@ mod tests {
             1,
             1,
             "runtime-scope-assignment:1",
-            128,
+            capacity,
             pin,
         )
         .expect("monster_summon.rs:tests:485: qualified fixture operation must succeed");
@@ -597,6 +623,70 @@ mod tests {
             .accept_input(r.binding().scope_generation())
             .expect("monster_summon.rs:tests:590: qualified fixture operation must succeed");
         f.stamp(o)
+    }
+    /// `CREATUREAI0-RL-04` and `CREATUREAI0-RL-08` (Codex 4242954089): more than 64 monsters
+    /// summon in one Channel. The D57 envelope refused the summon once 64 creatures were alive,
+    /// and the retirement once 65 children were dead together.
+    #[test]
+    fn more_than_sixty_four_summoners_each_summon_retire_together_and_summon_again() {
+        const SUMMONERS: usize = 100;
+        let (mut r, mut f, first, _, c, mut p) = setup_with_capacity(4 * SUMMONERS);
+        let s = stamp(&r, &mut f);
+        let mut parents = vec![first];
+        for i in 1..SUMMONERS {
+            let x = 100 + 3 * i32::try_from(i % 20).expect("a small column");
+            let y = 120 + 3 * i32::try_from(i / 20).expect("a small row");
+            parents.push(
+                r.admit_source_pinned_lab_creature(
+                    MovementLocalPosition { x, y, floor: 7 },
+                    &c.parent.key,
+                    115,
+                )
+                .expect("monster_summon.rs:tests: a summoner is admitted"),
+            );
+        }
+        let mut owner = NativeSummonOwner::default();
+        let mut map = Map {
+            known: true,
+            allow: true,
+        };
+        let mut children = Vec::new();
+        for &parent in &parents {
+            p.occurrence = ThinkOccurrence {
+                actor: parent,
+                sequence: 0,
+            };
+            let receipt = owner
+                .execute(&mut r, &f, s, &c, &p, &mut map)
+                .expect("monster_summon.rs:tests: every summoner summons");
+            assert!(receipt.newly_created);
+            assert_eq!(r.native_summon_role(receipt.child), Ok(Some(parent)));
+            children.push(receipt.child);
+        }
+        assert_eq!(owner.memos.len(), SUMMONERS);
+        for &child in &children {
+            r.commit_monster_lab_damage(child, b"native-child-lethal", 15)
+                .expect("monster_summon.rs:tests: a child dies");
+        }
+        assert_eq!(
+            r.retire_native_summons(&f, s)
+                .expect("monster_summon.rs:tests: every dead child retires"),
+            SUMMONERS
+        );
+        for &parent in &parents {
+            assert_eq!(r.native_summon_count(parent, None), 0);
+            p.occurrence = ThinkOccurrence {
+                actor: parent,
+                sequence: 1,
+            };
+            assert!(
+                owner
+                    .execute(&mut r, &f, s, &c, &p, &mut map)
+                    .expect("monster_summon.rs:tests: every summoner summons again")
+                    .newly_created
+            );
+        }
+        assert_eq!(owner.memos.len(), SUMMONERS);
     }
     #[test]
     fn summon_replay_interleave_source_caps_and_current_generation() {
@@ -1254,15 +1344,14 @@ pub(crate) struct DefenseSummonBatch {
     pub(crate) project_current_free_cell_selection: bool,
 }
 struct DefenseSummonMemo {
-    parent: ExactActorRef,
-    ability: Ref,
     sequence: u64,
     binding: [u8; 32],
     batch: DefenseSummonBatch,
 }
 #[derive(Default)]
 pub(crate) struct DefenseSummonOwner {
-    memos: Vec<DefenseSummonMemo>,
+    /// By parent and defence Ability (Codex 4243039220).
+    memos: ActorMemoTable<Ref, DefenseSummonMemo>,
 }
 impl DefenseSummonOwner {
     // Keep execute ABI explicit: current runtime owner, independent fence/stamp, exact actor/session/source and occurrence/policy facts are separate admission inputs.
@@ -1315,16 +1404,12 @@ impl DefenseSummonOwner {
         {
             return Err(SummonError::StaleParent);
         }
-        self.memos
-            .retain(|m| runtime.contains_live_creature(m.parent));
+        // The live parent's slot drops its former occupant's memos; the memos of other dead
+        // parents go only when the table is full (Codex 4243039220).
+        self.memos.evict_stale_at(think.actor);
         let binding: [u8; 32] =
             Sha256::digest(format!("{source:?}:{proposal:?}").as_bytes()).into();
-        let at = self
-            .memos
-            .iter()
-            .position(|m| m.parent == think.actor && m.ability == source.ability);
-        if let Some(i) = at {
-            let m = &self.memos[i];
+        if let Some(m) = self.memos.get(think.actor, &source.ability) {
             if think.sequence < m.sequence {
                 return Err(SummonError::Superseded);
             }
@@ -1338,14 +1423,15 @@ impl DefenseSummonOwner {
                 }
                 return Ok(batch);
             }
-        }
-        if at.is_none() {
-            if self.memos.len() >= 64 * 8 {
+        } else {
+            // `CREATUREAI0-RL-04` live parents times `CREATUREAI0-RL-07` defences (Codex
+            // 4242954089): when full, the memos of dead parents are dropped first.
+            if self.memos.len() >= CREATURE_DEFENCE_MEMOS_PER_CHANNEL_MAX {
+                self.memos.prune(|a| runtime.contains_live_creature(a));
+            }
+            if self.memos.len() >= CREATURE_DEFENCE_MEMOS_PER_CHANNEL_MAX {
                 return Err(SummonError::Capacity);
             }
-            self.memos
-                .try_reserve(1)
-                .map_err(|_| SummonError::Capacity)?;
         }
         let current = runtime.native_summon_count(think.actor, None);
         let requested = if current >= source.threshold {
@@ -1381,17 +1467,11 @@ impl DefenseSummonOwner {
             }
         }
         let memo = DefenseSummonMemo {
-            parent: think.actor,
-            ability: source.ability.clone(),
             sequence: think.sequence,
             binding,
             batch: batch.clone(),
         };
-        if let Some(i) = at {
-            self.memos[i] = memo
-        } else {
-            self.memos.push(memo)
-        }
+        self.memos.insert(think.actor, source.ability.clone(), memo);
         Ok(batch)
     }
     // Keep place ABI explicit: current runtime owner, independent fence/stamp, exact actor/session/source and occurrence/policy facts are separate admission inputs.
@@ -1560,6 +1640,52 @@ mod defense_summon_tests {
                 Some(true)
             }
         }
+    }
+    /// `CREATUREAI0-RL-04` and `CREATUREAI0-RL-07` (Codex 4242954089): more than 64 monsters
+    /// cast a defence summon in one Channel; the D57 envelope refused once 64 creatures were
+    /// alive.
+    #[test]
+    fn more_than_sixty_four_defence_summoners_each_summon() {
+        const SUMMONERS: usize = 100;
+        let (mut r, mut f, first, _, c, _) = tests::setup_with_capacity(4 * SUMMONERS);
+        let stamp = tests::stamp(&r, &mut f);
+        let src = source(&c, false, 1, 1);
+        let mut parents = vec![first];
+        for i in 1..SUMMONERS {
+            let x = 100 + 3 * i32::try_from(i % 20).expect("a small column");
+            let y = 120 + 3 * i32::try_from(i / 20).expect("a small row");
+            parents.push(
+                r.admit_source_pinned_lab_creature(
+                    MovementLocalPosition { x, y, floor: 7 },
+                    &c.parent.key,
+                    115,
+                )
+                .expect("monster_summon.rs:defense_summon_tests: a summoner is admitted"),
+            );
+        }
+        let mut owner = DefenseSummonOwner::default();
+        let mut map = Map {
+            calls: 0,
+            missing_after: None,
+        };
+        for &parent in &parents {
+            let think = ThinkOccurrence {
+                actor: parent,
+                sequence: 0,
+            };
+            let prepared = proposal(parent, src.ability.clone(), 0, 0);
+            let batch = owner
+                .execute(&mut r, &f, stamp, &src, think, &prepared, &mut map)
+                .expect("monster_summon.rs:defense_summon_tests: every summoner summons");
+            assert_eq!(batch.refused, None);
+            assert_eq!(batch.children.len(), 1);
+            assert!(batch.children[0].newly_created);
+            assert_eq!(
+                r.native_summon_role(batch.children[0].child),
+                Ok(Some(parent))
+            );
+        }
+        assert_eq!(owner.memos.len(), SUMMONERS);
     }
     #[test]
     fn partial_defense_batch_keeps_first_physical_child_and_exact_replay() {

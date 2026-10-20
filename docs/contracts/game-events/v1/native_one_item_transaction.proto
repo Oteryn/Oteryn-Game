@@ -23,9 +23,11 @@ package oteryn.events.v1;
 // Excluded fail-closed (no field exists; an unknown field rejects by canonical
 // round trip): item free text, value lines, transform inputs/outputs,
 // container expansion and the direct-root inventory typed_position. The one
-// admitted value line is the bank part of a fee, OneItemFeeBankDebitV1
-// (OneItemFeeBurnV1 field 13, GOLD-FEE-2); every other value line stays
-// excluded, on every operation.
+// admitted value line is a bank part, OneItemFeeBankDebitV1: of a fee
+// (OneItemFeeBurnV1 field 13, GOLD-FEE-2) or of an NPC BUY price
+// (OneItemNpcTradeV1 field 14, NPC-ECON-1); every other value line stays
+// excluded on every operation except the closed D1230 DustLimit arm
+// proposed below.
 // TRANSFER is admitted only for the B3 destinations
 // (reviews/OTERYN_GAME_B3_INVENTORY_DESTINATION_CAPACITY_AND_STACKS_DECISION_2026-09-28.md
 // §4): the CharacterEquipment `container` slot, direct entries of the equipped
@@ -76,6 +78,24 @@ package oteryn.events.v1;
 // once per (World, Channel, base bundle digest, placement key, reset epoch).
 // The pickup that follows is an ordinary B3 TRANSFER event. Its payload and
 // envelope stay within DUR03-RL-07.
+// The NPC trade (operation tag 9, NPC-TRADE-1; NPC-0 §4 command 8
+// NPC_TRADE_INTENT and §5.5, NPC_SINGLE_TRADE_COMMIT_V1) is one item-only
+// transaction per (occurrence, Character) under the closed NpcTradeCause: a
+// BUY burns the gold fee plan's coin stacks (FeeBurnCause::NpcTrade), mints
+// the change and the bought item; a SELL burns the sold units and mints the
+// coins. Every MINT is a fresh stack in a new direct entry of the equipped main
+// backpack. Its own rows are DUR03-RL-*-NPC-TRADE-* (BUY 23 participants / 66
+// work units, SELL 4 / 9; payload <= 27,094 B, EventEnvelope <= 27,408 B). It
+// carries its CommandRef in the payload; the envelope has no session, command
+// or causation.
+// The item use (operation tag 10, ITEM-USE-1; decision ITEM-USE-0 §4, DUR-03 §15,
+// §39.1 and §39.3 item-use amendment) is one player-originated event per use of
+// one consumable unit (food or potion): a BURN of exactly one unit from the used
+// stack, or, for a potion whose content names an empty flask, one unit-level
+// TRANSFORM whose output is one flask unit added to a compatible stack of the
+// main backpack or planted as a fresh item. At most two items are touched; nothing
+// is minted. Its own rows are DUR03-RL-*-ITEM-USE*; payload and envelope stay
+// within DUR03-RL-07.
 // Historical game-events/v1/item_transaction.proto and
 // game-events/v2/item_transaction.proto remain unchanged.
 
@@ -84,12 +104,52 @@ message OneItemTransactionV1 {
   oneof operation {
     OneItemMintV1 mint = 2;
     OneItemTransferV1 transfer = 3; // B3 destinations only (see above)
-    OneItemRewardClaimMintV1 reward_claim_mint = 4; // CHEST-1 only (see above)
+    OneItemRewardClaimMintV1 reward_claim_mint = 4; // CHEST-1 or MAIL-owned Inbox (see below)
     OneItemDecayRetireV1 decay_retire = 5; // D3-6 corpse decay only (see above)
     OneItemFeeBurnV1 fee_burn = 6; // coin fee BURN only (see above)
     OneItemTimedExpiryV1 timed_expiry = 7; // timed expiry only (see above)
     OneItemMapItemMintV1 map_item_mint = 8; // MAP-OVERLAY-1b only (see above)
+    OneItemNpcTradeV1 npc_trade = 9; // NPC-TRADE-1 only (see above)
+    OneItemUseV1 item_use = 10; // ITEM-USE-1 only (see above)
+    OneItemHouseTransferV1 house_transfer = 11; // HOUSE-RUNTIME-1a additive candidate slot tag
+    // Private proposal only; root coordinates Imbue tag 12 and rechecks before publication.
+    OneItemForgeDustLimitV1 forge_dust_limit = 13; // material-free D1230 closed shape
   }
+}
+
+// World-scoped House custody. No ChannelId is present; reclaim is immutable placement
+// provenance, not a current access grant. Each House endpoint is bounded by RL-07.
+message OneItemHouseLocationV1 {
+  bytes world_id = 1;
+  string house_key = 2; // <= 512 bytes
+  bytes spatial_position = 3; // 1..128 bytes, source-owner-qualified tile
+  uint64 stack_ordinal = 4;
+  uint64 scope_ownership_generation = 5;
+  bytes placement_transaction_id = 6;
+  bytes reclaim_subject = 7;
+  uint64 provenance_revision = 8;
+}
+message OneItemHouseCharacterLocationV1 {
+  bytes character_id = 1;
+  bytes parent_item_instance_id = 2; // inventory only
+  uint64 placement_ordinal = 3; // inventory only
+  uint32 equipment_slot = 4; // equipment only, 1..10; 9 is the B3 container slot
+}
+message OneItemHouseTransferV1 {
+  OneItemStateV1 before = 1;
+  OneItemStateV1 after = 2; // same live item/quantity/definition, never split or merge
+  oneof source {
+    OneItemHouseLocationV1 source_house = 3;
+    OneItemHouseCharacterLocationV1 source_character = 4;
+  }
+  oneof destination {
+    OneItemHouseLocationV1 destination_house = 5;
+    OneItemHouseCharacterLocationV1 destination_inventory = 6;
+  }
+  OneItemTransferCauseV1 cause = 7;
+  bytes character_id = 8;
+  uint64 connection_generation = 9;
+  uint64 character_lease_generation = 10;
 }
 
 // Typed identity is carried in full; no numeric key substitutes for it.
@@ -105,6 +165,7 @@ message OneItemStateV1 {
   OneItemTypedDefinitionRevisionV1 definition = 3;
   uint32 quantity = 4;
   uint32 lifecycle = 5; // 1 = LIVE; 2 = RETIRED (TRANSFER full-merge source after, quantity 0)
+  uint32 key_number = 6; // KEY-1: a key's immutable number, 1..65535; 0 = not a key (unset)
 }
 
 message OneItemGroundV1 {
@@ -242,12 +303,33 @@ message OneItemRewardClaimCauseV1 {
 
 // One fresh live item placed in a new direct entry of the main backpack; the
 // destination carries container_entry only (never the container slot).
+// D1318 additive destination of the same reward_claim_mint operation. A full
+// source output plan is one type-2 event, not twenty independent transactions.
+message RewardClaimInboxMintOutputV1 {
+  OneItemStateV1 after = 1;
+  uint64 ordinal = 2; // permanent CharacterInbox ordinal; positive, increasing
+  uint32 source_line = 3; // source-owned claim line, including zero
+}
+message RewardClaimInboxMintV1 {
+  bytes character_id = 1; // UUIDv7
+  bytes world_id = 2; // UUIDv7; every output after-state has this World
+  uint64 expected_session_generation = 3; // actual native fence, positive
+  bytes source_binding = 4; // exact 32-byte source-owner claim binding
+  repeated RewardClaimInboxMintOutputV1 outputs = 5; // 1..20 distinct fresh items
+  bytes plan_binding = 6; // exact full MAIL output-plan SHA-256
+  bytes mint_intent_sha256 = 7; // exact persisted canonical mint specification
+  uint64 expected_character_lease_generation = 8; // actual native lease, positive
+}
+
 message OneItemRewardClaimMintV1 {
   OneItemStateV1 after = 1;
   OneItemInventoryV1 destination = 2;
   OneItemRewardClaimCauseV1 source = 3;
   // Explicit semantic absence of a prior item; not a nil or zero identifier.
   bool before_semantically_absent = 4;
+  // Exactly this field or the legacy after/destination, never both. Source and
+  // before_semantically_absent=true are mandatory in either shape.
+  RewardClaimInboxMintV1 inbox = 5;
 }
 
 // D3-6 `CorpseDecay { corpse_item, deadline }` (DUR-03 §39.4): the only admitted
@@ -408,4 +490,124 @@ message OneItemMapItemMintV1 {
   // Explicit semantic absence of a prior item; not a nil or zero identifier.
   bool before_semantically_absent = 4;
   uint64 connection_generation = 5; // the commanding session's
+}
+
+// Closed NpcTradeCause: the catalogue offer and the trade command occurrence.
+message OneItemNpcTradeCauseV1 {
+  string npc_key = 1;            // the NPC's content key, <= 512 B
+  uint64 catalogue_revision = 2; // the bound trade catalogue revision
+  uint32 offer_index = 3;        // the offer in that catalogue (< offer count)
+  uint32 side = 4;               // 1 = BUY, 2 = SELL
+  bytes occurrence = 5;          // the trade command occurrence, 16-byte UUIDv7
+}
+
+// One line, in commit order. kind 1 = coin BURN, 2 = coin MINT, 3 = item BURN,
+// 4 = item MINT. A BURN carries before (LIVE) and after (the same identity,
+// World and definition: RETIRED with quantity 0, or LIVE with fewer units in
+// the same entry); a MINT carries only after (LIVE) in a new direct entry.
+message OneItemNpcTradeLineV1 {
+  uint32 kind = 1;
+  optional OneItemStateV1 before = 2;
+  OneItemStateV1 after = 3;
+  uint64 placement_ordinal = 4; // the entry before a BURN, the new entry of a MINT; non-zero
+}
+
+// NPC trade transaction (NPC-TRADE-1). BUY lines: 1..20 coin BURNs in the fee
+// plan's order (worth ascending, then highest placement ordinal first; only
+// the last keeps units), the change (burned - total, below the last burned
+// coin's worth: change / 100 platinum, then change % 100 gold, each only when
+// positive) and the item MINT last. SELL lines: one item BURN of a non-coin
+// item, then the proceeds as crystal, platinum and gold, each only when
+// positive, at most 100 crystal. MINT entries are consecutive after every BURN
+// entry. A BUY whose carried coins are worth less than the total pays the rest
+// from the buyer's (Account, World) bank balance (BANK-FEE-0 §4.3/§5): it then
+// carries bank_debit, every coin BURN is whole, there is no change MINT and
+// burned_gold_units + bank_debit.debit_gold_units = total_gold_units.
+message OneItemNpcTradeV1 {
+  OneItemNpcTradeCauseV1 cause = 1;
+  OneItemCommandRefV1 command = 2; // the trade command, command_id non-zero
+  bytes character_id = 3;          // 16-byte UUIDv7
+  bytes world_id = 4;
+  bytes channel_id = 5;
+  uint64 runtime_scope_ownership_generation = 6; // non-zero
+  bytes backpack_item_instance_id = 7;           // parent of every line's entry
+  uint32 quantity = 8;                           // 1..100 units of the item
+  uint64 unit_price = 9;                         // 0..total bound (0: NPC-0 §5.3/§5.4)
+  uint64 total_gold_units = 10; // unit_price x quantity; BUY <= 20,000,000 + 999,999,999,999
+                                // (BANK-FEE-0 §5), SELL <= 1,009,999
+  uint64 burned_gold_units = 11; // BUY: worth of the burned coins; SELL: 0
+  uint64 minted_gold_units = 12; // BUY: the change; SELL: total_gold_units
+  repeated OneItemNpcTradeLineV1 lines = 13; // BUY 1..23, SELL 1..4 (price 0: the item line only)
+  // NPC-ECON-1: the buyer's bank part, one FEE_DEBIT BURN value line
+  // (DUR03-RL-03-NPC-TRADE-BUY). BUY only, and only under the
+  // (2, DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V2) tuple; absent otherwise.
+  optional OneItemFeeBankDebitV1 bank_debit = 14;
+}
+
+// Closed ItemUseCause (decision ITEM-USE-0 §4.2): the variant and the using
+// command's CommandRef, which is the cause's identity.
+message OneItemUseCauseV1 {
+  uint32 kind = 1; // 1 Food, 2 Potion
+  string content_revision = 6;
+  string ruleset_revision = 7;
+  string sim_revision = 8;
+  OneItemCommandRefV1 command_ref = 9;
+}
+
+// The flask unit of a potion use: either a compatible stack E of the main
+// backpack grows by one unit (`before` present, same identity and definition) or
+// a fresh item F (`before` absent) of quantity 1 is planted in a new entry.
+message OneItemUseFlaskV1 {
+  OneItemStateV1 before = 1; // E, LIVE; absent for a fresh flask item
+  OneItemStateV1 after = 2;  // LIVE; E with quantity + 1, or F with quantity 1
+  OneItemContainerEntryV1 entry = 3; // E's entry, or F's new entry
+}
+
+// One item use: exactly one unit of `source_before` leaves (quantity - 1 and
+// the identity kept, or RETIRED at quantity 0) from its container entry. A
+// potion with an empty flask adds `flask` (the TRANSFORM output); `flask_missing`
+// records a flask the character had no room for (burn shape, PARITY_PENDING
+// until ITEM-MOVE-2b); `flask` and `flask_missing` are never both set, and
+// neither is set for Food. Touches 1 ItemInstance (2 with `flask`).
+message OneItemUseV1 {
+  OneItemStateV1 source_before = 1; // LIVE, quantity >= 1
+  OneItemStateV1 source_after = 2;  // same identity, World and definition
+  OneItemContainerEntryV1 source_entry = 3; // the used stack's entry before
+  OneItemUseCauseV1 cause = 4;
+  bytes character_id = 5; // exactly 16-byte non-nil UUIDv7
+  bytes world_id = 6;
+  bytes channel_id = 7;
+  uint64 runtime_scope_ownership_generation = 8; // non-zero
+  uint64 expected_session_generation = 9; // non-zero, the rule 2 fence
+  bytes expected_game_session_id = 10; // equals cause.command_ref.game_session_id
+  OneItemUseFlaskV1 flask = 11;
+  bool flask_missing = 12;
+}
+
+// D1230 closed material-free ForgeCause::DustLimit. Exactly one Character dust debit
+// and one +20 limit transition, no ItemInstance, fee, conversion, RNG or recipe field.
+// Tag 13 is bound by the root coordinator for this private review packet, not a CP reservation.
+message OneForgeDustBalanceV1 {
+  uint32 balance = 1;
+  uint32 dust_limit = 2; // exactly 100+20*n, n=0..225
+}
+message OneItemForgeDustLimitV1 {
+  bytes character_id = 1;
+  bytes world_id = 2;
+  bytes channel_id = 3;
+  bytes occurrence_id = 4;
+  bytes entry_id = 5;
+  optional bytes previous_entry_id = 6; // required by the closed shape: a prior gain
+  OneForgeDustBalanceV1 before = 7;
+  OneForgeDustBalanceV1 after = 8;
+  uint32 dust_burned = 9; // 25+(before.dust_limit-100)/20, no caller-chosen price
+  bytes content_digest = 10; // exact current server artifact digest, 32 bytes
+  string ruleset_revision = 11; // D1230
+  uint32 simulation_profile_revision = 12;
+  bytes game_session_id = 13;
+  uint64 command_id = 14;
+  uint64 connection_generation = 15;
+  uint64 character_lease_generation = 16;
+  uint64 scope_ownership_generation = 17;
+  uint64 character_revision = 18; // observed unchanged
 }

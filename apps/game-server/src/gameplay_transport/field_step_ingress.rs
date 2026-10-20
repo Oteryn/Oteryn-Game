@@ -205,36 +205,12 @@ impl StepIngressRead<'_, '_> {
                             // equipment absorption or initial HP application.
                             continue;
                         }
+                        // PVP-0 §6.4: a `pvp_zone` tile grants nothing until ARENA-0, so a
+                        // NoPvP World keeps no field-only exception.
                         if world.mode()
                             == crate::durability::spell_field_policy::FieldWorldType::NoPvp
                         {
-                            let current = runtime
-                                .read_actor_position(creator.actor)
-                                .map_err(MovementError::Actor)?;
-                            if current.context() != runtime.pinned_movement_context() {
-                                return Err(MovementError::NotQualified);
-                            }
-                            let position = current.position();
-                            let creator_tile = room
-                                .movement_cells()
-                                .spell_tiles()
-                                .lookup(
-                                    room.movement_cells().scope(),
-                                    crate::content::LogicalCell {
-                                        x: position.x,
-                                        y: position.y,
-                                        z: i32::from(position.floor),
-                                    },
-                                )
-                                .map_err(|_| MovementError::NotQualified)?;
-                            let source_pvp =
-                                creator_tile.pvp_zone().ok_or(MovementError::NotQualified)?;
-                            let target_pvp = tile.pvp_zone().ok_or(MovementError::NotQualified)?;
-                            // Source NoPvP worlds still permit combat when both
-                            // actual current tiles are PvP zones.
-                            if !(source_pvp && target_pvp) {
-                                continue;
-                            }
+                            continue;
                         }
                         let origin = item
                             .field_origin
@@ -325,7 +301,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         now_us: u64,
         direction: CardinalStep,
-        blocking: &std::collections::BTreeSet<crate::content::LogicalCell>,
+        blocking: &dyn crate::map::floor::CellBlocker,
         equipment_delta: Option<i32>,
     ) -> super::actor_movement::StepInChannel {
         use super::actor_movement::step_in_channel;
@@ -346,7 +322,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 equipment_delta,
             );
         };
-        let Some(_room) = self.qualified_room else {
+        let Some(_room) = self.rooms.gate_field_step_ingress() else {
             return fail();
         };
         let Ok(origin) = runtime.read_actor_position(actor) else {
@@ -402,7 +378,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 game_session_id:session,connection_generation:current.current_connection_generation(),character_lease_generation:current.current_character_lease().generation(),runtime_scope:current.current_runtime_scope(),scope_ownership_generation:current.current_scope_generation(),
             };
             let source=owner.active_generation.and_then(|active|active.native_gameplay()).ok_or(crate::durability::DurabilityError::Unavailable)?;
-            let room=owner.qualified_room.ok_or(crate::durability::DurabilityError::Unavailable)?;
+            let room=owner.rooms.gate_field_step_ingress().ok_or(crate::durability::DurabilityError::Unavailable)?;
             let objects=owner.door.lock().await;
             let prepared=if crate::movement::source_floor_change::is_source_profile(owner.movement_cells) {
                 Some(crate::movement::source_floor_change::collect_current_source_step(&mut tx,permit,owner.root,owner.character,owner.holder,&fence,room,runtime,&objects,source,actor,session,origin,direction).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?)
@@ -444,7 +420,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             match validation {
                 Ok(contact)=>{
                     let proof=if let Some(prepared)=prepared {Some(crate::movement::source_floor_change::bind_current_source_step(&mut tx,runtime,prepared).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?)} else {None};
-                    *outcome=Some(states.step_with_creature_field_contact(runtime,owner.movement_cells,actor,session,now_us,direction,blocking,equipment_delta,proof,contact));
+                    *outcome=Some(states.step_with_creature_field_contact(runtime,owner.movement_cells,actor,session,now_us,direction,*blocking,equipment_delta,proof,contact));
                 },
                 Err(error)=>*outcome=Some(Err(error)),
             }

@@ -20,6 +20,7 @@ on:
       - imports/tibiawiki/facts/items-stats.json
       - imports/canary/items-xml/items.xml
       - docs/agents/evidence/OTV2-20261003-timed-item-facts-v1.json
+      - docs/agents/evidence/OTV2-20261013-ranged-weapon-facts-v1.json
       - imports/canary/items-xml/manifest.json
       - docs/agents/evidence/OTV2-20261003-equip-abilities*.json
       - imports/tibiawiki/source-evidence/stack-default-successor8/**
@@ -162,10 +163,15 @@ jobs:
           python test_lower_timed_item_packet.py
           python lower_timed_item_packet.py --check
 
-      - name: Equipment ability facts (wiki first, Canary fallback) tests and drift
+      - name: Equipment ability facts (wiki first, reference-engine fallback) tests and drift
         run: |
           python test_lower_equip_abilities_packet.py
           python lower_equip_abilities_packet.py --check
+
+      - name: Ranged weapon facts (wiki first, Canary fallback) tests and drift
+        run: |
+          python test_lower_ranged_packet.py
+          python lower_ranged_packet.py --check
 
       - name: Bounded source-qualified container capacity tests and drift
         run: python test_lower_wiki_capacity_packet.py
@@ -293,14 +299,14 @@ jobs:
               -o "$SRC/$1/data/items/items.xml"
           }
           # Revisions come from the tools' own pins; the census verifies each digest.
-          read -r CRYSTAL_REPO CRYSTAL_REV CANARY_REPO CANARY_REV DONOR_REV < <(python -c '
+          read -r CRYSTAL_REPO CRYSTAL_REV REFERENCE_B_REPO REFERENCE_B_REV DONOR_REV < <(python -c '
           from engine_items import ENGINES
           from donor_census import DONOR_COMMIT
           c, k = ENGINES["crystal"], ENGINES["canary"]
           print(c["repository"], c["revision"], k["repository"], k["revision"], DONOR_COMMIT)')
           fetch crystal "$CRYSTAL_REPO" "$CRYSTAL_REV"
           fetch donor "$CRYSTAL_REPO" "$DONOR_REV"
-          fetch canary "$CANARY_REPO" "$CANARY_REV"
+          fetch canary "$REFERENCE_B_REPO" "$REFERENCE_B_REV"
           python client_appearance_census.py --check \
             --crystal-source "$SRC/crystal" --donor-source "$SRC/donor" --canary-source "$SRC/canary"
 

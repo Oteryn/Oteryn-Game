@@ -45,6 +45,7 @@ pub mod item_abilities;
 pub mod item_admission;
 pub mod item_bed_promotion;
 pub mod item_capacity_promotion;
+pub mod item_consumption_promotion;
 pub mod item_description_promotion;
 pub mod item_description_wiki_promotion;
 pub mod item_document_promotion;
@@ -60,6 +61,7 @@ pub mod item_name15_promotion;
 pub mod item_name_promotion;
 pub mod item_numeric_modifier_promotion;
 pub mod item_physical_promotion;
+pub mod item_ranged_promotion;
 pub(crate) mod item_ref;
 pub mod item_stack_default_promotion;
 pub mod item_stack_default_successor8_promotion;
@@ -69,6 +71,7 @@ pub mod item_stats_promotion;
 pub mod item_timed_promotion;
 pub mod item_use_observation_promotion;
 pub mod item_weapon_metadata_promotion;
+mod mail_text_policy;
 mod model;
 pub(crate) mod native_cell_lookup;
 pub(crate) mod native_gameplay;
@@ -101,6 +104,13 @@ pub use fixture::synthetic_vsl_fixture;
 pub use model::*;
 pub use npc_catalogue::{
     NpcDataCatalogue, load_data_only_npc_catalogue, npc_catalogue_preproduction_limits,
+};
+#[allow(
+    unused_imports,
+    reason = "read by NPC talk (NPC-TALK-1), which has no boot caller yet"
+)]
+pub(crate) use npc_catalogue::{
+    NpcEntry, NpcGeneratedReplies, NpcReplyLine, NpcReplyTemplate, NpcServiceModel,
 };
 pub use production::{
     CompiledFirstProductionContent, ContentLockBinding, ContentLockEntry, DurableMigrationClass,

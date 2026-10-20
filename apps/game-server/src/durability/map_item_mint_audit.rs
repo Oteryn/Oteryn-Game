@@ -163,7 +163,9 @@ pub fn check_map_item_mint(value: &OneItemMapItemMintV1) -> Result<(), AuditErro
     check_uuid_v7(&command.game_session_id)?;
     check_uuid_v7(&entry.world_id)?;
     check_uuid_v7(&entry.channel_id)?;
+    // A map-authored key is never materializable (WORLD-INTERACTION-0 §4.4).
     if !value.before_semantically_absent
+        || after.key_number != 0
         || after.lifecycle != ITEM_LIFECYCLE_LIVE
         || after.quantity == 0
         || after.quantity > GAMEITEM01_STACK_QUANTITY_MAX
@@ -354,6 +356,7 @@ mod tests {
                 }),
                 quantity: 3,
                 lifecycle: ITEM_LIFECYCLE_LIVE,
+                key_number: 0,
             }),
             destination: Some(OneItemGroundV1 {
                 world_id: uuid(1),
@@ -654,6 +657,7 @@ mod tests {
                     }),
                     quantity: u32::MAX,
                     lifecycle: u32::MAX,
+                    key_number: 0,
                 }),
                 destination: Some(OneItemGroundV1 {
                     world_id: uuid(0xee),

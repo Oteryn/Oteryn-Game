@@ -7,7 +7,7 @@ reference-date wiki (canary_batch.Converter.adopt_official). D47 accepts the cap
 because no Tibia.com news item dated after the reference date and up to the capture changes a creature
 (NEWS_CHECKED).
 
-Usage: python official_library.py --canary <Canary checkout> --captures <dir of <race>.json> [--out FILE] [--crystal <Crystal checkout>]
+Usage: python official_library.py --reference-engine <Canary checkout> --captures <dir of <race>.json> [--out FILE] [--crystal <Crystal checkout>]
        python official_library.py --crystal <Crystal checkout> --extra-captures <dir>
 """
 import argparse
@@ -140,7 +140,7 @@ def capture(directory, paths):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
-    parser.add_argument('--canary', type=Path, help='required unless --extra-captures')
+    parser.add_argument('--reference-engine', type=Path, help='required unless --extra-captures')
     parser.add_argument('--captures', type=Path, help='required unless --extra-captures')
     parser.add_argument('--out', type=Path, default=SAMPLE)
     parser.add_argument('--crystal', type=Path, help='also write CRYSTAL_SAMPLE for the crystal_batch.py monsters')
@@ -149,8 +149,8 @@ def main():
     args = parser.parse_args()
     if args.extra_captures and not args.crystal:
         parser.error('--extra-captures needs --crystal')
-    if not args.extra_captures and not (args.canary and args.captures):
-        parser.error('--canary and --captures are required unless --extra-captures is given')
+    if not args.extra_captures and not (args.reference_engine and args.captures):
+        parser.error('--reference-engine and --captures are required unless --extra-captures is given')
     if args.extra_captures:
         import crystal_batch
         extra = tuple(f'{crystal_batch.MONSTER_ROOT}/{relative}.lua' for relative in crystal_batch.EXTRA_MONSTERS)
@@ -167,11 +167,11 @@ def main():
         print(json.dumps({'out': CRYSTAL_EXTRA_SAMPLE.name, 'library_entries': len(library), 'monsters': len(monsters)}))
         return
     library = [json.loads(path.read_text(encoding='utf-8')) for path in sorted(args.captures.glob('*.json'))]
-    outputs = [(args.out, sorted((args.canary / cb.MONSTER_DIR).rglob('*.lua')))]
+    outputs = [(args.out, sorted((args.reference_engine / cb.MONSTER_DIR).rglob('*.lua')))]
     if args.crystal:
         import crystal_batch
         outputs.append((CRYSTAL_SAMPLE, [args.crystal / crystal_batch.MONSTER_ROOT / (relative + '.lua')
-                                         for relative in crystal_batch.files(args.canary, args.crystal)]))
+                                         for relative in crystal_batch.files(args.reference_engine, args.crystal)]))
     for out, paths in outputs:
         monsters = facts_for(paths, library)
         sample = {'schema': 'OTERYN_OFFICIAL_LIBRARY_FACTS/v1', 'decision': 'D47', 'captured': CAPTURED, 'api': API,

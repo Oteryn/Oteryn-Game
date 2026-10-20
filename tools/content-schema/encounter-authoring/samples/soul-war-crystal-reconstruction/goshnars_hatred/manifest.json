@@ -107,16 +107,7 @@
         491,
         492,
         493,
-        494,
-        495,
-        496,
-        497,
-        498,
-        499,
-        500,
-        501,
-        502,
-        503
+        494
       ],
       "status": "mapped",
       "resolution": "Crystal defines the Ashes/Spark/Flame/Blaze thresholds at 180/135/90/45 seconds.",
@@ -196,27 +187,27 @@
         638,
         639
       ],
-      "status": "mapped",
-      "resolution": "BurningChangeForm advances Ashes -> Spark -> Flame -> Blaze -> Ashes; the Blaze reset requires the extra reset tick, represented by a 46 second Blaze timer. New Ashes adds +10 hatred.",
-      "destination": "/encounter/rules"
+      "status": "unresolved_semantics",
+      "resolution": "BurningChangeForm compares the shared pre-decrement time to form thresholds. The initial Ashes transition occurs on callback 46, and Sorrow can raise time across earlier thresholds. The forward-only draft timers are not exact counter/phase equivalence."
     },
     {
       "source_index": 1,
       "source_lines": [
-        641,
-        642,
-        643,
-        644,
-        645,
-        646,
         647,
         648,
         649,
         650,
         651,
         652,
-        653,
-        654,
+        653
+      ],
+      "status": "mapped",
+      "resolution": "Player hits add the hatred multiplier to boss defense; the accepted Oteryn counter/attribute model is retained.",
+      "destination": "/encounter/rules/6"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
         655,
         656,
         657,
@@ -224,18 +215,10 @@
         659,
         660,
         661,
-        662,
-        663,
-        664,
-        665,
-        666,
-        667,
-        668,
-        669,
-        670
+        662
       ],
       "status": "mapped",
-      "resolution": "The hatred multiplier adds to boss defense on player hits and increases boss outgoing damage; the accepted Oteryn counter/attribute model is retained.",
+      "resolution": "The hatred multiplier increases boss outgoing primary damage; the accepted Oteryn additive empowerment model is retained.",
       "destination": "/encounter/rules/4"
     },
     {
@@ -320,6 +303,62 @@
       "status": "mapped",
       "resolution": "SoulWarBossesDeath credits contributors; the encounter exposes boss_defeated while persistent taints and boss flags remain Quest state.",
       "destination": "/encounter/rules/7"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        579,
+        580,
+        581,
+        582,
+        583,
+        584,
+        585,
+        586,
+        587,
+        588,
+        589,
+        590,
+        591,
+        592,
+        593,
+        594,
+        595
+      ],
+      "status": "unresolved_semantics",
+      "resolution": "Sorrow adds 10 to the shared remaining counter, which can cross earlier form thresholds and reverse forms. Extending only the currently running forward timer does not cover this behavior."
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        655,
+        656,
+        657,
+        658,
+        659,
+        660,
+        661,
+        662
+      ],
+      "status": "unresolved_semantics",
+      "resolution": "The source hatred multiplier scales primary outgoing damage only. The draft outgoing_damage_percent attribute is not proof of primary-only composition; no additional accepted exception was established by this audit."
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143,
+        144,
+        145
+      ],
+      "status": "unresolved_semantics",
+      "resolution": "Hatred disappearance removes the current Burning form. Death-only cleanup does not cover non-death disappearance and must be reconciled before admission."
     }
   ],
   "outcome_evidence": []

@@ -425,16 +425,19 @@ fn a_hit_to_zero_is_lethal_and_the_dead_player_is_no_target() {
 }
 
 #[test]
-fn the_ledger_holds_the_envelope_and_refuses_one_more_live_issuer() {
-    // §4.9 derived bound: 16 spawn sources x 4 creatures.
+fn the_ledger_keeps_every_live_issuer_past_the_old_envelope_and_a_reused_slot_starts_fresh() {
+    // SPAWN-CEILINGS-1 (Codex 4242381779): 300 issuers, past the D57 envelope of 16 x 4 and the
+    // old `AI01-ACTIVE-ACTORS` 256. The ledger holds `CREATUREAI0-RL-04` entries, as many as
+    // the creatures a Channel admits, and drops dead issuers' entries when full.
     assert_eq!(
         CREATURE_BITE_LEDGER_MAX,
-        AI01_SPAWN_SOURCES_PER_SCOPE_MAX * AI01_SPAWN_POPULATION_MAX
+        CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX
     );
-    let capacity = CREATURE_BITE_LEDGER_MAX + 2;
-    let mut owner = owner(capacity, position(11, 10));
+    const ISSUERS: usize = 300;
+    // One player and 300 creatures fill every slot.
+    let mut owner = owner(ISSUERS + 1, position(11, 10));
     let mut creatures = vec![owner.creature];
-    for index in 1..=CREATURE_BITE_LEDGER_MAX {
+    for index in 1..ISSUERS {
         let x = i32::try_from(index).expect("x") + 100;
         creatures.push(
             owner
@@ -445,49 +448,53 @@ fn the_ledger_holds_the_envelope_and_refuses_one_more_live_issuer() {
     }
     let mut ledger = CreatureBiteLedger::default();
     let mut vitals = vitals(185);
-    for creature in &creatures[..CREATURE_BITE_LEDGER_MAX] {
-        // Out of range, but each issuer's think still resolves and is kept.
-        let _ = bite(
-            (&mut owner.runtime, owner.player, owner.session),
-            &mut ledger,
-            &mut vitals,
-            *creature,
-            0,
-            UNPROTECTED,
-            0,
+    for creature in &creatures {
+        // Only the first issuer is in range, but each issuer's think resolves and is kept.
+        assert_ne!(
+            bite(
+                (&mut owner.runtime, owner.player, owner.session),
+                &mut ledger,
+                &mut vitals,
+                *creature,
+                0,
+                UNPROTECTED,
+                0,
+            ),
+            Err(BiteRejection::LedgerFull)
         );
     }
-    assert_eq!(ledger.len(), CREATURE_BITE_LEDGER_MAX);
-    let extra = creatures[CREATURE_BITE_LEDGER_MAX];
-    assert_eq!(
-        bite(
-            (&mut owner.runtime, owner.player, owner.session),
-            &mut ledger,
-            &mut vitals,
-            extra,
-            0,
-            UNPROTECTED,
-            0
-        ),
-        Err(BiteRejection::LedgerFull)
-    );
-    // A dead issuer's entry is dropped for a live one; retire drops it at once.
-    let dead = creatures[1];
-    owner.runtime.remove_test_actor(dead).expect("despawn");
-    assert_eq!(
-        bite(
-            (&mut owner.runtime, owner.player, owner.session),
-            &mut ledger,
-            &mut vitals,
-            extra,
-            0,
-            UNPROTECTED,
-            0
-        ),
-        Err(BiteRejection::OutOfRange)
-    );
-    assert_eq!(ledger.len(), CREATURE_BITE_LEDGER_MAX);
-    ledger.retire(extra);
-    assert_eq!(ledger.len(), CREATURE_BITE_LEDGER_MAX - 1);
+    assert_eq!(ledger.len(), ISSUERS);
     assert_eq!(vitals.writes, 1);
+    // The first issuer's bite landed; it despawns, and its slot, the only free one, takes the
+    // next creature. The dead entry stays until it is retired or the ledger is full.
+    let dead = creatures[0];
+    owner.runtime.remove_test_actor(dead).expect("despawn");
+    assert_eq!(ledger.len(), ISSUERS);
+    let newer = owner
+        .runtime
+        .admit_test_creature(position(11, 10))
+        .expect("newer creature");
+    assert_eq!(newer.actor_local_id(), dead.actor_local_id());
+    assert_ne!(newer, dead);
+    // The newer issuer's first bite is its own: no replay of the dead issuer's sequence 0 and no
+    // cooldown inherited from it.
+    assert!(
+        bite(
+            (&mut owner.runtime, owner.player, owner.session),
+            &mut ledger,
+            &mut vitals,
+            newer,
+            0,
+            UNPROTECTED,
+            0,
+        )
+        .is_ok()
+    );
+    assert_eq!(vitals.writes, 2);
+    assert_eq!(ledger.len(), ISSUERS + 1);
+    // Retiring the dead generation leaves the newer one's entry; retiring the newer drops it.
+    ledger.retire(dead);
+    assert_eq!(ledger.len(), ISSUERS);
+    ledger.retire(newer);
+    assert_eq!(ledger.len(), ISSUERS - 1);
 }

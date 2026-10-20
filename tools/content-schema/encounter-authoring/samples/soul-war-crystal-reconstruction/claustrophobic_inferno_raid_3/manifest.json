@@ -81,11 +81,10 @@
       "source_index": 0,
       "source_lines": [
         259,
-        260,
-        261
+        260
       ],
       "status": "mapped",
-      "resolution": "Crystal summer-update sets spawnTime=20 seconds, surviveTime=120 seconds and timeToKick=5 seconds.",
+      "resolution": "Crystal summer-update sets spawnTime=20 seconds and surviveTime=120 seconds. The separate 5 second player kick remains an unresolved reset action below.",
       "destination": "/encounter/state/timers"
     },
     {
@@ -119,12 +118,7 @@
         38,
         39,
         40,
-        41,
-        42,
-        43,
-        44,
-        45,
-        46
+        41
       ],
       "status": "mapped",
       "resolution": "The donor creates six stages (120/20), each spawning all three configured monster groups after a 3 second warning; the core models waves at t=3,23,43,63,83,103 seconds.",
@@ -133,18 +127,15 @@
     {
       "source_index": 1,
       "source_lines": [
+        43,
+        44,
+        45,
+        46,
+        47,
         48,
         49,
         50,
-        51,
-        52,
-        53,
-        54,
-        55,
-        56,
-        57,
-        58,
-        59
+        51
       ],
       "status": "unresolved_semantics",
       "resolution": "On reset Crystal removes monsters, waits 5 seconds, refreshes the zone and removes players. Encounter v1 has no delayed players-in-area removal/kick action."
@@ -152,6 +143,9 @@
     {
       "source_index": 1,
       "source_lines": [
+        58,
+        59,
+        60,
         61,
         62,
         63,
@@ -169,7 +163,10 @@
         75,
         76,
         77,
-        78
+        78,
+        79,
+        80,
+        81
       ],
       "status": "unresolved_semantics",
       "resolution": "Raid start is a sand-timer MoveEvent with direction filtering and a 10 second post-reset cooldown. This belongs to interaction/world entry ownership, not the encounter core."

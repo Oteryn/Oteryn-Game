@@ -13,14 +13,20 @@
 //!   `1..=100`, else 1, and `sub_type` its charges, else 0. A placement whose compact id names both
 //!   an Item and a Terrain record keeps its palette index, because the base keeps the id alone.
 //! - **Overlay.** The Channel overlay stays empty until MAP-CUTOVER-1c, so no added entry has
-//!   facts and every object revision is 0.
+//!   facts.
+//! - **Doors (MAP-DOOR-1).** The only state is the [`DoorBook`]: a plain door placement shows the
+//!   open item's facts while open and its transition count is its object revision; every other
+//!   object revision is 0.
 
+use super::door::{self, DoorBook, DoorStates, PaletteDoor};
+use super::floor::palette_mask;
 use super::overlay::{AddedItem, TilePos};
 use super::view::{self, EntryFacts, MapFacts, placement_key};
 use super::{LoadError, palette_appearance};
 use oteryn_protocol_oteryn::world_map::{MAX_BASE_ORDINAL, MapDefinition};
 use oteryn_world_bundle::bundle::{Family, Manifest, PaletteEntry, Sector, TerrainKind};
 use oteryn_world_bundle::sector::Attrs;
+use std::collections::BTreeSet;
 use std::num::NonZeroU32;
 
 /// The served definition of the Item a palette key names.
@@ -32,6 +38,9 @@ pub struct ItemDefinition {
     pub solid: Option<bool>,
     pub blocks_projectile: bool,
     pub pickupable: bool,
+    /// The content profile's `item_type` is `Door` (MAP-DOOR-1): the only thing that makes an
+    /// Item a door, whatever its appearance id.
+    pub door: bool,
 }
 
 /// Why the bundle's palette cannot be served.
@@ -55,6 +64,7 @@ struct PaletteFacts {
     id: u32,
     facts: EntryFacts,
     solid: bool,
+    door: PaletteDoor,
 }
 
 /// The per-placement facts that differ from the palette entry's.
@@ -76,6 +86,7 @@ pub struct BundleFacts {
     placements: Vec<(u64, Placement)>,
     /// Ascending.
     houses: Vec<TilePos>,
+    doors: DoorBook,
 }
 
 const AMBIGUOUS: u32 = u32::MAX;
@@ -109,6 +120,7 @@ impl BundleFacts {
             ids: unique,
             placements: Vec::new(),
             houses: Vec::new(),
+            doors: DoorBook::default(),
         })
     }
 
@@ -121,8 +133,15 @@ impl BundleFacts {
         })
     }
 
-    /// Records the placements and house tiles of one sector of `manifest`.
-    pub(crate) fn push(&mut self, manifest: &Manifest, sector: &Sector) {
+    /// Records the placements, house tiles and doors of one sector of `manifest`, and adds to
+    /// `blocked` the tiles one of whose top-level entries is a `wall` Terrain or a solid Item. A
+    /// door entry does not block here: [`DoorBook`] answers it by its current state.
+    pub(crate) fn push(
+        &mut self,
+        manifest: &Manifest,
+        sector: &Sector,
+        blocked: &mut BTreeSet<TilePos>,
+    ) {
         for tile in &sector.tiles {
             let pos = TilePos {
                 x: tile.x,
@@ -133,15 +152,44 @@ impl BundleFacts {
                 self.houses.push(pos);
             }
             let top = tile.items.iter().filter(|item| item.depth == 0);
+            let mut blocks = false;
             for (ordinal, item) in top.enumerate() {
-                let Some(key) = u8::try_from(ordinal)
+                let door = self
+                    .palette
+                    .get(item.palette as usize)
+                    .map_or(PaletteDoor::No, |entry| entry.door);
+                let key = u8::try_from(ordinal)
                     .ok()
                     .filter(|ordinal| *ordinal <= MAX_BASE_ORDINAL)
-                    .and_then(|ordinal| placement_key(pos, ordinal))
-                else {
-                    break;
+                    .and_then(|ordinal| placement_key(pos, ordinal));
+                // A dropped teleport is a bound, non-materialized placement, never a door.
+                let dropped =
+                    key.is_some_and(|key| manifest.dropped_teleports.binary_search(&key).is_ok());
+                let door = if dropped || bound(&item.attrs) {
+                    PaletteDoor::No
+                } else if tile.house != 0 && matches!(door, PaletteDoor::Pair { .. }) {
+                    // A house door belongs to the house runtime, never to the channel DoorBook.
+                    PaletteDoor::Sealed
+                } else {
+                    door
                 };
-                let dropped = manifest.dropped_teleports.binary_search(&key).is_ok();
+                let closed_solid = self.blocks(item.palette);
+                blocks |= closed_solid && door == PaletteDoor::No;
+                let Some(key) = key else {
+                    // A door beyond the ordinal reach cannot be named, so it blocks as a wall.
+                    blocks |= closed_solid;
+                    continue;
+                };
+                match door {
+                    PaletteDoor::Pair { open, open_solid } => {
+                        self.doors.push(key, closed_solid, open_solid, open);
+                    }
+                    PaletteDoor::Sealed => {
+                        self.doors.push_sealed();
+                        blocks |= closed_solid;
+                    }
+                    PaletteDoor::No => {}
+                }
                 let placement = Placement {
                     palette: item.palette,
                     bound: dropped || bound(&item.attrs),
@@ -166,6 +214,9 @@ impl BundleFacts {
                     self.placements.push((key, placement));
                 }
             }
+            if blocks {
+                blocked.insert(pos);
+            }
         }
     }
 
@@ -176,6 +227,52 @@ impl BundleFacts {
         self.houses.sort_unstable();
         self.houses.dedup();
         self.houses.shrink_to_fit();
+        self.doors.finish();
+    }
+
+    /// The doors of the bundle and their current state.
+    pub fn doors(&self) -> &DoorBook {
+        &self.doors
+    }
+
+    /// These facts with every door's state read once (Codex 4239177726): a map composition
+    /// reads them so that each door's appearance and its object revision come from one state,
+    /// whatever `USE` commits while it runs.
+    pub(crate) fn pinned(&self) -> PinnedFacts<'_> {
+        PinnedFacts {
+            facts: self,
+            doors: self.doors.snapshot(),
+        }
+    }
+
+    fn entry(
+        &self,
+        pos: TilePos,
+        ordinal: u8,
+        id: u32,
+        doors: Option<&DoorStates>,
+    ) -> Option<EntryFacts> {
+        let key = placement_key(pos, ordinal)?;
+        let placement = match self.placements.binary_search_by_key(&key, |(key, _)| *key) {
+            Ok(found) => self.placements[found].1,
+            Err(_) => Placement {
+                palette: self.unique_index(id)?,
+                bound: false,
+                count: 1,
+                sub_type: 0,
+            },
+        };
+        let entry = self.palette.get(placement.palette as usize)?;
+        if entry.id != id {
+            return None;
+        }
+        let facts = EntryFacts {
+            bound: placement.bound,
+            count: u32::from(placement.count),
+            sub_type: u32::from(placement.sub_type),
+            ..entry.facts
+        };
+        Some(self.doors.facts(key, facts, doors))
     }
 
     fn unique_index(&self, id: u32) -> Option<u32> {
@@ -193,6 +290,65 @@ fn bound(attrs: &Attrs) -> bool {
         || attrs.teleport.is_some()
         || attrs.text.is_some()
         || attrs.description.is_some()
+}
+
+/// The catalogue `floor_change` WorldObjects whose collision fact is `blocks_movement = true`
+/// (ascending Tibia appearance ids; kept equal to the JSON by a test). Every other floor-change
+/// record is walkable or has no collision fact (Terrain).
+const SOLID_FLOOR_CHANGE: &[u16] = &[17230, 24806, 24810, 24812, 28655];
+
+/// Whether the catalogue says the entry `key` names changes floors and can be walked onto: the
+/// compiler routes stairs and holes to Item entries that production definitions leave without a
+/// solidity fact, and a solid floor-change object (`SOLID_FLOOR_CHANGE`) is not one of them.
+fn walkable_floor_change(key: &str) -> bool {
+    palette_appearance(key).is_some_and(|id| {
+        palette_mask(Family::Item, key) != 0 && SOLID_FLOOR_CHANGE.binary_search(&id).is_err()
+    })
+}
+
+/// The `border` Terrain records whose catalogue `walkable` fact is not KNOWN true (ascending
+/// Tibia appearance ids; kept equal to `content/world/terrain` by a test): shorelines, cliffs and
+/// other borders that must keep blocking when the bundle states no solidity for them.
+const UNWALKABLE_BORDERS: &[u16] = &[
+    439, 440, 441, 442, 443, 444, 445, 446, 447, 448, 449, 450, 568, 569, 570, 4633, 4634, 4635,
+    4636, 4637, 4638, 4639, 4640, 4641, 4642, 4643, 4644, 4645, 4646, 4647, 4648, 4649, 4650, 4651,
+    4652, 6562, 6563, 6627, 6628, 6629, 6630, 6631, 6632, 6633, 6634, 6635, 6636, 6637, 6638, 6639,
+    6640, 6641, 6642, 6643, 6644, 6645, 6646, 6647, 6648, 6649, 6650, 6651, 6652, 6653, 6654, 6655,
+    6656, 6657, 6658, 6659, 6660, 6661, 6662, 6663, 6664, 6665, 6666, 6667, 6668, 6669, 6670, 6671,
+    6672, 6673, 6674, 6675, 6676, 6677, 6678, 6679, 6680, 6681, 6682, 6687, 6688, 6689, 6690, 6691,
+    6692, 6693, 6694, 7186, 8317, 8318, 11337, 11349, 11350, 11351, 11516, 11518, 11519, 11520,
+    11522, 11523, 11524, 11525, 11527, 11528, 11531, 11534, 11535, 11536, 11537, 11538, 12583,
+    12584, 12585, 12586, 12587, 12588, 12589, 12590, 12591, 12592, 12593, 12594, 15597, 15598,
+    15599, 15600, 15605, 15606, 15607, 15608, 15612, 15613, 15614, 15615, 15876, 15877, 15886,
+    15887, 20168, 21159, 21265, 21266, 21267, 21268, 21269, 21270, 21271, 21272, 21273, 21274,
+    21276, 21277, 21278, 21279, 21964, 24889, 24898, 24899, 25643, 26143, 28854, 28912, 30614,
+    30615, 31171, 31172, 31173, 31174, 31175, 31176, 31177, 31178, 31179, 31180, 31181, 31182,
+    31454, 31455, 31456, 31457, 31458, 31459, 31460, 31461, 32418, 32572, 32726, 38112, 38113,
+    38115, 38116, 38117, 38118, 38119, 38120, 38121, 38122, 38123, 38124, 38125, 38126, 38127,
+    38128, 38129, 38130, 38131, 38132, 38133, 38134, 38135, 38136, 38137, 38138, 38140, 38141,
+    38142, 38143, 38144, 38724, 38725, 38726, 38727, 38728, 38729, 38730, 38731, 38732, 38733,
+    38734, 38735,
+];
+
+/// Whether the bundle routes the Item entry to a Terrain record that does not block by itself:
+/// the compiler routes the World's grounds and borders to Item keys whose production definitions
+/// leave them without a solidity fact. A `ground` never blocks by itself (the base tile's ground
+/// already decides whether the cell can be walked on); a `border` only when the terrain
+/// catalogue proves it walkable (`UNWALKABLE_BORDERS`), so an unwalkable or unknown border, a
+/// wall, any other Terrain kind and every other Item without the fact still block.
+fn terrain_floor(entry: &PaletteEntry) -> bool {
+    let Some(terrain) = entry.terrain.as_ref() else {
+        return false;
+    };
+    match terrain.kind {
+        TerrainKind::Ground => true,
+        TerrainKind::Border => {
+            terrain.walkable != Some(false)
+                && palette_appearance(&entry.key)
+                    .is_some_and(|id| UNWALKABLE_BORDERS.binary_search(&id).is_err())
+        }
+        _ => false,
+    }
 }
 
 fn palette_facts(
@@ -218,6 +374,7 @@ fn palette_facts(
         sub_type: 0,
     };
     let mut solid = false;
+    let mut door = PaletteDoor::No;
     if entry.family == Family::Item {
         let definition = item(&entry.key)
             .filter(|definition| definition.reference == reference)
@@ -225,38 +382,70 @@ fn palette_facts(
         facts.definition = MapDefinition::Item(reference);
         facts.blocks_projectile = definition.blocks_projectile;
         facts.pickupable = definition.pickupable;
-        solid = definition.solid != Some(false);
+        solid = definition
+            .solid
+            .unwrap_or_else(|| !walkable_floor_change(&entry.key) && !terrain_floor(entry));
+        door = palette_door(&entry.key, item);
     }
     Ok(PaletteFacts {
         family: entry.family,
         id: entry.id,
         facts,
         solid,
+        door,
     })
+}
+
+/// Whether the Item palette key `key` is a plain closed door (MAP-DOOR-1), and the facts of its
+/// open counterpart, which `item` must serve. The content profile decides doorhood
+/// (`item_type` Door); the Game-owned registry only pairs a door with its open item.
+fn palette_door(key: &str, item: &impl Fn(&str) -> Option<ItemDefinition>) -> PaletteDoor {
+    if !item(key).is_some_and(|definition| definition.door) {
+        return PaletteDoor::No;
+    }
+    let Some(closed) = palette_appearance(key).map(u32::from) else {
+        return PaletteDoor::Sealed;
+    };
+    let Some(open) = door::open_of(closed) else {
+        return PaletteDoor::Sealed;
+    };
+    let Some(open_key) = door::open_key(key, closed, open) else {
+        return PaletteDoor::Sealed;
+    };
+    // The closed state must itself block movement and projectiles.
+    match item(key) {
+        Some(closed_def) if closed_def.solid != Some(false) && closed_def.blocks_projectile => {}
+        _ => return PaletteDoor::Sealed,
+    }
+    let Some(definition) = item(&open_key) else {
+        return PaletteDoor::Sealed;
+    };
+    // Qualified facts only: an item the profile does not describe reads `solid: None` and
+    // blocks projectiles, and must not pass as a walkable open doorway.
+    if definition.solid != Some(false) || definition.blocks_projectile {
+        return PaletteDoor::Sealed;
+    }
+    PaletteDoor::Pair {
+        open: EntryFacts {
+            definition: MapDefinition::Item(definition.reference),
+            terrain_kind: None,
+            appearance_id: view::appearance_id(
+                &open_key,
+                palette_appearance(&open_key).map(u32::from),
+            ),
+            blocks_projectile: definition.blocks_projectile,
+            pickupable: false,
+            bound: false,
+            count: 1,
+            sub_type: 0,
+        },
+        open_solid: false,
+    }
 }
 
 impl MapFacts for BundleFacts {
     fn base_entry(&self, pos: TilePos, ordinal: u8, id: u32) -> Option<EntryFacts> {
-        let key = placement_key(pos, ordinal)?;
-        let placement = match self.placements.binary_search_by_key(&key, |(key, _)| *key) {
-            Ok(found) => self.placements[found].1,
-            Err(_) => Placement {
-                palette: self.unique_index(id)?,
-                bound: false,
-                count: 1,
-                sub_type: 0,
-            },
-        };
-        let entry = self.palette.get(placement.palette as usize)?;
-        if entry.id != id {
-            return None;
-        }
-        Some(EntryFacts {
-            bound: placement.bound,
-            count: u32::from(placement.count),
-            sub_type: u32::from(placement.sub_type),
-            ..entry.facts
-        })
+        self.entry(pos, ordinal, id, None)
     }
 
     fn added_entry(&self, _item: &AddedItem) -> Option<EntryFacts> {
@@ -267,7 +456,238 @@ impl MapFacts for BundleFacts {
         self.houses.binary_search(&pos).is_ok()
     }
 
-    fn object_revision(&self, _placement_key: u64) -> u64 {
-        0
+    fn object_revision(&self, placement_key: u64) -> u64 {
+        self.doors.revision(placement_key)
+    }
+}
+
+/// [`BundleFacts`] with the door states of one read ([`BundleFacts::pinned`]).
+pub(crate) struct PinnedFacts<'a> {
+    facts: &'a BundleFacts,
+    doors: DoorStates,
+}
+
+impl MapFacts for PinnedFacts<'_> {
+    fn base_entry(&self, pos: TilePos, ordinal: u8, id: u32) -> Option<EntryFacts> {
+        self.facts.entry(pos, ordinal, id, Some(&self.doors))
+    }
+
+    fn added_entry(&self, item: &AddedItem) -> Option<EntryFacts> {
+        self.facts.added_entry(item)
+    }
+
+    fn house_tile(&self, pos: TilePos) -> bool {
+        self.facts.house_tile(pos)
+    }
+
+    fn object_revision(&self, placement_key: u64) -> u64 {
+        self.facts
+            .doors
+            .revision_in(placement_key, Some(&self.doors))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #![allow(clippy::expect_used)]
+    use super::*;
+    use crate::foundation::{ChannelId, WorldId};
+    use crate::map::boot::{boot, tests as fixture};
+
+    fn item_solid(key: &str) -> bool {
+        let entry = PaletteEntry {
+            key: key.into(),
+            family: Family::Item,
+            id: 0,
+            terrain: None,
+        };
+        let definition = |_: &str| {
+            Some(ItemDefinition {
+                reference: NonZeroU32::MIN,
+                solid: None,
+                blocks_projectile: false,
+                pickupable: false,
+                door: false,
+            })
+        };
+        palette_facts(&entry, &definition).expect("facts").solid
+    }
+
+    /// A solid floor-change object keeps blocking; a plain item without the fact blocks too.
+    #[test]
+    fn solid_floor_change_objects_without_a_solidity_fact_block() {
+        for key in SOLID_FLOOR_CHANGE {
+            assert!(item_solid(&format!("oteryn:item.tibia.i{key}")), "{key}");
+        }
+        assert!(item_solid("oteryn:item.tibia.i100"));
+        assert!(!item_solid("oteryn:item.tibia.i1950"));
+        assert!(!item_solid("oteryn:item.tibia.i293"));
+    }
+
+    /// An Item entry routed to a `ground` Terrain record, or to a `border` the terrain catalogue
+    /// proves walkable, does not block without a solidity fact (BOOT_WORLD_BUNDLE_REFUSED on the
+    /// real World, where every ground is an Item key); an unwalkable or unknown border, a wall,
+    /// any other Terrain kind and a stated solidity keep blocking.
+    #[test]
+    fn terrain_routed_grounds_and_walkable_borders_without_a_solidity_fact_do_not_block() {
+        let facts = |key: &str, kind: Option<TerrainKind>, walkable: Option<bool>| {
+            let solid = |solid: Option<bool>| {
+                let entry = PaletteEntry {
+                    key: key.into(),
+                    family: Family::Item,
+                    id: 0,
+                    terrain: kind.map(|kind| oteryn_world_bundle::bundle::Terrain {
+                        kind,
+                        walkable,
+                        ground_speed: (kind == TerrainKind::Ground).then_some(150),
+                    }),
+                };
+                let definition = move |_: &str| {
+                    Some(ItemDefinition {
+                        reference: NonZeroU32::MIN,
+                        solid,
+                        blocks_projectile: false,
+                        pickupable: false,
+                        door: false,
+                    })
+                };
+                palette_facts(&entry, &definition).expect("facts").solid
+            };
+            assert!(solid(Some(true)), "stated solid {key} {kind:?}");
+            solid(None)
+        };
+        let ground = Some(TerrainKind::Ground);
+        let border = Some(TerrainKind::Border);
+        assert!(
+            !facts("oteryn:item.tibia.i4408", ground, Some(true)),
+            "ground"
+        );
+        assert!(
+            !facts("oteryn:item.tibia.i1109", border, None),
+            "walkable border"
+        );
+        // The catalogue says these borders are not walkable: they keep blocking.
+        for id in [30614, 4633, 439] {
+            let key = format!("oteryn:item.tibia.i{id}");
+            assert!(facts(&key, border, None), "unwalkable border {id}");
+        }
+        assert!(
+            facts("oteryn:item.tibia.i1109", border, Some(false)),
+            "stated unwalkable"
+        );
+        assert!(
+            facts("item:border", border, None),
+            "border without a catalogue id"
+        );
+        for kind in [
+            TerrainKind::Wall,
+            TerrainKind::Roof,
+            TerrainKind::Field,
+            TerrainKind::Common,
+        ] {
+            assert!(
+                facts("oteryn:item.tibia.i4408", Some(kind), None),
+                "{kind:?}"
+            );
+        }
+        assert!(facts("oteryn:item.tibia.i4408", None, None), "plain item");
+    }
+
+    /// The unwalkable-border list equals the terrain catalogue's `border` records whose
+    /// `walkable` fact is not KNOWN true.
+    #[test]
+    fn unwalkable_border_list_matches_content() {
+        let dir =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content/world/terrain");
+        let (mut found, mut borders) = (Vec::new(), 0);
+        for entry in std::fs::read_dir(dir).expect("dir") {
+            let path = entry.expect("entry").path();
+            let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+            if !(name.starts_with("terrain-") && name.ends_with(".json")) {
+                continue;
+            }
+            let value: serde_json::Value =
+                serde_json::from_slice(&std::fs::read(&path).expect("read")).expect("json");
+            for record in value["records"].as_array().expect("records") {
+                if record["kind"]["value"] != "border" {
+                    continue;
+                }
+                borders += 1;
+                let walkable = &record["walkable"];
+                if walkable["state"] == "KNOWN" && walkable["value"] == true {
+                    continue;
+                }
+                let key = record["identity"]["key"].as_str().expect("key");
+                found.push(
+                    key.rsplit_once(".i")
+                        .expect("id")
+                        .1
+                        .parse::<u16>()
+                        .expect("n"),
+                );
+            }
+        }
+        found.sort_unstable();
+        assert!(borders > found.len(), "borders {borders}");
+        assert_eq!(found.as_slice(), UNWALKABLE_BORDERS);
+    }
+
+    /// The solid list equals the JSON catalogue's `blocks_movement` floor-change objects.
+    #[test]
+    fn solid_floor_change_list_matches_content() {
+        let dir =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content/world/objects");
+        let mut found = Vec::new();
+        for entry in std::fs::read_dir(dir).expect("dir") {
+            let path = entry.expect("entry").path();
+            let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+            if !(name.starts_with("objects-") && name.ends_with(".json")) {
+                continue;
+            }
+            let value: serde_json::Value =
+                serde_json::from_slice(&std::fs::read(&path).expect("read")).expect("json");
+            for record in value["records"].as_array().expect("records") {
+                let blocks = &record["collision"]["blocks_movement"];
+                if record["floor_change"]["state"] == "KNOWN"
+                    && blocks["state"] == "KNOWN"
+                    && blocks["value"] == true
+                {
+                    let key = record["identity"]["key"].as_str().expect("key");
+                    found.push(
+                        key.rsplit_once(".i")
+                            .expect("id")
+                            .1
+                            .parse::<u16>()
+                            .expect("n"),
+                    );
+                }
+            }
+        }
+        found.sort_unstable();
+        assert_eq!(found.as_slice(), SOLID_FLOOR_CHANGE);
+    }
+
+    /// Production item definitions carry no solidity fact: a stair routed to an Item entry is
+    /// still walkable through its catalogue floor change, a box without the fact still blocks.
+    #[test]
+    fn floor_change_items_without_a_solidity_fact_are_walkable() {
+        let (bytes, load) = fixture::floor_bundle();
+        let unknown = |key: &str| {
+            fixture::floor_items(key).map(|definition| ItemDefinition {
+                solid: None,
+                ..definition
+            })
+        };
+        let world = boot(
+            &bytes,
+            &fixture::floor_pins(load),
+            WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1]).expect("id"),
+            ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2]).expect("id"),
+            unknown,
+        )
+        .expect("boot");
+        let at = |x, floor| TilePos { x, y: 0, floor };
+        assert!(world.enterable(at(1, -8)), "east stair");
+        assert!(!world.enterable(at(1, -7)), "box");
     }
 }

@@ -15,7 +15,7 @@
 | Taints | five ordered taints; first boss starts 14-day window; bosses may be done in any order | Crystal; accepted Oteryn taint decisions preserved | Quest/encounter runtime held |
 | Claustrophobic Inferno | 3 raids; Crystal has 120 s survival, 20 s spawn cadence, 3 monster groups | Crystal + video; Canary conflict retained | three source-backed raid cores authored; 5 s player removal, entry-direction/10 s cooldown and one bad donor spawn token remain explicit hard holds |
 | Malice | Soul Cage 23 s / 40 s timeout chain and white/safe-tile behavior recorded | Crystal + visual video window `ZJKtfyRCPjQ 04:30-06:50` | representable core authored; procedural white tiles / additive reflect stay explicit hard holds |
-| Greed | Greedbeast/Soul chain, 5-kill vulnerability, Soul Sphere and 45 s window | Crystal + visual video `X_eftME4qkY 06:15-08:05` | representable core authored; moving Soul Sphere, Soulsnatcher area damage and max-health/reflect stack remain hard holds |
+| Greed | Greedbeast/Soul chain, 5-kill vulnerability, Soul Sphere and 34 s sphere-phase timeout | Crystal + visual video `X_eftME4qkY 06:15-08:05` | representable core authored; moving Soul Sphere, Soulsnatcher area damage and max-health/reflect stack remain hard holds |
 | Spite | Hazardous Phantom access, Searing Fire cycle, Weeping Soul corpse behavior, Fear evidence | Crystal + visual video `AR0TxuTv0rc 07:25-09:35` | representable fire core authored; per-player stomp cooldown/corpse step remain hard holds |
 | Cruelty | 40/55/70 energy gates, Greedy Eye, Mortal Essence/Greedy Maw, 15 s defense escalation | Crystal + visual video `t3GcDyTQsPk 05:10-07:15` | representable core authored; per-player Maw cooldown, dynamic damage scaling and custom elemental transform remain hard holds |
 | Hatred | 180 -> 135 -> 90 -> 45 Burning Hatred forms, Sorrow +10 s, +10 hatred empowerment | Crystal + visual video `oOgX3QQtJxg 04:20-06:30` | representable core authored; per-player Condensed Remorse / torment reset remains a hard hold |
@@ -46,3 +46,7 @@ The canonical Quest DATA is separately materialized through the Quest authoring 
 - `tools/content-schema/encounter-authoring/samples/soul-war-crystal-reconstruction/**`
 - `tools/content-schema/encounter-authoring/test_soul_war_crystal_reconstruction.py`
 - canonical Quest shard `content/quests/definitions/quests-00200-00299.json`
+
+## 2026-10-19 source-audit correction
+
+The earlier result matrix is a historical reconstruction summary, not a final claim of exact temporal equivalence. See `continuation-20261019.md` and `four-subagent-review-20261019.json` for the primary-source audit. The final manifests retain all 22 earlier unresolved topics with verified line-range corrections and contain 45 unresolved rows. Soul Cage overlap handling, global/shared clock equivalence, delayed Weak Soul replacement, captured Aspect position and other newly identified details remain explicit admission holds. Greed original-entity survival and fresh successor creation, and Megalomania's accepted guards/center teleport/phase-specific outcome, are repaired using existing Encounter vocabulary. No Quest or Encounter runtime has been enabled.

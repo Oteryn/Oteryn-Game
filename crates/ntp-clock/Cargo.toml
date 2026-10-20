@@ -1,0 +1,32 @@
+[package]
+name = "oteryn-ntp-clock"
+version.workspace = true
+description = "The kernel's NTP-disciplined clock and its error bound, read once (isolated FFI)"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[package.metadata.oteryn]
+category = "foundation"
+release-role = "production"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+libc = { version = "=0.2.189", default-features = false }
+
+# Owner decision 2026-10-14, PREMIUM-1 #2110, isolated FFI: this crate alone denies rather than
+# forbids `unsafe_code`, so the one kernel read can allow it locally. The other lints are the
+# workspace's.
+[lints.rust]
+unsafe_code = "deny"
+unused_must_use = "deny"
+
+[lints.clippy]
+all = { level = "deny", priority = -1 }
+dbg_macro = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"
+unimplemented = "deny"
+unwrap_used = "deny"

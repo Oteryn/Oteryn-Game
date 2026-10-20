@@ -123,10 +123,10 @@ def candidate(root: Path) -> dict:
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--canary", type=Path, default=Path("/workspace/spell-sources/canary"))
+    parser.add_argument("--reference-engine", type=Path, default=Path("/workspace/spell-sources/canary"))
     parser.add_argument("--write", action="store_true")
     args = parser.parse_args()
     if args.write:
-        PACKET.write_text(json.dumps(prove(args.canary), indent=2)+"\n")
+        PACKET.write_text(json.dumps(prove(args.reference_engine), indent=2)+"\n")
     else:
-        candidate(args.canary)
+        candidate(args.reference_engine)

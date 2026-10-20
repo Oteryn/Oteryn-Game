@@ -120,7 +120,7 @@ message ItemMoveIntentV1 {
     MainBackpackDestinationV1 main_backpack = 2;
     // Capability 12 only.
     EquipmentDestinationV1 equipment = 3;
-    // Capability 12 only.
+    // Capability 12, or capability 11 WORLD_INTERACTION_V1 (a map-item or Ground source).
     WorldTilePositionV1 ground = 4;
     // Capability 14 only.
     ContainerDestinationV1 container = 5;
@@ -143,7 +143,8 @@ enum ItemMoveOutcomeV1 {
   ITEM_MOVE_OUTCOME_SLOT_MISMATCH = 10;
   // Capability 12 only.
   ITEM_MOVE_OUTCOME_REQUIREMENT_NOT_MET = 11;
-  // Capability 12 only: the tile does not accept the item, no line of sight, or a limit is reached.
+  // Capability 12 or capability 11 (a map-item or Ground source, WORLD-INTERACTION-0 §10.1): the
+  // tile does not accept the item, no line of sight, or a limit is reached.
   ITEM_MOVE_OUTCOME_BLOCKED = 12;
 }
 

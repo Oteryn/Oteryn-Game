@@ -123,6 +123,13 @@ impl ActiveGeneration {
     pub(crate) fn native_gameplay(&self) -> Option<&super::native_gameplay::NativeGameplayState> {
         self.runtime_state.native_gameplay()
     }
+    /// The generation's pinned Character progression content (ARCH-PROGRESSION-SOURCE-0 §1.4);
+    /// `None` for a pin without the `progression` section.
+    pub(crate) fn progression(
+        &self,
+    ) -> Option<&super::character_progression_content::CharacterProgressionContent> {
+        self.native_gameplay()?.progression()
+    }
     pub fn identity(&self) -> &GenerationIdentity {
         &self.identity
     }
@@ -447,6 +454,9 @@ pub struct NativeEntryContentPin {
     /// carried through from the same qualified room this pin activates. The Channel activation
     /// owner binds the door's `LocalObjectRuntime` from this exact content.
     door: super::CanonicalReferencePlayableContent,
+    /// The qualified room's spawn source (SPAWN-1A-PACKET-1 §1.3), from this same activated
+    /// generation; `None` for the revision-1 spell candidate.
+    spawn_source: Option<super::NativeEntrySpawnSource>,
 }
 
 impl NativeEntryContentPin {
@@ -472,17 +482,24 @@ impl NativeEntryContentPin {
 
     /// The digest-level pin the Channel runtime is created with, the qualified cells the
     /// Channel's Movement reads, and the door's own qualified content the Channel's door
-    /// `LocalObjectRuntime` binds from (M2b). Consuming the activation pin keeps one active
-    /// generation per Channel creation.
+    /// `LocalObjectRuntime` binds from (M2b), and the spawn source the Channel runtime realizes
+    /// before it admits players (SPAWN-1A-PACKET-1 §1.3). Consuming the activation pin keeps one
+    /// active generation per Channel creation.
     pub(crate) fn into_channel_parts(
         self,
     ) -> (
         crate::foundation::ChannelContentPin,
         super::NativeEntryMovementCells,
         super::CanonicalReferencePlayableContent,
+        Option<super::NativeEntrySpawnSource>,
     ) {
         let channel_pin = self.channel_pin();
-        (channel_pin, self.movement_cells, self.door)
+        (
+            channel_pin,
+            self.movement_cells,
+            self.door,
+            self.spawn_source,
+        )
     }
 
     #[cfg(test)]
@@ -591,6 +608,10 @@ pub(crate) fn activate_native_entry_room_with_gameplay(
     if issuance.world_id != scope_world_id {
         return Err(NativeEntryActivationError::WorldMismatch);
     }
+    input
+        .validate_cosmetics_pin()
+        .map_err(super::ProjectError::from)
+        .map_err(NativeEntryActivationError::Qualification)?;
     let room = super::qualify_selected_native_gameplay_room(scope_world_id, input)
         .map_err(NativeEntryActivationError::Qualification)?;
     activate_qualified_native_entry_room(controller, quiescence, issuance, room)
@@ -641,6 +662,7 @@ fn activate_qualified_native_entry_room(
         map_revision_digest: room.map_revision_digest(),
         movement_cells: room.movement_cells().clone(),
         door: room.door().clone(),
+        spawn_source: room.spawn_source().cloned(),
     })
 }
 
@@ -964,7 +986,7 @@ mod tests {
         let active = controller.activate(&auth)?;
         assert_eq!(active.identity(), &identity);
         assert_eq!(active.activation_sequence(), 1);
-        assert_eq!(active.server_record_count(), 22);
+        assert_eq!(active.server_record_count(), 23);
         assert_eq!(active.client_record_count(), 6);
         assert_eq!(
             active

@@ -132,6 +132,19 @@ UNMODELLED_ROUTING_REASONS = {
     "mixed-or-unowned-surface",
     "unmodelled-input",
 }
+# Pull-request-only deferral for Content data. A PR whose only product-consumed
+# inputs are Content data files skips the PR Rust lanes; the Merge Queue classifies
+# the exact composed candidate without deferral and still runs Linux/PostgreSQL
+# (and Windows when routed) before integration. World bundle and Server
+# qualification selection are independent and unchanged. Rust sources, Cargo/build
+# inputs, workflows and repository controls are never deferred.
+CONTENT_DEFERRAL_PREFIX = "content/"
+CONTENT_DEFERRED_REASON = "content-consumers-deferred-to-merge-queue"
+CONTENT_DEFERRABLE_REASONS = frozenset({
+    "server-only-exact-consumer-closure",
+    "windows-consumer-affected",
+    "mixed-or-unowned-surface",
+})
 
 
 def full(reason: str, surface: str = "unknown") -> dict:
@@ -180,6 +193,16 @@ def agent_governance(path: str) -> bool:
     if path.startswith("tools/agents/"):
         return True
     return path.startswith("docs/agents/") and not path.startswith("docs/agents/evidence/")
+
+
+def deferrable_content_path(path: str) -> bool:
+    name = PurePosixPath(path).name
+    return (
+        path.startswith(CONTENT_DEFERRAL_PREFIX)
+        and not name.endswith(".rs")
+        and name not in BUILD_INPUTS | {"build.rs"}
+        and not canonical_control(path)
+    )
 
 
 def canonical_control(path: str) -> bool:
@@ -283,7 +306,9 @@ def auxiliary_path(roots: dict[str, str], path: str) -> bool:
     if path.startswith("tools/game-atlas-"):
         return False
     if (
-        path.startswith(("docs/", ".github/", "tools/", "content/", "imports/"))
+        # deploy/ holds operator deployment scripts and templates: auxiliary unless the
+        # exact candidate's product/build sources reference them.
+        path.startswith(("docs/", ".github/", "tools/", "content/", "imports/", "deploy/"))
         or PurePosixPath(path).name in {
             "AGENTS.md", "AGENTS.override.md", "README.md", "CHANGELOG.md",
             "CONTRIBUTING.md", "SECURITY.md", "LICENSE", "LICENSE-ASSETS.md",
@@ -616,6 +641,7 @@ def classify(
     candidate_modes_verified=False,
     candidate_sha=None,
     reference_consumers=None,
+    defer_content_consumers=False,
 ) -> dict:
     try:
         if candidate_modes_verified is not True:
@@ -707,6 +733,7 @@ def classify(
         affected: set[str] = set()
         auxiliary: list[str] = []
         unknown: list[str] = []
+        deferred: list[str] = []
         atlas_fullworld = False
 
         for path in scan_paths:
@@ -726,6 +753,16 @@ def classify(
             consumers = reference_consumers.get(path)
             if not isinstance(consumers, (set, list, tuple)):
                 return full("unverified-reference-consumers")
+            if (
+                defer_content_consumers is True
+                and consumers
+                and owner is None
+                and deferrable_content_path(path)
+                and CONTROL_CONSUMER not in consumers
+                and all(consumer in roots for consumer in consumers)
+            ):
+                deferred.append(path)
+                continue
             for consumer in consumers:
                 if consumer == CONTROL_CONSUMER:
                     return full("canonical-control-consumer-affected", "control-plane")
@@ -772,6 +809,13 @@ def classify(
             )
 
         if auxiliary and len(auxiliary) == len(scan_paths):
+            if deferred:
+                return dict(
+                    rust=False,
+                    windows=False,
+                    surface="content",
+                    reason=CONTENT_DEFERRED_REASON,
+                )
             return auxiliary_result(auxiliary)
 
         return full("mixed-or-unowned-surface")
@@ -825,6 +869,9 @@ WORLD_BUNDLE_INPUT_PREFIXES = (
     "content/houses/",
     "content/creatures/definitions/",
     "content/items/definitions/",
+    "content/npcs/definitions/",
+    "content/dialogues/definitions/",
+    "content/services/",
     "tools/world-bundle-compiler/",
     "crates/world-bundle/",
     ".cargo/",
@@ -925,14 +972,32 @@ def main() -> int:
             server_qualification = server_qualification_required(files, changed_count, complete)
             world_bundle = world_bundle_required(files, changed_count, complete)
             expected_head = os.environ["EXPECTED_HEAD"].strip().lower()
+            modes_verified = candidate_modes_safe(expected_head)
             result = classify(
                 files,
                 changed_count,
                 metadata,
                 complete=complete,
-                candidate_modes_verified=candidate_modes_safe(expected_head),
+                candidate_modes_verified=modes_verified,
                 candidate_sha=expected_head,
             )
+            # Only the pull-request gate defers Content consumers; the Merge Queue
+            # calls classify() directly and never passes defer_content_consumers.
+            if (
+                os.environ.get("GITHUB_EVENT_NAME") == "pull_request"
+                and result.get("reason") in CONTENT_DEFERRABLE_REASONS
+            ):
+                deferred = classify(
+                    files,
+                    changed_count,
+                    metadata,
+                    complete=complete,
+                    candidate_modes_verified=modes_verified,
+                    candidate_sha=expected_head,
+                    defer_content_consumers=True,
+                )
+                if deferred.get("reason") == CONTENT_DEFERRED_REASON:
+                    result = deferred
     except (
         OSError,
         ValueError,

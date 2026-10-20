@@ -538,11 +538,37 @@ fn envelope(message_type: u64, generation: u64, payload: &[u8]) -> Vec<u8> {
     output
 }
 
+/// ADMIT-CAP-1: the entry-room seam Channel requires capability 21 `LOGOUT_V1` (offered by both
+/// the in-process seam and the node-boot node, requires nothing, gates only command type 23,
+/// which no seam stage sends). Every seam bootstrap and resume declares support for it, so each
+/// admission and resume passes the owner's required-set check; one bootstrap and one resume
+/// omit it and must be refused (ADMIT0 §4).
+const SEAM_REQUIRED_CAPABILITIES: &[u32] = &[oteryn_protocol_oteryn::logout::CAPABILITY_LOGOUT_V1];
+
 fn bootstrap(major: u64, profile: u64, character: &[u8; 16], material: &str) -> Vec<u8> {
+    bootstrap_supporting(
+        major,
+        profile,
+        character,
+        material,
+        SEAM_REQUIRED_CAPABILITIES,
+    )
+}
+
+fn bootstrap_supporting(
+    major: u64,
+    profile: u64,
+    character: &[u8; 16],
+    material: &str,
+    supported: &[u32],
+) -> Vec<u8> {
     let mut payload = Vec::new();
     scalar(&mut payload, 1, major);
     scalar(&mut payload, 2, profile);
     scalar(&mut payload, 3, 1);
+    for capability in supported {
+        scalar(&mut payload, 4, u64::from(*capability));
+    }
     bytes_field(&mut payload, 5, material.as_bytes());
     bytes_field(&mut payload, 6, character);
     bytes_field(&mut payload, 7, b"seam-qualification");
@@ -552,12 +578,19 @@ fn bootstrap(major: u64, profile: u64, character: &[u8; 16], material: &str) -> 
 /// Structurally valid FND-02 resume request. The qualification supplies only
 /// unissued reconnect material; this transport must not mint resume authority.
 fn resume_payload(session: &[u8; 16], material: &[u8]) -> Vec<u8> {
+    resume_payload_supporting(session, material, SEAM_REQUIRED_CAPABILITIES)
+}
+
+fn resume_payload_supporting(session: &[u8; 16], material: &[u8], supported: &[u32]) -> Vec<u8> {
     let mut payload = Vec::new();
     bytes_field(&mut payload, 1, session);
     bytes_field(&mut payload, 2, material);
     scalar(&mut payload, 4, 1);
     scalar(&mut payload, 5, 1);
     scalar(&mut payload, 6, 1);
+    for capability in supported {
+        scalar(&mut payload, 7, u64::from(*capability));
+    }
     bytes_field(&mut payload, 8, b"seam-qualification");
     payload
 }
@@ -876,7 +909,7 @@ fn use_wire_frames(world: WorldId) -> TestResult<Vec<Vec<u8>>> {
             sequence,
             id,
             CommandStatus::Accepted,
-            &encode_use_result(disposition),
+            &encode_use_result(disposition).unwrap_or_default(),
         )
     };
     let overlay_delta = |sequence, from, state: &str, to| -> TestResult<Vec<u8>> {
@@ -1399,7 +1432,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
             &issuance,
         ),
     };
-    let (channel_pin, movement_cells, door_content) = pin
+    let (channel_pin, movement_cells, door_content, spawn_source) = pin
         .map_err(|e| format!("native entry activation: {e}"))?
         .into_channel_parts();
     // #162 5868482467 (M2b): the same door-binding the production boot sequence performs, from
@@ -1454,6 +1487,20 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
         )
         .map_err(|e| format!("channel runtime: {e:?}"))?,
     );
+    // SPAWN-1a: the activation spawn realization `serve` performs, before readiness.
+    let spawned_monsters = runtime
+        .lock()
+        .await
+        .realize_activation_spawns(
+            spawn_source
+                .map(|source| source.activation_facts())
+                .into_iter()
+                .collect(),
+        )
+        .map_err(|e| format!("creature spawn realization: {e:?}"))?;
+    evidence(&format!(
+        "creature_spawns state=realized spawned_monsters={spawned_monsters}"
+    ));
     if spell_input.is_some()
         && let Some(source_world) = room.source_world()
     {
@@ -1575,6 +1622,26 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
             evidence: &fresh_evidence,
             world_id: world,
             channel_id: channel,
+            // ADMIT0: the same binding boot derives. The entry-room seam declares
+            // `SEAM_REQUIRED_CAPABILITIES` (ADMIT-CAP-1); the spell seam declares none.
+            required_capabilities:
+                crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
+                    if spell_input.is_some() {
+                        &[]
+                    } else {
+                        SEAM_REQUIRED_CAPABILITIES
+                    },
+                    scope,
+                    scope_generation,
+                    "policy-s3b-1",
+                    crate::gameplay_transport::world_required_capabilities::offered_for_scope(
+                        false,
+                        spell_input
+                            .as_ref()
+                            .and_then(|_| content_controller.active()),
+                    ),
+                )
+                .map_err(|error| format!("required gameplay capabilities: {error:?}"))?,
             runtime: &runtime,
             movement_cells: &movement_cells,
             door: &door,
@@ -1584,10 +1651,15 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
                 .as_ref()
                 .and_then(|_| content_controller.active()),
             premium_coordinator: None,
-            qualified_room: spell_input.as_ref().map(|_| &room),
+            rooms: crate::gameplay_transport::SeamRooms::new(
+                spell_input.as_ref().map(|_| &room),
+                spell_input.as_ref().map(|_| &room),
+            ),
             achievements: &achievements,
+            npc_talk: None,
             imported_charms: &imported_charms,
             quest_catalogue: &quest_catalogue,
+            last_position_flush: None,
         },
         &shutdown,
     );
@@ -2363,7 +2435,7 @@ fn resume_frames(
             current_server_sequence: sequence,
             next_command_id: next,
             schema_revision: super::connection::SERVER_SCHEMA_REVISION,
-            selected_capabilities: &[],
+            selected_capabilities: SEAM_REQUIRED_CAPABILITIES,
         },
     )?];
     // USE-WIRE-V1 (#162 5868482467): the resync join snapshot also carries the door's current
@@ -2654,6 +2726,35 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
         "fnd04 invalid_signature=refused expired=refused wrong_character_binding=refused untrusted_signer=refused admissions=0",
     );
 
+    evidence("stage=capability_negatives");
+    // ADMIT-CAP-1 (ADMIT0 §4): the Channel requires `SEAM_REQUIRED_CAPABILITIES`. A bootstrap
+    // whose grant is valid and current but whose support omits them reaches the owner, which
+    // refuses it after grant authentication with exactly one ADMISSION_CAPABILITY_REQUIRED
+    // (1116) frame. Nothing commits and the grant's nonce stays unconsumed: the admission
+    // below presents this same grant.
+    let unsupported = framed(&bootstrap_supporting(
+        1,
+        1,
+        &characters[0],
+        &sign_grant(&grant.borrowed(), now_seconds()?),
+        &[],
+    ));
+    let reply = exchange_must_close(address, &exact, &unsupported).await?;
+    if reply
+        != Reply::Frames(vec![encode_protocol_error(
+            FoundationProtocolError::AdmissionCapabilityRequired,
+            0,
+        )?])
+    {
+        return Err(format!("capability_required: {reply:?}").into());
+    }
+    if committed_admissions(url).await? != 0 {
+        return Err("a capability refusal committed an admission".into());
+    }
+    evidence(
+        "capability required=21 unsupported_bootstrap=refused_admission_capability_required admissions=0",
+    );
+
     evidence("stage=admission");
     // Positive: the real owners admit on evidence fetched by this attempt
     // (the pre-seeded S2 observations are older than five seconds). The
@@ -2717,6 +2818,18 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
     };
     if frames.get(1..) != Some(expected.as_slice()) {
         return Err(format!("first-control steps diverged: {reply:?}").into());
+    }
+    // ADMIT-CAP-1: the same grant the capability negative presented admits, so that refusal
+    // consumed no nonce, and the session selects exactly the required set it declared.
+    let selected = frames
+        .first()
+        .and_then(|frame| decode_wire_envelope(frame).ok())
+        .and_then(|envelope| {
+            oteryn_protocol_oteryn::decode_server_accepted(envelope.payload()).ok()
+        })
+        .map(|accepted| accepted.selected_capabilities);
+    if selected.as_deref() != Some(SEAM_REQUIRED_CAPABILITIES) {
+        return Err(format!("admission selected {selected:?}, not the required set").into());
     }
     if session[6] >> 4 != 7 || committed_admissions(url).await? != 1 {
         return Err("admission did not commit exactly one GameSession".into());
@@ -2844,6 +2957,30 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
         now_seconds()?,
         [0x5e; 32],
     );
+    // ADMIT-CAP-1 (ADMIT0 §4, D1084): an authenticated recovery whose support omits the
+    // required set is refused before PREPARE with exactly one RECOVERY_CAPABILITY_REQUIRED
+    // (1118) frame. No claim is released and the credential is not consumed: the same
+    // credential resumes the same GameSession below.
+    let reply = exchange_must_close(
+        address,
+        &exact,
+        &framed(&envelope(
+            3,
+            0,
+            &resume_payload_supporting(&session, token.as_bytes(), &[]),
+        )),
+    )
+    .await?;
+    if reply
+        != Reply::Frames(vec![encode_protocol_error(
+            FoundationProtocolError::RecoveryCapabilityRequired,
+            0,
+        )?])
+        || committed_admissions(url).await? != 2
+    {
+        return Err(format!("recovery_capability_required: {reply:?}").into());
+    }
+    evidence("resume unsupported_recovery=refused_recovery_capability_required admissions=2");
     let step = u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT);
     let mut raw = framed(&resume(&session, token.as_bytes()));
     raw.extend_from_slice(&framed(&client_command_at(
@@ -3241,6 +3378,7 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
                     },
                 }),
                 world_object_overlay_delta: None,
+                gate_message_id: None,
             };
         let door_entry = |state: &str, revision: u64| WorldObjectOverlayEntry {
             content_generation,
@@ -3257,6 +3395,7 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
             result_server_sequence: result_sequence,
             world_spatial_delta: None,
             world_object_overlay_delta: None,
+            gate_message_id: None,
         };
         let door_event = |result_sequence: u64, base: u64, state: &str| {
             SessionEvent::WorldObjectOverlay(AppliedDelta {

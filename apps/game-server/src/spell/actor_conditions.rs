@@ -14,7 +14,7 @@ pub(crate) fn has_periodic_damage(state: &PlayerSpellState) -> bool {
     state.conditions.instances().iter().any(|instance| {
         matches!(
             instance.definition().condition_type(),
-            ConditionType::DamageOverTime(_)
+            ConditionType::DamageOverTime(_) | ConditionType::Agony
         )
     })
 }
@@ -440,6 +440,36 @@ pub(crate) fn apply_appearance(
     *state = staged;
     Ok(())
 }
+/// Cancel Magic Shield requires an active shield before committing the cast payment.
+pub(crate) fn remove_condition_at(
+    state: &mut PlayerSpellState,
+    name: &str,
+    now_us: u64,
+) -> Result<bool, SpellCastDisposition> {
+    if name == "manashield" {
+        require_active_mana_shield(&state.conditions, now_us)?;
+    }
+    remove_condition(state, name)
+}
+
+/// The same real store predicate is shared by both cast consumers. It neither
+/// removes the condition nor grants current actor or payment authority.
+pub(crate) fn require_active_mana_shield<S: Clone>(
+    store: &crate::ability::condition::ConditionStore<S>,
+    now_us: u64,
+) -> Result<(), SpellCastDisposition> {
+    if !store.accepts_time(now_us) {
+        return rejected();
+    }
+    if store
+        .mana_shield_at(now_us)
+        .is_none_or(|capacity| capacity == 0)
+    {
+        return Err(SpellCastDisposition::TargetIllegal);
+    }
+    Ok(())
+}
+
 pub(crate) fn remove_condition(
     state: &mut PlayerSpellState,
     name: &str,
@@ -455,6 +485,7 @@ pub(crate) fn remove_condition(
         "dazzled" => ConditionType::DamageOverTime(DotElement::Dazzled),
         "cursed" => ConditionType::DamageOverTime(DotElement::Cursed),
         "paralysis" | "paralyze" => ConditionType::Paralysis,
+        "manashield" => ConditionType::ManaShield,
         _ => return rejected(),
     };
     Ok(state.conditions.remove_type(kind))
@@ -506,15 +537,75 @@ fn tick_inner(
                         .min(staged.facts.max_mana);
                 }
             }
+            TickKind::Regeneration {
+                key: crate::ability::condition::ConflictKey::FoodRegeneration,
+                suppressed,
+            } => {
+                if !suppressed {
+                    super::food_regeneration::credit_fed_second(&mut staged);
+                }
+            }
+            // §3.5: a refused agony occurrence is used up in the protection zone.
+            TickKind::Agony { refused: true, .. } => {}
+            TickKind::Agony {
+                amount,
+                refused: false,
+            } => {
+                // These cycles record no death and have no PvP legality owner: only a
+                // non-lethal hit of creature provenance is dealt here. Any other occurrence
+                // goes to the combat owner, which deals it or leaves the pass unchanged.
+                let creature = tick.provenance.source_kind == ConditionSourceKind::Creature
+                    && tick
+                        .provenance
+                        .source
+                        .as_deref()
+                        .is_some_and(|source| source.starts_with("creature:"));
+                match creature.then(|| stage_agony_hit(&staged, amount, now)) {
+                    Some(Ok((successor, _))) if successor.health > 0 => staged = successor,
+                    _ => combat.push(tick),
+                }
+            }
             TickKind::Damage { .. } | TickKind::Regeneration { .. } => combat.push(tick),
         }
     }
     *state = staged;
     Ok(combat)
 }
+/// FOOD-REGEN-1: eating food adds `regeneration_seconds` to the fed time (cap 1,200 s).
+/// A full fed time or an unrepresentable food is refused and leaves the state unchanged.
+pub(crate) fn eat_food(
+    state: &mut PlayerSpellState,
+    regeneration_seconds: u16,
+    now_ms: u64,
+) -> Result<(), SpellCastDisposition> {
+    if regeneration_seconds == 0 {
+        return rejected();
+    }
+    let added_ms = u32::from(regeneration_seconds) * 1_000;
+    let mut staged = state.clone();
+    let food = definition(
+        "food.regeneration",
+        ConditionValues::FoodRegeneration {
+            added_ms,
+            interval_ms: super::food_regeneration::FOOD_TICK_MS,
+        },
+    )?;
+    // `Full` is a refusal, not `KeptCurrent`: `apply_definition` maps it to `Rejected`.
+    apply_definition(&mut staged, food, now_ms, 0)?;
+    *state = staged;
+    Ok(())
+}
 pub(crate) fn clear_on_lifecycle(state: &mut PlayerSpellState) {
     state.field_attack_history.clear_on_lifecycle();
     state.conditions.clear_on_death();
+    if let Some(monk) = state.monk.as_mut() {
+        monk.clear_on_death();
+    }
+    state.regen_health_ms = 0;
+    state.regen_mana_ms = 0;
+    if let Some(monk) = state.monk.as_mut() {
+        monk.clear_on_death();
+    }
 }
 
 /// The existing creature-bite vitals owner applies its already qualified damage to the
@@ -524,6 +615,38 @@ pub(crate) fn stage_creature_hit(
     state: &PlayerSpellState,
     magnitude: u32,
     now: u64,
+) -> Result<
+    (
+        PlayerSpellState,
+        crate::ability::creature_bite::FlooredDamage,
+    ),
+    SpellCastDisposition,
+> {
+    stage_hit(state, magnitude, now, true)
+}
+
+/// CONDITIONS-0 §3.5: an `agony` tick skips the whole incoming mitigation pipeline (damage
+/// reduction and the mana shield included, §3.3); only the D54 HP floor and the lifecycle of
+/// [`stage_creature_hit`] apply.
+pub(crate) fn stage_agony_hit(
+    state: &PlayerSpellState,
+    magnitude: u32,
+    now: u64,
+) -> Result<
+    (
+        PlayerSpellState,
+        crate::ability::creature_bite::FlooredDamage,
+    ),
+    SpellCastDisposition,
+> {
+    stage_hit(state, magnitude, now, false)
+}
+
+fn stage_hit(
+    state: &PlayerSpellState,
+    magnitude: u32,
+    now: u64,
+    mitigated: bool,
 ) -> Result<
     (
         PlayerSpellState,
@@ -541,7 +664,8 @@ pub(crate) fn stage_creature_hit(
     }
     let mut next = state.clone();
     let mut remaining = magnitude;
-    if let Some(attributes) = next.conditions.active_at(ConflictKey::Attributes, now)
+    if mitigated
+        && let Some(attributes) = next.conditions.active_at(ConflictKey::Attributes, now)
         && let ConditionValues::Attributes {
             incoming_reduction_percent,
             ..
@@ -556,7 +680,7 @@ pub(crate) fn stage_creature_hit(
             .checked_sub(u32::try_from(removed).map_err(|_| SpellCastDisposition::Rejected)?)
             .ok_or(SpellCastDisposition::Rejected)?;
     }
-    if let Some(capacity) = next.conditions.mana_shield_at(now) {
+    if let Some(capacity) = next.conditions.mana_shield_at(now).filter(|_| mitigated) {
         let absorbed = remaining.min(capacity).min(next.mana);
         if absorbed > 0 {
             next.conditions
@@ -603,6 +727,167 @@ mod tests {
         )
         .unwrap()
     }
+    #[test]
+    fn cancel_mana_shield_requires_active_capacity_and_removes_it() {
+        let mut state = actor();
+        apply_combat_change(
+            &mut state,
+            &OwnerCombatChange::ManaShield(ManaShieldState {
+                capacity: 300,
+                expires_ms: 2000,
+            }),
+            0,
+        )
+        .unwrap();
+        let vitals = (state.health, state.mana, state.soul, state.revision);
+        assert_eq!(
+            remove_condition_at(&mut state, "manashield", 1_000_000),
+            Ok(true)
+        );
+        assert_eq!(state.conditions.mana_shield_at(1_000_000), None);
+        assert_eq!(
+            (state.health, state.mana, state.soul, state.revision),
+            vitals
+        );
+        let before = state.clone();
+        assert_eq!(
+            remove_condition_at(&mut state, "manashield", 1_000_000),
+            Err(SpellCastDisposition::TargetIllegal)
+        );
+        assert_eq!(state, before);
+    }
+
+    #[test]
+    fn cancel_mana_shield_refuses_absent_expired_and_depleted_without_mutation() {
+        for scenario in 0..3 {
+            let mut state = actor();
+            if scenario != 0 {
+                apply_combat_change(
+                    &mut state,
+                    &OwnerCombatChange::ManaShield(ManaShieldState {
+                        capacity: 300,
+                        expires_ms: 2000,
+                    }),
+                    0,
+                )
+                .unwrap();
+            }
+            if scenario == 2 {
+                apply_combat_change(
+                    &mut state,
+                    &OwnerCombatChange::ConsumeManaShield {
+                        expected_capacity: 300,
+                        amount: 300,
+                    },
+                    1000,
+                )
+                .unwrap();
+            }
+            let before = state.clone();
+            let now = if scenario == 1 { 2_000_000 } else { 1_000_000 };
+            assert_eq!(
+                remove_condition_at(&mut state, "manashield", now),
+                Err(SpellCastDisposition::TargetIllegal)
+            );
+            assert_eq!(state, before);
+        }
+    }
+
+    #[test]
+    fn cancel_magic_shield_cast_guard_is_atomic_with_payment_and_revision() {
+        use super::super::cast::{CastContext, cast, v1_spell_book};
+        use super::super::{Execution, ManaCost, SpellBook, SpellEffect};
+        use crate::ability::{AbilityOccurrence, RevisionSet};
+        use oteryn_protocol_oteryn::actor_spell::{SpellCastIntent, SpellTarget};
+        use oteryn_simulation_determinism::SemanticTimeMicros;
+        use std::num::NonZeroU32;
+        let mut spell = v1_spell_book()
+            .unwrap()
+            .indexed(NonZeroU32::new(1).unwrap())
+            .unwrap()
+            .clone();
+        // Header-isolated actor test: preserve the real cast/condition/payment
+        // path while source entitlement and content binding qualify separately.
+        spell.authored = None;
+        spell.vocations = std::collections::BTreeSet::from([Vocation::Knight]);
+        spell.premium = false;
+        spell.learning_required = false;
+        spell.needs_target = false;
+        spell.target_or_direction = false;
+        spell.self_target = true;
+        spell.mana = ManaCost::Fixed(17);
+        spell.soul = 3;
+        spell.execution = Execution::Effects(vec![SpellEffect::RemoveCondition {
+            condition: "manashield".into(),
+        }]);
+        let book = SpellBook::new(vec![spell]).unwrap();
+        let intent = SpellCastIntent {
+            spell: NonZeroU32::new(1).unwrap(),
+            target: SpellTarget::None,
+            aim_at_target: false,
+        };
+        for scenario in 0..4 {
+            let mut state = actor();
+            if scenario != 0 {
+                apply_combat_change(
+                    &mut state,
+                    &OwnerCombatChange::ManaShield(ManaShieldState {
+                        capacity: 300,
+                        expires_ms: 2000,
+                    }),
+                    0,
+                )
+                .unwrap();
+            }
+            if scenario == 2 {
+                apply_combat_change(
+                    &mut state,
+                    &OwnerCombatChange::ConsumeManaShield {
+                        expected_capacity: 300,
+                        amount: 300,
+                    },
+                    1000,
+                )
+                .unwrap();
+            }
+            let before = state.clone();
+            let micros = if scenario == 1 { 2_000_000 } else { 1_000_000 };
+            let result = cast(
+                &book,
+                &state,
+                &intent,
+                CastContext {
+                    caster: "actor:cms-test",
+                    owner_scope: "channel:cms-test",
+                    occurrence: AbilityOccurrence::new(
+                        "cms-test",
+                        RevisionSet::new("r", "c", "w", "f", "s").unwrap(),
+                    )
+                    .unwrap(),
+                    now: SemanticTimeMicros::from_micros(micros),
+                    draw: &mut |_, _| panic!("Cancel Magic Shield has no random roll"),
+                },
+            );
+            assert_eq!(state, before);
+            if scenario != 3 {
+                assert_eq!(result, Err(SpellCastDisposition::TargetIllegal));
+            } else {
+                let next = result.unwrap();
+                assert_eq!(next.conditions.mana_shield_at(micros), None);
+                assert_eq!(
+                    (next.health, next.mana, next.soul, next.revision),
+                    (
+                        state.health,
+                        state.mana - 17,
+                        state.soul - 3,
+                        state.revision + 1
+                    )
+                );
+                assert_ne!(next.cooldowns, state.cooldowns);
+            }
+        }
+    }
+
     #[test]
     fn all_qualified_catalog_condition_shapes_convert_to_actual_store_definitions() {
         let catalog: serde_json::Value = serde_json::from_str(include_str!(
@@ -959,6 +1244,29 @@ impl PlayerSpellState {
             source: self.conditions.effective_attributes(now_us),
         })
     }
+    /// Current seven skills from the already loaded durable build and live conditions.
+    /// Missing build data never falls back to the creation-time starting skill.
+    pub(crate) fn owned_effective_skills(
+        &self,
+        build: &crate::durability::character_build::DurableBuildState,
+        now_us: u64,
+    ) -> Result<[u32; 7], SpellCastDisposition> {
+        let base = build.skills().map(|(level, _)| level);
+        if self.owned_skills != Some(base)
+            || super::Vocation::from_key(build.vocation()) != Some(self.facts.vocation)
+            || u32::from(build.magic().0) != self.facts.magic_level
+        {
+            return rejected();
+        }
+        let adjustments = self.owned_skill_adjustments(now_us)?;
+        let mut effective = [0; 7];
+        for (index, level) in base.into_iter().enumerate() {
+            effective[index] = adjustments
+                .adjust_skill(u32::from(level), index)
+                .ok_or(SpellCastDisposition::Rejected)?;
+        }
+        Ok(effective)
+    }
     pub(crate) fn owned_effective_magic_level(
         &self,
         now_us: u64,
@@ -1099,6 +1407,52 @@ mod source_attribute_projection_tests {
         assert_eq!(read.adjust_skill(53, 7), None);
     }
     #[test]
+    fn current_skills_require_loaded_matching_build_and_apply_live_modifiers() {
+        use crate::durability::character_build::DurableBuildState;
+        let mut state = actor(10);
+        let build = DurableBuildState::new(
+            "knight".to_owned(),
+            (10, 0),
+            [
+                (11, 0),
+                (31, 0),
+                (53, 0),
+                (71, 0),
+                (89, 0),
+                (97, 0),
+                (19, 0),
+            ],
+        )
+        .unwrap();
+        assert!(state.owned_effective_skills(&build, 0).is_err());
+        state.load_owned_build(&build).unwrap();
+        apply(
+            &mut state,
+            AttributeModifiers {
+                melee: Some(M::PercentOfBase(40)),
+                distance: Some(M::Add(-15)),
+                ..Default::default()
+            },
+        );
+        assert_eq!(
+            state.owned_effective_skills(&build, 0),
+            Ok([11, 13, 22, 29, 74, 97, 19])
+        );
+        // Expiry is exact even before the condition cleanup pass.
+        assert_eq!(
+            state.owned_effective_skills(&build, 1_000_000),
+            Ok([11, 31, 53, 71, 89, 97, 19])
+        );
+        let mut changed = build.skills();
+        changed[2].0 += 1;
+        let changed = DurableBuildState::new("knight".to_owned(), (10, 0), changed).unwrap();
+        assert!(state.owned_effective_skills(&changed, 0).is_err());
+        let changed_magic =
+            DurableBuildState::new("knight".to_owned(), (11, 0), build.skills()).unwrap();
+        assert!(state.owned_effective_skills(&changed_magic, 0).is_err());
+    }
+
+    #[test]
     fn composed_deltas_clamp_once_and_overflow_or_clock_regression_refuse() {
         let mut state = actor(10);
         apply(
@@ -1149,3 +1503,7 @@ mod source_attribute_projection_tests {
         assert!(state.owned_skill_adjustments(1999).is_err());
     }
 }
+
+#[cfg(test)]
+#[path = "actor_conditions_agony_tests.rs"]
+mod agony_tests;

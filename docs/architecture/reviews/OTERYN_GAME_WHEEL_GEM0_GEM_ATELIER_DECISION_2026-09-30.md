@@ -1,7 +1,7 @@
 # WHEEL-GEM-0 Wheel of Destiny gems: the Gem Atelier
 
 - Decision: `WHEEL-GEM0-GEM-ATELIER-V1`
-- Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (Character
+- Status: **ACCEPTED**. Accepted by the owner (blakinio) on 2026-10-15 (answer "3 tak" to the PROG-ADV-1 decision set), owner accepted via control plane, effective only on exact-head review, CI and protected integration of the acceptance PR (`ACCEPT-BATCH-2026-10-15` §6, `OTERYN_GAME_ACCEPT_BATCH_2026-10-15_ACCEPTANCE_DECISION.md`); no rule text changes. Original status: CANDIDATE. Original gate: Acceptance needs exact-head validation, independent review (Character
   state, persistence, economy, protocol and combat) and protected integration. It extends WHEEL-0
   and integrates after it. Owner questions G1 and G2 (§13) are answered (G1 a, G2 b; owner,
   2026-09-30, #162) and binding.

@@ -348,7 +348,7 @@ impl OwnedCastFacts {
             magic_level: skill_adjustments
                 .adjust_magic_level(facts.magic_level)
                 .ok_or(OwnedFactsError::BuildMismatch)?,
-            premium: premium.is_some_and(|p| p.value),
+            premium: super::CasterPremium::from_current(premium.is_some_and(|p| p.value)),
             mana: vitals.mana,
             max_mana: vitals.max_mana,
             soul: vitals.soul,
@@ -515,6 +515,7 @@ mod tests {
                 .collect(),
         };
         let input = NativeGameplayInput {
+            cosmetics: NativeGameplayInput::unavailable_cosmetics(),
             native_map_profile: NativeGameplayMapProfile::AcceptedEntryR1,
             catalog: pinned(include_bytes!(
                 "../../../../tools/content-schema/spell-authoring/samples/executable-spell-catalog.json"

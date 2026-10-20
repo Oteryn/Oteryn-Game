@@ -49,8 +49,29 @@ not enabled by this converter. `ready` continues to mean authoring-valid, not pl
 The schema verifier also runs the local `test_*.py` regression suites. Rune comparison joins prefer
 item ID, then explicit aliases and actual names; ambiguous identities are reported. Missing facts
 remain `no_source`, and source agreement does not establish runtime qualification. Party buffs may
-use scaled or fixed mana. This offline candidate's Enlighten regeneration follows the supplied
-owner handover; the referenced #162 decisions still need live readback before publication.
+use scaled or fixed mana. Enlighten's fixed mana 75 and regeneration of 2 mana every 2 s for
+120 s are confirmed by the live readback of [owner decision #162 comment 5914941038](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5914941038).
+The same decision requires an active Magic Shield condition for Cancel Magic Shield;
+the source declaration does not implement the runtime precondition or condition removal.
+
+The dated `rune-use-source-resolutions.json` selects two current rune-use facts:
+Intense Healing Rune includes Monk and Paralyse Rune uses the Attack group.
+Their instant conjuring requirements and groups remain unchanged. The ledger binds
+the TibiaData mirror payload hashes and independent client readbacks; it preserves
+the historical S13/S24 evidence and qualifies these as 2026-10-09 candidates.
+The separate `conjure-source-resolutions.json` qualifies Arrow Call's quantity as
+30 Simple Arrows from Fandom revision 1182610 (2026-05-06), before the historical
+cut. The converter fences the spell words, ID, result item, previous count and
+source revision/digest. Quantity is distinct from its 30 mana cost. The current
+TibiaData amount corroborates the dated wiki as third-party evidence; both pinned
+emulators' count 3 and mana 10 remain attributed. Historical capture files and
+the rune-use ledger remain unchanged; this does not establish cast parity.
+
+Successful conjuring cues follow the selected donor's `items.xml` rune type,
+including its first-loaded declaration rule, rather than rune registrar membership.
+This gives Blank Rune its magic-red cue and makes Lightest and Practise Wand
+reproduce the magic-red cue already retained in the stored catalogue. Missing XML item identities
+remain unresolved; these reference cue aliases do not qualify Oteryn render assets.
 
 The owner-requested wiki gap completion uses captured tibiopedia.pl rune `spellrange` only when
 Fandom/BR/official resolution and both engine registrars provide no range. Both engines must match
@@ -77,6 +98,7 @@ the one shared Ability); this folder adds the player-casting layer and the `play
 | `convert_spells.py` | Plan phase P2: turns the census into Spell bundles (Spell, Ability/Effect/Formula, catalog, import manifest) under S1–S5, S11, S13, S14, S16; plain combats go through the monster converter's `combat_ability`. Needs both checkouts and `lupa`. |
 | `tibiopedia_spells.py` | Fetches the tibiopedia.pl spell pages (owner decision S12) and keeps single facts with the page URL and page SHA-256, in Fandom field names; no descriptions or comments. |
 | `verify_spells.py` | Checks every converted bundle against Fandom, BR and tibiopedia.pl field by field: `agree`, `ours_differs` (the references agree, we do not), `sources_disagree`. |
+| `audit_rune_carriers.py` | RUNE-CONTENT-1 (RUNE-USE-0 §3, §9): audits the 36 rune carriers of the lowered catalogue (item ID, vocations, group, targeting, the dated rune-use ledger, `rune.charges` = conjure `count`, stack of 100, area ≤ 37 tiles (`RUNEUSE0-RL-08`, victim cap ≤ 74) and ≤ 12 field tiles (`RUNEUSE0-RL-07`)) into `samples/rune-carrier-audit.json`; `--check` fails when it is stale. A failed check keeps the rune blocked; a pass is not runtime admission. |
 | `tibiacom_spells.py` | Captures the official tibia.com spell library (S15) in Chromium on a machine tibia.com serves (it blocks the build container and hosted runners); `facts` maps the table cells to Fandom field names; `list-facts` turns an owner copy of the list view into facts. |
 | `vocation_vitals.py` | SPELL-D5 candidate vitals: max hitpoints, mana and capacity per vocation and level from Fandom `Formulae`, soul regeneration from `Soul Point`, hitpoint/mana regeneration from Canary and Crystal where they agree; every conflict is listed. |
 | `cooldown-groups.json` | S9: the declared closed catalogue of cooldown groups and their roles (primary, secondary); `validate_spell.py` rejects any other group. |
@@ -123,7 +145,7 @@ python tibiopedia_spells.py fetch --cache <dir>
 python tibiopedia_spells.py facts --cache <dir> --out samples/tibiopedia-spell-facts-2026-09-28.json
 python verify_spells.py --bundles <convert_spells --out dir> --out samples/spell-verify-3-sources-2026-09-28.json
 python vocation_vitals.py fetch --cache <dir>
-python vocation_vitals.py build --cache <dir> --canary <canary@99902524> --crystal <crystalserver@ff7ede5> \
+python vocation_vitals.py build --cache <dir> --reference-engine <canary@99902524> --crystal <crystalserver@ff7ede5> \
     --out samples/vocation-vitals-candidate-2026-09-28.json
 # BR: download the spell-wiki-br-<sha> artifact of spell-wiki-capture.yml, then
 python wiki_spells.py br-facts --artifact wiki-spell-infoboxes-br.json --out samples/wiki-spell-facts-br-2026-09-27.json
@@ -148,3 +170,10 @@ retained as superseded evidence. The Oct1 source identity and observation date
 apply to this row; other rows retain their recorded target-date sources.
 The Wheel evidence check binds this file's digest and refuses a value/unit
 disagreement between Spell and Wheel. This does not admit a native spell effect.
+
+### Client reference qualification (2026-10-09)
+
+[Reference packet](CLIENT_REFERENCE_QUALIFICATION_2026-10-09.md) records the
+246-row comparison,26 identity dispositions and full reference frame/audio
+decoding. It includes extracted facts and hashes only; accepted Oteryn bindings,
+runtime and Global qualification remain separate.

@@ -585,6 +585,30 @@ impl DurabilityRoot {
                         return Ok(Err(error));
                     }
                     let ground = ground_of(&frozen.request, &reservation, &fence);
+                    // Keep actual session/source admission and receipt replay above;
+                    // one new MINT creates one physical root, independent of quantity.
+                    if let Err(error) =
+                        super::ground_cell_limit::check_ground_cell_root_insert_with_recovery(
+                            &mut tx,
+                            permit,
+                            &recovery,
+                            &node,
+                            (fence.runtime_scope, fence.scope_ownership_generation.get()),
+                            &super::item_mint::GroundPlacement {
+                                spatial_position: ground.spatial_position.clone(),
+                                corpse_ref: ground.corpse_ref.clone(),
+                                map_revision: ground.map_revision.clone(),
+                                content_revision: ground.content_revision.clone(),
+                                native_room_placement_context: ground
+                                    .native_room_placement_context
+                                    .clone(),
+                            },
+                            &frozen.item_instance_id,
+                        )
+                        .await
+                    {
+                        return Ok(Err(error.into_map_item_mint_error()));
+                    }
                     let message = mint_message(&frozen, &reservation, &fence, ground.clone());
                     let tuple = tx.tuple();
                     let envelope = match audit::encode_map_item_mint_event(
@@ -791,6 +815,7 @@ fn mint_message(
             definition: Some(definition_message(&request.item.definition)),
             quantity: request.quantity,
             lifecycle: ITEM_LIFECYCLE_LIVE,
+            key_number: 0,
         }),
         destination: Some(ground),
         source: Some(OneItemMapItemMintCauseV1 {
@@ -1162,6 +1187,7 @@ mod tests {
 
     fn facts(key: &str, stack: ItemStackClass) -> ItemDefinitionFacts {
         ItemDefinitionFacts {
+            weight: None,
             definition: TypedDefinitionRef {
                 family: ITEM_FAMILY.into(),
                 production_key: key.into(),
@@ -1269,6 +1295,7 @@ mod tests {
             },
             MapItemMintRequest {
                 item: ItemDefinitionFacts {
+                    weight: None,
                     definition: TypedDefinitionRef {
                         family: "RewardClaim".into(),
                         ..request().item.definition

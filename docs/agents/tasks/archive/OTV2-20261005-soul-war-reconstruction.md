@@ -4,18 +4,18 @@
 task_id: OTV2-20261005-soul-war-reconstruction
 title: Reconstruct Soul War from Crystal summer-update with video cross-check
 mode: MIGRATE
-status: completed
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/soul-war-reconstruction-20261005
 pr: 1867
-base_sha: fc3db9abfb4ae05c13b0264752cfbbca13a276e6
-head_sha: 6cd02f6fd40fc9bc656fb0c42af2df2973d9405c
+base_sha: 575bcf7c94201fa80a6838e7fc8303d90038dc30
+head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
-owner: ChatGPT GPT-5.6 Sol session
+owner: Soul War reconstruction lead (2026-10-19 continuation)
 created_at: 2026-10-05T22:42:41+02:00
-updated_at: 2026-10-10
+updated_at: 2026-10-19T20:32:29.874410+00:00
 execution_policy: continuous_progress
 owned_paths:
   - tools/content-schema/encounter-authoring/
@@ -100,3 +100,8 @@ python tools/content-schema/quest-authoring/quest_tree_authoring.py --check pass
 python tools/agents/validate_governance.py pass
 python -m unittest discover -s tools/agents/tests pass
 
+## 2026-10-19 continuation checkpoint
+
+The earlier completion/readiness entries above are historical evidence, not current CI or merge proof. The current repair is in validation, with PR #1867 still open and no permission to merge. Starting remote head was `3a4f8bf24b0e5cb537a17cd8b0bf9d325d157cc8`; main integration uses `575bcf7c94201fa80a6838e7fc8303d90038dc30`. Final head and qualified check results are bound by the live PR freeze/readback, avoiding a self-referential commit hash in this record.
+
+Four real read-only subagents returned bounded source-based diagnostic reviews. Their findings, source proof, fixed defects and deferred non-blocking metadata refinements are retained at `docs/agents/evidence/OTV2-20261005-soul-war-reconstruction/continuation-20261019.md`. The lead performs all generation, tests and publication. Existing Quest/Encounter runtime holds remain active.

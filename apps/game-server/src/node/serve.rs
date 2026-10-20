@@ -25,6 +25,7 @@ use crate::durability::admission_authority_guards::{
     AdmissionGuardStore, GuardPublicationDisposition,
 };
 use crate::durability::character_authority::ReconciledCharacterAuthority;
+use crate::durability::character_command::{Classified, classify_intent};
 use crate::durability::native_admission_source::{DescriptorRegistration, FreshStoreProvenance};
 use crate::durability::runtime_scope_assignment::{
     AssignmentError, AssignmentState, BootstrapSecret, LaunchBinding, NodeIncarnationProof,
@@ -44,7 +45,13 @@ use crate::gameplay_transport::FreshEvidenceSource;
 use crate::native_admission_source::account_characters::{
     self, EpochFence, EpochFenceFile, MtlsSink, ProjectionDescriptor, Publisher,
 };
+use crate::native_admission_source::character_commands::{
+    CommandDescriptor, Consumer, Decider, Decision, Input, MtlsSource,
+};
 use crate::native_admission_source::descriptor::ProducerDescriptor;
+use crate::native_admission_source::public_projections::{
+    self, MtlsPublicSink, PublicProjectionDescriptor,
+};
 use crate::native_admission_source::runtime_status::{RuntimeStatusDescriptor, SystemClock};
 use crate::native_admission_source::{CHARACTER_BOOTSTRAP_INTENT_ISSUER, TransientCapacity};
 use crate::{GameplayListenerConfig, GameplaySeamOwners, serve_gameplay};
@@ -60,6 +67,8 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, UnixListener, UnixStream};
 use tokio::sync::Mutex;
 
+mod bundle_npcs;
+
 /// Registered protocol facts fixed by the build (D5).
 const PROTOCOL_MAJOR: u64 = 1;
 const TRANSPORT_PROFILE: u64 = 1;
@@ -71,6 +80,8 @@ const RETRY_BACKOFF_MAX: Duration = Duration::from_secs(5);
 const ASSIGNMENT_POLL: Duration = Duration::from_secs(1);
 const PENDING_RECONCILE_ATTEMPTS: u32 = 5;
 const SHUTDOWN_BUDGET: Duration = Duration::from_secs(10);
+/// The share of [`SHUTDOWN_BUDGET`] the shutdown last-position write may take (CHAR-POSITION-1).
+const LAST_POSITION_FLUSH_BUDGET: Duration = Duration::from_secs(3);
 const AUDIT_INTERVAL: Duration = Duration::from_secs(60 * 60);
 const AUDIT_BATCH: u16 = 64;
 const AUDIT_RUN_CAP: u32 = 64;
@@ -367,6 +378,22 @@ fn unix_now() -> i64 {
         .unwrap_or(0)
 }
 
+/// PREM-WIRE-1 production composition (PREMIUM-ACTIVATION-0 §1.1-§1.2): the one Premium fence,
+/// the system trusted clock, the durable activation latch and no activation.
+fn production_premium_reads(
+    root: &DurabilityRoot,
+) -> crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator {
+    use crate::gameplay_transport::spell_premium_coordinator::{
+        SpellPremiumCoordinator, SystemTrustedClock,
+    };
+    SpellPremiumCoordinator::new(
+        std::sync::Arc::default(),
+        Some(std::sync::Arc::new(SystemTrustedClock)),
+        None,
+        Some(root.clone()),
+    )
+}
+
 fn invalid(key: &'static str) -> BootError {
     BootError::Startup(StartupError::Invalid { key })
 }
@@ -384,6 +411,14 @@ struct Material {
     /// and epoch fence; `None` disables it. Taken once by the serving loop.
     account_characters:
         std::sync::Mutex<Option<(ProjectionDescriptor, String, std::path::PathBuf)>>,
+    /// Character-command consumer identity and source authority; `None`
+    /// (the default) disables it. Taken once by the serving loop.
+    character_commands: std::sync::Mutex<Option<(CommandDescriptor, String)>>,
+    /// Public-projection publisher: its identity, source authority and epoch
+    /// fence `F_pub`; `None` (absent or not enabled) disables it. Taken once
+    /// by the serving loop.
+    public_projections:
+        std::sync::Mutex<Option<(PublicProjectionDescriptor, String, std::path::PathBuf)>>,
     descriptor: DescriptorRegistration,
     launch: LaunchAuthorizationFile,
     s2: Option<S2AuthorizationFile>,
@@ -548,6 +583,107 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
             ))
         }
     };
+    let character_commands = match &platform.character_commands {
+        None => None,
+        Some(commands) => {
+            let chain = |key: &'static str, path: &Path| {
+                certificates(&secret(key, path, MAX_PEM_BYTES)?).map_err(|_| invalid(key))
+            };
+            let own = chain(
+                "platform.character_commands.client_certificate_file",
+                &commands.client_certificate_file,
+            )?;
+            let key = private_key(
+                "platform.character_commands.client_key_file",
+                &secret(
+                    "platform.character_commands.client_key_file",
+                    &commands.client_key_file,
+                    MAX_GAMEPLAY_KEY_BYTES,
+                )?,
+            )?;
+            let mut others = vec![client.clone()];
+            if let Some(status) = &platform.runtime_status {
+                others.push(chain(
+                    "platform.runtime_status.client_certificate_file",
+                    &status.client_certificate_file,
+                )?);
+            }
+            if let Some(projection) = &platform.account_characters {
+                others.push(chain(
+                    "platform.account_characters.client_certificate_file",
+                    &projection.client_certificate_file,
+                )?);
+            }
+            let others: Vec<&[CertificateDer<'static>]> =
+                others.iter().map(Vec::as_slice).collect();
+            let descriptor = CommandDescriptor::new(
+                endpoint.clone(),
+                platform.peer_name.clone(),
+                roots.clone(),
+                own,
+                key,
+                &others,
+            )
+            .map_err(|_| invalid("platform.character_commands"))?;
+            Some((descriptor, commands.source_authority.clone()))
+        }
+    };
+    let public_projections = match &platform.public_projections {
+        Some(public) if public.enabled => {
+            let chain = |key: &'static str, path: &Path| {
+                certificates(&secret(key, path, MAX_PEM_BYTES)?).map_err(|_| invalid(key))
+            };
+            let own = chain(
+                "platform.public_projections.client_certificate_file",
+                &public.client_certificate_file,
+            )?;
+            let key = private_key(
+                "platform.public_projections.client_key_file",
+                &secret(
+                    "platform.public_projections.client_key_file",
+                    &public.client_key_file,
+                    MAX_GAMEPLAY_KEY_BYTES,
+                )?,
+            )?;
+            // Its own identity, never one of the other purposes' (contract §3).
+            let mut others = vec![client.clone()];
+            if let Some(status) = &platform.runtime_status {
+                others.push(chain(
+                    "platform.runtime_status.client_certificate_file",
+                    &status.client_certificate_file,
+                )?);
+            }
+            if let Some(projection) = &platform.account_characters {
+                others.push(chain(
+                    "platform.account_characters.client_certificate_file",
+                    &projection.client_certificate_file,
+                )?);
+            }
+            if let Some(commands) = &platform.character_commands {
+                others.push(chain(
+                    "platform.character_commands.client_certificate_file",
+                    &commands.client_certificate_file,
+                )?);
+            }
+            let others: Vec<&[CertificateDer<'static>]> =
+                others.iter().map(Vec::as_slice).collect();
+            let descriptor = PublicProjectionDescriptor::new(
+                endpoint.clone(),
+                platform.peer_name.clone(),
+                roots.clone(),
+                own,
+                key,
+                &others,
+            )
+            .map_err(|_| invalid("platform.public_projections"))?;
+            Some((
+                descriptor,
+                public.source_authority.clone(),
+                public.epoch_fence_file.clone(),
+            ))
+        }
+        _ => None,
+    };
     let intents = ProducerDescriptor::new(
         CHARACTER_BOOTSTRAP_INTENT_ISSUER.into(),
         endpoint,
@@ -602,6 +738,8 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
         intents,
         runtime_status,
         account_characters: std::sync::Mutex::new(account_characters),
+        character_commands: std::sync::Mutex::new(character_commands),
+        public_projections: std::sync::Mutex::new(public_projections),
         descriptor,
         launch,
         s2,
@@ -655,6 +793,9 @@ const RESYNC_TIMEOUTS: &str = "SELECT set_config('transaction_timeout', $1, true
 const RESYNC_LOCK: &str = "SELECT projection_epoch, \
      floor(extract(epoch FROM transaction_timestamp()) * 1000)::bigint AS now_ms \
      FROM game_character_account_projection_epoch FOR UPDATE";
+const PUBLIC_RESYNC_LOCK: &str = "SELECT projection_epoch, \
+     floor(extract(epoch FROM transaction_timestamp()) * 1000)::bigint AS now_ms \
+     FROM game_public_projection_epoch FOR UPDATE";
 
 /// `oteryn-game-ops projection resync`: re-enqueue every account in one
 /// transaction (migration 0024). With `raise_epoch` the epoch row is locked
@@ -664,6 +805,51 @@ pub async fn resync(
     root: &DurabilityRoot,
     raise_epoch: bool,
     fence: &mut impl EpochFence,
+) -> Result<u64, ResyncError> {
+    resync_projection(
+        root,
+        raise_epoch,
+        fence,
+        RESYNC_LOCK,
+        ("SELECT game_character_account_projection_resync($1)", None),
+    )
+    .await
+}
+
+/// `oteryn-game-ops public-projection resync` (migration 0091): re-enqueue
+/// one family (`all`, `highscores`, `character_profile` or `world_online`)
+/// in one transaction, under `PUBPROJ-RESYNC-DEADLINE` rather than the
+/// ordinary pass deadline (the node is stopped). An epoch raise covers every
+/// family and follows the same fence rules against `F_pub`. Returns the epoch.
+pub async fn public_resync(
+    root: &DurabilityRoot,
+    family: &str,
+    raise_epoch: bool,
+    fence: &mut impl EpochFence,
+) -> Result<u64, ResyncError> {
+    let _recovery = root.boot_pass_deadline(crate::durability::public_projections::RESYNC_DEADLINE);
+    resync_projection(
+        root,
+        raise_epoch,
+        fence,
+        PUBLIC_RESYNC_LOCK,
+        (
+            "SELECT game_public_projection_resync($1, $2)",
+            Some(family.to_owned()),
+        ),
+    )
+    .await
+}
+
+/// One resync transaction: `lock` reads the epoch row `FOR UPDATE`; `call`
+/// is the resync function, bound to the family (when it takes one) and the
+/// raise choice.
+async fn resync_projection(
+    root: &DurabilityRoot,
+    raise_epoch: bool,
+    fence: &mut impl EpochFence,
+    lock: &'static str,
+    (call, family): (&'static str, Option<String>),
 ) -> Result<u64, ResyncError> {
     use crate::durability::DurabilityError;
     use sqlx::Row;
@@ -691,7 +877,7 @@ pub async fn resync(
                     .await?;
                 let mut expected = None;
                 if let Some(fence) = floor {
-                    let row = sqlx::query(RESYNC_LOCK).fetch_one(&mut *tx).await?;
+                    let row = sqlx::query(lock).fetch_one(&mut *tx).await?;
                     let current: i64 = row.try_get("projection_epoch")?;
                     let now_ms: i64 = row.try_get("now_ms")?;
                     match account_characters::raised_epoch(current, now_ms, fence) {
@@ -707,11 +893,11 @@ pub async fn resync(
                         }
                     }
                 }
-                let epoch: i64 =
-                    sqlx::query_scalar("SELECT game_character_account_projection_resync($1)")
-                        .bind(floor.is_some())
-                        .fetch_one(&mut *tx)
-                        .await?;
+                let mut query = sqlx::query_scalar(call);
+                if let Some(family) = family {
+                    query = query.bind(family);
+                }
+                let epoch: i64 = query.bind(floor.is_some()).fetch_one(&mut *tx).await?;
                 let epoch = u64::try_from(epoch).ok();
                 if epoch.is_none() || expected.is_some_and(|e| Some(e) != epoch) {
                     tx.rollback().await?;
@@ -807,6 +993,213 @@ async fn account_characters_loop(
         crate::durability::account_characters_projection::MAX_CHARACTER_TRANSACTION,
     );
     first(publisher.run(), stop.cancelled()).await;
+}
+
+const PUBLIC_PRIVILEGES: &str = "SELECT has_table_privilege('game_character_roots', 'SELECT') \
+     AND has_table_privilege('game_character_progression_state', 'SELECT') \
+     AND has_table_privilege('game_character_build_state', 'SELECT') \
+     AND has_table_privilege('game_durability_reconnect_sessions', 'SELECT') \
+     AND has_table_privilege('game_public_projection_epoch', 'SELECT') \
+     AND has_table_privilege('game_public_character_profiles', 'SELECT') \
+     AND has_table_privilege('game_public_highscores', 'SELECT') \
+     AND has_table_privilege('game_public_character_profile_outbox', 'SELECT') \
+     AND has_table_privilege('game_public_character_profile_outbox', 'DELETE') \
+     AND has_table_privilege('game_public_highscore_outbox', 'SELECT') \
+     AND has_table_privilege('game_public_highscore_outbox', 'DELETE') \
+     AND has_table_privilege('game_public_world_online', 'SELECT') \
+     AND has_table_privilege('game_public_world_online', 'INSERT') \
+     AND has_table_privilege('game_public_world_online', 'UPDATE')";
+
+/// Whether the node's database role can read the public sources and
+/// acknowledge the public outboxes; `None` while no answer was available.
+pub async fn public_store_readable(root: &DurabilityRoot) -> Option<bool> {
+    let pass = root.try_issue_semantic_pass().ok()?;
+    pass.run(|holder, _| {
+        Box::pin(async move {
+            Ok(sqlx::query_scalar::<_, bool>(PUBLIC_PRIVILEGES)
+                .fetch_one(&mut **holder)
+                .await?)
+        })
+    })
+    .await
+    .ok()
+}
+
+/// The public-projection publisher until `stop`, under the reconciled
+/// Character authority. Disabled unless configured and enabled; refused (and
+/// logged) when the node's role lacks the privileges, so Platform keeps the
+/// families stale and unserved.
+async fn public_projections_loop(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    public: Option<(PublicProjectionDescriptor, String, std::path::PathBuf)>,
+    stop: &CancellationToken,
+) {
+    let Some((descriptor, source_authority, fence)) = public else {
+        return;
+    };
+    match first(
+        await_answer(async || public_store_readable(root).await),
+        stop.cancelled(),
+    )
+    .await
+    {
+        None => return,
+        Some(false) => {
+            event("event=public_projections state=refused reason=privileges");
+            return;
+        }
+        Some(true) => {}
+    }
+    event("event=public_projections state=started");
+    let publisher = public_projections::Publisher::new(
+        SystemClock::default(),
+        crate::durability::public_projections::PublicProjectionsStore { root, authority },
+        MtlsPublicSink::new(descriptor),
+        EpochFenceFile::new(fence),
+        source_authority,
+        crate::durability::account_characters_projection::MAX_CHARACTER_TRANSACTION,
+    );
+    first(publisher.run(), stop.cancelled()).await;
+}
+
+/// RANK-1 (HIGHSCORES0 §4): this World's highscore snapshot job for the serve lifetime. It
+/// never gates serving and its end is not a shutdown reason. The job publishes under its own
+/// group role (migration 0129) and schedules from durable database time, so a restart or a second
+/// Channel of the World never publishes early. Category 10 reads the activated Achievement
+/// catalogue. Category 11 is published only with an activated per-race Charm point source; none
+/// exists yet (CHARM-6), so it is withheld and its query is `NOT_SUPPORTED`. The planned World
+/// reset notification source is not wired yet (WORLD-RESET): the sender is held, unused, for the
+/// job's lifetime.
+async fn highscores_loop(
+    root: &DurabilityRoot,
+    world: crate::foundation::WorldId,
+    achievements: &crate::achievement_catalogue::AchievementCatalogue,
+    stop: &CancellationToken,
+) {
+    use crate::durability::highscore_snapshot::{SnapshotCatalogues, job::HighscoreWorldJob};
+    let points: std::sync::Arc<dyn crate::durability::highscore_snapshot::AchievementPoints> =
+        std::sync::Arc::new(achievements.clone());
+    let Ok(catalogues) = SnapshotCatalogues::activated(points) else {
+        event("event=highscores state=refused reason=catalogues");
+        return;
+    };
+    let job = HighscoreWorldJob::new(std::sync::Arc::new(root.clone()), world, catalogues);
+    let (_planned_resets, receiver) = tokio::sync::mpsc::channel(1);
+    event("event=highscores state=started");
+    first(job.run(receiver), stop.cancelled()).await;
+}
+
+/// Both futures to completion on this task.
+async fn both(a: impl Future<Output = ()>, b: impl Future<Output = ()>) {
+    let mut a = pin!(a);
+    let mut b = pin!(b);
+    let (mut a_done, mut b_done) = (false, false);
+    poll_fn(|context| {
+        if !a_done {
+            a_done = a.as_mut().poll(context).is_ready();
+        }
+        if !b_done {
+            b_done = b.as_mut().poll(context).is_ready();
+        }
+        if a_done && b_done {
+            Poll::Ready(())
+        } else {
+            Poll::Pending
+        }
+    })
+    .await;
+}
+
+/// The Character Authority side of the command consumer: it refreshes the
+/// account's security evidence of a decoded create, then decides under the
+/// reconciled Character authority (contract §6).
+struct CommandDecider<'a, 'r, 'c> {
+    root: &'a DurabilityRoot,
+    authority: &'a ReconciledCharacterAuthority<'r, 'c>,
+    proof: &'a NodeIncarnationProof,
+    evidence: &'a FreshEvidenceSource,
+    source_authority: String,
+}
+
+impl Decider for CommandDecider<'_, '_, '_> {
+    async fn decide(&mut self, command: &str, operation_id: &str, input: Input<'_>) -> Decision {
+        let mut held = None;
+        if let Input::Intent(raw) = input
+            && let Classified::Create(intent) = classify_intent(raw, command, operation_id)
+        {
+            // A failed refresh leaves the evidence stale; the decision then
+            // reads it as unknown and stays transient until the intent expires.
+            // The reason is logged as fixed tokens only (no account or bytes).
+            let account = uuid_text(&intent.account_id);
+            let started = std::time::Instant::now();
+            match self
+                .evidence
+                .refresh_account_held(self.root, self.proof, &account)
+                .await
+            {
+                Ok(evidence) => {
+                    event(&format!(
+                        "event=character_commands operation=refresh command={command} result=accepted elapsed_ms={}",
+                        started.elapsed().as_millis()
+                    ));
+                    held = Some(evidence);
+                }
+                Err(unavailable) => event(&format!(
+                    "event=character_commands operation=refresh command={command} result=unavailable {unavailable} elapsed_ms={}",
+                    started.elapsed().as_millis()
+                )),
+            }
+        }
+        // The decision is the next pass after the acceptance; the accepted
+        // slot is cleared only once it has read the evidence.
+        let decision = self
+            .root
+            .decide_character_command(
+                self.authority,
+                self.proof,
+                &self.source_authority,
+                command,
+                operation_id,
+                input,
+            )
+            .await;
+        if let Some(evidence) = held {
+            let _ = evidence.release().await;
+        }
+        decision
+    }
+}
+
+/// The character-command consumer until `stop`; configured only by an explicit
+/// `[platform.character_commands]` section, so disabled by default.
+async fn character_commands_loop(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    proof: &NodeIncarnationProof,
+    evidence: &FreshEvidenceSource,
+    commands: Option<(CommandDescriptor, String)>,
+    stop: &CancellationToken,
+) {
+    let Some((descriptor, source_authority)) = commands else {
+        return;
+    };
+    event("event=character_commands state=started");
+    let decider = CommandDecider {
+        root,
+        authority,
+        proof,
+        evidence,
+        source_authority: source_authority.clone(),
+    };
+    let consumer = Consumer::new(
+        SystemClock::default(),
+        MtlsSource::new(descriptor),
+        decider,
+        source_authority,
+        event,
+    );
+    first(consumer.run(), stop.cancelled()).await;
 }
 
 /// Output of `primary`, or `None` once `stop` completes first.
@@ -932,26 +1325,99 @@ fn s2_parts(
     ))
 }
 
-/// Retry an S2 operation through transient unavailability, a bounded number
-/// of times. Definite rejections surface as errors.
-async fn with_retries<T, F, Fut>(root: &DurabilityRoot, mut operation: F) -> Option<T>
+/// Whether a boot durability step that failed with `error` may run again
+/// (NODE-BOOT-DEADLINE-1): only when no definite answer came back. The holder was not
+/// ready (no transaction ran), the pass deadline expired, or the commit outcome is unknown.
+/// Any database answer, refusal or stored-state failure is definite and ends the boot.
+fn boot_step_retryable(error: &crate::durability::DurabilityError) -> bool {
+    use crate::durability::DurabilityError;
+    matches!(
+        error,
+        DurabilityError::RootUnavailable
+            | DurabilityError::RootPassDeadlineExceeded
+            | DurabilityError::CommitOutcomeUnknown
+    )
+}
+
+/// [`boot_step_retryable`] for the Character authority open.
+fn character_authority_retryable(
+    error: &crate::durability::character_authority::CharacterAuthorityError,
+) -> bool {
+    matches!(
+        error,
+        crate::durability::character_authority::CharacterAuthorityError::Unavailable(inner)
+            if boot_step_retryable(inner)
+    )
+}
+
+/// Run one boot durability step under the boot pass deadline, retrying it a bounded
+/// number of times while `retryable` holds; the last error is returned.
+///
+/// Only idempotent steps are wrapped: the S2 registration read and the Character
+/// authority open are read-only, the custody claim writes nothing when custody is
+/// already this incarnation's, and the descriptor registration writes nothing when the
+/// same descriptor is already current. Each re-run first re-reads the stored row under
+/// its lock, so an attempt that committed although its outcome was unknown (or its
+/// deadline expired) is confirmed by that read, never applied twice.
+async fn with_retries<T, E, F, Fut>(
+    root: &DurabilityRoot,
+    step: &str,
+    deadline: Duration,
+    retryable: impl Fn(&E) -> bool,
+    mut operation: F,
+) -> Result<T, E>
 where
+    E: std::fmt::Debug,
     F: FnMut() -> Fut,
-    Fut: Future<Output = Result<T, crate::durability::DurabilityError>>,
+    Fut: Future<Output = Result<T, E>>,
 {
     let mut attempt = 0;
-    for _ in 0..PENDING_RECONCILE_ATTEMPTS {
-        match operation().await {
-            Ok(value) => return Some(value),
-            Err(crate::durability::DurabilityError::RootUnavailable) => {
-                root.request_ready();
-                let _ = root.maintain_ready_once().await;
-                backoff(&mut attempt).await;
-            }
-            Err(_) => return None,
+    let mut runs = 0;
+    loop {
+        let result = {
+            let _boot = root.boot_pass_deadline(deadline);
+            operation().await
+        };
+        let error = match result {
+            Ok(value) => return Ok(value),
+            Err(error) => error,
+        };
+        runs += 1;
+        if runs >= PENDING_RECONCILE_ATTEMPTS || !retryable(&error) {
+            boot_step_failed(step, &error);
+            return Err(error);
         }
+        event(&boot_step_retry_line(step, runs, &error));
+        root.request_ready();
+        let _ = root.maintain_ready_once().await;
+        backoff(&mut attempt).await;
     }
-    None
+}
+
+/// The class of a boot step's error, from the durability error's own form: no SQL text,
+/// parameter or credential is ever part of it.
+fn boot_step_detail(step: &str, error: &impl std::fmt::Debug) -> String {
+    format!("step=\"{step}\" error={error:?}")
+}
+
+fn boot_step_retry_line(step: &str, runs: u32, error: &impl std::fmt::Debug) -> String {
+    format!(
+        "event=boot_step_retry run={runs} {}",
+        boot_step_detail(step, error)
+    )
+}
+
+/// A warn line (always written) naming the failed boot step and its error class, written
+/// before `boot_failed`, whose detail carries only the stage.
+fn boot_step_failed(step: &str, error: &impl std::fmt::Debug) {
+    let detail = boot_step_detail(step, error);
+    let mut line =
+        oteryn_error_codes::Line::new(oteryn_error_codes::Level::Warn, "node", "boot_step_failed")
+            .detail(&detail);
+    if let Some(trace) = BOOT_TRACE.get() {
+        line = line.trace(trace);
+    }
+    emit(PROCESS, &line);
 }
 
 /// D3 step 4: establish S2 custody, confirm the recorded descriptor and
@@ -962,9 +1428,12 @@ async fn establish_custody(
     material: &Material,
     evidence: &FreshEvidenceSource,
 ) -> Result<(), BootError> {
-    let stored = with_retries(root, || root.read_native_admission_source_registration())
-        .await
-        .ok_or(BootError::SourceCustody("read"))?;
+    let deadline = material.config.boot_pass_deadline();
+    let stored = with_retries(root, "read", deadline, boot_step_retryable, || {
+        root.read_native_admission_source_registration()
+    })
+    .await
+    .map_err(|_| BootError::SourceCustody("read"))?;
     match (stored, &material.s2) {
         (None, None) => {
             return Err(BootError::SourceCustody(
@@ -973,16 +1442,25 @@ async fn establish_custody(
         }
         (None, Some(file)) => {
             let (provenance, descriptor) = s2_parts(file)?;
-            let initialized = root
-                .initialize_native_admission_source(proof, provenance.clone(), descriptor.clone())
-                .await;
-            if initialized.is_err() {
+            let initialized = {
+                let _boot = root.boot_pass_deadline(deadline);
+                root.initialize_native_admission_source(
+                    proof,
+                    provenance.clone(),
+                    descriptor.clone(),
+                )
+                .await
+            };
+            if let Err(error) = initialized {
                 // An initialization whose response was lost: compare exactly.
-                let after = with_retries(root, || root.read_native_admission_source_registration())
-                    .await
-                    .flatten()
-                    .ok_or(BootError::SourceCustody("initialize"))?;
-                if after != (provenance, descriptor) {
+                let after = with_retries(root, "initialize", deadline, boot_step_retryable, || {
+                    root.read_native_admission_source_registration()
+                })
+                .await
+                .ok()
+                .flatten();
+                if after != Some((provenance, descriptor)) {
+                    boot_step_failed("initialize", &error);
                     return Err(BootError::SourceCustody("initialize"));
                 }
             }
@@ -997,12 +1475,16 @@ async fn establish_custody(
         }
         (Some(_), None) => {}
     }
-    root.claim_native_admission_source_custody(proof)
-        .await
-        .map_err(|_| BootError::SourceCustody("custody claim"))?;
-    root.register_native_admission_descriptor(proof, material.descriptor.clone())
-        .await
-        .map_err(|_| BootError::SourceCustody("descriptor"))?;
+    with_retries(root, "custody claim", deadline, boot_step_retryable, || {
+        root.claim_native_admission_source_custody(proof)
+    })
+    .await
+    .map_err(|_| BootError::SourceCustody("custody claim"))?;
+    with_retries(root, "descriptor", deadline, boot_step_retryable, || {
+        root.register_native_admission_descriptor(proof, material.descriptor.clone())
+    })
+    .await
+    .map_err(|_| BootError::SourceCustody("descriptor"))?;
     for attempt in 0..PENDING_RECONCILE_ATTEMPTS {
         match evidence.reconcile_retained(root, proof).await {
             Ok(0) => {
@@ -1402,14 +1884,14 @@ async fn bootstrap_one(
     {
         Ok(Some(_)) => return "committed",
         Ok(None) => {}
-        Err(_) => return "unavailable",
+        Err(_) => return bootstrap_unavailable("reconcile", "durability"),
     }
     let intent = {
         let Ok(mut permit) = capacity.try_queue() else {
-            return "unavailable";
+            return bootstrap_unavailable("intent_queue", "capacity");
         };
         if permit.try_activate().is_err() {
-            return "unavailable";
+            return bootstrap_unavailable("intent_activation", "capacity");
         }
         match crate::character_bootstrap_intent::read_authenticated_intent(
             intents,
@@ -1419,17 +1901,22 @@ async fn bootstrap_one(
         .await
         {
             Ok(intent) => intent,
-            Err(_) => return "unavailable",
+            Err(crate::character_bootstrap_intent::IntentReadError::Source(_)) => {
+                return bootstrap_unavailable("intent_read", "source");
+            }
+            Err(crate::character_bootstrap_intent::IntentReadError::Invalid(_)) => {
+                return bootstrap_unavailable("intent_read", "invalid_intent");
+            }
         }
     };
     let account = uuid_text(intent.account_id().as_bytes());
     // Current account security is fetched into S2 through the D4 lane; an
     // authenticated denial is accepted there and then rejects the bootstrap.
-    if evidence
-        .refresh_account(root, proof, &account)
-        .await
-        .is_err()
-    {
+    // The refresh failure renders as fixed step/cause tokens only.
+    if let Err(unavailable) = evidence.refresh_account(root, proof, &account).await {
+        event(&format!(
+            "event=character_bootstrap_failure stage=account_security reason=evidence {unavailable}"
+        ));
         return "unavailable";
     }
     match root.bootstrap_character(authority, proof, &intent).await {
@@ -1439,8 +1926,17 @@ async fn bootstrap_one(
             | crate::durability::character_authority::CharacterAuthorityError::Conflict
             | crate::durability::character_authority::CharacterAuthorityError::NameUnavailable,
         ) => "rejected",
-        Err(_) => "unavailable",
+        Err(_) => bootstrap_unavailable("commit", "durability"),
     }
+}
+
+// Only static stage/reason classes reach diagnostics. Never format the intent,
+// account, operation or underlying database/TLS error into a bootstrap log.
+fn bootstrap_unavailable(stage: &'static str, reason: &'static str) -> &'static str {
+    event(&format!(
+        "event=character_bootstrap_failure stage={stage} reason={reason}"
+    ));
+    "unavailable"
 }
 
 fn parse_operation_id(request: &[u8]) -> Option<[u8; 16]> {
@@ -1580,8 +2076,10 @@ pub async fn run(config_path: &Path) -> Result<(), BootError> {
     run_with_npc_data_project(config_path, None).await
 }
 
-/// Optionally retain a pinned NPC authoring catalogue for the process lifetime.
-/// This imports data only; the active world and NPC gameplay capabilities are unchanged.
+/// Optionally retain a pinned NPC authoring catalogue for the process lifetime. With a
+/// `[world_bundle]` World it also decides which of the bundle's NPC placements become NPC
+/// actors at Channel start (NPC-LOAD-1, NPC-PLACE-1 §7, [`bundle_npcs`]); NPC services and
+/// talk stay inactive.
 pub async fn run_with_npc_data_project(
     config_path: &Path,
     npc_data: Option<(&Path, &str)>,
@@ -1608,15 +2106,28 @@ pub async fn run_with_npc_data_project(
         config.scope.world_id, config.scope.channel_id
     ));
     // MAP-CUTOVER-1a: a bundle World is checked before any durable or fixture step.
+    let mut npc_frame = None;
     let bundle = world_bundle_gate(config, |path| {
-        Ok(read_file(
+        let data = read_file(
             "world_bundle.path",
             path,
             FileClass::Trusted,
             effective_uid(),
             oteryn_world_bundle::bundle::READ_CAPS.file_bytes,
-        )?)
+        )?;
+        npc_frame = Some(bundle_npcs::read(&data)?);
+        Ok(data)
     })?;
+    let npc_boot = bundle_npcs::prepare(
+        npc_frame,
+        npc_catalogue
+            .as_ref()
+            .zip(npc_data.map(|(project_root, _)| project_root)),
+        config
+            .world_bundle
+            .as_ref()
+            .is_some_and(|bundle| bundle.production),
+    )?;
     let signalled = CancellationToken::new();
     let watcher = {
         let signalled = signalled.clone();
@@ -1629,7 +2140,7 @@ pub async fn run_with_npc_data_project(
     let root = connect_root(&config.database, effective_uid()).await?;
     let stop_maintenance = CancellationToken::new();
     let maintenance = tokio::spawn(maintain(root.clone(), stop_maintenance.clone()));
-    let result = boot_and_serve(&root, &material, bundle, &signalled).await;
+    let result = boot_and_serve(&root, &material, bundle, npc_boot, &signalled).await;
     stop_maintenance.cancel();
     let _ = maintenance.await;
     watcher.abort();
@@ -1664,7 +2175,8 @@ fn world_bundle_gate(
             content_revision: bundle.content_revision.clone(),
             production: bundle.production,
         },
-        map_revision: config.readiness.map_revision.clone(),
+        // Readiness carries the bare digest; the bundle check compares the internal `sha256:` form.
+        map_revision: crate::map::overlay::internal_map_revision(&config.readiness.map_revision),
         start: crate::map::overlay::TilePos {
             x: bundle.start_x,
             y: bundle.start_y,
@@ -1683,13 +2195,13 @@ fn world_bundle_gate(
 /// `blocks_projectile` and pickup eligibility are the generation's Item profile for that key and
 /// revision; a fact the generation does not state blocks and is not pickupable. A generation
 /// without an Item key set names no Item, so a bundle with any Item fails closed at boot.
-fn boot_bundle_world(
+fn boot_bundle_items(
     checked: crate::map::boot::CheckedBundle,
     world: WorldId,
     channel: ChannelId,
     gameplay: Option<&crate::content::native_gameplay::NativeGameplayState>,
 ) -> Result<crate::map::boot::BundleWorld, BootError> {
-    use crate::content::ReferenceItemField;
+    use crate::content::{ReferenceItemField, ReferenceItemType};
     let index = gameplay.and_then(|state| state.item_index());
     let item = |key: &str| {
         let index = index?;
@@ -1705,6 +2217,14 @@ fn boot_bundle_world(
                     if physical.pickupable == ReferenceItemField::Known(true)
             )
         });
+        // MAP-DOOR-1: doorhood is the content profile's `item_type`, never an appearance id.
+        let door = profile.is_some_and(|profile| {
+            matches!(
+                &profile.semantics.classification,
+                ReferenceItemField::Known(classification)
+                    if classification.item_type == ReferenceItemField::Known(ReferenceItemType::Door)
+            )
+        });
         let attributes = profile.map(|profile| &profile.attributes);
         Some(crate::map::facts::ItemDefinition {
             reference,
@@ -1713,16 +2233,58 @@ fn boot_bundle_world(
                 .and_then(|attributes| attributes.blocks_projectile)
                 .unwrap_or(true),
             pickupable,
+            door,
         })
     };
-    let booted = checked
+    checked
         .boot(world, channel, item)
-        .map_err(BootError::WorldBundle)?;
+        .map_err(BootError::WorldBundle)
+}
+
+/// MAP-DOOR-1: [`boot_bundle_items`] plus the preprod rule that the World places a usable door.
+/// A door is usable only when the generation's Item profile states its open item as walkable
+/// (`blocks_movement` false and `blocks_projectile` false); a profile that does not describe
+/// the open item leaves the door sealed, so the node refuses readiness instead of serving a
+/// doorway that opens in appearance only.
+fn boot_bundle_world(
+    checked: crate::map::boot::CheckedBundle,
+    world: WorldId,
+    channel: ChannelId,
+    gameplay: Option<&crate::content::native_gameplay::NativeGameplayState>,
+) -> Result<crate::map::boot::BundleWorld, BootError> {
+    let booted = boot_bundle_items(checked, world, channel, gameplay)?;
+    // MAP-DOOR-1: a bundle without a usable door is not a playable preprod World.
+    let doors = booted.facts().doors();
+    if doors.is_empty() {
+        return Err(BootError::WorldBundle(
+            crate::map::boot::BootRefusal::NoDoors,
+        ));
+    }
     event(&format!(
-        "event=world_bundle state=booted map_revision={}",
-        booted.map_revision()
+        "event=world_bundle state=booted map_revision={} doors={} doors_sealed={}",
+        booted.map_revision(),
+        doors.len(),
+        doors.sealed()
     ));
     Ok(booted)
+}
+
+/// MAP-FLOOR-1: activates the floor changes of the booted bundle World, which its movement
+/// cells serve to every step (`map::floor`). The boot already refused a floor change whose
+/// destinations never end; a served bundle must also place at least one, so a bundle whose
+/// stairs, ladders and holes all failed to resolve against the content catalogue refuses
+/// readiness instead of silently serving a flat map. Returns the number of floor-change tiles.
+fn activate_floor_changes(world: &crate::map::boot::BundleWorld) -> Result<usize, BootError> {
+    let count = world.floors().count();
+    if count == 0 {
+        return Err(BootError::WorldBundle(
+            crate::map::boot::BootRefusal::NoFloorChanges,
+        ));
+    }
+    event(&format!(
+        "event=world_bundle_floors state=active floor_changes={count}"
+    ));
+    Ok(count)
 }
 
 /// The Channel content pin of a bundle World: the activated generation's pin with the bundle's
@@ -1748,10 +2310,130 @@ fn bundle_channel_pin(
     ))
 }
 
+/// BUNDLE-COMBAT-ENABLE-1: the combat room of a bundle World, the qualified room's bundle view
+/// over the Channel's bundle `cells` with the bundle's frame binding, map revision and start,
+/// exactly as [`bundle_channel_pin`] puts them on the Channel pin. `None` (combat stays closed,
+/// the World still serves) when the view does not bind.
+fn bundle_combat_room(
+    room: &crate::content::QualifiedNativeEntryRoom,
+    world: &crate::map::boot::BundleWorld,
+    world_id: WorldId,
+    cells: &crate::content::NativeEntryMovementCells,
+) -> Option<crate::content::QualifiedNativeEntryRoom> {
+    let start = world.start();
+    let view = start.floor.checked_neg().and_then(|floor| {
+        room.bundle_view(
+            cells.clone(),
+            world.frame_binding_digest(world_id),
+            world.map_revision_digest(),
+            crate::content::NativeEntryStart {
+                x: i32::from(start.x),
+                y: i32::from(start.y),
+                floor: i16::from(floor),
+            },
+        )
+    });
+    event(&format!(
+        "event=bundle_combat state={}",
+        if view.is_some() {
+            "enabled"
+        } else {
+            "disabled"
+        }
+    ));
+    view
+}
+
+/// SPAWN-1a (CREATURE-AI-0 §6.2): the fixture World's spawn source is realized at Channel
+/// activation, before the listener binds. A bundle World has no fixture spawn source.
+fn realize_fixture_spawns(
+    runtime: &mut ChannelRuntimeV1,
+    spawn_source: Option<crate::content::NativeEntrySpawnSource>,
+    bundle_world: bool,
+) -> Result<usize, BootError> {
+    let sources = spawn_source
+        .filter(|_| !bundle_world)
+        .map(|source| source.activation_facts())
+        .into_iter()
+        .collect();
+    runtime
+        .realize_activation_spawns(sources)
+        .map_err(|_| BootError::Readiness("creature spawn realization"))
+}
+
+/// The Channel owner window an activation realizes at most one spawn window in
+/// (`CREATUREAI0-RL-14`; the carrier's `spawn::OWNER_WINDOW_MICROS`).
+const SPAWN_ACTIVATION_WINDOW_MICROS: u64 = 50_000;
+
+/// SPAWN-1b (CREATURE-AI-0 §6.1, §6.2): a bundle World realizes the spawn family of its bundle
+/// at Channel activation, before the listener binds, each bundle source as one runtime source.
+/// Each creature's initial health is its served definition's maximum health; a creature the
+/// active content does not serve refuses readiness. The served policy does not carry the
+/// creature profile's `blocked_by_nearby_players` yet, so every point keeps the SPAWN-1a
+/// default (not blockable).
+///
+/// The activation is begun once (every registered ceiling checked, nothing admitted) and then
+/// realized one `CREATUREAI0-RL-14` window (4,096 points) per 50 ms owner window, in canonical
+/// order, on a boot-local monotonic owner clock: the loop waits for the next window boundary
+/// between windows. Any refusal refuses readiness with nothing realized. Returns the creatures
+/// realized and the windows used, or `None` when shutdown was requested meanwhile.
+pub(crate) async fn realize_bundle_spawns(
+    runtime: &mut ChannelRuntimeV1,
+    world: &crate::map::boot::BundleWorld,
+    signalled: &CancellationToken,
+) -> Result<Option<(usize, u64)>, BootError> {
+    let refuse = || BootError::Readiness("creature spawn realization");
+    let sources = world
+        .activation_spawns(|key| {
+            let policy = runtime.companion_policy(key).ok()?;
+            Some((u64::try_from(policy.maximum_health).ok()?, false))
+        })
+        .ok_or_else(refuse)?;
+    realize_activation_paced(runtime, sources, signalled).await
+}
+
+/// Realizes `sources` as one activation paced at most one `CREATUREAI0-RL-14` window per
+/// 50 ms owner window (see [`realize_bundle_spawns`]).
+async fn realize_activation_paced(
+    runtime: &mut ChannelRuntimeV1,
+    sources: Vec<crate::map::boot::BundleSpawnFacts>,
+    signalled: &CancellationToken,
+) -> Result<Option<(usize, u64)>, BootError> {
+    let refuse = || BootError::Readiness("creature spawn realization");
+    runtime
+        .begin_activation_spawn_sources(sources)
+        .map_err(|_| refuse())?;
+    let origin = tokio::time::Instant::now();
+    let mut windows = 0u64;
+    loop {
+        let now = u64::try_from(origin.elapsed().as_micros()).unwrap_or(u64::MAX);
+        let progress = runtime
+            .realize_activation_spawn_window(now)
+            .map_err(|_| refuse())?;
+        if progress.realized > 0 {
+            windows += 1;
+        }
+        if progress.remaining == 0 {
+            return Ok(Some((progress.realized_total, windows)));
+        }
+        let next = (now / SPAWN_ACTIVATION_WINDOW_MICROS)
+            .saturating_add(1)
+            .saturating_mul(SPAWN_ACTIVATION_WINDOW_MICROS);
+        let wake = origin + Duration::from_micros(next);
+        if first(tokio::time::sleep_until(wake), signalled.cancelled())
+            .await
+            .is_none()
+        {
+            return Ok(None);
+        }
+    }
+}
+
 async fn boot_and_serve(
     root: &DurabilityRoot,
     material: &Material,
     bundle: Option<crate::map::boot::CheckedBundle>,
+    npc_boot: Option<bundle_npcs::NpcBoot>,
     signalled: &CancellationToken,
 ) -> Result<(), BootError> {
     let config = &material.config;
@@ -1773,10 +2455,16 @@ async fn boot_and_serve(
     let seal = store
         .seal_current()
         .map_err(|_| BootError::CharacterAuthority)?;
-    let authority = root
-        .open_character_authority(&seal)
-        .await
-        .map_err(|_| BootError::CharacterAuthority)?;
+    let seal = &seal;
+    let authority = with_retries(
+        root,
+        "character authority open",
+        config.boot_pass_deadline(),
+        character_authority_retryable,
+        || root.open_character_authority(seal),
+    )
+    .await
+    .map_err(|_| BootError::CharacterAuthority)?;
     event("event=character_authority state=open");
     let Some(generation) = first(
         await_assignment(
@@ -1800,7 +2488,7 @@ async fn boot_and_serve(
     let (active_content, content) =
         activate_content(root, material.world, material.channel).await?;
     let qualified_room = content.qualified_room().clone();
-    let (channel_pin, movement_cells, door_content) = content.into_channel_parts();
+    let (channel_pin, movement_cells, door_content, spawn_source) = content.into_channel_parts();
     // Spell cast §3 (SPELL-D1): the V1 spell book is loaded with the Content activation, before
     // the Channel runtime; a book that does not load refuses readiness.
     let gameplay = active_content
@@ -1813,6 +2501,23 @@ async fn boot_and_serve(
     let bundle = bundle
         .map(|checked| boot_bundle_world(checked, material.world, material.channel, gameplay))
         .transpose()?;
+    if let Some(world) = &bundle {
+        activate_floor_changes(world)?;
+    }
+    // ADMIT0/D1081: validate the real scope offer before any readiness publication.
+    // The generation is the operator assignment just resolved above, not config.
+    // D1442 registers WORLD_SPATIAL_FIELDS=30 behind a closed offer gate; D1083 keeps
+    // WORLD_INTERACTION's gate closed, so only offered floor members bind (fail closed).
+    let required_capabilities =
+        crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
+            &config.readiness.required_gameplay_capabilities,
+            scope,
+            generation,
+            &config.readiness.world_policy_revision,
+            crate::gameplay_transport::world_required_capabilities::offered_for_scope(
+                bundle.is_some(), active_content.active(),
+            ),
+        ).map_err(|_| BootError::Readiness("required gameplay capabilities"))?;
     let (channel_pin, movement_cells) = match &bundle {
         Some(world) => (
             bundle_channel_pin(&channel_pin, world)?,
@@ -1821,6 +2526,13 @@ async fn boot_and_serve(
                 .map_err(|_| BootError::ContentActivation("world bundle movement cells"))?,
         ),
         None => (channel_pin, movement_cells),
+    };
+    // BUNDLE-COMBAT-ENABLE-1: player auto-attack and native combat casts read the qualified
+    // room; a bundle World serves them the room's bundle view, whose identities are the bundle
+    // pin's. Every other `qualified_room` consumer stays closed for a bundle World (§1.2).
+    let combat_room = match &bundle {
+        Some(world) => bundle_combat_room(&qualified_room, world, material.world, &movement_cells),
+        None => Some(qualified_room.clone()),
     };
     let spells = match gameplay {
         Some(native) => native.spell_book().clone(),
@@ -1922,6 +2634,24 @@ async fn boot_and_serve(
             .install_companion_policies(&mut channel_runtime)
             .map_err(|_| BootError::ContentActivation("active creature policies"))?;
     }
+    // NPC-LOAD-1: the bundle's NPC actors take their cells at Channel start, before any creature.
+    bundle_npcs::place(&mut channel_runtime, npc_boot.as_ref())?;
+    let (spawned_monsters, spawn_windows) = match &bundle {
+        Some(world) => match realize_bundle_spawns(&mut channel_runtime, world, signalled).await? {
+            Some(realized) => realized,
+            None => {
+                stopped_before_ready();
+                return Ok(());
+            }
+        },
+        None => {
+            let realized = realize_fixture_spawns(&mut channel_runtime, spawn_source, false)?;
+            (realized, u64::from(realized > 0))
+        }
+    };
+    event(&format!(
+        "event=creature_spawns state=realized spawned_monsters={spawned_monsters} windows={spawn_windows}"
+    ));
     let runtime = Mutex::new(channel_runtime);
     event(&format!(
         "event=channel_runtime state=bootstrapped ownership_generation={} source_revision={} capacity={}",
@@ -1994,6 +2724,11 @@ async fn boot_and_serve(
             .map_err(|_| BootError::Serve)?,
         entry_deadline: Duration::from_millis(config.listener.entry_deadline_ms),
     };
+    let last_position_flush = crate::gameplay_transport::LastPositionFlush::default();
+    // PREM-WIRE-1: the one Premium fence every Premium gate reads, the system trusted clock
+    // (PREMIUM-ACTIVATION-0 §1.1) and the durable activation latch. No activation is configured
+    // (§1.2): setting one needs separate owner authority, so Premium is not delivered.
+    let premium_reads = production_premium_reads(root);
     let owners = GameplaySeamOwners {
         root,
         character: &authority,
@@ -2001,17 +2736,23 @@ async fn boot_and_serve(
         evidence,
         world_id: material.world,
         channel_id: material.channel,
+        required_capabilities: required_capabilities.clone(),
         runtime: &runtime,
         movement_cells: &movement_cells,
         door: &door,
         chest: &chest,
         spells: &spells,
         active_generation: active_content.active(),
-        premium_coordinator: None,
-        qualified_room: bundle.is_none().then_some(&qualified_room),
+        premium_coordinator: Some(&premium_reads),
+        rooms: crate::gameplay_transport::SeamRooms::new(
+            bundle.is_none().then_some(&qualified_room),
+            combat_room.as_ref(),
+        ),
         achievements: &achievements,
         imported_charms: &imported_charms,
+        npc_talk: bundle_npcs::talk_book(npc_boot.as_ref()),
         quest_catalogue: &quest_catalogue,
+        last_position_flush: Some(&last_position_flush),
     };
     let loops_stop = CancellationToken::new();
     let mut gameplay = pin!(serve_gameplay(
@@ -2030,18 +2771,48 @@ async fn boot_and_serve(
         &shutdown,
     ));
     let mut expiry = pin!(audit_expiry_loop(root, &authority, &loops_stop));
-    // Never gates serving; its end is not a shutdown reason.
-    let mut projection = pin!(account_characters_loop(
-        root,
-        &authority,
-        material
-            .account_characters
-            .lock()
-            .ok()
-            .and_then(|mut projection| projection.take()),
-        &loops_stop
+    // Never gates serving; its end is not a shutdown reason. The public
+    // projections run beside it, disabled unless configured and enabled.
+    let mut projection = pin!(both(
+        both(
+            highscores_loop(root, material.world, &achievements, &loops_stop),
+            account_characters_loop(
+                root,
+                &authority,
+                material
+                    .account_characters
+                    .lock()
+                    .ok()
+                    .and_then(|mut projection| projection.take()),
+                &loops_stop
+            ),
+        ),
+        public_projections_loop(
+            root,
+            &authority,
+            material
+                .public_projections
+                .lock()
+                .ok()
+                .and_then(|mut public| public.take()),
+            &loops_stop
+        ),
     ));
     let mut projection_done = false;
+    // Never gates serving either; disabled unless configured.
+    let mut commands = pin!(character_commands_loop(
+        root,
+        &authority,
+        &proof,
+        evidence,
+        material
+            .character_commands
+            .lock()
+            .ok()
+            .and_then(|mut commands| commands.take()),
+        &loops_stop
+    ));
+    let mut commands_done = false;
     let mut signal = pin!(signalled.cancelled());
     let mut serve_error = None;
     // A loop that ended is never polled again.
@@ -2066,6 +2837,9 @@ async fn boot_and_serve(
         if !projection_done && projection.as_mut().poll(context).is_ready() {
             projection_done = true;
         }
+        if !commands_done && commands.as_mut().poll(context).is_ready() {
+            commands_done = true;
+        }
         Poll::Pending
     })
     .await;
@@ -2077,6 +2851,39 @@ async fn boot_and_serve(
     // loops keep being driven meanwhile, so work already inside a durability
     // pass finishes and releases the holder the withdrawal needs.
     let budget = tokio::time::Instant::now() + SHUTDOWN_BUDGET;
+    // CHAR-POSITION-0 §3.2: the tracked last positions are written while the sessions are still
+    // fenced in, so before the withdrawal, within its own share of the budget.
+    if !gameplay_done {
+        last_position_flush.request();
+        let mut flushed = pin!(first(
+            last_position_flush.done(),
+            tokio::time::sleep(LAST_POSITION_FLUSH_BUDGET),
+        ));
+        poll_fn(|context| {
+            if flushed.as_mut().poll(context).is_ready() {
+                return Poll::Ready(());
+            }
+            if let Poll::Ready(result) = gameplay.as_mut().poll(context) {
+                serve_error = result.err();
+                gameplay_done = true;
+                return Poll::Ready(());
+            }
+            if !control_done && control_task.as_mut().poll(context).is_ready() {
+                control_done = true;
+            }
+            if !expiry_done && expiry.as_mut().poll(context).is_ready() {
+                expiry_done = true;
+            }
+            if !projection_done && projection.as_mut().poll(context).is_ready() {
+                projection_done = true;
+            }
+            if !commands_done && commands.as_mut().poll(context).is_ready() {
+                commands_done = true;
+            }
+            Poll::Pending
+        })
+        .await;
+    }
     let mut withdrawal = pin!(readiness.publish(false, Some(budget)));
     let withdrawn = poll_fn(|context| {
         if let Poll::Ready(result) = withdrawal.as_mut().poll(context) {
@@ -2094,6 +2901,9 @@ async fn boot_and_serve(
         }
         if !projection_done && projection.as_mut().poll(context).is_ready() {
             projection_done = true;
+        }
+        if !commands_done && commands.as_mut().poll(context).is_ready() {
+            commands_done = true;
         }
         Poll::Pending
     })
@@ -2123,6 +2933,9 @@ async fn boot_and_serve(
     }
     if !projection_done {
         projection.as_mut().await;
+    }
+    if !commands_done {
+        commands.as_mut().await;
     }
     if let Some(reporter) = reporter {
         reporter
@@ -2164,6 +2977,28 @@ mod tests {
             assert_eq!(calls, 3);
             let mut refused = [None, Some(false)].into_iter();
             assert!(!await_answer(async || refused.next().flatten()).await);
+        });
+    }
+
+    #[test]
+    fn production_premium_reads_configure_no_activation_and_read_the_latch() {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()
+            .expect("runtime");
+        runtime.block_on(async {
+            let root = DurabilityRoot::connect_test_runtime("postgres://node@127.0.0.1:1/game")
+                .expect("lazy root");
+            let reads = production_premium_reads(&root);
+            // PREMIUM-ACTIVATION-0 §1.2: no activation record in production, so Premium is
+            // never delivered and every account reads Free, without a latch write.
+            assert!(reads.activation().is_none());
+            assert!(reads.reads_latch());
+            assert!(reads.has_clock());
+            assert_eq!(
+                reads.premium_gate([1; 16]).await,
+                crate::domain::premium::PremiumGate::CLOSED
+            );
         });
     }
 
@@ -2247,6 +3082,81 @@ mod tests {
     }
 
     #[test]
+    fn boot_steps_retry_only_root_contention_and_deadline_outcomes() {
+        use crate::durability::{
+            DurabilityError, MigrationFailureClass, SchemaCompatibility, SqlxFailureClass,
+        };
+        // The single connection was busy or retired, or the pass ran out of time: the
+        // wrapped steps are idempotent re-reads, so the next run confirms the stored state.
+        for retryable in [
+            DurabilityError::RootUnavailable,
+            DurabilityError::RootPassDeadlineExceeded,
+            DurabilityError::CommitOutcomeUnknown,
+        ] {
+            assert!(boot_step_retryable(&retryable), "{retryable:?}");
+        }
+        // Every other class is a stored-state, schema or configuration verdict: fail closed.
+        for terminal in [
+            DurabilityError::AdmissionGameSessionLedgerExhausted,
+            DurabilityError::Unavailable,
+            DurabilityError::Database(SqlxFailureClass::Database(None)),
+            DurabilityError::Database(SqlxFailureClass::Transport),
+            DurabilityError::Database(SqlxFailureClass::Pool),
+            DurabilityError::Migration(MigrationFailureClass::Dirty),
+            DurabilityError::SchemaIncompatible(SchemaCompatibility::Incompatible),
+            DurabilityError::InvalidConfiguration,
+            DurabilityError::CommitRejected,
+            DurabilityError::RootTaskFailed,
+            DurabilityError::InvalidStoredState,
+        ] {
+            assert!(!boot_step_retryable(&terminal), "{terminal:?}");
+        }
+    }
+
+    #[test]
+    fn character_authority_open_retries_only_a_retryable_root_cause() {
+        use crate::durability::DurabilityError;
+        use crate::durability::character_authority::CharacterAuthorityError;
+        assert!(character_authority_retryable(
+            &CharacterAuthorityError::Unavailable(DurabilityError::RootPassDeadlineExceeded)
+        ));
+        assert!(character_authority_retryable(
+            &CharacterAuthorityError::Unavailable(DurabilityError::RootUnavailable)
+        ));
+        for terminal in [
+            CharacterAuthorityError::Rejected,
+            CharacterAuthorityError::Conflict,
+            CharacterAuthorityError::NameUnavailable,
+            CharacterAuthorityError::Unavailable(DurabilityError::Unavailable),
+            CharacterAuthorityError::Unavailable(DurabilityError::InvalidStoredState),
+        ] {
+            assert!(!character_authority_retryable(&terminal), "{terminal:?}");
+        }
+    }
+
+    #[test]
+    fn boot_step_lines_name_the_step_and_only_the_error_class() {
+        use crate::durability::{DurabilityError, SqlxFailureClass};
+        assert_eq!(
+            boot_step_detail("descriptor", &DurabilityError::RootPassDeadlineExceeded),
+            "step=\"descriptor\" error=RootPassDeadlineExceeded"
+        );
+        assert_eq!(
+            boot_step_detail(
+                "custody claim",
+                &DurabilityError::Database(SqlxFailureClass::Database(None))
+            ),
+            "step=\"custody claim\" error=Database(Database(None))"
+        );
+        let line = boot_step_retry_line("descriptor", 2, &DurabilityError::RootUnavailable);
+        let (level, module, event, detail) = split_event(&line);
+        assert_eq!(level, oteryn_error_codes::Level::Info);
+        assert_eq!(module, "node");
+        assert_eq!(event, "boot_step_retry");
+        assert_eq!(detail, "run=2 step=\"descriptor\" error=RootUnavailable");
+    }
+
+    #[test]
     fn budgeted_backoff_returns_by_the_deadline() {
         let runtime = tokio::runtime::Builder::new_current_thread()
             .enable_time()
@@ -2293,7 +3203,7 @@ mod tests {
             .replace("start_y = 200", "start_y = 0");
         let bundle = configured.replace(
             "map_revision = \"map-1\"",
-            &format!("map_revision = \"sha256:{digest}\""),
+            &format!("map_revision = \"{digest}\""),
         );
         assert!(matches!(gate(&bundle, &bytes), Ok(Some(_))));
         // Each check that needs no item definition refuses before any durable step.
@@ -2329,11 +3239,228 @@ mod tests {
     /// generation's Item key set and profiles, not from the entry room's content, and its
     /// Channel pin carries the bundle's identities.
     #[test]
+    fn boot_realizes_both_d116_rats_on_the_den_cells_before_readiness() {
+        let world = WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1])
+            .expect("world");
+        let channel = ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])
+            .expect("channel");
+        let node =
+            NodeId::decode(&[1, 0, 0, 0, 0, 3, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 3]).expect("node");
+        let room = crate::content::qualify_native_entry_room(world).expect("entry room");
+        let runtime = || {
+            ChannelRuntimeV1::from_committed_assignment(
+                world,
+                channel,
+                node,
+                1,
+                1,
+                1,
+                "runtime-scope-assignment:1",
+                8,
+                crate::foundation::ChannelContentPin::test(world),
+            )
+            .expect("runtime")
+        };
+        let mut booted = runtime();
+        assert_eq!(
+            realize_fixture_spawns(&mut booted, room.spawn_source().cloned(), false).ok(),
+            Some(2)
+        );
+        let rats = booted
+            .spawn_point_creatures()
+            .into_iter()
+            .map(|(_, cell, live)| ((cell.x, cell.y, cell.floor), live.is_some()))
+            .collect::<Vec<_>>();
+        assert_eq!(rats, vec![((2, 0, 0), true), ((2, -1, 0), true)]);
+        // A bundle World realizes no fixture spawn.
+        let mut bundle = runtime();
+        assert_eq!(
+            realize_fixture_spawns(&mut bundle, room.spawn_source().cloned(), true).ok(),
+            Some(0)
+        );
+        assert!(bundle.spawn_point_creatures().is_empty());
+    }
+
+    /// SPAWN-1b (Codex P1 on #1981, `CREATUREAI0-RL-14`): an activation above one window is
+    /// realized one window of at most 4,096 points per 50 ms owner window, not in one turn; a
+    /// shutdown requested meanwhile stops it before readiness.
+    #[test]
+    fn spawn1b_activation_is_paced_one_window_per_owner_window() {
+        let world = WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1])
+            .expect("world");
+        let channel = ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])
+            .expect("channel");
+        let node =
+            NodeId::decode(&[1, 0, 0, 0, 0, 3, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 3]).expect("node");
+        let runtime = || {
+            ChannelRuntimeV1::from_committed_assignment(
+                world,
+                channel,
+                node,
+                1,
+                1,
+                1,
+                "runtime-scope-assignment:1",
+                9_000,
+                crate::foundation::ChannelContentPin::test(world),
+            )
+            .expect("runtime")
+        };
+        // 131 sources of 63 points: 8,253 points in windows of 4,096, 4,096 and 61.
+        let sources = || -> Vec<crate::map::boot::BundleSpawnFacts> {
+            (0..131)
+                .map(|_| {
+                    let points = (0..63)
+                        .map(|x| {
+                            (
+                                (x, 0, 7),
+                                60_000,
+                                "oteryn:creature/rat".to_string(),
+                                20,
+                                false,
+                            )
+                        })
+                        .collect::<Vec<_>>();
+                    (points, 5_000)
+                })
+                .collect::<Vec<_>>()
+        };
+        let executor = tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()
+            .expect("runtime");
+        executor.block_on(async {
+            let mut paced = runtime();
+            let started = std::time::Instant::now();
+            let realized =
+                realize_activation_paced(&mut paced, sources(), &CancellationToken::new()).await;
+            assert_eq!(realized.ok(), Some(Some((8_253, 3))));
+            assert!(started.elapsed() >= Duration::from_millis(100));
+            assert_eq!(paced.spawn_point_creatures().len(), 8_253);
+
+            let stopped = CancellationToken::new();
+            stopped.cancel();
+            let mut cancelled = runtime();
+            assert_eq!(
+                realize_activation_paced(&mut cancelled, sources(), &stopped)
+                    .await
+                    .ok(),
+                Some(None)
+            );
+        });
+    }
+
+    /// SPAWN-1b (Codex P1 4243711197 on #1981): a family of the pinned pre-production bundle's
+    /// shape, 51,078 sources with 82,673 active points of which 31,595 sources mix two
+    /// creatures and delays, is 51,078 runtime sources: within `CREATUREAI0-RL-02` (65,536),
+    /// where one runtime source per creature/delay run would be 82,673 and refuse. It realizes
+    /// paced, in 21 owner windows.
+    #[test]
+    fn spawn1b_bundle_scale_family_stays_one_runtime_source_per_bundle_source() {
+        use oteryn_world_bundle::spawn::{Creature, Direction, Period, Point, Source, Table};
+        const SOURCES: usize = 51_078;
+        const POINTS: usize = 82_673;
+        let point = |creature, x, respawn_ms| Point {
+            creature,
+            x,
+            y: 5,
+            direction: Direction::South,
+            respawn_ms,
+        };
+        let creature = |key: &str| Creature {
+            key: key.into(),
+            period: Period::All,
+        };
+        let table = Table {
+            creatures: vec![
+                creature("oteryn:creature/bat"),
+                creature("oteryn:creature/rat"),
+            ],
+            sources: (0..SOURCES)
+                .map(|index| {
+                    let x = u16::try_from(index % 1_024).expect("small");
+                    let mut points = vec![point(1, x, 60_000)];
+                    if index < POINTS - SOURCES {
+                        points.push(point(0, x, 30_000));
+                    }
+                    Source {
+                        key: format!("oteryn:spawn/{index:05}"),
+                        floor: -7,
+                        x,
+                        y: 5,
+                        points,
+                    }
+                })
+                .collect(),
+        };
+        assert_eq!(table.point_count(), POINTS);
+        let sources = crate::map::boot::table_activation_spawns(&table, |key| {
+            Some((if key.ends_with("rat") { 20 } else { 35 }, false))
+        })
+        .expect("served creatures");
+        drop(table);
+        assert_eq!(sources.len(), SOURCES);
+        assert_eq!(
+            sources.iter().map(|source| source.0.len()).sum::<usize>(),
+            POINTS
+        );
+
+        let world = WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1])
+            .expect("world");
+        let channel = ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])
+            .expect("channel");
+        let node =
+            NodeId::decode(&[1, 0, 0, 0, 0, 3, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 3]).expect("node");
+        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+            world,
+            channel,
+            node,
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            POINTS + 1_000,
+            crate::foundation::ChannelContentPin::test(world),
+        )
+        .expect("runtime");
+        let executor = tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()
+            .expect("runtime");
+        let realized = executor.block_on(realize_activation_paced(
+            &mut runtime,
+            sources,
+            &CancellationToken::new(),
+        ));
+        assert_eq!(realized.ok(), Some(Some((POINTS, 21))));
+        assert_eq!(runtime.spawn_point_creatures().len(), POINTS);
+    }
+
+    #[test]
     fn map_cutover_b_a_bundle_with_items_boots_from_the_active_generation() {
         const KEYS: &[u8] =
             include_bytes!("../../../../tools/content-schema/native-gameplay/item-keys.json");
-        let (boxed, coin) = ("oteryn:item.tibia.i100", "oteryn:item.tibia.i1000");
-        let (bytes, pins) = crate::map::boot::tests::bundle_with_items(boxed, coin);
+        // MAP-DOOR-1: the solid entry is the closed door appearance 1629, whose open item 1630
+        // the generation also serves.
+        let (boxed, coin) = ("oteryn:item.tibia.i1629", "oteryn:item.tibia.i1000");
+        let probe = crate::content::native_gameplay::tests::activated_with_item_keys(Some(KEYS));
+        let probe_index = probe
+            .active()
+            .expect("active")
+            .native_gameplay()
+            .and_then(|state| state.item_index())
+            .expect("index");
+        let compact_id = |key: &str| {
+            let revision = probe_index.revision(key).expect("revision");
+            probe_index
+                .definition_ref("Item", key, revision)
+                .expect("reference")
+                .get()
+                - 1
+        };
+        let (boxed_id, coin_id) = (compact_id(boxed), compact_id(coin));
+        let (bytes, pins) =
+            crate::map::boot::tests::bundle_with_item_ids((boxed, boxed_id), (coin, coin_id));
         let mut revision = String::from("sha256:");
         for byte in pins.digest {
             revision.push_str(&format!("{byte:02x}"));
@@ -2357,8 +3484,19 @@ mod tests {
         let index = gameplay
             .and_then(|state| state.item_index())
             .expect("index");
-        let booted = boot_bundle_world(checked(), world, channel, gameplay).expect("booted");
-        for (key, x, compact) in [(boxed, 6, 0), (coin, 7, 1)] {
+        let booted = boot_bundle_items(checked(), world, channel, gameplay).expect("booted");
+        // The active profile does not classify 1629 as a Door (`item_type`), so no door is
+        // placed whatever its appearance id, and a preprod node refuses to serve this bundle
+        // rather than open a doorway in name only.
+        assert_eq!(booted.facts().doors().len(), 0);
+        assert_eq!(booted.facts().doors().sealed(), 0);
+        assert!(matches!(
+            boot_bundle_world(checked(), world, channel, gameplay),
+            Err(BootError::WorldBundle(
+                crate::map::boot::BootRefusal::NoDoors
+            ))
+        ));
+        for (key, x, compact) in [(boxed, 6, boxed_id), (coin, 7, coin_id)] {
             use crate::map::view::MapFacts;
             let reference = index
                 .definition_ref("Item", key, index.revision(key).expect("revision"))
@@ -2400,12 +3538,87 @@ mod tests {
             booted.frame_binding_digest(other),
             booted.frame_binding_digest(world)
         );
+        // MAP-DOOR-1: the same bundle with a plain solid box in place of the door places no door,
+        // and a preprod node refuses to serve it.
+        let (plain, plain_pins) = crate::map::boot::tests::bundle_with_items(
+            "oteryn:item.tibia.i100",
+            "oteryn:item.tibia.i1000",
+        );
+        let plain_revision: String = plain_pins
+            .digest
+            .iter()
+            .fold(String::from("sha256:"), |text, byte| {
+                format!("{text}{byte:02x}")
+            });
+        let plain_checked = crate::map::boot::check(
+            plain,
+            crate::map::boot::BootPins {
+                bundle: plain_pins,
+                map_revision: plain_revision,
+                start: boot_pins.start,
+            },
+        )
+        .expect("check");
+        assert!(matches!(
+            boot_bundle_world(plain_checked, world, channel, gameplay),
+            Err(BootError::WorldBundle(
+                crate::map::boot::BootRefusal::NoDoors
+            ))
+        ));
         // A generation without an Item key set names no Item: the same bundle fails closed.
         let without = crate::content::native_gameplay::tests::activated_with_item_keys(None);
         let gameplay = without.active().expect("active").native_gameplay();
         assert!(matches!(
             boot_bundle_world(checked(), world, channel, gameplay),
             Err(BootError::WorldBundle(_))
+        ));
+    }
+
+    #[test]
+    fn map_floor_activation_counts_floor_changes_and_refuses_a_flat_bundle() {
+        use crate::map::boot::tests::{bundle, floor_bundle, floor_items, floor_pins, items};
+        let world = WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1])
+            .expect("world");
+        let channel = ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])
+            .expect("channel");
+        let (bytes, pins) = floor_bundle();
+        let floors = crate::map::boot::boot(&bytes, &floor_pins(pins), world, channel, floor_items)
+            .expect("floor bundle");
+        assert_eq!(activate_floor_changes(&floors).expect("activated"), 2);
+
+        // A bundle none of whose entries is a catalogue floor change refuses readiness.
+        let (bytes, pins) = bundle();
+        let mut revision = String::from("sha256:");
+        for byte in pins.digest {
+            revision.push_str(&format!("{byte:02x}"));
+        }
+        let flat = crate::map::boot::boot(
+            &bytes,
+            &crate::map::boot::BootPins {
+                bundle: pins,
+                map_revision: revision,
+                start: crate::map::overlay::TilePos {
+                    x: 2,
+                    y: 0,
+                    floor: -7,
+                },
+            },
+            world,
+            channel,
+            items,
+        )
+        .expect("flat bundle");
+        assert!(matches!(
+            activate_floor_changes(&flat),
+            Err(BootError::WorldBundle(
+                crate::map::boot::BootRefusal::NoFloorChanges
+            ))
+        ));
+        // Bad floor-change data refuses the boot before it can be activated.
+        let (bytes, pins) = crate::map::boot::tests::floor_bundle_with(true);
+        assert!(matches!(
+            crate::map::boot::boot(&bytes, &floor_pins(pins), world, channel, floor_items),
+            Err(crate::map::boot::BootRefusal::FloorChain(_))
         ));
     }
 

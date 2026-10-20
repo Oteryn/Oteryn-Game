@@ -62,10 +62,39 @@ def require(ok: bool, message: str):
         raise ValueError(message)
 
 
+def validate_accepted_semantics(packet):
+    """Protect accepted Oteryn decisions independently of packet digest pins."""
+    progression = packet["progression"]
+    require(len(progression["mini_bosses"]) == 5,
+            "Soul War requires five distinct mini-bosses")
+    require(progression["mini_boss_order"].startswith("ANY_ORDER_SOURCE_FLAGS;"),
+            "Soul War mini-boss order must remain independent")
+    require(progression["final_access"] == "all five mini-boss completion flags are required",
+            "Soul War final access requires all five flags")
+    require(progression["final_reward"] ==
+            "one random item from the donor finalRewards set, once, only after Megalomania completion",
+            "Soul War final reward must remain one random post-Megalomania claim")
+    teleport = next(row for row in progression["taint_effects"] if row["level"] == 1)
+    require(teleport == {
+        "level": 1,
+        "effect": "10% chance for a qualifying Soul War creature to teleport to the player",
+        "basis": "OTERYN_ACCEPTED",
+    }, "Soul War accepted taint teleport differs")
+    mechanics = {row["key"]: row for row in packet["mechanics"]}
+    require(mechanics["mirror_image"]["chosen"] == {
+        "own_player_damage_transforms_to_attacker_base_vocation_percent": 70,
+        "other_vocations_percent_each": 7.5,
+        "other_damage_hp_floor": 1,
+    }, "Mirror Image accepted weights or HP floor differ")
+    require(mechanics["rotten_wasteland_shrines"]["chosen"]["required_activated_shrines"] == 4,
+            "Rotten Wasteland requires four shrines")
+
+
 def validate(root: Path):
     packet = load(root, PACKET)
     schema = load(root, SCHEMA)
     Draft202012Validator(schema).validate(packet)
+    validate_accepted_semantics(packet)
 
     require(packet["runtime_activation"] is False, "Soul War runtime activation must remain false")
     require(packet["quest"] == {

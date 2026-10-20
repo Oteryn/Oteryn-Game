@@ -41,6 +41,11 @@ pub enum FoundationProtocolError {
     /// key the catalogue lacks): an internal integrity fault. The client learns only that its
     /// account data needs support; the diagnostic stays in the operator event.
     AccountDataIntegrity = 1050,
+    /// HIGHSCORES0 §6 (HS-WIRE-1): the query names a category this server does not offer.
+    NotSupported = 1200,
+    /// HIGHSCORES0 §6 (HS-WIRE-1): the echoed snapshot token is no longer retained; the client
+    /// starts the list again at page 1 with token 0.
+    SnapshotExpired = 1201,
     // FND-04A §11 fresh-admission refusal rows (ARCH-LOGIN-FIRST-PACKETS-V1 §1.2, N8): written
     // once before admission with generation 0, then the server closes. `admission_refusal_class`
     // gives each its progression and public class.
@@ -61,6 +66,12 @@ pub enum FoundationProtocolError {
     AdmissionIncumbentProtected = 1114,
     AdmissionCapacityExceeded = 1115,
     AdmissionCapabilityRequired = 1116,
+    /// ADMIT0 §5 (CP D1187): an authenticated same-GameSession reconnect lacks a required
+    /// capability; the candidate ends and current authority is preserved.
+    ReconnectCapabilityRequired = 1117,
+    /// ADMIT0 §5 (CP D1187): an authenticated recovery lacks a required capability; nothing
+    /// is mutated and no recovery grant is consumed.
+    RecoveryCapabilityRequired = 1118,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -112,7 +123,11 @@ impl FoundationProtocolError {
             | Self::InvalidCapabilitySet => ProtocolDisposition::SessionFatal,
             Self::PayloadLimitExceeded
             | Self::TooManyOutstandingCommands
-            | Self::AccountDataIntegrity => ProtocolDisposition::OperationTerminal,
+            | Self::AccountDataIntegrity
+            | Self::NotSupported
+            | Self::SnapshotExpired
+            | Self::ReconnectCapabilityRequired
+            | Self::RecoveryCapabilityRequired => ProtocolDisposition::OperationTerminal,
             Self::CommandOutcomeExpired
             | Self::CommandSequenceGap
             | Self::ServerSequenceGap
@@ -145,6 +160,8 @@ impl Display for FoundationProtocolError {
             Self::BootstrapLimitExceeded => "bootstrap payload exceeds hard limit",
             Self::InvalidCapabilitySet => "invalid capability set",
             Self::AccountDataIntegrity => "account data needs support",
+            Self::NotSupported => "query is not supported",
+            Self::SnapshotExpired => "snapshot is no longer retained",
             Self::AdmissionGrantMalformed => "admission grant is malformed",
             Self::AdmissionGrantAuthenticationFailed => "admission grant authentication failed",
             Self::AdmissionGrantBindingMismatch => "admission grant binding mismatch",
@@ -168,14 +185,17 @@ impl Display for FoundationProtocolError {
             Self::AdmissionIncumbentProtected => "character is already active",
             Self::AdmissionCapacityExceeded => "admission capacity exceeded",
             Self::AdmissionCapabilityRequired => "a required capability is missing",
+            Self::ReconnectCapabilityRequired => "a required reconnect capability is missing",
+            Self::RecoveryCapabilityRequired => "a required recovery capability is missing",
         })
     }
 }
 
 impl Error for FoundationProtocolError {}
 
-/// The codes FND-04A §11 fresh-admission refusals use (ARCH-LOGIN-FIRST-PACKETS-V1 §1.2); 1117..
-/// 1199 are reserved for later admission rows and never reused.
+/// The codes FND-04A §11 fresh-admission refusals use (ARCH-LOGIN-FIRST-PACKETS-V1 §1.2), and
+/// the ADMIT0 §5 reconnect (1117) and recovery (1118) rows; 1119..1199 are reserved for later
+/// admission rows and never reused.
 pub const ADMISSION_REFUSAL_CODES: std::ops::RangeInclusive<u32> = 1100..=1199;
 
 /// FND-04A §11 progression of one admission refusal: what the client may do next on its own.
@@ -205,7 +225,7 @@ const ADMISSION_REFUSAL_ROWS: [(
     FoundationProtocolError,
     AdmissionProgression,
     AdmissionPublicClass,
-); 17] = {
+); 19] = {
     use AdmissionProgression::{Retryable, SecurityTerminal, Terminal};
     use AdmissionPublicClass::{
         AuthenticationRequired, CharacterAlreadyActive, ClientUpdateRequired, RetryLogin,
@@ -279,6 +299,16 @@ const ADMISSION_REFUSAL_ROWS: [(
         ),
         (
             E::AdmissionCapabilityRequired,
+            Terminal,
+            ClientUpdateRequired,
+        ),
+        (
+            E::ReconnectCapabilityRequired,
+            Terminal,
+            ClientUpdateRequired,
+        ),
+        (
+            E::RecoveryCapabilityRequired,
             Terminal,
             ClientUpdateRequired,
         ),
@@ -367,11 +397,22 @@ pub const MAX_SNAPSHOT_ASSEMBLED_BYTES: u64 = 16_777_216;
 // offered before BAGS-1) and 15 ITEM_USE_V1 (ITEM-USE-WIRE-1, not offered before ITEM-USE-1) and
 // 16 QUEST_LOG_V1 (QUEST-LOG-WIRE-1, not offered before the quest log
 // content and the production session copy are composed) and 17 ATTACK_V1 (ATTACK-WIRE-1, not
-// offered before ATTACK-1b) and 3 NPC_SERVICE_V1 (NPC-WIRE-1, not offered before NPC-TALK-1).
-// Registered is not offered. 13
-// PACED_MOVEMENT_V1 (SPEED-1) is offered: it adds the step result TOO_EARLY.
+// offered before ATTACK-1b) and 3 NPC_SERVICE_V1 (NPC-WIRE-1, not offered before NPC-TALK-1) and
+// 22 RUNE_USE_V1 (RUNE-WIRE-1, not offered before RUNE-CAST-1) and 23 PRESENTATION_V1
+// (PRESENT-WIRE-1, not offered before SPELL-PRESENT-1 or COMBAT-PRESENT-1). Registered is not
+// offered. 13 PACED_MOVEMENT_V1 (SPEED-1) is offered: it adds the step result TOO_EARLY. 21
+// LOGOUT_V1 (LOGOUT-WIRE-1) is offered with its command handler.
+// 26 WORLD_WEATHER_V1 (WEATHER-1, D1137) is offered (D1027 signed off) on a connection whose
+// authority exposes the shipped weather source; it requires 6.
+// 28 ITEM_LOOK_V1 (CP D1240/D1240a) is registered, not offered; no additional
+// capability requirement was assigned. 9 HIGHSCORES_V1 (HS-WIRE-1, RANK-1) is offered with its
+// command type 14 handler. CP D1442 registers 29 MAP_STATE_V1 (never offered: D1083 serves the
+// map as 18) and 30 WORLD_SPATIAL_FIELDS (FIELD-WIRE-1, not offered before the field payloads are
+// composed); both require 6. Next unallocated capability is 31.
 // Keep this sorted when a later owning gate allocates an additive capability ID.
-const REGISTERED_CAPABILITY_IDS_V1: &[u32] = &[1, 3, 4, 6, 7, 8, 10, 12, 13, 14, 15, 16, 17, 18];
+const REGISTERED_CAPABILITY_IDS_V1: &[u32] = &[
+    1, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 26, 28, 29, 30,
+];
 
 fn decode_uuid_v7(input: &[u8]) -> Result<[u8; 16], FoundationProtocolError> {
     let value: [u8; 16] = input
@@ -667,7 +708,7 @@ fn validate_acceptance_value(
 
 /// A selected capability whose requirement is not selected with it (ITEM-MOVE-WIRE-0 §4: 4
 /// requires 6; ITEM-EQUIP-DROP: 12 requires 4; BAGS-0 §5: 14 requires 4 and 12; ITEM-USE-0 §3:
-/// 15 requires 4; ATTACK-WIRE-1: 17 requires 6) is an invalid set, refused on encode and decode of both `ServerAccepted` and `ServerResumeAccepted`.
+/// 15 requires 4; ATTACK-WIRE-1: 17 requires 6; LOOP-CLOCK-1: 19 requires 6; PRESENT-WIRE-1: 23 requires 6; WORLDINT-WIRE-1: 11 requires 15 and 18; RUNE-WIRE-1: 22 requires 15) is an invalid set, refused on encode and decode of both `ServerAccepted` and `ServerResumeAccepted`.
 const CAPABILITY_REQUIREMENTS_V1: &[(u32, &[u32])] = &[
     (
         item_view::CAPABILITY_ITEM_VIEW_MOVE_V1,
@@ -689,6 +730,31 @@ const CAPABILITY_REQUIREMENTS_V1: &[(u32, &[u32])] = &[
         attack::CAPABILITY_ATTACK_V1,
         &attack::CAPABILITY_ATTACK_V1_REQUIRES,
     ),
+    (
+        world_clock::CAPABILITY_WORLD_LIGHT_V1,
+        &world_clock::CAPABILITY_WORLD_LIGHT_V1_REQUIRES,
+    ),
+    (
+        world_interaction::CAPABILITY_WORLD_INTERACTION_V1,
+        &world_interaction::CAPABILITY_WORLD_INTERACTION_V1_REQUIRES,
+    ),
+    (
+        world_object::CAPABILITY_RUNE_USE_V1,
+        world_object::CAPABILITY_RUNE_USE_V1_REQUIRES,
+    ),
+    (
+        presentation::CAPABILITY_PRESENTATION_V1,
+        &presentation::CAPABILITY_PRESENTATION_V1_REQUIRES,
+    ),
+    (
+        world_weather::CAPABILITY_WORLD_WEATHER_V1,
+        &world_weather::CAPABILITY_WORLD_WEATHER_V1_REQUIRES,
+    ),
+    // CP D1240/D1240a assigns no additional requirements for ITEM_LOOK_V1.
+    (28, &[]),
+    // CP D1442: MAP_STATE_V1 and WORLD_SPATIAL_FIELDS each require 6 WORLD_SPATIAL_ENTITIES.
+    (29, &[6]),
+    (30, &[6]),
 ];
 
 fn validate_capability_closure(selected: &[u32]) -> Result<(), FoundationProtocolError> {
@@ -2536,14 +2602,21 @@ mod charm_wire;
 pub mod chat;
 pub mod container_tree;
 pub mod damage_element;
+pub mod highscores;
+pub mod item_look;
 pub mod item_view;
+pub mod logout;
 pub mod npc_service;
+pub mod presentation;
 pub mod quest_log;
 pub mod spell_presentation_candidate;
+pub mod world_clock;
+pub mod world_interaction;
 pub mod world_map;
 pub mod world_object;
 pub mod world_spatial;
 pub mod world_spatial_entities;
+pub mod world_weather;
 
 #[cfg(test)]
 mod tests {
@@ -2690,6 +2763,16 @@ mod tests {
             (&[4, 17][..], false),
             (&[6, 17][..], true),
             (&[4, 6, 17][..], true),
+            (&[19][..], false),
+            (&[4, 19][..], false),
+            (&[6, 19][..], true),
+            (&[4, 6, 19][..], true),
+            (&[11][..], false),
+            (&[4, 6, 11, 15][..], false),
+            (&[4, 6, 11, 15, 18][..], true),
+            (&[22][..], false),
+            (&[4, 6, 22][..], false),
+            (&[4, 6, 15, 22][..], true),
         ] {
             let expected = |result: Result<(), FoundationProtocolError>| match valid {
                 true => assert!(result.is_ok(), "{selected:?}"),
@@ -4035,6 +4118,8 @@ mod tests {
             (E::BootstrapLimitExceeded, "BOOTSTRAP_LIMIT_EXCEEDED"),
             (E::InvalidCapabilitySet, "INVALID_CAPABILITY_SET"),
             (E::AccountDataIntegrity, "ACCOUNT_DATA_INTEGRITY"),
+            (E::NotSupported, "NOT_SUPPORTED"),
+            (E::SnapshotExpired, "SNAPSHOT_EXPIRED"),
             (E::AdmissionGrantMalformed, "ADMISSION_GRANT_MALFORMED"),
             (
                 E::AdmissionGrantAuthenticationFailed,
@@ -4085,6 +4170,14 @@ mod tests {
                 E::AdmissionCapabilityRequired,
                 "ADMISSION_CAPABILITY_REQUIRED",
             ),
+            (
+                E::ReconnectCapabilityRequired,
+                "RECONNECT_CAPABILITY_REQUIRED",
+            ),
+            (
+                E::RecoveryCapabilityRequired,
+                "RECOVERY_CAPABILITY_REQUIRED",
+            ),
         ]
         .into_iter()
         .map(|(error, name)| {
@@ -4119,7 +4212,13 @@ mod tests {
                 assert_eq!(admission_refusal_class(code), None, "{code}");
                 continue;
             }
-            assert_eq!(entry["default_disposition"], "TRANSPORT_FATAL");
+            // CP D1187: the ADMIT0 reconnect/recovery rows end the operation, not the transport.
+            let disposition = if matches!(code, 1117 | 1118) {
+                "OPERATION_TERMINAL"
+            } else {
+                "TRANSPORT_FATAL"
+            };
+            assert_eq!(entry["default_disposition"], disposition, "{code}");
             let (crate_progression, crate_class) =
                 admission_refusal_class(code).expect("admission code");
             let crate_progression = match crate_progression {
@@ -4142,7 +4241,7 @@ mod tests {
             );
             admission.push(code);
         }
-        assert_eq!(admission, (1100..=1116).collect::<Vec<_>>());
+        assert_eq!(admission, (1100..=1118).collect::<Vec<_>>());
         assert_eq!(
             ADMISSION_REFUSAL_ROWS
                 .map(|(error, _, _)| error.code())
@@ -4151,7 +4250,7 @@ mod tests {
         );
     }
 
-    /// The 17 rows of §1.2, written out once more so a table edit cannot pass unnoticed.
+    /// The 17 rows of §1.2 and the two ADMIT0 §5 rows, written out once more so a table edit cannot pass unnoticed.
     #[test]
     fn admission_refusal_class_table() {
         use AdmissionProgression::{Retryable as R, SecurityTerminal as S, Terminal as T};
@@ -4174,12 +4273,14 @@ mod tests {
             (1114, T, CharacterAlreadyActive),
             (1115, R, TemporarilyUnavailable),
             (1116, T, ClientUpdateRequired),
+            (1117, T, ClientUpdateRequired),
+            (1118, T, ClientUpdateRequired),
         ];
         for (code, progression, class) in rows {
             assert_eq!(admission_refusal_class(code), Some((progression, class)));
         }
         // Unassigned in range: generic, no retry. Outside the range: not an admission refusal.
-        for code in [1117, 1150, 1199] {
+        for code in [1119, 1150, 1199] {
             assert_eq!(
                 admission_refusal_class(code),
                 Some((T, TemporarilyUnavailable))

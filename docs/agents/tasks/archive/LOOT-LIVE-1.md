@@ -1,0 +1,135 @@
+# LOOT-LIVE-1
+
+```yaml
+task_id: LOOT-LIVE-1
+title: "LOOT-LIVE-1: a live kill's committed corpse binds to its projection, so its loot can be opened and taken"
+mode: IMPLEMENT
+status: completed
+repository: Oteryn/Oteryn-Game
+base_branch: main
+branch: claude/loot-live-1-20261012
+issue: 1622
+pr: 2008
+base_sha: e128fd6cc
+head_sha: null
+final_head_sha: null
+owner: claude-code-session-01CwP6d84eCPvpgoEuyci8Tx
+control_plane: claude-code-session-01CwP6d84eCPvpgoEuyci8Tx
+created_at: 2026-10-12
+updated_at: 2026-10-12
+migration_lease: none
+owned_paths:
+  - apps/game-server/src/combat/death_reward.rs
+  - apps/game-server/src/foundation/runtime_actor_carrier.rs
+  - apps/game-server/src/gameplay_transport/kill_reward.rs
+  - apps/game-server/src/gameplay_transport/kill_reward_tests.rs
+  - apps/game-server/tests/support/combat_death_reward_postgres_cases.rs
+  - docs/agents/tasks/active/LOOT-LIVE-1.md
+  - docs/agents/tasks/archive/LOOT-LIVE-1.md
+public_contracts: []
+external_repositories: []
+```
+
+## Outcome
+
+On the live node a monster's kill already settled its corpse Ground MINT and its authored loot
+entries into that corpse durably (ARCH-KILL-REWARD-LOGOUT-1), but nothing bound the committed corpse
+Item to the Channel's corpse projection. The corpse stayed invisible in domain 1, so USE could not
+open it and command 9 could not take from it. Now the durable settle, once it returns a committed
+corpse, binds that Item to the killed actor's projection (`ChannelRuntimeV1::bind_corpse_item`).
+The existing visibility refresh then shows the corpse, USE opens it and command 9 takes its
+entries through the existing durable TRANSFER.
+
+The bind needs the killed actor's corpse projection to be retained until the settle, so an
+accepted kill now pins that projection against the bounded FIFO eviction until its settle is final
+(Codex 4248192466). Without the pin, deaths projected while durability was unavailable (a full
+queue's, a familiar's, a crystal's) could evict an accepted kill's projection, and its later
+settle would mint a corpse that could never be bound or opened.
+
+## Architecture and source of truth
+
+- PROVEN: MAP-ITEM-REF-1 Part B (`docs/architecture/reviews/OTERYN_GAME_ARCH_MAP_TRACK_PACKETS_2026-10-05.md` section 1.6; `docs/agents/tasks/archive/OTV2-20261005-map-item-ref-1.md`) names the live bind after `commit_corpse_mint` as the remaining KILL-REWARD part B step (D607).
+- PROVEN: ARCH-KILL-REWARD-LOGOUT-1 (`docs/architecture/reviews/OTERYN_GAME_ARCH_KILL_REWARD_LOGOUT_PACKETS_2026-10-04.md`) owns the capture, the queue and the drain; the settle refuses a principal of another character, lease generation or session (`PrincipalMismatch`), so every durable write stays session-generation fenced.
+- DERIVED: the bind is runtime memory only. Durable corpse and loot rows are written once per cause by the existing MINTs (`AlreadyCommitted` on replay), and a replayed settle carries the same corpse Item, which binds idempotently. Another Item never rebinds a bound corpse (`CorpseProjectionConflict`). A projection of another world, Channel or scope generation is refused (`CommittedLethalUnavailable`, D52).
+- DERIVED: the lane permit and the revision slot are released before the runtime lock is taken. The runtime lock comes first in the lock order, and no channel guard is held across the settle.
+- DERIVED: D133 corpse exclusivity on taking is enforced on the DB clock by the existing corpse TRANSFER (`CorpseExclusiveWindow`). Opening is not gated.
+- DERIVED (Codex 4248192466): `kill_reward` pins the killed actor's corpse projection when the queue accepts the entry (queued or parked) and unpins it when the settle is final, after the bind; a Retry keeps the pin. `retain_corpse_projection` evicts the oldest unpinned projection. At most 64 pins (KILLRW-RL-01) and 64 unpinned projections are retained, so `corpse_projections` holds at most 128. Other death projections (`familiar_cast_dispatch`, `crystal_death_composition`, a kill the full queue refuses, a `principal_gone` refusal) pin nothing and can evict only unpinned projections.
+- DERIVED: each acceptance reconciles the pins to the entries still queued, parked or in flight (`retain_corpse_projection_pins`, then a pin per held entry), so an entry freed with `principal_gone` without a settle loses its pin and an entry requeued after its final settle released it regains it. The pins are runtime memory under the runtime lock; the queue's mutex is taken after it, as in the existing lock order.
+- No change to gameplay: summons still die in the death cascade, and no projection, reward or bind outcome changes except that an accepted kill's projection is no longer evicted.
+- No new wire format, item semantics, durable write, migration or contract.
+
+## Acceptance criteria
+
+- [x] A committed corpse binds to the killed actor's projection, and that binding becomes the domain-1 corpse with the row's corpse definition at the death position (`a_committed_corpse_binds_to_the_killed_actors_projection`).
+- [x] A replayed settle binds the same corpse once (`a_replayed_settle_binds_the_same_corpse_once`).
+- [x] Another Item never rebinds a bound corpse (`another_item_never_rebinds_a_bound_corpse`).
+- [x] A corpse committed before a loot entry's MINT is refused still binds. The refusal (`CombatDeathRewardLootError::Mint`) now carries the committed corpse, and a later Retry that commits every entry rebinds the same corpse without effect (`a_corpse_committed_before_a_refused_loot_entry_still_binds`). On PostgreSQL, a generation-2 replay whose second entry is refused carries the durable corpse of generation 1 (`combat_death_reward_postgres`).
+- [x] A settle with no committed corpse binds nothing (`no_committed_corpse_binds_nothing`).
+- [x] A corpse of another Channel's scope generation is refused (`a_corpse_of_another_channel_generation_is_refused`).
+- [x] A live actor with no projected death is refused (`a_live_actor_without_a_projected_death_is_refused`).
+- [x] A refused bind leaves the durable result and its Final/Retry classification unchanged, and is logged as `kill_reward_corpse_unbound`.
+- [x] An accepted kill pins its corpse projection until its settle is final; a Retry keeps the pin, a final settle releases it after the bind and the bound corpse stays visible (`an_accepted_kill_pins_its_corpse_until_its_settle_is_final`, `a_parked_kill_pins_its_corpse`).
+- [x] A kill the full queue refuses pins nothing and leaves the accepted pins (`a_kill_the_full_queue_refuses_pins_nothing`); a pinned projection survives 128 newer projections while the unpinned ones keep their bound of 64, and the first projection after its unpin evicts it (`a_pinned_corpse_projection_survives_newer_projections_until_unpinned`).
+- [x] Pins are bounded at 64 and name retained projections only, so at most 128 projections are retained (`corpse_projection_pins_are_bounded_and_name_retained_projections`).
+- [x] An entry freed without a settle loses its pin, and a requeued one regains it, at the next accepted kill (`the_pin_of_an_entry_freed_without_a_settle_is_released`, `a_requeued_entry_regains_its_pin_at_the_next_accepted_kill`).
+
+## Excluded scope
+
+- Client UI.
+- Corpse survival across a restart or a generation change (D52, existing behaviour).
+- `foundation/runtime_actor_carrier.rs` beyond the corpse projection pins (control-plane option A for Codex 4248192466: the pin set, its bound and the eviction of unpinned projections only). It is a hotspot (#2004, MON-RESPAWN-1). The only `combat/death_reward.rs` change is the corpse carried by the loot `Mint` error (review thread 4246395245).
+- The stale `dead_code` allowances on `bind_corpse_item` and `top_damage_character` stay in place for a follow-up in the carrier's owning lane.
+
+## Validation
+
+- `cargo fmt --all --check`: pass
+- `cargo clippy --locked -p oteryn-game-server --all-targets --quiet -- -D warnings`: pass
+- `cargo test --locked -p oteryn-game-server --quiet --lib -- kill_reward`: pass (30 passed, 0 failed)
+- `cargo test --locked -p oteryn-game-server --quiet --lib -- death_reward corpse`: pass (56 passed, 0 failed)
+- `cargo test --locked -p oteryn-game-server --test combat_death_reward_postgres --quiet` (PostgreSQL 17.6): pass (1076 passed, 0 failed)
+- `cargo test --locked -p oteryn-game-server --test corpse_transfer_postgres --quiet` (PostgreSQL 17.6): pass (1039 passed, 0 failed)
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: pass
+
+Codex 4248192466 repair (control-plane decision D1011: no local cargo build for this round; CI runs the full workspace on the new head):
+
+- `rustfmt --edition 2024 --check` on the touched Rust files: pass
+- `cargo clippy` and `cargo test` for the pin repair: not run locally (D1011); left to PR CI
+- `python tools/agents/validate_governance.py`: pass
+- `python tools/repository/validate_repository_policy.py`: pass
+
+### Exact-head CI
+
+- PR #2008 CI on 65c062d4c: green (control plane). The frozen head's checks are recorded on the PR.
+
+## Self-review
+
+- method: the implementing agent read the whole diff against the owned paths and the lock order.
+- material findings: none open.
+- review thread 4246395245 (P1, accepted and repaired): a corpse committed before a refused loot entry was never bound. The loot `Mint` error now carries the committed corpse, and `bind_settled_corpse` binds it.
+- review thread 4248192466 (P1, accepted and repaired): projections of kills a full queue refused could FIFO-evict an accepted kill's projection, so its later bind failed and the entry was finalized with an unreachable corpse. An accepted kill now pins its projection until its settle is final, and the eviction takes only unpinned projections.
+
+## Independent review
+
+- required: high risk (the authority-bearing runtime projection that follows a fenced durable write). The control plane requests it on the frozen head under the bound review policy.
+
+## PR and closeout
+
+- PR: 2008
+- changed-file review: within owned paths
+- review threads: 4246395245 repaired and resolved; 4248192466 repaired (resolution left to the control plane)
+- protected merge: control plane, through Merge Queue
+- merge commit/result: squash merge of #2008
+- source branch closeout: `claude/loot-live-1-20261012` is deleted after the merge
+- ownership release: on merge
+
+## Context checkpoint
+
+```yaml
+last_progress: corpse bind shipped with tests; review P1 4246395245 and 4248192466 repaired; record archived
+status: completed
+branch: claude/loot-live-1-20261012
+pr: 2008
+blocker: null
+next_action: none (terminal; lifecycle closes on the squash merge of #2008 and the source branch deletion)
+```

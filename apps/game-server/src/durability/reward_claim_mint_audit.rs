@@ -1,8 +1,8 @@
 //! Registered DUR-03 reward-claim MINT durable-audit encoding: event type 2
 //! (`oteryn.events.v1.OneItemTransactionV1`, operation `reward_claim_mint`,
-//! oneof tag 4) in the normative ANL-01 `EventEnvelope`, for the CHEST-1
-//! shape of the reward chest decisions (§5.1): one fresh live item placed in a
-//! new direct entry of the equipped main backpack for a `once` RewardClaim.
+//! oneof tag 4) in the normative ANL-01 `EventEnvelope`. The legacy CHEST-1
+//! shape places one fresh item in the equipped main backpack. Optional field 5
+//! adds a bounded fresh-output plan in the same CharacterInbox transaction.
 //!
 //! There is no Ground and no creature-death source. The cause is the actual
 //! player USE CommandRef and the claimed RewardClaim definition. Every
@@ -14,13 +14,20 @@ use super::item_mint_audit::{
     ITEM_LIFECYCLE_LIVE, OneItemOperationV1, OneItemStateV1, OneItemTransactionV1,
     OneItemTypedDefinitionRevisionV1, RL07_ENVELOPE_BYTES_MAX, RL07_PAYLOAD_BYTES_MAX,
     TransactionEventRefV1, TransactionResourceUsage, check_content_key, check_definition,
-    check_technical_text, check_uuid_v7, encode_bounded,
+    check_key_number, check_technical_text, check_uuid_v7, encode_bounded,
 };
 use super::item_transfer_audit::{
     GAMEITEM01_STACK_QUANTITY_MAX, OneItemCommandRefV1, OneItemInventoryV1,
 };
 use prost::Message;
 use sha2::{Digest, Sha256};
+
+#[path = "reward_claim_inbox_mint_audit.rs"]
+mod inbox;
+pub use inbox::{
+    REWARD_INBOX_ENVELOPE_BYTES_MAX, REWARD_INBOX_ITEMS_MAX, REWARD_INBOX_PAYLOAD_BYTES_MAX,
+    RewardClaimInboxMintOutputV1, RewardClaimInboxMintV1, reward_inbox_usage,
+};
 
 /// Typed cause of a reward-claim MINT (D40).
 pub const REWARD_CLAIM_MINT_TYPED_CAUSE: &str = "reward_claim_mint";
@@ -53,6 +60,10 @@ pub struct OneItemRewardClaimMintV1 {
     pub source: Option<OneItemRewardClaimCauseV1>,
     #[prost(bool, tag = "4")]
     pub before_semantically_absent: bool,
+    /// Additive same-transaction Inbox destination; never combined with the
+    /// legacy `after`/backpack destination. The existing operation remains tag 4.
+    #[prost(message, optional, tag = "5")]
+    pub inbox: Option<RewardClaimInboxMintV1>,
 }
 
 /// One fresh ItemInstance, one new backpack entry line, one participant
@@ -69,8 +80,11 @@ pub const REWARD_CLAIM_MINT_USAGE: TransactionResourceUsage = TransactionResourc
     events: 1,
 };
 
-/// Complete closed CHEST-1 shape and every registered per-field bound.
+/// The closed legacy CHEST-1 or additive Inbox shape and its source-specific bounds.
 pub fn check_reward_claim_mint(value: &OneItemRewardClaimMintV1) -> Result<(), AuditError> {
+    if value.inbox.is_some() {
+        return inbox::check_inbox(value);
+    }
     let after = value.after.as_ref().ok_or(AuditError::InvalidInput)?;
     let destination = value.destination.as_ref().ok_or(AuditError::InvalidInput)?;
     let source = value.source.as_ref().ok_or(AuditError::InvalidInput)?;
@@ -85,6 +99,7 @@ pub fn check_reward_claim_mint(value: &OneItemRewardClaimMintV1) -> Result<(), A
     check_uuid_v7(&after.item_instance_id)?;
     check_uuid_v7(&after.world_id)?;
     check_definition(after.definition.as_ref())?;
+    check_key_number(after)?;
     check_uuid_v7(&destination.character_id)?;
     check_uuid_v7(&destination.expected_game_session_id)?;
     check_uuid_v7(&entry.parent_item_instance_id)?;
@@ -114,7 +129,7 @@ pub fn check_reward_claim_mint(value: &OneItemRewardClaimMintV1) -> Result<(), A
 pub fn decode_reward_claim_mint_payload(
     wire: &[u8],
 ) -> Result<OneItemRewardClaimMintV1, AuditError> {
-    if wire.len() > RL07_PAYLOAD_BYTES_MAX {
+    if wire.len() > REWARD_INBOX_PAYLOAD_BYTES_MAX {
         return Err(AuditError::CapacityExceeded);
     }
     let value = OneItemTransactionV1::decode(wire).map_err(|_| AuditError::InvalidInput)?;
@@ -126,22 +141,24 @@ pub fn decode_reward_claim_mint_payload(
     let Some(OneItemOperationV1::RewardClaimMint(minted)) = value.operation else {
         return Err(AuditError::InvalidInput);
     };
+    if minted.inbox.is_none() && wire.len() > RL07_PAYLOAD_BYTES_MAX {
+        return Err(AuditError::CapacityExceeded);
+    }
     check_reward_claim_mint(&minted)?;
     Ok(minted)
 }
 
-/// Envelope gate: the common RL-07 gate, then the World of the minted item,
-/// a Channel, and the command, session and causation of the payload cause.
+/// Envelope gate with the selected source's byte ceiling, then the minted
+/// World, Channel, command, session generation and causation of its payload.
 pub fn decode_reward_claim_mint_envelope(
     wire: &[u8],
 ) -> Result<(EventEnvelopeV1, OneItemRewardClaimMintV1), AuditError> {
-    let value = mint::decode_common_envelope(wire)?;
+    let value = mint::decode_common_envelope_within(wire, REWARD_INBOX_ENVELOPE_BYTES_MAX)?;
     let minted = decode_reward_claim_mint_payload(&value.payload)?;
-    let after = minted.after.as_ref().ok_or(AuditError::InvalidInput)?;
-    let destination = minted
-        .destination
-        .as_ref()
-        .ok_or(AuditError::InvalidInput)?;
+    if minted.inbox.is_none() && wire.len() > RL07_ENVELOPE_BYTES_MAX {
+        return Err(AuditError::CapacityExceeded);
+    }
+    let (world_id, expected_generation) = reward_scope(&minted)?;
     let command = minted
         .source
         .as_ref()
@@ -158,15 +175,25 @@ pub fn decode_reward_claim_mint_envelope(
             command_id: command.command_id,
         })),
     };
-    if value.world_id.as_deref() != Some(after.world_id.as_slice())
+    if value.world_id.as_deref() != Some(world_id)
         || value.game_session_id.as_deref() != Some(command.game_session_id.as_slice())
         || value.command_id != Some(command.command_id)
-        || value.connection_generation != Some(destination.expected_session_generation)
+        || value.connection_generation != Some(expected_generation)
         || value.causation.as_ref() != Some(&envelope_command)
     {
         return Err(AuditError::InvalidInput);
     }
     Ok((value, minted))
+}
+
+fn reward_scope(value: &OneItemRewardClaimMintV1) -> Result<(&[u8], u64), AuditError> {
+    if let Some(inbox) = &value.inbox {
+        Ok((&inbox.world_id, inbox.expected_session_generation))
+    } else {
+        let after = value.after.as_ref().ok_or(AuditError::InvalidInput)?;
+        let destination = value.destination.as_ref().ok_or(AuditError::InvalidInput)?;
+        Ok((&after.world_id, destination.expected_session_generation))
+    }
 }
 
 /// Envelope identity fixed before the first commit attempt, with the fenced
@@ -195,27 +222,27 @@ pub fn encode_reward_claim_mint_event(
         return Err(AuditError::InvalidInput);
     }
     check_reward_claim_mint(&minted)?;
-    let world_id = minted
-        .after
-        .as_ref()
-        .map(|after| after.world_id.clone())
-        .ok_or(AuditError::InvalidInput)?;
+    let (world_id, connection_generation) = reward_scope(&minted)?;
+    let world_id = world_id.to_vec();
     let command = minted
         .source
         .as_ref()
         .and_then(|source| source.command_ref.clone())
         .ok_or(AuditError::InvalidInput)?;
-    let connection_generation = minted
-        .destination
-        .as_ref()
-        .map(|destination| destination.expected_session_generation)
-        .ok_or(AuditError::InvalidInput)?;
+    let (payload_max, envelope_max) = if minted.inbox.is_some() {
+        (
+            REWARD_INBOX_PAYLOAD_BYTES_MAX,
+            REWARD_INBOX_ENVELOPE_BYTES_MAX,
+        )
+    } else {
+        (RL07_PAYLOAD_BYTES_MAX, RL07_ENVELOPE_BYTES_MAX)
+    };
     let payload = encode_bounded(
         &OneItemTransactionV1 {
             interpretation_revision: mint::INTERPRETATION_REVISION,
             operation: Some(OneItemOperationV1::RewardClaimMint(minted)),
         },
-        RL07_PAYLOAD_BYTES_MAX,
+        payload_max,
     )?;
     let envelope = EventEnvelopeV1 {
         envelope_revision: mint::ENVELOPE_REVISION,
@@ -247,7 +274,7 @@ pub fn encode_reward_claim_mint_event(
         payload,
         ..EventEnvelopeV1::default()
     };
-    let wire = encode_bounded(&envelope, RL07_ENVELOPE_BYTES_MAX)?;
+    let wire = encode_bounded(&envelope, envelope_max)?;
     let (decoded, _) = decode_reward_claim_mint_envelope(&wire)?;
     if decoded != envelope {
         return Err(AuditError::InvalidInput);
@@ -259,7 +286,7 @@ pub fn encode_reward_claim_mint_event(
 mod tests {
     #![allow(clippy::expect_used, clippy::unwrap_used)]
     use super::super::item_mint_audit::{
-        RL07_CONTENT_KEY_BYTES_MAX, decode_envelope, decode_payload,
+        RL07_CONTENT_KEY_BYTES_MAX, WORLDINT0_KEY_NUMBER_MAX, decode_envelope, decode_payload,
     };
     use super::super::item_transfer_audit::{
         OneItemContainerEntryV1, decode_transfer_envelope, decode_transfer_payload,
@@ -295,6 +322,7 @@ mod tests {
                 definition: Some(definition("Item", "fixture:chest.coin")),
                 quantity: 30,
                 lifecycle: ITEM_LIFECYCLE_LIVE,
+                key_number: 0,
             }),
             destination: Some(OneItemInventoryV1 {
                 character_id: uuid(41),
@@ -319,6 +347,7 @@ mod tests {
                 reward_claim: Some(definition("RewardClaim", "fixture:chest.claim")),
             }),
             before_semantically_absent: true,
+            inbox: None,
         }
     }
 
@@ -460,6 +489,31 @@ mod tests {
             );
         }
         assert!(check_reward_claim_mint(&minted()).is_ok());
+    }
+
+    #[test]
+    fn a_key_number_is_one_item_within_the_registered_range() {
+        let keyed = |number: u32, quantity: u32| {
+            let mut value = minted();
+            let after = value.after.as_mut().unwrap();
+            after.key_number = number;
+            after.quantity = quantity;
+            value
+        };
+        assert!(check_reward_claim_mint(&keyed(1, 1)).is_ok());
+        assert!(check_reward_claim_mint(&keyed(WORLDINT0_KEY_NUMBER_MAX, 1)).is_ok());
+        assert_eq!(
+            check_reward_claim_mint(&keyed(WORLDINT0_KEY_NUMBER_MAX + 1, 1)),
+            Err(AuditError::InvalidInput)
+        );
+        assert_eq!(
+            check_reward_claim_mint(&keyed(7, 2)),
+            Err(AuditError::InvalidInput)
+        );
+        let wire =
+            encode_reward_claim_mint_event(identity(), keyed(4210, 1), mint::Type2EventTuple::V1)
+                .unwrap();
+        assert!(!wire.is_empty());
     }
 
     #[test]

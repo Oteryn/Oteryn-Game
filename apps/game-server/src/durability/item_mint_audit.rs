@@ -233,6 +233,10 @@ pub struct OneItemStateV1 {
     pub quantity: u32,
     #[prost(uint32, tag = "5")]
     pub lifecycle: u32,
+    /// The key capability's immutable instance number (WORLD-INTERACTION-0 §4.4,
+    /// `WORLDINT0-RL-10`); 0 for an item that is not a key, so a non-key state encodes as before.
+    #[prost(uint32, tag = "6")]
+    pub key_number: u32,
 }
 
 #[derive(Clone, PartialEq, Eq, Message)]
@@ -312,7 +316,8 @@ pub struct OneItemMintV1 {
 /// [`super::reward_claim_mint_audit`]) and the D3-6 `decay_retire` (tag 5,
 /// [`super::item_decay_retire_audit`]), the GOLD-FEE `fee_burn` (tag 6) and the TIMED-RT-1b
 /// `timed_expiry` (tag 7, [`super::item_timed_state_audit`]) and the MAP-OVERLAY-1b
-/// `map_item_mint` (tag 8, [`super::map_item_mint_audit`]).
+/// `map_item_mint` (tag 8, [`super::map_item_mint_audit`]), `npc_trade` (tag 9,
+/// [`super::npc_trade_audit`]) and `item_use` (tag 10, [`super::item_use_audit`]).
 #[derive(Clone, PartialEq, Eq, prost::Oneof)]
 pub enum OneItemOperationV1 {
     #[prost(message, tag = "2")]
@@ -329,13 +334,25 @@ pub enum OneItemOperationV1 {
     TimedExpiry(super::item_timed_state_audit::OneItemTimedExpiryV1),
     #[prost(message, tag = "8")]
     MapItemMint(super::map_item_mint_audit::OneItemMapItemMintV1),
+    #[prost(message, tag = "9")]
+    NpcTrade(super::npc_trade_audit::OneItemNpcTradeV1),
+    #[prost(message, tag = "10")]
+    ItemUse(super::item_use_audit::OneItemUseV1),
+    #[prost(message, tag = "11")]
+    HouseTransfer(super::house_interior_audit::OneItemHouseTransferV1),
+    // Private continuation proposal: root coordinates final allocation and Imbue tag 12.
+    #[prost(message, tag = "13")]
+    ForgeDustLimit(super::character_forge_dust_audit::OneItemForgeDustLimitV1),
 }
 
 #[derive(Clone, PartialEq, Eq, Message)]
 pub struct OneItemTransactionV1 {
     #[prost(uint32, tag = "1")]
     pub interpretation_revision: u32,
-    #[prost(oneof = "OneItemOperationV1", tags = "2, 3, 4, 5, 6, 7, 8")]
+    #[prost(
+        oneof = "OneItemOperationV1",
+        tags = "2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13"
+    )]
     pub operation: Option<OneItemOperationV1>,
 }
 
@@ -493,6 +510,19 @@ pub fn check_uuid_v7(value: &[u8]) -> Result<(), AuditError> {
     Ok(())
 }
 
+/// WORLDINT0-RL-10: the largest key number.
+pub const WORLDINT0_KEY_NUMBER_MAX: u32 = 65_535;
+
+/// A key state (WORLD-INTERACTION-0 §4.4): a number in 1..=`WORLDINT0_KEY_NUMBER_MAX` on one
+/// item, since keys are not stackable; 0 is an item that is not a key.
+pub(super) fn check_key_number(value: &OneItemStateV1) -> Result<(), AuditError> {
+    if value.key_number > WORLDINT0_KEY_NUMBER_MAX || (value.key_number != 0 && value.quantity != 1)
+    {
+        return Err(AuditError::InvalidInput);
+    }
+    Ok(())
+}
+
 pub(super) fn check_definition(
     value: Option<&OneItemTypedDefinitionRevisionV1>,
 ) -> Result<(), AuditError> {
@@ -553,8 +583,10 @@ pub fn check_mint(value: &OneItemMintV1) -> Result<(), AuditError> {
         }
         _ => return Err(AuditError::InvalidInput),
     }
-    // One live item with explicit semantic absence before it.
+    // One live item with explicit semantic absence before it; a key is minted only by a
+    // RewardClaim (WORLD-INTERACTION-0 §4.4).
     if !value.before_semantically_absent
+        || after.key_number != 0
         || after.quantity == 0
         || after.lifecycle != ITEM_LIFECYCLE_LIVE
         || source.typed_cause != LOOT_MINT_TYPED_CAUSE
@@ -1154,6 +1186,7 @@ pub(super) mod tests {
                 definition: Some(definition("ItemType", "fixture:alpha", "rev-a/1")),
                 quantity: 1,
                 lifecycle: ITEM_LIFECYCLE_LIVE,
+                key_number: 0,
             }),
             destination: Some(OneItemGroundV1 {
                 world_id: uuid(1),
@@ -1216,6 +1249,7 @@ pub(super) mod tests {
                     definition: Some(typed.clone()),
                     quantity: u32::MAX,
                     lifecycle: u32::MAX,
+                    key_number: 0,
                 }),
                 destination: Some(OneItemGroundV1 {
                     world_id: uuid(0xee),
@@ -1910,12 +1944,17 @@ pub(super) mod tests {
         assert_eq!(
             sites,
             [
+                "src/durability/character_forge_dust.rs",
+                "src/durability/character_inbox_reward_claim_mint.rs",
+                "src/durability/house_interior.rs",
                 "src/durability/item_decay_retire.rs",
                 "src/durability/item_fee_burn.rs",
                 "src/durability/item_mint.rs",
                 "src/durability/item_timed_state.rs",
                 "src/durability/item_transfer.rs",
+                "src/durability/item_use.rs",
                 "src/durability/map_item_mint.rs",
+                "src/durability/npc_trade.rs",
                 "src/durability/reward_claim_mint.rs",
             ]
         );

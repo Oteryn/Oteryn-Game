@@ -3,7 +3,8 @@
 //!
 //! Unknown or duplicate keys reject, every value is required, no production
 //! default exists, and secrets are given only as file references. Errors name
-//! the failing key, never its value.
+//! the failing key, never its value. The one exception is the optional `[boot]`
+//! table: without it the boot steps keep the ordinary semantic-pass deadline.
 
 use serde::Deserialize;
 use std::net::{IpAddr, SocketAddr};
@@ -17,6 +18,10 @@ pub const MAX_CONFIG_BYTES: usize = 64 * 1024;
 /// Bounded operator-assignment wait (D3 step 6).
 pub const MAX_ASSIGNMENT_WAIT_MS: u64 = 24 * 60 * 60 * 1000;
 pub const MAX_ENTRY_DEADLINE_MS: u64 = 60_000;
+/// Bounds of `boot.pass_deadline_ms` (NODE-BOOT-DEADLINE-1): never shorter than the
+/// ordinary `DB_PASS_DEADLINE`, never longer than `DurabilityRoot::MAX_BOOT_PASS_DEADLINE`.
+pub const MIN_BOOT_PASS_DEADLINE_MS: u64 = 2_000;
+pub const MAX_BOOT_PASS_DEADLINE_MS: u64 = 60_000;
 /// Owner-accepted finite bound for the explicitly non-production first slice.
 /// This is a required config value, never a production default or registry value.
 pub const PREPRODUCTION_FIRST_SLICE_ACTOR_CAPACITY: u32 = 131_072;
@@ -98,6 +103,8 @@ pub struct ReadinessConfig {
     pub content_revision: String,
     pub map_revision: String,
     pub world_policy_revision: String,
+    /// ADMIT0: explicit registered IDs, fixed with this policy and ownership generation.
+    pub required_gameplay_capabilities: Vec<u32>,
     pub offer_revision: String,
 }
 
@@ -121,6 +128,14 @@ pub struct PlatformConfig {
     /// projection publisher does not run. Endpoint, peer name and trust roots
     /// are those above.
     pub account_characters: Option<AccountCharactersConfig>,
+    /// `OTERYN_GAME_CHARACTER_AUTHORITY_COMMANDS_V1` §3, §14. Absent (the default): the
+    /// character command consumer does not run. Endpoint, peer name and trust roots are
+    /// those above.
+    pub character_commands: Option<CharacterCommandsConfig>,
+    /// `OTERYN_GAME_PUBLIC_PROJECTIONS_V1` §3. Absent, or `enabled = false`
+    /// (the default): the public-projection publisher does not run. Endpoint,
+    /// peer name and trust roots are those above.
+    pub public_projections: Option<PublicProjectionsConfig>,
 }
 
 /// The node host's own runtime-status identity (never the evidence one).
@@ -142,6 +157,33 @@ pub struct AccountCharactersConfig {
     pub client_key_file: PathBuf,
     pub source_authority: String,
     /// Persisted high-water fence F, outside the Character store and its
+    /// backups.
+    pub epoch_fence_file: PathBuf,
+}
+
+/// The Character Authority host's own character-command identity (never the evidence,
+/// runtime-status or projection one).
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CharacterCommandsConfig {
+    pub client_certificate_file: PathBuf,
+    pub client_key_file: PathBuf,
+    pub source_authority: String,
+}
+
+/// The Game host's own public-projection identity (never the evidence,
+/// runtime-status, projection or command one) and its own epoch fence
+/// `F_pub` (contract §5), never the `ListCharactersForAccount` fence.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PublicProjectionsConfig {
+    /// Off unless set: the section may be installed before Platform accepts.
+    #[serde(default)]
+    pub enabled: bool,
+    pub client_certificate_file: PathBuf,
+    pub client_key_file: PathBuf,
+    pub source_authority: String,
+    /// Persisted high-water fence `F_pub`, outside the Game store and its
     /// backups.
     pub epoch_fence_file: PathBuf,
 }
@@ -193,6 +235,15 @@ impl WorldBundleConfig {
     }
 }
 
+/// NODE-BOOT-DEADLINE-1: the semantic-pass deadline of the boot durability steps (S2 custody
+/// read, initialization, claim and descriptor registration, Character authority open) on a
+/// loaded host. Gameplay passes keep `DB_PASS_DEADLINE`.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct BootConfig {
+    pub pass_deadline_ms: u64,
+}
+
 /// `oteryn-game-server serve --config <path>`.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -206,6 +257,8 @@ pub struct NodeConfig {
     pub platform: PlatformConfig,
     pub launch: LaunchConfig,
     pub world_bundle: Option<WorldBundleConfig>,
+    /// Absent: the boot steps run under `DB_PASS_DEADLINE`.
+    pub boot: Option<BootConfig>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -226,6 +279,8 @@ pub struct OpsConfig {
     pub character: CharacterFenceConfig,
     /// `projection resync`: absent, the command refuses.
     pub projection: Option<ProjectionOpsConfig>,
+    /// `public-projection resync`: absent, the command refuses.
+    pub public_projection: Option<ProjectionOpsConfig>,
 }
 
 /// The operator-only projection resync (`oteryn-game-list-characters-for-account-v1`
@@ -313,12 +368,38 @@ fn parse<T: serde::de::DeserializeOwned>(document: &[u8]) -> Result<T, ConfigErr
     toml::from_str(text).map_err(|_| ConfigError { key: "<document>" })
 }
 
+/// ADMIT0: a node document whose `[readiness]` omits the explicit capability declaration
+/// (an older template) fails closed naming that key, not the whole document. There is no
+/// default; the operator declares the set, possibly `[]`.
+fn missing_required_capabilities(document: &[u8]) -> Option<ConfigError> {
+    if document.len() > MAX_CONFIG_BYTES {
+        return None;
+    }
+    let table: toml::Table = toml::from_str(std::str::from_utf8(document).ok()?).ok()?;
+    let readiness = table.get("readiness")?.as_table()?;
+    (!readiness.contains_key("required_gameplay_capabilities")).then_some(ConfigError {
+        key: "readiness.required_gameplay_capabilities",
+    })
+}
+
 impl NodeConfig {
     /// Parse and validate one node configuration document.
     pub fn parse(document: &[u8]) -> Result<Self, ConfigError> {
-        let config: Self = parse(document)?;
+        let config: Self = parse(document)
+            .map_err(|error| missing_required_capabilities(document).unwrap_or(error))?;
         config.validate()?;
         Ok(config)
+    }
+
+    /// The semantic-pass deadline of the boot durability steps: `boot.pass_deadline_ms`, or
+    /// `DB_PASS_DEADLINE` without `[boot]`.
+    #[must_use]
+    pub fn boot_pass_deadline(&self) -> std::time::Duration {
+        self.boot
+            .as_ref()
+            .map_or(crate::durability::DB_PASS_DEADLINE, |boot| {
+                std::time::Duration::from_millis(boot.pass_deadline_ms)
+            })
     }
 
     fn validate(&self) -> Result<(), ConfigError> {
@@ -356,6 +437,12 @@ impl NodeConfig {
             return reject("control.socket_path");
         }
         let readiness = &self.readiness;
+        crate::gameplay_transport::world_required_capabilities::validate_declared(
+            &readiness.required_gameplay_capabilities,
+        )
+        .map_err(|_| ConfigError {
+            key: "readiness.required_gameplay_capabilities",
+        })?;
         if !token(&readiness.source_authority, 128, b"/") {
             return reject("readiness.source_authority");
         }
@@ -464,6 +551,48 @@ impl NodeConfig {
                 return reject("platform.account_characters.epoch_fence_file");
             }
         }
+        if let Some(commands) = &platform.character_commands {
+            let status = platform.runtime_status.as_ref();
+            let projection = platform.account_characters.as_ref();
+            for (key, path) in [
+                (
+                    "platform.character_commands.client_certificate_file",
+                    &commands.client_certificate_file,
+                ),
+                (
+                    "platform.character_commands.client_key_file",
+                    &commands.client_key_file,
+                ),
+            ] {
+                if !absolute(path)
+                    || path == &platform.client_certificate_file
+                    || path == &platform.client_key_file
+                    || status.is_some_and(|status| {
+                        path == &status.client_certificate_file || path == &status.client_key_file
+                    })
+                    || projection.is_some_and(|projection| {
+                        path == &projection.client_certificate_file
+                            || path == &projection.client_key_file
+                    })
+                {
+                    return reject(key);
+                }
+            }
+            // The Character Authority's identity; the projection may share it.
+            let authority = commands.source_authority.as_str();
+            if !token(authority, 128, b"/")
+                || authority == platform.source_authority
+                || authority == readiness.source_authority
+                || authority == crate::character_bootstrap_intent::ISSUER_AUTHORITY
+                || authority == crate::native_admission_source::character_commands::PURPOSE
+                || authority == crate::native_admission_source::account_characters::PURPOSE
+            {
+                return reject("platform.character_commands.source_authority");
+            }
+        }
+        if let Some(public) = &platform.public_projections {
+            check_public_projections(platform, public, &self.character, readiness)?;
+        }
         if platform.descriptor_revision == 0 {
             return reject("platform.descriptor_revision");
         }
@@ -483,6 +612,12 @@ impl NodeConfig {
         }
         if let Some(bundle) = &self.world_bundle {
             check_world_bundle(bundle)?;
+        }
+        if self.boot.as_ref().is_some_and(|boot| {
+            !(MIN_BOOT_PASS_DEADLINE_MS..=MAX_BOOT_PASS_DEADLINE_MS)
+                .contains(&boot.pass_deadline_ms)
+        }) {
+            return reject("boot.pass_deadline_ms");
         }
         Ok(())
     }
@@ -519,6 +654,68 @@ fn check_world_bundle(bundle: &WorldBundleConfig) -> Result<(), ConfigError> {
     Ok(())
 }
 
+/// `[platform.public_projections]`: its own key pair, distinct from every
+/// other Platform identity on the host; an authority that is never a
+/// compiled purpose namespace or the evidence, readiness or intent one; and
+/// its own fence, never the account projection's.
+fn check_public_projections(
+    platform: &PlatformConfig,
+    public: &PublicProjectionsConfig,
+    character: &CharacterFenceConfig,
+    readiness: &ReadinessConfig,
+) -> Result<(), ConfigError> {
+    let mut taken = vec![&platform.client_certificate_file, &platform.client_key_file];
+    if let Some(status) = &platform.runtime_status {
+        taken.extend([&status.client_certificate_file, &status.client_key_file]);
+    }
+    if let Some(projection) = &platform.account_characters {
+        taken.extend([
+            &projection.client_certificate_file,
+            &projection.client_key_file,
+        ]);
+    }
+    if let Some(commands) = &platform.character_commands {
+        taken.extend([&commands.client_certificate_file, &commands.client_key_file]);
+    }
+    for (key, path) in [
+        (
+            "platform.public_projections.client_certificate_file",
+            &public.client_certificate_file,
+        ),
+        (
+            "platform.public_projections.client_key_file",
+            &public.client_key_file,
+        ),
+    ] {
+        if !absolute(path) || taken.contains(&path) {
+            return reject(key);
+        }
+    }
+    if public.client_certificate_file == public.client_key_file {
+        return reject("platform.public_projections.client_key_file");
+    }
+    let authority = public.source_authority.as_str();
+    if !token(authority, 128, b"/")
+        || authority == platform.source_authority
+        || authority == readiness.source_authority
+        || authority == crate::character_bootstrap_intent::ISSUER_AUTHORITY
+        || authority == crate::native_admission_source::account_characters::PURPOSE
+        || authority == crate::native_admission_source::character_commands::PURPOSE
+        || authority == crate::native_admission_source::public_projections::PURPOSE
+    {
+        return reject("platform.public_projections.source_authority");
+    }
+    if !outside(&public.epoch_fence_file, character)
+        || platform
+            .account_characters
+            .as_ref()
+            .is_some_and(|projection| projection.epoch_fence_file == public.epoch_fence_file)
+    {
+        return reject("platform.public_projections.epoch_fence_file");
+    }
+    Ok(())
+}
+
 impl OpsConfig {
     /// Parse and validate one operator configuration document.
     pub fn parse(document: &[u8]) -> Result<Self, ConfigError> {
@@ -538,6 +735,18 @@ impl OpsConfig {
             }
             check_database(&projection.database).map_err(|_| ConfigError {
                 key: "projection.database",
+            })?;
+        }
+        if let Some(public) = &config.public_projection {
+            if !outside(&public.epoch_fence_file, &config.character)
+                || config.projection.as_ref().is_some_and(|projection| {
+                    projection.epoch_fence_file == public.epoch_fence_file
+                })
+            {
+                return reject("public_projection.epoch_fence_file");
+            }
+            check_database(&public.database).map_err(|_| ConfigError {
+                key: "public_projection.database",
             })?;
         }
         Ok(config)
@@ -589,6 +798,7 @@ ruleset_revision = "ruleset-1"
 content_revision = "content-1"
 map_revision = "map-1"
 world_policy_revision = "policy-1"
+required_gameplay_capabilities = []
 offer_revision = "offer-1"
 
 [platform]
@@ -621,6 +831,35 @@ s2_authorization_file = "/var/lib/oteryn-ops/s2-fresh-store.json"
         assert_eq!(
             config.platform.runtime_status.map(|s| s.assignment_epoch),
             Some(1)
+        );
+    }
+
+    #[test]
+    fn required_gameplay_capabilities_are_explicit_registered_and_canonical() {
+        let field = "required_gameplay_capabilities = []";
+        for ids in [
+            "[0]",
+            "[999]",
+            "[18, 6]",
+            "[18, 18]",
+            "[\"WORLD_SPATIAL_FIELDS\"]",
+        ] {
+            let changed = NODE.replace(field, &format!("required_gameplay_capabilities = {ids}"));
+            assert!(NodeConfig::parse(changed.as_bytes()).is_err(), "{ids}");
+        }
+        assert_eq!(
+            NodeConfig::parse(NODE.replace(field, "").as_bytes()),
+            Err(ConfigError {
+                key: "readiness.required_gameplay_capabilities"
+            })
+        );
+        let declared = NODE.replace(field, "required_gameplay_capabilities = [11, 18]");
+        assert_eq!(
+            NodeConfig::parse(declared.as_bytes())
+                .expect("registered IDs; offer checked at boot")
+                .readiness
+                .required_gameplay_capabilities,
+            [11, 18]
         );
     }
 
@@ -760,6 +999,94 @@ epoch_fence_file = "/var/lib/oteryn/projection/epoch-fence"
         assert!(NodeConfig::parse(endpoint.as_bytes()).is_err());
     }
 
+    const PUBLIC: &str = r#"
+[platform.public_projections]
+client_certificate_file = "/etc/oteryn/node/public-projection.crt"
+client_key_file = "/etc/oteryn/node/public-projection.key"
+source_authority = "oteryn:game:primary"
+epoch_fence_file = "/var/lib/oteryn/public-projection/epoch-fence"
+
+[launch]"#;
+
+    #[test]
+    fn public_projections_section_is_off_by_default_separate_and_fenced() {
+        let config = NodeConfig::parse(NODE.as_bytes()).expect("valid configuration");
+        assert!(config.platform.public_projections.is_none());
+        let all = NODE
+            .replace("\n[launch]", STATUS)
+            .replace("\n[launch]", PROJECTION)
+            .replace("\n[launch]", COMMANDS)
+            .replace("\n[launch]", PUBLIC);
+        let public = NodeConfig::parse(all.as_bytes())
+            .expect("public projections")
+            .platform
+            .public_projections
+            .expect("section");
+        assert!(!public.enabled, "installed but off until enabled");
+        let enabled = all.replace(
+            "source_authority = \"oteryn:game:primary\"",
+            "enabled = true\nsource_authority = \"oteryn:game:primary\"",
+        );
+        assert!(
+            NodeConfig::parse(enabled.as_bytes())
+                .expect("enabled")
+                .platform
+                .public_projections
+                .expect("section")
+                .enabled
+        );
+        let alone = NODE.replace("\n[launch]", PUBLIC);
+        assert!(NodeConfig::parse(alone.as_bytes()).is_ok());
+        let certificate = "platform.public_projections.client_certificate_file";
+        let key = "platform.public_projections.client_key_file";
+        let authority = "platform.public_projections.source_authority";
+        let fence = "platform.public_projections.epoch_fence_file";
+        for (from, to, key) in [
+            ("public-projection.crt", "platform-client.crt", certificate),
+            ("public-projection.crt", "runtime-status.crt", certificate),
+            ("public-projection.crt", "projection.crt", certificate),
+            ("public-projection.crt", "commands.crt", certificate),
+            ("public-projection.key", "commands.key", key),
+            ("public-projection.key", "public-projection.crt", key),
+            (
+                "\"/etc/oteryn/node/public-projection.key\"",
+                "\"etc/public-projection.key\"",
+                key,
+            ),
+            (
+                "source_authority = \"oteryn:game:primary\"",
+                "source_authority = \"urn:oteryn:platform:game-auth\"",
+                authority,
+            ),
+            (
+                "source_authority = \"oteryn:game:primary\"",
+                "source_authority = \"OTERYN_GAME_PUBLIC_PROJECTIONS\"",
+                authority,
+            ),
+            (
+                "source_authority = \"oteryn:game:primary\"",
+                "source_authority = \"bad authority\"",
+                authority,
+            ),
+            (
+                "/var/lib/oteryn/public-projection/epoch-fence",
+                "/var/lib/oteryn/projection/epoch-fence",
+                fence,
+            ),
+            (
+                "/var/lib/oteryn/public-projection/epoch-fence",
+                "/var/lib/oteryn/character-fence/epoch-fence",
+                fence,
+            ),
+        ] {
+            let at = all.find("[platform.public_projections]").expect("section");
+            let changed = format!("{}{}", &all[..at], all[at..].replacen(from, to, 1));
+            assert_ne!(changed, all, "{from}");
+            let error = NodeConfig::parse(changed.as_bytes()).expect_err(key);
+            assert_eq!(error.key, key);
+        }
+    }
+
     pub(crate) const WORLD_BUNDLE: &str = r#"
 [world_bundle]
 path = "/var/lib/oteryn/world/world.otbundle"
@@ -772,6 +1099,82 @@ start_x = 100
 start_y = 200
 start_floor = -7
 "#;
+
+    const COMMANDS: &str = r#"
+[platform.character_commands]
+client_certificate_file = "/etc/oteryn/node/commands.crt"
+client_key_file = "/etc/oteryn/node/commands.key"
+source_authority = "oteryn:character-authority:primary"
+
+[launch]"#;
+
+    #[test]
+    fn character_commands_section_is_optional_off_by_default_and_separate() {
+        let config = NodeConfig::parse(NODE.as_bytes()).expect("valid configuration");
+        assert!(config.platform.character_commands.is_none());
+        let all = NODE
+            .replace("\n[launch]", STATUS)
+            .replace("\n[launch]", PROJECTION)
+            .replace("\n[launch]", COMMANDS);
+        let commands = NodeConfig::parse(all.as_bytes())
+            .expect("commands")
+            .platform
+            .character_commands
+            .expect("section");
+        // The projection and the command consumer are one Character Authority.
+        assert_eq!(
+            commands.source_authority,
+            "oteryn:character-authority:primary"
+        );
+        assert!(NodeConfig::parse(NODE.replace("\n[launch]", COMMANDS).as_bytes()).is_ok());
+        let certificate = "platform.character_commands.client_certificate_file";
+        let key = "platform.character_commands.client_key_file";
+        let authority = "platform.character_commands.source_authority";
+        for (from, to, field) in [
+            ("commands.crt", "platform-client.crt", certificate),
+            ("commands.crt", "runtime-status.crt", certificate),
+            ("commands.crt", "projection.crt", certificate),
+            ("commands.key", "platform-client.key", key),
+            ("commands.key", "projection.key", key),
+            (
+                "\"/etc/oteryn/node/commands.key\"",
+                "\"etc/commands.key\"",
+                key,
+            ),
+            (
+                "oteryn:character-authority:primary\"\n\n[launch]",
+                "urn:oteryn:platform:game-auth\"\n\n[launch]",
+                authority,
+            ),
+            (
+                "oteryn:character-authority:primary\"\n\n[launch]",
+                "OTERYN_GAME_CHARACTER_COMMANDS\"\n\n[launch]",
+                authority,
+            ),
+            (
+                "oteryn:character-authority:primary\"\n\n[launch]",
+                "OTERYN_PLATFORM_CHARACTER_AUTHORITY\"\n\n[launch]",
+                authority,
+            ),
+            (
+                "oteryn:character-authority:primary\"\n\n[launch]",
+                "bad authority\"\n\n[launch]",
+                authority,
+            ),
+        ] {
+            let changed = all.replacen(from, to, 1);
+            assert_ne!(changed, all, "{from}");
+            let error = NodeConfig::parse(changed.as_bytes()).expect_err(field);
+            assert_eq!(error.key, field);
+        }
+        // Endpoint, peer name and trust roots are reused, never configured here.
+        let endpoint = all.replace(
+            "client_key_file = \"/etc/oteryn/node/commands.key\"",
+            "client_key_file = \"/etc/oteryn/node/commands.key\"\nendpoint = \"127.0.0.1:1\"",
+        );
+        assert_ne!(endpoint, all);
+        assert!(NodeConfig::parse(endpoint.as_bytes()).is_err());
+    }
 
     #[test]
     fn world_bundle_is_optional_and_checked() {
@@ -830,6 +1233,58 @@ start_floor = -7
         assert!(NodeConfig::parse(unknown.as_bytes()).is_err());
         let missing = with.replace("start_y = 200\n", "");
         assert!(NodeConfig::parse(missing.as_bytes()).is_err());
+    }
+
+    #[test]
+    fn boot_pass_deadline_is_optional_bounded_and_defaults_to_the_pass_deadline() {
+        use std::time::Duration;
+        // The bounds are the durability root's own.
+        assert_eq!(
+            Duration::from_millis(MIN_BOOT_PASS_DEADLINE_MS),
+            crate::durability::DB_PASS_DEADLINE
+        );
+        assert_eq!(
+            Duration::from_millis(MAX_BOOT_PASS_DEADLINE_MS),
+            crate::durability::DurabilityRoot::MAX_BOOT_PASS_DEADLINE
+        );
+        let config = NodeConfig::parse(NODE.as_bytes()).expect("fixture node");
+        assert_eq!(config.boot, None);
+        assert_eq!(
+            config.boot_pass_deadline(),
+            crate::durability::DB_PASS_DEADLINE
+        );
+        for (millis, expected) in [
+            ("2000", Duration::from_secs(2)),
+            ("15000", Duration::from_secs(15)),
+            ("60000", Duration::from_secs(60)),
+        ] {
+            let with = format!("{NODE}\n[boot]\npass_deadline_ms = {millis}\n");
+            let config = NodeConfig::parse(with.as_bytes()).expect(millis);
+            assert_eq!(config.boot_pass_deadline(), expected);
+        }
+        for millis in ["0", "1999", "60001", "9223372036854775807"] {
+            let with = format!("{NODE}\n[boot]\npass_deadline_ms = {millis}\n");
+            let error = NodeConfig::parse(with.as_bytes()).expect_err(millis);
+            assert_eq!(error.key, "boot.pass_deadline_ms");
+            assert!(!error.to_string().contains(millis));
+        }
+        // A negative, fractional, textual, unknown or missing value is a document error.
+        for table in [
+            "pass_deadline_ms = -1",
+            "pass_deadline_ms = 15000.5",
+            "pass_deadline_ms = \"15000\"",
+            "pass_deadline_ms = 15000\nretries = 3",
+            "",
+        ] {
+            let with = format!("{NODE}\n[boot]\n{table}\n");
+            assert_eq!(
+                NodeConfig::parse(with.as_bytes())
+                    .err()
+                    .map(|error| error.key),
+                Some("<document>"),
+                "{table}"
+            );
+        }
     }
 
     #[test]
@@ -978,6 +1433,44 @@ root_ca_file = "/etc/oteryn/ops/db-ca.pem"
             assert_eq!(
                 OpsConfig::parse(changed.as_bytes()).err().map(|e| e.key),
                 Some(key)
+            );
+        }
+        let public = format!(
+            "{projection}{}",
+            r#"
+[public_projection]
+epoch_fence_file = "/var/lib/oteryn/public-projection/epoch-fence"
+
+[public_projection.database]
+transport_ip = "127.0.0.1"
+port = 5432
+tls_server_name = "db.internal"
+database = "oteryn"
+username = "projection_owner"
+password_file = "/etc/oteryn/ops/projection-pg-password"
+root_ca_file = "/etc/oteryn/ops/db-ca.pem"
+"#
+        );
+        assert!(
+            OpsConfig::parse(public.as_bytes())
+                .expect("public projection")
+                .public_projection
+                .is_some()
+        );
+        for (from, to) in [
+            (
+                "/var/lib/oteryn/public-projection/epoch-fence",
+                "/var/lib/oteryn/projection/epoch-fence",
+            ),
+            (
+                "/var/lib/oteryn/public-projection/epoch-fence",
+                "/var/lib/oteryn/character-fence/f",
+            ),
+        ] {
+            let changed = public.replace(from, to);
+            assert_eq!(
+                OpsConfig::parse(changed.as_bytes()).err().map(|e| e.key),
+                Some("public_projection.epoch_fence_file")
             );
         }
         let root = ops.replace("service_uid = 990", "service_uid = 0");

@@ -27,7 +27,7 @@ use crate::content::{ActiveGeneration, ReferenceEquipmentSlot, ReferenceItemFiel
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_transfer::{
     ItemDefinitionFacts, ItemStackClass, ItemTransferDestination, ItemTransferError,
-    ItemTransferOutcome, ItemTransferRequest,
+    ItemTransferOutcome, ItemTransferRequest, ItemWeightLookup, ItemWeightRefused,
 };
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef};
 use std::num::NonZeroU32;
@@ -65,7 +65,7 @@ fn offered_capabilities_when(
 
 /// The Item definition index of `admission`'s generation while the Channel content pin is that
 /// same generation; `None` otherwise, and then no item is named at all.
-fn pinned_index<'g>(
+pub(super) fn pinned_index<'g>(
     runtime: &ChannelRuntimeV1,
     generation: Option<&'g ActiveGeneration>,
 ) -> Option<&'g ItemDefinitionIndex> {
@@ -76,7 +76,7 @@ fn pinned_index<'g>(
     .then_some(index)
 }
 
-fn definition_ref(
+pub(super) fn definition_ref(
     index: &ItemDefinitionIndex,
     definition: &TypedDefinitionRef,
 ) -> Option<NonZeroU32> {
@@ -252,12 +252,45 @@ pub(super) fn generation_item_facts(
                     })
             )
     );
+    // D1211: native weights are already normalized centi-ounces. Unknown physical
+    // semantics or weight must remain unknown; never infer zero or convert again.
+    let weight = normalized_item_weight(&record.semantics.physical);
+
     Ok(ItemDefinitionFacts {
         definition: definition.clone(),
+        weight,
         stack,
         container_capacity,
         container_slot_equip_pattern,
     })
+}
+
+fn normalized_item_weight(
+    physical: &ReferenceItemField<crate::content::ReferenceItemPhysical>,
+) -> Option<u32> {
+    match physical {
+        ReferenceItemField::Known(physical) => match physical.weight {
+            ReferenceItemField::Known(weight) => Some(weight),
+            _ => None,
+        },
+        _ => None,
+    }
+}
+
+/// D1211: resolve every locked carried definition from this exact admitted native generation.
+impl ItemWeightLookup for NativeGameplayState {
+    fn generation_digest(&self) -> [u8; 32] {
+        self.source_digest()
+    }
+
+    fn weight_of(&self, definition: &TypedDefinitionRef) -> Result<u32, ItemWeightRefused> {
+        let facts = generation_item_facts(self, definition)
+            .map_err(|_| ItemWeightRefused::DefinitionMismatch)?;
+        if facts.stack == ItemStackClass::Unknown {
+            return Err(ItemWeightRefused::DefinitionMismatch);
+        }
+        facts.weight.ok_or(ItemWeightRefused::Unknown)
+    }
 }
 
 /// The Channel half of a corpse take, decided before any durable call: the corpse is a bound
@@ -341,6 +374,7 @@ pub(super) async fn take_corpse_entry(
     let request = ItemTransferRequest {
         command: crate::foundation::CommandRef::new(command.game_session_id, command_id),
         source_item_instance_id: entry_id,
+        weight_generation_digest: native.generation_digest(),
         destination: ItemTransferDestination::MainBackpack,
         item,
         backpack,
@@ -350,7 +384,13 @@ pub(super) async fn take_corpse_entry(
     };
     let mut candidate = admission
         .root
-        .freeze_item_transfer(admission.character, admission.holder, fence, request)
+        .freeze_item_transfer(
+            admission.character,
+            admission.holder,
+            fence,
+            request,
+            native,
+        )
         .await?;
     Ok(admission
         .root
@@ -360,6 +400,7 @@ pub(super) async fn take_corpse_entry(
             admission.holder,
             fence,
             &mut candidate,
+            native,
         )
         .await?)
 }

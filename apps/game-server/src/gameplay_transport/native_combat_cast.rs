@@ -835,6 +835,31 @@ fn is_source_self(spell: &SpellDefinition) -> bool {
             if matches!(p.spell()["execution"]["native_behavior"]["key"].as_str(),Some("monk_focus"|"companion_haste")))
 }
 
+/// LOOP-PROGRESS-1: shared-experience heal credit needs this attempt's transaction-qualified
+/// SourcePartyWorld, so every spell whose source effects can heal a player captures it,
+/// whatever the caster vocation (a druid's Heal Friend or Mass Healing). Any other
+/// execution captures nothing and therefore can never earn heal credit.
+fn may_heal_player(spell: &SpellDefinition) -> bool {
+    let heals = |effects: &[crate::spell::SpellEffect]| {
+        effects
+            .iter()
+            .any(|effect| matches!(effect, crate::spell::SpellEffect::Heal { .. }))
+    };
+    match &spell.execution {
+        Execution::Effects(effects) => heals(effects),
+        Execution::AbilityVariants(variants) => {
+            variants.iter().any(|variant| heals(&variant.effects))
+        }
+        Execution::NativeProfile(profile) => {
+            let behavior = &profile.spell()["execution"]["native_behavior"];
+            behavior["key"] == "mass_spirit_mend"
+                || (behavior["key"] == "wheel_combat"
+                    && behavior["parameters"]["element"] == "healing")
+        }
+        Execution::Conjure { .. } | Execution::PartyBuff(_) | Execution::ActorFocus { .. } => false,
+    }
+}
+
 struct PaidOwnerSelf {
     next: PlayerSpellState,
     anchor: crate::foundation::runtime_actor_spell_types::SpellAnchor,
@@ -1039,10 +1064,11 @@ async fn prepare_source_self_from_owners(
         .get(runtime, b.actor, b.session)
         .ok_or(SpellCastDisposition::Rejected)?
         .clone();
-    let party = if matches!(
-        before.source_party_vocation(),
-        crate::spell::Vocation::Monk | crate::spell::Vocation::ExaltedMonk
-    ) {
+    let party = if may_heal_player(spell)
+        || matches!(
+            before.source_party_vocation(),
+            crate::spell::Vocation::Monk | crate::spell::Vocation::ExaltedMonk
+        ) {
         Some(
             super::super::party_spell_owner::read_source_party_world_in_transaction(
                 tx, root, authority, runtime, states, b.actor, b.session,
@@ -1157,7 +1183,7 @@ async fn prepare_source_self_from_owners(
             );
         }
         Ok(OwnerCombatBatch { caster:b.actor,attacker,current_lease_generation:b.lease_generation,command,
-            occurrence:occurrence.clone().into(),anchor:Some(paid.anchor.clone()),now_ms:now.get()/1_000,
+            occurrence:occurrence.clone().into(),anchor:Some(paid.anchor.clone()),now_us:Some(now),now_ms:now.get()/1_000,
             effects,deferred:None,binding:serde_json::to_vec(&json!({"intent":source_cast_intent(intent,rune),
                 "source_definition":format!("{profile:?}"),"capture_format":"owner-debug-r21",
                 "equipment_facts":format!("{:?}",owned.equipment()),"character_revision":b.character_revision,
@@ -1729,10 +1755,11 @@ pub(crate) async fn prepare_from_owners(
         .ok_or(SpellCastDisposition::Rejected)?
         .clone();
     let before = &before_snapshot;
-    let party = if matches!(
-        before.source_party_vocation(),
-        crate::spell::Vocation::Monk | crate::spell::Vocation::ExaltedMonk
-    ) {
+    let party = if may_heal_player(spell)
+        || matches!(
+            before.source_party_vocation(),
+            crate::spell::Vocation::Monk | crate::spell::Vocation::ExaltedMonk
+        ) {
         Some(
             super::super::party_spell_owner::read_source_party_world_in_transaction(
                 tx, root, authority, runtime, states, b.actor, b.session,
@@ -2080,6 +2107,7 @@ pub(crate) async fn prepare_from_owners(
         occurrence: occurrence.clone().into(),
         binding: binding.clone(),
         anchor: Some(preview.anchor.clone()),
+        now_us: Some(now),
         now_ms: facts.now_ms,
         effects: Vec::new(),
         deferred: None,
@@ -2211,6 +2239,7 @@ pub(crate) async fn prepare_from_owners(
         occurrence: occurrence.clone().into(),
         binding,
         anchor: Some(paid.anchor.clone()),
+        now_us: Some(now),
         now_ms: facts.now_ms,
         effects: Vec::new(),
         deferred: None,
@@ -2543,6 +2572,7 @@ async fn prepare_named_failure(
         .map_err(|_| SpellCastDisposition::Rejected)?;
     let batch=OwnerCombatBatch{caster:actor,attacker:CharacterId::decode(&owned.binding().character).map_err(|_|SpellCastDisposition::Rejected)?,
         current_lease_generation:owned.binding().lease_generation,command,occurrence:occurrence.into(),anchor:Some(paid.anchor),
+        now_us: Some(now),
         now_ms:now.get()/1000,effects:Vec::new(),deferred:None,
         binding:serde_json::to_vec(&json!({"intent":source_parameter_intent(&parameter.intent,parameter)?,"parameter_result":result_bytes,
             "spell":format!("{spell:?}"),"before":format!("{before:?}"),"paid":format!("{:?}",paid.next),"owned":format!("{owned:?}")})).map_err(|_|SpellCastDisposition::Rejected)?};
@@ -2890,7 +2920,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         let Some(native) = active.native_gameplay() else {
             return rejected();
         };
-        let Some(_room) = self.qualified_room else {
+        let Some(_room) = self.rooms.gate_native_combat_cast() else {
             return rejected();
         };
         let Ok((current, _)) = FreshAdmissionStore::from_root(self.root.clone())
@@ -3032,12 +3062,14 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         };
         let intent = *intent;
         // SPELL-TARGET-1: the held attack target (ATTACK-0 §4), read last in the lock order.
-        let attack_target = self
-            .attack
-            .lock()
-            .await
-            .combat_state(actor, session, self.owner_now())
-            .target;
+        let attack_target = {
+            let mut attack = self.attack.lock().await;
+            // Best-effort allocation before SQL/installation; failure grants no activity.
+            attack.prepare_shared_experience_record(&runtime, actor, session);
+            // ATTACK-0 §4 (as amended by #2106): a `pacified` caster holds no target.
+            attack.settle_pacified_target(&runtime, &states, actor, session);
+            attack.combat_state(actor, session, self.owner_now()).target
+        };
         // The attempt lives in the external context before any committing await. Deadline
         // cancellation cannot discard the original normalized occurrence: before the commit
         // window it stays in the context, after it the window parks it in the lane.
@@ -3053,7 +3085,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             let (permit,pending)=writer.parts();
             let active=owner.active_generation.ok_or(DurabilityError::Unavailable)?;
             let content=active.native_gameplay().ok_or(DurabilityError::Unavailable)?;
-            let room=owner.qualified_room.ok_or(DurabilityError::Unavailable)?;
+            let room=owner.rooms.gate_native_combat_cast().ok_or(DurabilityError::Unavailable)?;
             let spell=owner.spells.indexed(intent.spell).ok_or(DurabilityError::Unavailable)?;
             let item_fence=CurrentCharacterItemFence{character_id:fence.character_id,game_session_id:session,
                 connection_generation:fence.connection_generation,character_lease_generation:fence.character_lease_generation,
@@ -3361,10 +3393,14 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             };
             // Kill recording's only await comes before the window gives up the attempt, so a
             // cancellation here still parks it and the resolver installs and records again.
-            let attack=owner.attack.lock().await;
+            let mut attack=owner.attack.lock().await;
             // Phase 2: no awaited work, allocation, new random draw or fallible branch.
             let mut attempt=window.install();
             let batch=attempt.prepared.install_commit(&mut runtime,&mut states,checked,committed.companion(),committed.direct_companion());
+            // Only this actual applied receipt can credit a positive attack/heal. The
+            // retained original batch supplies event time; a retry never renews it.
+            attack.record_committed_shared_experience_batch(&runtime,content,
+                attempt.prepared.batch(),&batch,attempt.prepared.party.as_ref());
             // §1.4: the committed batch's kills, under the same runtime turn, after installation.
             owner.record_spell_kills_locked(&attack,&mut runtime,std::iter::once(&batch));
             drop(attack);
@@ -3573,6 +3609,55 @@ mod tests {
             vec![p(1, 3), p(2, 2), p(3, 1)]
         );
         assert!(sight_steps(p(0, 0), p(65, 0)).is_err());
+    }
+    fn named<'a>(book: &'a SpellBook, name: &str) -> &'a SpellDefinition {
+        (1..=book.source_len())
+            .filter_map(|i| {
+                book.source_indexed(std::num::NonZeroU32::new(u32::try_from(i).unwrap()).unwrap())
+            })
+            .map(|(spell, _)| spell)
+            .find(|spell| spell.name == name)
+            .unwrap()
+    }
+    /// LOOP-PROGRESS-1 (Codex P2): a druid's party heal captures the qualified source party
+    /// facts that its committed heal credit requires; druid damage or haste captures none.
+    #[test]
+    fn druid_party_heal_captures_source_party_facts() {
+        let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../content/spells.manifest.json");
+        let input =
+            crate::content::native_gameplay::NativeGameplayInput::from_manifest(&manifest).unwrap();
+        let catalog =
+            crate::spell::executable_catalog::compile(&input.catalog.bytes, &input.catalog.sha256)
+                .unwrap();
+        let selections = crate::spell::executable_catalog::compile_source_selection(
+            &input.source_selection.bytes,
+            &input.source_selection.sha256,
+            &catalog,
+        )
+        .unwrap();
+        let book = catalog
+            .into_spell_book_with_selections(&selections)
+            .unwrap();
+        for name in ["Heal Friend", "Mass Healing"] {
+            let spell = named(&book, name);
+            assert!(
+                spell.vocations.contains(&crate::spell::Vocation::Druid),
+                "{name}"
+            );
+            assert!(!spell.aggressive, "{name}");
+            assert!(may_heal_player(spell), "{name} must capture party facts");
+        }
+        assert!(super::super::parameter_cast::named_player_spell(named(
+            &book,
+            "Heal Friend"
+        )));
+        for name in ["Strong Ice Wave", "Haste"] {
+            assert!(
+                !may_heal_player(named(&book, name)),
+                "{name} captures no party facts"
+            );
+        }
     }
     #[test]
     fn source_area_rotation_and_origin_are_not_permission() {

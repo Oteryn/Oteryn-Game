@@ -1,8 +1,9 @@
 # ATTACK-0 Attack target and auto-attack
 
 - Decision: `ATTACK0-ATTACK-TARGET-AND-AUTO-ATTACK-V1`
-- Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (protocol and
+- Status: **ACCEPTED**. Accepted by the owner on 2026-10-11 (`ACCEPT-CHAT-ATTACK-DEATH-0`, `OTERYN_GAME_ACCEPT_CHAT_ATTACK_DEATH0_ACCEPTANCE_DECISION_2026-10-11.md`); it records the acceptance of a runtime that is already implemented, and no rule text changes. Original gate: Acceptance needs exact-head validation, independent review (protocol and
   combat) and protected integration.
+- Review 2026-10-12 (`ACCEPT-CHAT-ATTACK-DEATH-0`, reviewed at `77762114d8dbc869679f5305c96cb9105fe82b0a`, see the acceptance decision section 3): protocol PASS, combat PASS for the implemented ATTACK-WIRE-1 and ATTACK-1b slice. Residual notes carried to ATTACK-PARITY-1: §5 does not name the swing damage distribution (the runtime draws uniformly over [0, max]); the 250 ms poll makes the effective swing interval 2.00 to 2.25 s; the swing occurrence id differs from §4 wording; a zero-damage swing refreshes the in-fight deadline; a closed client under repeated hits has no hold cap.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the architect programme plan (#162 5910870596, M1): a player cannot attack today
   (`spell/cast.rs`: "No attack-target owner exists yet")
@@ -122,13 +123,17 @@ does a hit do?
 - The target is the D85 identity of a creature visible to the session (VIS-2). A target that is
   not visible, not a creature, or in a protection zone is refused, and so is any target while the
   attacker stands in a protection zone.
+  **Amendment (ACCEPT-CONDITIONS-0, CONDITIONS-0 §3.5).** A `pacified` attacker's set-target intent
+  is refused with `ATTACK_INTENT_DISPOSITION_REJECTED` (6) before the visibility, creature,
+  protection-zone and PvP checks above. COND-1 builds it.
 - **First slice: creatures only.** Attacking a player is refused until PARTY-PVP-0 decides PvP
   rules; `secure` is carried now and has no effect until then.
 - **Chase** is carried now and has no effect in the first slice: every actor acts as STAND. Chase
   needs server-driven player movement, which has no owner yet.
-  **Amendment (pending on acceptance of RANGED-0; `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §8).** Once accepted
-  and CHASE-1 lands, `CHASE` makes the player follow its target through the Movement owner. Until
-  then the client ships the chase toggle disabled (always `STAND`).
+  **Amendment (pending on acceptance of RANGED-0; `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §8, owner decision 2026-10-14).** Once
+  accepted and CHASE-1 lands, `CHASE` makes the player follow its target through the Movement owner,
+  with bounded searches (`RANGED0-RL-03` to `-07`); a client step wins over a chase step. Until then
+  the client ships the chase toggle disabled (always `STAND`).
 - Fight modes are runtime-only, as in Tibia, where the client sends them at login: the defaults
   are balanced, stand and secure on.
 - Domain 10 is owned by the channel runtime; its revision is monotonic per GameSession (FND-02
@@ -166,14 +171,17 @@ PVP-DEATH-1 and PVP-WIRE-1 land, the first slice stays creatures only.
 
 - **Owner.** The channel runtime holds one attack target and the fight modes per actor. Setting a
   target is a runtime action; it writes nothing durable.
+  **Amendment (ACCEPT-CONDITIONS-0, CONDITIONS-0 §3.5).** Applying `pacified` clears the actor's
+  held attack target through this owner, as the same runtime action as a client clear; no further
+  swing of that target is scheduled. COND-1 builds it.
 - **Swing occurrence.** Each swing is a timer occurrence of the attack-target owner, keyed by
   (runtime scope, attacker actor id and generation, swing sequence). Its lineage is the CommandRef
   that set the target. The swing binds the formula content revision and the SIM profile. Its RNG
   purposes are closed: `hit_chance` (reserved for distance), `damage_draw`, `defence_draw` and
   `armor_draw`. Charm rolls take the swing as their `DecisionOccurrenceId`.
   **Amendment (pending on acceptance of RANGED-0; `reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md` §4.1).** The closed
-  purposes gain `miss_landing` and `break`; a ranged swing's DUR-03 key adds the World, Channel,
-  scope ownership generation and CharacterId (RANGED-0 §6.2).
+  purposes gain `miss_landing` and `break`; a ranged swing's DUR-03 TransactionId is an allocated UUIDv7 frozen at PREPARE, with provenance
+  (World, Channel, scope ownership generation, runtime actor id, CharacterId) (RANGED-0 §6.2).
 - **Timer.** Every attack interval (2,000 ms) while the target is valid, the actor swings once
   through the GAME-ABILITY-01 pipeline as one typed ability, `AutoAttack`. Catch-up policy
   `DEADLINE_STATE`: at most one swing per due deadline, never a backlog, as Canary never replays

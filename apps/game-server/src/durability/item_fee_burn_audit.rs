@@ -305,7 +305,10 @@ pub fn check_fee_burn(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
 
 /// The bank part's closed value line: `FEE_DEBIT`, class BURN, gold, in the fee's World, a
 /// positive debit within `BANK0-RL-01` and `after = before - debit`.
-fn check_bank_debit(debit: &OneItemFeeBankDebitV1, world_id: &[u8]) -> Result<(), AuditError> {
+pub(super) fn check_bank_debit(
+    debit: &OneItemFeeBankDebitV1,
+    world_id: &[u8],
+) -> Result<(), AuditError> {
     check_uuid_v7(&debit.entry_id)?;
     check_uuid_v7(&debit.account_id)?;
     if debit.asset != ASSET_GOLD
@@ -561,6 +564,7 @@ mod tests {
             } else {
                 ITEM_LIFECYCLE_LIVE
             },
+            key_number: 0,
         }
     }
 

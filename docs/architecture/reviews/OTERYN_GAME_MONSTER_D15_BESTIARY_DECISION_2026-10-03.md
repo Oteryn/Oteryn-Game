@@ -1,7 +1,7 @@
 # MONSTER-D15-BESTIARY: Bestiary profiles from the reference-date TibiaWiki
 
 - Decision: `MONSTER-D15-BESTIARY-V1` (schema row D48)
-- Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (content) and
+- Status: **ACCEPTED**. Accepted by the owner (blakinio) on 2026-10-15, owner accepted via control plane, effective only on exact-head review, CI and protected integration of the acceptance PR (`ACCEPT-BATCH-2026-10-15`, `OTERYN_GAME_ACCEPT_BATCH_2026-10-15_ACCEPTANCE_DECISION.md`); no rule text changes. Original gate: Acceptance needs exact-head validation, independent review (content) and
   protected integration.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: owner decision 3b (#1622 comment 5968564302, 2026-10-03). D15 is extended, so the

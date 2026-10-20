@@ -1,8 +1,9 @@
 # DEATH-0 Character death receipt decision
 
 - Decision: `DEATH0-CHARACTER-DEATH-RECEIPT-V1`
-- Status: **CANDIDATE**. Acceptance requires exact-head validation, independent review and
+- Status: **ACCEPTED**. Accepted by the owner on 2026-10-11 (`ACCEPT-CHAT-ATTACK-DEATH-0`, `OTERYN_GAME_ACCEPT_CHAT_ATTACK_DEATH0_ACCEPTANCE_DECISION_2026-10-11.md`); it records the acceptance of a runtime that is already implemented, and no rule text changes. Original gate: Acceptance requires exact-head validation, independent review and
   protected integration.
+- Review 2026-10-12 (`ACCEPT-CHAT-ATTACK-DEATH-0`, reviewed at `77762114d8dbc869679f5305c96cb9105fe82b0a`, see the acceptance decision section 3): receipt chain PASS, guards PASS, fencing PASS; no defect. Residual: §3.4 says the pending respawn is deleted in the same transaction as the placement, but the placement is runtime memory and the code consumes it in a separate transaction (at-least-once); suggest rewording.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.1)
 - Answers: the storage prerequisite of the Reference first player death decision (§4.3, child
   DEATH-0), required before DEATH-1 can commit anything
@@ -13,6 +14,7 @@
 - Runtime, migration and production authority: **NONE**. The migration belongs to the DEATH-0
   implementation allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
+- Amended by DEATH-COMPLETE-0 (`OTERYN_GAME_DEATH_COMPLETE0_PLAYER_DEATH_MODULE_DECISION_2026-10-13.md` §4.2): the DEATH-3 migration replaces the two `until_death3` checks and adds the PARTY-PVP-0 fields once. Takes effect when DEATH-COMPLETE-0 is accepted.
 - Amended by A13 (`OTERYN_GAME_A13_CHARACTER_BUILD_STATE_DECISION_2026-09-29.md` §4.6): §3.1
   death receipt build fields. The amendment takes effect only when A13 is accepted. The chain now
   has further kinds (stance, build) beyond the two named in §3.1.

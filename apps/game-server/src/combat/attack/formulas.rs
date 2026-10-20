@@ -26,68 +26,76 @@ fn floor(inner: Expression) -> Expression {
     Expression::Unary(Unary::Floor, Box::new(inner))
 }
 
-/// `round((coefficient * attack_factor * attack * attack_skill) + level / 5)` of
-/// `getMaxWeaponDamage` (`weapons.cpp:94-100`), with the level term on the official curve. The
-/// level term is an integer, so `floor(x + level_term + 0.5)` is the half-away-from-zero round
-/// of a nonnegative `x + level_term`.
-fn player_melee_maximum(coefficient: f64, attack: Expression) -> Expression {
-    let product = binary(
-        Binary::Mul,
+/// The pinned TibiaTools auto-attack bounds (ATTACK-PARITY-1 packet 1.3; `damage.ts:13-25`):
+///
+/// ```text
+/// v   = floor(6 * attack / 5) * (skill + 4) / 28 * attack_factor
+/// min = floor(level term + v / 2)
+/// max = floor(level term + 2 * v)
+/// ```
+///
+/// The level term is the official curve (`LevelBaseDamageHealing`, equal to TibiaTools' `flat`).
+/// The attack factor is 1.0 in Offensive, the mode the fixtures bind; other modes scale `v` and
+/// stay `PARITY_PENDING`.
+fn player_melee_bounds(constants: &AttackConstants, attack: Expression) -> Formula {
+    let melee = constants.player_melee;
+    let stepped = floor(binary(
+        Binary::Div,
         binary(
             Binary::Mul,
-            binary(Binary::Mul, constant(coefficient), var(Input::AttackFactor)),
+            constant(f64::from(melee.attack_numerator)),
             attack,
         ),
-        var(Input::AttackSkill),
-    );
-    let level = Expression::LevelBaseDamageHealing(Box::new(var(Input::Level)));
-    floor(binary(
+        constant(f64::from(melee.attack_denominator)),
+    ));
+    let skill = binary(
         Binary::Add,
-        binary(Binary::Add, product, level),
-        constant(0.5),
-    ))
+        var(Input::AttackSkill),
+        constant(f64::from(melee.skill_offset)),
+    );
+    let scaled = binary(
+        Binary::Div,
+        binary(Binary::Mul, stepped, skill),
+        constant(f64::from(melee.skill_divisor)),
+    );
+    let v = binary(Binary::Mul, scaled, var(Input::AttackFactor));
+    let level = || Expression::LevelBaseDamageHealing(Box::new(var(Input::Level)));
+    Formula {
+        minimum: floor(binary(
+            Binary::Add,
+            level(),
+            binary(
+                Binary::Div,
+                v.clone(),
+                constant(f64::from(melee.minimum_divisor)),
+            ),
+        )),
+        maximum: floor(binary(
+            Binary::Add,
+            level(),
+            binary(
+                Binary::Mul,
+                constant(f64::from(melee.maximum_multiplier)),
+                v,
+            ),
+        )),
+    }
 }
 
-/// Player melee weapon damage: `[0, max]`, the weapon's attack in `attack_value`.
-#[cfg_attr(
-    not(test),
-    allow(
-        dead_code,
-        reason = "ATTACK-1b composes fists only; weapon melee, creature defence, armor and block are follow-ups"
-    )
-)]
+/// Player melee weapon damage, the weapon's attack in `attack_value`.
 pub(crate) fn player_melee_formula(constants: &AttackConstants) -> Formula {
-    Formula {
-        minimum: constant(0.0),
-        maximum: player_melee_maximum(
-            constants.player_melee.damage_coefficient,
-            var(Input::AttackValue),
-        ),
-    }
+    player_melee_bounds(constants, var(Input::AttackValue))
 }
 
-/// Player fist damage: the melee formula with the fist attack value (`weapons.cpp:226`); it
-/// does not read `attack_value`.
+/// Player fist damage: the melee formula with the fist attack value; it does not read
+/// `attack_value`.
 pub(crate) fn player_fist_formula(constants: &AttackConstants) -> Formula {
-    Formula {
-        minimum: constant(0.0),
-        maximum: player_melee_maximum(
-            constants.player_melee.damage_coefficient,
-            constant(f64::from(constants.fist.attack)),
-        ),
-    }
+    player_melee_bounds(constants, constant(f64::from(constants.fist.attack)))
 }
 
 /// Creature melee damage `[0, ceil(skill * (attack * 0.05) + attack * 0.5)]`
 /// (`getMaxMeleeDamage`, `weapons.cpp:88-91`) over the creature's `attack_skill` and
 /// `attack_value`.
-#[cfg_attr(
-    not(test),
-    allow(
-        dead_code,
-        reason = "ATTACK-1b composes fists only; weapon melee, creature defence, armor and block are follow-ups"
-    )
-)]
 pub(crate) fn creature_melee_formula(constants: &AttackConstants) -> Formula {
     let melee = constants.creature_melee;
     let skill_term = binary(
@@ -119,7 +127,7 @@ pub(crate) fn creature_melee_formula(constants: &AttackConstants) -> Formula {
     not(test),
     allow(
         dead_code,
-        reason = "ATTACK-1b composes fists only; weapon melee, creature defence, armor and block are follow-ups"
+        reason = "ATTACK-2 composes weapon melee and creature block, defence and armor; player defence, distance and the scaled defence formula are follow-ups"
     )
 )]
 pub(crate) enum DefenceSource {
@@ -135,7 +143,7 @@ pub(crate) enum DefenceSource {
     not(test),
     allow(
         dead_code,
-        reason = "ATTACK-1b composes fists only; weapon melee, creature defence, armor and block are follow-ups"
+        reason = "ATTACK-2 composes weapon melee and creature block, defence and armor; player defence, distance and the scaled defence formula are follow-ups"
     )
 )]
 pub(crate) fn defence_mode_factor(
@@ -158,7 +166,7 @@ pub(crate) fn defence_mode_factor(
     not(test),
     allow(
         dead_code,
-        reason = "ATTACK-1b composes fists only; weapon melee, creature defence, armor and block are follow-ups"
+        reason = "ATTACK-2 composes weapon melee and creature block, defence and armor; player defence, distance and the scaled defence formula are follow-ups"
     )
 )]
 pub(crate) fn defence_formula(
@@ -208,7 +216,7 @@ pub(crate) fn defence_formula(
     not(test),
     allow(
         dead_code,
-        reason = "ATTACK-1b composes fists only; weapon melee, creature defence, armor and block are follow-ups"
+        reason = "ATTACK-2 composes weapon melee and creature block, defence and armor; player defence, distance and the scaled defence formula are follow-ups"
     )
 )]
 pub(crate) fn zero_skill_defence_bounds(
@@ -221,13 +229,6 @@ pub(crate) fn zero_skill_defence_bounds(
 
 /// Armor reduction draw range (`creature.cpp:976-982`): `[armor / 2, armor - (armor % 2 + 1)]`
 /// above the flat threshold, exactly 1 from 1 up to it, nothing at 0.
-#[cfg_attr(
-    not(test),
-    allow(
-        dead_code,
-        reason = "ATTACK-1b composes fists only; weapon melee, creature defence, armor and block are follow-ups"
-    )
-)]
 pub(crate) fn armor_reduction_bounds(constants: &AttackConstants, armor: u32) -> (u32, u32) {
     if armor > constants.armor.flat_reduction_max_armor {
         (armor / 2, armor - (armor % 2 + 1))

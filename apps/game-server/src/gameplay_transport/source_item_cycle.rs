@@ -63,6 +63,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if stopped {
                 return;
             }
+            // One owner pass is one owner turn: the world-interaction cap starts anew, under
+            // the runtime lock that every admitted act holds through its commit.
+            {
+                let _runtime = self.runtime.lock().await;
+                if let Ok(mut gate) = self.world_gate.lock() {
+                    gate.begin_turn();
+                }
+            }
             if !self.ensure_source_map_initialized().await {
                 continue;
             }
@@ -103,7 +111,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         #[cfg(test)]
         stage("entered");
         let Some(room) = self
-            .qualified_room
+            .rooms
+            .gate_source_map_initialization()
             .filter(|room| room.source_world().is_some())
         else {
             return true;

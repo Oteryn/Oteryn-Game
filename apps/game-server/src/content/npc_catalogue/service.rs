@@ -117,10 +117,13 @@ pub enum NpcOfferHeldReason {
     SellPriceAboveCoinCapacity,
     ArbitragePaying,
     ParityPending,
+    /// A charged or fluid offer: its count is charges or sub-type, which NPC-TRADE-1 does not
+    /// trade yet (follow-up NPC-TRADE-3).
+    ChargedOrFluidPending,
 }
 
 impl NpcOfferHeldReason {
-    pub const ALL: [Self; 7] = [
+    pub const ALL: [Self; 8] = [
         Self::NonGoldCurrency,
         Self::UnknownItem,
         Self::CountOutOfRange,
@@ -128,6 +131,7 @@ impl NpcOfferHeldReason {
         Self::SellPriceAboveCoinCapacity,
         Self::ArbitragePaying,
         Self::ParityPending,
+        Self::ChargedOrFluidPending,
     ];
     pub const fn as_str(self) -> &'static str {
         match self {
@@ -138,6 +142,7 @@ impl NpcOfferHeldReason {
             Self::SellPriceAboveCoinCapacity => "SellPriceAboveCoinCapacity",
             Self::ArbitragePaying => "ArbitragePaying",
             Self::ParityPending => "ParityPending",
+            Self::ChargedOrFluidPending => "ChargedOrFluidPending",
         }
     }
 }
@@ -158,6 +163,7 @@ pub struct NpcHeldOffer {
 /// One Service: its admitted offers and routes and its held offers, all in source order.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct NpcServiceEntry {
+    pub bank: bool,
     pub offers: Vec<ProjectV2ServiceOffer>,
     pub held_offers: Vec<NpcHeldOffer>,
     /// Every route loads (the source has no gate field); the destination stays in the source
@@ -165,11 +171,21 @@ pub struct NpcServiceEntry {
     pub routes: Vec<ProjectV2TravelRoute>,
 }
 
+/// The actual admitted Dialogue messages needed by the bounded Bank conversation consumer.
+/// This carries authored data only; it executes neither Lua callbacks nor quest state.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NpcBankDialogue {
+    pub greet: Vec<String>,
+    pub farewell: Vec<String>,
+    pub keywords: Vec<crate::content::ProjectV2DialogueKeyword>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NpcEntry {
     pub name: String,
     /// An admitted Dialogue replaces the generated replies.
     pub dialogue: Option<ProjectV2DefinitionRef>,
+    pub bank_dialogue: Option<NpcBankDialogue>,
     pub services: Vec<ProjectV2DefinitionRef>,
     /// Present exactly when `dialogue` is absent.
     pub generated_replies: Option<replies::NpcGeneratedReplies>,
@@ -284,6 +300,9 @@ fn classify(offer: &ProjectV2ServiceOffer, facts: &dyn NpcItemFacts) -> Option<N
     if offer.parity_pending {
         return Some(NpcOfferHeldReason::ParityPending);
     }
+    if facts.timed_charges(key).is_some() || facts.charged(key) || facts.fluid(key) {
+        return Some(NpcOfferHeldReason::ChargedOrFluidPending);
+    }
     None
 }
 
@@ -312,12 +331,19 @@ pub(super) fn build(
         BTreeMap::new();
     let mut classified: Vec<ClassifiedService<'_>> = Vec::new();
     for &(reference, declaration) in records {
-        let ProjectV2Declaration::Service { offers, routes, .. } = declaration else {
+        let ProjectV2Declaration::Service {
+            bank,
+            offers,
+            routes,
+            ..
+        } = declaration
+        else {
             continue;
         };
         services.insert(
             reference.clone(),
             NpcServiceEntry {
+                bank: *bank,
                 routes: routes.clone(),
                 ..NpcServiceEntry::default()
             },
@@ -404,6 +430,28 @@ pub(super) fn build(
             NpcEntry {
                 name,
                 dialogue: dialogue.clone(),
+                bank_dialogue: dialogue.as_ref().and_then(|wanted| {
+                    records.iter().find_map(|(reference, declaration)| {
+                        if *reference != wanted {
+                            return None;
+                        }
+                        let ProjectV2Declaration::Dialogue {
+                            greet,
+                            farewell,
+                            keywords,
+                            ..
+                        } = declaration
+                        else {
+                            return None;
+                        };
+                        Some(NpcBankDialogue {
+                            greet: greet.clone(),
+                            farewell: farewell.clone(),
+                            keywords: keywords.clone(),
+                        })
+                    })
+                }),
+
                 services: service_refs.clone(),
                 generated_replies,
             },

@@ -29,8 +29,9 @@ const SQL_KEY33_FUNCTIONS: [(&str, &str); 3] = [
 ];
 
 /// Production Rust functions that take the key-33 lock or write a key-33 table.
-const RUST_KEY33_SITES: [(&str, &str); 12] = [
+const RUST_KEY33_SITES: [(&str, &str); 13] = [
     ("src/durability/item_decay_retire.rs", "apply_retire"),
+    ("src/durability/item_loop_move.rs", "apply_loop_move"),
     (
         "src/durability/item_mint.rs",
         "insert_mint_with_corpse_attribution",
@@ -529,7 +530,9 @@ fn no_cast_writer_awaits_after_its_window_gives_up_the_attempt() {
         .expect("source");
     let text = collapse(&raw).replace(' ', "");
     let lock = text
-        .find("letattack=owner.attack.lock().await;")
+        // LOOP-PROGRESS-1: the guard is `mut` because the committed batch also records
+        // shared-experience activity under it; the lock order this pins is unchanged.
+        .find("letmutattack=owner.attack.lock().await;")
         .expect("native takes the attack guard");
     let install = text
         .find("letmutattempt=window.install();")

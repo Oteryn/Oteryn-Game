@@ -37,6 +37,77 @@ fn standing_element(
     }
     Some(None)
 }
+/// What one static top Item says about a standing field (COND-1c).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum StaticItemFact {
+    /// The Item has no qualified policy: its field semantics are missing, so Unknown.
+    NoPolicy,
+    /// A known Item that is not a field.
+    Plain,
+    /// A known field Item; `None` when its element is not resolvable.
+    Field(Option<Option<DotElement>>),
+    /// A classification that is not known.
+    Unknown,
+}
+fn fold_static(facts: impl IntoIterator<Item = StaticItemFact>) -> Option<Option<DotElement>> {
+    // The first field wins, but every later Item is still checked: one without qualified
+    // semantics could be the matching field, so it makes the whole tile Unknown.
+    let mut field = Some(None);
+    let mut seen_field = false;
+    for fact in facts {
+        match fact {
+            StaticItemFact::NoPolicy | StaticItemFact::Unknown => return None,
+            StaticItemFact::Plain => {}
+            StaticItemFact::Field(element) => {
+                if !seen_field {
+                    seen_field = true;
+                    field = element;
+                }
+            }
+        }
+    }
+    field
+}
+/// The field a bundle tile carries as a static top Item: the bundle's fields are not
+/// `game_item_ground_locations` rows. Missing metadata is Unknown, so no damage is consumed.
+fn static_element(
+    tile: &crate::content::QualifiedSpellTile,
+    source: &NativeGameplayState,
+) -> Option<Option<DotElement>> {
+    fold_static(tile.top_source_ids().iter().map(|id| {
+        let Some(policy) = source.item_policy_for_source_id(*id) else {
+            return StaticItemFact::NoPolicy;
+        };
+        let record = policy.record();
+        let ReferenceItemField::Known(classification) = &record.semantics.classification else {
+            return StaticItemFact::Unknown;
+        };
+        match classification.item_type {
+            ReferenceItemField::Known(ReferenceItemType::MagicField) => StaticItemFact::Field(
+                record
+                    .attributes
+                    .field_condition
+                    .as_ref()
+                    .and_then(|f| f.element().ok()),
+            ),
+            ReferenceItemField::Known(_) | ReferenceItemField::NotApplicable => {
+                StaticItemFact::Plain
+            }
+            ReferenceItemField::Unknown | ReferenceItemField::Conflict => StaticItemFact::Unknown,
+        }
+    }))
+}
+/// Ground Items and static bundle Items are two sources of the one standing fact: a known field
+/// wins, Unknown on either side stays Unknown (no damage consumed).
+fn combine_elements(
+    dynamic: Option<Option<DotElement>>,
+    fixed: Option<Option<DotElement>>,
+) -> Option<Option<DotElement>> {
+    match (dynamic?, fixed?) {
+        (Some(element), _) | (None, Some(element)) => Some(Some(element)),
+        (None, None) => Some(None),
+    }
+}
 impl ChannelSpellStates {
     /// A preview is read-only. Canonical Creature-origin damage is consumed by
     /// the existing HP/conditions/death owner, including after its creator dies.
@@ -59,14 +130,18 @@ impl ChannelSpellStates {
             None,
         )
         .ok()??;
-        if !preview.combat_ticks.iter().any(|t| {
-            matches!(t.kind, TickKind::Damage { .. })
-                && t.provenance.source_kind == ConditionSourceKind::Creature
-        }) {
+        // CONDITIONS-0 §3.5: an agony hit the cycle could not deal (lethal) is a creature hit
+        // for this death-capable owner as well.
+        let hit = |kind: TickKind| matches!(kind, TickKind::Damage { .. } | TickKind::Agony { .. });
+        if !preview
+            .combat_ticks
+            .iter()
+            .any(|t| hit(t.kind) && t.provenance.source_kind == ConditionSourceKind::Creature)
+        {
             return None;
         }
         if preview.combat_ticks.iter().any(|t| {
-            matches!(t.kind, TickKind::Damage { .. })
+            hit(t.kind)
                 && (t.provenance.source_kind != ConditionSourceKind::Creature
                     || !t
                         .provenance
@@ -154,7 +229,24 @@ impl ChannelSpellStates {
         let standing_on_field = if in_protection_zone {
             None
         } else {
-            let Some(element) = standing_element(read, source) else {
+            let static_tile = cells
+                .spell_tiles()
+                .lookup(
+                    cells.scope(),
+                    crate::content::LogicalCell {
+                        x: snapshot.position().x,
+                        y: snapshot.position().y,
+                        z: i32::from(snapshot.position().floor),
+                    },
+                )
+                .ok();
+            let dynamic = standing_element(read, source);
+            let fixed = match static_tile {
+                Some(tile) => static_element(tile, source),
+                None => Some(None),
+            };
+            let element = combine_elements(dynamic, fixed);
+            let Some(element) = element else {
                 // Missing field semantics cannot consume damage. Non-damage
                 // ticks depend on the independently qualified PZ, however.
                 return self.tick_in_environment(runtime, cells, actor, session, now);
@@ -258,7 +350,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 now,
             );
         }
-        let room = self.qualified_room?;
+        // COND-1c: a bundle World has no fixture qualified room; its periodic player damage
+        // reads the same bundle view as combat (BUNDLE-COMBAT-ENABLE-1).
+        let room = self.rooms.gate_periodic_damage()?;
         let source = self.active_generation?.native_gameplay()?;
         let position = runtime.borrow_movement_position().read(actor).ok()?;
         let target =
@@ -321,5 +415,43 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             now,
             &read,
         )
+    }
+}
+
+#[cfg(test)]
+mod standing_fact_tests {
+    use super::*;
+    #[test]
+    fn static_bundle_field_is_not_lost_and_unknown_stays_unknown() {
+        let fire = Some(Some(DotElement::Fire));
+        assert_eq!(combine_elements(Some(None), fire), fire);
+        assert_eq!(combine_elements(fire, Some(None)), fire);
+        assert_eq!(combine_elements(Some(None), Some(None)), Some(None));
+        assert_eq!(combine_elements(None, fire), None);
+        assert_eq!(combine_elements(fire, None), None);
+    }
+    #[test]
+    fn an_unprofiled_static_item_is_unknown_not_a_known_non_field() {
+        use StaticItemFact::*;
+        assert_eq!(fold_static([Plain, NoPolicy]), None);
+        assert_eq!(
+            fold_static([NoPolicy, Field(Some(Some(DotElement::Fire)))]),
+            None
+        );
+        assert_eq!(fold_static([Plain, Unknown]), None);
+        assert_eq!(fold_static([Plain, Plain]), Some(None));
+        assert_eq!(
+            fold_static([Plain, Field(Some(Some(DotElement::Fire)))]),
+            Some(Some(DotElement::Fire))
+        );
+        assert_eq!(fold_static([Field(None)]), None);
+        let fire = Field(Some(Some(DotElement::Fire)));
+        assert_eq!(fold_static([fire, NoPolicy]), None);
+        assert_eq!(fold_static([fire, Unknown]), None);
+        assert_eq!(fold_static([fire, Plain]), Some(Some(DotElement::Fire)));
+        assert_eq!(
+            fold_static([fire, Field(Some(Some(DotElement::Energy)))]),
+            Some(Some(DotElement::Fire))
+        );
     }
 }

@@ -46,7 +46,7 @@ pub(crate) enum InterestError {
 impl fmt::Display for InterestError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
-            Self::FloorOutOfRange => "floor is outside 0..=15",
+            Self::FloorOutOfRange => "floor is outside -15..=15",
             Self::WidthOutOfRange => "view width is outside 15..=36",
             Self::HeightOutOfRange => "view height is outside 11..=28",
             Self::ObserverNotIndexed => "observer is not in the interest index",
@@ -56,7 +56,10 @@ impl fmt::Display for InterestError {
 
 impl Error for InterestError {}
 
-/// A tile position on one floor. The floor is validated to `0..=15`.
+/// A tile position on one floor, held as a Tibia floor `0..=15`. A source world's native floor
+/// `-15..=-1` (`native.floor = -legacy.z`, the crystalserver import profile; Thalom is on
+/// `-8..=-5`) is the Tibia floor `-floor`; floor 0 is the same in both. A Channel's map uses one
+/// convention, so the two never meet in one view.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct VisibilityPosition {
     x: i32,
@@ -64,13 +67,21 @@ pub(crate) struct VisibilityPosition {
     floor: i16,
 }
 
+/// The Tibia floor `0..=15` of a Tibia or native floor (see [`VisibilityPosition`]); `None`
+/// outside `-15..=15`.
+pub(crate) fn tibia_floor(floor: i16) -> Option<i16> {
+    let tibia = if floor < 0 {
+        floor.checked_neg()?
+    } else {
+        floor
+    };
+    (0..=FLOOR_MAX).contains(&tibia).then_some(tibia)
+}
+
 impl VisibilityPosition {
     pub(crate) fn new(x: i32, y: i32, floor: i16) -> Result<Self, InterestError> {
-        if (0..=FLOOR_MAX).contains(&floor) {
-            Ok(Self { x, y, floor })
-        } else {
-            Err(InterestError::FloorOutOfRange)
-        }
+        let floor = tibia_floor(floor).ok_or(InterestError::FloorOutOfRange)?;
+        Ok(Self { x, y, floor })
     }
 }
 
@@ -539,11 +550,20 @@ mod tests {
     }
 
     #[test]
-    fn position_rejects_floors_outside_zero_to_fifteen() -> TestResult {
+    fn position_rejects_floors_outside_minus_fifteen_to_fifteen() -> TestResult {
         assert!(VisibilityPosition::new(0, 0, 0).is_ok());
         assert!(VisibilityPosition::new(0, 0, 15).is_ok());
         assert_eq!(
-            VisibilityPosition::new(0, 0, -1),
+            VisibilityPosition::new(0, 0, -15),
+            VisibilityPosition::new(0, 0, 15),
+            "a native floor is the Tibia floor of its negation"
+        );
+        assert_eq!(
+            VisibilityPosition::new(0, 0, -16),
+            Err(InterestError::FloorOutOfRange)
+        );
+        assert_eq!(
+            VisibilityPosition::new(0, 0, i16::MIN),
             Err(InterestError::FloorOutOfRange)
         );
         assert_eq!(
@@ -626,6 +646,24 @@ mod tests {
         assert_eq!(extent(s, 7, 5)?, Some((-6, 11, -4, 9)));
         // Observer z=7 tile z=6: d=+1.
         assert_eq!(extent(s, 7, 6)?, Some((-7, 10, -5, 8)));
+        Ok(())
+    }
+
+    /// ATTACK-2 (VIS-1): Thalom's native floors follow the Tibia rules of their negation.
+    #[test]
+    fn native_floors_see_as_the_tibia_floor_of_their_negation() -> TestResult {
+        let s = VisibilitySettings::REFERENCE;
+        // Surface observer -7 (z=7) sees -6 and -5 above it, never -8 below.
+        assert_eq!(extent(s, -7, -6)?, extent(s, 7, 6)?);
+        assert_eq!(extent(s, -7, -5)?, Some((-6, 11, -4, 9)));
+        assert_eq!(extent(s, -7, -8)?, None);
+        // Underground observer -8 (z=8) sees -6 to -10.
+        for floor in -10..=-6 {
+            assert_eq!(extent(s, -8, floor)?, extent(s, 8, -floor)?);
+            assert!(extent(s, -8, floor)?.is_some(), "floor {floor}");
+        }
+        assert_eq!(extent(s, -8, -5)?, None);
+        assert_eq!(extent(s, -8, -11)?, None);
         Ok(())
     }
 

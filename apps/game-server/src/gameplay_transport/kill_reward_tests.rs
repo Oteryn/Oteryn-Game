@@ -90,6 +90,7 @@ fn pending(channel: u8, session_seed: u8, lease: u64, drops: usize) -> PendingKi
             sim_revision: "sim-1".into(),
             native_room_placement_context: b"room".to_vec(),
         },
+        target: actor,
         no_progression_logged: false,
     }
 }
@@ -708,4 +709,352 @@ fn parked_entries_count_toward_killrw_rl_01() {
     assert_eq!(queue.append(pending(200, 51, 3, 0)), AppendOutcome::Full);
     // A parked death is deduplicated like a queued one.
     assert_eq!(queue.append(pending(2, 50, 3, 0)), AppendOutcome::Duplicate);
+}
+
+/// LOOT-LIVE-1: a pinned Channel runtime with one creature at (101, 100, 7) that a 20-point lab
+/// hit has killed, its death projected as `record_creature_kill` leaves it.
+fn runtime_with_killed_creature() -> (ChannelRuntimeV1, ExactActorRef) {
+    let world = WorldId::decode(&id(1)).expect("world");
+    let pin = crate::foundation::ChannelContentPin::from_activation(
+        world,
+        1,
+        [1; 32],
+        [2; 32],
+        [3; 32],
+        [4; 32],
+        (100, 100, 7),
+    );
+    let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+        world,
+        ChannelId::decode(&id(0x61)).expect("channel"),
+        crate::foundation::NodeId::decode(&id(0x62)).expect("node"),
+        1,
+        1,
+        1,
+        "runtime-scope-assignment:1",
+        4,
+        pin,
+    )
+    .expect("runtime");
+    let creature = runtime
+        .admit_pinned_test_creature(crate::foundation::MovementLocalPosition {
+            x: 101,
+            y: 100,
+            floor: 7,
+        })
+        .expect("creature");
+    runtime
+        .commit_monster_lab_damage(creature, b"loot-live-1", 20)
+        .expect("lethal hit");
+    let mut death = runtime.borrow_combat_death();
+    let receipt = death.committed_lethal_receipt(creature).expect("receipt");
+    death
+        .project_committed_lethal(receipt)
+        .expect("projected death");
+    (runtime, creature)
+}
+
+/// A settled entry whose killed actor is `creature`: the runtime's projected corpse.
+fn entry_for(creature: ExactActorRef) -> PendingKillSettlement {
+    let mut entry = pending(2, 50, 3, 1);
+    entry.target = creature;
+    entry
+}
+
+fn mint(seed: u8) -> crate::durability::item_mint::CommittedItemMint {
+    crate::durability::item_mint::CommittedItemMint {
+        transaction_id: id(seed),
+        event_id: id(seed.wrapping_add(1)),
+        item_instance_id: id(seed.wrapping_add(2)),
+        occurred_at_unix_ms: 1_000,
+        envelope_sha256: [seed; 32],
+    }
+}
+
+fn committed(corpse: u8) -> Result<CommittedCorpseLoot, CombatDeathRewardLootError> {
+    Ok(CommittedCorpseLoot {
+        corpse: mint(corpse),
+        entries: vec![mint(corpse.wrapping_add(10))],
+    })
+}
+
+#[test]
+fn a_committed_corpse_binds_to_the_killed_actors_projection() {
+    let (mut runtime, creature) = runtime_with_killed_creature();
+    let entry = entry_for(creature);
+    assert!(runtime.visible_corpses().is_empty());
+    assert_eq!(
+        bind_settled_corpse(&mut runtime, &entry, &committed(20)),
+        CorpseBind::Bound
+    );
+    let corpse = runtime
+        .bound_corpse(creature.corpse_identity())
+        .expect("a visible corpse");
+    assert_eq!(corpse.item.item_instance_id, mint(20).item_instance_id);
+    assert_eq!(corpse.item.family, "Item");
+    assert_eq!(corpse.item.production_key, "oteryn:item.corpse");
+    assert_eq!(corpse.item.revision_ref, "definition-r1");
+    assert_eq!(
+        corpse.position,
+        crate::foundation::MovementLocalPosition {
+            x: 101,
+            y: 100,
+            floor: 7
+        }
+    );
+    assert_eq!(runtime.visible_corpses().len(), 1);
+}
+
+#[test]
+fn a_replayed_settle_binds_the_same_corpse_once() {
+    let (mut runtime, creature) = runtime_with_killed_creature();
+    let entry = entry_for(creature);
+    assert_eq!(
+        bind_settled_corpse(&mut runtime, &entry, &committed(20)),
+        CorpseBind::Bound
+    );
+    let before = runtime.visible_corpses();
+    // A Retry settle replays the same committed corpse MINT (`AlreadyCommitted`).
+    assert_eq!(
+        bind_settled_corpse(&mut runtime, &entry, &committed(20)),
+        CorpseBind::Bound
+    );
+    assert_eq!(runtime.visible_corpses(), before);
+}
+
+#[test]
+fn another_item_never_rebinds_a_bound_corpse() {
+    let (mut runtime, creature) = runtime_with_killed_creature();
+    let entry = entry_for(creature);
+    assert_eq!(
+        bind_settled_corpse(&mut runtime, &entry, &committed(20)),
+        CorpseBind::Bound
+    );
+    assert_eq!(
+        bind_settled_corpse(&mut runtime, &entry, &committed(40)),
+        CorpseBind::Refused(CarrierError::CorpseProjectionConflict)
+    );
+    let corpse = runtime
+        .bound_corpse(creature.corpse_identity())
+        .expect("a visible corpse");
+    assert_eq!(corpse.item.item_instance_id, mint(20).item_instance_id);
+}
+
+#[test]
+fn no_committed_corpse_binds_nothing() {
+    let (mut runtime, creature) = runtime_with_killed_creature();
+    let entry = entry_for(creature);
+    let refused = Err(CombatDeathRewardLootError::Corpse(
+        ItemMintError::CapacityExceeded,
+    ));
+    assert_eq!(
+        bind_settled_corpse(&mut runtime, &entry, &refused),
+        CorpseBind::NoCorpse
+    );
+    assert!(runtime.visible_corpses().is_empty());
+}
+
+#[test]
+fn a_corpse_committed_before_a_refused_loot_entry_still_binds() {
+    let (mut runtime, creature) = runtime_with_killed_creature();
+    let entry = entry_for(creature);
+    // A later entry's MINT was refused finally; the corpse it went into is committed (D52).
+    let partial = Err(CombatDeathRewardLootError::Mint(
+        ItemMintError::AuthorityRejected,
+        mint(20),
+    ));
+    assert_eq!(
+        bind_settled_corpse(&mut runtime, &entry, &partial),
+        CorpseBind::Bound
+    );
+    let corpse = runtime
+        .bound_corpse(creature.corpse_identity())
+        .expect("a visible corpse");
+    assert_eq!(corpse.item.item_instance_id, mint(20).item_instance_id);
+    // A Retry settle that later commits every entry replays the same corpse.
+    assert_eq!(
+        bind_settled_corpse(&mut runtime, &entry, &committed(20)),
+        CorpseBind::Bound
+    );
+    assert_eq!(runtime.visible_corpses().len(), 1);
+}
+
+#[test]
+fn a_corpse_of_another_channel_generation_is_refused() {
+    let (mut runtime, _) = runtime_with_killed_creature();
+    // The entry's actor belongs to another Channel's scope generation (D52).
+    let foreign = pending(2, 50, 3, 1);
+    assert!(matches!(
+        bind_settled_corpse(&mut runtime, &foreign, &committed(20)),
+        CorpseBind::Refused(_)
+    ));
+    assert!(runtime.visible_corpses().is_empty());
+}
+
+#[test]
+fn a_live_actor_without_a_projected_death_is_refused() {
+    let (mut runtime, _) = runtime_with_killed_creature();
+    let living = runtime
+        .admit_pinned_test_creature(crate::foundation::MovementLocalPosition {
+            x: 102,
+            y: 100,
+            floor: 7,
+        })
+        .expect("creature");
+    let mut entry = pending(2, 50, 3, 1);
+    entry.target = living;
+    assert_eq!(
+        bind_settled_corpse(&mut runtime, &entry, &committed(20)),
+        CorpseBind::Refused(CarrierError::CommittedLethalUnavailable)
+    );
+    assert!(runtime.visible_corpses().is_empty());
+}
+
+/// Kill another creature of `runtime` standing at `position` and project its death.
+fn kill_creature_at(
+    runtime: &mut ChannelRuntimeV1,
+    position: crate::foundation::MovementLocalPosition,
+    occurrence: &[u8],
+) -> ExactActorRef {
+    let creature = runtime
+        .admit_pinned_test_creature(position)
+        .expect("creature");
+    runtime
+        .commit_monster_lab_damage(creature, occurrence, 20)
+        .expect("lethal hit");
+    let mut death = runtime.borrow_combat_death();
+    let receipt = death.committed_lethal_receipt(creature).expect("receipt");
+    death
+        .project_committed_lethal(receipt)
+        .expect("projected death");
+    creature
+}
+
+const SECOND_CREATURE: crate::foundation::MovementLocalPosition =
+    crate::foundation::MovementLocalPosition {
+        x: 102,
+        y: 100,
+        floor: 7,
+    };
+
+/// Codex 4248192466: an accepted kill pins its corpse projection against eviction until its
+/// settle is final; a Retry keeps the pin, and a final settle releases it after the bind.
+#[test]
+fn an_accepted_kill_pins_its_corpse_until_its_settle_is_final() {
+    let (mut runtime, creature) = runtime_with_killed_creature();
+    let queue = KillSettlementQueue::default();
+    assert!(!runtime.corpse_projection_pinned(creature));
+    assert_eq!(
+        accept_kill(&mut runtime, &queue, entry_for(creature)),
+        AppendOutcome::Queued
+    );
+    assert!(runtime.corpse_projection_pinned(creature));
+    // A replayed append of the same death keeps its one pin.
+    assert_eq!(
+        accept_kill(&mut runtime, &queue, entry_for(creature)),
+        AppendOutcome::Duplicate
+    );
+    assert!(runtime.corpse_projection_pinned(creature));
+    let in_flight = taken(queue.take(session(50), 3));
+    let entry = in_flight.entry().expect("entry");
+    release_settled_corpse(&mut runtime, entry, SettleVerdict::Retry);
+    assert!(runtime.corpse_projection_pinned(creature));
+    assert_eq!(
+        bind_settled_corpse(&mut runtime, entry, &committed(20)),
+        CorpseBind::Bound
+    );
+    release_settled_corpse(&mut runtime, entry, SettleVerdict::Final);
+    assert!(!runtime.corpse_projection_pinned(creature));
+    in_flight.finish();
+    // Only the protection from eviction is released: the bound corpse stays visible.
+    assert!(runtime.retains_corpse_projection(creature));
+    assert_eq!(runtime.visible_corpses().len(), 1);
+}
+
+/// Codex 4248192466: a kill parked under a `releasing` mark is accepted and pins its corpse.
+#[test]
+fn a_parked_kill_pins_its_corpse() {
+    let (mut runtime, creature) = runtime_with_killed_creature();
+    let queue = KillSettlementQueue::default();
+    assert!(matches!(queue.seal((session(50), 3)), Seal::Sealed(_)));
+    assert_eq!(
+        accept_kill(&mut runtime, &queue, entry_for(creature)),
+        AppendOutcome::Parked(ReleasePhase::Sealed)
+    );
+    assert!(runtime.corpse_projection_pinned(creature));
+}
+
+/// Codex 4248192466: a kill the full queue refuses pins nothing and leaves the accepted kills'
+/// pins in place, so its projection can evict only unpinned ones.
+#[test]
+fn a_kill_the_full_queue_refuses_pins_nothing() {
+    let (mut runtime, first) = runtime_with_killed_creature();
+    let queue = KillSettlementQueue::default();
+    assert_eq!(
+        accept_kill(&mut runtime, &queue, entry_for(first)),
+        AppendOutcome::Queued
+    );
+    for channel in 3..(2 + KILLRW_RL_01_UNSETTLED_ENTRIES_PER_CHANNEL_MAX as u8) {
+        assert_eq!(
+            queue.append(pending(channel, 50, 3, 0)),
+            AppendOutcome::Queued
+        );
+    }
+    let second = kill_creature_at(&mut runtime, SECOND_CREATURE, b"loot-live-1-second");
+    let mut late = pending(200, 51, 3, 0);
+    late.target = second;
+    assert_eq!(accept_kill(&mut runtime, &queue, late), AppendOutcome::Full);
+    assert!(runtime.corpse_projection_pinned(first));
+    assert!(!runtime.corpse_projection_pinned(second));
+}
+
+/// Codex 4248192466: an entry freed without a settle (`principal_gone`) loses its pin at the
+/// next accepted kill, so the pins stay those of held entries and never leak.
+#[test]
+fn the_pin_of_an_entry_freed_without_a_settle_is_released() {
+    let (mut runtime, first) = runtime_with_killed_creature();
+    let queue = KillSettlementQueue::default();
+    assert_eq!(
+        accept_kill(&mut runtime, &queue, entry_for(first)),
+        AppendOutcome::Queued
+    );
+    queue.discard_gone(session(50), None);
+    let second = kill_creature_at(&mut runtime, SECOND_CREATURE, b"loot-live-1-second");
+    let mut next = pending(3, 51, 3, 0);
+    next.target = second;
+    assert_eq!(
+        accept_kill(&mut runtime, &queue, next),
+        AppendOutcome::Queued
+    );
+    assert!(!runtime.corpse_projection_pinned(first));
+    assert!(runtime.corpse_projection_pinned(second));
+}
+
+/// Codex 4248192466: an entry requeued after its final settle released its pin (a cancelled
+/// drain) regains the pin at the next accepted kill.
+#[test]
+fn a_requeued_entry_regains_its_pin_at_the_next_accepted_kill() {
+    let (mut runtime, first) = runtime_with_killed_creature();
+    let queue = KillSettlementQueue::default();
+    assert_eq!(
+        accept_kill(&mut runtime, &queue, entry_for(first)),
+        AppendOutcome::Queued
+    );
+    let in_flight = taken(queue.take(session(50), 3));
+    release_settled_corpse(
+        &mut runtime,
+        in_flight.entry().expect("entry"),
+        SettleVerdict::Final,
+    );
+    assert!(!runtime.corpse_projection_pinned(first));
+    in_flight.requeue();
+    let second = kill_creature_at(&mut runtime, SECOND_CREATURE, b"loot-live-1-second");
+    let mut next = pending(3, 51, 3, 0);
+    next.target = second;
+    assert_eq!(
+        accept_kill(&mut runtime, &queue, next),
+        AppendOutcome::Queued
+    );
+    assert!(runtime.corpse_projection_pinned(first));
+    assert!(runtime.corpse_projection_pinned(second));
 }

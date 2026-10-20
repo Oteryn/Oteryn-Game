@@ -1,8 +1,13 @@
 # Oteryn Game Character Authority Commands v1
 
-- Status: **Candidate**, revision 1 (GAME-CHAR-CMD-0), 2026-10-08. Not accepted. It authorizes no
-  implementation, no Platform change and no enablement until the owner accepts it after the
-  independent review of the frozen head.
+- Status: **Accepted**, revision 1 (GAME-CHAR-CMD-0, revised by GAME-CHAR-CMD-0b), accepted by
+  the owner on 2026-10-11 (D1004, D1007) after independent review of the frozen head. The lock
+  entry `GAME-CHAR-CMD-0` pins the accepted wire at commit `cfe82f98` (#1959). Acceptance only
+  locks this Game-side wire contract; it is the accepted owning contract for the Game
+  implementation (§14 step 2), disabled by default. It grants no Oteryn/Oteryn-Platform authority:
+  Platform work (§14 step 3) proceeds only under its own task allocation and owner decisions
+  recorded in the #1622 STATE (for the Bazaar: D1004, D1005, D1007). Enablement still waits for
+  §14 step 4.
 - Contract ID: `oteryn-game-character-authority-commands-v1`
 - Coordination: #1622 (plan comment 6056637549, packet P4, inventory rows C7 and C8);
   Oteryn/Oteryn-Platform#1476.
@@ -87,7 +92,9 @@ client, exactly as LCFA §3.
   - `ListPendingCharacterCommandsV1` → `/internal/v1/game-auth/character-commands/pending`;
   - `ReadCharacterCommandIntentV1` → `/internal/v1/game-auth/character-commands/read`;
   - `PublishCharacterCommandReceiptV1` → `/internal/v1/game-auth/character-commands/receipt`.
-- Bounds: connect 1 s, handshake 2 s, exchange 3 s; a read request at most 256 bytes, a
+- Bounds: connect 1 s, handshake 2 s, exchange 3 s; a read request at most 512 bytes (with a
+  `source_authority` and an `issuer_authority` of up to 128 bytes each, a `command` of up to 64 and a
+  UUID it is 496 bytes at most), a
   pending-list request at most 512 bytes and a receipt at most 1024 bytes (the largest receipt,
   a committed transfer with 20-digit counters, is 699 bytes); a pending-list
   response at most 8192 bytes (a full page of 32 entries with 64-byte commands and 20-digit
@@ -128,6 +135,38 @@ as uint64, then `operation_id` as bytes), unique `operation_id`:
   entry's key, and starts again at `("0", nil)` after a response with fewer than `max_entries`
   entries. An intent that stays PENDING (a transient dependency failure, §6) therefore never hides
   later intents, including ones that share its `source_revision`.
+- Rescan: §5.3 permits Platform to commit a lower `source_revision` after the consumer has passed
+  it, and a continuous stream of full pages would keep the cursor from returning to that key. The
+  consumer therefore runs a bounded rescan: after at most 8 consecutive full pages, or 30 s since
+  its last rescan, whichever comes first, it lists again from `("0", nil)` and pages forward until
+  it passes the key it had reached, then resumes from that key. A rescan is list-only for keys the
+  consumer already knows: it skips every key it has already read and decided or is already
+  retrying on its own backoff (a local set bounded by the backlog), so it spends one pending-list
+  exchange per page and one read exchange, plus a receipt exchange, only per key it has not seen.
+  Re-listing an intent is safe because the per-operation receipt makes deciding idempotent.
+  Platform keeps at most 256 unreceipted PENDING intents (`CHARCMD-PENDING-BACKLOG`) and refuses to
+  store a new intent beyond that, so the account page shows a retry-later state instead of an
+  intent that could expire unread. With one exchange in flight at 3 s each, a rescan lists at most
+  8 pages, 24 s; an intent committed just behind the cursor waits at most 30 s for the next
+  rescan plus 24 s of listing plus 6 s (read and receipt) for each unseen key ahead of it, so up
+  to 41 unseen keys ahead of it stay inside the 300 s intent TTL (246 s / 6 s). Gate `U-CC9`
+  (closed by the §14 step 4 enablement packet) has two parts. First, the enabled backlog is at
+  most 40 unreceipted PENDING intents (derived: 300 s TTL less 30 s rescan and 24 s listing,
+  divided by 6 s per read and receipt, gives 41 unseen keys; 40 keeps one key of margin), so a
+  burst of fresh intents ahead of the cursor cannot push the newest one past its TTL unread.
+  Platform enforces it: its `max_pending_intents` setting defaults to 40, and a configured value
+  above 40, the enforced bound, makes the whole command surface unavailable
+  (`CharacterCommandSettings`, Oteryn/Oteryn-Platform#1632). `CHARCMD-PENDING-BACKLOG` (256) stays
+  the wire ceiling the consumer's rescan and local set are sized for. Second, Platform's issuance
+  commits no fresh intent behind the cursor, so the per-interval count is 0. Platform draws the
+  `source_revision` under its per-issuer lock and holds that lock until the issuing transaction
+  commits, so intents commit in `source_revision` order; the cursor is always a committed key the
+  consumer has listed. Platform refuses, before it is listable, an intent whose `source_revision`
+  is not above every stored key of the issuer (a sequence behind its table) and raises an operator
+  alarm. Intents that §5.4 reopens after a restore notice are the only ones listed behind the
+  cursor; they keep their original times and are decided by §5.4, not by this bound. The rescan
+  stays as the consumer's defence. The consumer raises an operator alarm when a rescan lists more
+  than 192 entries or finds more than 16 unseen keys.
 - `source_authority` is the configured Character Authority namespace (LCFA §4 rule).
 
 ### 4.2 Intent read
@@ -135,11 +174,16 @@ as uint64, then `operation_id` as bytes), unique `operation_id`:
 Request:
 
 ```json
-{"contract_version":1,"operation":"ReadCharacterCommandIntentV1","source_authority":"oteryn:character-authority:primary","command":"CreateCharacter","operation_id":"0192a000-0000-7000-8000-000000000001"}
+{"contract_version":1,"operation":"ReadCharacterCommandIntentV1","source_authority":"oteryn:character-authority:primary","issuer_authority":"OTERYN_PLATFORM_CHARACTER_AUTHORITY","command":"CreateCharacter","operation_id":"0192a000-0000-7000-8000-000000000001"}
 ```
 
+`issuer_authority` is a string of 1..128 bytes of ASCII uppercase letters, digits and `_`; Game
+sends its configured constant. Platform keys intent reads by `(issuer_authority, operation_id)`,
+the uniqueness scope of §5.1, and checks the requested `command` against the stored intent.
 Response `200` is the exact stored intent bytes, byte-identical on every read. `404` means
-Platform holds no intent with that `(command, operation_id)`.
+Platform holds no intent with that `(issuer_authority, operation_id)`. `409` means Platform holds
+that pair for another `command`; Game stores a `REJECTED` `CHAR_CMD_OPERATION_CONFLICT` receipt
+(§5.1) and raises an operator alarm.
 
 `CreateCharacter` intent:
 
@@ -570,13 +614,14 @@ The Game implementation and the Platform consumer must prove, with shared exact 
 | Limit | Value |
 |---|---|
 | pending entries per list response | 32 |
-| request bytes (read) | 256 |
+| request bytes (read) | 512 |
 | request bytes (pending list) | 512 |
 | intent bytes | 4096 |
 | receipt request bytes | 1024 |
 | response bytes (pending list) | 8192 |
 | response bytes (receipt) | 256 |
 | in-flight exchanges per consumer | 1 |
+| unreceipted PENDING intents (`CHARCMD-PENDING-BACKLOG`) | 256 |
 | intent TTL | 300 s |
 | Characters per account | 64 (`LCA-CHARACTERS`, wire bound, not a quota) |
 
@@ -594,18 +639,31 @@ The implementation packet registers the new limits in `docs/contracts/RESOURCE_L
 | U-CC6 | rename, deletion, restore, world transfer | out of scope; later contract versions |
 | U-CC7 | Platform storage of `recovery_generation` and the restore notice (PLATFORM-RESTORE-RECONCILE-P1, not yet accepted by Platform) | enablement (§14 step 4) requires Platform's acceptance; until then both commands stay disabled |
 | U-CC8 | housing prepare command and fence representation (EXP-HOUSES-01 not started) | §6.4 semantics bind; the housing contract fixes the wire and tables |
+| U-CC9 | cap on intents Platform commits behind the consumer's cursor per 30 s rescan interval (the 300 s TTL proof in §4.1 holds for up to 41 unseen keys) | closed by the enablement packet: enabled backlog at most 40 unreceipted PENDING intents (Platform `max_pending_intents` default 40, values above 40 refused by `CharacterCommandSettings`) and 0 fresh intents per interval (Platform `CharacterCommandClient` issuer-lock ordering and stored-key guard, PostgreSQL concurrency test `CharacterCommandIssuanceOrderPgsqlTest`); §5.4 reopens are outside the cap |
 
 ## 14. Rollout
 
 1. Owner acceptance of this candidate after independent review; the lock entry becomes `LOCKED`
-   at the merged commit.
+   at the merged commit. Done 2026-10-11 (D1004, D1007; pinned at `cfe82f98`).
 2. Game implementation (consumer, receipt store, decision transactions), disabled by default.
 3. Platform consumer: intent store, the three routes, receipt handling, the account page and the
    Bazaar saga change (packets DECANARY-CREATE-1 and DECANARY-BAZAAR-1).
 4. With U-CC7 settled, enable both in one `testing` stack with shared fixtures; then `preproduction`.
+   The enablement packet (Oteryn/Oteryn-Platform#1632, `docs/operations/CHARACTER_AUTHORITY_COMMANDS_ENABLEMENT.md`)
+   closes U-CC9 and lists the Platform switches, the Game `[platform.character_commands]` node
+   table and the deploy preconditions.
 5. Until step 4, Platform keeps creation and transfer disabled (D963 Q2=A).
 
 ## 15. Acceptance
 
-Not accepted. Acceptance makes revision 1 the frozen v1 wire; any later change to a member, path,
-bound, code or response is a new `contract_version`.
+Accepted by the owner on 2026-10-11 (D1004, D1007). Revision 1 as pinned in the lock entry
+(commit `cfe82f983daf22c7d653015d8e034254f9b72182`, document sha256
+`25359aa161096be15e42a0dca56dd9b75762e6ba0912b36784194a7c5eb1de7f`) is the frozen v1 wire. The
+status line, §14 step 1 and this section were later edited only to record the acceptance. Any
+later change to a member, path, bound, code or response is a new `contract_version`. Acceptance
+locks the Game-side wire only; Platform implementation needs its own separate authority (status
+line). The §4.1 rescan paragraph, the §13 U-CC9 row and §14 step 4 were later edited only to
+record the closure of gate U-CC9 by the enablement packet; no member, path, code or response
+changed, and the wire bound `CHARCMD-PENDING-BACKLOG` stays 256. The enabled backlog of at most
+40 is a Platform configuration limit inside that bound; Platform refuses a configured value above
+40.

@@ -553,7 +553,7 @@ async fn prepare_item_grant(
             .map_err(|_| SpellCastDisposition::Rejected)?;
     let mut batch=OwnerCombatBatch{caster:actor,attacker:crate::foundation::CharacterId::decode(&b.character)
         .map_err(|_|SpellCastDisposition::Rejected)?,current_lease_generation:b.lease_generation,
-        command,occurrence:occurrence.into(),anchor:Some(paid.anchor.clone()),now_ms:now.get()/1000,effects:Vec::new(),deferred:None,
+        command,occurrence:occurrence.into(),anchor:Some(paid.anchor.clone()),now_us:Some(now),now_ms:now.get()/1000,effects:Vec::new(),deferred:None,
         binding:serde_json::to_vec(&json!({"intent":source_intent(&intent),"spell":format!("{spell:?}"),
             "outputs":outputs.iter().map(|i|json!({"key":i.key,"revision":i.revision})).collect::<Vec<_>>(),
             "item_operations":format!("{operations:?}"),"before":format!("{before:?}"),
@@ -850,7 +850,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         let Some(content) = active.native_gameplay() else {
             return rejected();
         };
-        if self.qualified_room.is_none() {
+        if self.rooms.gate_world_item_cast().is_none() {
             return rejected();
         }
         let Ok((current, _)) = FreshAdmissionStore::from_root(self.root.clone())
@@ -996,7 +996,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             let (permit,pending)=writer.parts();
             let active=owner.active_generation.ok_or(DurabilityError::Unavailable)?;
             let content=active.native_gameplay().ok_or(DurabilityError::Unavailable)?;
-            let room=owner.qualified_room.ok_or(DurabilityError::Unavailable)?;
+            let room=owner.rooms.gate_world_item_cast().ok_or(DurabilityError::Unavailable)?;
             let spell=owner.spells.indexed(intent.spell).ok_or(DurabilityError::Unavailable)?;
             let item_fence=CurrentCharacterItemFence{character_id:fence.character_id,game_session_id:session,
                 connection_generation:fence.connection_generation,character_lease_generation:fence.character_lease_generation,

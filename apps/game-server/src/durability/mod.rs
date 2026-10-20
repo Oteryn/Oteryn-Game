@@ -11,46 +11,77 @@ pub(crate) mod admission_journal;
 pub mod bank;
 pub mod bank_audit;
 pub mod bestiary_progress;
+#[allow(
+    dead_code,
+    reason = "APP-1 production caller awaits admitted content, sex and grant owners"
+)]
+pub(crate) mod character_appearance;
 pub mod character_authority;
 pub mod character_authority_audit;
 pub mod character_build;
 pub(crate) mod character_chat_name;
+pub(crate) mod character_chat_recipient;
+pub mod character_command;
 pub mod character_death;
 pub mod character_equipment;
 pub mod character_familiar;
 pub mod character_forge_dust;
 pub mod character_forge_dust_audit;
 pub mod character_inbox;
+pub mod character_last_position;
 pub mod character_proficiency;
 pub mod character_proficiency_modification;
 pub mod character_progression;
 pub mod character_revision_sequencer;
 pub mod character_stance;
+pub mod character_vitals_soul;
+pub mod character_vitals_stamina;
 pub mod character_wheel;
 pub mod charm_state;
 pub mod content_activation;
 mod db;
 pub(crate) mod equipment_policy_abi;
+pub mod forge;
 pub mod fresh_admission;
 pub mod fresh_admission_composition;
+pub(crate) mod ground_cell_limit;
+pub(crate) mod highscore_snapshot;
+pub mod house_interior;
+pub mod house_interior_audit;
 pub mod house_scope_handoff;
+pub(crate) mod item_capacity;
 pub mod item_decay_retire;
 pub mod item_decay_retire_audit;
 pub mod item_fee_burn;
 pub mod item_fee_burn_audit;
+pub(crate) mod item_loop_move;
 pub mod item_mint;
 pub mod item_mint_audit;
+pub(crate) mod item_text;
 pub mod item_timed_state;
 pub mod item_timed_state_audit;
 pub mod item_transfer;
 pub mod item_transfer_audit;
+pub mod item_use;
+pub mod item_use_audit;
+#[cfg(test)]
+#[path = "../../tests/support/item_weight_lookup.rs"]
+pub mod item_weight_lookup;
+pub mod mail;
 pub mod map_item_mint;
 pub mod map_item_mint_audit;
+pub(crate) mod market;
 pub mod monk_state;
 pub mod native_admission_source;
 pub(crate) mod native_map_items;
 pub(crate) mod native_map_items_abi;
+pub mod npc_trade;
+pub mod npc_trade_audit;
+pub(crate) mod npc_travel;
+pub mod premium_activation_latch;
 pub mod premium_fence;
+pub mod public_projections;
+pub mod pvp_state;
 pub mod quest_state;
 pub mod recovery_evidence_composition;
 pub mod reward_claim_mint;
@@ -58,7 +89,6 @@ pub mod reward_claim_mint_audit;
 pub mod runtime_scope_assignment;
 mod schema;
 pub(crate) mod spell_character_lookup;
-pub(crate) mod spell_entitlements;
 pub(crate) mod spell_familiar_group;
 pub(crate) mod spell_field_policy;
 pub(crate) mod spell_house_abi;
@@ -67,10 +97,10 @@ pub(crate) mod spell_item_transaction;
 pub(crate) mod spell_items_abi;
 pub(crate) mod spell_owner_commit;
 pub(crate) mod spell_parameter_result;
-pub(crate) mod spell_premium_abi;
 pub(crate) mod spell_privacy;
 pub(crate) mod spell_wheel_abi;
 pub mod sqlstate_codes;
+pub(crate) mod starter_grant;
 pub(crate) mod world_house_instance;
 pub(crate) mod world_party;
 
@@ -98,6 +128,34 @@ mod account_achievement_linkage {
         let _ = FencedGrantingCharacter::after_fence;
         let _ = record_achievement_grant;
         let _ = DurabilityRoot::commit_test_achievement_grants;
+    }
+}
+
+#[cfg(test)]
+mod character_last_position_linkage {
+    use super::DurabilityRoot;
+    use super::character_last_position::{
+        FinalLastPosition, LAST_POSITION_WRITE_BATCH, LastPositionCell, LastPositionKey,
+        LastPositionRecord, LastPositionWrite, PeriodicLastPosition, StoredLastPosition,
+    };
+    use super::fresh_admission::FreshAdmissionStore;
+
+    #[test]
+    fn character_last_position_api_is_linked() {
+        let _ = std::mem::size_of::<FinalLastPosition>();
+        let _ = std::mem::size_of::<LastPositionCell>();
+        let _ = std::mem::size_of::<LastPositionKey>();
+        let _ = std::mem::size_of::<LastPositionRecord>();
+        let _ = std::mem::size_of::<LastPositionWrite>();
+        let _ = std::mem::size_of::<StoredLastPosition>();
+        let _ = std::mem::size_of::<PeriodicLastPosition>();
+        let _ = LAST_POSITION_WRITE_BATCH;
+        let _ = DurabilityRoot::write_character_last_position;
+        let _ = DurabilityRoot::write_character_last_positions;
+        let _ = FreshAdmissionStore::current_sessions_at;
+        let _ = DurabilityRoot::read_character_last_position;
+        let _ = DurabilityRoot::consume_pending_respawn_placed;
+        let _ = FreshAdmissionStore::with_final_position;
     }
 }
 
@@ -552,6 +610,25 @@ mod account_characters_projection_linkage {
         let _ = DurabilityRoot::next_account_characters_snapshot;
         let _ = DurabilityRoot::clear_account_characters;
         let _ = DurabilityRoot::account_characters_watermark_facts;
+    }
+}
+
+#[cfg(test)]
+mod public_projections_linkage {
+    use super::DurabilityRoot;
+    use super::public_projections::PublicProjectionsStore;
+
+    #[test]
+    fn public_projections_api_is_linked() {
+        let _ = std::mem::size_of::<PublicProjectionsStore<'_, '_, '_, '_>>();
+        let _ = DurabilityRoot::next_public_profiles;
+        let _ = DurabilityRoot::clear_public_profiles;
+        let _ = DurabilityRoot::public_outbox_facts;
+        let _ = DurabilityRoot::next_public_highscores;
+        let _ = DurabilityRoot::clear_public_highscores;
+        let _ = DurabilityRoot::public_online_cut;
+        let _ = DurabilityRoot::persist_public_online;
+        let _ = DurabilityRoot::ack_public_online;
     }
 }
 

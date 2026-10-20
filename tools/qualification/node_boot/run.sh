@@ -48,6 +48,12 @@ if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then
   NODE_BOOT_SPELL_MANIFEST_REL="${NODE_BOOT_SPELL_MANIFEST#"$GAME_SOURCE"/}"
   NODE_GAMEPLAY_ENV=("OTERYN_NATIVE_GAMEPLAY_MANIFEST=$BASE/gameplay/$NODE_BOOT_SPELL_MANIFEST_REL")
 fi
+# ADMIT-CAP-1: the entry-room seam stages run against a Channel that requires LOGOUT_V1 (21)
+# and prove the owner's capability refusals; the spell scenarios declare no required set.
+NODE_REQUIRED_CAPABILITIES='[21]'
+if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then
+  NODE_REQUIRED_CAPABILITIES='[]'
+fi
 PLATFORM_SOURCE="${PLATFORM_SOURCE:-$GAME_SOURCE/_platform}"
 if [[ "$(git -C "$PLATFORM_SOURCE" rev-parse HEAD 2>/dev/null)" != "$PLATFORM_SHA" ]]; then
   echo 'NODE_BOOT_RESULT=BLOCKED reason=exact_platform_checkout_missing'
@@ -150,10 +156,14 @@ docker run --detach --name "$PG_CONTAINER" --publish "127.0.0.1:$PG_PORT:5432" \
   --volume "$WP5_PKI/db.key:/tls/db.key:ro" --entrypoint bash "$PG_IMAGE" -c \
   'install -o postgres -m 0600 /tls/db.key /tmp/db.key && install -o postgres -m 0644 /tls/db.crt /tmp/db.crt && exec docker-entrypoint.sh postgres -c ssl=on -c ssl_cert_file=/tmp/db.crt -c ssl_key_file=/tmp/db.key' >/dev/null
 chmod 600 "$WP5_PKI/db.key"
+# Probe over TCP: the entrypoint's temporary init server listens on the unix socket only
+# and is shut down after init, so a socket probe can pass before the real server is up.
+pg_ready=0
 for _ in $(seq 1 60); do
-  docker exec "$PG_CONTAINER" pg_isready -U oteryn_node_boot_admin -d postgres >/dev/null 2>&1 && break
+  docker exec "$PG_CONTAINER" pg_isready -h 127.0.0.1 -p 5432 -U oteryn_node_boot_admin -d postgres >/dev/null 2>&1 && { pg_ready=1; break; }
   sleep 1
 done
+[[ $pg_ready == 1 ]] || fail "postgres_ready"
 psql_admin() { docker exec -i "$PG_CONTAINER" psql -v ON_ERROR_STOP=1 -qAt -U oteryn_node_boot_admin -d "$1"; }
 echo "CREATE DATABASE oteryn_node_boot" | psql_admin postgres
 [[ "$(echo 'SHOW server_version_num' | psql_admin oteryn_node_boot)" == 170006 ]] || fail "postgres_version"
@@ -170,8 +180,8 @@ php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app-
 evidence "platform_seed=synthetic_accounts=2 fresh_trust=published_public_key_only client_identities=1"
 
 # Shipped binaries and the SEAM client harness.
-cargo +1.94.0 build --locked -p oteryn-game-server --bins
-cargo +1.94.0 test --locked -p oteryn-game-server --lib --no-run
+cargo +1.95.0 build --locked -p oteryn-game-server --bins
+cargo +1.95.0 test --locked -p oteryn-game-server --lib --no-run
 TARGET="$GAME_SOURCE/target/debug"
 
 # Deployment administration: service user, directories, roles, migration.
@@ -311,6 +321,7 @@ ruleset_revision = "rules-s3b-1"
 content_revision = "content-s3b-1"
 map_revision = "map-s3b-1"
 world_policy_revision = "policy-s3b-1"
+required_gameplay_capabilities = $NODE_REQUIRED_CAPABILITIES
 offer_revision = "offer-s3b-1"
 [platform]
 source_authority = "platform"
@@ -503,7 +514,7 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   WP5_S3A_ACCOUNT_ID="$ACCOUNT_ID" WP5_S3B_SECOND_ACCOUNT_ID="$SECOND_ACCOUNT_ID" \
   WP5_S3B_FRESH_KEY_ID="$FRESH_KEY_ID" WP5_S3B_FRESH_KEY_SEED="$FRESH_SEED_HEX" \
   WP5_S3B_RECOVERY_KEY_ID="$RECOVERY_KEY_ID" WP5_S3B_RECOVERY_KEY_SEED="$RECOVERY_SEED_HEX" \
-    cargo +1.94.0 test --locked -p oteryn-game-server --lib \
+    cargo +1.95.0 test --locked -p oteryn-game-server --lib \
     "gameplay_transport::qualification::$qualification" -- --ignored --exact --nocapture
 }
 

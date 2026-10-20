@@ -20,6 +20,11 @@ database = "<DB_NAME>"
 username = "<RUNTIME_ROLE>"
 password_file = "<BASE>/node/secrets/pg-password"
 root_ca_file = "<BASE>/node/secrets/db-ca.pem"
+# Optional (NODE-BOOT-DEADLINE-1): the PostgreSQL pass deadline for the boot durability steps only
+# (S2 custody read/claim/descriptor, Character authority open), 2000..=60000 ms, default 2000 when
+# the table is absent. Gameplay passes keep the fixed 2 s deadline. A loaded host needs the margin.
+[boot]
+pass_deadline_ms = 15000
 [character]
 fence_directory = "<BASE>/fence-parent/fence"
 authority_scope_id = "character-primary"
@@ -56,6 +61,23 @@ client_certificate_file = "<BASE>/node/secrets/projection.crt"
 client_key_file = "<BASE>/node/secrets/projection.key"
 source_authority = "<PROJECTION_SOURCE_AUTHORITY>"
 epoch_fence_file = "<BASE>/projection/epoch-fence"
+# Character Authority command consumer (contract oteryn-game-character-authority-commands-v1). Off:
+# the consumer runs only when this table is present, so it stays commented until the §14 step 4
+# enablement (Oteryn/Oteryn-Platform docs/operations/CHARACTER_AUTHORITY_COMMANDS_ENABLEMENT.md):
+# Platform first enables the commands for this certificate's subject, then this table is uncommented
+# and the node restarted. The certificate is its own identity (CN=<CHARACTER_COMMANDS_IDENTITY>),
+# distinct from the evidence, runtime-status and projection ones above; the files are 0600, owner the
+# runner user. source_authority must equal Platform CHARACTER_AUTHORITY_COMMAND_SOURCE_AUTHORITY.
+# [platform.character_commands]
+# client_certificate_file = "<BASE>/node/secrets/character-commands.crt"
+# client_key_file = "<BASE>/node/secrets/character-commands.key"
+# source_authority = "oteryn:character-authority:primary"
 [launch]
 authorization_file = "<BASE>/state/launch-initial.json"
 s2_authorization_file = "<BASE>/state/s2-fresh-store.json"
+# Opt-in World Bundle (preproduction only; production is refused by the node). Enable it by appending
+# the [world_bundle] table of preprod-topology.toml with <BASE> replaced and, in [readiness],
+# map_revision = "<digest>". deploy-ops.sh check-setup refuses any difference from the manifest.
+# Without the table the node serves the fixture entry room.
+# NPC catalogue (NPC-LOAD-1): not a node.toml key. It is two command-line flags, --npc-data-project and
+# --npc-data-sha256, which supervisor.sh passes when the deploy staged BASE/run/npc-data (npc-data.pin.json).

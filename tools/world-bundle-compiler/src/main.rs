@@ -20,11 +20,11 @@ use std::process::{Command, ExitCode};
 
 use oteryn_world_bundle_compiler::Error;
 use oteryn_world_bundle_compiler::bundle::{
-    self, BuildClass, Extent, Identity, Manifest, RUNTIME_VERSION, SUPPORTED_CAPABILITIES,
+    self, BuildClass, Extent, Family, Identity, Manifest, RUNTIME_VERSION, SUPPORTED_CAPABILITIES,
     TerrainKind,
 };
 use oteryn_world_bundle_compiler::compile::{
-    self, Input, SpawnReport, equivalence, parity, placed_palette,
+    self, HoldReason, Input, NpcReport, SpawnReport, equivalence, parity, placed_palette,
 };
 use oteryn_world_bundle_compiler::project::{self, Families};
 use oteryn_world_bundle_compiler::resolve::Registry;
@@ -57,6 +57,89 @@ fn read(path: &Path) -> Result<Vec<u8>, Error> {
 
 fn json(bytes: &[u8], what: &str) -> Result<Value, Error> {
     serde_json::from_slice(bytes).map_err(|e| Error::Format(format!("{what}: {e}")))
+}
+
+/// A family index and its shards in index order.
+type Indexed = (Value, Vec<Vec<u8>>);
+
+/// The `OTERYN_FAMILY_INDEX/v1` index of `directory` (relative to `root`) and its shards in
+/// index order; `None` without an index or for another schema (a tree directory marker).
+fn indexed(root: &Path, directory: &str) -> Result<Option<Indexed>, Error> {
+    let path = root.join(directory).join("index.json");
+    if !path.is_file() {
+        return Ok(None);
+    }
+    let index = json(&read(&path)?, directory)?;
+    if index["schema"] != "OTERYN_FAMILY_INDEX/v1" {
+        return Ok(None);
+    }
+    let shards = index["shards"]
+        .as_array()
+        .ok_or_else(|| Error::Format(format!("{directory} index has no shards")))?
+        .iter()
+        .map(|shard| match shard.as_str() {
+            Some(shard) if shard.starts_with(directory) => read(&root.join(shard)),
+            _ => Err(Error::Format(format!(
+                "{directory} shard is not one of its paths"
+            ))),
+        })
+        .collect::<Result<_, _>>()?;
+    Ok(Some((index, shards)))
+}
+
+/// The NPC, Dialogue and Service records, the travel routes, the `Npc.Placement` family with
+/// its held list (NPC-PLACE-1 §4) and the catalogue digest (§3.1).
+fn add_npc_families(root: &Path, families: &mut Families) -> Result<(), Error> {
+    let shards_of = |directory: &str| {
+        indexed(root, directory).map(|found| found.map(|(_, shards)| shards).unwrap_or_default())
+    };
+    for shard in shards_of("content/npcs/definitions/")? {
+        families.add_npcs(&shard)?;
+    }
+    for shard in shards_of("content/dialogues/definitions/")? {
+        families.add_dialogues(&shard)?;
+    }
+    let services = root.join("content/services");
+    let io = |e: std::io::Error| Error::Format(format!("content/services: {e}"));
+    let mut kinds: Vec<String> = fs::read_dir(&services)
+        .map_err(io)?
+        .map(|entry| entry.map(|entry| entry.file_name().to_string_lossy().into_owned()))
+        .collect::<Result<_, _>>()
+        .map_err(io)?;
+    kinds.sort();
+    for kind in kinds {
+        for shard in shards_of(&format!("content/services/{kind}/"))? {
+            families.add_services(&shard)?;
+        }
+    }
+    if let Some((index, shards)) = indexed(root, "content/world/npc-placements/")? {
+        for shard in shards {
+            families.add_npc_placements(&shard)?;
+        }
+        let held = &index["held"];
+        let path = held["path"]
+            .as_str()
+            .filter(|path| path.starts_with("content/world/npc-placements/"))
+            .ok_or_else(|| Error::Format("NPC placements index has no held path".into()))?;
+        let bytes = read(&root.join(path))?;
+        if held["sha256"] != hex(&Sha256::digest(&bytes)) {
+            return Err(Error::Format(
+                "NPC held list sha256 differs from its index".into(),
+            ));
+        }
+        let before = families.npc_source_held.len();
+        families.add_npc_source_held(&bytes)?;
+        if held["count"] != (families.npc_source_held.len() - before) {
+            return Err(Error::Format(
+                "NPC held list count differs from its index".into(),
+            ));
+        }
+    }
+    families.catalogue_sha256 = Some(
+        oteryn_world_bundle_compiler::npc::catalogue_sha256(&root.join("content"))
+            .map_err(|e| Error::Format(format!("NPC catalogue: {e}")))?,
+    );
+    Ok(())
 }
 
 /// The World Project of `root`: placements index, B3 regions and the checked families.
@@ -94,6 +177,7 @@ fn project(root: &Path) -> Result<Project, Error> {
     for shard in shards(&root.join("content/world/spawns"), "spawns-")? {
         families.add_spawns(&shard)?;
     }
+    add_npc_families(root, &mut families)?;
     Ok(Project {
         index,
         regions,
@@ -107,6 +191,9 @@ fn registry(root: &Path, project: &Project) -> Result<(Registry, Vec<String>), E
     for shard in shards(&root.join("content/items/definitions"), "items-")? {
         registry.add_items(&shard)?;
     }
+    registry.add_item_profiles(&read(
+        &root.join("content/items/definitions/spell-native-profiles.json"),
+    )?)?;
     for (family, directory, prefix) in [
         ("Terrain", "content/world/terrain", "terrain-"),
         ("WorldObject", "content/world/objects", "objects-"),
@@ -154,6 +241,22 @@ fn spawn_report(report: &SpawnReport) -> Result<Value, Error> {
     Ok(value)
 }
 
+/// The NPC report as JSON (NPC-PLACE-1 §5, §6): totals, the count per reason of held placements
+/// and routes, and every one held.
+fn npc_report(report: &NpcReport) -> Result<Value, Error> {
+    let mut value = serde_json::to_value(report).map_err(|e| Error::Format(e.to_string()))?;
+    let by_reason = |reasons: &mut dyn Iterator<Item = HoldReason>| {
+        let mut counts = std::collections::BTreeMap::<String, usize>::new();
+        for reason in reasons {
+            *counts.entry(format!("{reason:?}")).or_default() += 1;
+        }
+        json!(counts)
+    };
+    value["held_by_reason"] = by_reason(&mut report.held.iter().map(|h| h.reason));
+    value["routes_held_by_reason"] = by_reason(&mut report.routes_held.iter().map(|r| r.reason));
+    Ok(value)
+}
+
 fn run_parity(root: &Path) -> Result<Value, Error> {
     let project = project(root)?;
     let mut report = serde_json::to_value(parity(&project.regions, &project.families)?)
@@ -178,7 +281,14 @@ fn run_parity(root: &Path) -> Result<Value, Error> {
         draft_areas: Vec::new(),
         families: &project.families,
     };
-    report["spawns"] = spawn_report(&compile::realize_spawns(&input, &registry)?.1)?;
+    let (spawns, spawn_counts) = compile::realize_spawns(&input, &registry)?;
+    report["spawns"] = spawn_report(&spawn_counts)?;
+    report["npcs"] = npc_report(&compile::realize_npcs(&input, &registry, &spawns)?.1)?;
+    let mut source_held = std::collections::BTreeMap::<&str, usize>::new();
+    for (_, reason) in &project.families.npc_source_held {
+        *source_held.entry(reason.as_str()).or_default() += 1;
+    }
+    report["npcs"]["source_held"] = json!(source_held);
     Ok(report)
 }
 
@@ -212,6 +322,7 @@ fn run_compile(root: &Path, identity: &Path, out: &Path, class: &str) -> Result<
         "skipped_provisional_entries": compiled.diagnostics.len(),
         "dropped_teleports": compiled.dropped_teleports.len(),
         "spawns": spawn_report(&compiled.spawns)?,
+        "npcs": npc_report(&compiled.npcs)?,
         "equivalence": proof,
     }))
 }
@@ -225,6 +336,9 @@ const INPUT_PATHS: &[&str] = &[
     "content/houses/",
     "content/creatures/definitions/",
     "content/items/definitions/",
+    "content/npcs/definitions/",
+    "content/dialogues/definitions/",
+    "content/services/",
     "tools/world-bundle-compiler/",
     "crates/world-bundle/",
     "Cargo.toml",
@@ -418,7 +532,11 @@ fn build_twice(root: &Path, identity: &Identity) -> Result<Vec<u8>, Error> {
 }
 
 /// `entry_start` must be a walkable, non-blocking base cell inside the World bounds: the first
-/// ground of its top-level entries is a walkable Terrain ground and none of them is a wall.
+/// ground of its top-level entries is a walkable Terrain ground, none of them is a wall and none
+/// is a plain Item (an Item entry without a Terrain record). The node decides a plain Item's
+/// solidity from the served Item definitions, where one without a stated `blocks_movement`
+/// blocks (`map::facts`), so the compiler cannot prove a plain Item there walkable and refuses
+/// it; an Item key routed to a `ground` or `border` Terrain record does not block.
 fn check_entry_start(bytes: &[u8], at: EntryStart) -> Result<(), Error> {
     let bad = |what: &str| Error::Format(format!("entry_start: {what}"));
     let mut found = None;
@@ -428,17 +546,19 @@ fn check_entry_start(bytes: &[u8], at: EntryStart) -> Result<(), Error> {
             && sector.sy == at.y / oteryn_world_bundle_compiler::sector::SECTOR_SIZE
             && let Some(tile) = sector.tiles.iter().find(|t| (t.x, t.y) == (at.x, at.y))
         {
-            let (mut ground, mut wall) = (None, false);
+            let (mut ground, mut wall, mut item_entry) = (None, false, false);
             for item in tile.items.iter().filter(|item| item.depth == 0) {
-                let terrain = manifest.palette[item.palette as usize].terrain;
+                let entry = &manifest.palette[item.palette as usize];
+                let terrain = entry.terrain;
                 if ground.is_none()
                     && let Some(t) = terrain.filter(|t| t.kind == TerrainKind::Ground)
                 {
                     ground = t.walkable;
                 }
                 wall |= terrain.is_some_and(|t| t.kind == TerrainKind::Wall);
+                item_entry |= entry.family == Family::Item && terrain.is_none();
             }
-            found = Some((ground == Some(true), wall));
+            found = Some((ground == Some(true), wall, item_entry));
         }
         Ok(())
     })?;
@@ -447,9 +567,10 @@ fn check_entry_start(bytes: &[u8], at: EntryStart) -> Result<(), Error> {
     }
     match found {
         None => Err(bad("the bundle has no tile there")),
-        Some((false, _)) => Err(bad("the cell has no walkable ground")),
-        Some((true, true)) => Err(bad("the cell holds a blocking wall")),
-        Some((true, false)) => Ok(()),
+        Some((false, ..)) => Err(bad("the cell has no walkable ground")),
+        Some((true, true, _)) => Err(bad("the cell holds a blocking wall")),
+        Some((true, false, true)) => Err(bad("the cell holds a plain Item")),
+        Some((true, false, false)) => Ok(()),
     }
 }
 

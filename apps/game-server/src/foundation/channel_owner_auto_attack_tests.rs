@@ -45,6 +45,7 @@ fn rat_policy(digest: [u8; 32]) -> CompiledCreaturePolicies {
             mana_cost: None,
             is_familiar: false,
             condition_immunities: vec![],
+            defense: Some(1),
             armor: Some(1),
             mitigation: None,
             resistances: vec![],
@@ -72,6 +73,7 @@ fn pinned(bytes: &[u8]) -> PinnedGameplayBytes {
 /// The source-qualified Thalom spell world: its tiles carry the protection-zone flags.
 fn source_world() -> QualifiedNativeEntryRoom {
     let input = NativeGameplayInput {
+        cosmetics: NativeGameplayInput::unavailable_cosmetics(),
         native_map_profile: NativeGameplayMapProfile::AcceptedEntryR1,
         catalog: pinned(include_bytes!(
             "../../../../tools/content-schema/spell-authoring/samples/executable-spell-catalog.json"
@@ -138,6 +140,14 @@ fn owner() -> Owner {
 }
 
 fn owner_at(player_at: MovementLocalPosition, rat_at: MovementLocalPosition) -> Owner {
+    owner_with_capacity(player_at, rat_at, 2)
+}
+
+fn owner_with_capacity(
+    player_at: MovementLocalPosition,
+    rat_at: MovementLocalPosition,
+    capacity: usize,
+) -> Owner {
     let room = source_world();
     let pin = ChannelContentPin::from_activation(
         room.movement_cells().scope().world_id,
@@ -156,7 +166,7 @@ fn owner_at(player_at: MovementLocalPosition, rat_at: MovementLocalPosition) -> 
         1,
         1,
         "runtime-scope-assignment:1",
-        2,
+        capacity,
         pin.clone(),
     )
     .unwrap();
@@ -476,6 +486,37 @@ fn a_hit_taken_starts_the_sixty_second_deadline_and_clearing_the_target_keeps_it
     );
 }
 
+/// SPAWN-CEILINGS-1 (Codex 4242381774): 300 players, past the old `AI01-ACTIVE-ACTORS` 256, each
+/// hold an attack entry; the carrier's slots, one per controlled player, bound them.
+#[test]
+fn three_hundred_players_each_hold_an_attack_entry() {
+    const PLAYERS: usize = 300;
+    let world = WorldId::decode(&uuid(1)).unwrap();
+    let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+        world,
+        ChannelId::decode(&uuid(2)).unwrap(),
+        NodeId::decode(&uuid(3)).unwrap(),
+        1,
+        1,
+        1,
+        "runtime-scope-assignment:1",
+        PLAYERS,
+        ChannelContentPin::test(world),
+    )
+    .unwrap();
+    let mut attack = ChannelAttackStates::default();
+    for index in 0..PLAYERS {
+        let mut bytes = uuid(0);
+        [bytes[14], bytes[15]] = u16::try_from(index + 1).unwrap().to_be_bytes();
+        let session = GameSessionId::decode(&bytes).unwrap();
+        let reservation = runtime.reserve_fresh_session(session).unwrap();
+        let player = runtime.commit_fresh_session(reservation).unwrap();
+        assert!(attack.set_modes(&runtime, player, session, FightModes::DEFAULT));
+    }
+    assert_eq!(attack.entries.len(), PLAYERS);
+    assert_eq!(runtime.actor_slot_capacity(), PLAYERS);
+}
+
 #[test]
 fn fight_modes_are_runtime_state_with_the_admission_defaults() {
     let mut owner = owner();
@@ -571,8 +612,10 @@ fn domain_ten_sends_a_delta_only_for_a_changed_state_and_never_reuses_a_revision
     );
 }
 
+/// ATTACK-2 (VIS-1): a source world's native floor sees as the Tibia floor of its negation:
+/// Thalom's surface -7 sees -6 and -5 above it, never the underground -8.
 #[test]
-fn a_source_world_floor_is_seen_on_its_own_plane_only() {
+fn a_source_world_floor_sees_as_the_tibia_floor_of_its_negation() {
     let at = |x, y, floor| MovementLocalPosition { x, y, floor };
     assert!(sees(at(2, 11, -7), at(1, 11, -7)));
     assert!(sees(at(0, 0, -7), at(9, 6, -7)));
@@ -580,7 +623,30 @@ fn a_source_world_floor_is_seen_on_its_own_plane_only() {
         !sees(at(0, 0, -7), at(-9, 0, -7)),
         "outside the 18 x 14 view"
     );
-    assert!(!sees(at(2, 11, -7), at(2, 11, -6)), "another native floor");
+    assert!(sees(at(2, 11, -7), at(2, 11, -6)), "a surface floor above");
+    assert!(
+        sees(at(2, 11, -7), at(1, 10, -5)),
+        "two surface floors above"
+    );
+    assert!(!sees(at(2, 11, -7), at(2, 11, -8)), "underground below");
+    assert!(
+        sees(at(2, 11, -8), at(2, 11, -6)),
+        "underground sees two up"
+    );
+    assert!(
+        sees(at(2, 11, -8), at(2, 11, -10)),
+        "underground sees two down"
+    );
+    assert!(
+        !sees(at(2, 11, -8), at(2, 11, -5)),
+        "three up is out of reach"
+    );
+    // Native floors match the Tibia floors of their negation, shift included.
+    assert_eq!(
+        sees(at(5, 5, -7), at(4, 4, -6)),
+        sees(at(5, 5, 7), at(4, 4, 6))
+    );
+    assert!(!sees(at(0, 0, -16), at(0, 0, -16)), "off the 16 floors");
     // Visibility floors keep the reference rules, other floors included.
     assert!(sees(at(0, 0, 7), at(1, 0, 7)));
     assert!(sees(at(5, 5, 7), at(4, 4, 6)));
@@ -1006,4 +1072,615 @@ fn a_held_actor_bitten_to_death_ends_the_hold_with_its_death_recorded_for_releas
         None,
         "a dead actor is not held"
     );
+}
+
+/// BUNDLE-COMBAT-ENABLE-1: a bundle World's Channel, pinned as `node/serve.rs` pins it, with
+/// the combat room it serves (the entry room's bundle view), a player at `player_x` and a rat
+/// at `rat_x` on the synthetic bundle row (`map::spell_tiles::tests::world`, x 2 is a
+/// protection zone).
+struct BundleOwner {
+    entry: QualifiedNativeEntryRoom,
+    owner: Owner,
+}
+
+fn bundle_owner(player_x: i32, rat_x: i32) -> BundleOwner {
+    use crate::map::spell_tiles::tests::{id, world as bundle_world};
+    let world = bundle_world();
+    let world_id = WorldId::decode(&id(1)).unwrap();
+    let entry = crate::content::qualify_native_entry_room(world_id).unwrap();
+    let cells = world.movement_cells(entry.movement_cells()).unwrap();
+    let start = world.start();
+    let room = entry
+        .bundle_view(
+            cells,
+            world.frame_binding_digest(world_id),
+            world.map_revision_digest(),
+            crate::content::NativeEntryStart {
+                x: i32::from(start.x),
+                y: i32::from(start.y),
+                floor: -i16::from(start.floor),
+            },
+        )
+        .expect("the bundle cells bind the view");
+    let floor = -i16::from(start.floor);
+    let pin = ChannelContentPin::from_activation(
+        world_id,
+        1,
+        entry.compiled().server_digest(),
+        entry.compiled().client_digest(),
+        world.frame_binding_digest(world_id),
+        world.map_revision_digest(),
+        (player_x, 0, floor),
+    );
+    let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+        world_id,
+        ChannelId::decode(&id(2)).unwrap(),
+        NodeId::decode(&uuid(3)).unwrap(),
+        1,
+        1,
+        1,
+        "runtime-scope-assignment:1",
+        2,
+        pin.clone(),
+    )
+    .unwrap();
+    runtime
+        .install_companion_policies(rat_policy(pin.server_artifact_digest()))
+        .unwrap();
+    let session = GameSessionId::decode(&uuid(4)).unwrap();
+    let reservation = runtime.reserve_fresh_session(session).unwrap();
+    let player = runtime.commit_fresh_session(reservation).unwrap();
+    runtime.initialize_first_entry_position(player).unwrap();
+    runtime
+        .realize_native_qualification_spawn(
+            pin,
+            "fixture:rat",
+            MovementLocalPosition {
+                x: rat_x,
+                y: 0,
+                floor,
+            },
+        )
+        .expect("the rat spawns on the bundle row");
+    let creature = runtime.visible_entities().creatures[0];
+    let rat = EntityRef {
+        identity: creature.actor.placement_identity(),
+        generation: creature.generation,
+    };
+    BundleOwner {
+        entry,
+        owner: Owner {
+            room,
+            runtime,
+            player,
+            session,
+            rat,
+            attack: ChannelAttackStates::default(),
+        },
+    }
+}
+
+#[test]
+fn a_bundle_view_carries_the_bundle_pin_identities_and_binds_only_bundle_cells() {
+    let BundleOwner { entry, owner } = bundle_owner(1, 6);
+    let pin = owner.runtime.content_pin();
+    let view = &owner.room;
+    // The room-vs-pin identity every combat consumer checks now holds for the bundle pin.
+    assert_eq!(
+        view.compiled().server_digest(),
+        pin.server_artifact_digest()
+    );
+    assert_eq!(
+        view.compiled().client_digest(),
+        pin.client_artifact_digest()
+    );
+    assert_eq!(view.frame_binding().digest(), pin.frame_binding_digest());
+    assert_eq!(view.map_revision_digest(), pin.map_revision_digest());
+    assert_eq!(
+        view.movement_cells().scope().generation_digest,
+        pin.server_artifact_digest()
+    );
+    assert!(view.source_world().is_none() && view.spawn_source().is_none());
+    // The entry room itself does not match the bundle pin: the root cause of the closed gate.
+    assert_ne!(entry.frame_binding().digest(), pin.frame_binding_digest());
+    assert_ne!(entry.map_revision_digest(), pin.map_revision_digest());
+    // Only bundle cells bind a view; the entry room's own cells and a view's own frame do not.
+    let start = entry.entry_start();
+    assert!(
+        entry
+            .bundle_view(
+                entry.movement_cells().clone(),
+                pin.frame_binding_digest(),
+                pin.map_revision_digest(),
+                start,
+            )
+            .is_none()
+    );
+}
+
+#[test]
+fn a_bundle_rat_is_held_and_attackable_outside_a_bundle_protection_zone() {
+    let BundleOwner { entry, mut owner } = bundle_owner(1, 6);
+    let rat = owner.rat;
+    assert_eq!(owner.target(T0, Some(rat), 1), AttackIntentDisposition::Ok);
+    assert_eq!(owner.held(), Some(rat));
+    let actor = owner.runtime.visible_entities().creatures[0].actor;
+    let facts = target_facts(
+        &owner.runtime,
+        &owner.room,
+        owner.player,
+        owner.session,
+        actor,
+        at(T0),
+    )
+    .expect("the bundle tiles answer both positions");
+    assert!(facts.present_and_visible && facts.attackable_kind && facts.alive && facts.same_floor);
+    assert_eq!(facts.distance, 5);
+    assert!(!facts.attacker_in_protection_zone && !facts.target_in_protection_zone);
+    // The entry room's tiles do not answer for a bundle position: no facts, no swing.
+    assert!(
+        target_facts(
+            &owner.runtime,
+            &entry,
+            owner.player,
+            owner.session,
+            actor,
+            at(T0),
+        )
+        .is_none()
+    );
+}
+
+#[test]
+fn a_bundle_protection_zone_refuses_the_target_and_the_attacker() {
+    let mut bundle = bundle_owner(1, 2);
+    let rat = bundle.owner.rat;
+    assert_eq!(
+        bundle.owner.target(T0, Some(rat), 1),
+        AttackIntentDisposition::ProtectionZone
+    );
+    assert_eq!(bundle.owner.held(), None);
+    let mut bundle = bundle_owner(2, 6);
+    let rat = bundle.owner.rat;
+    assert_eq!(
+        bundle.owner.target(T0, Some(rat), 1),
+        AttackIntentDisposition::ProtectionZone
+    );
+    assert_eq!(bundle.owner.held(), None);
+}
+
+/// BUNDLE-MONSTER-AI-1: the monster pass reads the bundle view's tiles for a player target: a
+/// player on an ordinary bundle cell is a target, a player in a bundle protection zone is
+/// protected (the entry room's tiles do not answer for a bundle position).
+#[test]
+fn a_bundle_player_is_a_monster_target_outside_a_protection_zone_only() {
+    use crate::gameplay_transport::monster_ai_cycle::melee_targets;
+    for (player_x, protected) in [(1, false), (2, true)] {
+        let mut bundle = bundle_owner(player_x, 6);
+        let (player, session) = (bundle.owner.player, bundle.owner.session);
+        bundle
+            .owner
+            .attack
+            .record_hit_taken(&bundle.owner.runtime, player, session, at(T0));
+        let states = held_player_states(&mut bundle.owner);
+        let owner = &bundle.owner;
+        let targets = melee_targets(
+            &owner.room,
+            &owner.runtime,
+            &states,
+            &owner.attack,
+            &owner.runtime.positioned_melee_census().unwrap(),
+            T0,
+        );
+        assert_eq!(
+            targets
+                .into_iter()
+                .map(|(actor, _, session, _, protected)| (actor, session, protected))
+                .collect::<Vec<_>>(),
+            [(player, session, protected)],
+            "player at x {player_x}"
+        );
+    }
+}
+
+/// CHASE-1: the first open Thalom cell east of the player at least three tiles away.
+fn distant_open_cell() -> MovementLocalPosition {
+    let room = source_world();
+    let none = std::collections::BTreeSet::new();
+    (OPEN_PLAYER.x + 3..OPEN_PLAYER.x + 8)
+        .map(|x| MovementLocalPosition { x, ..OPEN_PLAYER })
+        .find(|cell| chase_path_tile(room.movement_cells(), &none, *cell))
+        .expect("an open Thalom cell east of the player")
+}
+
+impl Owner {
+    fn chase_modes(&mut self, chase: ChaseMode) {
+        let modes = FightModes {
+            chase,
+            ..FightModes::DEFAULT
+        };
+        assert!(
+            self.attack
+                .set_modes(&self.runtime, self.player, self.session, modes)
+        );
+    }
+
+    fn chase(&mut self, now: u64) -> Option<crate::movement::CardinalStep> {
+        let room = self.room.clone();
+        let none = std::collections::BTreeSet::new();
+        self.attack.chase_decision(
+            &self.runtime,
+            &room,
+            self.player,
+            self.session,
+            at(now),
+            |cell| chase_path_tile(room.movement_cells(), &none, cell),
+        )
+    }
+
+    /// A due chase search registers in its owner window and is admitted from the next one
+    /// (`RANGED0-RL-03`).
+    fn searched(&mut self, now: u64) -> Option<crate::movement::CardinalStep> {
+        assert_eq!(self.chase(now), None, "a due search first registers");
+        self.chase(now + crate::combat_attack::CHASE_WINDOW_MICROS)
+    }
+}
+
+#[test]
+fn chase_steps_towards_a_distant_held_rat_and_stand_never_moves() {
+    let rat_at = distant_open_cell();
+    let mut owner = owner_at(OPEN_PLAYER, rat_at);
+    let rat = owner.rat;
+    assert_eq!(owner.target(T0, Some(rat), 1), AttackIntentDisposition::Ok);
+    owner.chase_modes(ChaseMode::Stand);
+    assert_eq!(owner.chase(T0), None, "STAND never moves the player");
+    owner.chase_modes(ChaseMode::Chase);
+    let step = owner.searched(T0).expect("a chase step");
+    let (dx, _) = match step {
+        crate::movement::CardinalStep::East => (1, 0),
+        crate::movement::CardinalStep::West => (-1, 0),
+        _ => (0, 0),
+    };
+    assert!(
+        dx >= 0,
+        "the first step never leads away from the rat: {step:?}"
+    );
+    // A step refused as blocked drops the route; the next search waits for the 1,000 ms
+    // interval and keeps the refused cell out of the route.
+    owner
+        .attack
+        .chase_step_refused(owner.player, owner.session, at(T0 + 50_000), true);
+    assert_eq!(owner.chase(T0 + 50_001), None);
+    assert!(owner.searched(T0 + 1_050_000).is_some());
+    // A client step wins; chase re-paths a second later.
+    owner
+        .attack
+        .chase_yield_to_client(owner.player, owner.session, at(T0 + 1_150_000));
+    assert_eq!(owner.chase(T0 + 1_200_000), None);
+    assert!(owner.searched(T0 + 2_150_000).is_some());
+    // Clearing the target ends the chase.
+    assert_eq!(
+        owner.target(T0 + 2_300_000, None, 2),
+        AttackIntentDisposition::Ok
+    );
+    assert_eq!(owner.chase(T0 + 5_000_000), None);
+}
+
+#[test]
+fn an_ended_connection_and_a_mode_change_leave_the_chase_search_ordering() {
+    // RANGED0-RL-03: a waiting search counts ahead of later ones only while its connection
+    // still drives the chase; the ended connection's yield takes it out of the ordering.
+    let mut owner = owner_at(OPEN_PLAYER, distant_open_cell());
+    let rat = owner.rat;
+    assert_eq!(owner.target(T0, Some(rat), 1), AttackIntentDisposition::Ok);
+    owner.chase_modes(ChaseMode::Chase);
+    assert_eq!(owner.chase(T0), None, "a due search first registers");
+    assert!(
+        owner
+            .attack
+            .chase_search_waiting(owner.player, owner.session)
+    );
+    // RANGED0-RL-08: reselecting the held target is no target change and keeps the chase.
+    assert_eq!(owner.target(T0, Some(rat), 2), AttackIntentDisposition::Ok);
+    assert!(
+        owner
+            .attack
+            .chase_search_waiting(owner.player, owner.session)
+    );
+    owner
+        .attack
+        .chase_yield_to_client(owner.player, owner.session, at(T0 + 1));
+    assert!(
+        !owner
+            .attack
+            .chase_search_waiting(owner.player, owner.session)
+    );
+    // RANGED0-RL-08: any accepted mode change, chase kept, resets the chase too.
+    assert_eq!(owner.chase(T0 + 1_000_001), None);
+    assert!(
+        owner
+            .attack
+            .chase_search_waiting(owner.player, owner.session)
+    );
+    let modes = FightModes {
+        secure: !FightModes::DEFAULT.secure,
+        chase: ChaseMode::Chase,
+        ..FightModes::DEFAULT
+    };
+    assert!(
+        owner
+            .attack
+            .set_modes(&owner.runtime, owner.player, owner.session, modes)
+    );
+    assert!(
+        !owner
+            .attack
+            .chase_search_waiting(owner.player, owner.session)
+    );
+}
+
+/// CHASE-1: two players chasing the rat, the lower actor id first, each one cell from the other.
+fn two_chasers() -> (Owner, [(ExactActorRef, GameSessionId); 2]) {
+    let mut owner = owner_with_capacity(OPEN_PLAYER, distant_open_cell(), 3);
+    let none = std::collections::BTreeSet::new();
+    let beside = [(0, 1), (0, -1), (-1, 0)]
+        .into_iter()
+        .map(|(dx, dy)| MovementLocalPosition {
+            x: OPEN_PLAYER.x + dx,
+            y: OPEN_PLAYER.y + dy,
+            ..OPEN_PLAYER
+        })
+        .find(|cell| chase_path_tile(owner.room.movement_cells(), &none, *cell))
+        .expect("an open cell beside the player");
+    let session = GameSessionId::decode(&uuid(5)).unwrap();
+    let reservation = owner.runtime.reserve_fresh_session(session).unwrap();
+    let other = owner.runtime.commit_fresh_session(reservation).unwrap();
+    owner
+        .runtime
+        .initialize_pinned_test_position(other, beside)
+        .expect("the second player stands beside the first");
+    let mut chasers = [(owner.player, owner.session), (other, session)];
+    chasers.sort_by_key(|(actor, _)| (actor.actor_local_id(), actor.actor_local_generation()));
+    let rat = owner.rat;
+    let modes = FightModes {
+        chase: ChaseMode::Chase,
+        ..FightModes::DEFAULT
+    };
+    for (player, session) in chasers {
+        assert_eq!(
+            owner.attack.set_target(
+                &owner.runtime,
+                Some(&owner.room),
+                player,
+                session,
+                at(T0),
+                Some(rat),
+                1,
+            ),
+            AttackIntentDisposition::Ok
+        );
+        assert!(
+            owner
+                .attack
+                .set_modes(&owner.runtime, player, session, modes)
+        );
+    }
+    (owner, chasers)
+}
+
+/// The chase steps two chasers take in the window after they registered, their checks reaching
+/// the Channel in `order`; with `commit`, each step commits before the next check.
+fn chase_steps(order: [usize; 2], commit: bool) -> [Option<crate::movement::CardinalStep>; 2] {
+    let (mut owner, chasers) = two_chasers();
+    let room = owner.room.clone();
+    let none = std::collections::BTreeSet::new();
+    let mut steps = [None; 2];
+    for now in [T0, T0 + crate::combat_attack::CHASE_WINDOW_MICROS] {
+        for index in order {
+            let (player, session) = chasers[index];
+            steps[index] = owner.attack.chase_decision(
+                &owner.runtime,
+                &room,
+                player,
+                session,
+                at(now),
+                |cell| chase_path_tile(room.movement_cells(), &none, cell),
+            );
+            let Some(step) = steps[index].filter(|_| commit) else {
+                continue;
+            };
+            let (dx, dy) = crate::movement::path_search::delta(step);
+            let mut movement = owner.runtime.borrow_movement_position();
+            let before = movement.read(player).expect("the chaser's position");
+            let position = before.position();
+            let next = MovementLocalPosition {
+                x: position.x + dx,
+                y: position.y + dy,
+                ..position
+            };
+            movement
+                .commit_cardinal(before, next)
+                .expect("the chase step commits");
+        }
+    }
+    steps
+}
+
+#[test]
+fn the_chase_search_drain_gives_the_same_routes_in_any_check_order() {
+    // RANGED0-RL-03: the first check of a window drains every waiting search in (waiting since,
+    // actor id) order, each against the occupancy the earlier ones leave; every chase then takes
+    // its own stored route, whichever connection reaches the Channel first.
+    let forward = chase_steps([0, 1], false);
+    assert!(forward.iter().all(Option::is_some), "{forward:?}");
+    assert_eq!(chase_steps([1, 0], false), forward);
+    // The lower id stepping first changes the occupancy the higher id's check reads, not the
+    // route the drain stored for it.
+    assert_eq!(chase_steps([0, 1], true), forward);
+    assert_eq!(chase_steps([1, 0], true), forward);
+}
+
+#[test]
+fn the_drain_serves_sixty_four_searches_a_window_and_the_sixty_fifth_in_the_next() {
+    // RANGED0-RL-03 max=64 / max+1=65: 65 chases wait from one window; the next window's drain
+    // serves 64 of them in actor id order, and the 65th keeps its place for the window after.
+    let rat_at = distant_open_cell();
+    let mut owner = owner_with_capacity(OPEN_PLAYER, rat_at, 66);
+    let none = std::collections::BTreeSet::new();
+    let cells: Vec<_> = (-6..=6)
+        .flat_map(|dy| (-8..=8).map(move |dx| (dx, dy)))
+        .filter(|(dx, dy): &(i32, i32)| dx.abs() > 1 || dy.abs() > 1)
+        .map(|(dx, dy)| MovementLocalPosition {
+            x: rat_at.x + dx,
+            y: rat_at.y + dy,
+            ..rat_at
+        })
+        .filter(|cell| *cell != OPEN_PLAYER)
+        .filter(|cell| chase_path_tile(owner.room.movement_cells(), &none, *cell))
+        .take(64)
+        .collect();
+    assert_eq!(cells.len(), 64, "64 open cells around the rat");
+    let mut chasers = vec![(owner.player, owner.session)];
+    for (index, cell) in cells.into_iter().enumerate() {
+        let session = GameSessionId::decode(&uuid(u8::try_from(10 + index).unwrap())).unwrap();
+        let reservation = owner.runtime.reserve_fresh_session(session).unwrap();
+        let player = owner.runtime.commit_fresh_session(reservation).unwrap();
+        owner
+            .runtime
+            .initialize_pinned_test_position(player, cell)
+            .expect("the chaser stands on its own open cell");
+        chasers.push((player, session));
+    }
+    chasers.sort_by_key(|(actor, _)| actor_order(*actor));
+    let modes = FightModes {
+        chase: ChaseMode::Chase,
+        ..FightModes::DEFAULT
+    };
+    let room = owner.room.clone();
+    let rat = owner.rat;
+    for &(player, session) in &chasers {
+        assert_eq!(
+            owner.attack.set_target(
+                &owner.runtime,
+                Some(&room),
+                player,
+                session,
+                at(T0),
+                Some(rat),
+                1,
+            ),
+            AttackIntentDisposition::Ok
+        );
+        assert!(
+            owner
+                .attack
+                .set_modes(&owner.runtime, player, session, modes)
+        );
+    }
+    let window = crate::combat_attack::CHASE_WINDOW_MICROS;
+    let check = |owner: &mut Owner, now: u64, (player, session): (ExactActorRef, GameSessionId)| {
+        owner
+            .attack
+            .chase_decision(&owner.runtime, &room, player, session, at(now), |cell| {
+                chase_path_tile(room.movement_cells(), &none, cell)
+            });
+    };
+    let waiting = |owner: &Owner| -> Vec<ExactActorRef> {
+        chasers
+            .iter()
+            .filter(|(player, _)| {
+                owner.attack.entries.iter().any(|entry| {
+                    entry.actor == *player && entry.chase.search_waiting_since().is_some()
+                })
+            })
+            .map(|(player, _)| *player)
+            .collect()
+    };
+    for &chaser in chasers.iter().rev() {
+        check(&mut owner, T0, chaser);
+    }
+    assert_eq!(
+        waiting(&owner).len(),
+        65,
+        "every chase waits from the first window"
+    );
+    // The highest id reaches the Channel first; the drain still serves the 64 lowest ids.
+    check(&mut owner, T0 + window, chasers[64]);
+    assert_eq!(waiting(&owner), vec![chasers[64].0]);
+    check(&mut owner, T0 + 2 * window, chasers[0]);
+    assert!(
+        waiting(&owner).is_empty(),
+        "the 65th is served in the next window"
+    );
+}
+#[test]
+fn the_actor_pacing_deadline_survives_a_replaced_connection() {
+    // CHASE-1 (RANGED-0 §8): the deadline is the actor's, not its connection's, so a resumed or
+    // replaced connection starts from it and never steps sooner.
+    let mut attack = ChannelAttackStates::default();
+    let player = owner().player;
+    let first = std::sync::Arc::new(());
+    let second = std::sync::Arc::new(());
+    let now = tokio::time::Instant::now();
+    let due = now + std::time::Duration::from_millis(400);
+    // A step claims the clock; while it is in flight a replacement cannot claim it, however
+    // long the step takes, and the replacement's record changes nothing.
+    assert_eq!(attack.begin_step(player, &first, now), None);
+    let late = now + std::time::Duration::from_secs(5);
+    assert!(
+        attack.begin_step(player, &second, late).is_some(),
+        "a step in flight holds the clock until it ends"
+    );
+    attack.record_step_deadline(player, &second, late, None);
+    assert!(attack.step_deadline(player, late).is_some());
+    attack.record_step_deadline(player, &first, now, Some(due));
+    // The new connection reads the deadline; a pacer resumed from it waits until it.
+    assert_eq!(attack.begin_step(player, &second, now), Some(due));
+    let resumed = crate::movement::pacing::StepPacer::resumed(attack.step_deadline(player, now));
+    assert_eq!(resumed.wait_until(now), Some(due));
+    assert_eq!(resumed.wait_until(due), None);
+    // At the deadline the clock is free again; a step that did not move releases it.
+    assert_eq!(attack.begin_step(player, &second, due), None);
+    attack.record_step_deadline(player, &second, due, None);
+    assert_eq!(attack.step_deadline(player, due), None);
+    // A claim whose connection ended mid-step frees the clock with it.
+    assert_eq!(attack.begin_step(player, &first, due), None);
+    drop(first);
+    assert_eq!(attack.step_deadline(player, due), None);
+    assert_eq!(attack.begin_step(player, &second, due), None);
+}
+
+#[test]
+fn chase_holds_next_to_the_rat_and_under_reentry_protection() {
+    let mut owner = owner();
+    let rat = owner.rat;
+    assert_eq!(owner.target(T0, Some(rat), 1), AttackIntentDisposition::Ok);
+    owner.chase_modes(ChaseMode::Chase);
+    assert_eq!(owner.chase(T0), None, "already next to the rat");
+
+    let mut owner = owner_at(OPEN_PLAYER, distant_open_cell());
+    let rat = owner.rat;
+    assert_eq!(owner.target(T0, Some(rat), 1), AttackIntentDisposition::Ok);
+    owner.chase_modes(ChaseMode::Chase);
+    owner
+        .runtime
+        .record_control_loss(
+            owner.player,
+            owner.session,
+            ControlLossMark {
+                epoch: 1,
+                grace_deadline: 1,
+            },
+        )
+        .unwrap();
+    owner
+        .runtime
+        .restore_control_after_committed_reentry(owner.player, owner.session, 1, T0)
+        .unwrap();
+    assert_eq!(
+        owner.chase(T0 + 1),
+        None,
+        "re-entry protection ends the chase"
+    );
+    assert!(owner.searched(T0 + 4_000_000).is_some());
 }

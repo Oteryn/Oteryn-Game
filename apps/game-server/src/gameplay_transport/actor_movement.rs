@@ -110,7 +110,7 @@ pub(crate) fn step_in_channel(
     session: GameSessionId,
     now_us: u64,
     direction: CardinalStep,
-    blocking: &std::collections::BTreeSet<LogicalCell>,
+    blocking: &dyn crate::map::floor::CellBlocker,
     equipment_delta: Option<i32>,
 ) -> StepInChannel {
     step_in_channel_with_source_step(
@@ -139,7 +139,7 @@ pub(crate) fn step_in_channel_with_source_step(
     session: GameSessionId,
     now_us: u64,
     direction: CardinalStep,
-    blocking: &std::collections::BTreeSet<LogicalCell>,
+    blocking: &dyn crate::map::floor::CellBlocker,
     equipment_delta: Option<i32>,
     prepared_source_step: Option<crate::movement::source_floor_change::SourceStepProof<'_>>,
 ) -> StepInChannel {
@@ -162,7 +162,7 @@ pub(crate) fn step_in_channel_with_source_step(
         let speed = baseline_speed(runtime, actor, session, now_us);
         if let Some(proof) = prepared_source_step {
             let position = proof.destination();
-            if blocking.contains(&cell(position)) {
+            if blocking.blocks(cell(position)) {
                 return failure(MovementError::Blocked);
             }
             let duration = duration_onto(&proof, position, speed)?;
@@ -183,6 +183,24 @@ pub(crate) fn step_in_channel_with_source_step(
         || expected.context() != runtime.pinned_movement_context()
     {
         return failure(MovementError::ScopeMismatch);
+    }
+    if crate::map::floor::table_of(cells).is_some() {
+        // MAP-FLOOR-1: a bundle World resolves the step over its floor table.
+        if prepared_source_step.is_some() {
+            return failure(MovementError::NotQualified);
+        }
+        let speed = spell_state_speed(
+            runtime,
+            state,
+            actor,
+            session,
+            now_us,
+            equipment_delta,
+            false,
+        );
+        return bundle_step(
+            runtime, cells, actor, session, direction, blocking, speed, expected,
+        );
     }
     let source_step = if let Some(proof) = prepared_source_step {
         if proof.expected() != expected || proof.validate_current(runtime).is_err() {
@@ -227,7 +245,7 @@ pub(crate) fn step_in_channel_with_source_step(
         y,
         floor: pos.floor,
     });
-    if blocking.contains(&cell(actual_destination)) {
+    if blocking.blocks(cell(actual_destination)) {
         return failure(MovementError::Blocked);
     }
     let duration = match &source_step {
@@ -259,13 +277,49 @@ pub(crate) fn step_in_channel_with_source_step(
     }
 }
 
+/// MAP-FLOOR-1: one step of a bundle World, which may change floors. The destination is proven
+/// against the bundle collision and floor table and committed by the owner turn like a source
+/// step; the pacing is the Engineering 150 source onto the destination.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the owner turn binds every independently resolved fact explicitly"
+)]
+fn bundle_step(
+    runtime: &mut ChannelRuntimeV1,
+    cells: &NativeEntryMovementCells,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    direction: CardinalStep,
+    blocking: &dyn crate::map::floor::CellBlocker,
+    speed: Option<u16>,
+    expected: MovementPositionSnapshot,
+) -> StepInChannel {
+    // WORLD-INTERACTION-0 §6.6: a teleport landing reads the actor's PZ block (PARTY-PVP-0
+    // §8.1). PVP-RT-1 owns that block (conformance case PVP-CC-03); no runtime path sets one
+    // yet, so no actor is under a PZ block here. The floor resolver already refuses a
+    // protection-zone landing to a blocked actor.
+    let pz_blocked = false;
+    let proof = crate::map::floor::prepare_bundle_step(
+        runtime, cells, actor, session, expected, direction, pz_blocked, blocking,
+    )?;
+    let onto = proof.destination();
+    if blocking.blocks(cell(onto)) {
+        return Err(MovementError::Blocked);
+    }
+    let duration = duration_onto(&EngineeringGroundSpeed, onto, speed)?;
+    runtime
+        .commit_source_step(proof)
+        .map(|snapshot| (snapshot, duration))
+        .map_err(MovementError::Actor)
+}
+
 fn baseline_step(
     runtime: &mut ChannelRuntimeV1,
     cells: &NativeEntryMovementCells,
     actor: ExactActorRef,
     session: GameSessionId,
     direction: CardinalStep,
-    blocking: &std::collections::BTreeSet<LogicalCell>,
+    blocking: &dyn crate::map::floor::CellBlocker,
     speed: Option<u16>,
 ) -> StepInChannel {
     let expected = runtime
@@ -280,12 +334,17 @@ fn baseline_step(
     {
         return Err(MovementError::ScopeMismatch);
     }
+    if crate::map::floor::table_of(cells).is_some() {
+        return bundle_step(
+            runtime, cells, actor, session, direction, blocking, speed, expected,
+        );
+    }
     if crate::movement::source_floor_change::is_source_profile(cells) {
         let proof = crate::movement::source_floor_change::prepare_source_step(
             runtime, cells, actor, session, expected, direction,
         )?;
         let p = proof.destination();
-        if blocking.contains(&cell(p)) {
+        if blocking.blocks(cell(p)) {
             return Err(MovementError::Blocked);
         }
         let duration = duration_onto(&proof, p, speed)?;
@@ -314,7 +373,7 @@ fn baseline_step(
         y,
         floor: pos.floor,
     };
-    if blocking.contains(&cell(onto)) {
+    if blocking.blocks(cell(onto)) {
         return Err(MovementError::Blocked);
     }
     let duration = duration_onto(&EngineeringGroundSpeed, onto, speed)?;
@@ -384,6 +443,387 @@ mod tests {
         runtime.initialize_first_entry_position(actor).unwrap();
         (runtime, ChannelSpellStates::default(), room, actor, session)
     }
+    /// MAP-FLOOR-1: a Channel booted from `floor_bundle`, with one actor at its start (`z` 8).
+    fn bundle_owner() -> (
+        ChannelRuntimeV1,
+        ChannelSpellStates,
+        NativeEntryMovementCells,
+        ExactActorRef,
+        GameSessionId,
+    ) {
+        bundle_owner_of(crate::map::boot::tests::floor_bundle)
+    }
+
+    /// [`bundle_owner`] over another fixture bundle starting on the same tile.
+    fn bundle_owner_of(
+        fixture: fn() -> (Vec<u8>, crate::map::BundlePins),
+    ) -> (
+        ChannelRuntimeV1,
+        ChannelSpellStates,
+        NativeEntryMovementCells,
+        ExactActorRef,
+        GameSessionId,
+    ) {
+        use crate::map::boot::tests::{floor_items, floor_pins};
+        let world = WorldId::decode(&id(1)).unwrap();
+        let channel = ChannelId::decode(&id(2)).unwrap();
+        let room = crate::content::qualify_native_entry_room(world).unwrap();
+        let (bytes, load) = fixture();
+        let booted =
+            crate::map::boot::boot(&bytes, &floor_pins(load), world, channel, floor_items).unwrap();
+        let cells = booted.movement_cells(room.movement_cells()).unwrap();
+        let pin = ChannelContentPin::from_activation(
+            world,
+            1,
+            room.compiled().server_digest(),
+            room.compiled().client_digest(),
+            booted.frame_binding_digest(world),
+            booted.map_revision_digest(),
+            (0, 0, 8),
+        );
+        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+            world,
+            channel,
+            NodeId::decode(&id(3)).unwrap(),
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            2,
+            pin,
+        )
+        .unwrap();
+        let session = GameSessionId::decode(&id(4)).unwrap();
+        let reservation = runtime.reserve_fresh_session(session).unwrap();
+        let actor = runtime.commit_fresh_session(reservation).unwrap();
+        runtime.initialize_first_entry_position(actor).unwrap();
+        (
+            runtime,
+            ChannelSpellStates::default(),
+            cells,
+            actor,
+            session,
+        )
+    }
+
+    fn at(runtime: &mut ChannelRuntimeV1, actor: ExactActorRef) -> (i32, i32, i16) {
+        let position = runtime
+            .borrow_movement_position()
+            .read(actor)
+            .unwrap()
+            .position();
+        (position.x, position.y, position.floor)
+    }
+
+    #[test]
+    fn map_floor_a_bundle_step_climbs_a_stair_and_drops_through_a_hole() {
+        let (mut runtime, mut states, cells, actor, session) = bundle_owner();
+        let none = std::collections::BTreeSet::new();
+        let mut step = |runtime: &mut ChannelRuntimeV1, direction| {
+            step_in_channel(
+                runtime,
+                &mut states,
+                &cells,
+                actor,
+                session,
+                1,
+                direction,
+                &none,
+                None,
+            )
+        };
+        assert_eq!(at(&mut runtime, actor), (0, 0, 8));
+        // Onto the east stair at x 1: one step east and one floor up.
+        let (_, duration) = step(&mut runtime, CardinalStep::East).unwrap();
+        assert_eq!(at(&mut runtime, actor), (2, 0, 7));
+        // SPEED-1: level 1 on 150 ground, 1000 x 150 / 278 -> 550 ms.
+        assert_eq!(duration, Duration::from_millis(550));
+        // Onto the hole at x 3: one floor down in place.
+        step(&mut runtime, CardinalStep::East).unwrap();
+        assert_eq!(at(&mut runtime, actor), (3, 0, 8));
+        // A plain step keeps the floor.
+        step(&mut runtime, CardinalStep::West).unwrap();
+        assert_eq!(at(&mut runtime, actor), (2, 0, 8));
+        // The stair works from its other side.
+        step(&mut runtime, CardinalStep::West).unwrap();
+        assert_eq!(at(&mut runtime, actor), (2, 0, 7));
+        // A solid box, then the edge of the map, refuse and leave the actor in place.
+        assert!(matches!(
+            step(&mut runtime, CardinalStep::West),
+            Err(MovementError::Blocked)
+        ));
+        assert!(matches!(
+            step(&mut runtime, CardinalStep::North),
+            Err(MovementError::Cell(
+                crate::content::static_cell_engine::StaticCellEngineError::Absent
+            ))
+        ));
+        assert_eq!(at(&mut runtime, actor), (2, 0, 7));
+    }
+
+    #[test]
+    fn newhaven_teleport_a_bundle_step_onto_a_teleport_moves_the_actor() {
+        let (mut runtime, mut states, cells, actor, session) =
+            bundle_owner_of(crate::map::boot::tests::teleport_bundle);
+        let none = std::collections::BTreeSet::new();
+        let mut step = |runtime: &mut ChannelRuntimeV1, direction| {
+            step_in_channel(
+                runtime,
+                &mut states,
+                &cells,
+                actor,
+                session,
+                1,
+                direction,
+                &none,
+                None,
+            )
+        };
+        assert_eq!(at(&mut runtime, actor), (0, 0, 8));
+        // Onto the forcefield at (0, 1): the actor ends on its destination, paced onto it.
+        let (_, duration) = step(&mut runtime, CardinalStep::South).unwrap();
+        assert_eq!(at(&mut runtime, actor), (5, 1, 8));
+        assert_eq!(duration, Duration::from_millis(550));
+        // A teleport whose destination a solid box blocks leaves the actor on the teleport.
+        step(&mut runtime, CardinalStep::West).unwrap();
+        assert_eq!(at(&mut runtime, actor), (4, 1, 8));
+        // So does one whose destination tile the bundle lacks.
+        step(&mut runtime, CardinalStep::West).unwrap();
+        assert_eq!(at(&mut runtime, actor), (3, 1, 8));
+    }
+
+    #[test]
+    fn newhaven_teleport_a_step_onto_a_teleport_keeps_the_step_rules() {
+        let (mut runtime, mut states, cells, actor, session) =
+            bundle_owner_of(crate::map::boot::tests::teleport_bundle);
+        // The proof carries the teleport destination, not the entered tile.
+        let expected = runtime.borrow_movement_position().read(actor).unwrap();
+        let destination = |pz_blocked| {
+            let onto = crate::map::floor::prepare_bundle_step(
+                &runtime,
+                &cells,
+                actor,
+                session,
+                expected,
+                CardinalStep::South,
+                pz_blocked,
+                &std::collections::BTreeSet::new(),
+            )
+            .unwrap()
+            .destination();
+            (onto.x, onto.y, onto.floor)
+        };
+        assert_eq!(destination(false), (5, 1, 8));
+        // WORLD-INTERACTION-0 §6.6: the destination is a protection-zone tile, so an actor under
+        // a PZ block stays on the teleport tile.
+        assert_eq!(destination(true), (0, 1, 8));
+        // A door closed on the destination refuses the landing like a static block: the actor
+        // stays on the teleport tile (Codex 4255311243).
+        let closed = std::collections::BTreeSet::from([LogicalCell { x: 5, y: 1, z: 8 }]);
+        assert!(
+            step_in_channel(
+                &mut runtime,
+                &mut states,
+                &cells,
+                actor,
+                session,
+                1,
+                CardinalStep::South,
+                &closed,
+                None,
+            )
+            .is_ok()
+        );
+        assert_eq!(at(&mut runtime, actor), (0, 1, 8));
+        // A player without control does not step onto it.
+        runtime
+            .record_control_loss(
+                actor,
+                session,
+                crate::foundation::ControlLossMark {
+                    epoch: 1,
+                    grace_deadline: 100,
+                },
+            )
+            .unwrap();
+        assert!(matches!(
+            step_in_channel(
+                &mut runtime,
+                &mut states,
+                &cells,
+                actor,
+                session,
+                1,
+                CardinalStep::South,
+                &std::collections::BTreeSet::new(),
+                None,
+            ),
+            Err(MovementError::NotQualified)
+        ));
+        let expected = runtime.borrow_movement_position().read(actor).unwrap();
+        assert!(
+            crate::map::floor::prepare_bundle_step(
+                &runtime,
+                &cells,
+                actor,
+                session,
+                expected,
+                CardinalStep::South,
+                false,
+                &std::collections::BTreeSet::new(),
+            )
+            .is_err()
+        );
+        assert_eq!(at(&mut runtime, actor), (0, 1, 8));
+    }
+
+    #[test]
+    fn newhaven_teleport_a_closed_door_on_the_entered_teleport_tile_blocks_the_step() {
+        let (mut runtime, mut states, cells, actor, session) =
+            bundle_owner_of(crate::map::boot::tests::teleport_bundle);
+        // The entered tile (0, 1, 8) is a teleport whose destination is open, yet a door closed
+        // on the entered tile itself refuses the step (Codex 4264376553).
+        let closed = std::collections::BTreeSet::from([LogicalCell { x: 0, y: 1, z: 8 }]);
+        let before = at(&mut runtime, actor);
+        assert!(matches!(
+            step_in_channel(
+                &mut runtime,
+                &mut states,
+                &cells,
+                actor,
+                session,
+                1,
+                CardinalStep::South,
+                &closed,
+                None,
+            ),
+            Err(MovementError::Blocked)
+        ));
+        assert_eq!(at(&mut runtime, actor), before);
+    }
+
+    #[test]
+    fn newhaven_teleport_a_closed_door_on_the_floor_change_landing_blocks_the_step() {
+        let (mut runtime, mut states, cells, actor, session) = bundle_owner();
+        // The stair resolves onto (2, 0, 7); a door closed there refuses the step before any
+        // teleport on that tile applies (WORLD-INTERACTION-0 §6.6, Codex review of 49fc686).
+        let closed = std::collections::BTreeSet::from([LogicalCell { x: 2, y: 0, z: 7 }]);
+        let before = at(&mut runtime, actor);
+        assert!(matches!(
+            step_in_channel(
+                &mut runtime,
+                &mut states,
+                &cells,
+                actor,
+                session,
+                1,
+                CardinalStep::East,
+                &closed,
+                None,
+            ),
+            Err(MovementError::Blocked)
+        ));
+        assert_eq!(at(&mut runtime, actor), before);
+    }
+
+    #[test]
+    fn map_floor_an_initialized_player_changes_floors_at_its_own_speed() {
+        let (mut runtime, mut states, cells, actor, session) = bundle_owner();
+        let facts = CharacterCastFacts {
+            vocation: crate::spell::Vocation::Knight,
+            level: 291,
+            magic_level: 10,
+            max_health: 1000,
+            max_mana: 500,
+            max_soul: 100,
+        };
+        states
+            .initialize(
+                &runtime,
+                actor,
+                session,
+                facts,
+                (0, 0),
+                SemanticTimeMicros::from_micros(0),
+            )
+            .unwrap();
+        let (_, duration) = step_in_channel(
+            &mut runtime,
+            &mut states,
+            &cells,
+            actor,
+            session,
+            1,
+            CardinalStep::East,
+            &std::collections::BTreeSet::new(),
+            None,
+        )
+        .unwrap();
+        // Base speed 400 on 150 ground: 200 ms.
+        assert_eq!(duration, Duration::from_millis(200));
+        assert_eq!(at(&mut runtime, actor), (2, 0, 7));
+    }
+
+    #[test]
+    fn map_floor_a_proof_is_bound_to_the_position_it_was_made_for() {
+        let (mut runtime, mut states, cells, actor, session) = bundle_owner();
+        let expected = runtime.borrow_movement_position().read(actor).unwrap();
+        let no_doors = std::collections::BTreeSet::new();
+        let proof = crate::map::floor::prepare_bundle_step(
+            &runtime,
+            &cells,
+            actor,
+            session,
+            expected,
+            CardinalStep::East,
+            false,
+            &no_doors,
+        )
+        .unwrap();
+        assert_eq!(proof.destination().floor, 7);
+        // The actor steps elsewhere first: the old proof no longer commits.
+        step_in_channel(
+            &mut runtime,
+            &mut states,
+            &cells,
+            actor,
+            session,
+            1,
+            CardinalStep::South,
+            &std::collections::BTreeSet::new(),
+            None,
+        )
+        .unwrap_err();
+        step_in_channel(
+            &mut runtime,
+            &mut states,
+            &cells,
+            actor,
+            session,
+            1,
+            CardinalStep::West,
+            &std::collections::BTreeSet::new(),
+            None,
+        )
+        .unwrap_err();
+        // Move for real, then replay the stale proof.
+        step_in_channel(
+            &mut runtime,
+            &mut states,
+            &cells,
+            actor,
+            session,
+            1,
+            CardinalStep::East,
+            &std::collections::BTreeSet::new(),
+            None,
+        )
+        .unwrap();
+        assert_eq!(at(&mut runtime, actor), (2, 0, 7));
+        assert!(runtime.commit_source_step(proof).is_err());
+        assert_eq!(at(&mut runtime, actor), (2, 0, 7));
+    }
+
     #[test]
     fn real_first_entry_without_spell_state_keeps_baseline_and_door_blocking() {
         let (mut runtime, mut states, room, actor, session) = owner();
@@ -628,7 +1068,7 @@ mod creature_field_step_tests {
                     session,
                     0,
                     CardinalStep::East,
-                    &Default::default(),
+                    &std::collections::BTreeSet::new(),
                     None,
                     None,
                     Some(field)
@@ -686,7 +1126,7 @@ mod creature_field_step_tests {
                     session,
                     10,
                     CardinalStep::East,
-                    &Default::default(),
+                    &std::collections::BTreeSet::new(),
                     None,
                     None,
                     Some(field)
@@ -705,7 +1145,7 @@ mod creature_field_step_tests {
                     session,
                     0,
                     CardinalStep::West,
-                    &Default::default(),
+                    &std::collections::BTreeSet::new(),
                     None,
                     None,
                     Some(field)
@@ -738,7 +1178,7 @@ mod creature_field_step_tests {
                     session,
                     0,
                     CardinalStep::East,
-                    &Default::default(),
+                    &std::collections::BTreeSet::new(),
                     None,
                     None,
                     Some(field)
@@ -759,7 +1199,7 @@ mod creature_field_step_tests {
                     session,
                     0,
                     CardinalStep::East,
-                    &Default::default(),
+                    &std::collections::BTreeSet::new(),
                     None,
                     None,
                     Some(field)

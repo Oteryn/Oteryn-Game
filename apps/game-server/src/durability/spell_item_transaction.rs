@@ -3298,6 +3298,31 @@ pub(crate) async fn apply_physical_item_line(
         }
         _ => return Err(SpellItemError::Rejected("physical cause/owner mismatch")),
     }
+    // Charge exactly a newly materialized Ground root: actual Ground MINT or
+    // the already-resolved inventory overflow. Merges, contained destinations
+    // and removals add no roots. Only actual earlier removals free room.
+    if kind == 1 && destination.is_none() {
+        let player_scope;
+        let scope = match owner {
+            PhysicalItemOwner::Player(authority) => {
+                // Same native projection as locked_tile_rows: independently
+                // issued current Player authority, already checked in this TX.
+                player_scope = SpellItemScopeAuthority {
+                    physical_transaction: authority.physical_transaction.clone(),
+                    world: authority.world,
+                    channel: authority.channel,
+                    ownership_generation: authority.ownership_generation,
+                };
+                &player_scope
+            }
+            PhysicalItemOwner::Creature(authority) => authority,
+        };
+        super::ground_cell_limit::check_ground_cell_root_insert_in_transaction(
+            tx, scope, placement, &item,
+        )
+        .await
+        .map_err(super::ground_cell_limit::GroundCellAdmissionError::into_spell_error)?;
+    }
     sqlx::query("INSERT INTO game_spell_item_lines(transaction_id,ordinal,operation_kind,item_instance_id,definition_family,definition_production_key,definition_revision,quantity_before,quantity_after,state_revision_before,world_id,channel_id,spatial_position,map_revision,content_revision,placement_context,source_stack_ordinal,content_generation_digest,blocks_movement,blocks_projectile,expires_at_unix_ms,immovable_block_solid,destination_parent_item_instance_id,destination_ordinal) VALUES(encode($1,'hex')::uuid,$2,$3,encode($4,'hex')::uuid,$5,$6,$7,$8,$9,$10::text::numeric(20,0),encode($11,'hex')::uuid,encode($12,'hex')::uuid,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,CASE WHEN $23::bytea IS NULL THEN NULL ELSE encode($23,'hex')::uuid END,$24::text::numeric(20,0))")
         .bind(cause.transaction_id().as_slice()).bind(i32::try_from(ordinal).map_err(|_|SpellItemError::Rejected("line ordinal"))?).bind(kind).bind(item.as_slice()).bind(&definition.family).bind(&definition.production_key).bind(&definition.revision_ref).bind(i64::from(quantity_before)).bind(i64::from(quantity_after)).bind(revision.to_string()).bind(owner.world().as_slice()).bind(owner.channel().as_slice()).bind(&placement.spatial_position).bind(&placement.map_revision).bind(&placement.content_revision).bind(&placement.native_room_placement_context).bind(stack.map(|n|i64::try_from(n).map_err(|_|SpellItemError::Rejected("Ground ordinal overflow"))).transpose()?).bind(content_digest.as_slice()).bind(blocks_movement).bind(blocks_projectile).bind(expires).bind(match operation {SpellItemOperation::MintGround{definition,blocks_movement,..}=> !definition.movable && *blocks_movement, _=>false}).bind(destination.as_ref().map(|(id,_)|id.as_slice())).bind(destination.as_ref().map(|(_,n)|n.to_string())).execute(&mut **tx).await?;
     if kind == 1 {

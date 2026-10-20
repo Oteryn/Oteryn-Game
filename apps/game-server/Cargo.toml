@@ -13,10 +13,12 @@ category = "app"
 release-role = "production"
 
 [dependencies]
+aws-lc-rs.workspace = true
 base64.workspace = true
 ed25519-dalek.workspace = true
 oteryn-error-codes = { version = "=0.1.0", path = "../../crates/error-codes" }
 oteryn-foundation = { version = "=0.1.0", path = "../../crates/foundation" }
+oteryn-ntp-clock = { version = "=0.1.0", path = "../../crates/ntp-clock" }
 oteryn-protocol-oteryn = { version = "=0.1.0", path = "../../crates/protocol-oteryn" }
 oteryn-simulation-determinism = { version = "=0.1.0", path = "../../crates/simulation-determinism" }
 oteryn-world-bundle = { version = "=0.1.0", path = "../../crates/world-bundle" }
@@ -39,6 +41,8 @@ oteryn-dev-client = { version = "=0.1.0", path = "../../tools/dev-client" }
 # Test-only (MAP-LOAD-1): the map_load tests compile their fixture bundle with the compiler.
 oteryn-world-bundle-compiler = { version = "=0.1.0", path = "../../tools/world-bundle-compiler" }
 rcgen.workspace = true
+# Test-only (BUNDLE-GATES-1): the gate inventory parses the seam sources to find each room read.
+syn.workspace = true
 # Test-only: a TLS 1.2-constrained client proves the seam rejects TLS 1.2.
 rustls = { workspace = true, features = ["tls12"] }
 # Test-only (MAP-LOAD-1): the map_load tests assemble and reseal bundles byte by byte.
@@ -49,5 +53,136 @@ cap-fs-ext.workspace = true
 cap-std.workspace = true
 rustix = { workspace = true, features = ["process"] }
 
+# Thin wrappers kept for focused local runs (`cargo test --test <name>`). Their
+# `tests/support/*_cases.rs` files run in the CI-run aggregate PostgreSQL targets and the
+# `../src` modules they include run their unit tests in the library, so `test = false`
+# keeps them out of `cargo test`/`cargo clippy --all-targets` instead of compiling and
+# running those tests once more per wrapper. `tools/repository/check_duplicate_test_sources.py`
+# fails a new wrapper that is not listed here.
+
+[[test]]
+name = "account_achievement_postgres"
+test = false
+
+[[test]]
+name = "bank_postgres"
+test = false
+
+[[test]]
+name = "bestiary_progress_postgres"
+test = false
+
+[[test]]
+name = "character_appearance_native_postgres"
+test = false
+
+[[test]]
+name = "character_appearance_postgres"
+test = false
+
+[[test]]
+name = "character_death_receipts_postgres"
+test = false
+
+[[test]]
+name = "character_forge_dust_postgres"
+test = false
+
+[[test]]
+name = "character_inbox_postgres"
+test = false
+
+[[test]]
+name = "character_proficiency_modification_postgres"
+test = false
+
+[[test]]
+name = "character_progression_postgres"
+test = false
+
+[[test]]
+name = "character_stance_postgres"
+test = false
+
+[[test]]
+name = "charm_state_postgres"
+test = false
+
+[[test]]
+name = "check_function_privileges_postgres"
+test = false
+
+[[test]]
+name = "chest_use_postgres"
+test = false
+
+[[test]]
+name = "combat_bestiary_postgres"
+test = false
+
+[[test]]
+name = "combat_death_reward_postgres"
+test = false
+
+[[test]]
+name = "combat_pickup_postgres"
+test = false
+
+[[test]]
+name = "corpse_decay_postgres"
+test = false
+
+[[test]]
+name = "corpse_transfer_postgres"
+test = false
+
+[[test]]
+name = "house_custody_postgres"
+test = false
+
+[[test]]
+name = "item_fee_burn_postgres"
+test = false
+
+[[test]]
+name = "item_mint_postgres"
+test = false
+
+[[test]]
+name = "item_ref_production"
+test = false
+
+[[test]]
+name = "item_timed_postgres"
+test = false
+
+[[test]]
+name = "item_timed_state_postgres"
+test = false
+
+[[test]]
+name = "item_transfer_postgres"
+test = false
+
+[[test]]
+name = "item_use_postgres"
+test = false
+
+[[test]]
+name = "map_item_mint_postgres"
+test = false
+
+[[test]]
+name = "npc_econ_bank_postgres"
+test = false
+
+[[test]]
+name = "reward_claim_mint_postgres"
+test = false
+
 [lints]
 workspace = true
+
+[[test]]
+name = "house_interior_postgres"
+test = false

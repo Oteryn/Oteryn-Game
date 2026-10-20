@@ -6,8 +6,8 @@
 //! movement like a creature, is never a combat target and is never removed within the
 //! generation. Nothing is durable.
 //!
-//! The table here is the typed §3.2 shape. Until NPC-PLACE-1b ships the format v4 reader, only
-//! tests supply it; the boot wiring and the join snapshot are the follow-up packet.
+//! The table here is the typed §3.2 shape. NPC-LOAD-1 supplies it at boot from the World
+//! Bundle's format v4 NPC frame (`node::serve::bundle_npcs`).
 
 use super::{
     ActorLocalGeneration, ActorLocalId, ActorRef, CarrierError, ChannelRuntimeV1, ExactActorRef,
@@ -139,10 +139,6 @@ impl NpcPlacementTable {
     }
 }
 
-#[allow(
-    dead_code,
-    reason = "NPC-RT-1: no runtime caller until the boot wiring follow-up after NPC-PLACE-1b"
-)]
 impl ChannelRuntimeV1 {
     /// NPC-BEHAVIOUR-0 §3.1: one actor per placement, allocated in frame order under the pinned
     /// Movement context, once, at Channel start. `admitted` answers whether the loaded NPC
@@ -316,6 +312,290 @@ mod tests {
 
     fn all(_: &str) -> bool {
         true
+    }
+
+    fn movement_fixture() -> (ChannelRuntimeV1, ExactActorRef, ExactActorRef) {
+        let mut runtime = runtime(4);
+        let outcome = runtime
+            .place_npcs(
+                &table(vec![
+                    npc("oteryn:npc.a", vec![at(-7, 10, 20)]),
+                    npc("oteryn:npc.b", vec![at(-7, 10, 24)]),
+                ]),
+                all,
+                true,
+            )
+            .expect("native NPC placements");
+        (runtime, outcome.actors[0], outcome.actors[1])
+    }
+
+    #[test]
+    fn npc_movement_commits_the_native_slot_and_updates_facing_visibility_and_occupancy() {
+        let (mut runtime, actor, other) = movement_fixture();
+        let mut snapshot = runtime
+            .borrow_movement_position()
+            .read(actor)
+            .expect("Movement reads the placed NPC");
+        assert_eq!(snapshot.context(), runtime.pinned_movement_context());
+        assert_eq!(snapshot.facing(), Some(MovementFacing::South));
+        let others_before = runtime.carrier.slots[1..].to_vec();
+        for (x, y, facing) in [
+            (20, 9, MovementFacing::North),
+            (19, 9, MovementFacing::West),
+            (19, 10, MovementFacing::South),
+            (20, 10, MovementFacing::East),
+        ] {
+            let next = MovementLocalPosition { x, y, floor: 7 };
+            let old = snapshot;
+            assert_eq!(runtime.position_occupied_by_other(actor, next), Ok(false));
+            snapshot = runtime
+                .borrow_movement_position()
+                .commit_cardinal(old, next)
+                .expect("native cardinal step");
+            assert_eq!(snapshot.position(), next);
+            assert_eq!(snapshot.context(), old.context());
+            assert_eq!(snapshot.revision(), old.revision() + 1);
+            assert_eq!(snapshot.facing(), Some(facing));
+            assert_eq!(runtime.borrow_movement_position().read(actor), Ok(snapshot));
+            let visible = runtime.visible_entities();
+            assert_eq!(visible.npcs[0].actor, actor);
+            assert_eq!(visible.npcs[0].position, next);
+            assert_eq!(visible.npcs[0].revision, snapshot.revision());
+            assert_eq!(runtime.position_occupied_by_other(other, next), Ok(true));
+            assert_eq!(
+                runtime.position_occupied_by_other(other, old.position()),
+                Ok(false)
+            );
+            assert_eq!(runtime.npc_key(actor), Some("oteryn:npc.a"));
+            assert_eq!(runtime.carrier.slots[1..], others_before);
+        }
+    }
+
+    #[test]
+    fn npc_movement_refuses_noncardinal_steps_without_mutation() {
+        let (mut runtime, actor, _) = movement_fixture();
+        let snapshot = runtime
+            .borrow_movement_position()
+            .read(actor)
+            .expect("NPC position");
+        let before = runtime.carrier.slots.clone();
+        for next in [
+            snapshot.position(),
+            MovementLocalPosition {
+                x: 21,
+                y: 11,
+                floor: 7,
+            },
+            MovementLocalPosition {
+                x: 22,
+                y: 10,
+                floor: 7,
+            },
+            MovementLocalPosition {
+                x: 21,
+                y: 10,
+                floor: 8,
+            },
+            MovementLocalPosition {
+                x: i32::MIN,
+                y: 10,
+                floor: 7,
+            },
+            MovementLocalPosition {
+                x: i32::MAX,
+                y: 10,
+                floor: 7,
+            },
+        ] {
+            assert_eq!(
+                runtime
+                    .borrow_movement_position()
+                    .commit_cardinal(snapshot, next),
+                Err(CarrierError::MovementNonCardinal)
+            );
+            assert_eq!(runtime.carrier.slots, before);
+        }
+    }
+
+    #[test]
+    fn npc_movement_rejects_changed_and_replayed_snapshots_without_mutation() {
+        let (mut runtime, actor, other) = movement_fixture();
+        let initial = runtime
+            .borrow_movement_position()
+            .read(actor)
+            .expect("NPC position");
+        let before = runtime.carrier.slots.clone();
+        for changed in 0..9 {
+            let mut wrong = initial;
+            match changed {
+                0 => wrong.0.actor_ref = other.0,
+                1 => wrong.0.version.context.content_generation_marker += 1,
+                2 => wrong.0.version.context.coordinate_frame_marker += 1,
+                3 => wrong.0.version.context.map_revision_marker += 1,
+                4 => wrong.0.version.position.x += 1,
+                5 => wrong.0.version.revision += 1,
+                6 => wrong.0.version.facing = Some(MovementFacing::West),
+                7 => wrong.0.version.actor_local_id = other.0.actor_local_id,
+                _ => wrong.0.version.actor_local_generation = ActorLocalGeneration(2),
+            }
+            let next = MovementLocalPosition {
+                x: wrong.position().x + 1,
+                ..wrong.position()
+            };
+            assert_eq!(
+                runtime
+                    .borrow_movement_position()
+                    .commit_cardinal(wrong, next),
+                Err(CarrierError::PositionSnapshotMismatch)
+            );
+            assert_eq!(runtime.carrier.slots, before);
+        }
+        let next = MovementLocalPosition {
+            x: 21,
+            ..initial.position()
+        };
+        let committed = runtime
+            .borrow_movement_position()
+            .commit_cardinal(initial, next)
+            .expect("first step");
+        let after = runtime.carrier.slots.clone();
+        assert_eq!(
+            runtime
+                .borrow_movement_position()
+                .commit_cardinal(initial, next),
+            Err(CarrierError::PositionSnapshotMismatch)
+        );
+        assert_eq!(
+            runtime.borrow_movement_position().read(actor),
+            Ok(committed)
+        );
+        assert_eq!(runtime.carrier.slots, after);
+    }
+
+    #[test]
+    fn npc_movement_rechecks_actor_generation_scope_and_retired_owner() {
+        let (mut runtime, actor, _) = movement_fixture();
+        let initial = runtime
+            .borrow_movement_position()
+            .read(actor)
+            .expect("NPC position");
+        let next = MovementLocalPosition {
+            x: 21,
+            ..initial.position()
+        };
+        let before = runtime.carrier.slots.clone();
+        let mut stale = actor;
+        stale.0.actor_local_generation = ActorLocalGeneration(stale.0.actor_local_generation.0 + 1);
+        assert_eq!(
+            runtime.borrow_movement_position().read(stale),
+            Err(CarrierError::StaleActorGeneration)
+        );
+        let mut wrong = initial;
+        wrong.0.actor_ref = stale.0;
+        assert_eq!(
+            runtime
+                .borrow_movement_position()
+                .commit_cardinal(wrong, next),
+            Err(CarrierError::PositionSnapshotMismatch)
+        );
+        let mut foreign = actor;
+        foreign.0.scope_generation =
+            crate::foundation::ScopeOwnershipGeneration::new(4).expect("foreign scope");
+        assert_eq!(
+            runtime.borrow_movement_position().read(foreign),
+            Err(CarrierError::WrongScope)
+        );
+        wrong.0.actor_ref = foreign.0;
+        assert_eq!(
+            runtime
+                .borrow_movement_position()
+                .commit_cardinal(wrong, next),
+            Err(CarrierError::WrongScope)
+        );
+        runtime.retire_owner_cycle();
+        assert_eq!(
+            runtime.borrow_movement_position().read(actor),
+            Err(CarrierError::WrongScope)
+        );
+        assert_eq!(
+            runtime
+                .borrow_movement_position()
+                .commit_cardinal(initial, next),
+            Err(CarrierError::WrongScope)
+        );
+        assert_eq!(runtime.carrier.slots, before);
+    }
+
+    #[test]
+    fn npc_movement_revision_exhaustion_refuses_without_mutation() {
+        let (mut runtime, actor, _) = movement_fixture();
+        // Fault injection changes the real placed slot; the snapshot is still read through
+        // the native Movement owner and no replacement position store participates.
+        if let Slot::NpcOccupied { position, .. } = &mut runtime.carrier.slots[0] {
+            position.revision = u64::MAX;
+        }
+        let snapshot = runtime
+            .borrow_movement_position()
+            .read(actor)
+            .expect("NPC position");
+        assert_eq!(snapshot.revision(), u64::MAX);
+        let before = runtime.carrier.slots.clone();
+        assert_eq!(
+            runtime.borrow_movement_position().commit_cardinal(
+                snapshot,
+                MovementLocalPosition {
+                    x: 21,
+                    ..snapshot.position()
+                }
+            ),
+            Err(CarrierError::PositionRevisionExhausted)
+        );
+        assert_eq!(runtime.carrier.slots, before);
+    }
+
+    #[test]
+    fn npc_movement_keeps_combat_removal_and_general_relocation_closed() {
+        let (mut runtime, actor, _) = movement_fixture();
+        let snapshot = runtime
+            .borrow_movement_position()
+            .read(actor)
+            .expect("NPC Movement position");
+        let before = runtime.carrier.slots.clone();
+        assert!(!runtime.contains_live_creature(actor));
+        assert!(!runtime.borrow_exact_actor_lookup().contains(actor));
+        assert!(runtime.read_actor_position(actor).is_err());
+        assert!(
+            runtime
+                .positioned_actor_census()
+                .expect("combat census")
+                .is_empty()
+        );
+        assert_eq!(
+            runtime.carrier.lookup(&runtime.continuity, actor.0),
+            Err(CarrierError::NotCreature)
+        );
+        assert_eq!(
+            runtime
+                .carrier
+                .check_remove(&runtime.continuity, actor.0, &[]),
+            Err(CarrierError::PlanConflict)
+        );
+        // The existing general compare-commit, also used by spell relocation, still
+        // refuses an NPC even when supplied with its genuine Movement snapshot.
+        assert_eq!(
+            runtime.carrier.compare_commit_position(
+                &runtime.continuity,
+                snapshot.0,
+                snapshot.0.version.context,
+                LocalPosition {
+                    x: 21,
+                    y: 10,
+                    floor: 7
+                }
+            ),
+            Err(CarrierError::PlanConflict)
+        );
+        assert_eq!(runtime.carrier.slots, before);
     }
 
     #[test]

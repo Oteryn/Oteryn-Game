@@ -390,7 +390,14 @@ fn controlled_producer_proves_tls13_mtls_and_four_operations()
                     | Operation::PublishAccountCharactersV1
                     | Operation::PublishProjectionWatermarkV1
                     | Operation::ReportScopeAssignmentV1
-                    | Operation::ReportScopeRevocationV1 => {
+                    | Operation::ReportScopeRevocationV1
+                    | Operation::ListPendingCharacterCommandsV1
+                    | Operation::ReadCharacterCommandIntentV1
+                    | Operation::PublishCharacterCommandReceiptV1
+                    | Operation::PublishWorldHighscoresV1
+                    | Operation::PublishCharacterProfileV1
+                    | Operation::PublishWorldOnlineV1
+                    | Operation::PublishPublicProjectionWatermarkV1 => {
                         return Err(io::Error::new(io::ErrorKind::InvalidData, "operation"));
                     }
                 };
@@ -441,7 +448,14 @@ fn controlled_producer_proves_tls13_mtls_and_four_operations()
                 | Operation::PublishAccountCharactersV1
                 | Operation::PublishProjectionWatermarkV1
                 | Operation::ReportScopeAssignmentV1
-                | Operation::ReportScopeRevocationV1 => {
+                | Operation::ReportScopeRevocationV1
+                | Operation::ListPendingCharacterCommandsV1
+                | Operation::ReadCharacterCommandIntentV1
+                | Operation::PublishCharacterCommandReceiptV1
+                | Operation::PublishWorldHighscoresV1
+                | Operation::PublishCharacterProfileV1
+                | Operation::PublishWorldOnlineV1
+                | Operation::PublishPublicProjectionWatermarkV1 => {
                     return Err("operation".into());
                 }
             };

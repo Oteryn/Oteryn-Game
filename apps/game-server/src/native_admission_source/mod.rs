@@ -1,7 +1,9 @@
 use std::{fmt, io};
 pub mod account_characters;
+pub mod character_commands;
 pub mod descriptor;
 pub mod http1_mtls;
+pub mod public_projections;
 pub mod runtime_status;
 pub mod scope_assignment;
 pub const HANDSHAKE_INBOUND_BYTES: usize = 65_536;
@@ -17,6 +19,9 @@ pub enum SourceError {
     InvalidInput,
     Unauthorized,
     Unavailable,
+    /// A `200` whose body exceeds the bound, where the caller asked to tell it
+    /// apart from any other over-capacity response.
+    OversizedOk,
     Io(io::Error),
     Tls(rustls::Error),
 }
@@ -28,6 +33,7 @@ impl fmt::Display for SourceError {
             Self::InvalidInput => "invalid native source input",
             Self::Unauthorized => "native source unauthorized",
             Self::Unavailable => "native source unavailable",
+            Self::OversizedOk => "native source success body over its bound",
             Self::Io(_) => "native source I/O unavailable",
             Self::Tls(_) => "native source TLS unavailable",
         })
@@ -190,26 +196,4 @@ pub async fn read_character_bootstrap_intent(
         return Err(SourceError::Unavailable);
     }
     Ok(raw)
-}
-
-/// Transport-only pull from the independently configured Premium producer.
-/// Strict 1024-byte JSON response bound is enforced before body allocation.
-/// The caller authenticates account/nonce, records conflict fences and classifies
-/// the response; returned bytes alone never authorize Premium gameplay.
-pub async fn read_premium_snapshot(
-    descriptor: &descriptor::ProducerDescriptor,
-    request_body: &str,
-    permit: &mut QueuePermit<'_>,
-) -> Result<Vec<u8>, SourceError> {
-    permit.require_active()?;
-    if request_body.is_empty() || request_body.len() > 256 {
-        return Err(SourceError::InvalidInput);
-    }
-    http1_mtls::exchange(
-        descriptor,
-        descriptor::Operation::ReadPremiumSnapshotV1,
-        request_body,
-        permit,
-    )
-    .await
 }

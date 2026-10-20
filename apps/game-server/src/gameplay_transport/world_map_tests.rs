@@ -230,6 +230,7 @@ fn bundle_bytes(
         skipped_provisional_keys: Vec::new(),
         dropped_teleports: Vec::new(),
         spawns: Default::default(),
+        npcs: Default::default(),
     };
     let bytes = bundle::write(&manifest, &sectors, &Default::default()).expect("written bundle");
     let digest = bundle::read(&bytes).expect("read bundle").digest;
@@ -1438,7 +1439,7 @@ fn seeded_walks_send_the_bytes_recorded_before_the_viewport_optimisation() {
 const GOLDEN: (usize, usize, &str) = (
     324,
     5_431_963,
-    "d9f1866f0a425c14443e5b16339cc4856be3fb4dc29679ae4da1f2efc80b5a01",
+    "2920e8ef47cb4578c6481a9824ae755fbdb99abdd0ac141034abe81e657d86df",
 );
 
 // --- MAP01-VIEWPORT-US -------------------------------------------------------------------------
@@ -1483,6 +1484,7 @@ fn production_item(key: &str) -> Option<crate::map::facts::ItemDefinition> {
         solid: Some(solid),
         blocks_projectile: id == PILLAR,
         pickupable: matches!(id, COIN | BAG),
+        door: false,
     })
 }
 
@@ -1698,3 +1700,6 @@ fn map_cutover_a_bundle_world_plans_domain_17_at_the_runtime_position() {
         .is_none()
     );
 }
+
+#[path = "world_map_domain_tests.rs"]
+mod domain_selection;

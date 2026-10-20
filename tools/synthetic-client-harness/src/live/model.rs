@@ -380,7 +380,18 @@ impl RenderModel {
             UseDisposition::RequirementNotMet
             | UseDisposition::Exhausted
             | UseDisposition::Full
-            | UseDisposition::NoTarget => Notice::DoorRejected,
+            | UseDisposition::NoTarget
+            // WORLDINT-WIRE-1: capability 11 dispositions; the harness selects no capability 11.
+            | UseDisposition::Locked
+            | UseDisposition::KeyMismatch
+            | UseDisposition::Sealed
+            | UseDisposition::PzBlocked
+            | UseDisposition::NotMovable
+            | UseDisposition::NoRoom
+            | UseDisposition::NotPossible
+            // RUNE-WIRE-1: capability 22 dispositions; the harness selects no capability 22.
+            | UseDisposition::TargetIllegal
+            | UseDisposition::ProtectionZone => Notice::DoorRejected,
         };
         next
     }

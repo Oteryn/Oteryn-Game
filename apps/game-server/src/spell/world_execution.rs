@@ -4,7 +4,8 @@
 //! cell index contains collision only, not ground ids, rope spots or floor-change flags.
 //! Detached planner snapshots grant no permission. The transaction-borrowing proof below
 //! is the sole production producer for the carrier's sealed relocation seam. The accepted
-//! entry-r1 source omits tile metadata and therefore still refuses these casts.
+//! entry room carries qualified tile metadata; a cell whose metadata is Unknown still
+//! refuses these casts.
 
 use super::native::CompiledNativeSpell;
 use super::native_house_movement::HouseMovementPlan;
@@ -147,10 +148,16 @@ pub(crate) fn qualified_combat_tile<'owner>(
 enum WorldStaticOwnerBorrow<'owner> {
     Entry(&'owner crate::world_runtime::LocalObjectRuntime),
     Source(&'owner crate::content::native_spell_world::QualifiedNativeSpellWorld),
+    /// BUNDLE-COMBAT-ENABLE-1: a bundle World's cells. Its static blockers are already the
+    /// bundle tile facts (`block_solid`, `block_projectile`, BUNDLE-TILES-1), and its runtime
+    /// blockers (a usable door, a pickupable Item) are Unknown tiles, refused before this owner
+    /// is asked; the entry door runtime has no cell in the bundle frame.
+    Bundle,
 }
 impl WorldStaticOwnerBorrow<'_> {
     fn blocks_movement(&self, position: MovementLocalPosition) -> bool {
         match self {
+            Self::Bundle => false,
             Self::Entry(objects) => objects.blocking_cells().contains(&cell(position)),
             Self::Source(world) => matches!(
                 world.lookup(world.scope(), cell(position)),
@@ -180,6 +187,12 @@ fn qualified_static_owner<'owner>(
             return Err(WorldRelocationError::AuthorityMismatch);
         }
         return Ok(WorldStaticOwnerBorrow::Source(world));
+    }
+    if matches!(
+        cells.index(),
+        crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(_)
+    ) {
+        return Ok(WorldStaticOwnerBorrow::Bundle);
     }
     objects
         .check_scope_fence(
@@ -1258,13 +1271,15 @@ mod tests {
 
     #[test]
     fn actual_native_metadata_unknown_does_not_become_empty_or_clear() {
+        // The accepted entry room authors one qualified tile per placed cell, so
+        // its answers come from that document, never from an inferred default.
         let room = room(1);
         let mut runtime = runtime(&room, false);
         let (actor, expected) = admit(&mut runtime, 10);
-        assert!(matches!(
-            tile(&room, expected.position()),
-            Err(WorldRelocationError::MissingTileMetadata)
-        ));
+        let start = tile(&room, expected.position()).unwrap().unwrap();
+        assert!(start.ground_present());
+        assert_eq!(start.ground_speed(), None);
+        assert!(start.top_source_ids().is_empty());
         let above = offset(expected.position(), 0, 0, 1).unwrap();
         assert_eq!(
             room.movement_cells()
@@ -1272,13 +1287,72 @@ mod tests {
                 .lookup(room.movement_cells().scope(), cell(above)),
             Err(StaticCellEngineError::Absent)
         );
-        // The whole metadata document is unknown even where no collision cell
-        // exists. The spell cannot derive an empty stack or absent ground from it.
+        // Absent is a qualified answer of a complete document, not Unknown.
+        assert!(matches!(tile(&room, above), Ok(None)));
+        assert_unchanged(&mut runtime, actor, expected);
+
+        // A cell whose facts are Unknown still refuses: outside the qualified
+        // source world bounds the spell cannot derive an empty stack or absent
+        // ground.
+        let source = source_world_room();
+        let outside = MovementLocalPosition {
+            x: i32::MAX,
+            y: i32::MAX,
+            floor: 0,
+        };
         assert!(matches!(
-            tile(&room, above),
+            tile(&source, outside),
             Err(WorldRelocationError::MissingTileMetadata)
         ));
-        assert_unchanged(&mut runtime, actor, expected);
+    }
+
+    fn source_world_room() -> QualifiedNativeEntryRoom {
+        use crate::content::native_gameplay::{
+            NativeGameplayInput, NativeGameplayMapProfile, PinnedGameplayBytes,
+        };
+        fn pin(bytes: &[u8]) -> PinnedGameplayBytes {
+            PinnedGameplayBytes {
+                bytes: bytes.to_vec(),
+                sha256: <sha2::Sha256 as sha2::Digest>::digest(bytes)
+                    .iter()
+                    .map(|b| format!("{b:02x}"))
+                    .collect(),
+            }
+        }
+        let input = NativeGameplayInput {
+            cosmetics: NativeGameplayInput::unavailable_cosmetics(),
+            native_map_profile: NativeGameplayMapProfile::AcceptedEntryR1,
+            catalog: pin(include_bytes!(
+                "../../../../tools/content-schema/spell-authoring/samples/executable-spell-catalog.json"
+            )),
+            source_selection: pin(include_bytes!(
+                "../../../../tools/content-schema/spell-authoring/samples/executable-spell-source-selection.json"
+            )),
+            creature_profiles: pin(include_bytes!(
+                "../../../../tools/content-schema/native-gameplay/creature_profiles.json"
+            )),
+            presentation_profiles: pin(include_bytes!(
+                "../../../../tools/content-schema/native-gameplay/presentation_profiles.json"
+            )),
+            item_profiles: None,
+            spell_appearances: None,
+            build_training: None,
+            familiar_config: None,
+            familiar_defenses: None,
+            wheel_profile: None,
+            source_world: None,
+            progression: None,
+            item_keys: None,
+            loot_tables: None,
+        };
+        crate::content::qualify_native_source_spell_world_with_gameplay(
+            WorldId::decode(&uuid(1)).unwrap(),
+            &input,
+            include_bytes!(
+                "../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
+            ),
+        )
+        .unwrap()
     }
 
     #[test]

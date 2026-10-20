@@ -189,6 +189,21 @@ pub(crate) fn definition(
         },
         S::ManaShield { duration_ms } => N::ManaShield { duration_ms },
         S::Invisible { duration_ms } => N::Invisible { duration_ms },
+        // CONDITIONS-0 §3.5: the gate families by their content name, and `agony`.
+        S::Gate { gate, duration_ms } => N::gate(gate.key(), duration_ms)?,
+        S::Agony {
+            total_min,
+            total_max,
+            per_tick,
+            interval_ms,
+            delayed,
+        } => N::Agony {
+            total_min,
+            total_max,
+            per_tick,
+            interval_ms,
+            delayed,
+        },
         _ => return None,
     };
     native::ConditionDefinition::new(value.key(), value.revision(), values)

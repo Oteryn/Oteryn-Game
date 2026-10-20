@@ -90,9 +90,8 @@
         431,
         432
       ],
-      "status": "mapped",
-      "resolution": "Every 14 seconds one of four Searing Fire tiles is chosen uniformly and the item is removed after 5 seconds.",
-      "destination": "/encounter/rules"
+      "status": "unresolved_semantics",
+      "resolution": "The 14 s fire event runs on a global donor clock, independently of encounter/boss presence. The instance-started timer preserves a nominal cadence only; source phase/lifecycle equivalence and timed removal must be reconciled before admission."
     },
     {
       "source_index": 1,
@@ -209,7 +208,7 @@
         398
       ],
       "status": "unresolved_semantics",
-      "resolution": "Stepping on a Weeping Soul corpse consumes it, applies a 14 second outfit condition and has a 10% chance to heal Spite for 10% max health; player corpse-step and percent-max heal are not representable."
+      "resolution": "Stepping on a Weeping Soul corpse is ignored if the player already has any outfit condition; otherwise it consumes the corpse, applies a 14 s outfit and has a 10% chance to heal Spite for 10% max health. These player corpse-step/prerequisite and percent-max heal semantics remain held."
     },
     {
       "source_index": 1,
@@ -244,6 +243,29 @@
       "status": "mapped",
       "resolution": "SoulWarBossesDeath credits contributors; the encounter exposes boss_defeated while quest taint/progress remains in Quest state.",
       "destination": "/encounter/rules/2"
+    },
+    {
+      "source_index": 0,
+      "source_lines": [
+        602,
+        603,
+        604,
+        605,
+        606,
+        607,
+        608,
+        609,
+        610,
+        611,
+        612,
+        613,
+        614,
+        615,
+        616,
+        617
+      ],
+      "status": "unresolved_semantics",
+      "resolution": "The Weeping Soul helper defines the outfit, probability and max-health heal; the preceding any-outfit-condition rejection remains part of the player-local hold."
     }
   ],
   "outcome_evidence": []

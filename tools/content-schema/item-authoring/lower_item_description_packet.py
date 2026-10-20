@@ -17,6 +17,12 @@ PROOF = (
 PROOF_SHA = "fa29b9e4702e81ee8e7365ed6f46b6cd3818b0dfebe6983504c86e3dc19c4727"
 OUTPUT = ROOT / "docs/agents/evidence/OTV2-20261002-item-description-promotion-v1.json"
 HEADERS = ("kind", "client_projection", "materializable", "stack_class")
+# ITEM-SEM-USE-2: the v3 consumable admission runs after this promotion in the Rust chain, so
+# the tracked definitions of the two overlapping Items carry its admission headers.
+CONSUMABLE_ADMISSION = (
+    "docs/agents/evidence/OTV2-20261004-consumable-item-admission.json"
+)
+STACK_CLASS = {"NON_STACKABLE": "NonStackable", "STACK_CAPABLE": "StackCapable"}
 # D316: main's quest-reward admission overlay reaches content/items after promotion, so the
 # Native guards compare against the pre-overlay stage that the Rust promotion applies to.
 PRE_OVERLAY = "content/world/definitions/reference.json"
@@ -56,8 +62,25 @@ def flavor(raw):
     return raw
 
 
-def qualify(source, historical, definition, owners, params):
+def consumable_admissions(root):
+    path = root / CONSUMABLE_ADMISSION
+    return {a["item_key"]: a for a in json.loads(path.read_text())["admissions"]}
+
+
+def admitted_guard(guard, admission):
+    """The source header guard as the tracked definition carries it after the v3 admission."""
+    guard = dict(guard)
+    if admission:
+        guard.update(
+            materializable=admission["materializable"],
+            stack_class=STACK_CLASS[admission["stack_class"]],
+        )
+    return guard
+
+
+def qualify(source, historical, definition, owners, params, admission=None):
     target, text = source["target"], flavor(source["description"])
+    guard = admitted_guard(source["native_header_guard"], admission)
     if (
         target != historical["target"]
         or source["source_item_id"] != historical["source_item_id"]
@@ -70,9 +93,7 @@ def qualify(source, historical, definition, owners, params):
         or not historical["xml_description_witnesses"]
         or historical["holds"]
         or definition.get("identity") != target
-        or not same(
-            {k: definition.get(k) for k in HEADERS}, source["native_header_guard"]
-        )
+        or not same({k: definition.get(k) for k in HEADERS}, guard)
         or movable.leaf(definition, "presentation.name") != source["native_name_guard"]
         or source["native_name_guard"]["state"] != "KNOWN"
     ):
@@ -127,6 +148,7 @@ def build(root=ROOT):
     ):
         raise ValueError("latest official admitted frame drift")
     members = {label: {r[0]: r for r in m["entries"]} for label, m in manifests.items()}
+    consumable = consumable_admissions(root)
     aliases = json.loads((root / "content/items/aliases.json").read_text())["entries"]
     wiki = json.loads((root / base.WIKI).read_text())["records"]
     rows, seen = [], set()
@@ -178,7 +200,16 @@ def build(root=ROOT):
         params = names.witness_params(
             source, indexed, pages, proof["qualification_cutoff"]
         )
-        rows.append(qualify(source, prior, definitions[target["key"]], owners, params))
+        rows.append(
+            qualify(
+                source,
+                prior,
+                definitions[target["key"]],
+                owners,
+                params,
+                consumable.get(target["key"]),
+            )
+        )
     if (
         len(seen) != 114
         or seen != {r["source_item_id"] for r in historical["records"]}
