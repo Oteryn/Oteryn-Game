@@ -303,7 +303,7 @@ fn native_population() -> Value {
     // Portable actual current corpus, rather than a deleted historical admission receipt.
     // The native overlay supplies exact Creature→Behavior references: NPC Behavior
     // profiles are never treated as Creature schedules merely because the family matches.
-    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let root = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server")).join("../..");
     let mut stage: Value = serde_json::from_slice(
         &std::fs::read(root.join("content/world/definitions/declarations.json"))
             .expect("actual canonical definitions"),

@@ -26,7 +26,7 @@ impl CreatureAiTable {
     /// Admits live creature `actor` of `runtime` to thinking with its projected behaviour
     /// profile; its first think is due at `now_us`. A missing or invalid profile is refused and
     /// admits nothing.
-    pub(crate) fn admit_creature(
+    pub fn admit_creature(
         &mut self,
         runtime: &ChannelRuntimeV1,
         actor: ExactActorRef,
@@ -52,7 +52,7 @@ impl CreatureAiTable {
     /// leaves at its next think, but one that died or despawned while idle has no due think, so
     /// without this its entry would outlive its slot. The table then holds at most one entry per
     /// live creature, so at most `CREATUREAI0-RL-04`.
-    pub(crate) fn forget_dead(&mut self, runtime: &ChannelRuntimeV1) {
+    pub fn forget_dead(&mut self, runtime: &ChannelRuntimeV1) {
         self.entries
             .retain(|_, entry| runtime.contains_live_creature(entry.state.actor()));
     }
@@ -61,12 +61,12 @@ impl CreatureAiTable {
     /// 4243189401). A think left due past the window's `CREATUREAI0-RL-05` budget keeps its due
     /// time, so after a pass this is at most that pass's time while a backlog remains. One pass
     /// over the table, like `forget_dead`.
-    pub(crate) fn earliest_due(&self) -> Option<u64> {
+    pub fn earliest_due(&self) -> Option<u64> {
         self.entries.values().filter_map(|entry| entry.due_us).min()
     }
 
     /// §2.1 item 1: `player` moved or was admitted; wakes the idle creatures it sees.
-    pub(crate) fn wake_for_player(
+    pub fn wake_for_player(
         &mut self,
         runtime: &ChannelRuntimeV1,
         player: ExactActorRef,
@@ -81,7 +81,7 @@ impl CreatureAiTable {
     /// §2.1 item 1 for every player of one pass, in `players` order: the result equals one
     /// `wake` per player in turn (a creature woken for an earlier player is no longer idle), and
     /// a player whose position cannot be read wakes nothing (SPAWN-CEILINGS-1, Codex 4242808144).
-    pub(crate) fn wake_for_players(
+    pub fn wake_for_players(
         &mut self,
         runtime: &ChannelRuntimeV1,
         players: &[ExactActorRef],
@@ -105,7 +105,7 @@ impl CreatureAiTable {
     /// by (floor, x, y); each viewer then examines only the index rows of its view box, at most
     /// the 16 VIS-1 floors of `2 * WAKE_VIEW_REACH + 1` rows. Returns the woken and the number
     /// of index entries the viewers examined.
-    pub(crate) fn wake_indexed(
+    pub fn wake_indexed(
         &mut self,
         viewers: &[MovementLocalPosition],
         position_of: impl Fn(ExactActorRef) -> Option<MovementLocalPosition>,
@@ -164,7 +164,7 @@ impl CreatureAiTable {
     /// walk of the table keeps only the window's remaining budget in a bounded heap: it neither
     /// collects nor sorts every due think, so a backlog of n due thinks costs a window
     /// `O(n log 1,024)` reads and `O(1,024)` memory instead of an `O(n log n)` sort of n.
-    pub(crate) fn take_due_bounded(&mut self, now_us: u64) -> (Vec<ExactActorRef>, Option<u64>) {
+    pub fn take_due_bounded(&mut self, now_us: u64) -> (Vec<ExactActorRef>, Option<u64>) {
         let window = now_us / CREATUREAI0_THINK_WINDOW_MICROS;
         if self.window != Some(window) {
             self.window = Some(window);
@@ -207,7 +207,7 @@ impl CreatureAiTable {
     /// Runs the thinks due at `now_us` within `CREATUREAI0-RL-05`. `players` are the Channel's
     /// player candidates with the owner's eligibility facts; `walkable` is the map's admission of
     /// a cell. A dead or despawned creature leaves the table. Each step is committed here.
-    pub(crate) fn run_due_thinks(
+    pub fn run_due_thinks(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         now_us: u64,
@@ -223,7 +223,7 @@ impl CreatureAiTable {
     /// [`Self::run_due_thinks`], also returning the earliest pending think after the pass
     /// (`earliest_due` without its walk of the table, SPAWN-CEILINGS-1, Codex 4243397472): the
     /// earliest think the selection left, or a taken creature's next think.
-    pub(crate) fn run_due_thinks_until_next(
+    pub fn run_due_thinks_until_next(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         now_us: u64,

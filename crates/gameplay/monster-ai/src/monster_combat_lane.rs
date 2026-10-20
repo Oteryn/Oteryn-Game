@@ -36,10 +36,10 @@ use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, GameSessionId, RuntimeWorkStamp, ScopeRuntimeFence,
 };
 mod states;
-pub(crate) use states::MonsterCombatStates;
-pub(crate) mod native_conditions;
-pub(crate) mod native_invisibility;
-pub(crate) mod native_ticks;
+pub use states::MonsterCombatStates;
+pub mod native_conditions;
+pub mod native_invisibility;
+pub mod native_ticks;
 use crate::monster_owner_cycle::{CycleError, MonsterThinkLane};
 use crate::self_heal_qualification::QualifiedCreatureSelfHeal;
 use crate::source_threshold_heal::{
@@ -55,14 +55,14 @@ use oteryn_simulation_determinism::{DecisionOccurrenceId, deterministic_decision
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 #[derive(Clone, Copy)]
-pub(crate) struct SelfConditionFacts {
-    pub(crate) base_speed: u16,
-    pub(crate) mana_shield_capacity: u32,
-    pub(crate) target_reentry_protected: bool,
-    pub(crate) source_reentry_protected: bool,
+pub struct SelfConditionFacts {
+    pub base_speed: u16,
+    pub mana_shield_capacity: u32,
+    pub target_reentry_protected: bool,
+    pub source_reentry_protected: bool,
 }
 #[derive(Clone)]
-pub(crate) struct NativeHeal {
+pub struct NativeHeal {
     index: usize,
     ability: Ref,
     source: QualifiedCreatureSelfHeal,
@@ -71,7 +71,7 @@ pub(crate) struct NativeHeal {
 #[derive(Debug)]
 // Presentation is returned by value from source-qualified owner dispatch; boxing the result would add a heap allocation after committed owner state. Preserve the prepublication allocation boundary.
 #[allow(clippy::large_enum_variant)]
-pub(crate) enum DefenseOutcome {
+pub enum DefenseOutcome {
     SelfHeal(OwnerDamageResult),
     ThresholdHeal(ThresholdHealOutcome),
     Icicle(crate::creature_icicle::IcicleOutcome),
@@ -82,7 +82,7 @@ pub(crate) enum DefenseOutcome {
     Appearance(bool),
 }
 #[derive(Debug)]
-pub(crate) enum DefenseError {
+pub enum DefenseError {
     Carrier(CarrierError),
     Invisible(InvisibilityError),
     Speed(InvisibilityError),
@@ -97,7 +97,7 @@ pub(crate) enum DefenseError {
 /// Selection must come from the existing current AI/perception owner under this same lock.
 /// Outer None means facts unavailable; inner None is an actual current no-target decision.
 /// This adapter never invents nearest target, PZ, visibility or condition immunity values.
-pub(crate) trait MonsterCombatReader:
+pub trait MonsterCombatReader:
     CurrentCombatFactsReader + SpellWorldReader + InvisibleTileCombatPolicy
 {
     fn source_callback_spawn_position(
@@ -520,127 +520,127 @@ impl<R: MonsterCombatReader> AreaHealPolicy for AreaHealMapReader<'_, R> {
         self.inner.area_heal_top_creature(r, t, s)
     }
 }
-include!("source_time_profile_bundle.rs");
-pub(crate) struct NativeActor {
-    pub(crate) seven_sources: Vec<crate::source_encounter_seven::SevenSource>,
-    pub(crate) time_profiles: Option<std::sync::Arc<BTreeMap<String, TimeProfileBundle>>>,
-    pub(crate) callback_spawn_sources: Vec<crate::source_callback_spawn::SourceCallbackSpawn>,
+include!("../../../../apps/game-server/src/source_time_profile_bundle.rs");
+pub struct NativeActor {
+    pub seven_sources: Vec<crate::source_encounter_seven::SevenSource>,
+    pub time_profiles: Option<std::sync::Arc<BTreeMap<String, TimeProfileBundle>>>,
+    pub callback_spawn_sources: Vec<crate::source_callback_spawn::SourceCallbackSpawn>,
     callback_casts: Vec<crate::source_callback_cast::SourceCallbackCast>,
     smelly_source: Option<crate::smelly_encounter_dispatch::SourceSmelly>,
     movement_cadence: Option<crate::movement::speed::CreatureMovementCadence>,
-    pub(crate) native_speed: Option<crate::movement::speed::NativeCreatureSpeed>,
+    pub native_speed: Option<crate::movement::speed::NativeCreatureSpeed>,
     move_pacer: crate::movement::pacing::CreatureStepPacer,
     condition_casts: Vec<NativeDefenseConditionMemo>,
-    pub(crate) actor: ExactActorRef,
+    pub actor: ExactActorRef,
     content: [u8; 32],
-    pub(crate) behavior: ProjectV2BehaviorAuthoring,
-    pub(crate) abilities: BTreeMap<Ref, ProjectV2AbilityAuthoring>,
-    pub(crate) schedule: ProfileScheduleState,
-    pub(crate) melee: Vec<MeleeSource>,
-    pub(crate) spells: Vec<(usize, SpellSource)>,
+    pub behavior: ProjectV2BehaviorAuthoring,
+    pub abilities: BTreeMap<Ref, ProjectV2AbilityAuthoring>,
+    pub schedule: ProfileScheduleState,
+    pub melee: Vec<MeleeSource>,
+    pub spells: Vec<(usize, SpellSource)>,
     defense_variants: Vec<SpellSource>,
     appearance_defenses: Vec<(usize, SpellSource)>,
     composed: Vec<(usize, ComposedSource)>,
-    pub(crate) unqualified: Vec<(usize, AttackError)>,
-    pub(crate) heals: Vec<NativeHeal>,
+    pub unqualified: Vec<(usize, AttackError)>,
+    pub heals: Vec<NativeHeal>,
     area_heals: Vec<(usize, AreaHealSource)>,
     threshold_heals: Vec<ThresholdHealSource>,
     icicle: Option<crate::creature_icicle::IcicleSource>,
-    pub(crate) invisible: Vec<(usize, SelfInvisibleSource)>,
-    pub(crate) speed: Vec<(usize, SelfSpeedSource)>,
+    pub invisible: Vec<(usize, SelfInvisibleSource)>,
+    pub speed: Vec<(usize, SelfSpeedSource)>,
     presentations: Vec<(usize, DefensePresentationSource)>,
-    pub(crate) defense_summons: Vec<crate::monster_summon::DefenseSummonSource>,
-    pub(crate) summons: Option<crate::monster_summon::NativeSummonCatalog>,
-    pub(crate) selected_target: Option<(ExactActorRef, GameSessionId)>,
-    pub(crate) creature: Ref,
+    pub defense_summons: Vec<crate::monster_summon::DefenseSummonSource>,
+    pub summons: Option<crate::monster_summon::NativeSummonCatalog>,
+    pub selected_target: Option<(ExactActorRef, GameSessionId)>,
+    pub creature: Ref,
 }
 #[derive(Debug)]
-pub(crate) enum CombatLaneError {
+pub enum CombatLaneError {
     Cycle(CycleError),
     Attack(AttackError),
     DuplicateActor,
 }
 #[derive(Debug)]
-pub(crate) struct ThinkCombatResult {
-    pub(crate) seven_map_pending: Vec<(
+pub struct ThinkCombatResult {
+    pub seven_map_pending: Vec<(
         Ref,
         Result<crate::source_encounter_seven::SourceMapWork, AttackError>,
     )>,
-    pub(crate) time_phases: Vec<(
+    pub time_phases: Vec<(
         Ref,
         Result<crate::source_encounter_seven::TimePhaseOutcome, AttackError>,
     )>,
-    pub(crate) callback_spawns: Vec<(Ref, Result<bool, AttackError>)>,
+    pub callback_spawns: Vec<(Ref, Result<bool, AttackError>)>,
     /// Real existing AI proposals; physical SQL owner must return a COMMIT receipt.
-    pub(crate) source_items: Vec<(
+    pub source_items: Vec<(
         Ref,
         Result<
             crate::creature_source_items::ScheduledCreatureSourceItems,
             crate::durability::spell_item_transaction::SpellItemError,
         >,
     )>,
-    pub(crate) callback_casts: Vec<(Ref, Result<bool, AttackError>)>,
-    pub(crate) smelly_scheduled: Vec<(Ref, Result<bool, AttackError>)>,
-    pub(crate) occurrence: ThinkOccurrence,
-    pub(crate) selection: Result<(), AttackError>,
-    pub(crate) schedule: Result<(), ScheduleError>,
-    pub(crate) spells: Vec<(Ref, Result<SpellOutcome, AttackError>)>,
-    pub(crate) defense_variants: Vec<(Ref, Result<SpellOutcome, AttackError>)>,
-    pub(crate) composed: Vec<(Ref, Result<ComposedOutcome, AttackError>)>,
-    pub(crate) chains: Vec<(Ref, Result<u64, AttackError>)>,
+    pub callback_casts: Vec<(Ref, Result<bool, AttackError>)>,
+    pub smelly_scheduled: Vec<(Ref, Result<bool, AttackError>)>,
+    pub occurrence: ThinkOccurrence,
+    pub selection: Result<(), AttackError>,
+    pub schedule: Result<(), ScheduleError>,
+    pub spells: Vec<(Ref, Result<SpellOutcome, AttackError>)>,
+    pub defense_variants: Vec<(Ref, Result<SpellOutcome, AttackError>)>,
+    pub composed: Vec<(Ref, Result<ComposedOutcome, AttackError>)>,
+    pub chains: Vec<(Ref, Result<u64, AttackError>)>,
     /// Explicit source entries not executed by the qualified consumer; never silently global-parity.
-    pub(crate) unqualified: Vec<(usize, AttackError)>,
-    pub(crate) deferred_defence: Vec<Ref>,
-    pub(crate) defenses: Vec<(Ref, Result<DefenseOutcome, DefenseError>)>,
-    pub(crate) defense_summons: Vec<(
+    pub unqualified: Vec<(usize, AttackError)>,
+    pub deferred_defence: Vec<Ref>,
+    pub defenses: Vec<(Ref, Result<DefenseOutcome, DefenseError>)>,
+    pub defense_summons: Vec<(
         Ref,
         Result<crate::monster_summon::DefenseSummonBatch, crate::monster_summon::SummonError>,
     )>,
-    pub(crate) deferred_summons: usize,
-    pub(crate) follow:
+    pub deferred_summons: usize,
+    pub follow:
         Option<Result<Option<crate::foundation::NativeSummonMovementOutcome>, SummonFollowError>>,
-    pub(crate) summons: Vec<(
+    pub summons: Vec<(
         Ref,
         Result<crate::monster_summon::SummonReceipt, crate::monster_summon::SummonError>,
     )>,
 }
 #[derive(Debug)]
-pub(crate) struct CombatPulse {
-    pub(crate) callback_speech_delivery:
+pub struct CombatPulse {
+    pub callback_speech_delivery:
         Option<Result<usize, crate::weak_spot_speech::WeakSpotSpeechError>>,
-    pub(crate) callback_speech_errors: Vec<(ExactActorRef, AttackError)>,
-    pub(crate) time_returns:
+    pub callback_speech_errors: Vec<(ExactActorRef, AttackError)>,
+    pub time_returns:
         Vec<Result<crate::source_encounter_seven::TimePhaseOutcome, AttackError>>,
-    pub(crate) callback_removals: Vec<(ExactActorRef, Result<(), crate::foundation::CarrierError>)>,
-    pub(crate) callback_spawn_pulses: Result<
+    pub callback_removals: Vec<(ExactActorRef, Result<(), crate::foundation::CarrierError>)>,
+    pub callback_spawn_pulses: Result<
         Vec<Result<crate::source_callback_spawn::CallbackSpawnReceipt, AttackError>>,
         AttackError,
     >,
-    pub(crate) creature_conditions: Vec<(
+    pub creature_conditions: Vec<(
         ExactActorRef,
         Result<crate::foundation::CreaturePeriodicReceipt, CarrierError>,
     )>,
-    pub(crate) callback_pulses: crate::source_callback_cast::CallbackPulseBatch,
-    pub(crate) smelly_pulses: crate::smelly_encounter_dispatch::SmellyPulseResults,
-    pub(crate) movements: Vec<(
+    pub callback_pulses: crate::source_callback_cast::CallbackPulseBatch,
+    pub smelly_pulses: crate::smelly_encounter_dispatch::SmellyPulseResults,
+    pub movements: Vec<(
         ExactActorRef,
         Result<
             Option<crate::foundation::MovementPositionSnapshot>,
             crate::movement::speed::CreatureCadenceError,
         >,
     )>,
-    pub(crate) child_registration: Vec<ChildRegistrationReceipt>,
-    pub(crate) thinks: Vec<ThinkCombatResult>,
-    pub(crate) melee: Vec<(Ref, Result<SwingOutcome, AttackError>)>,
-    pub(crate) chain_steps:
+    pub child_registration: Vec<ChildRegistrationReceipt>,
+    pub thinks: Vec<ThinkCombatResult>,
+    pub melee: Vec<(Ref, Result<SwingOutcome, AttackError>)>,
+    pub chain_steps:
         crate::creature_chain_attack::ChainPulseResults<crate::creature_damage_spell::SpellOutcome>,
-    pub(crate) windup_casts: crate::creature_damage_spell::WindupCastResults,
-    pub(crate) conditions:
+    pub windup_casts: crate::creature_damage_spell::WindupCastResults,
+    pub conditions:
         Result<Vec<(ExactActorRef, Option<NativeOwnedPlayerTickReceipt>)>, AttackError>,
 }
-pub(crate) struct MonsterCombatLane {
+pub struct MonsterCombatLane {
     callback_speech: crate::weak_spot_speech::WeakSpotSpeechMailbox,
-    pub(crate) time_guardian_owner: crate::source_encounter_seven::TimeGuardianOwner,
+    pub time_guardian_owner: crate::source_encounter_seven::TimeGuardianOwner,
     callback_spawn_owner: Option<crate::source_callback_spawn::CallbackSpawnOwner>,
     callback_casts: Option<crate::source_callback_cast::CallbackCastOwner>,
     native_appearance_content:
@@ -649,7 +649,7 @@ pub(crate) struct MonsterCombatLane {
     bone_encounters: Vec<BoneCombatInstance>,
     crystal_deaths: Option<crate::crystal_death_composition::CrystalDeathOwner>,
     timer: MonsterThinkLane,
-    pub(crate) actors: Vec<NativeActor>,
+    pub actors: Vec<NativeActor>,
     melee: AutoAttackOwner,
     spells: DamageSpellOwner,
     composed: ComposedOwner,
@@ -662,10 +662,10 @@ pub(crate) struct MonsterCombatLane {
     icicle_owner: crate::creature_icicle::IcicleOwner,
     defense_summon_owner: crate::monster_summon::DefenseSummonOwner,
     summons: crate::monster_summon::NativeSummonOwner,
-    pub(crate) child_closure: Option<std::sync::Arc<NativeChildClosure>>,
+    pub child_closure: Option<std::sync::Arc<NativeChildClosure>>,
 }
 impl MonsterCombatLane {
-    pub(crate) fn new(
+    pub fn new(
         runtime: &ChannelRuntimeV1,
         current: &ScopeRuntimeFence,
     ) -> Result<Self, CombatLaneError> {
@@ -909,7 +909,7 @@ impl MonsterCombatLane {
     }
     #[cfg(test)]
     #[allow(clippy::too_many_arguments)]
-    pub(crate) fn register_native(
+    pub fn register_native(
         &mut self,
         runtime: &ChannelRuntimeV1,
         current: &mut ScopeRuntimeFence,
@@ -933,7 +933,7 @@ impl MonsterCombatLane {
     }
     #[cfg(test)]
     #[allow(clippy::too_many_arguments)]
-    pub(crate) fn register_project(
+    pub fn register_project(
         &mut self,
         runtime: &ChannelRuntimeV1,
         current: &mut ScopeRuntimeFence,
@@ -957,7 +957,7 @@ impl MonsterCombatLane {
     /// current scope, physical actor identity and exact typed project admission checks.
     // Keep independently current runtime/fence, loaded content, source/proposal and owner facts explicit at this native composition boundary.
     #[allow(clippy::too_many_arguments)]
-    pub(crate) fn register_project_with_native(
+    pub fn register_project_with_native(
         &mut self,
         runtime: &ChannelRuntimeV1,
         current: &mut ScopeRuntimeFence,
@@ -1225,7 +1225,7 @@ impl MonsterCombatLane {
     }
     /// The caller holds runtime→states and supplies independently current scope authority and
     /// owner clock. Due think work and the global attack pulse get separate accepted ordinals.
-    pub(crate) fn run<R: MonsterCombatReader>(
+    pub fn run<R: MonsterCombatReader>(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         states: &mut impl MonsterCombatStates,
@@ -2030,7 +2030,7 @@ impl MonsterCombatLane {
 
 // Additive MonsterCombatLane API; one retained owner under existing runtime->states lock.
 impl MonsterCombatLane {
-    pub(crate) fn bind_crystal_death_owner(
+    pub fn bind_crystal_death_owner(
         &mut self,
         project: &crate::content::WorldProject,
         runtime: &ChannelRuntimeV1,
@@ -2048,7 +2048,7 @@ impl MonsterCombatLane {
         )?);
         Ok(())
     }
-    pub(crate) fn project_crystal_creature_death(
+    pub fn project_crystal_creature_death(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         current: &ScopeRuntimeFence,
@@ -2067,7 +2067,7 @@ impl MonsterCombatLane {
         )?;
         owner.project_and_dispatch(runtime, current, stamp, actor, listeners, server_rum_draw)
     }
-    pub(crate) fn drain_source_callback_speech(
+    pub fn drain_source_callback_speech(
         &mut self,
         runtime: &ChannelRuntimeV1,
         actor: ExactActorRef,
@@ -2075,10 +2075,10 @@ impl MonsterCombatLane {
     ) -> Result<Vec<Vec<u8>>, crate::weak_spot_speech::WeakSpotSpeechError> {
         self.callback_speech.drain(runtime, actor, session)
     }
-    pub(crate) fn clear_source_callback_speech_session(&mut self, session: GameSessionId) {
+    pub fn clear_source_callback_speech_session(&mut self, session: GameSessionId) {
         self.callback_speech.clear_session(session)
     }
-    pub(crate) fn drain_crystal_speech(
+    pub fn drain_crystal_speech(
         &mut self,
         runtime: &ChannelRuntimeV1,
         actor: ExactActorRef,
@@ -2089,7 +2089,7 @@ impl MonsterCombatLane {
             None => Ok(Vec::new()),
         }
     }
-    pub(crate) fn clear_crystal_speech_session(&mut self, session: GameSessionId) {
+    pub fn clear_crystal_speech_session(&mut self, session: GameSessionId) {
         if let Some(owner) = self.crystal_deaths.as_mut() {
             owner.clear_session(session)
         }
@@ -2098,7 +2098,7 @@ impl MonsterCombatLane {
 
 // Immutable union of exact source child execution dependencies, retained once per Channel lane.
 // No Draft clone, alternate factory or artifact-digest membership inference.
-pub(crate) struct NativeChildClosure {
+pub struct NativeChildClosure {
     callback_children: Vec<(
         Ref,
         Vec<crate::source_callback_cast::SourceCallbackCast>,
@@ -2106,7 +2106,7 @@ pub(crate) struct NativeChildClosure {
     )>,
     records: Vec<ProjectReferenceRecord>,
     profiles: Vec<ProjectV2AuthoringProfile>,
-    pub(crate) children: Vec<(Ref, Vec<NativeHeal>)>,
+    pub children: Vec<(Ref, Vec<NativeHeal>)>,
     content: [u8; 32],
 }
 impl NativeChildClosure {
@@ -2326,17 +2326,17 @@ impl NativeChildClosure {
     }
 }
 
-pub(crate) struct SummonFollowFacts<'a> {
+pub struct SummonFollowFacts<'a> {
     /// Independently supplied current map provider; absence refuses cadence/movement.
-    pub(crate) ground: Option<&'a dyn crate::movement::speed::GroundSpeedSource>,
-    pub(crate) direction: crate::movement::CardinalStep,
-    pub(crate) selection: crate::movement::MovementEngineeringSelection<'a>,
-    pub(crate) index: &'a crate::content::static_cell_engine::EngineeringStaticCellIndex,
+    pub ground: Option<&'a dyn crate::movement::speed::GroundSpeedSource>,
+    pub direction: crate::movement::CardinalStep,
+    pub selection: crate::movement::MovementEngineeringSelection<'a>,
+    pub index: &'a crate::content::static_cell_engine::EngineeringStaticCellIndex,
     /// Independently current source restrictions: no PZ/floor-change/teleport admission.
-    pub(crate) tile_admits: Option<bool>,
+    pub tile_admits: Option<bool>,
 }
 #[derive(Debug)]
-pub(crate) enum SummonFollowError {
+pub enum SummonFollowError {
     MissingMap,
     StaleOwner,
     StaleRelation,
@@ -2562,12 +2562,12 @@ mod native_summon_follow_tests {
     }
 }
 #[derive(Debug)]
-pub(crate) struct ChildRegistrationReceipt {
-    pub(crate) actor: ExactActorRef,
-    pub(crate) creature: Ref,
+pub struct ChildRegistrationReceipt {
+    pub actor: ExactActorRef,
+    pub creature: Ref,
     /// None is a verified already-registered exact binding, never a manufactured occurrence.
-    pub(crate) result: Result<Option<ThinkOccurrence>, CombatLaneError>,
-    pub(crate) cleanup: Option<Result<(), CarrierError>>,
+    pub result: Result<Option<ThinkOccurrence>, CombatLaneError>,
+    pub cleanup: Option<Result<(), CarrierError>>,
 }
 impl MonsterCombatLane {
     fn register_pending_children(
@@ -2849,9 +2849,9 @@ struct BoneCombatInstance {
     phylactery: ExactActorRef,
     state: crate::foundation::BoneOverlordCagePhase,
 }
-pub(crate) struct MonsterDeathWithBone {
-    pub(crate) projected: crate::crystal_death_composition::CrystalProjectedDeath,
-    pub(crate) bone:
+pub struct MonsterDeathWithBone {
+    pub projected: crate::crystal_death_composition::CrystalProjectedDeath,
+    pub bone:
         Vec<Result<crate::foundation::BonePhaseTransition, crate::foundation::BonePhaseError>>,
 }
 impl MonsterCombatLane {
@@ -2859,7 +2859,7 @@ impl MonsterCombatLane {
     /// Same-name global census does not identify an encounter instance or grant membership.
     // Keep admit_bone_shared_encounter ABI explicit: current runtime owner, independent fence/stamp, exact actor/session/source and occurrence/policy facts are separate admission inputs.
     #[allow(clippy::too_many_arguments)]
-    pub(crate) fn admit_bone_shared_encounter(
+    pub fn admit_bone_shared_encounter(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         project: &crate::content::WorldProject,
@@ -2904,7 +2904,7 @@ impl MonsterCombatLane {
     }
     /// Actual projection/callback turn plus native Bone tracker before actor removal. Callers handle
     /// explicit phase/callback errors; no authored phase counter is substituted for a sealed death.
-    pub(crate) fn project_monster_death_with_bone(
+    pub fn project_monster_death_with_bone(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         current: &ScopeRuntimeFence,
@@ -3492,14 +3492,14 @@ fn commit_paced_summon_follow(
     Ok(outcome)
 }
 
-pub(crate) struct RegularCreatureMovementFacts<'a> {
-    pub(crate) direction: crate::movement::CardinalStep,
-    pub(crate) scope: &'a crate::content::static_cell_engine::EngineeringStaticCellScope,
-    pub(crate) index: &'a crate::content::static_cell_engine::EngineeringStaticCellIndex,
-    pub(crate) ground: Option<&'a dyn crate::movement::speed::GroundSpeedSource>,
-    pub(crate) blocking: &'a [crate::content::LogicalCell],
+pub struct RegularCreatureMovementFacts<'a> {
+    pub direction: crate::movement::CardinalStep,
+    pub scope: &'a crate::content::static_cell_engine::EngineeringStaticCellScope,
+    pub index: &'a crate::content::static_cell_engine::EngineeringStaticCellIndex,
+    pub ground: Option<&'a dyn crate::movement::speed::GroundSpeedSource>,
+    pub blocking: &'a [crate::content::LogicalCell],
     /// Current source movement/PZ/teleport/floor-change restrictions, not default allow.
-    pub(crate) tile_admits: Option<bool>,
+    pub tile_admits: Option<bool>,
 }
 impl MonsterCombatLane {
     fn run_regular_creature_movement<R: MonsterCombatReader>(
@@ -3571,9 +3571,9 @@ impl MonsterCombatLane {
 
 /// Immutable trusted-loader artifacts; canonical runtime slots retain all tick cursors.
 /// Construction accepts the native compiler's qualified room, never raw collision claims.
-pub(crate) struct TrustedMonsterConditionTickInputs {
+pub struct TrustedMonsterConditionTickInputs {
     cells: crate::content::NativeEntryMovementCells,
-    pub(crate) regeneration: NativeRegenerationRegistry,
+    pub regeneration: NativeRegenerationRegistry,
     world: crate::foundation::WorldId,
     activation: u64,
     server: [u8; 32],
@@ -3582,7 +3582,7 @@ pub(crate) struct TrustedMonsterConditionTickInputs {
     map: [u8; 32],
 }
 impl TrustedMonsterConditionTickInputs {
-    pub(crate) fn from_trusted_native_loader(
+    pub fn from_trusted_native_loader(
         runtime: &ChannelRuntimeV1,
         room: &crate::content::QualifiedNativeEntryRoom,
         draft: &ProjectV2Draft,
@@ -3595,7 +3595,7 @@ impl TrustedMonsterConditionTickInputs {
         Self::from_project_definitions(runtime, room, draft, digest)
     }
     #[cfg(test)]
-    pub(crate) fn from_test_native_room(
+    pub fn from_test_native_room(
         runtime: &ChannelRuntimeV1,
         room: &crate::content::QualifiedNativeEntryRoom,
         draft: &ProjectV2Draft,
@@ -3634,7 +3634,7 @@ impl TrustedMonsterConditionTickInputs {
             map: pin.map_revision_digest(),
         })
     }
-    pub(crate) fn current<'a>(
+    pub fn current<'a>(
         &'a self,
         runtime: &ChannelRuntimeV1,
     ) -> Option<(
@@ -3660,7 +3660,7 @@ impl TrustedMonsterConditionTickInputs {
     /// The current standing-field reader supplies an explicit known result:
     /// outerNone is unavailable; Some(None) is independently observed no field.
     /// Native Player periodic state remains exclusively PlayerSpellState.conditions.
-    pub(crate) fn source_player_tick_spatial_facts(
+    pub fn source_player_tick_spatial_facts(
         &self,
         runtime: &ChannelRuntimeV1,
         actor: ExactActorRef,
@@ -4071,7 +4071,7 @@ mod native_ability_coverage {
     use std::collections::BTreeSet;
     type Key = (String, String);
     fn root() -> std::path::PathBuf {
-        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content")
+        std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server")).join("../../content")
     }
     fn shards(dir: &str) -> Vec<serde_json::Value> {
         let mut paths: Vec<_> = std::fs::read_dir(root().join(dir))

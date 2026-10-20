@@ -6,7 +6,7 @@
 extern crate self as oteryn_game_server;
 
 #[cfg(test)]
-#[path = "../src/monster_lab.rs"]
+#[path = "../../../crates/gameplay/monster-ai/src/monster_lab.rs"]
 mod monster_lab;
 
 #[allow(dead_code)]
@@ -20,12 +20,12 @@ mod achievement_catalogue;
     unused_imports,
     reason = "ai:: has no production caller yet; a later wiring task consumes it from ai_think"
 )]
-#[path = "../src/ai/mod.rs"]
+#[path = "../../../crates/gameplay/monster-ai/src/ai/mod.rs"]
 mod ai;
-#[path = "../src/ai_monster_melee.rs"]
+#[path = "../../../crates/gameplay/monster-ai/src/ai_monster_melee.rs"]
 mod ai_monster_melee;
 // Ordinary declarations retain the native non-mod.rs implicit child directories. A direct
-// #[path="../src/ai_think.rs"] would instead search src/ for its implicit children.
+// #[path="../../../crates/gameplay/monster-ai/src/ai_think.rs"] would instead search src/ for its implicit children.
 #[path = "../src"]
 mod native_file_modules {
     #[allow(
@@ -168,7 +168,7 @@ pub use oteryn_gameplay_native_admission_source as native_admission_source;
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-#[path = "../src/bone_phase_registry.rs"]
+#[path = "../../../crates/gameplay/monster-ai/src/bone_phase_registry.rs"]
 mod bone_phase_registry;
 #[allow(
     dead_code,
@@ -252,16 +252,16 @@ mod self_heal_qualification;
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-#[path = "../src/smelly_cheese.rs"]
+#[path = "../../../crates/gameplay/monster-ai/src/smelly_cheese.rs"]
 mod smelly_cheese;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-#[path = "../src/smelly_damage.rs"]
+#[path = "../../../crates/gameplay/monster-ai/src/smelly_damage.rs"]
 mod smelly_damage;
 #[allow(dead_code)]
-#[path = "../src/smelly_encounter_dispatch.rs"]
+#[path = "../../../crates/gameplay/monster-ai/src/smelly_encounter_dispatch.rs"]
 mod smelly_encounter_dispatch;
 #[path = "../../../crates/gameplay/encounters/src/source_callback_intent.rs"]
 mod source_callback_intent;
@@ -289,7 +289,7 @@ mod source_threshold_heal;
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-#[path = "../src/weak_spot_speech.rs"]
+#[path = "../../../crates/gameplay/monster-ai/src/weak_spot_speech.rs"]
 mod weak_spot_speech;
 #[allow(
     dead_code,
@@ -308,13 +308,13 @@ mod world_clock;
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-#[path = "../src/monster_owner_cycle.rs"]
+#[path = "../../../crates/gameplay/monster-ai/src/monster_owner_cycle.rs"]
 mod monster_owner_cycle;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-#[path = "../src/monster_summon.rs"]
+#[path = "../../../crates/gameplay/monster-ai/src/monster_summon.rs"]
 mod monster_summon;
 
 #[cfg(test)]

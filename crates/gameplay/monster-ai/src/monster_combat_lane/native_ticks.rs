@@ -5,9 +5,9 @@ use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, Movement
 /// One present player's death (§4.2): the occurrence minted at the lethal write, the idempotency
 /// key of every consequence, and the cell the player died on.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct PlayerDeath {
-    pub(crate) occurrence: PlayerDeathOccurrence,
-    pub(crate) cell: MovementLocalPosition,
+pub struct PlayerDeath {
+    pub occurrence: PlayerDeathOccurrence,
+    pub cell: MovementLocalPosition,
 }
 
 /// Retained source payload reader ABI; source monster regeneration is N/A (zero captured definitions).
@@ -15,7 +15,7 @@ pub(crate) struct PlayerDeath {
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-pub(crate) trait NativeRegenerationTickSource {
+pub trait NativeRegenerationTickSource {
     fn gains(
         &self,
         runtime: &ChannelRuntimeV1,
@@ -33,7 +33,7 @@ pub(crate) trait NativeRegenerationTickSource {
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-pub(crate) struct NativeRegenerationRegistry {
+pub struct NativeRegenerationRegistry {
     world: crate::foundation::WorldId,
     server: [u8; 32],
     loader_digest: [u8; 32],
@@ -57,7 +57,7 @@ struct NativeRegenerationEntry {
 impl NativeRegenerationRegistry {
     /// Immutable definitions only; the lane independently checks loaded membership before
     /// constructing a current tick capability. This registry alone grants no tick authority.
-    pub(crate) fn from_project_definitions(
+    pub fn from_project_definitions(
         runtime: &ChannelRuntimeV1,
         draft: &crate::content::ProjectV2Draft,
         loader_digest: [u8; 32],
@@ -127,10 +127,10 @@ impl NativeRegenerationRegistry {
             entries,
         })
     }
-    pub(crate) fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.entries.len()
     }
-    pub(crate) fn loader_digest(&self) -> [u8; 32] {
+    pub fn loader_digest(&self) -> [u8; 32] {
         self.loader_digest
     }
 }
@@ -152,9 +152,9 @@ impl NativeRegenerationTickSource for NativeRegenerationRegistry {
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-pub(crate) struct NativeOwnedPlayerTickReceipt {
-    pub(crate) ticks: Vec<crate::ability::condition::ConditionTick<String>>,
-    pub(crate) revision: u64,
-    pub(crate) damage: u32,
-    pub(crate) death: Option<PlayerDeath>,
+pub struct NativeOwnedPlayerTickReceipt {
+    pub ticks: Vec<crate::ability::condition::ConditionTick<String>>,
+    pub revision: u64,
+    pub damage: u32,
+    pub death: Option<PlayerDeath>,
 }

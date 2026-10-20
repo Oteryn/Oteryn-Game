@@ -11,7 +11,7 @@ use crate::foundation::{
 use oteryn_simulation_determinism::DecisionOccurrenceId;
 
 #[allow(clippy::too_many_arguments)]
-pub(crate) trait MonsterCombatStates:
+pub trait MonsterCombatStates:
     crate::player_lethal::PlayerLethalVitals + crate::creature_area_heal::AreaHealStates
 {
     fn prepare_native_conditions(

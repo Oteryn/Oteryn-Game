@@ -15,7 +15,7 @@ use crate::foundation::{
 
 const AI01_CREATURES_PER_SCOPE: usize = 64; // Accepted AI decision §4.9:16sources×4population.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum CycleError {
+pub enum CycleError {
     StaleOwner,
     StaleActor,
     ActorLimit,
@@ -23,15 +23,15 @@ pub(crate) enum CycleError {
     Ordinal(GenerationError),
 }
 #[derive(Debug)]
-pub(crate) struct MonsterThinkLane {
+pub struct MonsterThinkLane {
     scope: RuntimeScopeRefV1,
     generation: ScopeOwnershipGeneration,
     timers: OwnerTimerLane<ThinkFamily, ThinkOccurrence>,
-    pub(crate) tracker: ThinkSequenceTracker,
-    pub(crate) actors: Vec<ExactActorRef>,
+    pub tracker: ThinkSequenceTracker,
+    pub actors: Vec<ExactActorRef>,
 }
 impl MonsterThinkLane {
-    pub(crate) fn new(
+    pub fn new(
         runtime: &ChannelRuntimeV1,
         current: &ScopeRuntimeFence,
     ) -> Result<Self, CycleError> {
@@ -79,7 +79,7 @@ impl MonsterThinkLane {
     }
     /// Initial scheduling is its own accepted owner input. Mint its stamp only from
     /// the supplied existing current mutable fence, never from an unrelated receipt.
-    pub(crate) fn schedule(
+    pub fn schedule(
         &mut self,
         runtime: &ChannelRuntimeV1,
         current: &mut ScopeRuntimeFence,
@@ -141,7 +141,7 @@ impl MonsterThinkLane {
     /// Consumes due owner inputs once in the existing Foundation deterministic order. The
     /// callback must use actual native AI selection/combat facts; absent facts mean refusal.
     /// It receives the current fence and fresh stamp, never a caller-fabricated grant.
-    pub(crate) fn run_due<R, S>(
+    pub fn run_due<R, S>(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         states: &mut S,

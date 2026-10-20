@@ -7,7 +7,7 @@ extern crate self as oteryn_game_server;
 
 // Offline monster laboratory: reuse native components without enabling production AI dispatch.
 #[cfg(test)]
-mod monster_lab;
+pub(crate) use oteryn_gameplay_monster_ai::monster_lab;
 
 #[allow(dead_code)]
 pub(crate) use oteryn_gameplay_combat::ability;
@@ -24,7 +24,7 @@ mod player_lethal;
     unused_imports,
     reason = "ai:: has no production caller yet; a later wiring task consumes it from ai_think"
 )]
-mod ai;
+pub(crate) use oteryn_gameplay_monster_ai::ai;
 // AI-3's composition root over `ai::`'s public API: builds one creature's per-think decision and,
 // for chase/wander, acts through the real Movement owner. A sibling of `ai`, not a child of it,
 // so `tests/ai_bootstrap.rs`'s standalone path-include of `ai/mod.rs` never pulls in
@@ -32,12 +32,12 @@ mod ai;
 // the composed per-creature think into `ChannelRuntimeV1`'s live owner cycle yet -- same pattern
 // as AI-1's `owner_timer` and AI-2's spawn/respawn code: complete, tested and uncalled, ready for
 // that wiring.
-mod ai_monster_melee;
+pub(crate) use oteryn_gameplay_monster_ai::ai_monster_melee;
 #[allow(
     dead_code,
     reason = "ai_think has no production caller yet; AI-4/a later wiring task composes it into ChannelRuntimeV1's owner cycle"
 )]
-mod ai_think;
+pub(crate) use oteryn_gameplay_monster_ai::ai_think;
 #[allow(
     dead_code,
     reason = "nonshipping fixed-one-creature Combat proof awaits production composition"
@@ -731,7 +731,7 @@ pub use oteryn_gameplay_native_admission_source as native_admission_source;
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod bone_phase_registry;
+pub(crate) use oteryn_gameplay_monster_ai::bone_phase_registry;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
@@ -801,9 +801,9 @@ pub(crate) use oteryn_gameplay_encounters::self_heal_qualification;
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod smelly_cheese;
+pub(crate) use oteryn_gameplay_monster_ai::smelly_cheese;
 #[allow(dead_code)]
-mod smelly_encounter_dispatch;
+pub(crate) use oteryn_gameplay_monster_ai::smelly_encounter_dispatch;
 pub(crate) use oteryn_gameplay_encounters::source_callback_intent;
 #[allow(dead_code)]
 pub(crate) use oteryn_gameplay_encounters::source_callback_spawn;
@@ -812,7 +812,7 @@ pub(crate) use oteryn_gameplay_encounters::source_callback_spawn;
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod smelly_damage;
+pub(crate) use oteryn_gameplay_monster_ai::smelly_damage;
 use oteryn_gameplay_source_critical_baseline as source_critical_baseline;
 #[allow(
     dead_code,
@@ -828,7 +828,7 @@ pub(crate) use oteryn_gameplay_encounters::source_threshold_heal;
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod weak_spot_speech;
+pub(crate) use oteryn_gameplay_monster_ai::weak_spot_speech;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
@@ -845,17 +845,17 @@ use oteryn_gameplay_weather as world_weather;
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod monster_combat_lane;
+pub(crate) use oteryn_gameplay_monster_ai::monster_combat_lane;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod monster_owner_cycle;
+pub(crate) use oteryn_gameplay_monster_ai::monster_owner_cycle;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod monster_summon;
+pub(crate) use oteryn_gameplay_monster_ai::monster_summon;
 
 #[cfg(test)]
 mod canonical_monster_successor_tests;

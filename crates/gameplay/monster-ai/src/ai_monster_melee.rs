@@ -20,10 +20,10 @@ use crate::foundation::owner_timer::SemanticTimeMicros;
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId};
 use oteryn_simulation_determinism::deterministic_decision_u64;
 
-pub(crate) use crate::foundation::melee_definition::MeleeDefinition;
+pub use crate::foundation::melee_definition::MeleeDefinition;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Dispatch {
+pub enum Dispatch {
     Decision(ThinkOutcome),
     Bite(Result<AppliedBite, BiteRejection>),
     ZeroDamage,
@@ -36,29 +36,29 @@ struct Entry {
     last: Option<(u64, Dispatch)>,
 }
 #[derive(Debug, Default)]
-pub(crate) struct MonsterMeleeOwner {
+pub struct MonsterMeleeOwner {
     /// Keyed by the issuer's slot (`actor_local_id`), at most one entry per carrier slot and so
     /// at most `CREATUREAI0-RL-04` (SPAWN-CEILINGS-1, Codex 4242381779: no longer the D57 64). A
     /// newer generation in the slot replaces the dead issuer's entry in place.
     entries: BTreeMap<u32, Entry>,
     bites: CreatureBiteLedger,
     /// CREATURE-AI-1 §2.1: the Channel's creature thinks, which decide each swing's target.
-    pub(crate) creature_ai: crate::ai_think::CreatureAiTable,
+    pub creature_ai: crate::ai_think::CreatureAiTable,
     /// The first owner time of the next pass that swings (SPAWN-CEILINGS-1, Codex 4243189401):
     /// swings keep one pass per `CREATURE_THINK_INTERVAL_MILLIS`, while the passes between them
     /// only run thinks left due by `CREATUREAI0-RL-05`.
-    pub(crate) next_swing_pass_us: u64,
+    pub next_swing_pass_us: u64,
     /// The players of the last swing pass's census, by actor and session (SPAWN-CEILINGS-1,
     /// Codex 4243397472). A pass between swing passes reads only these players' current
     /// positions instead of a census of every actor; at most one entry per present player.
-    pub(crate) think_players: Vec<(ExactActorRef, GameSessionId)>,
+    pub think_players: Vec<(ExactActorRef, GameSessionId)>,
 }
 impl MonsterMeleeOwner {
     /// One scheduled owner think, at most one existing typed bite. The selected
     /// player id resolves to current actor/session facts supplied by the owner;
     /// the bite independently revalidates both generations and protection.
     #[allow(clippy::too_many_arguments)]
-    pub(crate) fn think(
+    pub fn think(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         vitals: &mut dyn CreatureBiteVitals,
@@ -174,7 +174,7 @@ impl MonsterMeleeOwner {
 
 /// CREATURE-AI-1 §2.1: of `perceived`, only the creature think's `target` may be swung at; no
 /// target leaves the swing idle.
-pub(crate) fn think_target_only(
+pub fn think_target_only(
     target: Option<ExactActorRef>,
     perceived: impl IntoIterator<Item = (ExactActorRef, PerceivedPlayer)>,
 ) -> Vec<PerceivedPlayer> {

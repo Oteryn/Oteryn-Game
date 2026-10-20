@@ -101,7 +101,7 @@ fn register_bone_phase(
 /// as PROJECT local fixtures; they do not assert donor/Global map anchor coordinates.
 // Keep register_bone_phase_shared ABI explicit: current runtime owner, independent fence/stamp, exact actor/session/source and occurrence/policy facts are separate admission inputs.
 #[allow(clippy::too_many_arguments)]
-pub(crate) fn register_bone_phase_shared(
+pub fn register_bone_phase_shared(
     runtime: &mut ChannelRuntimeV1,
     project: &crate::content::WorldProject,
     native: &crate::content::native_gameplay::NativeGameplayState,

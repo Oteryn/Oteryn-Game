@@ -17,7 +17,7 @@ use oteryn_simulation_determinism::{
 };
 use sha2::{Digest, Sha256};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum SummonError {
+pub enum SummonError {
     InvalidSource,
     UndefinedTarget,
     StaleOwner,
@@ -31,7 +31,7 @@ pub(crate) enum SummonError {
     Carrier(CarrierError),
 }
 #[derive(Debug, Clone)]
-pub(crate) struct NativeSummonSpec {
+pub struct NativeSummonSpec {
     parent: Ref,
     child: Ref,
     health: i64,
@@ -42,31 +42,31 @@ pub(crate) struct NativeSummonSpec {
     admission: NativeSummonAdmissionSpec,
 }
 impl NativeSummonSpec {
-    pub(crate) fn parent_key(&self) -> &str {
+    pub fn parent_key(&self) -> &str {
         &self.parent.key
     }
-    pub(crate) fn child_key(&self) -> &str {
+    pub fn child_key(&self) -> &str {
         &self.child.key
     }
-    pub(crate) fn health(&self) -> i64 {
+    pub fn health(&self) -> i64 {
         self.health
     }
-    pub(crate) fn index(&self) -> usize {
+    pub fn index(&self) -> usize {
         self.index
     }
-    pub(crate) fn total(&self) -> u32 {
+    pub fn total(&self) -> u32 {
         self.total
     }
-    pub(crate) fn count(&self) -> u32 {
+    pub fn count(&self) -> u32 {
         self.count
     }
-    pub(crate) fn content(&self) -> [u8; 32] {
+    pub fn content(&self) -> [u8; 32] {
         self.content
     }
 }
 // Immutable source specs only; live facts and native admission remain independently owned.
 #[derive(Clone)]
-pub(crate) struct NativeSummonCatalog {
+pub struct NativeSummonCatalog {
     parent: Ref,
     entries: Vec<Result<NativeSummonSpec, SummonError>>,
     targets: Vec<Ref>,
@@ -77,7 +77,7 @@ fn member(draft: &ProjectV2Draft, r: &Ref) -> bool {
  &&draft.state.source_identity_bindings.iter().any(|b|b.target==*r&&b.disposition==ProjectV2SourceIdentityDisposition::Exact&&draft.state.sources.iter().any(|s|s.key==b.source_key&&s.revision==b.source_revision))
 }
 impl NativeSummonCatalog {
-    pub(crate) fn from_project(
+    pub fn from_project(
         runtime: &ChannelRuntimeV1,
         parent: &Ref,
         draft: &ProjectV2Draft,
@@ -178,7 +178,7 @@ impl NativeSummonCatalog {
             content: loader_digest,
         })
     }
-    pub(crate) fn facts(
+    pub fn facts(
         &self,
         runtime: &ChannelRuntimeV1,
         occurrence: ThinkOccurrence,
@@ -204,7 +204,7 @@ impl NativeSummonCatalog {
 }
 /// All facts come from the actual current map/path owner under the same Channel turn.
 /// Unknown terrain, floor-change, PZ, teleport, sight/path or admission never means allow.
-pub(crate) trait SummonLocationPolicy {
+pub trait SummonLocationPolicy {
     fn current_target_reachable(
         &mut self,
         runtime: &ChannelRuntimeV1,
@@ -222,10 +222,10 @@ pub(crate) trait SummonLocationPolicy {
     ) -> Option<bool>;
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct SummonReceipt {
-    pub(crate) child: ExactActorRef,
-    pub(crate) newly_created: bool,
-    pub(crate) position: MovementLocalPosition,
+pub struct SummonReceipt {
+    pub child: ExactActorRef,
+    pub newly_created: bool,
+    pub position: MovementLocalPosition,
 }
 struct SummonMemo {
     sequence: u64,
@@ -233,12 +233,12 @@ struct SummonMemo {
     result: Result<SummonReceipt, SummonError>,
 }
 #[derive(Default)]
-pub(crate) struct NativeSummonOwner {
+pub struct NativeSummonOwner {
     /// By parent and summon entry (Codex 4243039220).
     memos: ActorMemoTable<usize, SummonMemo>,
 }
 impl NativeSummonOwner {
-    pub(crate) fn execute(
+    pub fn execute(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         fence: &ScopeRuntimeFence,
@@ -1056,7 +1056,7 @@ mod summon_retirement_regression {
     }
 }
 
-pub(crate) fn native_draft_world_matches(
+pub fn native_draft_world_matches(
     runtime: &ChannelRuntimeV1,
     draft: &ProjectV2Draft,
 ) -> bool {
@@ -1070,7 +1070,7 @@ pub(crate) fn native_draft_world_matches(
     draft.core.world_id == expected
 }
 #[cfg(test)]
-pub(crate) fn summon_execution_fixture_for_world(
+pub fn summon_execution_fixture_for_world(
     world: crate::foundation::WorldId,
 ) -> (
     ChannelRuntimeV1,
@@ -1168,8 +1168,8 @@ mod native_summon_distance_tests {
 
 // Source-authored defense summons reuse the actual intrinsic physical admission/lifecycle.
 #[derive(Debug, Clone)]
-pub(crate) struct DefenseSummonSource {
-    pub(crate) index: usize,
+pub struct DefenseSummonSource {
+    pub index: usize,
     ability: Ref,
     spec: NativeSummonSpec,
     fixed: bool,
@@ -1178,7 +1178,7 @@ pub(crate) struct DefenseSummonSource {
     offset: u16,
 }
 impl DefenseSummonSource {
-    pub(crate) fn qualify(
+    pub fn qualify(
         runtime: &ChannelRuntimeV1,
         parent: &Ref,
         draft: &ProjectV2Draft,
@@ -1330,18 +1330,18 @@ impl DefenseSummonSource {
             offset: *max_offset_tiles,
         })
     }
-    pub(crate) fn child(&self) -> &Ref {
+    pub fn child(&self) -> &Ref {
         &self.spec.child
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct DefenseSummonBatch {
-    pub(crate) requested: u32,
-    pub(crate) children: Vec<SummonReceipt>,
-    pub(crate) refused: Option<SummonError>,
-    pub(crate) cap_omitted: u32,
-    pub(crate) project_cap16_not_global: bool,
-    pub(crate) project_current_free_cell_selection: bool,
+pub struct DefenseSummonBatch {
+    pub requested: u32,
+    pub children: Vec<SummonReceipt>,
+    pub refused: Option<SummonError>,
+    pub cap_omitted: u32,
+    pub project_cap16_not_global: bool,
+    pub project_current_free_cell_selection: bool,
 }
 struct DefenseSummonMemo {
     sequence: u64,
@@ -1349,14 +1349,14 @@ struct DefenseSummonMemo {
     batch: DefenseSummonBatch,
 }
 #[derive(Default)]
-pub(crate) struct DefenseSummonOwner {
+pub struct DefenseSummonOwner {
     /// By parent and defence Ability (Codex 4243039220).
     memos: ActorMemoTable<Ref, DefenseSummonMemo>,
 }
 impl DefenseSummonOwner {
     // Keep execute ABI explicit: current runtime owner, independent fence/stamp, exact actor/session/source and occurrence/policy facts are separate admission inputs.
     #[allow(clippy::too_many_arguments)]
-    pub(crate) fn execute(
+    pub fn execute(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         fence: &ScopeRuntimeFence,
@@ -2015,24 +2015,24 @@ mod captured_defense_summon_test {
 /// Physical native roles remain owned by Foundation. This reconciles the source
 /// monster-parent relationship with95's independently typed player companion role.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum CurrentSourceCreatureRole {
+pub enum CurrentSourceCreatureRole {
     Ordinary,
     IntrinsicMonsterSummon(ExactActorRef),
     PlayerCompanion(ExactActorRef, crate::foundation::GameSessionId),
     Familiar,
 }
 impl CurrentSourceCreatureRole {
-    pub(crate) fn intrinsic_master(self) -> Option<ExactActorRef> {
+    pub fn intrinsic_master(self) -> Option<ExactActorRef> {
         match self {
             Self::IntrinsicMonsterSummon(master) => Some(master),
             _ => None,
         }
     }
-    pub(crate) fn is_ordinary(self) -> bool {
+    pub fn is_ordinary(self) -> bool {
         matches!(self, Self::Ordinary)
     }
 }
-pub(crate) fn current_source_creature_role(
+pub fn current_source_creature_role(
     runtime: &ChannelRuntimeV1,
     actor: ExactActorRef,
 ) -> Result<CurrentSourceCreatureRole, CarrierError> {

@@ -10,7 +10,7 @@ use crate::foundation::{
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum SmellyPulse {
+pub enum SmellyPulse {
     Damage500,
     Presentation700,
 }
@@ -22,13 +22,13 @@ impl TimerFamily for SmellyPulse {
     }
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct SmellyCastOccurrence {
+pub struct SmellyCastOccurrence {
     pub caster: ExactActorRef,
     pub sequence: u64,
 }
 
 #[derive(Debug)]
-pub(crate) enum SmellyScheduleError {
+pub enum SmellyScheduleError {
     Owner(CarrierError),
     Timer(OwnerTimerError),
     InvalidSequence,
@@ -38,26 +38,26 @@ pub(crate) enum SmellyScheduleError {
 /// One drained native timer input. Deliberately neither Clone nor Copy; only drain
 /// constructs it. A consumer takes ownership, so source A cannot be replayed after B.
 #[derive(Debug)]
-pub(crate) struct SmellyDuePulse {
+pub struct SmellyDuePulse {
     pulse: FiredTimer<SmellyPulse, SmellyCastOccurrence>,
 }
 impl SmellyDuePulse {
-    pub(crate) fn kind(&self) -> SmellyPulse {
+    pub fn kind(&self) -> SmellyPulse {
         self.pulse.family
     }
-    pub(crate) fn caster(&self) -> ExactActorRef {
+    pub fn caster(&self) -> ExactActorRef {
         self.pulse.occurrence.caster
     }
-    pub(crate) fn sequence(&self) -> u64 {
+    pub fn sequence(&self) -> u64 {
         self.pulse.occurrence.sequence
     }
 }
-pub(crate) struct SmellyCheeseTimers {
+pub struct SmellyCheeseTimers {
     lane: OwnerTimerLane<SmellyPulse, SmellyCastOccurrence>,
     accepted: Vec<SmellyCastOccurrence>,
 }
 impl SmellyCheeseTimers {
-    pub(crate) fn new(
+    pub fn new(
         scope: RuntimeScopeRefV1,
         generation: ScopeOwnershipGeneration,
     ) -> Result<Self, OwnerTimerError> {
@@ -80,7 +80,7 @@ impl SmellyCheeseTimers {
     }
     /// Source-bound ordered cast admission. This is the production scheduling entry point.
     /// Completed cast retries cannot schedule another HP pulse; old sequences fail closed.
-    pub(crate) fn schedule_once(
+    pub fn schedule_once(
         &mut self,
         runtime: &ChannelRuntimeV1,
         fence: &ScopeRuntimeFence,
@@ -173,7 +173,7 @@ impl SmellyCheeseTimers {
     /// Stale owner and retired actor purging are the existing timer owner's checks.
     /// Each drained pulse is consumed exactly once; target/presentation consumers resolve
     /// current native world state in the same owner work item before they mutate anything.
-    pub(crate) fn drain(
+    pub fn drain(
         &mut self,
         clock: &impl OwnerClock,
         fence: &ScopeRuntimeFence,

@@ -8,7 +8,7 @@ use crate::foundation::{
 use crate::player_lethal::{PlayerDamageReceipt, PlayerLethalVitals};
 use crate::smelly_cheese::{SmellyDuePulse, SmellyPulse};
 #[derive(Debug)]
-pub(crate) enum SmellyDamageError {
+pub enum SmellyDamageError {
     Owner(CarrierError),
     InvalidRangeDraw,
     WrongPulse,
@@ -19,7 +19,7 @@ pub(crate) enum SmellyDamageError {
 /// `native_legal` must be the existing map/target owner (not authoring metadata).
 // Keep commit_smelly_unambiguous_damage ABI explicit: current runtime owner, independent fence/stamp, exact actor/session/source and occurrence/policy facts are separate admission inputs.
 #[allow(clippy::too_many_arguments)]
-pub(crate) fn commit_smelly_unambiguous_damage(
+pub fn commit_smelly_unambiguous_damage(
     runtime: &mut ChannelRuntimeV1,
     fence: &ScopeRuntimeFence,
     stamp: RuntimeWorkStamp,

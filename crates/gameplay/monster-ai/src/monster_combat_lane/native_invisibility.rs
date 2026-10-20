@@ -9,7 +9,7 @@ use crate::foundation::{ChannelRuntimeV1, ExactActorRef};
 use crate::foundation::{ConditionDefinition, ConditionValues, StatusKind};
 use crate::foundation::{MovementPositionContext, WorldId};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct Pin {
+pub struct Pin {
     world: WorldId,
     activation: u64,
     server: [u8; 32],
@@ -18,7 +18,7 @@ pub(crate) struct Pin {
     movement: MovementPositionContext,
 }
 impl Pin {
-    pub(crate) fn current(r: &ChannelRuntimeV1) -> Self {
+    pub fn current(r: &ChannelRuntimeV1) -> Self {
         let p = r.content_pin();
         Self {
             world: p.world_id(),
@@ -31,7 +31,7 @@ impl Pin {
     }
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum InvisibilityError {
+pub enum InvisibilityError {
     InvalidNativeBinding,
     UnsupportedSource,
     ContentPinMismatch,
@@ -49,14 +49,14 @@ pub(crate) enum InvisibilityError {
 }
 /// Independently current tile Combat admission, supplied by the actual map/Combat owner.
 /// No permissive production default: missing policy facts must refuse before condition mutation.
-pub(crate) trait InvisibleTileCombatPolicy {
+pub trait InvisibleTileCombatPolicy {
     fn current_tile_allowed(
         &mut self,
         runtime: &ChannelRuntimeV1,
         caster: ExactActorRef,
     ) -> Option<bool>;
 }
-pub(crate) fn current_position(
+pub fn current_position(
     runtime: &ChannelRuntimeV1,
     actor: ExactActorRef,
 ) -> Result<(), InvisibilityError> {
@@ -70,11 +70,11 @@ pub(crate) fn current_position(
 }
 /// Minted from exact current native profiles, never a network-supplied actor token.
 #[derive(Debug, Clone)]
-pub(crate) struct SelfInvisibleSource {
-    pub(crate) pin: Pin,
-    pub(crate) creature: Ref,
+pub struct SelfInvisibleSource {
+    pub pin: Pin,
+    pub creature: Ref,
     ability: Ref,
-    pub(crate) definition: ConditionDefinition,
+    pub definition: ConditionDefinition,
     interval_ms: u64,
     chance_ppm: u32,
 }
@@ -112,7 +112,7 @@ fn behavior<'a>(
     Ok(b)
 }
 impl SelfInvisibleSource {
-    pub(crate) fn from_native(
+    pub fn from_native(
         runtime: &ChannelRuntimeV1,
         creature: &Ref,
         index: usize,
@@ -186,18 +186,18 @@ impl SelfInvisibleSource {
         })
     }
     /// Descriptor only; scheduling/chance must use the existing current owner cycle.
-    pub(crate) fn schedule(&self) -> (u64, u32) {
+    pub fn schedule(&self) -> (u64, u32) {
         (self.interval_ms, self.chance_ppm)
     }
 }
 #[derive(Debug, Clone)]
-pub(crate) struct CreatureVision {
-    pub(crate) pin: Pin,
-    pub(crate) creature: Ref,
-    pub(crate) sense_invisible: bool,
+pub struct CreatureVision {
+    pub pin: Pin,
+    pub creature: Ref,
+    pub sense_invisible: bool,
 }
 impl CreatureVision {
-    pub(crate) fn from_native(
+    pub fn from_native(
         runtime: &ChannelRuntimeV1,
         creature: &Ref,
         records: &[ProjectReferenceRecord],
@@ -220,12 +220,12 @@ impl CreatureVision {
 /// Source Defense-phase position Combat speed condition; preserves declared range even though
 /// castSpell(caster) uses caster position rather than that attack target range.
 #[derive(Debug, Clone)]
-pub(crate) struct SelfSpeedSource {
-    pub(crate) inner: SelfInvisibleSource,
-    pub(crate) base_speed: u16,
+pub struct SelfSpeedSource {
+    pub inner: SelfInvisibleSource,
+    pub base_speed: u16,
 }
 impl SelfSpeedSource {
-    pub(crate) fn from_native(
+    pub fn from_native(
         runtime: &ChannelRuntimeV1,
         creature: &Ref,
         index: usize,
@@ -328,15 +328,15 @@ impl SelfSpeedSource {
         })
     }
     /// Scheduling/chance is consumed exactly once by existing ProfileScheduleState Defense.
-    pub(crate) fn schedule(&self) -> (u64, u32) {
+    pub fn schedule(&self) -> (u64, u32) {
         self.inner.schedule()
     }
-    pub(crate) fn base_speed(&self) -> u16 {
+    pub fn base_speed(&self) -> u16 {
         self.base_speed
     }
 }
 
-pub(crate) fn exact_source_current(
+pub fn exact_source_current(
     runtime: &ChannelRuntimeV1,
     actor: ExactActorRef,
     source: &SelfInvisibleSource,

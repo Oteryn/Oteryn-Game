@@ -1,4 +1,4 @@
-#[path = "../src/ai/mod.rs"]
+#[path = "../../../crates/gameplay/monster-ai/src/ai/mod.rs"]
 mod ai;
 
 use ai::{

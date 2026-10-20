@@ -707,7 +707,7 @@ pub enum ThinkOutcome {
     Idle,
 }
 
-pub(crate) fn chebyshev_distance(
+pub fn chebyshev_distance(
     from: MovementLocalPosition,
     to: MovementLocalPosition,
 ) -> Option<i64> {
@@ -741,7 +741,7 @@ fn apply_step(position: MovementLocalPosition, step: CardinalStep) -> MovementLo
 /// scope, §7; the "path" this decision proposes is always exactly one step). Ties prefer the
 /// axis with the larger remaining delta, then the horizontal axis: a fixed, deterministic
 /// tie-break, not a claim of an optimal or Reference route.
-pub(crate) fn step_towards(
+pub fn step_towards(
     from: MovementLocalPosition,
     to: MovementLocalPosition,
 ) -> Option<CardinalStep> {
@@ -811,7 +811,7 @@ impl TimerFamily for ThinkFamily {
     }
 }
 
-pub(crate) use crate::foundation::ThinkOccurrence;
+pub use crate::foundation::ThinkOccurrence;
 
 /// Binding item (a): the only place a `ThinkOccurrence`'s sequence is derived from. It advances
 /// monotonically per actor and never re-issues a value, so `(actor, sequence)` can never repeat

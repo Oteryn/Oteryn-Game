@@ -7,7 +7,7 @@ use crate::foundation::{
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum NativeConditionError {
+pub enum NativeConditionError {
     Owner(ConditionOwnerError),
     StaleOwner,
     StaleActor,
@@ -16,7 +16,7 @@ pub(crate) enum NativeConditionError {
 }
 /// Independently current target/tile Combat facts from the existing map/Combat owner.
 /// Missing policy refuses before preparing a native condition; no permissive default.
-pub(crate) trait NativeConditionAdmission {
+pub trait NativeConditionAdmission {
     fn current_allowed(
         &mut self,
         runtime: &ChannelRuntimeV1,
@@ -25,7 +25,7 @@ pub(crate) trait NativeConditionAdmission {
     ) -> Option<bool>;
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct Pin {
+pub struct Pin {
     world: crate::foundation::WorldId,
     activation: u64,
     server: [u8; 32],
@@ -34,7 +34,7 @@ pub(crate) struct Pin {
     movement: crate::foundation::MovementPositionContext,
 }
 impl Pin {
-    pub(crate) fn current(runtime: &ChannelRuntimeV1) -> Self {
+    pub fn current(runtime: &ChannelRuntimeV1) -> Self {
         let p = runtime.content_pin();
         Self {
             world: p.world_id(),
@@ -46,7 +46,7 @@ impl Pin {
         }
     }
 }
-pub(crate) fn current_owner(
+pub fn current_owner(
     runtime: &ChannelRuntimeV1,
     fence: &ScopeRuntimeFence,
     stamp: RuntimeWorkStamp,
@@ -59,20 +59,20 @@ pub(crate) fn current_owner(
 }
 /// Immutable source-qualified value projection, not actor or content authority.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct NativeConditionApplication {
-    pub(crate) plan: ActorConditionPlan,
-    pub(crate) pin: Pin,
-    pub(crate) stamp: RuntimeWorkStamp,
-    pub(crate) target: ExactActorRef,
-    pub(crate) session: Option<GameSessionId>,
-    pub(crate) source: ConditionSource,
+pub struct NativeConditionApplication {
+    pub plan: ActorConditionPlan,
+    pub pin: Pin,
+    pub stamp: RuntimeWorkStamp,
+    pub target: ExactActorRef,
+    pub session: Option<GameSessionId>,
+    pub source: ConditionSource,
 }
 impl NativeConditionApplication {
-    pub(crate) fn native_plan(&self) -> &ActorConditionPlan {
+    pub fn native_plan(&self) -> &ActorConditionPlan {
         &self.plan
     }
 }
-pub(crate) fn creature_current(runtime: &ChannelRuntimeV1, actor: ExactActorRef) -> bool {
+pub fn creature_current(runtime: &ChannelRuntimeV1, actor: ExactActorRef) -> bool {
     runtime.contains_live_creature(actor)
         && runtime
             .read_actor_position(actor)

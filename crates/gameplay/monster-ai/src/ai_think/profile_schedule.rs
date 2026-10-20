@@ -440,7 +440,7 @@ fn prepare_summons(
     Ok(())
 }
 
-pub(crate) fn validate_entry<'a>(
+pub fn validate_entry<'a>(
     entry: &ProjectV2AbilitySchedule,
     abilities: &'a BTreeMap<ProjectV2DefinitionRef, ProjectV2AbilityAuthoring>,
 ) -> Result<&'a ProjectV2AbilityDetails, ScheduleError> {
@@ -459,7 +459,7 @@ pub(crate) fn validate_entry<'a>(
         .ok_or(ScheduleError::MissingAbilityProfile)
 }
 
-pub(crate) fn decision_occurrence(occurrence: ThinkOccurrence) -> DecisionOccurrenceId {
+pub fn decision_occurrence(occurrence: ThinkOccurrence) -> DecisionOccurrenceId {
     let digest = Sha256::new()
         .chain_update(b"oteryn:ai-profile-think:v1")
         .chain_update(occurrence.actor.placement_identity())

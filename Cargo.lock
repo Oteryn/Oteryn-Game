@@ -1983,6 +1983,7 @@ dependencies = [
  "oteryn-gameplay-durability",
  "oteryn-gameplay-encounters",
  "oteryn-gameplay-foundation",
+ "oteryn-gameplay-monster-ai",
  "oteryn-gameplay-native-admission-source",
  "oteryn-gameplay-node-files",
  "oteryn-gameplay-source-critical-baseline",
@@ -2119,6 +2120,23 @@ dependencies = [
  "ed25519-dalek",
  "oteryn-gameplay-domain",
  "oteryn-protocol-oteryn",
+ "oteryn-simulation-determinism",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+]
+
+[[package]]
+name = "oteryn-gameplay-monster-ai"
+version = "0.1.0"
+dependencies = [
+ "oteryn-gameplay-combat",
+ "oteryn-gameplay-content",
+ "oteryn-gameplay-durability",
+ "oteryn-gameplay-encounters",
+ "oteryn-gameplay-foundation",
+ "oteryn-gameplay-spell",
+ "oteryn-gameplay-world",
  "oteryn-simulation-determinism",
  "serde",
  "serde_json",

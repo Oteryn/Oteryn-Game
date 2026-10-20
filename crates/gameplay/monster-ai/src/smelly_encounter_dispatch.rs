@@ -15,12 +15,12 @@ use crate::player_lethal::{PlayerDamageReceipt, PlayerLethalVitals};
 use crate::smelly_cheese::{SmellyCastOccurrence, SmellyCheeseTimers, SmellyPulse};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
-pub(crate) const CREATURE: &str = "oteryn:creature.smelly_cheese";
-pub(crate) const PARENT: &str = "oteryn:ability.creature.smelly_cheese.berserk_bridge";
+pub const CREATURE: &str = "oteryn:creature.smelly_cheese";
+pub const PARENT: &str = "oteryn:ability.creature.smelly_cheese.berserk_bridge";
 #[derive(Clone)]
-pub(crate) struct SourceSmelly {
-    pub(crate) ability: Ref,
-    pub(crate) content: [u8; 32],
+pub struct SourceSmelly {
+    pub ability: Ref,
+    pub content: [u8; 32],
     presentation: Box<crate::content::ProjectV2AbilityDetails>,
 }
 #[derive(serde::Deserialize)]
@@ -29,10 +29,10 @@ struct Witness {
     records: Vec<Record>,
 }
 impl SourceSmelly {
-    pub(crate) fn ability(&self) -> &Ref {
+    pub fn ability(&self) -> &Ref {
         &self.ability
     }
-    pub(crate) fn qualify(
+    pub fn qualify(
         d: &ProjectV2Draft,
         caster: &Ref,
         content: [u8; 32],
@@ -93,7 +93,7 @@ impl SourceSmelly {
                 return Err(AttackError::InvalidSource);
             }
         }
-        let expected: Witness = serde_json::from_str(include_str!("smelly_encounter_source.json"))
+        let expected: Witness = serde_json::from_str(include_str!("../../../../apps/game-server/src/smelly_encounter_source.json"))
             .map_err(|_| AttackError::InvalidSource)?;
         for (key, data) in expected.profiles {
             let mut matches = d
@@ -196,24 +196,24 @@ impl SourceSmelly {
         seq.parse().map_err(|_| AttackError::InvalidPlan)
     }
 }
-pub(crate) struct Entry {
+pub struct Entry {
     actor: ExactActorRef,
     source: SourceSmelly,
     timers: SmellyCheeseTimers,
 }
 #[derive(Default)]
-pub(crate) struct SmellyEncounterOwner {
-    pub(crate) entries: Vec<Entry>,
+pub struct SmellyEncounterOwner {
+    pub entries: Vec<Entry>,
 }
 #[derive(Debug)]
 // Presentation is returned by value from source-qualified owner dispatch; boxing the result would add a heap allocation after committed owner state. Preserve the prepublication allocation boundary.
 #[allow(clippy::large_enum_variant)]
-pub(crate) enum SmellyEffect {
+pub enum SmellyEffect {
     Damage(Vec<(ExactActorRef, Result<PlayerDamageReceipt, AttackError>)>),
     Presentation(SourcePresentationEvent),
 }
 impl SmellyEncounterOwner {
-    pub(crate) fn schedule(
+    pub fn schedule(
         &mut self,
         r: &ChannelRuntimeV1,
         f: &ScopeRuntimeFence,
@@ -275,7 +275,7 @@ impl SmellyEncounterOwner {
             )
             .map_err(|_| AttackError::InvalidPlan)
     }
-    pub(crate) fn drain(
+    pub fn drain(
         &mut self,
         r: &mut ChannelRuntimeV1,
         f: &ScopeRuntimeFence,
@@ -450,9 +450,9 @@ fn record_identity(r: &Record) -> (&str, &str, &str) {
     };
     (&i.family, &i.key, &i.revision)
 }
-pub(crate) fn hex(v: [u8; 16]) -> String {
+pub fn hex(v: [u8; 16]) -> String {
     v.iter().map(|b| format!("{b:02x}")).collect()
 }
 
-pub(crate) type SmellyPulseResults =
+pub type SmellyPulseResults =
     Result<Vec<(ExactActorRef, Result<SmellyEffect, AttackError>)>, AttackError>;
