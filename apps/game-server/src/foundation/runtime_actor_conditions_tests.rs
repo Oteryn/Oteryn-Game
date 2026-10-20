@@ -1,8 +1,6 @@
 #![allow(clippy::expect_used, clippy::unwrap_used)]
-use super::super::super::exact_actor_test_ability::condition::{
-    ConditionValues, ConflictKey, SpeedRange,
-};
 use super::*;
+use crate::foundation::condition::{ConditionValues, ConflictKey, SpeedRange};
 use oteryn_simulation_determinism::GameplayDecisionRoot;
 
 fn fixture() -> (

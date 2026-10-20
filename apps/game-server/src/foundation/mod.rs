@@ -28,7 +28,7 @@ mod think_occurrence;
 #[allow(unused_imports)]
 pub(crate) use think_occurrence::ThinkOccurrence;
 #[allow(dead_code)]
-mod runtime_actor_carrier;
+pub(crate) mod runtime_actor_carrier;
 pub(crate) use runtime_actor_carrier::npc_actor::{
     NpcPlacement, NpcPlacementError, NpcPlacementTable, NpcPlacements,
 };
@@ -78,16 +78,6 @@ pub(crate) use runtime_actor_carrier::{
 #[allow(unused_imports)] // Each path-included Foundation test crate uses only some fixtures.
 pub(crate) use runtime_actor_carrier::{CombatDeathFixture, MovementActorFixture};
 pub(crate) use runtime_actor_carrier::{SpellRelocationProof, relocation_seal};
-#[cfg(test)]
-#[allow(dead_code)]
-#[allow(clippy::duplicate_mod)] // Standalone Foundation test crates lack the library root.
-#[path = "../ability/mod.rs"]
-mod exact_actor_test_ability;
-#[cfg(test)]
-#[allow(dead_code)]
-#[allow(clippy::duplicate_mod)] // Standalone Foundation test crates lack the library root.
-#[path = "../combat.rs"]
-mod exact_actor_test_combat;
 mod snapshot_facade;
 pub use admission::*;
 pub use admission_facade::{

@@ -1,18 +1,19 @@
 //! Isolated preproduction composition of typed Ability and the physical owner slot.
-use super::super::CharacterLease;
-use super::super::exact_actor_test_ability::commit::{
+use crate::ability::commit::{
     OwnerCharmDamagePlan, OwnerCharmDamageResult, OwnerCharmDamageSource, OwnerCommitError,
     OwnerCommittedPrimaryDamage, commit_exact_owner_charm_damage, commit_exact_owner_damage,
     commit_exact_owner_primary_damage,
 };
-use super::super::exact_actor_test_ability::exact_actor_resolution::{
+use crate::ability::exact_actor_resolution::{
     ExactActorProposal, ExactActorResolutionError, ResolvedExactActor, resolve_exact_actor,
 };
-use super::super::exact_actor_test_ability::{
+use crate::ability::{
     AbilityIntent, AbilityOccurrence, CalculationStage, CommitGroup, Effect, EffectPlan,
     ProposalSource, RevisionSet,
 };
-use super::*;
+use crate::foundation::CharacterLease;
+use crate::foundation::runtime_actor_carrier::*;
+use crate::foundation::*;
 
 /// D4: the typed bridge now needs the attacker and its actual FND-02 `CommandRef`; these tests
 /// commit every typed plan as attacker 1 of session 1 at command 1, so an identical plan replays
@@ -32,7 +33,10 @@ fn typed_commit(
         resolved,
         plan,
         attacker,
-        CommandRef::new(session, super::super::CommandId::new(1).expect("command")),
+        CommandRef::new(
+            session,
+            crate::foundation::CommandId::new(1).expect("command"),
+        ),
     )
 }
 
@@ -123,7 +127,7 @@ fn resolve(
     continuity: &NamespaceContinuityGuard,
     actor: ExactActorRef,
     occurrence: &AbilityOccurrence,
-) -> super::super::exact_actor_test_ability::exact_actor_resolution::ResolvedExactActor {
+) -> crate::ability::exact_actor_resolution::ResolvedExactActor {
     resolve_exact_actor(
         &carrier.current_owner_exact_lookup(continuity),
         occurrence,
@@ -498,7 +502,7 @@ fn attack(character: u8, session_seed: u8, sequence: u64, sub_ordinal: u16) -> A
         u64::from(session_seed),
         CommandRef::new(
             session(session_seed),
-            super::super::CommandId::new(sequence).expect("non-zero command"),
+            crate::foundation::CommandId::new(sequence).expect("non-zero command"),
         ),
         sub_ordinal,
     )
@@ -621,7 +625,7 @@ fn charm_attacker(carrier: &ChannelActorCarrier) -> ExactActorRef {
 fn charm_command() -> CommandRef {
     CommandRef::new(
         session(1),
-        super::super::CommandId::new(1).expect("command"),
+        crate::foundation::CommandId::new(1).expect("command"),
     )
 }
 
@@ -712,7 +716,7 @@ fn charm_native_declared_child_order_preserves_canonical_constructor() {
 
 #[test]
 fn charm_native_evaluator_runs_after_real_primary_and_leaf_damage_replays_without_chaining() {
-    use super::super::exact_actor_test_combat::charm_effects::*;
+    use crate::combat::charm_effects::*;
     use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
     struct Inputs(CharmDefinition);
     impl CharmCatalogueRead for Inputs {
@@ -962,7 +966,7 @@ fn charm_native_frozen_proof_never_supplies_current_owner_or_command_authority()
             current,
             CommandRef::new(
                 session(1),
-                super::super::CommandId::new(2).expect("different command"),
+                crate::foundation::CommandId::new(2).expect("different command"),
             ),
             OwnerCommitError::InvalidPlan,
         ),
@@ -1047,7 +1051,7 @@ fn charm_native_combined_lineage_bytes_are_bounded_after_primary_without_rewriti
     assert!(matches!(
         OwnerCharmDamagePlan::prepare(&parent, charm_child(&primary_plan, 9)),
         Err(OwnerCommitError::Plan(
-            super::super::exact_actor_test_ability::AbilityError::EffectPlanTooLarge
+            crate::ability::AbilityError::EffectPlanTooLarge
         ))
     ));
     assert_eq!(carrier.slots, after);
@@ -1059,7 +1063,7 @@ fn receipt_and_sub_ordinal_bounds_match_the_registered_rows() {
     assert_eq!(COMBAT01_DAMAGE_RECEIPTS_PER_CREATURE_GENERATION_MAX, 16);
     assert_eq!(
         usize::from(ABILITY01_EFFECT_PLAN_ENTRIES_MAX),
-        super::super::exact_actor_test_ability::MAX_EFFECT_PLAN_ENTRIES
+        crate::ability::MAX_EFFECT_PLAN_ENTRIES
     );
 }
 
@@ -1210,7 +1214,7 @@ fn a_sequence_at_or_below_the_session_mark_is_stale_and_lexicographic_with_sub_o
 
 #[test]
 fn reconnect_accepts_a_new_sessions_low_sequence_and_the_fence_refuses_the_old_session() {
-    use super::super::{ConnectionFence, ConnectionGeneration};
+    use crate::foundation::{ConnectionFence, ConnectionGeneration};
     let (continuity, mut carrier, actor) = tall_fixture(230, 1_000);
     let mut fence = ConnectionFence::fresh_admission();
     let session_a_generation = fence.current();
@@ -1469,7 +1473,7 @@ fn attack_with_lease(
         lease_generation,
         CommandRef::new(
             session(session_seed),
-            super::super::CommandId::new(sequence).expect("non-zero command"),
+            crate::foundation::CommandId::new(sequence).expect("non-zero command"),
         ),
         0,
     )

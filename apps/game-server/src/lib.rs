@@ -10,7 +10,6 @@ extern crate self as oteryn_game_server;
 mod monster_lab;
 
 #[allow(dead_code)]
-#[allow(clippy::duplicate_mod)] // Foundation's standalone tests include Ability source.
 mod ability;
 // Native source combat requires the actual Channel/Condition owners; it is
 // intentionally outside the standalone generic Ability fixture facade.
@@ -45,8 +44,7 @@ mod ai_think;
 )]
 mod combat;
 // A top-level module, not a submodule of `combat`: `combat.rs` is also recompiled standalone by
-// `foundation/mod.rs`'s `#[cfg(test)] #[path = "../combat.rs"] mod exact_actor_test_combat;` and
-// by several PG test binaries that need `combat::death_reward`/`combat::loot_plan` but not
+// several PG test binaries that need `combat::death_reward`/`combat::loot_plan` but not
 // Content, so a `crate::content` dependency inside `combat.rs`'s own module tree would force
 // every one of those to also carry a local `content` module. `combat_pickup` needs
 // `crate::content` (B3-2: definition facts bound to the current Content generation) and reaches
@@ -161,19 +159,19 @@ mod forge_dust_limit_audit_tests;
 mod highscore_ranking_tests;
 
 #[cfg(test)]
-#[path = "foundation/recovery_tests.rs"]
+#[path = "lifted_tests/foundation_recovery_tests.rs"]
 mod foundation_recovery_tests;
 
 #[cfg(test)]
-#[path = "foundation/final_review_regressions.rs"]
+#[path = "lifted_tests/foundation_final_review_regressions.rs"]
 mod foundation_final_review_regressions;
 
 #[cfg(test)]
-#[path = "foundation/final_review_round2_regressions.rs"]
+#[path = "lifted_tests/foundation_final_review_round2_regressions.rs"]
 mod foundation_final_review_round2_regressions;
 
 #[cfg(test)]
-#[path = "foundation/final_review_round2_runtime_rollback.rs"]
+#[path = "lifted_tests/foundation_final_review_round2_runtime_rollback.rs"]
 mod foundation_final_review_round2_runtime_rollback;
 
 use oteryn_foundation::CancellationToken;
@@ -925,3 +923,31 @@ mod movement_speed_runtime_tests;
 #[cfg(test)]
 #[path = "lifted_tests/world_clock_world_config_tests.rs"]
 mod world_clock_world_config_tests;
+#[allow(clippy::expect_used)]
+#[path = "lifted_tests/foundation_ability_exact_actor_resolution_tests.rs"]
+mod foundation_ability_exact_actor_resolution_tests;
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+#[path = "lifted_tests/foundation_channel_owner_ability_commit_tests.rs"]
+mod foundation_channel_owner_ability_commit_tests;
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+#[path = "lifted_tests/foundation_channel_owner_creature_bite_tests.rs"]
+mod foundation_channel_owner_creature_bite_tests;
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+#[path = "lifted_tests/foundation_channel_owner_combat_death_tests.rs"]
+mod foundation_channel_owner_combat_death_tests;
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+#[path = "lifted_tests/foundation_movement_static_kernel_structural_tests.rs"]
+mod foundation_movement_static_kernel_structural_tests;
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+#[path = "lifted_tests/foundation_attacker_fence_tests.rs"]
+mod foundation_attacker_fence_tests;

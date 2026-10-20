@@ -2,14 +2,15 @@
 //! and committed by the Channel owner. The vitals owner is a stand-in here with the same lethal
 //! rule (DEATH-2 retired D54's floor); the real `ChannelSpellStates` path is tested beside it in
 //! `actor_spell.rs`.
-use super::super::exact_actor_test_ability::creature_bite::{
+use crate::ability::creature_bite::{
     AppliedBite, BiteRejection, CREATURE_BITE_LEDGER_MAX, CreatureBiteDefinition,
     CreatureBiteLedger, CreatureBiteVitals, CreatureDamage, CreatureHit, ReentryProtection,
     commit_ai_bite, creature_damage,
 };
-use super::super::exact_actor_test_ability::{AiAbilityAdapter, RevisionSet};
-use super::super::owner_timer::SemanticTimeMicros;
-use super::*;
+use crate::ability::{AiAbilityAdapter, RevisionSet};
+use crate::foundation::owner_timer::SemanticTimeMicros;
+use crate::foundation::runtime_actor_carrier::*;
+use crate::foundation::*;
 
 fn uuid_v7(tag: u8) -> [u8; 16] {
     [

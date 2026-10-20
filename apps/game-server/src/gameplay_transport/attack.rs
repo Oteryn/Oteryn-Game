@@ -1684,7 +1684,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 }
 
 #[cfg(test)]
-#[path = "../foundation/channel_owner_auto_attack_tests.rs"]
+#[path = "channel_owner_auto_attack_tests.rs"]
 mod tests;
 
 #[cfg(test)]

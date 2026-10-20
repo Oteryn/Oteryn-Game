@@ -50,3 +50,8 @@ mod corpse_transfer_postgres_cases;
 
 #[path = "support/combat_pickup_postgres_cases.rs"]
 mod combat_pickup_postgres_cases;
+
+// The path-loaded Durability NPC-travel fixture shares this PostgreSQL harness.
+#[allow(dead_code)] // Each standalone target uses only part of the shared fixture API.
+#[path = "support/bestiary_postgres_harness.rs"]
+mod bestiary_postgres_harness;

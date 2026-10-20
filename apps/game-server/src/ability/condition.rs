@@ -1,5 +1,3 @@
-//! Compatibility entry point for standalone Ability source tests.
+//! Compatibility entry point for the canonical Foundation condition types.
 
-#[path = "../foundation/condition.rs"]
-mod implementation;
-pub(crate) use implementation::*;
+pub(crate) use crate::foundation::condition::*;
