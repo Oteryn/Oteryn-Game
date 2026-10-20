@@ -555,6 +555,13 @@ fn file_declarations(src: &str) -> Vec<Declaration> {
 /// A crate root Cargo builds without any declaration: the library, the main binary and every
 /// auto-discovered binary under `src/bin/`.
 fn crate_root(rel: &Path) -> bool {
+    // Accept both synthetic crate-relative cases and real workspace-relative sources.
+    let rel = rel
+        .ancestors()
+        .find(|parent| parent.file_name().is_some_and(|name| name == "src"))
+        .and_then(|src| src.parent())
+        .and_then(|root| rel.strip_prefix(root).ok())
+        .unwrap_or(rel);
     let bin = Path::new("src/bin");
     rel == Path::new("src/lib.rs")
         || rel == Path::new("src/main.rs")
@@ -678,7 +685,8 @@ fn gate_findings(files: &[(std::path::PathBuf, String)]) -> Vec<String> {
         .zip(skipped.iter().copied())
         .filter(|(_, skipped)| !skipped)
         .flat_map(|((rel, src), _)| {
-            let bridge_module = rel == Path::new(BRIDGE_MODULE);
+            let bridge_module = rel == Path::new(BRIDGE_MODULE)
+                || rel == &Path::new("crates/gameplay/foundation").join(BRIDGE_MODULE);
             production_references(src, bridge_module)
                 .into_iter()
                 .map(move |line| format!("{}:{line}", rel.display()))
@@ -709,26 +717,38 @@ fn collect(
 
 #[test]
 fn no_production_damage_write_bypasses_the_bound_attacker_slot() -> std::io::Result<()> {
-    let server = Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server"));
-    let repository = server.join("../..");
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .ancestors()
+        .find(|root| root.join("workspace-boundaries.toml").is_file())
+        .ok_or_else(|| std::io::Error::other("workspace root not found"))?
+        .canonicalize()?;
+    let server = repository.join("apps/game-server");
+    let mut files = Vec::new();
     for root in [
         server.to_path_buf(),
         repository.join("crates/gameplay/foundation"),
         repository.join("crates/gameplay/content"),
         repository.join("crates/gameplay/durability"),
+        repository.join("crates/gameplay/world"),
+        repository.join("crates/gameplay/combat"),
+        repository.join("crates/gameplay/spell"),
+        repository.join("crates/gameplay/encounters"),
+        repository.join("crates/gameplay/monster-ai"),
+        repository.join("crates/gameplay/social"),
     ] {
-        let mut files = Vec::new();
-        collect(&root.join("src"), &root, &mut files)?;
-        assert!(!files.is_empty(), "the scan must see {}", root.display());
-        let found = gate_findings(&files);
-        assert!(
-            found.is_empty(),
-            "D295 §3 item 3 gate (A2): {}: production references to the unbound attacker write \
+        let before = files.len();
+        collect(&root.join("src"), &repository, &mut files)?;
+        assert!(files.len() > before, "the scan must see {}", root.display());
+    }
+    let found = gate_findings(&files);
+    assert!(
+        found.is_empty(),
+        "D295 §3 item 3 gate (A2): {}: production references to the unbound attacker write \
              {BRIDGES:?}: {found:?}. Production damage writes go through the bound slot \
              (`commit_damage_for_bound_attacker` and the Ability bridges).",
-            root.display()
-        );
-    }
+        repository.display()
+    );
+
     Ok(())
 }
 
