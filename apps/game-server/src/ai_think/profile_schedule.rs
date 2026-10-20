@@ -498,5 +498,4 @@ fn snapshot_hash(
 }
 
 #[cfg(test)]
-#[path = "profile_schedule_tests.rs"]
 mod tests;

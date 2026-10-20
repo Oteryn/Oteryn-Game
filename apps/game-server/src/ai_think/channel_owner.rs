@@ -333,5 +333,4 @@ fn live_position(
 }
 
 #[cfg(test)]
-#[path = "channel_owner_creature_ai_tests.rs"]
 mod channel_owner_creature_ai_tests;

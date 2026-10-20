@@ -1049,3 +1049,35 @@ mod source_encounter_seven_tests;
 #[cfg(test)]
 #[path = "lifted_tests/source_threshold_heal_tests.rs"]
 mod source_threshold_heal_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/monster_owner_cycle_tests.rs"]
+mod monster_owner_cycle_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/smelly_damage_tests.rs"]
+mod smelly_damage_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/smelly_encounter_dispatch_tests.rs"]
+mod smelly_encounter_dispatch_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/monster_combat_lane_tests.rs"]
+mod monster_combat_lane_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/monster_combat_lane_defense_composition_tests.rs"]
+mod monster_combat_lane_defense_composition_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/monster_combat_lane_defense_speed_test.rs"]
+mod monster_combat_lane_defense_speed_test;
+
+#[cfg(test)]
+#[path = "lifted_tests/monster_combat_lane_source_summon_composition_tests.rs"]
+mod monster_combat_lane_source_summon_composition_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/source_time_profile_bundle_tests.rs"]
+mod source_time_profile_bundle_tests;

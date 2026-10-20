@@ -8,7 +8,7 @@
 //! (`PROFILE_MISSING`) and never defaulted. This module holds no profile literal: every value
 //! arrives from content (or, until SPAWN-1a, from test data).
 //!
-//! Declared from `ai_think.rs` with `#[path]`, not from `ai/mod.rs`: `tests/ai_bootstrap.rs`
+//! Declared as a child of `ai_think.rs`, not from `ai/mod.rs`: `tests/ai_bootstrap.rs`
 //! path-includes `ai/mod.rs` as a standalone crate root without `content`.
 
 use std::collections::BTreeMap;
