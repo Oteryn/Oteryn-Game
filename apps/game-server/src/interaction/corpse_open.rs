@@ -9,7 +9,7 @@
 //! can see a corpse's contents but cannot take them. Tibia refuses to open it; Oteryn does not gate
 //! opening, because a gate on the runtime clock would disagree with the writer's database clock.
 
-use crate::gameplay_transport::world_spatial::ActorPosition;
+use oteryn_protocol_oteryn::world_spatial::ActorPosition;
 
 /// Reach (§4.3): same floor, Chebyshev distance at most 1.
 pub(crate) fn within_reach(actor: ActorPosition, corpse: ActorPosition) -> bool {

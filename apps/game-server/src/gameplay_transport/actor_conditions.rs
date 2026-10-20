@@ -1001,3 +1001,20 @@ impl ChannelSpellStates {
 
 #[path = "appearance_atomic.rs"]
 mod appearance_atomic;
+
+impl crate::creature_area_heal::AreaHealStates for ChannelSpellStates {
+    fn commit_source_area_heal_and_paralysis_removal(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        content: [u8; 32],
+        heal: &[(ExactActorRef, String, u64, u64)],
+        cure: &[ExactActorRef],
+        now: u64,
+        fence: &ScopeRuntimeFence,
+        stamp: RuntimeWorkStamp,
+    ) -> Result<Vec<crate::foundation::OwnerDamageResult>, crate::foundation::CarrierError> {
+        Self::commit_source_area_heal_and_paralysis_removal(
+            self, runtime, content, heal, cure, now, fence, stamp,
+        )
+    }
+}

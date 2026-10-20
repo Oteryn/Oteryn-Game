@@ -721,4 +721,4 @@ fn resolve_source_cue(alias: &str) -> Option<Cue> {
 
 #[cfg(test)]
 #[path = "spell_presentations_tests.rs"]
-pub(super) mod tests;
+pub(crate) mod tests;

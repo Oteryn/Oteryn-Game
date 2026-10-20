@@ -50,6 +50,7 @@ pub(crate) mod party;
 #[cfg(test)]
 mod party_tests;
 pub(crate) mod plan;
+pub(crate) mod spell_presentations;
 pub(crate) mod stance_execution;
 pub(crate) mod target;
 #[cfg(test)]

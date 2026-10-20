@@ -64,7 +64,7 @@ impl OrdinaryCastBinding {
 #[derive(Debug, Clone)]
 pub(crate) struct ResolvedOrdinaryCombat {
     pub(crate) batch: OwnerCombatBatch,
-    pub(crate) presentation: Arc<crate::gameplay_transport::PreparedSpellPresentation>,
+    pub(crate) presentation: Arc<super::spell_presentations::PreparedPresentation>,
     pub(crate) magnitude: Arc<super::magnitude_owner::PreparedMagnitudeOwner>,
     pub(crate) owned: super::owned_cast_facts::OwnedCastFacts,
 }
