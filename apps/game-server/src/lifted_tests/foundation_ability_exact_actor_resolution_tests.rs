@@ -16,11 +16,11 @@ fn uuid_v7(raw: u64) -> [u8; 16] {
 }
 
 fn grant(seed: u64, generation: u64) -> PreProductionContinuityGrant {
-    PreProductionContinuityGrant {
-        world_id: WorldId::decode(&uuid_v7(seed)).expect("world"),
-        channel_id: ChannelId::decode(&uuid_v7(seed + 1)).expect("channel"),
-        scope_generation: ScopeOwnershipGeneration::new(generation).expect("generation"),
-    }
+    PreProductionContinuityGrant::fixture(
+        WorldId::decode(&uuid_v7(seed)).expect("world"),
+        ChannelId::decode(&uuid_v7(seed + 1)).expect("channel"),
+        ScopeOwnershipGeneration::new(generation).expect("generation"),
+    )
 }
 
 fn fixture(seed: u64, capacity: usize) -> (NamespaceContinuityGuard, ChannelActorCarrier) {

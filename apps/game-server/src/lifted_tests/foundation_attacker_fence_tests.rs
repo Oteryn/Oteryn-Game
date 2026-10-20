@@ -53,11 +53,11 @@ struct Fixture {
 
 fn fixture(seed: u64) -> Fixture {
     let mut continuity =
-        NamespaceContinuityGuard::from_pre_production_grant(PreProductionContinuityGrant {
-            world_id: WorldId::decode(&id(seed as u8)).expect("world"),
-            channel_id: ChannelId::decode(&id(seed as u8 + 1)).expect("channel"),
-            scope_generation: ScopeOwnershipGeneration::new(1).expect("scope"),
-        });
+        NamespaceContinuityGuard::from_pre_production_grant(PreProductionContinuityGrant::fixture(
+            WorldId::decode(&id(seed as u8)).expect("world"),
+            ChannelId::decode(&id(seed as u8 + 1)).expect("channel"),
+            ScopeOwnershipGeneration::new(1).expect("scope"),
+        ));
     let mut carrier =
         ChannelActorCarrier::bootstrap_pre_production(&mut continuity, 3).expect("carrier");
     let creature = ExactActorRef(

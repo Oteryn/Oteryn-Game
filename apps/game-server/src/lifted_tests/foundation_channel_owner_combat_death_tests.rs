@@ -51,18 +51,18 @@ fn uuid_v7(seed: u64) -> [u8; 16] {
 }
 
 fn grant(seed: u64, generation: u64) -> PreProductionContinuityGrant {
-    PreProductionContinuityGrant {
-        world_id: WorldId::decode(&uuid_v7(seed)).expect("world"),
-        channel_id: ChannelId::decode(&uuid_v7(seed + 1)).expect("channel"),
-        scope_generation: ScopeOwnershipGeneration::new(generation).expect("scope"),
-    }
+    PreProductionContinuityGrant::fixture(
+        WorldId::decode(&uuid_v7(seed)).expect("world"),
+        ChannelId::decode(&uuid_v7(seed + 1)).expect("channel"),
+        ScopeOwnershipGeneration::new(generation).expect("scope"),
+    )
 }
 
 fn position_context(owner: &NamespaceContinuityGuard) -> PreProductionPositionContext {
     PreProductionPositionContext {
-        world_id: owner.world_id,
-        channel_id: owner.channel_id,
-        scope_generation: owner.current_generation,
+        world_id: owner.world_id(),
+        channel_id: owner.channel_id(),
+        scope_generation: owner.current_generation(),
         coordinate_frame_marker: 31,
         map_revision_marker: 32,
         content_generation_marker: 33,
@@ -933,7 +933,7 @@ fn typed_commit_at(
 ) -> Result<OwnerDamageResult, OwnerCommitError> {
     let (session, _) = typed_attacker();
     let attacker = owner
-        .carrier
+        .test_carrier()
         .test_player_actor(session)
         .expect("bound attacker slot");
     commit_exact_owner_damage(
