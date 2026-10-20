@@ -592,11 +592,11 @@ mod tests {
     /// `walkable` fact is not KNOWN true.
     #[test]
     fn unwalkable_border_list_matches_content() {
-        let dir = std::path::Path::new(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/../../../apps/game-server"
-        ))
-        .join("../../content/world/terrain");
+        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .ancestors()
+            .find(|root| root.join("workspace-boundaries.toml").is_file())
+            .expect("workspace root")
+            .join("content/world/terrain");
         let (mut found, mut borders) = (Vec::new(), 0);
         for entry in std::fs::read_dir(dir).expect("dir") {
             let path = entry.expect("entry").path();
@@ -633,11 +633,11 @@ mod tests {
     /// The solid list equals the JSON catalogue's `blocks_movement` floor-change objects.
     #[test]
     fn solid_floor_change_list_matches_content() {
-        let dir = std::path::Path::new(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/../../../apps/game-server"
-        ))
-        .join("../../content/world/objects");
+        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .ancestors()
+            .find(|root| root.join("workspace-boundaries.toml").is_file())
+            .expect("workspace root")
+            .join("content/world/objects");
         let mut found = Vec::new();
         for entry in std::fs::read_dir(dir).expect("dir") {
             let path = entry.expect("entry").path();

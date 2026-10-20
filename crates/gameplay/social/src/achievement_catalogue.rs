@@ -482,11 +482,11 @@ mod tests {
 
     #[test]
     fn the_embedded_shards_are_the_catalogue_directory() {
-        let directory = std::path::Path::new(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/../../../apps/game-server"
-        ))
-        .join("../../content/achievements");
+        let directory = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .ancestors()
+            .find(|root| root.join("workspace-boundaries.toml").is_file())
+            .map(|root| root.join("content/achievements"))
+            .unwrap_or_default();
         let mut names: Vec<String> = std::fs::read_dir(&directory)
             .into_iter()
             .flatten()

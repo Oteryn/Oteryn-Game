@@ -4073,11 +4073,11 @@ mod native_ability_coverage {
     use std::collections::BTreeSet;
     type Key = (String, String);
     fn root() -> std::path::PathBuf {
-        std::path::Path::new(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/../../../apps/game-server"
-        ))
-        .join("../../content")
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .ancestors()
+            .find(|root| root.join("workspace-boundaries.toml").is_file())
+            .expect("workspace root")
+            .join("content")
     }
     fn shards(dir: &str) -> Vec<serde_json::Value> {
         let mut paths: Vec<_> = std::fs::read_dir(root().join(dir))

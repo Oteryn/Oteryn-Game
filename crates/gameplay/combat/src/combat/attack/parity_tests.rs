@@ -45,10 +45,13 @@ fn oteryn_attack(key: &str) -> Option<i64> {
 }
 
 fn definition_records() -> Vec<Value> {
-    let directory = concat!(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server"),
-        "/../../content/items/definitions"
-    );
+    let directory = &std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .ancestors()
+        .find(|root| root.join("workspace-boundaries.toml").is_file())
+        .expect("workspace root")
+        .join("content/items/definitions")
+        .display()
+        .to_string();
     let mut shards: Vec<_> = std::fs::read_dir(directory)
         .expect("the definitions directory")
         .map(|entry| entry.expect("an entry").path())

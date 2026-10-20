@@ -711,11 +711,11 @@ pub mod tests {
             include_bytes!("../../../../../tools/content-schema/native-gameplay/item-keys.json");
         let path = std::env::var("OTERYN_PINNED_WORLD_BUNDLE").expect("OTERYN_PINNED_WORLD_BUNDLE");
         let data = std::fs::read(path).expect("the pinned artifact");
-        let root = std::path::Path::new(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/../../../apps/game-server"
-        ))
-        .join("../..");
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .ancestors()
+            .find(|root| root.join("workspace-boundaries.toml").is_file())
+            .expect("workspace root")
+            .to_path_buf();
         let pin: serde_json::Value = serde_json::from_slice(
             &std::fs::read(root.join("content/world/pins/oteryn.json")).expect("pin"),
         )

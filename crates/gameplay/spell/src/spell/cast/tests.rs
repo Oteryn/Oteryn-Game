@@ -14,10 +14,9 @@ const CASTER: &str = "actor:caster";
 #[test]
 fn actual_named_healing_failure_starts_cooldowns_without_resources_or_harmony() {
     use sha2::{Digest, Sha256};
-    let bytes = include_bytes!(concat!(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server"),
-        "/../../tools/content-schema/spell-authoring/samples/executable-spell-catalog.json"
-    ));
+    let bytes = include_bytes!(
+        "../../../../../../tools/content-schema/spell-authoring/samples/executable-spell-catalog.json"
+    );
     let digest = Sha256::digest(bytes)
         .iter()
         .map(|b| format!("{b:02x}"))
@@ -499,10 +498,9 @@ fn a_premium_spell_needs_a_current_caster_and_the_wheel_exception_stays_closed()
 
     // WHEEL0-PS-1 is deferred to W-1: a `wheel_unlock` Premium spell is refused under
     // `NotActivated` too, and a spell that is not Premium needs no status.
-    let bytes = include_bytes!(concat!(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server"),
-        "/../../tools/content-schema/spell-authoring/samples/executable-spell-catalog.json"
-    ));
+    let bytes = include_bytes!(
+        "../../../../../../tools/content-schema/spell-authoring/samples/executable-spell-catalog.json"
+    );
     let digest = <sha2::Sha256 as sha2::Digest>::digest(bytes)
         .iter()
         .map(|b| format!("{b:02x}"))
@@ -1111,11 +1109,11 @@ fn a_bundle_world_protection_zone_casts_heal_and_support_and_refuses_aggression(
         .protection_zone;
     assert!(zone);
 
-    let manifest = std::path::Path::new(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/../../../apps/game-server"
-    ))
-    .join("../../content/spells.manifest.json");
+    let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .ancestors()
+        .find(|root| root.join("workspace-boundaries.toml").is_file())
+        .expect("workspace root")
+        .join("content/spells.manifest.json");
     let input = crate::content::native_gameplay::NativeGameplayInput::from_manifest(&manifest)
         .expect("canonical manifest");
     let catalog =

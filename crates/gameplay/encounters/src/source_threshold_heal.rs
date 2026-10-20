@@ -176,7 +176,7 @@ impl ThresholdHealSource {
             .ok_or(E::Source)?;
         // Compare actual typed Encounter data, not merely its name/hash; source-specific handlers
         // must be requalified if authoring semantics change. This is a pinned source adapter fixture.
-        let expected:serde_json::Value=serde_json::from_str(include_str!(concat!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/encounters/callback18/threshold-heal-expected-encounters.json"))).map_err(|_|E::Source)?;
+        let expected:serde_json::Value=serde_json::from_str(include_str!("../../../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/encounters/callback18/threshold-heal-expected-encounters.json")).map_err(|_|E::Source)?;
         let expected_data: Data =
             serde_json::from_value(expected[encounter].clone()).map_err(|_| E::Source)?;
         if serde_json::to_value(&ep.data).map_err(|_| E::Source)?

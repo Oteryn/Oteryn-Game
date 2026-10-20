@@ -846,11 +846,11 @@ mod tests {
     /// The generated table equals the JSON catalogue it was generated from.
     #[test]
     fn catalogue_matches_content() {
-        let root = std::path::Path::new(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/../../../apps/game-server"
-        ))
-        .join("../../content/world");
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .ancestors()
+            .find(|root| root.join("workspace-boundaries.toml").is_file())
+            .expect("workspace root")
+            .join("content/world");
         for (dir, generated) in [("objects", OBJECT), ("terrain", TERRAIN)] {
             let mut found = Vec::new();
             let mut files: Vec<_> = std::fs::read_dir(root.join(dir))
