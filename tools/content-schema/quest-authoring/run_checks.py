@@ -62,6 +62,8 @@ def main():
         ['quest_state_lowering.py', '--check'],
         ['source_lowered_binding_plan.py', '--check'],
         ['quest_completion_import.py', '--check'],
+        ['quest_native_binding_preflight.py', '--check'],
+        ['quest_reward_only_binding_candidates.py', '--check'],
         ['quest_donor_source_authoring.py', '--check'],
         ['bundle_authoring.py', '--check'],
         ['quest_tree_authoring.py', 'content', '--check', '--source-packet', str(packet)],
