@@ -101,7 +101,6 @@ pub mod map;
 )]
 mod movement;
 pub mod node;
-use oteryn_gameplay_node_files as node_files;
 pub mod premium;
 #[allow(
     dead_code,

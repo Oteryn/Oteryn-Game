@@ -2826,9 +2826,9 @@ impl DurabilityRoot {
         // Existing native UUIDv7 allocator; work identifiers are DATA, never authority.
         // Allocate before an attempt, then retain the operation in our committed cursor.
         // Every physical transaction receives a fresh C reservation ID.
-        let operation = crate::node_files::operator_files::uuid_v7()
+        let operation = oteryn_gameplay_node_files::operator_files::uuid_v7()
             .map_err(|_| GuildError::Unavailable(DurabilityError::Unavailable))?;
-        let reservation_id = crate::node_files::operator_files::uuid_v7()
+        let reservation_id = oteryn_gameplay_node_files::operator_files::uuid_v7()
             .map_err(|_| GuildError::Unavailable(DurabilityError::Unavailable))?;
         self.try_issue_semantic_pass()?.run(move |holder, deadline| {
             Box::pin(async move {
