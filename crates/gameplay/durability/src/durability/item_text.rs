@@ -298,10 +298,6 @@ impl DurabilityRoot {
     /// Commit a bounded rewrite; exact terminal replay never reacquires item
     /// authority. Every new write independently proves the live content digest,
     /// recovery, node, session, admission, root and current direct custody.
-    #[expect(
-        dead_code,
-        reason = "MAIL-TEXT-1 awaits actual qualified Content/transport composition and the D1369 shared offered-trade guard"
-    )]
     pub async fn commit_item_text_rewrite(
         &self,
         recovery: &ReconciledCharacterAuthority<'_, '_>,

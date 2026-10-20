@@ -72,12 +72,13 @@ fn scenario() -> TestResult {
         let world = WorldId::decode(&id(42)).map_err(debug)?;
         let channel = ChannelId::decode(&id(43)).map_err(debug)?;
         let session = GameSessionId::decode(&id(50)).map_err(debug)?;
-        let (controller, pin) = crate::content::native_gameplay::tests::activated_with_loot_tables(
-            world,
-            Some(include_bytes!(
-                "../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
-            )),
-        );
+        let (controller, pin) =
+            crate::content::native_gameplay::test_support::activated_with_loot_tables(
+                world,
+                Some(include_bytes!(
+                    "../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
+                )),
+            );
         let active = controller.active().expect("activated generation");
         let native = active.native_gameplay().expect("native gameplay state");
         let room = pin.qualified_room().clone();

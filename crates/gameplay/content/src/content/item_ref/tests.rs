@@ -116,7 +116,12 @@ fn the_production_key_set_decodes_and_a_rebuild_gives_the_same_index() {
 }
 
 fn repo_root() -> PathBuf {
-    Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server")).join("../..")
+    Path::new(if env!("CARGO_PKG_NAME") == "oteryn-game-server" {
+        env!("CARGO_MANIFEST_DIR")
+    } else {
+        concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server")
+    })
+    .join("../..")
 }
 
 fn shards(directory: &str, prefix: &str) -> Vec<Vec<u8>> {

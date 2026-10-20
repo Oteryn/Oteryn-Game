@@ -123,7 +123,7 @@ impl UnresolvedLane {
 impl SpellLanePermit {
     /// The permit of a fresh lane, which never holds a parked attempt: for the PostgreSQL test
     /// support of the DB-only item writers, which owns no Channel runtime.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     #[allow(
         dead_code,
         reason = "used only by the PostgreSQL item-writer test support"
@@ -140,7 +140,7 @@ impl SpellLanePermit {
         }
     }
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     #[allow(
         dead_code,
         reason = "used only by the PostgreSQL item-writer test support"

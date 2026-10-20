@@ -121,7 +121,7 @@ impl Drop for ProductionRootAdmission {
 #[derive(Clone)]
 enum RootLedgerHandle {
     Process(&'static RootResidentLedger),
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     Test(Arc<RootResidentLedger>),
 }
 
@@ -129,7 +129,7 @@ impl RootLedgerHandle {
     fn ledger(&self) -> &RootResidentLedger {
         match self {
             Self::Process(ledger) => ledger,
-            #[cfg(test)]
+            #[cfg(any(test, feature = "test-support"))]
             Self::Test(ledger) => ledger,
         }
     }
@@ -575,7 +575,7 @@ impl DurabilityRootConfig {
         )
     }
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn new_with_isolated_test_ledger(
         transport_ip: IpAddr,
         port: u16,
@@ -810,9 +810,9 @@ fn build_production_root_pool(
 #[derive(Clone)]
 enum RootRuntime {
     Dedicated(tokio::runtime::Handle),
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     OwnedTestFixture(Arc<tokio::runtime::Runtime>),
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     AmbientTestFixture,
 }
 
@@ -820,9 +820,9 @@ impl RootRuntime {
     fn handle(&self) -> Option<&tokio::runtime::Handle> {
         match self {
             Self::Dedicated(handle) => Some(handle),
-            #[cfg(test)]
+            #[cfg(any(test, feature = "test-support"))]
             Self::OwnedTestFixture(runtime) => Some(runtime.handle()),
-            #[cfg(test)]
+            #[cfg(any(test, feature = "test-support"))]
             Self::AmbientTestFixture => None,
         }
     }
@@ -869,11 +869,11 @@ impl DurabilityRoot {
         let runtime = if production {
             RootRuntime::Dedicated(production_runtime_handle()?)
         } else {
-            #[cfg(test)]
+            #[cfg(any(test, feature = "test-support"))]
             {
                 RootRuntime::OwnedTestFixture(Arc::new(build_wp3_runtime_owned()?))
             }
-            #[cfg(not(test))]
+            #[cfg(not(any(test, feature = "test-support")))]
             {
                 return Err(DurabilityError::RootUnavailable);
             }
@@ -914,7 +914,7 @@ impl DurabilityRoot {
         self.relay_options.as_deref().cloned()
     }
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     #[allow(dead_code)]
     pub fn connect_test_runtime(database_url: &str) -> Result<Self, DurabilityError> {
         Ok(Self {
@@ -943,9 +943,9 @@ impl DurabilityRoot {
     {
         match &self.runtime {
             RootRuntime::Dedicated(handle) => handle.spawn(future),
-            #[cfg(test)]
+            #[cfg(any(test, feature = "test-support"))]
             RootRuntime::OwnedTestFixture(runtime) => runtime.handle().spawn(future),
-            #[cfg(test)]
+            #[cfg(any(test, feature = "test-support"))]
             RootRuntime::AmbientTestFixture => tokio::spawn(future),
         }
     }
@@ -978,7 +978,7 @@ impl DurabilityRoot {
                 )
                 .await
             }
-            #[cfg(test)]
+            #[cfg(any(test, feature = "test-support"))]
             RootRuntime::OwnedTestFixture(_) => {
                 let root = self.clone();
                 await_root_task(
@@ -986,7 +986,7 @@ impl DurabilityRoot {
                 )
                 .await
             }
-            #[cfg(test)]
+            #[cfg(any(test, feature = "test-support"))]
             RootRuntime::AmbientTestFixture => self.maintain_ready_once_inner().await,
         }
     }

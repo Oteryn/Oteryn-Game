@@ -1326,7 +1326,7 @@ impl DurabilityRoot {
     /// Test-only entry point without the caster's lane: proves the cast under a fresh lane
     /// permit for the fence's Channel. Production casts commit through
     /// [`Self::commit_familiar_spell_in_window`] inside the seam's lane.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     #[allow(clippy::too_many_arguments)]
     pub async fn commit_familiar_spell<
         F: super::character_build::BuildFormula + Clone + Send + Sync + 'static,
@@ -1345,7 +1345,7 @@ impl DurabilityRoot {
 
     /// Test-only counterpart of [`Self::reconcile_familiar_spell_in_window`]; see
     /// [`Self::commit_familiar_spell`].
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     #[allow(clippy::too_many_arguments)]
     pub async fn reconcile_familiar_spell<
         F: super::character_build::BuildFormula + Clone + Send + Sync + 'static,
@@ -1362,7 +1362,7 @@ impl DurabilityRoot {
             .await
     }
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     #[allow(clippy::too_many_arguments)]
     async fn familiar_spell_on_fresh_lane<
         F: super::character_build::BuildFormula + Clone + Send + Sync + 'static,

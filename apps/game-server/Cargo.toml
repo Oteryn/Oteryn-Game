@@ -12,6 +12,10 @@ publish.workspace = true
 category = "app"
 release-role = "production"
 
+[features]
+# Recognized by the remaining path-loaded integration fixtures.
+test-support = []
+
 [dependencies]
 oteryn-gameplay-durability = { version = "=0.1.0", path = "../../crates/gameplay/durability" }
 oteryn-gameplay-content = { version = "=0.1.0", path = "../../crates/gameplay/content" }
@@ -44,6 +48,9 @@ tokio-rustls.workspace = true
 toml.workspace = true
 
 [dev-dependencies]
+oteryn-gameplay-foundation = { version = "=0.1.0", path = "../../crates/gameplay/foundation", features = ["test-support"] }
+oteryn-gameplay-durability = { version = "=0.1.0", path = "../../crates/gameplay/durability", features = ["test-support"] }
+oteryn-gameplay-content = { version = "=0.1.0", path = "../../crates/gameplay/content", features = ["test-support"] }
 # Dev/qualification-only (ADR-0011 §6, #162 C1b): drives the seam qualification's
 # `stage=dev_client`. Not part of either production closure (workspace-boundaries.toml
 # `[dev_edges]`, never walked by the production-closure check).

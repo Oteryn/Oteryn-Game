@@ -41,9 +41,15 @@ pub trait RewardClaimTile {
 /// variant shards. Of the variants, this reader serves only key rewards (KEY-1); every other
 /// variant is left out.
 pub const REWARD_CLAIM_SHARDS: [&str; 5] = [
-    include_str!("../../../../../content/interactions/reward_claims/reward-claims-00000-00099.json"),
-    include_str!("../../../../../content/interactions/reward_claims/reward-claims-00100-00199.json"),
-    include_str!("../../../../../content/interactions/reward_claims/reward-claims-00200-00230.json"),
+    include_str!(
+        "../../../../../content/interactions/reward_claims/reward-claims-00000-00099.json"
+    ),
+    include_str!(
+        "../../../../../content/interactions/reward_claims/reward-claims-00100-00199.json"
+    ),
+    include_str!(
+        "../../../../../content/interactions/reward_claims/reward-claims-00200-00230.json"
+    ),
     include_str!(
         "../../../../../content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
     ),

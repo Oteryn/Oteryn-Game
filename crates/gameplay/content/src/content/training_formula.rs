@@ -1,4 +1,5 @@
 //! Immutable source-qualified build training profile.
+use crate::domain::character_build::{BuildFormula, MAX_BUILD_LEVEL, skill_tries_required};
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
 
@@ -47,10 +48,7 @@ pub struct CompiledTrainingFormula {
     pub digest: [u8; 32],
 }
 impl CompiledTrainingFormula {
-    pub fn from_profile(
-        bytes: &[u8],
-        content_revision: &str,
-    ) -> Result<Self, TrainingError> {
+    pub fn from_profile(bytes: &[u8], content_revision: &str) -> Result<Self, TrainingError> {
         if bytes.len() > 32768
             || content_revision.is_empty()
             || content_revision.len() > 128
@@ -108,5 +106,53 @@ impl CompiledTrainingFormula {
     }
     pub fn content_revision(&self) -> &str {
         &self.content_revision
+    }
+}
+
+impl BuildFormula for CompiledTrainingFormula {
+    fn required(&self, vocation: &str, family: usize, level: u16) -> Option<u64> {
+        let v = self.profile.vocations.iter().find(|v| v.key == vocation)?;
+        if family == 0 {
+            if !(1..=MAX_BUILD_LEVEL).contains(&level) {
+                return None;
+            }
+            // Source stores the XML literal in float, then promotes it to double.
+            let multiplier = f64::from(v.mana_multiplier.parse::<f32>().ok()?);
+            let value = f64::from(self.profile.magic_base) * multiplier.powf(f64::from(level - 1));
+            (value.is_finite() && value < 9_223_372_036_854_775_808.0)
+                .then_some(value.floor() as u64)
+        } else {
+            // SKILLS-0 §2: a promoted vocation trains skills with its base vocation's row (the
+            // pinned elite_knight row swaps fist and distance, a Canary data error).
+            let v = self
+                .profile
+                .vocations
+                .iter()
+                .find(|row| row.key == skill_vocation(vocation))?;
+            let index = family.checked_sub(1)?;
+            skill_tries_required(
+                *self.profile.skill_bases.get(index)?,
+                f64::from(v.skill_multipliers.get(index)?.parse::<f32>().ok()?),
+                level,
+            )
+        }
+    }
+    fn digest(&self) -> [u8; 32] {
+        self.digest
+    }
+    fn content_revision(&self) -> &str {
+        &self.content_revision
+    }
+}
+
+/// The base vocation whose skill multipliers a promoted vocation uses (SKILLS-0 §2).
+fn skill_vocation(vocation: &str) -> &str {
+    match vocation {
+        "elder_druid" => "druid",
+        "elite_knight" => "knight",
+        "exalted_monk" => "monk",
+        "master_sorcerer" => "sorcerer",
+        "royal_paladin" => "paladin",
+        other => other,
     }
 }

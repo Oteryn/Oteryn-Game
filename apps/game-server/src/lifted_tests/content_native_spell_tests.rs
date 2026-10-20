@@ -1,5 +1,6 @@
 #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
 use crate::content::spell_data::native::{profiles, spell_from_bundle};
+use crate::spell::native::CompiledNativeSpellPlanExt;
 use crate::spell::native::{Facts, Plan};
 use crate::spell::native_items as items;
 use serde_json::json;

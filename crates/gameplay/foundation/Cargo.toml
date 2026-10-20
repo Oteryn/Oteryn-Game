@@ -11,6 +11,9 @@ publish.workspace = true
 category = "gameplay"
 release-role = "production"
 
+[features]
+test-support = []
+
 [dependencies]
 base64.workspace = true
 ed25519-dalek.workspace = true

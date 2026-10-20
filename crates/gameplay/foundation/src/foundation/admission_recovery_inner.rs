@@ -20,7 +20,7 @@ impl CharacterWorldEligibilityClaimV1 {
         Self::new(identity.character_id(), identity.world_id())
     }
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     #[must_use]
     pub fn from_identity(identity: &ReconnectIdentityV1) -> Self {
         Self::expected_from_identity(identity)
@@ -59,7 +59,7 @@ pub struct GameSessionAuthoritySnapshot<T: Copy + Eq> {
 }
 
 impl<T: Copy + Eq> GameSessionAuthoritySnapshot<T> {
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     #[must_use]
     pub const fn new(
         commit: FreshAdmissionCommit<T>,
@@ -832,7 +832,7 @@ impl ReconnectCandidateBindingV1 {
         )
     }
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn from_record(
         record: &ReconnectDurabilityRecordV1,
     ) -> Result<Self, ReconnectDurabilityErrorV1> {
@@ -1230,7 +1230,7 @@ impl AccountPresenceClaimV1 {
         Self::new(identity.account_id(), identity.character_id())
     }
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn from_identity(
         identity: &ReconnectIdentityV1,
     ) -> Result<Self, ReconnectDurabilityErrorV1> {
@@ -1329,7 +1329,7 @@ impl ReconnectCurrentAuthorityV1 {
         })
     }
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn from_record(
         record: &ReconnectDurabilityRecordV1,
         observed_at: i64,
@@ -2488,7 +2488,7 @@ impl PostGraceActorObservationV1 {
 }
 /// A DTO or historical receipt cannot implement the registration supertrait.
 /// ```compile_fail
-/// use crate::foundation::*;
+/// use oteryn_gameplay_foundation::foundation::*;
 /// struct History;
 /// impl PostGraceActorSourceV1 for History {
 ///     fn resolve_current_actor(&self, _: &str, _: CharacterId, _: i64) -> Result<PostGraceActorObservationV1, ReconnectDurabilityErrorV1> { unreachable!() }
@@ -2534,7 +2534,7 @@ pub struct PostGraceRecoveryOperationV1 {
 /// flag can construct this capability. It remains inert until its exact owning
 /// transaction; final authorization must independently resolve current sources.
 /// ```compile_fail
-/// use crate::foundation::*;
+/// use oteryn_gameplay_foundation::foundation::*;
 /// fn forge(history: PostGraceActorObservationV1) -> PostGraceRecoveryAuthorizationV1 { history.into() }
 /// ```
 #[derive(Debug, Clone)]
@@ -2757,10 +2757,10 @@ pub struct PostGraceDurableCompletionV1 {
     pub outcome: PostGraceDurableOutcomeV1,
 }
 /// ```compile_fail
-/// use crate::foundation::*;
+/// use oteryn_gameplay_foundation::foundation::*;
 /// struct Peer;
 /// impl PostGraceCompletionSourceV1 for Peer {
-/// fn take_completion(&mut self, _: &crate::foundation::admission_authority_publication::PostGraceClaimEvidenceV1, _: PostGraceFlowPhaseV1) -> Result<Option<PostGraceDurableCompletionV1>, ReconnectDurabilityErrorV1> { Ok(None) }
+/// fn take_completion(&mut self, _: &oteryn_gameplay_foundation::foundation::admission_authority_publication::PostGraceClaimEvidenceV1, _: PostGraceFlowPhaseV1) -> Result<Option<PostGraceDurableCompletionV1>, ReconnectDurabilityErrorV1> { Ok(None) }
 /// }
 /// ```
 pub trait PostGraceCompletionSourceV1: super::fnd04_verifier::recovery_source_sealed::Sealed {
@@ -2769,7 +2769,7 @@ pub trait PostGraceCompletionSourceV1: super::fnd04_verifier::recovery_source_se
 /// Historical committed proof, created only after a sealed exact-operation
 /// completion. It is not a controller or a source registration capability.
 /// ```compile_fail
-/// use crate::foundation::*;
+/// use oteryn_gameplay_foundation::foundation::*;
 /// fn install(history: PostGraceCommitReceiptV1) -> PostGraceControllerBindingV1 { history.into() }
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -2889,10 +2889,10 @@ pub struct PostGraceAdoptionCurrentV1 {
     pub claims: Vec<super::admission_authority_publication::AdmissionAuthorityPublicationChangeV1>,
 }
 /// ```compile_fail
-/// use crate::foundation::*;
+/// use oteryn_gameplay_foundation::foundation::*;
 /// struct PeerHistory;
 /// impl PostGraceAdoptionSourceV1 for PeerHistory {
-/// fn current_adoption(&self, _: &crate::foundation::admission_authority_publication::PostGraceClaimEvidenceV1, _: i64) -> Result<PostGraceAdoptionCurrentV1, ReconnectDurabilityErrorV1> { unreachable!() }
+/// fn current_adoption(&self, _: &oteryn_gameplay_foundation::foundation::admission_authority_publication::PostGraceClaimEvidenceV1, _: i64) -> Result<PostGraceAdoptionCurrentV1, ReconnectDurabilityErrorV1> { unreachable!() }
 /// }
 /// ```
 pub trait PostGraceAdoptionSourceV1: super::fnd04_verifier::recovery_source_sealed::Sealed {
@@ -3141,7 +3141,7 @@ impl ControlLossObservationV1 {
 /// manufacture observations from a request/receipt. Resolution is bounded and
 /// does not wait on SQL or network. Actual producer registration is separate.
 /// ```compile_fail
-/// use crate::foundation::*;
+/// use oteryn_gameplay_foundation::foundation::*;
 /// struct Socket;
 /// impl ControlLossSourceV1 for Socket {
 /// fn resolve_loss(&self, _: GameSessionId, _: i64) -> Result<ControlLossObservationV1, ReconnectDurabilityErrorV1> { unreachable!() }
@@ -3171,7 +3171,7 @@ impl ControlLossOperationV1 {
 }
 /// Only Foundation constructs this capability from an independent sealed owner.
 /// ```compile_fail
-/// use crate::foundation::*;
+/// use oteryn_gameplay_foundation::foundation::*;
 /// fn forge(operation: ControlLossOperationV1) -> ControlLossAuthorizationV1 {
 /// ControlLossAuthorizationV1 { operation }
 /// }
@@ -3242,7 +3242,7 @@ impl ControlLossAuthorizationV1 {
 /// Exact bounded write projection, privately constructed after final validation.
 /// It contains no claim acquisition/release or actor/protection mutation.
 /// ```compile_fail
-/// use crate::foundation::*;
+/// use oteryn_gameplay_foundation::foundation::*;
 /// fn forge(operation: ControlLossOperationV1, successor: GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>) -> ControlLossEffectV1 {
 /// ControlLossEffectV1 {operation, successor}
 /// }
@@ -3300,7 +3300,7 @@ pub struct ControlLossCompletionV1 {
     pub outcome: ControlLossOutcomeV1,
 }
 /// ```compile_fail
-/// use crate::foundation::*;
+/// use oteryn_gameplay_foundation::foundation::*;
 /// struct History;
 /// impl ControlLossCompletionSourceV1 for History {
 /// fn take_loss_completion(&mut self, _: &ControlLossOperationV1) -> Result<Option<ControlLossCompletionV1>,ReconnectDurabilityErrorV1> { Ok(None) }
@@ -3316,7 +3316,7 @@ pub trait ControlLossCompletionSourceV1:
 }
 /// Inert original disposition. No receipt-to-live or receipt-to-effect conversion.
 /// ```compile_fail
-/// use crate::foundation::*;
+/// use oteryn_gameplay_foundation::foundation::*;
 /// fn replay(receipt: ControlLossReceiptV1) -> ControlLossRequestV1 {receipt.into()}
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -3956,7 +3956,7 @@ pub struct CompleteReconnectCurrentV1 {
 /// trust methods provide authenticated source contexts, not cached verifier facts.
 /// No SQL/network waits are permitted on the owning writer.
 /// ```compile_fail
-/// use crate::foundation::*;
+/// use oteryn_gameplay_foundation::foundation::*;
 /// struct Receipt;
 /// impl CompleteReconnectSourceV1 for Receipt {}
 /// ```
@@ -4111,7 +4111,7 @@ impl CompleteReconnectProofV1 {
 
 /// Private live authorization; deserialized history has no conversion into it.
 /// ```compile_fail
-/// use crate::foundation::*;
+/// use oteryn_gameplay_foundation::foundation::*;
 /// fn forge(history: CompleteReconnectOperationV1) -> CompleteReconnectAuthorizationV1 { history.into() }
 /// ```
 #[derive(Debug)]
@@ -4378,7 +4378,7 @@ impl CompleteReconnectRequestV1 {
 }
 /// Exact inert write projection. PREPARE cannot activate a controller/protection.
 /// ```compile_fail
-/// use crate::foundation::*;
+/// use oteryn_gameplay_foundation::foundation::*;
 /// fn forge(history: CompleteReconnectDurabilityOperationV1) -> CompleteReconnectEffectV1 { history.into() }
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -4548,7 +4548,7 @@ pub trait CompleteReconnectCompletionSourceV1:
 }
 /// Historical receipt exposes original disposition, never another write effect.
 /// ```compile_fail
-/// use crate::foundation::*;
+/// use oteryn_gameplay_foundation::foundation::*;
 /// fn replay(receipt: CompleteReconnectReceiptV1) -> CompleteReconnectRequestV1 { receipt.into() }
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq)]

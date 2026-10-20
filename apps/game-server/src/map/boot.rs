@@ -570,13 +570,17 @@ impl crate::content::native_cell_lookup::BundleCollisionLookup for BundleCollisi
 }
 
 pub(crate) use crate::content::native_cell_lookup::BundleCollisionIndex;
-impl BundleCollisionIndex {
+pub(crate) trait BundleCollisionIndexExt {
+    fn map(&self) -> &BundleMap;
+}
+
+impl BundleCollisionIndexExt for BundleCollisionIndex {
     /// The Channel's map view over the same bundle.
     #[expect(
         clippy::expect_used,
         reason = "the bundle port is constructed only here from BundleCollisionData"
     )]
-    pub(crate) fn map(&self) -> &BundleMap {
+    fn map(&self) -> &BundleMap {
         &(self.0.as_ref() as &dyn std::any::Any)
             .downcast_ref::<BundleCollisionData>()
             .expect("bundle map owner")

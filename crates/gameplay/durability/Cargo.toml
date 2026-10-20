@@ -11,6 +11,9 @@ publish.workspace = true
 category = "gameplay"
 release-role = "production"
 
+[features]
+test-support = ["oteryn-gameplay-foundation/test-support", "oteryn-gameplay-content/test-support"]
+
 [dependencies]
 base64.workspace = true
 oteryn-error-codes = { version = "=0.1.0", path = "../../error-codes" }
@@ -29,6 +32,10 @@ serde_json = { workspace = true, features = ["raw_value"] }
 sha2.workspace = true
 sqlx.workspace = true
 tokio = { workspace = true, features = ["signal"] }
+
+[dev-dependencies]
+oteryn-gameplay-foundation = { version = "=0.1.0", path = "../foundation", features = ["test-support"] }
+oteryn-gameplay-content = { version = "=0.1.0", path = "../content", features = ["test-support"] }
 
 [lints]
 workspace = true

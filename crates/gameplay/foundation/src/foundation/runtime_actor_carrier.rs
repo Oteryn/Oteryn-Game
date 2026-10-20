@@ -177,10 +177,7 @@ impl NamespaceContinuityGuard {
         }
     }
 
-    pub fn advance(
-        &mut self,
-        grant: PreProductionContinuityGrant,
-    ) -> Result<(), CarrierError> {
+    pub fn advance(&mut self, grant: PreProductionContinuityGrant) -> Result<(), CarrierError> {
         if grant.world_id != self.world_id || grant.channel_id != self.channel_id {
             return Err(CarrierError::WrongScope);
         }
@@ -275,7 +272,7 @@ impl ExactActorRef {
 
 impl ExactActorRef {
     /// Transport test fixture: an actor reference that names no runtime slot.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     #[allow(clippy::expect_used, dead_code)]
     pub fn transport_fixture(world_id: WorldId, channel_id: ChannelId) -> Self {
         Self(ActorRef {
@@ -469,10 +466,7 @@ impl CurrentOwnerMovementPosition<'_> {
         )?;
         Ok(MovementPositionSnapshot(snapshot))
     }
-    pub fn read(
-        &self,
-        actor: ExactActorRef,
-    ) -> Result<MovementPositionSnapshot, CarrierError> {
+    pub fn read(&self, actor: ExactActorRef) -> Result<MovementPositionSnapshot, CarrierError> {
         self.carrier
             .read_movement_position(self.continuity, actor.0)
     }
@@ -1008,7 +1002,7 @@ impl CurrentOwnerExactActorCommit<'_> {
     /// replay never double-attributes: it never reaches the mutation boundary a second time.
     /// Test only: the attacker is supplied, not read from a bound slot. Production writes go
     /// through [`Self::commit_damage_for_bound_attacker`] (A2, D295 item 4).
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn commit_damage_for_attacker(
         &mut self,
         actor: ExactActorRef,
@@ -1125,7 +1119,7 @@ impl CurrentOwnerCombatDeath<'_> {
             .project_committed_lethal_inner(self.continuity, receipt, false, false)
     }
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn project_committed_lethal_with_failures(
         &mut self,
         receipt: CommittedLethalReceipt,
@@ -1161,10 +1155,7 @@ impl CurrentOwnerCombatDeath<'_> {
     /// P2 4180039074: the owner clock of the turn that committed `actor`'s lethal receipt, read
     /// from the retained projection, so a replayed projection keeps its original death time.
     /// `Ok(None)` when that turn supplied no clock.
-    pub fn projected_death_at_ms(
-        &self,
-        actor: ExactActorRef,
-    ) -> Result<Option<u64>, CarrierError> {
+    pub fn projected_death_at_ms(&self, actor: ExactActorRef) -> Result<Option<u64>, CarrierError> {
         self.carrier.validate_ref(self.continuity, actor.0)?;
         self.carrier
             .corpse_projections
@@ -1735,7 +1726,7 @@ impl SpawnDefinition {
     }
 
     /// Every point of this source blockable or not.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn with_blockable(mut self, blockable: bool) -> Self {
         for point in &mut self.points {
             point.blockable = blockable;
@@ -1938,7 +1929,7 @@ fn mint_reward_occurrence_bytes(actor: ActorRef, character: [u8; 16]) -> [u8; 16
 /// frame binding digest. In production it is minted only by the Content activation path from an
 /// activated native entry generation; it is fixed for the runtime's lifetime.
 #[derive(Debug, PartialEq, Eq)]
-#[cfg_attr(test, derive(Clone))]
+#[cfg_attr(any(test, feature = "test-support"), derive(Clone))]
 pub struct ChannelContentPin {
     world_id: WorldId,
     activation_sequence: u64,
@@ -1979,7 +1970,7 @@ impl ChannelContentPin {
     }
 
     /// Synthetic pin for runtime tests that do not exercise Content activation.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub const fn test(world_id: WorldId) -> Self {
         Self::from_activation(world_id, 1, [1; 32], [2; 32], [3; 32], [4; 32], (0, 0, 0))
     }
@@ -2020,7 +2011,7 @@ impl ChannelRuntimeV1 {
     }
 
     /// Test only: sets a live creature's health directly.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn set_test_creature_health(
         &mut self,
         actor: ExactActorRef,
@@ -2073,7 +2064,7 @@ pub struct ChannelRuntimeV1 {
     spawn_drive_window: Option<SpawnDriveWindow>,
     /// Test only: the spawn records the respawn drives read (gone-scan points and deadline
     /// entries), to prove the work per owner window is bounded.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     spawn_drive_visits: usize,
 }
 
@@ -2242,7 +2233,7 @@ impl ChannelRuntimeV1 {
             },
             spawn_activation: None,
             spawn_drive_window: None,
-            #[cfg(test)]
+            #[cfg(any(test, feature = "test-support"))]
             spawn_drive_visits: 0,
         })
     }
@@ -2804,7 +2795,7 @@ impl ChannelRuntimeV1 {
 
     /// Synthetic context is confined to tests. A committed session still goes through
     /// the actual runtime reservation and carrier position initialization checks.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn initialize_movement_test_position(
         &mut self,
         actor: ExactActorRef,
@@ -2827,7 +2818,7 @@ impl ChannelRuntimeV1 {
 
     /// Test only: `initialize_movement_test_position` under the active pin's position context,
     /// for consumers that read occupancy or commit steps beside pinned creatures.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn initialize_pinned_test_position(
         &mut self,
         actor: ExactActorRef,
@@ -2848,7 +2839,7 @@ impl ChannelRuntimeV1 {
             .map(MovementPositionSnapshot)
     }
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     const fn test_position_context(&self) -> PreProductionPositionContext {
         PreProductionPositionContext {
             world_id: self.binding.world_id,
@@ -2863,7 +2854,7 @@ impl ChannelRuntimeV1 {
     /// Explicit Game-owned qualification declaration. The caller independently holds
     /// current qualified tile and SQL Item collision proofs through this owner turn.
     /// Health and policy come from this active runtime, not fixture health constants.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn realize_native_qualification_spawn(
         &mut self,
         expected_pin: ChannelContentPin,
@@ -2968,7 +2959,7 @@ impl ChannelRuntimeV1 {
         self.realize_begun_activation_in_one_turn(total_points)
     }
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     fn realize_spawn_definitions(
         &mut self,
         definitions: Vec<SpawnDefinition>,
@@ -3197,7 +3188,7 @@ impl ChannelRuntimeV1 {
     }
 
     /// Kills a live creature in place, as a lethal hit would, for owner-turn spawn tests.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn kill_creature_for_test(&mut self, actor: ExactActorRef) -> bool {
         let Ok(index) = self.carrier.validate_ref(&self.continuity, actor.0) else {
             return false;
@@ -3252,16 +3243,13 @@ impl ChannelRuntimeV1 {
     }
 
     /// The pending respawn occurrence of `point`, if any.
-    pub fn pending_respawn(
-        &self,
-        point: spawn::SpawnPoint,
-    ) -> Option<spawn::PendingRespawn> {
+    pub fn pending_respawn(&self, point: spawn::SpawnPoint) -> Option<spawn::PendingRespawn> {
         self.spawn_schedule.pending(point)
     }
 
     /// Test only: the spawn records read by the drives since the last call (gone-scan points
     /// and deadline entries), and whether the deadline index still equals the schedule.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn take_spawn_drive_visits(&mut self) -> (usize, bool) {
         let consistent = self.spawn_deadlines.len() == self.spawn_schedule.len()
             && self.spawn_deadlines.iter().all(|&(due_micros, point)| {
@@ -3334,7 +3322,7 @@ impl ChannelRuntimeV1 {
             let Some(&(due_micros, point)) = self.spawn_deadlines.first() else {
                 break;
             };
-            #[cfg(test)]
+            #[cfg(any(test, feature = "test-support"))]
             {
                 self.spawn_drive_visits += 1;
             }
@@ -3450,7 +3438,7 @@ impl ChannelRuntimeV1 {
         while read < SPAWN_GONE_SCAN_POINTS_PER_WINDOW_MAX {
             let spawn = &spawns[source];
             read += 1;
-            #[cfg(test)]
+            #[cfg(any(test, feature = "test-support"))]
             {
                 self.spawn_drive_visits += 1;
             }
@@ -3554,7 +3542,7 @@ impl ChannelRuntimeV1 {
 
     /// Test only: one live creature at `position`, under the same synthetic context as
     /// [`Self::initialize_movement_test_position`]. Spawn realization is AI-2's carrier path.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn admit_test_creature(
         &mut self,
         position: MovementLocalPosition,
@@ -3563,7 +3551,7 @@ impl ChannelRuntimeV1 {
     }
 
     /// Test-only parameterized admission for the native monster laboratory.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn admit_monster_lab_creature(
         &mut self,
         position: MovementLocalPosition,
@@ -3589,7 +3577,7 @@ impl ChannelRuntimeV1 {
 
     /// Test only: actual fixed-slot creature admission with the active pin's position
     /// context, for consumers that independently require qualified current policy reads.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn admit_pinned_test_creature(
         &mut self,
         position: MovementLocalPosition,
@@ -3612,7 +3600,7 @@ impl ChannelRuntimeV1 {
     }
 
     /// Test only: despawn one actor, so its generation goes stale.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn remove_test_actor(&mut self, actor: ExactActorRef) -> Result<(), CarrierError> {
         self.carrier.remove(&self.continuity, actor.0).map(|_| ())
     }
@@ -3746,7 +3734,7 @@ impl ChannelRuntimeV1 {
     }
 
     /// Test-only census: (committed player actors, pending player reservations).
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn player_slot_counts(&self) -> (usize, usize) {
         self.carrier
             .slots
@@ -3768,7 +3756,7 @@ impl ChannelRuntimeV1 {
 
     /// Test-only census: the position revisions of committed player actors that
     /// stand at the pinned start cell under the pinned context, ascending.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn entry_start_player_revisions(&self) -> Vec<u64> {
         let mut revisions: Vec<u64> = self
             .carrier
@@ -3793,7 +3781,7 @@ impl ChannelRuntimeV1 {
     }
 
     /// Test-only census: the recorded control-loss epochs of committed players, ascending.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn player_control_loss_epochs(&self) -> Vec<u64> {
         let mut epochs: Vec<u64> = self
             .carrier
@@ -3815,7 +3803,7 @@ impl ChannelRuntimeV1 {
 
     /// Test-only census: committed player actors positioned at the pinned
     /// start cell under the pinned context by one initialization (revision 1).
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn players_positioned_at_entry_start(&self) -> usize {
         self.carrier
             .slots
@@ -3833,7 +3821,7 @@ impl ChannelRuntimeV1 {
             .count()
     }
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     fn contains_committed_session(
         &self,
         game_session_id: GameSessionId,
@@ -6343,7 +6331,7 @@ fn copy_bounded_binding(bytes: &[u8]) -> Result<Box<[u8]>, CarrierError> {
 }
 
 fn allocate_slots(explicit_capacity: usize) -> Result<Vec<Slot>, CarrierError> {
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     if explicit_capacity == TEST_ALLOCATION_FAILURE_CAPACITY {
         return Err(CarrierError::AllocationFailed);
     }
@@ -6530,10 +6518,7 @@ impl ChannelRuntimeV1 {
     /// can still bind its committed corpse Item. Pinning a pinned projection is a no-op. A
     /// projection that is not retained in this generation is `CommittedLethalUnavailable`; more
     /// than `MAX_PINNED_CORPSE_PROJECTIONS` pins are `CapacityExceeded`. Runtime memory only.
-    pub fn pin_corpse_projection(
-        &mut self,
-        actor: ExactActorRef,
-    ) -> Result<(), CarrierError> {
+    pub fn pin_corpse_projection(&mut self, actor: ExactActorRef) -> Result<(), CarrierError> {
         self.carrier.pin_corpse_projection_inner(actor)
     }
 
@@ -6553,13 +6538,13 @@ impl ChannelRuntimeV1 {
     }
 
     /// Whether `actor`'s corpse projection is pinned against eviction.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn corpse_projection_pinned(&self, actor: ExactActorRef) -> bool {
         self.carrier.corpse_projection_pins.contains(&actor)
     }
 
     /// Whether `actor`'s committed death is still projected and retained in this generation.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn retains_corpse_projection(&self, actor: ExactActorRef) -> bool {
         self.carrier.retains_corpse_projection(actor)
     }
@@ -6581,24 +6566,21 @@ impl ChannelRuntimeV1 {
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 const TEST_ALLOCATION_FAILURE_CAPACITY: usize = u32::MAX as usize;
 
 /// Foundation-only factory. Path-included Foundation integration crates do not import Content;
 /// the Movement library tests supply real Content claims outside this module.
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 pub struct MovementActorFixture {
     owner: NamespaceContinuityGuard,
     carrier: ChannelActorCarrier,
     actor: ExactActorRef,
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 impl MovementActorFixture {
-    pub fn new(
-        position: MovementLocalPosition,
-        creature: bool,
-    ) -> Result<Self, CarrierError> {
+    pub fn new(position: MovementLocalPosition, creature: bool) -> Result<Self, CarrierError> {
         fn uuid(seed: u8) -> [u8; 16] {
             let mut bytes = [seed; 16];
             bytes[6] = 0x70;
@@ -6754,7 +6736,7 @@ impl MovementActorFixture {
 /// generation. A death exists only through the owner's committed lethal path
 /// and Combat's projection; the fixture returns the death key that projection
 /// names and never constructs one. Nothing here exists outside `cfg(test)`.
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 pub struct CombatDeathFixture {
     owner: NamespaceContinuityGuard,
     carrier: ChannelActorCarrier,
@@ -6766,7 +6748,7 @@ pub struct CombatDeathFixture {
     attacker: Option<ExactActorRef>,
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 impl CombatDeathFixture {
     /// Fixture creature health: test/evidence only, not Reference behavior.
     pub const HEALTH: i64 = 20;
@@ -7015,10 +6997,7 @@ impl CombatDeathFixture {
 
     /// The scope moved: owner continuity advances to `next`, while this
     /// carrier still serves its original generation.
-    pub fn advance_owner(
-        &mut self,
-        next: ScopeOwnershipGeneration,
-    ) -> Result<(), CarrierError> {
+    pub fn advance_owner(&mut self, next: ScopeOwnershipGeneration) -> Result<(), CarrierError> {
         self.owner.advance(PreProductionContinuityGrant {
             world_id: self.owner.world_id,
             channel_id: self.owner.channel_id,
@@ -7027,7 +7006,7 @@ impl CombatDeathFixture {
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 impl ChannelActorCarrier {
     /// Test only: a committed player slot for `session` with `lease` bound, as fresh admission
     /// leaves it (A2).
@@ -10090,6 +10069,10 @@ impl<K: Ord, V> ActorMemoTable<K, V> {
     pub fn len(&self) -> usize {
         self.len
     }
+    /// Whether the table holds no memos.
+    pub fn is_empty(&self) -> bool {
+        self.len == 0
+    }
     /// The memos of exactly `actor`.
     pub fn actor_len(&self, actor: ExactActorRef) -> usize {
         self.slots
@@ -10102,6 +10085,9 @@ impl<K: Ord, V> ActorMemoTable<K, V> {
         K: std::borrow::Borrow<Q>,
         Q: Ord + ?Sized,
     {
+        if self.is_empty() {
+            return None;
+        }
         self.slots
             .get(&actor.actor_local_id())
             .filter(|memos| memos.actor == actor)?
@@ -10684,11 +10670,7 @@ impl ChannelRuntimeV1 {
 }
 // Main reconciliation Foundation-2: intrinsic native summon lifecycle.
 impl ChannelRuntimeV1 {
-    pub fn matches_live_creature_identity(
-        &self,
-        actor: ExactActorRef,
-        target: &[u8],
-    ) -> bool {
+    pub fn matches_live_creature_identity(&self, actor: ExactActorRef, target: &[u8]) -> bool {
         self.current_live_creature_identity(actor)
             .is_ok_and(|identity| identity == target)
     }
@@ -10741,7 +10723,7 @@ impl NativeSummonLinks {
     fn len(&self) -> usize {
         self.links.len()
     }
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     fn is_empty(&self) -> bool {
         self.links.is_empty()
     }
@@ -12035,10 +12017,7 @@ impl ChannelRuntimeV1 {
 impl CurrentOwnerCombatDeath<'_> {
     // Insert inside existing impl CurrentOwnerCombatDeath<'_>.
     // Actual carrier-owned data; neither method mints mutation authority or accepts caller facts.
-    pub fn creature_target_identity(
-        &self,
-        actor: ExactActorRef,
-    ) -> Result<&[u8], CarrierError> {
+    pub fn creature_target_identity(&self, actor: ExactActorRef) -> Result<&[u8], CarrierError> {
         let index = self.carrier.validate_ref(self.continuity, actor.0)?;
         match &self.carrier.slots[index] {
             Slot::CreatureOccupied {
@@ -12153,7 +12132,7 @@ impl ChannelRuntimeV1 {
 }
 
 // Qualification entry point only: not included in product proposal.
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 #[allow(
     clippy::expect_used,
     reason = "test-only native fixture assertions retain descriptive failures"
@@ -12407,7 +12386,7 @@ impl ChannelRuntimeV1 {
 impl ChannelRuntimeV1 {
     /// Test-only native damage writer for source-specific lab fixtures. Target identity is
     /// read from the actual current slot; caller cannot supply an alternate target binding.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn commit_monster_lab_damage(
         &mut self,
         actor: ExactActorRef,
@@ -12442,7 +12421,7 @@ impl ChannelRuntimeV1 {
 impl ChannelRuntimeV1 {
     /// Test-only player geometry under its independently selected current ContentPin.
     /// Session identity and one-time initialization use the real carrier checks.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn initialize_source_pinned_lab_player_position(
         &mut self,
         actor: ExactActorRef,
@@ -12467,7 +12446,7 @@ impl ChannelRuntimeV1 {
     }
     /// Test-only admission through the REAL current ContentPin position context. Existing
     /// movement-test fixture context is intentionally unchanged for its separate test contract.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn admit_source_pinned_lab_creature(
         &mut self,
         at: MovementLocalPosition,
@@ -12657,7 +12636,7 @@ impl ChannelRuntimeV1 {
 }
 
 // Isolated proof: real current carrier, owner damage commits and corpse projections.
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 #[allow(
     clippy::expect_used,
     reason = "test-only native fixture assertions retain descriptive failures"
@@ -12908,7 +12887,7 @@ impl ChannelRuntimeV1 {
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 #[allow(
     clippy::expect_used,
     reason = "test-only native fixture assertions retain descriptive failures"
@@ -13186,7 +13165,7 @@ impl ChannelRuntimeV1 {
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 #[allow(
     clippy::expect_used,
     reason = "test-only native fixture assertions retain descriptive failures"
@@ -13600,7 +13579,7 @@ impl ChannelRuntimeV1 {
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 #[allow(
     clippy::expect_used,
     reason = "test-only native fixture assertions retain descriptive failures"
@@ -13835,7 +13814,7 @@ impl ChannelRuntimeV1 {
 }
 
 // Append in physical Foundation carrier. Pure test-only owner construction; no production grants.
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 #[allow(
     clippy::expect_used,
     reason = "test-only native fixture assertions retain descriptive failures"
@@ -13843,14 +13822,14 @@ impl ChannelRuntimeV1 {
 pub fn crystal_death_router_fixture(world: WorldId) -> ChannelRuntimeV1 {
     crystal_death_router_fixture_digest(world, [1; 32])
 }
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 pub fn crystal_death_router_fixture_with_artifact(
     world: WorldId,
     digest: [u8; 32],
 ) -> ChannelRuntimeV1 {
     crystal_death_router_fixture_digest(world, digest)
 }
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 #[allow(clippy::expect_used)]
 fn crystal_death_router_fixture_digest(world: WorldId, digest: [u8; 32]) -> ChannelRuntimeV1 {
     let mut channel = [0u8; 16];
@@ -13880,7 +13859,7 @@ fn crystal_death_router_fixture_digest(world: WorldId, digest: [u8; 32]) -> Chan
     )
     .expect("valid native fixture operation must succeed")
 }
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 #[allow(
     clippy::expect_used,
     reason = "test-only native fixture assertions retain descriptive failures"
@@ -13949,7 +13928,7 @@ impl ChannelRuntimeV1 {
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 #[allow(
     clippy::expect_used,
     reason = "test-only native fixture assertions retain descriptive failures"
@@ -14410,7 +14389,7 @@ impl ChannelRuntimeV1 {
 
 // Test-only native owner harness. Registration callback supplied by root test reads actual project.
 // No Content dependency is introduced into standalone Foundation path includes.
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 #[allow(
     clippy::expect_used,
     reason = "test-only native fixture assertions retain descriptive failures"
@@ -14913,7 +14892,7 @@ pub fn bone_shared_actual_owner_harness(
     );
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 impl ChannelRuntimeV1 {
     pub fn bone_shared_fixture_damage(
         &mut self,
@@ -15460,6 +15439,7 @@ mod native_callback_origin_tests {
         const ENTRIES: usize = CREATUREAI0_SUMMON_ENTRIES_PER_CREATURE_MAX;
         let mut r = super::tests::runtime(CREATURES + 8);
         let mut table = ActorMemoTable::<usize, u64>::default();
+        assert!(table.is_empty());
         let mut actors = Vec::new();
         for i in 0..CREATURES {
             let actor = ExactActorRef(
@@ -15509,5 +15489,40 @@ mod native_callback_origin_tests {
         assert_eq!(table.actor_len(actors[1]), 0);
         assert_eq!(table.actor_len(actors[2]), ENTRIES);
         assert_eq!(table.get(next, &0), Some(&9));
+        assert!(!table.is_empty());
+        table.prune(|_| false);
+        assert!(table.is_empty());
+        assert_eq!(table.get(next, &0), None);
+    }
+}
+
+/// Project the already committed lethal transition. Combat cannot manufacture
+/// lethality, actor identity or position: it can only ask the physical owner
+/// for an opaque receipt and immediately return that receipt for projection.
+pub fn project_fixed_one_creature_death<'a>(
+    owner: &'a mut CurrentOwnerCombatDeath<'_>,
+    actor: ExactActorRef,
+) -> Result<&'a RuntimeCorpseProjection, CarrierError> {
+    let receipt = owner.committed_lethal_receipt(actor)?;
+    owner.project_committed_lethal(receipt)
+}
+
+#[cfg(any(test, feature = "test-support"))]
+impl crate::foundation::CombatDeathFixture {
+    /// Combat's idempotent projection of the committed lethal occurrence and
+    /// the durable death key it names, with the corpse position.
+    pub fn project_death(
+        &mut self,
+    ) -> Result<
+        (
+            crate::foundation::CreatureDeathOccurrenceKey,
+            crate::foundation::MovementLocalPosition,
+        ),
+        CarrierError,
+    > {
+        let actor = self.actor();
+        let mut combat = self.borrow_combat_death();
+        let projection = project_fixed_one_creature_death(&mut combat, actor)?;
+        Ok((projection.occurrence().death_key(), projection.position()))
     }
 }

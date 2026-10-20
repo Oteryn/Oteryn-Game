@@ -50,11 +50,7 @@ pub struct CompiledCreaturePolicy {
 impl CompiledCreaturePolicy {
     /// Source game.cpp healingMap is evaluated before blockHit/immunity, from
     /// the incoming pre-buff magnitude. No attacker means no damage-derived heal.
-    pub fn damage_healing(
-        &self,
-        damage_type: &str,
-        magnitude: i64,
-    ) -> Result<i64, CarrierError> {
+    pub fn damage_healing(&self, damage_type: &str, magnitude: i64) -> Result<i64, CarrierError> {
         if magnitude < 0 {
             return Err(CarrierError::InvalidDamage);
         }
@@ -93,10 +89,7 @@ pub struct CompiledCreaturePolicies {
 impl CompiledCreaturePolicies {
     /// Content's already-qualified outer artifact contains these exact decoded records.
     /// Rebinding data does not issue runtime scope or current mutation authority.
-    pub fn bind_qualified_outer_artifact(
-        &mut self,
-        digest: [u8; 32],
-    ) -> Result<(), CarrierError> {
+    pub fn bind_qualified_outer_artifact(&mut self, digest: [u8; 32]) -> Result<(), CarrierError> {
         if digest == [0; 32] {
             return Err(CarrierError::ContentPinWorldMismatch);
         }

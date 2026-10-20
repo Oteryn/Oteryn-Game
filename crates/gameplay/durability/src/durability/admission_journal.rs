@@ -1,6 +1,6 @@
 pub mod party_target_binding;
 pub mod spell_reconnect;
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 use crate::durability::schema;
 use crate::durability::{DurabilityError, DurabilityRoot, db};
 use crate::foundation::{
@@ -10,7 +10,7 @@ use crate::foundation::{
     ReconnectPrepareRequestV1, ReconnectProofV1, RuntimeScopeRefV1,
 };
 use serde_json::{Value, json};
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 use sqlx::PgPool;
 use sqlx::pool::PoolConnection;
 use sqlx::postgres::PgRow;
@@ -73,7 +73,7 @@ pub(super) async fn replacement_receipt_matches_record(
 
 #[derive(Clone)]
 pub(super) enum JournalBackend {
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     Legacy(PgPool),
     Root(DurabilityRoot),
 }
@@ -81,7 +81,7 @@ pub(super) enum JournalBackend {
 impl JournalBackend {
     pub(super) fn try_issue_root(&self) -> Result<Option<db::IssuedSemanticPass>, DurabilityError> {
         match self {
-            #[cfg(test)]
+            #[cfg(any(test, feature = "test-support"))]
             Self::Legacy(_) => Ok(None),
             Self::Root(root) => root.try_issue_semantic_pass().map(Some),
         }
@@ -96,7 +96,7 @@ impl JournalBackend {
         F::Output: Send + 'static,
     {
         match self {
-            #[cfg(test)]
+            #[cfg(any(test, feature = "test-support"))]
             Self::Legacy(_) => Err(DurabilityError::InvalidStoredState),
             Self::Root(root) => Ok(root.spawn_task(future)),
         }
@@ -117,7 +117,7 @@ impl JournalBackend {
             + Send,
     {
         match self {
-            #[cfg(test)]
+            #[cfg(any(test, feature = "test-support"))]
             Self::Legacy(pool) => {
                 if issued.is_some() {
                     return Err(DurabilityError::InvalidStoredState);
@@ -161,7 +161,7 @@ pub struct AdmissionReconnectJournal {
 }
 
 impl AdmissionReconnectJournal {
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub async fn connect_runtime(database_url: &str) -> Result<Self, DurabilityError> {
         Ok(Self {
             backend: JournalBackend::Legacy(schema::connect_runtime(database_url).await?),

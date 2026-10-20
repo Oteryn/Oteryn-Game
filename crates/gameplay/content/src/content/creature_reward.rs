@@ -74,7 +74,7 @@ pub struct CreatureRewardTable {
 }
 
 impl CreatureRewardTable {
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn insert(
         &mut self,
         creature: impl Into<String>,

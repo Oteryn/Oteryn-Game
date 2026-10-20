@@ -74,7 +74,7 @@ pub use runtime_actor_carrier::{
     TickFacts, TickKind, WelterConsumeError, WelterConsumeLedger, WelterConsumeResult, WelterPrey,
     WelterSourceRegistration,
 };
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 #[allow(unused_imports)] // Each path-included Foundation test crate uses only some fixtures.
 pub use runtime_actor_carrier::{CombatDeathFixture, MovementActorFixture};
 pub use runtime_actor_carrier::{SpellRelocationProof, relocation_seal};
@@ -923,7 +923,7 @@ impl RuntimeWorkStamp {
 /// Ordinal issuance is single-owner state for one scope ownership generation.
 ///
 /// ```compile_fail
-/// use crate::foundation::{ScopeOwnershipGeneration, ScopeRuntimeFence};
+/// use oteryn_gameplay_foundation::foundation::{ScopeOwnershipGeneration, ScopeRuntimeFence};
 ///
 /// let generation = ScopeOwnershipGeneration::new(1).unwrap();
 /// let mut owner = ScopeRuntimeFence::from_external_grant(generation);
@@ -933,7 +933,7 @@ impl RuntimeWorkStamp {
 /// ```
 ///
 /// ```compile_fail
-/// use crate::foundation::{ScopeOwnershipGeneration, ScopeRuntimeFence};
+/// use oteryn_gameplay_foundation::foundation::{ScopeOwnershipGeneration, ScopeRuntimeFence};
 ///
 /// let generation = ScopeOwnershipGeneration::new(1).unwrap();
 /// let owner = ScopeRuntimeFence::from_external_grant(generation);
@@ -941,7 +941,7 @@ impl RuntimeWorkStamp {
 /// ```
 ///
 /// ```compile_fail
-/// use crate::foundation::{ScopeOwnershipGeneration, ScopeRuntimeFence};
+/// use oteryn_gameplay_foundation::foundation::{ScopeOwnershipGeneration, ScopeRuntimeFence};
 ///
 /// let generation = ScopeOwnershipGeneration::new(1).unwrap();
 /// let _first = ScopeRuntimeFence::from_external_grant(generation);
@@ -1504,13 +1504,13 @@ pub mod admission_authority_publication;
 
 pub mod fresh_admission_durability;
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 #[allow(unused_imports)]
 pub use runtime_actor_carrier::{
     crystal_death_router_fixture, crystal_death_router_fixture_with_artifact,
 };
 // Append inside Foundation module. Test builds only; no production grant API.
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 pub fn crystal_timer_fixture(
     scope: RuntimeScopeRefV1,
     generation: ScopeOwnershipGeneration,
@@ -1521,7 +1521,7 @@ pub fn crystal_timer_fixture(
     Ok((fence, stamp))
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 #[allow(unused_imports)]
 pub use runtime_actor_carrier::bone_shared_actual_owner_harness;
 #[allow(unused_imports)]
@@ -1549,3 +1549,5 @@ pub mod map_position;
 pub mod melee_definition;
 
 pub mod spell_wheel_profile;
+
+pub use runtime_actor_carrier::project_fixed_one_creature_death;

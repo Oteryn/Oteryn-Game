@@ -828,7 +828,7 @@ pub struct CleansePlan {
 }
 
 impl CleansePlan {
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub const fn conflict_key(self) -> ConflictKey {
         self.key
     }
@@ -1432,11 +1432,7 @@ impl<S: Clone> ConditionStore<S> {
         self.take_due_matching(now, facts, true, Some(&matches))
     }
     /// Independent qualified regeneration must not drain unknown combat ticks.
-    pub fn take_due_non_damage(
-        &mut self,
-        now: u64,
-        facts: TickFacts,
-    ) -> Vec<ConditionTick<S>> {
+    pub fn take_due_non_damage(&mut self, now: u64, facts: TickFacts) -> Vec<ConditionTick<S>> {
         self.take_due_matching(now, facts, false, None)
     }
     fn take_due_matching(

@@ -23,8 +23,7 @@ use std::fmt;
 /// `N` of the death path and the kill reward path; a table of any other length is refused.
 pub const CHARACTER_EXPERIENCE_TABLE_LEVELS: usize = 2000;
 pub const PROGRESSION_SECTION_SCHEMA: &str = "OTERYN_NATIVE_PROGRESSION/v1";
-pub const PROGRESSION_SIMULATION_REVISION: &str =
-    "oteryn-simulation-determinism-exact-i64-v1";
+pub const PROGRESSION_SIMULATION_REVISION: &str = "oteryn-simulation-determinism-exact-i64-v1";
 /// Upper bound of the section inside the artifact (`1..=256 KiB`).
 pub const MAX_PROGRESSION_SECTION_BYTES: usize = 256 * 1024;
 const MAX_SAFE_INTEGER: u64 = (1 << 53) - 1;
@@ -447,5 +446,8 @@ impl CharacterProgressionContent {
     }
 }
 
+#[cfg(any(test, feature = "test-support"))]
+pub mod test_support;
+
 #[cfg(test)]
-pub mod tests;
+mod tests;

@@ -1273,9 +1273,20 @@ mod tests {
 
     #[test]
     fn no_production_writer_advances_a_revision_outside_the_sequencer() {
-        let root = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server")).join("src");
+        let root = std::path::Path::new(if env!("CARGO_PKG_NAME") == "oteryn-game-server" {
+            env!("CARGO_MANIFEST_DIR")
+        } else {
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server")
+        })
+        .join("src");
         let mut files = Vec::new();
         sources(&root, &mut files);
+        for package in ["foundation", "content", "durability"] {
+            let extracted = root.join(format!("../../../crates/gameplay/{package}/src"));
+            let before = files.len();
+            sources(&extracted, &mut files);
+            assert!(files.len() > before, "the scan must see {package} sources");
+        }
         assert!(
             files.len() > 100,
             "the scan must see the game-server sources"

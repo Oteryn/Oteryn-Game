@@ -1366,7 +1366,7 @@ pub async fn read_spell_tile_in_transaction(
 
 /// Native qualification spawn reads the actual scope-owned Item tile, without
 /// fabricating a player command or describing it as a standing-player read.
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 pub async fn read_qualification_scope_tile_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemScopeAuthority,

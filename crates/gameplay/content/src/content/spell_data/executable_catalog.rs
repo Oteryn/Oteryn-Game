@@ -1150,10 +1150,7 @@ fn equivalent_body(entry: &CompiledEntry) -> (Value, Value) {
 
 /// Compile all identities, including representability failures. The caller must
 /// independently bind this digest into its admitted content generation.
-pub fn compile(
-    bytes: &[u8],
-    expected_artifact_digest: &str,
-) -> Result<CompiledCatalog, Error> {
+pub fn compile(bytes: &[u8], expected_artifact_digest: &str) -> Result<CompiledCatalog, Error> {
     require(
         !bytes.is_empty() && bytes.len() <= MAX_ARTIFACT_BYTES,
         "invalid artifact byte length",

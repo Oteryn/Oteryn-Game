@@ -481,10 +481,7 @@ fn validate_batch(batch: &OwnerCombatBatch) -> Result<(), Error> {
 
 impl ChannelRuntimeV1 {
     /// Every actual actor mutation outside the owning pending batch checks this guard.
-    pub fn assert_actor_spell_unreserved(
-        &self,
-        actor: ExactActorRef,
-    ) -> Result<(), CarrierError> {
+    pub fn assert_actor_spell_unreserved(&self, actor: ExactActorRef) -> Result<(), CarrierError> {
         let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
         if !matches!(&self.carrier.slots[index],Slot::Occupied{generation,..}|Slot::CreatureOccupied{generation,..}
             if *generation==actor.0.actor_local_generation.0)
@@ -514,10 +511,7 @@ impl ChannelRuntimeV1 {
         clippy::expect_used,
         reason = "post-validation commit invariant; a fallible exit here would leave a partial owner write"
     )]
-    pub fn reserve_spell_batch(
-        &mut self,
-        staged: &mut StagedSpellBatch,
-    ) -> Result<(), Error> {
+    pub fn reserve_spell_batch(&mut self, staged: &mut StagedSpellBatch) -> Result<(), Error> {
         self.validate_staged_spell_batch(staged)?;
         if !staged.will_apply() {
             return Ok(());
@@ -715,10 +709,7 @@ impl ChannelRuntimeV1 {
 
     /// The borrowing check of [`Self::release_companion_touches_for_source_commit`]
     /// (ARCH-SPELL-LOCK-2 §1.6): it changes no slot and no staged field.
-    pub fn check_companion_touch_release(
-        &self,
-        staged: &StagedSpellBatch,
-    ) -> Result<(), Error> {
+    pub fn check_companion_touch_release(&self, staged: &StagedSpellBatch) -> Result<(), Error> {
         self.validate_staged_spell_batch(staged)?;
         let reservation = staged.reservation.as_ref().ok_or(Error::InvalidBatch)?;
         for index in &staged.companion_touch_indices {
@@ -908,10 +899,7 @@ impl ChannelRuntimeV1 {
         Ok(staged)
     }
 
-    pub fn stage_spell_batch(
-        &self,
-        batch: &OwnerCombatBatch,
-    ) -> Result<StagedSpellBatch, Error> {
+    pub fn stage_spell_batch(&self, batch: &OwnerCombatBatch) -> Result<StagedSpellBatch, Error> {
         let staged = self.stage_spell_batch_inner(batch)?;
         if staged.will_apply()
             && serde_json::from_slice::<serde_json::Value>(&batch.binding)
@@ -1399,10 +1387,7 @@ impl ChannelRuntimeV1 {
 
     /// Borrow-only compare of the already allocated real slots, also used before consuming
     /// a receipt-qualified training successor. This check grants no detached authority.
-    pub fn validate_staged_spell_batch(
-        &self,
-        staged: &StagedSpellBatch,
-    ) -> Result<(), Error> {
+    pub fn validate_staged_spell_batch(&self, staged: &StagedSpellBatch) -> Result<(), Error> {
         // Independent current continuity and actual player session are checked again here.
         self.carrier.validate_current_continuity(&self.continuity)?;
         let facts =

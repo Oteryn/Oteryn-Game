@@ -120,7 +120,7 @@ impl FreshAdmissionAuditBindingV1 {
 /// Only verified claims and independently current published guards can create
 /// the live capability. A historical DTO intentionally cannot be converted.
 /// ```compile_fail
-/// use crate::foundation::fresh_admission_durability::*;
+/// use oteryn_gameplay_foundation::foundation::fresh_admission_durability::*;
 /// fn forge(binding: FreshAdmissionAuditBindingV1) -> FreshAdmissionCommitAuthorizationV1 {
 ///     FreshAdmissionCommitAuthorizationV1::from(binding)
 /// }
@@ -367,7 +367,7 @@ pub struct FreshAdmissionDurabilityFlowV1 {
 }
 impl FreshAdmissionDurabilityFlowV1 {
     /// ```compile_fail
-    /// use crate::foundation::fresh_admission_durability::*;
+    /// use oteryn_gameplay_foundation::foundation::fresh_admission_durability::*;
     /// fn unpaired(auth: FreshAdmissionCommitAuthorizationV1) {
     ///     FreshAdmissionDurabilityFlowV1::begin(auth);
     /// }

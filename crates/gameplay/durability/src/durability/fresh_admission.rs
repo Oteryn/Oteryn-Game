@@ -273,8 +273,8 @@ pub enum FreshLossReconciliation {
 /// It reports persistence to the matching owning flow, never live authorization,
 /// acknowledgement of consumption, or permission to release an executor slot.
 /// ```compile_fail
-/// use crate::durability::fresh_admission::DurableLossCompletionSource;
-/// use crate::foundation::ControlLossCompletionV1;
+/// use oteryn_gameplay_durability::durability::fresh_admission::DurableLossCompletionSource;
+/// use oteryn_gameplay_foundation::foundation::ControlLossCompletionV1;
 /// fn promote_history(history: ControlLossCompletionV1) -> DurableLossCompletionSource {
 ///     history.into()
 /// }
@@ -349,7 +349,7 @@ impl FreshAdmissionStore {
             && check(scope, *ownership_generation, world_policy_revision))
     }
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub async fn connect_runtime(
         url: &str,
         maximum_operation_bytes: usize,
@@ -440,7 +440,7 @@ impl FreshAdmissionStore {
 
     /// Fixture-only raw write. Production enters through the composed owner,
     /// which requires current capability revalidation in the deciding transaction.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub async fn commit(
         &self,
         request: &FreshAdmissionCommitRequestV1,
@@ -2722,7 +2722,7 @@ impl FreshAdmissionStore {
     }
 
     /// Test seam: the same decision against the source's own recovery evidence.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub async fn apply_complete_reconnect(
         &self,
         request: std::sync::Arc<CompleteReconnectRequestV1>,
@@ -2734,7 +2734,7 @@ impl FreshAdmissionStore {
 
     /// Independent signed-fixture qualification of the same locked ADMIT0 gate.
     /// Production always uses registered custody and the mandatory callback above.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     #[allow(
         dead_code,
         reason = "the focused PostgreSQL target drives this test-only seam"

@@ -1,5 +1,5 @@
 //! Source-qualified Creature composition over the existing durable Item owner.
-//! Compiled only by the real server lib, not standalone Durability fixtures.
+//! Owned by Durability and re-exported by the server composition root.
 #![allow(
     dead_code,
     reason = "Source-qualified SQL and native owner component is locally tested; Channel shipping activation remains the explicit #162 single-scheduler integration gate"

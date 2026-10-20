@@ -102,10 +102,7 @@ impl QualifiedSpellAppearance<'_> {
 impl CompiledSpellAppearances {
     /// Data-only outer artifact binding. The staging owner separately verifies
     /// the independently issued enclosing artifact before calling this.
-    pub fn bind_qualified_outer_artifact(
-        &mut self,
-        digest: [u8; 32],
-    ) -> Result<(), ContentError> {
+    pub fn bind_qualified_outer_artifact(&mut self, digest: [u8; 32]) -> Result<(), ContentError> {
         if digest == [0; 32] {
             return Err(ContentError::InvalidArtifact(
                 "zero outer appearance artifact pin",
@@ -117,11 +114,7 @@ impl CompiledSpellAppearances {
     pub const fn source_digest(&self) -> [u8; 32] {
         self.digest
     }
-    pub fn for_creature(
-        &self,
-        key: &str,
-        revision: &str,
-    ) -> Option<QualifiedSpellAppearance<'_>> {
+    pub fn for_creature(&self, key: &str, revision: &str) -> Option<QualifiedSpellAppearance<'_>> {
         let record = self.records.iter().find(|r| {
             r.creature
                 .as_ref()

@@ -2,7 +2,7 @@
 
 use super::super::item_view::{InventoryItems, ItemKey};
 use super::*;
-use crate::content::native_gameplay::tests::{
+use crate::content::native_gameplay::test_support::{
     activated_with_item_keys, activated_with_loot_tables,
 };
 use crate::content::{ReferenceItemField as F, ReferenceItemPresentation, ReferenceItemSemantics};

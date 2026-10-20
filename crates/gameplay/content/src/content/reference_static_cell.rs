@@ -120,9 +120,7 @@ pub struct ReferenceStaticCellIndex {
 impl ReferenceStaticCellIndex {
     /// Fixture-only construction. The bound is a local test fixture bound, not a production
     /// resource limit or content-profile decision.
-    pub fn from_fixture(
-        records: Vec<StaticCellFixtureRecord>,
-    ) -> Result<Self, StaticCellError> {
+    pub fn from_fixture(records: Vec<StaticCellFixtureRecord>) -> Result<Self, StaticCellError> {
         if records.len() > REFERENCE_STATIC_CELL_FIXTURE_MAX_CELLS {
             return Err(StaticCellError::TooManyFixtureCells);
         }

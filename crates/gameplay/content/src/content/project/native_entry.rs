@@ -686,20 +686,14 @@ impl NativeEntryMovementCells {
     pub const fn spell_tiles(&self) -> &QualifiedSpellTiles {
         &self.spell_tiles
     }
-    pub const fn index(
-        &self,
-    ) -> &crate::content::native_cell_lookup::NativeMovementCollisionIndex {
+    pub const fn index(&self) -> &crate::content::native_cell_lookup::NativeMovementCollisionIndex {
         &self.index
     }
-    pub fn source_world(
-        &self,
-    ) -> Option<&super::native_spell_world::QualifiedNativeSpellWorld> {
+    pub fn source_world(&self) -> Option<&super::native_spell_world::QualifiedNativeSpellWorld> {
         self.index.source_world()
     }
 
-    pub const fn scope(
-        &self,
-    ) -> &crate::content::static_cell_engine::EngineeringStaticCellScope {
+    pub const fn scope(&self) -> &crate::content::static_cell_engine::EngineeringStaticCellScope {
         &self.scope
     }
 
@@ -774,9 +768,7 @@ impl QualifiedNativeEntryRoom {
         })
     }
 
-    pub fn source_world(
-        &self,
-    ) -> Option<&super::native_spell_world::QualifiedNativeSpellWorld> {
+    pub fn source_world(&self) -> Option<&super::native_spell_world::QualifiedNativeSpellWorld> {
         self.movement_cells.source_world()
     }
     pub fn compiled(&self) -> &crate::content::CompiledFirstProductionContent {

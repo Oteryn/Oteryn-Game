@@ -52,12 +52,12 @@ pub(crate) enum Plan {
     Barrier(Box<items::BarrierPlan>),
 }
 
-impl CompiledNativeSpell {
-    pub(crate) fn plan(
-        &self,
-        facts: Facts<'_>,
-        draw: &mut dyn FnMut(i64, i64) -> i64,
-    ) -> Result<Plan, Error> {
+pub(crate) trait CompiledNativeSpellPlanExt {
+    fn plan(&self, facts: Facts<'_>, draw: &mut dyn FnMut(i64, i64) -> i64) -> Result<Plan, Error>;
+}
+
+impl CompiledNativeSpellPlanExt for CompiledNativeSpell {
+    fn plan(&self, facts: Facts<'_>, draw: &mut dyn FnMut(i64, i64) -> i64) -> Result<Plan, Error> {
         let execution = &self.spell()["execution"];
         if let Some(native) = execution.get("native_behavior") {
             let key = native["key"]

@@ -2118,9 +2118,7 @@ pub fn check_bed_occupied_target(
 }
 
 /// The bed set rule over canonical definitions, sorted by identity.
-pub fn validate_item_bed_set(
-    definitions: &[ReferenceDefinition],
-) -> Result<(), ContentError> {
+pub fn validate_item_bed_set(definitions: &[ReferenceDefinition]) -> Result<(), ContentError> {
     for definition in definitions {
         let ReferenceDefinitionKind::Item(item) = &definition.kind else {
             continue;

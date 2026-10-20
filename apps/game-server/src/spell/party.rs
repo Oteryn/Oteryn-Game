@@ -41,10 +41,18 @@ pub(crate) enum PartyFailure {
     CostOverflow,
 }
 
-impl PartyBuffSpec {
+pub(crate) trait PartyBuffSpecExt {
+    fn affected<'a>(
+        &self,
+        world: &'a dyn PartyWorld,
+    ) -> Result<Vec<&'a ChainCreature>, PartyFailure>;
+    fn mana_cost(&self, members: usize) -> Result<u32, PartyFailure>;
+}
+
+impl PartyBuffSpecExt for PartyBuffSpec {
     /// The members one cast affects, ordered by creature id: party members on the caster's floor
     /// inside the area. The caster must be listed in its own party.
-    pub(crate) fn affected<'a>(
+    fn affected<'a>(
         &self,
         world: &'a dyn PartyWorld,
     ) -> Result<Vec<&'a ChainCreature>, PartyFailure> {
@@ -55,7 +63,7 @@ impl PartyBuffSpec {
         }
         let affected: BTreeMap<u64, &ChainCreature> = party
             .iter()
-            .filter(|member| self.covers(caster.position, member.position))
+            .filter(|member| covers(self, caster.position, member.position))
             .map(|member| (member.id, member))
             .collect();
         if affected.len() < usize::try_from(self.min_affected).unwrap_or(usize::MAX) {
@@ -64,12 +72,8 @@ impl PartyBuffSpec {
         Ok(affected.into_values().collect())
     }
 
-    fn covers(&self, centre: TilePosition, tile: TilePosition) -> bool {
-        tile.floor == centre.floor && self.area.contains(&(tile.x - centre.x, tile.y - centre.y))
-    }
-
     /// Mana of a cast affecting `members` creatures, rounded up in exact integer arithmetic.
-    pub(crate) fn mana_cost(&self, members: usize) -> Result<u32, PartyFailure> {
+    fn mana_cost(&self, members: usize) -> Result<u32, PartyFailure> {
         let (base, numerator, denominator) = match self.mana {
             PartyMana::Fixed(mana) => return Ok(mana),
             PartyMana::Scaled {
@@ -88,4 +92,8 @@ impl PartyBuffSpec {
         let bottom = power(denominator).ok_or(PartyFailure::CostOverflow)?;
         u32::try_from(top.div_ceil(bottom)).map_err(|_| PartyFailure::CostOverflow)
     }
+}
+
+fn covers(spec: &PartyBuffSpec, centre: TilePosition, tile: TilePosition) -> bool {
+    tile.floor == centre.floor && spec.area.contains(&(tile.x - centre.x, tile.y - centre.y))
 }

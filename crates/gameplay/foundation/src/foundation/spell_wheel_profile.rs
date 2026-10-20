@@ -64,10 +64,7 @@ impl CompiledWheelProfile {
     pub fn source_digest(&self) -> [u8; 32] {
         self.source_digest
     }
-    pub fn bind_qualified_outer_artifact(
-        &mut self,
-        digest: [u8; 32],
-    ) -> Result<(), &'static str> {
+    pub fn bind_qualified_outer_artifact(&mut self, digest: [u8; 32]) -> Result<(), &'static str> {
         if digest == [0; 32] {
             return Err("zero Wheel outer pin");
         }
@@ -178,10 +175,7 @@ impl CompiledWheelProfile {
         }
         Ok(out)
     }
-    pub fn flat_stats(
-        &self,
-        stages: &BTreeMap<String, u8>,
-    ) -> Result<(i32, i32), &'static str> {
+    pub fn flat_stats(&self, stages: &BTreeMap<String, u8>) -> Result<(i32, i32), &'static str> {
         let mut out = (0_i32, 0_i32);
         for colour in ["green", "red", "purple", "blue"] {
             let stage = *stages.get(colour).ok_or("missing complete Wheel stage")?;
@@ -249,7 +243,9 @@ mod tests {
     use super::*;
     fn profile() -> CompiledWheelProfile {
         CompiledWheelProfile::from_active_artifact(
-            include_bytes!("../../../../../tools/content-schema/native-gameplay/wheel-profile.json"),
+            include_bytes!(
+                "../../../../../tools/content-schema/native-gameplay/wheel-profile.json"
+            ),
             [1; 32],
         )
         .unwrap()
@@ -286,8 +282,9 @@ mod tests {
     }
     #[test]
     fn changed_source_bytes_and_zero_pin_refuse() {
-        let raw =
-            include_bytes!("../../../../../tools/content-schema/native-gameplay/wheel-profile.json");
+        let raw = include_bytes!(
+            "../../../../../tools/content-schema/native-gameplay/wheel-profile.json"
+        );
         assert!(CompiledWheelProfile::from_active_artifact(raw, [0; 32]).is_err());
         let mut value: serde_json::Value = serde_json::from_slice(raw).unwrap();
         value["points_per_level"] = 2.into();

@@ -4,10 +4,6 @@
 //! corpse ordering. Oteryn identity, authority, replay and resource limits are
 //! defined here by the current Channel owner and its exact Ability commit.
 
-use crate::foundation::{
-    CarrierError, CurrentOwnerCombatDeath, ExactActorRef, RuntimeCorpseProjection,
-};
-
 // A directory module keeps one child-module layout in native and standalone test roots.
 pub(crate) mod chain;
 pub(crate) mod charm_effects;
@@ -43,33 +39,4 @@ pub(crate) use loot_plan::{
     LootPlanError, LootSelectionAlgorithm, LootTableDefinition, LootTableEntry, plan_creature_loot,
 };
 
-/// Project the already committed lethal transition. Combat cannot manufacture
-/// lethality, actor identity or position: it can only ask the physical owner
-/// for an opaque receipt and immediately return that receipt for projection.
-pub(crate) fn project_fixed_one_creature_death<'a>(
-    owner: &'a mut CurrentOwnerCombatDeath<'_>,
-    actor: ExactActorRef,
-) -> Result<&'a RuntimeCorpseProjection, CarrierError> {
-    let receipt = owner.committed_lethal_receipt(actor)?;
-    owner.project_committed_lethal(receipt)
-}
-
-#[cfg(test)]
-impl crate::foundation::CombatDeathFixture {
-    /// Combat's idempotent projection of the committed lethal occurrence and
-    /// the durable death key it names, with the corpse position.
-    pub(crate) fn project_death(
-        &mut self,
-    ) -> Result<
-        (
-            crate::foundation::CreatureDeathOccurrenceKey,
-            crate::foundation::MovementLocalPosition,
-        ),
-        CarrierError,
-    > {
-        let actor = self.actor();
-        let mut combat = self.borrow_combat_death();
-        let projection = project_fixed_one_creature_death(&mut combat, actor)?;
-        Ok((projection.occurrence().death_key(), projection.position()))
-    }
-}
+pub(crate) use crate::foundation::project_fixed_one_creature_death;

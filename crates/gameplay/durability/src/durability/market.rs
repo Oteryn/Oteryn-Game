@@ -870,7 +870,7 @@ pub async fn read_operation(
 }
 
 /// Administrative fixture access to the exact production encoder; never a command grant.
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 pub fn fixture_occurrence_key(occurrence: Occurrence) -> Result<Vec<u8>> {
     occurrence.key()
 }

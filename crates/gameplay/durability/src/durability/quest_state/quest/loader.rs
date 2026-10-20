@@ -27,7 +27,8 @@ use super::{
     QuestTrack, QuestTransition,
 };
 
-const EMBEDDED: &str = include_str!("../../../../../../../content/quests/missions/quest-state.json");
+const EMBEDDED: &str =
+    include_str!("../../../../../../../content/quests/missions/quest-state.json");
 const SCHEMA: &str = "OTERYN_QUEST_STATE_LOWERING/v1";
 
 /// The NPC dialogue a source transition was written from (format §3.2): the source NPC bundle

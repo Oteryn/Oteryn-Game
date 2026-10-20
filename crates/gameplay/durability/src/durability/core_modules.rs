@@ -1098,7 +1098,7 @@ pub struct AdmissionReconnectJournalV2 {
 }
 
 impl AdmissionReconnectJournalV2 {
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub async fn connect_runtime(database_url: &str) -> Result<Self, DurabilityError> {
         Ok(Self {
             legacy: AdmissionReconnectJournal::connect_runtime(database_url).await?,

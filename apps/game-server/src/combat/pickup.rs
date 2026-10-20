@@ -168,13 +168,16 @@ pub(crate) fn resolve_item_definition_facts(
 /// Compatibility for the existing canonical Reference pickup seam (no production caller).
 /// The Content-owned source manifest pins the actual source, not a request-selected revision.
 /// Native production admission uses NativeGameplayState's admitted-generation implementation.
-impl ItemWeightLookup for CanonicalReferencePlayableContent {
+struct ReferenceItemWeights<'a>(&'a CanonicalReferencePlayableContent);
+
+impl ItemWeightLookup for ReferenceItemWeights<'_> {
     fn generation_digest(&self) -> [u8; 32] {
         use sha2::{Digest, Sha256};
         let mut hash = Sha256::new();
         hash.update(b"OTERYN_REFERENCE_PICKUP_WEIGHT_SOURCE/v1\0");
         hash.update(
-            self.package_manifest
+            self.0
+                .package_manifest
                 .source_manifest_digest
                 .as_str()
                 .as_bytes(),
@@ -183,7 +186,7 @@ impl ItemWeightLookup for CanonicalReferencePlayableContent {
     }
 
     fn weight_of(&self, definition: &TypedDefinitionRef) -> Result<u32, ItemWeightRefused> {
-        let facts = resolve_item_definition_facts(self, definition)
+        let facts = resolve_item_definition_facts(self.0, definition)
             .map_err(|_| ItemWeightRefused::DefinitionMismatch)?;
         if facts.stack == ItemStackClass::Unknown {
             return Err(ItemWeightRefused::DefinitionMismatch);
@@ -343,7 +346,7 @@ async fn settle_pickup(
     let transfer_request = ItemTransferRequest {
         command: request.command,
         source_item_instance_id: request.source_item_instance_id,
-        weight_generation_digest: content.generation_digest(),
+        weight_generation_digest: ReferenceItemWeights(content).generation_digest(),
         destination: request.destination,
         item,
         backpack,
@@ -358,7 +361,7 @@ async fn settle_pickup(
             session.node,
             fence,
             transfer_request,
-            content,
+            &ReferenceItemWeights(content),
         )
         .await?;
     Ok(session
@@ -369,7 +372,7 @@ async fn settle_pickup(
             session.node,
             fence,
             &mut candidate,
-            content,
+            &ReferenceItemWeights(content),
         )
         .await?)
 }

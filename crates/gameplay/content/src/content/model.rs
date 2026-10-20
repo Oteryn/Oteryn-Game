@@ -572,7 +572,7 @@ pub struct FixtureSource {
 }
 
 impl FixtureSource {
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn reverse_enumeration_for_test(&mut self) {
         self.regions.reverse();
         self.areas.reverse();

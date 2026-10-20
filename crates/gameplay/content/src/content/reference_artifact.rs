@@ -1006,9 +1006,9 @@ impl ReferencePlayableGenerationIdentity {
 /// A validated Reference pair that has no activation conversion or controller slot.
 ///
 /// ```compile_fail
-/// use crate::content::{ContentActivationController, compile_reference_playable};
+/// use oteryn_gameplay_content::content::{ContentActivationController, compile_reference_playable};
 /// # fn rejected(
-/// #     linked: &crate::content::CanonicalReferencePlayableContent,
+/// #     linked: &oteryn_gameplay_content::content::CanonicalReferencePlayableContent,
 /// # ) -> Result<(), Box<dyn std::error::Error>> {
 /// let compiled = compile_reference_playable(linked)?;
 /// let mut controller = ContentActivationController::new();

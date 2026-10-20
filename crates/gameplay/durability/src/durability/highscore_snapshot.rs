@@ -64,7 +64,7 @@ impl CutLimits {
         page_rows: CUT_SOURCE_PAGE_ROWS,
     };
     /// Fixture-only tighter bounds, or `None` above a registered maximum or for an empty page.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     #[allow(
         dead_code,
         reason = "fixture entry point of the PostgreSQL integration targets that path-load this module"
@@ -279,7 +279,7 @@ impl DurabilityRoot {
 
     /// Fixture-only planned-reset cut under tighter `limits`, crossing page boundaries and
     /// the World bound with a handful of Characters.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     #[allow(
         dead_code,
         reason = "fixture entry point of the PostgreSQL integration targets that path-load this module"
@@ -631,7 +631,7 @@ fn materialize(source: &[Source], category: usize) -> Result<Vec<StoredRow>> {
 
 /// Fixture-only publication with owning catalogues inside the caller's transaction, so the
 /// PostgreSQL suite can exercise a stale cut's publication conflict.
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 #[allow(
     dead_code,
     reason = "fixture entry point of the PostgreSQL integration targets that path-load this module"

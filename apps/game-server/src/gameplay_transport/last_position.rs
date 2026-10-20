@@ -54,6 +54,7 @@
 //! write captured later always orders after one captured earlier in the same lease, including
 //! the final write after an in-flight periodic one.
 
+use crate::map::boot::BundleCollisionIndexExt;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};

@@ -36,8 +36,9 @@ use serde::Deserialize;
 use std::collections::{BTreeMap, BTreeSet};
 
 /// The pinned packet bytes; any change is a new candidate with a new digest.
-pub const ITEM_STATS_PROMOTION_V2_PACKET: &[u8] =
-    include_bytes!("../../../../../docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json");
+pub const ITEM_STATS_PROMOTION_V2_PACKET: &[u8] = include_bytes!(
+    "../../../../../docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json"
+);
 pub const ITEM_STATS_PROMOTION_V2_PACKET_SHA256: &str =
     "4084ef6d0c603ee9b649de1abc9f470b929a66a3bc99c36e1cff38772cf544cd";
 pub const ITEM_STATS_PROMOTION_V2_FIELD_COUNT: usize = 13_414;

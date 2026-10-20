@@ -1861,11 +1861,18 @@ pub(super) mod tests {
         assert_eq!(decode_payload(&canonical).unwrap(), mint());
     }
 
+    fn repository() -> std::path::PathBuf {
+        std::path::Path::new(if env!("CARGO_PKG_NAME") == "oteryn-game-server" {
+            env!("CARGO_MANIFEST_DIR")
+        } else {
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server")
+        })
+        .join("../..")
+    }
+
     /// The production part of a source file: everything before its test module.
     fn production(path: &str) -> String {
-        let source =
-            std::fs::read_to_string(std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server")).join(path))
-                .unwrap();
+        let source = std::fs::read_to_string(repository().join(path)).unwrap();
         // Cut at the first `#[cfg(test)]` whose next non-attribute line opens a module.
         let cut = source
             .match_indices("\n#[cfg(test)]\n")
@@ -1880,7 +1887,7 @@ pub(super) mod tests {
         source[..cut].to_owned()
     }
 
-    /// Every production `.rs` file under `src/`, as (path from the crate root, production part).
+    /// Every server and extracted gameplay source, with its repository-relative path.
     fn production_sources() -> Vec<(String, String)> {
         fn walk(dir: &std::path::Path, out: &mut Vec<std::path::PathBuf>) {
             for entry in std::fs::read_dir(dir).unwrap() {
@@ -1892,15 +1899,23 @@ pub(super) mod tests {
                 }
             }
         }
-        let root = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server"));
+        let root = repository();
         let mut paths = Vec::new();
-        walk(&root.join("src"), &mut paths);
+        walk(&root.join("apps/game-server/src"), &mut paths);
+        for package in ["foundation", "content", "durability"] {
+            let before = paths.len();
+            walk(
+                &root.join(format!("crates/gameplay/{package}/src")),
+                &mut paths,
+            );
+            assert!(paths.len() > before, "the scan must see {package} sources");
+        }
         paths.sort();
         paths
             .into_iter()
             .map(|path| {
                 let relative = path
-                    .strip_prefix(root)
+                    .strip_prefix(&root)
                     .unwrap()
                     .to_string_lossy()
                     .into_owned();
@@ -1944,24 +1959,24 @@ pub(super) mod tests {
         assert_eq!(
             sites,
             [
-                "src/durability/character_forge_dust.rs",
-                "src/durability/character_inbox/reward_claim/mint.rs",
-                "src/durability/house_interior.rs",
-                "src/durability/item_decay_retire.rs",
-                "src/durability/item_fee_burn.rs",
-                "src/durability/item_mint.rs",
-                "src/durability/item_timed_state.rs",
-                "src/durability/item_transfer.rs",
-                "src/durability/item_use.rs",
-                "src/durability/map_item_mint.rs",
-                "src/durability/npc_trade.rs",
-                "src/durability/reward_claim_mint.rs",
+                "crates/gameplay/durability/src/durability/character_forge_dust.rs",
+                "crates/gameplay/durability/src/durability/character_inbox/reward_claim/mint.rs",
+                "crates/gameplay/durability/src/durability/house_interior.rs",
+                "crates/gameplay/durability/src/durability/item_decay_retire.rs",
+                "crates/gameplay/durability/src/durability/item_fee_burn.rs",
+                "crates/gameplay/durability/src/durability/item_mint.rs",
+                "crates/gameplay/durability/src/durability/item_timed_state.rs",
+                "crates/gameplay/durability/src/durability/item_transfer.rs",
+                "crates/gameplay/durability/src/durability/item_use.rs",
+                "crates/gameplay/durability/src/durability/map_item_mint.rs",
+                "crates/gameplay/durability/src/durability/npc_trade.rs",
+                "crates/gameplay/durability/src/durability/reward_claim_mint.rs",
             ]
         );
         // Every type-2 encoder writes the tuple it is given, never this module's compile-time
         // one (other modules reach it as `mint::` or `mint_audit::`).
         for (path, source) in production_sources() {
-            let local = path == "src/durability/item_mint_audit.rs"
+            let local = path == "crates/gameplay/durability/src/durability/item_mint_audit.rs"
                 && source.contains("event_schema_revision: EVENT_SCHEMA_REVISION");
             assert!(
                 !local
@@ -1972,12 +1987,12 @@ pub(super) mod tests {
         }
         // The tuple type has no constructor outside this module.
         for (path, source) in production_sources() {
-            if path != "src/durability/item_mint_audit.rs" {
+            if path != "crates/gameplay/durability/src/durability/item_mint_audit.rs" {
                 assert!(!source.contains("SelectedType2Tuple("), "{path}");
             }
         }
         // The fee writer's tuple is its Type2Transaction's, and its only entry takes one.
-        let fee = production("src/durability/item_fee_burn.rs");
+        let fee = production("crates/gameplay/durability/src/durability/item_fee_burn.rs");
         assert!(
             fee.contains(
                 "pub async fn burn_fee_in_transaction(\n    tx: &mut Type2Transaction<'_>,"
@@ -1993,7 +2008,7 @@ pub(super) mod tests {
         // §1.4, ordering: the fence and the activation read are the first statements after the
         // session settings, so they precede the recovery fence, the admission relations, the
         // gameplay fence and every row lock of the transaction.
-        let db = production("src/durability/db.rs");
+        let db = production("crates/gameplay/durability/src/durability/db.rs");
         let opener = &db[db.find("async fn begin_type2_transaction").unwrap()..];
         let opener = &opener[..opener.find("\n}\n").unwrap()];
         let begin = opener
@@ -2007,7 +2022,9 @@ pub(super) mod tests {
             "{between}"
         );
         for (path, source) in production_sources() {
-            if path != "src/durability/db.rs" && path != "src/durability/item_mint_audit.rs" {
+            if path != "crates/gameplay/durability/src/durability/db.rs"
+                && path != "crates/gameplay/durability/src/durability/item_mint_audit.rs"
+            {
                 assert!(
                     !source.contains("Type2Transaction::open("),
                     "{path} fences late"
@@ -2026,7 +2043,7 @@ pub(super) mod tests {
                 );
             }
         }
-        let open = &production("src/durability/item_mint_audit.rs");
+        let open = &production("crates/gameplay/durability/src/durability/item_mint_audit.rs");
         let body = &open[open.find("pub async fn open(").unwrap()..];
         let fence = body.find("pg_advisory_xact_lock_shared").unwrap();
         let read = body.find("FROM game_type2_audit_activation").unwrap();
@@ -2035,7 +2052,11 @@ pub(super) mod tests {
 
     #[test]
     fn the_fence_key_and_the_grandfather_list_match_the_migrations() {
-        let root = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server"));
+        let root = std::path::Path::new(if env!("CARGO_PKG_NAME") == "oteryn-game-server" {
+            env!("CARGO_MANIFEST_DIR")
+        } else {
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server")
+        });
         let migration =
             std::fs::read_to_string(root.join("migrations/0079_type2_audit_activation.sql"))
                 .unwrap();

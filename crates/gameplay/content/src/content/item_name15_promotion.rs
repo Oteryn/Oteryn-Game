@@ -7,8 +7,9 @@ use super::{
 use serde::Deserialize;
 use std::collections::{BTreeMap, BTreeSet};
 
-pub const ITEM_NAME15_PACKET: &[u8] =
-    include_bytes!("../../../../../docs/agents/evidence/OTV2-20261002-item-name15-promotion-v1.json");
+pub const ITEM_NAME15_PACKET: &[u8] = include_bytes!(
+    "../../../../../docs/agents/evidence/OTV2-20261002-item-name15-promotion-v1.json"
+);
 pub const ITEM_NAME15_PACKET_SHA256: &str =
     "caa064c2e300fad31c6ee39f626812555d83f05cdad4e2701eea58dd9befdf96";
 const IDS: [u32; 15] = [

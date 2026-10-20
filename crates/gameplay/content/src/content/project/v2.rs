@@ -2375,9 +2375,7 @@ pub fn validate_native_gameplay_profile(
     validate_v2_authoring_profile(profile, &|reference| reference.validate(), limits)
 }
 
-pub fn validate_native_gameplay_item(
-    item: &ProjectV2ItemAuthoring,
-) -> Result<(), ProjectError> {
+pub fn validate_native_gameplay_item(item: &ProjectV2ItemAuthoring) -> Result<(), ProjectError> {
     validate_v2_item_authoring(
         item,
         &|reference| reference.validate(),

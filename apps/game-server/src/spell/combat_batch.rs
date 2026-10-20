@@ -2,22 +2,6 @@
 //! Shared data never depends on a gameplay transport or authoring implementation.
 pub(crate) use crate::foundation::runtime_actor_spell_types::*;
 
-impl From<crate::ability::AbilityOccurrence> for SpellOccurrenceBinding {
-    fn from(value: crate::ability::AbilityOccurrence) -> Self {
-        let r = value.revisions();
-        Self {
-            id: value.id().as_str().to_owned(),
-            revisions: [
-                r.ruleset().to_owned(),
-                r.content().to_owned(),
-                r.world_policy().to_owned(),
-                r.formula().to_owned(),
-                r.simulation().to_owned(),
-            ],
-        }
-    }
-}
-
 use super::native_combat::{Element, MagnitudePlan, NativeCombatPlan};
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef};
 

@@ -122,7 +122,7 @@ type GrantReplayKey = FreshAdmissionReplayKey;
 /// without accessing private grant fields.
 ///
 /// ```
-/// use crate::foundation::{FreshAdmissionFacts, FreshAdmissionReplayKey};
+/// use oteryn_gameplay_foundation::foundation::{FreshAdmissionFacts, FreshAdmissionReplayKey};
 ///
 /// fn durable_key(facts: FreshAdmissionFacts) -> [u8; 33] {
 ///     facts.replay_key().to_bytes()
