@@ -141,7 +141,18 @@ def shared_cache_completion_regressions() -> None:
             assert f"          key: {key}\n" in block, (filename, job)
             assert f"            {prefix}\n" in block, (filename, job)
         if filename != "rust.yml":
-            assert "actions/cache/save@" not in text, filename
+            saves = re.findall(r"(?m)^( *)- name: [^\n]*\n(?:\1  [^\n]*\n)*?\1  uses: actions/cache/save@[^\n]*\n((?:\1  [^\n]*\n)*)", text)
+            # Only the merge gate's per-pull-request job-result marker may be saved
+            # outside the protected-main producer: a tiny marker under its own
+            # `jobresult-v1-` key that never shares a key or path with the Cargo cache.
+            if filename == "merge-gate.yml":
+                assert text.count("actions/cache/save@") == len(saves) == text.count("name: Save job-result marker\n"), filename
+                for _indent, body in saves:
+                    assert "path: ${{ runner.temp }}/jobresult\n" in body, filename
+                    assert "key: ${{ steps.jr_key.outputs.key }}\n" in body, filename
+                    assert "target/" not in body and ".cargo" not in body, filename
+            else:
+                assert "actions/cache/save@" not in text, filename
     assert core.validate_post_merge_rust(source) == []
     # The protected-main producer only compiles tests. Full test execution is
     # retained in MQ; cache hits never stand in for candidate qualification.
