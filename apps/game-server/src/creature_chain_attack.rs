@@ -1,9 +1,10 @@
 //! Source-bound sequential native chain work, using accepted picker and Foundation timers.
 //! Frozen targets are exact live ActorRefs, never manufactured network creature identities.
 use crate::ability::{AbilityIntent, ProposalSource};
-use crate::ai_think::profile_schedule::ProfileAbilityProposal;
-use crate::creature_auto_attack::AttackError;
-use crate::creature_damage_spell::{DamageSpellOwner, SpellOutcome, SpellSource, SpellWorldReader};
+use crate::combat::chain::{
+    ChainCreature, ChainShape, ChainSpec, ChainStart, ChainWorld, TilePosition, pick_chain,
+};
+use crate::creature_auto_attack::{AttackError, ProfileAbilityProposal};
 use crate::foundation::owner_timer::{
     AI01_PENDING_TIMERS_PER_ACTOR, CatchUpPolicy, FamilyPolicy, OwnerClock, OwnerTimerLane,
     SemanticTimeMicros, TimerFamily,
@@ -13,10 +14,56 @@ use crate::foundation::{
     ScopeOwnershipGeneration, ScopeRuntimeFence,
 };
 use crate::player_lethal::PlayerLethalVitals;
-use crate::spell::chain::{
-    ChainCreature, ChainShape, ChainSpec, ChainStart, ChainWorld, TilePosition, pick_chain,
-};
 use sha2::{Digest, Sha256};
+/// Source validation stays with the higher-layer native spell owner.
+pub(crate) trait ChainSource: Clone {
+    type Outcome: Clone;
+
+    fn chain_binding(&self) -> (&str, usize, [u8; 32], [u8; 32]);
+    fn validate_chain_proposal(
+        &self,
+        proposal: &ProfileAbilityProposal,
+    ) -> Result<u64, AttackError>;
+    fn chain_details(&self) -> Option<&crate::content::ProjectV2Chain>;
+    fn range_tiles(&self) -> u16;
+    fn element(&self) -> Option<&str>;
+}
+
+/// Independently resolved player and combat facts needed by the chain picker.
+pub(crate) trait ChainWorldReader {
+    fn current_players(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+    ) -> Option<Vec<(ExactActorRef, GameSessionId)>>;
+    fn attack_facts(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        issuer: ExactActorRef,
+        target: ExactActorRef,
+        session: GameSessionId,
+        element: Option<&str>,
+        stamp: RuntimeWorkStamp,
+    ) -> Option<crate::creature_auto_attack::AttackFacts>;
+}
+
+/// The higher layer consumes the sealed pulse through its existing damage owner.
+pub(crate) trait ChainDamage<S: ChainSource> {
+    type World<'a>: ChainWorldReader + ?Sized;
+
+    #[allow(clippy::too_many_arguments)]
+    fn consume_chain_pulse(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        fence: &ScopeRuntimeFence,
+        stamp: RuntimeWorkStamp,
+        vitals: &mut dyn PlayerLethalVitals,
+        pulse: ChainPulse<S>,
+        world: &mut Self::World<'_>,
+        now: SemanticTimeMicros,
+    ) -> Result<S::Outcome, AttackError>;
+}
+
 /// Current map-owner facts, not inferred from native geometry or precomputed source records.
 pub(crate) trait ChainMapFacts {
     fn sight(
@@ -77,18 +124,18 @@ struct Target {
     from: TilePosition,
     effects: Vec<TilePosition>,
 }
-struct Cast {
+struct Cast<S: ChainSource> {
     token: u64,
     issuer: ExactActorRef,
     entry: usize,
     sequence: u64,
     binding: [u8; 32],
-    source: SpellSource,
+    source: S,
     proposal: ProfileAbilityProposal,
     targets: Vec<Target>,
     next: usize,
     start: SemanticTimeMicros,
-    receipts: Vec<Result<SpellOutcome, AttackError>>,
+    receipts: Vec<Result<S::Outcome, AttackError>>,
 }
 struct Memo {
     issuer: ExactActorRef,
@@ -99,25 +146,25 @@ struct Memo {
     result: Result<u64, AttackError>,
 }
 /// Sealed one-use capability produced only by draining this lane. No Clone/Copy constructor.
-pub(crate) struct ChainPulse {
-    source: SpellSource,
+pub(crate) struct ChainPulse<S> {
+    source: S,
     proposal: ProfileAbilityProposal,
     session: GameSessionId,
 }
-impl ChainPulse {
-    pub(crate) fn into_owned_parts(self) -> (SpellSource, ProfileAbilityProposal, GameSessionId) {
+impl<S> ChainPulse<S> {
+    pub(crate) fn into_owned_parts(self) -> (S, ProfileAbilityProposal, GameSessionId) {
         (self.source, self.proposal, self.session)
     }
 }
-pub(crate) struct ChainOwner {
+pub(crate) struct ChainOwner<S: ChainSource> {
     scope: RuntimeScopeRefV1,
     generation: ScopeOwnershipGeneration,
     timers: OwnerTimerLane<Family, StepKey>,
-    casts: Vec<Cast>,
+    casts: Vec<Cast<S>>,
     memos: Vec<Memo>,
     next_token: u64,
 }
-impl ChainOwner {
+impl<S: ChainSource> ChainOwner<S> {
     pub(crate) fn new(
         runtime: &ChannelRuntimeV1,
         fence: &ScopeRuntimeFence,
@@ -192,9 +239,9 @@ impl ChainOwner {
         runtime: &ChannelRuntimeV1,
         fence: &ScopeRuntimeFence,
         stamp: RuntimeWorkStamp,
-        source: &SpellSource,
+        source: &S,
         proposal: &ProfileAbilityProposal,
-        world: &mut dyn SpellWorldReader,
+        world: &mut (impl ChainWorldReader + ?Sized),
         map: &mut dyn ChainMapFacts,
         now: SemanticTimeMicros,
     ) -> Result<u64, AttackError> {
@@ -330,9 +377,9 @@ impl ChainOwner {
     fn pick(
         &self,
         runtime: &ChannelRuntimeV1,
-        source: &SpellSource,
+        source: &S,
         proposal: &ProfileAbilityProposal,
-        world: &mut dyn SpellWorldReader,
+        world: &mut (impl ChainWorldReader + ?Sized),
         map: &mut dyn ChainMapFacts,
         stamp: RuntimeWorkStamp,
     ) -> Result<Vec<Target>, AttackError> {
@@ -381,8 +428,8 @@ impl ChainOwner {
             if lookup.insert(id, (actor, session)).is_some() {
                 return Err(AttackError::InvalidPlan);
             }
-            let facts = world
-                .combat(
+            let f = world
+                .attack_facts(
                     runtime,
                     proposal.issuer,
                     actor,
@@ -391,7 +438,6 @@ impl ChainOwner {
                     stamp,
                 )
                 .ok_or(AttackError::MissingCombatFacts)?;
-            let f = facts.attack;
             if f.issuer != proposal.issuer
                 || f.target != actor
                 || f.session != session
@@ -478,16 +524,16 @@ impl ChainOwner {
     /// creates a non-Clone pulse, validates current world facts and commits actual HP/MP once.
     // Keep run_due ABI explicit: current runtime owner, independent fence/stamp, exact actor/session/source and occurrence/policy facts are separate admission inputs.
     #[allow(clippy::too_many_arguments)]
-    pub(crate) fn run_due(
+    pub(crate) fn run_due<D: ChainDamage<S>>(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         fence: &mut ScopeRuntimeFence,
         vitals: &mut dyn PlayerLethalVitals,
-        damage: &DamageSpellOwner,
-        world: &mut dyn SpellWorldReader,
+        damage: &D,
+        world: &mut D::World<'_>,
         map: &mut dyn ChainMapFacts,
         clock: &impl OwnerClock,
-    ) -> ChainPulseResults {
+    ) -> ChainPulseResults<S::Outcome> {
         if !self.current(runtime, fence) {
             return Err(AttackError::StaleOwner);
         }
@@ -515,9 +561,8 @@ impl ChainOwner {
             let target = &cast.targets[step];
             let mut proposal = cast.proposal.clone();
             proposal.target = target.actor;
-            proposal.occurrence =
-                crate::spell::plan::chain_step_occurrence(&proposal.occurrence, step)
-                    .map_err(|_| AttackError::InvalidPlan)?;
+            proposal.occurrence = crate::ability::chain_step_occurrence(&proposal.occurrence, step)
+                .map_err(|_| AttackError::InvalidPlan)?;
             proposal.intent = AbilityIntent::normalize(
                 ProposalSource::Ai,
                 &atom(proposal.issuer),
@@ -588,7 +633,7 @@ impl ChainOwner {
         }
         Ok(results)
     }
-    pub(crate) fn receipts(&self, token: u64) -> Option<&[Result<SpellOutcome, AttackError>]> {
+    pub(crate) fn receipts(&self, token: u64) -> Option<&[Result<S::Outcome, AttackError>]> {
         self.casts
             .iter()
             .find(|c| c.token == token)
@@ -619,8 +664,8 @@ fn admit_cast_capacity(
     }
 }
 
-pub(crate) type ChainPulseResults =
-    Result<Vec<(u64, usize, Result<SpellOutcome, AttackError>)>, AttackError>;
+pub(crate) type ChainPulseResults<O> =
+    Result<Vec<(u64, usize, Result<O, AttackError>)>, AttackError>;
 
 #[allow(clippy::expect_used)]
 #[cfg(test)]

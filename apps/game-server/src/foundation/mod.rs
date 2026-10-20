@@ -18,6 +18,12 @@ pub(crate) mod condition;
 #[allow(dead_code)]
 pub(crate) mod owner_timer;
 mod protocol;
+#[allow(dead_code)] // Standalone Foundation fixtures do not compose speech.
+pub(crate) mod speech;
+#[allow(dead_code)] // Standalone Foundation fixtures do not compose creature AI.
+mod think_occurrence;
+#[allow(unused_imports)]
+pub(crate) use think_occurrence::ThinkOccurrence;
 #[allow(dead_code)]
 mod runtime_actor_carrier;
 pub(crate) use runtime_actor_carrier::npc_actor::{

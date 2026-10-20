@@ -9,8 +9,10 @@ use crate::combat_attack::{
 use crate::content::{
     EffectFamilyDocument, ProjectReferenceRecord, ProjectV2AbilityEffect, ProjectV2AbilityKind,
     ProjectV2AuthoringProfile, ProjectV2AuthoringProfileData as Data,
-    ProjectV2DefinitionRef as Ref, ProjectV2Family, ProjectV2FormulaAuthoring, ProjectV2Mitigation,
+    ProjectV2DefinitionRef as Ref, ProjectV2Family, ProjectV2FormulaAuthoring, ProjectV2Magnitude,
+    ProjectV2Mitigation,
 };
+use crate::durability::creature_schedule::ScheduleList;
 use crate::foundation::owner_timer::SemanticTimeMicros;
 use crate::foundation::{ApplicationFacts, ConditionDefinition, ConditionType, ConditionValues};
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId};
@@ -20,10 +22,24 @@ use oteryn_simulation_determinism::{
 };
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProfileAbilityProposal {
+    pub issuer: ExactActorRef,
+    pub target: ExactActorRef,
+    pub ability: Ref,
+    pub list: ScheduleList,
+    pub entry_index: usize,
+    pub magnitude: Option<ProjectV2Magnitude>,
+    pub range_tiles: u16,
+    pub occurrence: AbilityOccurrence,
+    pub intent: AbilityIntent,
+}
+
 /// Existing main formula evaluator and checked ATTACK constants are the only arithmetic owner.
 pub(crate) fn canonical_melee_bounds(attack: u32, skill: u32) -> Result<(u64, u64), AttackError> {
     let constants = AttackConstants::checked_in().ok_or(AttackError::InvalidSource)?;
-    let inputs = crate::spell::formula::FormulaInputs {
+    let inputs = crate::combat::formula::FormulaInputs {
         level: 1,
         magic_level: 0,
         base_power: None,
@@ -378,7 +394,7 @@ impl AutoAttackOwner {
         runtime: &ChannelRuntimeV1,
         fence: &crate::foundation::ScopeRuntimeFence,
         stamp: crate::foundation::RuntimeWorkStamp,
-        selection: crate::ai_think::ThinkOccurrence,
+        selection: crate::foundation::ThinkOccurrence,
         target: ExactActorRef,
         session: GameSessionId,
         sources: &[MeleeSource],
@@ -927,7 +943,7 @@ impl AutoAttackOwner {
         let draw = |purpose: &str, min: u32, max: u32| -> Result<u32, AttackError> {
             let d = deterministic_decision_u64(root, id, purpose, source.entry_index as u64)
                 .map_err(|_| AttackError::InvalidPlan)?;
-            u32::try_from(crate::spell::uniform_draw(
+            u32::try_from(crate::durability::uniform_draw::uniform_draw(
                 d,
                 i64::from(min),
                 i64::from(max),

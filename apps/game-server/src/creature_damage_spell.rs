@@ -834,6 +834,68 @@ impl SpellSource {
         self.element.as_deref()
     }
 }
+impl crate::creature_chain_attack::ChainSource for SpellSource {
+    type Outcome = SpellOutcome;
+
+    fn chain_binding(&self) -> (&str, usize, [u8; 32], [u8; 32]) {
+        self.chain_binding()
+    }
+    fn validate_chain_proposal(
+        &self,
+        proposal: &ProfileAbilityProposal,
+    ) -> Result<u64, AttackError> {
+        self.validate_chain_proposal(proposal)
+    }
+    fn chain_details(&self) -> Option<&crate::content::ProjectV2Chain> {
+        self.chain_details()
+    }
+    fn range_tiles(&self) -> u16 {
+        self.range_tiles()
+    }
+    fn element(&self) -> Option<&str> {
+        self.element()
+    }
+}
+
+impl<T: SpellWorldReader + ?Sized> crate::creature_chain_attack::ChainWorldReader for T {
+    fn current_players(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+    ) -> Option<Vec<(ExactActorRef, GameSessionId)>> {
+        SpellWorldReader::current_players(self, runtime, stamp)
+    }
+    fn attack_facts(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        issuer: ExactActorRef,
+        target: ExactActorRef,
+        session: GameSessionId,
+        element: Option<&str>,
+        stamp: RuntimeWorkStamp,
+    ) -> Option<AttackFacts> {
+        self.combat(runtime, issuer, target, session, element, stamp)
+            .map(|facts| facts.attack)
+    }
+}
+
+impl crate::creature_chain_attack::ChainDamage<SpellSource> for DamageSpellOwner {
+    type World<'a> = dyn SpellWorldReader + 'a;
+
+    fn consume_chain_pulse(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        fence: &ScopeRuntimeFence,
+        stamp: RuntimeWorkStamp,
+        vitals: &mut dyn PlayerLethalVitals,
+        pulse: crate::creature_chain_attack::ChainPulse<SpellSource>,
+        world: &mut Self::World<'_>,
+        now: SemanticTimeMicros,
+    ) -> Result<SpellOutcome, AttackError> {
+        self.consume_chain_pulse(runtime, fence, stamp, vitals, pulse, world, now)
+    }
+}
+
 /// Independent current Combat owner snapshot, never inferred from the source artifact.
 #[derive(Clone)]
 pub(crate) struct SpellCombatFacts {
@@ -1174,7 +1236,7 @@ impl DamageSpellOwner {
                 source.entry_index as u64,
             )
             .map_err(|_| AttackError::InvalidPlan)?;
-            let selected = usize::try_from(crate::spell::uniform_draw(
+            let selected = usize::try_from(crate::durability::uniform_draw::uniform_draw(
                 decision,
                 0,
                 (source.variants.len() - 1) as i64,
@@ -1367,7 +1429,7 @@ impl DamageSpellOwner {
         fence: &ScopeRuntimeFence,
         stamp: RuntimeWorkStamp,
         vitals: &mut dyn PlayerLethalVitals,
-        pulse: crate::creature_chain_attack::ChainPulse,
+        pulse: crate::creature_chain_attack::ChainPulse<SpellSource>,
         reader: &mut dyn SpellWorldReader,
         now: SemanticTimeMicros,
     ) -> Result<SpellOutcome, AttackError> {
@@ -1842,7 +1904,7 @@ impl DamageSpellOwner {
         let id = DecisionOccurrenceId::from_bytes(id);
         let draw = deterministic_decision_u64(&root, id, "damage_draw", source.entry_index as u64)
             .map_err(|_| AttackError::InvalidPlan)?;
-        let requested = u32::try_from(crate::spell::uniform_draw(
+        let requested = u32::try_from(crate::durability::uniform_draw::uniform_draw(
             draw,
             i64::from(source.minimum),
             i64::from(source.maximum),
@@ -1886,8 +1948,12 @@ impl DamageSpellOwner {
                         source.entry_index as u64,
                     )
                     .map_err(|_| AttackError::InvalidPlan)?;
-                    u32::try_from(crate::spell::uniform_draw(d, i64::from(lo), i64::from(hi)))
-                        .map_err(|_| AttackError::NumericOverflow)?
+                    u32::try_from(crate::durability::uniform_draw::uniform_draw(
+                        d,
+                        i64::from(lo),
+                        i64::from(hi),
+                    ))
+                    .map_err(|_| AttackError::NumericOverflow)?
                 }
             } else {
                 0

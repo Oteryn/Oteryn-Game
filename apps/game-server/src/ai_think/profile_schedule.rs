@@ -7,11 +7,12 @@ use std::collections::BTreeMap;
 
 use sha2::{Digest, Sha256};
 
-use crate::ability::{AbilityIntent, AbilityOccurrence, AiAbilityAdapter, RevisionSet};
+use crate::ability::{AbilityOccurrence, AiAbilityAdapter, RevisionSet};
+#[cfg(test)]
+use crate::content::ProjectV2Magnitude;
 use crate::content::{
     ProjectV2AbilityAuthoring, ProjectV2AbilityDetails, ProjectV2AbilityKind,
     ProjectV2AbilitySchedule, ProjectV2BehaviorAuthoring, ProjectV2DefinitionRef, ProjectV2Family,
-    ProjectV2Magnitude,
 };
 use crate::foundation::ExactActorRef;
 use oteryn_simulation_determinism::{
@@ -76,18 +77,7 @@ pub struct AttackTarget {
     pub same_floor_distance: Option<u16>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ProfileAbilityProposal {
-    pub issuer: ExactActorRef,
-    pub target: ExactActorRef,
-    pub ability: ProjectV2DefinitionRef,
-    pub list: ScheduleList,
-    pub entry_index: usize,
-    pub magnitude: Option<ProjectV2Magnitude>,
-    pub range_tiles: u16,
-    pub occurrence: AbilityOccurrence,
-    pub intent: AbilityIntent,
-}
+pub use crate::creature_auto_attack::ProfileAbilityProposal;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SchedulePlan {

@@ -629,7 +629,8 @@ pub(crate) struct CombatPulse {
     pub(crate) child_registration: Vec<ChildRegistrationReceipt>,
     pub(crate) thinks: Vec<ThinkCombatResult>,
     pub(crate) melee: Vec<(Ref, Result<SwingOutcome, AttackError>)>,
-    pub(crate) chain_steps: crate::creature_chain_attack::ChainPulseResults,
+    pub(crate) chain_steps:
+        crate::creature_chain_attack::ChainPulseResults<crate::creature_damage_spell::SpellOutcome>,
     pub(crate) windup_casts: crate::creature_damage_spell::WindupCastResults,
     pub(crate) conditions:
         Result<Vec<(ExactActorRef, Option<NativeOwnedPlayerTickReceipt>)>, AttackError>,
@@ -649,7 +650,7 @@ pub(crate) struct MonsterCombatLane {
     melee: AutoAttackOwner,
     spells: DamageSpellOwner,
     composed: ComposedOwner,
-    chains: ChainOwner,
+    chains: ChainOwner<SpellSource>,
     last_time: Option<SemanticTimeMicros>,
     heals: CreatureSelfHealLedger,
     area_catalog: Option<CreatureHealCatalog>,

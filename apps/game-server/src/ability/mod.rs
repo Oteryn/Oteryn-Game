@@ -93,3 +93,15 @@ mod charm_desc_fence_gate_tests;
 mod tests;
 
 pub(crate) mod field_condition;
+
+/// Stable source-chain child identity, shared by native monster HP/MP consumers.
+#[allow(dead_code)] // Standalone Ability fixtures do not compose native chain attacks.
+pub(crate) fn chain_step_occurrence(
+    base: &AbilityOccurrence,
+    index: usize,
+) -> Result<AbilityOccurrence, AbilityError> {
+    AbilityOccurrence::new(
+        &format!("{}/chain-{index}", base.id().as_str()),
+        base.revisions().clone(),
+    )
+}

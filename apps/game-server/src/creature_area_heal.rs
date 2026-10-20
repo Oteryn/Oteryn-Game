@@ -1,6 +1,5 @@
 //! Source-known AREA/NAMED defense healing into actual native Creature HP.
 //! Creature-only partialcast; Player/NPC healing and presentation delivery remain explicit.
-use crate::ai_think::profile_schedule::{ProfileAbilityProposal, ScheduleList};
 use crate::content::{
     EffectFamilyDocument, ProjectReferenceRecord as Record, ProjectV2AbilityDetails,
     ProjectV2AbilityEffect, ProjectV2AffectsKind, ProjectV2AuthoringProfileData as Data,
@@ -8,6 +7,8 @@ use crate::content::{
     ProjectV2FormulaAuthoring, ProjectV2InlineEffectOperation, ProjectV2SourceIdentityDisposition,
 };
 use crate::creature_attack_geometry::{self as geometry, Facing};
+use crate::creature_auto_attack::ProfileAbilityProposal;
+use crate::durability::creature_schedule::ScheduleList;
 use crate::foundation::{
     CarrierError, ChannelRuntimeV1, ExactActorRef, OwnerDamageResult, RuntimeScopeRefV1,
     RuntimeWorkStamp, ScopeRuntimeFence,
@@ -589,8 +590,11 @@ impl AreaHealOwner {
                 )
                 .map_err(|_| E::Numeric)?;
                 let draw = source.source_load_magnitude.unwrap_or_else(|| {
-                    crate::spell::uniform_draw(draw, source.minimum as i64, source.maximum as i64)
-                        as u64
+                    crate::durability::uniform_draw::uniform_draw(
+                        draw,
+                        source.minimum as i64,
+                        source.maximum as i64,
+                    ) as u64
                 });
                 requests.try_reserve(1).map_err(|_| E::Capacity)?;
                 requests.push((*target, key.to_owned(), max, draw));
@@ -665,7 +669,7 @@ fn project_prophet_source_load_magnitude(source: [u8; 32]) -> u64 {
         .finalize();
     let mut bytes = [0; 8];
     bytes.copy_from_slice(&digest[..8]);
-    crate::spell::uniform_draw(u64::from_le_bytes(bytes), 200, 350) as u64
+    crate::durability::uniform_draw::uniform_draw(u64::from_le_bytes(bytes), 200, 350) as u64
 }
 
 #[cfg(test)]
