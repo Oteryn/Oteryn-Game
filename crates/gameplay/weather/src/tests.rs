@@ -3,9 +3,9 @@
 use super::*;
 use serde_json::{Value, json};
 
-const INDEX: &str = include_str!("../../../content/weather/index.json");
-const CLIMATES: &str = include_str!("../../../content/weather/climates.json");
-const AREAS: &str = include_str!("../../../content/weather/areas.json");
+const INDEX: &str = include_str!("../../../../content/weather/index.json");
+const CLIMATES: &str = include_str!("../../../../content/weather/climates.json");
+const AREAS: &str = include_str!("../../../../content/weather/areas.json");
 
 fn load() -> WorldWeatherSource {
     WorldWeatherSource::from_json(INDEX, CLIMATES, AREAS).expect("shipped data loads")

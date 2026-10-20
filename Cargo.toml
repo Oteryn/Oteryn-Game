@@ -23,6 +23,8 @@ members = [
     "crates/synthetic-assets",
     "crates/test-support",
     "crates/world-bundle",
+    "crates/gameplay/weather",
+    "crates/gameplay/world-change",
     "tests/security/auth",
     "tests/pre-native-client",
     "tools/architecture-check",

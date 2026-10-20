@@ -1975,6 +1975,7 @@ dependencies = [
  "oteryn-dev-client",
  "oteryn-error-codes",
  "oteryn-foundation",
+ "oteryn-gameplay-weather",
  "oteryn-ntp-clock",
  "oteryn-protocol-oteryn",
  "oteryn-simulation-determinism",
@@ -1994,6 +1995,24 @@ dependencies = [
  "tokio-rustls",
  "toml",
  "zstd",
+]
+
+[[package]]
+name = "oteryn-gameplay-weather"
+version = "0.1.0"
+dependencies = [
+ "oteryn-protocol-oteryn",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+]
+
+[[package]]
+name = "oteryn-gameplay-world-change"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

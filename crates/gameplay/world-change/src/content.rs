@@ -23,7 +23,7 @@ const SOURCED_FIELDS: [&str; 6] = [
 
 #[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
-pub(crate) struct WorldChangeCandidate {
+pub struct WorldChangeCandidate {
     schema: String,
     key: String,
     kind: ChangeKind,
@@ -87,7 +87,7 @@ const ALL_BINDING_GAPS: [BindingGap; 6] = [
 ];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum CandidateError {
+pub enum CandidateError {
     DefinitionCount,
     Schema,
     Key,
@@ -104,17 +104,17 @@ pub(crate) enum CandidateError {
 /// A validated selection-source entry, not an executable W1 definition (D1206).
 /// Its private field prevents a consumer from treating unchecked JSON as compiled selection.
 #[derive(Debug)]
-pub(crate) struct WorldChangeSelection<'a> {
+pub struct WorldChangeSelection<'a> {
     source: &'a WorldChangeCandidate,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct WorldChangeBindingsUnavailable;
+pub struct WorldChangeBindingsUnavailable;
 
 impl WorldChangeSelection<'_> {
     /// Compiler boundary for an entry that needs native W1 bindings. Selection-source
     /// compilation alone cannot supply geometry, House, value-source or spawn authority.
-    pub(crate) fn require_w1_bindings(&self) -> Result<(), WorldChangeBindingsUnavailable> {
+    pub fn require_w1_bindings(&self) -> Result<(), WorldChangeBindingsUnavailable> {
         // Ok is unreachable for validated input: validate_candidates rejects an
         // empty unresolved list, and compile_selection_source alone constructs
         // this selection's private source field. No complete bindings are invented.
@@ -127,7 +127,7 @@ impl WorldChangeSelection<'_> {
 }
 
 /// Compile only the owned selection-source. No W1 schema or gameplay bindings are emitted.
-pub(crate) fn compile_selection_source(
+pub fn compile_selection_source(
     candidates: &[WorldChangeCandidate],
 ) -> Result<Vec<WorldChangeSelection<'_>>, CandidateError> {
     validate_candidates(candidates)?;
@@ -147,9 +147,7 @@ fn key(value: &str) -> bool {
 /// Validate bounded source candidates only. Every successful input still explicitly lacks
 /// native W1 bindings; callers must not interpret `Ok` as compiler or gameplay admission.
 /// Source hashes identify retained evidence; this function does not fetch or attest that evidence.
-pub(crate) fn validate_candidates(
-    candidates: &[WorldChangeCandidate],
-) -> Result<(), CandidateError> {
+pub fn validate_candidates(candidates: &[WorldChangeCandidate]) -> Result<(), CandidateError> {
     if candidates.len() > MAX_DEFINITIONS {
         return Err(CandidateError::DefinitionCount);
     }

@@ -84,6 +84,8 @@ SERVER_QUALIFICATION_PREFIXES = (
     "crates/foundation/",
     "crates/protocol-oteryn/",
     "crates/simulation-determinism/",
+    # Gameplay crates carved out of apps/game-server/src keep the routing they had there.
+    "crates/gameplay/",
     "tools/qualification/",
     "vendor/",
 )

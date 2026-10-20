@@ -837,11 +837,7 @@ mod welter_consume;
     reason = "LOOP-CLOCK-1 registers the pure World clock; the WORLD_LIGHT_V1 offer composes it later"
 )]
 mod world_clock;
-#[allow(
-    dead_code,
-    reason = "CP D1448: the WeatherSource seam and the reserved real_world coordinates are an extension point for a later live binding; today only the shipped Oteryn design is consumed"
-)]
-mod world_weather;
+use oteryn_gameplay_weather as world_weather;
 
 #[allow(
     dead_code,
@@ -868,10 +864,6 @@ mod creature_icicle;
 // Full native Creature callbacks stay outside standalone Durability path loads.
 #[path = "durability/creature_source_items.rs"]
 mod creature_source_items;
-
-// D1287: selection-source component tests, without a production runtime caller.
-#[cfg(test)]
-mod world_change;
 
 #[cfg(test)]
 mod security;
