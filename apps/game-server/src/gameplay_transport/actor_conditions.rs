@@ -1,84 +1,13 @@
-//! Conditions consume the sole native actor-slot store. No transport condition collection.
-//! Runtime lock precedes the existing ChannelSpellStates HP lock at every composition call.
+//! Conditions consume the sole native actor-slot store.
 use super::*;
 use crate::foundation::{
-    ActorConditionPlan, ActorConditionTransition, ApplicationFacts, AttributeModifiers,
-    ConditionDefinition, ConditionOwnerError, ConditionSource, ConditionType, RuntimeScopeRefV1,
-    RuntimeWorkStamp, ScopeRuntimeFence, StatusKind,
+    ActorConditionTransition, ApplicationFacts, AttributeModifiers, ConditionDefinition,
+    ConditionSource, ConditionType, RuntimeWorkStamp, ScopeRuntimeFence, StatusKind,
 };
+#[cfg(test)]
+use crate::foundation::{ConditionOwnerError, RuntimeScopeRefV1};
+use crate::monster_combat_lane::native_conditions::*;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum NativeConditionError {
-    Owner(ConditionOwnerError),
-    StaleOwner,
-    StaleActor,
-    ContentChanged,
-    CombatRefused,
-}
-/// Independently current target/tile Combat facts from the existing map/Combat owner.
-/// Missing policy refuses before preparing a native condition; no permissive default.
-pub(crate) trait NativeConditionAdmission {
-    fn current_allowed(
-        &mut self,
-        runtime: &ChannelRuntimeV1,
-        target: ExactActorRef,
-        source: ConditionSource,
-    ) -> Option<bool>;
-}
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct Pin {
-    world: crate::foundation::WorldId,
-    activation: u64,
-    server: [u8; 32],
-    client: [u8; 32],
-    frame: [u8; 32],
-    movement: crate::foundation::MovementPositionContext,
-}
-impl Pin {
-    fn current(runtime: &ChannelRuntimeV1) -> Self {
-        let p = runtime.content_pin();
-        Self {
-            world: p.world_id(),
-            activation: p.activation_sequence(),
-            server: p.server_artifact_digest(),
-            client: p.client_artifact_digest(),
-            frame: p.frame_binding_digest(),
-            movement: runtime.pinned_movement_context(),
-        }
-    }
-}
-fn current_owner(
-    runtime: &ChannelRuntimeV1,
-    fence: &ScopeRuntimeFence,
-    stamp: RuntimeWorkStamp,
-) -> bool {
-    let binding = runtime.binding();
-    fence.is_current_for_scope(
-        RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
-        binding.scope_generation(),
-    ) && fence.accepts_stamp(stamp)
-}
-/// Immutable source-qualified value projection, not actor or content authority.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct NativeConditionApplication {
-    plan: ActorConditionPlan,
-    pin: Pin,
-    stamp: RuntimeWorkStamp,
-    target: ExactActorRef,
-    session: Option<GameSessionId>,
-    source: ConditionSource,
-}
-impl NativeConditionApplication {
-    pub(crate) fn native_plan(&self) -> &ActorConditionPlan {
-        &self.plan
-    }
-}
-fn creature_current(runtime: &ChannelRuntimeV1, actor: ExactActorRef) -> bool {
-    runtime.contains_live_creature(actor)
-        && runtime
-            .read_actor_position(actor)
-            .is_ok_and(|p| p.context() == runtime.pinned_movement_context())
-}
 impl ChannelSpellStates {
     fn condition_player_current(
         &self,

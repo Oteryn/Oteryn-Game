@@ -8053,3 +8053,5 @@ mod death_ml_loss_postgres {
 }
 
 mod vocation_choice;
+
+mod monster_combat_states;

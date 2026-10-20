@@ -7,7 +7,7 @@
 //! beyond it. Selection is a pure function of the candidates and the caller's draws; the think
 //! (`ai_think.rs`) owns the draws, the order of selection steps and the target slot.
 //!
-//! Declared from `ai_think.rs` with `#[path]` (see `behaviour_profile.rs`).
+//! Declared as a child of `ai_think.rs` (see `behaviour_profile.rs`).
 
 use crate::ai::ResourceLimit;
 use crate::content::{ProjectV2StrategyWeights, ProjectV2Targeting};

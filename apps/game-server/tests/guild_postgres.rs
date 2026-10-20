@@ -33,13 +33,15 @@ mod native_file_modules {
         reason = "ai_think has no production caller yet; AI-4/a later wiring task composes it into ChannelRuntimeV1's owner cycle"
     )]
     pub(crate) mod ai_think;
+    #[allow(dead_code)]
+    pub(crate) mod monster_combat_lane;
     #[allow(
         dead_code,
         reason = "unactivated local Movement proof awaits the separate production composition lease"
     )]
     pub(crate) mod movement;
 }
-use native_file_modules::{ai_think, movement};
+use native_file_modules::{ai_think, monster_combat_lane, movement};
 #[allow(
     dead_code,
     reason = "nonshipping fixed-one-creature Combat proof awaits production composition"
@@ -306,12 +308,6 @@ mod world_clock;
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-#[path = "../src/monster_combat_lane.rs"]
-mod monster_combat_lane;
-#[allow(
-    dead_code,
-    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
-)]
 #[path = "../src/monster_owner_cycle.rs"]
 mod monster_owner_cycle;
 #[allow(
@@ -382,3 +378,35 @@ mod source_encounter_seven_tests;
 #[cfg(test)]
 #[path = "../src/lifted_tests/source_threshold_heal_tests.rs"]
 mod source_threshold_heal_tests;
+
+#[cfg(test)]
+#[path = "../src/lifted_tests/monster_owner_cycle_tests.rs"]
+mod monster_owner_cycle_tests;
+
+#[cfg(test)]
+#[path = "../src/lifted_tests/smelly_damage_tests.rs"]
+mod smelly_damage_tests;
+
+#[cfg(test)]
+#[path = "../src/lifted_tests/smelly_encounter_dispatch_tests.rs"]
+mod smelly_encounter_dispatch_tests;
+
+#[cfg(test)]
+#[path = "../src/lifted_tests/monster_combat_lane_tests.rs"]
+mod monster_combat_lane_tests;
+
+#[cfg(test)]
+#[path = "../src/lifted_tests/monster_combat_lane_defense_composition_tests.rs"]
+mod monster_combat_lane_defense_composition_tests;
+
+#[cfg(test)]
+#[path = "../src/lifted_tests/monster_combat_lane_defense_speed_test.rs"]
+mod monster_combat_lane_defense_speed_test;
+
+#[cfg(test)]
+#[path = "../src/lifted_tests/monster_combat_lane_source_summon_composition_tests.rs"]
+mod monster_combat_lane_source_summon_composition_tests;
+
+#[cfg(test)]
+#[path = "../src/lifted_tests/source_time_profile_bundle_tests.rs"]
+mod source_time_profile_bundle_tests;
