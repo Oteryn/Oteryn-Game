@@ -1,14 +1,18 @@
 #![allow(clippy::expect_used)]
 #![allow(clippy::panic)]
+use crate::spell::Vocation;
+use oteryn_protocol_oteryn::actor_spell::SpellCastDisposition;
+use oteryn_simulation_determinism::SemanticTimeMicros;
+use serde_json::Value;
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::num::NonZeroU32;
 
-use super::*;
 use crate::gameplay_transport::actor_spell::{
     ChannelSpellStates, cast_in_channel, observe_vitals,
     tests::{runtime_with_player, wound},
 };
+use crate::spell::actor_execution::*;
 use crate::spell::cast::{CharacterCastFacts, PlayerSpellState, v1_spell_book};
 use crate::spell::{
     Carrier, CooldownGroup, Cooldowns, Execution, HarmonyRole, ManaCost, SpellBook, SpellDefinition,
@@ -20,9 +24,10 @@ fn at(ms: u64) -> SemanticTimeMicros {
 }
 
 fn parameters(name: &str) -> Value {
-    let export: Value = serde_json::from_str(include_str!(
-        "../../../../tools/content-schema/spell-authoring/samples/native-spell-profiles.json"
-    ))
+    let export: Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../tools/content-schema/spell-authoring/samples/native-spell-profiles.json"
+    )))
     .expect("canonical profiles");
     export["profiles"]
         .as_array()

@@ -1,11 +1,10 @@
 //! Actual source-specific ChatLine mailbox; no synthetic CHAT_INTENT or durable ledger.
 use crate::durability::chat_text::ChatText;
 use crate::foundation::speech::{ChatPosition, SpeechMode, hears};
-#[path = "weak_spot_speech/callback.rs"]
-pub(crate) mod callback;
 use crate::foundation::{
     CarrierError, ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition,
 };
+pub(crate) use crate::spell::callback_speech as callback;
 use oteryn_protocol_oteryn::chat::{
     ChatLine, ChatSpeaker, ChatSpeechMode, ChatWireError, encode_chat_line,
 };

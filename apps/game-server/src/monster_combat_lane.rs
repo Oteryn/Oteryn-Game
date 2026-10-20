@@ -522,7 +522,7 @@ struct NativeActor {
     seven_sources: Vec<crate::source_encounter_seven::SevenSource>,
     time_profiles: Option<std::sync::Arc<BTreeMap<String, TimeProfileBundle>>>,
     callback_spawn_sources: Vec<crate::source_callback_spawn::SourceCallbackSpawn>,
-    callback_casts: Vec<crate::creature_damage_spell::SourceCallbackCast>,
+    callback_casts: Vec<crate::source_callback_cast::SourceCallbackCast>,
     smelly_source: Option<crate::smelly_encounter_dispatch::SourceSmelly>,
     movement_cadence: Option<crate::movement::speed::CreatureMovementCadence>,
     native_speed: Option<crate::movement::speed::NativeCreatureSpeed>,
@@ -617,7 +617,7 @@ pub(crate) struct CombatPulse {
         ExactActorRef,
         Result<crate::foundation::CreaturePeriodicReceipt, CarrierError>,
     )>,
-    pub(crate) callback_pulses: crate::creature_damage_spell::CallbackPulseBatch,
+    pub(crate) callback_pulses: crate::source_callback_cast::CallbackPulseBatch,
     pub(crate) smelly_pulses: crate::smelly_encounter_dispatch::SmellyPulseResults,
     pub(crate) movements: Vec<(
         ExactActorRef,
@@ -639,7 +639,7 @@ pub(crate) struct MonsterCombatLane {
     callback_speech: crate::weak_spot_speech::WeakSpotSpeechMailbox,
     time_guardian_owner: crate::source_encounter_seven::TimeGuardianOwner,
     callback_spawn_owner: Option<crate::source_callback_spawn::CallbackSpawnOwner>,
-    callback_casts: Option<crate::creature_damage_spell::CallbackCastOwner>,
+    callback_casts: Option<crate::source_callback_cast::CallbackCastOwner>,
     native_appearance_content:
         Option<std::sync::Arc<crate::content::native_gameplay::NativeGameplayState>>,
     smelly: crate::smelly_encounter_dispatch::SmellyEncounterOwner,
@@ -1159,7 +1159,7 @@ impl MonsterCombatLane {
         }
         let mut callback_casts = Vec::new();
         for index in 0..behavior.attacks.len() {
-            if let Some(source) = crate::creature_damage_spell::SourceCallbackCast::qualify(
+            if let Some(source) = crate::source_callback_cast::SourceCallbackCast::qualify(
                 draft,
                 creature,
                 index,
@@ -1253,7 +1253,7 @@ impl MonsterCombatLane {
         let summons = &mut self.summons;
         if self.callback_casts.is_none() {
             self.callback_casts = Some(
-                crate::creature_damage_spell::CallbackCastOwner::new(runtime, current)
+                crate::source_callback_cast::CallbackCastOwner::new(runtime, current)
                     .map_err(CombatLaneError::Attack)?,
             );
         }
@@ -4276,7 +4276,7 @@ impl MonsterCombatLane {
 struct NativeChildClosure {
     callback_children: Vec<(
         Ref,
-        Vec<crate::creature_damage_spell::SourceCallbackCast>,
+        Vec<crate::source_callback_cast::SourceCallbackCast>,
         Vec<crate::source_callback_spawn::SourceCallbackSpawn>,
     )>,
     records: Vec<ProjectReferenceRecord>,
@@ -4471,7 +4471,7 @@ impl NativeChildClosure {
                 for index in 0..entries.len() {
                     if list == ScheduleList::Attack
                         && let Some(source) =
-                            crate::creature_damage_spell::SourceCallbackCast::qualify(
+                            crate::source_callback_cast::SourceCallbackCast::qualify(
                                 draft, &creature, index, content,
                             )
                             .map_err(CombatLaneError::Attack)?

@@ -427,12 +427,8 @@ impl ComposedOwner {
                             source.index as u64,
                         )
                         .map_err(|_| AttackError::InvalidPlan)?;
-                        u32::try_from(crate::durability::uniform_draw::uniform_draw(
-                            d,
-                            i64::from(lo),
-                            i64::from(hi),
-                        ))
-                        .map_err(|_| AttackError::NumericOverflow)?
+                        u32::try_from(crate::spell::uniform_draw(d, i64::from(lo), i64::from(hi)))
+                            .map_err(|_| AttackError::NumericOverflow)?
                     }
                 } else {
                     0
@@ -808,7 +804,7 @@ impl Callback {
         let id = DecisionOccurrenceId::from_bytes(bytes);
         let draw = deterministic_decision_u64(root, id, "source_callback_health", branch as u64)
             .map_err(|_| AttackError::InvalidPlan)?;
-        let amount = u32::try_from(crate::durability::uniform_draw::uniform_draw(
+        let amount = u32::try_from(crate::spell::uniform_draw(
             draw,
             i64::from(self.minimum),
             i64::from(self.maximum),

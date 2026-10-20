@@ -14,7 +14,6 @@ use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use std::{collections::BTreeSet, num::NonZeroU32, sync::OnceLock};
 
-#[path = "spell_presentations_familiar.rs"]
 mod familiar;
 pub(crate) const MAX_PRESENTATIONS: usize = 512;
 pub(crate) const MAX_CAST_PRESENTATIONS: usize = 256;
@@ -720,5 +719,4 @@ fn resolve_source_cue(alias: &str) -> Option<Cue> {
 }
 
 #[cfg(test)]
-#[path = "spell_presentations_tests.rs"]
 pub(crate) mod tests;

@@ -151,7 +151,3 @@ pub(crate) fn apply_focus(
     next.health = health;
     Ok(plan)
 }
-
-#[cfg(test)]
-#[path = "actor_execution_tests.rs"]
-mod tests;

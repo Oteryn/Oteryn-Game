@@ -1,6 +1,5 @@
 #![allow(clippy::expect_used, clippy::panic)]
 #![allow(clippy::unwrap_used)]
-use crate::ai_think::profile_schedule::ProfileAbilityProposal;
 use crate::ai_think::{
     ThinkSequenceTracker,
     profile_schedule::{
@@ -14,16 +13,16 @@ use crate::content::{
     ProjectV2DefinitionRef as Ref, ProjectV2Family,
 };
 use crate::creature_attack_geometry::Facing;
+use crate::creature_auto_attack::ProfileAbilityProposal;
 use crate::creature_auto_attack::{AttackError, AttackFacts, CurrentConditionPolicy};
 use crate::creature_damage_spell::*;
 use crate::foundation::owner_timer::SemanticTimeMicros;
+use crate::foundation::{ChannelContentPin, ChannelId, MovementLocalPosition, NodeId};
 use crate::foundation::{
-    ChannelContentPin, ChannelId, ChannelRuntimeV1, ExactActorRef, GameSessionId,
-    MovementLocalPosition, NodeId, RuntimeWorkStamp, ScopeRuntimeFence,
+    ChannelRuntimeV1, ExactActorRef, GameSessionId, RuntimeWorkStamp, ScopeRuntimeFence,
 };
 use crate::gameplay_transport::actor_spell::{ChannelSpellStates, tests::FACTS};
 use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
-
 fn actual_content() -> (NativeGameplayState, ChannelContentPin) {
     let path = std::env::var_os("OTERYN_FULL_SPELL_TEST_MANIFEST")
         .expect("explicit actual source artifact manifest");
@@ -45,7 +44,11 @@ fn actual_content() -> (NativeGameplayState, ChannelContentPin) {
     (native, pin)
 }
 fn packet() -> serde_json::Value {
-    serde_json::from_str(include_str!("../creature_appearance_execution_data.json")).unwrap()
+    serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/src/creature_appearance_execution_data.json"
+    )))
+    .unwrap()
 }
 struct World<'a> {
     native: &'a NativeGameplayState,

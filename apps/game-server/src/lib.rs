@@ -771,6 +771,11 @@ mod creature_damage_spell;
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
+mod creature_damage_spell_delayed;
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
 mod creature_defense_presentation;
 #[allow(
     dead_code,
@@ -911,13 +916,12 @@ mod content_npc_service_tests;
 mod movement_speed_runtime_tests;
 
 #[cfg(test)]
-#[path = "lifted_tests/world_clock_world_config_tests.rs"]
-mod world_clock_world_config_tests;
-
-#[cfg(test)]
 #[allow(clippy::expect_used)]
 #[path = "lifted_tests/foundation_ability_exact_actor_resolution_tests.rs"]
 mod foundation_ability_exact_actor_resolution_tests;
+#[cfg(test)]
+#[path = "lifted_tests/world_clock_world_config_tests.rs"]
+mod world_clock_world_config_tests;
 
 #[cfg(test)]
 #[allow(clippy::expect_used)]
@@ -953,18 +957,6 @@ mod creature_area_heal_tests;
 mod creature_icicle_tests;
 
 #[cfg(test)]
-#[path = "lifted_tests/creature_damage_composed_tests.rs"]
-mod creature_damage_composed_tests;
-
-#[cfg(test)]
-#[path = "lifted_tests/creature_appearance_execution_tests.rs"]
-mod creature_appearance_execution_tests;
-
-#[cfg(test)]
-#[path = "lifted_tests/creature_defense_variant_tests.rs"]
-mod creature_defense_variant_tests;
-
-#[cfg(test)]
 #[path = "lifted_tests/creature_auto_attack_tests.rs"]
 mod creature_auto_attack_tests;
 
@@ -983,3 +975,61 @@ mod creature_condition_content_tests;
 #[cfg(test)]
 #[path = "lifted_tests/creature_condition_content_gate_tests.rs"]
 mod creature_condition_content_gate_tests;
+
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+mod source_callback_cast;
+
+#[cfg(test)]
+#[path = "lifted_tests/creature_damage_spell_tests.rs"]
+mod creature_damage_spell_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/creature_damage_spell_defense_variant_tests.rs"]
+mod creature_damage_spell_defense_variant_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/creature_damage_spell_appearance_execution_tests.rs"]
+mod creature_damage_spell_appearance_execution_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/creature_damage_spell_composed_tests.rs"]
+mod creature_damage_spell_composed_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/spell_house_execution_tests.rs"]
+mod spell_house_execution_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/spell_owned_cast_facts_tests.rs"]
+mod spell_owned_cast_facts_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/spell_field_history_tests.rs"]
+mod spell_field_history_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/spell_companion_lifecycle_direct_acquisition_owner_tests.rs"]
+mod spell_companion_lifecycle_direct_acquisition_owner_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/spell_actor_execution_tests.rs"]
+mod spell_actor_execution_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/spell_magnitude_owner_tests.rs"]
+mod spell_magnitude_owner_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/spell_native_cast_commit_tests.rs"]
+mod spell_native_cast_commit_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/spell_delayed_execution_tests.rs"]
+mod spell_delayed_execution_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/spell_callback_speech_tests.rs"]
+mod spell_callback_speech_tests;

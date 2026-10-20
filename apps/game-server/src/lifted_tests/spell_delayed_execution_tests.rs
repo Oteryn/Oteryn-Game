@@ -1,6 +1,13 @@
-use super::*;
+use crate::ability::AbilityOccurrence;
+use crate::foundation::owner_timer::{OwnerClock, SemanticTimeMicros};
+use crate::foundation::{
+    ChannelRuntimeV1, CharacterId, CommandRef, GameSessionId, RuntimeScopeRefV1, RuntimeWorkStamp,
+};
 use crate::foundation::{CommandId, MovementLocalPosition};
+use crate::spell::chain::TilePosition;
+use crate::spell::combat_batch::OwnerCombatBatch;
 use crate::spell::combat_batch::{MonsterAiState, OwnerCombatChange, OwnerCombatEffect};
+use crate::spell::delayed_execution::*;
 #[allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
 #[test]
 fn actual_owner_due_applies_ai_lifetime_at_callback_and_never_replays() {
@@ -34,9 +41,10 @@ fn actual_owner_due_applies_ai_lifetime_at_callback_and_never_replays() {
             floor: 7,
         })
         .unwrap();
-    let document: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../../tools/content-schema/spell-authoring/samples/native-spell-profiles.json"
-    ))
+    let document: serde_json::Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../tools/content-schema/spell-authoring/samples/native-spell-profiles.json"
+    )))
     .unwrap();
     let row = document["profiles"]
         .as_array()
@@ -44,7 +52,7 @@ fn actual_owner_due_applies_ai_lifetime_at_callback_and_never_replays() {
         .iter()
         .find(|r| r["name"] == "Chivalrous Challenge")
         .unwrap();
-    let spell = super::super::native::spell_from_bundle(
+    let spell = crate::spell::native::spell_from_bundle(
         &serde_json::json!({"spell":row["spell"]}),
         &row["dependencies"],
     )
@@ -86,11 +94,11 @@ fn actual_owner_due_applies_ai_lifetime_at_callback_and_never_replays() {
     )
     .unwrap();
     // D1218 read-only metadata: warnings/other session/epoch cannot substitute expiry.
-    let expiry = super::super::companion_lifecycle::SavedFamiliarTimer {
+    let expiry = crate::spell::companion_lifecycle::SavedFamiliarTimer {
         binding: binding.clone(),
         creature: target,
         lifecycle_epoch: 7,
-        event: super::super::companion_lifecycle::FamiliarTimerEvent::Expiry,
+        event: crate::spell::companion_lifecycle::FamiliarTimerEvent::Expiry,
     };
     let due = SemanticTimeMicros::from_micros(1_500_000);
     let pending = Pending {
@@ -139,7 +147,7 @@ fn actual_owner_due_applies_ai_lifetime_at_callback_and_never_replays() {
     assert_eq!(owner.familiar_expiry_due(caster, session, caster, 7), None);
     assert_eq!(owner.familiar_expiry_due(caster, session, target, 8), None);
     let mut warning = expiry;
-    warning.event = super::super::companion_lifecycle::FamiliarTimerEvent::Warning { index: 0 };
+    warning.event = crate::spell::companion_lifecycle::FamiliarTimerEvent::Warning { index: 0 };
     owner.payloads.push(Pending {
         payload: TimerPayload::Familiar(warning),
         ..pending.clone()
@@ -526,9 +534,10 @@ fn due_familiar_expiry_is_handed_to_the_owner_cadence_without_a_despawn() {
             7,
         )
         .unwrap();
-    let document: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../../tools/content-schema/spell-authoring/samples/native-spell-profiles.json"
-    ))
+    let document: serde_json::Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../tools/content-schema/spell-authoring/samples/native-spell-profiles.json"
+    )))
     .unwrap();
     let row = document["profiles"]
         .as_array()
@@ -536,7 +545,7 @@ fn due_familiar_expiry_is_handed_to_the_owner_cadence_without_a_despawn() {
         .iter()
         .find(|r| r["name"] == "Knight familiar")
         .unwrap();
-    let spell = super::super::native::spell_from_bundle(
+    let spell = crate::spell::native::spell_from_bundle(
         &serde_json::json!({"spell":row["spell"]}),
         &row["dependencies"],
     )

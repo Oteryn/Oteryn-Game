@@ -1,6 +1,18 @@
 //! Sealed, nine-source callback child casts; reuses the existing native damage consumer.
 //! Source Encounter bytes qualify actions; there is no general Encounter interpreter.
-use super::*;
+use crate::content::{
+    EffectFamilyDocument, ProjectReferenceRecord, ProjectV2AbilityArea, ProjectV2AbilityEffect,
+    ProjectV2AbilityKind, ProjectV2AuthoringProfileData as Data, ProjectV2DefinitionRef as Ref,
+    ProjectV2Family, ProjectV2FormulaAuthoring, ProjectV2Magnitude,
+};
+use crate::creature_auto_attack::{AttackError, ProfileAbilityProposal};
+use crate::creature_damage_spell::*;
+use crate::durability::creature_schedule::ScheduleList;
+use crate::foundation::owner_timer::SemanticTimeMicros;
+use crate::foundation::{ChannelRuntimeV1, ExactActorRef, RuntimeWorkStamp, ScopeRuntimeFence};
+use crate::player_lethal::PlayerLethalVitals;
+use sha2::{Digest, Sha256};
+use std::collections::BTreeMap;
 pub(crate) type CallbackPulseBatch =
     Result<Vec<(ExactActorRef, Ref, usize, Result<SpellOutcome, AttackError>)>, AttackError>;
 use crate::content::{ProjectV2Draft, ProjectV2SourceIdentityBinding};
@@ -8,7 +20,7 @@ use crate::foundation::owner_timer::{
     CatchUpPolicy, FamilyPolicy, OwnerClock, OwnerTimerLane, TimerFamily,
 };
 use crate::foundation::{RuntimeScopeRefV1, ScopeOwnershipGeneration};
-pub(crate) use crate::weak_spot_speech::callback::CallbackSpeech;
+pub(crate) use crate::spell::callback_speech::CallbackSpeech;
 #[derive(serde::Deserialize)]
 struct Witness {
     cases: BTreeMap<String, Case>,
@@ -644,6 +656,7 @@ impl CallbackCastOwner {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::creature_auto_attack::AttackFacts;
     use crate::foundation::owner_timer::VirtualOwnerClock;
     use crate::foundation::{GameSessionId, MovementLocalPosition};
     use crate::gameplay_transport::actor_spell::{

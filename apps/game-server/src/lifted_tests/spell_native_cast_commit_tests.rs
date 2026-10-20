@@ -1,9 +1,12 @@
 #![allow(clippy::expect_used)]
-use super::super::cast::{CastContext, cast, v1_spell_book};
-use super::*;
 use crate::ability::{AbilityOccurrence, RevisionSet};
 use crate::gameplay_transport::actor_spell::tests::FACTS;
+use crate::spell::SpellBook;
+use crate::spell::cast::PlayerSpellState;
+use crate::spell::cast::{CastContext, cast, v1_spell_book};
+use crate::spell::combat_batch::CastOwnerChanges;
 use oteryn_protocol_oteryn::actor_spell::{SpellCastIntent, SpellTarget};
+use oteryn_simulation_determinism::SemanticTimeMicros;
 use std::num::NonZeroU32;
 
 fn paid_fixture() -> (
@@ -14,7 +17,7 @@ fn paid_fixture() -> (
 ) {
     let book = v1_spell_book().expect("admitted book");
     let mut before = PlayerSpellState::new(
-        super::super::cast::CharacterCastFacts { level: 20, ..FACTS },
+        crate::spell::cast::CharacterCastFacts { level: 20, ..FACTS },
         0,
         0,
     )
@@ -105,7 +108,7 @@ fn before_groups_with_new_cast(
     book: &SpellBook,
     now: SemanticTimeMicros,
 ) -> std::collections::BTreeMap<String, SemanticTimeMicros> {
-    let mut cooldowns = super::super::Cooldowns::default();
+    let mut cooldowns = crate::spell::Cooldowns::default();
     cooldowns
         .rearm(&book.spells[0], now)
         .expect("common groups");

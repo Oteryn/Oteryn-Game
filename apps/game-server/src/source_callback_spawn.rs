@@ -481,7 +481,7 @@ pub(crate) struct CallbackSpawnOwner {
     pending: Vec<Pending>,
     memos: Vec<Memo>,
     next: u64,
-    speech: Vec<crate::creature_damage_spell::CallbackSpeech>,
+    speech: Vec<crate::source_callback_cast::CallbackSpeech>,
     speech_errors: Vec<(ExactActorRef, AttackError)>,
 }
 impl CallbackSpawnOwner {
@@ -517,7 +517,7 @@ impl CallbackSpawnOwner {
     }
     pub(crate) fn take_source_speech(
         &mut self,
-    ) -> Vec<crate::creature_damage_spell::CallbackSpeech> {
+    ) -> Vec<crate::source_callback_cast::CallbackSpeech> {
         std::mem::take(&mut self.speech)
     }
     pub(crate) fn take_speech_errors(&mut self) -> Vec<(ExactActorRef, AttackError)> {
@@ -921,13 +921,13 @@ impl CallbackSpawnOwner {
             };
             if let Ok(new) = &result {
                 let line = match s.kind {
-                    Kind::Tenebris => crate::creature_damage_spell::CallbackSpeech::spawn(
+                    Kind::Tenebris => crate::source_callback_cast::CallbackSpeech::spawn(
                         r,
                         *new,
                         &child.creature.key,
                     ),
                     Kind::Maxxen => {
-                        crate::creature_damage_spell::CallbackSpeech::generator_warning(r, *new)
+                        crate::source_callback_cast::CallbackSpeech::generator_warning(r, *new)
                             .map(Some)
                     }
                     _ => Ok(None),
@@ -962,7 +962,7 @@ impl CallbackSpawnOwner {
         if output.children.iter().any(|c| c.result.is_ok())
             && matches!(s.kind, Kind::Gaz | Kind::GeneratorRelease)
         {
-            match crate::creature_damage_spell::CallbackSpeech::spawn(r, actor, &s.creature) {
+            match crate::source_callback_cast::CallbackSpeech::spawn(r, actor, &s.creature) {
                 Ok(Some(line)) => self.speech.push(line),
                 Err(e) => self.speech_errors.push((actor, e)),
                 Ok(None) => {}

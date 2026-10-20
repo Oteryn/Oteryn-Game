@@ -208,8 +208,14 @@ mod creature_condition_content;
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-#[path = "../src/creature_damage_spell.rs"]
+#[path = "../src/creature_damage_spell/mod.rs"]
 mod creature_damage_spell;
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+#[path = "../src/creature_damage_spell_delayed.rs"]
+mod creature_damage_spell_delayed;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
@@ -354,3 +360,10 @@ mod durability_vip_tests;
 #[cfg(test)]
 #[path = "../src/lifted_tests/durability_guild_disband_terminal_tests.rs"]
 mod durability_guild_disband_terminal_tests;
+
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+#[path = "../src/source_callback_cast.rs"]
+mod source_callback_cast;

@@ -1,13 +1,17 @@
 #![allow(clippy::expect_used)]
 #![allow(clippy::panic)]
-use super::*;
+use crate::foundation::{ChannelRuntimeV1, CharacterId, ExactActorRef, GameSessionId};
 use crate::foundation::{
     CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureExactRatio, CreatureFlags,
     CreatureResistance, MovementLocalPosition,
 };
 use crate::gameplay_transport::actor_spell::tests::FACTS;
+use crate::spell::cast::PlayerSpellState;
 use crate::spell::combat_batch::{AvatarState, OwnerCombatChange};
+use crate::spell::combat_batch::{Error, LiveActorBinding};
+use crate::spell::magnitude_owner::*;
 use crate::spell::native_combat::CombatPlan;
+use crate::spell::native_combat::{Element, MagnitudePlan, NativeCombatPlan};
 
 struct Fixture {
     runtime: ChannelRuntimeV1,
@@ -46,7 +50,7 @@ fn fixture_with_damage_healing(source_percent: i64) -> Fixture {
         .initialize_first_entry_position(caster)
         .expect("actual pinned player position");
     let mut state = PlayerSpellState::new(FACTS, 0, 0).expect("actual player owner data");
-    super::super::actor_conditions::apply_combat_change(
+    crate::spell::actor_conditions::apply_combat_change(
         &mut state,
         &OwnerCombatChange::Avatar(AvatarState {
             expires_ms: 15100,
@@ -120,7 +124,7 @@ fn fixture_with_damage_healing(source_percent: i64) -> Fixture {
     let mut bindings = vec![LiveActorBinding {
         source_id: 1,
         actor: caster,
-        target_atom: super::super::combat_execution::actor_atom(caster),
+        target_atom: crate::spell::combat_execution::actor_atom(caster),
     }];
     for id in [2, 3] {
         let actor = runtime
@@ -610,14 +614,15 @@ fn strict_fatal_endpoint_and_invalid_draw_preserve_source_rng_contract() {
 
 #[test]
 fn all_twenty_canonical_combat_profiles_lower_against_real_slots_and_qualified_magnitudes() {
-    use super::super::{
+    use crate::foundation::{CommandId, CommandRef};
+    use crate::spell::{
         chain::TilePosition, combat_batch as batch, formula::FormulaInputs, native_combat as native,
     };
-    use crate::foundation::{CommandId, CommandRef};
     use std::collections::BTreeSet;
-    let document: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../../tools/content-schema/spell-authoring/samples/native-spell-profiles.json"
-    ))
+    let document: serde_json::Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../tools/content-schema/spell-authoring/samples/native-spell-profiles.json"
+    )))
     .expect("canonical profiles");
     let profiles = document["profiles"].as_array().expect("profiles");
     let mut count = 0;
