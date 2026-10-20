@@ -116,6 +116,12 @@ pub mod wheel_gem_data;
 )]
 #[path = "../src/interaction/mod.rs"]
 mod interaction;
+#[allow(dead_code)] // Preserve the original Spell adapter lint scope.
+#[path = "../src/durability/native_world_items.rs"]
+mod native_world_items;
+#[allow(dead_code)] // Preserve the original Spell adapter lint scope.
+#[path = "../src/durability/native_world_read.rs"]
+mod native_world_read;
 #[allow(
     dead_code,
     reason = "§7 timed-revert driver awaits its live Channel/Instance scope owner"

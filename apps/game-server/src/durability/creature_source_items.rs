@@ -19,6 +19,10 @@ use crate::durability::spell_item_transaction::{
 use crate::durability::spell_items_abi::*;
 use sha2::{Digest, Sha256};
 use sqlx::{Postgres, Row, Transaction};
+type ProfileAbilityProposal = crate::foundation::profile_schedule::ProfileAbilityProposal<
+    crate::content::ProjectV2DefinitionRef,
+    crate::content::ProjectV2Magnitude,
+>;
 type Result<T> = std::result::Result<T, SpellItemError>;
 
 /// Sealed cause is created by the trusted current Creature source dispatcher,
@@ -329,7 +333,7 @@ impl CreatureGroundCause {
         compiled: &crate::content::CompiledFirstProductionContent,
         native: &crate::content::native_gameplay::NativeGameplayState,
         creature: &crate::content::ProjectV2DefinitionRef,
-        proposal: &crate::ai_think::profile_schedule::ProfileAbilityProposal,
+        proposal: &ProfileAbilityProposal,
     ) -> Result<Self> {
         use crate::content::{ProjectV2AuthoringProfileData, ProjectV2Family};
         let actor = proposal.issuer;
@@ -550,16 +554,18 @@ where
 /// Actual source CreateItem footprint joins qualified Map facts, locked durable
 /// Item reads and the same immutable native field-chain recipe used by Player casts.
 #[allow(clippy::too_many_arguments)]
-async fn prepare_creature_source_fields_in_transaction(
+async fn prepare_creature_source_fields_in_transaction<
+    O: crate::native_world_read::NativeWorldObjectRead + Sync + ?Sized,
+>(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemScopeAuthority,
     runtime: &crate::foundation::ChannelRuntimeV1,
     room: &crate::content::QualifiedNativeEntryRoom,
-    objects: &crate::world_runtime::LocalObjectRuntime,
+    objects: &O,
     compiled: &crate::content::CompiledFirstProductionContent,
     native: &crate::content::native_gameplay::NativeGameplayState,
     cause: &CreatureGroundCause,
-    proposal: &crate::ai_think::profile_schedule::ProfileAbilityProposal,
+    proposal: &ProfileAbilityProposal,
 ) -> Result<PreparedCreatureGroundOperations> {
     use crate::content::creature_attack_geometry as geometry;
     use crate::content::{
@@ -676,13 +682,13 @@ async fn prepare_creature_source_fields_in_transaction(
         return Err(SpellItemError::Rejected("Creature field footprint"));
     }
     // Reuse the actual ordinary cast sight kernel and its exempt endpoint rule.
-    for (ray, exempt) in crate::spell::world_execution::source_sight_steps(fp, center)
+    for (ray, exempt) in crate::native_world_read::source_sight_steps(fp, center)
         .map_err(|_| SpellItemError::Rejected("Creature field sight geometry"))?
     {
         if exempt {
             continue;
         }
-        let tile = crate::spell::world_execution::qualified_creature_source_tile_in_transaction(
+        let tile = crate::native_world_read::qualified_creature_source_tile_in_transaction(
             tx, authority, room, runtime, objects, ray,
         )
         .await
@@ -699,7 +705,7 @@ async fn prepare_creature_source_fields_in_transaction(
         .ok_or(SpellItemError::Rejected(
             "Creature field Item source absent",
         ))?;
-    if !crate::spell::world_items_execution::source_magic_field(policy)? {
+    if !crate::native_world_items::source_magic_field(policy)? {
         return Err(SpellItemError::Rejected(
             "Creature created Item must be source field",
         ));
@@ -711,7 +717,7 @@ async fn prepare_creature_source_fields_in_transaction(
     let projectile = attrs
         .blocks_projectile
         .ok_or(SpellItemError::Rejected("Creature field projectile source"))?;
-    let definition = crate::spell::world_items_execution::qualify_source_field_chain(
+    let definition = crate::native_world_items::qualify_source_field_chain(
         native,
         QualifiedItemDefinition::from_native_policy(policy).map_err(SpellItemError::Rejected)?,
     )?;
@@ -732,7 +738,7 @@ async fn prepare_creature_source_fields_in_transaction(
         if !positions.insert((pos.x, pos.y, pos.floor)) {
             return Err(SpellItemError::Rejected("Creature field duplicate tile"));
         }
-        let tile = crate::spell::world_execution::qualified_creature_source_tile_in_transaction(
+        let tile = crate::native_world_read::qualified_creature_source_tile_in_transaction(
             tx, authority, room, runtime, objects, pos,
         )
         .await
@@ -744,18 +750,17 @@ async fn prepare_creature_source_fields_in_transaction(
         {
             continue;
         }
-        for (ray, exempt) in crate::spell::world_execution::source_sight_steps(center, pos)
+        for (ray, exempt) in crate::native_world_read::source_sight_steps(center, pos)
             .map_err(|_| SpellItemError::Rejected("Creature field area sight geometry"))?
         {
             if exempt {
                 continue;
             }
-            let sight =
-                crate::spell::world_execution::qualified_creature_source_tile_in_transaction(
-                    tx, authority, room, runtime, objects, ray,
-                )
-                .await
-                .map_err(|_| SpellItemError::Rejected("Creature area ray Map qualification"))?;
+            let sight = crate::native_world_read::qualified_creature_source_tile_in_transaction(
+                tx, authority, room, runtime, objects, ray,
+            )
+            .await
+            .map_err(|_| SpellItemError::Rejected("Creature area ray Map qualification"))?;
             let ray_address = SpellGroundTarget::for_native_tile_read(room, runtime, ray)
                 .map_err(SpellItemError::Rejected)?;
             let blockers =
@@ -774,7 +779,7 @@ async fn prepare_creature_source_fields_in_transaction(
                     &current.definition.revision_ref,
                 )
                 .ok_or(SpellItemError::Rejected("Creature existing Item policy"))?;
-            if crate::spell::world_items_execution::source_magic_field(current_policy)? {
+            if crate::native_world_items::source_magic_field(current_policy)? {
                 if current_policy.record().attributes.field_replaceable != Some(true) {
                     return Err(SpellItemError::Rejected(
                         "Creature field replacement policy",
@@ -831,16 +836,18 @@ async fn prepare_creature_source_fields_in_transaction(
 }
 
 #[allow(clippy::too_many_arguments)]
-async fn prepare_creature_source_removals_in_transaction(
+async fn prepare_creature_source_removals_in_transaction<
+    O: crate::native_world_read::NativeWorldObjectRead + Sync + ?Sized,
+>(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemScopeAuthority,
     runtime: &crate::foundation::ChannelRuntimeV1,
     room: &crate::content::QualifiedNativeEntryRoom,
-    objects: &crate::world_runtime::LocalObjectRuntime,
+    objects: &O,
     _compiled: &crate::content::CompiledFirstProductionContent,
     native: &crate::content::native_gameplay::NativeGameplayState,
     cause: &CreatureGroundCause,
-    proposal: &crate::ai_think::profile_schedule::ProfileAbilityProposal,
+    proposal: &ProfileAbilityProposal,
 ) -> Result<PreparedCreatureGroundOperations> {
     use crate::content::{
         ProjectV2AbilityEffect, ProjectV2AuthoringProfileData, ProjectV2InlineEffectOperation,
@@ -905,14 +912,11 @@ async fn prepare_creature_source_removals_in_transaction(
                     .ok_or(SpellItemError::Rejected("Creature removal y"))?,
                 floor: fp.floor,
             };
-            let _tile =
-                crate::spell::world_execution::qualified_creature_source_tile_in_transaction(
-                    tx, authority, room, runtime, objects, pos,
-                )
-                .await
-                .map_err(|_| {
-                    SpellItemError::Rejected("Creature removal source tile qualification")
-                })?;
+            let _tile = crate::native_world_read::qualified_creature_source_tile_in_transaction(
+                tx, authority, room, runtime, objects, pos,
+            )
+            .await
+            .map_err(|_| SpellItemError::Rejected("Creature removal source tile qualification"))?;
             let address = SpellGroundTarget::for_native_tile_read(room, runtime, pos)
                 .map_err(SpellItemError::Rejected)?;
             let existing = read_creature_scope_tile_in_transaction(tx, authority, &address).await?;
@@ -949,18 +953,20 @@ async fn prepare_creature_source_removals_in_transaction(
 /// independently fenced SQL transaction remain held throughout this call.
 /// Receipt reconciliation precedes re-reading the original mutable Ground.
 #[allow(clippy::too_many_arguments)]
-pub(crate) async fn execute_creature_source_items_in_transaction(
+pub(crate) async fn execute_creature_source_items_in_transaction<
+    O: crate::native_world_read::NativeWorldObjectRead + Sync + ?Sized,
+>(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemScopeAuthority,
     runtime: &crate::foundation::ChannelRuntimeV1,
     fence: &crate::foundation::ScopeRuntimeFence,
     stamp: crate::foundation::RuntimeWorkStamp,
     room: &crate::content::QualifiedNativeEntryRoom,
-    objects: &crate::world_runtime::LocalObjectRuntime,
+    objects: &O,
     compiled: &crate::content::CompiledFirstProductionContent,
     native: &crate::content::native_gameplay::NativeGameplayState,
     creature: &crate::content::ProjectV2DefinitionRef,
-    proposal: &crate::ai_think::profile_schedule::ProfileAbilityProposal,
+    proposal: &ProfileAbilityProposal,
 ) -> Result<CreatureGroundReceipt> {
     let cause = CreatureGroundCause::from_current_native_proposal(
         runtime, fence, stamp, compiled, native, creature, proposal,
@@ -1064,7 +1070,7 @@ pub(crate) async fn execute_creature_source_items_in_transaction(
 #[derive(Debug)]
 pub(crate) struct ScheduledCreatureSourceItems {
     creature: crate::content::ProjectV2DefinitionRef,
-    proposal: crate::ai_think::profile_schedule::ProfileAbilityProposal,
+    proposal: ProfileAbilityProposal,
     issued: crate::foundation::RuntimeWorkStamp,
     source: crate::foundation::MovementPositionSnapshot,
     target: crate::foundation::MovementPositionSnapshot,
@@ -1080,7 +1086,7 @@ impl ScheduledCreatureSourceItems {
         stamp: crate::foundation::RuntimeWorkStamp,
         native: &crate::content::native_gameplay::NativeGameplayState,
         creature: &crate::content::ProjectV2DefinitionRef,
-        proposal: &crate::ai_think::profile_schedule::ProfileAbilityProposal,
+        proposal: &ProfileAbilityProposal,
     ) -> Result<Self> {
         let actor = proposal.issuer;
         let scope =
@@ -1124,14 +1130,16 @@ impl ScheduledCreatureSourceItems {
 /// Whole operation preparation and same-source receipt replay are delegated to
 /// the one shared physical owner above; no Player or cost authority is invented.
 #[allow(clippy::too_many_arguments)]
-pub(crate) async fn execute_scheduled_creature_source_items_in_transaction(
+pub(crate) async fn execute_scheduled_creature_source_items_in_transaction<
+    O: crate::native_world_read::NativeWorldObjectRead + Sync + ?Sized,
+>(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemScopeAuthority,
     runtime: &crate::foundation::ChannelRuntimeV1,
     fence: &crate::foundation::ScopeRuntimeFence,
     stamp: crate::foundation::RuntimeWorkStamp,
     room: &crate::content::QualifiedNativeEntryRoom,
-    objects: &crate::world_runtime::LocalObjectRuntime,
+    objects: &O,
     compiled: &crate::content::CompiledFirstProductionContent,
     native: &crate::content::native_gameplay::NativeGameplayState,
     scheduled: &ScheduledCreatureSourceItems,
@@ -1236,14 +1244,16 @@ async fn creature_scope_item_tags_in_transaction(
 }
 
 #[allow(clippy::too_many_arguments)]
-async fn prepare_creature_source_destroy_in_transaction(
+async fn prepare_creature_source_destroy_in_transaction<
+    O: crate::native_world_read::NativeWorldObjectRead + Sync + ?Sized,
+>(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemScopeAuthority,
     runtime: &crate::foundation::ChannelRuntimeV1,
     room: &crate::content::QualifiedNativeEntryRoom,
-    objects: &crate::world_runtime::LocalObjectRuntime,
+    objects: &O,
     cause: &CreatureGroundCause,
-    proposal: &crate::ai_think::profile_schedule::ProfileAbilityProposal,
+    proposal: &ProfileAbilityProposal,
     items: &[crate::content::ProjectV2DefinitionRef],
 ) -> Result<PreparedCreatureGroundOperations> {
     use crate::content::native_items::{
@@ -1301,12 +1311,11 @@ async fn prepare_creature_source_destroy_in_transaction(
                     .ok_or(SpellItemError::Rejected("Destroy y"))?,
                 floor: origin.floor,
             };
-            let tile =
-                crate::spell::world_execution::qualified_creature_source_tile_in_transaction(
-                    tx, authority, room, runtime, objects, pos,
-                )
-                .await
-                .map_err(|_| SpellItemError::Rejected("Destroy current SourceMap tile"))?;
+            let tile = crate::native_world_read::qualified_creature_source_tile_in_transaction(
+                tx, authority, room, runtime, objects, pos,
+            )
+            .await
+            .map_err(|_| SpellItemError::Rejected("Destroy current SourceMap tile"))?;
             let address = SpellGroundTarget::for_native_tile_read(room, runtime, pos)
                 .map_err(SpellItemError::Rejected)?;
             let snapshot = read_creature_scope_tile_in_transaction(tx, authority, &address).await?;
@@ -1495,13 +1504,13 @@ mod conservative_destroy_tests {
 
 /// Borrow the already locked native owners for the existing semantic SQL pass.
 /// No copied fence, fabricated Player cast, or independently running scheduler.
-struct CreatureSourceScopeContext<'a> {
+struct CreatureSourceScopeContext<'a, O: crate::native_world_read::NativeWorldObjectRead + ?Sized> {
     permit: &'a crate::durability::spell_owner_commit::SpellLanePermit,
     runtime: &'a crate::foundation::ChannelRuntimeV1,
     fence: &'a crate::foundation::ScopeRuntimeFence,
     stamp: crate::foundation::RuntimeWorkStamp,
     room: &'a crate::content::QualifiedNativeEntryRoom,
-    objects: &'a crate::world_runtime::LocalObjectRuntime,
+    objects: &'a O,
     compiled: &'a crate::content::CompiledFirstProductionContent,
     native: &'a crate::content::native_gameplay::NativeGameplayState,
     scheduled: &'a ScheduledCreatureSourceItems,
@@ -1512,7 +1521,9 @@ impl DurabilityRoot {
     /// across this await; transaction authority is re-proved from actual recovery
     /// and the current database assignment inside the pass, never from metadata.
     #[allow(clippy::too_many_arguments)]
-    pub(crate) async fn commit_creature_source_items(
+    pub(crate) async fn commit_creature_source_items<
+        O: crate::native_world_read::NativeWorldObjectRead + Sync + ?Sized,
+    >(
         &self,
         permit: &crate::durability::spell_owner_commit::SpellLanePermit,
         recovery: &ReconciledCharacterAuthority<'_, '_>,
@@ -1521,7 +1532,7 @@ impl DurabilityRoot {
         fence: &crate::foundation::ScopeRuntimeFence,
         stamp: crate::foundation::RuntimeWorkStamp,
         room: &crate::content::QualifiedNativeEntryRoom,
-        objects: &crate::world_runtime::LocalObjectRuntime,
+        objects: &O,
         compiled: &crate::content::CompiledFirstProductionContent,
         native: &crate::content::native_gameplay::NativeGameplayState,
         scheduled: &ScheduledCreatureSourceItems,

@@ -858,6 +858,20 @@ mod canonical_monster_successor_tests;
 #[allow(dead_code)]
 mod creature_icicle;
 
+// Native Content adapters are excluded from standalone Durability path loads.
+#[allow(
+    dead_code,
+    reason = "preserves the spell module's allowance for native adapters awaiting shipping activation"
+)]
+#[path = "durability/native_world_items.rs"]
+mod native_world_items;
+#[allow(
+    dead_code,
+    reason = "preserves the spell module's allowance for native adapters awaiting shipping activation"
+)]
+#[path = "durability/native_world_read.rs"]
+mod native_world_read;
+
 // Full native Creature callbacks stay outside standalone Durability path loads.
 #[path = "durability/creature_source_items.rs"]
 mod creature_source_items;
