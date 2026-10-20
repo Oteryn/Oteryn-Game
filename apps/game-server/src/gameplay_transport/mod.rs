@@ -4179,14 +4179,32 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         let signing_key_id = fresh_grant_signing_key_id(token).ok_or(malformed)?;
         let character_id = domain::CharacterId::from_bytes(*attempt.character_id.as_bytes())
             .map_err(|_| malformed)?;
-        let record = self
-            .root
-            .read_current_character(self.character, character_id)
-            .await
-            .map_err(|error| match error {
-                CharacterAuthorityError::Unavailable(_) => Unavailable,
-                _ => Rejected,
-            })?;
+        // Every durable pass shares the single, non-blocking durability holder, so a
+        // concurrent pass (another attempt, or the node's background work) fails a
+        // pass at once with nothing written. Such a busy holder is retried, bounded,
+        // with a per-attempt backoff so concurrent attempts do not stay in lockstep.
+        let backoff = fresh_admission_backoff(&attempt.game_session_id);
+        let retry = move || async move {
+            tokio::time::sleep(backoff).await;
+        };
+        let mut read_round = 0;
+        let record = loop {
+            read_round += 1;
+            match self
+                .root
+                .read_current_character(self.character, character_id)
+                .await
+            {
+                Ok(record) => break record,
+                Err(CharacterAuthorityError::Unavailable(_))
+                    if fresh_round_retries(Unavailable, read_round >= FRESH_ADMISSION_ROUNDS) =>
+                {
+                    retry().await;
+                }
+                Err(CharacterAuthorityError::Unavailable(_)) => return Err(Unavailable),
+                Err(_) => return Err(Rejected),
+            }
+        };
         // The grant is not authenticated yet: a classified answer here would reveal another
         // world's character, so only 1100/1101 may precede authentication (N8 precedence).
         if record.world_id.as_bytes() != self.world_id.as_bytes() {
@@ -4207,9 +4225,6 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         let (request, reservation) = loop {
             round += 1;
             let last = round >= FRESH_ADMISSION_ROUNDS;
-            let retry = || async {
-                tokio::time::sleep(RECONCILE_BACKOFF).await;
-            };
             // D4: the five-second source-age bound requires evidence fetched for
             // this attempt; S2 custody retains it and the composition decides.
             if self
@@ -4305,7 +4320,15 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             // Capacity is reserved only after every semantic/authentication check,
             // but before the durable GameSession mutation. M+1 therefore rejects
             // without creating a playable/committed session.
-            let reservation = self.reserve_runtime_player(attempt.game_session_id).await?;
+            // A busy holder on the assignment read reserves nothing: retry the round.
+            let reservation = match self.reserve_runtime_player(attempt.game_session_id).await {
+                Ok(reservation) => reservation,
+                Err(refusal) if fresh_round_retries(refusal, last) => {
+                    retry().await;
+                    continue;
+                }
+                Err(refusal) => return Err(refusal),
+            };
             match self
                 .root
                 .commit_composed_fresh_admission(
@@ -4354,6 +4377,13 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                         ReconciliationDisposition::Committed => {}
                         ReconciliationDisposition::DefinitelyNotCurrent(refusal) => {
                             self.rollback_runtime_player(reservation).await?;
+                            // No receipt under the admission locks proves noncommit (for
+                            // example a commit refused on a busy holder): retry the round;
+                            // the grant replay key still admits at most one GameSession.
+                            if fresh_round_retries(refusal, last) {
+                                retry().await;
+                                continue;
+                            }
                             return Err(refusal);
                         }
                         ReconciliationDisposition::DurableNotOwned => {
@@ -4528,6 +4558,20 @@ const FRESH_ADMISSION_ROUNDS: u32 = 3;
 /// Bounded reconciliation of one possibly committed admission.
 const RECONCILE_ATTEMPTS: u32 = 5;
 const RECONCILE_BACKOFF: Duration = Duration::from_millis(200);
+
+/// Whether a fresh-admission step that ended on a proven noncommit is retried. Only an
+/// unavailable outcome (such as a busy durability holder) is transient, and only while
+/// rounds remain; a rejection or a classified refusal is final.
+fn fresh_round_retries(refusal: AdmissionRefusal, last: bool) -> bool {
+    !last && refusal == AdmissionRefusal::Unavailable
+}
+
+/// The fresh-admission retry backoff: the base plus up to 63 ms taken from the random
+/// tail of the attempt's UUIDv7 GameSession id, so concurrent attempts spread out.
+fn fresh_admission_backoff(game_session_id: &GameSessionId) -> Duration {
+    let jitter = u64::from(game_session_id.as_bytes()[15] & 0x3f);
+    RECONCILE_BACKOFF + Duration::from_millis(jitter)
+}
 /// Bound on grace-expiry release attempts (waits for the deadline and store
 /// retries): with the capped backoff, about two minutes of owner unavailability.
 const EXPIRY_ATTEMPTS: u32 = 32;
@@ -5604,6 +5648,29 @@ mod tests {
         0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x71, 0x11, 0x91, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
         0x11,
     ];
+
+    /// A busy durability holder fails a pass at once with nothing written. Fresh admission
+    /// retries that proven noncommit while rounds remain and fails closed on the last one;
+    /// rejections and classified refusals are never retried.
+    #[test]
+    fn fresh_admission_retries_only_transient_noncommits() {
+        assert!(fresh_round_retries(AdmissionRefusal::Unavailable, false));
+        assert!(!fresh_round_retries(AdmissionRefusal::Unavailable, true));
+        for last in [false, true] {
+            assert!(!fresh_round_retries(AdmissionRefusal::Rejected, last));
+            assert!(!fresh_round_retries(
+                AdmissionRefusal::Classified(FoundationProtocolError::AdmissionGrantReplayed),
+                last
+            ));
+        }
+        let low = GameSessionId::decode(&uuid_v7(0x40)).expect("low session");
+        let high = GameSessionId::decode(&uuid_v7(0x7f)).expect("high session");
+        assert_eq!(fresh_admission_backoff(&low), RECONCILE_BACKOFF);
+        assert_eq!(
+            fresh_admission_backoff(&high),
+            RECONCILE_BACKOFF + Duration::from_millis(63)
+        );
+    }
 
     /// N8 (ARCH-LOGIN-FIRST-PACKETS-V1 §1.2): each fresh verifier refusal carries its FND-04A
     /// row; a recovery error stays frameless.
