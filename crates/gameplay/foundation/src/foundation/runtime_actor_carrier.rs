@@ -213,6 +213,24 @@ impl PreProductionContinuityGrant {
             scope_generation,
         }
     }
+
+    /// Test builds only: the World this grant names.
+    #[cfg(any(test, feature = "test-support"))]
+    pub const fn world_id(&self) -> WorldId {
+        self.world_id
+    }
+
+    /// Test builds only: the Channel this grant names.
+    #[cfg(any(test, feature = "test-support"))]
+    pub const fn channel_id(&self) -> ChannelId {
+        self.channel_id
+    }
+
+    /// Test builds only: the scope ownership generation this grant names.
+    #[cfg(any(test, feature = "test-support"))]
+    pub const fn scope_generation(&self) -> ScopeOwnershipGeneration {
+        self.scope_generation
+    }
 }
 
 /// Surviving pre-production namespace continuity state.
