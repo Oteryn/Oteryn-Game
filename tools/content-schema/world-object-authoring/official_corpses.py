@@ -18,6 +18,7 @@ import appearance_membership
 import engine_items
 from item_id_alias_table import tibia_key
 from item_official_navigation import admission_ids
+from source_relocations import read_text as relocated_text
 
 PROFILE = "OTERYN_OFFICIAL_CLIENT_WORLD_APPEARANCE/v1"
 QUALIFICATION = Path(__file__).parent / "samples/qualified-official-corpses-15.30.json"
@@ -118,7 +119,7 @@ def source_inputs():
         raise ValueError("OFFICIAL_CORPSE_SOURCE_ARTIFACT")
     members = {row[0]: row for row in manifest["entries"]}
     admission = document["admission_source"]
-    admitted = admission_ids((ROOT / admission["path"]).read_text(), admission)
+    admitted = admission_ids(relocated_text(ROOT, admission["path"]), admission)
     definitions = {}
     for path in (ROOT / "content/items/definitions").glob("items-*.json"):
         for row in json.loads(path.read_bytes())["records"]:

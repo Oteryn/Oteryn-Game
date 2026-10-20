@@ -13,6 +13,7 @@ from engine_items import CORPSE_FLAGS, GROUND_OR_BORDER_FLAGS, load_wiki_family_
 from item_id_alias_table import tibia_key
 from item_official_navigation import qualification_inputs
 from item_wiki_family_capture import parse_infobox_fields, resolve_infobox_fields
+from source_relocations import read_pinned
 
 ALIAS_PATH = "imports/tibiawiki/facts/items-family-alias26-20261001.json"
 ALIAS_SHA = "2b5b3dbd37c36a84ea2f1605ba42fb815bd322c00e8c81ec1fc55475ce9d0898"
@@ -26,8 +27,8 @@ def digest(data):
 
 
 def checked(root, path, expected):
-    data = (root / path).read_bytes()
-    if digest(data) != expected:
+    data = read_pinned(root, path, expected)
+    if data is None:
         raise ValueError(f"NAVIGATION_SOURCE_DIGEST:{path}")
     return data
 
