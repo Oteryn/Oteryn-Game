@@ -59,14 +59,14 @@ fn grant(seed: u64, generation: u64) -> PreProductionContinuityGrant {
 }
 
 fn position_context(owner: &NamespaceContinuityGuard) -> PreProductionPositionContext {
-    PreProductionPositionContext {
-        world_id: owner.world_id(),
-        channel_id: owner.channel_id(),
-        scope_generation: owner.current_generation(),
-        coordinate_frame_marker: 31,
-        map_revision_marker: 32,
-        content_generation_marker: 33,
-    }
+    PreProductionPositionContext::for_test(
+        owner.world_id(),
+        owner.channel_id(),
+        owner.current_generation(),
+        31,
+        32,
+        33,
+    )
 }
 
 fn fixture(
@@ -209,7 +209,7 @@ fn client_and_ai_lethal_commits_project_their_exact_owner_lineage() {
             .iter()
             .find_map(|slot| match slot {
                 Slot::CreatureOccupied { committed, .. } => {
-                    committed.lethal().map(|record| record.binding.to_vec())
+                    committed.lethal().map(|record| record.binding().to_vec())
                 }
                 _ => None,
             })
@@ -393,7 +393,7 @@ fn projection_failures_preserve_retry_and_lost_response_idempotency() {
         .current_owner_combat_death(&owner)
         .committed_lethal_receipt(actor)
         .expect("conflicting retry receipt");
-    conflicting_retry.projection.occurrence.commit_binding =
+    conflicting_retry.projection_mut().occurrence.commit_binding =
         b"cast:conflicting\0binding".to_vec().into_boxed_slice();
     assert_eq!(
         carrier
@@ -431,9 +431,10 @@ fn projection_failures_preserve_retry_and_lost_response_idempotency() {
         )
     };
     assert_eq!(replay, retained);
-    let wrong_generation = ExactActorRef(ActorRef {
-        actor_local_generation: ActorLocalGeneration(actor.0.actor_local_generation.0 + 1),
-        ..actor.0
+    let wrong_generation = ExactActorRef({
+        let mut wrong = actor.0;
+        wrong.actor_local_generation = ActorLocalGeneration(actor.0.actor_local_generation.0 + 1);
+        wrong
     });
     assert!(
         project_fixed_one_creature_death(
@@ -505,7 +506,7 @@ fn dead_position_mutation_and_changed_receipt_fail_without_projection() {
         .current_owner_combat_death(&owner)
         .committed_lethal_receipt(actor)
         .expect("receipt");
-    changed.projection.position.revision += 1;
+    changed.projection_mut().position.revision += 1;
     assert_eq!(
         carrier
             .current_owner_combat_death(&owner)
@@ -518,7 +519,7 @@ fn dead_position_mutation_and_changed_receipt_fail_without_projection() {
         .current_owner_combat_death(&owner)
         .committed_lethal_receipt(actor)
         .expect("receipt");
-    changed.projection.occurrence.commit_binding = b"changed".to_vec().into_boxed_slice();
+    changed.projection_mut().occurrence.commit_binding = b"changed".to_vec().into_boxed_slice();
     assert_eq!(
         carrier
             .current_owner_combat_death(&owner)
@@ -666,10 +667,11 @@ fn key_fields(
 }
 
 fn d1_fixture(seed: u64) -> CombatDeathFixture {
+    let scope = grant(seed, 1);
     CombatDeathFixture::new(
-        WorldId::decode(&uuid_v7(seed)).expect("world"),
-        ChannelId::decode(&uuid_v7(seed + 1)).expect("channel"),
-        ScopeOwnershipGeneration::new(1).expect("scope"),
+        scope.world_id(),
+        scope.channel_id(),
+        scope.scope_generation(),
     )
     .expect("fixture creature")
 }
@@ -697,7 +699,7 @@ fn committed_lethal_death_key_is_the_exact_owner_actor_ref_and_replay_stable() {
         (
             actor.0.world_id,
             actor.0.channel_id,
-            actor.0.scope_generation,
+            actor.scope_generation(),
             actor.0.actor_local_id.0,
             actor.0.actor_local_generation.0,
         )
@@ -961,9 +963,9 @@ fn receipts(carrier: &ChannelActorCarrier) -> &DamageReceipts {
 
 fn lethal_receipt_count(carrier: &ChannelActorCarrier) -> usize {
     receipts(carrier)
-        .entries
+        .entries()
         .iter()
-        .filter(|record| record.result.health_after == 0)
+        .filter(|record| record.result().health_after == 0)
         .count()
 }
 
@@ -1013,18 +1015,18 @@ fn several_typed_hits_kill_a_twenty_hp_creature_and_the_last_is_the_one_lethal_r
     {
         let committed = receipts(&carrier);
         let ordinals: Vec<u64> = committed
-            .entries
+            .entries()
             .iter()
-            .map(|record| record.ordinal)
+            .map(|record| record.ordinal())
             .collect();
         assert_eq!(ordinals, vec![0, 1, 2, 3]);
         let lethal = committed.lethal().expect("one lethal receipt");
-        assert_eq!(lethal.ordinal, 3);
-        assert_eq!(lethal.binding.as_ref(), lethal_binding.as_slice());
+        assert_eq!(lethal.ordinal(), 3);
+        assert_eq!(lethal.binding(), lethal_binding.as_slice());
         assert!(
-            committed.entries[..3]
+            committed.entries()[..3]
                 .iter()
-                .all(|record| record.binding.as_ref() != lethal_binding.as_slice())
+                .all(|record| record.binding() != lethal_binding.as_slice())
         );
     }
     // Every earlier occurrence still replays its original transition after death.
@@ -1100,10 +1102,10 @@ fn twenty_distinct_single_hp_hits_kill_past_the_sixteen_receipt_bound() {
     {
         let committed = receipts(&carrier);
         assert_eq!(
-            committed.entries.len(),
+            committed.entries().len(),
             COMBAT01_DAMAGE_RECEIPTS_PER_CREATURE_GENERATION_MAX
         );
-        assert_eq!(committed.next_ordinal, 20);
+        assert_eq!(committed.next_ordinal(), 20);
     }
     assert_eq!(lethal_receipt_count(&carrier), 1);
     let mut combat = carrier.current_owner_combat_death(&owner);

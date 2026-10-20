@@ -55,7 +55,7 @@ fn corrupt() -> VipError {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct VipListKey {
     pub account_id: AccountId,
-    pub world_id: WorldId,
+    pub(crate) world_id: WorldId,
 }
 
 /// Future per-session handle resolution supplies this exact retained invitation binding.
@@ -135,7 +135,7 @@ pub enum VipResult {
 pub struct VipReceipt {
     pub result: VipResult,
     /// The acting Account's receipt/rate-list revision, also retained for refusals.
-    pub revision: u64,
+    pub(crate) revision: u64,
     pub replayed: bool,
 }
 
@@ -651,7 +651,7 @@ pub enum VipAddResult {
 pub struct VipAddReceipt {
     pub result: VipAddResult,
     pub entry_no: Option<u64>,
-    pub revision: u64,
+    pub(crate) revision: u64,
     pub replayed: bool,
 }
 // Local private SQL proposal arm; not a protocol, capability, state domain or event ID.
@@ -1118,7 +1118,7 @@ pub enum VipListResult {
 pub struct VipListReceipt {
     pub result: VipListResult,
     pub group_no: Option<u8>,
-    pub revision: u64,
+    pub(crate) revision: u64,
     pub replayed: bool,
 }
 fn list_digest(actor: CharacterId, request: &VipListRequest) -> [u8; 32] {

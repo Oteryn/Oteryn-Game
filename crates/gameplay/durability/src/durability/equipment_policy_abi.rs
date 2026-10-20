@@ -18,7 +18,7 @@ pub fn claims(
     slot: u8,
 ) -> Result<EquipmentClaims, EquipmentError> {
     let value = policy
-        .claims
+        .claims()
         .iter()
         .find(|(s, _)| *s == slot)
         .ok_or(EquipmentError::Rejected("equipment slot"))?;

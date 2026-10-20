@@ -112,9 +112,9 @@ fn missing_vacant_recycled_and_cross_scope_refs_fail_closed() {
     for changed in 0..3 {
         let mut wrong = recycled;
         match changed {
-            0 => wrong.world_id = WorldId::decode(&uuid_v7(40)).expect("world"),
-            1 => wrong.channel_id = ChannelId::decode(&uuid_v7(41)).expect("channel"),
-            _ => wrong.scope_generation = ScopeOwnershipGeneration::new(2).expect("generation"),
+            0 => wrong.world_id = grant(40, 1).world_id(),
+            1 => wrong.channel_id = grant(40, 1).channel_id(),
+            _ => wrong.set_scope_generation(ScopeOwnershipGeneration::new(2).expect("generation")),
         }
         assert_eq!(
             resolve_exact_actor(

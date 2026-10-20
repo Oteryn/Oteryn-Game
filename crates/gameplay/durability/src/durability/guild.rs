@@ -390,7 +390,7 @@ pub fn invalid() -> GuildError {
     DurabilityError::InvalidStoredState.into()
 }
 
-pub fn binding(fence: &CurrentCharacterItemFence, request: &GuildRequest) -> Result<Vec<u8>> {
+pub(crate) fn binding(fence: &CurrentCharacterItemFence, request: &GuildRequest) -> Result<Vec<u8>> {
     let ids = [
         &request.identity.occurrence,
         &request.identity.transaction_id,
@@ -1062,8 +1062,8 @@ enum GuildTargetPreflight {
     Fresh([u8; 16], Option<[u8; 16]>),
 }
 pub struct RankWrite {
-    pub node: NodeIncarnationProof,
-    pub fence: CurrentCharacterItemFence,
+    pub(crate) node: NodeIncarnationProof,
+    pub(crate) fence: CurrentCharacterItemFence,
     pub rank: GuildRankRequest,
     pub binding: Vec<u8>,
     pub account: Option<[u8; 16]>,
@@ -1100,8 +1100,8 @@ impl RankWrite {
 }
 
 pub struct ResignWrite {
-    pub node: NodeIncarnationProof,
-    pub fence: CurrentCharacterItemFence,
+    pub(crate) node: NodeIncarnationProof,
+    pub(crate) fence: CurrentCharacterItemFence,
     pub resign: GuildResignRequest,
     pub binding: Vec<u8>,
     pub accounts: Option<[[u8; 16]; 2]>,
@@ -1144,8 +1144,8 @@ impl ResignWrite {
 }
 
 pub struct EditRanksWrite {
-    pub node: NodeIncarnationProof,
-    pub fence: CurrentCharacterItemFence,
+    pub(crate) node: NodeIncarnationProof,
+    pub(crate) fence: CurrentCharacterItemFence,
     pub edit_ranks: GuildEditRanksRequest,
     pub binding: Vec<u8>,
 }

@@ -367,9 +367,21 @@ fn result(row: &Value, replayed: bool, receipt_id: [u8; 16]) -> Result<PreparedW
 }
 /// Only a trusted real combat/logout owner may provide this proof. The source port
 /// is deliberately sealed; the absent PvP owner never turns into a zero-deadline default.
-pub mod logout_owner_seal {
+mod logout_owner_seal {
     pub trait Sealed {}
 }
+/// The seal module stays private to this crate, so no other crate can forge the proof:
+///
+/// ```
+/// use oteryn_gameplay_durability::durability::world_party::PartyLogoutEligibility;
+/// fn requires_owner_proof<T: PartyLogoutEligibility>(_proof: &T) {}
+/// ```
+///
+/// ```compile_fail
+/// use oteryn_gameplay_durability::durability::world_party::logout_owner_seal;
+/// struct Forged;
+/// impl logout_owner_seal::Sealed for Forged {}
+/// ```
 pub trait PartyLogoutEligibility: logout_owner_seal::Sealed + Send + Sync {
     /// Bind the complete independently current caster occurrence and the actual SQL transaction.
     fn matches(&self, authority: &SpellItemAuthority, transaction_id: &str) -> bool;

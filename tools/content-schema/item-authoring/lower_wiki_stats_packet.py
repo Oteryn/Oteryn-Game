@@ -1,5 +1,5 @@
 """Lower the pinned TibiaWiki Item stat snapshot into the Item stat promotion packet v2
-(ITEM-SEM-2b-1) that `crates/gameplay/content/src/content/item_stats_promotion.rs` applies.
+(ITEM-SEM-2b-1) that `apps/game-server/src/content/item_stats_promotion.rs` applies.
 
 Source policy: tibia.com, then TibiaWiki; Crystal and Canary are hypotheses. So every
 value here comes from the English TibiaWiki snapshot
