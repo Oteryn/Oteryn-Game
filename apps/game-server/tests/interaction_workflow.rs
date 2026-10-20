@@ -1,3 +1,5 @@
+use oteryn_game_server::domain;
+
 #[path = "../src/interaction/mod.rs"]
 mod interaction;
 

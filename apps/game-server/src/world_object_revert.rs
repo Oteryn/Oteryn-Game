@@ -26,11 +26,11 @@ use crate::content::{
     LocalObjectIntentFamily, LogicalCell, LoweredActionId, PlacementKey, ProductionKey,
     TransitionBinding, TransitionEventOwner, TransitionKey,
 };
+use crate::domain::interaction::{ChildOccurrenceRef, InteractionError, SemanticRevisionContext};
 use crate::foundation::{
     GenerationError, RuntimeExecutionOrdinal, RuntimeScopeRefV1, ScopeOwnershipGeneration,
     ScopeRuntimeFence, TerminalSemanticOutcome,
 };
-use crate::interaction::{ChildOccurrenceRef, InteractionError, SemanticRevisionContext};
 use crate::world_runtime::{
     LocalObjectOperation, LocalObjectRuntime, ReferenceContentGeneration,
     ScopeLocalObjectOperation, WorldRuntimeError,

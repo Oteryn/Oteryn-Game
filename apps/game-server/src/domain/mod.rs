@@ -14,6 +14,7 @@ pub mod forge_dust;
 #[cfg(test)]
 #[path = "../durability/forge_tests.rs"]
 mod forge_tests;
+pub mod interaction;
 pub mod item_definition;
 pub mod mail;
 pub mod market;
