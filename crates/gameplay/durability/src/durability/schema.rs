@@ -2,7 +2,7 @@ use crate::durability::{DurabilityError, db};
 use sqlx::postgres::PgConnection;
 use sqlx::{Executor, PgPool, Postgres, Row};
 
-pub static GAME_MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!("../../../apps/game-server/migrations");
+pub static GAME_MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!("./migrations");
 
 const MIGRATION_LEDGER_INSPECTION_SQL: &str = "WITH expected(version, checksum_len) AS (\
      SELECT * FROM unnest($1::BIGINT[], $2::BIGINT[])\
@@ -49,7 +49,7 @@ impl MigrationExecutor {
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 pub async fn connect_runtime(database_url: &str) -> Result<PgPool, DurabilityError> {
     let pool = db::connect(database_url, 4).await?;
     let compatibility = inspect(&pool).await?;
@@ -135,8 +135,11 @@ fn is_missing_table(error: &sqlx::Error) -> bool {
 
 #[cfg(test)]
 mod contract_tests {
-    const MIGRATION: &str = include_str!("../../../../../apps/game-server/migrations/0001_admission_reconnect_journal.sql");
-    const ADMISSION_RECOVERY: &str = include_str!("../../../foundation/src/foundation/admission_recovery_inner.rs");
+    const MIGRATION: &str = include_str!(
+        "../../../../../apps/game-server/migrations/0001_admission_reconnect_journal.sql"
+    );
+    const ADMISSION_RECOVERY: &str =
+        include_str!("../../../foundation/src/foundation/admission_recovery_inner.rs");
 
     fn session_schema() -> Option<&'static str> {
         MIGRATION
@@ -163,15 +166,35 @@ mod contract_tests {
     }
 
     #[test]
-    fn record_derived_current_authority_is_test_only_but_current_facts_remain_public() {
+    fn record_derived_current_authority_is_test_only_but_current_facts_remain_public()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let manifest = include_str!("../../../../../apps/game-server/Cargo.toml");
+        let (production, development) = manifest
+            .split_once("[dev-dependencies]")
+            .ok_or("server dev dependencies")?;
+        let production = production
+            .split_once("[dependencies]")
+            .ok_or("server production dependencies")?
+            .1;
+        assert!(!production.contains("test-support"));
+        for package in ["foundation", "content", "durability"] {
+            let dependency = format!("oteryn-gameplay-{package} = ");
+            let fixture = development
+                .lines()
+                .find(|line| line.starts_with(&dependency))
+                .ok_or("gameplay test dependency")?;
+            assert!(fixture.contains(r#"features = ["test-support"]"#));
+        }
         assert!(
             ADMISSION_RECOVERY.contains("pub fn from_current_facts("),
             "production callers must be able to supply independently observed current authority"
         );
         assert!(
-            ADMISSION_RECOVERY.contains("#[cfg(test)]\n    pub fn from_record("),
+            ADMISSION_RECOVERY
+                .contains("#[cfg(any(test, feature = \"test-support\"))]\n    pub fn from_record("),
             "record-derived current authority must not be production-accessible"
         );
+        Ok(())
     }
 
     #[test]
@@ -187,8 +210,10 @@ mod contract_tests {
         let Some(candidate_impl) = candidate_impl else {
             return;
         };
-        let production_candidate_impl =
-            candidate_impl.replace("#[cfg(test)]\n    pub fn from_record(", "");
+        let production_candidate_impl = candidate_impl.replace(
+            "#[cfg(any(test, feature = \"test-support\"))]\n    pub fn from_record(",
+            "",
+        );
 
         assert!(
             !production_candidate_impl.contains("\n    pub fn from_record("),
@@ -199,7 +224,8 @@ mod contract_tests {
             "immutable record derivation must remain an internal expected-binding helper"
         );
         assert!(
-            candidate_impl.contains("#[cfg(test)]\n    pub fn from_record("),
+            candidate_impl
+                .contains("#[cfg(any(test, feature = \"test-support\"))]\n    pub fn from_record("),
             "the record-derived candidate convenience must remain available only to tests"
         );
     }
@@ -221,10 +247,10 @@ mod contract_tests {
             };
             let production_impl = implementation
                 .replace(
-                    "#[cfg(test)]\n    #[must_use]\n    pub fn from_identity(",
+                    "#[cfg(any(test, feature = \"test-support\"))]\n    #[must_use]\n    pub fn from_identity(",
                     "",
                 )
-                .replace("#[cfg(test)]\n    pub fn from_identity(", "");
+                .replace("#[cfg(any(test, feature = \"test-support\"))]\n    pub fn from_identity(", "");
 
             assert!(
                 !production_impl.contains("\n    pub fn from_identity("),
@@ -235,9 +261,9 @@ mod contract_tests {
                 "{type_name}: immutable identity derivation must remain an internal expected-value helper"
             );
             assert!(
-                implementation.contains("#[cfg(test)]\n    pub fn from_identity(")
+                implementation.contains("#[cfg(any(test, feature = \"test-support\"))]\n    pub fn from_identity(")
                     || implementation
-                        .contains("#[cfg(test)]\n    #[must_use]\n    pub fn from_identity("),
+                        .contains("#[cfg(any(test, feature = \"test-support\"))]\n    #[must_use]\n    pub fn from_identity("),
                 "{type_name}: identity-derived convenience must remain available only to tests"
             );
         }

@@ -11,6 +11,9 @@ publish.workspace = true
 category = "gameplay"
 release-role = "production"
 
+[features]
+test-support = ["oteryn-gameplay-foundation/test-support"]
+
 [dependencies]
 oteryn-gameplay-domain = { version = "=0.1.0", path = "../domain" }
 oteryn-gameplay-foundation = { version = "=0.1.0", path = "../foundation" }
@@ -22,6 +25,7 @@ serde_json = { workspace = true, features = ["raw_value"] }
 sha2.workspace = true
 
 [dev-dependencies]
+oteryn-gameplay-foundation = { version = "=0.1.0", path = "../foundation", features = ["test-support"] }
 oteryn-world-bundle-compiler = { version = "=0.1.0", path = "../../../tools/world-bundle-compiler" }
 zstd.workspace = true
 

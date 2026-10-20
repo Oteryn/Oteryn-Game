@@ -5,32 +5,16 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::BTreeMap;
 
-const INDEX: &str = include_str!(concat!(
-    concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server"),
-    "/../../content/proficiencies/index.json"
-));
+const INDEX: &str = include_str!("../../../../../../../../content/proficiencies/index.json");
 const SHARDS: [&str; 3] = [
-    include_str!(concat!(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server"),
-        "/../../content/proficiencies/proficiencies-00000-00149.json"
-    )),
-    include_str!(concat!(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server"),
-        "/../../content/proficiencies/proficiencies-00150-00299.json"
-    )),
-    include_str!(concat!(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server"),
-        "/../../content/proficiencies/proficiencies-00300-00442.json"
-    )),
+    include_str!("../../../../../../../../content/proficiencies/proficiencies-00000-00149.json"),
+    include_str!("../../../../../../../../content/proficiencies/proficiencies-00150-00299.json"),
+    include_str!("../../../../../../../../content/proficiencies/proficiencies-00300-00442.json"),
 ];
-const BINDINGS: &str = include_str!(concat!(
-    concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server"),
-    "/../../content/proficiencies/bindings.json"
-));
-const RULES: &str = include_str!(concat!(
-    concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server"),
-    "/../../rulesets/progression/weapon-proficiency/progression.json"
-));
+const BINDINGS: &str = include_str!("../../../../../../../../content/proficiencies/bindings.json");
+const RULES: &str = include_str!(
+    "../../../../../../../../rulesets/progression/weapon-proficiency/progression.json"
+);
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ImportedWeaponProficiency {
@@ -296,10 +280,9 @@ fn import(
     if input.schema != "OTERYN_PROFICIENCY_ITEM_BINDINGS/v1" || !input.excluded.is_object() {
         return Err(invalid("proficiency bindings schema"));
     }
-    let source_bytes = include_bytes!(concat!(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server"),
-        "/../../tools/content-schema/item-authoring/samples/item-weapon-proficiency-15-30-7fea90ec.json"
-    ));
+    let source_bytes = include_bytes!(
+        "../../../../../../../../tools/content-schema/item-authoring/samples/item-weapon-proficiency-15-30-7fea90ec.json"
+    );
     if input.source.path
         != "tools/content-schema/item-authoring/samples/item-weapon-proficiency-15-30-7fea90ec.json"
         || input.source.sha256 != crate::content::world_project_sha256(source_bytes)
@@ -429,8 +412,13 @@ mod tests {
         }
         // Every bound weapon resolves to a committed Item definition at the exact revision.
         let mut items = BTreeMap::new();
-        let dir = concat!(
-            concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server"),
+        let dir = format!(
+            "{}{}",
+            if env!("CARGO_PKG_NAME") == "oteryn-game-server" {
+                env!("CARGO_MANIFEST_DIR")
+            } else {
+                concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server")
+            },
             "/../../content/items/definitions"
         );
         for entry in std::fs::read_dir(dir).expect("item definitions") {

@@ -155,6 +155,22 @@ pub struct SpellOccurrenceBinding {
     pub revisions: [String; 5],
 }
 
+impl From<crate::foundation::ability_data::AbilityOccurrence> for SpellOccurrenceBinding {
+    fn from(value: crate::foundation::ability_data::AbilityOccurrence) -> Self {
+        let r = value.revisions();
+        Self {
+            id: value.id().as_str().to_owned(),
+            revisions: [
+                r.ruleset().to_owned(),
+                r.content().to_owned(),
+                r.world_policy().to_owned(),
+                r.formula().to_owned(),
+                r.simulation().to_owned(),
+            ],
+        }
+    }
+}
+
 /// Implemented by the audited actual player-vitals owner, never by a decoded input.
 pub mod player_proof_seal {
     pub trait Sealed {}

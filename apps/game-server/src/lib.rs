@@ -80,8 +80,8 @@ mod interaction_chest_use;
 // the chest `USE`.
 mod achievement_catalogue;
 
-pub use oteryn_gameplay_durability::character_bootstrap_intent;
 pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
+pub use oteryn_gameplay_durability::character_bootstrap_intent;
 #[allow(
     dead_code,
     unused_imports,
@@ -865,9 +865,9 @@ mod creature_icicle;
 
 pub(crate) use durability::{native_world_items, native_world_read};
 
-// Full native Creature callbacks stay outside standalone Durability path loads.
-#[path = "../../../crates/gameplay/durability/src/durability/creature_source_items.rs"]
-mod creature_source_items;
+pub(crate) use durability::creature_source_items;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+pub(crate) use durability::mail_text_policy;
 
 #[cfg(test)]
 mod security;
@@ -884,8 +884,6 @@ mod domain_market_tests;
 #[cfg(test)]
 #[path = "lifted_tests/domain_timed_item_host_tests.rs"]
 mod domain_timed_item_host_tests;
-#[path = "../../../crates/gameplay/durability/src/durability/mail_text_policy.rs"]
-mod mail_text_policy;
 
 #[cfg(test)]
 #[path = "lifted_tests/content_executable_catalog_tests.rs"]

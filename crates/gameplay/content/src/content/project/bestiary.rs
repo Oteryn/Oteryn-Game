@@ -13,19 +13,27 @@ const INDEX: &[u8] = include_bytes!("../../../../../../content/creatures/definit
 const SHARDS: [(&str, &[u8]); 4] = [
     (
         "content/creatures/definitions/creatures-00000-00499.json",
-        include_bytes!("../../../../../../content/creatures/definitions/creatures-00000-00499.json"),
+        include_bytes!(
+            "../../../../../../content/creatures/definitions/creatures-00000-00499.json"
+        ),
     ),
     (
         "content/creatures/definitions/creatures-00500-00999.json",
-        include_bytes!("../../../../../../content/creatures/definitions/creatures-00500-00999.json"),
+        include_bytes!(
+            "../../../../../../content/creatures/definitions/creatures-00500-00999.json"
+        ),
     ),
     (
         "content/creatures/definitions/creatures-01000-01499.json",
-        include_bytes!("../../../../../../content/creatures/definitions/creatures-01000-01499.json"),
+        include_bytes!(
+            "../../../../../../content/creatures/definitions/creatures-01000-01499.json"
+        ),
     ),
     (
         "content/creatures/definitions/creatures-01500-01862.json",
-        include_bytes!("../../../../../../content/creatures/definitions/creatures-01500-01862.json"),
+        include_bytes!(
+            "../../../../../../content/creatures/definitions/creatures-01500-01862.json"
+        ),
     ),
 ];
 const CREATURE_COUNT: usize = 1_863;

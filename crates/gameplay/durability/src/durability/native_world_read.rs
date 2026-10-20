@@ -275,10 +275,7 @@ pub async fn tile_in_transaction<'owner, E>(
 
 /// A STEP consumer must first obtain the actual low-level standing read in this
 /// same held transaction. A detached previous tick read cannot call this port.
-pub async fn qualified_standing_tile_in_transaction<
-    'owner,
-    O: NativeWorldObjectRead + ?Sized,
->(
+pub async fn qualified_standing_tile_in_transaction<'owner, O: NativeWorldObjectRead + ?Sized>(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     read: &crate::durability::spell_item_transaction::StandingTileRead,
     room: &'owner crate::content::QualifiedNativeEntryRoom,
@@ -378,10 +375,7 @@ pub async fn qualified_source_step_probe_in_transaction<
     })
 }
 
-pub async fn qualified_combat_tile_in_transaction<
-    'owner,
-    O: NativeWorldObjectRead + ?Sized,
->(
+pub async fn qualified_combat_tile_in_transaction<'owner, O: NativeWorldObjectRead + ?Sized>(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     authority: &crate::durability::spell_item_transaction::SpellItemAuthority,
     room: &'owner crate::content::QualifiedNativeEntryRoom,

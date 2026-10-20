@@ -398,10 +398,7 @@ impl SpellBook {
     }
     /// Inspect the complete source index without granting a cast lookup. An
     /// unselected alias remains represented and cannot be cast via its index.
-    pub fn source_indexed(
-        &self,
-        index: std::num::NonZeroU32,
-    ) -> Option<(&SpellDefinition, bool)> {
+    pub fn source_indexed(&self, index: std::num::NonZeroU32) -> Option<(&SpellDefinition, bool)> {
         let index = usize::try_from(index.get() - 1).ok()?;
         self.spells
             .get(index)

@@ -1256,6 +1256,22 @@ fn decode_receipt(row: &sqlx::postgres::PgRow) -> StoredResult<CommittedQuestTra
     })
 }
 
+/// The production session copy (QUEST-STATE-0 §7).
+impl quest::log::QuestLogFacts for QuestStateCopy {
+    fn track_value(&self, track: &str) -> Option<i64> {
+        self.tracks().get(track).copied()
+    }
+
+    fn quest_state(&self, quest: &str) -> Option<quest::log::QuestLogState<'_>> {
+        self.states()
+            .get(quest)
+            .map(|state| quest::log::QuestLogState {
+                pinned_content_revision: &state.pinned_content_revision,
+                completed: state.completed,
+            })
+    }
+}
+
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 mod tests {

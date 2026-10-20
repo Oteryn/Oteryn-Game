@@ -278,13 +278,15 @@ fn normalized_item_weight(
 }
 
 /// D1211: resolve every locked carried definition from this exact admitted native generation.
-impl ItemWeightLookup for NativeGameplayState {
+pub(super) struct NativeItemWeights<'a>(pub(super) &'a NativeGameplayState);
+
+impl ItemWeightLookup for NativeItemWeights<'_> {
     fn generation_digest(&self) -> [u8; 32] {
-        self.source_digest()
+        self.0.source_digest()
     }
 
     fn weight_of(&self, definition: &TypedDefinitionRef) -> Result<u32, ItemWeightRefused> {
-        let facts = generation_item_facts(self, definition)
+        let facts = generation_item_facts(self.0, definition)
             .map_err(|_| ItemWeightRefused::DefinitionMismatch)?;
         if facts.stack == ItemStackClass::Unknown {
             return Err(ItemWeightRefused::DefinitionMismatch);
@@ -374,7 +376,7 @@ pub(super) async fn take_corpse_entry(
     let request = ItemTransferRequest {
         command: crate::foundation::CommandRef::new(command.game_session_id, command_id),
         source_item_instance_id: entry_id,
-        weight_generation_digest: native.generation_digest(),
+        weight_generation_digest: NativeItemWeights(native).generation_digest(),
         destination: ItemTransferDestination::MainBackpack,
         item,
         backpack,
@@ -389,7 +391,7 @@ pub(super) async fn take_corpse_entry(
             admission.holder,
             fence,
             request,
-            native,
+            &NativeItemWeights(native),
         )
         .await?;
     Ok(admission
@@ -400,7 +402,7 @@ pub(super) async fn take_corpse_entry(
             admission.holder,
             fence,
             &mut candidate,
-            native,
+            &NativeItemWeights(native),
         )
         .await?)
 }

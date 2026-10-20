@@ -79,11 +79,9 @@ impl SqlstateKind {
     }
 }
 
-#[cfg(test)]
-pub mod tests {
+#[cfg(any(test, feature = "test-support"))]
+pub mod test_support {
     #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
-    use super::*;
-
     /// Every code is the registry's, with the same name, category and progression.
     pub fn assert_in_registry(codes: &[oteryn_error_codes::ErrorCode]) {
         let registry: serde_json::Value = serde_json::from_str(include_str!(
@@ -112,6 +110,13 @@ pub mod tests {
             );
         }
     }
+}
+
+#[cfg(test)]
+mod tests {
+    #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
+    use super::test_support::assert_in_registry;
+    use super::*;
 
     #[test]
     fn sqlstate_codes_match_the_registry() {

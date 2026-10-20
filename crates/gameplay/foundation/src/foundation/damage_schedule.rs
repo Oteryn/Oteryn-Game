@@ -90,10 +90,7 @@ impl DamageSchedule {
             }
         }
     }
-    pub fn compile(
-        &self,
-        facts: &ApplicationFacts<'_>,
-    ) -> Result<DamageCursor, ConditionRefusal> {
+    pub fn compile(&self, facts: &ApplicationFacts<'_>) -> Result<DamageCursor, ConditionRefusal> {
         if !self.validate() {
             return Err(ConditionRefusal::DrawFailed);
         }

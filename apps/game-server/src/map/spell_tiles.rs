@@ -45,6 +45,8 @@ use super::facts::ItemDefinition;
 use super::overlay::TilePos;
 use super::view::placement_of;
 use crate::content::{NativeSpellTileFlags, QualifiedSpellTile};
+#[cfg(test)]
+use crate::map::boot::BundleCollisionIndexExt;
 use oteryn_world_bundle::bundle::{Family, Manifest, Sector, TerrainKind};
 use std::collections::{BTreeSet, HashMap};
 use std::sync::Arc;
@@ -736,8 +738,9 @@ pub(crate) mod tests {
             map_revision: format!("sha256:{hex}"),
             start,
         };
-        let controller =
-            crate::content::native_gameplay::tests::activated_with_item_keys(Some(ITEM_KEYS));
+        let controller = crate::content::native_gameplay::test_support::activated_with_item_keys(
+            Some(ITEM_KEYS),
+        );
         let state = controller
             .active()
             .expect("active")

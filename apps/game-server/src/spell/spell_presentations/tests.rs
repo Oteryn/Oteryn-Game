@@ -237,7 +237,7 @@ fn ordinary_passive_cue_fixture() -> (
     ExactActorRef,
     GameSessionId,
 ) {
-    let controller = crate::content::native_gameplay::tests::activated_with_item_keys(None);
+    let controller = crate::content::native_gameplay::test_support::activated_with_item_keys(None);
     let generation = controller.active().unwrap();
     let identity = generation.identity();
     let active = generation.native_gameplay().unwrap().clone();

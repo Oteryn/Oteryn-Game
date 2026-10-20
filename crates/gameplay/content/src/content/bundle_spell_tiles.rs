@@ -58,10 +58,7 @@ impl Eq for BundleSpellTiles {}
 impl BundleSpellTiles {
     /// The facts of `cell` (legacy `z`, native floor `-z`): absent where the bundle holds no
     /// tile, unknown where a fact has no source (see the module documentation).
-    pub fn lookup(
-        &self,
-        cell: LogicalCell,
-    ) -> Result<&QualifiedSpellTile, SpellTileLookupError> {
+    pub fn lookup(&self, cell: LogicalCell) -> Result<&QualifiedSpellTile, SpellTileLookupError> {
         let pos = tile_pos(cell).ok_or(SpellTileLookupError::Absent)?;
         let index = self
             .base

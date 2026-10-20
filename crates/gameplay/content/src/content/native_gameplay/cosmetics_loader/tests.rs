@@ -15,7 +15,14 @@ fn debug(error: impl std::fmt::Debug) -> String {
 fn repository() -> PathBuf {
     std::env::var_os("OTERYN_TEST_COSMETICS_REPOSITORY")
         .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server")).join("../.."))
+        .unwrap_or_else(|| {
+            PathBuf::from(if env!("CARGO_PKG_NAME") == "oteryn-game-server" {
+                env!("CARGO_MANIFEST_DIR")
+            } else {
+                concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server")
+            })
+            .join("../..")
+        })
 }
 
 struct Fixture {

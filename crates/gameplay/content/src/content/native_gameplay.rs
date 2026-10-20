@@ -958,14 +958,10 @@ impl NativeGameplayState {
     ) -> Option<&super::spell_familiar_defenses::CompiledFamiliarDefenses> {
         self.familiar_defenses.as_ref()
     }
-    pub fn familiar_config(
-        &self,
-    ) -> Option<&super::spell_familiar_config::CompiledFamiliarConfig> {
+    pub fn familiar_config(&self) -> Option<&super::spell_familiar_config::CompiledFamiliarConfig> {
         self.familiar_config.as_ref()
     }
-    pub fn wheel_profile(
-        &self,
-    ) -> Option<&super::spell_wheel_profile::CompiledWheelProfile> {
+    pub fn wheel_profile(&self) -> Option<&super::spell_wheel_profile::CompiledWheelProfile> {
         self.wheel_profile.as_ref()
     }
     /// Stage invokes this only after the complete outer artifact matches independent issuance.
@@ -2009,23 +2005,22 @@ fn creature_policies(
     Ok(records)
 }
 
-#[cfg(test)]
-pub mod tests {
+#[cfg(any(test, feature = "test-support"))]
+pub mod test_support {
     #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
     use super::*;
-    use crate::content::production::{StagedGeneration, test_source};
+    use crate::content::production::test_source;
     use crate::content::{
         ContentActivationController, NativeEntryActivationIssuance, NodeBootQuiescence,
-        activate_native_entry_room_with_gameplay, qualify_native_entry_room,
-        qualify_native_entry_room_with_gameplay,
+        activate_native_entry_room_with_gameplay, qualify_native_entry_room_with_gameplay,
     };
-    use serde_json::Value;
-    fn pinned(bytes: &[u8]) -> PinnedGameplayBytes {
+    pub(super) fn pinned(bytes: &[u8]) -> PinnedGameplayBytes {
         PinnedGameplayBytes {
             bytes: bytes.to_vec(),
             sha256: hex(sha256(bytes)),
         }
     }
+
     pub(super) fn input() -> NativeGameplayInput {
         NativeGameplayInput {
             cosmetics: NativeGameplayInput::unavailable_cosmetics(),
@@ -2054,6 +2049,123 @@ pub mod tests {
             loot_tables: None,
         }
     }
+
+    pub(super) fn v6_input() -> NativeGameplayInput {
+        let mut supplied = input();
+        supplied.item_profiles = Some(pinned(
+            br#"{"schema":"OTERYN_NATIVE_ITEM_PROFILES/v1","records":[]}"#,
+        ));
+        supplied.spell_appearances = Some(pinned(include_bytes!(
+            "../../../../../tools/content-schema/native-gameplay/spell_appearances.json"
+        )));
+        supplied.build_training = Some(NativeTrainingInput {
+            profile: pinned(include_bytes!(
+                "../../../../../tools/content-schema/native-gameplay/build-training.json"
+            )),
+            content_revision: "build-content-r1".into(),
+            magnitude_policy: crate::foundation::magnitude_policy::MagnitudePolicy::Strict,
+        });
+        supplied.familiar_config = Some(pinned(include_bytes!(
+            "../../../../../tools/content-schema/native-gameplay/familiar-config.json"
+        )));
+        supplied.wheel_profile = Some(pinned(include_bytes!(
+            "../../../../../tools/content-schema/native-gameplay/wheel-profile.json"
+        )));
+        supplied
+    }
+
+    /// The V6 input (with progression), plus `item_keys` as its Item key set, which selects V7.
+    pub(super) fn v7_input(item_keys: Option<&[u8]>) -> NativeGameplayInput {
+        let mut supplied = v6_input();
+        supplied.progression = Some(pinned(
+            &super::super::character_progression_content::test_support::section_bytes(),
+        ));
+        supplied.item_keys = item_keys.map(pinned);
+        supplied
+    }
+
+    /// A controller with the native gameplay generation activated at node boot: V7 with
+    /// `item_keys` as its pinned Item key set section, or V6 without one.
+    pub fn activated_with_item_keys(item_keys: Option<&[u8]>) -> ContentActivationController {
+        let world = test_source(1).unwrap().world_id;
+        let supplied = v7_input(item_keys);
+        let room = qualify_native_entry_room_with_gameplay(world, &supplied).unwrap();
+        let issuance = NativeEntryActivationIssuance {
+            world_id: world,
+            activation_sequence: 1,
+            server_artifact_digest: room.compiled().server_digest(),
+            client_artifact_digest: room.compiled().client_digest(),
+            frame_binding_digest: room.frame_binding().digest(),
+        };
+        let mut controller = ContentActivationController::new();
+        activate_native_entry_room_with_gameplay(
+            &mut controller,
+            &NodeBootQuiescence::before_channel_runtime(),
+            world,
+            &issuance,
+            &supplied,
+        )
+        .unwrap();
+        controller
+    }
+
+    /// The committed production manifest's generation, activated at node boot for `world`: every
+    /// pinned section including `loot_tables` (V8), so the reward table carries the real creature
+    /// rows (the rat's 5 XP and `oteryn:loot.creature.rat`). `source_world` replaces the
+    /// manifest's optional source-world addon (`None`: the accepted entry room). The returned pin
+    /// is the activation's own, which the Channel runtime and its combat room are built from.
+    pub fn activated_with_loot_tables(
+        world: crate::foundation::WorldId,
+        source_world: Option<&[u8]>,
+    ) -> (
+        ContentActivationController,
+        crate::content::NativeEntryContentPin,
+    ) {
+        let manifest = Path::new(if env!("CARGO_PKG_NAME") == "oteryn-game-server" {
+            env!("CARGO_MANIFEST_DIR")
+        } else {
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server")
+        })
+        .join("../../content/spells.manifest.json");
+        let mut supplied = NativeGameplayInput::from_manifest(&manifest).unwrap();
+        assert!(
+            supplied.loot_tables.is_some(),
+            "the manifest pins loot_tables"
+        );
+        supplied.source_world = source_world.map(pinned);
+        let room = crate::content::qualify_selected_native_gameplay_room(world, &supplied).unwrap();
+        let issuance = NativeEntryActivationIssuance {
+            world_id: world,
+            activation_sequence: 1,
+            server_artifact_digest: room.compiled().server_digest(),
+            client_artifact_digest: room.compiled().client_digest(),
+            frame_binding_digest: room.frame_binding().digest(),
+        };
+        let mut controller = ContentActivationController::new();
+        let pin = activate_native_entry_room_with_gameplay(
+            &mut controller,
+            &NodeBootQuiescence::before_channel_runtime(),
+            world,
+            &issuance,
+            &supplied,
+        )
+        .unwrap();
+        (controller, pin)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
+    use super::test_support::*;
+    use super::*;
+    use crate::content::production::{StagedGeneration, test_source};
+    use crate::content::{
+        ContentActivationController, NativeEntryActivationIssuance, NodeBootQuiescence,
+        activate_native_entry_room_with_gameplay, qualify_native_entry_room,
+        qualify_native_entry_room_with_gameplay,
+    };
+    use serde_json::Value;
     /// Explicit local qualification of the real composed input, without runtime activation.
     #[test]
     #[ignore = "requires OTERYN_FULL_SPELL_TEST_MANIFEST from the explicit source producer"]
@@ -2687,34 +2799,11 @@ pub mod tests {
             .is_err()
         );
     }
-    fn v6_input() -> NativeGameplayInput {
-        let mut supplied = input();
-        supplied.item_profiles = Some(pinned(
-            br#"{"schema":"OTERYN_NATIVE_ITEM_PROFILES/v1","records":[]}"#,
-        ));
-        supplied.spell_appearances = Some(pinned(include_bytes!(
-            "../../../../../tools/content-schema/native-gameplay/spell_appearances.json"
-        )));
-        supplied.build_training = Some(NativeTrainingInput {
-            profile: pinned(include_bytes!(
-                "../../../../../tools/content-schema/native-gameplay/build-training.json"
-            )),
-            content_revision: "build-content-r1".into(),
-            magnitude_policy: crate::foundation::magnitude_policy::MagnitudePolicy::Strict,
-        });
-        supplied.familiar_config = Some(pinned(include_bytes!(
-            "../../../../../tools/content-schema/native-gameplay/familiar-config.json"
-        )));
-        supplied.wheel_profile = Some(pinned(include_bytes!(
-            "../../../../../tools/content-schema/native-gameplay/wheel-profile.json"
-        )));
-        supplied
-    }
     #[test]
     fn v6_progression_section_is_pinned_strict_and_older_pins_carry_none() {
         let world = test_source(1).unwrap().world_id;
         let baseline = qualify_native_entry_room(world).unwrap();
-        let section = super::super::character_progression_content::tests::section_bytes();
+        let section = super::super::character_progression_content::test_support::section_bytes();
         let v5 = compile_native_gameplay(baseline.compiled(), &v6_input()).unwrap();
         assert!(
             decode(&v5.server_artifact)
@@ -2762,80 +2851,6 @@ pub mod tests {
         let mut invalid_section = v6_input();
         invalid_section.progression = Some(pinned(b"{}"));
         assert!(compile_native_gameplay(baseline.compiled(), &invalid_section).is_err());
-    }
-    /// The V6 input (with progression), plus `item_keys` as its Item key set, which selects V7.
-    fn v7_input(item_keys: Option<&[u8]>) -> NativeGameplayInput {
-        let mut supplied = v6_input();
-        supplied.progression = Some(pinned(
-            &super::super::character_progression_content::tests::section_bytes(),
-        ));
-        supplied.item_keys = item_keys.map(pinned);
-        supplied
-    }
-    /// A controller with the native gameplay generation activated at node boot: V7 with
-    /// `item_keys` as its pinned Item key set section, or V6 without one.
-    pub fn activated_with_item_keys(
-        item_keys: Option<&[u8]>,
-    ) -> ContentActivationController {
-        let world = test_source(1).unwrap().world_id;
-        let supplied = v7_input(item_keys);
-        let room = qualify_native_entry_room_with_gameplay(world, &supplied).unwrap();
-        let issuance = NativeEntryActivationIssuance {
-            world_id: world,
-            activation_sequence: 1,
-            server_artifact_digest: room.compiled().server_digest(),
-            client_artifact_digest: room.compiled().client_digest(),
-            frame_binding_digest: room.frame_binding().digest(),
-        };
-        let mut controller = ContentActivationController::new();
-        activate_native_entry_room_with_gameplay(
-            &mut controller,
-            &NodeBootQuiescence::before_channel_runtime(),
-            world,
-            &issuance,
-            &supplied,
-        )
-        .unwrap();
-        controller
-    }
-    /// The committed production manifest's generation, activated at node boot for `world`: every
-    /// pinned section including `loot_tables` (V8), so the reward table carries the real creature
-    /// rows (the rat's 5 XP and `oteryn:loot.creature.rat`). `source_world` replaces the
-    /// manifest's optional source-world addon (`None`: the accepted entry room). The returned pin
-    /// is the activation's own, which the Channel runtime and its combat room are built from.
-    pub fn activated_with_loot_tables(
-        world: crate::foundation::WorldId,
-        source_world: Option<&[u8]>,
-    ) -> (
-        ContentActivationController,
-        crate::content::NativeEntryContentPin,
-    ) {
-        let manifest =
-            Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server")).join("../../content/spells.manifest.json");
-        let mut supplied = NativeGameplayInput::from_manifest(&manifest).unwrap();
-        assert!(
-            supplied.loot_tables.is_some(),
-            "the manifest pins loot_tables"
-        );
-        supplied.source_world = source_world.map(pinned);
-        let room = crate::content::qualify_selected_native_gameplay_room(world, &supplied).unwrap();
-        let issuance = NativeEntryActivationIssuance {
-            world_id: world,
-            activation_sequence: 1,
-            server_artifact_digest: room.compiled().server_digest(),
-            client_artifact_digest: room.compiled().client_digest(),
-            frame_binding_digest: room.frame_binding().digest(),
-        };
-        let mut controller = ContentActivationController::new();
-        let pin = activate_native_entry_room_with_gameplay(
-            &mut controller,
-            &NodeBootQuiescence::before_channel_runtime(),
-            world,
-            &issuance,
-            &supplied,
-        )
-        .unwrap();
-        (controller, pin)
     }
     #[test]
     fn production_manifest_activates_with_the_rat_reward_row() {
@@ -2936,7 +2951,12 @@ pub mod tests {
     /// RAW SYNTHETIC facts only, with real pinned source bytes. This is never production
     /// population, accepted Wiki/sex/starter evidence or permission to activate a catalogue.
     fn cosmetics_test_packet() -> Value {
-        let root = Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server")).join("../..");
+        let root = Path::new(if env!("CARGO_PKG_NAME") == "oteryn-game-server" {
+            env!("CARGO_MANIFEST_DIR")
+        } else {
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server")
+        })
+        .join("../..");
         let source = root.join("imports/cipsoft-appearances/outfits");
         let manifest = std::fs::read(source.join("manifest.json")).unwrap();
         let parsed: Value = serde_json::from_slice(&manifest).unwrap();
@@ -3108,8 +3128,12 @@ pub mod tests {
     }
     #[test]
     fn v6_manifest_with_cosmetics_requires_the_loot_tables_closure() {
-        let committed =
-            Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server")).join("../../content/spells.manifest.json");
+        let committed = Path::new(if env!("CARGO_PKG_NAME") == "oteryn-game-server" {
+            env!("CARGO_MANIFEST_DIR")
+        } else {
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server")
+        })
+        .join("../../content/spells.manifest.json");
         let directory = committed.parent().unwrap();
         let mut manifest: Value =
             serde_json::from_slice(&std::fs::read(&committed).unwrap()).unwrap();
@@ -3391,8 +3415,12 @@ pub mod tests {
     }
     #[test]
     fn provisioning_reads_caller_files_and_rejects_partial_or_stale_pins() {
-        let directory = Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server"))
-            .join("../../tools/content-schema/native-gameplay");
+        let directory = Path::new(if env!("CARGO_PKG_NAME") == "oteryn-game-server" {
+            env!("CARGO_MANIFEST_DIR")
+        } else {
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server")
+        })
+        .join("../../tools/content-schema/native-gameplay");
         let loaded = NativeGameplayInput::from_manifest(&directory.join("manifest.json")).unwrap();
         assert_eq!(loaded.catalog.bytes, input().catalog.bytes);
         let incomplete: Result<ProvisioningManifest, _> = serde_json::from_slice(br#"{"schema":"OTERYN_NATIVE_GAMEPLAY_MANIFEST/v1","catalog":{"path":"catalog.json","sha256":"bad"}}"#);
@@ -3725,7 +3753,7 @@ mod source_item_closure_tests {
     }
 }
 /// Test-only use of the actual active native policy decoder, not manually forged stats/appearance.
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 pub fn callback_source_native_test_policies(
     creature_bytes: &[u8],
     presentation_bytes: &[u8],
@@ -3742,11 +3770,9 @@ pub fn callback_source_native_test_policies(
     .map_err(|_| invalid("callback native source fixture policy pin"))
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 #[allow(clippy::expect_used)]
-pub fn retained_callback_native_fixture(
-    world: crate::foundation::WorldId,
-) -> NativeGameplayState {
+pub fn retained_callback_native_fixture(world: crate::foundation::WorldId) -> NativeGameplayState {
     let path = std::env::var_os("OTERYN_FULL_SPELL_TEST_MANIFEST")
         .expect("explicit actual native manifest required for callback authority test");
     let input = NativeGameplayInput::from_manifest(Path::new(&path))
@@ -3772,7 +3798,7 @@ mod callback_membership_tests {
     use super::*;
     #[test]
     fn callback_membership_requires_current_digest_and_exact_loaded_profile() {
-        let input = super::tests::input();
+        let input = super::test_support::input();
         let world = crate::foundation::WorldId::decode(&[
             1, 144, 0, 0, 0, 8, 112, 0, 128, 0, 0, 0, 0, 0, 0, 8,
         ])

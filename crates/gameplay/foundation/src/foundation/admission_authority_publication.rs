@@ -423,7 +423,7 @@ pub struct AdmissionAuthorityPublicationChangeV1 {
 /// implement the sealing supertrait. Raw fields and receipts cannot register it.
 ///
 /// ```compile_fail
-/// use crate::foundation::admission_authority_publication::*;
+/// use oteryn_gameplay_foundation::foundation::admission_authority_publication::*;
 /// struct Caller;
 /// impl AdmissionAuthorityOwningPublisherV1 for Caller {
 ///     fn resolve_publication(&self, _: i64) -> Result<Vec<AdmissionAuthorityPublicationChangeV1>, AdmissionAuthorityPublicationErrorV1> {
@@ -771,10 +771,10 @@ pub struct AdmissionClaimTransitionEvidenceV1 {
 
 /// Registration belongs to the owning Game adapter, never to an audit/receipt consumer.
 /// ```compile_fail
-/// use crate::foundation::admission_authority_publication::*;
+/// use oteryn_gameplay_foundation::foundation::admission_authority_publication::*;
 /// struct Unregistered;
 /// impl AdmissionClaimOwningSourceV1 for Unregistered {
-///     fn prepare_fresh_claim(&self, _: &crate::foundation::fresh_admission_durability::FreshAdmissionAuditBindingV1, _: i64)
+///     fn prepare_fresh_claim(&self, _: &oteryn_gameplay_foundation::foundation::fresh_admission_durability::FreshAdmissionAuditBindingV1, _: i64)
 ///         -> Result<AdmissionClaimTransitionEvidenceV1, AdmissionAuthorityPublicationErrorV1> {
 ///         Err(AdmissionAuthorityPublicationErrorV1::Unavailable)
 ///     }
@@ -797,7 +797,7 @@ pub trait AdmissionClaimOwningSourceV1: fresh_source_sealed::Sealed {
 
 /// Prepared source changes remain inert until the matching atomic session COMMIT.
 /// ```compile_fail
-/// use crate::foundation::admission_authority_publication::*;
+/// use oteryn_gameplay_foundation::foundation::admission_authority_publication::*;
 /// fn forge(history: AdmissionClaimTransitionEvidenceV1) -> FreshAdmissionClaimTransitionV1 {
 ///     FreshAdmissionClaimTransitionV1::from(history)
 /// }
@@ -913,7 +913,7 @@ impl AdmissionClaimLifecycleEvidenceV1 {
 /// Only a registered owner can prepare this inert release, and it must accompany
 /// the exact fenced canonical terminal session write. A receipt is not authority.
 /// ```compile_fail
-/// use crate::foundation::admission_authority_publication::*;
+/// use oteryn_gameplay_foundation::foundation::admission_authority_publication::*;
 /// fn forge(history: AdmissionClaimLifecycleEvidenceV1) -> TerminalReleaseClaimTransitionV1 {
 ///     TerminalReleaseClaimTransitionV1::from(history)
 /// }
@@ -956,7 +956,7 @@ impl TerminalReleaseClaimTransitionV1 {
 /// Inert owner-authored replacement; canonical reconnect V1/V2 authorization
 /// and all candidate/session effects remain the durable adapter's prerequisites.
 /// ```compile_fail
-/// use crate::foundation::admission_authority_publication::*;
+/// use oteryn_gameplay_foundation::foundation::admission_authority_publication::*;
 /// fn forge(history: AdmissionClaimLifecycleEvidenceV1) -> TerminalReplacementClaimTransitionV1 {
 ///     TerminalReplacementClaimTransitionV1::from(history)
 /// }
@@ -2376,7 +2376,7 @@ pub trait PostGraceClaimOwningSourceV1:
 /// Inert owner-authored claim successors, usable only with the matching canonical
 /// post-grace transaction and independently current Recovery authorization.
 /// ```compile_fail
-/// use crate::foundation::admission_authority_publication::*;
+/// use oteryn_gameplay_foundation::foundation::admission_authority_publication::*;
 /// fn forge(history: PostGraceClaimEvidenceV1) -> PostGraceClaimTransitionV1 { history.into() }
 /// ```
 #[derive(Debug, Clone)]

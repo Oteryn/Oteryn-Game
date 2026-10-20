@@ -7,7 +7,7 @@
 //! locked owner resolution. This read does not certify a whole-database restore.
 //!
 //! ```compile_fail
-//! use crate::durability::recovery_evidence_composition::RecoveryEvidenceComposition;
+//! use oteryn_gameplay_durability::durability::recovery_evidence_composition::RecoveryEvidenceComposition;
 //! ```
 
 use super::db::{begin_semantic_transaction, commit_semantic_transaction};

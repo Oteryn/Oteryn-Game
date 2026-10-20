@@ -2168,10 +2168,7 @@ mod death_build_postgres {
                   may coexist with a root mount of the same support file"
     )]
     mod harness {
-        include!(concat!(
-            concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server"),
-            "/tests/support/bestiary_postgres_harness.rs"
-        ));
+        include!("../../../../../apps/game-server/tests/support/bestiary_postgres_harness.rs");
     }
     use harness::{Harness, TestResult, debug, fence, id};
 

@@ -308,7 +308,8 @@ pub fn apply_tibia_id_key_rule_with_appearance_items(
     source_ids: &BTreeMap<String, u64>,
     items: Vec<ProjectReferenceRecord>,
 ) -> Result<ItemKeySwitch, ItemIdentityError> {
-    let index = include_bytes!("../../../../../imports/official/appearance-membership/admitted.json");
+    let index =
+        include_bytes!("../../../../../imports/official/appearance-membership/admitted.json");
     let manifest = include_bytes!(
         "../../../../../imports/official/appearance-membership/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.json"
     );
@@ -341,7 +342,8 @@ pub fn apply_tibia_id_key_rule_with_current_source_items(
     mut appearance_items: Vec<ProjectReferenceRecord>,
     source_items: Vec<ProjectReferenceRecord>,
 ) -> Result<ItemKeySwitch, ItemIdentityError> {
-    let index = include_bytes!("../../../../../imports/official/appearance-membership/admitted.json");
+    let index =
+        include_bytes!("../../../../../imports/official/appearance-membership/admitted.json");
     let manifest = include_bytes!(
         "../../../../../imports/official/appearance-membership/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.json"
     );

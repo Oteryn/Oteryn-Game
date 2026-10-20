@@ -12,17 +12,14 @@ use crate::durability::item_text::{ItemTextWriteError, MailTextPolicy};
 
 type Result<T> = std::result::Result<T, ItemTextWriteError>;
 
-impl NativeGameplayState {
+pub trait NativeGameplayMailTextPolicyExt {
+    fn mail_text_policy(&self, definition: &TypedDefinitionRef) -> Result<MailTextPolicy>;
+}
+
+impl NativeGameplayMailTextPolicyExt for NativeGameplayState {
     /// Sole producer of MailTextPolicy: lookup is in this decoded generation;
     /// the exact definition and this generation's digest travel together.
-    #[expect(
-        dead_code,
-        reason = "MAIL-TEXT-1 adapter awaits actual wire composition, admitted content, migration and trade reservation"
-    )]
-    pub fn mail_text_policy(
-        &self,
-        definition: &TypedDefinitionRef,
-    ) -> Result<MailTextPolicy> {
+    fn mail_text_policy(&self, definition: &TypedDefinitionRef) -> Result<MailTextPolicy> {
         let policy = self
             .item_policy(&definition.production_key, &definition.revision_ref)
             .ok_or(ItemTextWriteError::NotWritable)?;

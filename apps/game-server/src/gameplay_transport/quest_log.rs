@@ -23,10 +23,7 @@
 
 use std::sync::Arc;
 
-use crate::durability::quest_state::QuestStateCopy;
-use crate::durability::quest_state::quest::log::{
-    ProjectedLine, QuestLogContent, QuestLogFacts, QuestLogState as CopyQuestState,
-};
+use crate::durability::quest_state::quest::log::{ProjectedLine, QuestLogContent, QuestLogFacts};
 use oteryn_protocol_oteryn::quest_log::{
     MAX_QUEST_LINE_BYTES, MAX_QUEST_LOG_QUERIES_PER_SECOND, MAX_TRACKED_QUESTS, QuestLine,
     QuestListEntry, QuestLog, QuestLogQuery, QuestLogView, QuestMission, encode_quest_log,
@@ -151,20 +148,6 @@ pub(crate) enum QuestLogObservation {
     /// The copy has the version the caller named.
     Unchanged,
     Changed(QuestLogSource),
-}
-
-/// The production session copy (QUEST-STATE-0 §7).
-impl QuestLogFacts for QuestStateCopy {
-    fn track_value(&self, track: &str) -> Option<i64> {
-        self.tracks().get(track).copied()
-    }
-
-    fn quest_state(&self, quest: &str) -> Option<CopyQuestState<'_>> {
-        self.states().get(quest).map(|state| CopyQuestState {
-            pinned_content_revision: &state.pinned_content_revision,
-            completed: state.completed,
-        })
-    }
 }
 
 /// The view a client requested on this connection.

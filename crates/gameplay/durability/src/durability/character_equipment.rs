@@ -115,7 +115,7 @@ fn admission_equipment_unavailable(
     _stage: &'static str,
     _error: EquipmentError,
 ) -> DurabilityError {
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     if std::env::var_os("OTERYN_SEAM_SPELL_MANIFEST").is_some() {
         match &_error {
             EquipmentError::Rejected(reason) => {

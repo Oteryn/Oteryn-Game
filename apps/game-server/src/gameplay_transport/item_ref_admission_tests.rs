@@ -1,7 +1,7 @@
 #![allow(clippy::expect_used, clippy::unwrap_used)]
 
 use super::*;
-use crate::content::native_gameplay::tests::activated_with_item_keys;
+use crate::content::native_gameplay::test_support::activated_with_item_keys;
 use crate::domain::currency::{COIN_STACK_MAXIMUM, Coin};
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_transfer::{BackpackEntry, CharacterBackpack, InventoryItem};
@@ -403,11 +403,14 @@ fn corpse_take_facts_are_the_generation_item_profiles() {
             container_slot_equip_pattern: true,
         }
     );
-    assert_eq!(native.generation_digest(), native.source_digest());
-    assert_eq!(native.weight_of(&cheese), Ok(400));
-    assert_eq!(native.weight_of(&backpack), Ok(1_800));
     assert_eq!(
-        native.weight_of(&TypedDefinitionRef {
+        NativeItemWeights(native).generation_digest(),
+        native.source_digest()
+    );
+    assert_eq!(NativeItemWeights(native).weight_of(&cheese), Ok(400));
+    assert_eq!(NativeItemWeights(native).weight_of(&backpack), Ok(1_800));
+    assert_eq!(
+        NativeItemWeights(native).weight_of(&TypedDefinitionRef {
             revision_ref: "another-generation-revision".to_owned(),
             ..cheese.clone()
         }),

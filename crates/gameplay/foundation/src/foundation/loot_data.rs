@@ -7,8 +7,7 @@ pub const CORPSE_CONTAINER_ENTRIES_MAX: u32 = 16;
 /// holds at most 16 entries, equal by construction to
 /// `COMBAT01-LOOT-PLAN-ITEMS`. Checked once, against the whole accepted plan,
 /// before the corpse or any entry is frozen.
-pub const GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX: usize =
-    CORPSE_CONTAINER_ENTRIES_MAX as usize;
+pub const GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX: usize = CORPSE_CONTAINER_ENTRIES_MAX as usize;
 
 /// This module's own minimal, `Clone`/`PartialEq` typed-identity shape:
 /// field-compatible with both `content::reference_playable::TypedDefinitionRef`

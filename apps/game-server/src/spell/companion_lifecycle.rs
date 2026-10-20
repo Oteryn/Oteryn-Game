@@ -11,6 +11,7 @@ use crate::foundation::{
     CarrierError, ChannelRuntimeV1, CompanionMaster, CompanionSnapshot, ExactActorRef,
     GameSessionId, MovementLocalPosition,
 };
+use crate::spell::native::CompiledNativeSpellPlanExt;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum CompanionExecutionError {

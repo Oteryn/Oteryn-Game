@@ -87,9 +87,7 @@ impl NativeStaticCellLookup for NativeMovementCollisionIndex {
 }
 
 /// Read-only bundle collision supplied by the World owner.
-pub trait BundleCollisionLookup:
-    std::fmt::Debug + std::any::Any + Send + Sync
-{
+pub trait BundleCollisionLookup: std::fmt::Debug + std::any::Any + Send + Sync {
     fn lookup(
         &self,
         scope: &EngineeringStaticCellScope,

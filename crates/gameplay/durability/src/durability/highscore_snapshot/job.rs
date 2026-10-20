@@ -18,7 +18,7 @@ pub struct HighscoreWorldJob {
     root: Arc<DurabilityRoot>,
     world: WorldId,
     catalogues: SnapshotCatalogues,
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     completed_passes: std::sync::atomic::AtomicU64,
 }
 
@@ -32,12 +32,12 @@ impl HighscoreWorldJob {
             root,
             world,
             catalogues,
-            #[cfg(test)]
+            #[cfg(any(test, feature = "test-support"))]
             completed_passes: std::sync::atomic::AtomicU64::new(0),
         }
     }
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     #[allow(
         dead_code,
         reason = "the PostgreSQL job cases in character_authority_postgres read it"
@@ -92,7 +92,7 @@ impl HighscoreWorldJob {
                     );
                 }
             }
-            #[cfg(test)]
+            #[cfg(any(test, feature = "test-support"))]
             self.completed_passes
                 .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         }

@@ -663,7 +663,7 @@ fn key_predicate(query: &mut sqlx::QueryBuilder<sqlx::Postgres>, fields: Mirror)
 }
 
 impl AdmissionGuardStore {
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub async fn connect_runtime(database_url: &str, maximum_guard_bytes: usize) -> Result<Self> {
         if maximum_guard_bytes != super::MAX_ADMISSION_GUARD_BYTES {
             return invalid();
@@ -733,7 +733,7 @@ impl AdmissionGuardStore {
 
     // Tests observe the production SQL projection, before decoding/mirror checks.
     // This exposes no owner capability and is absent from production builds.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub async fn projected_guard_presence(
         &self,
         key: &AdmissionAuthorityGuardKeyV1,

@@ -15,6 +15,7 @@ pub(crate) mod authoring;
 pub(crate) mod callback_speech;
 pub(crate) mod cast;
 pub(crate) use crate::combat::chain;
+use crate::spell::native::CompiledNativeSpellPlanExt;
 #[cfg(test)]
 mod chain_tests;
 pub(crate) mod combat_batch;
@@ -68,8 +69,8 @@ use oteryn_simulation_determinism::SemanticTimeMicros;
 use chain::{ChainCreature, ChainHit, ChainStart, ChainWorld, pick_chain, step_value};
 pub(crate) use formula::{FormulaError, FormulaInputs};
 use harmony::HarmonyMultiplier;
-use party::{PartyFailure, PartyWorld};
-use target::{AllowedTargets, CastTarget, CheckedTarget};
+use party::{PartyBuffSpecExt, PartyFailure, PartyWorld};
+use target::{AllowedTargets, AllowedTargetsExt, CastTarget, CheckedTarget};
 
 pub(crate) use crate::content::spell_data::*;
 

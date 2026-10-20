@@ -43,7 +43,7 @@ pub use oteryn_protocol_oteryn::{
 // `WireEnvelopeView`'s methods by inference; no code in this crate names them, so they are not
 // re-exported. `read_varint`/`skip_field`/`bounded_length_delimited` are byte-cursor primitives
 // used only by this file's own test below, which inspects an assembled snapshot chunk by hand.
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 pub use oteryn_protocol_oteryn::{bounded_length_delimited, read_varint, skip_field};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]

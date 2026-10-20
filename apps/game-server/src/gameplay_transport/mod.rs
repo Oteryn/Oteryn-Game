@@ -36,6 +36,7 @@ mod logout;
 #[cfg(test)]
 mod logout_tests;
 mod loop_move;
+use crate::map::boot::BundleCollisionIndexExt;
 pub(crate) use last_position::LastPositionFlush;
 mod map_door;
 mod monk_save;
@@ -5055,7 +5056,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     self.character,
                     self.holder,
                     &fence,
-                    native,
+                    &item_ref_admission::NativeItemWeights(native),
                     &crate::durability::starter_grant::StarterTemplate::main(),
                 )
                 .await

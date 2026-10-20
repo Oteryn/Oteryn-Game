@@ -3443,7 +3443,8 @@ mod tests {
         // MAP-DOOR-1: the solid entry is the closed door appearance 1629, whose open item 1630
         // the generation also serves.
         let (boxed, coin) = ("oteryn:item.tibia.i1629", "oteryn:item.tibia.i1000");
-        let probe = crate::content::native_gameplay::tests::activated_with_item_keys(Some(KEYS));
+        let probe =
+            crate::content::native_gameplay::test_support::activated_with_item_keys(Some(KEYS));
         let probe_index = probe
             .active()
             .expect("active")
@@ -3479,7 +3480,8 @@ mod tests {
             .expect("world");
         let channel = ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])
             .expect("channel");
-        let with = crate::content::native_gameplay::tests::activated_with_item_keys(Some(KEYS));
+        let with =
+            crate::content::native_gameplay::test_support::activated_with_item_keys(Some(KEYS));
         let gameplay = with.active().expect("active").native_gameplay();
         let index = gameplay
             .and_then(|state| state.item_index())
@@ -3566,7 +3568,7 @@ mod tests {
             ))
         ));
         // A generation without an Item key set names no Item: the same bundle fails closed.
-        let without = crate::content::native_gameplay::tests::activated_with_item_keys(None);
+        let without = crate::content::native_gameplay::test_support::activated_with_item_keys(None);
         let gameplay = without.active().expect("active").native_gameplay();
         assert!(matches!(
             boot_bundle_world(checked(), world, channel, gameplay),
@@ -3628,7 +3630,7 @@ mod tests {
         let mut codes: Vec<_> = BootErrorKind::ALL.iter().map(|kind| kind.code()).collect();
         codes.extend(LogKind::ALL.iter().map(|kind| kind.code()));
         codes.extend(NotDeliveredKind::ALL.iter().map(|kind| kind.code()));
-        crate::durability::sqlstate_codes::tests::assert_in_registry(&codes);
+        crate::durability::sqlstate_codes::test_support::assert_in_registry(&codes);
     }
 
     #[test]

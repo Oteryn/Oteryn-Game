@@ -50,11 +50,7 @@ pub enum Heard {
 
 /// Whether and how a listener at `listener` hears a line spoken at `speaker` (CHAT-0 §3 with the
 /// Canary ranges of §2). The speaker hears its own line.
-pub fn hears(
-    mode: SpeechMode,
-    speaker: ChatPosition,
-    listener: ChatPosition,
-) -> Option<Heard> {
+pub fn hears(mode: SpeechMode, speaker: ChatPosition, listener: ChatPosition) -> Option<Heard> {
     match mode {
         SpeechMode::Say => (speaker.floor == listener.floor
             && speaker.within(listener, SAY_RANGE_X, SAY_RANGE_Y))

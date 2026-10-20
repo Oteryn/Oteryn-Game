@@ -476,8 +476,9 @@ fn admit_v2(
 }
 
 /// The pinned v3 packet bytes (ITEM-SEM-USE-2): the consumable stack shapes.
-pub const ITEM_ADMISSION_V3_PACKET: &[u8] =
-    include_bytes!("../../../../../docs/agents/evidence/OTV2-20261004-consumable-item-admission.json");
+pub const ITEM_ADMISSION_V3_PACKET: &[u8] = include_bytes!(
+    "../../../../../docs/agents/evidence/OTV2-20261004-consumable-item-admission.json"
+);
 pub const ITEM_ADMISSION_V3_PACKET_SHA256: &str =
     "7c85a8171e25d5dd7b098587c9e5e323d61b4fe0b767e83dcb1cc808f63bba8e";
 pub const ITEM_ADMISSION_V3_ITEM_COUNT: usize = 147;
@@ -934,8 +935,13 @@ mod tests {
             Some(ITEM_ADMISSION_V2_ITEM_COUNT)
         );
         let canary = &packet["admissions"][0]["evidence"]["canary"];
-        let items_xml = std::fs::read(concat!(
-            concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server"),
+        let items_xml = std::fs::read(format!(
+            "{}{}",
+            if env!("CARGO_PKG_NAME") == "oteryn-game-server" {
+                env!("CARGO_MANIFEST_DIR")
+            } else {
+                concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server")
+            },
             "/../../imports/canary/items-xml/items.xml"
         ))
         .expect("pinned Canary import");
@@ -1038,7 +1044,15 @@ mod tests {
             packet["admissions"].as_array().map(Vec::len),
             Some(ITEM_ADMISSION_V2_CHEESE_ITEM_COUNT)
         );
-        let root = concat!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server"), "/../../");
+        let root = format!(
+            "{}{}",
+            if env!("CARGO_PKG_NAME") == "oteryn-game-server" {
+                env!("CARGO_MANIFEST_DIR")
+            } else {
+                concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server")
+            },
+            "/../../"
+        );
         let evidence = &packet["admissions"][0]["evidence"];
         let canary = &evidence["canary"];
         let items_xml = std::fs::read(format!("{root}imports/canary/items-xml/items.xml"))

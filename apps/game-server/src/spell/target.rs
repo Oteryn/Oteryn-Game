@@ -1,9 +1,13 @@
 //! Runtime target resolution; authored restrictions remain Content-owned.
 pub(crate) use crate::content::spell_data::target::*;
 
-impl AllowedTargets {
+pub(crate) trait AllowedTargetsExt {
+    fn allows(self, target: &CastTarget) -> bool;
+}
+
+impl AllowedTargetsExt for AllowedTargets {
     /// Whether a cast may be aimed at `target`.
-    pub(crate) fn allows(self, target: &CastTarget) -> bool {
+    fn allows(self, target: &CastTarget) -> bool {
         let own = target.creature == target.caster;
         match self {
             Self::Any => true,

@@ -27,10 +27,7 @@ pub struct CompiledFamiliarConfig {
 impl CompiledFamiliarConfig {
     /// Data-only binding after Content independently qualifies its enclosing artifact.
     /// The validated source settings and file pins remain unchanged.
-    pub fn bind_qualified_outer_artifact(
-        &mut self,
-        digest: [u8; 32],
-    ) -> Result<(), &'static str> {
+    pub fn bind_qualified_outer_artifact(&mut self, digest: [u8; 32]) -> Result<(), &'static str> {
         if digest == [0; 32] {
             return Err("unqualified familiar outer artifact");
         }

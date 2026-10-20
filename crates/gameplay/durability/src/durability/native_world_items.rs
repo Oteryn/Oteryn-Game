@@ -267,9 +267,7 @@ impl DurableCorpseReservation {
         decode_ground_cell(&self.placement.spatial_position)
     }
 }
-pub fn decode_ground_cell(
-    bytes: &[u8],
-) -> Result<crate::content::LogicalCell, &'static str> {
+pub fn decode_ground_cell(bytes: &[u8]) -> Result<crate::content::LogicalCell, &'static str> {
     let cell = crate::durability::spell_items_abi::decode_ground_cell(bytes)?;
     Ok(crate::content::LogicalCell {
         x: cell.x,

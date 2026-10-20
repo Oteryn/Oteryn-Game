@@ -12,7 +12,7 @@ use super::{
 };
 use crate::combat::CreatureDeathRewardInput;
 use crate::content::character_progression_content::{
-    CHARACTER_EXPERIENCE_TABLE_LEVELS, CharacterProgressionContent, tests::section_bytes,
+    CHARACTER_EXPERIENCE_TABLE_LEVELS, CharacterProgressionContent, test_support::section_bytes,
 };
 use crate::durability::DurabilityError;
 use crate::durability::character_death::{ConsumedRespawn, PlayerDeathOccurrence};

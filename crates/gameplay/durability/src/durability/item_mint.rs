@@ -149,7 +149,7 @@ impl ItemMintCause {
     }
 
     /// Test-only: production causes descend from a committed Combat death.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     #[allow(clippy::too_many_arguments)]
     pub fn for_test(
         world_id: WorldId,
@@ -245,7 +245,7 @@ pub struct ItemMintCandidate {
     work_units_used: u8,
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 impl ItemMintCandidate {
     /// A fresh lane permit of this candidate's death Channel, for the PostgreSQL test support.
     #[allow(

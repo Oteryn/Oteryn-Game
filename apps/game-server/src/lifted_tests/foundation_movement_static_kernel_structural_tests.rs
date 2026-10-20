@@ -2,66 +2,12 @@
 //! activate Reference, establish its parity, or qualify production MOVE-RL-03.
 use crate::foundation::runtime_actor_carrier::*;
 use crate::foundation::*;
-use std::io::{Error as FixtureInputError, ErrorKind};
-
-// Some integration targets include Foundation's source as their own crate root. Compile the
-// existing test-only Content index source here so all such test crates exercise that exact
-// algorithm, not a second cell-index design. The input value types below are deliberately
-// synthetic stand-ins, not real Content types or evidence of Content activation/wiring.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum CollisionClass {
-    Walkable,
-    Blocked,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-struct ProductionAtom(String);
-
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-struct CoordinateFrameRef(String);
-
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-struct MapRevisionRef(String);
-
-fn fixture_atom(value: &str) -> Result<String, FixtureInputError> {
-    if value.is_empty() {
-        return Err(FixtureInputError::new(
-            ErrorKind::InvalidInput,
-            "empty fixture atom",
-        ));
-    }
-    Ok(value.to_owned())
-}
-
-impl ProductionAtom {
-    fn new(_label: &str, value: &str) -> Result<Self, FixtureInputError> {
-        fixture_atom(value).map(Self)
-    }
-}
-
-impl CoordinateFrameRef {
-    fn new(value: &str) -> Result<Self, FixtureInputError> {
-        fixture_atom(value).map(Self)
-    }
-}
-
-impl MapRevisionRef {
-    fn new(value: &str) -> Result<Self, FixtureInputError> {
-        fixture_atom(value).map(Self)
-    }
-}
-
-// The included source has `super` type imports and uses this exact checked-key lookup. This
-// child remains reachable only through the carrier's `#[cfg(test)]` declaration.
-// Lib tests already load the same source through Content; path-importing integration test crates
-// do not, so this one duplicate module load is intentional and confined to test compilation.
-#[allow(clippy::duplicate_mod)]
-#[path = "../../../../crates/gameplay/content/src/content/reference_static_cell.rs"]
-mod reference_static_cell;
-use reference_static_cell::{
+// Exercise the Content crate's fixture index with its actual value types.
+use crate::content::reference_static_cell::{
     ReferenceStaticCellIndex, StaticCellError, StaticCellFact, StaticCellFixtureRecord,
     StaticCellPosition, StaticCellScope,
 };
+use crate::content::{CollisionClass, CoordinateFrameRef, MapRevisionRef, ProductionAtom};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Step {
@@ -253,10 +199,10 @@ impl Harness {
             .expect("initialize fixture position");
         let scope = StaticCellScope::fixture(
             owner.world_id,
-            CoordinateFrameRef::new("movement-fixture-frame").expect("frame fixture"),
-            ProductionAtom::new("fixture generation", "movement-fixture-generation")
+            CoordinateFrameRef::new("movement-frame-r1").expect("frame fixture"),
+            ProductionAtom::new("fixture generation", "movement-generation-r1")
                 .expect("generation fixture"),
-            MapRevisionRef::new("movement-fixture-map").expect("map fixture"),
+            MapRevisionRef::new("movement-map-r1").expect("map fixture"),
         );
         Self {
             owner,
@@ -399,9 +345,8 @@ fn cell_in_another_scope_or_floor_cannot_supply_the_candidate() {
     let other_scope = StaticCellScope::fixture(
         fixture.owner.world_id,
         CoordinateFrameRef::new("other-frame").expect("frame"),
-        ProductionAtom::new("fixture generation", "movement-fixture-generation")
-            .expect("generation"),
-        MapRevisionRef::new("movement-fixture-map").expect("map"),
+        ProductionAtom::new("fixture generation", "movement-generation-r1").expect("generation"),
+        MapRevisionRef::new("movement-map-r1").expect("map"),
     );
     for (scope, floor) in [(&other_scope, 7), (&fixture.scope, 8)] {
         let index = ReferenceStaticCellIndex::from_fixture(vec![StaticCellFixtureRecord::fixture(
@@ -478,9 +423,8 @@ fn stale_snapshot_wrong_scope_context_and_coordinate_overflow_reject_before_look
     let wrong_scope = StaticCellScope::fixture(
         fixture.owner.world_id,
         CoordinateFrameRef::new("other-frame").expect("frame"),
-        ProductionAtom::new("fixture generation", "movement-fixture-generation")
-            .expect("generation"),
-        MapRevisionRef::new("movement-fixture-map").expect("map"),
+        ProductionAtom::new("fixture generation", "movement-generation-r1").expect("generation"),
+        MapRevisionRef::new("movement-map-r1").expect("map"),
     );
     assert_eq!(
         prepare_step(

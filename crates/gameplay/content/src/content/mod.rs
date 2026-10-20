@@ -2,7 +2,7 @@
 //! Live deployment authority is deliberately absent; activation consumes sealed Game authority.
 //!
 //! ```compile_fail
-//! use crate::content::ActivationSlot;
+//! use oteryn_gameplay_content::content::ActivationSlot;
 //! let _ = ActivationSlot::new();
 //! ```
 //!
@@ -11,14 +11,15 @@
 //! registered single-staged / two-resident generation ceiling.
 //!
 //! ```compile_fail
-//! use crate::content::StagedGeneration;
+//! use oteryn_gameplay_content::content::StagedGeneration;
 //! ```
 //!
 //! First-production CONTENT uses Foundation's canonical cross-boundary `WorldId`; the
 //! domain-local nominal type cannot be substituted implicitly.
 //!
 //! ```compile_fail
-//! use crate::{domain, foundation};
+//! use oteryn_gameplay_domain::domain;
+//! use oteryn_gameplay_foundation::foundation;
 //! let domain_world = domain::WorldId::from_bytes([
 //!     0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0x70, 0xcd,
 //!     0x8e, 0xf0, 0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc,
@@ -85,7 +86,7 @@ mod project;
 mod project_fs;
 mod reference_artifact;
 mod reference_playable;
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 pub mod reference_static_cell;
 pub mod spell_wheel_profile;
 #[allow(
@@ -164,11 +165,11 @@ pub use project::SourceFloorChange;
 
 // Crate test composition may inspect an actually staged native pair; the Stage owner
 // and its complete runtime generation remain private to CONTENT and absent downstream.
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 pub fn native_gameplay_test_world_id() -> Result<crate::foundation::WorldId, ContentError> {
     Ok(production::test_source(1)?.world_id)
 }
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 pub fn qualified_native_gameplay_test_state(
     compiled: &CompiledFirstProductionContent,
 ) -> Result<native_gameplay::NativeGameplayState, ContentError> {

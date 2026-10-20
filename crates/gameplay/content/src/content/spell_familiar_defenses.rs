@@ -117,10 +117,7 @@ impl CompiledFamiliarDefenses {
         self.source_digest
     }
     /// Data-only outer envelope binding; does not mint runtime authority.
-    pub fn bind_qualified_outer_artifact(
-        &mut self,
-        digest: [u8; 32],
-    ) -> Result<(), &'static str> {
+    pub fn bind_qualified_outer_artifact(&mut self, digest: [u8; 32]) -> Result<(), &'static str> {
         if digest == [0; 32] {
             return Err("unqualified familiar outer artifact");
         }

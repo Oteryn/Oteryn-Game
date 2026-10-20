@@ -1738,7 +1738,7 @@ mod weapon_tests {
     /// The production generation's Item policies, loaded once for every case.
     fn production() -> crate::content::ContentActivationController {
         let world = crate::foundation::WorldId::decode(&uuid(1)).expect("world id");
-        crate::content::native_gameplay::tests::activated_with_loot_tables(world, None).0
+        crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None).0
     }
 
     fn weapon_of(

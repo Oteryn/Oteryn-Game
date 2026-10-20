@@ -149,9 +149,7 @@ pub struct RepairSnapshot<'a> {
     pub funds: RepairFunds,
 }
 
-pub fn plan_soft_boots_repair(
-    snapshot: RepairSnapshot<'_>,
-) -> Result<RepairPlan, RepairPlanError> {
+pub fn plan_soft_boots_repair(snapshot: RepairSnapshot<'_>) -> Result<RepairPlan, RepairPlanError> {
     let capacity = snapshot
         .change
         .backpack

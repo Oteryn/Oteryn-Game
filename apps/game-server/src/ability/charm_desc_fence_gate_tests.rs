@@ -341,12 +341,22 @@ fn cfg_test_ranges(code: &[u8], macros: &[(usize, usize)]) -> Vec<(usize, usize)
     ranges
 }
 
+// The explicit fixture feature is absent from production dependencies. Normalize only its
+// canonical gate; all other cfg expressions still fail closed in this lexical scanner.
+fn test_support_as_test(src: &str) -> String {
+    src.replace(
+        r#"#[cfg(any(test, feature = "test-support"))]"#,
+        "#[cfg(test)]",
+    )
+}
+
 /// 1-based lines of non-test production references to the unbound entry in one source file.
 /// `bridge_module` is true only for [`BRIDGE_MODULE`], the sole home of its canonical definition;
 /// a same-named function anywhere else is a reference, not an exempt definition. A production
 /// caller inside that module is a reference too.
 fn production_references(src: &str, bridge_module: bool) -> Vec<usize> {
-    let mut code = sanitize(src);
+    let source = test_support_as_test(src);
+    let mut code = sanitize(&source);
     if inner_cfg_test(&code) {
         return Vec::new();
     }
@@ -421,6 +431,8 @@ struct Declaration {
 /// blocks and macros, so directory resolution never hides one; a macro-carried `#[cfg(test)]`
 /// token gates nothing.
 fn file_declarations(src: &str) -> Vec<Declaration> {
+    let source = test_support_as_test(src);
+    let src = source.as_str();
     let code = sanitize(src);
     let test_only = inner_cfg_test(&code);
     let macros = macro_ranges(&code);
@@ -697,16 +709,26 @@ fn collect(
 
 #[test]
 fn no_production_damage_write_bypasses_the_bound_attacker_slot() -> std::io::Result<()> {
-    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
-    let mut files = Vec::new();
-    collect(&root.join("src"), root, &mut files)?;
-    let found = gate_findings(&files);
-    assert!(
-        found.is_empty(),
-        "D295 §3 item 3 gate (A2): production references to the unbound attacker write \
-         {BRIDGES:?}: {found:?}. Production damage writes go through the bound slot \
-         (`commit_damage_for_bound_attacker` and the Ability bridges)."
-    );
+    let server = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let repository = server.join("../..");
+    for root in [
+        server.to_path_buf(),
+        repository.join("crates/gameplay/foundation"),
+        repository.join("crates/gameplay/content"),
+        repository.join("crates/gameplay/durability"),
+    ] {
+        let mut files = Vec::new();
+        collect(&root.join("src"), &root, &mut files)?;
+        assert!(!files.is_empty(), "the scan must see {}", root.display());
+        let found = gate_findings(&files);
+        assert!(
+            found.is_empty(),
+            "D295 §3 item 3 gate (A2): {}: production references to the unbound attacker write \
+             {BRIDGES:?}: {found:?}. Production damage writes go through the bound slot \
+             (`commit_damage_for_bound_attacker` and the Ability bridges).",
+            root.display()
+        );
+    }
     Ok(())
 }
 
@@ -798,6 +820,12 @@ fn scan_flags_a_production_reference() {
 
 #[test]
 fn scan_ignores_test_comment_string_and_bridge_bodies() {
+    let opt_in_fixture = r#"#[cfg(any(test, feature = "test-support"))]
+        fn helper() { commit_damage_for_attacker(); }"#;
+    assert!(production_references(opt_in_fixture, false).is_empty());
+    let production_feature = opt_in_fixture.replace("test-support", "shipping");
+    assert_eq!(production_references(&production_feature, false), [2]);
+
     let src = r##"
 // commit_damage_for_attacker in a line comment
 /* commit_damage_for_attacker /* nested */ still a comment */

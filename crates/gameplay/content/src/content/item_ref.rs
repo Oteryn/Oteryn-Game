@@ -68,12 +68,7 @@ impl ItemDefinitionIndex {
     /// The wire reference of a typed Item definition: 1 + the key's index, only when `family`
     /// is Item and the key is an Item of this generation at exactly `revision`. Anything else is
     /// `None`, and the caller fails closed.
-    pub fn definition_ref(
-        &self,
-        family: &str,
-        key: &str,
-        revision: &str,
-    ) -> Option<NonZeroU32> {
+    pub fn definition_ref(&self, family: &str, key: &str, revision: &str) -> Option<NonZeroU32> {
         if family != ITEM_FAMILY {
             return None;
         }

@@ -9,6 +9,7 @@ use crate::gameplay_transport::spell_presentations::{
     CueTarget, LocatedCueRequest, QualifiedCueTile,
 };
 use crate::spell::combat_batch::{OwnerCombatChange, OwnerCombatEffect};
+use crate::spell::native::CompiledNativeSpellPlanExt;
 use crate::spell::native_items::{ItemOperation, ItemWorldSnapshot, NativeItemRef, WorldItemFacts};
 
 pub(super) fn applicable(spell: &SpellDefinition) -> bool {

@@ -13,8 +13,9 @@ use super::{
 use serde::Deserialize;
 use std::collections::{BTreeMap, BTreeSet};
 
-pub const ITEM_CONSUMPTION_PACKET: &[u8] =
-    include_bytes!("../../../../../docs/agents/evidence/OTV2-20261004-item-consumption-facts-v1.json");
+pub const ITEM_CONSUMPTION_PACKET: &[u8] = include_bytes!(
+    "../../../../../docs/agents/evidence/OTV2-20261004-item-consumption-facts-v1.json"
+);
 pub const ITEM_CONSUMPTION_PACKET_SHA256: &str =
     "d13625eadd669ca491964e4a0cd1a76ec0e92999c613a55c9b8964c01687e5e6";
 pub const ITEM_CONSUMPTION_FOOD_COUNT: usize = 137;

@@ -571,7 +571,7 @@ pub struct FirstProductionContentSource {
 }
 
 impl FirstProductionContentSource {
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn reverse_enumeration_for_test(&mut self) {
         self.regions.reverse();
         self.areas.reverse();
@@ -2072,7 +2072,7 @@ impl StagedGeneration {
         &self.identity
     }
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn runtime_state(&self) -> &FirstProductionRuntimeState {
         &self.runtime_state
     }
@@ -3095,7 +3095,7 @@ fn array32(bytes: &[u8]) -> Result<[u8; 32], ContentError> {
     <[u8; 32]>::try_from(bytes).map_err(|_| ContentError::Truncated)
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 fn test_world_id(seed: u8) -> Result<WorldId, ContentError> {
     let mut bytes = [0_u8; 16];
     bytes[0] = 1;
@@ -3122,7 +3122,7 @@ pub fn test_source_with_population(
     Ok(source)
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 pub fn test_source(cell_count: usize) -> Result<FirstProductionContentSource, ContentError> {
     let package_key = ProductionKey::new("oteryn:content.first-production")?;
     let package_revision = ProductionAtom::new("first-production package revision", "package-r1")?;

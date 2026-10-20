@@ -2202,7 +2202,7 @@ impl<'a> FreshDurabilityCurrentAuthorityV1<'a> {
 /// no public constructor, deserializer or default implementation.
 ///
 /// ```compile_fail
-/// use crate::foundation::fnd04_verifier::VerifiedFreshDurabilityFactsV1;
+/// use oteryn_gameplay_foundation::foundation::fnd04_verifier::VerifiedFreshDurabilityFactsV1;
 /// let evidence = VerifiedFreshDurabilityFactsV1::default();
 /// ```
 #[derive(Debug, Clone)]
@@ -2467,7 +2467,7 @@ pub mod recovery_source_sealed {
 /// Only an owning, authenticated recovery source may implement this capability.
 /// Raw observations and the legacy evidence authority cannot register one.
 /// ```compile_fail
-/// use crate::foundation::fnd04_verifier::*;
+/// use oteryn_gameplay_foundation::foundation::fnd04_verifier::*;
 /// struct Unregistered;
 /// impl RecoveryDurabilityEvidenceSourceV2 for Unregistered {
 ///     fn signing_trust(&self, _: &str, _: i64) -> Result<RecoverySigningTrustObservationV2, Fnd04EvidenceError> { unreachable!() }
@@ -2505,7 +2505,7 @@ impl<'a> RecoveryDurabilityTrustContextV2<'a> {
 /// scoped source observations that established a finite eligibility deadline.
 /// This is not actor authority or permission to construct a live post-grace flow.
 /// ```compile_fail
-/// use crate::foundation::fnd04_verifier::*;
+/// use oteryn_gameplay_foundation::foundation::fnd04_verifier::*;
 /// fn forge(old: VerifiedRecoveryDurabilityFactsV1) -> VerifiedRecoveryDurabilityFactsV2 { old.into() }
 /// ```
 #[derive(Debug, Clone)]

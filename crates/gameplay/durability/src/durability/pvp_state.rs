@@ -112,7 +112,7 @@ impl PvpRemainingMicros {
         self.0
     }
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub const fn for_test(value: u64) -> Self {
         Self(value)
     }

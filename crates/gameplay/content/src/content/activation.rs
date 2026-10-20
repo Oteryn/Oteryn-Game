@@ -103,7 +103,7 @@ impl From<ContentError> for ContentActivationError {
 ///
 /// ```compile_fail
 /// fn require_clone<T: Clone>() {}
-/// require_clone::<crate::content::ActiveGeneration>();
+/// require_clone::<oteryn_gameplay_content::content::ActiveGeneration>();
 /// ```
 #[derive(Debug, PartialEq, Eq)]
 pub struct ActiveGeneration {
@@ -439,7 +439,7 @@ impl Error for NativeEntryActivationError {}
 ///
 /// ```compile_fail
 /// fn require_clone<T: Clone>() {}
-/// require_clone::<crate::content::NativeEntryContentPin>();
+/// require_clone::<oteryn_gameplay_content::content::NativeEntryContentPin>();
 /// ```
 #[derive(Debug, PartialEq, Eq)]
 pub struct NativeEntryContentPin {
@@ -502,7 +502,7 @@ impl NativeEntryContentPin {
         )
     }
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn into_channel_pin(self) -> crate::foundation::ChannelContentPin {
         self.channel_pin()
     }
