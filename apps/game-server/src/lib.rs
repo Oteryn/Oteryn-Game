@@ -91,7 +91,7 @@ mod chat;
 pub mod content;
 pub use oteryn_gameplay_domain::domain;
 pub mod durability;
-pub mod foundation;
+pub use oteryn_gameplay_foundation::foundation;
 mod gameplay_transport;
 pub mod house_scope;
 pub mod map;

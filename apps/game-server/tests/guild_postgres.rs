@@ -82,7 +82,7 @@ pub mod content;
 pub mod domain;
 #[path = "../src/durability/mod.rs"]
 pub mod durability;
-#[path = "../src/foundation/mod.rs"]
+#[path = "../../../crates/gameplay/foundation/src/foundation/mod.rs"]
 pub mod foundation;
 #[path = "../src/gameplay_transport/mod.rs"]
 mod gameplay_transport;

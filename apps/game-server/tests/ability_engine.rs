@@ -7,10 +7,10 @@ mod domain {
     pub(crate) use crate::appearance;
 }
 #[allow(dead_code)]
-#[path = "../src/foundation/ability_data/mod.rs"]
+#[path = "../../../crates/gameplay/foundation/src/foundation/ability_data/mod.rs"]
 pub(crate) mod ability_data;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/foundation/condition.rs"]
+#[path = "../../../crates/gameplay/foundation/src/foundation/condition.rs"]
 mod condition;
 #[allow(dead_code)]
 mod foundation {

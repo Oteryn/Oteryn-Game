@@ -136,7 +136,7 @@ fn is_missing_table(error: &sqlx::Error) -> bool {
 #[cfg(test)]
 mod contract_tests {
     const MIGRATION: &str = include_str!("../../migrations/0001_admission_reconnect_journal.sql");
-    const ADMISSION_RECOVERY: &str = include_str!("../foundation/admission_recovery_inner.rs");
+    const ADMISSION_RECOVERY: &str = include_str!("../../../../crates/gameplay/foundation/src/foundation/admission_recovery_inner.rs");
 
     fn session_schema() -> Option<&'static str> {
         MIGRATION

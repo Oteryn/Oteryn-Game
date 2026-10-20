@@ -1978,6 +1978,7 @@ dependencies = [
  "oteryn-gameplay-admission-evidence",
  "oteryn-gameplay-character-recovery-fence",
  "oteryn-gameplay-domain",
+ "oteryn-gameplay-foundation",
  "oteryn-gameplay-native-admission-source",
  "oteryn-gameplay-node-files",
  "oteryn-gameplay-source-critical-baseline",
@@ -2022,6 +2023,20 @@ dependencies = [
 name = "oteryn-gameplay-domain"
 version = "0.1.0"
 dependencies = [
+ "oteryn-simulation-determinism",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+]
+
+[[package]]
+name = "oteryn-gameplay-foundation"
+version = "0.1.0"
+dependencies = [
+ "base64",
+ "ed25519-dalek",
+ "oteryn-gameplay-domain",
+ "oteryn-protocol-oteryn",
  "oteryn-simulation-determinism",
  "serde",
  "serde_json",

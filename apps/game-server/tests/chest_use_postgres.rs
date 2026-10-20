@@ -34,7 +34,7 @@ mod durability {
     include!("../src/durability/core_modules.rs");
 }
 #[allow(dead_code, unused_imports)]
-#[path = "../src/foundation/mod.rs"]
+#[path = "../../../crates/gameplay/foundation/src/foundation/mod.rs"]
 pub mod foundation;
 #[allow(dead_code, unused_imports)]
 pub use oteryn_gameplay_native_admission_source as native_admission_source;
