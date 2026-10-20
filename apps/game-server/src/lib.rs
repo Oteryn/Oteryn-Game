@@ -911,6 +911,8 @@ mod movement_speed_runtime_tests;
 #[cfg(test)]
 #[path = "lifted_tests/world_clock_world_config_tests.rs"]
 mod world_clock_world_config_tests;
+
+#[cfg(test)]
 #[allow(clippy::expect_used)]
 #[path = "lifted_tests/foundation_ability_exact_actor_resolution_tests.rs"]
 mod foundation_ability_exact_actor_resolution_tests;
