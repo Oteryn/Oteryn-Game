@@ -4,7 +4,7 @@
 usage: stage_npc_data.py <pin> <repository-root> <destination>
 
 The destination is a fresh directory holding exactly what the node reads (NPC-LOAD-1,
-apps/game-server/src/content/npc_catalogue.rs and crates/world-bundle/src/npc.rs):
+crates/gameplay/content/src/content/npc_catalogue.rs and crates/world-bundle/src/npc.rs):
 
   content/world/{project.json,manifest.json,content.lock.json}  the WorldProject control files
   content/world/<locator>                                       the manifest's documents only
@@ -28,7 +28,7 @@ PROJECT_SCHEMA = "OTERYN_WORLD_PROJECT_ROOT/v2"
 MANIFEST_SCHEMA = "OTERYN_WORLD_PROJECT_MANIFEST/v2"
 # crates/world-bundle/src/npc.rs CATALOGUE_DIRS, relative to the content root.
 CATALOGUE_DIRS = ("npcs/definitions", "dialogues/definitions", "services")
-# apps/game-server/src/content/npc_catalogue.rs: max_documents 11 = 3 control files + 8 documents.
+# crates/gameplay/content/src/content/npc_catalogue.rs: max_documents 11 = 3 control files + 8 documents.
 MAX_DOCUMENTS = 11
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
 

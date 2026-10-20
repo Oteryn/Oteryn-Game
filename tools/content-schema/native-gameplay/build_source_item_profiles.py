@@ -18,7 +18,7 @@ MAP_IDS={1949,2338,2429,2430,2433,2441,2454,2471,2472,2480,2487,2488,2493,2494,2
 PATHS=('data/items/appearances.dat','data/items/items.xml','src/items/items.hpp','src/items/items.cpp','src/items/item.cpp','src/items/functions/item/item_parse.cpp','src/items/functions/item/item_parse.hpp','src/utils/const.hpp','src/creatures/combat/spells.cpp','src/creatures/combat/combat.cpp','src/items/tile.cpp','src/utils/utils_definitions.hpp','config.lua.dist')
 K=lambda value:{'state':'KNOWN','value':value}
 NA={'state':'NOT_APPLICABLE'};U={'state':'UNKNOWN'}
-# Closed coin table of apps/game-server/src/domain/currency.rs (CHARACTER-GOLD-FEE-BOUNDARY-V1
+# Closed coin table of crates/gameplay/domain/src/domain/currency.rs (CHARACTER-GOLD-FEE-BOUNDARY-V1
 # D175/D176): gold, platinum and crystal, each StackCapable to exactly COIN_STACK_MAXIMUM.
 COIN_IDS=(3031,3035,3043);COIN_STACK_MAXIMUM=100;COINS='coin-item-profiles.json'
 # Plain door pairs of the Game-owned door registry (apps/game-server/src/map/door_registry.rs; closed id C,
