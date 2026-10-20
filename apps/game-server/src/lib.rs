@@ -724,7 +724,7 @@ mod v2_reconciled_prepared_budget_regression_tests {
 }
 
 pub use oteryn_gameplay_admission_evidence as admission_evidence;
-pub mod native_admission_source;
+pub use oteryn_gameplay_native_admission_source as native_admission_source;
 
 #[allow(
     dead_code,

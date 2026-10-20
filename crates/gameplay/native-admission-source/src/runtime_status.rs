@@ -473,7 +473,7 @@ pub const BUSY_RETRY_MIN: Duration = Duration::from_millis(100);
 pub const BUSY_RETRY_MAX: Duration = Duration::from_secs(1);
 
 /// `Some(output)` of `primary`, or `None` once `sleep` completes first.
-pub(crate) async fn first_of<C, S>(changed: C, sleep: S) -> Option<C::Output>
+pub async fn first_of<C, S>(changed: C, sleep: S) -> Option<C::Output>
 where
     C: Future,
     S: Future<Output = ()>,

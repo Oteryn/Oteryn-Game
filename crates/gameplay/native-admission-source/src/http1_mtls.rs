@@ -83,7 +83,7 @@ impl<T: AsyncWrite + Unpin> AsyncWrite for BoundedHandshakeIo<T> {
 fn limit_error() -> io::Error {
     io::Error::other("native source handshake ingress exceeded")
 }
-pub(crate) async fn exchange(
+pub async fn exchange(
     desc: &ProducerDescriptor,
     operation: Operation,
     body: &str,
@@ -226,9 +226,7 @@ async fn exchange_status(
         .await
         .map_err(|_| SourceError::Unavailable)?
 }
-pub(crate) async fn read_response<S: AsyncRead + Unpin>(
-    stream: &mut S,
-) -> Result<Vec<u8>, SourceError> {
+pub async fn read_response<S: AsyncRead + Unpin>(stream: &mut S) -> Result<Vec<u8>, SourceError> {
     read_response_status(stream, true)
         .await
         .map(|(_, body)| body)

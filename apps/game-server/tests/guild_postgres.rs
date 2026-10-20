@@ -163,8 +163,7 @@ mod foundation_final_review_round2_regressions;
 mod foundation_final_review_round2_runtime_rollback;
 
 pub use oteryn_gameplay_admission_evidence as admission_evidence;
-#[path = "../src/native_admission_source/mod.rs"]
-pub mod native_admission_source;
+pub use oteryn_gameplay_native_admission_source as native_admission_source;
 
 #[allow(
     dead_code,

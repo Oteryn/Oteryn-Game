@@ -37,8 +37,6 @@ ALLOWED_DUPLICATING_TARGETS: dict[tuple[str, str], tuple[str, str]] = {
             "durability_postgres",
             "interaction_workflow",
             "native_admission_source_postgres",
-            "native_admission_source_real_interop",
-            "native_admission_source_transport",
             "runtime_scope_assignment_postgres",
             "wp5_s3b_composition",
         )

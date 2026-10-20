@@ -1,3 +1,4 @@
+use oteryn_gameplay_admission_evidence as admission_evidence;
 use std::{fmt, io};
 pub mod account_characters;
 pub mod character_commands;
@@ -88,7 +89,7 @@ pub struct QueuePermit<'a> {
     queued_at: std::time::Instant,
 }
 impl QueuePermit<'_> {
-    pub(super) fn require_active(&self) -> Result<(), SourceError> {
+    pub(crate) fn require_active(&self) -> Result<(), SourceError> {
         if self.active {
             Ok(())
         } else {

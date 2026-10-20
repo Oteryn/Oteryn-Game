@@ -13,8 +13,7 @@ pub use production_server::domain;
 #[path = "../src/foundation/mod.rs"]
 pub mod foundation;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/native_admission_source/mod.rs"]
-pub mod native_admission_source;
+pub use oteryn_gameplay_native_admission_source as native_admission_source;
 
 #[path = "support/authority_matrix.rs"]
 mod authority_matrix;

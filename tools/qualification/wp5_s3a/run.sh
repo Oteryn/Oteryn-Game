@@ -33,6 +33,10 @@ for path in apps/game-server/src/admission_evidence.rs apps/game-server/src/nati
   current_path="$path"
   if [[ "$path" == apps/game-server/src/admission_evidence.rs ]]; then
     current_path=crates/gameplay/admission-evidence/src/lib.rs
+  elif [[ "$path" == apps/game-server/src/native_admission_source/mod.rs ]]; then
+    current_path=crates/gameplay/native-admission-source/src/lib.rs
+  elif [[ "$path" == apps/game-server/src/native_admission_source/* ]]; then
+    current_path="crates/gameplay/native-admission-source/src/${path##*/}"
   fi
   [[ "$(git rev-parse "$GAME_ADMISSION_SHA:$path")" == "$(git rev-parse "HEAD:$current_path")" ]] || {
     echo "S3_RESULT=BLOCKED reason=protected_game_source_moved path=$path"

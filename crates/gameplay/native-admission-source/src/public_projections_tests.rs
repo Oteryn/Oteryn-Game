@@ -144,11 +144,11 @@ fn bodies_match_the_platform_fixtures() {
 fn profile_matches_the_shared_wire_fixtures() {
     const VISIBLE: &str = include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/../../docs/contracts/fixtures/public-projections/character_profile_v1.json"
+        "/../../../docs/contracts/fixtures/public-projections/character_profile_v1.json"
     ));
     const HIDDEN: &str = include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/../../docs/contracts/fixtures/public-projections/character_profile_guild_hidden_v1.json"
+        "/../../../docs/contracts/fixtures/public-projections/character_profile_guild_hidden_v1.json"
     ));
     let guild = || {
         Some(ProfileGuild {

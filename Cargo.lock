@@ -1977,6 +1977,7 @@ dependencies = [
  "oteryn-foundation",
  "oteryn-gameplay-admission-evidence",
  "oteryn-gameplay-character-recovery-fence",
+ "oteryn-gameplay-native-admission-source",
  "oteryn-gameplay-source-critical-baseline",
  "oteryn-gameplay-weather",
  "oteryn-ntp-clock",
@@ -2013,6 +2014,24 @@ version = "0.1.0"
 dependencies = [
  "rustix 1.1.5",
  "sha2 0.11.0",
+]
+
+[[package]]
+name = "oteryn-gameplay-native-admission-source"
+version = "0.1.0"
+dependencies = [
+ "cap-fs-ext",
+ "cap-std",
+ "oteryn-error-codes",
+ "oteryn-gameplay-admission-evidence",
+ "rustix 1.1.5",
+ "rustls",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+ "tokio",
+ "tokio-rustls",
+ "toml",
 ]
 
 [[package]]

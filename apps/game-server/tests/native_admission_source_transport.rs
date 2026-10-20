@@ -1,13 +1,12 @@
 #![allow(dead_code)]
-use oteryn_gameplay_admission_evidence as admission_evidence;
-#[path = "../src/native_admission_source/mod.rs"]
-mod native_admission_source;
 use admission_evidence::{Failure, Request, Response};
 use native_admission_source::{
     TransientCapacity,
     descriptor::{Operation, ProducerDescriptor},
     http1_mtls::{BoundedHandshakeIo, exchange as bounded_exchange},
 };
+use oteryn_gameplay_admission_evidence as admission_evidence;
+use oteryn_gameplay_native_admission_source as native_admission_source;
 use rustls::{
     RootCertStore,
     pki_types::{CertificateDer, PrivateKeyDer},

@@ -1,7 +1,6 @@
 #![allow(dead_code)]
 use oteryn_gameplay_admission_evidence as admission_evidence;
-#[path = "../src/native_admission_source/mod.rs"]
-mod native_admission_source;
+use oteryn_gameplay_native_admission_source as native_admission_source;
 
 use admission_evidence::{Facts, Failure, Observation, Request, Response};
 use base64::{Engine as _, engine::general_purpose::STANDARD};

@@ -20,8 +20,7 @@ mod durability;
 #[path = "../src/foundation/mod.rs"]
 pub mod foundation;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/native_admission_source/mod.rs"]
-pub mod native_admission_source;
+pub use oteryn_gameplay_native_admission_source as native_admission_source;
 
 // Standalone target for local focused runs; the protected PostgreSQL lane also
 // includes these exact cases through character_authority_postgres.
