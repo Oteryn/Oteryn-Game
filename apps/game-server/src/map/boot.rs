@@ -482,12 +482,12 @@ impl BundleWorld {
         let mut scope = entry.scope().clone();
         scope.coordinate_frame = CoordinateFrameRef::new(BUNDLE_FRAME)?;
         scope.map_revision = MapRevisionRef::new(&self.map_revision)?;
-        let index = BundleCollisionIndex {
+        let index = BundleCollisionIndex(Arc::new(BundleCollisionData {
             scope: scope.clone(),
             base: Arc::clone(&self.base),
             blocked: Arc::clone(&self.blocked),
             map: Arc::clone(&self.map),
-        };
+        }));
         Ok(NativeEntryMovementCells::from_bundle(
             entry,
             scope,
@@ -511,14 +511,14 @@ pub(crate) struct BundleMap {
 /// The collision of a Channel's movement cells over a world bundle: a tile is Walkable when it
 /// is enterable, Blocked when it exists but is not, and Absent outside the map.
 #[derive(Debug, Clone)]
-pub(crate) struct BundleCollisionIndex {
+struct BundleCollisionData {
     scope: EngineeringStaticCellScope,
     base: Arc<WorldBase>,
     blocked: Arc<BTreeSet<TilePos>>,
     map: Arc<BundleMap>,
 }
 
-impl PartialEq for BundleCollisionIndex {
+impl PartialEq for BundleCollisionData {
     fn eq(&self, other: &Self) -> bool {
         self.scope == other.scope
             && self.base.digest() == other.base.digest()
@@ -526,14 +526,9 @@ impl PartialEq for BundleCollisionIndex {
     }
 }
 
-impl Eq for BundleCollisionIndex {}
+impl Eq for BundleCollisionData {}
 
-impl BundleCollisionIndex {
-    /// The Channel's map view over the same bundle.
-    pub(crate) fn map(&self) -> &BundleMap {
-        &self.map
-    }
-
+impl BundleCollisionData {
     pub(crate) fn lookup(
         &self,
         scope: &EngineeringStaticCellScope,
@@ -553,6 +548,39 @@ impl BundleCollisionIndex {
                 CollisionClass::Blocked
             },
         )
+    }
+}
+
+impl crate::content::native_cell_lookup::BundleCollisionLookup for BundleCollisionData {
+    fn lookup(
+        &self,
+        scope: &EngineeringStaticCellScope,
+        cell: LogicalCell,
+    ) -> Result<CollisionClass, StaticCellEngineError> {
+        self.lookup(scope, cell)
+    }
+    fn same_index(
+        &self,
+        other: &dyn crate::content::native_cell_lookup::BundleCollisionLookup,
+    ) -> bool {
+        (other as &dyn std::any::Any)
+            .downcast_ref::<Self>()
+            .is_some_and(|other| self == other)
+    }
+}
+
+pub(crate) use crate::content::native_cell_lookup::BundleCollisionIndex;
+impl BundleCollisionIndex {
+    /// The Channel's map view over the same bundle.
+    #[expect(
+        clippy::expect_used,
+        reason = "the bundle port is constructed only here from BundleCollisionData"
+    )]
+    pub(crate) fn map(&self) -> &BundleMap {
+        &(self.0.as_ref() as &dyn std::any::Any)
+            .downcast_ref::<BundleCollisionData>()
+            .expect("bundle map owner")
+            .map
     }
 }
 

@@ -28,7 +28,8 @@ pub mod combat_pickup;
 #[allow(dead_code, unused_imports)]
 #[path = "support/content_shim.rs"]
 pub mod content;
-pub use production_server::domain;
+#[path = "support/domain_shim.rs"]
+pub mod domain;
 #[allow(dead_code, unused_imports)]
 #[path = "../src/durability/mod.rs"]
 mod durability;

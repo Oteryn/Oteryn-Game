@@ -97,21 +97,7 @@ pub enum PremiumActivationRead<T> {
     Empty,
 }
 
-/// Witness that the gate's transaction holds the shared lock and read an empty latch table. Only
-/// [`DurabilityRoot::read_premium_activation_with`] makes one, and lends it to the bypass for the
-/// transaction's duration.
-#[derive(Debug)]
-pub struct EmptyLatchHeld {
-    _private: (),
-}
-
-impl EmptyLatchHeld {
-    /// Test-only: a witness for pure status tests that hold no transaction.
-    #[cfg(test)]
-    pub(crate) const fn for_test() -> Self {
-        Self { _private: () }
-    }
-}
+pub use crate::domain::premium::EmptyLatchHeld;
 
 /// A pre-delivery bypass: applied in the gate's transaction, which holds the shared lock and read
 /// an empty table. Its writes commit with it, before any latch can. The transaction commits
@@ -172,7 +158,7 @@ impl DurabilityRoot {
                         tx.rollback().await?;
                         return Ok(PremiumActivationRead::Empty);
                     };
-                    let held = EmptyLatchHeld { _private: () };
+                    let held = EmptyLatchHeld::inside_gate();
                     let applied = bypass.apply(&held, &mut tx).await;
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(PremiumActivationRead::PreDelivery(applied))
