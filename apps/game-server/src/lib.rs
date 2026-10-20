@@ -864,3 +864,6 @@ mod creature_source_items;
 
 #[cfg(test)]
 mod security;
+
+#[path = "durability/mail_text_policy.rs"]
+mod mail_text_policy;

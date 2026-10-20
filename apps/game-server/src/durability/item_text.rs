@@ -202,7 +202,7 @@ enum MailTextDestination {
 
 impl MailTextPolicy {
     /// Sole producer: NativeGameplayState::mail_text_policy in
-    /// content/mail_text_policy.rs, after exact qualified profile validation.
+    /// durability/mail_text_policy.rs, after exact qualified profile validation.
     /// The writer independently checks this digest against current activation.
     pub(crate) fn from_qualified_content(
         definition: TypedDefinitionRef,

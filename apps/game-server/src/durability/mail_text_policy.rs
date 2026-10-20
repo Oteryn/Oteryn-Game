@@ -2,12 +2,12 @@
 //! A qualified profile supplies immutable expected facts, never current custody
 //! or activation authority. The durability writer independently checks those.
 
-use super::native_gameplay::{
+use crate::content::native_gameplay::{
     NativeGameplayState, NativeItemAdmission, NativeItemDestination, NativeProductionItemDefinition,
 };
-use super::{ReferenceItemField, ReferenceItemSemantics};
+use crate::content::{ReferenceItemField, ReferenceItemSemantics};
+use crate::domain::item_definition::TypedDefinitionRef;
 use crate::domain::mail::MailTextClass;
-use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_text::{ItemTextWriteError, MailTextPolicy};
 
 type Result<T> = std::result::Result<T, ItemTextWriteError>;

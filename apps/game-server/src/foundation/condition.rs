@@ -1849,3 +1849,6 @@ mod reconciled_schedule_tests;
 #[cfg(test)]
 #[path = "condition_gate_tests.rs"]
 mod condition_gate_tests;
+
+#[path = "field_condition.rs"]
+pub(crate) mod field_condition;

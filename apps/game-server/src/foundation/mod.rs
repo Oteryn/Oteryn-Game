@@ -1548,3 +1548,5 @@ pub(crate) mod loot_data;
 pub(crate) mod magnitude_policy;
 pub(crate) mod map_position;
 pub(crate) mod melee_definition;
+
+pub(crate) mod spell_wheel_profile;

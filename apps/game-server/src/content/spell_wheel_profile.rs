@@ -1,2 +1,2 @@
-//! Active Content compiler exposes the independent, pure source-qualified Wheel ABI.
-pub(crate) use crate::durability::spell_wheel_abi::CompiledWheelProfile;
+//! Content facade for the independent Wheel profile ABI.
+pub(crate) use crate::foundation::spell_wheel_profile::CompiledWheelProfile;

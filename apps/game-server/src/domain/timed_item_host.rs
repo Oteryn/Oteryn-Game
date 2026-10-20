@@ -20,10 +20,6 @@ use super::timed_item::{
     TIMEDITEM0B_RL_04_LIVE_ITEMS_PER_ACTOR, TimedItemError, TimedItemLane, TimedValues,
     ambiguous_bound_exceeded,
 };
-use crate::content::{
-    ReferenceItemField, ReferenceItemSemantics, ReferenceItemTarget, ReferenceTemporalMode,
-    ReferenceTransformKind,
-};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TimedHostError {
@@ -46,99 +42,49 @@ impl From<TimedItemError> for TimedHostError {
 
 /// A timed definition: its full values and expiry target.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TimedItemDefinition {
-    pub definition: ReferenceItemTarget,
+pub struct TimedItemDefinition<T> {
+    pub definition: T,
     pub full: TimedValues,
     /// `None` burns the item at expiry (§8).
-    pub decay_target: Option<ReferenceItemTarget>,
+    pub decay_target: Option<T>,
+}
+
+/// Content supplies the timed definition without coupling the host to its schema.
+pub trait TimedDefinitionSource<T> {
+    fn resolve_timed_definition(
+        &self,
+        definition: &T,
+    ) -> Result<Option<TimedItemDefinition<T>>, TimedHostError>;
 }
 
 /// The item's timed definition, or `None` when the hosting runtime does not run it.
-pub fn resolve_timed_definition(
-    definition: &ReferenceItemTarget,
-    semantics: &ReferenceItemSemantics,
-) -> Result<Option<TimedItemDefinition>, TimedHostError> {
-    use ReferenceItemField::{Conflict, Known};
-    let (remaining_ms, temporal_target) = match &semantics.temporal {
-        Conflict => return Err(TimedHostError::InvalidDefinition),
-        Known(temporal) => {
-            let target = match &temporal.decay_target {
-                Conflict => return Err(TimedHostError::InvalidDefinition),
-                Known(target) => Some(target),
-                _ => None,
-            };
-            match (&temporal.consumption_mode, &temporal.duration) {
-                (Conflict, _) | (_, Conflict) => return Err(TimedHostError::InvalidDefinition),
-                (Known(ReferenceTemporalMode::AuthoritativeActiveTimeBudget), Known(duration)) => {
-                    (Some(duration.0), target)
-                }
-                _ => (None, target),
-            }
-        }
-        _ => (None, None),
-    };
-    // §8: `transform {trigger: decay}` takes precedence; both set to different targets conflict.
-    let transform_target = match &semantics.use_transform {
-        Conflict => return Err(TimedHostError::InvalidDefinition),
-        Known(transform) => match transform
-            .targets
-            .iter()
-            .find(|entry| entry.kind == ReferenceTransformKind::Decay)
-            .map(|entry| &entry.target)
-        {
-            Some(Conflict) => return Err(TimedHostError::InvalidDefinition),
-            Some(Known(target)) => Some(target),
-            _ => None,
-        },
-        _ => None,
-    };
-    let decay_target = match (transform_target, temporal_target) {
-        (Some(transform), Some(temporal)) if transform != temporal => {
-            return Err(TimedHostError::InvalidDefinition);
-        }
-        (Some(target), _) | (None, Some(target)) => Some(target.clone()),
-        (None, None) => None,
-    };
-    let charges = match &semantics.charges {
-        Conflict => return Err(TimedHostError::InvalidDefinition),
-        Known(charges) => match charges.count {
-            Conflict => return Err(TimedHostError::InvalidDefinition),
-            Known(count) => Some(count),
-            _ => None,
-        },
-        _ => None,
-    };
-    if charges.is_none() && remaining_ms.is_none() {
-        return Ok(None);
-    }
-    Ok(Some(TimedItemDefinition {
-        definition: definition.clone(),
-        full: TimedValues::new(charges, remaining_ms)
-            .map_err(|_| TimedHostError::InvalidDefinition)?,
-        decay_target,
-    }))
+pub fn resolve_timed_definition<T>(
+    definition: &T,
+    semantics: &impl TimedDefinitionSource<T>,
+) -> Result<Option<TimedItemDefinition<T>>, TimedHostError> {
+    semantics.resolve_timed_definition(definition)
 }
 
 /// One item to make live: its definition and its row (`None` when it has none).
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct HostedItem {
+pub struct HostedItem<T> {
     pub item_instance_id: [u8; 16],
-    pub definition: TimedItemDefinition,
+    pub definition: TimedItemDefinition<T>,
     /// The row's revision and values; values `None` is a spent row, which is never live.
     pub row: Option<(u64, Option<TimedValues>)>,
 }
 
 /// One write for the caller to run, keyed by the lane.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct HostWrite {
+pub struct HostWrite<T> {
     pub item_instance_id: [u8; 16],
-    pub definition: TimedItemDefinition,
+    pub definition: TimedItemDefinition<T>,
     pub write: LaneWrite,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-struct Hosted {
-    definition: TimedItemDefinition,
+struct Hosted<T> {
+    definition: TimedItemDefinition<T>,
     /// The lane's write was handed to the caller and its outcome is not known yet.
     dispatched: bool,
     /// When the write in flight turned ambiguous.
@@ -147,14 +93,14 @@ struct Hosted {
 
 /// The live timed items of one actor in its hosting runtime.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TimedItemHost {
+pub struct TimedItemHost<T> {
     lanes: ActorTimedLanes,
-    hosted: BTreeMap<[u8; 16], Hosted>,
+    hosted: BTreeMap<[u8; 16], Hosted<T>>,
     exercise: Option<[u8; 16]>,
     checkpoint_interval_ms: u64,
 }
 
-impl TimedItemHost {
+impl<T: Clone> TimedItemHost<T> {
     /// A host that checkpoints a changed live item every `checkpoint_interval_ms`
     /// (1..=`TIMEDITEM0B-RL-01`).
     pub fn new(checkpoint_interval_ms: u64) -> Result<Self, TimedHostError> {
@@ -172,7 +118,11 @@ impl TimedItemHost {
     /// §5.1 places 1 and 2: the items in their slot at login, respawn or arrival become live.
     /// Spent rows are skipped. All of them are hosted or none: the count is checked against
     /// `TIMEDITEM0B-RL-04` before any lane opens.
-    pub fn host_live(&mut self, items: Vec<HostedItem>, now_ms: u64) -> Result<(), TimedHostError> {
+    pub fn host_live(
+        &mut self,
+        items: Vec<HostedItem<T>>,
+        now_ms: u64,
+    ) -> Result<(), TimedHostError> {
         let live: Vec<_> = items
             .into_iter()
             .filter(|item| !matches!(item.row, Some((_, None))))
@@ -191,7 +141,11 @@ impl TimedItemHost {
     }
 
     /// §5.1 place 3: the exercise weapon becomes live (EXERCISE-1 calls this).
-    pub fn bind_exercise(&mut self, item: HostedItem, now_ms: u64) -> Result<(), TimedHostError> {
+    pub fn bind_exercise(
+        &mut self,
+        item: HostedItem<T>,
+        now_ms: u64,
+    ) -> Result<(), TimedHostError> {
         if self.exercise.is_some() || matches!(item.row, Some((_, None))) {
             return Err(TimedHostError::ExerciseBinding);
         }
@@ -240,8 +194,8 @@ impl TimedItemHost {
         &mut self,
         now_ms: u64,
         mut transaction_id: impl FnMut() -> [u8; 16],
-        mut timed_target: impl FnMut(&ReferenceItemTarget) -> Option<TimedItemDefinition>,
-    ) -> Vec<HostWrite> {
+        mut timed_target: impl FnMut(&T) -> Option<TimedItemDefinition<T>>,
+    ) -> Vec<HostWrite<T>> {
         let mut writes = Vec::new();
         let mut released = Vec::new();
         for (id, hosted) in &mut self.hosted {
@@ -360,7 +314,7 @@ impl TimedItemHost {
         self.lanes.len()
     }
 
-    fn open(&mut self, item: HostedItem, now_ms: u64) -> Result<(), TimedHostError> {
+    fn open(&mut self, item: HostedItem<T>, now_ms: u64) -> Result<(), TimedHostError> {
         let (revision, values) = match item.row {
             Some((revision, Some(values))) => (revision, values),
             Some((_, None)) => return Err(TimedHostError::NotHosted),
@@ -388,17 +342,28 @@ impl TimedItemHost {
         }
     }
 
-    fn lane(&mut self, id: &[u8; 16]) -> Result<(&mut TimedItemLane, &mut Hosted), TimedHostError> {
+    fn lane(
+        &mut self,
+        id: &[u8; 16],
+    ) -> Result<(&mut TimedItemLane, &mut Hosted<T>), TimedHostError> {
         let hosted = self.hosted.get_mut(id).ok_or(TimedHostError::NotHosted)?;
         let lane = self.lanes.get_mut(id).ok_or(TimedHostError::NotHosted)?;
         Ok((lane, hosted))
     }
 }
 
-#[cfg(test)]
 #[allow(clippy::expect_used, clippy::panic)]
+#[cfg(test)]
 mod tests {
     use super::*;
+    use crate::content::{
+        ReferenceItemField, ReferenceItemSemantics, ReferenceItemTarget, ReferenceTemporalMode,
+        ReferenceTransformKind,
+    };
+    type TimedItemDefinition = super::TimedItemDefinition<ReferenceItemTarget>;
+    type HostWrite = super::HostWrite<ReferenceItemTarget>;
+    type HostedItem = super::HostedItem<ReferenceItemTarget>;
+    type TimedItemHost = super::TimedItemHost<ReferenceItemTarget>;
     use crate::content::{ReferenceItemCharges, ReferenceItemTemporal, ReferenceMilliseconds};
     use crate::domain::timed_item::{
         ExpireReason, LaneWriteKind, TIMEDITEM0B_RL_01_CHECKPOINT_INTERVAL_MS,

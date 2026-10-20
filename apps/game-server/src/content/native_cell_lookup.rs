@@ -8,7 +8,7 @@ mod sealed {
     pub trait Sealed {}
     impl Sealed for super::EngineeringStaticCellIndex {}
     impl Sealed for crate::content::project::native_spell_world::QualifiedNativeSpellWorld {}
-    impl Sealed for crate::map::boot::BundleCollisionIndex {}
+    impl Sealed for super::BundleCollisionIndex {}
 }
 pub(crate) trait NativeStaticCellLookup: sealed::Sealed {
     fn lookup(
@@ -35,7 +35,7 @@ impl NativeStaticCellLookup for super::project::native_spell_world::QualifiedNat
         self.lookup(scope, cell)
     }
 }
-impl NativeStaticCellLookup for crate::map::boot::BundleCollisionIndex {
+impl NativeStaticCellLookup for BundleCollisionIndex {
     fn lookup(
         &self,
         scope: &EngineeringStaticCellScope,
@@ -52,7 +52,7 @@ impl NativeStaticCellLookup for crate::map::boot::BundleCollisionIndex {
 pub(crate) enum NativeMovementCollisionIndex {
     Entry(EngineeringStaticCellIndex),
     Source(super::project::native_spell_world::QualifiedNativeSpellWorld),
-    Bundle(crate::map::boot::BundleCollisionIndex),
+    Bundle(BundleCollisionIndex),
 }
 impl sealed::Sealed for NativeMovementCollisionIndex {}
 impl NativeMovementCollisionIndex {
@@ -83,5 +83,36 @@ impl NativeStaticCellLookup for NativeMovementCollisionIndex {
         cell: LogicalCell,
     ) -> Result<CollisionClass, StaticCellEngineError> {
         self.lookup(scope, cell)
+    }
+}
+
+/// Read-only bundle collision supplied by the World owner.
+pub(crate) trait BundleCollisionLookup:
+    std::fmt::Debug + std::any::Any + Send + Sync
+{
+    fn lookup(
+        &self,
+        scope: &EngineeringStaticCellScope,
+        cell: LogicalCell,
+    ) -> Result<CollisionClass, StaticCellEngineError>;
+    fn same_index(&self, other: &dyn BundleCollisionLookup) -> bool;
+}
+
+/// A shared bundle collision port. The World owner retains its concrete map view.
+#[derive(Debug, Clone)]
+pub(crate) struct BundleCollisionIndex(pub(crate) std::sync::Arc<dyn BundleCollisionLookup>);
+impl PartialEq for BundleCollisionIndex {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.same_index(other.0.as_ref())
+    }
+}
+impl Eq for BundleCollisionIndex {}
+impl BundleCollisionIndex {
+    pub(crate) fn lookup(
+        &self,
+        scope: &EngineeringStaticCellScope,
+        cell: LogicalCell,
+    ) -> Result<CollisionClass, StaticCellEngineError> {
+        self.0.lookup(scope, cell)
     }
 }

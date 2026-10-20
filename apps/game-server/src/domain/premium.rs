@@ -8,7 +8,26 @@
 //! §4.1: every surface `REQUIRE_CURRENT`, every other class reads as Free). It starts closed, and
 //! only a Premium fence read that classified the account as current authority opens it.
 
-use crate::durability::premium_activation_latch::EmptyLatchHeld;
+/// Witness that the gate's transaction holds the shared lock and read an empty latch table. Only
+/// `DurabilityRoot::read_premium_activation_with` makes one, and lends it to the bypass for the
+/// transaction's duration.
+#[derive(Debug)]
+pub struct EmptyLatchHeld {
+    _private: (),
+}
+
+impl EmptyLatchHeld {
+    /// Called only after the durable latch read holds the shared lock.
+    pub(crate) const fn inside_gate() -> Self {
+        Self { _private: () }
+    }
+
+    /// Test-only: a witness for pure status tests that hold no transaction.
+    #[cfg(test)]
+    pub(crate) const fn for_test() -> Self {
+        Self { _private: () }
+    }
+}
 
 /// Soul maximum without a current promotion benefit.
 pub const BASE_SOUL_MAXIMUM: u32 = 100;

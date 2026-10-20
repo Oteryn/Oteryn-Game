@@ -14,10 +14,10 @@ use super::project::{
     ProjectV2AppearanceSelection, ProjectV2AuthoringProfile, ProjectV2AuthoringProfileData,
     ProjectV2DefinitionRef, ProjectV2Family,
 };
+use super::spell_data::{SpellBook, executable_catalog};
 use crate::domain::appearance::AppearanceContent;
 use crate::foundation::condition::{ConditionType, DotElement};
 use crate::foundation::{ChannelRuntimeV1, CompiledCreaturePolicies, CompiledCreaturePolicy};
-use crate::spell::{SpellBook, executable_catalog};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -734,7 +734,8 @@ pub(crate) struct NativeItemAttributes {
     pub(crate) blocks_projectile: Option<bool>,
     pub(crate) immovable_block_solid: Option<bool>,
     /// Missing is Unknown; only a source-qualified recipe may assert a non-damaging field.
-    pub(crate) field_condition: Option<crate::ability::field_condition::QualifiedFieldCondition>,
+    pub(crate) field_condition:
+        Option<crate::foundation::condition::field_condition::QualifiedFieldCondition>,
     /// Explicit activated source/config policy; absence stays Unknown.
     pub(crate) rune_consumption: Option<NativeRuneConsumption>,
     pub(crate) field_replaceable: Option<bool>,
