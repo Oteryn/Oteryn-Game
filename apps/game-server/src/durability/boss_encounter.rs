@@ -296,7 +296,7 @@ pub(crate) fn plan_respawn_death(
     let minimum = i64::try_from(min_s).map_err(|_| BossClockError::InvalidInput)?;
     let maximum = i64::try_from(max_s).map_err(|_| BossClockError::InvalidInput)?;
     let draw = draw(key, cycle, "boss_respawn")?;
-    let seconds = crate::spell::uniform_draw(draw, minimum, maximum);
+    let seconds = crate::durability::uniform_draw::uniform_draw(draw, minimum, maximum);
     let due = seconds
         .checked_mul(1000)
         .and_then(|delta| death_unix_ms.checked_add(delta))
@@ -334,7 +334,8 @@ pub(crate) fn plan_reset(
         return Ok(None);
     }
     let draw = draw(key, epoch, "boss_at_reset")?;
-    let yes = crate::spell::uniform_draw(draw, 0, (denominator - 1) as i64) < numerator as i64;
+    let yes = crate::durability::uniform_draw::uniform_draw(draw, 0, (denominator - 1) as i64)
+        < numerator as i64;
     Ok(Some(BossClock {
         state: if yes {
             BossClockState::Due

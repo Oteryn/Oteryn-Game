@@ -23,8 +23,8 @@ use crate::domain::guild::{
     GuildState, INVITATION_LIFETIME_MS, MEMBERS_MAX, TARGET_INVITATIONS_MAX,
 };
 use crate::domain::premium::PremiumStatus;
+use crate::durability::premium_activation_latch::PremiumGateOwner;
 use crate::foundation::CommandRef;
-use crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator;
 use sha2::{Digest, Sha256};
 use sqlx::{Acquire, Postgres, Row, Transaction};
 
@@ -193,7 +193,7 @@ impl GuildTextRequest {
             {
                 received.to_owned()
             }
-            GuildCommand::SetMessage => crate::chat::ChatText::parse(received)
+            GuildCommand::SetMessage => crate::durability::chat_text::ChatText::parse(received)
                 .map_err(|_| GuildError::InvalidInput)?
                 .as_str()
                 .to_owned(),
@@ -551,7 +551,7 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
         request: GuildFoundRequest,
-        premium: &SpellPremiumCoordinator,
+        premium: &impl PremiumGateOwner,
     ) -> Result<GuildOutcome> {
         let common = request.operation();
         let mut digest = Sha256::new();
@@ -730,7 +730,7 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
         rank: GuildRankRequest,
-        premium: &SpellPremiumCoordinator,
+        premium: &impl PremiumGateOwner,
     ) -> Result<GuildOutcome> {
         let binding = rank_binding(&fence, &rank)?;
         let recovery = authority
@@ -853,7 +853,7 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
         resign: GuildResignRequest,
-        premium: &SpellPremiumCoordinator,
+        premium: &impl PremiumGateOwner,
     ) -> Result<GuildOutcome> {
         let binding = resign_binding(&fence, &resign)?;
         let recovery = authority

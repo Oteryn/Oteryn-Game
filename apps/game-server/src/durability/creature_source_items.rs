@@ -377,8 +377,8 @@ impl CreatureGroundCause {
             return Err(SpellItemError::Rejected("Creature source schedule kind"));
         };
         let list = match proposal.list {
-            crate::ai_think::profile_schedule::ScheduleList::Attack => &behavior.attacks,
-            crate::ai_think::profile_schedule::ScheduleList::Defence => &behavior.defenses,
+            crate::durability::creature_schedule::ScheduleList::Attack => &behavior.attacks,
+            crate::durability::creature_schedule::ScheduleList::Defence => &behavior.defenses,
         };
         if list
             .get(proposal.entry_index)
@@ -452,8 +452,8 @@ impl CreatureGroundCause {
             .parse::<u64>()
             .map_err(|_| SpellItemError::Rejected("Creature AI sequence"))?;
         let label = match proposal.list {
-            crate::ai_think::profile_schedule::ScheduleList::Attack => "attack",
-            crate::ai_think::profile_schedule::ScheduleList::Defence => "defence",
+            crate::durability::creature_schedule::ScheduleList::Attack => "attack",
+            crate::durability::creature_schedule::ScheduleList::Defence => "defence",
         };
         if sequence != parsed.to_string() || suffix != format!("{label}:{}", proposal.entry_index) {
             return Err(SpellItemError::Rejected(
@@ -561,10 +561,10 @@ async fn prepare_creature_source_fields_in_transaction(
     cause: &CreatureGroundCause,
     proposal: &crate::ai_think::profile_schedule::ProfileAbilityProposal,
 ) -> Result<PreparedCreatureGroundOperations> {
+    use crate::content::creature_attack_geometry as geometry;
     use crate::content::{
         ProjectV2AbilityEffect, ProjectV2AuthoringProfileData, ProjectV2InlineEffectOperation,
     };
-    use crate::creature_attack_geometry as geometry;
     use crate::foundation::{MovementFacing, MovementLocalPosition as Pos};
     check_scope_transaction(tx, authority).await?;
     if authority.world_bytes() != cause.world
@@ -1190,7 +1190,7 @@ pub(crate) async fn execute_scheduled_creature_source_items_in_transaction(
 fn conservative_destroy_stack_is_known(
     static_layers_known_empty: bool,
     occupied: bool,
-    listed: &[crate::spell::native_items::NativeItemRef],
+    listed: &[crate::content::native_items::NativeItemRef],
     rows: &[crate::durability::spell_items_abi::DurableTileItem],
 ) -> Result<bool> {
     if rows.iter().any(|row| row.top_down_ordinal == 0)
@@ -1246,7 +1246,7 @@ async fn prepare_creature_source_destroy_in_transaction(
     proposal: &crate::ai_think::profile_schedule::ProfileAbilityProposal,
     items: &[crate::content::ProjectV2DefinitionRef],
 ) -> Result<PreparedCreatureGroundOperations> {
-    use crate::spell::native_items::{
+    use crate::content::native_items::{
         ItemOperation, NativeItemRef, SourceRemovalTile, WorldItemFacts, plan_source_item_removals,
     };
     let listed: Vec<_> = items
@@ -1410,7 +1410,7 @@ fn destroy_instance_key(bytes: &[u8; 16]) -> String {
 mod conservative_destroy_tests {
     #![allow(clippy::expect_used, clippy::items_after_test_module)]
     use super::*;
-    use crate::spell::native_items::NativeItemRef;
+    use crate::content::native_items::NativeItemRef;
     fn listed() -> Vec<NativeItemRef> {
         [10181, 2128, 10182, 2130]
             .into_iter()
