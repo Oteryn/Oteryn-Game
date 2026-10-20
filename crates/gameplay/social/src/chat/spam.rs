@@ -14,7 +14,7 @@ use super::SpeechMode;
 
 const MICROS_PER_SECOND: u64 = 1_000_000;
 /// `CHAT0-RL-02`: a bucket of 4 lines.
-pub(crate) const BUCKET_LINES: u8 = 4;
+pub const BUCKET_LINES: u8 = 4;
 /// `CHAT0-RL-02`: one line comes back every 2.5 s.
 const REFILL_MICROS: u64 = 2_500_000;
 /// How long an under-level yell is refused by [`ChatLimiter::pre_gate`] without the Channel (each
@@ -42,7 +42,7 @@ const ADVERTISING_INTERVAL_MICROS: u64 = 2 * 60 * MICROS_PER_SECOND;
 
 /// Why a line that passed the text checks is not sent.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum ChatRefusal {
+pub enum ChatRefusal {
     /// `MUTED {seconds}`: the character is muted, or this line started a mute.
     Muted { seconds: u32 },
     /// `EXHAUSTED {seconds}`: the yell cooldown runs.
@@ -54,9 +54,9 @@ pub(crate) enum ChatRefusal {
 /// The speaker's facts a yell is gated on. `premium_current` stays `false` until Premium is
 /// delivered (PREMIUM-DELIVERY-0).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct YellGate {
-    pub(crate) level: u32,
-    pub(crate) premium_current: bool,
+pub struct YellGate {
+    pub level: u32,
+    pub premium_current: bool,
 }
 
 impl YellGate {
@@ -66,19 +66,19 @@ impl YellGate {
 
     /// Whether the speaker may write to `room`: Help is open to all, the other rooms need level 20
     /// or `premium_current`. The level-1 ban is the yell's own and does not apply here.
-    pub(crate) fn allows_room(self, room: ChatRoom) -> bool {
+    pub fn allows_room(self, room: ChatRoom) -> bool {
         room == ChatRoom::Help || self.level >= YELL_FREE_LEVEL || self.premium_current
     }
 
     /// Whether the speaker may send a private message: level 3.
-    pub(crate) fn allows_private(self) -> bool {
+    pub fn allows_private(self) -> bool {
         self.level >= PRIVATE_LEVEL
     }
 }
 
 /// One character's spam bucket, offences, mute and yell cooldown.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct ChatLimiter {
+pub struct ChatLimiter {
     lines: u8,
     /// When the next line comes back; meaningful only while the bucket is not full.
     refill_anchor: SemanticTimeMicros,
@@ -99,7 +99,7 @@ pub(crate) struct ChatLimiter {
 
 impl ChatLimiter {
     /// A full bucket, no offences, not muted.
-    pub(crate) fn new(now: SemanticTimeMicros) -> Self {
+    pub fn new(now: SemanticTimeMicros) -> Self {
         Self {
             lines: BUCKET_LINES,
             refill_anchor: now,
@@ -114,7 +114,7 @@ impl ChatLimiter {
     }
 
     /// Whether the character is muted at `now`: it can neither chat nor cast a spell.
-    pub(crate) fn is_muted(&self, now: SemanticTimeMicros) -> bool {
+    pub fn is_muted(&self, now: SemanticTimeMicros) -> bool {
         self.muted_until.is_some_and(|until| until > now)
     }
 
@@ -127,7 +127,7 @@ impl ChatLimiter {
     /// `LevelTooLow` here, so repeated under-level yells drain the bucket and reach the offence
     /// without taking the Channel locks. Any other line takes no line here: it goes through
     /// [`Self::admit_local`], which takes it.
-    pub(crate) fn pre_gate(
+    pub fn pre_gate(
         &mut self,
         mode: SpeechMode,
         now: SemanticTimeMicros,
@@ -169,7 +169,7 @@ impl ChatLimiter {
     /// line that passes the mute and the cooldown takes one line from the bucket, an under-level
     /// yell included; a line beyond the bucket is dropped and starts a mute. An admitted yell
     /// starts the cooldown.
-    pub(crate) fn admit_local(
+    pub fn admit_local(
         &mut self,
         mode: SpeechMode,
         gate: YellGate,
@@ -215,7 +215,7 @@ impl ChatLimiter {
     /// the offence. Any other line takes its line here, before its level, its recipient or the
     /// relay is consulted, so a refused line (`LEVEL_TOO_LOW`, `NOT_ONLINE`, `NO_VOCATION`) costs a
     /// line like a sent one and a flood of them reaches the mute without the Channel locks.
-    pub(crate) fn pre_gate_relay(
+    pub fn pre_gate_relay(
         &mut self,
         advertising: bool,
         now: SemanticTimeMicros,
@@ -249,7 +249,7 @@ impl ChatLimiter {
     /// Claims the Advertising interval for a line about to be sent: `Exhausted` while it runs.
     /// Checked again here, under the same lock as the claim, so two lines racing past
     /// [`Self::pre_gate_relay`] cannot both be sent.
-    pub(crate) fn claim_advertising(&mut self, now: SemanticTimeMicros) -> Result<(), ChatRefusal> {
+    pub fn claim_advertising(&mut self, now: SemanticTimeMicros) -> Result<(), ChatRefusal> {
         let now = now.max(self.last_seen);
         self.last_seen = now;
         if let Some(ready) = self.advertising_ready_at.filter(|ready| *ready > now) {
@@ -264,7 +264,7 @@ impl ChatLimiter {
     /// Records a private message to `recipient` (`CHAT0-RL-05`). A 21st distinct recipient within
     /// 10 minutes is an offence: the line is dropped and the character is muted as for an empty
     /// bucket. A recipient already written to in the window is always admitted.
-    pub(crate) fn admit_recipient(
+    pub fn admit_recipient(
         &mut self,
         recipient: [u8; 16],
         now: SemanticTimeMicros,

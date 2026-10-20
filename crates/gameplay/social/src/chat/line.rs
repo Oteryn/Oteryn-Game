@@ -9,7 +9,7 @@ use super::{ChatPosition, ChatText, Heard, SpeechMode, WHISPER_OBSCURED, hears};
 
 /// The listeners of a local line and what each hears, in the order given. The speaker is chosen
 /// like any listener, so it hears its own line when its position is among `listeners`.
-pub(crate) fn local_listeners<K>(
+pub fn local_listeners<K>(
     mode: SpeechMode,
     speaker: ChatPosition,
     listeners: impl IntoIterator<Item = (K, ChatPosition)>,
@@ -22,7 +22,7 @@ pub(crate) fn local_listeners<K>(
 
 /// The `LOCAL` line one listener receives. A yell is upper-cased; a whisper heard from beyond an
 /// adjacent tile carries [`WHISPER_OBSCURED`] as its text.
-pub(crate) fn local_line(
+pub fn local_line(
     speaker: ChatSpeaker,
     speaker_name: &str,
     mode: SpeechMode,
@@ -48,14 +48,14 @@ pub(crate) fn local_line(
     }
 }
 
-pub(crate) fn private_line(speaker_name: &str, text: &ChatText) -> ChatLine {
+pub fn private_line(speaker_name: &str, text: &ChatText) -> ChatLine {
     ChatLine::Private {
         speaker_name: speaker_name.to_owned(),
         text: text.as_str().to_owned(),
     }
 }
 
-pub(crate) fn room_line(room: ChatRoom, speaker_name: &str, text: &ChatText) -> ChatLine {
+pub fn room_line(room: ChatRoom, speaker_name: &str, text: &ChatText) -> ChatLine {
     ChatLine::Room {
         room,
         speaker_name: speaker_name.to_owned(),

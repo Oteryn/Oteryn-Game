@@ -9,10 +9,10 @@ use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 
-const WHEEL: &str = include_str!("../../../rulesets/progression/wheel-of-destiny/wheel.json");
-const GEMS: &str = include_str!("../../../rulesets/progression/wheel-of-destiny/gems.json");
+const WHEEL: &str = include_str!("../../../../rulesets/progression/wheel-of-destiny/wheel.json");
+const GEMS: &str = include_str!("../../../../rulesets/progression/wheel-of-destiny/gems.json");
 const MANIFEST: &str =
-    include_str!("../../../rulesets/progression/wheel-of-destiny/import-manifest.json");
+    include_str!("../../../../rulesets/progression/wheel-of-destiny/import-manifest.json");
 const SOURCE: &str = "tools/content-schema/wheel-authoring/samples/wheel-candidate.json";
 const VOCATIONS: [&str; 5] = ["druid", "knight", "monk", "paladin", "sorcerer"];
 

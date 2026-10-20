@@ -1986,6 +1986,7 @@ dependencies = [
  "oteryn-gameplay-monster-ai",
  "oteryn-gameplay-native-admission-source",
  "oteryn-gameplay-node-files",
+ "oteryn-gameplay-social",
  "oteryn-gameplay-source-critical-baseline",
  "oteryn-gameplay-spell",
  "oteryn-gameplay-weather",
@@ -2168,6 +2169,31 @@ dependencies = [
  "rustix 1.1.5",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "oteryn-gameplay-social"
+version = "0.1.0"
+dependencies = [
+ "aws-lc-rs",
+ "base64",
+ "oteryn-gameplay-combat",
+ "oteryn-gameplay-content",
+ "oteryn-gameplay-domain",
+ "oteryn-gameplay-durability",
+ "oteryn-gameplay-foundation",
+ "oteryn-gameplay-world",
+ "oteryn-ntp-clock",
+ "oteryn-protocol-oteryn",
+ "oteryn-simulation-determinism",
+ "rcgen",
+ "reqwest",
+ "rustls",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+ "tokio",
+ "tokio-rustls",
 ]
 
 [[package]]

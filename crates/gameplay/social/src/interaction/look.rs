@@ -10,7 +10,7 @@ use std::num::NonZeroU32;
 /// Identity, visibility and admission are the caller's responsibility. Unknown and
 /// conflicting descriptions are omitted; a missing name cannot produce examine text.
 /// Article, pluralisation, weight and readable-instance text await owning contracts.
-pub(crate) fn item_text(semantics: &ReferenceItemSemantics, count: NonZeroU32) -> Option<String> {
+pub fn item_text(semantics: &ReferenceItemSemantics, count: NonZeroU32) -> Option<String> {
     let ReferenceItemField::Known(presentation) = &semantics.presentation else {
         return None;
     };

@@ -24,7 +24,7 @@ pub mod foundation;
 #[allow(dead_code, unused_imports)]
 pub use oteryn_gameplay_native_admission_source as native_admission_source;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/premium/mod.rs"]
+#[path = "../../../crates/gameplay/social/src/premium/mod.rs"]
 mod premium;
 
 use durability::DurabilityRoot;
@@ -3064,15 +3064,15 @@ pub mod content;
 // D39 chest `USE` wiring to the CHEST-1 reward-claim MINT shares its cases with
 // the focused standalone target through the same protected lane.
 #[allow(dead_code, unused_imports)]
-#[path = "../src/achievement_catalogue.rs"]
+#[path = "../../../crates/gameplay/social/src/achievement_catalogue.rs"]
 pub mod achievement_catalogue;
 #[path = "support/chest_use_postgres_cases.rs"]
 mod chest_use_postgres_cases;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/interaction/mod.rs"]
+#[path = "../../../crates/gameplay/social/src/interaction/mod.rs"]
 pub mod interaction;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/interaction/chest_use.rs"]
+#[path = "../../../crates/gameplay/social/src/interaction/chest_use.rs"]
 pub mod interaction_chest_use;
 
 // GOLD-FEE-1a in-transaction gold fee BURN (migration 0023) shares its cases

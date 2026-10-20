@@ -7,23 +7,23 @@
 //! messages, rooms and the durable mute row are CHAT-2. Chat is Channel-local here and never
 //! durable.
 
-pub(crate) mod egress;
-pub(crate) mod greeting;
-pub(crate) mod line;
-pub(crate) mod relay;
-pub(crate) mod spam;
+pub mod egress;
+pub mod greeting;
+pub mod line;
+pub mod relay;
+pub mod spam;
 #[cfg(test)]
 mod tests;
 
 #[allow(unused_imports)] // Preserve the existing text grammar paths.
-pub(crate) use crate::durability::chat_text::{
+pub use crate::durability::chat_text::{
     ChatText, TEXT_MAX_BYTES, TEXT_MAX_CHARS, TextError,
 };
-pub(crate) use egress::{ChatEgress, EGRESS_MAX_LINES};
-pub(crate) use greeting::{GreetingNpc, greeted_npc};
-pub(crate) use line::{local_line, local_listeners, private_line, room_line};
-pub(crate) use spam::{ChatLimiter, ChatRefusal, YellGate};
+pub use egress::{ChatEgress, EGRESS_MAX_LINES};
+pub use greeting::{GreetingNpc, greeted_npc};
+pub use line::{local_line, local_listeners, private_line, room_line};
+pub use spam::{ChatLimiter, ChatRefusal, YellGate};
 
-pub(crate) use crate::foundation::speech::{
+pub use crate::foundation::speech::{
     ChatPosition, Heard, SpeechMode, WHISPER_OBSCURED, hears,
 };

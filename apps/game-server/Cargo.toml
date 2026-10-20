@@ -17,6 +17,7 @@ release-role = "production"
 test-support = []
 
 [dependencies]
+oteryn-gameplay-social = { version = "=0.1.0", path = "../../crates/gameplay/social" }
 oteryn-gameplay-monster-ai = { version = "=0.1.0", path = "../../crates/gameplay/monster-ai" }
 oteryn-gameplay-encounters = { version = "=0.1.0", path = "../../crates/gameplay/encounters" }
 oteryn-gameplay-spell = { version = "=0.1.0", path = "../../crates/gameplay/spell" }

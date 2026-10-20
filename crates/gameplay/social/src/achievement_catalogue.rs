@@ -32,8 +32,8 @@ use crate::durability::account_achievement::{
 /// Every `content/achievements/achievements-*.json` shard, in file-name order. A unit test keeps
 /// this list equal to the directory.
 const SHARDS: [&str; 2] = [
-    include_str!("../../../content/achievements/achievements-00000-00499.json"),
-    include_str!("../../../content/achievements/achievements-00500-00570.json"),
+    include_str!("../../../../content/achievements/achievements-00000-00499.json"),
+    include_str!("../../../../content/achievements/achievements-00500-00570.json"),
 ];
 
 const FAMILY: &str = "Achievement";
@@ -81,7 +81,7 @@ struct Entry {
 /// The display read failed closed (display contract §4.3): a fact whose key the catalogue lacks
 /// is a server integrity error, never skipped, because a skip would understate the points.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum AccountAchievementsPageError {
+pub enum AccountAchievementsPageError {
     /// A fact under this key, which the catalogue lacks.
     UnknownKey(String),
     /// The fact count or the point total does not fit `uint32`.
@@ -92,7 +92,7 @@ impl AccountAchievementsPageError {
     /// The registered operation-terminal error of the reply (owner decision 2026-09-30): an
     /// unknown key is `ACCOUNT_DATA_INTEGRITY`, which tells the client only that its account data
     /// needs support; an overflow stays a plain `REJECTED`.
-    pub(crate) const fn protocol_error(&self) -> Option<FoundationProtocolError> {
+    pub const fn protocol_error(&self) -> Option<FoundationProtocolError> {
         match self {
             Self::UnknownKey(_) => Some(FoundationProtocolError::AccountDataIntegrity),
             Self::Overflow => None,
@@ -104,18 +104,18 @@ impl AccountAchievementsPageError {
 /// contract §4.1), the page, and the request's correlation (FND-02 §20), which only the operator
 /// event of an integrity fault uses.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct AccountAchievementsRequest {
-    pub(crate) account_id: [u8; 16],
-    pub(crate) page: u32,
-    pub(crate) game_session_id: [u8; 16],
-    pub(crate) command_id: u64,
+pub struct AccountAchievementsRequest {
+    pub account_id: [u8; 16],
+    pub page: u32,
+    pub game_session_id: [u8; 16],
+    pub command_id: u64,
 }
 
 /// The operator event of an Achievement integrity fault (owner decision 2026-09-30): one
 /// error-level line with the account, the offending key and the request (GameSessionId and
 /// CommandId), and nothing else. The key is quoted and escaped, so stored text cannot break the
 /// line.
-pub(crate) fn integrity_fault_event(request: &AccountAchievementsRequest, key: &str) -> String {
+pub fn integrity_fault_event(request: &AccountAchievementsRequest, key: &str) -> String {
     format!(
         "event=account_achievement_integrity_fault level=error account_id={} achievement_key={key:?} game_session_id={} command_id={}",
         uuid(&request.account_id),
@@ -138,7 +138,7 @@ fn uuid(bytes: &[u8; 16]) -> String {
 
 /// The catalogue could not be loaded; the server refuses readiness.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum AchievementCatalogueError {
+pub enum AchievementCatalogueError {
     /// A shard is not a catalogue shard (not JSON, or not the shard shape).
     MalformedShard,
     /// A shard or record identity names another family.
@@ -153,18 +153,18 @@ pub(crate) enum AchievementCatalogueError {
 
 /// The world's Achievement catalogue: key to revision and retired state.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct AchievementCatalogue {
+pub struct AchievementCatalogue {
     entries: BTreeMap<String, Entry>,
 }
 
 impl AchievementCatalogue {
     /// The catalogue embedded from `content/achievements/`.
-    pub(crate) fn embedded() -> Result<Self, AchievementCatalogueError> {
+    pub fn embedded() -> Result<Self, AchievementCatalogueError> {
         Self::from_shards(&SHARDS)
     }
 
     /// All shards together form one catalogue, so keys are unique across them.
-    pub(crate) fn from_shards(shards: &[&str]) -> Result<Self, AchievementCatalogueError> {
+    pub fn from_shards(shards: &[&str]) -> Result<Self, AchievementCatalogueError> {
         let mut entries = BTreeMap::new();
         for shard in shards {
             let shard: Shard = serde_json::from_str(shard)
@@ -213,7 +213,7 @@ impl AchievementCatalogue {
     }
 
     /// The catalogue's entry for `key` (contract §3).
-    pub(crate) fn lookup(&self, key: &str) -> AchievementCatalogueLookup {
+    pub fn lookup(&self, key: &str) -> AchievementCatalogueLookup {
         match self.entries.get(key) {
             None => AchievementCatalogueLookup::Absent,
             Some(Entry { retired: true, .. }) => AchievementCatalogueLookup::Retired,
@@ -223,14 +223,14 @@ impl AchievementCatalogue {
         }
     }
 
-    pub(crate) fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.entries.len()
     }
 
     /// Content validation (contract §3.3): the achievement keys that `content`'s RewardClaim
     /// placements name and this catalogue lacks, in Content order. A retired key binds (§3.4);
     /// the server refuses a Content activation with any unbound key.
-    pub(crate) fn unbound_reward_claim_achievements<'a>(
+    pub fn unbound_reward_claim_achievements<'a>(
         &self,
         content: &'a CanonicalReferencePlayableContent,
     ) -> Vec<&'a str> {
@@ -259,7 +259,7 @@ impl AchievementCatalogue {
     /// `fact_count` is their number, the same on every page. Rows are ordered by grade, then name
     /// by Unicode code point (UTF-8 byte order is code point order), then key; a page holds
     /// `min(64, remaining)` rows and a page past the end holds none.
-    pub(crate) fn account_achievements_page(
+    pub fn account_achievements_page(
         &self,
         facts: &[EarnedAchievement],
         page: u32,
@@ -312,7 +312,7 @@ impl AchievementCatalogue {
     /// An unknown key is an integrity fault (owner decision 2026-09-30): the operator learns of it
     /// through one [`integrity_fault_event`] passed to `log`, the client only through the reply's
     /// [`AccountAchievementsPageError::protocol_error`].
-    pub(crate) fn answer_account_achievements(
+    pub fn answer_account_achievements(
         &self,
         facts: &[EarnedAchievement],
         request: &AccountAchievementsRequest,
@@ -462,7 +462,7 @@ mod tests {
     #[test]
     fn the_embedded_shards_are_the_catalogue_directory() {
         let directory =
-            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content/achievements");
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server")).join("../../content/achievements");
         let mut names: Vec<String> = std::fs::read_dir(&directory)
             .into_iter()
             .flatten()

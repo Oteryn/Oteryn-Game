@@ -27,7 +27,7 @@ pub use oteryn_gameplay_native_admission_source as native_admission_source;
 // The runtime Achievement catalogue of the display read, with the narrow
 // `content` shim it names (as `character_authority_postgres` includes them).
 #[allow(dead_code, unused_imports)]
-#[path = "../src/achievement_catalogue.rs"]
+#[path = "../../../crates/gameplay/social/src/achievement_catalogue.rs"]
 pub mod achievement_catalogue;
 #[allow(dead_code, unused_imports)]
 #[path = "support/content_shim.rs"]

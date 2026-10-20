@@ -73,32 +73,32 @@ use crate::interaction::{
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 
 /// §5.5 typed edge of a player `USE` on a placed object.
-pub(crate) const USE_EDGE: &str = "USE";
+pub const USE_EDGE: &str = "USE";
 
 /// A player's `USE` of one placed reward chest, as GAME-INTERACTION resolves it.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct ChestUseRequest {
+pub struct ChestUseRequest {
     /// The FND-02 `CommandRef` of the player's `USE`; the DUR-03 cause key.
-    pub(crate) command: CommandRef,
+    pub command: CommandRef,
     /// The placed chest the player used. It must be an Item placement in the current Content
     /// and be listed under a RewardClaim; the claim and the reward are resolved from Content.
-    pub(crate) chest: PlacementKey,
-    pub(crate) content_revision: String,
-    pub(crate) ruleset_revision: String,
-    pub(crate) sim_revision: String,
+    pub chest: PlacementKey,
+    pub content_revision: String,
+    pub ruleset_revision: String,
+    pub sim_revision: String,
 }
 
 /// Committed or replayed result of one chest `USE`, with its GAME-INTERACTION correlation.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct ChestUseOutcome {
-    pub(crate) child: ChildOccurrenceRef,
-    pub(crate) mint: RewardClaimMintOutcome,
+pub struct ChestUseOutcome {
+    pub child: ChildOccurrenceRef,
+    pub mint: RewardClaimMintOutcome,
     /// ACH-NOTIFY-1/2: the notice of the grant this commit made; `None` on a replay.
-    pub(crate) notice: GrantNotice,
+    pub notice: GrantNotice,
 }
 
 #[derive(Debug)]
-pub(crate) enum ChestUseError {
+pub enum ChestUseError {
     /// No placement with the named key exists in the current Content.
     ChestNotPlaced,
     /// The placement is not an Item placement, so it cannot be a chest.
@@ -192,7 +192,7 @@ fn chest_occurrence(
 }
 
 /// §5.1 child identity of the chest `USE`, from the resolved chest ([`resolve_chest`]).
-pub(crate) fn chest_use_occurrence(
+pub fn chest_use_occurrence(
     request: &ChestUseRequest,
     chest: &ResolvedChest,
 ) -> Result<ChildOccurrenceRef, InteractionError> {
@@ -202,20 +202,20 @@ pub(crate) fn chest_use_occurrence(
 /// A placed chest resolved from the current Content: its placement definition, the claim that
 /// lists it and that placement's reward and achievement.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct ResolvedChest {
+pub struct ResolvedChest {
     /// The placement definition as `Item:key@revision` (§5.3).
-    pub(crate) definition: String,
-    pub(crate) claim: TypedDefinitionRef,
-    pub(crate) reward_item: TypedDefinitionRef,
-    pub(crate) quantity: u32,
+    pub definition: String,
+    pub claim: TypedDefinitionRef,
+    pub reward_item: TypedDefinitionRef,
+    pub quantity: u32,
     /// That placement's `oteryn:achievement/<slug>` key, if the chest grants one.
-    pub(crate) achievement: Option<String>,
+    pub achievement: Option<String>,
     /// The quest transition the chest requests (QUEST-STATE-0 §5.4), recorded as an obligation
     /// with the claim. Only a placement the lowering bound (CHEST-QUEST-BIND-1) carries one; every
     /// other chest has none and its claim is unchanged.
-    pub(crate) quest_transition: Option<String>,
+    pub quest_transition: Option<String>,
     /// The key number of a key reward (KEY-1), minted onto the item.
-    pub(crate) key_number: Option<u16>,
+    pub key_number: Option<u16>,
 }
 
 fn durable_ref(family: &str, definition: &ContentDefinitionRef) -> TypedDefinitionRef {
@@ -228,7 +228,7 @@ fn durable_ref(family: &str, definition: &ContentDefinitionRef) -> TypedDefiniti
 
 /// §5.4: the server resolves the target. The named chest must be an Item placement of the
 /// current Content generation, listed under a RewardClaim; its reward is that placement's entry.
-pub(crate) fn resolve_chest(
+pub fn resolve_chest(
     content: &CanonicalReferencePlayableContent,
     chest: &PlacementKey,
 ) -> Result<ResolvedChest, ChestUseError> {
@@ -287,7 +287,7 @@ fn chest_achievement(
 /// Everything before DUR-03: resolve the chest and the facts from `content` and the equipped
 /// backpack, the achievement's entry from `achievements`, and build the child occurrence and the
 /// MINT intent. Reads only; writes nothing.
-pub(crate) async fn prepare_chest_use(
+pub async fn prepare_chest_use(
     session: &DurabilitySession<'_, '_, '_>,
     content: &CanonicalReferencePlayableContent,
     achievements: &AchievementCatalogue,
@@ -327,7 +327,7 @@ pub(crate) async fn prepare_chest_use(
 
 /// D39 entry point: [`prepare_chest_use`], then claim through CHEST-1's freeze and commit.
 /// Every failure before freeze writes nothing.
-pub(crate) async fn settle_chest_use(
+pub async fn settle_chest_use(
     session: &DurabilitySession<'_, '_, '_>,
     content: &CanonicalReferencePlayableContent,
     achievements: &AchievementCatalogue,
@@ -363,33 +363,33 @@ pub(crate) async fn settle_chest_use(
 /// `world_runtime::bind_native_entry_door` injects the door placement. The compiled native
 /// Content and its digests stay unchanged: this clone is never hashed, pinned or projected to a
 /// client; only the chest `USE` reads it.
-pub(crate) mod entry_chest {
+pub mod entry_chest {
     /// The chest placement the client names in `USE_INTENT` field 1.
-    pub(crate) const PLACEMENT: &str = "oteryn:placement/entry-chest";
-    pub(crate) const CHEST_ITEM: &str = "oteryn:item/entry-chest";
-    pub(crate) const REWARD_ITEM: &str = "oteryn:item/entry-reward-coin";
-    pub(crate) const REWARD_COUNT: u32 = 10;
+    pub const PLACEMENT: &str = "oteryn:placement/entry-chest";
+    pub const CHEST_ITEM: &str = "oteryn:item/entry-chest";
+    pub const REWARD_ITEM: &str = "oteryn:item/entry-reward-coin";
+    pub const REWARD_COUNT: u32 = 10;
     /// The main backpack definition the chest's MINT resolves. Until STARTER-BACKPACK provisions
     /// one, no production Character has a main backpack and the chest refuses `NoMainBackpack`.
-    pub(crate) const BACKPACK_ITEM: &str = "oteryn:item/entry-backpack";
-    pub(crate) const BACKPACK_CAPACITY: u16 = 20;
-    pub(crate) const CLAIM: &str = "oteryn:reward-claim/entry-chest";
-    pub(crate) const DEFINITION_REVISION: &str = "oteryn:rev/entry-chest-r1";
+    pub const BACKPACK_ITEM: &str = "oteryn:item/entry-backpack";
+    pub const BACKPACK_CAPACITY: u16 = 20;
+    pub const CLAIM: &str = "oteryn:reward-claim/entry-chest";
+    pub const DEFINITION_REVISION: &str = "oteryn:rev/entry-chest-r1";
     /// Must equal `content::accepted::REVISIONS[1]` (the entry room's map revision).
-    pub(crate) const MAP_REVISION: &str = "oteryn:map/entry-r2";
+    pub const MAP_REVISION: &str = "oteryn:map/entry-r2";
     /// The entry room's non-walkable `entry-north` cell (`content::accepted::CELLS[2]`): one step
     /// from the start cell and from the door, so the chest never stands on a walkable cell.
-    pub(crate) const CELL: (i32, i32, i32) = (0, -1, 0);
+    pub const CELL: (i32, i32, i32) = (0, -1, 0);
     /// The revisions a chest `USE` is bound to: the entry room's content, ruleset and sim
     /// revisions (`content::accepted::REVISIONS[0]`, `[2]` and `[6]`).
-    pub(crate) const CONTENT_REVISION: &str = "oteryn:content/entry-r2";
-    pub(crate) const RULESET_REVISION: &str = "oteryn:ruleset/entry-r1";
-    pub(crate) const SIM_REVISION: &str = "oteryn:sim/entry-r1";
+    pub const CONTENT_REVISION: &str = "oteryn:content/entry-r2";
+    pub const RULESET_REVISION: &str = "oteryn:ruleset/entry-r1";
+    pub const SIM_REVISION: &str = "oteryn:sim/entry-r1";
 }
 
 /// `base` with the entry chest injected: the chest, reward and backpack Item definitions, the
 /// chest's `once` RewardClaim and the chest as the only placement. Data only; writes nothing.
-pub(crate) fn with_entry_chest(
+pub fn with_entry_chest(
     base: &CanonicalReferencePlayableContent,
 ) -> Result<CanonicalReferencePlayableContent, crate::content::ContentError> {
     use crate::content::{
@@ -529,7 +529,7 @@ const CHEST_USE_ATTEMPTS: usize = 3;
 /// written unless DUR-03 committed. Production refuses `NoMainBackpack` until STARTER-BACKPACK.
 /// The third value is the notice of the grant this `USE` made (ACH-NOTIFY-2). After an unproven
 /// attempt, a replayed outcome may hide a committed `Granted`, so its notice is `Unknown`.
-pub(crate) async fn use_chest(
+pub async fn use_chest(
     session: &DurabilitySession<'_, '_, '_>,
     content: &CanonicalReferencePlayableContent,
     achievements: &AchievementCatalogue,
@@ -572,7 +572,7 @@ pub(crate) async fn use_chest(
 }
 
 /// The wire disposition of a chest `USE` that did not mint.
-pub(crate) fn chest_use_disposition(error: &ChestUseError) -> UseDisposition {
+pub fn chest_use_disposition(error: &ChestUseError) -> UseDisposition {
     match error {
         ChestUseError::Mint(RewardClaimMintError::Refused(RewardClaimRefusal::AlreadyClaimed)) => {
             UseDisposition::NothingToUse

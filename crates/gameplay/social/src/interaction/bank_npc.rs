@@ -21,7 +21,7 @@ use crate::durability::bank::{
 use crate::durability::bank_audit::{BANK_DEPOSIT_MAX, BANK_TRANSFER_MAX, BANK_WITHDRAW_MAX};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum BankNpcError {
+pub enum BankNpcError {
     InvalidInput,
     AmountOutOfRange,
     UnknownRecipient,
@@ -30,7 +30,7 @@ pub(crate) enum BankNpcError {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum BankNpcIntent {
+pub enum BankNpcIntent {
     Balance,
     Deposit(u64),
     DepositAll,
@@ -41,7 +41,7 @@ pub(crate) enum BankNpcIntent {
 impl BankNpcIntent {
     /// Deposit and withdraw move coin custody and need current backpack coin facts; balance
     /// and transfer read only the Bank account and never resolve item custody.
-    pub(crate) const fn uses_coin_custody(&self) -> bool {
+    pub const fn uses_coin_custody(&self) -> bool {
         matches!(
             self,
             Self::Deposit(_) | Self::DepositAll | Self::Withdraw(_)
@@ -61,7 +61,7 @@ fn amount(value: &str, cap: u64) -> Result<u64, BankNpcError> {
 }
 
 /// Exact bounded bank commands; no substring matches, coin exchange or promotion command.
-pub(crate) fn parse(text: &str) -> Result<BankNpcIntent, BankNpcError> {
+pub fn parse(text: &str) -> Result<BankNpcIntent, BankNpcError> {
     if text.len() > MAX_TALK_TEXT_BYTES || text.chars().any(char::is_control) {
         return Err(BankNpcError::InvalidInput);
     }
@@ -90,7 +90,7 @@ pub(crate) fn parse(text: &str) -> Result<BankNpcIntent, BankNpcError> {
 
 /// Prompt data after caller-owned resolution. `deposit all` is already an exact amount here.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum BankNpcOperation {
+pub enum BankNpcOperation {
     Deposit(u64),
     Withdraw(u64),
     Transfer {
@@ -101,7 +101,7 @@ pub(crate) enum BankNpcOperation {
 }
 
 impl BankNpcOperation {
-    pub(crate) fn prompt(&self) -> String {
+    pub fn prompt(&self) -> String {
         match self {
             Self::Deposit(amount) => format!("Do you want to deposit {amount} gold?"),
             Self::Withdraw(amount) => format!("Do you want to withdraw {amount} gold?"),
@@ -122,15 +122,15 @@ impl BankNpcOperation {
     }
 
     /// Consistency checks only; native identities, coin facts and fences remain writer-owned.
-    pub(crate) fn matches_deposit(&self, request: &BankDepositRequest) -> bool {
+    pub fn matches_deposit(&self, request: &BankDepositRequest) -> bool {
         matches!(self, Self::Deposit(amount) if *amount == request.amount)
     }
 
-    pub(crate) fn matches_withdraw(&self, request: &BankWithdrawRequest) -> bool {
+    pub fn matches_withdraw(&self, request: &BankWithdrawRequest) -> bool {
         matches!(self, Self::Withdraw(amount) if *amount == request.amount)
     }
 
-    pub(crate) fn matches_transfer(&self, request: &BankTransferRequest) -> bool {
+    pub fn matches_transfer(&self, request: &BankTransferRequest) -> bool {
         matches!(self, Self::Transfer { amount, recipient, name }
             if *amount == request.amount && *recipient == request.recipient_character_id
                 && name.comparison_key() == request.recipient_name_key)
@@ -138,7 +138,7 @@ impl BankNpcOperation {
 
     /// Only a terminal BankResult of this operation, returned by the native writer, belongs
     /// here. The caller must check the request/record and occurrence binding before replying.
-    pub(crate) fn reply(&self, result: BankResult) -> String {
+    pub fn reply(&self, result: BankResult) -> String {
         match result {
             BankResult::Ok => match self {
                 Self::Deposit(amount) => format!("You have deposited {amount} gold."),
@@ -170,17 +170,17 @@ impl BankNpcOperation {
 /// Unqualified binding data, not proof of current authority. The owner must independently
 /// resolve an open, in-range Bank conversation and retire pending data on reconnect/transfer.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct BankDialogueContext {
-    pub(crate) session: GameSessionId,
-    pub(crate) character: CharacterId,
-    pub(crate) world: WorldId,
-    pub(crate) npc: EntityRef,
-    pub(crate) conversation_revision: u64,
+pub struct BankDialogueContext {
+    pub session: GameSessionId,
+    pub character: CharacterId,
+    pub world: WorldId,
+    pub npc: EntityRef,
+    pub conversation_revision: u64,
 }
 
 /// One pending invocation. Not Clone: a response consumes it, including cancellation.
 #[derive(Debug)]
-pub(crate) struct BankConfirmation {
+pub struct BankConfirmation {
     operation: BankNpcOperation,
     context: BankDialogueContext,
     opened_at_ms: u64,
@@ -188,7 +188,7 @@ pub(crate) struct BankConfirmation {
 }
 
 impl BankConfirmation {
-    pub(crate) fn new(
+    pub fn new(
         operation: BankNpcOperation,
         context: BankDialogueContext,
         now_ms: u64,
@@ -213,7 +213,7 @@ impl BankConfirmation {
     /// Only an exact ASCII-folded `yes` before expiry matches. Every other response, missing
     /// or changed context, expired/non-monotonic time cancels. The returned value is data;
     /// it cannot qualify current authority or replace the native writer's rechecks.
-    pub(crate) fn respond(
+    pub fn respond(
         self,
         current_context: Option<&BankDialogueContext>,
         text: &str,
@@ -230,7 +230,7 @@ impl BankConfirmation {
 }
 
 /// Privacy-safe refusals before a transfer prompt; no unresolved recipient identity is made up.
-pub(crate) fn refusal_reply(result: BankResult) -> &'static str {
+pub fn refusal_reply(result: BankResult) -> &'static str {
     match result {
         BankResult::UnknownRecipient => "This player does not exist.",
         BankResult::SameAccount => "This character already shares your bank balance.",

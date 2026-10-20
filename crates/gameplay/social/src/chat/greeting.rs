@@ -8,20 +8,20 @@
 use super::{ChatPosition, ChatText};
 
 /// `CHAT0-RL-08`: an NPC hears a greeting within 4 tiles until NPC-0 sets its own range.
-pub(crate) const DEFAULT_TALK_RANGE: u32 = 4;
+pub const DEFAULT_TALK_RANGE: u32 = 4;
 
 /// An NPC on the speaker's Channel that can be greeted.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct GreetingNpc<'a> {
-    pub(crate) actor_id: u64,
-    pub(crate) position: ChatPosition,
+pub struct GreetingNpc<'a> {
+    pub actor_id: u64,
+    pub position: ChatPosition,
     /// The NPC's greetings from its content, for example `hi` or `hail king`.
-    pub(crate) greetings: &'a [String],
-    pub(crate) talk_range: u32,
+    pub greetings: &'a [String],
+    pub talk_range: u32,
 }
 
 /// The actor id of the NPC that `text`, said at `speaker`, greets; `None` when it greets none.
-pub(crate) fn greeted_npc(
+pub fn greeted_npc(
     speaker: ChatPosition,
     text: &ChatText,
     npcs: &[GreetingNpc<'_>],
@@ -42,7 +42,7 @@ pub(crate) fn greeted_npc(
 }
 
 /// Lower-cased words: runs of letters and digits.
-pub(crate) fn words(text: &str) -> Vec<String> {
+pub fn words(text: &str) -> Vec<String> {
     text.split(|c: char| !c.is_alphanumeric())
         .filter(|word| !word.is_empty())
         .map(str::to_lowercase)
@@ -50,7 +50,7 @@ pub(crate) fn words(text: &str) -> Vec<String> {
 }
 
 /// Whether `needle` occurs in `haystack` as consecutive words.
-pub(crate) fn contains_words(haystack: &[String], needle: &[String]) -> bool {
+pub fn contains_words(haystack: &[String], needle: &[String]) -> bool {
     !needle.is_empty()
         && haystack
             .windows(needle.len())

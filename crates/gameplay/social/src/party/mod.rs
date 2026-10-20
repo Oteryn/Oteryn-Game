@@ -5,7 +5,7 @@
     reason = "PARTY-1 source owner awaits the allocated runtime wiring slot"
 )]
 
-pub(crate) mod view;
+pub mod view;
 #[cfg(test)]
 mod view_tests;
 
@@ -13,7 +13,7 @@ mod view_tests;
 /// This is source DATA for the node's full refresh/revision check, never current authority.
 /// A node combines ALL its scope reads before replacing its views. An unknown/failed scope
 /// leaves the full-refresh ticket incomplete, and therefore party readiness disabled.
-pub(crate) async fn read_scope(
+pub async fn read_scope(
     root: &crate::durability::DurabilityRoot,
     permit: &crate::durability::spell_owner_commit::SpellLanePermit,
     recovery: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
@@ -31,7 +31,7 @@ pub(crate) async fn read_scope(
 /// independently checked, presence and membership are read in the native transaction, and
 /// nothing is returned to the cache before COMMIT. Call begin_admission before awaiting it;
 /// on failure the character stays unavailable and the owner retries the source read.
-pub(crate) async fn read_admission(
+pub async fn read_admission(
     root: &crate::durability::DurabilityRoot,
     permit: &crate::durability::spell_owner_commit::SpellLanePermit,
     recovery: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,

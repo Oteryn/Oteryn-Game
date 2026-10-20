@@ -12,7 +12,7 @@
 use oteryn_protocol_oteryn::world_spatial::ActorPosition;
 
 /// Reach (§4.3): same floor, Chebyshev distance at most 1.
-pub(crate) fn within_reach(actor: ActorPosition, corpse: ActorPosition) -> bool {
+pub fn within_reach(actor: ActorPosition, corpse: ActorPosition) -> bool {
     actor.floor == corpse.floor
         && (i64::from(actor.x) - i64::from(corpse.x)).abs() <= 1
         && (i64::from(actor.y) - i64::from(corpse.y)).abs() <= 1
@@ -20,7 +20,7 @@ pub(crate) fn within_reach(actor: ActorPosition, corpse: ActorPosition) -> bool 
 
 /// What the item target of one `USE` names, as the Channel owner sees it now.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum UseItemTarget<C> {
+pub enum UseItemTarget<C> {
     /// The item is gone or no longer visible to this session.
     Gone,
     /// A visible item that is not a corpse: only a corpse opens in this slice.
@@ -34,14 +34,14 @@ pub(crate) enum UseItemTarget<C> {
 
 /// The decision of one `USE` with an item target (§4.3): `COMMITTED` opens the corpse.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum OpenDecision {
+pub enum OpenDecision {
     Open,
     TooFar,
     StaleState,
     NothingToUse,
 }
 
-pub(crate) fn decide_open<C>(actor: ActorPosition, target: &UseItemTarget<C>) -> OpenDecision {
+pub fn decide_open<C>(actor: ActorPosition, target: &UseItemTarget<C>) -> OpenDecision {
     match target {
         UseItemTarget::Gone => OpenDecision::StaleState,
         UseItemTarget::NotACorpse => OpenDecision::NothingToUse,
@@ -55,7 +55,7 @@ pub(crate) fn decide_open<C>(actor: ActorPosition, target: &UseItemTarget<C>) ->
 /// An event that may close the open corpse (§4.3). Opening another corpse closes the first as part
 /// of the open itself.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum CloseTrigger<K> {
+pub enum CloseTrigger<K> {
     /// The character walked to `to`: the corpse closes when it is no longer within reach, which
     /// includes a change of floor.
     Moved {
@@ -72,7 +72,7 @@ pub(crate) enum CloseTrigger<K> {
 }
 
 /// Whether `trigger` closes the corpse `open` at `position`.
-pub(crate) fn closes<K: PartialEq>(
+pub fn closes<K: PartialEq>(
     open: &K,
     position: ActorPosition,
     trigger: &CloseTrigger<K>,

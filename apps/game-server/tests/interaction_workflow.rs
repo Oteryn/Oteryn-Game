@@ -1,6 +1,6 @@
 use oteryn_game_server::domain;
 
-#[path = "../src/interaction/mod.rs"]
+#[path = "../../../crates/gameplay/social/src/interaction/mod.rs"]
 mod interaction;
 
 use interaction::{

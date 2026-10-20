@@ -724,7 +724,7 @@ fn the_pre_gate_mutes_an_empty_bucket_yell_before_the_level_is_known() {
 #[test]
 fn egress_bound_is_the_registered_chat0_rl_11_row() {
     let registry: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json"
+        "../../../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json"
     ))
     .expect("resource registry");
     let rows: Vec<&serde_json::Value> = registry["entries"]

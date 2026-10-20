@@ -238,7 +238,7 @@ async fn read_request<S: tokio::io::AsyncRead + Unpin>(stream: &mut S) -> Option
     if lines.next()?
         != format!(
             "POST {} HTTP/1.1",
-            oteryn_game_server::premium::client::SNAPSHOT_PATH
+            crate::premium::client::SNAPSHOT_PATH
         )
     {
         return None;
@@ -255,7 +255,7 @@ async fn read_request<S: tokio::io::AsyncRead + Unpin>(stream: &mut S) -> Option
         return None;
     }
     let length: usize = header("content-length")?.parse().ok()?;
-    if length > oteryn_game_server::premium::client::MAX_REQUEST_BYTES {
+    if length > crate::premium::client::MAX_REQUEST_BYTES {
         return None;
     }
     let mut body = vec![0; length];
@@ -264,7 +264,7 @@ async fn read_request<S: tokio::io::AsyncRead + Unpin>(stream: &mut S) -> Option
     let text = |key: &str| value.get(key)?.as_str().map(str::to_owned);
     let nonce = text("nonce")?;
     (value.len() == 3
-        && text("schema")?.as_str() == oteryn_game_server::premium::client::REQUEST_SCHEMA
+        && text("schema")?.as_str() == crate::premium::client::REQUEST_SCHEMA
         && nonce.len() == 32
         && nonce
             .bytes()

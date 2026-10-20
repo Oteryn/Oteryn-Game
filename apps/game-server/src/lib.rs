@@ -68,17 +68,17 @@ mod combat_attack;
 #[path = "../../../crates/gameplay/combat/src/combat/pvp/mod.rs"]
 mod combat_pvp;
 // PARTY-1 (CP D1391): the party module and its PostgreSQL cases.
-mod party;
+pub(crate) use oteryn_gameplay_social::party;
 #[cfg(test)]
 #[path = "lifted_tests/party_shared_xp_postgres_tests.rs"]
 mod party_shared_xp_postgres_tests;
 // D39 chest `USE` wiring, top-level for the same reason: `tests/interaction_workflow.rs`
 // recompiles `interaction/mod.rs` without Content or durability. C2 routes `USE_INTENT` to it.
-#[path = "interaction/chest_use.rs"]
+#[path = "../../../crates/gameplay/social/src/interaction/chest_use.rs"]
 mod interaction_chest_use;
 // ACHIEVEMENT: the runtime Achievement catalogue, loaded with the Content activation and read by
 // the chest `USE`.
-mod achievement_catalogue;
+pub(crate) use oteryn_gameplay_social::achievement_catalogue;
 
 pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
 pub use oteryn_gameplay_durability::character_bootstrap_intent;
@@ -87,7 +87,7 @@ pub use oteryn_gameplay_durability::character_bootstrap_intent;
     unused_imports,
     reason = "CHAT-1a local chat rules await the CHAT_V1 wire and runtime of CHAT-1b"
 )]
-mod chat;
+pub(crate) use oteryn_gameplay_social::chat;
 pub use oteryn_gameplay_content::content;
 pub use oteryn_gameplay_domain::domain;
 pub use oteryn_gameplay_durability::durability;
@@ -101,13 +101,13 @@ pub use oteryn_gameplay_world::map;
 )]
 pub(crate) use oteryn_gameplay_world::movement;
 pub mod node;
-pub mod premium;
+pub use oteryn_gameplay_social::premium;
 #[allow(
     dead_code,
     reason = "player spell core (P3a) awaits the cast protocol and runtime state contracts (P3b)"
 )]
 pub(crate) use oteryn_gameplay_spell::spell;
-pub mod wheel_gem_data;
+pub use oteryn_gameplay_social::wheel_gem_data;
 
 pub use gameplay_transport::{
     FreshEvidenceSource, GameplayListenerConfig, GameplaySeamOwners, GameplayServeError,
@@ -119,7 +119,7 @@ pub use gameplay_transport::{
     unused_imports,
     reason = "GAME-INTERACTION identity; the §7 revert driver is its first library consumer"
 )]
-mod interaction;
+pub(crate) use oteryn_gameplay_social::interaction;
 #[allow(
     dead_code,
     reason = "§7 timed-revert driver awaits its live Channel/Instance scope owner"
@@ -870,7 +870,7 @@ pub(crate) use durability::creature_source_items;
 pub(crate) use durability::mail_text_policy;
 
 #[cfg(test)]
-mod security;
+pub(crate) use oteryn_gameplay_social::security;
 
 #[cfg(test)]
 #[path = "lifted_tests/domain_death_tests.rs"]

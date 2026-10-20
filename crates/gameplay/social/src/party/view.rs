@@ -10,13 +10,13 @@ const STALE_AFTER: Duration = Duration::from_secs(10);
 type Id = [u8; 16];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct RefreshTicket {
+pub struct RefreshTicket {
     generation: u64,
     admission: Option<Id>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum ViewError {
+pub enum ViewError {
     Unavailable,
     InvalidSnapshot,
     Superseded,
@@ -63,12 +63,12 @@ impl PartyView {
 /// Membership-only projection: deliberately has no channel, position, health or mana.
 /// It must never authorize harm, durable rewards, consent or a membership mutation.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct PartyMembership {
-    pub(crate) party: Id,
-    pub(crate) revision: u64,
-    pub(crate) leader: Id,
-    pub(crate) shared_xp_enabled: bool,
-    pub(crate) members: Vec<Id>,
+pub struct PartyMembership {
+    pub party: Id,
+    pub revision: u64,
+    pub leader: Id,
+    pub shared_xp_enabled: bool,
+    pub members: Vec<Id>,
 }
 
 struct CollectedViews {
@@ -77,7 +77,7 @@ struct CollectedViews {
 }
 
 #[derive(Debug)]
-pub(crate) struct PartyViews {
+pub struct PartyViews {
     world: Id,
     generation: u64,
     full_ready: bool,
@@ -88,7 +88,7 @@ pub(crate) struct PartyViews {
 }
 
 impl PartyViews {
-    pub(crate) fn new(world: Id) -> Self {
+    pub fn new(world: Id) -> Self {
         Self {
             world,
             generation: 0,
@@ -101,7 +101,7 @@ impl PartyViews {
 
     /// Start, relay reconnect, revision gap or a failed pass disables party readiness.
     /// An older in-flight read cannot restore readiness after a later invalidation.
-    pub(crate) fn begin_refresh(&mut self) -> Result<RefreshTicket, ViewError> {
+    pub fn begin_refresh(&mut self) -> Result<RefreshTicket, ViewError> {
         self.full_ready = false;
         self.confirmed_at = None;
         self.generation = self
@@ -117,7 +117,7 @@ impl PartyViews {
     /// A hint carries no view or presence DATA. Any hint for a cached party requires a full
     /// read: presence writes advance only `presence_revision`, so the party revision in the
     /// hint can equal the cached one. Hints for unknown parties are ignored.
-    pub(crate) fn observe_hint(&mut self, party: Id, _revision: u64) -> Result<bool, ViewError> {
+    pub fn observe_hint(&mut self, party: Id, _revision: u64) -> Result<bool, ViewError> {
         let changed = self.views.contains_key(&party);
         if changed {
             self.begin_refresh()?;
@@ -125,13 +125,13 @@ impl PartyViews {
         Ok(changed)
     }
 
-    pub(crate) fn revision_check_due(&self, now: Duration) -> bool {
+    pub fn revision_check_due(&self, now: Duration) -> bool {
         self.confirmed_at
             .and_then(|confirmed| now.checked_sub(confirmed))
             .is_none_or(|elapsed| elapsed >= REVISION_INTERVAL)
     }
 
-    pub(crate) fn ready(&self, now: Duration) -> bool {
+    pub fn ready(&self, now: Duration) -> bool {
         self.full_ready
             && self
                 .confirmed_at
@@ -141,7 +141,7 @@ impl PartyViews {
 
     /// Called after the complete node census was read and its transaction committed.
     /// The periodic revision/presence pass uses the same single-batch replacement path.
-    pub(crate) fn finish_refresh(
+    pub fn finish_refresh(
         &mut self,
         ticket: RefreshTicket,
         snapshots: Vec<PartySnapshot>,
@@ -218,7 +218,7 @@ impl PartyViews {
 
     /// Every admission/readmission/reconnect/entry withdraws the old local observation first.
     /// Its source transaction must write current presence and COMMIT before finish_admission.
-    pub(crate) fn begin_admission(&mut self, character: Id) -> Result<RefreshTicket, ViewError> {
+    pub fn begin_admission(&mut self, character: Id) -> Result<RefreshTicket, ViewError> {
         self.remove_local(character)?;
         Ok(RefreshTicket {
             generation: self.generation,
@@ -226,7 +226,7 @@ impl PartyViews {
         })
     }
 
-    pub(crate) fn finish_admission(
+    pub fn finish_admission(
         &mut self,
         ticket: RefreshTicket,
         snapshot: PartySnapshot,
@@ -267,7 +267,7 @@ impl PartyViews {
         Ok(())
     }
 
-    pub(crate) fn remove_local(&mut self, character: Id) -> Result<(), ViewError> {
+    pub fn remove_local(&mut self, character: Id) -> Result<(), ViewError> {
         self.generation = match self.generation.checked_add(1) {
             Some(generation) => generation,
             None => {
@@ -284,7 +284,7 @@ impl PartyViews {
         Ok(())
     }
 
-    pub(crate) fn membership(
+    pub fn membership(
         &self,
         character: Id,
         now: Duration,

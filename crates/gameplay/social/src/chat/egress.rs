@@ -14,7 +14,7 @@ use std::collections::VecDeque;
 use oteryn_protocol_oteryn::chat::ChatLine;
 
 /// `CHAT0-RL-11`: undelivered lines per session.
-pub(crate) const EGRESS_MAX_LINES: usize = 64;
+pub const EGRESS_MAX_LINES: usize = 64;
 
 /// Drop order: a higher rank is dropped first.
 fn drop_rank(line: &ChatLine) -> u8 {
@@ -27,7 +27,7 @@ fn drop_rank(line: &ChatLine) -> u8 {
 
 /// One session's undelivered chat lines.
 #[derive(Debug, Default)]
-pub(crate) struct ChatEgress {
+pub struct ChatEgress {
     lines: VecDeque<ChatLine>,
     marker_owed: bool,
     /// A marker was sent and no line has been delivered since: further overflow stays covered
@@ -39,12 +39,12 @@ pub(crate) struct ChatEgress {
 }
 
 impl ChatEgress {
-    pub(crate) fn new() -> Self {
+    pub fn new() -> Self {
         Self::default()
     }
 
     /// Queues `line`; a [`ChatLine::Dropped`] argument only owes the marker.
-    pub(crate) fn push(&mut self, line: ChatLine) {
+    pub fn push(&mut self, line: ChatLine) {
         if matches!(line, ChatLine::Dropped) {
             self.marker_owed = true;
             return;
@@ -65,7 +65,7 @@ impl ChatEgress {
     /// Hands out the next line and acknowledges it as delivered at once (a write that cannot
     /// stall). Marker coverage is reset only through [`Self::delivered`].
     #[cfg(test)]
-    pub(crate) fn pop(&mut self) -> Option<ChatLine> {
+    pub fn pop(&mut self) -> Option<ChatLine> {
         let line = self.next_for_write()?;
         self.delivered();
         Some(line)
@@ -82,7 +82,7 @@ impl ChatEgress {
     /// Hands out the next line to write (the owed marker first). A real line counts against the
     /// bound until [`Self::delivered`]; one line at a time keeps every other undelivered line
     /// queued and so subject to the drop order.
-    pub(crate) fn next_for_write(&mut self) -> Option<ChatLine> {
+    pub fn next_for_write(&mut self) -> Option<ChatLine> {
         let line = self.take()?;
         self.in_flight = !matches!(line, ChatLine::Dropped);
         Some(line)
@@ -90,25 +90,25 @@ impl ChatEgress {
 
     /// The last real line of [`Self::next_for_write`] was written to the client: its slot is
     /// free and a marker no longer covers later overflow.
-    pub(crate) fn delivered(&mut self) {
+    pub fn delivered(&mut self) {
         if std::mem::take(&mut self.in_flight) {
             self.marker_sent = false;
         }
     }
 
     /// Drops every queued line without a marker (a replacement snapshot drops lines).
-    pub(crate) fn clear(&mut self) {
+    pub fn clear(&mut self) {
         self.in_flight = false;
         self.lines.clear();
         self.marker_owed = false;
         self.marker_sent = false;
     }
 
-    pub(crate) fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.lines.len()
     }
 
-    pub(crate) fn is_empty(&self) -> bool {
+    pub fn is_empty(&self) -> bool {
         self.lines.is_empty() && !self.marker_owed
     }
 }

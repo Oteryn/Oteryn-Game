@@ -13,7 +13,7 @@ mod monster_lab;
 #[allow(clippy::duplicate_mod)] // Foundation's standalone tests include Ability source.
 #[path = "../../../crates/gameplay/combat/src/ability/mod.rs"]
 mod ability;
-#[path = "../src/achievement_catalogue.rs"]
+#[path = "../../../crates/gameplay/social/src/achievement_catalogue.rs"]
 mod achievement_catalogue;
 #[allow(
     dead_code,
@@ -62,7 +62,7 @@ mod combat_pickup;
 )]
 #[path = "../../../crates/gameplay/combat/src/combat/pvp/mod.rs"]
 mod combat_pvp;
-#[path = "../src/interaction/chest_use.rs"]
+#[path = "../../../crates/gameplay/social/src/interaction/chest_use.rs"]
 mod interaction_chest_use;
 #[allow(dead_code)] // Preserve the original Ability module lint scope for this native-only adapter.
 #[path = "../../../crates/gameplay/combat/src/ability/player_lethal.rs"]
@@ -76,7 +76,7 @@ pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
     unused_imports,
     reason = "CHAT-1a local chat rules await the CHAT_V1 wire and runtime of CHAT-1b"
 )]
-#[path = "../src/chat/mod.rs"]
+#[path = "../../../crates/gameplay/social/src/chat/mod.rs"]
 mod chat;
 #[path = "../../../crates/gameplay/content/src/content/mod.rs"]
 pub mod content;
@@ -100,7 +100,7 @@ pub mod map;
 
 #[path = "../src/node/mod.rs"]
 pub mod node;
-#[path = "../src/premium/mod.rs"]
+#[path = "../../../crates/gameplay/social/src/premium/mod.rs"]
 pub mod premium;
 #[allow(
     dead_code,
@@ -108,7 +108,7 @@ pub mod premium;
 )]
 #[path = "../../../crates/gameplay/spell/src/spell/mod.rs"]
 mod spell;
-#[path = "../src/wheel_gem_data.rs"]
+#[path = "../../../crates/gameplay/social/src/wheel_gem_data.rs"]
 pub mod wheel_gem_data;
 
 #[allow(
@@ -116,7 +116,7 @@ pub mod wheel_gem_data;
     unused_imports,
     reason = "GAME-INTERACTION identity; the §7 revert driver is its first library consumer"
 )]
-#[path = "../src/interaction/mod.rs"]
+#[path = "../../../crates/gameplay/social/src/interaction/mod.rs"]
 mod interaction;
 #[allow(dead_code)] // Preserve the original Spell adapter lint scope.
 use durability::{native_world_items, native_world_read};

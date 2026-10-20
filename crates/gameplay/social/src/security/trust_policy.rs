@@ -7,11 +7,11 @@
 
 use std::time::Duration;
 
-pub(crate) const MAX_CHECKPOINT_AGE: Duration = Duration::from_secs(24 * 60 * 60);
-pub(crate) const MAX_CLOCK_SKEW: Duration = Duration::from_secs(5 * 60);
+pub const MAX_CHECKPOINT_AGE: Duration = Duration::from_secs(24 * 60 * 60);
+pub const MAX_CLOCK_SKEW: Duration = Duration::from_secs(5 * 60);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum PolicyError {
+pub enum PolicyError {
     AtOrBelowFloor,
     WrongPredecessor,
     RevisionExhausted,
@@ -29,7 +29,7 @@ pub(crate) enum PolicyError {
 
 /// Ordinary record advance only. A DB below the embedded floor cannot bootstrap
 /// by applying the record at that floor; seed/recovery is a separate contract.
-pub(crate) fn check_record_advance(
+pub fn check_record_advance(
     applied: u64,
     embedded_floor: u64,
     previous_revision: u64,
@@ -51,13 +51,13 @@ pub(crate) fn check_record_advance(
 }
 
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct CheckpointMetadata {
+pub struct CheckpointMetadata {
     pub revision: u64,
     pub issued_at: Duration,
 }
 
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct CheckpointConstraints {
+pub struct CheckpointConstraints {
     pub embedded_floor: u64,
     pub highest_seen_revision: u64,
     pub embedded_issued_at: Duration,
@@ -66,7 +66,7 @@ pub(crate) struct CheckpointConstraints {
 
 /// Checks only numeric metadata; an unsigned checkpoint can pass this function.
 /// The caller must separately authenticate the pinned root and checkpoint bytes.
-pub(crate) fn check_checkpoint_metadata(
+pub fn check_checkpoint_metadata(
     checkpoint: CheckpointMetadata,
     constraints: CheckpointConstraints,
 ) -> Result<(), PolicyError> {
@@ -90,7 +90,7 @@ pub(crate) fn check_checkpoint_metadata(
 }
 
 /// Equal heads are necessary, never sufficient for usable challenge evidence.
-pub(crate) fn check_applied_head(
+pub fn check_applied_head(
     applied: u64,
     checkpoint_revision: u64,
 ) -> Result<(), PolicyError> {
@@ -101,7 +101,7 @@ pub(crate) fn check_applied_head(
 }
 
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct ClockSample {
+pub struct ClockSample {
     pub wall: Duration,
     pub monotonic: Duration,
 }
@@ -109,7 +109,7 @@ pub(crate) struct ClockSample {
 /// Compare raw wall observations against elapsed monotonic time. Do not supply
 /// World clock facts: their clamping deliberately hides wall-clock adjustments.
 /// An error also fails closed; the future owner must latch either case.
-pub(crate) fn backward_step_exceeds_skew(
+pub fn backward_step_exceeds_skew(
     previous: ClockSample,
     current: ClockSample,
 ) -> Result<bool, PolicyError> {
@@ -129,7 +129,7 @@ pub(crate) fn backward_step_exceeds_skew(
 /// Compare observations from the same process monotonic origin. This predicate
 /// does not prove a fetch occurred or authenticate its result. The future owner
 /// must retain its latch and fetch provenance, and recheck all checkpoint rules.
-pub(crate) fn check_fetch_after_step(
+pub fn check_fetch_after_step(
     fetched_at: Duration,
     step_at: Duration,
 ) -> Result<(), PolicyError> {

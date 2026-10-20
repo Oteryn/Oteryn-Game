@@ -40,13 +40,13 @@ pub mod foundation;
 pub use oteryn_gameplay_native_admission_source as native_admission_source;
 
 #[allow(dead_code, unused_imports)]
-#[path = "../src/achievement_catalogue.rs"]
+#[path = "../../../crates/gameplay/social/src/achievement_catalogue.rs"]
 pub mod achievement_catalogue;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/interaction/mod.rs"]
+#[path = "../../../crates/gameplay/social/src/interaction/mod.rs"]
 pub mod interaction;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/interaction/chest_use.rs"]
+#[path = "../../../crates/gameplay/social/src/interaction/chest_use.rs"]
 pub mod interaction_chest_use;
 
 // Reuses the B3-1 harness (Database/register/scope/seed_character/Harness).

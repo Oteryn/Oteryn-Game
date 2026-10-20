@@ -6,20 +6,20 @@
 //! keep the offline keys distinct. These checks do none of those operations.
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum SigningRole {
+pub enum SigningRole {
     Release,
     TrustRoot,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum SignedObject {
+pub enum SignedObject {
     Manifest,
     TrustRecord,
     Checkpoint,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum PolicyError {
+pub enum PolicyError {
     WrongSignerRole,
     RootUsedAsReleaseKey,
     RevokedReleaseKey,
@@ -27,7 +27,7 @@ pub(crate) enum PolicyError {
 }
 
 /// A matching role is necessary but proves neither a signature nor authority.
-pub(crate) fn check_signer_role(
+pub fn check_signer_role(
     signer: SigningRole,
     object: SignedObject,
 ) -> Result<(), PolicyError> {
@@ -43,7 +43,7 @@ pub(crate) fn check_signer_role(
 /// Inputs are not a current-state wrapper: callers must authenticate and resolve
 /// the key sets again at their actual consuming boundary. No key-id format,
 /// bootstrap state, embedded pin or release artifact schema is defined here.
-pub(crate) fn check_release_key_membership(
+pub fn check_release_key_membership(
     signer: &[u8; 32],
     pinned_root: &[u8; 32],
     active_release_keys: &[[u8; 32]],

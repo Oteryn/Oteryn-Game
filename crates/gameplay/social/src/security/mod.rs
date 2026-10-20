@@ -4,5 +4,5 @@
 //! authenticates signed bytes, resolves current trust, bootstraps a restored
 //! store, grants admission, or authorizes a challenge/outcome.
 
-pub(crate) mod release_policy;
-pub(crate) mod trust_policy;
+pub mod release_policy;
+pub mod trust_policy;

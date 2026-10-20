@@ -20,20 +20,20 @@ use super::{ChatText, TEXT_MAX_BYTES};
 use crate::domain::character_name::CharacterName;
 
 /// `CHAT0-RL-06`: the `NOTIFY` text is at most 2,048 bytes.
-pub(crate) const NOTIFY_MAX_BYTES: usize = 2_048;
+pub const NOTIFY_MAX_BYTES: usize = 2_048;
 /// `CHAT0-RL-12`: a retired relay key still opens lines for 24 hours.
-pub(crate) const KEY_OVERLAP_MICROS: u64 = 24 * 60 * 60 * 1_000_000;
+pub const KEY_OVERLAP_MICROS: u64 = 24 * 60 * 60 * 1_000_000;
 /// `CHAT0-RL-13`: a line older than 30 s is dropped; its `message_id` is remembered that long.
-pub(crate) const FRESHNESS_MICROS: u64 = 30 * 1_000_000;
+pub const FRESHNESS_MICROS: u64 = 30 * 1_000_000;
 /// Distinct `message_id`s kept per World inside the window. A full window refuses new lines
 /// rather than forgetting a fresh one, so a captured line can never be admitted twice.
-pub(crate) const REPLAY_WINDOW_LINES: usize = 8_192;
+pub const REPLAY_WINDOW_LINES: usize = 8_192;
 /// How far ahead of the current database reading a listener stores its relay lease. A window
 /// receives only while its clock is inside a lease stored durably, and a restarted window starts
 /// past the highest lease stored, so its guarantees survive a restart and a clock rollback.
-pub(crate) const RELAY_LEASE_MICROS: u64 = 30 * 1_000_000;
+pub const RELAY_LEASE_MICROS: u64 = 30 * 1_000_000;
 /// The sender name is at most 120 bytes (CHAT-0 §5).
-pub(crate) const SENDER_NAME_MAX_BYTES: usize = 120;
+pub const SENDER_NAME_MAX_BYTES: usize = 120;
 
 const KEY_BYTES: usize = 32;
 const NONCE_BYTES: usize = 12;
@@ -43,14 +43,14 @@ const ID_BYTES: usize = 16;
 const PLAINTEXT_MAX_BYTES: usize =
     1 + ID_BYTES + 8 + ID_BYTES + 2 + SENDER_NAME_MAX_BYTES + 2 + TEXT_MAX_BYTES;
 /// `key_id` + nonce + ciphertext + tag: at most 1,216 bytes (CHAT-0 §5).
-pub(crate) const SEALED_MAX_BYTES: usize = 1 + NONCE_BYTES + PLAINTEXT_MAX_BYTES + TAG_BYTES;
+pub const SEALED_MAX_BYTES: usize = 1 + NONCE_BYTES + PLAINTEXT_MAX_BYTES + TAG_BYTES;
 const KIND_PRIVATE: u8 = 1;
 const KIND_ROOM: u8 = 2;
 const CHANNEL_PREFIX: &str = "oteryn_chat_";
 
 /// Why a relay line is refused. Every refusal drops the line; none reaches a client.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum RelayError {
+pub enum RelayError {
     /// The line would not fit the sealed bound, or a field is out of bounds.
     Oversized,
     /// The World id cannot name a `NOTIFY` channel.
@@ -105,7 +105,7 @@ impl Error for RelayError {}
 
 /// Where a relayed line goes.
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub(crate) enum RelayDestination {
+pub enum RelayDestination {
     /// A private message, keyed by the recipient CharacterId (server side only).
     Private { recipient: CharacterId },
     /// A World room: each node delivers to its sessions that opened it.
@@ -124,15 +124,15 @@ impl fmt::Debug for RelayDestination {
 
 /// The plaintext of one relayed line (CHAT-0 §5 layout).
 #[derive(Clone, PartialEq, Eq)]
-pub(crate) struct RelayLine {
-    pub(crate) message_id: [u8; ID_BYTES],
+pub struct RelayLine {
+    pub message_id: [u8; ID_BYTES],
     /// The sender's database time, microseconds.
-    pub(crate) sent_at_micros: u64,
-    pub(crate) destination: RelayDestination,
-    pub(crate) sender_name: CharacterName,
+    pub sent_at_micros: u64,
+    pub destination: RelayDestination,
+    pub sender_name: CharacterName,
     /// Valid chat text (CHAT-0 §4) on both sides: a sender cannot seal, and a receiver does not
     /// open, a text that `ChatText::parse` refuses.
-    pub(crate) text: ChatText,
+    pub text: ChatText,
 }
 
 // Text and the sender are private chat and the recipient is redacted by
@@ -246,7 +246,7 @@ impl<'a> Cursor<'a> {
 /// and distinct per World. A WorldId is admitted exactly as `node/config.rs` (`v7_uuid`) admits
 /// it: 36 characters with hyphens, version nibble `7` and RFC 9562 variant (`8`, `9`, `a`, `b`);
 /// any other value is `BadChannel`, so no WorldId the node would refuse names a relay channel.
-pub(crate) fn channel_name(world_id: &str) -> Result<String, RelayError> {
+pub fn channel_name(world_id: &str) -> Result<String, RelayError> {
     let bytes = world_id.as_bytes();
     let canonical = bytes.len() == 36
         && bytes.iter().enumerate().all(|(index, byte)| match index {
@@ -264,7 +264,7 @@ pub(crate) fn channel_name(world_id: &str) -> Result<String, RelayError> {
 
 /// One relay key of a World. The bytes come from an environment secret, never the repository.
 #[derive(Clone)]
-pub(crate) struct RelayKey {
+pub struct RelayKey {
     key_id: u8,
     /// The cluster-wide instant from which the key is used to send. Every node opens with the key
     /// as soon as it holds it, but sends with it only from here, set after the whole cluster has
@@ -274,7 +274,7 @@ pub(crate) struct RelayKey {
 }
 
 impl RelayKey {
-    pub(crate) fn new(key_id: u8, activate_at_micros: u64, key: [u8; KEY_BYTES]) -> Self {
+    pub fn new(key_id: u8, activate_at_micros: u64, key: [u8; KEY_BYTES]) -> Self {
         Self {
             key_id,
             activate_at_micros,
@@ -294,13 +294,13 @@ impl fmt::Debug for RelayKey {
 /// The keys a node holds for one World. It sends with the newest key already activated and opens
 /// with every key held except one retired (superseded by an activated key) over `CHAT0-RL-12`.
 #[derive(Debug, Clone)]
-pub(crate) struct RelayKeyRing {
+pub struct RelayKeyRing {
     /// Sorted by `activate_at_micros`; `key_id`s are distinct.
     keys: Vec<RelayKey>,
 }
 
 impl RelayKeyRing {
-    pub(crate) fn new(mut keys: Vec<RelayKey>) -> Result<Self, RelayError> {
+    pub fn new(mut keys: Vec<RelayKey>) -> Result<Self, RelayError> {
         if keys.is_empty() {
             return Err(RelayError::NoKey);
         }
@@ -359,19 +359,19 @@ fn random_message_id() -> Result<[u8; ID_BYTES], RelayError> {
 }
 
 /// What a sender supplies for one line; the `message_id` is generated inside [`seal`].
-pub(crate) struct OutgoingLine {
+pub struct OutgoingLine {
     /// The sender's database time, microseconds.
-    pub(crate) sent_at_micros: u64,
-    pub(crate) destination: RelayDestination,
-    pub(crate) sender_name: CharacterName,
-    pub(crate) text: ChatText,
+    pub sent_at_micros: u64,
+    pub destination: RelayDestination,
+    pub sender_name: CharacterName,
+    pub text: ChatText,
 }
 
 /// Seals `line` for `channel` with the newest key and a fresh random nonce, and returns the
 /// `NOTIFY` text (standard base64 of `key_id || nonce || ciphertext || tag`). The associated data
 /// is the channel name and the `key_id`. A line over the bound is `Oversized`, never truncated or
 /// split. The `message_id` and the nonce are drawn here so no caller can repeat either.
-pub(crate) fn seal(
+pub fn seal(
     ring: &RelayKeyRing,
     channel: &str,
     line: OutgoingLine,
@@ -483,7 +483,7 @@ fn open(
 /// The listener stores the lease so that it never decreases (for example
 /// `GREATEST(stored, new)`) and passes the stored value back on restart.
 #[derive(Debug)]
-pub(crate) struct ReplayWindow {
+pub struct ReplayWindow {
     /// Lines sent before this instant are refused: the listener was not up to receive them.
     floor: u64,
     /// The newest clock reading seen, starting at `floor`. Time never runs backwards here, so a
@@ -509,7 +509,7 @@ pub(crate) struct ReplayWindow {
 /// listeners of the World restart in a row, because a stored lease is at most `RELAY_LEASE_MICROS`
 /// past the database reading it was taken at ([`ReplayWindow::lease_due`]). Chat is best-effort
 /// and a restart already drops the connection.
-pub(crate) fn startup_floor(db_now_micros: u64) -> u64 {
+pub fn startup_floor(db_now_micros: u64) -> u64 {
     db_now_micros
         .saturating_add(FRESHNESS_MICROS)
         .saturating_add(1)
@@ -521,7 +521,7 @@ impl ReplayWindow {
     /// listener (`None` only when none was ever stored). The floor and the clock start past both
     /// the readiness reading and that lease, so nothing an earlier process admitted or retired can
     /// come back, even if the database clock now reads earlier than it did then.
-    pub(crate) fn resume(db_now_micros: u64, stored_lease_micros: Option<u64>) -> Self {
+    pub fn resume(db_now_micros: u64, stored_lease_micros: Option<u64>) -> Self {
         let past_lease = stored_lease_micros.map_or(0, startup_floor);
         let floor = startup_floor(db_now_micros).max(past_lease);
         Self {
@@ -542,7 +542,7 @@ impl ReplayWindow {
     /// another node may have stamped while this listener was down. The
     /// de-duplication set and the stored lease are kept: a line admitted before the drop is still
     /// refused, and the lease still bounds what the window acts on.
-    pub(crate) fn reconnected(&mut self, db_now_micros: u64) {
+    pub fn reconnected(&mut self, db_now_micros: u64) {
         self.observe(db_now_micros);
         self.floor = startup_floor(self.read_high).max(self.floor);
         self.high_water = self.floor.max(self.high_water);
@@ -553,7 +553,7 @@ impl ReplayWindow {
     /// lease covers the clock; otherwise `None`. The listener stamps sends with this clock and
     /// reports the relay ready only while it is `Some`, so a send is never accepted while its own
     /// node would drop it, also after the database clock steps back.
-    pub(crate) fn admitting_clock(&mut self, now_micros: u64) -> Option<u64> {
+    pub fn admitting_clock(&mut self, now_micros: u64) -> Option<u64> {
         let clock = self.observe(now_micros);
         let admits =
             now_micros >= self.floor && self.leased_until.is_some_and(|until| until >= clock);
@@ -562,7 +562,7 @@ impl ReplayWindow {
 
     /// A window with `floor` and a lease that never runs out, for the rules tests.
     #[cfg(test)]
-    pub(crate) fn starting_at(floor_micros: u64) -> Self {
+    pub fn starting_at(floor_micros: u64) -> Self {
         Self {
             floor: floor_micros,
             high_water: floor_micros,
@@ -585,7 +585,7 @@ impl ReplayWindow {
     /// clock however many listeners restart, and a resumed window stays `Unleased` until the reading
     /// is within `RELAY_LEASE_MICROS` of its floor. The window still acts only on clock readings at
     /// most a stored lease, which is all the restart guarantees need.
-    pub(crate) fn lease_due(&mut self, now_micros: u64) -> Option<u64> {
+    pub fn lease_due(&mut self, now_micros: u64) -> Option<u64> {
         self.observe(now_micros);
         let renew_at = now_micros.saturating_add(RELAY_LEASE_MICROS / 2);
         if self.leased_until.is_some_and(|until| until >= renew_at) {
@@ -595,7 +595,7 @@ impl ReplayWindow {
     }
 
     /// `until_micros` is stored durably: the window may act on readings up to it.
-    pub(crate) fn lease_stored(&mut self, until_micros: u64) {
+    pub fn lease_stored(&mut self, until_micros: u64) {
         self.leased_until = Some(
             self.leased_until
                 .map_or(until_micros, |l| l.max(until_micros)),
@@ -607,7 +607,7 @@ impl ReplayWindow {
     /// seen, so a database clock stepped back can neither revive a retired key nor re-admit an
     /// evicted `message_id` or an expired line. A reading past the stored lease is `Unleased`
     /// before any key is consulted.
-    pub(crate) fn receive(
+    pub fn receive(
         &mut self,
         ring: &RelayKeyRing,
         channel: &str,
