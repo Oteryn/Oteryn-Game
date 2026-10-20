@@ -4,7 +4,7 @@ extern crate oteryn_game_server as production_server;
 extern crate self as oteryn_game_server;
 pub use production_server::admission_evidence;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/character_bootstrap_intent.rs"]
+#[path = "../../../crates/gameplay/durability/src/character_bootstrap_intent.rs"]
 pub mod character_bootstrap_intent;
 #[allow(dead_code, unused_imports)]
 pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
@@ -33,7 +33,7 @@ mod character_revision_sequencer_postgres_cases;
 #[path = "../src/durability"]
 mod durability {
     // Recompile the shared core; native world adapters use the full library Content context.
-    include!("../src/durability/core_modules.rs");
+    include!("../../../crates/gameplay/durability/src/durability/core_modules.rs");
 }
 #[path = "support/highscores_session_postgres_cases.rs"]
 mod highscores_session_postgres_cases;

@@ -8,7 +8,7 @@ pub use production_server::admission_evidence;
 #[path = "support/bestiary_postgres_harness.rs"]
 mod bestiary_postgres_harness;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/character_bootstrap_intent.rs"]
+#[path = "../../../crates/gameplay/durability/src/character_bootstrap_intent.rs"]
 pub mod character_bootstrap_intent;
 #[path = "support/domain_shim.rs"]
 pub mod domain;
@@ -18,7 +18,7 @@ pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
 #[path = "../src/durability"]
 mod durability {
     // Recompile the shared core; native world adapters use the full library Content context.
-    include!("../src/durability/core_modules.rs");
+    include!("../../../crates/gameplay/durability/src/durability/core_modules.rs");
 }
 #[allow(dead_code, unused_imports)]
 #[path = "../../../crates/gameplay/foundation/src/foundation/mod.rs"]

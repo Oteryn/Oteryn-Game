@@ -6,7 +6,7 @@ extern crate oteryn_game_server as production_server;
 extern crate self as oteryn_game_server;
 pub use production_server::admission_evidence;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/character_bootstrap_intent.rs"]
+#[path = "../../../crates/gameplay/durability/src/character_bootstrap_intent.rs"]
 pub mod character_bootstrap_intent;
 #[allow(dead_code, unused_imports)]
 pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
@@ -16,7 +16,7 @@ pub mod domain;
 #[path = "../src/durability"]
 mod durability {
     // Recompile the shared core; native world adapters use the full library Content context.
-    include!("../src/durability/core_modules.rs");
+    include!("../../../crates/gameplay/durability/src/durability/core_modules.rs");
 }
 #[allow(dead_code, unused_imports)]
 #[path = "../../../crates/gameplay/foundation/src/foundation/mod.rs"]
@@ -2321,7 +2321,7 @@ mod bestiary_progress_postgres_cases;
 
 // LOOP-GROUND-1 Ground64 same-transaction admission (pure and native PostgreSQL
 // cases) on the CHARM-2 harness included above; its only test mount.
-#[path = "../src/durability/ground_cell_limit_tests.rs"]
+#[path = "../../../crates/gameplay/durability/src/durability/ground_cell_limit_tests.rs"]
 mod ground_cell_limit_tests;
 
 // RANK-1 HS-1 World highscore snapshots (migration 0129): the job, its 11 categories and the

@@ -80,7 +80,7 @@ mod interaction_chest_use;
 // the chest `USE`.
 mod achievement_catalogue;
 
-pub mod character_bootstrap_intent;
+pub use oteryn_gameplay_durability::character_bootstrap_intent;
 pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
 #[allow(
     dead_code,
@@ -90,7 +90,7 @@ pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
 mod chat;
 pub use oteryn_gameplay_content::content;
 pub use oteryn_gameplay_domain::domain;
-pub mod durability;
+pub use oteryn_gameplay_durability::durability;
 pub use oteryn_gameplay_foundation::foundation;
 mod gameplay_transport;
 pub mod house_scope;
@@ -151,7 +151,7 @@ mod world_party_runtime_postgres_cases;
 // LIMIT_RAISE value/audit regressions have one source mount; the canonical PG root
 // path-loads durability and must not collect these pure cases a second time.
 #[cfg(test)]
-#[path = "durability/forge_dust_limit_audit_tests.rs"]
+#[path = "../../../crates/gameplay/durability/src/durability/forge_dust_limit_audit_tests.rs"]
 mod forge_dust_limit_audit_tests;
 
 // RANK-1 ranking order has one source mount; the PG roots path-load durability (which owns the
@@ -866,7 +866,7 @@ mod creature_icicle;
 pub(crate) use durability::{native_world_items, native_world_read};
 
 // Full native Creature callbacks stay outside standalone Durability path loads.
-#[path = "durability/creature_source_items.rs"]
+#[path = "../../../crates/gameplay/durability/src/durability/creature_source_items.rs"]
 mod creature_source_items;
 
 #[cfg(test)]
@@ -876,7 +876,7 @@ mod security;
 #[path = "lifted_tests/domain_death_tests.rs"]
 mod domain_death_tests;
 #[cfg(test)]
-#[path = "durability/forge_tests.rs"]
+#[path = "../../../crates/gameplay/durability/src/durability/forge_tests.rs"]
 mod domain_forge_tests;
 #[cfg(test)]
 #[path = "lifted_tests/domain_market_tests.rs"]
@@ -884,7 +884,7 @@ mod domain_market_tests;
 #[cfg(test)]
 #[path = "lifted_tests/domain_timed_item_host_tests.rs"]
 mod domain_timed_item_host_tests;
-#[path = "durability/mail_text_policy.rs"]
+#[path = "../../../crates/gameplay/durability/src/durability/mail_text_policy.rs"]
 mod mail_text_policy;
 
 #[cfg(test)]

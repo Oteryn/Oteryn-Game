@@ -66,7 +66,7 @@ mod interaction_chest_use;
 #[path = "../src/ability/player_lethal.rs"]
 mod player_lethal;
 
-#[path = "../src/character_bootstrap_intent.rs"]
+#[path = "../../../crates/gameplay/durability/src/character_bootstrap_intent.rs"]
 pub mod character_bootstrap_intent;
 pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
 #[allow(
@@ -80,7 +80,7 @@ mod chat;
 pub mod content;
 #[path = "../../../crates/gameplay/domain/src/domain/mod.rs"]
 pub mod domain;
-#[path = "../src/durability/mod.rs"]
+#[path = "../../../crates/gameplay/durability/src/durability/mod.rs"]
 pub mod durability;
 #[path = "../../../crates/gameplay/foundation/src/foundation/mod.rs"]
 pub mod foundation;
@@ -329,7 +329,7 @@ mod canonical_monster_successor_tests;
 #[path = "../src/creature_icicle.rs"]
 mod creature_icicle;
 
-#[path = "../src/durability/creature_source_items.rs"]
+#[path = "../../../crates/gameplay/durability/src/durability/creature_source_items.rs"]
 mod creature_source_items;
 
 #[allow(
