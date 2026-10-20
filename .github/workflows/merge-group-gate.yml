@@ -517,6 +517,11 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: read
+    # The legs run every registered target exactly once; any target not named below runs in the rest leg.
+    strategy:
+      fail-fast: true
+      matrix:
+        shard: [character-authority, rest]
     services:
       postgres:
         image: postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3
@@ -580,8 +585,13 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.merge_group.base_sha }}
           HEAD_SHA: ${{ github.event.merge_group.head_sha }}
+          SHARD: ${{ matrix.shard }}
         run: |
           set -euo pipefail
+          [[ "$SHARD" == character-authority || "$SHARD" == rest ]] || {
+            echo "Unknown PostgreSQL shard: $SHARD" >&2
+            exit 1
+          }
           verify_registered_target_binding() {
             local name="$1"
             local path="$2"
@@ -658,6 +668,12 @@ jobs:
               test -f "$path" && test ! -L "$path"
               test "$(git hash-object -- "$path")" = "$(git rev-parse "$HEAD_SHA:$path")"
               verify_registered_target_binding "$name" "$path"
+              local leg=rest
+              [[ "$name" == character_authority_postgres ]] && leg=character-authority
+              if [[ "$leg" != "$SHARD" ]]; then
+                echo "SHARD_SKIP: $name runs in the $leg leg"
+                return 0
+              fi
               cargo +1.95.0 test --locked --workspace --test "$name"
             elif [[ -e "$path" ]]; then
               echo "Absent registered PostgreSQL target has unexpected checkout state: $name -> $path" >&2
