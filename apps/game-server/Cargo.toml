@@ -20,6 +20,7 @@ oteryn-error-codes = { version = "=0.1.0", path = "../../crates/error-codes" }
 oteryn-foundation = { version = "=0.1.0", path = "../../crates/foundation" }
 oteryn-gameplay-admission-evidence = { version = "=0.1.0", path = "../../crates/gameplay/admission-evidence" }
 oteryn-gameplay-character-recovery-fence = { version = "=0.1.0", path = "../../crates/gameplay/character-recovery-fence" }
+oteryn-gameplay-node-files = { version = "=0.1.0", path = "../../crates/gameplay/node-files" }
 oteryn-gameplay-source-critical-baseline = { version = "=0.1.0", path = "../../crates/gameplay/source-critical-baseline" }
 oteryn-gameplay-weather = { version = "=0.1.0", path = "../../crates/gameplay/weather" }
 oteryn-ntp-clock = { version = "=0.1.0", path = "../../crates/ntp-clock" }

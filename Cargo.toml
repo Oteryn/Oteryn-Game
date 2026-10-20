@@ -28,6 +28,7 @@ members = [
     "crates/gameplay/source-critical-baseline",
     "crates/gameplay/character-recovery-fence",
     "crates/gameplay/admission-evidence",
+    "crates/gameplay/node-files",
     "tests/security/auth",
     "tests/pre-native-client",
     "tools/architecture-check",
