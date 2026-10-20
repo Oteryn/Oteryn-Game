@@ -74,6 +74,20 @@ impl TypedDefinitionRef {
     }
 }
 
+impl crate::domain::market::MarketDefinitionIdentity for TypedDefinitionRef {
+    fn is_item_family(&self) -> bool {
+        self.family() == DefinitionFamily::Item
+    }
+
+    fn production_key(&self) -> &str {
+        self.key().as_str()
+    }
+
+    fn revision_ref(&self) -> &str {
+        self.revision().as_str()
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReferenceEffectFamily {
     Damage,

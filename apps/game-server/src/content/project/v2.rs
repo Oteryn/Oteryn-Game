@@ -952,12 +952,7 @@ pub struct ProjectV2ItemTaxonomy {
     pub tertiary: Option<String>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct ProjectV2ItemForgeProfile {
-    pub classification: u8,
-    pub max_tier: u8,
-}
+pub use crate::domain::item_definition::ProjectV2ItemForgeProfile;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

@@ -5,8 +5,7 @@
 //! its locks. D1230 adds only pure checked dust quotes/conversions below; no
 //! item recipe, roll, current account balance, durable writer or mutation is implemented.
 
-use crate::content::ProjectV2ItemForgeProfile;
-use crate::durability::item_transfer::{ItemDefinitionFacts, ItemStackClass};
+use super::item_definition::{ItemDefinitionFacts, ItemStackClass, ProjectV2ItemForgeProfile};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ItemTier(u8);

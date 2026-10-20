@@ -13,7 +13,6 @@ pub mod fnd04_verifier;
 // wiring into `ChannelRuntimeV1`'s owner cycle still awaits a `foundation`-owned follow-up:
 // `ScopeRuntimeFence`'s own scope-bound constructor (`from_external_grant`/`with_scope`) stays
 // private to this module, so no outside caller can yet obtain a fence to schedule/drain with.
-#[path = "../ability/condition.rs"]
 #[allow(dead_code)]
 pub(crate) mod condition;
 #[allow(dead_code)]

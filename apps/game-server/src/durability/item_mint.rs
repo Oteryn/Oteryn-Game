@@ -97,13 +97,7 @@ macro_rules! bind_cause {
     }};
 }
 
-/// `TypedDefinitionRef = (DefinitionFamily, ProductionKey, DefinitionRevisionRef)`.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TypedDefinitionRef {
-    pub family: String,
-    pub production_key: String,
-    pub revision_ref: String,
-}
+pub use crate::domain::item_definition::TypedDefinitionRef;
 
 /// `CREATURE-DEATH-OCCURRENCE-IDENTITY-V1` durable, restart-stable death key.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

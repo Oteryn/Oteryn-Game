@@ -4,8 +4,8 @@
 //! The caller supplies only PvE deaths (D60). The Character transaction that commits this outcome
 //! and the DUR-03 item moves that follow it are separate children (DEATH-1b, DEATH-3).
 
-use crate::durability::character_build::{
-    BuildFormula, DurableBuildState, MAX_BUILD_LEVEL, MAX_BUILD_PROGRESS, MIN_SKILL_LEVEL,
+use super::character_build::{
+    BuildFormula, DeathBuildState, MAX_BUILD_LEVEL, MAX_BUILD_PROGRESS, MIN_SKILL_LEVEL,
     cumulative_progress, relevel,
 };
 use oteryn_simulation_determinism::{
@@ -24,12 +24,12 @@ pub enum DeathBuildLossError {
 /// this calculation neither resolves current authority nor writes a receipt.
 /// Growth, saturation and re-levelling reuse the existing native build arithmetic.
 /// Vocation stays unchanged. An unchanged result requires NULL death-build fields.
-pub fn calculate_death_build_loss(
+pub fn calculate_death_build_loss<S: DeathBuildState>(
     formula: &dyn BuildFormula,
-    before: &DurableBuildState,
+    before: &S,
     experience_before: ExactI64,
     experience_lost: ExactI64,
-) -> Result<DurableBuildState, DeathBuildLossError> {
+) -> Result<S, DeathBuildLossError> {
     let mut families = [(0, 0); 8];
     families[0] = before.magic();
     families[1..].copy_from_slice(&before.skills());
@@ -41,8 +41,8 @@ pub fn calculate_death_build_loss(
     )?;
     let mut skills = [(0, 0); 7];
     skills.copy_from_slice(&families[1..]);
-    DurableBuildState::new(before.vocation(), families[0], skills)
-        .map_err(|_| DeathBuildLossError::InvalidBuild)
+    S::from_death_families(before.vocation(), families[0], skills)
+        .ok_or(DeathBuildLossError::InvalidBuild)
 }
 
 /// Persistence-neutral value boundary of [`calculate_death_build_loss`]. Native
@@ -333,7 +333,7 @@ mod tests {
     #![allow(clippy::expect_used)]
 
     use super::*;
-    use crate::durability::character_build::MAX_BUILD_PROGRESS;
+    use crate::durability::character_build::{DurableBuildState, MAX_BUILD_PROGRESS};
 
     // Deliberately small requirement oracles; these are arithmetic fixtures, not
     // a content formula or a new source of vocation rates.
