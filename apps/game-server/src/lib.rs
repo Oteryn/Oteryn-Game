@@ -88,7 +88,7 @@ pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
     reason = "CHAT-1a local chat rules await the CHAT_V1 wire and runtime of CHAT-1b"
 )]
 mod chat;
-pub mod content;
+pub use oteryn_gameplay_content::content;
 pub use oteryn_gameplay_domain::domain;
 pub mod durability;
 pub use oteryn_gameplay_foundation::foundation;

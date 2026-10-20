@@ -13,6 +13,7 @@ category = "app"
 release-role = "production"
 
 [dependencies]
+oteryn-gameplay-content = { version = "=0.1.0", path = "../../crates/gameplay/content" }
 oteryn-gameplay-foundation = { version = "=0.1.0", path = "../../crates/gameplay/foundation" }
 oteryn-gameplay-domain = { version = "=0.1.0", path = "../../crates/gameplay/domain" }
 aws-lc-rs.workspace = true

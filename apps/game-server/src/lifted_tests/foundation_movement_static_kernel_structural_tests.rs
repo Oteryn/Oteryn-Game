@@ -56,7 +56,7 @@ impl MapRevisionRef {
 // Lib tests already load the same source through Content; path-importing integration test crates
 // do not, so this one duplicate module load is intentional and confined to test compilation.
 #[allow(clippy::duplicate_mod)]
-#[path = "../content/reference_static_cell.rs"]
+#[path = "../../../../crates/gameplay/content/src/content/reference_static_cell.rs"]
 mod reference_static_cell;
 use reference_static_cell::{
     ReferenceStaticCellIndex, StaticCellError, StaticCellFact, StaticCellFixtureRecord,

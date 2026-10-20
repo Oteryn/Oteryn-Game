@@ -18,13 +18,13 @@
 // `encounter_map_item.rs`'s `#[cfg(test)]` module (needs `world_runtime`/`world_object_revert`/
 // `interaction`, unrelated to B3-2).
 
-#[path = "../../src/content/digest.rs"]
+#[path = "../../../../crates/gameplay/content/src/content/digest.rs"]
 pub mod digest;
-#[path = "../../src/content/model.rs"]
+#[path = "../../../../crates/gameplay/content/src/content/model.rs"]
 pub mod model;
 #[path = "production_lite.rs"]
 pub mod production;
-#[path = "../../src/content/reference_playable.rs"]
+#[path = "../../../../crates/gameplay/content/src/content/reference_playable.rs"]
 mod reference_playable;
 #[path = "spell_data_shim.rs"]
 #[allow(dead_code)]

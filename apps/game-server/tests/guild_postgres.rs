@@ -76,7 +76,7 @@ pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
 )]
 #[path = "../src/chat/mod.rs"]
 mod chat;
-#[path = "../src/content/mod.rs"]
+#[path = "../../../crates/gameplay/content/src/content/mod.rs"]
 pub mod content;
 #[path = "../../../crates/gameplay/domain/src/domain/mod.rs"]
 pub mod domain;

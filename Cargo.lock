@@ -1977,6 +1977,7 @@ dependencies = [
  "oteryn-foundation",
  "oteryn-gameplay-admission-evidence",
  "oteryn-gameplay-character-recovery-fence",
+ "oteryn-gameplay-content",
  "oteryn-gameplay-domain",
  "oteryn-gameplay-foundation",
  "oteryn-gameplay-native-admission-source",
@@ -2017,6 +2018,25 @@ version = "0.1.0"
 dependencies = [
  "rustix 1.1.5",
  "sha2 0.11.0",
+]
+
+[[package]]
+name = "oteryn-gameplay-content"
+version = "0.1.0"
+dependencies = [
+ "cap-fs-ext",
+ "cap-std",
+ "oteryn-gameplay-domain",
+ "oteryn-gameplay-foundation",
+ "oteryn-protocol-oteryn",
+ "oteryn-simulation-determinism",
+ "oteryn-world-bundle",
+ "oteryn-world-bundle-compiler",
+ "rustix 1.1.5",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+ "zstd",
 ]
 
 [[package]]

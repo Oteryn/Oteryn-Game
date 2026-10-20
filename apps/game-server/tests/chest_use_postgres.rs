@@ -21,7 +21,7 @@ pub mod combat;
 #[path = "../src/combat/pickup.rs"]
 pub mod combat_pickup;
 // `support/content_shim.rs` mirrors `src/content/mod.rs`'s own wiring (see its header comment
-// for why it is not a plain `#[path = "../src/content/mod.rs"]` inclusion).
+// for why it is not a plain `#[path = "../../../crates/gameplay/content/src/content/mod.rs"]` inclusion).
 #[allow(dead_code, unused_imports)]
 #[path = "support/content_shim.rs"]
 pub mod content;

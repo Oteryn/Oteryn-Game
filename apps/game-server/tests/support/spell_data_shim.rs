@@ -2,7 +2,7 @@
 // directly: `combat/chain.rs` and
 // `combat/formula.rs` re-export these two std-only modules. Nothing else is needed.
 
-#[path = "../../src/content/spell_data/chain.rs"]
+#[path = "../../../../crates/gameplay/content/src/content/spell_data/chain.rs"]
 pub mod chain;
-#[path = "../../src/content/spell_data/formula.rs"]
+#[path = "../../../../crates/gameplay/content/src/content/spell_data/formula.rs"]
 pub mod formula;
