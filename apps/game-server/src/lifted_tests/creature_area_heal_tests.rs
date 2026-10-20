@@ -1,6 +1,17 @@
 #![allow(clippy::expect_used, clippy::panic)]
-use super::*;
-use crate::foundation::{ChannelContentPin, ChannelId, MovementLocalPosition, NodeId, WorldId};
+use crate::content::{
+    ProjectReferenceRecord as Record, ProjectV2AuthoringProfileData as Data,
+    ProjectV2DefinitionRef as Ref, ProjectV2Draft, ProjectV2Family,
+};
+use crate::creature_area_heal::*;
+use crate::creature_attack_geometry::Facing;
+use crate::creature_auto_attack::ProfileAbilityProposal;
+use crate::durability::creature_schedule::ScheduleList;
+use crate::foundation::{
+    ChannelContentPin, ChannelId, ChannelRuntimeV1, ExactActorRef, MovementLocalPosition, NodeId,
+    RuntimeScopeRefV1, RuntimeWorkStamp, WorldId,
+};
+
 fn fixture() -> (ChannelRuntimeV1, ProjectV2Draft, Ref) {
     let v:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/encounters/area-heal-native-fixture.json"))).expect("qualified fixture");
     let id = |t: u8| [1, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, t];

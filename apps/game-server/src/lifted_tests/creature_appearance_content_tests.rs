@@ -1,14 +1,18 @@
 #![allow(clippy::unwrap_used)]
-use super::*;
+
+use crate::content::{ProjectV2InlineEffect, ProjectV2InlineEffectOperation};
+use crate::creature_appearance_content::*;
+use crate::foundation::ConditionValues;
+
 #[test]
 fn all110_actual_source_creature_appearance_operations_construct_from_exact_native_members() {
     let registry = crate::content::native_spell_appearances::compile(
-        include_bytes!("../../../content/presentations/bindings/spell-appearances.json"),
+        include_bytes!("../../../../content/presentations/bindings/spell-appearances.json"),
         [9; 32],
     )
     .unwrap();
     let cases: Vec<serde_json::Value> =
-        serde_json::from_slice(include_bytes!("creature_appearance_test_data.json")).unwrap();
+        serde_json::from_slice(include_bytes!("../creature_appearance_test_data.json")).unwrap();
     let mut count = 0;
     for row in cases {
         let effect: ProjectV2InlineEffect = serde_json::from_value(row["effect"].clone()).unwrap();
@@ -59,11 +63,11 @@ fn all110_actual_source_creature_appearance_operations_construct_from_exact_nati
 #[test]
 fn ten_actual_item_appearance_operations_have_no_exact_active_policy_and_are_not_rekeyed() {
     let document: serde_json::Value = serde_json::from_slice(include_bytes!(
-        "../../../content/items/definitions/spell-native-profiles.json"
+        "../../../../content/items/definitions/spell-native-profiles.json"
     ))
     .unwrap();
     let cases: Vec<serde_json::Value> =
-        serde_json::from_slice(include_bytes!("creature_appearance_test_data.json")).unwrap();
+        serde_json::from_slice(include_bytes!("../creature_appearance_test_data.json")).unwrap();
     let mut count = 0;
     for row in cases {
         let effect: ProjectV2InlineEffect = serde_json::from_value(row["effect"].clone()).unwrap();
@@ -93,7 +97,7 @@ fn ten_actual_item_appearance_operations_have_no_exact_active_policy_and_are_not
 #[test]
 fn source_object_illusion_flag_does_not_grant_an_unqualified_outfit_cast() {
     let actual: serde_json::Value = serde_json::from_slice(include_bytes!(
-        "../../../content/creatures/definitions/spell-native-profiles.json"
+        "../../../../content/creatures/definitions/spell-native-profiles.json"
     ))
     .unwrap();
     let row = actual["records"]
@@ -109,7 +113,7 @@ fn source_object_illusion_flag_does_not_grant_an_unqualified_outfit_cast() {
     let creature: crate::content::ProjectV2DefinitionRef =
         serde_json::from_value(row["profile"]["target"].clone()).unwrap();
     let registry = crate::content::native_spell_appearances::compile(
-        include_bytes!("../../../content/presentations/bindings/spell-appearances.json"),
+        include_bytes!("../../../../content/presentations/bindings/spell-appearances.json"),
         [9; 32],
     )
     .unwrap();

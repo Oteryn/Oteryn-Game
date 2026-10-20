@@ -44,7 +44,7 @@ use native_file_modules::{ai_think, movement};
     dead_code,
     reason = "nonshipping fixed-one-creature Combat proof awaits production composition"
 )]
-#[path = "../src/combat.rs"]
+#[path = "../src/combat/mod.rs"]
 mod combat;
 #[path = "../src/combat/attack/mod.rs"]
 mod combat_attack;
@@ -136,13 +136,8 @@ pub(crate) mod world_runtime;
 #[path = "support/bestiary_postgres_harness.rs"]
 mod bestiary_postgres_harness;
 
-#[cfg(test)]
-#[path = "support/spell_stance_runtime_postgres_cases.rs"]
-mod spell_stance_runtime_postgres_cases;
-
-#[cfg(test)]
-#[path = "support/spell_familiar_runtime_postgres_cases.rs"]
-mod spell_familiar_runtime_postgres_cases;
+// Spell Stance/Familiar PostgreSQL cases are registered by src/lib.rs, where their native
+// Spell owner is available without importing it into neutral durability test roots.
 
 #[cfg(test)]
 #[path = "../src/lifted_tests/durability_world_party_tests.rs"]

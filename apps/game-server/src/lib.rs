@@ -943,3 +943,43 @@ mod foundation_movement_static_kernel_structural_tests;
 #[allow(clippy::expect_used)]
 #[path = "lifted_tests/foundation_attacker_fence_tests.rs"]
 mod foundation_attacker_fence_tests;
+// Higher-layer qualification tests stay in the native composition root.
+#[cfg(test)]
+#[path = "lifted_tests/creature_area_heal_tests.rs"]
+mod creature_area_heal_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/creature_icicle_tests.rs"]
+mod creature_icicle_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/creature_damage_composed_tests.rs"]
+mod creature_damage_composed_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/creature_appearance_execution_tests.rs"]
+mod creature_appearance_execution_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/creature_defense_variant_tests.rs"]
+mod creature_defense_variant_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/creature_auto_attack_tests.rs"]
+mod creature_auto_attack_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/creature_appearance_content_tests.rs"]
+mod creature_appearance_content_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/creature_defense_presentation_tests.rs"]
+mod creature_defense_presentation_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/creature_condition_content_tests.rs"]
+mod creature_condition_content_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/creature_condition_content_gate_tests.rs"]
+mod creature_condition_content_gate_tests;

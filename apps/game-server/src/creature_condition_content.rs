@@ -306,7 +306,7 @@ pub(crate) fn lower_condition_definition(
     ConditionDefinition::new(&effect.key, revision, values).ok_or(E::InvalidDefinition)
 }
 
-fn exact_thousandths(ratio: ProjectV2ExactRatio) -> Result<i32, ConditionContentError> {
+pub(crate) fn exact_thousandths(ratio: ProjectV2ExactRatio) -> Result<i32, ConditionContentError> {
     use ConditionContentError as E;
     if ratio.denominator == 0 {
         return Err(E::InvalidDefinition);
@@ -318,11 +318,3 @@ fn exact_thousandths(ratio: ProjectV2ExactRatio) -> Result<i32, ConditionContent
     }
     i32::try_from(scaled / denominator).map_err(|_| E::NumericOverflow)
 }
-
-#[cfg(test)]
-#[path = "condition_content_tests.rs"]
-mod tests;
-
-#[cfg(test)]
-#[path = "creature_condition_content_gate_tests.rs"]
-mod gate_tests;

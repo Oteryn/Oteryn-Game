@@ -33,8 +33,8 @@ pub(crate) enum AreaHealError {
 #[derive(Debug, Clone)]
 pub(crate) struct CreatureHealCatalog {
     content: [u8; 32],
-    world: crate::foundation::WorldId,
-    maximum: BTreeMap<String, u64>,
+    pub(crate) world: crate::foundation::WorldId,
+    pub(crate) maximum: BTreeMap<String, u64>,
 }
 impl CreatureHealCatalog {
     pub(crate) fn matches_current(&self, r: &ChannelRuntimeV1) -> bool {
@@ -120,15 +120,15 @@ impl CreatureHealCatalog {
 #[derive(Debug, Clone)]
 pub(crate) struct AreaHealSource {
     caster: Ref,
-    ability: Ref,
+    pub(crate) ability: Ref,
     index: usize,
     details: Box<ProjectV2AbilityDetails>,
-    minimum: u64,
-    maximum: u64,
-    filter: Option<ProjectV2EffectAffects>,
+    pub(crate) minimum: u64,
+    pub(crate) maximum: u64,
+    pub(crate) filter: Option<ProjectV2EffectAffects>,
     remove_paralysis: bool,
     fingerprint: [u8; 32],
-    source_load_magnitude: Option<u64>,
+    pub(crate) source_load_magnitude: Option<u64>,
 }
 impl AreaHealSource {
     pub(crate) fn from_native(
@@ -366,11 +366,11 @@ pub(crate) struct AreaHealOutcome {
     pub(crate) targets: Vec<(ExactActorRef, OwnerDamageResult)>,
     pub(crate) qualification: &'static str,
 }
-struct Memo {
+pub(crate) struct Memo {
     caster: ExactActorRef,
     ability: Ref,
     index: usize,
-    sequence: u64,
+    pub(crate) sequence: u64,
     occurrence: String,
     binding: [u8; 32],
     activation: u64,
@@ -378,7 +378,7 @@ struct Memo {
 }
 #[derive(Default)]
 pub(crate) struct AreaHealOwner {
-    memos: Vec<Memo>,
+    pub(crate) memos: Vec<Memo>,
 }
 impl AreaHealOwner {
     // Keep execute ABI explicit: current runtime owner, independent fence/stamp, exact actor/session/source and occurrence/policy facts are separate admission inputs.
@@ -671,7 +671,3 @@ fn project_prophet_source_load_magnitude(source: [u8; 32]) -> u64 {
     bytes.copy_from_slice(&digest[..8]);
     crate::durability::uniform_draw::uniform_draw(u64::from_le_bytes(bytes), 200, 350) as u64
 }
-
-#[cfg(test)]
-#[path = "creature_area_heal_tests.rs"]
-mod tests;

@@ -1741,7 +1741,13 @@ impl MonsterCombatLane {
                                 .find(|(i, _)| *i == proposal.entry_index)
                             {
                                 let event = source
-                                    .produce(runtime, fence, stamp, &proposal, reader)
+                                    .produce(
+                                        runtime,
+                                        fence,
+                                        stamp,
+                                        &proposal,
+                                        &mut crate::creature_damage_spell::SpellPresentationReader(reader),
+                                    )
                                     .map(DefenseOutcome::Presentation)
                                     .map_err(DefenseError::Presentation);
                                 result.defenses.push((proposal.ability, event));

@@ -1,10 +1,10 @@
 //! Crystal00ce Icicle: raw Dragon Egg HP callback + literal-string target clear.
 //! SOURCE_CPP_RAW_ADDHEALTH; PROJECT_COMPLETE_CURRENT_CENSUS_BATCH; no fake Combat facts.
-use crate::ai_think::profile_schedule::{ProfileAbilityProposal, ScheduleList};
 use crate::content::{
     ProjectV2AuthoringProfileData as Data, ProjectV2DefinitionRef as Ref, ProjectV2Draft,
 };
-use crate::creature_auto_attack::AutoAttackOwner;
+use crate::creature_auto_attack::{AutoAttackOwner, ProfileAbilityProposal};
+use crate::durability::creature_schedule::ScheduleList;
 use crate::foundation::owner_timer::SemanticTimeMicros;
 use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, GameSessionId, OwnerDamageResult, RuntimeScopeRefV1,
@@ -30,11 +30,11 @@ pub(crate) struct IcicleOutcome {
 pub(crate) struct IcicleSource {
     pub(crate) ability: Ref,
     pub(crate) index: usize,
-    content: [u8; 32],
+    pub(crate) content: [u8; 32],
     fingerprint: [u8; 32],
 }
-const CASTER: &str = "oteryn:creature.icicle";
-const EGG: &str = "oteryn:creature.dragon_egg";
+pub(crate) const CASTER: &str = "oteryn:creature.icicle";
+pub(crate) const EGG: &str = "oteryn:creature.dragon_egg";
 const ABILITY: &str = "oteryn:ability.creature.icicle.optional-field-core-defenses-1";
 impl IcicleSource {
     pub(crate) fn qualify(
@@ -113,7 +113,7 @@ pub(crate) trait IcicleWorldReader {
     ) -> Option<bool>;
 }
 #[derive(Clone)]
-struct Memo {
+pub(crate) struct Memo {
     actor: ExactActorRef,
     activation: u64,
     sequence: u64,
@@ -123,9 +123,9 @@ struct Memo {
 }
 #[derive(Default)]
 pub(crate) struct IcicleOwner {
-    memos: Vec<Memo>,
+    pub(crate) memos: Vec<Memo>,
 }
-fn hex(v: &[u8]) -> String {
+pub(crate) fn hex(v: &[u8]) -> String {
     v.iter().map(|b| format!("{b:02x}")).collect()
 }
 impl IcicleOwner {
@@ -335,7 +335,3 @@ impl IcicleOwner {
         Ok(out)
     }
 }
-
-#[cfg(test)]
-#[path = "creature_icicle_tests.rs"]
-mod tests;

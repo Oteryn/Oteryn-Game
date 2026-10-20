@@ -8,16 +8,11 @@ use crate::foundation::{
     CarrierError, CurrentOwnerCombatDeath, ExactActorRef, RuntimeCorpseProjection,
 };
 
-// Explicit paths preserve module resolution in standalone PostgreSQL test binaries.
-#[path = "combat/chain.rs"]
+// A directory module keeps one child-module layout in native and standalone test roots.
 pub(crate) mod chain;
-#[path = "combat/charm_effects.rs"]
 pub(crate) mod charm_effects;
-#[path = "combat/death_reward.rs"]
 mod death_reward;
-#[path = "combat/formula.rs"]
 pub(crate) mod formula;
-#[path = "combat/loot_plan.rs"]
 mod loot_plan;
 
 // The live kill-reward caller (`gameplay_transport::kill_reward`) uses only
