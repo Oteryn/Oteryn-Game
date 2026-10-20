@@ -1,5 +1,12 @@
 //! ADR-0019 gameplay crate `oteryn-gameplay-durability`: modules moved verbatim from `oteryn-game-server` (re-exported there at the old path).
 
+extern crate self as oteryn_gameplay_durability;
+
+/// The game-server migrations, embedded once here so files that other crates
+/// include by `#[path]` name one migrator whichever crate compiles them.
+pub static GAME_MIGRATOR: sqlx::migrate::Migrator =
+    sqlx::migrate!("../../../apps/game-server/migrations");
+
 pub mod character_bootstrap_intent;
 pub mod durability;
 
