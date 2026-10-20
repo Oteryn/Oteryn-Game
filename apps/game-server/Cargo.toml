@@ -18,6 +18,7 @@ base64.workspace = true
 ed25519-dalek.workspace = true
 oteryn-error-codes = { version = "=0.1.0", path = "../../crates/error-codes" }
 oteryn-foundation = { version = "=0.1.0", path = "../../crates/foundation" }
+oteryn-gameplay-weather = { version = "=0.1.0", path = "../../crates/gameplay/weather" }
 oteryn-ntp-clock = { version = "=0.1.0", path = "../../crates/ntp-clock" }
 oteryn-protocol-oteryn = { version = "=0.1.0", path = "../../crates/protocol-oteryn" }
 oteryn-simulation-determinism = { version = "=0.1.0", path = "../../crates/simulation-determinism" }

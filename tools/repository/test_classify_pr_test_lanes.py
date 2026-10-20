@@ -639,6 +639,7 @@ def test_server_qualification(module):
         "crates/foundation/Cargo.toml",
         "crates/protocol-oteryn/Cargo.toml",
         "crates/simulation-determinism/Cargo.toml",
+        "crates/gameplay/weather/src/lib.rs",
         "Cargo.lock",
         "vendor/tokio-1.53.1/src/lib.rs",
         "tools/qualification/node_boot/run.sh",

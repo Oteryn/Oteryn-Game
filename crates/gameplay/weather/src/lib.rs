@@ -20,6 +20,11 @@
 //! maps to the nearest area anchor (a region position or a city hometown temple) by x and y.
 //! Areas without an anchor never win a lookup.
 
+#![allow(
+    dead_code,
+    reason = "CP D1448: the WeatherSource seam and the reserved real_world coordinates are an extension point for a later live binding; today only the shipped Oteryn design is consumed"
+)]
+
 use oteryn_protocol_oteryn::world_spatial::ActorPosition;
 use oteryn_protocol_oteryn::world_weather::{
     WEATHER_INTENSITY_MAX, WEATHER_KIND_MAX, WorldWeather,
@@ -30,7 +35,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::sync::OnceLock;
 
 /// D1023: 360 Tibian minutes, each 2,500 real milliseconds.
-pub(crate) const WEATHER_SLOT_MS: u64 = 900_000;
+pub const WEATHER_SLOT_MS: u64 = 900_000;
 const BLOCK_SLOTS: u64 = 12;
 
 const INDEX_SCHEMA: &str = "OTERYN_WEATHER_INDEX/v1";
@@ -52,21 +57,21 @@ const KIND_CODES: [(&str, u8); 9] = [
 
 /// One weather period: it starts at `start_slot` and holds until the next period starts.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct WeatherPeriod {
-    pub(crate) start_slot: u64,
-    pub(crate) kind: u8,
-    pub(crate) intensity: u8,
+pub struct WeatherPeriod {
+    pub start_slot: u64,
+    pub kind: u8,
+    pub intensity: u8,
 }
 
 /// The seam between "where" and "what": given an area index and an absolute slot, the period in
 /// effect. [`OterynDesignSource`] is today's implementation; a later real-world source can read
 /// the area's `real_world` coordinates instead (not implemented, CP D1448).
-pub(crate) trait WeatherSource {
+pub trait WeatherSource {
     fn period(&self, area: &WeatherArea, slot: u64) -> Option<WeatherPeriod>;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum WeatherDataError {
+pub enum WeatherDataError {
     Parse(&'static str),
     Schema(&'static str),
     Invalid(&'static str),
@@ -142,11 +147,11 @@ struct AreasFile {
 /// One region or city: its climate, its lookup anchor and the optional real-world coordinates
 /// reserved for a later live binding.
 #[derive(Debug, Clone)]
-pub(crate) struct WeatherArea {
-    pub(crate) key: String,
+pub struct WeatherArea {
+    pub key: String,
     climate: usize,
     anchor: Option<(i32, i32)>,
-    pub(crate) real_world: Option<(f64, f64)>,
+    pub real_world: Option<(f64, f64)>,
 }
 
 #[derive(Debug, Clone)]
@@ -158,7 +163,7 @@ struct Climate {
 
 /// The shipped Oteryn design: public, deterministic, sha256-based draws.
 #[derive(Debug, Clone)]
-pub(crate) struct OterynDesignSource {
+pub struct OterynDesignSource {
     revision: String,
     climates: Vec<Climate>,
     duration: (u8, u8),
@@ -230,7 +235,7 @@ impl WeatherSource for OterynDesignSource {
 
 /// The loaded, validated weather data and the source that turns it into observations.
 #[derive(Debug)]
-pub(crate) struct WorldWeatherSource {
+pub struct WorldWeatherSource {
     source: OterynDesignSource,
     areas: Vec<WeatherArea>,
     token: [u8; 32],
@@ -239,11 +244,7 @@ pub(crate) struct WorldWeatherSource {
 impl WorldWeatherSource {
     /// Loads and validates the three JSON files. Any problem fails closed: the caller then holds
     /// no source and never offers capability 26.
-    pub(crate) fn from_json(
-        index: &str,
-        climates: &str,
-        areas: &str,
-    ) -> Result<Self, WeatherDataError> {
+    pub fn from_json(index: &str, climates: &str, areas: &str) -> Result<Self, WeatherDataError> {
         let index: IndexFile =
             serde_json::from_str(index).map_err(|_| WeatherDataError::Parse("index"))?;
         let climates: ClimatesFile =
@@ -356,7 +357,7 @@ impl WorldWeatherSource {
 
     /// The nearest anchored area to a position (x and y only; the first of equal distances in
     /// key order). OTERYN_DESIGN approximation until area geometry exists.
-    pub(crate) fn area_at(&self, position: ActorPosition) -> Option<&WeatherArea> {
+    pub fn area_at(&self, position: ActorPosition) -> Option<&WeatherArea> {
         self.areas
             .iter()
             .filter_map(|area| {
@@ -371,7 +372,7 @@ impl WorldWeatherSource {
 
     /// The full-replacement observation for a position at a UTC time fact. `Unavailable` (never
     /// a fictitious value) when no area or period resolves.
-    pub(crate) fn observe(&self, position: ActorPosition, now_utc_ms: u64) -> WorldWeather {
+    pub fn observe(&self, position: ActorPosition, now_utc_ms: u64) -> WorldWeather {
         self.try_observe(position, now_utc_ms)
             .unwrap_or(WorldWeather::Unavailable)
     }
@@ -388,26 +389,26 @@ impl WorldWeatherSource {
     }
 
     #[cfg(test)]
-    pub(crate) fn areas(&self) -> &[WeatherArea] {
+    pub fn areas(&self) -> &[WeatherArea] {
         &self.areas
     }
 
     #[cfg(test)]
-    pub(crate) fn source(&self) -> &OterynDesignSource {
+    pub fn source(&self) -> &OterynDesignSource {
         &self.source
     }
 }
 
 /// The shipped data, loaded once. `None` when it is missing or invalid: capability 26 is then
 /// never offered (fail closed).
-pub(crate) fn shipped() -> Option<&'static WorldWeatherSource> {
+pub fn shipped() -> Option<&'static WorldWeatherSource> {
     static SHIPPED: OnceLock<Option<WorldWeatherSource>> = OnceLock::new();
     SHIPPED
         .get_or_init(|| {
             WorldWeatherSource::from_json(
-                include_str!("../../../content/weather/index.json"),
-                include_str!("../../../content/weather/climates.json"),
-                include_str!("../../../content/weather/areas.json"),
+                include_str!("../../../../content/weather/index.json"),
+                include_str!("../../../../content/weather/climates.json"),
+                include_str!("../../../../content/weather/areas.json"),
             )
             .ok()
         })
@@ -415,5 +416,4 @@ pub(crate) fn shipped() -> Option<&'static WorldWeatherSource> {
 }
 
 #[cfg(test)]
-#[path = "world_weather_tests.rs"]
 mod tests;
