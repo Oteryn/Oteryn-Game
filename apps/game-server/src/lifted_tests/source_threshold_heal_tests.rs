@@ -1,6 +1,16 @@
 #![allow(clippy::expect_used, clippy::panic)]
-use super::*;
+use crate::content::{
+    ProjectV2AuthoringProfileData as Data, ProjectV2DefinitionRef as Ref, ProjectV2Draft,
+    ProjectV2Family as Family,
+};
+use crate::creature_auto_attack::ProfileAbilityProposal;
+use crate::durability::creature_schedule::ScheduleList;
 use crate::foundation::{ChannelContentPin, ChannelId, MovementLocalPosition, NodeId, WorldId};
+use crate::foundation::{
+    ChannelRuntimeV1, ExactActorRef, RuntimeScopeRefV1, RuntimeWorkStamp, ScopeRuntimeFence,
+};
+use crate::source_threshold_heal::*;
+
 fn fixture(name: &str) -> (ChannelRuntimeV1, ProjectV2Draft, Ref, ThresholdHealSource) {
     let v:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/encounters/callback18/threshold-heal-native-fixture-v2.json"))).expect("qualified fixture");
     let id = |t: u8| [1, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, t];
@@ -898,7 +908,7 @@ pub(crate) fn complete_retained_threshold_aggregate_fixture(
         .any(|p| p.target.key == "oteryn:creature.professor_maxxen")
     {
         let seven: serde_json::Value =
-            serde_json::from_str(include_str!("source_encounter_seven_fixture.json"))
+            serde_json::from_str(include_str!("../source_encounter_seven_fixture.json"))
                 .map_err(|e| e.to_string())?;
         profiles(
             draft,
@@ -936,7 +946,7 @@ pub(crate) fn complete_retained_threshold_aggregate_fixture(
         // Add only already selected callback parents (Maxxen generator and its
         // retained children), never the unrelated sixteen-source population.
         let spawn: serde_json::Value =
-            serde_json::from_str(include_str!("source_callback_spawn_fixture.json"))
+            serde_json::from_str(include_str!("../source_callback_spawn_fixture.json"))
                 .map_err(|e| e.to_string())?;
         for case in spawn["cases"].as_array().ok_or("actual callback cases")? {
             let parent = case["parent"].as_str().ok_or("actual callback parent")?;
@@ -993,7 +1003,7 @@ pub(crate) fn complete_retained_threshold_aggregate_fixture(
         // production qualifier deliberately checks the entire pinned callback
         // witness, so retain that witness too rather than bypass its closure.
         let casts: serde_json::Value =
-            serde_json::from_str(include_str!("source_callback_cast_fixture.json"))
+            serde_json::from_str(include_str!("../source_callback_cast_fixture.json"))
                 .map_err(|e| e.to_string())?;
         for (key, data) in casts["profiles"]
             .as_object()

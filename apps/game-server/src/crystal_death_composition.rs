@@ -5,7 +5,10 @@ use crate::foundation::{
     GameSessionId, RumBarrelDeathLedger, RumBarrelDeathResult, RuntimeScopeRefV1, RuntimeWorkStamp,
     ScopeOwnershipGeneration, ScopeRuntimeFence, WorldId,
 };
-use crate::weak_spot_speech::{WeakSpotSpeechError, WeakSpotSpeechMailbox};
+pub(crate) mod speech {
+    include!("crystal_death_composition/speech.rs");
+}
+use speech::{WeakSpotSpeechError, WeakSpotSpeechMailbox};
 #[derive(Debug)]
 struct PinnedDeathDefinition {
     target: String,

@@ -367,3 +367,18 @@ mod durability_guild_disband_terminal_tests;
 )]
 #[path = "../src/source_callback_cast.rs"]
 mod source_callback_cast;
+#[cfg(test)]
+#[path = "../src/lifted_tests/source_callback_cast_tests.rs"]
+mod source_callback_cast_tests;
+
+#[cfg(test)]
+#[path = "../src/lifted_tests/source_callback_spawn_tests.rs"]
+mod source_callback_spawn_tests;
+
+#[cfg(test)]
+#[path = "../src/lifted_tests/source_encounter_seven_tests.rs"]
+mod source_encounter_seven_tests;
+
+#[cfg(test)]
+#[path = "../src/lifted_tests/source_threshold_heal_tests.rs"]
+mod source_threshold_heal_tests;

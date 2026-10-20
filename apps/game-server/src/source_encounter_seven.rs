@@ -1,12 +1,13 @@
 //! Seven exact source descriptors; Map-dependent actions fail closed without their real owner.
 //! Time phase is PROJECT_SINGLE_ACTOR_PROFILE_SWAP_NOT_GLOBAL_TWO_ACTOR_SWAP.
-use crate::ai_think::profile_schedule::{ProfileAbilityProposal, ScheduleList};
 use crate::content::{
     ProjectReferenceRecord as Record, ProjectV2AuthoringProfile,
     ProjectV2AuthoringProfileData as Data, ProjectV2DefinitionRef as Ref, ProjectV2Draft,
     ProjectV2Family as Family, ProjectV2SourceIdentityBinding,
 };
 use crate::creature_auto_attack::AttackError;
+use crate::creature_auto_attack::ProfileAbilityProposal;
+use crate::durability::creature_schedule::ScheduleList;
 use crate::foundation::owner_timer::{
     CatchUpPolicy, FamilyPolicy, OwnerClock, OwnerTimerLane, SemanticTimeMicros, TimerFamily,
 };
@@ -16,9 +17,9 @@ use crate::foundation::{
     WorldId,
 };
 use sha2::{Digest, Sha256};
-const BASE: &str = "oteryn:creature.the_time_guardian";
-const BLAZING: &str = "oteryn:creature.the_blazing_time_guardian";
-const FREEZING: &str = "oteryn:creature.the_freezing_time_guardian";
+pub(crate) const BASE: &str = "oteryn:creature.the_time_guardian";
+pub(crate) const BLAZING: &str = "oteryn:creature.the_blazing_time_guardian";
+pub(crate) const FREEZING: &str = "oteryn:creature.the_freezing_time_guardian";
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum SevenKind {
     BrainHeal,
@@ -30,25 +31,25 @@ pub(crate) enum SevenKind {
     Zamulosh,
 }
 #[derive(serde::Deserialize)]
-struct Witness {
-    cases: Vec<Case>,
+pub(crate) struct Witness {
+    pub(crate) cases: Vec<Case>,
     profiles: Vec<ProjectV2AuthoringProfile>,
     records: Vec<Record>,
     source_identity_bindings: Vec<ProjectV2SourceIdentityBinding>,
 }
 #[derive(Clone, serde::Deserialize)]
-struct Case {
-    creature: String,
+pub(crate) struct Case {
+    pub(crate) creature: String,
     ability: String,
-    list: String,
-    index: usize,
-    encounter: String,
+    pub(crate) list: String,
+    pub(crate) index: usize,
+    pub(crate) encounter: String,
 }
 #[derive(Clone)]
 pub(crate) struct SevenSource {
-    case: Case,
+    pub(crate) case: Case,
     kind: SevenKind,
-    content: [u8; 32],
+    pub(crate) content: [u8; 32],
     profiles: std::sync::Arc<[ProjectV2AuthoringProfile]>,
     records: std::sync::Arc<[Record]>,
 }
@@ -282,7 +283,7 @@ impl SevenSource {
         })
     }
 }
-fn hex(v: [u8; 16]) -> String {
+pub(crate) fn hex(v: [u8; 16]) -> String {
     v.iter().map(|b| format!("{b:02x}")).collect()
 }
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -320,7 +321,7 @@ struct ReturnKey {
     actor: ExactActorRef,
     token: u64,
 }
-struct Pending {
+pub(crate) struct Pending {
     actor: ExactActorRef,
     token: u64,
     epoch: u64,
@@ -347,10 +348,10 @@ struct Memo {
 }
 pub(crate) struct TimeGuardianOwner {
     timers: OwnerTimerLane<ReturnFamily, ReturnKey>,
-    pending: Vec<Pending>,
+    pub(crate) pending: Vec<Pending>,
     memos: Vec<Memo>,
     next: u64,
-    last_time: Option<SemanticTimeMicros>,
+    pub(crate) last_time: Option<SemanticTimeMicros>,
 }
 pub(crate) struct PreparedTimeCast {
     actor: ExactActorRef,
@@ -367,7 +368,7 @@ pub(crate) struct PreparedTimeCast {
     memo_out: TimePhaseOutcome,
 }
 pub(crate) struct DueTimeReturn {
-    actor: ExactActorRef,
+    pub(crate) actor: ExactActorRef,
     token: u64,
     source: SevenSource,
     native: PreparedCreatureProfileTransformation,
@@ -730,7 +731,3 @@ impl TimeGuardianOwner {
     }
 }
 const QUALIFICATION: &str = "PROJECT_SINGLE_ACTOR_PROFILE_SWAP_NOT_GLOBAL_TWO_ACTOR_SWAP;PROJECT_UNIFORM_DRAW;SOURCE_TWO_DISTINCT_ENTRIES_PRESERVED;SOURCE_30S_DELAY;PRESENTATION_NETWORK_PENDING";
-
-#[cfg(test)]
-#[path = "source_encounter_seven_tests.rs"]
-pub(crate) mod tests;

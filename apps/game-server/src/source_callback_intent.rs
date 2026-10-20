@@ -1,6 +1,7 @@
 //! Canonical AI proposal grammar, checked before callback timer/memo/speech mutation.
-use crate::ai_think::profile_schedule::{ProfileAbilityProposal, ScheduleList};
 use crate::creature_auto_attack::AttackError;
+use crate::creature_auto_attack::ProfileAbilityProposal;
+use crate::durability::creature_schedule::ScheduleList;
 use crate::foundation::ChannelRuntimeV1;
 pub(crate) fn validate(
     r: &ChannelRuntimeV1,
