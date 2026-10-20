@@ -51,7 +51,7 @@ use oteryn_world_bundle::bundle::{Family, Manifest, Sector, TerrainKind};
 use std::collections::{BTreeSet, HashMap};
 use std::sync::Arc;
 
-pub(crate) use crate::content::bundle_spell_tiles::BundleSpellTiles;
+pub use crate::content::bundle_spell_tiles::BundleSpellTiles;
 use crate::content::bundle_spell_tiles::UNKNOWN;
 
 impl crate::content::bundle_spell_tiles::BundleTileBase for WorldBase {
@@ -108,7 +108,7 @@ impl Shape {
 
 /// Collects the spell tile facts of a bundle's sectors during the boot scan.
 #[derive(Debug)]
-pub(crate) struct SpellTilesBuilder {
+pub struct SpellTilesBuilder {
     base: Arc<WorldBase>,
     palette: Option<Vec<PaletteSpell>>,
     tiles: Vec<u32>,
@@ -120,7 +120,7 @@ pub(crate) struct SpellTilesBuilder {
 }
 
 impl SpellTilesBuilder {
-    pub(crate) fn new(base: Arc<WorldBase>) -> Self {
+    pub fn new(base: Arc<WorldBase>) -> Self {
         let tiles = vec![UNKNOWN; base.tile_count()];
         Self {
             base,
@@ -136,7 +136,7 @@ impl SpellTilesBuilder {
     /// Records the tiles of one sector of `manifest`. `blocked` holds the tiles the boot blocks
     /// (at least those of this sector), `item` serves the Item definitions and `masks` holds the
     /// catalogue floor-change mask of each palette entry.
-    pub(crate) fn push(
+    pub fn push(
         &mut self,
         manifest: &Manifest,
         sector: &Sector,
@@ -240,7 +240,7 @@ impl SpellTilesBuilder {
 
     /// The bundle's spell tiles: every tile with a usable door ([`DoorBook`], MAP-DOOR-1) is
     /// unknown, since its state changes at runtime. Refuses a scan that disagrees with the base.
-    pub(crate) fn finish(
+    pub fn finish(
         mut self,
         doors: &DoorBook,
     ) -> Result<BundleSpellTiles, super::boot::BootRefusal> {
@@ -267,7 +267,7 @@ impl SpellTilesBuilder {
 }
 
 #[cfg(test)]
-pub(crate) mod tests {
+pub mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
     use super::*;
     use crate::content::{LogicalCell, NativeEntryMovementCells, SpellTileLookupError};
@@ -280,7 +280,7 @@ pub(crate) mod tests {
     /// changes*). Their ground id is carried as `ground_source_id`; they are not `floor_change`.
     const ROPE_SPOTS: [u32; 2] = [386, 21965];
 
-    pub(crate) fn id(n: u8) -> [u8; 16] {
+    pub fn id(n: u8) -> [u8; 16] {
         [1, 0, 0, 0, 0, n, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, n]
     }
 
@@ -438,7 +438,7 @@ pub(crate) mod tests {
     }
 
     /// The synthetic bundle World of these tests, started at x 1; x 2 is a protection zone.
-    pub(crate) fn world() -> BundleWorld {
+    pub fn world() -> BundleWorld {
         let (bytes, bundle) = bundle();
         let mut revision = String::from("sha256:");
         for byte in bundle.digest {
@@ -707,10 +707,10 @@ pub(crate) mod tests {
     #[ignore = "needs the pinned artifact: OTERYN_PINNED_WORLD_BUNDLE=<pin-check .otwb>"]
     fn pinned_bundle_tiles_answer_every_base_tile() {
         const ITEM_KEYS: &[u8] =
-            include_bytes!("../../../../tools/content-schema/native-gameplay/item-keys.json");
+            include_bytes!("../../../../../tools/content-schema/native-gameplay/item-keys.json");
         let path = std::env::var("OTERYN_PINNED_WORLD_BUNDLE").expect("OTERYN_PINNED_WORLD_BUNDLE");
         let data = std::fs::read(path).expect("the pinned artifact");
-        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let root = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server")).join("../..");
         let pin: serde_json::Value = serde_json::from_slice(
             &std::fs::read(root.join("content/world/pins/oteryn.json")).expect("pin"),
         )

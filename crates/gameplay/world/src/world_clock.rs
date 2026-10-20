@@ -14,7 +14,7 @@ use oteryn_simulation_determinism::GameplayDecisionRoot;
 /// D1190: retained World-config input, never current session/owner authority. The only
 /// constructor reads the actual checked Secret file; there is no raw-seed/default constructor.
 /// Intentionally non-Clone, with no secret-bearing Debug implementation.
-pub(crate) struct RetainedWorldConfig {
+pub struct RetainedWorldConfig {
     world: WorldId,
     root: GameplayDecisionRoot,
     clock_identity: String,
@@ -36,7 +36,7 @@ impl std::fmt::Debug for RetainedWorldConfig {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum WorldConfigError {
+pub enum WorldConfigError {
     SeedFile(FileError),
     SeedLength,
     ClockIdentity,
@@ -46,17 +46,17 @@ pub(crate) enum WorldConfigError {
 
 /// Borrowed read data for exactly one retained World. It never proves current ownership,
 /// policy liveness, clock-fact provenance or permission to offer/publish weather.
-pub(crate) struct WorldConfigRead<'a> {
-    pub(crate) root: &'a GameplayDecisionRoot,
-    pub(crate) clock_identity: &'a str,
-    pub(crate) clock: WorldClockSource,
-    pub(crate) policy_revision: &'a str,
+pub struct WorldConfigRead<'a> {
+    pub root: &'a GameplayDecisionRoot,
+    pub clock_identity: &'a str,
+    pub clock: WorldClockSource,
+    pub policy_revision: &'a str,
 }
 
 impl RetainedWorldConfig {
     /// Called by the node composition with `[world]` and the single existing
     /// `readiness.world_policy_revision`. Ownership is checked against the current process UID.
-    pub(crate) fn load_checked_secret(
+    pub fn load_checked_secret(
         world: WorldId,
         seed_file: &std::path::Path,
         clock_identity: &str,
@@ -97,7 +97,7 @@ impl RetainedWorldConfig {
     }
 
     /// D1190: another World cannot read this seed/clock/policy binding.
-    pub(crate) fn read(&self, world: WorldId) -> Option<WorldConfigRead<'_>> {
+    pub fn read(&self, world: WorldId) -> Option<WorldConfigRead<'_>> {
         (self.world == world).then_some(WorldConfigRead {
             root: &self.root,
             clock_identity: &self.clock_identity,
@@ -108,11 +108,11 @@ impl RetainedWorldConfig {
 }
 
 /// `WORLDINT0-RL-16`: real milliseconds per Tibian minute.
-pub(crate) const TIBIAN_MINUTE_MS: u64 = 2_500;
+pub const TIBIAN_MINUTE_MS: u64 = 2_500;
 /// `WORLDINT0-RL-17`: the light level at night and by day, and the light color.
-pub(crate) const NIGHT_LIGHT_LEVEL: u8 = 40;
-pub(crate) const DAY_LIGHT_LEVEL: u8 = 250;
-pub(crate) const LIGHT_COLOR: u8 = 215;
+pub const NIGHT_LIGHT_LEVEL: u8 = 40;
+pub const DAY_LIGHT_LEVEL: u8 = 250;
+pub const LIGHT_COLOR: u8 = 215;
 /// `WORLDINT0-RL-17`: the light step of 7 per 4 Tibian minutes, and the sunrise (06:00) and
 /// sunset (17:30) starts, in Tibian minutes.
 const LIGHT_STEP: u32 = 7;
@@ -122,17 +122,17 @@ const DAY_START: u32 = 480;
 const SUNSET_START: u32 = 1_050;
 const NIGHT_START: u32 = 1_170;
 /// `WORLDINT0-RL-18`: at most one `WORLD_CLOCK` delta per session in this many milliseconds.
-pub(crate) const MIN_DELTA_INTERVAL_MS: u64 = 10_000;
+pub const MIN_DELTA_INTERVAL_MS: u64 = 10_000;
 
 /// CLOCK-1: the World clock epoch while no World ruleset carries `world_clock_epoch_utc_ms`: the
 /// Unix epoch, a whole UTC hour (§11.1).
-pub(crate) const DEFAULT_WORLD_CLOCK_EPOCH_UTC_MS: u64 = 0;
+pub const DEFAULT_WORLD_CLOCK_EPOCH_UTC_MS: u64 = 0;
 
 /// The process's UTC time fact in milliseconds (§11.2), normalized onto the monotonic owner clock:
 /// the wall clock is read once, on the first call, and every later fact is that reading plus the
 /// monotonic time since it. A wall-clock adjustment therefore never moves the World clock, and
 /// the facts never go backward. `None` when the wall clock cannot be read.
-pub(crate) fn now_utc_ms() -> Option<u64> {
+pub fn now_utc_ms() -> Option<u64> {
     static ANCHOR: std::sync::OnceLock<Option<(u64, std::time::Instant)>> =
         std::sync::OnceLock::new();
     let (utc_ms, at) = (*ANCHOR.get_or_init(|| {
@@ -150,7 +150,7 @@ const TIBIAN_HOUR_MINUTES: u32 = 60;
 
 /// §11.3: the World light level at a Tibian minute of the day. Panics never; a minute outside the
 /// day is reduced modulo the day.
-pub(crate) fn light_level(minute: u32) -> u8 {
+pub fn light_level(minute: u32) -> u8 {
     let minute = minute % TIBIAN_MINUTES_PER_DAY;
     let (night, day) = (u32::from(NIGHT_LIGHT_LEVEL), u32::from(DAY_LIGHT_LEVEL));
     let level = match minute {
@@ -168,14 +168,14 @@ pub(crate) fn light_level(minute: u32) -> u8 {
 }
 
 /// §11.5: `is_day`, 06:00 to 18:00.
-pub(crate) fn is_day(minute: u32) -> bool {
+pub fn is_day(minute: u32) -> bool {
     (SUNRISE_START..SUNSET_START + 30).contains(&(minute % TIBIAN_MINUTES_PER_DAY))
 }
 
 /// §11.5: the `world_time {from_minute, to_minute}` predicate on a Tibian minute; the range is
 /// inclusive of `from`, exclusive of `to`, and wraps over midnight when `from > to`. An empty
 /// range (`from == to`) never holds.
-pub(crate) fn in_world_time(minute: u32, from_minute: u32, to_minute: u32) -> bool {
+pub fn in_world_time(minute: u32, from_minute: u32, to_minute: u32) -> bool {
     let minute = minute % TIBIAN_MINUTES_PER_DAY;
     match from_minute.cmp(&to_minute) {
         std::cmp::Ordering::Less => (from_minute..to_minute).contains(&minute),
@@ -187,12 +187,12 @@ pub(crate) fn in_world_time(minute: u32, from_minute: u32, to_minute: u32) -> bo
 /// The World's clock: its epoch only. The default epoch is a whole UTC hour, so Tibian midnight
 /// falls on each full real hour (§11.1).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct WorldClockSource {
+pub struct WorldClockSource {
     epoch_utc_ms: u64,
 }
 
 impl WorldClockSource {
-    pub(crate) fn new(epoch_utc_ms: u64) -> Self {
+    pub fn new(epoch_utc_ms: u64) -> Self {
         Self { epoch_utc_ms }
     }
 
@@ -202,18 +202,18 @@ impl WorldClockSource {
     ///
     /// This arithmetic read does not prove World-config provenance. In particular, the
     /// legacy epoch-zero clock at the transport caller is not a weather binding (D1025).
-    pub(crate) fn absolute_elapsed_ms(&self, recorded_utc_ms: u64) -> Option<u64> {
+    pub fn absolute_elapsed_ms(&self, recorded_utc_ms: u64) -> Option<u64> {
         recorded_utc_ms.checked_sub(self.epoch_utc_ms)
     }
 
     /// §11.2: `floor((t - epoch) / 2,500 ms) mod 1,440`. `None` before the epoch.
-    pub(crate) fn tibian_minute(&self, now_utc_ms: u64) -> Option<u32> {
+    pub fn tibian_minute(&self, now_utc_ms: u64) -> Option<u32> {
         let elapsed = self.absolute_elapsed_ms(now_utc_ms)?;
         u32::try_from((elapsed / TIBIAN_MINUTE_MS) % u64::from(TIBIAN_MINUTES_PER_DAY)).ok()
     }
 
     /// The wire payload at a time fact; `None` before the epoch.
-    pub(crate) fn reading(&self, now_utc_ms: u64) -> Option<WorldClock> {
+    pub fn reading(&self, now_utc_ms: u64) -> Option<WorldClock> {
         let minute = self.tibian_minute(now_utc_ms)?;
         Some(WorldClock {
             tibian_minute: u16::try_from(minute).ok()?,
@@ -227,18 +227,18 @@ impl WorldClockSource {
 /// Tibian hour, at most one per `MIN_DELTA_INTERVAL_MS`. The snapshot at admission, reconnect and
 /// channel transfer is `WorldClockSource::reading` and calls `reset`.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub(crate) struct WorldClockDeltaPacer {
+pub struct WorldClockDeltaPacer {
     last: Option<(WorldClock, u64)>,
 }
 
 impl WorldClockDeltaPacer {
     /// Records the snapshot just sent at `now_utc_ms`.
-    pub(crate) fn reset(&mut self, snapshot: WorldClock, now_utc_ms: u64) {
+    pub fn reset(&mut self, snapshot: WorldClock, now_utc_ms: u64) {
         self.last = Some((snapshot, now_utc_ms));
     }
 
     /// The delta to send at `now_utc_ms`, if any. Nothing is due before a snapshot was recorded.
-    pub(crate) fn due(&mut self, source: &WorldClockSource, now_utc_ms: u64) -> Option<WorldClock> {
+    pub fn due(&mut self, source: &WorldClockSource, now_utc_ms: u64) -> Option<WorldClock> {
         let (previous, sent_at) = self.last?;
         let current = source.reading(now_utc_ms)?;
         let elapsed = now_utc_ms.checked_sub(sent_at)?;

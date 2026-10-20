@@ -93,9 +93,9 @@ pub use gameplay_transport::{
     FreshEvidenceSource, GameplayListenerConfig, GameplaySeamOwners, GameplayServeError,
     serve_gameplay,
 };
-#[path = "../src/house_scope/mod.rs"]
+#[path = "../../../crates/gameplay/world/src/house_scope/mod.rs"]
 pub mod house_scope;
-#[path = "../src/map/mod.rs"]
+#[path = "../../../crates/gameplay/world/src/map/mod.rs"]
 pub mod map;
 
 #[path = "../src/node/mod.rs"]
@@ -124,10 +124,10 @@ use durability::{native_world_items, native_world_read};
     dead_code,
     reason = "§7 timed-revert driver awaits its live Channel/Instance scope owner"
 )]
-#[path = "../src/world_object_revert.rs"]
+#[path = "../../../crates/gameplay/world/src/world_object_revert.rs"]
 mod world_object_revert;
 #[allow(dead_code)]
-#[path = "../src/world_runtime.rs"]
+#[path = "../../../crates/gameplay/world/src/world_runtime.rs"]
 pub(crate) mod world_runtime;
 
 #[cfg(test)]
@@ -301,7 +301,7 @@ mod welter_consume;
     dead_code,
     reason = "LOOP-CLOCK-1 registers the pure World clock; the WORLD_LIGHT_V1 offer composes it later"
 )]
-#[path = "../src/world_clock.rs"]
+#[path = "../../../crates/gameplay/world/src/world_clock.rs"]
 mod world_clock;
 
 #[allow(

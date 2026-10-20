@@ -329,7 +329,7 @@ fn ground_speed(pos: TilePos) -> u16 {
 /// The ground speed domain 17 sends for `pos`, whose base ground stores `stored` (0 without a
 /// ground item): the speed the server paces with ([`ground_speed`]), so server and client stay
 /// on the Engineering 150 source until MAP-CLIENT-1; 0 without a ground item.
-pub(crate) fn view_ground_speed(pos: TilePos, stored: u16) -> u16 {
+pub fn view_ground_speed(pos: TilePos, stored: u16) -> u16 {
     if stored == 0 { 0 } else { ground_speed(pos) }
 }
 
@@ -346,13 +346,13 @@ pub(super) use crate::content::bundle_spell_tiles::tile_pos;
 /// (the carrier's `ActivationSpawnSourceFacts`): its points in authored order, each its
 /// placement cell `(x, y, z)`, respawn delay (ms), creature key, initial health and creature
 /// profile `blocked_by_nearby_players`, and the source's occupancy retry interval (ms).
-pub(crate) type BundleSpawnFacts = (Vec<BundleSpawnPointFacts>, u64);
+pub type BundleSpawnFacts = (Vec<BundleSpawnPointFacts>, u64);
 
 /// SPAWN-1b: one point of a [`BundleSpawnFacts`] (the carrier's `ActivationSpawnPointFacts`).
-pub(crate) type BundleSpawnPointFacts = ((i32, i32, i16), u64, String, u64, bool);
+pub type BundleSpawnPointFacts = ((i32, i32, i16), u64, String, u64, bool);
 
 /// CREATURE-AI-0 §6.3: the occupancy retry interval of a bundle spawn (the D116 value).
-pub(crate) const BUNDLE_OCCUPANCY_RETRY_MS: u64 = 5_000;
+pub const BUNDLE_OCCUPANCY_RETRY_MS: u64 = 5_000;
 
 /// CREATURE-AI-0 §6.1: each bundle source is one runtime source (one `CREATUREAI0-RL-02`
 /// count), in canonical (source key, point ordinal) order, whatever creatures and respawn
@@ -360,7 +360,7 @@ pub(crate) const BUNDLE_OCCUPANCY_RETRY_MS: u64 = 5_000;
 /// activation set, and a source left with no point is not activated. `profile` gives a
 /// creature key's initial health and `blocked_by_nearby_players`; a creature it does not serve
 /// refuses the whole family (`None`). The point direction is not realized yet.
-pub(crate) fn table_activation_spawns(
+pub fn table_activation_spawns(
     table: &oteryn_world_bundle::spawn::Table,
     profile: impl Fn(&str) -> Option<(u64, bool)>,
 ) -> Option<Vec<BundleSpawnFacts>> {
@@ -400,7 +400,7 @@ pub(crate) fn table_activation_spawns(
 impl BundleWorld {
     /// SPAWN-1b (CREATURE-AI-0 §6.1): the bundle's spawn family as activation spawn sources; see
     /// [`table_activation_spawns`].
-    pub(crate) fn activation_spawns(
+    pub fn activation_spawns(
         &self,
         profile: impl Fn(&str) -> Option<(u64, bool)>,
     ) -> Option<Vec<BundleSpawnFacts>> {
@@ -410,7 +410,7 @@ impl BundleWorld {
     /// Test only: this World with `table` as its spawn family (a booted bundle carries the
     /// table its `spawn` section decoded to).
     #[cfg(test)]
-    pub(crate) fn with_spawns_for_test(mut self, table: oteryn_world_bundle::spawn::Table) -> Self {
+    pub fn with_spawns_for_test(mut self, table: oteryn_world_bundle::spawn::Table) -> Self {
         self.spawns = Arc::new(table);
         self
     }
@@ -500,12 +500,12 @@ impl BundleWorld {
 /// What domain 17 of a bundle World's Channel is composed from: the Channel overlay, which stays
 /// empty until MAP-CUTOVER-1c (§1.2), and the bundle's map facts.
 #[derive(Debug)]
-pub(crate) struct BundleMap {
-    pub(crate) overlay: ChannelOverlay,
-    pub(crate) facts: BundleFacts,
-    pub(crate) floors: FloorTable,
+pub struct BundleMap {
+    pub overlay: ChannelOverlay,
+    pub facts: BundleFacts,
+    pub floors: FloorTable,
     /// The spell tile facts of the bundle (BUNDLE-TILES-1).
-    pub(crate) spell_tiles: Arc<BundleSpellTiles>,
+    pub spell_tiles: Arc<BundleSpellTiles>,
 }
 
 /// The collision of a Channel's movement cells over a world bundle: a tile is Walkable when it
@@ -529,7 +529,7 @@ impl PartialEq for BundleCollisionData {
 impl Eq for BundleCollisionData {}
 
 impl BundleCollisionData {
-    pub(crate) fn lookup(
+    pub fn lookup(
         &self,
         scope: &EngineeringStaticCellScope,
         cell: LogicalCell,
@@ -569,8 +569,8 @@ impl crate::content::native_cell_lookup::BundleCollisionLookup for BundleCollisi
     }
 }
 
-pub(crate) use crate::content::native_cell_lookup::BundleCollisionIndex;
-pub(crate) trait BundleCollisionIndexExt {
+pub use crate::content::native_cell_lookup::BundleCollisionIndex;
+pub trait BundleCollisionIndexExt {
     fn map(&self) -> &BundleMap;
 }
 
@@ -589,7 +589,7 @@ impl BundleCollisionIndexExt for BundleCollisionIndex {
 }
 
 #[cfg(test)]
-pub(crate) mod tests {
+pub mod tests {
     #![allow(clippy::expect_used)]
     use super::*;
     use crate::foundation::{
@@ -756,17 +756,17 @@ pub(crate) mod tests {
 
     /// One row at native floor -7 (legacy `z` 7): grass at x 1..=3, lava (not walkable) at x 4,
     /// grass under a wall at x 5, grass under a solid box at x 6 and under a loose coin at x 7.
-    pub(crate) fn bundle() -> (Vec<u8>, BundlePins) {
+    pub fn bundle() -> (Vec<u8>, BundlePins) {
         bundle_with_items("item:box", "item:coin")
     }
 
     /// [`bundle`] with `boxed` as palette Item id 0 (the solid box) and `coin` as Item id 1.
-    pub(crate) fn bundle_with_items(boxed: &str, coin: &str) -> (Vec<u8>, BundlePins) {
+    pub fn bundle_with_items(boxed: &str, coin: &str) -> (Vec<u8>, BundlePins) {
         bundle_with_item_ids((boxed, 0), (coin, 1))
     }
 
     /// [`bundle_with_items`] with the compact Item ids the §1.6 index gives the two keys.
-    pub(crate) fn bundle_with_item_ids(
+    pub fn bundle_with_item_ids(
         (boxed, boxed_id): (&str, u32),
         (coin, coin_id): (&str, u32),
     ) -> (Vec<u8>, BundlePins) {
@@ -786,7 +786,7 @@ pub(crate) mod tests {
 
     /// [`bundle`] whose grass is the Item key `item:grass` at Item id 2, routed to its walkable
     /// `ground` Terrain record, as the real World routes every ground (BOOT_WORLD_BUNDLE_REFUSED).
-    pub(crate) fn bundle_with_item_grass() -> (Vec<u8>, BundlePins) {
+    pub fn bundle_with_item_grass() -> (Vec<u8>, BundlePins) {
         bundle_with_grass("item:box", 0, "item:coin", 1, 0, Some(("item:grass", 2)))
     }
 
@@ -901,20 +901,20 @@ pub(crate) mod tests {
     /// content catalogue's `floor_change` facts apply. Legacy `z` 8 (native -8) has grass at
     /// x 0..=5 and an east stair (`i1950`) on x 1; `z` 7 (native -7) has grass at x 0..=2 (a solid
     /// box on x 1), a hole (Terrain `i293`, `down`) at x 3 and nothing beyond.
-    pub(crate) fn floor_bundle() -> (Vec<u8>, BundlePins) {
+    pub fn floor_bundle() -> (Vec<u8>, BundlePins) {
         floor_bundle_with(false)
     }
 
     /// [`floor_bundle`], plus a stair up onto a hole whose floor below leads back to the stair
     /// (`cycle`): stair `i1947` (north) on `z` 8 at (3, 3) and (3, 2), the hole on `z` 7 at (3, 2).
-    pub(crate) fn floor_bundle_with(cycle: bool) -> (Vec<u8>, BundlePins) {
+    pub fn floor_bundle_with(cycle: bool) -> (Vec<u8>, BundlePins) {
         floor_bundle_of(cycle, false)
     }
 
     /// NEWHAVEN-TELEPORT-1: [`floor_bundle`], plus a row of teleports (palette Item `i37001`)
     /// on `z` 8 at `y` 1: (0, 1) to (5, 1), (3, 1) to the missing tile (9, 1) and (4, 1) to (6, 1)
     /// under a solid box; (5, 1) is plain grass in a protection zone (tile flag bit 0).
-    pub(crate) fn teleport_bundle() -> (Vec<u8>, BundlePins) {
+    pub fn teleport_bundle() -> (Vec<u8>, BundlePins) {
         floor_bundle_of(false, true)
     }
 
@@ -1058,7 +1058,7 @@ pub(crate) mod tests {
 
     /// The served definitions of [`floor_bundle`]'s Items: the stairs and the forcefield are
     /// walkable, the box solid.
-    pub(crate) fn floor_items(key: &str) -> Option<ItemDefinition> {
+    pub fn floor_items(key: &str) -> Option<ItemDefinition> {
         let (reference, solid) = match key {
             "oteryn:item.tibia.i1950" => (1, Some(false)),
             "oteryn:item.tibia.i100" => (2, Some(true)),
@@ -1076,7 +1076,7 @@ pub(crate) mod tests {
     }
 
     /// [`pins`] for [`floor_bundle`], starting on legacy `z` 8.
-    pub(crate) fn floor_pins(bundle: BundlePins) -> BootPins {
+    pub fn floor_pins(bundle: BundlePins) -> BootPins {
         BootPins {
             start: TilePos {
                 x: 0,
@@ -1089,7 +1089,7 @@ pub(crate) mod tests {
 
     /// The served definitions of the test bundle's Items: the §1.6 index places `item:box` at
     /// Item id 0 and `item:coin` at 1.
-    pub(crate) fn items(key: &str) -> Option<ItemDefinition> {
+    pub fn items(key: &str) -> Option<ItemDefinition> {
         let (reference, solid, pickupable) = match key {
             "item:box" => (1, Some(true), false),
             "item:coin" => (2, Some(false), true),
@@ -1444,7 +1444,7 @@ pub(crate) mod tests {
 
     /// The served definitions of [`door_world`]: the plain closed door 1629 (solid), its open
     /// item 1630 (not solid) and a loose coin.
-    pub(crate) fn door_items(key: &str) -> Option<ItemDefinition> {
+    pub fn door_items(key: &str) -> Option<ItemDefinition> {
         let (reference, solid, pickupable) = match key {
             "oteryn:item.tibia.i1629" => (1, Some(true), false),
             "oteryn:item.tibia.i1630" => (1631, Some(false), false),
@@ -1462,7 +1462,7 @@ pub(crate) mod tests {
 
     /// The test bundle with the closed door 1629 at x 6 (top-level entry 1 of its tile) and a
     /// coin at x 7, booted with `item`.
-    pub(crate) fn door_world_with(
+    pub fn door_world_with(
         item: impl Fn(&str) -> Option<ItemDefinition>,
     ) -> Result<BundleWorld, Box<dyn Error>> {
         let (bytes, load) = bundle_with_items("oteryn:item.tibia.i1629", "oteryn:item.tibia.i1000");
@@ -1475,18 +1475,18 @@ pub(crate) mod tests {
         )?)
     }
 
-    pub(crate) fn door_world() -> Result<BundleWorld, Box<dyn Error>> {
+    pub fn door_world() -> Result<BundleWorld, Box<dyn Error>> {
         door_world_with(door_items)
     }
 
     /// The door's tile.
-    pub(crate) const DOOR_AT: TilePos = TilePos {
+    pub const DOOR_AT: TilePos = TilePos {
         x: 6,
         y: 0,
         floor: -7,
     };
 
-    pub(crate) fn door_key() -> u64 {
+    pub fn door_key() -> u64 {
         crate::map::view::placement_key(DOOR_AT, 1).unwrap_or(0)
     }
 

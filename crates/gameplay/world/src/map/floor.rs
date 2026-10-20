@@ -57,7 +57,7 @@ const MAX_Z: i32 = 15;
 
 /// The floor-change flags of the entry a palette key names, as a bit set; 0 for a key that is not
 /// a Tibia appearance or whose catalogue fact is not a floor change.
-pub(crate) fn palette_mask(family: Family, key: &str) -> u8 {
+pub fn palette_mask(family: Family, key: &str) -> u8 {
     let Some(appearance) = palette_appearance(key) else {
         return 0;
     };
@@ -83,7 +83,7 @@ pub struct FloorTable {
 }
 
 impl FloorTable {
-    pub(crate) fn add(&mut self, pos: TilePos, mask: u8) {
+    pub fn add(&mut self, pos: TilePos, mask: u8) {
         if mask != 0 {
             *self.tiles.entry(pos).or_insert(0) |= mask;
         }
@@ -91,7 +91,7 @@ impl FloorTable {
 
     /// Records the teleport of the tile at `from`; the first entry of a tile that teleports
     /// decides, as Canary's top teleport item does.
-    pub(crate) fn add_teleport(&mut self, from: TilePos, to: TilePos) {
+    pub fn add_teleport(&mut self, from: TilePos, to: TilePos) {
         self.teleports.entry(from).or_insert(to);
     }
 
@@ -130,7 +130,7 @@ impl FloorTable {
 
     /// The boot check: following the destinations from every floor-change tile that `ground`
     /// can enter ends within the source bound. A chain that does not end (a cycle) is bad data.
-    pub(crate) fn validate(&self, ground: impl Fn(Cell) -> Ground) -> Result<(), TilePos> {
+    pub fn validate(&self, ground: impl Fn(Cell) -> Ground) -> Result<(), TilePos> {
         for tile in self.positions() {
             let cell = (i32::from(tile.x), i32::from(tile.y), -i32::from(tile.floor));
             if ground(cell) == Ground::Walkable
@@ -144,12 +144,12 @@ impl FloorTable {
 }
 
 /// `(x, y, legacy z)`.
-pub(crate) type Cell = (i32, i32, i32);
+pub type Cell = (i32, i32, i32);
 
 /// Whether a cell is closed to an actor by a dynamic fact (a closed door). A bundle step asks
 /// only the few cells it considers, so an implementation answers by lookup, not by a set built
 /// per step.
-pub(crate) trait CellBlocker: Sync {
+pub trait CellBlocker: Sync {
     fn blocks(&self, cell: LogicalCell) -> bool;
 }
 
@@ -161,7 +161,7 @@ impl CellBlocker for BTreeSet<LogicalCell> {
 
 /// The closed bundle doors, read live through the indexed door lookup. The native floor is the
 /// legacy `z` negated.
-pub(crate) struct BundleDoors<'a>(pub(crate) &'a super::door::DoorBook);
+pub struct BundleDoors<'a>(pub &'a super::door::DoorBook);
 
 impl CellBlocker for BundleDoors<'_> {
     fn blocks(&self, cell: LogicalCell) -> bool {
@@ -182,7 +182,7 @@ fn pos(x: i32, y: i32, z: i32) -> Option<TilePos> {
 
 /// What a bundle holds at a cell.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Ground {
+pub enum Ground {
     Absent,
     Blocked,
     Walkable,
@@ -190,7 +190,7 @@ pub(crate) enum Ground {
 
 /// Why no destination exists.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Refusal {
+pub enum Refusal {
     /// The step target is outside the map.
     Absent,
     /// The tile the step ends on is not enterable.
@@ -201,7 +201,7 @@ pub(crate) enum Refusal {
 
 /// [`resolve_landing`] for an actor every enterable teleport destination admits.
 #[cfg(test)]
-pub(crate) fn resolve(
+pub fn resolve(
     table: &FloorTable,
     ground: impl Fn(Cell) -> Ground,
     origin: Cell,
@@ -213,7 +213,7 @@ pub(crate) fn resolve(
 /// The tile a player standing on `origin` ends on after stepping `direction`, following the
 /// floor changes it enters. `landable` says whether the actor may land on an enterable teleport
 /// destination (the PZ part of the landing rule); a refused landing leaves it on the teleport.
-pub(crate) fn resolve_landing(
+pub fn resolve_landing(
     table: &FloorTable,
     ground: impl Fn(Cell) -> Ground,
     landable: impl Fn(Cell) -> bool,
@@ -323,7 +323,7 @@ fn teleported(
 }
 
 /// The floor table of the bundle `cells` run over; `None` on a fixture or source World.
-pub(crate) fn table_of(cells: &NativeEntryMovementCells) -> Option<&FloorTable> {
+pub fn table_of(cells: &NativeEntryMovementCells) -> Option<&FloorTable> {
     match cells.index() {
         NativeMovementCollisionIndex::Bundle(index) => Some(&index.map().floors),
         _ => None,
@@ -332,7 +332,7 @@ pub(crate) fn table_of(cells: &NativeEntryMovementCells) -> Option<&FloorTable> 
 
 /// NEWHAVEN-TELEPORT-1 (WORLD-INTERACTION-0 §6.5): whether `cell` of the bundle `cells` run over
 /// teleports. Monsters never enter such a tile; a fixture or source World has no teleports.
-pub(crate) fn is_teleport(cells: &NativeEntryMovementCells, cell: LogicalCell) -> bool {
+pub fn is_teleport(cells: &NativeEntryMovementCells, cell: LogicalCell) -> bool {
     table_of(cells)
         .zip(pos(cell.x, cell.y, cell.z))
         .is_some_and(|(table, at)| table.teleport(at).is_some())
@@ -378,7 +378,7 @@ fn movement_error(refusal: Refusal) -> MovementError {
 
 /// A step of a bundle World proven against its actual collision and floor table. Private
 /// construction consumes the actual cells, not a caller's target.
-pub(crate) struct BundleStepProof<'a> {
+pub struct BundleStepProof<'a> {
     cells: &'a NativeEntryMovementCells,
     table: &'a FloorTable,
     actor: ExactActorRef,
@@ -397,7 +397,7 @@ pub(crate) struct BundleStepProof<'a> {
     clippy::too_many_arguments,
     reason = "the proof binds every independently resolved fact explicitly"
 )]
-pub(crate) fn prepare_bundle_step<'a>(
+pub fn prepare_bundle_step<'a>(
     runtime: &ChannelRuntimeV1,
     cells: &'a NativeEntryMovementCells,
     actor: ExactActorRef,
@@ -494,7 +494,7 @@ fn destination(
 }
 
 impl BundleStepProof<'_> {
-    pub(crate) const fn destination(&self) -> MovementLocalPosition {
+    pub const fn destination(&self) -> MovementLocalPosition {
         self.destination
     }
 
@@ -846,7 +846,7 @@ mod tests {
     /// The generated table equals the JSON catalogue it was generated from.
     #[test]
     fn catalogue_matches_content() {
-        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content/world");
+        let root = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server")).join("../../content/world");
         for (dir, generated) in [("objects", OBJECT), ("terrain", TERRAIN)] {
             let mut found = Vec::new();
             let mut files: Vec<_> = std::fs::read_dir(root.join(dir))

@@ -22,16 +22,16 @@ use crate::foundation::{
     MovementLocalPosition, MovementPositionContext, MovementPositionSnapshot,
 };
 use std::num::NonZeroUsize;
-pub(crate) mod interest;
-pub(crate) mod pacing;
-pub(crate) mod path_search;
-pub(crate) mod source_floor_change;
-pub(crate) mod speed;
+pub mod interest;
+pub mod pacing;
+pub mod path_search;
+pub mod source_floor_change;
+pub mod speed;
 
-pub(crate) const LOCAL_STEP_CANDIDATES_PER_DECISION: usize = 1;
+pub const LOCAL_STEP_CANDIDATES_PER_DECISION: usize = 1;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum CardinalStep {
+pub enum CardinalStep {
     North,
     East,
     South,
@@ -50,7 +50,7 @@ impl CardinalStep {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum MovementError {
+pub enum MovementError {
     Actor(CarrierError),
     SnapshotMismatch,
     ContextMismatch,
@@ -71,14 +71,14 @@ impl std::error::Error for MovementError {}
 
 /// The owner context is separately supplied engineering binding; matching a stored context
 /// does not prove a Reference generation is active or clear a July-28 field claim.
-pub(crate) struct MovementEngineeringSelection<'a> {
-    pub(crate) owner_context: MovementPositionContext,
-    pub(crate) content_scope: &'a EngineeringStaticCellScope,
+pub struct MovementEngineeringSelection<'a> {
+    pub owner_context: MovementPositionContext,
+    pub content_scope: &'a EngineeringStaticCellScope,
 }
 
 /// No mutation or result publication is possible until the entire decision has passed its
 /// candidate budget. An over-budget attempt poisons this decision even after a prior WALKABLE.
-pub(crate) struct MovementDecision<'a> {
+pub struct MovementDecision<'a> {
     expected: MovementPositionSnapshot,
     scope: &'a EngineeringStaticCellScope,
     destination: MovementLocalPosition,
@@ -90,7 +90,7 @@ pub(crate) struct MovementDecision<'a> {
 }
 
 impl<'a> MovementDecision<'a> {
-    pub(crate) fn begin(
+    pub fn begin(
         owner: &CurrentOwnerMovementPosition<'_>,
         actor: ExactActorRef,
         expected: MovementPositionSnapshot,
@@ -140,7 +140,7 @@ impl<'a> MovementDecision<'a> {
 
     /// One direct lookup into the integrated Content index. The attempt counter advances
     /// before touching that index, so max+1 cannot issue a second key lookup or owner write.
-    pub(crate) fn attempt_candidate(
+    pub fn attempt_candidate(
         &mut self,
         index: &(impl NativeStaticCellLookup + ?Sized),
     ) -> Result<(), MovementError> {
@@ -172,14 +172,14 @@ impl<'a> MovementDecision<'a> {
         }
     }
 
-    pub(crate) const fn attempted(&self) -> usize {
+    pub const fn attempted(&self) -> usize {
         self.attempted
     }
-    pub(crate) const fn real_content_lookups(&self) -> usize {
+    pub const fn real_content_lookups(&self) -> usize {
         self.real_content_lookups
     }
 
-    pub(crate) fn commit(
+    pub fn commit(
         self,
         owner: &mut CurrentOwnerMovementPosition<'_>,
     ) -> Result<MovementPositionSnapshot, MovementError> {
@@ -195,7 +195,7 @@ impl<'a> MovementDecision<'a> {
     }
 }
 
-pub(crate) fn step_cardinal(
+pub fn step_cardinal(
     owner: &mut CurrentOwnerMovementPosition<'_>,
     actor: ExactActorRef,
     expected: MovementPositionSnapshot,
@@ -212,20 +212,20 @@ pub(crate) fn step_cardinal(
 /// retains inputs returned as Deferred and decides which actor to offer next turn.
 /// No production maximum, queue, command outcome, or scheduling authority is implied.
 /// Fairness remains an obligation of the future owner scheduler.
-pub(crate) struct MovementOwnerTurn<'a> {
+pub struct MovementOwnerTurn<'a> {
     owner: CurrentOwnerMovementPosition<'a>,
     max_inputs: NonZeroUsize,
     processed: usize,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum MovementTurnOutcome {
+pub enum MovementTurnOutcome {
     Applied(MovementPositionSnapshot),
     Deferred,
 }
 
 impl<'a> MovementOwnerTurn<'a> {
-    pub(crate) fn begin(runtime: &'a mut ChannelRuntimeV1, max_inputs: NonZeroUsize) -> Self {
+    pub fn begin(runtime: &'a mut ChannelRuntimeV1, max_inputs: NonZeroUsize) -> Self {
         Self {
             owner: runtime.borrow_movement_position(),
             max_inputs,
@@ -233,14 +233,14 @@ impl<'a> MovementOwnerTurn<'a> {
         }
     }
 
-    pub(crate) const fn processed(&self) -> usize {
+    pub const fn processed(&self) -> usize {
         self.processed
     }
 
     /// All admitted attempts, including a blocked or stale input, consume one unit.
     /// At max+1 no Content lookup or owner read/write occurs; the input stays with
     /// the caller for a subsequent turn and must be revalidated against that turn.
-    pub(crate) fn try_step(
+    pub fn try_step(
         &mut self,
         actor: ExactActorRef,
         expected: MovementPositionSnapshot,
@@ -263,7 +263,7 @@ impl<'a> MovementOwnerTurn<'a> {
         .map(MovementTurnOutcome::Applied)
     }
 
-    pub(crate) fn read(
+    pub fn read(
         &self,
         actor: ExactActorRef,
     ) -> Result<MovementPositionSnapshot, CarrierError> {
@@ -275,20 +275,20 @@ impl<'a> MovementOwnerTurn<'a> {
 /// offered a second time by the scheduler; an over-budget input remains pending.
 /// A separately reoffered stale input still passes through the owner's checks.
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct MovementInput {
+pub struct MovementInput {
     actor: ExactActorRef,
     expected: MovementPositionSnapshot,
     direction: CardinalStep,
 }
 
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct MovementOffer {
+pub struct MovementOffer {
     input: MovementInput,
     completion: Option<Result<MovementPositionSnapshot, MovementError>>,
 }
 
 impl MovementOffer {
-    pub(crate) const fn pending(
+    pub const fn pending(
         actor: ExactActorRef,
         expected: MovementPositionSnapshot,
         direction: CardinalStep,
@@ -303,7 +303,7 @@ impl MovementOffer {
         }
     }
 
-    pub(crate) const fn completion(
+    pub const fn completion(
         &self,
     ) -> Option<Result<MovementPositionSnapshot, MovementError>> {
         self.completion
@@ -313,12 +313,12 @@ impl MovementOffer {
 /// Caller-owned service cursor; its ordering is deterministic for the supplied
 /// batch and does not imply a production queue or starvation-free ingress.
 #[derive(Debug, Default)]
-pub(crate) struct MovementFairCursor {
+pub struct MovementFairCursor {
     last_actor: Option<ExactActorRef>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum MovementBatchError {
+pub enum MovementBatchError {
     OfferCapacityExceeded,
 }
 
@@ -330,16 +330,16 @@ impl std::fmt::Display for MovementBatchError {
 impl std::error::Error for MovementBatchError {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct MovementBatchResult {
-    pub(crate) serviced: usize,
-    pub(crate) deferred: usize,
+pub struct MovementBatchResult {
+    pub serviced: usize,
+    pub deferred: usize,
 }
 
 impl MovementOwnerTurn<'_> {
     /// An explicit engineering offer cap bounds scans and retained caller work.
     /// It is independent of the per-turn attempt budget and is not a production
     /// resource limit. Overflow rejects the whole batch before touching an owner.
-    pub(crate) fn service_finite_batch(
+    pub fn service_finite_batch(
         &mut self,
         offers: &mut [MovementOffer],
         max_offers: NonZeroUsize,
@@ -1320,7 +1320,7 @@ mod tests {
 }
 
 impl MovementDecision<'_> {
-    pub(crate) fn commit_native_summon(
+    pub fn commit_native_summon(
         self,
         runtime: &mut ChannelRuntimeV1,
         current: &crate::foundation::ScopeRuntimeFence,
@@ -1340,7 +1340,7 @@ impl MovementDecision<'_> {
 }
 // Keep step_native_summon_cardinal ABI explicit: current runtime owner, independent fence/stamp, exact actor/session/source and occurrence/policy facts are separate admission inputs.
 #[allow(clippy::too_many_arguments)]
-pub(crate) fn step_native_summon_cardinal(
+pub fn step_native_summon_cardinal(
     runtime: &mut ChannelRuntimeV1,
     current: &crate::foundation::ScopeRuntimeFence,
     stamp: crate::foundation::RuntimeWorkStamp,

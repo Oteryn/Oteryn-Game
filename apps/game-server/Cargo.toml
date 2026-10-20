@@ -17,6 +17,7 @@ release-role = "production"
 test-support = []
 
 [dependencies]
+oteryn-gameplay-world = { version = "=0.1.0", path = "../../crates/gameplay/world" }
 oteryn-gameplay-durability = { version = "=0.1.0", path = "../../crates/gameplay/durability" }
 oteryn-gameplay-content = { version = "=0.1.0", path = "../../crates/gameplay/content" }
 oteryn-gameplay-foundation = { version = "=0.1.0", path = "../../crates/gameplay/foundation" }

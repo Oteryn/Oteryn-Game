@@ -93,7 +93,7 @@ const AMBIGUOUS: u32 = u32::MAX;
 
 impl BundleFacts {
     /// The facts of `manifest`'s palette. `item` serves the definition of an Item key.
-    pub(crate) fn palette(
+    pub fn palette(
         manifest: &Manifest,
         item: impl Fn(&str) -> Option<ItemDefinition>,
     ) -> Result<Self, FactsRefusal> {
@@ -126,7 +126,7 @@ impl BundleFacts {
 
     /// Whether palette entry `index` blocks a tile: a `wall` Terrain or a solid Item. An index
     /// outside the palette blocks.
-    pub(crate) fn blocks(&self, index: u32) -> bool {
+    pub fn blocks(&self, index: u32) -> bool {
         self.palette.get(index as usize).is_none_or(|entry| {
             entry.facts.terrain_kind == Some(TerrainKind::Wall)
                 || (entry.family == Family::Item && entry.solid)
@@ -136,7 +136,7 @@ impl BundleFacts {
     /// Records the placements, house tiles and doors of one sector of `manifest`, and adds to
     /// `blocked` the tiles one of whose top-level entries is a `wall` Terrain or a solid Item. A
     /// door entry does not block here: [`DoorBook`] answers it by its current state.
-    pub(crate) fn push(
+    pub fn push(
         &mut self,
         manifest: &Manifest,
         sector: &Sector,
@@ -221,7 +221,7 @@ impl BundleFacts {
     }
 
     /// Orders the recorded placements and house tiles for lookup.
-    pub(crate) fn finish(&mut self) {
+    pub fn finish(&mut self) {
         self.placements.sort_unstable_by_key(|(key, _)| *key);
         self.placements.shrink_to_fit();
         self.houses.sort_unstable();
@@ -238,7 +238,7 @@ impl BundleFacts {
     /// These facts with every door's state read once (Codex 4239177726): a map composition
     /// reads them so that each door's appearance and its object revision come from one state,
     /// whatever `USE` commits while it runs.
-    pub(crate) fn pinned(&self) -> PinnedFacts<'_> {
+    pub fn pinned(&self) -> PinnedFacts<'_> {
         PinnedFacts {
             facts: self,
             doors: self.doors.snapshot(),
@@ -462,7 +462,7 @@ impl MapFacts for BundleFacts {
 }
 
 /// [`BundleFacts`] with the door states of one read ([`BundleFacts::pinned`]).
-pub(crate) struct PinnedFacts<'a> {
+pub struct PinnedFacts<'a> {
     facts: &'a BundleFacts,
     doors: DoorStates,
 }
@@ -598,7 +598,7 @@ mod tests {
     #[test]
     fn unwalkable_border_list_matches_content() {
         let dir =
-            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content/world/terrain");
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server")).join("../../content/world/terrain");
         let (mut found, mut borders) = (Vec::new(), 0);
         for entry in std::fs::read_dir(dir).expect("dir") {
             let path = entry.expect("entry").path();
@@ -636,7 +636,7 @@ mod tests {
     #[test]
     fn solid_floor_change_list_matches_content() {
         let dir =
-            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content/world/objects");
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server")).join("../../content/world/objects");
         let mut found = Vec::new();
         for entry in std::fs::read_dir(dir).expect("dir") {
             let path = entry.expect("entry").path();

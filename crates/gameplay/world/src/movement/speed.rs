@@ -17,19 +17,19 @@ use std::sync::OnceLock;
 use std::time::Duration;
 
 /// Player base speed at level 1 (vocation data, CONDITIONS-0 §4.1).
-pub(crate) const PLAYER_BASE_SPEED: i64 = 110;
+pub const PLAYER_BASE_SPEED: i64 = 110;
 /// The effective speed clamp (§4.1); the table covers exactly this range.
-pub(crate) const SPEED_MIN: u16 = 10;
-pub(crate) const SPEED_MAX: u16 = u16::MAX;
+pub const SPEED_MIN: u16 = 10;
+pub const SPEED_MAX: u16 = u16::MAX;
 /// The ground speed of a tile whose ground item names none (§4.2).
-pub(crate) const DEFAULT_GROUND_SPEED: u16 = 150;
+pub const DEFAULT_GROUND_SPEED: u16 = 150;
 /// `SERVER_BEAT`: a step duration is rounded up to a multiple of it (§4.2).
-pub(crate) const SERVER_BEAT_MS: u64 = 50;
+pub const SERVER_BEAT_MS: u64 = 50;
 
-const TABLE_JSON: &str = include_str!("../../../../content/movement/step_speed_v1.json");
+const TABLE_JSON: &str = include_str!("../../../../../content/movement/step_speed_v1.json");
 const TABLE_SCHEMA: &str = "OTERYN_STEP_SPEED_TABLE/v1";
 /// The digest SPEED-1 checked in; a table with another digest is never used.
-pub(crate) const TABLE_SHA256_U16LE: &str =
+pub const TABLE_SHA256_U16LE: &str =
     "323b70ceb76edc53ed341a31d67fea5543149689ead9ad51856286e792bfe436";
 
 #[derive(serde::Deserialize)]
@@ -47,7 +47,7 @@ struct TableFile {
 }
 
 /// The step speed of every effective speed from [`SPEED_MIN`] to [`SPEED_MAX`].
-pub(crate) struct StepSpeedTable {
+pub struct StepSpeedTable {
     step_speed: Vec<u16>,
 }
 
@@ -80,13 +80,13 @@ impl StepSpeedTable {
 
     /// The checked-in table, parsed and verified once. `None` (every paced step refused) if the
     /// embedded file does not verify, which the tests rule out.
-    pub(crate) fn embedded() -> Option<&'static Self> {
+    pub fn embedded() -> Option<&'static Self> {
         static TABLE: OnceLock<Option<StepSpeedTable>> = OnceLock::new();
         TABLE.get_or_init(|| Self::parse(TABLE_JSON)).as_ref()
     }
 
     /// The step speed of an effective speed within the clamp.
-    pub(crate) fn step_speed(&self, speed: u16) -> Option<u16> {
+    pub fn step_speed(&self, speed: u16) -> Option<u16> {
         let index = usize::from(speed.checked_sub(SPEED_MIN)?);
         self.step_speed.get(index).copied()
     }
@@ -95,7 +95,7 @@ impl StepSpeedTable {
     /// of `SERVER_BEAT`. `None` for ground speed 0: nothing paces on it, so the step is refused.
     /// Only cardinal steps exist (`CardinalStep`), so the diagonal × 3 never applies; a monster's
     /// near-target × 2 belongs to CREATURE-MOVE-1.
-    pub(crate) fn step_duration(&self, speed: u16, ground_speed: u16) -> Option<Duration> {
+    pub fn step_duration(&self, speed: u16, ground_speed: u16) -> Option<Duration> {
         if ground_speed == 0 {
             return None;
         }
@@ -108,7 +108,7 @@ impl StepSpeedTable {
 
 /// A player's effective speed (§4.1): base 110 + level − 1, plus the `SPEED` condition delta,
 /// plus the worn-equipment speed (0 until EQUIP-RT-1 supplies it), clamped to `[10, 65,535]`.
-pub(crate) fn player_effective_speed(level: u32, speed_delta: i64, equipment_speed: i64) -> u16 {
+pub fn player_effective_speed(level: u32, speed_delta: i64, equipment_speed: i64) -> u16 {
     effective_speed(
         PLAYER_BASE_SPEED + i64::from(level) - 1,
         speed_delta,
@@ -117,7 +117,7 @@ pub(crate) fn player_effective_speed(level: u32, speed_delta: i64, equipment_spe
 }
 
 /// The effective speed of a `base` speed with its condition delta and equipment speed (§4.1).
-pub(crate) fn effective_speed(base: i64, speed_delta: i64, equipment_speed: i64) -> u16 {
+pub fn effective_speed(base: i64, speed_delta: i64, equipment_speed: i64) -> u16 {
     let speed = base
         .saturating_add(speed_delta)
         .saturating_add(equipment_speed)
@@ -126,7 +126,7 @@ pub(crate) fn effective_speed(base: i64, speed_delta: i64, equipment_speed: i64)
 }
 
 /// A player's base speed at `level` (§4.1), capped at [`SPEED_MAX`]. `None` for level 0.
-pub(crate) fn player_base_speed(level: u32) -> Option<u32> {
+pub fn player_base_speed(level: u32) -> Option<u32> {
     let base = PLAYER_BASE_SPEED.checked_add(i64::from(level.checked_sub(1)?))?;
     u32::try_from(base.min(i64::from(SPEED_MAX))).ok()
 }
@@ -134,7 +134,7 @@ pub(crate) fn player_base_speed(level: u32) -> Option<u32> {
 /// The effective speed of the player `actor` of `session` at the owner time `now`: the level
 /// term and the actor's active `SPEED` condition delta from the Channel runtime's condition
 /// owner (§4.1). `None` when that delta cannot be read; the step is then refused.
-pub(crate) fn runtime_player_speed(
+pub fn runtime_player_speed(
     runtime: &ChannelRuntimeV1,
     actor: ExactActorRef,
     session: GameSessionId,
@@ -149,7 +149,7 @@ pub(crate) fn runtime_player_speed(
 
 /// The duration of a player step at `speed` onto `onto`, with the ground speed `source` gives that
 /// tile. `None` refuses the step: the table did not verify, or the ground speed is 0.
-pub(crate) fn player_step_duration(
+pub fn player_step_duration(
     source: &impl GroundSpeedSource,
     onto: LogicalCell,
     speed: u16,
@@ -158,13 +158,13 @@ pub(crate) fn player_step_duration(
 }
 
 /// The ground speed of the ground item on a tile (§1.11 seam).
-pub(crate) trait GroundSpeedSource {
+pub trait GroundSpeedSource {
     fn ground_speed(&self, cell: LogicalCell) -> u16;
 }
 
 /// The engineering map's source: it has no ground item with another speed, so every tile is 150.
 #[derive(Debug, Clone, Copy, Default)]
-pub(crate) struct EngineeringGroundSpeed;
+pub struct EngineeringGroundSpeed;
 
 impl GroundSpeedSource for EngineeringGroundSpeed {
     fn ground_speed(&self, _cell: LogicalCell) -> u16 {
@@ -177,8 +177,8 @@ impl GroundSpeedSource for EngineeringGroundSpeed {
 /// the map, so `player_step_duration` refuses the step. `cell.z` is legacy `z` (native floor
 /// `-z`).
 #[derive(Debug, Clone)]
-pub(crate) struct MapGroundSpeed {
-    pub(crate) base: WorldBaseHandle,
+pub struct MapGroundSpeed {
+    pub base: WorldBaseHandle,
 }
 
 impl GroundSpeedSource for MapGroundSpeed {
@@ -201,12 +201,12 @@ impl GroundSpeedSource for MapGroundSpeed {
 /// and qualified gives its ground item's speed (0 meaning none, so 150); an unknown tile, or one
 /// without qualified ground, gives 0, so a step onto it is refused rather than guessed.
 #[derive(Clone, Copy)]
-pub(crate) struct QualifiedCellGroundSpeed<'a> {
-    pub(crate) cells: &'a crate::content::NativeEntryMovementCells,
+pub struct QualifiedCellGroundSpeed<'a> {
+    pub cells: &'a crate::content::NativeEntryMovementCells,
 }
 
 /// The ground speed of a qualified tile's ground item: 0 names none, so 150 (§4.2).
-pub(crate) fn qualified_ground_speed(present: bool, speed: Option<u16>) -> u16 {
+pub fn qualified_ground_speed(present: bool, speed: Option<u16>) -> u16 {
     match speed {
         Some(0) if present => DEFAULT_GROUND_SPEED,
         Some(speed) if present => speed,
@@ -507,7 +507,7 @@ mod tests {
 
 /// Read-only source facts supplied by the current native definition owner. Missing source
 /// membership/base speed never becomes a player/default speed or a caller-minted grant.
-pub(crate) trait CurrentCreatureSpeedReader {
+pub trait CurrentCreatureSpeedReader {
     fn current_native_base_speed(
         &self,
         runtime: &ChannelRuntimeV1,
@@ -516,7 +516,7 @@ pub(crate) trait CurrentCreatureSpeedReader {
 }
 /// Source-defined base plus the ONE actual occupied actor-slot condition owner.
 /// The exact physical generation and condition clock are checked by Foundation.
-pub(crate) fn runtime_creature_speed(
+pub fn runtime_creature_speed(
     runtime: &ChannelRuntimeV1,
     actor: ExactActorRef,
     source: &dyn CurrentCreatureSpeedReader,
@@ -540,7 +540,7 @@ pub(crate) fn runtime_creature_speed(
 /// Pure cadence calculation: exactly the same table, ground provider and50ms beat as players.
 /// This issues neither a Movement decision nor scope/session authority. The caller still
 /// uses the existing Movement owner and records its pacer only after a real moved step.
-pub(crate) fn creature_step_duration(
+pub fn creature_step_duration(
     runtime: &ChannelRuntimeV1,
     actor: ExactActorRef,
     source: &dyn CurrentCreatureSpeedReader,
@@ -603,13 +603,13 @@ mod creature_native_speed_tests {
 /// Caller supplies real loader records/profiles; digest equality is ONLY an expected pin
 /// check, not permission to invent source membership, a movement actor or a scope grant.
 #[derive(Debug, Clone)]
-pub(crate) struct NativeCreatureSpeed {
+pub struct NativeCreatureSpeed {
     creature: crate::content::ProjectV2DefinitionRef,
     base: u16,
     server: [u8; 32],
 }
 impl NativeCreatureSpeed {
-    pub(crate) fn from_native(
+    pub fn from_native(
         runtime: &ChannelRuntimeV1,
         creature: &crate::content::ProjectV2DefinitionRef,
         records: &[crate::content::ProjectReferenceRecord],
@@ -663,13 +663,13 @@ impl CurrentCreatureSpeedReader for NativeCreatureSpeed {
 
 /// Per-exact-actor cadence state; no actor census, condition store or Movement authority.
 /// Caller retains this alongside the existing native actor owner and supplies current work.
-pub(crate) struct CreatureMovementCadence {
+pub struct CreatureMovementCadence {
     actor: ExactActorRef,
     content: [u8; 32],
     pacer: crate::movement::pacing::CreatureStepPacer,
 }
 #[derive(Debug)]
-pub(crate) enum CreatureCadenceError {
+pub enum CreatureCadenceError {
     StaleOwner,
     StaleActor,
     MissingSpeed,
@@ -679,7 +679,7 @@ pub(crate) enum CreatureCadenceError {
     Movement(crate::movement::MovementError),
 }
 impl CreatureMovementCadence {
-    pub(crate) fn bind(runtime: &ChannelRuntimeV1, actor: ExactActorRef) -> Option<Self> {
+    pub fn bind(runtime: &ChannelRuntimeV1, actor: ExactActorRef) -> Option<Self> {
         if !runtime.contains_live_creature(actor) {
             return None;
         }
@@ -693,7 +693,7 @@ impl CreatureMovementCadence {
     /// this regular-creature path must never bypass its distance cleanup.
     // Keep step ABI explicit: current runtime owner, independent fence/stamp, exact actor/session/source and occurrence/policy facts are separate admission inputs.
     #[allow(clippy::too_many_arguments)]
-    pub(crate) fn step(
+    pub fn step(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         current: &crate::foundation::ScopeRuntimeFence,

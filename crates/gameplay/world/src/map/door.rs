@@ -14,7 +14,7 @@
 //! gates without a consecutive open item and a pair whose open item the item index does not
 //! serve stay sealed: the closed placement is solid and refuses `USE`.
 
-pub(crate) use super::door_registry::open_of;
+pub use super::door_registry::open_of;
 use super::overlay::TilePos;
 use super::view::EntryFacts;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -22,14 +22,14 @@ use std::sync::{Arc, Mutex};
 
 /// The palette key of the open item that pairs with the closed door `key` (the key names Item id
 /// `closed` as its trailing digits): the same key with `open` in place of `closed`.
-pub(crate) fn open_key(key: &str, closed: u32, open: u32) -> Option<String> {
+pub fn open_key(key: &str, closed: u32, open: u32) -> Option<String> {
     let prefix = key.strip_suffix(closed.to_string().as_str())?;
     Some(format!("{prefix}{open}"))
 }
 
 /// What a bundle palette Item entry is as a door.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum PaletteDoor {
+pub enum PaletteDoor {
     /// Not a plain closed door.
     No,
     /// A plain closed door whose open item the item index does not serve: it stays sealed.
@@ -62,11 +62,11 @@ impl Door {
 /// The state of every door of a [`DoorBook`] at one read ([`DoorBook::snapshot`]), in the book's
 /// order.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub(crate) struct DoorStates(Arc<[u64]>);
+pub struct DoorStates(Arc<[u64]>);
 
 /// The outcome of one `USE` on a door.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum DoorUse {
+pub enum DoorUse {
     /// The door changed state; `revision` is its new object revision and `open` its new state.
     Toggled { revision: u64, open: bool },
     /// `expected_revision` is not the door's current one.
@@ -87,7 +87,7 @@ pub struct DoorBook {
 }
 
 impl DoorBook {
-    pub(crate) fn push(
+    pub fn push(
         &mut self,
         key: u64,
         closed_solid: bool,
@@ -103,11 +103,11 @@ impl DoorBook {
         });
     }
 
-    pub(crate) fn push_sealed(&mut self) {
+    pub fn push_sealed(&mut self) {
         self.sealed += 1;
     }
 
-    pub(crate) fn finish(&mut self) {
+    pub fn finish(&mut self) {
         self.doors.sort_unstable_by_key(|door| door.key);
         self.doors.shrink_to_fit();
     }
@@ -138,7 +138,7 @@ impl DoorBook {
     /// composition picks a door's facts and later reads its object revision, after the runtime
     /// lock is released, so both must come from the same value or a concurrent `USE` could pair
     /// a closed appearance with an open revision. One `u64` per door.
-    pub(crate) fn snapshot(&self) -> DoorStates {
+    pub fn snapshot(&self) -> DoorStates {
         // One shared snapshot per version: sessions reading between transitions clone an Arc
         // instead of each walking every door. A transition racing the build leaves the cached
         // version stale, so the next read rebuilds.
@@ -177,23 +177,23 @@ impl DoorBook {
     }
 
     /// Whether placement `key` is a door a player can use.
-    pub(crate) fn contains(&self, key: u64) -> bool {
+    pub fn contains(&self, key: u64) -> bool {
         self.find(key).is_some()
     }
 
     /// The object revision of placement `key`: 0 for every entry that is no door.
-    pub(crate) fn revision(&self, key: u64) -> u64 {
+    pub fn revision(&self, key: u64) -> u64 {
         self.revision_in(key, None)
     }
 
     /// [`Self::revision`], read from `pinned` when given.
-    pub(crate) fn revision_in(&self, key: u64, pinned: Option<&DoorStates>) -> u64 {
+    pub fn revision_in(&self, key: u64, pinned: Option<&DoorStates>) -> u64 {
         self.state(key, pinned).map_or(0, |(_, state)| state)
     }
 
     /// `entry`, the closed facts of placement `key`, or the open item's facts while the door is
     /// open; the door's state is read from `pinned` when given.
-    pub(crate) fn facts(
+    pub fn facts(
         &self,
         key: u64,
         entry: EntryFacts,
@@ -212,7 +212,7 @@ impl DoorBook {
     }
 
     /// Whether a door entry of `pos` is solid in its current state.
-    pub(crate) fn blocks(&self, pos: TilePos) -> bool {
+    pub fn blocks(&self, pos: TilePos) -> bool {
         let Some(tile) = super::view::placement_key(pos, 0) else {
             return false;
         };
@@ -243,7 +243,7 @@ impl DoorBook {
     /// revision. `occupied` is whether an actor stands on the door's tile: it keeps an open door
     /// from closing. The change is one compare-and-swap, so concurrent `USE`s of a revision
     /// commit once. `None` when `key` is no door.
-    pub(crate) fn toggle(
+    pub fn toggle(
         &self,
         key: u64,
         expected_revision: u64,

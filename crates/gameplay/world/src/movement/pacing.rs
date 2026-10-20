@@ -11,7 +11,7 @@ use std::time::Duration;
 use tokio::time::Instant;
 
 /// When the next step of one connection may run.
-pub(crate) trait PacingTime: Copy + Ord {
+pub trait PacingTime: Copy + Ord {
     fn checked_after(self, duration: Duration) -> Option<Self>;
 }
 impl PacingTime for Instant {
@@ -26,7 +26,7 @@ impl PacingTime for oteryn_simulation_determinism::SemanticTimeMicros {
     }
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct StepPacer<T = Instant> {
+pub struct StepPacer<T = Instant> {
     next_due: Option<T>,
 }
 impl<T> Default for StepPacer<T> {
@@ -35,26 +35,26 @@ impl<T> Default for StepPacer<T> {
     }
 }
 /// Same moved-only pacing kernel, driven by the independently supplied Channel owner clock.
-pub(crate) type CreatureStepPacer = StepPacer<oteryn_simulation_determinism::SemanticTimeMicros>;
+pub type CreatureStepPacer = StepPacer<oteryn_simulation_determinism::SemanticTimeMicros>;
 
 impl<T: PacingTime> StepPacer<T> {
     /// A clock that continues from a deadline the actor already holds.
-    pub(crate) const fn resumed(next_due: Option<T>) -> Self {
+    pub const fn resumed(next_due: Option<T>) -> Self {
         Self { next_due }
     }
 
     /// When the next step may run, if a moved step set a deadline.
-    pub(crate) const fn next_due(&self) -> Option<T> {
+    pub const fn next_due(&self) -> Option<T> {
         self.next_due
     }
 
     /// `None` when a step requested at `now` may run at once, otherwise the instant it is due.
-    pub(crate) fn wait_until(&self, now: T) -> Option<T> {
+    pub fn wait_until(&self, now: T) -> Option<T> {
         self.next_due.filter(|due| now < *due)
     }
 
     /// Preflight overflow and the current deadline BEFORE a Movement mutation.
-    pub(crate) fn prepare_moved_deadline(&self, now: T, duration: Duration) -> Option<T> {
+    pub fn prepare_moved_deadline(&self, now: T, duration: Duration) -> Option<T> {
         if self.wait_until(now).is_some() {
             return None;
         }
@@ -63,7 +63,7 @@ impl<T: PacingTime> StepPacer<T> {
 
     /// A step ran at `ran_at`. Only a step that moved has a duration (`Some`); a blocked or
     /// refused step leaves the clock as it was.
-    pub(crate) fn record(&mut self, ran_at: T, duration: Option<Duration>) {
+    pub fn record(&mut self, ran_at: T, duration: Option<Duration>) {
         if let Some(duration) = duration {
             self.next_due = ran_at.checked_after(duration).or(self.next_due);
         }

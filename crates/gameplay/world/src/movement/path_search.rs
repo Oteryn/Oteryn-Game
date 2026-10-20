@@ -22,15 +22,15 @@ use crate::movement::CardinalStep;
 /// `AI01-PATH-SEARCH-WORK` (CREATURE-AI-0 §5.3, `RESOURCE_LIMITS_REGISTRY`), for a chase
 /// `RANGED0-RL-04` (RANGED-0 §8): expansions per
 /// search; the 1,025th expansion fails the search.
-pub(crate) const PATH_SEARCH_WORK: usize = 1_024;
+pub const PATH_SEARCH_WORK: usize = 1_024;
 /// `AI01-ROUTE-STEPS` (CREATURE-AI-0 §5.3, `RESOURCE_LIMITS_REGISTRY`): steps of a route.
-pub(crate) const ROUTE_STEPS: usize = 128;
+pub const ROUTE_STEPS: usize = 128;
 /// `RANGED0-RL-05` (RANGED-0 §8, CREATURE-AI-0 §5.3): the 12-tile search distance of a chase,
 /// from the start (Chebyshev).
-pub(crate) const CHASE_SEARCH_DISTANCE: i32 = 12;
+pub const CHASE_SEARCH_DISTANCE: i32 = 12;
 /// The extra cost of a path tile another actor stands on (CREATURE-AI-0 §5.3 "+40 over a
 /// creature"; a player is a creature of the path profile).
-pub(crate) const CREATURE_COST: u32 = 40;
+pub const CREATURE_COST: u32 = 40;
 
 /// The cost of one step.
 const STEP_COST: u32 = 10;
@@ -54,7 +54,7 @@ struct SearchBounds {
     distance: i32,
 }
 
-pub(crate) const fn delta(step: CardinalStep) -> (i32, i32) {
+pub const fn delta(step: CardinalStep) -> (i32, i32) {
     match step {
         CardinalStep::North => (0, -1),
         CardinalStep::East => (1, 0),
@@ -63,7 +63,7 @@ pub(crate) const fn delta(step: CardinalStep) -> (i32, i32) {
     }
 }
 
-pub(crate) fn chebyshev(from: MovementLocalPosition, to: MovementLocalPosition) -> i64 {
+pub fn chebyshev(from: MovementLocalPosition, to: MovementLocalPosition) -> i64 {
     let dx = (i64::from(to.x) - i64::from(from.x)).abs();
     let dy = (i64::from(to.y) - i64::from(from.y)).abs();
     dx.max(dy)
@@ -93,7 +93,7 @@ fn is_goal(at: MovementLocalPosition, target: MovementLocalPosition) -> bool {
 /// when it is no path tile, else its extra cost ([`CREATURE_COST`] over an occupied tile).
 /// `Some(empty)` when `start` already is such a tile; `None` when no route is found within the
 /// bounds (a failed search).
-pub(crate) fn route_next_to(
+pub fn route_next_to(
     start: MovementLocalPosition,
     target: MovementLocalPosition,
     distance: i32,

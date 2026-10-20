@@ -20,7 +20,7 @@ pub mod facts;
 pub mod floor;
 mod floor_catalogue;
 pub mod overlay;
-pub(crate) mod spell_tiles;
+pub mod spell_tiles;
 pub mod view;
 
 /// What a World expects of its bundle (§1.1): the bundle digest it pinned, the schema versions
@@ -273,7 +273,7 @@ impl WorldBase {
     /// order; `None` for a position the bundle holds no tile at.
     ///
     /// [`tiles`]: Self::tiles
-    pub(crate) fn tile_index(&self, x: u16, y: u16, floor: i8) -> Option<usize> {
+    pub fn tile_index(&self, x: u16, y: u16, floor: i8) -> Option<usize> {
         let key = sector_key(floor, x / SECTOR_SIZE, y / SECTOR_SIZE)?;
         let row = (key >> 11) as usize;
         let start = self.rows[row] as usize;

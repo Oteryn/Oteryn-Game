@@ -15,16 +15,16 @@ use std::fmt;
 use std::ops::Bound;
 
 /// `MOVE-RL-08`: enter, leave and update entries in one delta; a larger change is a resync.
-pub(crate) const INTEREST_DELTA_ENTRIES_MAX: usize = 256;
+pub const INTEREST_DELTA_ENTRIES_MAX: usize = 256;
 /// `MOVE-RL-09`: candidates examined by one visibility query.
-pub(crate) const VISIBILITY_QUERY_CANDIDATES_MAX: usize = 1024;
+pub const VISIBILITY_QUERY_CANDIDATES_MAX: usize = 1024;
 /// `MOVE-RL-10` (equal to `MOVE-RL-11`): results returned by one visibility query.
-pub(crate) const VISIBILITY_QUERY_RESULTS_MAX: usize = 256;
+pub const VISIBILITY_QUERY_RESULTS_MAX: usize = 256;
 
-pub(crate) const VIEW_WIDTH_MIN: u16 = 15;
-pub(crate) const VIEW_WIDTH_MAX: u16 = 36;
-pub(crate) const VIEW_HEIGHT_MIN: u16 = 11;
-pub(crate) const VIEW_HEIGHT_MAX: u16 = 28;
+pub const VIEW_WIDTH_MIN: u16 = 15;
+pub const VIEW_WIDTH_MAX: u16 = 36;
+pub const VIEW_HEIGHT_MIN: u16 = 11;
+pub const VIEW_HEIGHT_MAX: u16 = 28;
 
 /// Tibia floors: 0 is the top, 7 is the ground floor, 15 is the deepest.
 const FLOOR_GROUND: i16 = 7;
@@ -33,10 +33,10 @@ const FLOOR_MAX: i16 = 15;
 const UNDERGROUND_FLOOR_REACH: i16 = 2;
 
 /// Opaque entity identity; compared bytewise (canonical order tie-break).
-pub(crate) type EntityIdentity = [u8; 16];
+pub type EntityIdentity = [u8; 16];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum InterestError {
+pub enum InterestError {
     FloorOutOfRange,
     WidthOutOfRange,
     HeightOutOfRange,
@@ -61,7 +61,7 @@ impl Error for InterestError {}
 /// `-8..=-5`) is the Tibia floor `-floor`; floor 0 is the same in both. A Channel's map uses one
 /// convention, so the two never meet in one view.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) struct VisibilityPosition {
+pub struct VisibilityPosition {
     x: i32,
     y: i32,
     floor: i16,
@@ -69,7 +69,7 @@ pub(crate) struct VisibilityPosition {
 
 /// The Tibia floor `0..=15` of a Tibia or native floor (see [`VisibilityPosition`]); `None`
 /// outside `-15..=15`.
-pub(crate) fn tibia_floor(floor: i16) -> Option<i16> {
+pub fn tibia_floor(floor: i16) -> Option<i16> {
     let tibia = if floor < 0 {
         floor.checked_neg()?
     } else {
@@ -79,7 +79,7 @@ pub(crate) fn tibia_floor(floor: i16) -> Option<i16> {
 }
 
 impl VisibilityPosition {
-    pub(crate) fn new(x: i32, y: i32, floor: i16) -> Result<Self, InterestError> {
+    pub fn new(x: i32, y: i32, floor: i16) -> Result<Self, InterestError> {
         let floor = tibia_floor(floor).ok_or(InterestError::FloorOutOfRange)?;
         Ok(Self { x, y, floor })
     }
@@ -87,18 +87,18 @@ impl VisibilityPosition {
 
 /// Immutable per-Channel view size. `REFERENCE` is 18 x 14.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct VisibilitySettings {
+pub struct VisibilitySettings {
     width: u16,
     height: u16,
 }
 
 impl VisibilitySettings {
-    pub(crate) const REFERENCE: Self = Self {
+    pub const REFERENCE: Self = Self {
         width: 18,
         height: 14,
     };
 
-    pub(crate) fn new(width: u16, height: u16) -> Result<Self, InterestError> {
+    pub fn new(width: u16, height: u16) -> Result<Self, InterestError> {
         if !(VIEW_WIDTH_MIN..=VIEW_WIDTH_MAX).contains(&width) {
             return Err(InterestError::WidthOutOfRange);
         }
@@ -108,11 +108,11 @@ impl VisibilitySettings {
         Ok(Self { width, height })
     }
 
-    pub(crate) const fn width(self) -> u16 {
+    pub const fn width(self) -> u16 {
         self.width
     }
 
-    pub(crate) const fn height(self) -> u16 {
+    pub const fn height(self) -> u16 {
         self.height
     }
 
@@ -152,7 +152,7 @@ impl VisibilitySettings {
     }
 
     /// Whether an observer at `observer` sees the tile `target`.
-    pub(crate) fn can_see(self, observer: VisibilityPosition, target: VisibilityPosition) -> bool {
+    pub fn can_see(self, observer: VisibilityPosition, target: VisibilityPosition) -> bool {
         self.plane_offsets(observer, target).is_some()
     }
 
@@ -199,10 +199,10 @@ fn floor_visible(observer_floor: i16, floor: i16) -> bool {
 
 /// Identity, position and an opaque change stamp. Payload fields belong to a later slice.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct InterestEntity {
-    pub(crate) identity: EntityIdentity,
-    pub(crate) position: VisibilityPosition,
-    pub(crate) revision: u64,
+pub struct InterestEntity {
+    pub identity: EntityIdentity,
+    pub position: VisibilityPosition,
+    pub revision: u64,
 }
 
 type CellKey = (i16, i32, i32);
@@ -213,36 +213,36 @@ fn cell_key(position: VisibilityPosition) -> CellKey {
 
 /// Spatial index over entity positions. Iteration order is independent of insertion order.
 #[derive(Debug, Default)]
-pub(crate) struct InterestIndex {
+pub struct InterestIndex {
     entities: BTreeMap<EntityIdentity, InterestEntity>,
     cells: BTreeMap<CellKey, BTreeSet<EntityIdentity>>,
 }
 
 /// The bounded result of one visibility query: the own actor first, then canonical order.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct VisibilityQuery {
+pub struct VisibilityQuery {
     entities: Vec<InterestEntity>,
     examined: usize,
 }
 
 impl VisibilityQuery {
-    pub(crate) fn entities(&self) -> &[InterestEntity] {
+    pub fn entities(&self) -> &[InterestEntity] {
         &self.entities
     }
 
     /// Candidates examined, including the own actor.
-    pub(crate) const fn examined(&self) -> usize {
+    pub const fn examined(&self) -> usize {
         self.examined
     }
 }
 
 impl InterestIndex {
-    pub(crate) fn new() -> Self {
+    pub fn new() -> Self {
         Self::default()
     }
 
     /// Inserts or replaces the entity with the same identity.
-    pub(crate) fn upsert(&mut self, entity: InterestEntity) {
+    pub fn upsert(&mut self, entity: InterestEntity) {
         self.remove(&entity.identity);
         self.cells
             .entry(cell_key(entity.position))
@@ -251,7 +251,7 @@ impl InterestIndex {
         self.entities.insert(entity.identity, entity);
     }
 
-    pub(crate) fn remove(&mut self, identity: &EntityIdentity) -> Option<InterestEntity> {
+    pub fn remove(&mut self, identity: &EntityIdentity) -> Option<InterestEntity> {
         let entity = self.entities.remove(identity)?;
         let key = cell_key(entity.position);
         if let Some(set) = self.cells.get_mut(&key) {
@@ -263,11 +263,11 @@ impl InterestIndex {
         Some(entity)
     }
 
-    pub(crate) fn get(&self, identity: &EntityIdentity) -> Option<&InterestEntity> {
+    pub fn get(&self, identity: &EntityIdentity) -> Option<&InterestEntity> {
         self.entities.get(identity)
     }
 
-    pub(crate) fn query(
+    pub fn query(
         &self,
         observer: &EntityIdentity,
         settings: VisibilitySettings,
@@ -279,7 +279,7 @@ impl InterestIndex {
     /// stops at `VISIBILITY_QUERY_RESULTS_MAX` results or `VISIBILITY_QUERY_CANDIDATES_MAX`
     /// examined candidates. `accept` may reject a candidate (it still counts as examined); the
     /// own actor is always included and counts as one result and one examined candidate.
-    pub(crate) fn query_with(
+    pub fn query_with(
         &self,
         observer: &EntityIdentity,
         settings: VisibilitySettings,
@@ -427,14 +427,14 @@ fn for_each_ring_cell(settings: VisibilitySettings, ring: i64, mut visit: impl F
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum InterestChange {
+pub enum InterestChange {
     Enter(InterestEntity),
     Leave(EntityIdentity),
     Update(InterestEntity),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum InterestDiff {
+pub enum InterestDiff {
     /// At most `INTEREST_DELTA_ENTRIES_MAX` entries, ascending by identity.
     Delta(Vec<InterestChange>),
     /// The change exceeded the delta ceiling: the full current snapshot.
@@ -443,7 +443,7 @@ pub(crate) enum InterestDiff {
 
 /// Diff between the previous and current result of one observer. An entity present in both
 /// results is an update when its position or revision changed.
-pub(crate) fn diff_interest(previous: &VisibilityQuery, current: &VisibilityQuery) -> InterestDiff {
+pub fn diff_interest(previous: &VisibilityQuery, current: &VisibilityQuery) -> InterestDiff {
     let previous: BTreeMap<_, _> = previous.entities.iter().map(|e| (e.identity, *e)).collect();
     let current_map: BTreeMap<_, _> = current.entities.iter().map(|e| (e.identity, *e)).collect();
     let mut changes = Vec::new();

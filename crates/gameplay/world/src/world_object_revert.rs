@@ -43,20 +43,20 @@ use std::sync::Arc;
 use std::time::Duration;
 
 /// `WOBJ-RL-04`: lifecycle records one scope generation may hold, in any state.
-pub(crate) const MAX_REVERT_RECORDS_PER_SCOPE_GENERATION: usize = 1_024;
+pub const MAX_REVERT_RECORDS_PER_SCOPE_GENERATION: usize = 1_024;
 /// `WOBJ-RL-05`: due records one driver wake admits; the remainder waits for a later wake.
-pub(crate) const MAX_DUE_REVERTS_PER_WAKE: usize = 32;
+pub const MAX_DUE_REVERTS_PER_WAKE: usize = 32;
 /// `WOBJ-RL-06`: nesting depth of a revert child occurrence (its forward is one less).
-pub(crate) const MAX_REVERT_OCCURRENCE_DEPTH: usize = 4;
+pub const MAX_REVERT_OCCURRENCE_DEPTH: usize = 4;
 /// `WOBJ-RL-07`: bytes of an occurrence identity's `Debug` rendering, which contains every one
 /// of its semantic-key bytes at least once, so it bounds the total key bytes the record retains.
-pub(crate) const MAX_REVERT_OCCURRENCE_RENDERED_BYTES: usize = 4_096;
+pub const MAX_REVERT_OCCURRENCE_RENDERED_BYTES: usize = 4_096;
 
 /// Unforgeable proof that the caller is the §7 revert driver: its field is private to this
 /// module, so no other code can build one. `apply_scope_operation` refuses a timed transition
 /// without it, so a timed transition never commits without its lifecycle record.
 #[derive(Debug)]
-pub(crate) struct RevertSchedulingCapability(());
+pub struct RevertSchedulingCapability(());
 
 const DISPOSITION_COMMITTED: &str = "COMMITTED";
 
@@ -65,7 +65,7 @@ const DISPOSITION_COMMITTED: &str = "COMMITTED";
 /// from a `RuntimeExecutionOrdinal`. §7 names no discriminator values, so this lane uses: the
 /// authored action as the interaction definition, the placement as the target, the bound
 /// inverse as the edge, and no ordinal (one revert per forward child, action and placement).
-pub(crate) fn revert_child_occurrence(
+pub fn revert_child_occurrence(
     forward: &ChildOccurrenceRef,
     action: &LoweredActionId,
     placement: &PlacementKey,
@@ -89,7 +89,7 @@ pub(crate) fn revert_child_occurrence(
 /// event commits nothing. `transitions` is the bound Content's transition set; only edges this
 /// placement times for `action` (and so binds, `LocalObjectRuntime::bind`) are candidates.
 /// More than one candidate is an ambiguous authored binding and fails closed.
-pub(crate) fn select_timed_forward<'a>(
+pub fn select_timed_forward<'a>(
     runtime: &LocalObjectRuntime,
     action: &LoweredActionId,
     transitions: impl IntoIterator<Item = &'a TransitionBinding>,
@@ -111,7 +111,7 @@ pub(crate) fn select_timed_forward<'a>(
 /// whose created state `runtime` is in now, so the pre-authored teleporter is open. `None` from any
 /// other state and for every non-CREATE forward, so a TRANSFORM teleporter (the duke, owner
 /// decision 3) keeps its kill-while-open no-op. More than one candidate fails closed.
-pub(crate) fn select_open_create<'a>(
+pub fn select_open_create<'a>(
     runtime: &LocalObjectRuntime,
     action: &LoweredActionId,
     transitions: impl IntoIterator<Item = &'a TransitionBinding>,
@@ -166,7 +166,7 @@ fn check_occurrence_bounds(
 
 /// §7's complete `PENDING` field list, captured once from the forward operation's own commit.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct PendingRevert {
+pub struct PendingRevert {
     scope: RuntimeScopeRefV1,
     scope_generation: ScopeOwnershipGeneration,
     placement: PlacementKey,
@@ -186,17 +186,17 @@ pub(crate) struct PendingRevert {
 
 impl PendingRevert {
     #[must_use]
-    pub(crate) fn inverse(&self) -> &TransitionKey {
+    pub fn inverse(&self) -> &TransitionKey {
         &self.inverse
     }
 
     #[must_use]
-    pub(crate) fn expected_state(&self) -> &ProductionKey {
+    pub fn expected_state(&self) -> &ProductionKey {
         &self.expected_state
     }
 
     #[must_use]
-    pub(crate) const fn expected_revision(&self) -> u64 {
+    pub const fn expected_revision(&self) -> u64 {
         self.expected_revision
     }
 
@@ -213,7 +213,7 @@ impl PendingRevert {
 /// The `PENDING`-step fence that rejected a record without it reaching `prepare` (§7's
 /// `SCOPE_GENERATION_CHANGED` / `CONTENT_GENERATION_CHANGED` / `INCARNATION_CHANGED`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum RevertFence {
+pub enum RevertFence {
     ScopeGeneration,
     ContentGeneration,
     /// The stored incarnation no longer matches, or no object is bound at the placement.
@@ -222,7 +222,7 @@ pub(crate) enum RevertFence {
 
 /// A record's one answer to every later presentation of its identity.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum RevertOutcome {
+pub enum RevertOutcome {
     /// `prepare`'s own outcome: `COMMITTED`, or a rejection with an unchanged disposition.
     Prepared(TerminalSemanticOutcome),
     Fenced(RevertFence),
@@ -230,13 +230,13 @@ pub(crate) enum RevertOutcome {
 
 impl RevertOutcome {
     #[must_use]
-    pub(crate) fn committed(&self) -> bool {
+    pub fn committed(&self) -> bool {
         matches!(self, Self::Prepared(outcome) if outcome.disposition() == DISPOSITION_COMMITTED)
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum RevertLifecycle {
+pub enum RevertLifecycle {
     Pending(PendingRevert),
     InFlight { ordinal: RuntimeExecutionOrdinal },
     Terminal(RevertOutcome),
@@ -244,7 +244,7 @@ pub(crate) enum RevertLifecycle {
 
 /// What one presentation of an identity observed or did.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum RevertPresentation {
+pub enum RevertPresentation {
     /// `PENDING` and not yet due: nothing ran.
     NotDue,
     /// `IN_FLIGHT`: converged onto the execution already under way; nothing ran.
@@ -253,7 +253,7 @@ pub(crate) enum RevertPresentation {
 }
 
 #[derive(Debug)]
-pub(crate) enum RevertError {
+pub enum RevertError {
     /// FND-03 §28: the record store is full; the forward operation committed nothing.
     CapacityExceeded,
     /// The forward occurrence already scheduled this revert; the forward committed nothing.
@@ -304,7 +304,7 @@ impl Display for RevertError {
 impl std::error::Error for RevertError {}
 
 /// The scope's one FND-03 §10.2 ordinal issuer; `ScopeRuntimeFence` in production.
-pub(crate) trait ScopeOrdinalIssuer {
+pub trait ScopeOrdinalIssuer {
     fn generation(&self) -> ScopeOwnershipGeneration;
     fn accept_input(
         &mut self,
@@ -326,13 +326,13 @@ impl ScopeOrdinalIssuer for ScopeRuntimeFence {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct RevertDriverLimits {
+pub struct RevertDriverLimits {
     record_capacity: usize,
     due_batch: usize,
 }
 
 impl RevertDriverLimits {
-    pub(crate) fn new(record_capacity: usize, due_batch: usize) -> Result<Self, RevertError> {
+    pub fn new(record_capacity: usize, due_batch: usize) -> Result<Self, RevertError> {
         if record_capacity == 0 || record_capacity > MAX_REVERT_RECORDS_PER_SCOPE_GENERATION {
             return Err(RevertError::InvalidLimits(
                 "record capacity is outside WOBJ-RL-04",
@@ -350,7 +350,7 @@ impl RevertDriverLimits {
     }
 
     #[must_use]
-    pub(crate) const fn registered() -> Self {
+    pub const fn registered() -> Self {
         Self {
             record_capacity: MAX_REVERT_RECORDS_PER_SCOPE_GENERATION,
             due_batch: MAX_DUE_REVERTS_PER_WAKE,
@@ -359,24 +359,24 @@ impl RevertDriverLimits {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct ForwardOutcome {
-    pub(crate) outcome: TerminalSemanticOutcome,
-    pub(crate) scheduled: Option<ChildOccurrenceRef>,
+pub struct ForwardOutcome {
+    pub outcome: TerminalSemanticOutcome,
+    pub scheduled: Option<ChildOccurrenceRef>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct WakeReport {
+pub struct WakeReport {
     /// Admitted records in (deadline, scheduling ordinal, sequence) order, with their outcome.
-    pub(crate) fired: Vec<(ChildOccurrenceRef, RevertOutcome)>,
+    pub fired: Vec<(ChildOccurrenceRef, RevertOutcome)>,
     /// More records are already due; they wait for a later wake (bounded batch).
-    pub(crate) more_due: bool,
+    pub more_due: bool,
 }
 
 type DueKey = (Deadline, RuntimeExecutionOrdinal, u32, ChildOccurrenceRef);
 
 /// One per scope owner (`ChannelRuntimeV1`/`InstanceRuntime`), never per object: owns the scope's
 /// ordinal issuer, its single clock and its lifecycle-record store.
-pub(crate) struct ScopeRevertDriver<I> {
+pub struct ScopeRevertDriver<I> {
     scope: RuntimeScopeRefV1,
     issuer: I,
     clock: Arc<dyn MonotonicClock>,
@@ -389,7 +389,7 @@ pub(crate) struct ScopeRevertDriver<I> {
 
 impl<I: ScopeOrdinalIssuer> ScopeRevertDriver<I> {
     #[must_use]
-    pub(crate) fn new(
+    pub fn new(
         scope: RuntimeScopeRefV1,
         issuer: I,
         clock: Arc<dyn MonotonicClock>,
@@ -408,23 +408,23 @@ impl<I: ScopeOrdinalIssuer> ScopeRevertDriver<I> {
     }
 
     #[must_use]
-    pub(crate) fn issuer(&self) -> &I {
+    pub fn issuer(&self) -> &I {
         &self.issuer
     }
 
     #[must_use]
-    pub(crate) fn lifecycle(&self, id: &ChildOccurrenceRef) -> Option<&RevertLifecycle> {
+    pub fn lifecycle(&self, id: &ChildOccurrenceRef) -> Option<&RevertLifecycle> {
         self.records.get(id)
     }
 
     #[must_use]
-    pub(crate) fn record_count(&self) -> usize {
+    pub fn record_count(&self) -> usize {
         self.records.len()
     }
 
     /// The earliest pending deadline: when the scope owner should wake this driver next.
     #[must_use]
-    pub(crate) fn next_deadline(&self) -> Option<Deadline> {
+    pub fn next_deadline(&self) -> Option<Deadline> {
         self.due.first().map(|(deadline, ..)| *deadline)
     }
 
@@ -444,7 +444,7 @@ impl<I: ScopeOrdinalIssuer> ScopeRevertDriver<I> {
     /// A non-timer-origin operation (e.g. an encounter action). When the invoked transition
     /// carries `revert_after_ms` for `action` and `prepare` returns `Publish`, the revert record
     /// is created `PENDING` in the same staged commit; if the store is full, nothing commits.
-    pub(crate) fn apply_forward(
+    pub fn apply_forward(
         &mut self,
         runtime: &mut LocalObjectRuntime,
         occurrence: &ChildOccurrenceRef,
@@ -551,7 +551,7 @@ impl<I: ScopeOrdinalIssuer> ScopeRevertDriver<I> {
     /// generation (`StaleRuntimeScope`/`StaleScopeOwnershipGeneration`), a `create` that is not a
     /// CREATE edge of `runtime` (`NotCreateTransition`), or no matching `PENDING` record, fails
     /// closed with nothing changed.
-    pub(crate) fn rearm_open_create(
+    pub fn rearm_open_create(
         &mut self,
         runtime: &LocalObjectRuntime,
         action: &LoweredActionId,
@@ -628,7 +628,7 @@ impl<I: ScopeOrdinalIssuer> ScopeRevertDriver<I> {
     }
 
     /// One owner-turn wake: fires at most `due_batch` due records in stored order.
-    pub(crate) fn wake(
+    pub fn wake(
         &mut self,
         runtimes: &mut BTreeMap<PlacementKey, LocalObjectRuntime>,
         occupied_cells: &BTreeSet<LogicalCell>,
@@ -664,7 +664,7 @@ impl<I: ScopeOrdinalIssuer> ScopeRevertDriver<I> {
     /// §7's fixed presentation order: look up; `TERMINAL` answers verbatim; `IN_FLIGHT`
     /// converges; only a due `PENDING` record reaches the fences, then `accept_input`, then
     /// `prepare`/commit, all in this one synchronous step.
-    pub(crate) fn present(
+    pub fn present(
         &mut self,
         id: &ChildOccurrenceRef,
         runtimes: &mut BTreeMap<PlacementKey, LocalObjectRuntime>,
@@ -773,7 +773,7 @@ impl<I: ScopeOrdinalIssuer> ScopeRevertDriver<I> {
 /// Foundation): the same `accept_input` contract, plus a count of minted ordinals.
 #[cfg(test)]
 #[derive(Debug)]
-pub(crate) struct TestIssuer {
+pub struct TestIssuer {
     generation: ScopeOwnershipGeneration,
     next: Option<u64>,
     minted: u64,
@@ -782,7 +782,7 @@ pub(crate) struct TestIssuer {
 #[cfg(test)]
 impl TestIssuer {
     #[must_use]
-    pub(crate) const fn new(generation: ScopeOwnershipGeneration) -> Self {
+    pub const fn new(generation: ScopeOwnershipGeneration) -> Self {
         Self {
             generation,
             next: Some(1),
@@ -844,7 +844,7 @@ mod tests {
     type TestResult<T = ()> = Result<T, Box<dyn Error>>;
 
     const DUKE: &str = include_str!(
-        "../../../tools/content-schema/encounter-authoring/samples/the_duke_of_the_depths/encounter.json"
+        "../../../../tools/content-schema/encounter-authoring/samples/the_duke_of_the_depths/encounter.json"
     );
     const DUKE_KEY: &str = "canary:encounter/the_duke_of_the_depths";
     const DUKE_ACTION: &str =
@@ -2681,14 +2681,14 @@ mod tests {
             "canary:encounter/death_priest_shargon",
             "shargon_exit",
             include_str!(
-                "../../../tools/content-schema/encounter-authoring/samples/death_priest_shargon/encounter.json"
+                "../../../../tools/content-schema/encounter-authoring/samples/death_priest_shargon/encounter.json"
             ),
         ),
         (
             "canary:encounter/the_ravager",
             "ravager_exit",
             include_str!(
-                "../../../tools/content-schema/encounter-authoring/samples/the_ravager/encounter.json"
+                "../../../../tools/content-schema/encounter-authoring/samples/the_ravager/encounter.json"
             ),
         ),
     ];

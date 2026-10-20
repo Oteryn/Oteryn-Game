@@ -23,7 +23,7 @@ use std::sync::Arc;
 
 /// MAP-LOAD-1: the World's base map, loaded once and shared by every Channel of the World
 /// (ADR-0021 §4.1). No runtime holds one yet; MAP-CUTOVER-1 boots from it.
-pub(crate) type WorldBaseHandle = Arc<crate::map::WorldBase>;
+pub type WorldBaseHandle = Arc<crate::map::WorldBase>;
 
 const DISPOSITION_COMMITTED: &str = "COMMITTED";
 const DISPOSITION_NO_CHANGE: &str = "NO_CHANGE";
@@ -37,12 +37,12 @@ const REFERENCE_CONTENT_GENERATION_DOMAIN: &[u8] = b"OTERYN/CW4/REFERENCE_CONTEN
 const EVENT_ORIGIN_BINDING_DOMAIN: &[u8] = b"OTERYN/CW4/D91_EVENT_ORIGIN_BINDING/v1";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct ReferenceContentGeneration {
+pub struct ReferenceContentGeneration {
     semantic_identity: Box<str>,
 }
 
 impl ReferenceContentGeneration {
-    pub(crate) fn from_content(
+    pub fn from_content(
         content: &CanonicalReferencePlayableContent,
     ) -> Result<Self, WorldRuntimeError> {
         // Foundation retains one bounded Content-generation component. Hash the complete
@@ -118,7 +118,7 @@ impl ReferenceContentGeneration {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct ScopeContentGenerationFence {
+pub struct ScopeContentGenerationFence {
     scope: RuntimeScopeRefV1,
     scope_generation: ScopeOwnershipGeneration,
     content_generation: ReferenceContentGeneration,
@@ -129,7 +129,7 @@ impl ScopeContentGenerationFence {
     // test-only until the current scope owner supplies this fence at a later allocated seam.
     #[cfg(test)]
     #[must_use]
-    pub(crate) fn for_test(
+    pub fn for_test(
         scope: RuntimeScopeRefV1,
         scope_generation: ScopeOwnershipGeneration,
         content_generation: ReferenceContentGeneration,
@@ -152,7 +152,7 @@ impl ScopeContentGenerationFence {
     /// runtime; nothing here derives any of the three from the door `LocalObjectRuntime` this
     /// fence is then used to bind.
     #[must_use]
-    pub(crate) fn for_activation(
+    pub fn for_activation(
         scope: RuntimeScopeRefV1,
         scope_generation: ScopeOwnershipGeneration,
         content_generation: ReferenceContentGeneration,
@@ -189,14 +189,14 @@ impl ScopeContentGenerationFence {
 /// This view carries no activation or controller capability. Its authoritative Item semantics
 /// are decoded exactly once through the staged server artifact's typed identity index.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct NonAuthoritativeReferenceItemRuntimeView {
+pub struct NonAuthoritativeReferenceItemRuntimeView {
     scope: RuntimeScopeRefV1,
     generation_identity: ReferencePlayableGenerationIdentity,
     authoritative_item: ReferenceServerItem,
 }
 
 impl NonAuthoritativeReferenceItemRuntimeView {
-    pub(crate) fn bind(
+    pub fn bind(
         stage: NonAuthoritativeReferenceStage<'_>,
         scope: RuntimeScopeRefV1,
     ) -> Result<Self, WorldRuntimeError> {
@@ -222,32 +222,32 @@ impl NonAuthoritativeReferenceItemRuntimeView {
     }
 
     #[must_use]
-    pub(crate) const fn scope(&self) -> RuntimeScopeRefV1 {
+    pub const fn scope(&self) -> RuntimeScopeRefV1 {
         self.scope
     }
 
     #[must_use]
-    pub(crate) fn generation_identity(&self) -> &ReferencePlayableGenerationIdentity {
+    pub fn generation_identity(&self) -> &ReferencePlayableGenerationIdentity {
         &self.generation_identity
     }
 
     #[must_use]
-    pub(crate) fn item_identity(&self) -> &TypedDefinitionRef {
+    pub fn item_identity(&self) -> &TypedDefinitionRef {
         self.generation_identity.item_identity()
     }
 
     #[must_use]
-    pub(crate) fn server_artifact_digest(&self) -> [u8; 32] {
+    pub fn server_artifact_digest(&self) -> [u8; 32] {
         self.generation_identity.server_artifact_digest()
     }
 
     #[must_use]
-    pub(crate) fn client_artifact_digest(&self) -> [u8; 32] {
+    pub fn client_artifact_digest(&self) -> [u8; 32] {
         self.generation_identity.client_artifact_digest()
     }
 
     #[must_use]
-    pub(crate) fn lookup_item(
+    pub fn lookup_item(
         &self,
         identity: &TypedDefinitionRef,
     ) -> Option<&ReferenceServerItem> {
@@ -455,7 +455,7 @@ fn validate_synthetic_placement_evidence(
 ///
 /// The sole caller is the Channel activation owner (`node/serve.rs`'s boot sequence, and the WP5
 /// seam qualification harness building the same owners), once per Channel activation.
-pub(crate) fn bind_native_entry_door(
+pub fn bind_native_entry_door(
     door_content: &CanonicalReferencePlayableContent,
     fence: &ScopeContentGenerationFence,
     scope: RuntimeScopeRefV1,
@@ -537,11 +537,11 @@ pub(crate) fn bind_native_entry_door(
 /// serves all four named operations. Open/Close are the two-state special case of this same
 /// mechanism, not a distinct code path.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct LocalObjectOperation(TransitionKey);
+pub struct LocalObjectOperation(TransitionKey);
 
 impl LocalObjectOperation {
     #[must_use]
-    pub(crate) const fn new(transition: TransitionKey) -> Self {
+    pub const fn new(transition: TransitionKey) -> Self {
         Self(transition)
     }
 
@@ -563,7 +563,7 @@ enum UseSelectionError {
 /// the wire `UseDisposition` the gameplay seam encodes, except this type carries the committed
 /// state and revision instead of duplicating them into a disposition-only enum.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum LocalObjectUseOutcome {
+pub enum LocalObjectUseOutcome {
     Committed { state: ProductionKey, revision: u64 },
     NothingToUse,
     Occupied,
@@ -572,7 +572,7 @@ pub(crate) enum LocalObjectUseOutcome {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct LocalObjectCommand {
+pub struct LocalObjectCommand {
     command_ref: CommandRef,
     connection_generation: ConnectionGeneration,
     placement: PlacementKey,
@@ -585,7 +585,7 @@ pub(crate) struct LocalObjectCommand {
 impl LocalObjectCommand {
     #[allow(clippy::too_many_arguments)]
     #[must_use]
-    pub(crate) const fn new(
+    pub const fn new(
         command_ref: CommandRef,
         connection_generation: ConnectionGeneration,
         placement: PlacementKey,
@@ -606,7 +606,7 @@ impl LocalObjectCommand {
     }
 
     #[must_use]
-    pub(crate) const fn command_ref(&self) -> CommandRef {
+    pub const fn command_ref(&self) -> CommandRef {
         self.command_ref
     }
 }
@@ -614,7 +614,7 @@ impl LocalObjectCommand {
 /// #162 §7: the target and delta of one scope-origin operation (`apply_scope_operation`) —
 /// exactly what `prepare` needs, with no session, connection or `CommandId`.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct ScopeLocalObjectOperation {
+pub struct ScopeLocalObjectOperation {
     placement: PlacementKey,
     incarnation: u64,
     content_generation: ReferenceContentGeneration,
@@ -628,7 +628,7 @@ pub(crate) struct ScopeLocalObjectOperation {
 
 impl ScopeLocalObjectOperation {
     #[must_use]
-    pub(crate) const fn new(
+    pub const fn new(
         placement: PlacementKey,
         incarnation: u64,
         content_generation: ReferenceContentGeneration,
@@ -647,12 +647,12 @@ impl ScopeLocalObjectOperation {
     }
 
     #[must_use]
-    pub(crate) fn transition_key(&self) -> &TransitionKey {
+    pub fn transition_key(&self) -> &TransitionKey {
         self.operation.transition_key()
     }
 
     #[must_use]
-    pub(crate) fn owner(&self) -> &TransitionEventOwner {
+    pub fn owner(&self) -> &TransitionEventOwner {
         &self.owner
     }
 }
@@ -660,13 +660,13 @@ impl ScopeLocalObjectOperation {
 /// #162 §7: the post-operation state and revision of a `Publish` that `prepare` has already
 /// computed, shown to `apply_scope_operation`'s staging step before anything commits.
 #[derive(Debug)]
-pub(crate) struct ScopePublish<'a> {
-    pub(crate) next_state: &'a ProductionKey,
-    pub(crate) next_revision: u64,
+pub struct ScopePublish<'a> {
+    pub next_state: &'a ProductionKey,
+    pub next_revision: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct LocalObjectCommandResult {
+pub struct LocalObjectCommandResult {
     disposition: Box<str>,
     state: Box<str>,
     revision: u64,
@@ -685,28 +685,28 @@ impl LocalObjectCommandResult {
     }
 
     #[must_use]
-    pub(crate) fn disposition(&self) -> &str {
+    pub fn disposition(&self) -> &str {
         &self.disposition
     }
 
     #[must_use]
-    pub(crate) fn state(&self) -> &str {
+    pub fn state(&self) -> &str {
         &self.state
     }
 
     #[must_use]
-    pub(crate) const fn revision(&self) -> u64 {
+    pub const fn revision(&self) -> u64 {
         self.revision
     }
 
     #[must_use]
-    pub(crate) const fn replayed(&self) -> bool {
+    pub const fn replayed(&self) -> bool {
         self.replayed
     }
 }
 
 #[derive(Debug)]
-pub(crate) enum WorldRuntimeError {
+pub enum WorldRuntimeError {
     Content(ContentError),
     CommandLifecycle(CommandLifecycleError),
     InvalidBinding(&'static str),
@@ -797,7 +797,7 @@ impl From<CommandLifecycleError> for WorldRuntimeError {
 }
 
 #[derive(Debug)]
-pub(crate) struct LocalObjectRuntime {
+pub struct LocalObjectRuntime {
     scope: RuntimeScopeRefV1,
     scope_generation: ScopeOwnershipGeneration,
     content_generation: ReferenceContentGeneration,
@@ -823,7 +823,7 @@ pub(crate) struct LocalObjectRuntime {
 
 impl LocalObjectRuntime {
     #[allow(clippy::too_many_arguments)]
-    pub(crate) fn bind(
+    pub fn bind(
         content: &CanonicalReferencePlayableContent,
         active_content: &ScopeContentGenerationFence,
         scope: RuntimeScopeRefV1,
@@ -1082,7 +1082,7 @@ impl LocalObjectRuntime {
         )
     )]
     #[must_use]
-    pub(crate) fn attributes(&self) -> Option<&LocalObjectStateAttributes> {
+    pub fn attributes(&self) -> Option<&LocalObjectStateAttributes> {
         self.state_attributes.get(&self.state)
     }
 
@@ -1097,7 +1097,7 @@ impl LocalObjectRuntime {
         )
     )]
     #[must_use]
-    pub(crate) fn is_absent(&self) -> bool {
+    pub fn is_absent(&self) -> bool {
         self.states
             .iter()
             .any(|state| state.key == self.state && state.absent)
@@ -1113,7 +1113,7 @@ impl LocalObjectRuntime {
         )
     )]
     #[must_use]
-    pub(crate) fn revert_after_ms(
+    pub fn revert_after_ms(
         &self,
         transition: &TransitionKey,
         action: &LoweredActionId,
@@ -1125,7 +1125,7 @@ impl LocalObjectRuntime {
 
     /// Owner decision D91: `transition`'s typed origin at this placement, fixed at `bind`.
     #[must_use]
-    pub(crate) fn transition_origin(&self, transition: &TransitionKey) -> TransitionOrigin {
+    pub fn transition_origin(&self, transition: &TransitionKey) -> TransitionOrigin {
         self.event_transitions
             .get(transition)
             .map_or(TransitionOrigin::PlayerUse, |owner| {
@@ -1136,7 +1136,7 @@ impl LocalObjectRuntime {
     /// Owner decision D91: a scope operation may name only an event-origin transition bound to
     /// its own owner. Reads only; `apply_scope_operation` runs it before `prepare`, and the §7
     /// driver runs it before it mints an ordinal.
-    pub(crate) fn check_scope_owner(
+    pub fn check_scope_owner(
         &self,
         operation: &ScopeLocalObjectOperation,
     ) -> Result<(), WorldRuntimeError> {
@@ -1152,7 +1152,7 @@ impl LocalObjectRuntime {
     /// The runtime scope and scope-ownership-generation fence of a scope operation: the caller's
     /// scope owner must be the one this runtime was bound under. Reads only; `apply_scope_operation`
     /// runs it first, and the §7 driver runs it before a Q2=b re-arm mints an ordinal.
-    pub(crate) fn check_scope_fence(
+    pub fn check_scope_fence(
         &self,
         scope: RuntimeScopeRefV1,
         scope_generation: ScopeOwnershipGeneration,
@@ -1173,7 +1173,7 @@ impl LocalObjectRuntime {
     /// The normalized intent family of a transition this runtime binds; `None` when it binds no such
     /// transition or its family is not a known one.
     #[must_use]
-    pub(crate) fn transition_intent_family(
+    pub fn transition_intent_family(
         &self,
         transition: &TransitionKey,
     ) -> Option<LocalObjectIntentFamily> {
@@ -1184,42 +1184,42 @@ impl LocalObjectRuntime {
 
     /// #162 §7: the unique bound inverse `bind` validated for a timed forward transition.
     #[must_use]
-    pub(crate) fn revert_inverse(&self, forward: &TransitionKey) -> Option<&TransitionKey> {
+    pub fn revert_inverse(&self, forward: &TransitionKey) -> Option<&TransitionKey> {
         self.revert_inverses.get(forward)
     }
 
     #[must_use]
-    pub(crate) fn placement_key(&self) -> &PlacementKey {
+    pub fn placement_key(&self) -> &PlacementKey {
         &self.placement
     }
 
     #[must_use]
-    pub(crate) const fn incarnation(&self) -> u64 {
+    pub const fn incarnation(&self) -> u64 {
         self.incarnation
     }
 
     #[must_use]
-    pub(crate) fn content_generation(&self) -> &ReferenceContentGeneration {
+    pub fn content_generation(&self) -> &ReferenceContentGeneration {
         &self.content_generation
     }
 
     #[must_use]
-    pub(crate) fn state_key(&self) -> &ProductionKey {
+    pub fn state_key(&self) -> &ProductionKey {
         &self.state
     }
 
     #[must_use]
-    pub(crate) const fn revision(&self) -> u64 {
+    pub const fn revision(&self) -> u64 {
         self.revision
     }
 
     #[must_use]
-    pub(crate) fn collision_cells(&self) -> &BTreeSet<LogicalCell> {
+    pub fn collision_cells(&self) -> &BTreeSet<LogicalCell> {
         &self.collision_cells
     }
 
     #[must_use]
-    pub(crate) fn blocking_cells(&self) -> &BTreeSet<LogicalCell> {
+    pub fn blocking_cells(&self) -> &BTreeSet<LogicalCell> {
         &self.blocking_cells
     }
 
@@ -1256,7 +1256,7 @@ impl LocalObjectRuntime {
     /// `resume_pending` serve. `occupied_cells` carries only the cells the caller has already
     /// proven are currently occupied (WOBJ-RL-01: at most one use input per actor per Channel
     /// work cycle, so the caller supplies at most the acting actor's own current cell here).
-    pub(crate) fn attempt_use(
+    pub fn attempt_use(
         &mut self,
         expected_revision: u64,
         occupied_cells: &BTreeSet<LogicalCell>,
@@ -1357,7 +1357,7 @@ impl LocalObjectRuntime {
         ))
     }
 
-    pub(crate) fn apply<T: Copy + Eq>(
+    pub fn apply<T: Copy + Eq>(
         &mut self,
         authority: &GameSessionAuthoritySnapshot<T>,
         command: &LocalObjectCommand,
@@ -1387,7 +1387,7 @@ impl LocalObjectRuntime {
         self.terminalize_current(command, ingress, occupied_cells)
     }
 
-    pub(crate) fn resume_pending<T: Copy + Eq>(
+    pub fn resume_pending<T: Copy + Eq>(
         &mut self,
         authority: &GameSessionAuthoritySnapshot<T>,
         command: &LocalObjectCommand,
@@ -1534,7 +1534,7 @@ impl LocalObjectRuntime {
     /// also refused, before any mutation, unless `capability` is presented (#1144 review). Only
     /// the §7 revert driver can construct one, so a timed transition never commits without its
     /// lifecycle record.
-    pub(crate) fn apply_scope_operation<E>(
+    pub fn apply_scope_operation<E>(
         &mut self,
         scope: RuntimeScopeRefV1,
         scope_generation: ScopeOwnershipGeneration,
@@ -1818,7 +1818,7 @@ mod tests {
     const PLACEMENT_A: &str = "oteryn:reference.placement.local-object-a";
     const PLACEMENT_B: &str = "oteryn:reference.placement.local-object-b";
     const B1_EVIDENCE: &[u8] = include_bytes!(
-        "../../../docs/agents/evidence/OTV2-20260919-content-world-cw2-b1-item-identity-catalog.json"
+        "../../../../docs/agents/evidence/OTV2-20260919-content-world-cw2-b1-item-identity-catalog.json"
     );
 
     fn fixture_error(_reason: &'static str) -> WorldRuntimeError {
@@ -3575,7 +3575,7 @@ mod tests {
 }
 // Read-only existing Map-owner fence validation. No grant construction/publication is added.
 impl ScopeContentGenerationFence {
-    pub(crate) fn qualifies_current_content(
+    pub fn qualifies_current_content(
         &self,
         scope: RuntimeScopeRefV1,
         generation: ScopeOwnershipGeneration,
@@ -3693,7 +3693,7 @@ const TENTACLE_SOURCE_MAP_ROWS: &[TentacleSourceMapRow] = &[
     ),
 ];
 impl LocalObjectRuntime {
-    pub(crate) fn tentacle_source_map_binding_matches(
+    pub fn tentacle_source_map_binding_matches(
         &self,
         content: &CanonicalReferencePlayableContent,
         op: &ScopeLocalObjectOperation,

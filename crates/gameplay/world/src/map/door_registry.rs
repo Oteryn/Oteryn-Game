@@ -184,7 +184,7 @@ const DOOR_PAIRS: &[(u32, u32)] = &[
 ];
 
 /// The open id of closed door item `closed`, if it is a plain door.
-pub(crate) fn open_of(closed: u32) -> Option<u32> {
+pub fn open_of(closed: u32) -> Option<u32> {
     let found = DOOR_PAIRS
         .binary_search_by_key(&closed, |(closed, _)| *closed)
         .ok()?;

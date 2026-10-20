@@ -19,7 +19,7 @@ type SourceTiles =
     std::collections::BTreeMap<(i32, i32, i16), (Option<QualifiedSpellTile>, bool, u16)>;
 
 /// Private construction consumes actual qualified cells, not a caller's target.
-pub(crate) struct SourceStepProof<'a> {
+pub struct SourceStepProof<'a> {
     cells: &'a NativeEntryMovementCells,
     actor: ExactActorRef,
     session: GameSessionId,
@@ -30,7 +30,7 @@ pub(crate) struct SourceStepProof<'a> {
     _transaction: std::marker::PhantomData<&'a mut ()>,
 }
 impl SourceStepProof<'_> {
-    pub(crate) fn matches_request(
+    pub fn matches_request(
         &self,
         actor: ExactActorRef,
         session: GameSessionId,
@@ -38,13 +38,13 @@ impl SourceStepProof<'_> {
     ) -> bool {
         self.actor == actor && self.session == session && self.direction == direction
     }
-    pub(crate) const fn expected(&self) -> MovementPositionSnapshot {
+    pub const fn expected(&self) -> MovementPositionSnapshot {
         self.expected
     }
-    pub(crate) const fn destination(&self) -> MovementLocalPosition {
+    pub const fn destination(&self) -> MovementLocalPosition {
         self.destination
     }
-    pub(crate) fn validate_current(&self, runtime: &ChannelRuntimeV1) -> Result<(), MovementError> {
+    pub fn validate_current(&self, runtime: &ChannelRuntimeV1) -> Result<(), MovementError> {
         qualify_origin(runtime, self.cells, self.actor, self.session, self.expected)?;
         let observed = if let Some(tiles) = &self.current_tiles {
             destination_with_lookup(self.expected.position(), self.direction, |p| {
@@ -58,7 +58,7 @@ impl SourceStepProof<'_> {
         }
         Ok(())
     }
-    pub(crate) fn parts(
+    pub fn parts(
         &self,
     ) -> (
         ExactActorRef,
@@ -100,10 +100,10 @@ impl super::speed::GroundSpeedSource for SourceStepProof<'_> {
         }
     }
 }
-pub(crate) fn is_source_profile(cells: &NativeEntryMovementCells) -> bool {
+pub fn is_source_profile(cells: &NativeEntryMovementCells) -> bool {
     cells.scope().coordinate_frame.as_str() == FRAME && cells.scope().map_revision.as_str() == MAP
 }
-pub(crate) fn prepare_source_step<'a>(
+pub fn prepare_source_step<'a>(
     runtime: &ChannelRuntimeV1,
     cells: &'a NativeEntryMovementCells,
     actor: ExactActorRef,
@@ -416,16 +416,16 @@ mod tests {
             cosmetics: NativeGameplayInput::unavailable_cosmetics(),
             native_map_profile: NativeGameplayMapProfile::AcceptedEntryR1,
             catalog: pin(include_bytes!(
-                "../../../../tools/content-schema/spell-authoring/samples/executable-spell-catalog.json"
+                "../../../../../tools/content-schema/spell-authoring/samples/executable-spell-catalog.json"
             )),
             source_selection: pin(include_bytes!(
-                "../../../../tools/content-schema/spell-authoring/samples/executable-spell-source-selection.json"
+                "../../../../../tools/content-schema/spell-authoring/samples/executable-spell-source-selection.json"
             )),
             creature_profiles: pin(include_bytes!(
-                "../../../../tools/content-schema/native-gameplay/creature_profiles.json"
+                "../../../../../tools/content-schema/native-gameplay/creature_profiles.json"
             )),
             presentation_profiles: pin(include_bytes!(
-                "../../../../tools/content-schema/native-gameplay/presentation_profiles.json"
+                "../../../../../tools/content-schema/native-gameplay/presentation_profiles.json"
             )),
             item_profiles: None,
             spell_appearances: None,
@@ -442,7 +442,7 @@ mod tests {
             world,
             &input,
             include_bytes!(
-                "../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
+                "../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
             ),
         )
         .unwrap();
@@ -806,7 +806,7 @@ mod tests {
 
 /// Prepared reads retain no mutation authority. Binding below rechecks the
 /// originating physical transaction before a sealed synchronous owner commit.
-pub(crate) struct PreparedCurrentSourceStep<'room> {
+pub struct PreparedCurrentSourceStep<'room> {
     cells: &'room NativeEntryMovementCells,
     actor: ExactActorRef,
     session: GameSessionId,
@@ -817,15 +817,15 @@ pub(crate) struct PreparedCurrentSourceStep<'room> {
     transaction_id: String,
 }
 impl PreparedCurrentSourceStep<'_> {
-    pub(crate) fn destination(&self) -> MovementLocalPosition {
+    pub fn destination(&self) -> MovementLocalPosition {
         self.destination
     }
-    pub(crate) fn tile(&self, position: MovementLocalPosition) -> Option<&QualifiedSpellTile> {
+    pub fn tile(&self, position: MovementLocalPosition) -> Option<&QualifiedSpellTile> {
         self.tiles
             .get(&(position.x, position.y, position.floor))
             .and_then(|(tile, _, _)| tile.as_ref())
     }
-    pub(crate) fn validate_current(&self, runtime: &ChannelRuntimeV1) -> Result<(), MovementError> {
+    pub fn validate_current(&self, runtime: &ChannelRuntimeV1) -> Result<(), MovementError> {
         qualify_origin(runtime, self.cells, self.actor, self.session, self.expected)?;
         if destination_with_lookup(self.expected.position(), self.direction, |p| {
             current_tile(&self.tiles, p)
@@ -841,7 +841,7 @@ impl PreparedCurrentSourceStep<'_> {
 /// source cells that it actually requests. Each request performs a fresh sealed
 /// current-player Item read and retains Ground serialization through the turn.
 #[allow(clippy::too_many_arguments)]
-pub(crate) async fn collect_current_source_step<'room>(
+pub async fn collect_current_source_step<'room>(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     permit: &crate::durability::spell_owner_commit::SpellLanePermit,
     root: &crate::durability::DurabilityRoot,
@@ -967,7 +967,7 @@ pub(crate) async fn collect_current_source_step<'room>(
     Err(MovementError::CapacityExceeded)
 }
 
-pub(crate) async fn bind_current_source_step<'owner>(
+pub async fn bind_current_source_step<'owner>(
     tx: &'owner mut sqlx::Transaction<'_, sqlx::Postgres>,
     runtime: &ChannelRuntimeV1,
     prepared: PreparedCurrentSourceStep<'owner>,

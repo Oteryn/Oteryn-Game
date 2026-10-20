@@ -93,13 +93,13 @@ pub use oteryn_gameplay_domain::domain;
 pub use oteryn_gameplay_durability::durability;
 pub use oteryn_gameplay_foundation::foundation;
 mod gameplay_transport;
-pub mod house_scope;
-pub mod map;
+pub use oteryn_gameplay_world::house_scope;
+pub use oteryn_gameplay_world::map;
 #[allow(
     dead_code,
     reason = "unactivated local Movement proof awaits the separate production composition lease"
 )]
-mod movement;
+pub(crate) use oteryn_gameplay_world::movement;
 pub mod node;
 pub mod premium;
 #[allow(
@@ -124,9 +124,9 @@ mod interaction;
     dead_code,
     reason = "§7 timed-revert driver awaits its live Channel/Instance scope owner"
 )]
-mod world_object_revert;
+pub(crate) use oteryn_gameplay_world::world_object_revert;
 #[allow(dead_code)]
-pub(crate) mod world_runtime;
+pub(crate) use oteryn_gameplay_world::world_runtime;
 
 #[cfg(test)]
 #[allow(
@@ -838,7 +838,7 @@ mod welter_consume;
     dead_code,
     reason = "LOOP-CLOCK-1 registers the pure World clock; the WORLD_LIGHT_V1 offer composes it later"
 )]
-mod world_clock;
+pub(crate) use oteryn_gameplay_world::world_clock;
 use oteryn_gameplay_weather as world_weather;
 
 #[allow(
