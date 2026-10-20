@@ -12,6 +12,7 @@
 pub(crate) mod actor_conditions;
 pub(crate) mod actor_execution;
 pub(crate) mod authoring;
+pub(crate) mod callback_speech;
 pub(crate) mod cast;
 pub(crate) use crate::combat::chain;
 #[cfg(test)]
@@ -131,8 +132,8 @@ pub(crate) struct CasterState {
 /// Ready times of a caster's spell and group cooldowns.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(crate) struct Cooldowns {
-    spells: BTreeMap<String, SemanticTimeMicros>,
-    groups: BTreeMap<String, SemanticTimeMicros>,
+    pub(crate) spells: BTreeMap<String, SemanticTimeMicros>,
+    pub(crate) groups: BTreeMap<String, SemanticTimeMicros>,
 }
 
 impl Cooldowns {

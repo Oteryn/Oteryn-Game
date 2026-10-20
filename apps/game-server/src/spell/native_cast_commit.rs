@@ -157,7 +157,3 @@ pub(crate) fn finalize_paid_combat_cast(
     lowered.batch.anchor = Some(anchor);
     Ok(())
 }
-
-#[cfg(test)]
-#[path = "native_cast_commit_tests.rs"]
-mod tests;

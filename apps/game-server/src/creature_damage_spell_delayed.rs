@@ -1,10 +1,14 @@
 //! Source soulwars_fear addEvent(2000), inside the existing generic cast owner.
 //! PROJECT_BOUNDED_DELAYED_CAST1; no second clock, authority, thread or interpreter.
-use super::*;
+use crate::content::ProjectV2DefinitionRef as Ref;
+use crate::creature_auto_attack::{AttackError, ProfileAbilityProposal};
+use crate::creature_damage_spell::SpellSource;
+use crate::foundation::owner_timer::SemanticTimeMicros;
 use crate::foundation::owner_timer::{
     AI01_PENDING_TIMERS_PER_ACTOR, CatchUpPolicy, FamilyPolicy, OwnerClock, OwnerTimerLane,
     TimerFamily,
 };
+use crate::foundation::{ChannelRuntimeV1, GameSessionId, RuntimeWorkStamp, ScopeRuntimeFence};
 use crate::foundation::{RuntimeScopeRefV1, ScopeOwnershipGeneration};
 #[derive(Clone, Copy, PartialEq, Eq)]
 struct Family;
@@ -41,7 +45,7 @@ impl Pulse {
         )
     }
 }
-pub(super) struct DelayedOwner {
+pub(crate) struct DelayedOwner {
     scope: RuntimeScopeRefV1,
     generation: ScopeOwnershipGeneration,
     timers: OwnerTimerLane<Family, u64>,
@@ -101,7 +105,7 @@ impl DelayedOwner {
     }
     // Keep schedule ABI explicit: current runtime owner, independent fence/stamp, exact actor/session/source and occurrence/policy facts are separate admission inputs.
     #[allow(clippy::too_many_arguments)]
-    pub(super) fn schedule(
+    pub(crate) fn schedule(
         &mut self,
         r: &ChannelRuntimeV1,
         f: &ScopeRuntimeFence,
@@ -209,7 +213,7 @@ impl DelayedOwner {
         Ok((pulses, cancellations))
     }
     #[cfg(test)]
-    pub(super) fn pending_len(&self) -> usize {
+    pub(crate) fn pending_len(&self) -> usize {
         self.timers.pending_len()
     }
 }

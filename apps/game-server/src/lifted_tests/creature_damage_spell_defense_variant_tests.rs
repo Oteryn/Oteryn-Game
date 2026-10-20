@@ -1,15 +1,29 @@
 #![allow(clippy::expect_used)]
-use super::*;
 use crate::ai_think::{
     ThinkSequenceTracker,
     profile_schedule::{
         MonsterSummonFacts, ObservedSummonCount, ProfileScheduleInput, ProfileScheduleState,
     },
 };
+use crate::content::{
+    ProjectReferenceRecord, ProjectV2AuthoringProfile, ProjectV2AuthoringProfileData as Data,
+    ProjectV2DefinitionRef as Ref, ProjectV2Family,
+};
+use crate::creature_attack_geometry::Facing;
+use crate::creature_auto_attack::ProfileAbilityProposal;
+use crate::creature_auto_attack::{AttackError, AttackFacts, CurrentConditionPolicy};
+use crate::creature_damage_spell::*;
+use crate::durability::creature_schedule::ScheduleList;
+use crate::foundation::owner_timer::SemanticTimeMicros;
 use crate::foundation::{
     ChannelContentPin, ChannelId, MovementLocalPosition, NodeId, RuntimeScopeRefV1, WorldId,
 };
+use crate::foundation::{
+    ChannelRuntimeV1, ExactActorRef, GameSessionId, RuntimeWorkStamp, ScopeRuntimeFence,
+};
 use crate::gameplay_transport::actor_spell::{ChannelSpellStates, tests::FACTS};
+use crate::player_lethal::PlayerLethalVitals;
+use oteryn_simulation_determinism::GameplayDecisionRoot;
 fn native() -> (Vec<ProjectReferenceRecord>, Vec<ProjectV2AuthoringProfile>) {
     let v:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/conditions/remaining-source-families/defense4/native-fixture.json"))).expect("qualified fixture");
     (

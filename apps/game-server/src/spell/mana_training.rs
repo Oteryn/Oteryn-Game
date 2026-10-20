@@ -6,7 +6,6 @@ use crate::durability::character_build::{
     DurableBuildState, MAX_BUILD_LEVEL, MAX_BUILD_PROGRESS, skill_tries_required,
 };
 
-#[path = "hit_training.rs"]
 pub(crate) mod hit_training;
 use hit_training::{HitTrainingCounters, SkillFamily};
 

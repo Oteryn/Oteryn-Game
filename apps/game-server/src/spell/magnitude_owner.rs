@@ -204,7 +204,7 @@ struct Target {
 }
 #[derive(Debug)]
 pub(crate) struct PreparedMagnitudeOwner {
-    attributes: MagnitudeOwnedAttributes,
+    pub(crate) attributes: MagnitudeOwnedAttributes,
     resolved_attributes: MagnitudeOwnedAttributes,
     caster: PlayerSpellState,
     now_ms: u64,
@@ -762,7 +762,3 @@ fn checked_draw(draw: &mut dyn FnMut(i64, i64) -> i64, min: i64, max: i64) -> Re
     }
     Ok(value)
 }
-
-#[cfg(test)]
-#[path = "magnitude_owner_tests.rs"]
-mod tests;

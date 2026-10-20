@@ -1505,5 +1505,4 @@ mod source_attribute_projection_tests {
 }
 
 #[cfg(test)]
-#[path = "actor_conditions_agony_tests.rs"]
 mod agony_tests;

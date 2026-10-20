@@ -163,5 +163,4 @@ fn precheck_commit(
 }
 
 #[cfg(test)]
-#[path = "combat_execution_tests.rs"]
 mod tests;
