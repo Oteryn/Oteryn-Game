@@ -14,11 +14,11 @@ use super::{
     ContentError, ProjectEvidenceLimits, ProjectV2AuthoringProfileData, ProjectV2CreatureAuthoring,
     ProjectV2DefinitionRef,
 };
-use crate::combat::{
+use crate::domain::bestiary::BestiaryRace;
+use crate::foundation::loot_data::{
     GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX, LootDefinitionRef, LootSelectionAlgorithm,
     LootTableDefinition, LootTableEntry,
 };
-use crate::domain::bestiary::BestiaryRace;
 
 pub(crate) const LOOT_TABLES_SCHEMA: &str = "OTERYN_NATIVE_LOOT_TABLES/v1";
 /// The record bound of each list of the loot section.

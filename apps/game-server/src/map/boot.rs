@@ -340,15 +340,7 @@ fn enterable(base: &WorldBase, blocked: &BTreeSet<TilePos>, pos: TilePos) -> boo
         && !blocked.contains(&pos)
 }
 
-/// The native tile of a movement cell: `z` is legacy `z` in `0..=15`, native floor `-z`.
-pub(super) fn tile_pos(cell: LogicalCell) -> Option<TilePos> {
-    let z = i8::try_from(cell.z).ok().filter(|z| (0..=15).contains(z))?;
-    Some(TilePos {
-        x: u16::try_from(cell.x).ok()?,
-        y: u16::try_from(cell.y).ok()?,
-        floor: -z,
-    })
-}
+pub(super) use crate::content::bundle_spell_tiles::tile_pos;
 
 /// SPAWN-1b (Codex P1 on #1981): one bundle spawn source as the Channel runtime realizes it
 /// (the carrier's `ActivationSpawnSourceFacts`): its points in authored order, each its

@@ -1538,3 +1538,14 @@ pub(crate) use runtime_actor_carrier::runtime_actor_party::{
 pub(crate) use runtime_actor_carrier::runtime_actor_source_reservation::{
     SourceActorReservation, SourceActorReservationProof, source_reservation_seal,
 };
+
+#[allow(
+    dead_code,
+    reason = "preserves the existing Combat data lint scope for unmounted charm hooks"
+)]
+pub(crate) mod charm_data;
+pub(crate) mod equipment_policy_abi;
+pub(crate) mod loot_data;
+pub(crate) mod magnitude_policy;
+pub(crate) mod map_position;
+pub(crate) mod melee_definition;

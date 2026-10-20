@@ -128,12 +128,7 @@ pub fn palette_appearance(key: &str) -> Option<u16> {
     digits.parse().ok()
 }
 
-/// The `unique` attribute of a top-level entry and the appearance id of its palette key.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct UniqueEntry {
-    pub unique: u16,
-    pub appearance: Option<u16>,
-}
+pub use crate::content::world_reward_claims::UniqueEntry;
 
 /// The compact, read-only base model of a World's map (ADR-0021 §4.1): every tile's position,
 /// the palette-resolved compact ids of its entries in payload order with their depths, its
@@ -556,5 +551,23 @@ impl Builder {
             first_tile,
         });
         Ok(())
+    }
+}
+
+impl crate::content::world_reward_claims::RewardClaimBase for WorldBase {
+    type Tile<'a> = TileView<'a>;
+
+    fn tile(&self, x: u16, y: u16, floor: i8) -> Option<Self::Tile<'_>> {
+        self.tile(x, y, floor)
+    }
+}
+
+impl crate::content::world_reward_claims::RewardClaimTile for TileView<'_> {
+    fn depths(&self) -> &[u8] {
+        self.depths()
+    }
+
+    fn unique(&self, ordinal: u8) -> Option<UniqueEntry> {
+        self.unique(ordinal)
     }
 }

@@ -4,7 +4,7 @@
 
 use super::ContentError;
 use super::charm_source_json::{CharmSourceMembers, ExactPercent, ensure_empty, take};
-use crate::combat::charm_effects::{
+use crate::foundation::charm_data::{
     CharmDamageKind, CharmEffect, CharmElement, CharmPercent, CharmResource,
 };
 use serde_json::value::RawValue;
