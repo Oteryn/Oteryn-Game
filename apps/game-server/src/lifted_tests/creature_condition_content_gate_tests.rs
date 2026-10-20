@@ -1,7 +1,10 @@
 //! CONDITIONS-0 §3.5 (MAGIC-COND-1): content lowers the gate families by name; `agony` and
 //! any other unknown condition type stay unsupported.
 #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
-use super::*;
+
+use crate::content::ProjectV2InlineEffect;
+use crate::creature_condition_content::*;
+use crate::foundation::{ConditionDefinition, ConditionValues};
 use serde_json::{Value, json};
 
 fn drunk() -> Value {

@@ -45,7 +45,7 @@ mod ai_think;
 )]
 mod combat;
 // A top-level module, not a submodule of `combat`: `combat.rs` is also recompiled standalone by
-// `foundation/mod.rs`'s `#[cfg(test)] #[path = "../combat.rs"] mod exact_actor_test_combat;` and
+// `foundation/mod.rs`'s `#[cfg(test)] #[path = "../combat/mod.rs"] mod exact_actor_test_combat;` and
 // by several PG test binaries that need `combat::death_reward`/`combat::loot_plan` but not
 // Content, so a `crate::content` dependency inside `combat.rs`'s own module tree would force
 // every one of those to also carry a local `content` module. `combat_pickup` needs
@@ -893,3 +893,44 @@ mod domain_market_tests;
 mod domain_timed_item_host_tests;
 #[path = "durability/mail_text_policy.rs"]
 mod mail_text_policy;
+
+// Higher-layer qualification tests stay in the native composition root.
+#[cfg(test)]
+#[path = "lifted_tests/creature_area_heal_tests.rs"]
+mod creature_area_heal_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/creature_icicle_tests.rs"]
+mod creature_icicle_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/creature_damage_composed_tests.rs"]
+mod creature_damage_composed_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/creature_appearance_execution_tests.rs"]
+mod creature_appearance_execution_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/creature_defense_variant_tests.rs"]
+mod creature_defense_variant_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/creature_auto_attack_tests.rs"]
+mod creature_auto_attack_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/creature_appearance_content_tests.rs"]
+mod creature_appearance_content_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/creature_defense_presentation_tests.rs"]
+mod creature_defense_presentation_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/creature_condition_content_tests.rs"]
+mod creature_condition_content_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/creature_condition_content_gate_tests.rs"]
+mod creature_condition_content_gate_tests;

@@ -1,8 +1,19 @@
 #![allow(clippy::expect_used)]
-use super::*;
 use crate::ai_think::{ThinkSequenceTracker, profile_schedule::ProfileScheduleState};
-use crate::content::{ProjectDraft, ProjectV2Family as Family, ProjectV2State};
-use crate::foundation::{ChannelContentPin, ChannelId, MovementLocalPosition, NodeId, WorldId};
+use crate::content::{
+    ProjectDraft, ProjectV2AuthoringProfileData as Data, ProjectV2DefinitionRef as Ref,
+    ProjectV2Draft, ProjectV2Family as Family, ProjectV2State,
+};
+use crate::creature_auto_attack::{AutoAttackOwner, ProfileAbilityProposal};
+use crate::creature_icicle::hex;
+use crate::creature_icicle::*;
+use crate::durability::creature_schedule::ScheduleList;
+use crate::foundation::owner_timer::SemanticTimeMicros;
+use crate::foundation::{
+    ChannelContentPin, ChannelId, ChannelRuntimeV1, ExactActorRef, GameSessionId,
+    MovementLocalPosition, NodeId, RuntimeScopeRefV1, RuntimeWorkStamp, ScopeRuntimeFence, WorldId,
+};
+
 fn fixture() -> (
     ChannelRuntimeV1,
     ProjectV2Draft,
@@ -48,7 +59,7 @@ fn fixture() -> (
             8200,
         )
         .expect("qualified fixture");
-    let v: serde_json::Value = serde_json::from_str(include_str!("icicle_source_fixture.json"))
+    let v: serde_json::Value = serde_json::from_str(include_str!("../icicle_source_fixture.json"))
         .expect("qualified fixture");
     let d = ProjectV2Draft {
         core: ProjectDraft {

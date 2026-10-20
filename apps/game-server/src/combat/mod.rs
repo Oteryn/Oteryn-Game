@@ -8,21 +8,11 @@ use crate::foundation::{
     CarrierError, CurrentOwnerCombatDeath, ExactActorRef, RuntimeCorpseProjection,
 };
 
-// Explicit `#[path]`: `combat.rs` is also compiled under a different module
-// name via `foundation/mod.rs`'s `#[path = "../combat.rs"] mod
-// exact_actor_test_combat;` (standalone Foundation test crate). An unpathed
-// `mod loot_plan;`/`mod death_reward;` resolves against that site's own
-// directory in that context; the explicit path keeps both inclusions
-// pointing at the same file.
-#[path = "combat/chain.rs"]
+// A directory module keeps one child-module layout in native and standalone test roots.
 pub(crate) mod chain;
-#[path = "combat/charm_effects.rs"]
 pub(crate) mod charm_effects;
-#[path = "combat/death_reward.rs"]
 mod death_reward;
-#[path = "combat/formula.rs"]
 pub(crate) mod formula;
-#[path = "combat/loot_plan.rs"]
 mod loot_plan;
 
 // The live kill-reward caller (`gameplay_transport::kill_reward`) uses only

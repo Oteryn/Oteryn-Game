@@ -532,5 +532,4 @@ fn effect_outcome(
 }
 
 #[cfg(test)]
-#[path = "charm_effects_tests.rs"]
 mod tests;

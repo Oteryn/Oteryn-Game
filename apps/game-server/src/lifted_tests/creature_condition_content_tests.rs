@@ -1,11 +1,16 @@
 #![allow(clippy::expect_used, clippy::unwrap_used)]
-use super::*;
+
+use crate::content::{
+    ProjectV2DefinitionRef, ProjectV2ExactRatio, ProjectV2FormulaAuthoring, ProjectV2InlineEffect,
+};
+use crate::creature_condition_content::*;
 use crate::foundation::{
-    ApplicationFacts, ConditionRefusal, ConditionSourceKind, ConditionStore, ConditionType,
-    TickFacts, TickKind,
+    ApplicationFacts, AttributeModifiers, ConditionDefinition, ConditionRefusal,
+    ConditionSourceKind, ConditionStore, ConditionType, ConditionValues, TickFacts, TickKind,
 };
 use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
 use serde_json::{Value, json};
+
 fn rows() -> Vec<Value> {
     serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../docs/agents/evidence/monster-runtime-project-20261004/lanes/special/condition-fixtures.json"))).unwrap()
 }

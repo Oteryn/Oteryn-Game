@@ -12,7 +12,7 @@ pub mod character_bootstrap_intent;
 #[allow(dead_code, unused_imports)]
 pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/combat.rs"]
+#[path = "../src/combat/mod.rs"]
 pub mod combat;
 #[path = "support/domain_shim.rs"]
 pub mod domain;

@@ -86,7 +86,7 @@ mod exact_actor_test_ability;
 #[cfg(test)]
 #[allow(dead_code)]
 #[allow(clippy::duplicate_mod)] // Standalone Foundation test crates lack the library root.
-#[path = "../combat.rs"]
+#[path = "../combat/mod.rs"]
 mod exact_actor_test_combat;
 mod snapshot_facade;
 pub use admission::*;

@@ -6,7 +6,15 @@ const TEST_SCHEMA: &str = "CREATE TABLE game_character_pending_arrivals (
 )";
 
 use super::*;
-use crate::bestiary_postgres_harness::{self as fixture, TestResult, debug, fence, id};
+// Standalone durability roots do not all mount the shared harness at crate root.
+#[allow(
+    dead_code,
+    clippy::duplicate_mod,
+    reason = "shared real PostgreSQL harness; this fixture uses a subset and may coexist with a root mount"
+)]
+#[path = "bestiary_postgres_harness.rs"]
+mod fixture;
+use fixture::{TestResult, debug, fence, id};
 use sqlx::Connection;
 fn occurrence(seed: u8) -> Result<TravelOccurrence, String> {
     TravelOccurrence::from_bytes(id(seed)).map_err(debug)

@@ -16,8 +16,7 @@
 //! This module intentionally does not import `crate::content` or
 //! `crate::durability`: `combat.rs` (and so this submodule) is also compiled,
 //! unchanged, as a standalone Foundation test crate
-//! (`foundation/mod.rs`'s `#[path = "../combat.rs"] mod
-//! exact_actor_test_combat;`, and several `apps/game-server/tests/*.rs`
+//! (`foundation/mod.rs`'s `exact_actor_test_combat` mount, and several `apps/game-server/tests/*.rs`
 //! Postgres/composition harnesses that re-declare `foundation` at their own
 //! crate root), none of which also declare a `content` module. `[LootTableDefinition`],
 //! [`LootTableEntry`], [`LootSelectionAlgorithm`] and [`LootDefinitionRef`]
