@@ -666,9 +666,12 @@ fn key_fields(
 }
 
 fn d1_fixture(seed: u64) -> CombatDeathFixture {
-    let scope = grant(seed, 1);
-    CombatDeathFixture::new(scope.world_id, scope.channel_id, scope.scope_generation)
-        .expect("fixture creature")
+    CombatDeathFixture::new(
+        WorldId::decode(&uuid_v7(seed)).expect("world"),
+        ChannelId::decode(&uuid_v7(seed + 1)).expect("channel"),
+        ScopeOwnershipGeneration::new(1).expect("scope"),
+    )
+    .expect("fixture creature")
 }
 
 #[test]

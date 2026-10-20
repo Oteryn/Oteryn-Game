@@ -297,7 +297,7 @@ fn owner_and_actor_generation_are_revalidated_after_resolution() {
     let resolved = resolve(&carrier, &continuity, actor, &cast);
     let p = plan(cast, "target:one", 5);
     let mut wrong_actor = actor.0;
-    wrong_actor.world_id = grant(60, 1).world_id;
+    wrong_actor.world_id = WorldId::decode(&uuid_v7(60)).expect("world");
     let before = carrier.slots.clone();
     assert_eq!(
         carrier.commit_creature_damage_inner(
