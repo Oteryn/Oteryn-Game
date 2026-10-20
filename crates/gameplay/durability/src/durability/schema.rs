@@ -2,7 +2,7 @@ use crate::durability::{DurabilityError, db};
 use sqlx::postgres::PgConnection;
 use sqlx::{Executor, PgPool, Postgres, Row};
 
-pub static GAME_MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!("./migrations");
+pub static GAME_MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!("../../../apps/game-server/migrations");
 
 const MIGRATION_LEDGER_INSPECTION_SQL: &str = "WITH expected(version, checksum_len) AS (\
      SELECT * FROM unnest($1::BIGINT[], $2::BIGINT[])\
