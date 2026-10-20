@@ -559,7 +559,7 @@ fn swings_of_one_lineage_commit_in_order_and_never_rewind() {
     // Once the retained receipt is gone, a lower or equal ordinal of the current lineage is
     // stale, never a fresh write.
     if let Slot::CreatureOccupied { committed, .. } = &mut f.carrier.slots[0] {
-        committed.entries.clear();
+        committed.entries_mut().clear();
     }
     let before = f.carrier.slots.clone();
     assert_eq!(f.swing(next, 1), Err(CarrierError::StaleAttackerSequence));
@@ -672,14 +672,14 @@ fn the_top_damage_principal_is_untracked_present_or_gone() {
 #[test]
 fn the_projected_death_time_is_the_lethal_hit_clock_and_survives_a_replay() {
     let mut f = fixture(72);
-    let context = PreProductionPositionContext {
-        world_id: WorldId::decode(&id(72)).expect("world"),
-        channel_id: ChannelId::decode(&id(73)).expect("channel"),
-        scope_generation: ScopeOwnershipGeneration::new(1).expect("scope"),
-        coordinate_frame_marker: 41,
-        map_revision_marker: 42,
-        content_generation_marker: 43,
-    };
+    let context = PreProductionPositionContext::for_test(
+        WorldId::decode(&id(72)).expect("world"),
+        ChannelId::decode(&id(73)).expect("channel"),
+        ScopeOwnershipGeneration::new(1).expect("scope"),
+        41,
+        42,
+        43,
+    );
     f.carrier
         .initialize_position(
             &f.continuity,

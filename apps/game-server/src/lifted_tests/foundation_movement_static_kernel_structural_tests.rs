@@ -186,14 +186,14 @@ impl Harness {
         let actor = carrier
             .admit(&owner, ActorState(1))
             .expect("admit fixture actor");
-        let context = PreProductionPositionContext {
-            world_id: owner.world_id(),
-            channel_id: owner.channel_id(),
-            scope_generation: owner.current_generation(),
-            coordinate_frame_marker: 11,
-            map_revision_marker: 12,
-            content_generation_marker: 13,
-        };
+        let context = PreProductionPositionContext::for_test(
+            owner.world_id(),
+            owner.channel_id(),
+            owner.current_generation(),
+            11,
+            12,
+            13,
+        );
         let snapshot = carrier
             .initialize_position(&owner, actor, context, position)
             .expect("initialize fixture position");
@@ -439,9 +439,10 @@ fn stale_snapshot_wrong_scope_context_and_coordinate_overflow_reject_before_look
         Err(MoveError::CellScopeMismatch)
     );
     let wrong_binding = FixtureBinding {
-        context: PreProductionPositionContext {
-            coordinate_frame_marker: 99,
-            ..binding.context
+        context: {
+            let mut context = binding.context;
+            context.coordinate_frame_marker = 99;
+            context
         },
         static_scope: &fixture.scope,
     };

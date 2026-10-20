@@ -9,6 +9,18 @@ use super::{
     ChannelId, CharacterId, CharacterLease, CommandRef, GameSessionId, NodeId,
     ScopeOwnershipGeneration, WorldId,
 };
+/// Carrier entry points the crate's runtime uses and that the lifted qualification tests
+/// drive directly: `pub` only in test builds, crate-private everywhere else, so no other
+/// crate can admit actors, read owner commits or advance continuity in production.
+macro_rules! test_support_pub {
+    ($(#[$meta:meta])* fn $($rest:tt)*) => {
+        #[cfg(any(test, feature = "test-support"))]
+        $(#[$meta])* pub fn $($rest)*
+        #[cfg(not(any(test, feature = "test-support")))]
+        $(#[$meta])* pub(crate) fn $($rest)*
+    };
+}
+
 #[path = "runtime_actor_companion.rs"]
 pub mod runtime_actor_companion;
 #[path = "runtime_actor_spell_types.rs"]
@@ -266,28 +278,32 @@ impl NamespaceContinuityGuard {
         self.current_generation
     }
 
-    pub fn from_pre_production_grant(grant: PreProductionContinuityGrant) -> Self {
-        Self {
-            world_id: grant.world_id,
-            channel_id: grant.channel_id,
-            current_generation: grant.scope_generation,
-            current_generation_claimed: false,
-            active: true,
+    test_support_pub! {
+        fn from_pre_production_grant(grant: PreProductionContinuityGrant) -> Self {
+            Self {
+                world_id: grant.world_id,
+                channel_id: grant.channel_id,
+                current_generation: grant.scope_generation,
+                current_generation_claimed: false,
+                active: true,
+            }
         }
     }
 
-    pub fn advance(&mut self, grant: PreProductionContinuityGrant) -> Result<(), CarrierError> {
-        if grant.world_id != self.world_id || grant.channel_id != self.channel_id {
-            return Err(CarrierError::WrongScope);
-        }
-        if grant.scope_generation.get() <= self.current_generation.get() {
-            return Err(CarrierError::ContinuityGenerationNotNewer);
-        }
+    test_support_pub! {
+        fn advance(&mut self, grant: PreProductionContinuityGrant) -> Result<(), CarrierError> {
+            if grant.world_id != self.world_id || grant.channel_id != self.channel_id {
+                return Err(CarrierError::WrongScope);
+            }
+            if grant.scope_generation.get() <= self.current_generation.get() {
+                return Err(CarrierError::ContinuityGenerationNotNewer);
+            }
 
-        self.current_generation = grant.scope_generation;
-        self.current_generation_claimed = false;
-        self.active = true;
-        Ok(())
+            self.current_generation = grant.scope_generation;
+            self.current_generation_claimed = false;
+            self.active = true;
+            Ok(())
+        }
     }
 
     fn claim_current_generation(&mut self) -> Result<(), CarrierError> {
@@ -313,13 +329,34 @@ pub struct ActorLocalId(pub u32);
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ActorLocalGeneration(pub u64);
 
+/// Carrier-issued actor reference. Its scope generation stays crate-private, so no other
+/// crate can mint one for a scope the carrier never owned:
+///
+/// ```
+/// use oteryn_gameplay_foundation::foundation::runtime_actor_carrier::ActorRef;
+/// fn local_id(actor: ActorRef) -> u32 { actor.actor_local_id.0 }
+/// ```
+///
+/// ```compile_fail
+/// use oteryn_gameplay_foundation::foundation::runtime_actor_carrier::ActorRef;
+/// fn forge(actor: ActorRef) -> ActorRef { ActorRef { ..actor } }
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ActorRef {
     pub world_id: WorldId,
     pub channel_id: ChannelId,
-    pub scope_generation: ScopeOwnershipGeneration,
+    pub(crate) scope_generation: ScopeOwnershipGeneration,
     pub actor_local_id: ActorLocalId,
     pub actor_local_generation: ActorLocalGeneration,
+}
+
+#[cfg(any(test, feature = "test-support"))]
+impl ActorRef {
+    /// Test builds only: restamp the scope generation, so a test can present the carrier
+    /// with a reference from a scope it does not own.
+    pub fn set_scope_generation(&mut self, scope_generation: ScopeOwnershipGeneration) {
+        self.scope_generation = scope_generation;
+    }
 }
 
 /// Inseparable semantic actor handle issued by this one Channel carrier.
@@ -688,35 +725,91 @@ impl AttackerCommand {
 /// One retained damage receipt. `origin` and `ordinal` are immutable once set.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OwnerCommitRecord {
-    pub binding: Box<[u8]>,
+    pub(crate) binding: Box<[u8]>,
     damage: i64,
-    pub result: OwnerDamageResult,
+    pub(crate) result: OwnerDamageResult,
     /// D142: this creature generation's owner damage-application ordinal of this receipt.
-    pub ordinal: u64,
+    pub(crate) ordinal: u64,
     /// D141: `Some` for an attributed commit (its replay identity), `None` for an unsequenced
     /// one, which is never evictable.
-    pub origin: Option<DamageOrigin>,
+    pub(crate) origin: Option<DamageOrigin>,
+}
+
+#[cfg(any(test, feature = "test-support"))]
+impl OwnerCommitRecord {
+    /// Test builds only: the complete commit binding of this receipt.
+    pub fn binding(&self) -> &[u8] {
+        &self.binding
+    }
+
+    /// Test builds only: the owner damage result this receipt retained.
+    pub const fn result(&self) -> &OwnerDamageResult {
+        &self.result
+    }
+
+    /// Test builds only: this receipt's owner damage-application ordinal.
+    pub const fn ordinal(&self) -> u64 {
+        self.ordinal
+    }
+
+    /// Test builds only: this receipt's replay identity, if attributed.
+    pub const fn origin(&self) -> Option<DamageOrigin> {
+        self.origin
+    }
 }
 
 /// D140/D142: the bounded, ephemeral, per-creature-generation receipt list and the owner
 /// damage-application ordinal counter. Fresh on every admission, dropped with the slot.
+///
+/// Only the carrier appends receipts or advances the ordinal; no other crate can:
+///
+/// ```
+/// use oteryn_gameplay_foundation::foundation::runtime_actor_carrier::DamageReceipts;
+/// let _empty = DamageReceipts::default();
+/// ```
+///
+/// ```compile_fail
+/// use oteryn_gameplay_foundation::foundation::runtime_actor_carrier::DamageReceipts;
+/// fn forge(receipts: &mut DamageReceipts) { receipts.next_ordinal = 0; }
+/// ```
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct DamageReceipts {
-    pub entries: Vec<OwnerCommitRecord>,
-    pub next_ordinal: u64,
+    entries: Vec<OwnerCommitRecord>,
+    next_ordinal: u64,
     /// The owner clock (ms) of the turn that committed the lethal receipt, when that turn
     /// supplied one. Set once by the lethal commit; a replay never changes it.
     lethal_at_ms: Option<u64>,
 }
 
 impl DamageReceipts {
-    /// D144: the one retained receipt whose commit drove health to zero, if any.
-    pub fn lethal(&self) -> Option<&OwnerCommitRecord> {
-        self.entries.iter().find(|record| {
-            record.result.applied
-                && record.result.health_before > 0
-                && record.result.health_after == 0
-        })
+    /// Test builds only: the retained receipts, oldest first.
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn entries(&self) -> &[OwnerCommitRecord] {
+        &self.entries
+    }
+
+    /// Test builds only: the retained receipts, mutable so a test can stage a carrier
+    /// whose receipt list was lost.
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn entries_mut(&mut self) -> &mut Vec<OwnerCommitRecord> {
+        &mut self.entries
+    }
+
+    /// Test builds only: the next owner damage-application ordinal.
+    #[cfg(any(test, feature = "test-support"))]
+    pub const fn next_ordinal(&self) -> u64 {
+        self.next_ordinal
+    }
+
+    test_support_pub! {
+        /// D144: the one retained receipt whose commit drove health to zero, if any.
+        fn lethal(&self) -> Option<&OwnerCommitRecord> {
+            self.entries.iter().find(|record| {
+                record.result.applied
+                    && record.result.health_before > 0
+                    && record.result.health_after == 0
+            })
+        }
     }
 
     /// D141 point 4: the oldest evictable receipt. A receipt is evictable iff it is sequenced,
@@ -1067,7 +1160,16 @@ pub struct VisibleRuntimeEntities {
 /// deliberately neither Clone nor Copy and has no caller-visible constructor.
 #[derive(Debug, PartialEq, Eq)]
 pub struct CommittedLethalReceipt {
-    pub projection: RuntimeCorpseProjection,
+    pub(crate) projection: RuntimeCorpseProjection,
+}
+
+#[cfg(any(test, feature = "test-support"))]
+impl CommittedLethalReceipt {
+    /// Test builds only: the carried projection, mutable so a test can present Combat with
+    /// a receipt that no longer matches the owner commit.
+    pub fn projection_mut(&mut self) -> &mut RuntimeCorpseProjection {
+        &mut self.projection
+    }
 }
 
 /// 4096 is the registered Ability plan bound; the owner still independently
@@ -1350,10 +1452,33 @@ pub struct ActorState(pub u64);
 pub struct PreProductionPositionContext {
     pub world_id: WorldId,
     pub channel_id: ChannelId,
-    pub scope_generation: ScopeOwnershipGeneration,
+    pub(crate) scope_generation: ScopeOwnershipGeneration,
     pub coordinate_frame_marker: u64,
     pub map_revision_marker: u64,
     pub content_generation_marker: u64,
+}
+
+#[cfg(any(test, feature = "test-support"))]
+impl PreProductionPositionContext {
+    /// Test builds only: a synthetic position context for the named scope. Production
+    /// contexts come only from the runtime's pinned assignment.
+    pub const fn for_test(
+        world_id: WorldId,
+        channel_id: ChannelId,
+        scope_generation: ScopeOwnershipGeneration,
+        coordinate_frame_marker: u64,
+        map_revision_marker: u64,
+        content_generation_marker: u64,
+    ) -> Self {
+        Self {
+            world_id,
+            channel_id,
+            scope_generation,
+            coordinate_frame_marker,
+            map_revision_marker,
+            content_generation_marker,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -3938,13 +4063,15 @@ impl ChannelRuntimeV1 {
 }
 
 impl ChannelActorCarrier {
-    pub fn current_owner_combat_death<'a>(
-        &'a mut self,
-        continuity: &'a NamespaceContinuityGuard,
-    ) -> CurrentOwnerCombatDeath<'a> {
-        CurrentOwnerCombatDeath {
-            carrier: self,
-            continuity,
+    test_support_pub! {
+        fn current_owner_combat_death<'a>(
+            &'a mut self,
+            continuity: &'a NamespaceContinuityGuard,
+        ) -> CurrentOwnerCombatDeath<'a> {
+            CurrentOwnerCombatDeath {
+                carrier: self,
+                continuity,
+            }
         }
     }
 
@@ -4055,33 +4182,39 @@ impl ChannelActorCarrier {
             .map(MovementPositionSnapshot)
     }
 
-    pub fn current_owner_exact_commit<'a>(
-        &'a mut self,
-        continuity: &'a NamespaceContinuityGuard,
-    ) -> CurrentOwnerExactActorCommit<'a> {
-        self.current_owner_exact_commit_at(continuity, None)
-    }
-
-    pub fn current_owner_exact_commit_at<'a>(
-        &'a mut self,
-        continuity: &'a NamespaceContinuityGuard,
-        now_ms: Option<u64>,
-    ) -> CurrentOwnerExactActorCommit<'a> {
-        CurrentOwnerExactActorCommit {
-            content: None,
-            carrier: self,
-            continuity,
-            now_ms,
+    test_support_pub! {
+        fn current_owner_exact_commit<'a>(
+            &'a mut self,
+            continuity: &'a NamespaceContinuityGuard,
+        ) -> CurrentOwnerExactActorCommit<'a> {
+            self.current_owner_exact_commit_at(continuity, None)
         }
     }
 
-    pub fn current_owner_exact_lookup<'a>(
-        &'a self,
-        continuity: &'a NamespaceContinuityGuard,
-    ) -> CurrentOwnerExactActorLookup<'a> {
-        CurrentOwnerExactActorLookup {
-            carrier: self,
-            continuity,
+    test_support_pub! {
+        fn current_owner_exact_commit_at<'a>(
+            &'a mut self,
+            continuity: &'a NamespaceContinuityGuard,
+            now_ms: Option<u64>,
+        ) -> CurrentOwnerExactActorCommit<'a> {
+            CurrentOwnerExactActorCommit {
+                content: None,
+                carrier: self,
+                continuity,
+                now_ms,
+            }
+        }
+    }
+
+    test_support_pub! {
+        fn current_owner_exact_lookup<'a>(
+            &'a self,
+            continuity: &'a NamespaceContinuityGuard,
+        ) -> CurrentOwnerExactActorLookup<'a> {
+            CurrentOwnerExactActorLookup {
+                carrier: self,
+                continuity,
+            }
         }
     }
 
@@ -4132,44 +4265,48 @@ impl ChannelActorCarrier {
         })
     }
 
-    pub fn admit(
-        &mut self,
-        continuity: &NamespaceContinuityGuard,
-        actor: ActorState,
-    ) -> Result<ActorRef, CarrierError> {
-        self.admit_inner(continuity, actor, None, true, None, false)
+    test_support_pub! {
+        fn admit(
+            &mut self,
+            continuity: &NamespaceContinuityGuard,
+            actor: ActorState,
+        ) -> Result<ActorRef, CarrierError> {
+            self.admit_inner(continuity, actor, None, true, None, false)
+        }
     }
 
-    /// AI-2 (GAME-AI-01 §4.1: "the carrier's current one-creature limit ... is lifted to this
-    /// envelope in AI-2"): more than one creature actor may be admitted per Channel
-    /// generation. Its capacity gates are `CREATUREAI0-RL-04`
-    /// ([`CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX`]) and the general slot-capacity check
-    /// `admit_inner` performs; population/placement-cell ceilings are a spawn-realization
-    /// concern (`realize_spawn`), not this generic per-actor primitive.
-    pub fn admit_creature(
-        &mut self,
-        continuity: &NamespaceContinuityGuard,
-        actor: ActorState,
-        target_identity: &str,
-        initial_health: i64,
-    ) -> Result<ActorRef, CarrierError> {
-        if initial_health <= 0 {
-            return Err(CarrierError::InvalidCreatureHealth);
+    test_support_pub! {
+        /// AI-2 (GAME-AI-01 §4.1: "the carrier's current one-creature limit ... is lifted to this
+        /// envelope in AI-2"): more than one creature actor may be admitted per Channel
+        /// generation. Its capacity gates are `CREATUREAI0-RL-04`
+        /// ([`CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX`]) and the general slot-capacity check
+        /// `admit_inner` performs; population/placement-cell ceilings are a spawn-realization
+        /// concern (`realize_spawn`), not this generic per-actor primitive.
+        fn admit_creature(
+            &mut self,
+            continuity: &NamespaceContinuityGuard,
+            actor: ActorState,
+            target_identity: &str,
+            initial_health: i64,
+        ) -> Result<ActorRef, CarrierError> {
+            if initial_health <= 0 {
+                return Err(CarrierError::InvalidCreatureHealth);
+            }
+            self.validate_current_continuity(continuity)?;
+            // `CREATUREAI0-RL-04`, before anything is selected or written.
+            if self.occupied.len() >= CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX {
+                return Err(CarrierError::CapacityExceeded);
+            }
+            let target_identity = creature_target_binding(target_identity)?;
+            self.admit_inner(
+                continuity,
+                actor,
+                None,
+                true,
+                Some((initial_health, target_identity)),
+                false,
+            )
         }
-        self.validate_current_continuity(continuity)?;
-        // `CREATUREAI0-RL-04`, before anything is selected or written.
-        if self.occupied.len() >= CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX {
-            return Err(CarrierError::CapacityExceeded);
-        }
-        let target_identity = creature_target_binding(target_identity)?;
-        self.admit_inner(
-            continuity,
-            actor,
-            None,
-            true,
-            Some((initial_health, target_identity)),
-            false,
-        )
     }
 
     pub fn reserve_player(
@@ -5827,62 +5964,68 @@ impl ChannelActorCarrier {
         Ok(&mut self.attackers[at].authority)
     }
 
-    pub fn bind_attacker_lease(
-        &mut self,
-        continuity: &NamespaceContinuityGuard,
-        actor_ref: ActorRef,
-        game_session_id: GameSessionId,
-        lease: CharacterLease,
-    ) -> Result<(), CarrierError> {
-        let authority = self.attacker_authority_mut(continuity, actor_ref, game_session_id)?;
-        match authority.lease {
-            None => {
-                authority.lease = Some(lease);
-                Ok(())
+    test_support_pub! {
+        fn bind_attacker_lease(
+            &mut self,
+            continuity: &NamespaceContinuityGuard,
+            actor_ref: ActorRef,
+            game_session_id: GameSessionId,
+            lease: CharacterLease,
+        ) -> Result<(), CarrierError> {
+            let authority = self.attacker_authority_mut(continuity, actor_ref, game_session_id)?;
+            match authority.lease {
+                None => {
+                    authority.lease = Some(lease);
+                    Ok(())
+                }
+                Some(bound) if bound == lease => Ok(()),
+                Some(_) => Err(CarrierError::AttackerBindingConflict),
             }
-            Some(bound) if bound == lease => Ok(()),
-            Some(_) => Err(CarrierError::AttackerBindingConflict),
         }
     }
 
-    pub fn fence_player_writes(
-        &mut self,
-        continuity: &NamespaceContinuityGuard,
-        actor_ref: ActorRef,
-        game_session_id: GameSessionId,
-        token: WriteFenceToken,
-    ) -> Result<WriteFenceSet, CarrierError> {
-        if let WriteFenceToken::ControlLoss(epoch) = token
-            && self
-                .player_control_loss(continuity, actor_ref, game_session_id)?
-                .is_none_or(|mark| mark.epoch != epoch)
-        {
-            return Err(CarrierError::ControlLossConflict);
-        }
-        let authority = self.attacker_authority_mut(continuity, actor_ref, game_session_id)?;
-        match authority.fence {
-            None => {
-                authority.fence = Some(token);
-                Ok(WriteFenceSet::Fenced)
+    test_support_pub! {
+        fn fence_player_writes(
+            &mut self,
+            continuity: &NamespaceContinuityGuard,
+            actor_ref: ActorRef,
+            game_session_id: GameSessionId,
+            token: WriteFenceToken,
+        ) -> Result<WriteFenceSet, CarrierError> {
+            if let WriteFenceToken::ControlLoss(epoch) = token
+                && self
+                    .player_control_loss(continuity, actor_ref, game_session_id)?
+                    .is_none_or(|mark| mark.epoch != epoch)
+            {
+                return Err(CarrierError::ControlLossConflict);
             }
-            Some(set) if set == token => Ok(WriteFenceSet::Joined),
-            Some(_) => Err(CarrierError::WriteFenceBusy),
+            let authority = self.attacker_authority_mut(continuity, actor_ref, game_session_id)?;
+            match authority.fence {
+                None => {
+                    authority.fence = Some(token);
+                    Ok(WriteFenceSet::Fenced)
+                }
+                Some(set) if set == token => Ok(WriteFenceSet::Joined),
+                Some(_) => Err(CarrierError::WriteFenceBusy),
+            }
         }
     }
 
-    pub fn lift_player_fence(
-        &mut self,
-        continuity: &NamespaceContinuityGuard,
-        actor_ref: ActorRef,
-        game_session_id: GameSessionId,
-        token: WriteFenceToken,
-    ) -> Result<bool, CarrierError> {
-        let authority = self.attacker_authority_mut(continuity, actor_ref, game_session_id)?;
-        if authority.fence == Some(token) {
-            authority.fence = None;
-            return Ok(true);
+    test_support_pub! {
+        fn lift_player_fence(
+            &mut self,
+            continuity: &NamespaceContinuityGuard,
+            actor_ref: ActorRef,
+            game_session_id: GameSessionId,
+            token: WriteFenceToken,
+        ) -> Result<bool, CarrierError> {
+            let authority = self.attacker_authority_mut(continuity, actor_ref, game_session_id)?;
+            if authority.fence == Some(token) {
+                authority.fence = None;
+                return Ok(true);
+            }
+            Ok(false)
         }
-        Ok(false)
     }
 
     pub fn rebind_player_session(

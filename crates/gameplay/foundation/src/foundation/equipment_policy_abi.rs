@@ -29,7 +29,7 @@ pub struct EquipmentClaims {
 }
 pub struct QualifiedEquipmentPolicy {
     digest: [u8; 32],
-    pub claims: Vec<(u8, Result<EquipmentClaims, &'static str>)>,
+    claims: Vec<(u8, Result<EquipmentClaims, &'static str>)>,
     container_capacity: Option<u16>,
 }
 impl QualifiedEquipmentPolicy {
@@ -71,5 +71,15 @@ impl QualifiedEquipmentPolicy {
     }
     pub fn container_capacity(&self) -> Option<u16> {
         self.container_capacity
+    }
+    /// The qualified per-slot claims, read-only: the field stays private so no crate can
+    /// replace them after `from_qualified_content` validated them.
+    ///
+    /// ```compile_fail
+    /// use oteryn_gameplay_foundation::foundation::equipment_policy_abi::QualifiedEquipmentPolicy;
+    /// fn forge(policy: &mut QualifiedEquipmentPolicy) { policy.claims.clear(); }
+    /// ```
+    pub fn claims(&self) -> &[(u8, Result<EquipmentClaims, &'static str>)] {
+        &self.claims
     }
 }

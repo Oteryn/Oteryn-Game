@@ -114,7 +114,7 @@ fn missing_vacant_recycled_and_cross_scope_refs_fail_closed() {
         match changed {
             0 => wrong.world_id = grant(40, 1).world_id(),
             1 => wrong.channel_id = grant(40, 1).channel_id(),
-            _ => wrong.scope_generation = ScopeOwnershipGeneration::new(2).expect("generation"),
+            _ => wrong.set_scope_generation(ScopeOwnershipGeneration::new(2).expect("generation")),
         }
         assert_eq!(
             resolve_exact_actor(

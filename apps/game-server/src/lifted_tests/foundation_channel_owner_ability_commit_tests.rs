@@ -606,9 +606,9 @@ fn receipts(carrier: &ChannelActorCarrier) -> &DamageReceipts {
 
 fn origins(carrier: &ChannelActorCarrier) -> Vec<Option<DamageOrigin>> {
     receipts(carrier)
-        .entries
+        .entries()
         .iter()
-        .map(|record| record.origin)
+        .map(|record| record.origin())
         .collect()
 }
 
@@ -1083,7 +1083,7 @@ fn every_retained_occurrence_replays_and_an_evicted_one_is_refused_never_reappli
             .expect("hit"),
         );
     }
-    assert_eq!(receipts(&carrier).entries.len(), 16);
+    assert_eq!(receipts(&carrier).entries().len(), 16);
     assert_eq!(health(&carrier), Some(1_000 - 48));
     let full = carrier.slots.clone();
     // Replay of each retained occurrence: byte-identical original transition, nothing mutated.
@@ -1109,7 +1109,7 @@ fn every_retained_occurrence_replays_and_an_evicted_one_is_refused_never_reappli
     // The 17th distinct occurrence evicts the oldest and still applies.
     let seventeenth = hit(&mut carrier, &continuity, actor, attack(1, 1, 17, 0), 3).expect("17th");
     assert!(seventeenth.applied);
-    assert_eq!(receipts(&carrier).entries.len(), 16);
+    assert_eq!(receipts(&carrier).entries().len(), 16);
     assert_eq!(health(&carrier), Some(1_000 - 51));
     assert!(
         !origins(&carrier).contains(&Some(attack(1, 1, 1, 0).origin())),
@@ -1323,7 +1323,7 @@ fn two_sub_occurrences_of_one_command_are_distinct_receipts_and_the_bound_is_enf
     let first = hit(&mut carrier, &continuity, actor, attack(1, 1, 1, 0), 3).expect("sub 0");
     let second = hit(&mut carrier, &continuity, actor, attack(1, 1, 1, 1), 4).expect("sub 1");
     assert!(first.applied && second.applied);
-    assert_eq!(receipts(&carrier).entries.len(), 2);
+    assert_eq!(receipts(&carrier).entries().len(), 2);
     assert_eq!(health(&carrier), Some(1_000 - 7));
     let both = carrier.slots.clone();
     assert_eq!(
@@ -1367,7 +1367,7 @@ fn a_reconnect_orphaned_receipt_is_evicted_and_never_starves_new_hits() {
         )
         .expect("B hit");
     }
-    assert_eq!(receipts(&carrier).entries.len(), 16);
+    assert_eq!(receipts(&carrier).entries().len(), 16);
     assert_eq!(origins(&carrier)[0], Some(attack(1, 1, 1, 0).origin()));
     // B16 needs room: the superseded A1 receipt is the oldest evictable one.
     assert!(
