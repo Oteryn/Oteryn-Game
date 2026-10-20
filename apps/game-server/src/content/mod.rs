@@ -30,6 +30,7 @@
 
 mod activation;
 mod artifact;
+pub(crate) mod bundle_spell_tiles;
 pub(crate) mod character_progression_content;
 pub(crate) mod charm_source;
 pub(crate) mod charm_source_effect;
@@ -91,6 +92,11 @@ pub(crate) mod spell_wheel_profile;
     reason = "unactivated engineering Content carrier awaits the separate Movement consumer lease"
 )]
 pub(crate) mod static_cell_engine;
+#[allow(
+    dead_code,
+    reason = "preserves the existing Spell profile lint scope for the candidate training owner"
+)]
+pub(crate) mod training_formula;
 pub mod world_reward_claims;
 
 pub use activation::*;

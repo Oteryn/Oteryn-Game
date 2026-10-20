@@ -711,7 +711,7 @@ impl NativeEntryMovementCells {
         entry: &Self,
         scope: crate::content::static_cell_engine::EngineeringStaticCellScope,
         index: crate::map::boot::BundleCollisionIndex,
-        spell_tiles: std::sync::Arc<crate::map::spell_tiles::BundleSpellTiles>,
+        spell_tiles: std::sync::Arc<crate::content::bundle_spell_tiles::BundleSpellTiles>,
     ) -> Self {
         Self {
             spell_tiles: QualifiedSpellTiles::from_bundle(scope.clone(), spell_tiles),

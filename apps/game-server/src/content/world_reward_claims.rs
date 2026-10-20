@@ -1,7 +1,7 @@
 //! CHEST-PLACE-BIND-1 (ARCH-WORLD-CONTENT-SERVE-1 §1.4, §1.5): the served set of RewardClaims and
 //! the binding of each placement to exactly one entry of a World's base map.
 //!
-//! [`bind_reward_claims`] is a pure function of a [`WorldBase`], the reward-claim shards and the
+//! [`bind_reward_claims`] is a pure function of a [`RewardClaimBase`], the reward-claim shards and the
 //! admitted Item registry. It writes nothing and returns the claims a World serves, with each
 //! placement's canonical [`PlacementKey`], bound cell and bundle `placement_key`, plus the
 //! placements that did not bind and the records left out, so the caller can gate boot on it.
@@ -10,11 +10,32 @@ use crate::content::{
     ContentError, DefinitionFamily, DefinitionRevisionRef, PlacementKey, ProductionKey,
     RewardClaimItem, RewardClaimPlacement, TypedDefinitionRef,
 };
-use crate::map::WorldBase;
 use oteryn_world_bundle::bundle;
 use serde_json::Value;
 use std::collections::BTreeMap;
 use std::fmt;
+
+/// The `unique` attribute of a top-level entry and the appearance id of its palette key.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct UniqueEntry {
+    pub unique: u16,
+    pub appearance: Option<u16>,
+}
+
+/// Read-only base-map data used to bind reward placements.
+pub trait RewardClaimBase {
+    type Tile<'a>: RewardClaimTile
+    where
+        Self: 'a;
+
+    fn tile(&self, x: u16, y: u16, floor: i8) -> Option<Self::Tile<'_>>;
+}
+
+/// The payload depths and unique attributes of one base-map tile.
+pub trait RewardClaimTile {
+    fn depths(&self) -> &[u8];
+    fn unique(&self, ordinal: u8) -> Option<UniqueEntry>;
+}
 
 /// The RewardClaim shards, embedded as the quest document is: the plain shards, then the authored
 /// variant shards. Of the variants, this reader serves only key rewards (KEY-1); every other
@@ -137,7 +158,7 @@ impl From<ContentError> for ClaimsError {
 
 /// [`bind_reward_claims`] over the embedded plain shards.
 pub fn bind_embedded_reward_claims(
-    base: &WorldBase,
+    base: &impl RewardClaimBase,
     admitted: &dyn Fn(&TypedDefinitionRef) -> bool,
 ) -> Result<BindingReport, ClaimsError> {
     bind_reward_claims(base, &REWARD_CLAIM_SHARDS, admitted)
@@ -146,7 +167,7 @@ pub fn bind_embedded_reward_claims(
 /// The served set and binding report of `shards` over `base` (§1.4, §1.5). `admitted` says
 /// whether an Item definition is admitted and materializable.
 pub fn bind_reward_claims(
-    base: &WorldBase,
+    base: &impl RewardClaimBase,
     shards: &[&str],
     admitted: &dyn Fn(&TypedDefinitionRef) -> bool,
 ) -> Result<BindingReport, ClaimsError> {
@@ -423,7 +444,7 @@ fn native_cell(position: &Value) -> Option<BoundCell> {
 }
 
 fn bind_candidate(
-    base: &WorldBase,
+    base: &impl RewardClaimBase,
     key: &str,
     candidate: &Candidate,
     report: &mut BindingReport,
@@ -471,7 +492,7 @@ fn bind_candidate(
 /// §1.4: the one top-level entry on the cell whose `unique` is the CrystalServer id and whose
 /// palette appearance id is the placement's.
 fn bind_placement(
-    base: &WorldBase,
+    base: &impl RewardClaimBase,
     placement: &CandidatePlacement,
 ) -> Result<(BoundCell, u64), UnboundReason> {
     let id = placement

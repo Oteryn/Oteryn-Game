@@ -231,7 +231,12 @@ fn always_triggering(definition: &CharmDefinition) -> CharmDefinition {
     let effect = definition.effect();
     let values = match effect.stage_value() {
         CharmStageValue::TriggerChancePercent => [1, 2, CHARM_PERCENT_HUNDREDTHS_WHOLE],
-        CharmStageValue::EffectPercent => definition.stages.map(CharmPercent::hundredths),
+        CharmStageValue::EffectPercent => [1, 2, 3].map(|stage| {
+            definition
+                .stage(stage)
+                .expect("valid charm stage")
+                .hundredths()
+        }),
     };
     define(definition.key(), definition.category(), values, effect)
 }

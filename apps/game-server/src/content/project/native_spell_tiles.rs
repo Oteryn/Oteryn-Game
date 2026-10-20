@@ -194,7 +194,7 @@ pub struct QualifiedSpellTiles {
     unknown_cells: BTreeSet<LogicalCell>,
     source_bounds: Option<[i32; 6]>,
     /// A world bundle's tiles (BUNDLE-TILES-1); when set, every lookup under `scope` reads them.
-    bundle: Option<Arc<crate::map::spell_tiles::BundleSpellTiles>>,
+    bundle: Option<Arc<crate::content::bundle_spell_tiles::BundleSpellTiles>>,
 }
 
 impl QualifiedSpellTiles {
@@ -361,7 +361,7 @@ impl QualifiedSpellTiles {
     /// The spell tiles of a world bundle Channel under its bundle `scope` (BUNDLE-TILES-1).
     pub(super) fn from_bundle(
         scope: EngineeringStaticCellScope,
-        bundle: Arc<crate::map::spell_tiles::BundleSpellTiles>,
+        bundle: Arc<crate::content::bundle_spell_tiles::BundleSpellTiles>,
     ) -> Self {
         Self {
             scope,

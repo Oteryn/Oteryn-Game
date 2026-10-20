@@ -557,7 +557,7 @@ pub(crate) struct NativeGameplayInput {
 pub(crate) struct NativeTrainingInput {
     pub(crate) profile: PinnedGameplayBytes,
     pub(crate) content_revision: String,
-    pub(crate) magnitude_policy: crate::spell::magnitude_owner::MagnitudePolicy,
+    pub(crate) magnitude_policy: crate::foundation::magnitude_policy::MagnitudePolicy,
 }
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -566,7 +566,7 @@ struct TrainingFilePin {
     sha256: String,
     content_revision: String,
     #[serde(default)]
-    magnitude_policy: crate::spell::magnitude_owner::MagnitudePolicy,
+    magnitude_policy: crate::foundation::magnitude_policy::MagnitudePolicy,
 }
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -574,10 +574,10 @@ struct TrainingEnvelope {
     content_revision: String,
     profile: serde_json::Value,
     #[serde(default, skip_serializing_if = "strict_magnitude_policy")]
-    magnitude_policy: crate::spell::magnitude_owner::MagnitudePolicy,
+    magnitude_policy: crate::foundation::magnitude_policy::MagnitudePolicy,
 }
-fn strict_magnitude_policy(policy: &crate::spell::magnitude_owner::MagnitudePolicy) -> bool {
-    *policy == crate::spell::magnitude_owner::MagnitudePolicy::Strict
+fn strict_magnitude_policy(policy: &crate::foundation::magnitude_policy::MagnitudePolicy) -> bool {
+    *policy == crate::foundation::magnitude_policy::MagnitudePolicy::Strict
 }
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -694,7 +694,7 @@ impl NativeMonsterMeleeProfile {
                     && a.chance_ppm == self.chance_ppm
                     && a.range_tiles.is_none_or(|range| range == 1)
             })
-            || crate::ai_monster_melee::MeleeDefinition::new(
+            || crate::foundation::melee_definition::MeleeDefinition::new(
                 [0; 32],
                 self.interval_ms,
                 self.chance_ppm,
@@ -815,8 +815,8 @@ pub(crate) struct NativeGameplayState {
     presentations: PresentationProfilesDocument,
     items: Option<ItemProfilesDocument>,
     appearances: Option<super::native_spell_appearances::CompiledSpellAppearances>,
-    training: Option<crate::spell::mana_training::CompiledTrainingFormula>,
-    magnitude_policy: crate::spell::magnitude_owner::MagnitudePolicy,
+    training: Option<crate::content::training_formula::CompiledTrainingFormula>,
+    magnitude_policy: crate::foundation::magnitude_policy::MagnitudePolicy,
     familiar_config: Option<super::spell_familiar_config::CompiledFamiliarConfig>,
     familiar_defenses: Option<super::spell_familiar_defenses::CompiledFamiliarDefenses>,
     wheel_profile: Option<super::spell_wheel_profile::CompiledWheelProfile>,
@@ -916,12 +916,12 @@ impl NativeGameplayState {
     pub(crate) fn presentation_profiles(&self) -> &PresentationProfilesDocument {
         &self.presentations
     }
-    pub(crate) fn magnitude_policy(&self) -> crate::spell::magnitude_owner::MagnitudePolicy {
+    pub(crate) fn magnitude_policy(&self) -> crate::foundation::magnitude_policy::MagnitudePolicy {
         self.magnitude_policy
     }
     pub(crate) fn training_formula(
         &self,
-    ) -> Option<&crate::spell::mana_training::CompiledTrainingFormula> {
+    ) -> Option<&crate::content::training_formula::CompiledTrainingFormula> {
         self.training.as_ref()
     }
     pub(crate) fn spell_appearances(
@@ -1686,7 +1686,7 @@ pub(crate) fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentE
             .map_err(|_| invalid("native gameplay training profile"))?;
         (
             Some(
-                crate::spell::mana_training::CompiledTrainingFormula::from_profile(
+                crate::content::training_formula::CompiledTrainingFormula::from_profile(
                     &bytes,
                     &envelope.content_revision,
                 )
@@ -1695,7 +1695,10 @@ pub(crate) fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentE
             envelope.magnitude_policy,
         )
     } else {
-        (None, crate::spell::magnitude_owner::MagnitudePolicy::Strict)
+        (
+            None,
+            crate::foundation::magnitude_policy::MagnitudePolicy::Strict,
+        )
     };
     let (familiar_config, familiar_defenses, wheel_profile, native_map_profile) = if is_v5 {
         let envelope: SupplementsEnvelope = serde_json::from_slice(sections[8])
@@ -2598,7 +2601,7 @@ pub(crate) mod tests {
                 "../../../../tools/content-schema/native-gameplay/build-training.json"
             )),
             content_revision: "build-content-r1".into(),
-            magnitude_policy: crate::spell::magnitude_owner::MagnitudePolicy::Strict,
+            magnitude_policy: crate::foundation::magnitude_policy::MagnitudePolicy::Strict,
         });
         let artifact = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
         assert!(artifact.server_artifact.starts_with(MAGIC_V4));
@@ -2609,19 +2612,19 @@ pub(crate) mod tests {
         );
         assert_eq!(
             state.magnitude_policy(),
-            crate::spell::magnitude_owner::MagnitudePolicy::Strict
+            crate::foundation::magnitude_policy::MagnitudePolicy::Strict
         );
         let mut baseline_test = supplied.clone();
         baseline_test
             .build_training
             .as_mut()
             .unwrap()
-            .magnitude_policy = crate::spell::magnitude_owner::MagnitudePolicy::BaselineTest;
+            .magnitude_policy = crate::foundation::magnitude_policy::MagnitudePolicy::BaselineTest;
         let test_artifact = compile_native_gameplay(baseline.compiled(), &baseline_test).unwrap();
         let test_state = decode(&test_artifact.server_artifact).unwrap().state;
         assert_eq!(
             test_state.magnitude_policy(),
-            crate::spell::magnitude_owner::MagnitudePolicy::BaselineTest
+            crate::foundation::magnitude_policy::MagnitudePolicy::BaselineTest
         );
         assert_ne!(test_artifact.server_digest(), artifact.server_digest());
         let appearances = state.spell_appearances().unwrap();
@@ -2697,7 +2700,7 @@ pub(crate) mod tests {
                 "../../../../tools/content-schema/native-gameplay/build-training.json"
             )),
             content_revision: "build-content-r1".into(),
-            magnitude_policy: crate::spell::magnitude_owner::MagnitudePolicy::Strict,
+            magnitude_policy: crate::foundation::magnitude_policy::MagnitudePolicy::Strict,
         });
         supplied.familiar_config = Some(pinned(include_bytes!(
             "../../../../tools/content-schema/native-gameplay/familiar-config.json"
@@ -3322,7 +3325,7 @@ pub(crate) mod tests {
                 "../../../../tools/content-schema/native-gameplay/build-training.json"
             )),
             content_revision: "build-content-r1".into(),
-            magnitude_policy: crate::spell::magnitude_owner::MagnitudePolicy::Strict,
+            magnitude_policy: crate::foundation::magnitude_policy::MagnitudePolicy::Strict,
         });
         supplied.familiar_config = Some(pinned(include_bytes!(
             "../../../../tools/content-schema/native-gameplay/familiar-config.json"
@@ -3400,11 +3403,11 @@ pub(crate) mod tests {
     }
 }
 
-impl crate::durability::equipment_policy_abi::policy_registration::Registered
+impl crate::foundation::equipment_policy_abi::policy_registration::Registered
     for NativeGameplayState
 {
 }
-impl crate::durability::equipment_policy_abi::EquipmentPolicyLookup for NativeGameplayState {
+impl crate::foundation::equipment_policy_abi::EquipmentPolicyLookup for NativeGameplayState {
     fn source_digest(&self) -> [u8; 32] {
         self.source_digest
     }
@@ -3412,7 +3415,7 @@ impl crate::durability::equipment_policy_abi::EquipmentPolicyLookup for NativeGa
         &self,
         key: &str,
         revision: &str,
-    ) -> Option<crate::durability::equipment_policy_abi::QualifiedEquipmentPolicy> {
+    ) -> Option<crate::foundation::equipment_policy_abi::QualifiedEquipmentPolicy> {
         use super::ReferenceItemField;
         let policy = self.item_policy(key, revision)?;
         let semantics = &policy.record().semantics;
@@ -3427,7 +3430,7 @@ impl crate::durability::equipment_policy_abi::EquipmentPolicyLookup for NativeGa
             },
             _ => None,
         };
-        crate::durability::equipment_policy_abi::QualifiedEquipmentPolicy::from_qualified_content(
+        crate::foundation::equipment_policy_abi::QualifiedEquipmentPolicy::from_qualified_content(
             self.source_digest,
             claims,
             capacity,
@@ -3438,9 +3441,9 @@ impl crate::durability::equipment_policy_abi::EquipmentPolicyLookup for NativeGa
 fn projected_equipment_claims(
     semantics: &super::ReferenceItemSemantics,
     slot: u8,
-) -> Result<crate::durability::equipment_policy_abi::EquipmentClaims, &'static str> {
+) -> Result<crate::foundation::equipment_policy_abi::EquipmentClaims, &'static str> {
     use super::{ReferenceBaseVocation, ReferenceEquipmentSlot, ReferenceItemField};
-    use crate::durability::equipment_policy_abi::{EquipmentBaseVocation, EquipmentClaims};
+    use crate::foundation::equipment_policy_abi::{EquipmentBaseVocation, EquipmentClaims};
     let rejected = |s| s;
     let ReferenceItemField::Known(equipment) = &semantics.equipment else {
         return Err(rejected("unknown equipment pattern"));
@@ -3555,7 +3558,7 @@ mod equipment_projection_tests {
         assert_eq!(claims.level, 20);
         assert_eq!(
             claims.vocations,
-            vec![crate::durability::equipment_policy_abi::EquipmentBaseVocation::Paladin]
+            vec![crate::foundation::equipment_policy_abi::EquipmentBaseVocation::Paladin]
         );
         assert!(projected_equipment_claims(&semantics, 6).is_err());
         let mut incomplete = pattern.clone();

@@ -186,10 +186,7 @@ pub struct GroundPlacement {
     pub native_room_placement_context: Vec<u8>,
 }
 
-/// `GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX` (D3 §4.2): a corpse container
-/// holds at most this many entries; a loot entry's `placement_ordinal` is
-/// `1..=` this.
-pub const CORPSE_CONTAINER_ENTRIES_MAX: u32 = 16;
+pub use crate::foundation::loot_data::CORPSE_CONTAINER_ENTRIES_MAX;
 
 /// `Container { parent_item_instance_id = <the death's corpse>, entry }`
 /// (DUR-03 §39.4, D3 §4.1/§4.2): where a loot entry's own MINT establishes
