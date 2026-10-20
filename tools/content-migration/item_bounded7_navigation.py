@@ -20,6 +20,7 @@ from item_external_family_refinement import dom_fields, normalized, own_fields
 from item_id_alias_table import tibia_key
 from item_navigation_source_supplement import checked, name_agrees
 from item_official_navigation import admission_ids, decoded_digest
+from source_relocations import read_text as relocated_text
 
 PATH = "imports/tibiawiki/facts/items-bounded7-navigation-20261002.json"
 SHA = "e7934cbc1dbe846479523702c9392b0416a2f6b01c804b32a7b49b20b70a934e"
@@ -47,7 +48,7 @@ def source_inputs(root=ROOT):
         checked(root, sources[name]["path"], sources[name]["sha256"])
     admission = sources["native_admission"]
     if not A12_IDS.issubset(
-        admission_ids((root / admission["path"]).read_text(), admission)
+        admission_ids(relocated_text(root, admission["path"]), admission)
     ):
         raise ValueError("BOUNDED7_EXISTING_A12_ADMISSION")
     index, manifests = appearance_membership.load_admitted()

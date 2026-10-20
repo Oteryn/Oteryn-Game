@@ -15,10 +15,12 @@ on:
     # Everything the game-server PostgreSQL targets link: the targets and the
     # library PostgreSQL tests exercise game-server code well beyond
     # durability/** (combat, pickup, transport, interaction, catalogues), so
-    # the whole crate and its workspace path dependencies are in scope. The
+    # the whole crate and its workspace path dependencies (including the
+    # gameplay crates carved out of it) are in scope. The
     # lane is skipped only for PRs that cannot change what it runs.
     paths:
       - 'apps/game-server/**'
+      - 'crates/gameplay/**'
       - 'crates/error-codes/**'
       - 'crates/foundation/**'
       - 'crates/ntp-clock/**'

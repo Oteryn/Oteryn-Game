@@ -1,4 +1,4 @@
-"""Lower timed-item facts into the packet `apps/game-server/src/content/item_timed_promotion.rs` applies
+"""Lower timed-item facts into the packet `crates/gameplay/content/src/content/item_timed_promotion.rs` applies
 (TIMED-CONTENT-1, TIMED-ITEM-0 brief and sections 4 and 6, TIMED-ITEM-0B sections 4 and 10.1).
 
 Scope: rings, amulets and necklaces, soft-boots-like boots, torches and lamps. Exercise and training

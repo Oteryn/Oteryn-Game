@@ -143,13 +143,76 @@ impl std::error::Error for CarrierError {}
 
 /// Authority supplied by a future, independently accepted assignment consumer.
 ///
-/// There is deliberately no constructor, issuer, reissuer, `Clone`, or `Copy`
-/// implementation here. Consuming this value makes namespace bootstrap one-shot.
+/// There is deliberately no production constructor, issuer, reissuer, `Clone`, or `Copy`
+/// implementation here. Consuming this value makes namespace bootstrap one-shot. Its fields,
+/// the continuity guard's scope fields and the commit borrow's carrier stay sealed behind the
+/// [`ChannelRuntimeV1`] facade, so no other crate can mint continuity for a retired runtime:
+///
+/// ```
+/// use oteryn_gameplay_foundation::foundation::ChannelRuntimeV1;
+/// use oteryn_gameplay_foundation::foundation::runtime_actor_carrier::{
+///     CurrentOwnerExactActorCommit, NamespaceContinuityGuard, PreProductionContinuityGrant,
+/// };
+///
+/// fn facade(runtime: &mut ChannelRuntimeV1) -> CurrentOwnerExactActorCommit<'_> {
+///     let _ = runtime.binding().world_id();
+///     runtime.borrow_exact_actor_commit()
+/// }
+/// fn named(_: &PreProductionContinuityGrant, _: &NamespaceContinuityGuard) {}
+/// ```
+///
+/// ```compile_fail
+/// use oteryn_gameplay_foundation::foundation::ChannelRuntimeV1;
+/// use oteryn_gameplay_foundation::foundation::runtime_actor_carrier::PreProductionContinuityGrant;
+///
+/// fn forge(runtime: &ChannelRuntimeV1) -> PreProductionContinuityGrant {
+///     let binding = runtime.binding();
+///     PreProductionContinuityGrant {
+///         world_id: binding.world_id(),
+///         channel_id: binding.channel_id(),
+///         scope_generation: binding.scope_generation(),
+///     }
+/// }
+/// ```
+///
+/// ```compile_fail
+/// use oteryn_gameplay_foundation::foundation::ScopeOwnershipGeneration;
+/// use oteryn_gameplay_foundation::foundation::runtime_actor_carrier::NamespaceContinuityGuard;
+///
+/// fn rewind(guard: &mut NamespaceContinuityGuard, generation: ScopeOwnershipGeneration) {
+///     guard.current_generation = generation;
+/// }
+/// ```
+///
+/// ```compile_fail
+/// use oteryn_gameplay_foundation::foundation::ChannelRuntimeV1;
+///
+/// fn escape(runtime: &mut ChannelRuntimeV1) {
+///     let commit = runtime.borrow_exact_actor_commit();
+///     let _carrier = commit.carrier;
+/// }
+/// ```
 #[derive(Debug)]
 pub struct PreProductionContinuityGrant {
-    pub world_id: WorldId,
-    pub channel_id: ChannelId,
-    pub scope_generation: ScopeOwnershipGeneration,
+    world_id: WorldId,
+    channel_id: ChannelId,
+    scope_generation: ScopeOwnershipGeneration,
+}
+
+impl PreProductionContinuityGrant {
+    /// Test builds only: a grant for a qualification fixture. No production grant API.
+    #[cfg(any(test, feature = "test-support"))]
+    pub const fn fixture(
+        world_id: WorldId,
+        channel_id: ChannelId,
+        scope_generation: ScopeOwnershipGeneration,
+    ) -> Self {
+        Self {
+            world_id,
+            channel_id,
+            scope_generation,
+        }
+    }
 }
 
 /// Surviving pre-production namespace continuity state.
@@ -159,14 +222,32 @@ pub struct PreProductionContinuityGrant {
 /// that carrier therefore cannot make the generation claimable again.
 #[derive(Debug)]
 pub struct NamespaceContinuityGuard {
-    pub world_id: WorldId,
-    pub channel_id: ChannelId,
-    pub current_generation: ScopeOwnershipGeneration,
+    world_id: WorldId,
+    channel_id: ChannelId,
+    current_generation: ScopeOwnershipGeneration,
     current_generation_claimed: bool,
     active: bool,
 }
 
 impl NamespaceContinuityGuard {
+    /// Test builds only: the World of this guard's namespace.
+    #[cfg(any(test, feature = "test-support"))]
+    pub const fn world_id(&self) -> WorldId {
+        self.world_id
+    }
+
+    /// Test builds only: the Channel of this guard's namespace.
+    #[cfg(any(test, feature = "test-support"))]
+    pub const fn channel_id(&self) -> ChannelId {
+        self.channel_id
+    }
+
+    /// Test builds only: the current scope ownership generation.
+    #[cfg(any(test, feature = "test-support"))]
+    pub const fn current_generation(&self) -> ScopeOwnershipGeneration {
+        self.current_generation
+    }
+
     pub fn from_pre_production_grant(grant: PreProductionContinuityGrant) -> Self {
         Self {
             world_id: grant.world_id,
@@ -360,7 +441,7 @@ pub struct CurrentOwnerExactActorLookup<'a> {
 /// again at the sole write.
 pub struct CurrentOwnerExactActorCommit<'a> {
     content: Option<&'a ChannelContentPin>,
-    pub carrier: &'a mut ChannelActorCarrier,
+    carrier: &'a mut ChannelActorCarrier,
     continuity: &'a NamespaceContinuityGuard,
     /// The owner clock (ms) of this turn, recorded on each commit's receipt and contributor.
     /// `None` records no time: such a hit never earns time-windowed credit.
@@ -976,6 +1057,12 @@ pub struct CommittedLethalReceipt {
 pub const MAX_OWNER_COMMIT_BINDING_BYTES: usize = 4_096;
 
 impl CurrentOwnerExactActorCommit<'_> {
+    /// Test builds only: read the borrowed carrier. No mutable carrier crosses this boundary.
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn test_carrier(&self) -> &ChannelActorCarrier {
+        self.carrier
+    }
+
     pub fn commit_damage(
         &mut self,
         actor: ExactActorRef,

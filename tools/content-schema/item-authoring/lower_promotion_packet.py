@@ -1,6 +1,6 @@
 """Lower this package's converted, zero-validator-error Crystal Item bundles into
 candidate rows for the Item semantic-promotion packet
-`apps/game-server/src/content/cw2_b1_import.rs` decodes
+`crates/gameplay/content/src/content/cw2_b1_import.rs` decodes
 (`OTERYN_ITEM_SEMANTIC_PROMOTION/v1`,
 `docs/agents/evidence/OTV2-20260923-content-world-item-semantic-promotion.json`).
 
@@ -108,7 +108,7 @@ def require_int(value, *, minimum, maximum):
 #
 # Each branch below is the encoding-direction mirror of one arm of
 # `decode_item_semantic_promotion_value` in
-# apps/game-server/src/content/cw2_b1_import.rs. It never raises: a value this
+# crates/gameplay/content/src/content/cw2_b1_import.rs. It never raises: a value this
 # package's own schema allows but the Rust decoder's narrower bounds do not is simply
 # skipped (the caller counts the skip), because a rejected row would defeat the point
 # of shipping a decoder-accepted candidate.
@@ -260,7 +260,7 @@ def validate_row(row):
 def validate_packet(packet):
     """Fail-closed replica of every check
     `protected_cw2_b1_promoted_item_family_import`/`validate_item_semantic_promotion_
-    packet` (apps/game-server/src/content/cw2_b1_import.rs) would apply to
+    packet` (crates/gameplay/content/src/content/cw2_b1_import.rs) would apply to
     `packet["promotions"]`, run against this candidate before it is written or
     accepted by `--check`."""
     promotions = packet["promotions"]

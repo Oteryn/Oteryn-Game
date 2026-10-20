@@ -49,7 +49,7 @@ def main():
         if completed.stdout.strip():
             print(completed.stdout.strip())
     # Exercise the actual receipt-reader predicate, not a separately mirrored query.
-    source = (ROOT / "apps/game-server/src/durability/spell_item_transaction.rs").read_text()
+    source = (ROOT / "crates/gameplay/durability/src/durability/spell_item_transaction.rs").read_text()
     predicate = re.search(r'async fn verify_paid_due_source\([\s\S]+?query_scalar\("([^"]+)"\)', source)
     if predicate is None:
         raise SystemExit("missing exact due receipt predicate")

@@ -102,9 +102,12 @@ SERVER_QUALIFICATION_EXCLUDED_PREFIXES = (
     "apps/game-server/src/ai/",
     "apps/game-server/src/interaction/",
     "apps/game-server/src/content/",
+    # The Content module carved into the gameplay content crate keeps its routing.
+    "crates/gameplay/content/src/content/",
 )
 SERVER_QUALIFICATION_EXCLUDED_FILES = {
     "apps/game-server/src/combat.rs",
+    "apps/game-server/src/combat/mod.rs",
 }
 # The native entry room and its activation are the Content the qualifications serve.
 SERVER_QUALIFICATION_CONTENT = (
@@ -119,6 +122,17 @@ SERVER_QUALIFICATION_CONTENT = (
     "apps/game-server/src/content/project/native_entry",
     # The native entry room parses and validates through the WorldProject/v2 model.
     "apps/game-server/src/content/project/v2",
+    # The same Content at its carved gameplay content crate path.
+    "crates/gameplay/content/src/content/mod.rs",
+    "crates/gameplay/content/src/content/activation.rs",
+    "crates/gameplay/content/src/content/digest.rs",
+    "crates/gameplay/content/src/content/model.rs",
+    "crates/gameplay/content/src/content/production.rs",
+    "crates/gameplay/content/src/content/project.rs",
+    "crates/gameplay/content/src/content/static_cell_engine.rs",
+    "crates/gameplay/content/src/content/reference_static_cell.rs",
+    "crates/gameplay/content/src/content/project/native_entry",
+    "crates/gameplay/content/src/content/project/v2",
 )
 DEGRADED_ROUTING_REASONS = {
     "classifier-input-failure",

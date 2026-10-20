@@ -190,7 +190,7 @@ def verify(sources_dir=Path('/workspace/monster-reference-sources')):
                  ROOT / 'tools/content-schema/monster-authoring/build_formal_schema.py',
                  Path(sys.modules['appearance_membership'].__file__), Path(sys.modules['engine_items'].__file__),
                  Path(sys.modules['client_map_reader'].__file__),
-                 ROOT / 'apps/game-server/src/content/project/v2/creature.rs', Path(__file__)]:
+                 ROOT / 'crates/gameplay/content/src/content/project/v2/creature.rs', Path(__file__)]:
         evidence[str(path)] = sha(path.read_bytes())
     membership = {label: {str(number): next((row for row in m['entries'] if row[0] == number), None)
                          for number in IDS} for label, m in manifests.items()}

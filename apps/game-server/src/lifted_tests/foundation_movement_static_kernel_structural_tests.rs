@@ -175,11 +175,11 @@ struct Harness {
 
 impl Harness {
     fn new(position: LocalPosition) -> Self {
-        let grant = PreProductionContinuityGrant {
-            world_id: WorldId::decode(&uuid_v7(10)).expect("world fixture"),
-            channel_id: ChannelId::decode(&uuid_v7(11)).expect("channel fixture"),
-            scope_generation: ScopeOwnershipGeneration::new(1).expect("scope fixture"),
-        };
+        let grant = PreProductionContinuityGrant::fixture(
+            WorldId::decode(&uuid_v7(10)).expect("world fixture"),
+            ChannelId::decode(&uuid_v7(11)).expect("channel fixture"),
+            ScopeOwnershipGeneration::new(1).expect("scope fixture"),
+        );
         let mut owner = NamespaceContinuityGuard::from_pre_production_grant(grant);
         let mut carrier = ChannelActorCarrier::bootstrap_pre_production(&mut owner, 1)
             .expect("one fixture actor slot");
@@ -187,9 +187,9 @@ impl Harness {
             .admit(&owner, ActorState(1))
             .expect("admit fixture actor");
         let context = PreProductionPositionContext {
-            world_id: owner.world_id,
-            channel_id: owner.channel_id,
-            scope_generation: owner.current_generation,
+            world_id: owner.world_id(),
+            channel_id: owner.channel_id(),
+            scope_generation: owner.current_generation(),
             coordinate_frame_marker: 11,
             map_revision_marker: 12,
             content_generation_marker: 13,
@@ -198,7 +198,7 @@ impl Harness {
             .initialize_position(&owner, actor, context, position)
             .expect("initialize fixture position");
         let scope = StaticCellScope::fixture(
-            owner.world_id,
+            owner.world_id(),
             CoordinateFrameRef::new("movement-frame-r1").expect("frame fixture"),
             ProductionAtom::new("fixture generation", "movement-generation-r1")
                 .expect("generation fixture"),
@@ -343,7 +343,7 @@ fn cell_in_another_scope_or_floor_cannot_supply_the_candidate() {
         floor: 7,
     });
     let other_scope = StaticCellScope::fixture(
-        fixture.owner.world_id,
+        fixture.owner.world_id(),
         CoordinateFrameRef::new("other-frame").expect("frame"),
         ProductionAtom::new("fixture generation", "movement-generation-r1").expect("generation"),
         MapRevisionRef::new("movement-map-r1").expect("map"),
@@ -421,7 +421,7 @@ fn stale_snapshot_wrong_scope_context_and_coordinate_overflow_reject_before_look
         Err(MoveError::SnapshotMismatch)
     );
     let wrong_scope = StaticCellScope::fixture(
-        fixture.owner.world_id,
+        fixture.owner.world_id(),
         CoordinateFrameRef::new("other-frame").expect("frame"),
         ProductionAtom::new("fixture generation", "movement-generation-r1").expect("generation"),
         MapRevisionRef::new("movement-map-r1").expect("map"),
@@ -606,11 +606,11 @@ fn recycled_actor_and_stale_owner_reject_before_cell_lookup() {
     );
     fixture
         .owner
-        .advance(PreProductionContinuityGrant {
-            world_id: fixture.owner.world_id,
-            channel_id: fixture.owner.channel_id,
-            scope_generation: ScopeOwnershipGeneration::new(2).expect("new owner generation"),
-        })
+        .advance(PreProductionContinuityGrant::fixture(
+            fixture.owner.world_id(),
+            fixture.owner.channel_id(),
+            ScopeOwnershipGeneration::new(2).expect("new owner generation"),
+        ))
         .expect("advance owner");
     assert_eq!(
         prepare_step(

@@ -10,7 +10,7 @@ Every binding row is first reproduced in the historical key space, from the prot
 that minted the retired keys, and the historical epoch-1 bytes must still match their
 digest:
 
-- epoch 1: the CW2-B1 allocator (`apps/game-server/src/content/cw2_b1_import.rs`) walks the
+- epoch 1: the CW2-B1 allocator (`crates/gameplay/content/src/content/cw2_b1_import.rs`) walks the
   protected catalogue
   (`docs/agents/evidence/OTV2-20260919-content-world-cw2-b1-item-identity-catalog.json`,
   source `zimbadev/crystalserver@ff7ede593c69d4c658b382c97443e8155926924a`
@@ -59,7 +59,7 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
-RUST_SOURCE = ROOT / "apps/game-server/src/content/cw2_b1_import.rs"
+RUST_SOURCE = ROOT / "crates/gameplay/content/src/content/cw2_b1_import.rs"
 EVIDENCE = (
     ROOT
     / "docs/agents/evidence/OTV2-20260919-content-world-cw2-b1-item-identity-catalog.json"

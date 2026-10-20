@@ -32,7 +32,7 @@ class SemanticContractAuditDispatchTests(unittest.TestCase):
             audit.select_profiles(
                 {
                     "docs/architecture/ALPHA-CLIENT-01_NATIVE_CLIENT_ARCHITECTURE_ANALYSIS.md",
-                    "apps/game-server/src/foundation/fnd04_verifier.rs",
+                    "crates/gameplay/foundation/src/foundation/fnd04_verifier.rs",
                 }
             ),
             ["ALPHA_CLIENT_01", "FOUNDATION_RECONNECT_DURABILITY_V1"],
@@ -876,8 +876,8 @@ impl UnrelatedScannerProbe {
             audit.text(
                 "docs/agents/tasks/archive/OTV2-20260826-impl-foundation-reconnect-durability.md"
             ),
-            audit.text("apps/game-server/src/foundation/admission_recovery_inner.rs"),
-            audit.text("apps/game-server/src/foundation/fnd04_verifier.rs"),
+            audit.text("crates/gameplay/foundation/src/foundation/admission_recovery_inner.rs"),
+            audit.text("crates/gameplay/foundation/src/foundation/fnd04_verifier.rs"),
         )
 
     @staticmethod
