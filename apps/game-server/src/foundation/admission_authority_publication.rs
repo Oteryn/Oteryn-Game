@@ -59,7 +59,7 @@ pub struct GameSessionUseCurrentFenceV1 {
     pub(super) scope_ownership_generation: u64,
 }
 
-#[allow(dead_code)] // Reserved for the inactive crate::durability owner handoff.
+#[allow(dead_code)] // Reserved for the inactive Durability owner handoff.
 impl GameSessionUseCurrentFenceV1 {
     #[must_use]
     pub fn from_snapshot<T: Copy + Eq>(snapshot: GameSessionAuthoritySnapshot<T>) -> Self {
@@ -104,7 +104,7 @@ pub struct GameSessionUseRequestV1 {
     pub(super) current_fence: Option<GameSessionUseCurrentFenceV1>,
 }
 
-#[allow(dead_code)] // Reserved for the inactive crate::durability owner handoff.
+#[allow(dead_code)] // Reserved for the inactive Durability owner handoff.
 impl GameSessionUseRequestV1 {
     #[allow(clippy::too_many_arguments)]
     #[must_use]
@@ -177,7 +177,7 @@ pub struct GameSessionUseObservationV1 {
     pub(super) current_fence: Option<GameSessionUseCurrentFenceV1>,
 }
 
-#[allow(dead_code)] // Reserved for the inactive crate::durability owner handoff.
+#[allow(dead_code)] // Reserved for the inactive Durability owner handoff.
 impl GameSessionUseObservationV1 {
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn from_owner_results(

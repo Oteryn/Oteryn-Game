@@ -20,13 +20,14 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / ".github/workflows/merge-group-gate.yml"
 LIFECYCLE = ROOT / "tools/agents/tests/test_governance_lifecycle_discovery.py"
-APPROVED = "bbb9ee1d7483753df0fddd508b15f850205c9445"
+APPROVED = "0ff705f1d5074e565c89f7d1619c9f994caa4a60"
 LIFECYCLE_COMMAND = "python tools/agents/tests/test_governance_lifecycle_discovery.py"
 REGISTERED_POSTGRES_TARGETS = (
     ("durability_postgres", "apps/game-server/tests/durability_postgres.rs"),
     ("character_authority_postgres", "apps/game-server/tests/character_authority_postgres.rs"),
     ("runtime_scope_assignment_postgres", "apps/game-server/tests/runtime_scope_assignment_postgres.rs"),
     ("native_admission_source_postgres", "apps/game-server/tests/native_admission_source_postgres.rs"),
+    ("guild_postgres", "apps/game-server/tests/guild_postgres.rs"),
 )
 NATIVE_POLICY = (
     "$ErrorActionPreference = 'Stop'",

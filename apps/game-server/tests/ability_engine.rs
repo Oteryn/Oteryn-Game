@@ -10,7 +10,7 @@ mod domain {
 #[path = "../src/foundation/ability_data/mod.rs"]
 pub(crate) mod ability_data;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/ability/condition.rs"]
+#[path = "../src/foundation/condition.rs"]
 mod condition;
 #[allow(dead_code)]
 mod foundation {

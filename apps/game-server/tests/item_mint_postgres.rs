@@ -11,6 +11,10 @@ pub use production_server::admission_evidence;
 pub mod character_bootstrap_intent;
 #[allow(dead_code, unused_imports)]
 pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
+// Combat owns the death-projection extension used by these corpse fixtures.
+#[allow(dead_code, unused_imports)]
+#[path = "../src/combat.rs"]
+pub mod combat;
 #[path = "support/domain_shim.rs"]
 pub mod domain;
 #[allow(dead_code, unused_imports)]
@@ -30,3 +34,8 @@ mod item_mint_postgres_cases;
 #[allow(dead_code, unused_imports)]
 #[path = "support/content_spell_data_shim.rs"]
 mod content;
+
+// The path-loaded Durability NPC-travel fixture shares this PostgreSQL harness.
+#[allow(dead_code)] // Each standalone target uses only part of the shared fixture API.
+#[path = "support/bestiary_postgres_harness.rs"]
+mod bestiary_postgres_harness;

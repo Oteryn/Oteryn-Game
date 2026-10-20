@@ -1,15 +1,7 @@
 //! COND-1c: one condition store in each occupied actor slot, under the existing owner fence.
 //! A retry retains its prepared plan; it never replans an old occurrence at a new revision.
 
-#[cfg(test)]
-pub(crate) use super::super::exact_actor_test_ability::condition::{
-    ApplicationFacts, AttributeModifier, AttributeModifiers, CombatSkill, ConditionDefinition,
-    ConditionRefusal, ConditionSourceKind, ConditionStore, ConditionTick, ConditionType,
-    ConditionValues, DamageSchedule, DamageSegment, DotElement, ExactSpeedRatio,
-    RationalSpeedRange, SpeedRange, StatusKind, TickFacts, TickKind,
-};
 use super::*;
-#[cfg(not(test))]
 pub(crate) use crate::foundation::condition::{
     ApplicationFacts, AttributeModifier, AttributeModifiers, CombatSkill, ConditionDefinition,
     ConditionRefusal, ConditionSourceKind, ConditionStore, ConditionTick, ConditionType,
@@ -27,13 +19,13 @@ pub(super) struct ActorConditionState {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub(super) struct PlayerRuntimeState {
+pub(crate) struct PlayerRuntimeState {
     pub(super) control_loss: Option<ControlLossMark>,
     pub(super) conditions: ActorConditionState,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub(super) struct CreatureCommitState {
+pub(crate) struct CreatureCommitState {
     damage: DamageReceipts,
     pub(super) conditions: ActorConditionState,
 }

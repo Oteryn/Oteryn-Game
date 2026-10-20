@@ -1,10 +1,11 @@
 //! Preproduction composition only: the carrier's private admission fixtures
 //! supply refs; Ability receives just the read-only current-owner view.
-use super::super::exact_actor_test_ability::exact_actor_resolution::{
+use crate::ability::exact_actor_resolution::{
     ExactActorProposal, ExactActorResolutionError, resolve_exact_actor,
 };
-use super::super::exact_actor_test_ability::{AbilityOccurrence, RevisionSet};
-use super::*;
+use crate::ability::{AbilityOccurrence, RevisionSet};
+use crate::foundation::runtime_actor_carrier::*;
+use crate::foundation::*;
 
 fn uuid_v7(raw: u64) -> [u8; 16] {
     let mut value = [0; 16];

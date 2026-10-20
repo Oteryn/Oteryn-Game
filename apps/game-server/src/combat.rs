@@ -8,12 +8,7 @@ use crate::foundation::{
     CarrierError, CurrentOwnerCombatDeath, ExactActorRef, RuntimeCorpseProjection,
 };
 
-// Explicit `#[path]`: `combat.rs` is also compiled under a different module
-// name via `foundation/mod.rs`'s `#[path = "../combat.rs"] mod
-// exact_actor_test_combat;` (standalone Foundation test crate). An unpathed
-// `mod loot_plan;`/`mod death_reward;` resolves against that site's own
-// directory in that context; the explicit path keeps both inclusions
-// pointing at the same file.
+// Explicit paths preserve module resolution in standalone PostgreSQL test binaries.
 #[path = "combat/chain.rs"]
 pub(crate) mod chain;
 #[path = "combat/charm_effects.rs"]
@@ -26,8 +21,7 @@ pub(crate) mod formula;
 mod loot_plan;
 
 // The live kill-reward caller (`gameplay_transport::kill_reward`) uses only
-// part of these re-exports; the rest serve the path-loaded test harnesses,
-// and `foundation/mod.rs` recompiles this file standalone with none used.
+// part of these re-exports; the rest serve the path-loaded test harnesses.
 #[allow(
     unused_imports,
     reason = "partly used by the live caller; the rest serve path-loaded test crates"
@@ -63,4 +57,24 @@ pub(crate) fn project_fixed_one_creature_death<'a>(
 ) -> Result<&'a RuntimeCorpseProjection, CarrierError> {
     let receipt = owner.committed_lethal_receipt(actor)?;
     owner.project_committed_lethal(receipt)
+}
+
+#[cfg(test)]
+impl crate::foundation::CombatDeathFixture {
+    /// Combat's idempotent projection of the committed lethal occurrence and
+    /// the durable death key it names, with the corpse position.
+    pub(crate) fn project_death(
+        &mut self,
+    ) -> Result<
+        (
+            crate::foundation::CreatureDeathOccurrenceKey,
+            crate::foundation::MovementLocalPosition,
+        ),
+        CarrierError,
+    > {
+        let actor = self.actor();
+        let mut combat = self.borrow_combat_death();
+        let projection = project_fixed_one_creature_death(&mut combat, actor)?;
+        Ok((projection.occurrence().death_key(), projection.position()))
+    }
 }

@@ -1,14 +1,15 @@
 //! Nonshipping fixed-one-creature lethal -> death -> corpse proof.
 
-use super::super::exact_actor_test_ability::commit::{OwnerCommitError, commit_exact_owner_damage};
-use super::super::exact_actor_test_ability::exact_actor_resolution::{
+use crate::ability::commit::{OwnerCommitError, commit_exact_owner_damage};
+use crate::ability::exact_actor_resolution::{
     ExactActorProposal, ResolvedExactActor, resolve_exact_actor,
 };
-use super::super::exact_actor_test_ability::{
+use crate::ability::{
     AbilityIntent, AbilityOccurrence, CommitGroup, Effect, EffectPlan, ProposalSource, RevisionSet,
 };
-use super::super::exact_actor_test_combat::project_fixed_one_creature_death;
-use super::*;
+use crate::combat::project_fixed_one_creature_death;
+use crate::foundation::runtime_actor_carrier::*;
+use crate::foundation::*;
 
 /// D4: the typed bridge now needs the attacker and its actual FND-02 `CommandRef`; these tests
 /// commit every typed plan as attacker 1 of session 1 at command 1, so an identical plan replays
@@ -942,7 +943,7 @@ fn typed_commit_at(
         attacker,
         CommandRef::new(
             session,
-            super::super::CommandId::new(sequence).expect("command"),
+            crate::foundation::CommandId::new(sequence).expect("command"),
         ),
     )
 }
@@ -1079,7 +1080,7 @@ fn twenty_distinct_single_hp_hits_kill_past_the_sixteen_receipt_bound() {
                     1,
                     CommandRef::new(
                         session,
-                        super::super::CommandId::new(sequence).expect("command"),
+                        crate::foundation::CommandId::new(sequence).expect("command"),
                     ),
                     0,
                 )),

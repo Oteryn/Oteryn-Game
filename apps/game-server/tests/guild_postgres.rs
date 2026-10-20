@@ -153,19 +153,19 @@ mod spell_familiar_runtime_postgres_cases;
 mod world_party_runtime_postgres_cases;
 
 #[cfg(test)]
-#[path = "../src/foundation/recovery_tests.rs"]
+#[path = "../src/lifted_tests/foundation_recovery_tests.rs"]
 mod foundation_recovery_tests;
 
 #[cfg(test)]
-#[path = "../src/foundation/final_review_regressions.rs"]
+#[path = "../src/lifted_tests/foundation_final_review_regressions.rs"]
 mod foundation_final_review_regressions;
 
 #[cfg(test)]
-#[path = "../src/foundation/final_review_round2_regressions.rs"]
+#[path = "../src/lifted_tests/foundation_final_review_round2_regressions.rs"]
 mod foundation_final_review_round2_regressions;
 
 #[cfg(test)]
-#[path = "../src/foundation/final_review_round2_runtime_rollback.rs"]
+#[path = "../src/lifted_tests/foundation_final_review_round2_runtime_rollback.rs"]
 mod foundation_final_review_round2_runtime_rollback;
 
 pub use oteryn_gameplay_admission_evidence as admission_evidence;

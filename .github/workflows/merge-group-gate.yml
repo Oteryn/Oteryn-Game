@@ -686,6 +686,7 @@ jobs:
           run_registered_target character_authority_postgres apps/game-server/tests/character_authority_postgres.rs
           run_registered_target runtime_scope_assignment_postgres apps/game-server/tests/runtime_scope_assignment_postgres.rs
           run_registered_target native_admission_source_postgres apps/game-server/tests/native_admission_source_postgres.rs
+          run_registered_target guild_postgres apps/game-server/tests/guild_postgres.rs
 
   rust_windows:
     name: Merge Queue / Rust Windows client

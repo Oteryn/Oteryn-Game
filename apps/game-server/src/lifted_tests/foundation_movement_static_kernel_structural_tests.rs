@@ -1,6 +1,7 @@
 //! Non-shipping structural Movement fixture. These local markers and synthetic cells do not
 //! activate Reference, establish its parity, or qualify production MOVE-RL-03.
-use super::*;
+use crate::foundation::runtime_actor_carrier::*;
+use crate::foundation::*;
 use std::io::{Error as FixtureInputError, ErrorKind};
 
 // Some integration targets include Foundation's source as their own crate root. Compile the

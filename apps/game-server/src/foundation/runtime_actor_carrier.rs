@@ -37,7 +37,7 @@ use std::sync::Arc;
 mod runtime_actor_conditions;
 // SPAWN-1a: the pure spawn schedule (std only) compiles with the carrier so every
 // path-included Foundation crate has it without the `ai` tree.
-#[path = "../ai/spawn.rs"]
+#[path = "spawn.rs"]
 mod spawn;
 #[allow(unused_imports)] // The Foundation facade is composed by the owning consumer child.
 pub(crate) use runtime_actor_conditions::{
@@ -146,10 +146,10 @@ impl std::error::Error for CarrierError {}
 /// There is deliberately no constructor, issuer, reissuer, `Clone`, or `Copy`
 /// implementation here. Consuming this value makes namespace bootstrap one-shot.
 #[derive(Debug)]
-struct PreProductionContinuityGrant {
-    world_id: WorldId,
-    channel_id: ChannelId,
-    scope_generation: ScopeOwnershipGeneration,
+pub(crate) struct PreProductionContinuityGrant {
+    pub(crate) world_id: WorldId,
+    pub(crate) channel_id: ChannelId,
+    pub(crate) scope_generation: ScopeOwnershipGeneration,
 }
 
 /// Surviving pre-production namespace continuity state.
@@ -158,16 +158,16 @@ struct PreProductionContinuityGrant {
 /// `Clone` nor `Copy`. A carrier claims the current generation once; losing
 /// that carrier therefore cannot make the generation claimable again.
 #[derive(Debug)]
-struct NamespaceContinuityGuard {
-    world_id: WorldId,
-    channel_id: ChannelId,
-    current_generation: ScopeOwnershipGeneration,
+pub(crate) struct NamespaceContinuityGuard {
+    pub(crate) world_id: WorldId,
+    pub(crate) channel_id: ChannelId,
+    pub(crate) current_generation: ScopeOwnershipGeneration,
     current_generation_claimed: bool,
     active: bool,
 }
 
 impl NamespaceContinuityGuard {
-    fn from_pre_production_grant(grant: PreProductionContinuityGrant) -> Self {
+    pub(crate) fn from_pre_production_grant(grant: PreProductionContinuityGrant) -> Self {
         Self {
             world_id: grant.world_id,
             channel_id: grant.channel_id,
@@ -177,7 +177,10 @@ impl NamespaceContinuityGuard {
         }
     }
 
-    fn advance(&mut self, grant: PreProductionContinuityGrant) -> Result<(), CarrierError> {
+    pub(crate) fn advance(
+        &mut self,
+        grant: PreProductionContinuityGrant,
+    ) -> Result<(), CarrierError> {
         if grant.world_id != self.world_id || grant.channel_id != self.channel_id {
             return Err(CarrierError::WrongScope);
         }
@@ -209,25 +212,25 @@ impl NamespaceContinuityGuard {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct ActorLocalId(u32);
+pub(crate) struct ActorLocalId(pub(crate) u32);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct ActorLocalGeneration(u64);
+pub(crate) struct ActorLocalGeneration(pub(crate) u64);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct ActorRef {
-    world_id: WorldId,
-    channel_id: ChannelId,
-    scope_generation: ScopeOwnershipGeneration,
-    actor_local_id: ActorLocalId,
-    actor_local_generation: ActorLocalGeneration,
+pub(crate) struct ActorRef {
+    pub(crate) world_id: WorldId,
+    pub(crate) channel_id: ChannelId,
+    pub(crate) scope_generation: ScopeOwnershipGeneration,
+    pub(crate) actor_local_id: ActorLocalId,
+    pub(crate) actor_local_generation: ActorLocalGeneration,
 }
 
 /// Inseparable semantic actor handle issued by this one Channel carrier.
-/// Its fields and constructor are private to Foundation; it is never decoded
-/// from a client handle or derived from the fixture Ability `TargetId`.
+/// Its internals are exposed within the crate for carrier qualification tests.
+/// It is never decoded from a client handle or derived from the fixture Ability `TargetId`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct ExactActorRef(ActorRef);
+pub(crate) struct ExactActorRef(pub(crate) ActorRef);
 
 impl ExactActorRef {
     pub(crate) const fn world_id(self) -> WorldId {
@@ -360,7 +363,7 @@ pub(crate) struct CurrentOwnerExactActorLookup<'a> {
 /// again at the sole write.
 pub(crate) struct CurrentOwnerExactActorCommit<'a> {
     content: Option<&'a ChannelContentPin>,
-    carrier: &'a mut ChannelActorCarrier,
+    pub(crate) carrier: &'a mut ChannelActorCarrier,
     continuity: &'a NamespaceContinuityGuard,
     /// The owner clock (ms) of this turn, recorded on each commit's receipt and contributor.
     /// `None` records no time: such a hit never earns time-windowed credit.
@@ -531,7 +534,7 @@ pub(crate) const ABILITY01_EFFECT_PLAN_ENTRIES_MAX: u16 = 2;
 
 /// `(CharacterId, character_lease_generation, GameSessionId, CommandId sequence, sub_ordinal)`:
 /// the carrier-derived replay identity of one attributed damage occurrence (D141 point 3).
-type DamageOrigin = (CharacterId, u64, GameSessionId, u64, u16);
+pub(crate) type DamageOrigin = (CharacterId, u64, GameSessionId, u64, u16);
 
 /// `(character_lease_generation, GameSessionId, sequence, sub_ordinal)`: one attacker's
 /// high-water mark (D141 point 4). The lease generation is the per-character monotonic
@@ -545,11 +548,11 @@ type HighWater = (u64, GameSessionId, u64, u16);
 /// effect's own index within its Effect Plan.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct AttackerCommand {
-    character: CharacterId,
+    pub(crate) character: CharacterId,
     lease_generation: u64,
-    session: GameSessionId,
-    sequence: u64,
-    sub_ordinal: u16,
+    pub(crate) session: GameSessionId,
+    pub(crate) sequence: u64,
+    pub(crate) sub_ordinal: u16,
 }
 
 impl AttackerCommand {
@@ -569,7 +572,7 @@ impl AttackerCommand {
         }
     }
 
-    const fn origin(self) -> DamageOrigin {
+    pub(crate) const fn origin(self) -> DamageOrigin {
         (
             self.character,
             self.lease_generation,
@@ -591,23 +594,23 @@ impl AttackerCommand {
 
 /// One retained damage receipt. `origin` and `ordinal` are immutable once set.
 #[derive(Debug, Clone, PartialEq, Eq)]
-struct OwnerCommitRecord {
-    binding: Box<[u8]>,
+pub(crate) struct OwnerCommitRecord {
+    pub(crate) binding: Box<[u8]>,
     damage: i64,
-    result: OwnerDamageResult,
+    pub(crate) result: OwnerDamageResult,
     /// D142: this creature generation's owner damage-application ordinal of this receipt.
-    ordinal: u64,
+    pub(crate) ordinal: u64,
     /// D141: `Some` for an attributed commit (its replay identity), `None` for an unsequenced
     /// one, which is never evictable.
-    origin: Option<DamageOrigin>,
+    pub(crate) origin: Option<DamageOrigin>,
 }
 
 /// D140/D142: the bounded, ephemeral, per-creature-generation receipt list and the owner
 /// damage-application ordinal counter. Fresh on every admission, dropped with the slot.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-struct DamageReceipts {
-    entries: Vec<OwnerCommitRecord>,
-    next_ordinal: u64,
+pub(crate) struct DamageReceipts {
+    pub(crate) entries: Vec<OwnerCommitRecord>,
+    pub(crate) next_ordinal: u64,
     /// The owner clock (ms) of the turn that committed the lethal receipt, when that turn
     /// supplied one. Set once by the lethal commit; a replay never changes it.
     lethal_at_ms: Option<u64>,
@@ -615,7 +618,7 @@ struct DamageReceipts {
 
 impl DamageReceipts {
     /// D144: the one retained receipt whose commit drove health to zero, if any.
-    fn lethal(&self) -> Option<&OwnerCommitRecord> {
+    pub(crate) fn lethal(&self) -> Option<&OwnerCommitRecord> {
         self.entries.iter().find(|record| {
             record.result.applied
                 && record.result.health_before > 0
@@ -660,9 +663,9 @@ pub(crate) const COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX: usize = 16;
 /// reached. A contributor's total only ever increases, so "last reached" already is "first
 /// reached this exact value" -- no separate history is needed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct DamageContributor {
+pub(crate) struct DamageContributor {
     character: CharacterId,
-    total: u64,
+    pub(crate) total: u64,
     last_update_ordinal: u64,
     /// D141: this attacker's `(session, sequence, sub_ordinal)` high-water mark. A new current
     /// session replaces it outright; within one session it only ever rises.
@@ -680,8 +683,8 @@ struct DamageContributor {
 /// in-progress accumulation was pending, exactly the accepted D52 loss ("Przepadają, bez
 /// duplikatów" -- nothing duplicated, nothing silently completed by a later generation).
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-struct DamageContributors {
-    entries: Vec<DamageContributor>,
+pub(crate) struct DamageContributors {
+    pub(crate) entries: Vec<DamageContributor>,
 }
 
 impl DamageContributors {
@@ -850,7 +853,7 @@ impl TopDamagePrincipal {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct CreatureDeathOccurrenceRef {
     actor: ExactActorRef,
-    commit_binding: Box<[u8]>,
+    pub(crate) commit_binding: Box<[u8]>,
     damage: i64,
     health_before: i64,
 }
@@ -916,8 +919,8 @@ impl CreatureDeathOccurrenceKey {
 /// the lethal commit; dead creatures cannot mutate or initialize it later.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct RuntimeCorpseProjection {
-    occurrence: CreatureDeathOccurrenceRef,
-    position: VersionedPosition,
+    pub(crate) occurrence: CreatureDeathOccurrenceRef,
+    pub(crate) position: VersionedPosition,
     /// The lethal receipt's owner clock (ms), when its committing turn supplied one.
     death_at_ms: Option<u64>,
 }
@@ -971,12 +974,12 @@ pub(crate) struct VisibleRuntimeEntities {
 /// deliberately neither Clone nor Copy and has no caller-visible constructor.
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) struct CommittedLethalReceipt {
-    projection: RuntimeCorpseProjection,
+    pub(crate) projection: RuntimeCorpseProjection,
 }
 
 /// 4096 is the registered Ability plan bound; the owner still independently
 /// checks the actual complete encoding before allocating its one receipt.
-const MAX_OWNER_COMMIT_BINDING_BYTES: usize = 4_096;
+pub(crate) const MAX_OWNER_COMMIT_BINDING_BYTES: usize = 4_096;
 
 impl CurrentOwnerExactActorCommit<'_> {
     pub(crate) fn commit_damage(
@@ -1240,7 +1243,7 @@ impl CurrentOwnerExactActorLookup<'_> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct ActorState(u64);
+pub(crate) struct ActorState(pub(crate) u64);
 
 /// The binding a position is valid under. In production the Channel's fixed
 /// Content pin (#935) holds the full binding once; each slot keeps only this
@@ -1248,42 +1251,42 @@ struct ActorState(u64);
 /// is unchanged): the frame-binding and map-revision digest prefixes and the
 /// activation sequence. Test fixtures use synthetic values.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct PreProductionPositionContext {
-    world_id: WorldId,
-    channel_id: ChannelId,
-    scope_generation: ScopeOwnershipGeneration,
-    coordinate_frame_marker: u64,
-    map_revision_marker: u64,
-    content_generation_marker: u64,
+pub(crate) struct PreProductionPositionContext {
+    pub(crate) world_id: WorldId,
+    pub(crate) channel_id: ChannelId,
+    pub(crate) scope_generation: ScopeOwnershipGeneration,
+    pub(crate) coordinate_frame_marker: u64,
+    pub(crate) map_revision_marker: u64,
+    pub(crate) content_generation_marker: u64,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct LocalPosition {
-    x: i32,
-    y: i32,
-    floor: i16,
+pub(crate) struct LocalPosition {
+    pub(crate) x: i32,
+    pub(crate) y: i32,
+    pub(crate) floor: i16,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct VersionedPosition {
+pub(crate) struct VersionedPosition {
     actor_local_id: ActorLocalId,
     actor_local_generation: ActorLocalGeneration,
-    context: PreProductionPositionContext,
-    position: LocalPosition,
-    revision: u64,
+    pub(crate) context: PreProductionPositionContext,
+    pub(crate) position: LocalPosition,
+    pub(crate) revision: u64,
     facing: Option<MovementFacing>,
 }
 
 /// A value snapshot, never an authority token. Compare-commit revalidates
 /// actor, independently current owner, context and revision at the write.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct PositionSnapshot {
-    actor_ref: ActorRef,
-    version: VersionedPosition,
+pub(crate) struct PositionSnapshot {
+    pub(crate) actor_ref: ActorRef,
+    pub(crate) version: VersionedPosition,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-enum Slot {
+pub(crate) enum Slot {
     VacantReusable {
         generation: u64,
         next_free: Option<u32>,
@@ -1404,11 +1407,11 @@ pub(crate) struct PlayerControlFacts {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-struct ChannelActorCarrier {
+pub(crate) struct ChannelActorCarrier {
     world_id: WorldId,
     channel_id: ChannelId,
     scope_generation: ScopeOwnershipGeneration,
-    slots: Box<[Slot]>,
+    pub(crate) slots: Box<[Slot]>,
     free_head: Option<u32>,
     /// AI-2 (GAME-AI-01 §4.1: "the carrier's current one-creature limit ...
     /// is lifted to this envelope in AI-2"): one committed death per creature
@@ -1416,7 +1419,7 @@ struct ChannelActorCarrier {
     /// `slots.len()` itself -- no more than one dead-but-not-yet-removed
     /// creature can exist per slot, so this can never exceed total capacity.
     /// `remove` prunes an actor's entry so it never outlives its slot.
-    corpse_projections: Vec<RuntimeCorpseProjection>,
+    pub(crate) corpse_projections: Vec<RuntimeCorpseProjection>,
     /// D2b: the memoized XP reward occurrence of each committed death, minted
     /// at most once per actor (DUR-03 decision §4.2). AI-2 widens this from
     /// its original one-creature-per-generation singleton to one entry per
@@ -1439,7 +1442,7 @@ struct ChannelActorCarrier {
     /// A2: the bound lease and write fence of each committed player slot that has one, keyed by
     /// slot index and that slot's generation. At most one entry per slot: `remove` prunes it, so
     /// it is bounded by `slots.len()` and never outlives its actor.
-    attackers: Vec<PlayerAttackerEntry>,
+    pub(crate) attackers: Vec<PlayerAttackerEntry>,
     /// VIS-3 (Codex 4178196302): the index of every slot off the free list (`Occupied`,
     /// `CreatureOccupied` or a companion's `CreatureReserved`), in no particular order, so a
     /// census of the actors present costs their number, not the capacity. Its capacity is
@@ -1457,7 +1460,7 @@ struct ChannelActorCarrier {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct PlayerAttackerEntry {
+pub(crate) struct PlayerAttackerEntry {
     index: usize,
     generation: u64,
     authority: PlayerAttackerAuthority,
@@ -3842,7 +3845,7 @@ impl ChannelRuntimeV1 {
 }
 
 impl ChannelActorCarrier {
-    fn current_owner_combat_death<'a>(
+    pub(crate) fn current_owner_combat_death<'a>(
         &'a mut self,
         continuity: &'a NamespaceContinuityGuard,
     ) -> CurrentOwnerCombatDeath<'a> {
@@ -3959,14 +3962,14 @@ impl ChannelActorCarrier {
             .map(MovementPositionSnapshot)
     }
 
-    fn current_owner_exact_commit<'a>(
+    pub(crate) fn current_owner_exact_commit<'a>(
         &'a mut self,
         continuity: &'a NamespaceContinuityGuard,
     ) -> CurrentOwnerExactActorCommit<'a> {
         self.current_owner_exact_commit_at(continuity, None)
     }
 
-    fn current_owner_exact_commit_at<'a>(
+    pub(crate) fn current_owner_exact_commit_at<'a>(
         &'a mut self,
         continuity: &'a NamespaceContinuityGuard,
         now_ms: Option<u64>,
@@ -3979,7 +3982,7 @@ impl ChannelActorCarrier {
         }
     }
 
-    fn current_owner_exact_lookup<'a>(
+    pub(crate) fn current_owner_exact_lookup<'a>(
         &'a self,
         continuity: &'a NamespaceContinuityGuard,
     ) -> CurrentOwnerExactActorLookup<'a> {
@@ -3989,7 +3992,7 @@ impl ChannelActorCarrier {
         }
     }
 
-    fn bootstrap_pre_production(
+    pub(crate) fn bootstrap_pre_production(
         continuity: &mut NamespaceContinuityGuard,
         explicit_capacity: usize,
     ) -> Result<Self, CarrierError> {
@@ -4036,7 +4039,7 @@ impl ChannelActorCarrier {
         })
     }
 
-    fn admit(
+    pub(crate) fn admit(
         &mut self,
         continuity: &NamespaceContinuityGuard,
         actor: ActorState,
@@ -4050,7 +4053,7 @@ impl ChannelActorCarrier {
     /// ([`CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX`]) and the general slot-capacity check
     /// `admit_inner` performs; population/placement-cell ceilings are a spawn-realization
     /// concern (`realize_spawn`), not this generic per-actor primitive.
-    fn admit_creature(
+    pub(crate) fn admit_creature(
         &mut self,
         continuity: &NamespaceContinuityGuard,
         actor: ActorState,
@@ -4076,7 +4079,7 @@ impl ChannelActorCarrier {
         )
     }
 
-    fn reserve_player(
+    pub(crate) fn reserve_player(
         &mut self,
         continuity: &NamespaceContinuityGuard,
         game_session_id: GameSessionId,
@@ -4095,7 +4098,7 @@ impl ChannelActorCarrier {
         })
     }
 
-    fn commit_reserved_player(
+    pub(crate) fn commit_reserved_player(
         &mut self,
         continuity: &NamespaceContinuityGuard,
         reservation: PlayerActorReservation,
@@ -4140,7 +4143,7 @@ impl ChannelActorCarrier {
         self.remove(continuity, reservation.actor_ref).map(|_| ())
     }
 
-    fn remove_terminal_player(
+    pub(crate) fn remove_terminal_player(
         &mut self,
         continuity: &NamespaceContinuityGuard,
         game_session_id: GameSessionId,
@@ -4260,7 +4263,7 @@ impl ChannelActorCarrier {
         Ok(actor_ref)
     }
 
-    fn lookup(
+    pub(crate) fn lookup(
         &self,
         continuity: &NamespaceContinuityGuard,
         actor_ref: ActorRef,
@@ -4370,7 +4373,7 @@ impl ChannelActorCarrier {
         Ok(())
     }
 
-    fn remove(
+    pub(crate) fn remove(
         &mut self,
         continuity: &NamespaceContinuityGuard,
         actor_ref: ActorRef,
@@ -4506,7 +4509,7 @@ impl ChannelActorCarrier {
     /// An unattributed commit keeps the caller's opaque `occurrence` identity and is never
     /// evictable.
     // Structural sibling supplies no current content authority; registered encounter actors refuse.
-    fn commit_creature_damage_inner(
+    pub(crate) fn commit_creature_damage_inner(
         &mut self,
         continuity: &NamespaceContinuityGuard,
         actor: ActorRef,
@@ -5327,7 +5330,7 @@ impl ChannelActorCarrier {
 
     /// Private preproduction-only initial binding; existing actor admission
     /// cannot silently invent a position or a Content activation context.
-    fn initialize_position(
+    pub(crate) fn initialize_position(
         &mut self,
         continuity: &NamespaceContinuityGuard,
         actor_ref: ActorRef,
@@ -5386,7 +5389,7 @@ impl ChannelActorCarrier {
     }
 
     /// One direct occupied-slot read under the independently current owner.
-    fn read_position(
+    pub(crate) fn read_position(
         &self,
         continuity: &NamespaceContinuityGuard,
         actor_ref: ActorRef,
@@ -5434,7 +5437,7 @@ impl ChannelActorCarrier {
     /// Compare and commit exactly one replacement in the same actor slot.
     /// All fallible checks run before the sole mutation and no alternate store
     /// or movement timing authority participates.
-    fn compare_commit_position(
+    pub(crate) fn compare_commit_position(
         &mut self,
         continuity: &NamespaceContinuityGuard,
         expected: PositionSnapshot,
@@ -5591,7 +5594,7 @@ impl ChannelActorCarrier {
         }
     }
 
-    fn player_control_loss(
+    pub(crate) fn player_control_loss(
         &self,
         continuity: &NamespaceContinuityGuard,
         actor_ref: ActorRef,
@@ -5604,7 +5607,7 @@ impl ChannelActorCarrier {
         }
     }
 
-    fn record_player_control_loss(
+    pub(crate) fn record_player_control_loss(
         &mut self,
         continuity: &NamespaceContinuityGuard,
         actor_ref: ActorRef,
@@ -5629,7 +5632,7 @@ impl ChannelActorCarrier {
         }
     }
 
-    fn restore_player_control(
+    pub(crate) fn restore_player_control(
         &mut self,
         continuity: &NamespaceContinuityGuard,
         actor_ref: ActorRef,
@@ -5731,7 +5734,7 @@ impl ChannelActorCarrier {
         Ok(&mut self.attackers[at].authority)
     }
 
-    fn bind_attacker_lease(
+    pub(crate) fn bind_attacker_lease(
         &mut self,
         continuity: &NamespaceContinuityGuard,
         actor_ref: ActorRef,
@@ -5749,7 +5752,7 @@ impl ChannelActorCarrier {
         }
     }
 
-    fn fence_player_writes(
+    pub(crate) fn fence_player_writes(
         &mut self,
         continuity: &NamespaceContinuityGuard,
         actor_ref: ActorRef,
@@ -5774,7 +5777,7 @@ impl ChannelActorCarrier {
         }
     }
 
-    fn lift_player_fence(
+    pub(crate) fn lift_player_fence(
         &mut self,
         continuity: &NamespaceContinuityGuard,
         actor_ref: ActorRef,
@@ -5789,7 +5792,7 @@ impl ChannelActorCarrier {
         Ok(false)
     }
 
-    fn rebind_player_session(
+    pub(crate) fn rebind_player_session(
         &mut self,
         continuity: &NamespaceContinuityGuard,
         actor_ref: ActorRef,
@@ -5827,7 +5830,7 @@ impl ChannelActorCarrier {
         Ok(())
     }
 
-    fn bind_continuation(
+    pub(crate) fn bind_continuation(
         &mut self,
         continuity: &NamespaceContinuityGuard,
         actor_ref: ActorRef,
@@ -6768,7 +6771,7 @@ impl CombatDeathFixture {
     /// Fixture creature health: test/evidence only, not Reference behavior.
     pub(crate) const HEALTH: i64 = 20;
     const TARGET: &'static str = "fixture:vsl-combat.creature";
-    const POSITION: LocalPosition = LocalPosition {
+    pub(crate) const POSITION: LocalPosition = LocalPosition {
         x: 100,
         y: 100,
         floor: 7,
@@ -6913,8 +6916,6 @@ impl CombatDeathFixture {
             )
     }
 
-    /// Combat's idempotent projection of the committed lethal occurrence and
-    /// the durable death key it names, with the corpse position.
     /// MAP-ITEM-REF-1 Part B: [`ChannelRuntimeV1::bind_corpse_item`] for the fixture's corpse.
     pub(crate) fn bind_corpse_item(
         &mut self,
@@ -6941,17 +6942,6 @@ impl CombatDeathFixture {
             .into_iter()
             .find(|corpse| corpse.identity == self.actor.corpse_identity())
             .map(|corpse| corpse.item.item_instance_id)
-    }
-
-    pub(crate) fn project_death(
-        &mut self,
-    ) -> Result<(CreatureDeathOccurrenceKey, MovementLocalPosition), CarrierError> {
-        let mut combat = self.carrier.current_owner_combat_death(&self.owner);
-        let projection = super::exact_actor_test_combat::project_fixed_one_creature_death(
-            &mut combat,
-            self.actor,
-        )?;
-        Ok((projection.occurrence().death_key(), projection.position()))
     }
 
     /// D132/D3-3 + D4: the same owner-committed damage occurrence as [`Self::strike`],
@@ -7078,26 +7068,6 @@ impl ChannelActorCarrier {
 
 #[cfg(test)]
 #[allow(clippy::expect_used)]
-#[path = "ability_exact_actor_resolution_tests.rs"]
-mod ability_exact_actor_resolution_tests;
-
-#[cfg(test)]
-#[allow(clippy::expect_used)]
-#[path = "channel_owner_ability_commit_tests.rs"]
-mod channel_owner_ability_commit_tests;
-
-#[cfg(test)]
-#[allow(clippy::expect_used)]
-#[path = "channel_owner_creature_bite_tests.rs"]
-mod channel_owner_creature_bite_tests;
-
-#[cfg(test)]
-#[allow(clippy::expect_used)]
-#[path = "channel_owner_combat_death_tests.rs"]
-mod channel_owner_combat_death_tests;
-
-#[cfg(test)]
-#[allow(clippy::expect_used)]
 #[path = "damage_contributors_tests.rs"]
 mod damage_contributors_tests;
 
@@ -7105,11 +7075,6 @@ mod damage_contributors_tests;
 #[allow(clippy::expect_used)]
 #[path = "channel_actor_position_tests.rs"]
 mod channel_actor_position_tests;
-
-#[cfg(test)]
-#[allow(clippy::expect_used)]
-#[path = "movement_static_kernel_structural_tests.rs"]
-mod movement_static_kernel_structural_tests;
 
 #[cfg(test)]
 #[allow(clippy::expect_used)]
@@ -10076,714 +10041,6 @@ mod tests {
         // Read-only.
         assert_eq!(runtime.carrier.slots, before);
         assert_eq!(runtime.visible_entities(), visible);
-    }
-}
-
-/// A2 (#1635): the bound attacker slot and its write fence (CHARM-DESC-FENCE-LEASE §6 item 3).
-#[cfg(test)]
-#[allow(clippy::expect_used)]
-mod attacker_fence_tests {
-    use super::super::exact_actor_test_ability::commit::{
-        OwnerCharmDamagePlan, OwnerCommitError, commit_exact_owner_charm_damage,
-        commit_exact_owner_damage, commit_exact_owner_primary_damage,
-    };
-    use super::super::exact_actor_test_ability::exact_actor_resolution::{
-        ExactActorProposal, ResolvedExactActor, resolve_exact_actor,
-    };
-    use super::super::exact_actor_test_ability::{
-        AbilityIntent, AbilityOccurrence, CalculationStage, CommitGroup, Effect, EffectPlan,
-        ProposalSource, RevisionSet,
-    };
-    use super::*;
-
-    const SUPERSEDED: Result<OwnerDamageResult, CarrierError> =
-        Err(CarrierError::SupersededAttackerSession);
-
-    fn id(seed: u8) -> [u8; 16] {
-        let mut bytes = [seed; 16];
-        bytes[6] = 0x70;
-        bytes[8] = (bytes[8] & 0x3f) | 0x80;
-        bytes
-    }
-
-    fn session(seed: u8) -> GameSessionId {
-        GameSessionId::decode(&id(seed)).expect("session")
-    }
-
-    fn lease(character: u8, generation: u64) -> CharacterLease {
-        CharacterLease::new(
-            CharacterId::decode(&id(character)).expect("character"),
-            generation,
-        )
-        .expect("lease")
-    }
-
-    fn command(session_seed: u8, sequence: u64) -> CommandRef {
-        CommandRef::new(
-            session(session_seed),
-            super::super::CommandId::new(sequence).expect("command"),
-        )
-    }
-
-    struct Fixture {
-        continuity: NamespaceContinuityGuard,
-        carrier: ChannelActorCarrier,
-        creature: ExactActorRef,
-        /// Session 1 of Character 1, bound at lease generation 1.
-        attacker: ExactActorRef,
-    }
-
-    fn fixture(seed: u64) -> Fixture {
-        let mut continuity =
-            NamespaceContinuityGuard::from_pre_production_grant(PreProductionContinuityGrant {
-                world_id: WorldId::decode(&id(seed as u8)).expect("world"),
-                channel_id: ChannelId::decode(&id(seed as u8 + 1)).expect("channel"),
-                scope_generation: ScopeOwnershipGeneration::new(1).expect("scope"),
-            });
-        let mut carrier =
-            ChannelActorCarrier::bootstrap_pre_production(&mut continuity, 3).expect("carrier");
-        let creature = ExactActorRef(
-            carrier
-                .admit_creature(&continuity, ActorState(1), "target:one", 100)
-                .expect("creature"),
-        );
-        let attacker = carrier
-            .admit_bound_test_attacker(&continuity, session(1), lease(1, 1))
-            .expect("bound attacker");
-        Fixture {
-            continuity,
-            carrier,
-            creature,
-            attacker,
-        }
-    }
-
-    impl Fixture {
-        fn hit(
-            &mut self,
-            attacker: ExactActorRef,
-            command: CommandRef,
-        ) -> Result<OwnerDamageResult, CarrierError> {
-            let binding = format!("hit:{}", command.command_id().get());
-            self.carrier
-                .current_owner_exact_commit(&self.continuity)
-                .commit_damage_for_bound_attacker(
-                    self.creature,
-                    attacker,
-                    command,
-                    0,
-                    OwnerDamageCommand {
-                        target: b"target:one",
-                        occurrence: &[],
-                        binding: binding.as_bytes(),
-                        damage: 1,
-                    },
-                )
-        }
-
-        fn health(&self) -> i64 {
-            match &self.carrier.slots[0] {
-                Slot::CreatureOccupied { health, .. } => Some(*health),
-                _ => None,
-            }
-            .expect("the creature is slot 0")
-        }
-
-        fn fence(&mut self, token: WriteFenceToken) -> Result<WriteFenceSet, CarrierError> {
-            self.carrier
-                .fence_player_writes(&self.continuity, self.attacker.0, session(1), token)
-        }
-
-        fn lift(&mut self, token: WriteFenceToken) -> Result<bool, CarrierError> {
-            self.carrier
-                .lift_player_fence(&self.continuity, self.attacker.0, session(1), token)
-        }
-
-        fn lose_control(&mut self, epoch: u64) {
-            self.carrier
-                .record_player_control_loss(
-                    &self.continuity,
-                    self.attacker.0,
-                    session(1),
-                    ControlLossMark {
-                        epoch,
-                        grace_deadline: 100,
-                    },
-                )
-                .expect("control loss");
-        }
-    }
-
-    #[test]
-    fn a_write_between_fence_and_commit_is_refused_and_only_the_exact_token_lifts() {
-        let mut f = fixture(10);
-        assert!(f.hit(f.attacker, command(1, 1)).is_ok());
-        let token = WriteFenceToken::Transition(7);
-        assert_eq!(f.fence(token), Ok(WriteFenceSet::Fenced));
-        let before = f.carrier.slots.clone();
-        assert_eq!(f.hit(f.attacker, command(1, 2)), SUPERSEDED);
-        assert_eq!(f.carrier.slots, before);
-        // A lift with any other token is a no-op.
-        assert_eq!(f.lift(WriteFenceToken::Transition(8)), Ok(false));
-        assert_eq!(f.lift(WriteFenceToken::ControlLoss(7)), Ok(false));
-        assert_eq!(f.hit(f.attacker, command(1, 2)), SUPERSEDED);
-        // NotApplicable with the session still holding the lease: the exact token lifts.
-        assert_eq!(f.lift(token), Ok(true));
-        assert_eq!(f.lift(token), Ok(false));
-        assert!(f.hit(f.attacker, command(1, 2)).is_ok());
-        assert_eq!(f.health(), 98);
-    }
-
-    #[test]
-    fn one_transition_per_session_joins_its_retry_and_never_replaces_a_fence() {
-        let mut f = fixture(20);
-        f.lose_control(3);
-        let grace = WriteFenceToken::ControlLoss(3);
-        assert_eq!(f.fence(grace), Ok(WriteFenceSet::Fenced));
-        // An unknown durable outcome keeps the fence; the retry joins it.
-        assert_eq!(f.fence(grace), Ok(WriteFenceSet::Joined));
-        // An overlapping logout or revocation waits for the first transition's step (c).
-        assert_eq!(
-            f.fence(WriteFenceToken::Transition(1)),
-            Err(CarrierError::WriteFenceBusy)
-        );
-        assert_eq!(f.hit(f.attacker, command(1, 1)), SUPERSEDED);
-        // After a lift, the second transition starts again at step (a) with its own token.
-        assert_eq!(f.lift(grace), Ok(true));
-        assert_eq!(
-            f.fence(WriteFenceToken::Transition(1)),
-            Ok(WriteFenceSet::Fenced)
-        );
-        assert_eq!(f.fence(grace), Err(CarrierError::WriteFenceBusy));
-        // After a terminal settle, the second transition finds nothing to do.
-        f.carrier
-            .remove_terminal_player(&f.continuity, session(1), f.attacker)
-            .expect("terminal settle");
-        assert!(f.fence(WriteFenceToken::Transition(2)).is_err());
-        assert!(f.lift(WriteFenceToken::Transition(1)).is_err());
-        assert_eq!(f.hit(f.attacker, command(1, 1)), SUPERSEDED);
-    }
-
-    #[test]
-    fn grace_expiry_fences_only_its_marked_epoch_and_a_resume_lifts_it() {
-        let mut f = fixture(30);
-        // No mark, or another epoch: fencing refuses and the transition does not start.
-        assert_eq!(
-            f.fence(WriteFenceToken::ControlLoss(1)),
-            Err(CarrierError::ControlLossConflict)
-        );
-        f.lose_control(1);
-        assert_eq!(
-            f.fence(WriteFenceToken::ControlLoss(2)),
-            Err(CarrierError::ControlLossConflict)
-        );
-        assert_eq!(
-            f.fence(WriteFenceToken::ControlLoss(1)),
-            Ok(WriteFenceSet::Fenced)
-        );
-        assert_eq!(f.hit(f.attacker, command(1, 1)), SUPERSEDED);
-        // The same-session resume lifts the fence together with the mark of its epoch.
-        f.carrier
-            .restore_player_control(&f.continuity, f.attacker.0, session(1), 1)
-            .expect("resume");
-        assert!(f.hit(f.attacker, command(1, 1)).is_ok());
-        // A resume never lifts another transition's fence.
-        f.lose_control(2);
-        assert_eq!(
-            f.fence(WriteFenceToken::Transition(5)),
-            Ok(WriteFenceSet::Fenced)
-        );
-        f.carrier
-            .restore_player_control(&f.continuity, f.attacker.0, session(1), 2)
-            .expect("resume");
-        assert_eq!(f.hit(f.attacker, command(1, 2)), SUPERSEDED);
-    }
-
-    #[test]
-    fn a_terminal_session_is_never_unfenced_and_its_slot_binding_goes_with_it() {
-        let mut f = fixture(40);
-        let token = WriteFenceToken::Transition(1);
-        assert_eq!(f.fence(token), Ok(WriteFenceSet::Fenced));
-        f.carrier
-            .remove_terminal_player(&f.continuity, session(1), f.attacker)
-            .expect("terminal settle");
-        assert!(f.lift(token).is_err());
-        assert!(
-            f.carrier
-                .bind_attacker_lease(&f.continuity, f.attacker.0, session(1), lease(1, 1))
-                .is_err()
-        );
-        assert_eq!(f.hit(f.attacker, command(1, 1)), SUPERSEDED);
-        assert!(f.carrier.attackers.is_empty());
-        // A new session in the recycled slot inherits neither the fence nor the binding.
-        let reservation = f
-            .carrier
-            .reserve_player(&f.continuity, session(2))
-            .expect("reserve");
-        let next = f
-            .carrier
-            .commit_reserved_player(&f.continuity, reservation)
-            .expect("commit");
-        assert_eq!(f.hit(next, command(2, 1)), SUPERSEDED);
-        f.carrier
-            .bind_attacker_lease(&f.continuity, next.0, session(2), lease(1, 2))
-            .expect("bind");
-        assert_eq!(
-            f.carrier
-                .bind_attacker_lease(&f.continuity, next.0, session(2), lease(1, 3)),
-            Err(CarrierError::AttackerBindingConflict)
-        );
-        assert!(f.hit(next, command(2, 1)).is_ok());
-    }
-
-    #[test]
-    fn a_rebind_drops_the_old_fence_and_leaves_the_rebound_slot_unfenced() {
-        let mut f = fixture(50);
-        f.lose_control(4);
-        assert_eq!(
-            f.fence(WriteFenceToken::ControlLoss(4)),
-            Ok(WriteFenceSet::Fenced)
-        );
-        for (successor, refused) in [
-            (lease(1, 1), "an equal lease generation"),
-            (lease(2, 2), "another Character"),
-        ] {
-            assert_eq!(
-                f.carrier.rebind_player_session(
-                    &f.continuity,
-                    f.attacker.0,
-                    session(1),
-                    session(2),
-                    successor
-                ),
-                Err(CarrierError::AttackerBindingConflict),
-                "{refused}"
-            );
-        }
-        f.carrier
-            .rebind_player_session(
-                &f.continuity,
-                f.attacker.0,
-                session(1),
-                session(2),
-                lease(1, 2),
-            )
-            .expect("post-grace rebind");
-        assert_eq!(f.hit(f.attacker, command(1, 1)), SUPERSEDED);
-        assert!(f.hit(f.attacker, command(2, 1)).is_ok());
-        assert!(f.fence(WriteFenceToken::ControlLoss(4)).is_err());
-        assert_eq!(
-            f.carrier
-                .player_control_loss(&f.continuity, f.attacker.0, session(2)),
-            Ok(None)
-        );
-    }
-
-    #[test]
-    fn a_same_session_continuation_reconciles_before_it_binds() {
-        let mut f = fixture(60);
-        let reservation = f
-            .carrier
-            .reserve_player(&f.continuity, session(3))
-            .expect("reserve");
-        let slot = f
-            .carrier
-            .commit_reserved_player(&f.continuity, reservation)
-            .expect("reconstructed slot");
-        // No write is admitted before the binding exists.
-        assert_eq!(f.hit(slot, command(3, 1)), SUPERSEDED);
-        for refused in [
-            ContinuationReconcile::Terminal,
-            ContinuationReconcile::Unprovable,
-        ] {
-            assert_eq!(
-                f.carrier
-                    .bind_continuation(&f.continuity, slot.0, session(3), refused),
-                Err(CarrierError::ContinuationRefused)
-            );
-            assert_eq!(f.hit(slot, command(3, 1)), SUPERSEDED);
-        }
-        f.carrier
-            .bind_continuation(
-                &f.continuity,
-                slot.0,
-                session(3),
-                ContinuationReconcile::Proven(lease(3, 1)),
-            )
-            .expect("proven continuation binds unfenced");
-        assert!(f.hit(slot, command(3, 1)).is_ok());
-        assert_eq!(
-            f.carrier.bind_continuation(
-                &f.continuity,
-                slot.0,
-                session(3),
-                ContinuationReconcile::Proven(lease(3, 2)),
-            ),
-            Err(CarrierError::ContinuationRefused)
-        );
-    }
-
-    fn primary_plan(f: &Fixture) -> (ResolvedExactActor, EffectPlan) {
-        let occurrence = AbilityOccurrence::new(
-            "attack:rebind",
-            RevisionSet::new(
-                "rules:1",
-                "content:1",
-                "world:1",
-                "formula:1",
-                "simulation:1",
-            )
-            .expect("revisions"),
-        )
-        .expect("occurrence");
-        let resolved = resolve_exact_actor(
-            &f.carrier.current_owner_exact_lookup(&f.continuity),
-            &occurrence,
-            ExactActorProposal::client(f.creature),
-        )
-        .expect("current creature");
-        let plan = EffectPlan::immediate(
-            occurrence,
-            AbilityIntent::normalize(ProposalSource::Client, "actor:fixture", &["target:one"])
-                .expect("intent"),
-            vec![Effect::damage("target:one", 3).expect("damage")],
-            vec![],
-            CommitGroup::atomic("scope:fixture", "group:one").expect("group"),
-        )
-        .expect("plan");
-        (resolved, plan)
-    }
-
-    fn charm_plan(parent: &EffectPlan) -> EffectPlan {
-        EffectPlan::ordered_sequential(
-            parent.occurrence().clone(),
-            parent.intent().clone(),
-            vec![
-                parent.effects()[0].clone(),
-                Effect::damage("target:one", 9).expect("generated"),
-            ],
-            vec![CalculationStage::new("charm:generated").expect("stage")],
-            parent.commit_group().owner_scope(),
-            parent.commit_group().group_id(),
-        )
-        .expect("charm plan")
-    }
-
-    #[test]
-    fn a_rebind_during_an_in_flight_charm_or_descriptor_commit_settles_exactly_once() {
-        for charm_before_rebind in [false, true] {
-            let mut f = fixture(70);
-            let (resolved, plan) = primary_plan(&f);
-            let parent = commit_exact_owner_primary_damage(
-                &mut f.carrier.current_owner_exact_commit(&f.continuity),
-                &resolved,
-                &plan,
-                f.attacker,
-                command(1, 1),
-            )
-            .expect("primary under the bound lease");
-            let frozen = OwnerCharmDamagePlan::prepare(&parent, charm_plan(&plan))
-                .expect("prepare")
-                .expect("live parent");
-            let charm = |f: &mut Fixture| {
-                commit_exact_owner_charm_damage(
-                    &mut f.carrier.current_owner_exact_commit(&f.continuity),
-                    &frozen,
-                    f.attacker,
-                    command(1, 1),
-                )
-                .map(|charm| charm.result)
-            };
-            if charm_before_rebind {
-                assert!(charm(&mut f).expect("descendant").applied);
-            }
-            let settled = f.health();
-            assert_eq!(settled, if charm_before_rebind { 88 } else { 97 });
-            f.carrier
-                .rebind_player_session(
-                    &f.continuity,
-                    f.attacker.0,
-                    session(1),
-                    session(2),
-                    lease(1, 2),
-                )
-                .expect("rebind");
-            // Neither the descendant nor a replay of the primary applies again under the old
-            // session: each occurrence settled exactly once, before the rebind or never.
-            assert_eq!(
-                charm(&mut f),
-                Err(OwnerCommitError::Owner(
-                    CarrierError::SupersededAttackerSession
-                ))
-            );
-            assert_eq!(
-                commit_exact_owner_damage(
-                    &mut f.carrier.current_owner_exact_commit(&f.continuity),
-                    &resolved,
-                    &plan,
-                    f.attacker,
-                    command(1, 1),
-                ),
-                Err(OwnerCommitError::Owner(
-                    CarrierError::SupersededAttackerSession
-                ))
-            );
-            assert_eq!(f.health(), settled);
-        }
-    }
-
-    #[test]
-    fn a_fenced_slot_refuses_every_bridge_before_the_owner_write() {
-        let mut f = fixture(80);
-        let (resolved, plan) = primary_plan(&f);
-        f.lose_control(1);
-        assert_eq!(
-            f.fence(WriteFenceToken::ControlLoss(1)),
-            Ok(WriteFenceSet::Fenced)
-        );
-        let before = f.carrier.slots.clone();
-        assert_eq!(
-            commit_exact_owner_primary_damage(
-                &mut f.carrier.current_owner_exact_commit(&f.continuity),
-                &resolved,
-                &plan,
-                f.attacker,
-                command(1, 1),
-            )
-            .map(|_| ()),
-            Err(OwnerCommitError::Owner(
-                CarrierError::SupersededAttackerSession
-            ))
-        );
-        // A command of a session the slot does not hold is refused the same way.
-        assert_eq!(
-            commit_exact_owner_damage(
-                &mut f.carrier.current_owner_exact_commit(&f.continuity),
-                &resolved,
-                &plan,
-                f.attacker,
-                command(9, 1),
-            ),
-            Err(OwnerCommitError::Owner(
-                CarrierError::SupersededAttackerSession
-            ))
-        );
-        assert_eq!(f.carrier.slots, before);
-    }
-
-    impl Fixture {
-        fn swing(
-            &mut self,
-            lineage: CommandRef,
-            ordinal: u16,
-        ) -> Result<OwnerDamageResult, CarrierError> {
-            let binding = format!("swing:{}:{ordinal}", lineage.command_id().get());
-            self.carrier
-                .current_owner_exact_commit(&self.continuity)
-                .commit_swing_damage_for_bound_attacker(
-                    self.creature,
-                    self.attacker,
-                    lineage,
-                    ordinal,
-                    OwnerDamageCommand {
-                        target: b"target:one",
-                        occurrence: &[],
-                        binding: binding.as_bytes(),
-                        damage: 1,
-                    },
-                )
-        }
-    }
-
-    /// ATTACK-1b swing identity: many swings of one lineage commit on the same creature, a
-    /// replay of a retained swing is idempotent, a lower or equal unretained ordinal is refused,
-    /// the session fence still holds and the high-water mark never lowers.
-    #[test]
-    fn swings_of_one_lineage_commit_in_order_and_never_rewind() {
-        let mut f = fixture(40);
-        let lineage = command(1, 5);
-        for ordinal in 0..4 {
-            let hit = f.swing(lineage, ordinal).expect("swing commits");
-            assert!(hit.applied);
-            assert_eq!(hit.health_before - hit.health_after, 1);
-        }
-        assert_eq!(f.health(), 96);
-        // An exact replay of a retained swing returns its receipt without a second write.
-        let replay = f.swing(lineage, 3).expect("replay");
-        assert!(!replay.applied);
-        assert_eq!(f.health(), 96);
-        // A different-bytes swing under an already committed ordinal is not a new swing.
-        let before = f.carrier.slots.clone();
-        let binding = b"swing:other";
-        assert!(
-            f.carrier
-                .current_owner_exact_commit(&f.continuity)
-                .commit_swing_damage_for_bound_attacker(
-                    f.creature,
-                    f.attacker,
-                    lineage,
-                    3,
-                    OwnerDamageCommand {
-                        target: b"target:one",
-                        occurrence: &[],
-                        binding,
-                        damage: 1,
-                    },
-                )
-                .is_err()
-        );
-        assert_eq!(f.carrier.slots, before);
-        // A later lineage (a new `ATTACK_TARGET`) starts again at ordinal 0.
-        let next = command(1, 6);
-        assert!(f.swing(next, 0).expect("new lineage").applied);
-        assert!(f.swing(next, 1).expect("new lineage").applied);
-        assert_eq!(f.health(), 94);
-        // Once the retained receipt is gone, a lower or equal ordinal of the current lineage is
-        // stale, never a fresh write.
-        if let Slot::CreatureOccupied { committed, .. } = &mut f.carrier.slots[0] {
-            committed.entries.clear();
-        }
-        let before = f.carrier.slots.clone();
-        assert_eq!(f.swing(next, 1), Err(CarrierError::StaleAttackerSequence));
-        assert_eq!(f.swing(next, 0), Err(CarrierError::StaleAttackerSequence));
-        assert_eq!(f.carrier.slots, before);
-        // A spell command of the same session after the swings keeps the mark; the lineage
-        // continues and the mark is never lowered by it.
-        assert!(f.hit(f.attacker, command(1, 7)).expect("spell").applied);
-        assert!(f.swing(next, 2).expect("lineage continues").applied);
-        assert_eq!(
-            f.hit(f.attacker, command(1, 7)).map(|r| r.applied),
-            Ok(false)
-        );
-        // The bound-attacker session fence still refuses a superseded session.
-        assert_eq!(f.swing(command(9, 8), 0), SUPERSEDED);
-        let token = WriteFenceToken::Transition(3);
-        assert_eq!(f.fence(token), Ok(WriteFenceSet::Fenced));
-        assert_eq!(f.swing(next, 3), SUPERSEDED);
-    }
-
-    /// Codex P2 4180149935: the lineage's last swing ordinal (`u16::MAX`) is admitted, and a
-    /// replay of it stays idempotent.
-    #[test]
-    fn the_final_u16_swing_ordinal_commits() {
-        let mut f = fixture(40);
-        let lineage = command(1, 5);
-        assert!(f.swing(lineage, u16::MAX - 1).expect("penultimate").applied);
-        let last = f.swing(lineage, u16::MAX).expect("final ordinal commits");
-        assert!(last.applied);
-        assert_eq!(f.health(), 98);
-        assert!(!f.swing(lineage, u16::MAX).expect("replay").applied);
-        assert_eq!(f.health(), 98);
-    }
-
-    #[test]
-    fn fence_tokens_keep_their_kind() {
-        assert_eq!(
-            ChannelRuntimeV1::transition_fence(2),
-            WriteFenceToken::Transition(2)
-        );
-        assert_eq!(
-            ChannelRuntimeV1::grace_expiry_fence(2),
-            WriteFenceToken::ControlLoss(2)
-        );
-        assert_ne!(
-            ChannelRuntimeV1::transition_fence(2),
-            ChannelRuntimeV1::grace_expiry_fence(2)
-        );
-    }
-
-    fn hit_at(
-        f: &mut Fixture,
-        command: CommandRef,
-        now_ms: u64,
-        damage: i64,
-    ) -> Result<OwnerDamageResult, CarrierError> {
-        let binding = format!("hit:{}", command.command_id().get());
-        f.carrier
-            .current_owner_exact_commit_at(&f.continuity, Some(now_ms))
-            .commit_damage_for_bound_attacker(
-                f.creature,
-                f.attacker,
-                command,
-                0,
-                OwnerDamageCommand {
-                    target: b"target:one",
-                    occurrence: &[],
-                    binding: binding.as_bytes(),
-                    damage,
-                },
-            )
-    }
-
-    fn principal(f: &mut Fixture) -> TopDamagePrincipal {
-        CurrentOwnerCombatDeath {
-            carrier: &mut f.carrier,
-            continuity: &f.continuity,
-        }
-        .top_damage_contributor(f.creature)
-        .expect("live creature")
-    }
-
-    /// §1.3: no tracked contributor means the lethal-attacker fallback; a tracked winner whose
-    /// bound slot is still present carries its session, slot and latest damage clock; a winner
-    /// whose slot is gone is reported as gone.
-    #[test]
-    fn the_top_damage_principal_is_untracked_present_or_gone() {
-        let mut f = fixture(70);
-        assert_eq!(principal(&mut f), TopDamagePrincipal::Untracked);
-        assert!(hit_at(&mut f, command(1, 1), 1_000, 1).is_ok());
-        assert!(f.hit(f.attacker, command(1, 2)).is_ok());
-        assert!(hit_at(&mut f, command(1, 3), 900, 1).is_ok());
-        let character = CharacterId::decode(&id(1)).expect("character");
-        assert_eq!(
-            principal(&mut f),
-            TopDamagePrincipal::Present(TopDamageContributor {
-                character,
-                lease_generation: 1,
-                session: session(1),
-                actor: f.attacker,
-                last_damage_at_ms: Some(1_000),
-            })
-        );
-        f.carrier
-            .remove(&f.continuity, f.attacker.0)
-            .expect("attacker leaves");
-        assert_eq!(principal(&mut f), TopDamagePrincipal::Gone);
-    }
-
-    /// P2 4180039074: the projected death time is the lethal hit's owner clock and an
-    /// idempotent replay at a later clock does not move it.
-    #[test]
-    fn the_projected_death_time_is_the_lethal_hit_clock_and_survives_a_replay() {
-        let mut f = fixture(72);
-        let context = PreProductionPositionContext {
-            world_id: WorldId::decode(&id(72)).expect("world"),
-            channel_id: ChannelId::decode(&id(73)).expect("channel"),
-            scope_generation: ScopeOwnershipGeneration::new(1).expect("scope"),
-            coordinate_frame_marker: 41,
-            map_revision_marker: 42,
-            content_generation_marker: 43,
-        };
-        f.carrier
-            .initialize_position(
-                &f.continuity,
-                f.creature.0,
-                context,
-                CombatDeathFixture::POSITION,
-            )
-            .expect("position");
-        assert!(hit_at(&mut f, command(1, 1), 5_000, 100).is_ok());
-        assert_eq!(f.health(), 0);
-        assert!(hit_at(&mut f, command(1, 1), 9_000, 100).is_ok());
-        let mut death = CurrentOwnerCombatDeath {
-            carrier: &mut f.carrier,
-            continuity: &f.continuity,
-        };
-        super::super::exact_actor_test_combat::project_fixed_one_creature_death(
-            &mut death, f.creature,
-        )
-        .expect("projected death");
-        assert_eq!(death.projected_death_at_ms(f.creature), Ok(Some(5_000)));
     }
 }
 
@@ -15152,7 +14409,7 @@ impl ChannelRuntimeV1 {
 }
 
 // Test-only native owner harness. Registration callback supplied by root test reads actual project.
-// No crate::content dependency is introduced into standalone Foundation path includes.
+// No Content dependency is introduced into standalone Foundation path includes.
 #[cfg(test)]
 #[allow(
     clippy::expect_used,

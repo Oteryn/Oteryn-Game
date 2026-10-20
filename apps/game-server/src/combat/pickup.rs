@@ -27,8 +27,7 @@
 //! in `durability::item_transfer`'s admission and its database guards.
 //!
 //! This is `crate::combat_pickup` (a top-level module, not `combat::pickup`): `combat.rs` is
-//! also recompiled standalone by `foundation/mod.rs`'s `#[cfg(test)] mod exact_actor_test_combat`
-//! and by PG test binaries that need `combat::death_reward`/`combat::loot_plan` but not Content,
+//! also recompiled standalone by PG test binaries that need `combat::death_reward`/`combat::loot_plan` but not Content,
 //! so a `crate::content` dependency inside `combat.rs`'s own module tree would force every one
 //! of those to also carry a local `content` module. This module reaches
 //! `combat::death_reward::DurabilitySession` through `combat`'s own `pub(crate)` re-export.
