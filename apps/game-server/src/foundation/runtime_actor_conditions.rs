@@ -10,7 +10,7 @@ pub(crate) use super::super::exact_actor_test_ability::condition::{
 };
 use super::*;
 #[cfg(not(test))]
-pub(crate) use crate::ability::condition::{
+pub(crate) use crate::foundation::condition::{
     ApplicationFacts, AttributeModifier, AttributeModifiers, CombatSkill, ConditionDefinition,
     ConditionRefusal, ConditionSourceKind, ConditionStore, ConditionTick, ConditionType,
     ConditionValues, DamageSchedule, DamageSegment, DotElement, ExactSpeedRatio,

@@ -141,18 +141,7 @@ pub struct CurrentCharacterItemFence {
     pub scope_ownership_generation: ScopeOwnershipGeneration,
 }
 
-/// GAME-ITEM-01 §4.1 stack class of a definition.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ItemStackClass {
-    NonStackable,
-    /// Stackable; `proven_maximum` is the definition's proven stack maximum,
-    /// or `None` for the D82 default of 100.
-    Stackable {
-        proven_maximum: Option<u32>,
-    },
-    /// Not admitted for pickup (fail closed).
-    Unknown,
-}
+pub use crate::domain::item_definition::ItemStackClass;
 
 /// Same admitted Content generation, resolved by the real producer, never a client revision.
 pub trait ItemWeightLookup: Send + Sync {
@@ -169,19 +158,7 @@ pub enum ItemWeightRefused {
     DefinitionMismatch,
 }
 
-/// Current compatible Content facts for one item definition.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ItemDefinitionFacts {
-    /// Known physical unit weight in centi-oz from the admitted Content generation.
-    pub weight: Option<u32>,
-    pub definition: TypedDefinitionRef,
-    pub stack: ItemStackClass,
-    /// Declared container capacity (direct entries); `None` for a non-container.
-    pub container_capacity: Option<u32>,
-    /// The definition declares a complete equip pattern whose primary slot is
-    /// `container` (GAME-ITEM-01 §6.2). Being a container is not enough.
-    pub container_slot_equip_pattern: bool,
-}
+pub use crate::domain::item_definition::ItemDefinitionFacts;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ItemTransferDestination {

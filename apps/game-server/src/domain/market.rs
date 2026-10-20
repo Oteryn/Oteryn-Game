@@ -5,20 +5,25 @@
     reason = "private Market owner awaits atomic CP integration"
 )]
 
-use crate::content::{DefinitionFamily, TypedDefinitionRef};
-use crate::durability::DurabilityError;
-use crate::durability::market::StoredItemDefinition;
+/// Definition identity supplied by the admitted content producer.
+pub trait MarketDefinitionIdentity {
+    fn is_item_family(&self) -> bool;
+    fn production_key(&self) -> &str;
+    fn revision_ref(&self) -> &str;
+}
 
-pub(crate) fn definition_for_storage(
-    value: &TypedDefinitionRef,
-) -> Result<StoredItemDefinition, DurabilityError> {
-    if value.family() != DefinitionFamily::Item {
-        return Err(DurabilityError::InvalidStoredState);
+pub(crate) fn definition_for_storage<T, E>(
+    value: &impl MarketDefinitionIdentity,
+    store: impl FnOnce(super::item_definition::TypedDefinitionRef) -> Result<T, E>,
+    invalid: impl FnOnce() -> E,
+) -> Result<T, E> {
+    if !value.is_item_family() {
+        return Err(invalid());
     }
-    StoredItemDefinition::new(crate::durability::item_mint::TypedDefinitionRef {
+    store(crate::domain::item_definition::TypedDefinitionRef {
         family: "Item".to_owned(),
-        production_key: value.key().as_str().to_owned(),
-        revision_ref: value.revision().as_str().to_owned(),
+        production_key: value.production_key().to_owned(),
+        revision_ref: value.revision_ref().to_owned(),
     })
 }
 
@@ -55,7 +60,7 @@ mod tests {
         key: &str,
         revision: &str,
     ) -> Result<StoredItemDefinition, crate::durability::DurabilityError> {
-        StoredItemDefinition::new(crate::durability::item_mint::TypedDefinitionRef {
+        StoredItemDefinition::new(crate::domain::item_definition::TypedDefinitionRef {
             family: "Item".to_owned(),
             production_key: key.to_owned(),
             revision_ref: revision.to_owned(),
@@ -78,13 +83,21 @@ mod tests {
         let revision = DefinitionRevisionRef::new("r+1").expect("revision");
         let content =
             TypedDefinitionRef::new(DefinitionFamily::Item, key.clone(), revision.clone());
-        let stored = super::definition_for_storage(&content).expect("mapping");
+        let stored = super::definition_for_storage(&content, StoredItemDefinition::new, || {
+            crate::durability::DurabilityError::InvalidStoredState
+        })
+        .expect("mapping");
         assert_eq!(
             (stored.family(), stored.key(), stored.revision()),
             ("Item", "n:ware", "r+1")
         );
         let other = TypedDefinitionRef::new(DefinitionFamily::Creature, key, revision);
-        assert!(super::definition_for_storage(&other).is_err());
+        assert!(
+            super::definition_for_storage(&other, StoredItemDefinition::new, || {
+                crate::durability::DurabilityError::InvalidStoredState
+            })
+            .is_err()
+        );
     }
     #[test]
     fn market_checked_total_and_fee_limits() {

@@ -2,6 +2,7 @@
 
 pub mod appearance;
 pub mod bestiary;
+pub mod character_build;
 pub mod character_name;
 pub mod charm;
 pub mod currency;
@@ -13,6 +14,7 @@ pub mod forge_dust;
 #[cfg(test)]
 #[path = "../durability/forge_tests.rs"]
 mod forge_tests;
+pub mod item_definition;
 pub mod mail;
 pub mod market;
 pub mod premium;

@@ -14,8 +14,8 @@ use super::project::{
     ProjectV2AppearanceSelection, ProjectV2AuthoringProfile, ProjectV2AuthoringProfileData,
     ProjectV2DefinitionRef, ProjectV2Family,
 };
-use crate::ability::condition::{ConditionType, DotElement};
 use crate::domain::appearance::AppearanceContent;
+use crate::foundation::condition::{ConditionType, DotElement};
 use crate::foundation::{ChannelRuntimeV1, CompiledCreaturePolicies, CompiledCreaturePolicy};
 use crate::spell::{SpellBook, executable_catalog};
 use serde::{Deserialize, Serialize};
