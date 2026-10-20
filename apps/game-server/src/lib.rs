@@ -80,7 +80,7 @@ mod interaction_chest_use;
 mod achievement_catalogue;
 
 pub mod character_bootstrap_intent;
-pub mod character_recovery_fence;
+pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
 #[allow(
     dead_code,
     unused_imports,
@@ -723,7 +723,7 @@ mod v2_reconciled_prepared_budget_regression_tests {
     }
 }
 
-pub mod admission_evidence;
+pub use oteryn_gameplay_admission_evidence as admission_evidence;
 pub mod native_admission_source;
 
 #[allow(
@@ -807,11 +807,7 @@ mod source_callback_spawn;
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
 mod smelly_damage;
-#[allow(
-    dead_code,
-    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
-)]
-mod source_critical_baseline;
+use oteryn_gameplay_source_critical_baseline as source_critical_baseline;
 #[allow(
     dead_code,
     reason = "Private native encounter owner ABI retained for source-qualified library dispatch; shipping AI loop is not activated"

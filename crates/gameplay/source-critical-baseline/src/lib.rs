@@ -1,23 +1,31 @@
 //! Closed four-actor SOURCE-DEFAULT baseline. Not global critical parity or dynamic SoulPit support.
+#![allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
 use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
 };
-pub(crate) const CRITICAL_BASELINE_QUALIFICATION: &str =
+pub const CRITICAL_BASELINE_QUALIFICATION: &str =
     "PROJECT_SOURCE_DEFAULT_CRITICAL_BONUS_ZERO(GlobalUnverifiedDynamicCritical)";
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct SourceCriticalBaseline {
+pub struct SourceCriticalBaseline {
     chance_ppm: u32,
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct SourceCriticalEvent {
-    pub(crate) critical: bool,
-    pub(crate) bonus_basis_points: u32,
-    pub(crate) qualification: &'static str,
+pub struct SourceCriticalEvent {
+    pub critical: bool,
+    pub bonus_basis_points: u32,
+    pub qualification: &'static str,
 }
 impl SourceCriticalBaseline {
     /// Native source profiles must originate from the current owning artifact loader. Closed
     /// keys/chances qualify the cached pinned source default, not arbitrary Lua setters.
-    pub(crate) fn qualify(key: &str, chance_ppm: u32) -> Result<Option<Self>, ()> {
+    #[allow(
+        clippy::result_unit_err,
+        reason = "mechanical crate extraction preserves the existing unit-error API"
+    )]
+    pub fn qualify(key: &str, chance_ppm: u32) -> Result<Option<Self>, ()> {
         if chance_ppm == 0 {
             return Ok(None);
         }
@@ -31,13 +39,17 @@ impl SourceCriticalBaseline {
         }
         Ok(Some(Self { chance_ppm }))
     }
-    pub(crate) fn fingerprint_parts(self) -> (u32, &'static str) {
+    pub fn fingerprint_parts(self) -> (u32, &'static str) {
         (self.chance_ppm, CRITICAL_BASELINE_QUALIFICATION)
     }
     /// Distinct deterministic decision-purpose keyed by the ORIGINAL owner-issued cast/swing
     /// occurrence. Native memoized outcomes suppress replay; no extra attack/target occurrence.
     /// Source uniform_random(1,10000)<=chance*100: exact source chance granularity retained.
-    pub(crate) fn draw(
+    #[allow(
+        clippy::result_unit_err,
+        reason = "mechanical crate extraction preserves the existing unit-error API"
+    )]
+    pub fn draw(
         self,
         root: &GameplayDecisionRoot,
         occurrence: DecisionOccurrenceId,

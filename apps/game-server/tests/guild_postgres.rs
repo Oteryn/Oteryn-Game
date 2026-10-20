@@ -68,8 +68,7 @@ mod player_lethal;
 
 #[path = "../src/character_bootstrap_intent.rs"]
 pub mod character_bootstrap_intent;
-#[path = "../src/character_recovery_fence.rs"]
-pub mod character_recovery_fence;
+pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
 #[allow(
     dead_code,
     unused_imports,
@@ -163,8 +162,7 @@ mod foundation_final_review_round2_regressions;
 #[path = "../src/foundation/final_review_round2_runtime_rollback.rs"]
 mod foundation_final_review_round2_runtime_rollback;
 
-#[path = "../src/admission_evidence.rs"]
-pub mod admission_evidence;
+pub use oteryn_gameplay_admission_evidence as admission_evidence;
 #[path = "../src/native_admission_source/mod.rs"]
 pub mod native_admission_source;
 
@@ -270,8 +268,7 @@ mod source_callback_spawn;
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-#[path = "../src/source_critical_baseline.rs"]
-mod source_critical_baseline;
+use oteryn_gameplay_source_critical_baseline as source_critical_baseline;
 #[allow(
     dead_code,
     reason = "Private native encounter owner ABI retained for source-qualified library dispatch; shipping AI loop is not activated"

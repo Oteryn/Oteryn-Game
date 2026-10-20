@@ -12,8 +12,7 @@ mod bestiary_postgres_harness;
 #[path = "../src/character_bootstrap_intent.rs"]
 pub mod character_bootstrap_intent;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/character_recovery_fence.rs"]
-pub mod character_recovery_fence;
+pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
 #[allow(dead_code, unused_imports)]
 #[path = "../src/durability/mod.rs"]
 mod durability;

@@ -30,7 +30,11 @@ if ! git merge-base --is-ancestor "$GAME_ADMISSION_SHA" HEAD; then
   exit 2
 fi
 for path in apps/game-server/src/admission_evidence.rs apps/game-server/src/native_admission_source/mod.rs apps/game-server/src/native_admission_source/descriptor.rs apps/game-server/src/native_admission_source/http1_mtls.rs; do
-  [[ "$(git rev-parse "$GAME_ADMISSION_SHA:$path")" == "$(git rev-parse "HEAD:$path")" ]] || {
+  current_path="$path"
+  if [[ "$path" == apps/game-server/src/admission_evidence.rs ]]; then
+    current_path=crates/gameplay/admission-evidence/src/lib.rs
+  fi
+  [[ "$(git rev-parse "$GAME_ADMISSION_SHA:$path")" == "$(git rev-parse "HEAD:$current_path")" ]] || {
     echo "S3_RESULT=BLOCKED reason=protected_game_source_moved path=$path"
     exit 2
   }

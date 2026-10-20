@@ -1,6 +1,5 @@
 #![allow(dead_code)]
-#[path = "../src/admission_evidence.rs"]
-mod admission_evidence;
+use oteryn_gameplay_admission_evidence as admission_evidence;
 #[path = "../src/native_admission_source/mod.rs"]
 mod native_admission_source;
 use admission_evidence::{Failure, Request, Response};

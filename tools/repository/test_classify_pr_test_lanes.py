@@ -27,6 +27,14 @@ def load_module():
     return module
 
 
+if __name__ != "__main__":
+    import pytest
+
+    @pytest.fixture
+    def module():
+        return load_module()
+
+
 def fixture(workspace_root="/repo"):
     roots = {
         "oteryn-game-server": "apps/game-server",
@@ -640,6 +648,9 @@ def test_server_qualification(module):
         "crates/protocol-oteryn/Cargo.toml",
         "crates/simulation-determinism/Cargo.toml",
         "crates/gameplay/weather/src/lib.rs",
+        "crates/gameplay/source-critical-baseline/src/lib.rs",
+        "crates/gameplay/character-recovery-fence/src/lib.rs",
+        "crates/gameplay/admission-evidence/src/lib.rs",
         "Cargo.lock",
         "vendor/tokio-1.53.1/src/lib.rs",
         "tools/qualification/node_boot/run.sh",
