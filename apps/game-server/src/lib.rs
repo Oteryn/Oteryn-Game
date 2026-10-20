@@ -69,6 +69,9 @@ mod combat_attack;
 mod combat_pvp;
 // PARTY-1 (CP D1391): the party module and its PostgreSQL cases.
 mod party;
+#[cfg(test)]
+#[path = "lifted_tests/party_shared_xp_postgres_tests.rs"]
+mod party_shared_xp_postgres_tests;
 // D39 chest `USE` wiring, top-level for the same reason: `tests/interaction_workflow.rs`
 // recompiles `interaction/mod.rs` without Content or durability. C2 routes `USE_INTENT` to it.
 #[path = "interaction/chest_use.rs"]

@@ -5,8 +5,6 @@
     reason = "PARTY-1 source owner awaits the allocated runtime wiring slot"
 )]
 
-#[cfg(test)]
-mod shared_xp_postgres_tests;
 pub(crate) mod view;
 #[cfg(test)]
 mod view_tests;
