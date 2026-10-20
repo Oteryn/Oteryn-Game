@@ -9,8 +9,9 @@
 //! only a Premium fence read that classified the account as current authority opens it.
 
 /// Witness that the gate's transaction holds the shared lock and read an empty latch table. Only
-/// `DurabilityRoot::read_premium_activation_with` makes one, and lends it to the bypass for the
-/// transaction's duration.
+/// the durable Premium latch read in `premium_activation_latch.rs` makes one, and lends it to the
+/// bypass for the transaction's duration; the architecture check enforces that no other file
+/// names its constructor.
 #[derive(Debug)]
 pub struct EmptyLatchHeld {
     _private: (),

@@ -503,20 +503,36 @@ fn validate_production_closure(policy: &Policy) -> Result<(), String> {
     Ok(())
 }
 
-/// Game-server methods that only named files may name (PREM-WIRE-1): the Premium latch read that
+/// Gameplay methods that only named files may name (PREM-WIRE-1): the Premium latch read that
 /// runs a pre-delivery bypass is the Premium gate's own entry, so only its definition, the
-/// coordinator's `settle` and the latch's PostgreSQL qualification may name it.
-const RESTRICTED_CALLS: &[(&str, &[&str])] = &[(
-    "read_premium_activation_with",
-    &[
-        "apps/game-server/src/durability/premium_activation_latch.rs",
-        "apps/game-server/src/gameplay_transport/spell_premium_coordinator.rs",
-        "apps/game-server/tests/support/premium_activation_latch_postgres_cases.rs",
-    ],
-)];
+/// coordinator's `settle` and the latch's PostgreSQL qualification may name it. The empty-latch
+/// witness is minted only by that read once it holds the shared lock: since the witness type
+/// lives in the domain crate, its constructor is public, so only its definition and the latch
+/// read may name it.
+const RESTRICTED_CALLS: &[(&str, &[&str])] = &[
+    (
+        "read_premium_activation_with",
+        &[
+            "crates/gameplay/durability/src/durability/premium_activation_latch.rs",
+            "apps/game-server/src/gameplay_transport/spell_premium_coordinator.rs",
+            "apps/game-server/tests/support/premium_activation_latch_postgres_cases.rs",
+        ],
+    ),
+    (
+        "EmptyLatchHeld::inside_gate",
+        &[
+            "crates/gameplay/domain/src/domain/premium.rs",
+            "crates/gameplay/durability/src/durability/premium_activation_latch.rs",
+        ],
+    ),
+];
 
-/// The game-server source trees scanned for [`RESTRICTED_CALLS`].
-const RESTRICTED_CALL_ROOTS: &[&str] = &["apps/game-server/src", "apps/game-server/tests"];
+/// The game-server and gameplay source trees scanned for [`RESTRICTED_CALLS`].
+const RESTRICTED_CALL_ROOTS: &[&str] = &[
+    "apps/game-server/src",
+    "apps/game-server/tests",
+    "crates/gameplay",
+];
 
 fn validate_restricted_calls(root: &Path) -> Result<(), String> {
     let mut files = Vec::new();
@@ -528,7 +544,7 @@ fn validate_restricted_calls(root: &Path) -> Result<(), String> {
         Ok(())
     } else {
         Err(format!(
-            "restricted game-server calls outside their allowed files: {}",
+            "restricted gameplay calls outside their allowed files: {}",
             violations.join(", ")
         ))
     }
@@ -895,7 +911,7 @@ mod tests {
     fn the_premium_bypass_read_is_named_only_by_the_gate_and_its_qualification() {
         let call = "root.read_premium_activation_with(&mut slot).await";
         let allowed = [
-            "apps/game-server/src/durability/premium_activation_latch.rs",
+            "crates/gameplay/durability/src/durability/premium_activation_latch.rs",
             "apps/game-server/src/gameplay_transport/spell_premium_coordinator.rs",
             "apps/game-server/tests/support/premium_activation_latch_postgres_cases.rs",
         ];
@@ -922,6 +938,34 @@ mod tests {
             "root.read_premium_activation().await".to_owned(),
         )];
         assert!(restricted_call_violations(&unrelated).is_empty());
+    }
+
+    #[test]
+    fn the_empty_latch_witness_is_minted_only_by_the_latch_read() {
+        let mint = "let held = EmptyLatchHeld::inside_gate();";
+        let allowed = vec![(
+            "crates/gameplay/durability/src/durability/premium_activation_latch.rs".to_owned(),
+            mint.to_owned(),
+        )];
+        assert!(restricted_call_violations(&allowed).is_empty());
+
+        let forged = vec![(
+            "apps/game-server/src/gameplay_transport/spell_premium_coordinator.rs".to_owned(),
+            mint.to_owned(),
+        )];
+        assert_eq!(
+            restricted_call_violations(&forged),
+            vec![
+                "apps/game-server/src/gameplay_transport/spell_premium_coordinator.rs: \
+                 EmptyLatchHeld::inside_gate"
+                    .to_owned()
+            ]
+        );
+        let lent = vec![(
+            "apps/game-server/src/gameplay_transport/spell_premium_coordinator.rs".to_owned(),
+            "PremiumStatus::NotActivated(PreDelivery::inside_gate(held))".to_owned(),
+        )];
+        assert!(restricted_call_violations(&lent).is_empty());
     }
 
     #[test]
