@@ -1555,3 +1555,7 @@ fn recovery_verification_and_s2_denial_serialize_at_registration()
         cleanup_database(&admin_url,&name).await?;result
     })
 }
+
+#[allow(dead_code, unused_imports)]
+#[path = "support/content_spell_data_shim.rs"]
+mod content;

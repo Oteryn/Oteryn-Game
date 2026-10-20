@@ -30,3 +30,7 @@ mod item_transfer_postgres_cases;
 mod house_interior_postgres_cases;
 #[path = "support/house_test_fixture.rs"]
 mod house_test_fixture;
+
+#[allow(dead_code, unused_imports)]
+#[path = "support/content_spell_data_shim.rs"]
+mod content;

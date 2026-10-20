@@ -35,3 +35,7 @@ mod item_ref_production_postgres_cases;
 
 #[path = "support/equipment_move_postgres_cases.rs"]
 mod equipment_move_postgres_cases;
+
+#[allow(dead_code, unused_imports)]
+#[path = "support/content_spell_data_shim.rs"]
+mod content;

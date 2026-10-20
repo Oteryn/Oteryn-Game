@@ -1054,3 +1054,7 @@ fn s3b_pins_are_closed() {
     assert_eq!(uuid_text(&v7(1, 1)).len(), 36);
     let _ = CharacterId::decode;
 }
+
+#[allow(dead_code, unused_imports)]
+#[path = "support/content_spell_data_shim.rs"]
+mod content;

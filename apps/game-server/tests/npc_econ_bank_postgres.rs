@@ -29,3 +29,7 @@ pub use oteryn_gameplay_native_admission_source as native_admission_source;
 // The protected PostgreSQL aggregate consumes these same case bodies.
 #[path = "support/npc_econ_bank_postgres_cases.rs"]
 mod npc_econ_bank_postgres_cases;
+
+#[allow(dead_code, unused_imports)]
+#[path = "support/content_spell_data_shim.rs"]
+mod content;

@@ -29,3 +29,7 @@ mod bestiary_postgres_harness;
 // above, so the protected PostgreSQL lane can include the same two files.
 #[path = "support/bestiary_progress_postgres_cases.rs"]
 mod bestiary_progress_postgres_cases;
+
+#[allow(dead_code, unused_imports)]
+#[path = "support/content_spell_data_shim.rs"]
+mod content;

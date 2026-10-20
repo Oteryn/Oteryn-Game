@@ -6931,3 +6931,7 @@ mod readmit {
         }
     }
 }
+
+#[allow(dead_code, unused_imports)]
+#[path = "support/content_spell_data_shim.rs"]
+mod content;

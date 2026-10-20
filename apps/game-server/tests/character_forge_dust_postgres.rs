@@ -25,3 +25,7 @@ pub use oteryn_gameplay_native_admission_source as native_admission_source;
 // above, so a protected PostgreSQL wrapper can include the same file.
 #[path = "support/character_forge_dust_postgres_cases.rs"]
 mod character_forge_dust_postgres_cases;
+
+#[allow(dead_code, unused_imports)]
+#[path = "support/content_spell_data_shim.rs"]
+mod content;

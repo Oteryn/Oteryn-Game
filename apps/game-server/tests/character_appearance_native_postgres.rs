@@ -35,3 +35,7 @@ mod bestiary_postgres_harness;
 // `character_authority_postgres`.
 #[path = "support/character_appearance_native_postgres_cases.rs"]
 mod character_appearance_native_postgres_cases;
+
+#[allow(dead_code, unused_imports)]
+#[path = "support/content_spell_data_shim.rs"]
+mod content;

@@ -26,6 +26,9 @@ pub mod model;
 pub mod production;
 #[path = "../../src/content/reference_playable.rs"]
 mod reference_playable;
+#[path = "spell_data_shim.rs"]
+#[allow(dead_code)]
+pub mod spell_data;
 
 pub use model::*;
 pub use production::{

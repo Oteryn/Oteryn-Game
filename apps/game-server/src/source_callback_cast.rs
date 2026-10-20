@@ -3,14 +3,12 @@
 use super::*;
 pub(crate) type CallbackPulseBatch =
     Result<Vec<(ExactActorRef, Ref, usize, Result<SpellOutcome, AttackError>)>, AttackError>;
-#[path = "source_callback_speech.rs"]
-mod speech;
 use crate::content::{ProjectV2Draft, ProjectV2SourceIdentityBinding};
 use crate::foundation::owner_timer::{
     CatchUpPolicy, FamilyPolicy, OwnerClock, OwnerTimerLane, TimerFamily,
 };
 use crate::foundation::{RuntimeScopeRefV1, ScopeOwnershipGeneration};
-pub(crate) use speech::CallbackSpeech;
+pub(crate) use crate::weak_spot_speech::callback::CallbackSpeech;
 #[derive(serde::Deserialize)]
 struct Witness {
     cases: BTreeMap<String, Case>,

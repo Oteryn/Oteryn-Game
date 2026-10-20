@@ -1,5 +1,8 @@
 //! Actual source-specific ChatLine mailbox; no synthetic CHAT_INTENT or durable ledger.
-use crate::chat::{ChatPosition, ChatText, SpeechMode, hears};
+use crate::durability::chat_text::ChatText;
+use crate::foundation::speech::{ChatPosition, SpeechMode, hears};
+#[path = "weak_spot_speech/callback.rs"]
+pub(crate) mod callback;
 use crate::foundation::{
     CarrierError, ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition,
 };
@@ -194,7 +197,7 @@ impl WeakSpotSpeechMailbox {
     pub(crate) fn publish_callback(
         &mut self,
         runtime: &ChannelRuntimeV1,
-        line: &crate::creature_damage_spell::CallbackSpeech,
+        line: &callback::CallbackSpeech,
         candidates: &[(ExactActorRef, GameSessionId)],
     ) -> Result<usize, WeakSpotSpeechError> {
         let from = line.position();

@@ -43,7 +43,7 @@ impl CallbackSpeech {
             },
         })
     }
-    pub(super) fn cast(
+    pub(crate) fn cast(
         r: &ChannelRuntimeV1,
         actor: ExactActorRef,
         key: &str,

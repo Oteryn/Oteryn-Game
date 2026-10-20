@@ -28,3 +28,7 @@ mod bestiary_postgres_harness;
 // the harness above, so a protected PostgreSQL wrapper can include the same two files.
 #[path = "support/item_timed_state_postgres_cases.rs"]
 mod item_timed_state_postgres_cases;
+
+#[allow(dead_code, unused_imports)]
+#[path = "support/content_spell_data_shim.rs"]
+mod content;

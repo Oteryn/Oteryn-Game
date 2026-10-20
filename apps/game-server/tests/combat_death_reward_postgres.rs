@@ -29,3 +29,7 @@ pub use oteryn_gameplay_native_admission_source as native_admission_source;
 mod attack_kill_reward_postgres_cases;
 #[path = "support/combat_death_reward_postgres_cases.rs"]
 mod combat_death_reward_postgres_cases;
+
+#[allow(dead_code, unused_imports)]
+#[path = "support/content_spell_data_shim.rs"]
+mod content;

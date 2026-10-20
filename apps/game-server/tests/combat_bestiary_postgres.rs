@@ -32,3 +32,7 @@ pub mod combat;
 mod bestiary_postgres_harness;
 #[path = "support/combat_bestiary_postgres_cases.rs"]
 mod combat_bestiary_postgres_cases;
+
+#[allow(dead_code, unused_imports)]
+#[path = "support/content_spell_data_shim.rs"]
+mod content;

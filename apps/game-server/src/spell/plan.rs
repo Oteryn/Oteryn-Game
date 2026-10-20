@@ -220,13 +220,5 @@ fn plan(
     })
 }
 
-/// Stable source-chain child identity, shared by native monster HP/MP consumers.
-pub(crate) fn chain_step_occurrence(
-    base: &AbilityOccurrence,
-    index: usize,
-) -> Result<AbilityOccurrence, AbilityError> {
-    AbilityOccurrence::new(
-        &format!("{}/chain-{index}", base.id().as_str()),
-        base.revisions().clone(),
-    )
-}
+#[allow(unused_imports)] // Preserve the original path for existing callers.
+pub(crate) use crate::ability::chain_step_occurrence;

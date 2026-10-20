@@ -35,3 +35,7 @@ mod item_transfer_postgres_cases;
 // includes these exact cases through character_authority_postgres.
 #[path = "support/corpse_decay_postgres_cases.rs"]
 mod corpse_decay_postgres_cases;
+
+#[allow(dead_code, unused_imports)]
+#[path = "support/content_spell_data_shim.rs"]
+mod content;

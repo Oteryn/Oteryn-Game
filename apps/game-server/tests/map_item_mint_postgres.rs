@@ -29,3 +29,7 @@ pub use oteryn_gameplay_native_admission_source as native_admission_source;
 // includes these exact cases through character_authority_postgres.
 #[path = "support/map_item_mint_postgres_cases.rs"]
 mod map_item_mint_postgres_cases;
+
+#[allow(dead_code, unused_imports)]
+#[path = "support/content_spell_data_shim.rs"]
+mod content;

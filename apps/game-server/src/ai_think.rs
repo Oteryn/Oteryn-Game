@@ -813,12 +813,7 @@ impl TimerFamily for ThinkFamily {
     }
 }
 
-/// §4.2: "a think occurrence is (creature `ExactActorRef`, per-actor think sequence number)."
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct ThinkOccurrence {
-    pub actor: ExactActorRef,
-    pub sequence: u64,
-}
+pub(crate) use crate::foundation::ThinkOccurrence;
 
 /// Binding item (a): the only place a `ThinkOccurrence`'s sequence is derived from. It advances
 /// monotonically per actor and never re-issues a value, so `(actor, sequence)` can never repeat

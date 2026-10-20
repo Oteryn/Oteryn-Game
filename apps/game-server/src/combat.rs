@@ -14,10 +14,14 @@ use crate::foundation::{
 // `mod loot_plan;`/`mod death_reward;` resolves against that site's own
 // directory in that context; the explicit path keeps both inclusions
 // pointing at the same file.
+#[path = "combat/chain.rs"]
+pub(crate) mod chain;
 #[path = "combat/charm_effects.rs"]
 pub(crate) mod charm_effects;
 #[path = "combat/death_reward.rs"]
 mod death_reward;
+#[path = "combat/formula.rs"]
+pub(crate) mod formula;
 #[path = "combat/loot_plan.rs"]
 mod loot_plan;
 

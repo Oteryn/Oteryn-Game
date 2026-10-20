@@ -31,3 +31,7 @@ pub mod combat;
 // above, so a protected PostgreSQL wrapper can include the same file.
 #[path = "support/charm_state_postgres_cases.rs"]
 mod charm_state_postgres_cases;
+
+#[allow(dead_code, unused_imports)]
+#[path = "support/content_spell_data_shim.rs"]
+mod content;

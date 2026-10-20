@@ -3566,3 +3566,7 @@ fn s2_rotation_waits_for_fresh_store_initialization() -> TestResult {
         })
     })
 }
+
+#[allow(dead_code, unused_imports)]
+#[path = "support/content_spell_data_shim.rs"]
+mod content;

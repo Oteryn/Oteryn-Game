@@ -13,7 +13,7 @@ pub(crate) mod actor_conditions;
 pub(crate) mod actor_execution;
 pub(crate) mod authoring;
 pub(crate) mod cast;
-pub(crate) mod chain;
+pub(crate) use crate::combat::chain;
 #[cfg(test)]
 mod chain_tests;
 pub(crate) mod combat_batch;
@@ -25,7 +25,7 @@ pub(crate) mod executable_catalog;
 pub(crate) mod field_history;
 pub(crate) mod find_person_execution;
 pub(crate) mod food_regeneration;
-pub(crate) mod formula;
+pub(crate) use crate::combat::formula;
 pub(crate) mod harmony;
 #[cfg(test)]
 mod harmony_tests;

@@ -31,3 +31,7 @@ mod character_proficiency_postgres_cases;
 
 #[path = "support/bestiary_postgres_harness.rs"]
 mod bestiary_postgres_harness;
+
+#[allow(dead_code, unused_imports)]
+#[path = "support/content_spell_data_shim.rs"]
+mod content;

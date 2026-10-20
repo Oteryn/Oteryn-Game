@@ -29,3 +29,7 @@ mod bestiary_postgres_harness;
 // includes the same cases.
 #[path = "support/bank_postgres_cases.rs"]
 mod bank_postgres_cases;
+
+#[allow(dead_code, unused_imports)]
+#[path = "support/content_spell_data_shim.rs"]
+mod content;
