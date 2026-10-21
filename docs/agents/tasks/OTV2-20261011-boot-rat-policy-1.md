@@ -21,7 +21,7 @@ created_at: 2026-10-15
 updated_at: 2026-10-15
 execution_policy: continuous_progress
 owned_paths:
-  - apps/game-server/src/content/project/native_entry.rs # D1138: source carrier checkpoint
+  - crates/gameplay/content/src/content/project/native_entry.rs # D1138: source carrier checkpoint
   - docs/agents/tasks/OTV2-20261011-boot-rat-policy-1.md
 slot_only_paths:
   - content/world/pins/*, goldens and qualified digests if any entry-room fact changes (one author, one commit)
@@ -58,7 +58,7 @@ All dependencies merged; the task may start.
 
 ## Owned paths (builder edits freely)
 
-- `apps/game-server/src/content/project/native_entry.rs`
+- `crates/gameplay/content/src/content/project/native_entry.rs`
 - `docs/agents/tasks/OTV2-20261011-boot-rat-policy-1.md` (this record)
 
 Widened to exactly this checkpoint's file set (D1138). Later slices (`native_gameplay.rs` after #2173,

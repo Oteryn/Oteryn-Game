@@ -92,16 +92,16 @@ Rows marked BLOCKING must merge (or be accepted/decided) before the builder's sl
 ## owned_paths (builder edits freely)
 
 - `content/cyclopedia/** (sources only; generated outputs are slot-only)`
-- `apps/game-server/src/domain/cyclopedia.rs`
-- `apps/game-server/src/durability/character_cyclopedia.rs`
-- `apps/game-server/src/durability/character_cyclopedia_tests.rs`
-- `apps/game-server/src/gameplay_transport/cyclopedia.rs`
-- `apps/game-server/src/gameplay_transport/cyclopedia_tests.rs`
+- `crates/gameplay/domain/src/domain/cyclopedia.rs`
+- `crates/gameplay/durability/src/durability/character_cyclopedia.rs`
+- `crates/gameplay/durability/src/durability/character_cyclopedia_tests.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/cyclopedia.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/cyclopedia_tests.rs`
 - `crates/protocol-oteryn/src/cyclopedia.rs`
 - `apps/game-server/tests/cyclopedia_postgres.rs`
 - `docs/agents/evidence/LOOP-MAP-1-*.md`
 - `docs/agents/tasks/LOOP-MAP-1.md` (this record: status and notes only)
-- `apps/game-server/src/content/npc_catalogue.rs` (scan-budget +1 only; added per CP D1301 (merge-queue scan budget))
+- `crates/gameplay/content/src/content/npc_catalogue.rs` (scan-budget +1 only; added per CP D1301 (merge-queue scan budget))
 - `apps/game-server/tests/content_world_project_repository.rs` (scan-budget +1 only; added per CP D1301 (merge-queue scan budget))
 
 D1285 registers `pub mod cyclopedia;` in `domain/mod.rs` on this head. This pure public API and its test belong to ordinary branch compilation; that registration does not wait for a slot commit. Other shared module registration remains subject to its own allocation.
@@ -117,9 +117,9 @@ D1285 registers `pub mod cyclopedia;` in `domain/mod.rs` on this head. This pure
 - Rust pins (pinned registries / fixtures regenerated from content)
 - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json, GAME_EVENT_FOUNDATION_REGISTRY.json, RESOURCE_LIMITS_REGISTRY.json, OTERYN_GAME_ERROR_CODE_REGISTRY.json
 - apps/game-server/migrations/NNNN_*.sql number (next free on main at queue turn; main ends at 0087)
-- apps/game-server/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
+- crates/gameplay/dispatch/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
 - crates/protocol-oteryn/src/lib.rs `pub mod` + registry constants
-- Other allocated apps/game-server/src/durability/mod.rs, domain/mod.rs, lib.rs registration; D1285 Cyclopedia registration is already owned on this head
+- Other allocated crates/gameplay/durability/src/durability/core_modules.rs, domain/mod.rs, lib.rs registration; D1285 Cyclopedia registration is already owned on this head
 
 ## Wiring points (verified on origin/main 5742f30f3)
 
@@ -260,9 +260,9 @@ existing map/content format owners, not allocated by this document:
 
 | Owner / real source | Required implementation boundary |
 |---|---|
-| Content: `apps/game-server/src/content/project/v2.rs:141` | `Area` is a generic **candidate-only** declaration; its presence is not executable lowering. `content/project.json` still lists Area among next-population families. Add qualified CYC authoring/admission through the existing owner, not a fake admitted-area callback or permissive generic fields. |
+| Content: `crates/gameplay/content/src/content/project/v2.rs:141` | `Area` is a generic **candidate-only** declaration; its presence is not executable lowering. `content/project.json` still lists Area among next-population families. Add qualified CYC authoring/admission through the existing owner, not a fake admitted-area callback or permissive generic fields. |
 | Bundle: `crates/world-bundle/src/{bundle,sector,spawn}.rs`, `tools/world-bundle-compiler/src/project.rs` | Actual v4 carries tile zones, draft_areas, spawn and NPC frames, but no CYC crosswalk/membership/pool frame. `draft_areas` must be empty in production; numeric tile zones are not MapAreaId. The fail-closed format rejects unknown fields, so a real format-owner extension/version plus compiler/reader/pin changes is a CP schema/integration seam. Do not add a parallel runtime sidecar authority. |
-| Map/position: `apps/game-server/src/map/{boot,view}.rs`, `foundation/runtime_actor_carrier.rs` | Reuse pinned WorldBase/map revision, native `WindowLayout` and current-owner `borrow_movement_position().read(ExactActorRef)` provenance. Bind the accepted “current game window” semantics explicitly. Detect POIs against committed positions and exact exploration/pool revisions; request coordinates or cached actor snapshots are not fresh position/session authority. No new discovery-by-walking rule. |
+| Map/position: `crates/gameplay/world/src/map/{boot,view}.rs`, `foundation/runtime_actor_carrier.rs` | Reuse pinned WorldBase/map revision, native `WindowLayout` and current-owner `borrow_movement_position().read(ExactActorRef)` provenance. Bind the accepted “current game window” semantics explicitly. Detect POIs against committed positions and exact exploration/pool revisions; request coordinates or cached actor snapshots are not fresh position/session authority. No new discovery-by-walking rule. |
 | Discovery: `durability/character_revision_sequencer.rs`, `crates/simulation-determinism/src/lib.rs` | Add the actual CYC Character writer through the existing revision slot/sequencer, session-generation fence and expected revision; no second sequencer. Persist append-only discovered subareas and at most one active exploration row (pinned pool revision, generated positions, found mask, start revision). Start/shuffle request occurrences use the existing deterministic decision primitive with `cyclopedia_poi`; they replace/reset only the active progress. |
 | Completion/grants | Commit the found bit before effect195/progress. Seventh find inserts discovery, removes active exploration and records completion in one Character transaction. Area completion records and consumes the real Account achievement grant in that transaction; missing catalogue key rolls everything back. Derive percentages/30–70–100% unlocks/full-area count/titles; do not store drifting copies. Charos outfit thresholds10/15/20 use the actual Account outfit owner/NPC lane; raids use RAID-1; speed uses its own contribution owner. |
 | Donations: `durability/item_fee_burn.rs:63`, bank fee boundary | Existing closed FeeBurnCause currently exposes CharmUnassign, not AreaDonation. Add the accepted closed cause/audit amendment through its owner, then reuse coin-first/BANK-FEE payment (junior coins only), fixed occurrence/intent and native fee/bank locking. Check active eligibility/current improved epoch after pool lock; burn+bank debit+pool revision increment+fenced Character receipt remain one transaction, never an independent donation counter update. |

@@ -22,11 +22,11 @@ updated_at: 2026-10-18
 candidate_state: READY_FOR_REVIEW
 execution_policy: continuous_progress
 owned_paths:
-  - apps/game-server/src/gameplay_transport/world_required_capabilities.rs (new)
-  - apps/game-server/src/gameplay_transport/world_required_capabilities_tests.rs (new)
-  - apps/game-server/src/gameplay_transport/resume.rs
-  - apps/game-server/src/durability/fresh_admission_composition.rs
-  - apps/game-server/src/durability/fresh_admission.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/world_required_capabilities.rs (new)
+  - crates/gameplay/dispatch/src/gameplay_transport/world_required_capabilities_tests.rs (new)
+  - crates/gameplay/dispatch/src/gameplay_transport/resume.rs
+  - crates/gameplay/durability/src/durability/fresh_admission_composition.rs
+  - crates/gameplay/durability/src/durability/fresh_admission.rs
   - apps/game-server/src/node/config.rs (ReadinessConfig and its validation)
   - apps/game-server/src/node/serve.rs (boot validation and bound effective set only)
   - apps/game-server/tests/world_required_capabilities*.rs
@@ -35,15 +35,15 @@ owned_paths:
   - tools/qualification/login_local/run.sh
   - docs/architecture/reviews/OTERYN_GAME_ADMIT0_WORLD_REQUIRED_CAPABILITIES_DECISION_2026-10-01.md (D1083 map successor correction only)
   - docs/agents/tasks/ADMIT-CAP-1.md (task packet/notes)
-  - apps/game-server/src/gameplay_transport/map_bundle_domain_postgres_tests.rs (D1164: two callers and matching fixture binding only)
+  - crates/gameplay/dispatch/src/gameplay_transport/map_bundle_domain_postgres_tests.rs (D1164: two callers and matching fixture binding only)
   # 2026-10-18 completion directive (lead; D1442): the A2 integration paths, hand-authored.
-  - apps/game-server/src/gameplay_transport/connection.rs (admit/resume refusal wiring only)
-  - apps/game-server/src/gameplay_transport/mod.rs (module, owner fields, fresh admit check only)
-  - apps/game-server/src/gameplay_transport/capabilities.rs (D1442 constants and gated rows only)
-  - apps/game-server/src/gameplay_transport/capabilities_tests.rs (ADMIT0 transport cases only)
-  - apps/game-server/src/gameplay_transport/qualification.rs (owner binding; D1452 seam capability stages)
-  - apps/game-server/src/gameplay_transport/monk_save_postgres_tests.rs (owner binding only)
-  - apps/game-server/src/gameplay_transport/kill_reward_postgres_e2e_tests.rs (owner binding only)
+  - crates/gameplay/dispatch/src/gameplay_transport/connection.rs (admit/resume refusal wiring only)
+  - crates/gameplay/dispatch/src/gameplay_transport/mod.rs (module, owner fields, fresh admit check only)
+  - crates/gameplay/dispatch/src/gameplay_transport/capabilities.rs (D1442 constants and gated rows only)
+  - crates/gameplay/dispatch/src/gameplay_transport/capabilities_tests.rs (ADMIT0 transport cases only)
+  - apps/game-server/src/qualification.rs (owner binding; D1452 seam capability stages)
+  - crates/gameplay/dispatch/src/gameplay_transport/monk_save_postgres_tests.rs (owner binding only)
+  - crates/gameplay/dispatch/src/gameplay_transport/kill_reward_postgres_e2e_tests.rs (owner binding only)
   - apps/game-server/tests/wp5_s3b_composition.rs (commit capability argument only)
   - crates/protocol-oteryn/src/lib.rs (1117/1118 and capability rows 29/30)
   - crates/protocol-oteryn/src/item_look_tests.rs (unregistered probe moved to 31)
@@ -408,8 +408,8 @@ ADMISSION_CAPABILITY_REQUIRED=1116 and FND-04 tables already exist; leave them u
 
 ## Owned paths (builder edits freely)
 
-- apps/game-server/src/gameplay_transport/world_required_capabilities.rs (new)
-- apps/game-server/src/gameplay_transport/world_required_capabilities_tests.rs (new)
+- crates/gameplay/dispatch/src/gameplay_transport/world_required_capabilities.rs (new)
+- crates/gameplay/dispatch/src/gameplay_transport/world_required_capabilities_tests.rs (new)
 - D1081 additions are enumerated in the YAML owned_paths above.
 - docs/agents/tasks/ADMIT-CAP-1.md (task packet/notes)
 
@@ -953,10 +953,10 @@ pN5ZxZw=
 ```json
 {
   "patch_lines": [
-    "diff --git a/apps/game-server/src/gameplay_transport/capabilities_tests.rs b/apps/game-server/src/gameplay_transport/capabilities_tests.rs\n",
+    "diff --git a/crates/gameplay/dispatch/src/gameplay_transport/capabilities_tests.rs b/crates/gameplay/dispatch/src/gameplay_transport/capabilities_tests.rs\n",
     "index 4693aec1..739edba2 100644\n",
-    "--- a/apps/game-server/src/gameplay_transport/capabilities_tests.rs\n",
-    "+++ b/apps/game-server/src/gameplay_transport/capabilities_tests.rs\n",
+    "--- a/crates/gameplay/dispatch/src/gameplay_transport/capabilities_tests.rs\n",
+    "+++ b/crates/gameplay/dispatch/src/gameplay_transport/capabilities_tests.rs\n",
     "@@ -386,8 +386,10 @@ impl ConnectionIdentifiers for Identifiers {\n",
     " /// connection's own refusal is observable. `offered` is `None` for the production set.\n",
     " struct NegotiatingAuthority {\n",
@@ -1054,10 +1054,10 @@ pN5ZxZw=
     "         let (admitted, frames) = admit(&authority, &bootstrap(&[4, 6, 13, 17, 18])?).await?;\n",
     "         let selected = accepted_selection(&frames)?;\n",
     "         assert!(!selected.contains(&CAPABILITY_WORLD_MAP_VIEW_V1));\n",
-    "diff --git a/apps/game-server/src/gameplay_transport/connection.rs b/apps/game-server/src/gameplay_transport/connection.rs\n",
+    "diff --git a/crates/gameplay/dispatch/src/gameplay_transport/connection.rs b/crates/gameplay/dispatch/src/gameplay_transport/connection.rs\n",
     "index 1eb5b4f0..f832a644 100644\n",
-    "--- a/apps/game-server/src/gameplay_transport/connection.rs\n",
-    "+++ b/apps/game-server/src/gameplay_transport/connection.rs\n",
+    "--- a/crates/gameplay/dispatch/src/gameplay_transport/connection.rs\n",
+    "+++ b/crates/gameplay/dispatch/src/gameplay_transport/connection.rs\n",
     "@@ -136,6 +136,7 @@ pub(crate) const SERVER_SCHEMA_REVISION: u32 = 1;\n",
     " pub(crate) struct FreshAdmissionAttempt<'a> {\n",
     "     pub(crate) character_id: CharacterId,\n",
@@ -1219,10 +1219,10 @@ pN5ZxZw=
     "     #[test]\n",
     "     fn admission_resume_is_not_served_and_admits_nothing() -> Result<(), Box<dyn Error>> {\n",
     "         run(async {\n",
-    "diff --git a/apps/game-server/src/gameplay_transport/kill_reward_postgres_e2e_tests.rs b/apps/game-server/src/gameplay_transport/kill_reward_postgres_e2e_tests.rs\n",
+    "diff --git a/crates/gameplay/dispatch/src/gameplay_transport/kill_reward_postgres_e2e_tests.rs b/crates/gameplay/dispatch/src/gameplay_transport/kill_reward_postgres_e2e_tests.rs\n",
     "index d6aa557d..0af348fc 100644\n",
-    "--- a/apps/game-server/src/gameplay_transport/kill_reward_postgres_e2e_tests.rs\n",
-    "+++ b/apps/game-server/src/gameplay_transport/kill_reward_postgres_e2e_tests.rs\n",
+    "--- a/crates/gameplay/dispatch/src/gameplay_transport/kill_reward_postgres_e2e_tests.rs\n",
+    "+++ b/crates/gameplay/dispatch/src/gameplay_transport/kill_reward_postgres_e2e_tests.rs\n",
     "@@ -223,6 +223,17 @@ fn scenario() -> TestResult {\n",
     "             evidence: &evidence,\n",
     "             world_id: world,\n",
@@ -1241,10 +1241,10 @@ pN5ZxZw=
     "             runtime: &runtime,\n",
     "             movement_cells: room.movement_cells(),\n",
     "             door: &door,\n",
-    "diff --git a/apps/game-server/src/gameplay_transport/mod.rs b/apps/game-server/src/gameplay_transport/mod.rs\n",
+    "diff --git a/crates/gameplay/dispatch/src/gameplay_transport/mod.rs b/crates/gameplay/dispatch/src/gameplay_transport/mod.rs\n",
     "index 75a282b0..b5e4c90d 100644\n",
-    "--- a/apps/game-server/src/gameplay_transport/mod.rs\n",
-    "+++ b/apps/game-server/src/gameplay_transport/mod.rs\n",
+    "--- a/crates/gameplay/dispatch/src/gameplay_transport/mod.rs\n",
+    "+++ b/crates/gameplay/dispatch/src/gameplay_transport/mod.rs\n",
     "@@ -27,6 +27,7 @@ mod last_position;\n",
     " mod logout;\n",
     " #[cfg(test)]\n",
@@ -1331,10 +1331,10 @@ pN5ZxZw=
     "                 )\n",
     "                 .await\n",
     "             {\n",
-    "diff --git a/apps/game-server/src/gameplay_transport/monk_save_postgres_tests.rs b/apps/game-server/src/gameplay_transport/monk_save_postgres_tests.rs\n",
+    "diff --git a/crates/gameplay/dispatch/src/gameplay_transport/monk_save_postgres_tests.rs b/crates/gameplay/dispatch/src/gameplay_transport/monk_save_postgres_tests.rs\n",
     "index e4aad206..17b15728 100644\n",
-    "--- a/apps/game-server/src/gameplay_transport/monk_save_postgres_tests.rs\n",
-    "+++ b/apps/game-server/src/gameplay_transport/monk_save_postgres_tests.rs\n",
+    "--- a/crates/gameplay/dispatch/src/gameplay_transport/monk_save_postgres_tests.rs\n",
+    "+++ b/crates/gameplay/dispatch/src/gameplay_transport/monk_save_postgres_tests.rs\n",
     "@@ -203,6 +203,19 @@ impl Dependencies {\n",
     "             evidence: &self.evidence,\n",
     "             world_id: self.admitted.world_id,\n",
@@ -1355,10 +1355,10 @@ pN5ZxZw=
     "             runtime: &self.runtime,\n",
     "             movement_cells: self.room.movement_cells(),\n",
     "             door: &self.door,\n",
-    "diff --git a/apps/game-server/src/gameplay_transport/qualification.rs b/apps/game-server/src/gameplay_transport/qualification.rs\n",
+    "diff --git a/apps/game-server/src/qualification.rs b/apps/game-server/src/qualification.rs\n",
     "index d5af5115..92019af0 100644\n",
-    "--- a/apps/game-server/src/gameplay_transport/qualification.rs\n",
-    "+++ b/apps/game-server/src/gameplay_transport/qualification.rs\n",
+    "--- a/apps/game-server/src/qualification.rs\n",
+    "+++ b/apps/game-server/src/qualification.rs\n",
     "@@ -1589,6 +1589,20 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -\n",
     "             evidence: &fresh_evidence,\n",
     "             world_id: world,\n",
@@ -1380,10 +1380,10 @@ pN5ZxZw=
     "             runtime: &runtime,\n",
     "             movement_cells: &movement_cells,\n",
     "             door: &door,\n",
-    "diff --git a/apps/game-server/src/gameplay_transport/world_required_capabilities_tests.rs b/apps/game-server/src/gameplay_transport/world_required_capabilities_tests.rs\n",
+    "diff --git a/crates/gameplay/dispatch/src/gameplay_transport/world_required_capabilities_tests.rs b/crates/gameplay/dispatch/src/gameplay_transport/world_required_capabilities_tests.rs\n",
     "index 6f269629..771ed697 100644\n",
-    "--- a/apps/game-server/src/gameplay_transport/world_required_capabilities_tests.rs\n",
-    "+++ b/apps/game-server/src/gameplay_transport/world_required_capabilities_tests.rs\n",
+    "--- a/crates/gameplay/dispatch/src/gameplay_transport/world_required_capabilities_tests.rs\n",
+    "+++ b/crates/gameplay/dispatch/src/gameplay_transport/world_required_capabilities_tests.rs\n",
     "@@ -478,3 +478,38 @@ fn independently_current_binding_is_required_by_the_durable_callback() {\n",
     "         );\n",
     "     }\n",
@@ -1724,7 +1724,7 @@ pN5ZxZw=
     "+        \"world_required_capabilities::tests::real_scope_offer_enforces_the_registered_d1083_floor\"\n",
     "+      ],\n",
     "+      \"consumers\": [\n",
-    "+        \"apps/game-server/src/gameplay_transport/world_required_capabilities.rs MAX_DECLARED_REQUIRED_CAPABILITIES\",\n",
+    "+        \"crates/gameplay/dispatch/src/gameplay_transport/world_required_capabilities.rs MAX_DECLARED_REQUIRED_CAPABILITIES\",\n",
     "+        \"apps/game-server/src/node/config.rs ReadinessConfig\"\n",
     "+      ],\n",
     "+      \"notes\": \"ADMIT0 section3.1. The limit does not let the operator omit the mandatory offered floor; no FIELD id is allocated here.\"\n",
@@ -1746,7 +1746,7 @@ This exact separately reviewed/formatted patch is assigned to G as the single wr
   "author": "I/#2187",
   "integration_pr": 2150,
   "base_head": "4e80528e79382807f25395d3465d0418e578bb5a",
-  "path": "apps/game-server/src/gameplay_transport/world_item_cast.rs",
+  "path": "crates/gameplay/dispatch/src/gameplay_transport/world_item_cast.rs",
   "before_sha256": "fc61cd1a5086cea0d50005f6dc560c8ad495be07f2e215887ddc06ee33dc62b1",
   "after_sha256": "674495174762f6023f9491371c28ca5301fb94cf14cdc8d704aa058ceb168542",
   "patch_sha256": "dbb3a8bc3a481975af3b5e9700a6d3749f7e60c83e999cea2396bdad970aa3d6",
@@ -1760,8 +1760,8 @@ This exact separately reviewed/formatted patch is assigned to G as the single wr
 ```json
 {
   "patch_lines": [
-    "--- a/apps/game-server/src/gameplay_transport/world_item_cast.rs\n",
-    "+++ b/apps/game-server/src/gameplay_transport/world_item_cast.rs\n",
+    "--- a/crates/gameplay/dispatch/src/gameplay_transport/world_item_cast.rs\n",
+    "+++ b/crates/gameplay/dispatch/src/gameplay_transport/world_item_cast.rs\n",
     "@@ -1057,7 +1057,20 @@\n",
     "             // Release after S: the COMMIT and the post-commit transaction hold only the lane.\n",
     "             *guards=None;\n",

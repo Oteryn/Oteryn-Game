@@ -49,9 +49,9 @@ Rows marked BLOCKING must merge (or be accepted) before the builder's slot commi
 ## owned_paths (builder edits freely)
 
 - `apps/game-server/src/highscores/`
-- `apps/game-server/src/durability/highscore_snapshot.rs`
-- `apps/game-server/src/durability/highscore_snapshot_tests.rs`
-- `apps/game-server/src/gameplay_transport/highscores.rs`
+- `crates/gameplay/durability/src/durability/highscore_snapshot.rs`
+- `crates/gameplay/durability/src/durability/highscore_snapshot_tests.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/highscores.rs`
 - `crates/protocol-oteryn/src/highscores.rs`
 - `crates/protocol-oteryn/src/highscores_tests.rs`
 - `apps/game-server/src/analyser_emit.rs`
@@ -61,12 +61,12 @@ Rows marked BLOCKING must merge (or be accepted) before the builder's slot commi
 Widened by CP D1441 (integration slot, 2026-10-18):
 
 - `apps/game-server/migrations/0129_world_highscores.sql` (0097 until the CP D1453 wave numbering)
-- `apps/game-server/src/highscores/reply.rs` (the command type 14 handler core)
-- `apps/game-server/src/gameplay_transport/highscores_tests.rs`
-- `apps/game-server/src/gameplay_transport/capabilities.rs`, `capabilities_tests.rs`,
+- `crates/gameplay/durability/src/durability/highscore_snapshot/reply.rs` (the command type 14 handler core)
+- `crates/gameplay/dispatch/src/gameplay_transport/highscores_tests.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/capabilities.rs`, `capabilities_tests.rs`,
   `connection.rs`, `mod.rs` (capability 9 offer, `GATED` row, dispatch, authority)
 - `apps/game-server/src/node/serve.rs` (the per-World snapshot job in the serve loop)
-- `apps/game-server/src/durability/mod.rs`, `apps/game-server/src/lib.rs` (module registration)
+- `crates/gameplay/durability/src/durability/core_modules.rs`, `apps/game-server/src/lib.rs` (module registration)
 - `apps/game-server/tests/character_authority_postgres.rs`,
   `apps/game-server/tests/support/highscores_postgres_cases.rs`,
   `apps/game-server/tests/support/public_projections_postgres_cases.rs`
@@ -76,7 +76,7 @@ Widened by CP D1441 (integration slot, 2026-10-18):
 
 Widened by CP (owner decisions, 2026-10-19):
 
-- `apps/game-server/src/native_admission_source/public_projections.rs`,
+- `crates/gameplay/native-admission-source/src/public_projections.rs`,
   `public_projections_tests.rs` (base-vocation lists keep their World ranks)
 - `docs/contracts/OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md` (§4.1 rank text only)
 - `apps/game-server/tests/durability_postgres.rs` (support mod registration),
@@ -95,9 +95,9 @@ To compile on the branch the builder may add only the module registration lines 
 - Rust pins (pinned registries / fixtures regenerated from content)
 - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json, GAME_EVENT_FOUNDATION_REGISTRY.json, RESOURCE_LIMITS_REGISTRY.json, OTERYN_GAME_ERROR_CODE_REGISTRY.json
 - apps/game-server/migrations/NNNN_*.sql number (next free on main at queue turn; main ends at 0087)
-- apps/game-server/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
+- crates/gameplay/dispatch/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
 - crates/protocol-oteryn/src/lib.rs `pub mod` + registry constants
-- apps/game-server/src/durability/mod.rs, domain/mod.rs, lib.rs module registration
+- crates/gameplay/durability/src/durability/core_modules.rs, domain/mod.rs, lib.rs module registration
 
 ## Wiring points (verified on origin/main 5742f30f3)
 
@@ -538,7 +538,7 @@ tests. `cargo fmt --all -- --check` also passed.
 
 The isolated exact-head checkout added only
 `pub(crate) mod highscore_snapshot;` to
-`apps/game-server/src/durability/mod.rs`, whose original Git blob was
+`crates/gameplay/durability/src/durability/core_modules.rs`, whose original Git blob was
 `dbae55905fa58f164b36f18d46c7661e218bdefa`. This was a **validation-only shared
 module registration**, not a published runtime integration change. The original
 production/test bodies, canonical fixture, Cargo configuration and migrations

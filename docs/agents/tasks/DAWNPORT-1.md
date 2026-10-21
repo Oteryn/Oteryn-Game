@@ -24,8 +24,8 @@ merge_authority: CP_ONLY
 owned_paths:
   - content/world/ Dawnport inputs (new family files only)
   - content/npcs/ Dawnport vocation NPC dialogue (new files)
-  - apps/game-server/src/interaction/vocation_choice.rs
-  - apps/game-server/src/gameplay_transport/npc_command.rs (D1103 SessionNpc and choice ingress hunk only)
+  - crates/gameplay/dispatch/src/gameplay_transport/vocation_choice.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs (D1103 SessionNpc and choice ingress hunk only)
   - apps/game-server/tests/dawnport_*.rs (existing owned request test)
   - apps/game-server/tests/private/dawnport_native_*.rs (new native-owner fixtures)
 slot_only_paths:
@@ -65,8 +65,8 @@ D1103: Dawnport content and a native vocation choice without a vocation start; T
 
 - content/world/ Dawnport inputs (new family files only)
 - content/npcs/ Dawnport vocation NPC dialogue (new files)
-- apps/game-server/src/interaction/vocation_choice.rs
-- apps/game-server/src/gameplay_transport/npc_command.rs (D1103 SessionNpc and choice ingress hunk only)
+- crates/gameplay/dispatch/src/gameplay_transport/vocation_choice.rs
+- crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs (D1103 SessionNpc and choice ingress hunk only)
 - apps/game-server/tests/dawnport_*.rs (new)
 
 ## Slot-only paths (final commit only, at the merge-queue turn, after merging main)

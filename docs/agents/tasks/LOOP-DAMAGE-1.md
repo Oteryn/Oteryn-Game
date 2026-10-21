@@ -23,8 +23,8 @@ merge_authority: CP_ONLY (builder never marks ready)
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/tasks/LOOP-DAMAGE-1.md
-  - apps/game-server/src/gameplay_transport/spell_magnitude_facts.rs  # CP D1125
-  - apps/game-server/src/spell/actor_conditions.rs  # CP D1125
+  - crates/gameplay/dispatch/src/gameplay_transport/spell_magnitude_facts.rs  # CP D1125
+  - crates/gameplay/spell/src/spell/actor_conditions.rs  # CP D1125
 public_contracts: []
 blocks: []
 cross_repository_coordination_id: null

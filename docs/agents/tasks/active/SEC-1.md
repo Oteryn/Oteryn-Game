@@ -21,11 +21,11 @@ updated_at: 2026-10-17
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/tasks/active/SEC-1.md
-  - apps/game-server/src/security/mod.rs (new)
-  - apps/game-server/src/security/trust_policy.rs (new)
-  - apps/game-server/src/security/trust_policy_tests.rs (new)
-  - apps/game-server/src/security/release_policy.rs (new)
-  - apps/game-server/src/security/release_policy_tests.rs (new)
+  - crates/gameplay/social/src/security/mod.rs (new)
+  - crates/gameplay/social-rules/src/trust_policy.rs (new)
+  - crates/gameplay/social-rules/src/trust_policy/tests.rs (new)
+  - crates/gameplay/social-rules/src/release_policy.rs (new)
+  - crates/gameplay/social-rules/src/release_policy/tests.rs (new)
 slot_only_paths:
   - "apps/game-server/src/lib.rs: the `security` module declaration only (D1427)"
 public_contracts: []

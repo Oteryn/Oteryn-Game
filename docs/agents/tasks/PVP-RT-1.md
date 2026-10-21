@@ -21,7 +21,7 @@ created_at: 2026-10-15
 updated_at: 2026-10-16
 execution_policy: continuous_progress
 owned_paths:
-  - apps/game-server/src/combat/pvp/lock.rs
+  - crates/gameplay/combat-rules/src/pvp/lock.rs
   - apps/game-server/tests/pvp_rt_readmission_postgres.rs
   - docs/agents/tasks/PVP-RT-1.md
 slot_only_paths:
@@ -60,8 +60,8 @@ Runtime wiring of PvP legality into attacks and spells.
 
 ## Original implementation paths (historical; not this allocation)
 
-- `apps/game-server/src/combat/pvp/legality.rs`
-- `apps/game-server/src/combat/pvp/lock.rs`
+- `crates/gameplay/combat-rules/src/pvp/legality.rs`
+- `crates/gameplay/combat-rules/src/pvp/lock.rs`
 - apps/game-server/tests/pvp_rt_*.rs (new)
 
 ## Slot-only paths (final commit only, at the merge-queue turn, after merging main)

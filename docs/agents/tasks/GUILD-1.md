@@ -43,10 +43,10 @@ Rows marked BLOCKING must merge (or be accepted) before the builder's slot commi
 
 ## owned_paths (builder edits freely)
 
-- `apps/game-server/src/domain/guild.rs`
-- `apps/game-server/src/durability/guild.rs`
-- `apps/game-server/src/durability/guild_audit.rs`
-- `apps/game-server/src/durability/guild_tests.rs`
+- `crates/gameplay/domain/src/domain/guild.rs`
+- `crates/gameplay/durability/src/durability/guild.rs`
+- `crates/gameplay/durability/src/durability/guild_audit.rs`
+- `apps/game-server/src/lifted_tests/durability_guild_tests.rs`
 - `apps/game-server/src/node/guild_jobs.rs`
 - `apps/game-server/tests/guild_postgres.rs`
 - `docs/agents/tasks/GUILD-1.md` (this record: status and notes only)
@@ -64,9 +64,9 @@ To compile on the branch the builder may add only the module registration lines 
 - Rust pins (pinned registries / fixtures regenerated from content)
 - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json, GAME_EVENT_FOUNDATION_REGISTRY.json, RESOURCE_LIMITS_REGISTRY.json, OTERYN_GAME_ERROR_CODE_REGISTRY.json
 - apps/game-server/migrations/NNNN_*.sql number (next free on main at queue turn; main ends at 0087)
-- apps/game-server/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
+- crates/gameplay/dispatch/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
 - crates/protocol-oteryn/src/lib.rs `pub mod` + registry constants
-- apps/game-server/src/durability/mod.rs, domain/mod.rs, lib.rs module registration
+- crates/gameplay/durability/src/durability/core_modules.rs, domain/mod.rs, lib.rs module registration
 
 ## Wiring points (verified on origin/main 5742f30f3)
 
@@ -142,7 +142,7 @@ aggregate holds above therefore do not govern this bounded pure preparation. No 
 document or external status was rewritten. This work does not depend on the newly
 accepted 41 briefs or pending #2207.
 
-The only code write is the previously absent `apps/game-server/src/domain/guild.rs`:
+The only code write is the previously absent `crates/gameplay/domain/src/domain/guild.rs`:
 reuse `CharacterName` grammar and canonical key for the separate guild namespace;
 checked rank levels and rank count; the numeric rank-change and exclusion inequalities;
 the ordinary-command state gate; and the strict

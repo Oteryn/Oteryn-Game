@@ -27,7 +27,7 @@ Entry-room protection-zone and spell_tiles facts are set so a player attack is n
 
 ## Architecture and source of truth
 
-- PROVEN: the entry room is qualified by exact tile flags in `apps/game-server/src/content/project/native_entry.rs` (four cells, `protection_zone: false`, one obstacle cell). Source: `native_spell_entry_room.json`.
+- PROVEN: the entry room is qualified by exact tile flags in `crates/gameplay/content/src/content/project/native_entry.rs` (four cells, `protection_zone: false`, one obstacle cell). Source: `native_spell_entry_room.json`.
 - DERIVED: any change to those facts rotates the qualified content digests and the goldens that pin them, so it is not a documentation change.
 - UNKNOWN: the exact current refusal a player or rat meets in the entry room. The implementing task reproduces it first.
 

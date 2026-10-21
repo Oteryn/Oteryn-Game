@@ -13,7 +13,7 @@ base_sha: d0b091b6b5ad4b9527d354df0043c6e55d5861cc
 owner: chatgpt-shards-reconstruction-lead
 execution_policy: continuous_progress
 owned_paths:
-  - apps/game-server/src/content/project/v2/encounter.rs
+  - crates/gameplay/content/src/content/project/v2/encounter.rs
   - apps/game-server/tests/content_world_project_v2_encounter_admission.rs
   - tools/content-schema/encounter-authoring/build_schema.py
   - tools/content-schema/encounter-authoring/encounter.schema.json

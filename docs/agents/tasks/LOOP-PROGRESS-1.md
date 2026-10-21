@@ -21,10 +21,10 @@ created_at: 2026-10-15
 updated_at: 2026-10-16
 execution_policy: continuous_progress
 owned_paths:
-  - apps/game-server/src/gameplay_transport/attack.rs
-  - apps/game-server/src/domain/progression.rs
-  - apps/game-server/src/durability/character_progression.rs
-  - apps/game-server/src/gameplay_transport/character_progression_binding.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/attack.rs
+  - crates/gameplay/domain/src/domain/progression.rs
+  - crates/gameplay/durability/src/durability/character_progression.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/character_progression_binding.rs
   - apps/game-server/tests/loop_progress_*.rs (new)
 slot_only_paths:
   - migration number (chain #3)
@@ -62,9 +62,9 @@ Level-up updates vitals and capacity per vocation; vocations end to end; skill g
 
 ## Owned paths (builder edits freely)
 
-- `apps/game-server/src/domain/progression.rs`
-- `apps/game-server/src/durability/character_progression.rs`
-- `apps/game-server/src/gameplay_transport/character_progression_binding.rs`
+- `crates/gameplay/domain/src/domain/progression.rs`
+- `crates/gameplay/durability/src/durability/character_progression.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/character_progression_binding.rs`
 - apps/game-server/tests/loop_progress_*.rs (new)
 
 ## Slot-only paths (final commit only, at the merge-queue turn, after merging main)

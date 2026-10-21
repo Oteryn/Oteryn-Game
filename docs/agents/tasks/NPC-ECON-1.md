@@ -21,9 +21,9 @@ created_at: 2026-10-15
 updated_at: 2026-10-17
 execution_policy: continuous_progress
 owned_paths:
-  - apps/game-server/src/gameplay_transport/npc_trade_command.rs
-  - apps/game-server/src/gameplay_transport/npc_command.rs
-  - apps/game-server/src/interaction/bank_npc.rs (new)
+  - crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs
+  - crates/gameplay/npc/src/bank_npc.rs (new)
   - apps/game-server/tests/npc_econ_*.rs (new)
 slot_only_paths:
   - connection.rs (`npc_trade` l.696 arm)
@@ -88,9 +88,9 @@ section at the end).
 
 ## Owned paths (builder edits freely)
 
-- `apps/game-server/src/gameplay_transport/npc_trade_command.rs`
-- `apps/game-server/src/gameplay_transport/npc_command.rs`
-- apps/game-server/src/interaction/bank_npc.rs (new)
+- `crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs`
+- crates/gameplay/npc/src/bank_npc.rs (new)
 - apps/game-server/tests/npc_econ_*.rs (new)
 
 ## Slot-only paths (final commit only, at the merge-queue turn, after merging main)
@@ -116,7 +116,7 @@ section at the end).
 ## Acceptance criteria
 
 - [x] Trade command commits one DUR-03 transaction; bank fees burned through the ledger; idempotent retry. Evidence for the owned value path at source head `222c7dce99ee3fb854b25bcb2140e4fde8e7fc9e`:
-  - `apps/game-server/src/durability/npc_trade.rs:697-711` begins one native transaction, locks the occurrence and returns its stored outcome on replay; `:793-808` inserts the matching `FEE_DEBIT`/BURN value line; `:827-840` applies the trade and commits that same transaction.
+  - `crates/gameplay/durability/src/durability/npc_trade.rs:697-711` begins one native transaction, locks the occurrence and returns its stored outcome on replay; `:793-808` inserts the matching `FEE_DEBIT`/BURN value line; `:827-840` applies the trade and commits that same transaction.
   - `apps/game-server/tests/support/npc_econ_bank_postgres_cases.rs:395-429`, `actual_npc_buy_uses_coins_then_bank_in_one_native_trade_and_single_event`, asserts bank-only and mixed coins-first conservation, matching ledger/audit data, one audit event, unchanged retry footprint and insufficient-funds rollback.
   - Recorded execution evidence: **Actual local validation and review evidence** below (33 native bodies and eight real PostgreSQL 17.6 cases, including the qualification limits), plus the **Published-candidate CI successor (slot 2)** record and `/workspace/oteryn-prep/npc-econ-1-slot-2-evidence/`. These are retained qualification reports, not a fresh run by this administrative refresh. The shared-tail, exact-head CI, independent architect review and CP gates remain open.
 - [ ] Builder confirms the residue against main before code (plan §4, 'each worker confirms the residue').

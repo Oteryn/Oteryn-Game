@@ -42,8 +42,8 @@ Rows marked BLOCKING must merge (or be accepted) before the builder's slot commi
 ## owned_paths (builder edits freely)
 
 - `content/cosmetics/outfits/ and content/cosmetics/mounts/ authoring inputs (existing index.json present: extend)`
-- `apps/game-server/src/content/cosmetics_loader.rs`
-- `apps/game-server/src/content/cosmetics_loader_tests.rs`
+- `crates/gameplay/content/src/content/native_gameplay/cosmetics_loader.rs`
+- `crates/gameplay/content/src/content/native_gameplay/cosmetics_loader/tests.rs`
 - `docs/agents/tasks/APP-2.md` (this record: status and notes only)
 
 To compile on the branch the builder may add only the module registration lines in shared `mod.rs`/`lib.rs` files; they are re-applied in the slot commit after merging main, together with every other slot-only change.
@@ -59,9 +59,9 @@ To compile on the branch the builder may add only the module registration lines 
 - Rust pins (pinned registries / fixtures regenerated from content)
 - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json, GAME_EVENT_FOUNDATION_REGISTRY.json, RESOURCE_LIMITS_REGISTRY.json, OTERYN_GAME_ERROR_CODE_REGISTRY.json
 - apps/game-server/migrations/NNNN_*.sql number (next free on main at queue turn; main ends at 0087)
-- apps/game-server/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
+- crates/gameplay/dispatch/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
 - crates/protocol-oteryn/src/lib.rs `pub mod` + registry constants
-- apps/game-server/src/durability/mod.rs, domain/mod.rs, lib.rs module registration
+- crates/gameplay/durability/src/durability/core_modules.rs, domain/mod.rs, lib.rs module registration
 
 ## Wiring points (verified on origin/main 5742f30f3)
 

@@ -21,10 +21,10 @@ created_at: 2026-10-15
 updated_at: 2026-10-17
 execution_policy: continuous_progress
 owned_paths:
-  - apps/game-server/src/durability/world_party.rs
-  - apps/game-server/src/durability/world_party_tests.rs # ROOT-HELP-D-PARTY-20261016: first-policy fixture only; sole author /root/party_owner
-  - apps/game-server/src/foundation/runtime_actor_party.rs
-  - apps/game-server/src/party/ (new)
+  - crates/gameplay/durability/src/durability/world_party.rs
+  - crates/gameplay/dispatch/src/lifted_tests/durability_world_party_tests.rs # ROOT-HELP-D-PARTY-20261016: first-policy fixture only; sole author /root/party_owner
+  - crates/gameplay/entities/src/carrier/runtime_actor_party.rs
+  - crates/gameplay/social/src/party/ (new)
   - crates/protocol-oteryn/src/party*.rs (new)
   - apps/game-server/tests/party_*.rs (new)
 slot_only_paths:
@@ -63,10 +63,10 @@ Party invite/join/leave, succession, shared-XP toggle, `PartyView` cache (member
 
 ## Owned paths (builder edits freely)
 
-- `apps/game-server/src/durability/world_party.rs`
-- `apps/game-server/src/durability/world_party_tests.rs` — ROOT-HELP-D-PARTY-20261016; only the first-policy fixture correction, sole author `/root/party_owner`.
-- `apps/game-server/src/foundation/runtime_actor_party.rs`
-- apps/game-server/src/party/ (new)
+- `crates/gameplay/durability/src/durability/world_party.rs`
+- `crates/gameplay/dispatch/src/lifted_tests/durability_world_party_tests.rs` — ROOT-HELP-D-PARTY-20261016; only the first-policy fixture correction, sole author `/root/party_owner`.
+- `crates/gameplay/entities/src/carrier/runtime_actor_party.rs`
+- crates/gameplay/social/src/party/ (new)
 - crates/protocol-oteryn/src/party*.rs (new)
 - apps/game-server/tests/party_*.rs (new)
 
@@ -156,13 +156,13 @@ World writer, rather than an empty party skeleton:
 
 | Requested semantics | Existing source at the allocated head |
 |---|---|
-| Visible invite target, target consent, leader requirement and 10/20/50 limits | `apps/game-server/src/durability/world_party.rs:251` invite branch; target-root lock before consent/cap reads |
+| Visible invite target, target consent, leader requirement and 10/20/50 limits | `crates/gameplay/durability/src/durability/world_party.rs:251` invite branch; target-root lock before consent/cap reads |
 | Valid unexpired invitation, one-party membership and 50-member bound | `world_party.rs:311` accept branch; it deletes only the accepted invitation |
 | Decline, leader revoke, transfer to a member, combat-qualified leave | `world_party.rs:330` through the leave branch at line 354 |
 | Leader-only party lifetime and last-member deletion | `world_party.rs:383` and `remove_member_with_succession` at line 391 |
 | Online-first, lowest-invitation-sequence successor | `world_party.rs:402`: independently queried session state 1/2, then `m.seq` |
 | Expired invitation cleanup, one party and at most 100 rows per pass | `world_party.rs:427` |
-| Read-only actor snapshot cache, explicitly no authority grants | `apps/game-server/src/foundation/runtime_actor_party.rs:1` |
+| Read-only actor snapshot cache, explicitly no authority grants | `crates/gameplay/entities/src/carrier/runtime_actor_party.rs:1` |
 
 The existing writer is registered in `durability/mod.rs:81`; the actor cache is
 re-exported through `foundation/mod.rs:1535`. These are private source ports; source
@@ -184,9 +184,9 @@ Source SHA-256 evidence:
 
 | Input | SHA-256 |
 |---|---|
-| `apps/game-server/src/durability/world_party.rs` | `7ff6285716deb6bb7af5404695eb10ecc39cfabcdf4890457036e067328914d3` |
-| `apps/game-server/src/durability/world_party_tests.rs` | `70812f10a1731852d0d040e5a3fe38bc7e5cac3afbd04610d102eb41925b3740` |
-| `apps/game-server/src/foundation/runtime_actor_party.rs` | `0185148f0df3b11c578a220ca92164141c6a674495e8958c17a2673390ae4a1a` |
+| `crates/gameplay/durability/src/durability/world_party.rs` | `7ff6285716deb6bb7af5404695eb10ecc39cfabcdf4890457036e067328914d3` |
+| `crates/gameplay/dispatch/src/lifted_tests/durability_world_party_tests.rs` | `70812f10a1731852d0d040e5a3fe38bc7e5cac3afbd04610d102eb41925b3740` |
+| `crates/gameplay/entities/src/carrier/runtime_actor_party.rs` | `0185148f0df3b11c578a220ca92164141c6a674495e8958c17a2673390ae4a1a` |
 
 ### Validation and remaining boundaries
 
@@ -512,7 +512,7 @@ remains held on the inherited default-test constraint and final native/review ga
 
 This current entry supersedes the earlier unresolved literal-test/path hold only.
 The user's explicit ROOT-HELP-D-PARTY-20261016 instruction allocates
-`apps/game-server/src/durability/world_party_tests.rs` on `skeleton/party-1` to sole
+`crates/gameplay/dispatch/src/lifted_tests/durability_world_party_tests.rs` on `skeleton/party-1` to sole
 source author `/root/party_owner` exclusively for this contract-fixture repair.
 The task returns to AUTHORING from local `1538cd2bcac320a64507d1a0fee579171189a72c`;
 remote draft #2201's expected predecessor remains `5b46fefaa424fabc754239c8d7dc987ba1766ed4`.
@@ -585,7 +585,7 @@ shrinks, and the only other option, a `test = false` manifest entry, is a shared
 `Cargo.toml` hunk that would keep it out of CI anyway.
 
 **Fix within owned paths.** The 18 `shared_xp_cases` bodies are moved verbatim to
-`apps/game-server/src/party/shared_xp_postgres_tests.rs`, mounted under `cfg(test)` from
+`apps/game-server/src/lifted_tests/party_shared_xp_postgres_tests.rs`, mounted under `cfg(test)` from
 `party/mod.rs`. The only change is the PRE-ROUTING / NONCANONICAL early return
 (repository harness convention) in place of a hard failure when
 `OTERYN_TEST_POSTGRES_ADMIN_URL` is absent. The crate-copy wrapper is deleted. No

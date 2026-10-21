@@ -70,8 +70,8 @@ Rows marked BLOCKING must merge (or be accepted/decided) before the builder's sl
 
 ## owned_paths (builder edits freely)
 
-- `apps/game-server/src/durability/house_interior.rs`
-- `apps/game-server/src/durability/house_interior_audit.rs`
+- `crates/gameplay/durability/src/durability/house_interior.rs`
+- `crates/gameplay/durability/src/durability/house_interior_audit.rs`
 - `apps/game-server/tests/house_interior_postgres.rs`
 - `apps/game-server/tests/support/house_interior_postgres_cases.rs`
 - `apps/game-server/tests/support/house_test_fixture.rs`
@@ -94,9 +94,9 @@ To compile on the branch the builder may add only the module registration lines 
 - Rust pins (pinned registries / fixtures regenerated from content)
 - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json, GAME_EVENT_FOUNDATION_REGISTRY.json, RESOURCE_LIMITS_REGISTRY.json, OTERYN_GAME_ERROR_CODE_REGISTRY.json
 - apps/game-server/migrations/NNNN_*.sql number (next free on main at queue turn; main ends at 0091)
-- apps/game-server/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
+- crates/gameplay/dispatch/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
 - crates/protocol-oteryn/src/lib.rs `pub mod` + registry constants
-- apps/game-server/src/durability/mod.rs, domain/mod.rs, lib.rs module registration
+- crates/gameplay/durability/src/durability/core_modules.rs, domain/mod.rs, lib.rs module registration
 
 ## Wiring points (verified on origin/main 5742f30f3)
 
