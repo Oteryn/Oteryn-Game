@@ -358,9 +358,14 @@ mod tests {
         ExactActorRef,
         crate::foundation::GameSessionId,
     ) {
-        use crate::foundation::{
-            ChannelContentPin, ChannelId, CompiledCreaturePolicies, CompiledCreaturePolicy,
-            CreatureFlags, GameSessionId, NodeId, WorldId,
+        use {
+            crate::foundation::{ChannelId, GameSessionId, NodeId, WorldId},
+            oteryn_gameplay_content::content::{
+                channel_content_pin::ChannelContentPin,
+                creature_policy::{
+                    CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureFlags,
+                },
+            },
         };
         let id = |tag: u8| [1, 0x92, 0, 0, 0, tag, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag];
         let world = WorldId::decode(&id(1)).expect("world");

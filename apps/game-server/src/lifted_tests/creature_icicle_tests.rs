@@ -9,11 +9,14 @@ use crate::creature_icicle::hex;
 use crate::creature_icicle::*;
 use crate::durability::creature_schedule::ScheduleList;
 use crate::foundation::owner_timer::SemanticTimeMicros;
-use crate::foundation::{
-    ChannelContentPin, ChannelId, ChannelRuntimeV1, ExactActorRef, GameSessionId,
-    MovementLocalPosition, NodeId, RuntimeScopeRefV1, RuntimeWorkStamp, ScopeRuntimeFence, WorldId,
-};
 use oteryn_gameplay_encounters::bosses::icicle::native_owner::IcicleCarrierExt;
+use {
+    crate::foundation::{
+        ChannelId, ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition, NodeId,
+        RuntimeScopeRefV1, RuntimeWorkStamp, ScopeRuntimeFence, WorldId,
+    },
+    oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+};
 
 fn fixture() -> (
     ChannelRuntimeV1,
@@ -482,7 +485,9 @@ fn icicle_native_mixed_targets_and_receipt_failure_preflight_leave_first_slot_un
                 &[a],
                 b"receipt-refusal",
                 b"receipt-refusal\0native-source",
-                |_| Err::<(), _>(crate::foundation::CarrierError::AllocationFailed)
+                |_| Err::<(), _>(
+                    oteryn_gameplay_domain::domain::carrier_values::CarrierError::AllocationFailed
+                )
             )
             .is_err()
     );

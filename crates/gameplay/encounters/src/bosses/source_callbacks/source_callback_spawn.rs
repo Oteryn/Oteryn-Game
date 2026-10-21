@@ -457,7 +457,7 @@ pub struct SpawnChildReceipt {
     pub creature: Ref,
     pub result: Result<ExactActorRef, AttackError>,
     pub intrinsic: bool,
-    pub cleanup: Option<Result<(), crate::foundation::CarrierError>>,
+    pub cleanup: Option<Result<(), oteryn_gameplay_domain::domain::carrier_values::CarrierError>>,
 }
 #[derive(Debug)]
 pub struct CallbackSpawnReceipt {
@@ -465,7 +465,7 @@ pub struct CallbackSpawnReceipt {
     pub ability: Ref,
     pub requested: u32,
     pub children: Vec<SpawnChildReceipt>,
-    pub remove: Option<Result<(), crate::foundation::CarrierError>>,
+    pub remove: Option<Result<(), oteryn_gameplay_domain::domain::carrier_values::CarrierError>>,
     pub flags: &'static [&'static str],
 }
 pub struct CallbackSpawnOwner {

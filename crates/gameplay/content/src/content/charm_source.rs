@@ -8,7 +8,7 @@ use serde_json::value::RawValue;
 use sha2::{Digest, Sha256};
 
 use crate::domain::charm::{CharmCatalogue, CharmCategory as DomainCategory, CharmKey};
-use crate::foundation::charm_data::{
+use oteryn_gameplay_domain::domain::charm_data::{
     CharmCatalogueRead, CharmCategory, CharmDefinition, CharmPercent, CharmStageValue,
 };
 

@@ -1,7 +1,10 @@
 //! Actual familiar defense cues share the Channel outbox. They have no player
 //! cast command; a sealed physical defense receipt is their sole commit proof.
 use super::*;
-use crate::foundation::{CompanionSnapshot, FamiliarDefenseReceipt, FamiliarSelfHealDefense};
+use {
+    crate::foundation::{CompanionSnapshot, FamiliarDefenseReceipt},
+    oteryn_gameplay_content::content::creature_policy::FamiliarSelfHealDefense,
+};
 #[derive(Debug)]
 pub struct PreparedFamiliarDefenseCue {
     actor: ExactActorRef,

@@ -2,13 +2,18 @@
 //! A retry retains its prepared plan; it never replans an old occurrence at a new revision.
 
 use super::*;
-pub use oteryn_gameplay_foundation::foundation::condition::{
-    ApplicationFacts, AttributeModifier, AttributeModifiers, CombatSkill, ConditionDefinition,
-    ConditionRefusal, ConditionSourceKind, ConditionStore, ConditionTick, ConditionType,
-    ConditionValues, DamageSchedule, DamageSegment, DotElement, ExactSpeedRatio,
-    RationalSpeedRange, SpeedRange, StatusKind, TickFacts, TickKind,
-};
 use oteryn_simulation_determinism::{DecisionOccurrenceId, SemanticTimeMicros};
+pub use {
+    oteryn_gameplay_domain::domain::condition::{
+        ConditionRefusal, ConditionType, ConditionValues, DotElement, ExactSpeedRatio,
+        RationalSpeedRange, SpeedRange, StatusKind,
+        attributes::{AttributeModifier, AttributeModifiers, CombatSkill},
+    },
+    oteryn_gameplay_foundation::foundation::condition::{
+        ApplicationFacts, ConditionDefinition, ConditionSourceKind, ConditionStore, ConditionTick,
+        DamageSchedule, DamageSegment, TickFacts, TickKind,
+    },
+};
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(super) struct ActorConditionState {

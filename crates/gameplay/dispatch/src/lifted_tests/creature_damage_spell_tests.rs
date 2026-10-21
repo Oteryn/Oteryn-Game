@@ -95,7 +95,10 @@ fn test_uuid(tag: u8) -> [u8; 16] {
     ]
 }
 fn runtime_three_slots() -> (ChannelRuntimeV1, ExactActorRef, GameSessionId) {
-    use crate::foundation::{ChannelContentPin, ChannelId, NodeId, WorldId};
+    use {
+        crate::foundation::{ChannelId, NodeId, WorldId},
+        oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+    };
     let w = WorldId::decode(&test_uuid(0x60)).expect("qualified fixture");
     let mut r = ChannelRuntimeV1::from_committed_assignment(
         w,
@@ -1138,7 +1141,9 @@ fn native_djinn_source_area_dispel_invisible_player_without_primary_hp_and_repla
         let invisible = crate::ability::condition::ConditionDefinition::new(
             "test.source.djinn.invisible",
             1,
-            crate::ability::condition::ConditionValues::Invisible { duration_ms: 5000 },
+            oteryn_gameplay_domain::domain::condition::ConditionValues::Invisible {
+                duration_ms: 5000,
+            },
         )
         .expect("qualified fixture");
         let seed_facts = crate::ability::condition::ApplicationFacts {

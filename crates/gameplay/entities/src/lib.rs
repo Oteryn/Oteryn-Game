@@ -7,6 +7,13 @@ pub(crate) use oteryn_gameplay_domain::domain;
 #[allow(unused_imports)]
 pub use oteryn_gameplay_foundation::foundation::*;
 
+pub use oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin;
+pub use oteryn_gameplay_content::content::creature_policy::{
+    CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureExactRatio, CreatureFlags,
+    CreatureResistance, FamiliarSelfHealDefense,
+};
+pub use oteryn_gameplay_domain::domain::carrier_values::{CarrierError, LocalPosition};
+
 pub mod content_adapters;
 
 #[allow(dead_code)]

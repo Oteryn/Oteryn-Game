@@ -816,8 +816,11 @@ mod progression_dispatch_tests {
 
     #[test]
     fn food_regeneration_credits_through_the_channel_owner_and_stops_at_expiry() {
-        use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, NodeId};
         use crate::map::boot::tests::{floor_bundle, floor_items, floor_pins};
+        use {
+            crate::foundation::{ChannelRuntimeV1, NodeId},
+            oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+        };
 
         let (template, _, session) = runtime_with_player(0x78);
         let world = template.binding().world_id();

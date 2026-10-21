@@ -9,15 +9,18 @@ use crate::content::{
 use crate::creature_attack_geometry::{self as geometry, Facing};
 use crate::creature_auto_attack::ProfileAbilityProposal;
 use crate::durability::creature_schedule::ScheduleList;
-use crate::foundation::{
-    CarrierError, ChannelRuntimeV1, ExactActorRef, OwnerDamageResult, RuntimeScopeRefV1,
-    RuntimeWorkStamp, ScopeRuntimeFence,
-};
 use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
 };
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
+use {
+    crate::foundation::{
+        ChannelRuntimeV1, ExactActorRef, OwnerDamageResult, RuntimeScopeRefV1, RuntimeWorkStamp,
+        ScopeRuntimeFence,
+    },
+    oteryn_gameplay_domain::domain::carrier_values::CarrierError,
+};
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AreaHealError {
     InvalidSource,
@@ -356,7 +359,7 @@ pub trait AreaHealStates {
         now: u64,
         fence: &ScopeRuntimeFence,
         stamp: RuntimeWorkStamp,
-    ) -> Result<Vec<OwnerDamageResult>, crate::foundation::CarrierError>;
+    ) -> Result<Vec<OwnerDamageResult>, oteryn_gameplay_domain::domain::carrier_values::CarrierError>;
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AreaHealOutcome {

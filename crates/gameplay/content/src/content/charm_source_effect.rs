@@ -4,7 +4,7 @@
 
 use super::ContentError;
 use super::charm_source_json::{CharmSourceMembers, ExactPercent, ensure_empty, take};
-use crate::foundation::charm_data::{
+use oteryn_gameplay_domain::domain::charm_data::{
     CharmDamageKind, CharmEffect, CharmElement, CharmPercent, CharmResource,
 };
 use serde_json::value::RawValue;

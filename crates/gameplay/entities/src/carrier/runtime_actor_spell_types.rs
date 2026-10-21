@@ -127,7 +127,7 @@ pub struct CombatBatchReceipt {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Error {
-    Owner(oteryn_gameplay_foundation::foundation::CarrierError),
+    Owner(oteryn_gameplay_domain::domain::carrier_values::CarrierError),
     InvalidBatch,
     InvalidAnchor,
     InvalidMagnitude,
@@ -142,8 +142,8 @@ pub enum Error {
     AllocationFailed,
 }
 
-impl From<oteryn_gameplay_foundation::foundation::CarrierError> for Error {
-    fn from(error: oteryn_gameplay_foundation::foundation::CarrierError) -> Self {
+impl From<oteryn_gameplay_domain::domain::carrier_values::CarrierError> for Error {
+    fn from(error: oteryn_gameplay_domain::domain::carrier_values::CarrierError) -> Self {
         Self::Owner(error)
     }
 }

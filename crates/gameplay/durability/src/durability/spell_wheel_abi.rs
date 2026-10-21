@@ -1,2 +1,2 @@
 //! Compatibility path for the Foundation-owned Wheel compiler.
-pub use crate::foundation::spell_wheel_profile::*;
+pub use oteryn_gameplay_content::content::spell_wheel_profile::*;

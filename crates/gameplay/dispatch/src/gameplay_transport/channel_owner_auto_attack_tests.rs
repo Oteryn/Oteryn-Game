@@ -9,11 +9,14 @@ use crate::content::native_gameplay::{
     NativeGameplayInput, NativeGameplayMapProfile, PinnedGameplayBytes,
 };
 use crate::content::qualify_native_source_spell_world_with_gameplay;
-use crate::foundation::{
-    ChannelContentPin, ChannelId, CompiledCreaturePolicies, CompiledCreaturePolicy,
-    ControlLossMark, CreatureFlags, NodeId, WorldId,
-};
 use oteryn_protocol_oteryn::attack::ChaseMode;
+use {
+    crate::foundation::{ChannelId, ControlLossMark, NodeId, WorldId},
+    oteryn_gameplay_content::content::{
+        channel_content_pin::ChannelContentPin,
+        creature_policy::{CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureFlags},
+    },
+};
 
 fn uuid(raw: u8) -> [u8; 16] {
     let mut bytes = [0; 16];

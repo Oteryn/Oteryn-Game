@@ -1,8 +1,8 @@
 //! Real companion entities in the Channel's existing fixed slots. Content policies are installed
 //! by the active artifact loader; client names only resolve those already qualified records.
 use super::*;
+pub use oteryn_gameplay_content::content::creature_policy::*;
 use oteryn_gameplay_foundation::foundation::condition::ConditionStore;
-pub use oteryn_gameplay_foundation::foundation::creature_policy::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CompanionMaster {
@@ -2039,8 +2039,11 @@ mod tests {
         use super::super::runtime_actor_spell_types::{
             OwnerCombatBatch, OwnerCombatChange, OwnerCombatEffect, SpellOccurrenceBinding,
         };
-        use oteryn_gameplay_foundation::foundation::condition::{
-            ApplicationFacts, ConditionDefinition, ConditionSourceKind, ConditionValues,
+        use {
+            oteryn_gameplay_domain::domain::condition::ConditionValues,
+            oteryn_gameplay_foundation::foundation::condition::{
+                ApplicationFacts, ConditionDefinition, ConditionSourceKind,
+            },
         };
         let (mut runtime, owner, session) = owner();
         let actor = runtime

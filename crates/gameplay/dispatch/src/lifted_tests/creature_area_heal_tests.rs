@@ -7,9 +7,12 @@ use crate::creature_area_heal::*;
 use crate::creature_attack_geometry::Facing;
 use crate::creature_auto_attack::ProfileAbilityProposal;
 use crate::durability::creature_schedule::ScheduleList;
-use crate::foundation::{
-    ChannelContentPin, ChannelId, ChannelRuntimeV1, ExactActorRef, MovementLocalPosition, NodeId,
-    RuntimeScopeRefV1, RuntimeWorkStamp, WorldId,
+use {
+    crate::foundation::{
+        ChannelId, ChannelRuntimeV1, ExactActorRef, MovementLocalPosition, NodeId,
+        RuntimeScopeRefV1, RuntimeWorkStamp, WorldId,
+    },
+    oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
 };
 
 fn fixture() -> (ChannelRuntimeV1, ProjectV2Draft, Ref) {

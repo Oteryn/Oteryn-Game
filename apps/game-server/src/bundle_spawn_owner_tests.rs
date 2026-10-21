@@ -7,8 +7,11 @@ use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 #[test]
 #[allow(clippy::expect_used)]
 fn a_bundle_spawned_rat_killed_by_a_lethal_hit_respawns_on_the_owner_turn() {
-    use crate::foundation::{ChannelContentPin, ChannelId, NodeId, WorldId};
     use oteryn_world_bundle::spawn::{Creature, Direction, Period, Point, Source, Table};
+    use {
+        crate::foundation::{ChannelId, NodeId, WorldId},
+        oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+    };
     let world =
         WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1]).expect("world");
     let channel = ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])

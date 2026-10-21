@@ -5,11 +5,14 @@ use crate::content::{ProjectV2BehaviorAuthoring, ProjectV2DefinitionRef as Ref, 
 use crate::creature_auto_attack::CurrentCombatFactsReader;
 use crate::creature_damage_spell::{CreatureCombatFacts, SpellWorldReader};
 use crate::foundation::owner_timer::OwnerClock;
-use crate::foundation::{
-    CarrierError, ChannelRuntimeV1, ExactActorRef, GameSessionId, RuntimeWorkStamp,
-    ScopeRuntimeFence, TickFacts,
-};
 use crate::spell::chain::TilePosition;
+use {
+    crate::foundation::{
+        ChannelRuntimeV1, ExactActorRef, GameSessionId, RuntimeWorkStamp, ScopeRuntimeFence,
+        TickFacts,
+    },
+    oteryn_gameplay_domain::domain::carrier_values::CarrierError,
+};
 mod states;
 pub use states::MonsterCombatStates;
 pub mod native_conditions;
@@ -92,20 +95,30 @@ pub trait MonsterCombatReader:
     ) -> Option<crate::ability::condition::TickFacts> {
         let current = self.condition_tick_facts(runtime, actor, session, stamp)?;
         let standing = current.standing_on_field.map(|field| match field {
-            crate::foundation::DotElement::Poison => crate::ability::condition::DotElement::Poison,
-            crate::foundation::DotElement::Fire => crate::ability::condition::DotElement::Fire,
-            crate::foundation::DotElement::Energy => crate::ability::condition::DotElement::Energy,
-            crate::foundation::DotElement::Bleeding => {
-                crate::ability::condition::DotElement::Bleeding
+            crate::foundation::DotElement::Poison => {
+                oteryn_gameplay_domain::domain::condition::DotElement::Poison
             }
-            crate::foundation::DotElement::Drown => crate::ability::condition::DotElement::Drown,
+            crate::foundation::DotElement::Fire => {
+                oteryn_gameplay_domain::domain::condition::DotElement::Fire
+            }
+            crate::foundation::DotElement::Energy => {
+                oteryn_gameplay_domain::domain::condition::DotElement::Energy
+            }
+            crate::foundation::DotElement::Bleeding => {
+                oteryn_gameplay_domain::domain::condition::DotElement::Bleeding
+            }
+            crate::foundation::DotElement::Drown => {
+                oteryn_gameplay_domain::domain::condition::DotElement::Drown
+            }
             crate::foundation::DotElement::Freezing => {
-                crate::ability::condition::DotElement::Freezing
+                oteryn_gameplay_domain::domain::condition::DotElement::Freezing
             }
             crate::foundation::DotElement::Dazzled => {
-                crate::ability::condition::DotElement::Dazzled
+                oteryn_gameplay_domain::domain::condition::DotElement::Dazzled
             }
-            crate::foundation::DotElement::Cursed => crate::ability::condition::DotElement::Cursed,
+            crate::foundation::DotElement::Cursed => {
+                oteryn_gameplay_domain::domain::condition::DotElement::Cursed
+            }
         });
         let (cells, _) = self.native_condition_tick_inputs(runtime, stamp)?;
         qualified_source_player_tick_spatial_facts(runtime, cells, actor, session, Some(standing))
@@ -445,7 +458,9 @@ impl TrustedMonsterConditionTickInputs {
         runtime: &ChannelRuntimeV1,
         actor: ExactActorRef,
         session: GameSessionId,
-        current_standing_field: Option<Option<crate::ability::condition::DotElement>>,
+        current_standing_field: Option<
+            Option<oteryn_gameplay_domain::domain::condition::DotElement>,
+        >,
     ) -> Option<crate::ability::condition::TickFacts> {
         let (cells, _) = self.current(runtime)?;
         qualified_source_player_tick_spatial_facts(
@@ -463,7 +478,7 @@ fn qualified_source_player_tick_spatial_facts(
     cells: &crate::content::NativeEntryMovementCells,
     actor: ExactActorRef,
     session: GameSessionId,
-    current_standing_field: Option<Option<crate::ability::condition::DotElement>>,
+    current_standing_field: Option<Option<oteryn_gameplay_domain::domain::condition::DotElement>>,
 ) -> Option<crate::ability::condition::TickFacts> {
     let standing_on_field = current_standing_field?;
     if cells.scope().world_id != runtime.binding().world_id()

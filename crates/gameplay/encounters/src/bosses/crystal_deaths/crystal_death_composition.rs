@@ -4,12 +4,15 @@ use crate::bosses::rum_barrel::native_death::{
     RumBarrelCarrierExt, RumBarrelDeathLedger, RumBarrelDeathResult,
 };
 use crate::content::{ProjectV2AuthoringProfile, ProjectV2SourceIdentityBinding, WorldProject};
-use crate::foundation::{
-    CarrierError, ChannelId, ChannelRuntimeV1, ExactActorRef, GameSessionId, RuntimeScopeRefV1,
-    RuntimeWorkStamp, ScopeOwnershipGeneration, ScopeRuntimeFence, WorldId,
-};
 #[cfg(test)]
 use oteryn_gameplay_encounters::bosses::crystal_deaths::native_fixtures::CrystalRouterFixtureExt;
+use {
+    crate::foundation::{
+        ChannelId, ChannelRuntimeV1, ExactActorRef, GameSessionId, RuntimeScopeRefV1,
+        RuntimeWorkStamp, ScopeOwnershipGeneration, ScopeRuntimeFence, WorldId,
+    },
+    oteryn_gameplay_domain::domain::carrier_values::CarrierError,
+};
 pub mod speech {
     include!("crystal_death_composition/speech.rs");
 }

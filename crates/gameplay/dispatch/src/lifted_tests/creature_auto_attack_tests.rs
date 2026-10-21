@@ -579,7 +579,10 @@ fn test_uuid(tag: u8) -> [u8; 16] {
 }
 #[test]
 fn shield_budget_65_session_turnovers_purge_stale_and_preserve_live_other_tokens() {
-    use crate::foundation::{ChannelContentPin, ChannelId, NodeId, WorldId};
+    use {
+        crate::foundation::{ChannelId, NodeId, WorldId},
+        oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+    };
     let world = WorldId::decode(&test_uuid(0x60)).expect("world");
     let mut runtime = ChannelRuntimeV1::from_committed_assignment(
         world,

@@ -18,9 +18,12 @@ use crate::ability::RevisionSet;
 use crate::content::{
     ProjectV2AbilityAuthoring, ProjectV2BehaviorAuthoring, ProjectV2DefinitionRef,
 };
-use crate::foundation::{CarrierError, ChannelRuntimeV1, ExactActorRef, MovementLocalPosition};
 use crate::movement::interest::tibia_floor;
 use oteryn_simulation_determinism::GameplayDecisionRoot;
+use {
+    crate::foundation::{ChannelRuntimeV1, ExactActorRef, MovementLocalPosition},
+    oteryn_gameplay_domain::domain::carrier_values::CarrierError,
+};
 
 impl CreatureAiTable {
     /// Admits live creature `actor` of `runtime` to thinking with its projected behaviour

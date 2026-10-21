@@ -8,12 +8,15 @@ use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_transfer::{
     BackpackEntry, CharacterBackpack, InventoryItem, ItemDefinitionFacts,
 };
-use crate::foundation::{
-    CarrierError, ChannelContentPin, ChannelId, ChannelRuntimeV1, ExactActorRef,
-    MovementLocalPosition, NodeId,
-};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_VIEW_MOVE_V1;
+use {
+    crate::foundation::{
+        ChannelId, ChannelRuntimeV1, ExactActorRef, MovementLocalPosition, NodeId,
+    },
+    oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+    oteryn_gameplay_domain::domain::carrier_values::CarrierError,
+};
 
 const PRODUCTION_KEYS: &[u8] =
     include_bytes!("../../../../../tools/content-schema/native-gameplay/item-keys.json");

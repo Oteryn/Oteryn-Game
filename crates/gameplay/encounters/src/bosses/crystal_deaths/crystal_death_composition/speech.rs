@@ -3,9 +3,7 @@ use crate::bosses::the_welter::native_owner::WelterCarrierExt;
 use crate::durability::chat_text::ChatText;
 use crate::foundation::speech::{ChatPosition, SpeechMode, hears};
 pub use crate::callback_speech as callback;
-use crate::foundation::{
-    CarrierError, ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition,
-};
+use {oteryn_gameplay_domain::domain::carrier_values::CarrierError, crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition}};
 use oteryn_protocol_oteryn::chat::{
     ChatLine, ChatSpeaker, ChatSpeechMode, ChatWireError, encode_chat_line,
 };

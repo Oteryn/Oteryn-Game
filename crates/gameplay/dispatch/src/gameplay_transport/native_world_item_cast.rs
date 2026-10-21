@@ -332,7 +332,7 @@ pub(super) async fn prepare(
             let condition = crate::ability::condition::ConditionDefinition::new(
                 "spell.chameleon",
                 0,
-                crate::ability::condition::ConditionValues::ItemOutfit {
+                oteryn_gameplay_domain::domain::condition::ConditionValues::ItemOutfit {
                     duration_ms: *duration_ms,
                 },
             )
@@ -951,7 +951,7 @@ async fn prepare_carried(
     let definition = crate::ability::condition::ConditionDefinition::new(
         "spell.chameleon",
         0,
-        crate::ability::condition::ConditionValues::ItemOutfit {
+        oteryn_gameplay_domain::domain::condition::ConditionValues::ItemOutfit {
             duration_ms: *duration_ms,
         },
     )

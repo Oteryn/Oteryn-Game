@@ -457,7 +457,7 @@ mod tests {
             1,
             "runtime-scope-assignment:1",
             2,
-            crate::foundation::ChannelContentPin::test(world),
+            oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::test(world),
         )?;
         let reservation = runtime.reserve_fresh_session(session)?;
         let actor = runtime.commit_fresh_session(reservation)?;

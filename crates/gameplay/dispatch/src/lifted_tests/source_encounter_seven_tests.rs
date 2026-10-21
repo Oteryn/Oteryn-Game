@@ -12,12 +12,15 @@ use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, RuntimeScopeRefV1, RuntimeWorkStamp, ScopeRuntimeFence,
     WorldId,
 };
-use crate::foundation::{
-    CompiledCreaturePolicies, CompiledCreaturePolicy, ConditionType, CreatureExactRatio,
-    CreatureFlags, CreatureResistance, MovementLocalPosition,
-};
 use crate::gameplay_transport::actor_spell::tests::runtime_with_player;
 use crate::source_encounter_seven::*;
+use {
+    crate::foundation::{ConditionType, MovementLocalPosition},
+    oteryn_gameplay_content::content::creature_policy::{
+        CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureExactRatio, CreatureFlags,
+        CreatureResistance,
+    },
+};
 
 fn draft(r: &ChannelRuntimeV1) -> ProjectV2Draft {
     let v: serde_json::Value = serde_json::from_str(include_str!(
@@ -615,7 +618,10 @@ fn sole_return_deadline_survives_real_reservation_refused_commit_and_foreign_sco
 }
 #[test]
 fn two_retained_casts_and_returns_cannot_rewind_the_same_source_owner_clock() {
-    use crate::foundation::{ChannelContentPin, NodeId};
+    use {
+        crate::foundation::NodeId,
+        oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+    };
     let (base, _, _, _, _) = fixture();
     let b = base.binding();
     let pin: ChannelContentPin = base.content_pin().clone();

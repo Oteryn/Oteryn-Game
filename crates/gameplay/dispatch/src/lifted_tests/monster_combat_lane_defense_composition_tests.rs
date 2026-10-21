@@ -23,16 +23,18 @@ mod defense_composition_tests {
     use crate::foundation::owner_timer::OwnerClock;
     use crate::foundation::owner_timer::SemanticTimeMicros;
     use crate::foundation::owner_timer::VirtualOwnerClock;
-    use crate::foundation::{
-        ChannelContentPin, ChannelId, MovementLocalPosition, NodeId, RuntimeScopeRefV1,
-        crystal_timer_fixture,
-    };
     use crate::foundation::{ConditionValues, StatusKind};
     use crate::gameplay_transport::actor_spell::ChannelSpellStates;
     use crate::gameplay_transport::actor_spell::CreatureVision;
     use crate::monster_combat_lane::native_invisibility::InvisibleTileCombatPolicy;
     use crate::monster_combat_lane::native_invisibility::SelfSpeedSource;
     use crate::monster_combat_lane::*;
+    use {
+        crate::foundation::{
+            ChannelId, MovementLocalPosition, NodeId, RuntimeScopeRefV1, crystal_timer_fixture,
+        },
+        oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+    };
     /// Explicit no-target test owner. Unknown attack/condition facts never grant admission.
     struct DefenseWorld;
     impl CurrentCombatFactsReader for DefenseWorld {

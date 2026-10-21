@@ -1,7 +1,7 @@
 use super::{
     ContentError, ContentLockBinding, PackageManifestBinding, ProductionAtom, ProductionKey,
 };
-use crate::foundation::WorldId;
+use oteryn_protocol_oteryn::WorldId;
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
 use std::collections::{BTreeMap, BTreeSet};
 

@@ -1,6 +1,6 @@
 //! Typed immutable field recipes from the pinned XML and actual source parser.
 //! Missing item metadata is Unknown; a qualified non-damaging barrier is None.
-use super::DotElement;
+use oteryn_gameplay_domain::domain::condition::DotElement;
 use serde::{Deserialize, Serialize};
 use std::sync::OnceLock;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -70,8 +70,13 @@ impl QualifiedFieldCondition {
         dead_code,
         reason = "read only by the actual spell field owner, not mounted in every crate"
     )]
-    pub fn condition_values(&self) -> Result<Option<super::ConditionValues>, FieldError> {
-        use super::{ConditionValues, DotSequenceStep, MAX_DOT_SEQUENCE_STEPS};
+    pub fn condition_values(
+        &self,
+    ) -> Result<Option<oteryn_gameplay_domain::domain::condition::ConditionValues>, FieldError>
+    {
+        use oteryn_gameplay_domain::domain::condition::{
+            ConditionValues, DotSequenceStep, MAX_DOT_SEQUENCE_STEPS,
+        };
         self.validate()?;
         match &self.condition {
             FieldConditionKind::None => Ok(None),

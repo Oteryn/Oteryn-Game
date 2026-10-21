@@ -283,11 +283,14 @@ mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
     use super::*;
     use crate::foundation::owner_timer::OwnerClock;
-    use crate::foundation::{
-        ChannelContentPin, ChannelId, CommandId, GameSessionId, MovementLocalPosition, NodeId,
-        RuntimeScopeRefV1, WorldId,
-    };
     use crate::spell::delayed_execution::SpellTimerOwner;
+    use {
+        crate::foundation::{
+            ChannelId, CommandId, GameSessionId, MovementLocalPosition, NodeId, RuntimeScopeRefV1,
+            WorldId,
+        },
+        oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+    };
 
     #[test]
     fn actual_source_chain_schedules_zero_phase_and_refuses_unqualified_due_damage() {

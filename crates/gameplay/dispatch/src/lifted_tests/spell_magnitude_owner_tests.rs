@@ -1,10 +1,6 @@
 #![allow(clippy::expect_used)]
 #![allow(clippy::panic)]
 use crate::foundation::{ChannelRuntimeV1, CharacterId, ExactActorRef, GameSessionId};
-use crate::foundation::{
-    CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureExactRatio, CreatureFlags,
-    CreatureResistance, MovementLocalPosition,
-};
 use crate::gameplay_transport::actor_spell::tests::FACTS;
 use crate::spell::cast::PlayerSpellState;
 use crate::spell::combat_batch::{AvatarState, OwnerCombatChange};
@@ -12,6 +8,13 @@ use crate::spell::combat_batch::{Error, LiveActorBinding};
 use crate::spell::magnitude_owner::*;
 use crate::spell::native_combat::CombatPlan;
 use crate::spell::native_combat::{Element, MagnitudePlan, NativeCombatPlan};
+use {
+    crate::foundation::MovementLocalPosition,
+    oteryn_gameplay_content::content::creature_policy::{
+        CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureExactRatio, CreatureFlags,
+        CreatureResistance,
+    },
+};
 
 struct Fixture {
     runtime: ChannelRuntimeV1,
@@ -36,7 +39,7 @@ fn fixture_with_damage_healing(source_percent: i64) -> Fixture {
         1,
         "runtime-scope-assignment:1",
         4,
-        crate::foundation::ChannelContentPin::test(world),
+        oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::test(world),
     )
     .expect("bounded actual owner4 slots");
     let session = GameSessionId::decode(&uuid(32)).expect("session");
@@ -535,7 +538,7 @@ fn changed_actual_target_or_caster_condition_refuses_prepared_magnitude() {
     let mut changed = f.state.clone();
     changed
         .conditions
-        .remove_type(crate::ability::condition::ConditionType::Attributes);
+        .remove_type(oteryn_gameplay_domain::domain::condition::ConditionType::Attributes);
     assert_eq!(
         prepared.validate_current(&f.runtime, &changed, &f.attributes, &[]),
         Err(Error::SnapshotChanged)

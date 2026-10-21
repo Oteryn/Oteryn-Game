@@ -15,16 +15,19 @@ use crate::content::{
     ProjectV2AbilityAuthoring, ProjectV2AuthoringProfile, ProjectV2AuthoringProfileData,
     ProjectV2BehaviorAuthoring, ProjectV2DefinitionRef,
 };
-use crate::foundation::{
-    ChannelContentPin, ChannelId, ChannelRuntimeV1, CombatDeathFixture, ExactActorRef,
-    GameSessionId, MovementLocalPosition, NodeId, ScopeOwnershipGeneration, WorldId,
-};
 use oteryn_simulation_determinism::GameplayDecisionRoot;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
+use {
+    crate::foundation::{
+        ChannelId, ChannelRuntimeV1, CombatDeathFixture, ExactActorRef, GameSessionId,
+        MovementLocalPosition, NodeId, ScopeOwnershipGeneration, WorldId,
+    },
+    oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+};
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]

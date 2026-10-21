@@ -122,7 +122,7 @@ pub fn register_bone_phase_shared(
         || !current.accepts_stamp(stamp)
     {
         return Err(BonePhaseError::Carrier(
-            crate::foundation::CarrierError::WrongScope,
+            oteryn_gameplay_domain::domain::carrier_values::CarrierError::WrongScope,
         ));
     }
     if project

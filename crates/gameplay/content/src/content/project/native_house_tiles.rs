@@ -160,7 +160,7 @@ mod tests {
     use super::*;
     #[test]
     fn omission_retains_unknown_on_actual_accepted_room() {
-        let world = crate::foundation::WorldId::decode(&[
+        let world = oteryn_protocol_oteryn::WorldId::decode(&[
             0x01, 0x9a, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1,
         ])
         .unwrap();

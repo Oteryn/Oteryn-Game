@@ -799,7 +799,10 @@ mod tests {
         MovementLocalPosition,
     ) {
         use crate::content::ProjectSnapshot;
-        use crate::foundation::{ChannelContentPin, NodeId};
+        use {
+            crate::foundation::NodeId,
+            oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+        };
         let (base, _, session) = runtime_with_player(0x59);
         let world = base.binding().world_id();
         let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -1164,8 +1167,9 @@ mod tests {
     fn aggregate_native_poison_ticks_with_actual_qualified_loader_room_and_refuses_missing_or_stale_inputs()
      {
         use crate::content::ProjectSnapshot;
-        use crate::foundation::{
-            ChannelContentPin, ConditionDefinition, ConditionValues, DotElement, NodeId,
+        use {
+            crate::foundation::{ConditionDefinition, ConditionValues, DotElement, NodeId},
+            oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
         };
         let (base, _, session) = runtime_with_player(0x59);
         let world = base.binding().world_id();

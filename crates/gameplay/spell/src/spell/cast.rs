@@ -572,7 +572,7 @@ pub fn condition_gate(
     state: &PlayerSpellState,
     spell: &SpellDefinition,
     now: SemanticTimeMicros,
-) -> Result<(), crate::ability::condition::ConditionGate> {
+) -> Result<(), oteryn_gameplay_domain::domain::condition::ConditionGate> {
     store_condition_gate(&state.conditions, spell, now)
 }
 
@@ -581,7 +581,7 @@ pub fn store_condition_gate<S: Clone>(
     store: &crate::ability::condition::ConditionStore<S>,
     spell: &SpellDefinition,
     now: SemanticTimeMicros,
-) -> Result<(), crate::ability::condition::ConditionGate> {
+) -> Result<(), oteryn_gameplay_domain::domain::condition::ConditionGate> {
     if matches!(spell.carrier, super::Carrier::Rune { .. }) {
         store.rune_gate(spell.aggressive, now.get())
     } else {

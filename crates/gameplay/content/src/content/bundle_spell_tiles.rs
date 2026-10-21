@@ -1,6 +1,6 @@
 //! Immutable bundle spell tile data; map supplies the base index and constructs the data.
 use crate::content::{LogicalCell, QualifiedSpellTile, SpellTileLookupError};
-use crate::foundation::map_position::TilePos;
+use oteryn_gameplay_domain::domain::map_position::TilePos;
 use std::fmt;
 use std::sync::Arc;
 

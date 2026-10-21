@@ -670,7 +670,10 @@ fn runtime_players(
     leader: &CurrentSession,
     member: &CurrentSession,
 ) -> TestResult<RuntimePlayers> {
-    use crate::foundation::{ChannelContentPin, ChannelId, ChannelRuntimeV1, WorldId};
+    use {
+        crate::foundation::{ChannelId, ChannelRuntimeV1, WorldId},
+        oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+    };
     let world = WorldId::decode(&id(WORLD)).map_err(debug)?;
     let mut runtime = ChannelRuntimeV1::from_committed_assignment(
         world,

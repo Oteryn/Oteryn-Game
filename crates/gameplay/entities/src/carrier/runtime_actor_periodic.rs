@@ -120,7 +120,7 @@ impl ChannelRuntimeV1 {
                                 if position.context() != self.pinned_movement_context() {
                                     return Err(CarrierError::PositionContextMismatch);
                                 }
-                                use oteryn_gameplay_foundation::foundation::condition::{
+                                use oteryn_gameplay_domain::domain::condition::{
                                     ConditionValues, ConflictKey,
                                 };
                                 let source_store = self
@@ -180,9 +180,7 @@ impl ChannelRuntimeV1 {
                     let adjusted = (u64::from(amount) * u64::from(dealt_percent)) / 100;
                     let adjusted =
                         u32::try_from(adjusted).map_err(|_| CarrierError::DamageOverflow)?;
-                    use oteryn_gameplay_foundation::foundation::condition::{
-                        ConditionValues, ConflictKey,
-                    };
+                    use oteryn_gameplay_domain::domain::condition::{ConditionValues, ConflictKey};
                     let imported = self
                         .actor_conditions_at(actor, None, now_us)
                         .map_err(|_| CarrierError::PlanConflict)?;
@@ -219,9 +217,9 @@ impl ChannelRuntimeV1 {
                     )?;
                     had_damage |= damage > 0;
                     if damage > 0 {
-                        after
-                            .conditions
-                            .remove_type(oteryn_gameplay_foundation::foundation::condition::ConditionType::Invisible);
+                        after.conditions.remove_type(
+                            oteryn_gameplay_domain::domain::condition::ConditionType::Invisible,
+                        );
                     }
                     // Source combatBlockHit heals before residual damage; each
                     // real tick caps independently, and lethal never resurrects.
@@ -254,9 +252,9 @@ impl ChannelRuntimeV1 {
                     };
                     had_damage |= damage > 0;
                     if damage > 0 {
-                        after
-                            .conditions
-                            .remove_type(oteryn_gameplay_foundation::foundation::condition::ConditionType::Invisible);
+                        after.conditions.remove_type(
+                            oteryn_gameplay_domain::domain::condition::ConditionType::Invisible,
+                        );
                     }
                     health_after = health_after
                         .checked_sub(damage)
@@ -406,9 +404,9 @@ impl ChannelRuntimeV1 {
 }
 
 fn periodic_element_key(
-    element: oteryn_gameplay_foundation::foundation::condition::DotElement,
+    element: oteryn_gameplay_domain::domain::condition::DotElement,
 ) -> &'static str {
-    use oteryn_gameplay_foundation::foundation::condition::DotElement;
+    use oteryn_gameplay_domain::domain::condition::DotElement;
     match element {
         DotElement::Poison => "earth",
         DotElement::Fire => "fire",
@@ -438,7 +436,7 @@ fn finish_condition_tick_with_received(
     now_us: u64,
     received_override: Option<u32>,
 ) -> Result<i64, CarrierError> {
-    use oteryn_gameplay_foundation::foundation::condition::{ConditionValues, ConflictKey};
+    use oteryn_gameplay_domain::domain::condition::{ConditionValues, ConflictKey};
     if tick.provenance.source.is_some() || tick.provenance.lineage.is_some() {
         return Err(CarrierError::PlanConflict);
     }
@@ -502,13 +500,16 @@ mod tests {
     #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
     use super::super::runtime_actor_companion::{CreatureExactRatio, CreatureFlags};
     use super::*;
-    use oteryn_gameplay_foundation::foundation::condition::{
-        ApplicationFacts, ConditionDefinition, ConditionSourceKind, ConditionValues, DotElement,
-    };
-    use oteryn_gameplay_foundation::foundation::{
+    use oteryn_gameplay_content::content::creature_policy::{
         CompiledCreaturePolicies, CompiledCreaturePolicy,
     };
     use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+    use {
+        oteryn_gameplay_domain::domain::condition::{ConditionValues, DotElement},
+        oteryn_gameplay_foundation::foundation::condition::{
+            ApplicationFacts, ConditionDefinition, ConditionSourceKind,
+        },
+    };
     fn id(n: u8) -> [u8; 16] {
         [n, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, n]
     }

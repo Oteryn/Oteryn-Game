@@ -1,6 +1,6 @@
 //! Qualified creature policy values shared by Content and the actor carrier.
 
-use super::{CarrierError, condition::ConditionType};
+use oteryn_gameplay_domain::domain::{carrier_values::CarrierError, condition::ConditionType};
 use std::sync::Arc;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

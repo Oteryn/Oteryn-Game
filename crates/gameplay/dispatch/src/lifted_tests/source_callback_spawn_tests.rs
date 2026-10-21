@@ -7,16 +7,19 @@ use crate::foundation::DotElement;
 use crate::foundation::owner_timer::SemanticTimeMicros;
 use crate::foundation::owner_timer::VirtualOwnerClock;
 use crate::foundation::{
-    ActorConditionTransition, ApplicationFacts, CompiledCreaturePolicies, ConditionDefinition,
-    ConditionSource, ConditionSourceKind, ConditionValues,
-};
-use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, MovementLocalPosition, RuntimeScopeRefV1, RuntimeWorkStamp,
     ScopeOwnershipGeneration, ScopeRuntimeFence,
 };
 use crate::gameplay_transport::actor_spell::tests::runtime_with_capacity;
 use crate::source_callback_spawn::*;
 use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+use {
+    crate::foundation::{
+        ActorConditionTransition, ApplicationFacts, ConditionDefinition, ConditionSource,
+        ConditionSourceKind, ConditionValues,
+    },
+    oteryn_gameplay_content::content::creature_policy::CompiledCreaturePolicies,
+};
 
 fn runtime_with_player(
     tag: u8,

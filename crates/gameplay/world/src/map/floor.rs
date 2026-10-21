@@ -32,14 +32,17 @@ use super::palette_appearance;
 use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
 use crate::content::static_cell_engine::StaticCellEngineError;
 use crate::content::{CollisionClass, LogicalCell, NativeEntryMovementCells};
-use crate::foundation::{
-    CarrierError, ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementFacing,
-    MovementLocalPosition, MovementPositionSnapshot,
-};
 use crate::map::boot::BundleCollisionIndexExt;
 use crate::movement::{CardinalStep, MovementError};
 use oteryn_world_bundle::bundle::Family;
 use std::collections::{BTreeMap, BTreeSet};
+use {
+    crate::foundation::{
+        ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementFacing, MovementLocalPosition,
+        MovementPositionSnapshot,
+    },
+    oteryn_gameplay_domain::domain::carrier_values::CarrierError,
+};
 
 const DOWN: u8 = 1;
 const NORTH: u8 = 2;

@@ -11,11 +11,14 @@ use crate::foundation::GameSessionId;
 #[test]
 fn stance_real_receipt_pays_actual_actor_once_and_preserves_intervening_hp() -> TestResult {
     run("stance_actor_receipt", async |h| {
-        use crate::foundation::{ChannelContentPin, ChannelId, ChannelRuntimeV1, WorldId};
         use crate::spell::cast::{CharacterCastFacts, PlayerSpellState, prepare_native_owner_cast};
         use crate::spell::stance_execution::PreparedStance;
         use crate::spell::{OperationalCastFacts, SpellBook, Vocation};
         use oteryn_simulation_determinism::SemanticTimeMicros;
+        use {
+            crate::foundation::{ChannelId, ChannelRuntimeV1, WorldId},
+            oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+        };
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root

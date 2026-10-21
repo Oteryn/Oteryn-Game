@@ -397,7 +397,7 @@ impl NodeBootQuiescence {
 /// row. It authorizes exact digests and one frame binding; it carries no Content bytes.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NativeEntryActivationIssuance {
-    pub world_id: crate::foundation::WorldId,
+    pub world_id: oteryn_protocol_oteryn::WorldId,
     pub activation_sequence: u64,
     pub server_artifact_digest: [u8; 32],
     pub client_artifact_digest: [u8; 32],
@@ -488,7 +488,7 @@ impl NativeEntryContentPin {
     pub fn into_channel_parts(
         self,
     ) -> (
-        crate::foundation::ChannelContentPin,
+        crate::content::channel_content_pin::ChannelContentPin,
         super::NativeEntryMovementCells,
         super::CanonicalReferencePlayableContent,
         Option<super::NativeEntrySpawnSource>,
@@ -503,12 +503,12 @@ impl NativeEntryContentPin {
     }
 
     #[cfg(any(test, feature = "test-support"))]
-    pub fn into_channel_pin(self) -> crate::foundation::ChannelContentPin {
+    pub fn into_channel_pin(self) -> crate::content::channel_content_pin::ChannelContentPin {
         self.channel_pin()
     }
 
-    fn channel_pin(&self) -> crate::foundation::ChannelContentPin {
-        crate::foundation::ChannelContentPin::from_activation(
+    fn channel_pin(&self) -> crate::content::channel_content_pin::ChannelContentPin {
+        crate::content::channel_content_pin::ChannelContentPin::from_activation(
             self.identity.world_id(),
             self.activation_sequence,
             self.identity.server_artifact_digest(),
@@ -585,7 +585,7 @@ impl AuthorizedContentGeneration for NodeBootAuthorization<'_> {
 pub fn activate_native_entry_room(
     controller: &mut ContentActivationController,
     quiescence: &NodeBootQuiescence,
-    scope_world_id: crate::foundation::WorldId,
+    scope_world_id: oteryn_protocol_oteryn::WorldId,
     issuance: &NativeEntryActivationIssuance,
 ) -> Result<NativeEntryContentPin, NativeEntryActivationError> {
     if issuance.world_id != scope_world_id {
@@ -601,7 +601,7 @@ pub fn activate_native_entry_room(
 pub fn activate_native_entry_room_with_gameplay(
     controller: &mut ContentActivationController,
     quiescence: &NodeBootQuiescence,
-    scope_world_id: crate::foundation::WorldId,
+    scope_world_id: oteryn_protocol_oteryn::WorldId,
     issuance: &NativeEntryActivationIssuance,
     input: &super::native_gameplay::NativeGameplayInput,
 ) -> Result<NativeEntryContentPin, NativeEntryActivationError> {
@@ -1116,16 +1116,16 @@ mod tests {
 
     type NativeResult<T> = Result<T, Box<dyn Error>>;
 
-    fn native_world(raw: u8) -> NativeResult<crate::foundation::WorldId> {
+    fn native_world(raw: u8) -> NativeResult<oteryn_protocol_oteryn::WorldId> {
         let mut bytes = [0_u8; 16];
         bytes[15] = raw;
         bytes[6] = 0x70;
         bytes[8] = 0x80;
-        Ok(crate::foundation::WorldId::decode(&bytes)?)
+        Ok(oteryn_protocol_oteryn::WorldId::decode(&bytes)?)
     }
 
     fn native_issuance(
-        world_id: crate::foundation::WorldId,
+        world_id: oteryn_protocol_oteryn::WorldId,
     ) -> NativeResult<(
         NativeEntryActivationIssuance,
         super::super::QualifiedNativeEntryRoom,
@@ -1143,7 +1143,7 @@ mod tests {
 
     fn activate_native(
         controller: &mut ContentActivationController,
-        world_id: crate::foundation::WorldId,
+        world_id: oteryn_protocol_oteryn::WorldId,
         issuance: &NativeEntryActivationIssuance,
     ) -> Result<NativeEntryContentPin, NativeEntryActivationError> {
         activate_native_entry_room(

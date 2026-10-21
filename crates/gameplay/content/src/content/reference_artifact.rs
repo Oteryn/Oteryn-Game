@@ -15,7 +15,7 @@ use super::{
     ReferenceDefinitionKind, ReferenceItemDestination, ReferenceItemPhysicalClass,
     ReferenceItemStackClass, Sha256HexDigest, TypedDefinitionRef,
 };
-use crate::foundation::WorldId;
+use oteryn_protocol_oteryn::WorldId;
 
 pub const OTERYN_REFERENCE_PLAYABLE_ARTIFACT_PROFILE_ID: &str =
     "OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v1";

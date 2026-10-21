@@ -1,10 +1,13 @@
 #![allow(clippy::expect_used)]
 use super::*;
 use crate::ability::{AbilityIntent, AbilityOccurrence, CommitGroup, RevisionSet};
-use crate::foundation::{
-    ChannelContentPin, ChannelId, CommandId, GameSessionId, MovementLocalPosition, NodeId, WorldId,
-};
 use crate::spell::ResolvedEffect;
+use {
+    crate::foundation::{
+        ChannelId, CommandId, GameSessionId, MovementLocalPosition, NodeId, WorldId,
+    },
+    oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+};
 
 /// Test-only physical commit through the Ability damage bridge, standing in for the A2 wiring
 /// (#1635) so the owner's replay, lethal and staleness semantics stay qualified meanwhile.

@@ -71,7 +71,10 @@ pub trait MonsterCombatStates:
         target: ExactActorRef,
         facts: crate::foundation::TickFacts,
         now: crate::foundation::owner_timer::SemanticTimeMicros,
-    ) -> Result<crate::foundation::CreaturePeriodicReceipt, crate::foundation::CarrierError>;
+    ) -> Result<
+        crate::foundation::CreaturePeriodicReceipt,
+        oteryn_gameplay_domain::domain::carrier_values::CarrierError,
+    >;
     fn commit_self_heal_and_paralysis_removal(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
@@ -83,5 +86,8 @@ pub trait MonsterCombatStates:
         now: u64,
         fence: &ScopeRuntimeFence,
         stamp: RuntimeWorkStamp,
-    ) -> Result<crate::foundation::OwnerDamageResult, crate::foundation::CarrierError>;
+    ) -> Result<
+        crate::foundation::OwnerDamageResult,
+        oteryn_gameplay_domain::domain::carrier_values::CarrierError,
+    >;
 }
