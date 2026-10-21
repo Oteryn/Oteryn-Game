@@ -6,7 +6,7 @@ on:
       - .github/workflows/native-entry-room-qualification.yml
       - tools/qualification/native_entry_room/**
       - tools/qualification/wp5_s3a/platform-fpm.Dockerfile
-      - apps/game-server/src/content/**
+      - crates/gameplay/content/**
       - apps/game-server/tests/content_native_entry_room.rs
   workflow_dispatch:
 

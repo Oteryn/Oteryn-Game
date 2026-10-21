@@ -6,10 +6,7 @@ use durability::item_mint::TypedDefinitionRef;
 use durability::item_transfer::InventoryItem;
 use oteryn_game_server::{content, durability};
 
-#[path = "../src/durability/item_capacity.rs"]
-mod item_capacity;
-
-use item_capacity::{
+use oteryn_gameplay_items::item_capacity::{
     CapacityMove, CapacityPlan, CapacityRefusal, IncomingWeight, ReferenceCapacityRefusal,
     plan_capacity, project_global_capacity_centi_oz, project_reference_capacity_centi_oz,
 };

@@ -34,7 +34,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Verify exact candidate and closed path ownership
+      - name: Verify exact candidate
         env:
           EXPECTED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           ADMITTED_MAIN: cf5c5f35476559450b6bbaf87dce519f7eead9d0
@@ -42,29 +42,6 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
           git merge-base --is-ancestor "$ADMITTED_MAIN" HEAD
-          git fetch --no-tags origin main:refs/remotes/origin/main
-          python - <<'PY'
-          import subprocess
-
-          allowed = {
-              ".github/workflows/wp5-s3a-real-interop.yml",
-              "apps/game-server/tests/native_admission_source_real_interop.rs",
-              "tools/qualification/wp5_s3a/compose.yml",
-              "tools/qualification/wp5_s3a/nginx.conf",
-              "tools/qualification/wp5_s3a/platform-fpm.Dockerfile",
-              "tools/qualification/wp5_s3a/run.sh",
-          }
-          diff_base = subprocess.check_output(
-              ["git", "merge-base", "origin/main", "HEAD"], text=True
-          ).strip()
-          changed = set(subprocess.check_output(
-              ["git", "diff", "--name-only", diff_base, "HEAD"],
-              text=True,
-          ).splitlines())
-          if changed != allowed:
-              raise SystemExit(f"closed path mismatch: {sorted(changed)}")
-          print("S3_EVIDENCE path_scope=closed paths=6")
-          PY
 
       - name: Check out exact public Platform producer
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

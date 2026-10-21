@@ -7,6 +7,8 @@ pub mod bundle;
 pub mod npc;
 pub mod sector;
 pub mod spawn;
+#[cfg(feature = "writer")]
+pub mod writer;
 
 use std::fmt;
 

@@ -13,6 +13,7 @@ release-role = "tool-only"
 
 [dependencies]
 serde_json.workspace = true
+syn.workspace = true
 
 [lints]
 workspace = true

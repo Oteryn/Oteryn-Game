@@ -1,9 +1,6 @@
 //! Tests the one pure stamina arithmetic leaf used by the native durability owner.
 
-#[path = "../src/durability/character_vitals_stamina_math.rs"]
-mod character_vitals_stamina;
-
-use character_vitals_stamina::{
+use oteryn_gameplay_characters::stamina::{
     MAX_OFFLINE_SECONDS, MAX_STAMINA_MINUTES, StaminaOutOfRange, regenerate_stamina_minutes,
 };
 

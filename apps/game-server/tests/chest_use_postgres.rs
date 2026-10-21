@@ -8,43 +8,42 @@ extern crate self as oteryn_game_server;
 
 pub use production_server::admission_evidence;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/character_bootstrap_intent.rs"]
+#[path = "../../../crates/gameplay/durability/src/character_bootstrap_intent.rs"]
 pub mod character_bootstrap_intent;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/character_recovery_fence.rs"]
-pub mod character_recovery_fence;
+pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/combat.rs"]
+#[path = "../../../crates/gameplay/combat/src/combat/mod.rs"]
 pub mod combat;
 // A top-level module, not `combat::pickup`: see `src/combat/pickup.rs`'s own header comment for
 // why (`combat.rs` is recompiled standalone in other, Content-free contexts).
 #[allow(dead_code, unused_imports)]
-#[path = "../src/combat/pickup.rs"]
+#[path = "../../../crates/gameplay/combat/src/combat/pickup.rs"]
 pub mod combat_pickup;
 // `support/content_shim.rs` mirrors `src/content/mod.rs`'s own wiring (see its header comment
-// for why it is not a plain `#[path = "../src/content/mod.rs"]` inclusion).
+// for why it is not a plain `#[path = "../../../crates/gameplay/content/src/content/mod.rs"]` inclusion).
 #[allow(dead_code, unused_imports)]
 #[path = "support/content_shim.rs"]
 pub mod content;
-pub use production_server::domain;
+#[path = "support/domain_shim.rs"]
+pub mod domain;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/durability/mod.rs"]
-mod durability;
+#[path = "../src/durability"]
+mod durability {
+    // Recompile the shared core; native world adapters use the full library Content context.
+    include!("../../../crates/gameplay/durability/src/durability/core_modules.rs");
+}
 #[allow(dead_code, unused_imports)]
-#[path = "../src/foundation/mod.rs"]
-pub mod foundation;
+pub use oteryn_gameplay_entities as foundation;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/native_admission_source/mod.rs"]
-pub mod native_admission_source;
+pub use oteryn_gameplay_native_admission_source as native_admission_source;
 
 #[allow(dead_code, unused_imports)]
-#[path = "../src/achievement_catalogue.rs"]
+#[path = "../../../crates/gameplay/social/src/achievement_catalogue.rs"]
 pub mod achievement_catalogue;
+
 #[allow(dead_code, unused_imports)]
-#[path = "../src/interaction/mod.rs"]
-pub mod interaction;
-#[allow(dead_code, unused_imports)]
-#[path = "../src/interaction/chest_use.rs"]
+#[path = "../../../crates/gameplay/social/src/interaction/chest_use.rs"]
 pub mod interaction_chest_use;
 
 // Reuses the B3-1 harness (Database/register/scope/seed_character/Harness).
@@ -54,3 +53,8 @@ mod item_transfer_postgres_cases;
 
 #[path = "support/chest_use_postgres_cases.rs"]
 mod chest_use_postgres_cases;
+
+// The path-loaded Durability NPC-travel fixture shares this PostgreSQL harness.
+#[allow(dead_code)] // Each standalone target uses only part of the shared fixture API.
+#[path = "support/bestiary_postgres_harness.rs"]
+mod bestiary_postgres_harness;

@@ -39,7 +39,8 @@ def normalize(root: Path, marker: Path = MARKER, old_mtime: int = OLD_MTIME) -> 
     try:
         subprocess.check_call(["git", "cat-file", "-e", f"{cached}^{{commit}}"], stderr=subprocess.DEVNULL)
     except subprocess.CalledProcessError:
-        subprocess.check_call(["git", "fetch", "--no-tags", "--depth=1", "origin", cached])
+        # Only the trees are compared, so the cached commit is fetched without its blobs.
+        subprocess.check_call(["git", "fetch", "--no-tags", "--depth=1", "--filter=blob:none", "origin", cached])
     changed = {p for p in git("diff", "--no-renames", "--name-only", "-z", cached, "HEAD", "--").decode("utf-8").split("\0") if p}
     tracked = [p for p in git("ls-files", "-z").decode("utf-8").split("\0") if p]
     reset = 0

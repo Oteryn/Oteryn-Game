@@ -1,0 +1,1303 @@
+//! Explicit candidate parameter caster on the actual Channel/Character owners.
+//! The original normalized v2 intent and private result survive unknown COMMIT.
+#![allow(
+    dead_code,
+    reason = "spell import candidate; awaits its production owner caller"
+)]
+use super::native_combat_cast::{
+    NativeCastDispatch, ParkedMarker, ParkedMarkerKind, UnresolvedSpellCommit,
+};
+use super::{
+    ChannelSpellStates, PlayerBatchPreflight, SpellCastOutcome, check_owner_batch,
+    commit_owner_batch, install_owner_batch, stage_player_batch,
+};
+use crate::ability::{AbilityOccurrence, RevisionSet};
+use crate::content::{QualifiedNativeEntryRoom, native_gameplay::NativeGameplayState};
+use crate::durability::character_build::{BuildCommitOutcome, BuildOccurrence};
+use crate::durability::character_progression::CurrentCharacterGameplayFence;
+use crate::durability::item_transfer::CurrentCharacterItemFence;
+use crate::durability::spell_items_abi::*;
+use crate::durability::spell_owner_commit::{SpellLanePermit, SpellWriterPass};
+use crate::durability::{DurabilityError, spell_item_transaction as items};
+use crate::foundation::{
+    ChannelRuntimeV1, CommandRef, ExactActorRef, GameSessionId, StagedSpellBatch,
+};
+use crate::spell::cast::{PlayerSpellState, prepare_native_callback_owner_cast_with_caster};
+use crate::spell::combat_batch::OwnerCombatBatch;
+use crate::spell::harmony::HarmonyMultiplier;
+use crate::spell::mana_training::PreparedPlayerTraining;
+use crate::spell::native_house_movement::{HouseList, HouseMovementPlan};
+use crate::spell::owned_cast_facts::OwnedCastFacts;
+use crate::spell::{Execution, OperationalCastFacts, SpellDefinition};
+use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
+use oteryn_protocol_oteryn::actor_spell_v2::*;
+use oteryn_simulation_determinism::SemanticTimeMicros;
+use serde_json::json;
+use sha2::{Digest, Sha256};
+use sqlx::{Postgres, Transaction};
+
+const MAX_PENDING_PARAMETERS: usize = 256;
+
+pub use oteryn_gameplay_spell_rules::parameter_cast::{named_player_spell, native_key};
+#[allow(
+    clippy::large_enum_variant,
+    reason = "transient owner result; boxing would add an allocation to the owner turn"
+)]
+pub(super) enum NamedPlayerResolution {
+    Found(QualifiedNamedPlayer),
+    Absent(&'static str),
+}
+
+/// Private construction requires the durable name and current source access
+/// reads above. The proposal remains bound to that physical SQL transaction.
+pub(in crate::gameplay_transport) struct QualifiedNamedPlayer {
+    actor: ExactActorRef,
+    session: GameSessionId,
+    position: crate::foundation::MovementPositionSnapshot,
+    transaction: String,
+    command: CommandRef,
+    content: [u8; 32],
+}
+impl QualifiedNamedPlayer {
+    pub(in crate::gameplay_transport) fn actor(&self) -> ExactActorRef {
+        self.actor
+    }
+    pub(in crate::gameplay_transport) async fn validate_in_transaction(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        runtime: &ChannelRuntimeV1,
+        authority: &items::SpellItemAuthority,
+    ) -> Result<(), items::SpellItemError> {
+        items::check_transaction(tx, authority).await?;
+        let xid: String = sqlx::query_scalar("SELECT pg_current_xact_id()::text")
+            .fetch_one(&mut **tx)
+            .await?;
+        if xid != self.transaction
+            || self.command != authority.command()
+            || self.content != authority.compatible_content_digest()
+            || self.content != runtime.content_pin().server_artifact_digest()
+            || runtime
+                .positioned_player_for_session(self.session)
+                .map_err(|_| items::SpellItemError::Rejected("named actor owner"))?
+                != Some((self.actor, self.position))
+            || self.position.context() != runtime.pinned_movement_context()
+        {
+            return Err(items::SpellItemError::Rejected(
+                "named actor transaction changed",
+            ));
+        }
+        Ok(())
+    }
+}
+
+/// A source name is a query only. Current admission, access and physical owners
+/// independently qualify the actor inside the same caster transaction.
+pub(super) async fn resolve_named_player_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    root: &crate::durability::DurabilityRoot,
+    authority: &items::SpellItemAuthority,
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    intent: &ParameterSpellCastIntent,
+) -> Result<NamedPlayerResolution, SpellCastDisposition> {
+    let admissions =
+        crate::durability::fresh_admission::FreshAdmissionStore::from_root(root.clone());
+    let targets = root
+        .lookup_spell_player_names_in_transaction(
+            tx,
+            authority,
+            intent.parameter.as_deref().unwrap_or(""),
+        )
+        .await
+        .map_err(|_| SpellCastDisposition::NotAvailable)?;
+    if targets.len() > 1 {
+        return Ok(NamedPlayerResolution::Absent("name_is_ambiguous"));
+    }
+    let Some(target) = targets.first() else {
+        return Ok(NamedPlayerResolution::Absent(
+            "player_with_this_name_is_not_online",
+        ));
+    };
+    let Some(session) = target.session_candidate() else {
+        return Ok(NamedPlayerResolution::Absent(
+            "player_with_this_name_is_not_online",
+        ));
+    };
+    let current = admissions
+        .current_session_in_transaction(tx, session)
+        .await
+        .map_err(|_| SpellCastDisposition::NotAvailable)?;
+    if current.session_state() != crate::foundation::GameSessionState::Active
+        || current.current_transport().is_none()
+        || current.current_control_loss_epoch().is_some()
+        || current.current_character_lease().character_id().as_bytes()
+            != target.character_id().as_bytes()
+    {
+        return Ok(NamedPlayerResolution::Absent(
+            "player_with_this_name_is_not_online",
+        ));
+    }
+    if current.current_runtime_scope() != authority.runtime_scope()
+        || current.current_scope_generation().get() != authority.scope_generation()
+        || authority.runtime_scope()
+            != crate::foundation::RuntimeScopeRefV1::channel(
+                runtime.binding().world_id(),
+                runtime.binding().channel_id(),
+            )
+        || authority.compatible_content_digest() != runtime.content_pin().server_artifact_digest()
+    {
+        return Err(SpellCastDisposition::NotAvailable);
+    }
+    let target_group = crate::durability::spell_familiar_group::read_current_group_in_transaction(
+        tx,
+        authority,
+        &admissions,
+        session,
+    )
+    .await
+    .map_err(|_| SpellCastDisposition::NotAvailable)?;
+    let caster_group = crate::durability::spell_familiar_group::read_current_group_in_transaction(
+        tx,
+        authority,
+        &admissions,
+        authority.game_session_id(),
+    )
+    .await
+    .map_err(|_| SpellCastDisposition::NotAvailable)?;
+    if target_group.access() && !caster_group.access() {
+        return Ok(NamedPlayerResolution::Absent("source_no_error"));
+    }
+    let Some((actor, position)) = runtime
+        .positioned_player_for_session(session)
+        .map_err(|_| SpellCastDisposition::NotAvailable)?
+    else {
+        return Err(SpellCastDisposition::NotAvailable);
+    };
+    if position.context() != runtime.pinned_movement_context() {
+        return Err(SpellCastDisposition::NotAvailable);
+    }
+    let state = states
+        .get(runtime, actor, session)
+        .ok_or(SpellCastDisposition::NotAvailable)?;
+    if state.vitals().health == 0 {
+        return Ok(NamedPlayerResolution::Absent("source_no_error"));
+    }
+    let transaction: String = sqlx::query_scalar("SELECT pg_current_xact_id()::text")
+        .fetch_one(&mut **tx)
+        .await
+        .map_err(|_| SpellCastDisposition::NotAvailable)?;
+    Ok(NamedPlayerResolution::Found(QualifiedNamedPlayer {
+        actor,
+        session,
+        position,
+        transaction,
+        command: authority.command(),
+        content: authority.compatible_content_digest(),
+    }))
+}
+
+pub(in crate::gameplay_transport) struct ParameterCastDispatch {
+    pub cast: NativeCastDispatch,
+    pub result: Option<ParameterSpellCastResult>,
+}
+impl ParameterCastDispatch {
+    fn bare(cast: NativeCastDispatch) -> Self {
+        Self { cast, result: None }
+    }
+}
+#[derive(Debug)]
+pub struct PreparedParameterCast {
+    actor: ExactActorRef,
+    session: GameSessionId,
+    intent: ParameterSpellCastIntent,
+    fence: CurrentCharacterGameplayFence,
+    before: PlayerSpellState,
+    position: crate::foundation::MovementPositionSnapshot,
+    owned: OwnedCastFacts,
+    batch: OwnerCombatBatch,
+    definition: crate::durability::item_mint::TypedDefinitionRef,
+    result: ParameterSpellCastResult,
+    result_bytes: Vec<u8>,
+    /// The paid installation; `None` for a result-only cast.
+    installation: Option<ParameterInstallation>,
+    relocation: Option<crate::foundation::QualifiedSpellRelocation>,
+}
+#[derive(Debug)]
+struct ParameterInstallation {
+    request: SpellItemTransactionRequest,
+    training: PreparedPlayerTraining,
+    paid: PlayerSpellState,
+    physical: StagedSpellBatch,
+    player: PlayerBatchPreflight,
+}
+/// The verdict refusal of a new grant; the guarded writer returns it only without a receipt.
+const PARAMETER_NEW_GRANT_REFUSED: &str = "current new grant access";
+
+fn nonce(
+    tag: &[u8],
+    actor: ExactActorRef,
+    session: GameSessionId,
+    command: u64,
+    extra: &[u8],
+) -> [u8; 16] {
+    let h = Sha256::new()
+        .chain_update(tag)
+        .chain_update(actor.placement_identity())
+        .chain_update(session.as_bytes())
+        .chain_update(command.to_be_bytes())
+        .chain_update(extra)
+        .finalize();
+    let mut b = [0; 16];
+    b.copy_from_slice(&h[..16]);
+    b[6] = (b[6] & 15) | 0x70;
+    b[8] = (b[8] & 63) | 0x80;
+    b
+}
+fn current_facts_match(
+    p: &PreparedParameterCast,
+    current: &OwnedCastFacts,
+    reconnect: Option<
+        &crate::durability::admission_journal::spell_reconnect::SpellReconnectTransition,
+    >,
+) -> bool {
+    let mut binding = p.owned.binding().clone();
+    let mut equipment = p.owned.equipment().clone();
+    if current.binding().connection_generation != binding.connection_generation {
+        let Ok(connection) =
+            crate::foundation::ConnectionGeneration::new(current.binding().connection_generation)
+        else {
+            return false;
+        };
+        if !reconnect.is_some_and(|proof| {
+            proof.matches(
+                p.fence.connection_generation,
+                connection,
+                p.batch.command,
+                p.fence.character_id,
+                p.fence.character_lease_generation,
+                p.fence.runtime_scope,
+                p.fence.scope_ownership_generation.get(),
+            )
+        }) {
+            return false;
+        }
+        binding.connection_generation = current.binding().connection_generation;
+    }
+    let expected_build = if current.binding().character_revision == binding.character_revision {
+        p.owned.durable_build()
+    } else if binding.character_revision.checked_add(1)
+        == Some(current.binding().character_revision)
+    {
+        let Some(request) = p.installation.as_ref().and_then(|i| i.training.request()) else {
+            return false;
+        };
+        binding.character_revision = current.binding().character_revision;
+        equipment.character_revision = binding.character_revision;
+        &request.after
+    } else {
+        return false;
+    };
+    current.binding() == &binding
+        && current.equipment() == &equipment
+        && current.durable_build() == expected_build
+}
+pub(super) fn source_feedback(
+    reason: &str,
+    effect: Option<&str>,
+) -> Result<Option<PrivateSpellFeedback>, SpellCastDisposition> {
+    let (text, poff) = oteryn_gameplay_spell_rules::parameter_cast::source_feedback(reason, effect)
+        .map_err(|_| SpellCastDisposition::NotAvailable)?;
+    Ok(Some(PrivateSpellFeedback {
+        text: text.into(),
+        effect: if poff {
+            PrivateSpellEffect::Poff
+        } else {
+            PrivateSpellEffect::None
+        },
+    }))
+}
+#[allow(clippy::too_many_arguments)]
+async fn prepare_parameter(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &items::SpellItemAuthority,
+    admissions: &crate::durability::fresh_admission::FreshAdmissionStore,
+    runtime: &mut ChannelRuntimeV1,
+    states: &mut ChannelSpellStates,
+    room: &QualifiedNativeEntryRoom,
+    objects: &crate::world_runtime::LocalObjectRuntime,
+    content: &NativeGameplayState,
+    owned: OwnedCastFacts,
+    spell: &SpellDefinition,
+    intent: ParameterSpellCastIntent,
+    fence: CurrentCharacterGameplayFence,
+    command: CommandRef,
+    now: SemanticTimeMicros,
+) -> Result<PreparedParameterCast, SpellCastDisposition> {
+    let Execution::NativeProfile(profile) = &spell.execution else {
+        return Err(SpellCastDisposition::Rejected);
+    };
+    if intent.intent.target != SpellTarget::None || intent.intent.aim_at_target || spell.aggressive
+    {
+        return Err(SpellCastDisposition::Rejected);
+    }
+    let b = owned.binding();
+    let actor = b.actor;
+    let session = command.game_session_id();
+    if b.session != session
+        || b.content_digest != content.source_digest()
+        || authority.command() != command
+        || authority.character_id_bytes() != b.character
+    {
+        return Err(SpellCastDisposition::Rejected);
+    }
+    let before = states
+        .get(runtime, actor, session)
+        .ok_or(SpellCastDisposition::Rejected)?
+        .clone();
+    let position = runtime
+        .read_actor_position(actor)
+        .map_err(|_| SpellCastDisposition::Rejected)?;
+    let p = position.position();
+    let tile = crate::spell::world_execution::qualified_combat_tile(room, runtime, objects, p)
+        .map_err(|_| SpellCastDisposition::NotAvailable)?;
+    let operational = OperationalCastFacts {
+        caster_position: crate::spell::chain::TilePosition {
+            x: p.x,
+            y: p.y,
+            floor: p.floor,
+        },
+        target_position: None,
+        target: None,
+        line_of_sight_clear: None,
+        direction_available: position.facing().is_some(),
+        wheel_unlocked: None,
+        in_protection_zone: tile.protection_zone(),
+        target_tile_solid: None,
+        target_tile_creature: None,
+    };
+    let caster = owned
+        .caster(&before, spell, content, HarmonyMultiplier::ONE, now.get())
+        .map_err(|_| SpellCastDisposition::NotAvailable)?;
+    let mut common =
+        prepare_native_callback_owner_cast_with_caster(&before, spell, &operational, now, &caster)?;
+    let behavior = &profile.spell()["execution"]["native_behavior"];
+    let params = &behavior["parameters"];
+    let mut relocation_proof = None;
+    let mut cooldown_only = false;
+    let mut result = ParameterSpellCastResult {
+        disposition: SpellCastDisposition::Cast,
+        feedback: None,
+        editor: None,
+    };
+    match behavior["key"].as_str() {
+        Some("locate_message") if params["source"].as_str() == Some("online_player") => {
+            let plan = crate::spell::find_person_execution::plan_find_person_in_transaction(
+                tx,
+                authority,
+                admissions,
+                runtime,
+                profile,
+                actor,
+                position,
+                intent.parameter.as_deref().unwrap_or(""),
+            )
+            .await
+            .map_err(|_| SpellCastDisposition::NotAvailable)?;
+            match plan {
+                HouseMovementPlan::Message {
+                    text,
+                    effect: "magic_blue",
+                } => {
+                    result.feedback = Some(PrivateSpellFeedback {
+                        text,
+                        effect: PrivateSpellEffect::MagicBlue,
+                    })
+                }
+                HouseMovementPlan::Refused {
+                    reason,
+                    effect,
+                    cast_succeeds,
+                    start_cooldown,
+                } => {
+                    result.disposition = if cast_succeeds {
+                        SpellCastDisposition::Cast
+                    } else {
+                        SpellCastDisposition::Rejected
+                    };
+                    result.feedback = source_feedback(reason, effect)?;
+                    if start_cooldown && !cast_succeeds {
+                        common =
+                            crate::spell::cast::prepare_locate_name_failure_owner_cast_with_caster(
+                                &before,
+                                spell,
+                                &operational,
+                                now,
+                                &caster,
+                            )?;
+                        cooldown_only = true;
+                    }
+                }
+                _ => return Err(SpellCastDisposition::Rejected),
+            }
+        }
+        Some("house_access") if params["action"].as_str() == Some("edit_list") => {
+            if intent.parameter.is_some() {
+                return Err(SpellCastDisposition::Rejected);
+            }
+            match crate::spell::house_execution::open_aleta_editor_in_transaction(
+                tx, authority, room, runtime, profile, actor, position,
+            )
+            .await
+            {
+                Ok(e) => {
+                    result.editor = Some(SpellHouseEditor {
+                        editor_id: e.editor_id,
+                        house_key: e.house_key,
+                        list: match e.list {
+                            HouseList::Guest => HouseEditorList::Guest,
+                            HouseList::Subowner => HouseEditorList::Subowner,
+                            HouseList::Door(n) => HouseEditorList::Door(
+                                std::num::NonZeroU32::new(n)
+                                    .ok_or(SpellCastDisposition::Rejected)?,
+                            ),
+                        },
+                        ownership_revision: std::num::NonZeroU64::new(e.ownership_revision)
+                            .ok_or(SpellCastDisposition::Rejected)?,
+                        acl_revision: e.acl_revision,
+                        text: e.text,
+                    })
+                }
+                Err(crate::spell::house_execution::Error::NotInHouse) => {
+                    result.disposition = SpellCastDisposition::Rejected;
+                    if params["no_house_failure_silent"].as_bool() != Some(true) {
+                        result.feedback = source_feedback("not_possible", Some("poff"))?;
+                    }
+                }
+                Err(crate::spell::house_execution::Error::Storage(
+                    items::SpellItemError::Rejected("House ACL edit denied"),
+                )) => {
+                    result.disposition = if params["denied_cast_succeeds"].as_bool() == Some(true) {
+                        SpellCastDisposition::Cast
+                    } else {
+                        SpellCastDisposition::Rejected
+                    };
+                    if result.disposition != SpellCastDisposition::Cast {
+                        result.feedback = source_feedback("not_possible", Some("poff"))?;
+                    }
+                }
+                Err(_) => return Err(SpellCastDisposition::NotAvailable),
+            }
+        }
+        Some("vertical_move") => {
+            if params["mode"].as_str() == Some("rope_up") && intent.parameter.is_some() {
+                return Err(SpellCastDisposition::Rejected);
+            }
+            let outcome = crate::spell::world_execution::prepare_relocation(
+                profile,
+                intent.parameter.as_deref().unwrap_or(""),
+                runtime,
+                room,
+                objects,
+                actor,
+                position,
+                tx,
+                authority,
+            )
+            .await
+            .map_err(|_| SpellCastDisposition::NotAvailable)?;
+            match outcome {
+                crate::spell::world_execution::WorldRelocationOutcome::Move(proof) => {
+                    relocation_proof = Some(proof);
+                    result.feedback = Some(PrivateSpellFeedback {
+                        text: String::new(),
+                        effect: PrivateSpellEffect::Teleport,
+                    });
+                }
+                crate::spell::world_execution::WorldRelocationOutcome::RopeTeleportDenied => {
+                    result.feedback = Some(PrivateSpellFeedback {
+                        text: String::new(),
+                        effect: PrivateSpellEffect::Poff,
+                    });
+                }
+                crate::spell::world_execution::WorldRelocationOutcome::Refused { reason } => {
+                    result.disposition = SpellCastDisposition::Rejected;
+                    result.feedback = source_feedback(reason, Some("poff"))?;
+                }
+                _ => return Err(SpellCastDisposition::Rejected),
+            }
+        }
+        Some("house_access") if params["action"].as_str() == Some("kick") => {
+            let outcome = crate::spell::world_execution::prepare_house_kick(
+                profile,
+                intent.parameter.as_deref().unwrap_or(""),
+                runtime,
+                room,
+                objects,
+                admissions,
+                actor,
+                position,
+                tx,
+                authority,
+            )
+            .await
+            .map_err(|_| SpellCastDisposition::NotAvailable)?;
+            match outcome {
+                crate::spell::world_execution::WorldRelocationOutcome::Move(proof) => {
+                    relocation_proof = Some(proof)
+                }
+                crate::spell::world_execution::WorldRelocationOutcome::HouseTeleportDenied => (),
+                crate::spell::world_execution::WorldRelocationOutcome::Refused { reason } => {
+                    result.disposition = SpellCastDisposition::Rejected;
+                    result.feedback = source_feedback(reason, Some("poff"))?;
+                }
+                _ => return Err(SpellCastDisposition::Rejected),
+            }
+        }
+        Some("house_access") => return Err(SpellCastDisposition::NotAvailable),
+        _ => return Err(SpellCastDisposition::Rejected),
+    }
+    let result_bytes =
+        encode_parameter_spell_cast_result(&result).map_err(|_| SpellCastDisposition::Rejected)?;
+    let intent_bytes =
+        encode_parameter_spell_cast_intent(&intent).map_err(|_| SpellCastDisposition::Rejected)?;
+    let identity = &spell
+        .authored
+        .as_ref()
+        .ok_or(SpellCastDisposition::Rejected)?
+        .header
+        .identity;
+    let definition = crate::durability::item_mint::TypedDefinitionRef {
+        family: "Spell".into(),
+        production_key: identity.key.clone(),
+        revision_ref: identity.revision.clone(),
+    };
+    let paid_success = result.disposition == SpellCastDisposition::Cast || cooldown_only;
+    let hex = |bytes: &[u8]| bytes.iter().map(|b| format!("{b:02x}")).collect::<String>();
+    let revision = RevisionSet::new(
+        "ruleset:spell-native-r20",
+        &format!("content:{}", hex(&content.source_digest())),
+        "world:spell-pve-candidate-r21",
+        "formula:spell-p2-r20",
+        "simulation:v1",
+    )
+    .map_err(|_| SpellCastDisposition::Rejected)?;
+    let occurrence = AbilityOccurrence::new(
+        &format!(
+            "parameter:{}",
+            hex(&nonce(
+                b"oteryn:parameter-occurrence:v2",
+                actor,
+                session,
+                command.command_id().get(),
+                &intent_bytes
+            ))
+        ),
+        revision,
+    )
+    .map_err(|_| SpellCastDisposition::Rejected)?;
+    let mut batch=OwnerCombatBatch{caster:actor,attacker:crate::foundation::CharacterId::decode(&b.character).map_err(|_|SpellCastDisposition::Rejected)?,current_lease_generation:b.lease_generation,
+        command,occurrence:occurrence.into(),anchor:paid_success.then(||common.anchor.clone()),now_us:Some(now),now_ms:now.get()/1000,effects:Vec::new(),deferred:None,
+        binding:serde_json::to_vec(&json!({"intent":intent_bytes,"result":result_bytes,"spell":profile.spell(),"before":format!("{before:?}"),"paid":format!("{:?}",common.next),"owned":format!("{owned:?}")})).map_err(|_|SpellCastDisposition::Rejected)?};
+    // Consume the transaction-borrowing source proof while Item locks are held.
+    // The Foundation seal and real reserved destination survive unknown COMMIT.
+    let relocation = relocation_proof
+        .map(|proof| crate::foundation::QualifiedSpellRelocation::bind(&mut batch, proof))
+        .transpose()
+        .map_err(|_| SpellCastDisposition::Rejected)?;
+    let installation = if paid_success {
+        let formula = content
+            .training_formula()
+            .ok_or(SpellCastDisposition::NotAvailable)?;
+        let training = before
+            .prepare_paid_training(
+                &common.next,
+                &common.anchor,
+                formula,
+                BuildOccurrence::from_bytes(nonce(
+                    b"oteryn:parameter-training:v2",
+                    actor,
+                    session,
+                    command.command_id().get(),
+                    &intent_bytes,
+                ))
+                .map_err(|_| SpellCastDisposition::Rejected)?,
+                now.get(),
+            )
+            .map_err(|_| SpellCastDisposition::Rejected)?;
+        let request = SpellItemTransactionRequest {
+            command,
+            spell: definition.clone(),
+            catalog_digest: content.source_digest(),
+            transaction_id: nonce(
+                b"oteryn:parameter-cost:v2",
+                actor,
+                session,
+                command.command_id().get(),
+                &intent_bytes,
+            ),
+            event_id: nonce(
+                b"oteryn:parameter-event:v2",
+                actor,
+                session,
+                command.command_id().get(),
+                &batch.binding,
+            ),
+            cost: crate::spell::companion_lifecycle::familiar_cost_binding(
+                &before,
+                &common.next,
+                &common.anchor,
+            )
+            .map_err(|_| SpellCastDisposition::Rejected)?,
+            caster_origin: Some(SourceCasterOrigin {
+                actor,
+                character_lease_generation: b.lease_generation,
+            }),
+            operations: Vec::new(),
+            companion: None,
+            direct_companion: None,
+        };
+        let physical = match &relocation {
+            Some(seal) => runtime.stage_spell_batch_with_relocation(&batch, seal),
+            None => runtime.stage_spell_batch(&batch),
+        }
+        .map_err(|_| SpellCastDisposition::Rejected)?;
+        let player = stage_player_batch(runtime, states, &batch, Some(common.next.clone()))
+            .map_err(|_| SpellCastDisposition::Rejected)?;
+        Some(ParameterInstallation {
+            request,
+            training,
+            paid: common.next,
+            physical,
+            player,
+        })
+    } else {
+        None
+    };
+    Ok(PreparedParameterCast {
+        actor,
+        session,
+        intent,
+        fence,
+        before,
+        position,
+        owned,
+        batch,
+        definition,
+        result,
+        result_bytes,
+        installation,
+        relocation,
+    })
+}
+impl ChannelSpellStates {
+    pub fn has_pending_parameters(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
+        self.pending_parameters
+            .iter()
+            .any(|p| p.is_for(actor, session))
+    }
+}
+/// Moves a parked parameter attempt into its caster's marker for the resolution (§1.6).
+pub fn restore_parked_parameter(
+    states: &mut ChannelSpellStates,
+    attempt: PreparedParameterCast,
+) -> ParkedMarker {
+    let (actor, session, intent, command) = (
+        attempt.actor,
+        attempt.session,
+        attempt.intent.clone(),
+        attempt.batch.command,
+    );
+    super::PendingSpellMarker::restore(
+        &mut states.pending_parameters,
+        actor,
+        session,
+        command,
+        intent,
+        attempt,
+    );
+    ParkedMarker {
+        kind: ParkedMarkerKind::Parameter,
+        actor,
+        session,
+    }
+}
+impl super::super::ComposedFreshAdmission<'_, '_, '_> {
+    /// The lane comes first, so an attempt parked in `unresolved` is resolved before the marker
+    /// is read.
+    pub(in crate::gameplay_transport) async fn reconcile_pending_parameters_for_control_loss<
+        A: super::super::spell_access_facts::CurrentSpellAccessOwner + Sync,
+    >(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        access: &A,
+    ) -> Option<ParameterCastDispatch> {
+        let Some(mut permit) = self.spell_lane_permit().await else {
+            return self
+                .spell_states
+                .lock()
+                .await
+                .has_pending_parameters(actor, session)
+                .then(|| ParameterCastDispatch::bare(NativeCastDispatch::Pending));
+        };
+        let original = {
+            let states = self.spell_states.lock().await;
+            states
+                .pending_parameters
+                .iter()
+                .find(|p| p.is_for(actor, session))
+                .map(|p| (p.command.command_id().get(), p.intent.clone()))
+        };
+        let (command, intent) = original?;
+        let result = self
+            .cast_parameters_inner(actor, session, command, &intent, access, Some(&mut permit))
+            .await;
+        if self
+            .spell_states
+            .lock()
+            .await
+            .has_pending_parameters(actor, session)
+        {
+            Some(ParameterCastDispatch::bare(NativeCastDispatch::Pending))
+        } else {
+            Some(result)
+        }
+    }
+    /// The resolver of a parameter attempt parked in `unresolved` (ARCH-SPELL-LOCK-2 §1.6): the
+    /// writer's retained retry path with the original attempt. An attempt the pass does not
+    /// install or release goes back into `unresolved`. The caller moved the attempt into the
+    /// caster's marker.
+    pub(in crate::gameplay_transport) async fn resolve_parked_parameter(
+        &self,
+        permit: &mut SpellLanePermit,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> &'static str {
+        let original = super::PendingSpellMarker::take_original(
+            &mut self.spell_states.lock().await.pending_parameters,
+            actor,
+            session,
+        );
+        let Some((command, intent)) = original else {
+            return "consumed";
+        };
+        let access = self.refresh_spell_access(actor, session).await;
+        let dispatch = self
+            .cast_parameters_inner(actor, session, command, &intent, &access, Some(permit))
+            .await;
+        let leftover = {
+            let mut states = self.spell_states.lock().await;
+            super::PendingSpellMarker::take_attempt(&mut states.pending_parameters, actor, session)
+        };
+        if let Some(attempt) = leftover {
+            permit
+                .open_commit_window(attempt, UnresolvedSpellCommit::park_parameter)
+                .park();
+        }
+        super::native_combat_cast::dispatch_outcome_token(&dispatch.cast)
+    }
+    /// Called only after the separate candidate capability was actually selected.
+    /// Parameter bytes never reinterpret the accepted v1 command.
+    pub(in crate::gameplay_transport) async fn cast_parameters<
+        A: super::super::spell_access_facts::CurrentSpellAccessOwner + Sync,
+    >(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        command_id: u64,
+        intent: &ParameterSpellCastIntent,
+        access: &A,
+    ) -> ParameterCastDispatch {
+        self.cast_parameters_inner(actor, session, command_id, intent, access, None)
+            .await
+    }
+    async fn cast_parameters_inner<
+        A: super::super::spell_access_facts::CurrentSpellAccessOwner + Sync,
+    >(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        command_id: u64,
+        intent: &ParameterSpellCastIntent,
+        access: &A,
+        lane: Option<&mut SpellLanePermit>,
+    ) -> ParameterCastDispatch {
+        use super::super::spell_access_facts::load_owned_cast_facts_in_transaction;
+        use crate::durability::fresh_admission::FreshAdmissionStore;
+        use crate::foundation::{CommandId, GameSessionState};
+        let Some((spell, active_spell)) = self.spells.source_indexed(intent.intent.spell) else {
+            return ParameterCastDispatch::bare(NativeCastDispatch::NotApplicable);
+        };
+        if named_player_spell(spell) || super::native_combat_cast::direct_companion_spell(spell) {
+            return self
+                .cast_named_player_parameters(actor, session, command_id, intent, access)
+                .await;
+        }
+        let Execution::NativeProfile(profile) = &spell.execution else {
+            return ParameterCastDispatch::bare(NativeCastDispatch::NotApplicable);
+        };
+        let key = profile.spell()["execution"]["native_behavior"]["key"]
+            .as_str()
+            .unwrap_or("");
+        if !matches!(key, "locate_message" | "house_access" | "vertical_move") {
+            return ParameterCastDispatch::bare(NativeCastDispatch::NotApplicable);
+        }
+        let rejected = || {
+            ParameterCastDispatch::bare(NativeCastDispatch::Outcome(SpellCastOutcome::rejected()))
+        };
+        if !active_spell || command_id == 0 {
+            return rejected();
+        }
+        let Some(active) = self.active_generation else {
+            return rejected();
+        };
+        let Some(content) = active.native_gameplay() else {
+            return rejected();
+        };
+        if self.rooms.gate_parameter_cast(key).is_none() {
+            return rejected();
+        }
+        let Ok((current, _)) = FreshAdmissionStore::from_root(self.root.clone())
+            .current_session_at(session)
+            .await
+        else {
+            return ParameterCastDispatch::bare(NativeCastDispatch::Pending);
+        };
+        if current.session_state() != GameSessionState::Active {
+            return rejected();
+        }
+        let Ok(character) =
+            crate::domain::CharacterId::from_bytes(*current.commit().character_id().as_bytes())
+        else {
+            return rejected();
+        };
+        let Ok(record) = self
+            .root
+            .read_current_character(self.character, character)
+            .await
+        else {
+            return ParameterCastDispatch::bare(NativeCastDispatch::Pending);
+        };
+        let fence = CurrentCharacterGameplayFence {
+            character_id: character,
+            game_session_id: session,
+            connection_generation: current.current_connection_generation(),
+            character_lease_generation: current.current_character_lease().generation(),
+            runtime_scope: current.current_runtime_scope(),
+            scope_ownership_generation: current.current_scope_generation(),
+            expected_character_revision: record.revision,
+        };
+        let Ok(command) = CommandId::new(command_id).map(|id| CommandRef::new(session, id)) else {
+            return rejected();
+        };
+        // Lock order (§1.2): the lane before any Channel guard.
+        let mut acquired;
+        let permit = match lane {
+            Some(permit) => permit,
+            None => {
+                let Some(permit) = self.spell_lane_permit().await else {
+                    return ParameterCastDispatch::bare(NativeCastDispatch::Pending);
+                };
+                acquired = permit;
+                &mut acquired
+            }
+        };
+        let mut runtime = self.runtime.lock().await;
+        let mut states = self.spell_states.lock().await;
+        if runtime.player_control_facts(actor, session).is_err()
+            || runtime.owner_fence().is_err()
+            || runtime.content_pin().server_artifact_digest() != content.source_digest()
+        {
+            return rejected();
+        }
+        // Only an actual committed physical receipt permits immediate replay.
+        // The exact v2 bytes include the parameter, unlike the old v1 helper.
+        let Ok(attacker) = crate::foundation::CharacterId::decode(character.as_bytes()) else {
+            return rejected();
+        };
+        match runtime.retained_spell_batch(
+            actor,
+            attacker,
+            fence.character_lease_generation,
+            command,
+        ) {
+            Ok(Some(batch)) => {
+                let replay = (|| {
+                    let saved: serde_json::Value = serde_json::from_slice(&batch.binding).ok()?;
+                    let bytes = encode_parameter_spell_cast_intent(intent).ok()?;
+                    if saved["intent"] != serde_json::json!(bytes) {
+                        return None;
+                    }
+                    let result_bytes: Vec<u8> =
+                        serde_json::from_value(saved["result"].clone()).ok()?;
+                    let result = decode_parameter_spell_cast_result(&result_bytes).ok()?;
+                    let staged = runtime.stage_spell_batch(&batch).ok()?;
+                    if staged.will_apply() {
+                        return None;
+                    }
+                    commit_owner_batch(&mut runtime, &mut states, staged, None).ok()?;
+                    Some(result)
+                })();
+                return match replay {
+                    Some(result) => ParameterCastDispatch {
+                        cast: NativeCastDispatch::Outcome(SpellCastOutcome {
+                            disposition: result.disposition,
+                            vitals: super::observe_vitals(&runtime, &states, actor, session),
+                        }),
+                        result: Some(result),
+                    },
+                    None => rejected(),
+                };
+            }
+            Ok(None) => (),
+            Err(_) => return rejected(),
+        }
+        // The marker (§1.4) stays for the whole pass; the pass holds the attempt itself.
+        let retained = match states
+            .pending_parameters
+            .iter_mut()
+            .find(|p| p.is_for(actor, session))
+        {
+            Some(marker) => {
+                if marker.intent != *intent || marker.command != command {
+                    return ParameterCastDispatch::bare(NativeCastDispatch::Pending);
+                }
+                match marker.attempt.take() {
+                    Some(attempt) => Some(attempt),
+                    // The lane is held and holds nothing, so no pass or parked record owns it.
+                    None => return ParameterCastDispatch::bare(NativeCastDispatch::Pending),
+                }
+            }
+            None => {
+                if states.pending_parameters.len() >= MAX_PENDING_PARAMETERS
+                    || states.pending_parameters.try_reserve(1).is_err()
+                {
+                    return rejected();
+                }
+                states.pending_parameters.push(super::PendingSpellMarker {
+                    actor,
+                    session,
+                    command,
+                    intent: intent.clone(),
+                    attempt: None,
+                });
+                None
+            }
+        };
+        let intent = intent.clone();
+        // A cancelled pass parks what it holds, so the marker is always settled (§1.6).
+        let writer = SpellWriterPass::new(
+            permit,
+            retained,
+            super::native_combat_cast::UnresolvedSpellCommit::park_parameter,
+            super::native_combat_cast::UnresolvedSpellCommit::park_vacant(
+                super::native_combat_cast::ParkedMarkerKind::Parameter,
+                actor,
+                session,
+            ),
+        );
+        let Ok(pass) = self.root.try_issue_semantic_pass() else {
+            let (leftover, parked) = writer.finish();
+            super::PendingSpellMarker::settle(
+                &mut states.pending_parameters,
+                actor,
+                session,
+                command,
+                intent,
+                leftover,
+                parked,
+            );
+            return ParameterCastDispatch::bare(NativeCastDispatch::Pending);
+        };
+        let marker_intent = intent.clone();
+        // The descriptor is outside the bounded callback before any committing
+        // await. Deadline cancellation cannot discard the original occurrence:
+        // before the commit window it stays in the context, after it the window
+        // parks it in the lane.
+        let mut context = (self, access, writer, Some((runtime, states)));
+        let result=pass.run_with_context(&mut context,move|holder,deadline,ctx|Box::pin(async move{
+            let (owner,access,writer,guards)=ctx;
+            let (permit,pending)=writer.parts();
+            let active=owner.active_generation.ok_or(DurabilityError::Unavailable)?;
+            let content=active.native_gameplay().ok_or(DurabilityError::Unavailable)?;
+            let spell=owner.spells.indexed(intent.intent.spell).ok_or(DurabilityError::Unavailable)?;
+            let room=owner.rooms.gate_parameter_cast(native_key(spell)).ok_or(DurabilityError::Unavailable)?;
+            let item_fence=CurrentCharacterItemFence{character_id:fence.character_id,game_session_id:session,
+                connection_generation:fence.connection_generation,character_lease_generation:fence.character_lease_generation,
+                runtime_scope:fence.runtime_scope,scope_ownership_generation:fence.scope_ownership_generation};
+            let mut tx=items::begin_spell_owner_transaction(holder,deadline).await?;
+            let authority=items::assert_spell_item_authority_in_transaction(&mut tx,permit,owner.root,owner.character,
+                owner.holder,&item_fence,command,content.source_digest()).await.map_err(|_|DurabilityError::Unavailable)?;
+            // S (§1.1): the guarded span, through the staged installation and the verdict.
+            let verdict={
+                let (runtime,states)=match guards.as_mut(){
+                    Some((runtime,states))=>(&mut **runtime,&mut **states),
+                    None=>return Err(DurabilityError::Unavailable),
+                };
+                let state=states.get(runtime,actor,session).ok_or(DurabilityError::Unavailable)?;
+                let owned=load_owned_cast_facts_in_transaction(&mut tx,owner.root,owner.character,owner.holder,&item_fence,
+                    command,runtime,actor,state,active,*access,owner.owner_now().get()).await.map_err(|_|DurabilityError::Unavailable)?;
+                if pending.is_none(){
+                    let identity=&spell.authored.as_ref().ok_or(DurabilityError::Unavailable)?.header.identity;
+                    let definition=crate::durability::item_mint::TypedDefinitionRef{family:"Spell".into(),production_key:identity.key.clone(),revision_ref:identity.revision.clone()};
+                    if let Some(history)=crate::durability::spell_parameter_result::read_parameter_result_in_transaction(&mut tx,&authority,&definition,&intent).await.map_err(|_|DurabilityError::Unavailable)?{
+                        if !history.historical() || history.cost_transaction().is_some(){return Err(DurabilityError::Unavailable)}
+                        let result=history.result().map_err(|_|DurabilityError::InvalidStoredState)?;
+                        return Ok(ParameterCastDispatch{cast:NativeCastDispatch::Outcome(SpellCastOutcome{disposition:result.disposition,vitals:None}),result:Some(result)})
+                    }
+                    let objects=owner.door.lock().await;
+                    let prepared=match prepare_parameter(&mut tx,&authority,&FreshAdmissionStore::from_root(owner.root.clone()),runtime,states,room,&objects,content,owned.clone(),
+                        spell,intent.clone(),fence,command,owner.owner_now()).await{
+                        Ok(p)=>p,Err(disposition)=>return Ok(ParameterCastDispatch{cast:NativeCastDispatch::Outcome(SpellCastOutcome{disposition,vitals:None}),result:None}),
+                    };
+                    *pending=Some(prepared);
+                }
+                let attempt=pending.as_mut().ok_or(DurabilityError::Unavailable)?;
+                let reconnect=crate::durability::admission_journal::spell_reconnect::prove_pending_spell_reconnect(&mut tx,&authority,&attempt.fence,&item_fence).await?;
+                if states.get(runtime,actor,session)!=Some(&attempt.before)
+                    || runtime.read_actor_position(actor).map_err(|_|DurabilityError::Unavailable)?!=attempt.position
+                    || !current_facts_match(attempt,&owned,reconnect.as_ref())
+                    || attempt.fence.character_lease_generation!=fence.character_lease_generation {
+                    return Err(DurabilityError::Unavailable);
+                }
+                if let Some(installation)=attempt.installation.as_mut(){
+                    installation.player.validate_current(runtime,states).map_err(|_|DurabilityError::Unavailable)?;
+                    runtime.reserve_spell_batch(&mut installation.physical).map_err(|_|DurabilityError::Unavailable)?;
+                }
+                let existing=crate::durability::spell_parameter_result::read_parameter_result_in_transaction(&mut tx,&authority,&attempt.definition,&attempt.intent).await.map_err(|_|DurabilityError::Unavailable)?;
+                if let Some(record)=&existing
+                    && record.bytes()!=attempt.result_bytes.as_slice(){return Err(DurabilityError::InvalidStoredState)}
+                if existing.is_none()
+                    && let Some(editor)=&attempt.result.editor{
+                        let presence=crate::spell::house_execution::current_house_presence(room,runtime,session,actor,attempt.position).map_err(|_|DurabilityError::Unavailable)?;
+                        let list=match editor.list{HouseEditorList::Guest=>HouseList::Guest,HouseEditorList::Subowner=>HouseList::Subowner,HouseEditorList::Door(n)=>HouseList::Door(n.get())};
+                        let present:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_house_editors WHERE editor_id=encode($1,'hex')::uuid)").bind(editor.editor_id.as_slice()).fetch_one(&mut *tx).await?;
+                        if !present{
+                        let observed=crate::durability::house_spell_acl::restage_editor_in_transaction(&mut tx,&authority,&presence,list,editor.editor_id).await.map_err(|_|DurabilityError::Unavailable)?;
+                        if observed.house_key!=editor.house_key || observed.list!=list || observed.ownership_revision!=editor.ownership_revision.get() || observed.acl_revision!=editor.acl_revision || observed.text!=editor.text{return Err(DurabilityError::Unavailable)}
+                        }
+                    }
+                owned.check_current_access(spell,owner.owner_now().get())
+                    .map_err(|_|items::SpellItemError::Rejected(PARAMETER_NEW_GRANT_REFUSED))
+            };
+            // Release after S: the COMMIT and the post-commit transaction hold only the lane.
+            *guards=None;
+            let attempt=pending.as_ref().ok_or(DurabilityError::Unavailable)?;
+            let private_result=attempt.result.clone();
+            let Some(installation)=attempt.installation.as_ref() else{
+                let record=crate::durability::spell_parameter_result::write_parameter_result_in_transaction(&mut tx,&authority,&attempt.definition,&attempt.intent,&attempt.result,None).await.map_err(|_|DurabilityError::Unavailable)?;
+                let attempt=pending.take().ok_or(DurabilityError::Unavailable)?;
+                let mut window=permit.open_commit_window(attempt,UnresolvedSpellCommit::park_parameter);
+                if !record.historical(){
+                    let committed=match crate::durability::spell_owner_commit::stage_parameter_result_commit(&mut tx,&record,deadline).await{
+                        Ok(commit)=>crate::durability::spell_owner_commit::commit_spell_owner_transaction(tx,commit,&mut window).await,
+                        Err(error)=>Err(error),
+                    };
+                    if let Err(error)=committed{
+                        if let Ok(attempt)=window.reclaim_uncommitted(){*pending=Some(attempt);}
+                        return Err(error);
+                    }
+                } else {drop(tx);}
+                // A result-only cast installs nothing on the Channel.
+                let _=window.install();
+                return Ok(ParameterCastDispatch{cast:NativeCastDispatch::Outcome(SpellCastOutcome{disposition:private_result.disposition,vitals:None}),result:Some(private_result)})
+            };
+            let outcome=match items::apply_spell_items_in_transaction_guarded(&mut tx,&authority,&installation.request,verdict).await{
+                Ok(outcome)=>outcome,
+                Err(items::SpellItemError::Rejected(PARAMETER_NEW_GRANT_REFUSED))=>{
+                    // The writer holds the exact-command lock and found no historical receipt.
+                    // Only a successful rollback proves this attempt cannot later COMMIT.
+                    tx.rollback().await.map_err(|_|DurabilityError::Unavailable)?;
+                    let mut runtime=owner.runtime.lock().await;
+                    let states=owner.spell_states.lock().await;
+                    if installation.physical.will_apply(){
+                        runtime.release_definitely_uncommitted_spell_batch(&installation.physical)
+                            .map_err(|_|DurabilityError::Unavailable)?;
+                    }
+                    *pending=None;
+                    return Ok(ParameterCastDispatch{cast:NativeCastDispatch::Outcome(SpellCastOutcome{
+                        disposition:SpellCastDisposition::Rejected,
+                        vitals:super::observe_vitals(&runtime,&states,actor,session)}),result:None});
+                }
+                Err(_)=>return Err(DurabilityError::Unavailable),
+            };
+            let historical=matches!(outcome,SpellItemTransactionOutcome::AlreadyCommitted(_));
+            let attempt=pending.take().ok_or(DurabilityError::Unavailable)?;
+            let mut window=permit.open_commit_window(attempt,UnresolvedSpellCommit::park_parameter);
+            // A historical outcome is marked before any fallible follow-up, so each later
+            // failure parks the attempt and keeps the lane fenced.
+            if historical{window.mark_already_committed();}
+            let training=async{
+                let attempt=window.attempt();
+                let installation=attempt.installation.as_ref().ok_or(DurabilityError::Unavailable)?;
+                crate::durability::spell_parameter_result::write_parameter_result_in_transaction(&mut tx,&authority,&attempt.definition,&attempt.intent,&attempt.result,Some(installation.request.transaction_id)).await.map_err(|_|DurabilityError::Unavailable)?;
+                let formula=content.training_formula().ok_or(DurabilityError::Unavailable)?;
+                Ok::<_,DurabilityError>(match installation.training.request(){
+                    Some(request)=>Some(crate::durability::character_build::prepare_character_build_in_transaction(
+                        owner.root,&mut tx,owner.character,owner.holder,CurrentCharacterGameplayFence{connection_generation:fence.connection_generation,..attempt.fence},request.clone(),formula)
+                        .await.map_err(|_|DurabilityError::Unavailable)?),None=>None,
+                })
+            }.await;
+            let training=match training{
+                Ok(training)=>training,
+                Err(error)=>{
+                    if !historical && let Ok(attempt)=window.reclaim_uncommitted(){*pending=Some(attempt);}
+                    return Err(error);
+                },
+            };
+            let committed=match outcome{
+                SpellItemTransactionOutcome::Applied(descriptor)=>{
+                    match items::stage_spell_owner_commit(&mut tx,&authority,descriptor,None,None,deadline).await{
+                        Ok(staged)=>crate::durability::spell_owner_commit::commit_spell_owner_transaction(tx,staged,&mut window).await,
+                        Err(_)=>Err(DurabilityError::Unavailable),
+                    }
+                },
+                SpellItemTransactionOutcome::AlreadyCommitted(descriptor)=>{
+                    let proof=items::reconcile_spell_owner_commit_in_transaction(&mut tx,&authority,descriptor,None)
+                        .await.map_err(|_|DurabilityError::Unavailable);drop(tx);proof
+                },
+            };
+            let proof=match committed{
+                Ok(proof)=>proof,
+                Err(error)=>{
+                    // Proven uncommitted: the attempt goes back to the marker. Otherwise the
+                    // window parks it.
+                    if let Ok(attempt)=window.reclaim_uncommitted(){*pending=Some(attempt);}
+                    return Err(error);
+                },
+            };
+            // From here every early return parks the attempt through the window's Drop.
+            let training=training.map(|p|p.after_commit(&proof)).transpose().map_err(|_|DurabilityError::InvalidStoredState)?;
+            let receipt=training.as_ref().map(|r|match r{BuildCommitOutcome::Committed(r)|BuildCommitOutcome::AlreadyCommitted(r)=>r});
+            let mut runtime=owner.runtime.lock().await;
+            let mut states=owner.spell_states.lock().await;
+            // Phase 1: every fallible check borrows the attempt; nothing moves.
+            let checked={
+                let attempt=window.attempt();
+                let installation=attempt.installation.as_ref().ok_or(DurabilityError::InvalidStoredState)?;
+                let anchor=attempt.batch.anchor.as_ref().ok_or(DurabilityError::InvalidStoredState)?;
+                installation.training.check_install(&attempt.before,&installation.paid,anchor,receipt)
+                    .map_err(|_|DurabilityError::InvalidStoredState)?;
+                let preview=installation.training.qualified_preview(&installation.paid).map_err(|_|DurabilityError::InvalidStoredState)?;
+                installation.player.check_rebind_training(&runtime,&states,&preview).map_err(|_|DurabilityError::InvalidStoredState)?;
+                check_owner_batch(&runtime,&states,&installation.physical,Some(&installation.player))
+                    .map_err(|_|DurabilityError::InvalidStoredState)?
+            };
+            // Phase 2: no awaited work, allocation, new random draw or fallible branch.
+            let attempt=window.install();
+            if let Some(mut installation)=attempt.installation{
+                installation.training.install_into(&mut installation.paid);
+                installation.player.install_rebind_training(installation.paid);
+                let _=install_owner_batch(&mut runtime,&mut states,installation.physical,Some(installation.player),checked);
+                // NPC-TALK-2: a caster the spell relocated out of talk range ends its conversation.
+                owner.chat.close_out_of_range(&runtime,session);
+            }
+            Ok(ParameterCastDispatch{cast:NativeCastDispatch::Outcome(SpellCastOutcome{disposition:private_result.disposition, vitals:super::observe_vitals(&runtime,&states,actor,session)}),result:Some(private_result)})
+        })).await;
+        let (_, _, writer, guards) = context;
+        drop(guards);
+        let mut states = self.spell_states.lock().await;
+        let (leftover, parked) = writer.finish();
+        super::PendingSpellMarker::settle(
+            &mut states.pending_parameters,
+            actor,
+            session,
+            command,
+            marker_intent,
+            leftover,
+            parked,
+        );
+        match result {
+            Ok(result) => result,
+            Err(_) => ParameterCastDispatch::bare(NativeCastDispatch::Pending),
+        }
+    }
+}
+#[cfg(test)]
+mod tests {
+    #![allow(clippy::unwrap_used)]
+    use super::*;
+    #[test]
+    fn replay_binding_distinguishes_same_spell_different_player_text() {
+        let a = decode_parameter_spell_cast_intent(&[
+            8, 2, 18, 4, 8, 1, 16, 1, 26, 3, b'B', b'o', b'b',
+        ])
+        .unwrap();
+        let mut b = a.clone();
+        b.parameter = Some("Bobby".into());
+        assert_ne!(
+            encode_parameter_spell_cast_intent(&a).unwrap(),
+            encode_parameter_spell_cast_intent(&b).unwrap()
+        );
+        let (_runtime, actor, session) =
+            crate::gameplay_transport::actor_spell::tests::runtime_with_player(90);
+        assert_ne!(
+            nonce(
+                b"parameter-test",
+                actor,
+                session,
+                1,
+                &encode_parameter_spell_cast_intent(&a).unwrap()
+            ),
+            nonce(
+                b"parameter-test",
+                actor,
+                session,
+                1,
+                &encode_parameter_spell_cast_intent(&b).unwrap()
+            )
+        );
+    }
+    #[test]
+    fn exact_source_cancel_feedback_and_unknown_reason_refusal() {
+        let ambiguous = source_feedback("name_is_ambiguous", Some("poff"))
+            .unwrap()
+            .unwrap();
+        assert_eq!(ambiguous.text, "Player name is ambiguous.");
+        assert_eq!(ambiguous.effect, PrivateSpellEffect::Poff);
+        let protected = source_feedback("exiva_protected", None).unwrap().unwrap();
+        assert_eq!(
+            protected.text,
+            "The character you are trying to find with Exiva is currently protected from your spell."
+        );
+        assert_eq!(protected.effect, PrivateSpellEffect::None);
+        assert!(source_feedback("unqualified_source_message", None).is_err());
+    }
+    /// MAGIC-CAST-1: on a bundle World (no fixture room, the combat room is the entry room's
+    /// bundle view) a locate message reads the combat room, while house access and vertical moves
+    /// stay closed; on a fixture World every parameter cast reads the fixture room.
+    #[test]
+    fn bundle_world_opens_locate_message_only() {
+        use crate::gameplay_transport::SeamRooms;
+        use crate::map::spell_tiles::tests::{id, world as bundle_world};
+        let world = bundle_world();
+        let world_id = crate::foundation::WorldId::decode(&id(1)).unwrap();
+        let entry = crate::content::qualify_native_entry_room(world_id).unwrap();
+        let start = world.start();
+        let view = entry
+            .bundle_view(
+                world.movement_cells(entry.movement_cells()).unwrap(),
+                world.frame_binding_digest(world_id),
+                world.map_revision_digest(),
+                crate::content::NativeEntryStart {
+                    x: i32::from(start.x),
+                    y: i32::from(start.y),
+                    floor: -i16::from(start.floor),
+                },
+            )
+            .unwrap();
+        let bundle = SeamRooms::new(None, Some(&view));
+        assert!(std::ptr::eq(
+            bundle.gate_parameter_cast("locate_message").unwrap(),
+            &view
+        ));
+        for key in ["house_access", "vertical_move", ""] {
+            assert!(bundle.gate_parameter_cast(key).is_none(), "{key}");
+        }
+        let fixture = SeamRooms::new(Some(&entry), Some(&entry));
+        for key in ["locate_message", "house_access", "vertical_move"] {
+            let fixture = fixture.gate_parameter_cast(key).unwrap();
+            assert!(std::ptr::eq(fixture, &entry), "{key}");
+        }
+    }
+}

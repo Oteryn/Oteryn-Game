@@ -93,7 +93,9 @@ impl Database {
             .fetch_one(&mut connection)
             .await?;
         assert_eq!(version, "170006", "canonical target is PostgreSQL 17.6");
-        sqlx::migrate!("./migrations").run(&mut connection).await?;
+        oteryn_gameplay_durability::GAME_MIGRATOR
+            .run(&mut connection)
+            .await?;
         connection.close().await?;
         Ok(Self {
             admin_url,
@@ -170,7 +172,7 @@ impl Harness {
     pub(crate) async fn create_appearance(admin: String, tag: &str) -> TestResult<Self> {
         // Resolve the real migration before constructing any recovery/admission authority.
         // Database::create runs this same embedded migrator before opening the native root.
-        let expected_checksum = sqlx::migrate!("./migrations")
+        let expected_checksum = oteryn_gameplay_durability::GAME_MIGRATOR
             .iter()
             .find(|migration| migration.version == 93)
             .map(|migration| migration.checksum.to_vec())

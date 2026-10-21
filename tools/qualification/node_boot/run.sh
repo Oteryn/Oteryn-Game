@@ -515,7 +515,7 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   WP5_S3B_FRESH_KEY_ID="$FRESH_KEY_ID" WP5_S3B_FRESH_KEY_SEED="$FRESH_SEED_HEX" \
   WP5_S3B_RECOVERY_KEY_ID="$RECOVERY_KEY_ID" WP5_S3B_RECOVERY_KEY_SEED="$RECOVERY_SEED_HEX" \
     cargo +1.95.0 test --locked -p oteryn-game-server --lib \
-    "gameplay_transport::qualification::$qualification" -- --ignored --exact --nocapture
+    "qualification::$qualification" -- --ignored --exact --nocapture
 }
 
 graceful_shutdown() { # ready=false first, socket removed

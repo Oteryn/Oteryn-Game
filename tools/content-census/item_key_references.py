@@ -59,7 +59,7 @@ SKIP_DIRS = ("content/assets/files",)
 # switch, and the identity tests resolve retired keys through the alias table.
 HISTORY = {
     ALIAS_TABLE,
-    "apps/game-server/src/content/cw2_b1_import.rs",
+    "crates/gameplay/content/src/content/cw2_b1_import.rs",
     "apps/game-server/examples/materialize_content_world_project_v2.rs",
     "apps/game-server/tests/content_item_identity.rs",
     "apps/game-server/tests/content_world_cw2_b1_import.rs",

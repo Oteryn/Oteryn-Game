@@ -198,6 +198,39 @@ pub const EQUIPMENT_SLOT_SEMANTIC_KEYS: [(EquipmentSlot, &str); 9] = [
     (EquipmentSlot::Ammo, "EXTRA"),
 ];
 
+/// The durable slot code of a wire slot, by its semantic key (ITEM-MOVE-WIRE-1 §2).
+pub fn durable_slot(slot: EquipmentSlot) -> Option<u8> {
+    Some(match slot.semantic_key() {
+        "HEAD" => 1,
+        "TORSO" => 2,
+        "LEGS" => 3,
+        "FEET" => 4,
+        "WEAPON" => 5,
+        "SHIELD" => 6,
+        "AMULET" => 7,
+        "RING" => 8,
+        "EXTRA" => 10,
+        _ => return None,
+    })
+}
+
+/// The wire slot of a durable slot code; the backpack slot 9 and unknown codes have none.
+pub fn wire_slot(code: u8) -> Option<EquipmentSlot> {
+    [
+        EquipmentSlot::Head,
+        EquipmentSlot::Necklace,
+        EquipmentSlot::Armor,
+        EquipmentSlot::RightHand,
+        EquipmentSlot::LeftHand,
+        EquipmentSlot::Legs,
+        EquipmentSlot::Feet,
+        EquipmentSlot::Ring,
+        EquipmentSlot::Ammo,
+    ]
+    .into_iter()
+    .find(|slot| durable_slot(*slot) == Some(code))
+}
+
 /// `EquippedItemV1`: an occupied slot of domain 9 under capability 12; an empty slot is absent.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EquippedItem {

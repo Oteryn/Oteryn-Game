@@ -4,18 +4,16 @@ extern crate oteryn_game_server as production_server;
 extern crate self as oteryn_game_server;
 pub use production_server::admission_evidence;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/character_bootstrap_intent.rs"]
+#[path = "../../../crates/gameplay/durability/src/character_bootstrap_intent.rs"]
 pub mod character_bootstrap_intent;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/character_recovery_fence.rs"]
-pub mod character_recovery_fence;
-pub use production_server::domain;
+pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
+#[path = "support/domain_shim.rs"]
+pub mod domain;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/foundation/mod.rs"]
-pub mod foundation;
+pub use oteryn_gameplay_entities as foundation;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/native_admission_source/mod.rs"]
-pub mod native_admission_source;
+pub use oteryn_gameplay_native_admission_source as native_admission_source;
 
 #[path = "support/authority_matrix.rs"]
 mod authority_matrix;
@@ -31,8 +29,11 @@ mod character_proficiency_modification_postgres_cases;
 #[path = "support/character_revision_sequencer_postgres_cases.rs"]
 mod character_revision_sequencer_postgres_cases;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/durability/mod.rs"]
-mod durability;
+#[path = "../src/durability"]
+mod durability {
+    // Recompile the shared core; native world adapters use the full library Content context.
+    include!("../../../crates/gameplay/durability/src/durability/core_modules.rs");
+}
 #[path = "support/highscores_session_postgres_cases.rs"]
 mod highscores_session_postgres_cases;
 #[path = "support/item_timed_postgres_cases.rs"]
@@ -288,7 +289,10 @@ fn owning_fresh_loss_is_atomic_and_raw_prepare_does_not_supply_authority()
     use foundation::admission_authority_publication::*;
     use foundation::*;
     struct LossSource(std::sync::Mutex<ControlLossObservationV1>);
-    impl foundation::fnd04_verifier::recovery_source_sealed::Sealed for LossSource {}
+    impl oteryn_gameplay_foundation::foundation::fnd04_verifier::recovery_source_sealed::Sealed
+        for LossSource
+    {
+    }
     impl ControlLossSourceV1 for LossSource {
         fn resolve_loss(
             &self,
@@ -721,12 +725,12 @@ fn fresh_prepare_cannot_invent_control_loss_or_poison_an_unopened_epoch()
                         let journal = AdmissionReconnectJournal::connect_runtime(&url).await?;
                         if use_v2 {
                             let (_, request_v2) =
-                                foundation::ReconnectDurabilityFlowV2::begin(reconnect, None);
+                                oteryn_gameplay_foundation::foundation::ReconnectDurabilityFlowV2::begin(reconnect, None);
                             let journal_v2 =
                                 durability::AdmissionReconnectJournalV2::connect_runtime(&url)
                                     .await?;
                             if journal_v2.prepare(&request_v2).await?
-                                != foundation::ReconnectPrepareDispositionV2::RejectedStaleAuthority
+                                != oteryn_gameplay_foundation::foundation::ReconnectPrepareDispositionV2::RejectedStaleAuthority
                             {
                                 return Err("raw V2 prepare invented owning loss authority".into());
                             }
@@ -2580,17 +2584,17 @@ fn existing_terminal_replay_precedes_cross_character_account_incumbent()
                     reloaded.legacy().prepare(&changed).await?,
                     ReconnectPrepareDispositionV1::IdempotencyConflict
                 );
-                let (_, first_v2) = foundation::ReconnectDurabilityFlowV2::begin(first.record().clone(), None);
-                let (_, changed_v2) = foundation::ReconnectDurabilityFlowV2::begin(changed.record().clone(), None);
+                let (_, first_v2) = oteryn_gameplay_foundation::foundation::ReconnectDurabilityFlowV2::begin(first.record().clone(), None);
+                let (_, changed_v2) = oteryn_gameplay_foundation::foundation::ReconnectDurabilityFlowV2::begin(changed.record().clone(), None);
                 assert_eq!(
                     reloaded.prepare(&first_v2).await?,
-                    foundation::ReconnectPrepareDispositionV2::ExistingTerminal {
-                        disposition: foundation::ReconnectDurableTerminalDispositionV1::StaleAuthority,
+                    oteryn_gameplay_foundation::foundation::ReconnectPrepareDispositionV2::ExistingTerminal {
+                        disposition: oteryn_gameplay_foundation::foundation::ReconnectDurableTerminalDispositionV1::StaleAuthority,
                     }
                 );
                 assert_eq!(
                     reloaded.prepare(&changed_v2).await?,
-                    foundation::ReconnectPrepareDispositionV2::IdempotencyConflict
+                    oteryn_gameplay_foundation::foundation::ReconnectPrepareDispositionV2::IdempotencyConflict
                 );
                 let sessions: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM game_durability_reconnect_sessions")
                     .fetch_one(&pool).await?;
@@ -5321,31 +5325,34 @@ fn session_use_ledger_capacity_replay_and_sealed_reload() -> Result<(), Box<dyn 
 }
 
 struct LifecycleOwner {
-    current: foundation::GameSessionAuthoritySnapshot<foundation::AuthenticatedTransportRefV1>,
-    transition: foundation::admission_authority_publication::AdmissionClaimTransitionEvidenceV1,
+    current: oteryn_gameplay_foundation::foundation::GameSessionAuthoritySnapshot<oteryn_gameplay_foundation::foundation::AuthenticatedTransportRefV1>,
+    transition: oteryn_gameplay_foundation::foundation::admission_authority_publication::AdmissionClaimTransitionEvidenceV1,
 }
-impl foundation::fnd04_verifier::fresh_source_sealed::Sealed for LifecycleOwner {}
-impl foundation::admission_authority_publication::AdmissionClaimOwningSourceV1 for LifecycleOwner {
+impl oteryn_gameplay_foundation::foundation::fnd04_verifier::fresh_source_sealed::Sealed
+    for LifecycleOwner
+{
+}
+impl oteryn_gameplay_foundation::foundation::admission_authority_publication::AdmissionClaimOwningSourceV1 for LifecycleOwner {
     fn prepare_fresh_claim(
         &self,
-        _: &foundation::fresh_admission_durability::FreshAdmissionAuditBindingV1,
+        _: &oteryn_gameplay_foundation::foundation::fresh_admission_durability::FreshAdmissionAuditBindingV1,
         _: i64,
     ) -> Result<
-        foundation::admission_authority_publication::AdmissionClaimTransitionEvidenceV1,
-        foundation::admission_authority_publication::AdmissionAuthorityPublicationErrorV1,
+        oteryn_gameplay_foundation::foundation::admission_authority_publication::AdmissionClaimTransitionEvidenceV1,
+        oteryn_gameplay_foundation::foundation::admission_authority_publication::AdmissionAuthorityPublicationErrorV1,
     > {
-        Err(foundation::admission_authority_publication::AdmissionAuthorityPublicationErrorV1::Unavailable)
+        Err(oteryn_gameplay_foundation::foundation::admission_authority_publication::AdmissionAuthorityPublicationErrorV1::Unavailable)
     }
     fn prepare_lifecycle_claim(
         &self,
-        _: &foundation::admission_authority_publication::AdmissionClaimLifecycleOperationV1,
+        _: &oteryn_gameplay_foundation::foundation::admission_authority_publication::AdmissionClaimLifecycleOperationV1,
         _: i64,
     ) -> Result<
-        foundation::admission_authority_publication::AdmissionClaimLifecycleResolutionV1,
-        foundation::admission_authority_publication::AdmissionAuthorityPublicationErrorV1,
+        oteryn_gameplay_foundation::foundation::admission_authority_publication::AdmissionClaimLifecycleResolutionV1,
+        oteryn_gameplay_foundation::foundation::admission_authority_publication::AdmissionAuthorityPublicationErrorV1,
     > {
         Ok(
-            foundation::admission_authority_publication::AdmissionClaimLifecycleResolutionV1 {
+            oteryn_gameplay_foundation::foundation::admission_authority_publication::AdmissionClaimLifecycleResolutionV1 {
                 current_session: self.current,
                 evidence: self.transition.clone(),
             },
@@ -5404,7 +5411,7 @@ fn terminal_release_claims_are_atomic_and_exactly_replayed_after_reload()
             assert_eq!(reloaded.reconcile_lifecycle(transition.evidence()).await?,Some(decided_at));
             assert_eq!(guards.load(&keys).await?,successors.into_iter().map(Some).collect::<Vec<_>>());
             let FreshReconciliation::Committed(after) = store.reconcile(request.operation()).await? else { return Err("missing released session".into()); };
-            assert_eq!(after.current_session.session_state(),foundation::GameSessionState::Terminal);
+            assert_eq!(after.current_session.session_state(),oteryn_gameplay_foundation::foundation::GameSessionState::Terminal);
             assert_eq!(after.current_session.current_transport(),None);
             assert_eq!(after.current_session.current_character_lease(),before.current_session.current_character_lease());
             let members: i64 = sqlx::query_scalar("SELECT count(*) FROM game_durability_session_use_memberships").fetch_one(&pool).await?;
@@ -5804,18 +5811,21 @@ fn content_activation_floor_is_monotonic_predecessor_bound_and_immutable()
 /// stack because the operation clone is large.
 #[inline(never)]
 fn assert_early_terminal_replacement_refused(
-    operation: &foundation::CompleteReconnectDurabilityOperationV1,
+    operation: &oteryn_gameplay_foundation::foundation::CompleteReconnectDurabilityOperationV1,
 ) {
     let mut replacement = Box::new(operation.clone());
-    replacement.recovery.mode = foundation::CompleteReconnectModeV1::EarlyTerminalReplacement;
+    replacement.recovery.mode =
+        oteryn_gameplay_foundation::foundation::CompleteReconnectModeV1::EarlyTerminalReplacement;
     assert!(durability::fresh_admission::encode_complete_reconnect(&replacement).is_err());
 }
 
 #[inline(never)]
-fn assert_exhausted_budget_refused<S: foundation::CompleteReconnectSourceV1>(
-    source: impl FnOnce(foundation::RetainedRecoveryBudgetV1) -> Box<S>,
-    identity: foundation::ReconnectIdentityV1,
-    proof: foundation::CompleteReconnectProofV1,
+fn assert_exhausted_budget_refused<
+    S: oteryn_gameplay_foundation::foundation::CompleteReconnectSourceV1,
+>(
+    source: impl FnOnce(oteryn_gameplay_foundation::foundation::RetainedRecoveryBudgetV1) -> Box<S>,
+    identity: oteryn_gameplay_foundation::foundation::ReconnectIdentityV1,
+    proof: oteryn_gameplay_foundation::foundation::CompleteReconnectProofV1,
     now: i64,
 ) -> Result<(), Box<dyn std::error::Error>> {
     use foundation::*;
@@ -5854,7 +5864,10 @@ fn complete_reconnect_resumes_an_owning_loss_session_exactly_once()
     use foundation::fnd04_verifier::*;
     use foundation::*;
     struct LossSource(ControlLossObservationV1);
-    impl foundation::fnd04_verifier::recovery_source_sealed::Sealed for LossSource {}
+    impl oteryn_gameplay_foundation::foundation::fnd04_verifier::recovery_source_sealed::Sealed
+        for LossSource
+    {
+    }
     impl ControlLossSourceV1 for LossSource {
         fn resolve_loss(
             &self,
@@ -5869,7 +5882,10 @@ fn complete_reconnect_resumes_an_owning_loss_session_exactly_once()
         signing: RecoverySigningTrustObservationV2,
         security: RecoveryAccountSecurityObservationV2,
     }
-    impl foundation::fnd04_verifier::recovery_source_sealed::Sealed for Security {}
+    impl oteryn_gameplay_foundation::foundation::fnd04_verifier::recovery_source_sealed::Sealed
+        for Security
+    {
+    }
     impl RecoveryDurabilityEvidenceSourceV2 for Security {
         fn signing_trust(
             &self,
@@ -5890,7 +5906,10 @@ fn complete_reconnect_resumes_an_owning_loss_session_exactly_once()
         current: std::sync::Mutex<CompleteReconnectCurrentV1>,
         security: Security,
     }
-    impl foundation::fnd04_verifier::recovery_source_sealed::Sealed for Owner {}
+    impl oteryn_gameplay_foundation::foundation::fnd04_verifier::recovery_source_sealed::Sealed
+        for Owner
+    {
+    }
     impl CompleteReconnectSourceV1 for Owner {
         fn resolve_reconnect(
             &self,
@@ -5907,7 +5926,10 @@ fn complete_reconnect_resumes_an_owning_loss_session_exactly_once()
         }
     }
     struct Report(Option<CompleteReconnectCompletionV1>);
-    impl foundation::fnd04_verifier::recovery_source_sealed::Sealed for Report {}
+    impl oteryn_gameplay_foundation::foundation::fnd04_verifier::recovery_source_sealed::Sealed
+        for Report
+    {
+    }
     impl CompleteReconnectCompletionSourceV1 for Report {
         fn take_complete_reconnect_completion(
             &mut self,
@@ -6254,7 +6276,10 @@ fn resumed_session_loss_opens_the_next_epoch_and_resumes_again()
     use foundation::fnd04_verifier::*;
     use foundation::*;
     struct LossSource(ControlLossObservationV1);
-    impl foundation::fnd04_verifier::recovery_source_sealed::Sealed for LossSource {}
+    impl oteryn_gameplay_foundation::foundation::fnd04_verifier::recovery_source_sealed::Sealed
+        for LossSource
+    {
+    }
     impl ControlLossSourceV1 for LossSource {
         fn resolve_loss(
             &self,
@@ -6269,7 +6294,10 @@ fn resumed_session_loss_opens_the_next_epoch_and_resumes_again()
         signing: RecoverySigningTrustObservationV2,
         security: RecoveryAccountSecurityObservationV2,
     }
-    impl foundation::fnd04_verifier::recovery_source_sealed::Sealed for Security {}
+    impl oteryn_gameplay_foundation::foundation::fnd04_verifier::recovery_source_sealed::Sealed
+        for Security
+    {
+    }
     impl RecoveryDurabilityEvidenceSourceV2 for Security {
         fn signing_trust(
             &self,
@@ -6290,7 +6318,10 @@ fn resumed_session_loss_opens_the_next_epoch_and_resumes_again()
         current: std::sync::Mutex<CompleteReconnectCurrentV1>,
         security: Security,
     }
-    impl foundation::fnd04_verifier::recovery_source_sealed::Sealed for Owner {}
+    impl oteryn_gameplay_foundation::foundation::fnd04_verifier::recovery_source_sealed::Sealed
+        for Owner
+    {
+    }
     impl CompleteReconnectSourceV1 for Owner {
         fn resolve_reconnect(
             &self,
@@ -6307,7 +6338,10 @@ fn resumed_session_loss_opens_the_next_epoch_and_resumes_again()
         }
     }
     struct Report(Option<CompleteReconnectCompletionV1>);
-    impl foundation::fnd04_verifier::recovery_source_sealed::Sealed for Report {}
+    impl oteryn_gameplay_foundation::foundation::fnd04_verifier::recovery_source_sealed::Sealed
+        for Report
+    {
+    }
     impl CompleteReconnectCompletionSourceV1 for Report {
         fn take_complete_reconnect_completion(
             &mut self,
@@ -6932,3 +6966,7 @@ mod readmit {
         }
     }
 }
+
+#[allow(dead_code, unused_imports)]
+#[path = "support/content_spell_data_shim.rs"]
+mod content;

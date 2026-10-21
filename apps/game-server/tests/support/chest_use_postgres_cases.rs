@@ -36,7 +36,6 @@ use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::foundation::{
     CommandId, CommandRef, ConnectionGeneration, GameSessionId, ScopeOwnershipGeneration, WorldId,
 };
-use crate::interaction::InteractionError;
 use crate::interaction_chest_use::{
     ChestUseError, ChestUseOutcome, ChestUseRequest, chest_use_occurrence, entry_chest,
     prepare_chest_use, resolve_chest, settle_chest_use, use_chest, with_entry_chest,
@@ -45,6 +44,7 @@ use crate::item_transfer_postgres_cases::{
     CHARACTER, Harness, SESSION, TestResult, configured_admin, debug, id, runtime, scope, uuid_text,
 };
 use ReferenceItemField::{Known, Unknown};
+use oteryn_gameplay_domain::domain::interaction::InteractionError;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 use std::collections::BTreeMap;
 

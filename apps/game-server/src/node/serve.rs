@@ -56,6 +56,7 @@ use crate::native_admission_source::runtime_status::{RuntimeStatusDescriptor, Sy
 use crate::native_admission_source::{CHARACTER_BOOTSTRAP_INTENT_ISSUER, TransientCapacity};
 use crate::{GameplayListenerConfig, GameplaySeamOwners, serve_gameplay};
 use oteryn_foundation::CancellationToken;
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use rustls::pki_types::pem::PemObject;
 use rustls::pki_types::{CertificateDer, PrivateKeyDer};
 use std::future::{Future, poll_fn};
@@ -1505,7 +1506,7 @@ async fn establish_custody(
 /// can apply, so boot refuses it instead.
 pub(crate) fn check_chest_quest_transitions(
     content: &crate::content::CanonicalReferencePlayableContent,
-    catalogue: &crate::durability::quest_state::quest::QuestStateCatalogue,
+    catalogue: &oteryn_gameplay_quests::quest::QuestStateCatalogue,
 ) -> Result<(), BootError> {
     let unbound = content
         .definitions
@@ -1534,13 +1535,13 @@ pub(crate) fn load_quest_catalogue(
     load: impl FnOnce(
         &str,
     ) -> Result<
-        crate::durability::quest_state::quest::loader::LoweredQuestState,
-        crate::durability::quest_state::quest::loader::QuestLoadError,
+        oteryn_gameplay_quests::quest::loader::LoweredQuestState,
+        oteryn_gameplay_quests::quest::loader::QuestLoadError,
     >,
     content_revision: &str,
 ) -> Result<
     (
-        std::sync::Arc<crate::durability::quest_state::quest::QuestStateCatalogue>,
+        std::sync::Arc<oteryn_gameplay_quests::quest::QuestStateCatalogue>,
         String,
     ),
     BootError,
@@ -2291,23 +2292,25 @@ fn activate_floor_changes(world: &crate::map::boot::BundleWorld) -> Result<usize
 /// frame binding and map-revision identities and its start (native floor `-z`) as the
 /// first-entry start.
 fn bundle_channel_pin(
-    pin: &crate::foundation::ChannelContentPin,
+    pin: &oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
     world: &crate::map::boot::BundleWorld,
-) -> Result<crate::foundation::ChannelContentPin, BootError> {
+) -> Result<oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin, BootError> {
     let start = world.start();
     let floor = start
         .floor
         .checked_neg()
         .ok_or(BootError::ContentActivation("world bundle start floor"))?;
-    Ok(crate::foundation::ChannelContentPin::from_activation(
-        pin.world_id(),
-        pin.activation_sequence(),
-        pin.server_artifact_digest(),
-        pin.client_artifact_digest(),
-        world.frame_binding_digest(pin.world_id()),
-        world.map_revision_digest(),
-        (i32::from(start.x), i32::from(start.y), i16::from(floor)),
-    ))
+    Ok(
+        oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::from_activation(
+            pin.world_id(),
+            pin.activation_sequence(),
+            pin.server_artifact_digest(),
+            pin.client_artifact_digest(),
+            world.frame_binding_digest(pin.world_id()),
+            world.map_revision_digest(),
+            (i32::from(start.x), i32::from(start.y), i16::from(floor)),
+        ),
+    )
 }
 
 /// BUNDLE-COMBAT-ENABLE-1: the combat room of a bundle World, the qualified room's bundle view
@@ -2553,7 +2556,7 @@ async fn boot_and_serve(
     ));
     // Data import only: retain the qualified reference catalogue for this boot. Loading
     // it does not admit Wheel stages, effects, paid Atelier operations or Item definitions.
-    let _wheel_gem_data = crate::wheel_gem_data::WheelGemData::embedded()
+    let _wheel_gem_data = oteryn_gameplay_progression::wheel_gem_data::WheelGemData::embedded()
         .map_err(|_| BootError::ContentActivation("Wheel/Gem reference data"))?;
     event("event=wheel_gem_data state=loaded runtime_admitted=false");
     // ACHIEVEMENT: the Achievement catalogue loads with the Content activation as well; a
@@ -2571,7 +2574,7 @@ async fn boot_and_serve(
         ));
     }
     let (quest_catalogue, quest_event) = load_quest_catalogue(
-        crate::durability::quest_state::quest::loader::load_embedded_quest_state,
+        oteryn_gameplay_quests::quest::loader::load_embedded_quest_state,
         &config.readiness.content_revision,
     )?;
     event(&quest_event);
@@ -2730,6 +2733,7 @@ async fn boot_and_serve(
     // (§1.2): setting one needs separate owner authority, so Premium is not delivered.
     let premium_reads = production_premium_reads(root);
     let owners = GameplaySeamOwners {
+        emit,
         root,
         character: &authority,
         holder: &proof,
@@ -3257,7 +3261,9 @@ mod tests {
                 1,
                 "runtime-scope-assignment:1",
                 8,
-                crate::foundation::ChannelContentPin::test(world),
+                oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::test(
+                    world,
+                ),
             )
             .expect("runtime")
         };
@@ -3302,7 +3308,9 @@ mod tests {
                 1,
                 "runtime-scope-assignment:1",
                 9_000,
-                crate::foundation::ChannelContentPin::test(world),
+                oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::test(
+                    world,
+                ),
             )
             .expect("runtime")
         };
@@ -3420,7 +3428,7 @@ mod tests {
             1,
             "runtime-scope-assignment:1",
             POINTS + 1_000,
-            crate::foundation::ChannelContentPin::test(world),
+            oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::test(world),
         )
         .expect("runtime");
         let executor = tokio::runtime::Builder::new_current_thread()
@@ -3443,7 +3451,8 @@ mod tests {
         // MAP-DOOR-1: the solid entry is the closed door appearance 1629, whose open item 1630
         // the generation also serves.
         let (boxed, coin) = ("oteryn:item.tibia.i1629", "oteryn:item.tibia.i1000");
-        let probe = crate::content::native_gameplay::tests::activated_with_item_keys(Some(KEYS));
+        let probe =
+            crate::content::native_gameplay::test_support::activated_with_item_keys(Some(KEYS));
         let probe_index = probe
             .active()
             .expect("active")
@@ -3479,7 +3488,8 @@ mod tests {
             .expect("world");
         let channel = ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])
             .expect("channel");
-        let with = crate::content::native_gameplay::tests::activated_with_item_keys(Some(KEYS));
+        let with =
+            crate::content::native_gameplay::test_support::activated_with_item_keys(Some(KEYS));
         let gameplay = with.active().expect("active").native_gameplay();
         let index = gameplay
             .and_then(|state| state.item_index())
@@ -3513,14 +3523,15 @@ mod tests {
         }
         // #1916: the Channel pin of the booted World carries the bundle's map-revision and frame
         // identities, never the entry room's, and starts at the bundle start (legacy `z` 7).
-        let entry = crate::foundation::ChannelContentPin::test(world);
+        let entry =
+            oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::test(world);
         let pin = bundle_channel_pin(&entry, &booted).expect("pin");
         let map_revision: [u8; 32] =
             <sha2::Sha256 as sha2::Digest>::digest(boot_pins.map_revision.as_bytes()).into();
         assert_eq!(booted.map_revision_digest(), map_revision);
         assert_eq!(
             pin,
-            crate::foundation::ChannelContentPin::from_activation(
+            oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::from_activation(
                 world,
                 entry.activation_sequence(),
                 entry.server_artifact_digest(),
@@ -3566,7 +3577,7 @@ mod tests {
             ))
         ));
         // A generation without an Item key set names no Item: the same bundle fails closed.
-        let without = crate::content::native_gameplay::tests::activated_with_item_keys(None);
+        let without = crate::content::native_gameplay::test_support::activated_with_item_keys(None);
         let gameplay = without.active().expect("active").native_gameplay();
         assert!(matches!(
             boot_bundle_world(checked(), world, channel, gameplay),
@@ -3628,7 +3639,7 @@ mod tests {
         let mut codes: Vec<_> = BootErrorKind::ALL.iter().map(|kind| kind.code()).collect();
         codes.extend(LogKind::ALL.iter().map(|kind| kind.code()));
         codes.extend(NotDeliveredKind::ALL.iter().map(|kind| kind.code()));
-        crate::durability::sqlstate_codes::tests::assert_in_registry(&codes);
+        crate::durability::sqlstate_codes::test_support::assert_in_registry(&codes);
     }
 
     #[test]
