@@ -31,3 +31,13 @@ updates:
       - dependencies
     commit-message:
       prefix: "build(deps)"
+    groups:
+      # One weekly PR for every semver-compatible bump. Each Dependabot PR runs
+      # the full Rust gate, and a stale one runs it again on every rebase.
+      # Major bumps still arrive one per PR.
+      cargo-compatible:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch

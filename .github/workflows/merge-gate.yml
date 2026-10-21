@@ -17,10 +17,12 @@ on:
 permissions: {}
 
 concurrency:
-  # Metadata and label edits cannot cancel a product qualification.
-  # Base retargets and new commits keep the per-PR cancellation group.
-  group: ${{ ((github.event.action == 'edited' && github.event.changes.base == null) || (github.event.action == 'labeled' || github.event.action == 'unlabeled')) && format('merge-gate-edit-{0}-{1}', github.event.pull_request.number, github.run_id) || format('merge-gate-{0}', github.event.pull_request.number) }}
-  cancel-in-progress: true
+  # One group per PR. Metadata and label edits never cancel a product
+  # qualification: they wait for it and then reuse its job-result markers
+  # instead of running a second full gate on the same head. Base retargets
+  # and new commits cancel whatever is running.
+  group: ${{ format('merge-gate-{0}', github.event.pull_request.number) }}
+  cancel-in-progress: ${{ !((github.event.action == 'edited' && github.event.changes.base == null) || (github.event.action == 'labeled' || github.event.action == 'unlabeled')) }}
 
 jobs:
   scope:
