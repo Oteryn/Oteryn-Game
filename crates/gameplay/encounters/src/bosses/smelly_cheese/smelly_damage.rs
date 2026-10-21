@@ -1,6 +1,7 @@
 //! Narrow actual HP consumer for source range on unambiguous native top-player tiles.
 //! Not a whole Encounter or elemental/presentation owner. Caller qualifies Earth mitigation
 //! and wall legality through their actual native owners before enabling this partial route.
+use crate::bosses::smelly_cheese::native_owner::SmellyCheeseCarrierExt;
 use crate::foundation::{
     CarrierError, ChannelRuntimeV1, ExactActorRef, RuntimeScopeRefV1, RuntimeWorkStamp,
     ScopeRuntimeFence,

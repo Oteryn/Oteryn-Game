@@ -636,7 +636,7 @@ impl ChannelRuntimeV1 {
             self.assert_actor_spell_unreserved(*actor)?;
             prepared.push(self.stage_creature_paralysis_removal(*actor, now)?);
         }
-        // Native all-target preflight includes physical generation, source-world and Bone
+        // Native all-target preflight includes physical generation, source-world and encounter
         // shared-HP fanout. A failure publishes neither HP nor any canonical condition slot.
         let receipts = self.commit_source_creature_heal_batch(content, heal)?;
         for (index, next) in prepared {

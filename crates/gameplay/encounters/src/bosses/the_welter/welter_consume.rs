@@ -1,5 +1,6 @@
 //! Dedicated donor defenses[4] sourcecase; never aliases ordinary native defense-2.
 //! Called in an owning AI think work item. Production timer/transport composition is root-owned.
+use crate::bosses::the_welter::native_owner::WelterCarrierExt;
 use crate::content::{
     ProjectReferenceRecord, ProjectV2AuthoringProfile, ProjectV2AuthoringProfileData as Data,
     ProjectV2DefinitionRef as Ref, ProjectV2Family, ProjectV2SourceIdentityBinding,

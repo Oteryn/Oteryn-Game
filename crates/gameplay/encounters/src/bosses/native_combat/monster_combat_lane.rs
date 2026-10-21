@@ -7,6 +7,9 @@ use crate::ai_think::{
         ScheduleError, ScheduleList,
     },
 };
+#[cfg(test)]
+use crate::bosses::bone_overlord::native_owner::BoneFixtureDamageExt;
+use crate::bosses::bone_overlord::native_owner::BoneOverlordCarrierExt;
 use crate::content::ProjectV2Draft;
 use crate::content::{
     ProjectReferenceRecord, ProjectV2AbilityAuthoring, ProjectV2AbilityKind,
@@ -42,6 +45,8 @@ use native_invisibility::{
     InvisibilityError, InvisibleTileCombatPolicy, SelfInvisibleSource, SelfSpeedSource,
 };
 use native_ticks::NativeOwnedPlayerTickReceipt;
+#[cfg(test)]
+use oteryn_gameplay_encounters::bosses::crystal_deaths::native_fixtures::CrystalRouterFixtureExt;
 pub use oteryn_gameplay_monster_ai::monster_combat_lane::{
     MonsterCombatReader, MonsterCombatStates, RegularCreatureMovementFacts, SelfConditionFacts,
     SummonFollowError, SummonFollowFacts, TrustedMonsterConditionTickInputs, native_conditions,

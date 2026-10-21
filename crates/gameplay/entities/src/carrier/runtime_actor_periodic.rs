@@ -71,10 +71,8 @@ impl ChannelRuntimeV1 {
             return Err(CarrierError::PlanConflict);
         }
         if self
-            .carrier
-            .bone_shared_groups
-            .iter()
-            .any(|g| g.phylactery == actor || g.cages.contains(&actor))
+            .encounter_hooks()
+            .is_some_and(|hooks| hooks.contains(actor))
         {
             return Err(CarrierError::PositionContextMismatch);
         }

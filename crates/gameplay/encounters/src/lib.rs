@@ -40,7 +40,22 @@ pub(crate) use oteryn_gameplay_durability::character_bootstrap_intent;
 #[allow(unused_imports, reason = "preserve the former server module path")]
 pub(crate) use oteryn_gameplay_durability::durability;
 #[allow(unused_imports, reason = "preserve the former server module path")]
-pub(crate) use oteryn_gameplay_entities as foundation;
+pub(crate) mod foundation {
+    #[cfg(any(test, feature = "test-support"))]
+    pub use crate::bosses::bone_overlord::native_owner::bone_shared_actual_owner_harness;
+    pub use crate::bosses::bone_overlord::native_owner::{
+        BoneOverlordCagePhase, BoneOverlordPhase, BonePhaseError, BonePhaseTransition,
+    };
+    #[cfg(any(test, feature = "test-support"))]
+    pub use crate::bosses::crystal_deaths::native_fixtures::{
+        crystal_death_router_fixture, crystal_death_router_fixture_with_artifact,
+    };
+    pub use crate::bosses::the_welter::native_owner::{
+        WelterCarrierExt, WelterConsumeError, WelterConsumeLedger, WelterConsumeResult, WelterPrey,
+        WelterSourceRegistration,
+    };
+    pub use oteryn_gameplay_entities::*;
+}
 #[allow(unused_imports, reason = "preserve the former server module path")]
 pub(crate) use oteryn_gameplay_spell::creature_damage_spell;
 #[allow(unused_imports, reason = "preserve the former server module path")]
