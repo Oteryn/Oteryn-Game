@@ -20,7 +20,7 @@ pub(crate) use oteryn_gameplay_durability::character_bootstrap_intent;
 #[allow(unused_imports, reason = "preserve the former server module path")]
 pub(crate) use oteryn_gameplay_durability::durability;
 #[allow(unused_imports, reason = "preserve the former server module path")]
-pub(crate) use oteryn_gameplay_foundation::foundation;
+pub(crate) use oteryn_gameplay_entities as foundation;
 #[allow(unused_imports, reason = "preserve the former server module path")]
 pub(crate) use oteryn_gameplay_world::house_scope;
 #[allow(unused_imports, reason = "preserve the former server module path")]

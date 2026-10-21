@@ -11,5 +11,5 @@ pub mod vocation_choice;
 
 pub(crate) use oteryn_gameplay_content::content;
 pub(crate) use oteryn_gameplay_domain::domain;
-pub(crate) use oteryn_gameplay_foundation::foundation;
+pub(crate) use oteryn_gameplay_entities as foundation;
 pub(crate) use oteryn_gameplay_world::{map, movement};

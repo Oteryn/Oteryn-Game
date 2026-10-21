@@ -90,7 +90,7 @@ pub(crate) use oteryn_gameplay_dispatch::gameplay_transport;
 pub use oteryn_gameplay_domain::domain;
 pub use oteryn_gameplay_durability::character_bootstrap_intent;
 pub use oteryn_gameplay_durability::durability;
-pub use oteryn_gameplay_foundation::foundation;
+pub use oteryn_gameplay_entities as foundation;
 #[allow(
     dead_code,
     unused_imports,

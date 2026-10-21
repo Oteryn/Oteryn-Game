@@ -85,7 +85,7 @@ fn scope_and_context_fields_fail_independently_without_mutation() {
     let mut wrong_channel = actor;
     wrong_channel.channel_id = grant(30, 1).channel_id;
     let mut wrong_scope = actor;
-    wrong_scope.scope_generation = ScopeOwnershipGeneration::new(2).expect("scope");
+    wrong_scope.set_scope_generation(ScopeOwnershipGeneration::new(2).expect("scope"));
     for wrong in [wrong_world, wrong_channel, wrong_scope] {
         assert_eq!(
             carrier.read_position(&continuity, wrong),

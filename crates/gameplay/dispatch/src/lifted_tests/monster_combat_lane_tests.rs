@@ -1,6 +1,8 @@
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 mod tests {
+    use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+
     use crate::ability::RevisionSet;
     use crate::ai_think::ThinkOccurrence;
     use crate::content::ProjectReferenceRecord;

@@ -1,6 +1,6 @@
 #![allow(clippy::expect_used, clippy::unwrap_used)]
 use super::*;
-use crate::foundation::condition::{ConditionValues, ConflictKey, SpeedRange};
+use oteryn_gameplay_foundation::foundation::condition::{ConditionValues, ConflictKey, SpeedRange};
 use oteryn_simulation_determinism::GameplayDecisionRoot;
 
 fn fixture() -> (
@@ -232,7 +232,7 @@ fn stale_session_generation_scope_and_future_time_never_mutate_native_conditions
     assert_eq!(runtime.carrier.slots, before);
     let mut other = fixture().0;
     other.continuity.current_generation =
-        super::super::super::ScopeOwnershipGeneration::new(2).unwrap();
+        oteryn_gameplay_foundation::foundation::ScopeOwnershipGeneration::new(2).unwrap();
     assert_eq!(
         other.commit_actor_condition(&plan, at(1)),
         Err(ConditionOwnerError::Actor(CarrierError::WrongScope))

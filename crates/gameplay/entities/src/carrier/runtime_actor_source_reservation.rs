@@ -163,7 +163,7 @@ impl ChannelRuntimeV1 {
 mod tests {
     #![allow(clippy::unwrap_used)]
     use super::*;
-    use crate::foundation::{
+    use crate::{
         ChannelContentPin, ChannelId, ControlLossMark, MovementLocalPosition,
         MovementPositionSnapshot, NodeId, WorldId,
     };

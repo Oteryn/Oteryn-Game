@@ -19,6 +19,6 @@ pub(crate) use oteryn_gameplay_content::content;
 #[allow(unused_imports)]
 pub(crate) use oteryn_gameplay_domain::domain;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_foundation::foundation;
+pub(crate) use oteryn_gameplay_entities as foundation;
 #[allow(unused_imports)]
 pub(crate) use oteryn_gameplay_native_admission_source as native_admission_source;

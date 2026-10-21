@@ -1,4 +1,5 @@
 //! Node activation and transport owner-cycle integration.
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 /// End to end through the activation path: the bundle's spawn family is realized by
 /// `realize_bundle_spawns` against the production generation's served rat, a real lethal
 /// native hit kills the creature, and the owner-turn drive (no session involved) warns at

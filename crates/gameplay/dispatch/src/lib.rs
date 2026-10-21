@@ -75,7 +75,7 @@ pub(crate) use oteryn_gameplay_encounters::source_threshold_heal;
 #[allow(unused_imports)]
 pub(crate) use oteryn_gameplay_encounters::weak_spot_speech;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_foundation::foundation;
+pub(crate) use oteryn_gameplay_entities as foundation;
 #[allow(unused_imports)]
 pub(crate) use oteryn_gameplay_monster_ai::ai;
 #[allow(unused_imports)]

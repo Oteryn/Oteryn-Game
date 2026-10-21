@@ -79,7 +79,7 @@ impl ChannelRuntimeV1 {
 mod tests {
     #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
     use super::*;
-    use crate::foundation::{ChannelContentPin, ChannelId, ControlLossMark, NodeId, WorldId};
+    use crate::{ChannelContentPin, ChannelId, ControlLossMark, NodeId, WorldId};
     fn id(n: u8) -> [u8; 16] {
         [1, 0, 0, 0, 0, n, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, n]
     }

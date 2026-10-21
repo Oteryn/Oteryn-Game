@@ -286,7 +286,7 @@ impl Binding {
         let a = actor.0;
         self.bytes(a.world_id.as_bytes())?;
         self.bytes(a.channel_id.as_bytes())?;
-        self.number(a.scope_generation.get())?;
+        self.number(ExactActorRef(a).scope_generation().get())?;
         self.number(u64::from(a.actor_local_id.0))?;
         self.number(a.actor_local_generation.0)
     }
@@ -915,7 +915,7 @@ impl ChannelRuntimeV1 {
             authority.phase_ordinal() != 0
                 && authority.matches(
                     batch,
-                    super::super::RuntimeScopeRefV1::channel(
+                    oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
                         self.binding.world_id,
                         self.binding.channel_id,
                     ),
@@ -989,7 +989,7 @@ impl ChannelRuntimeV1 {
         let deferred = if let Some(authority) = &batch.deferred {
             if !authority.matches(
                 batch,
-                super::super::RuntimeScopeRefV1::channel(
+                oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
                     self.binding.world_id,
                     self.binding.channel_id,
                 ),

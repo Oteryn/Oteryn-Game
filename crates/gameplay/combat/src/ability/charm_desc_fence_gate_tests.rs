@@ -12,7 +12,7 @@ use std::path::Path;
 const BRIDGES: [&str; 1] = ["commit_damage_for_attacker"];
 
 /// The sole home of the canonical unbound entry's definition.
-const BRIDGE_MODULE: &str = "src/foundation/runtime_actor_carrier.rs";
+const BRIDGE_MODULE: &str = "src/carrier.rs";
 
 /// Blanks comments and string/char literal contents, keeping newlines so line numbers survive.
 fn sanitize(src: &str) -> Vec<u8> {
@@ -686,7 +686,7 @@ fn gate_findings(files: &[(std::path::PathBuf, String)]) -> Vec<String> {
         .filter(|(_, skipped)| !skipped)
         .flat_map(|((rel, src), _)| {
             let bridge_module = rel == Path::new(BRIDGE_MODULE)
-                || rel == &Path::new("crates/gameplay/foundation").join(BRIDGE_MODULE);
+                || rel == &Path::new("crates/gameplay/entities").join(BRIDGE_MODULE);
             production_references(src, bridge_module)
                 .into_iter()
                 .map(move |line| format!("{}:{line}", rel.display()))
@@ -727,6 +727,7 @@ fn no_production_damage_write_bypasses_the_bound_attacker_slot() -> std::io::Res
     for root in [
         server.to_path_buf(),
         repository.join("crates/gameplay/foundation"),
+        repository.join("crates/gameplay/entities"),
         repository.join("crates/gameplay/content"),
         repository.join("crates/gameplay/durability"),
         repository.join("crates/gameplay/world"),

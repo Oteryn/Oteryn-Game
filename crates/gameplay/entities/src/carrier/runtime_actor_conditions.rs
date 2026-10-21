@@ -2,7 +2,7 @@
 //! A retry retains its prepared plan; it never replans an old occurrence at a new revision.
 
 use super::*;
-pub use crate::foundation::condition::{
+pub use oteryn_gameplay_foundation::foundation::condition::{
     ApplicationFacts, AttributeModifier, AttributeModifiers, CombatSkill, ConditionDefinition,
     ConditionRefusal, ConditionSourceKind, ConditionStore, ConditionTick, ConditionType,
     ConditionValues, DamageSchedule, DamageSegment, DotElement, ExactSpeedRatio,

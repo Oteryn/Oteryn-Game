@@ -15,7 +15,7 @@ pub struct PreparedFamiliarDefense {
     slot: Box<Slot>,
     next: CompanionState,
     health_after: i64,
-    stamp: super::super::RuntimeWorkStamp,
+    stamp: oteryn_gameplay_foundation::foundation::RuntimeWorkStamp,
     policy: FamiliarSelfHealDefense,
     successful: bool,
 }

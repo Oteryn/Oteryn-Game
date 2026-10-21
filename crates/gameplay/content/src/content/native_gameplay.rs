@@ -17,7 +17,7 @@ use super::project::{
 use super::spell_data::{SpellBook, executable_catalog};
 use crate::domain::appearance::AppearanceContent;
 use crate::foundation::condition::{ConditionType, DotElement};
-use crate::foundation::{ChannelRuntimeV1, CompiledCreaturePolicies, CompiledCreaturePolicy};
+use crate::foundation::{CompiledCreaturePolicies, CompiledCreaturePolicy};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -1002,13 +1002,8 @@ impl NativeGameplayState {
         self.source_digest = digest;
         Ok(())
     }
-    pub fn install_companion_policies(
-        &self,
-        runtime: &mut ChannelRuntimeV1,
-    ) -> Result<(), ContentError> {
-        runtime
-            .install_companion_policies(self.policies.clone())
-            .map_err(|_| invalid("native gameplay active creature policy pin"))
+    pub fn policies(&self) -> &CompiledCreaturePolicies {
+        &self.policies
     }
 }
 fn invalid(reason: &'static str) -> ContentError {
