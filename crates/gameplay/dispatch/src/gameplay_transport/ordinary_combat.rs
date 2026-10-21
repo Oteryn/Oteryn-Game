@@ -19,9 +19,7 @@ pub(super) struct OrdinaryItemCreation {
     pub(super) item: DefinitionRef,
 }
 
-pub use oteryn_gameplay_spell_rules::dispatch_plans::ordinary_combat::{
-    applicable, has_world_geometry,
-};
+pub use oteryn_gameplay_spell_rules::dispatch_plans::ordinary_combat::applicable;
 use oteryn_gameplay_spell_rules::dispatch_plans::{geometry as plans, ordinary_combat as rules};
 
 fn ability<'a>(
