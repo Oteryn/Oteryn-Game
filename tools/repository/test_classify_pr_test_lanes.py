@@ -527,8 +527,8 @@ def test_metadata_events():
 
     # Evaluate the exact hosted concurrency expressions for overlapping runs.
     # Every run of one PR shares one group, so an edit queues behind the active
-    # qualification and reuses its job-result markers. Only edits and label
-    # changes leave the running qualification alone; retarget and synchronize
+    # qualification and reuses its job-result markers. Only metadata edits
+    # leave the running qualification alone; retarget and synchronize
     # supersede it, and unrelated PRs never share a group.
     def expression_of(prefix):
         line = next(line for line in gate.splitlines() if line.startswith(prefix))
@@ -536,7 +536,7 @@ def test_metadata_events():
     group_line, group_expression = expression_of("  group:")
     cancel_line, cancel_expression = expression_of("  cancel-in-progress:")
     assert group_line == "  group: ${{ format('merge-gate-{0}', github.event.pull_request.number) }}"
-    assert cancel_line == "  cancel-in-progress: ${{ !((github.event.action == 'edited' && github.event.changes.base == null) || (github.event.action == 'labeled' || github.event.action == 'unlabeled')) }}"
+    assert cancel_line == "  cancel-in-progress: ${{ !(github.event.action == 'edited' && github.event.changes.base == null) }}"
     def evaluate(expression, action, base_changed, number, run_id):
         expression = expression.replace("github.event.action", "action")
         expression = expression.replace("github.event.changes.base", "base")
@@ -555,16 +555,14 @@ def test_metadata_events():
         return evaluate(cancel_expression, action, base_changed, 42, 1)
     product = group("synchronize", False, 42, 1)
     assert product == "merge-gate-42"
-    for action, base_changed in (("edited", False), ("edited", True), ("labeled", False),
-                                 ("unlabeled", False), ("synchronize", False), ("opened", False),
-                                 ("reopened", False)):
+    for action, base_changed in (("edited", False), ("edited", True), ("synchronize", False),
+                                 ("opened", False), ("reopened", False)):
         assert group(action, base_changed, 42, 9) == product
     assert group("synchronize", False, 43, 6) != product
     for action in ("synchronize", "opened", "reopened"):
         assert cancels(action, False) is True
     assert cancels("edited", True) is True
-    for action in ("edited", "labeled", "unlabeled"):
-        assert cancels(action, False) is False
+    assert cancels("edited", False) is False
     # Execute the actual final fence with fresh/retargeted live responses. A
     # returning main with a newer base must never publish the old edit's gate.
     import urllib.request
@@ -594,7 +592,7 @@ def test_metadata_events():
     ):
         assert not accepts_live(dict(live, **changed)), changed
     assert not accepts_live({}) and not accepts_live(None)
-    assert "        if: (github.event.action == 'edited' && github.event.changes.base == null) || (github.event.action == 'labeled' || github.event.action == 'unlabeled')\n" in final
+    assert "        if: github.event.action == 'edited' && github.event.changes.base == null\n" in final
     assert "          EXPECTED_BASE: ${{ needs.scope.outputs.base_sha }}\n" in final
     assert "      pull-requests: read\n" in final
     print("Metadata concurrency PASS: isolated edits, retarget cancellation and canonical full game-gate")

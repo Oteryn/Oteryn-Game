@@ -12,6 +12,8 @@ on:
   pull_request:
     branches:
       - main
+    # Drafts are still being authored; the harness runs once the PR is ready.
+    types: [opened, reopened, synchronize, ready_for_review]
     # Everything the game-server PostgreSQL targets link: the targets and the
     # library PostgreSQL tests exercise game-server code well beyond
     # durability/** (combat, pickup, transport, interaction, catalogues), so
@@ -46,6 +48,9 @@ concurrency:
 jobs:
   durability_postgres:
     name: PR early signal / Durability PostgreSQL harness
+    # Early signal for authors only: drafts and Dependabot bumps wait for the
+    # Merge Queue, which runs the same targets on the exact candidate.
+    if: github.event.pull_request.draft == false && github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:

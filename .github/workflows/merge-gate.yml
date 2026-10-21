@@ -11,18 +11,17 @@ on:
       - reopened
       - synchronize
       - edited
-      - labeled
-      - unlabeled
 
 permissions: {}
 
 concurrency:
-  # One group per PR. Metadata and label edits never cancel a product
-  # qualification: they wait for it and then reuse its job-result markers
-  # instead of running a second full gate on the same head. Base retargets
-  # and new commits cancel whatever is running.
+  # One group per PR. Metadata edits never cancel a product qualification:
+  # they wait for it and then reuse its job-result markers instead of running
+  # a second full gate on the same head. Base retargets and new commits cancel
+  # whatever is running. Labels select nothing, so label changes do not run
+  # the gate at all.
   group: ${{ format('merge-gate-{0}', github.event.pull_request.number) }}
-  cancel-in-progress: ${{ !((github.event.action == 'edited' && github.event.changes.base == null) || (github.event.action == 'labeled' || github.event.action == 'unlabeled')) }}
+  cancel-in-progress: ${{ !(github.event.action == 'edited' && github.event.changes.base == null) }}
 
 jobs:
   scope:
@@ -1062,7 +1061,7 @@ jobs:
           LEGACY_VALIDATE: ${{ needs.validate.result }}
         run: test "$LEGACY_VALIDATE" = "success"
       - name: Revalidate isolated edit target before publishing game-gate
-        if: (github.event.action == 'edited' && github.event.changes.base == null) || (github.event.action == 'labeled' || github.event.action == 'unlabeled')
+        if: github.event.action == 'edited' && github.event.changes.base == null
         env:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
