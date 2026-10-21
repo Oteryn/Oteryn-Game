@@ -5,7 +5,7 @@ set -euo pipefail
 # discovery, workspace-wide fetches, builds, or tests here. The material worker
 # selects focused validation for the exact cell it is changing.
 
-readonly RUST_TOOLCHAIN="${OTERYN_CODEX_RUST_TOOLCHAIN:-1.94.0}"
+readonly RUST_TOOLCHAIN="${OTERYN_CODEX_RUST_TOOLCHAIN:-1.95.0}"
 
 rustc "+${RUST_TOOLCHAIN}" --version
 cargo "+${RUST_TOOLCHAIN}" --version

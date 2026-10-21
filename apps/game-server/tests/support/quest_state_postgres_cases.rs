@@ -16,14 +16,14 @@ use crate::durability::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence, ExperienceRewardOccurrence,
 };
 use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
-use crate::durability::quest_state::quest::{
-    QuestComparison, QuestEffect, QuestEffectKind, QuestRefusal, QuestStateCatalogue, QuestTrack,
-    QuestTrackChange, QuestTransition,
-};
 use crate::durability::quest_state::{
     CommittedQuestTransition, QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
 };
 use crate::foundation::{CommandId, CommandRef, ConnectionGeneration, GameSessionId};
+use oteryn_gameplay_quests::quest::{
+    QuestComparison, QuestEffect, QuestEffectKind, QuestRefusal, QuestStateCatalogue, QuestTrack,
+    QuestTrackChange, QuestTransition,
+};
 
 const QUEST: &str = "oteryn:quest/fixture.rats";
 const OTHER: &str = "oteryn:quest/fixture.other";
@@ -1428,9 +1428,8 @@ fn source_herald_grouped_writer_death_replay_ineligible_and_stale_session_are_at
         let source_key = "oteryn:quest-transition/crystalserver/targuna/herald-death/mission-1";
         // The source definition remains pinned by the embedded catalogue; its
         // served content revision must match the actual Character fixture.
-        let lowered =
-            crate::durability::quest_state::quest::loader::load_embedded_quest_state("content-1")
-                .map_err(debug)?;
+        let lowered = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+            .map_err(debug)?;
         let catalogue = Arc::new(lowered.catalogue().clone());
         let seal = harness.recovery.seal_current().map_err(debug)?;
         let authority = harness
@@ -1512,7 +1511,7 @@ fn source_herald_grouped_writer_death_replay_ineligible_and_stale_session_are_at
 /// QUEST-CAT-BOOT-1: the embedded quest catalogue the node loads at boot, at `content_revision`.
 fn embedded_catalogue(content_revision: &str) -> TestResult<Arc<QuestStateCatalogue>> {
     let lowered =
-        crate::durability::quest_state::quest::loader::load_embedded_quest_state(content_revision)
+        oteryn_gameplay_quests::quest::loader::load_embedded_quest_state(content_revision)
             .map_err(debug)?;
     Ok(Arc::new(lowered.catalogue().clone()))
 }

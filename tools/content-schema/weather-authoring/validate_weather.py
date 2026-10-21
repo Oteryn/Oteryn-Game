@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Validate content/weather (CP D1448, OTERYN_DESIGN values).
 
-Mirrors the loader in apps/game-server/src/world_weather.rs: a file that fails here would make
+Mirrors the loader in crates/gameplay/weather/src/lib.rs: a file that fails here would make
 the server fail closed and never offer capability 26. Standard library only.
 
 Usage: validate_weather.py [content/weather]
@@ -13,7 +13,7 @@ from pathlib import Path
 KINDS = {"clear", "cloudy", "rain", "storm", "fog", "snow", "blizzard", "heat_haze", "sandstorm"}
 ROOT = Path(__file__).resolve().parents[3]
 
-# Exact fields of the serde structs in world_weather.rs (all deny_unknown_fields): name -> Rust
+# Exact fields of the serde structs in crates/gameplay/weather/src/lib.rs (all deny_unknown_fields): name -> Rust
 # type. Option<T> fields may be absent, every other field is required. Types: "str" (String),
 # "u8"/"u32"/"u64"/"i32" (integers, never bool), "f64" (finite number, never bool), None
 # (a nested record or collection, checked by its own spec below).

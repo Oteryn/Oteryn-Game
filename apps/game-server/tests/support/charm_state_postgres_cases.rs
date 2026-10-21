@@ -511,7 +511,7 @@ fn catalogue() -> CharmCatalogue {
 fn native_content(
     races: Vec<crate::domain::bestiary::BestiaryRace>,
 ) -> TestResult<CharmConnectionContent> {
-    use crate::combat::charm_effects::{
+    use oteryn_gameplay_progression::charm_effects::{
         CharmCatalogueRead, CharmCategory as EffectCategory, CharmDefinition as EffectDefinition,
         CharmEffect, CharmPercent, CharmStageValue,
     };

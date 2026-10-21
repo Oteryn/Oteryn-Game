@@ -8,6 +8,7 @@ import unittest
 from unittest.mock import patch
 
 import item_bounded7_navigation as nav
+from source_relocations import read_text as relocated_text
 
 
 class BoundedSevenTests(unittest.TestCase):
@@ -110,7 +111,7 @@ class BoundedSevenTests(unittest.TestCase):
 
     def test_admission_and_source_seals_are_required(self):
         spec = self.inputs[0]["sources"]["native_admission"]
-        text = (nav.ROOT / spec["path"]).read_text()
+        text = relocated_text(nav.ROOT, spec["path"])
         with self.assertRaises(ValueError):
             nav.admission_ids(text.replace("43778,", "43777,"), spec)
         nav.source_inputs.cache_clear()

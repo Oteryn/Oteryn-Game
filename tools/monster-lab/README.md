@@ -53,7 +53,7 @@ Kod wyjścia: 0 — wszystkie wybrane natywne scenariusze przeszły; 1 — batch
 
 ```bash
 python -m unittest discover -s tools/monster-lab -p 'test_*.py'
-cargo test --locked -p oteryn-game-server --lib monster_lab:: --quiet
+cargo test --locked -p oteryn-gameplay-monster-ai --lib monster_lab:: --quiet
 ```
 
 Drugie polecenie bez manifestu wykonuje testy mechaniki harnessu, a nie batch danych. Pełny batch należy uruchamiać przez `run.py`, który wymaga świeżego wyniku i sprawdza zakres, profile, SHA oraz liczniki.

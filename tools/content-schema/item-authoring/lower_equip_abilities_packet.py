@@ -1,7 +1,7 @@
 """Lower the EQUIP-CONTENT-1 Equipment ability facts (EQUIP-0 §3.1-§3.2, architect bundle §2.9).
 
 The six abilities are a derived typed view over the Item `skill_modifiers` and `protection`
-groups (`apps/game-server/src/content/item_abilities.rs`; control-plane ruling a: no codec or
+groups (`crates/gameplay/content/src/content/item_abilities.rs`; control-plane ruling a: no codec or
 schema change). TibiaWiki comes first, through the committed stats packet that
 `lower_wiki_stats_packet.py` writes. Where every wiki page of an Item is silent on a group, this
 tool lowers the Canary `items.xml` attributes (D384 pin, OTS_HYPOTHESIS_ONLY) into canonical

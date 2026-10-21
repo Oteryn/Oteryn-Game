@@ -6,28 +6,28 @@ extern crate oteryn_game_server as production_server;
 extern crate self as oteryn_game_server;
 pub use production_server::admission_evidence;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/character_bootstrap_intent.rs"]
+#[path = "../../../crates/gameplay/durability/src/character_bootstrap_intent.rs"]
 pub mod character_bootstrap_intent;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/character_recovery_fence.rs"]
-pub mod character_recovery_fence;
-pub use production_server::domain;
+pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
+#[path = "support/domain_shim.rs"]
+pub mod domain;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/durability/mod.rs"]
-mod durability;
+#[path = "../src/durability"]
+mod durability {
+    // Recompile the shared core; native world adapters use the full library Content context.
+    include!("../../../crates/gameplay/durability/src/durability/core_modules.rs");
+}
 #[allow(dead_code, unused_imports)]
-#[path = "../src/foundation/mod.rs"]
-pub mod foundation;
+pub use oteryn_gameplay_entities as foundation;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/native_admission_source/mod.rs"]
-pub mod native_admission_source;
+pub use oteryn_gameplay_native_admission_source as native_admission_source;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/premium/mod.rs"]
+#[path = "../../../crates/gameplay/social/src/premium/mod.rs"]
 mod premium;
 
 use durability::DurabilityRoot;
 use durability::character_authority::CharacterAuthorityError;
-use durability::character_authority_audit as audit;
 use durability::native_admission_source::{
     DescriptorRegistration, FreshStoreProvenance, NativeSourceOperation, NativeSourceSubject,
     SourceObservation,
@@ -45,6 +45,7 @@ use oteryn_game_server::character_recovery_fence::{
     recovery_record_digest,
 };
 use oteryn_game_server::domain::{AccountId, CharacterId, WorldId};
+use oteryn_gameplay_characters::character_authority_audit as audit;
 use prost::Message;
 use sqlx::{Connection, Executor};
 
@@ -292,9 +293,10 @@ async fn register(
 ) -> TestResult<NodeIncarnationProof> {
     let secret = BootstrapSecret::from_bytes([tag; 32]);
     let launch = LaunchBinding::new(&format!("launch-{tag}")).map_err(|e| format!("{e:?}"))?;
-    let node = foundation::NodeId::decode(&id(tag)).map_err(|e| format!("{e:?}"))?;
+    let node = oteryn_gameplay_foundation::foundation::NodeId::decode(&id(tag))
+        .map_err(|e| format!("{e:?}"))?;
     let supersedes = supersedes
-        .map(|previous| foundation::NodeId::decode(&id(previous)))
+        .map(|previous| oteryn_gameplay_foundation::foundation::NodeId::decode(&id(previous)))
         .transpose()
         .map_err(|e| format!("{e:?}"))?;
     root.issue_node_bootstrap_authorization(&secret, &launch, supersedes)
@@ -446,9 +448,11 @@ async fn assign_world(
     let writer = RuntimeScopeAssignmentWriter::open(root.clone(), "writer-a")
         .await
         .map_err(|e| format!("{e:?}"))?;
-    let scope = foundation::RuntimeScopeRefV1::channel(
-        foundation::WorldId::decode(&id(world)).map_err(|e| format!("{e:?}"))?,
-        foundation::ChannelId::decode(&id(tag)).map_err(|e| format!("{e:?}"))?,
+    let scope = oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
+        oteryn_gameplay_foundation::foundation::WorldId::decode(&id(world))
+            .map_err(|e| format!("{e:?}"))?,
+        oteryn_gameplay_foundation::foundation::ChannelId::decode(&id(tag))
+            .map_err(|e| format!("{e:?}"))?,
     );
     // Owner-written exact-scope grant for the session role, which is also
     // the recorded actor (OPS-NODE-BOOT-01 D2).
@@ -2290,7 +2294,7 @@ mod character_stance_postgres_cases;
 // cases with the focused standalone target through the same protected lane.
 #[path = "support/charm_state_postgres_cases.rs"]
 mod charm_state_postgres_cases;
-#[path = "../src/gameplay_transport/charm.rs"]
+#[path = "../../../crates/gameplay/dispatch/src/gameplay_transport/charm.rs"]
 mod charm_transport;
 
 // CHEST-1 reward-claim MINT (a `once` RewardClaim into a new main backpack
@@ -2319,7 +2323,7 @@ mod bestiary_progress_postgres_cases;
 
 // LOOP-GROUND-1 Ground64 same-transaction admission (pure and native PostgreSQL
 // cases) on the CHARM-2 harness included above; its only test mount.
-#[path = "../src/durability/ground_cell_limit_tests.rs"]
+#[path = "../../../crates/gameplay/durability/src/durability/ground_cell_limit_tests.rs"]
 mod ground_cell_limit_tests;
 
 // RANK-1 HS-1 World highscore snapshots (migration 0129): the job, its 11 categories and the
@@ -3036,7 +3040,7 @@ mod monk_state_postgres_cases {
 #[path = "support/attack_kill_reward_postgres_cases.rs"]
 mod attack_kill_reward_postgres_cases;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/combat.rs"]
+#[path = "../../../crates/gameplay/combat/src/combat/mod.rs"]
 pub mod combat;
 #[path = "support/combat_death_reward_postgres_cases.rs"]
 mod combat_death_reward_postgres_cases;
@@ -3051,7 +3055,7 @@ mod combat_bestiary_postgres_cases;
 // and D3-4 cases included above. `combat_pickup` is a top-level module and
 // `content` is the test shim for the same reasons as in that target.
 #[allow(dead_code, unused_imports)]
-#[path = "../src/combat/pickup.rs"]
+#[path = "../../../crates/gameplay/combat/src/combat/pickup.rs"]
 pub mod combat_pickup;
 #[path = "support/combat_pickup_postgres_cases.rs"]
 mod combat_pickup_postgres_cases;
@@ -3062,15 +3066,13 @@ pub mod content;
 // D39 chest `USE` wiring to the CHEST-1 reward-claim MINT shares its cases with
 // the focused standalone target through the same protected lane.
 #[allow(dead_code, unused_imports)]
-#[path = "../src/achievement_catalogue.rs"]
+#[path = "../../../crates/gameplay/social/src/achievement_catalogue.rs"]
 pub mod achievement_catalogue;
 #[path = "support/chest_use_postgres_cases.rs"]
 mod chest_use_postgres_cases;
+
 #[allow(dead_code, unused_imports)]
-#[path = "../src/interaction/mod.rs"]
-pub mod interaction;
-#[allow(dead_code, unused_imports)]
-#[path = "../src/interaction/chest_use.rs"]
+#[path = "../../../crates/gameplay/social/src/interaction/chest_use.rs"]
 pub mod interaction_chest_use;
 
 // GOLD-FEE-1a in-transaction gold fee BURN (migration 0023) shares its cases
@@ -3443,3 +3445,7 @@ mod pvp_readmission_postgres_cases;
 mod character_appearance_native_postgres_cases;
 #[path = "support/character_appearance_postgres_cases.rs"]
 mod character_appearance_postgres_cases;
+
+#[cfg(test)]
+#[path = "../src/lifted_tests/durability_npc_travel_postgres_fixture.rs"]
+mod durability_npc_travel_postgres_fixture;

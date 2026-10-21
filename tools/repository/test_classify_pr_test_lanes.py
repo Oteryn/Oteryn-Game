@@ -27,6 +27,20 @@ def load_module():
     return module
 
 
+# Under pytest the `module` argument of the test functions is this fixture; the plain
+# script runner (CI has no pytest) passes the loaded module explicitly from main().
+try:
+    import pytest
+except ImportError:  # pragma: no cover - CI runs these regressions without pytest
+    pytest = None
+
+if pytest is not None and __name__ != "__main__":
+
+    @pytest.fixture
+    def module():
+        return load_module()
+
+
 def fixture(workspace_root="/repo"):
     roots = {
         "oteryn-game-server": "apps/game-server",
@@ -511,32 +525,44 @@ def test_metadata_events():
     assert "    name: game-gate\n" in final and "    needs: [scope, validate]\n" in final
     assert '        run: test "$LEGACY_VALIDATE" = "success"\n' in final
 
-    # Evaluate the exact hosted group expression for overlapping runs. An edit
-    # gets its own group; retarget and synchronize still supersede stale product
-    # qualification, and unrelated PRs never share a cancellation group.
-    line = next(line for line in gate.splitlines() if line.startswith("  group:"))
-    expected = "  group: ${{ ((github.event.action == 'edited' && github.event.changes.base == null) || (github.event.action == 'labeled' || github.event.action == 'unlabeled')) && format('merge-gate-edit-{0}-{1}', github.event.pull_request.number, github.run_id) || format('merge-gate-{0}', github.event.pull_request.number) }}"
-    assert line == expected
-    def group(action, base_changed, number, run_id):
-        expression = line.split("${{", 1)[1].rsplit("}}", 1)[0].strip()
+    # Evaluate the exact hosted concurrency expressions for overlapping runs.
+    # Every run of one PR shares one group, so an edit queues behind the active
+    # qualification and reuses its job-result markers. Only metadata edits
+    # leave the running qualification alone; retarget and synchronize
+    # supersede it, and unrelated PRs never share a group.
+    def expression_of(prefix):
+        line = next(line for line in gate.splitlines() if line.startswith(prefix))
+        return line, line.split("${{", 1)[1].rsplit("}}", 1)[0].strip()
+    group_line, group_expression = expression_of("  group:")
+    cancel_line, cancel_expression = expression_of("  cancel-in-progress:")
+    assert group_line == "  group: ${{ format('merge-gate-{0}', github.event.pull_request.number) }}"
+    assert cancel_line == "  cancel-in-progress: ${{ !(github.event.action == 'edited' && github.event.changes.base == null) }}"
+    def evaluate(expression, action, base_changed, number, run_id):
         expression = expression.replace("github.event.action", "action")
         expression = expression.replace("github.event.changes.base", "base")
         expression = expression.replace("github.event.pull_request.number", "number")
         expression = expression.replace("github.run_id", "run_id")
-        expression = expression.replace("&&", "and").replace("||", "or").replace("null", "None")
+        expression = expression.replace("&&", " and ").replace("||", " or ").replace("null", "None")
+        expression = expression.replace("!(", "not (").replace("==", " == ")
         return eval(expression, {"__builtins__": {}}, {
             "action": action, "base": {"ref": {"from": "other"}} if base_changed else None,
             "number": number, "run_id": run_id,
             "format": lambda template, *args: template.format(*args),
         })
+    def group(action, base_changed, number, run_id):
+        return evaluate(group_expression, action, base_changed, number, run_id)
+    def cancels(action, base_changed):
+        return evaluate(cancel_expression, action, base_changed, 42, 1)
     product = group("synchronize", False, 42, 1)
-    edits = [group("edited", False, 42, n) for n in (2, 3)]
-    assert len(set([product, *edits])) == 3
-    assert group("edited", True, 42, 4) == product
-    assert group("synchronize", False, 42, 5) == product
+    assert product == "merge-gate-42"
+    for action, base_changed in (("edited", False), ("edited", True), ("synchronize", False),
+                                 ("opened", False), ("reopened", False)):
+        assert group(action, base_changed, 42, 9) == product
     assert group("synchronize", False, 43, 6) != product
-    for action in ("labeled", "unlabeled"):
-        assert group(action, False, 42, 7) != product
+    for action in ("synchronize", "opened", "reopened"):
+        assert cancels(action, False) is True
+    assert cancels("edited", True) is True
+    assert cancels("edited", False) is False
     # Execute the actual final fence with fresh/retargeted live responses. A
     # returning main with a newer base must never publish the old edit's gate.
     import urllib.request
@@ -566,7 +592,7 @@ def test_metadata_events():
     ):
         assert not accepts_live(dict(live, **changed)), changed
     assert not accepts_live({}) and not accepts_live(None)
-    assert "        if: (github.event.action == 'edited' && github.event.changes.base == null) || (github.event.action == 'labeled' || github.event.action == 'unlabeled')\n" in final
+    assert "        if: github.event.action == 'edited' && github.event.changes.base == null\n" in final
     assert "          EXPECTED_BASE: ${{ needs.scope.outputs.base_sha }}\n" in final
     assert "      pull-requests: read\n" in final
     print("Metadata concurrency PASS: isolated edits, retarget cancellation and canonical full game-gate")
@@ -622,6 +648,7 @@ def test_server_qualification(module):
 
     for path in (
         "apps/game-server/src/gameplay_transport/resume.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/resume.rs",
         "apps/game-server/src/durability/fresh_admission.rs",
         "apps/game-server/src/foundation/protocol.rs",
         "apps/game-server/src/node/serve.rs",
@@ -631,6 +658,14 @@ def test_server_qualification(module):
         "apps/game-server/src/content/project/native_entry_room.json",
         "apps/game-server/src/content/project/v2.rs",
         "apps/game-server/src/content/project/v2/creature.rs",
+        "crates/gameplay/content/src/content/activation.rs",
+        "crates/gameplay/content/src/content/project/native_entry.rs",
+        "crates/gameplay/content/src/content/project/native_entry_room.json",
+        "crates/gameplay/content/src/content/project/v2.rs",
+        "crates/gameplay/content/src/content/project/v2/creature.rs",
+        "crates/gameplay/content/Cargo.toml",
+        "crates/gameplay/durability/src/durability/fresh_admission.rs",
+        "crates/gameplay/foundation/src/foundation/protocol.rs",
         "apps/game-server/migrations/0009_character_progression.sql",
         "apps/game-server/Cargo.toml",
         "crates/foundation/src/lib.rs",
@@ -639,6 +674,10 @@ def test_server_qualification(module):
         "crates/foundation/Cargo.toml",
         "crates/protocol-oteryn/Cargo.toml",
         "crates/simulation-determinism/Cargo.toml",
+        "crates/gameplay/weather/src/lib.rs",
+        "crates/gameplay/source-critical-baseline/src/lib.rs",
+        "crates/gameplay/character-recovery-fence/src/lib.rs",
+        "crates/gameplay/admission-evidence/src/lib.rs",
         "Cargo.lock",
         "vendor/tokio-1.53.1/src/lib.rs",
         "tools/qualification/node_boot/run.sh",
@@ -653,6 +692,13 @@ def test_server_qualification(module):
         "apps/game-server/src/interaction/mod.rs",
         "apps/game-server/src/content/cw2_b1_import.rs",
         "apps/game-server/src/content/reference_playable.rs",
+        "apps/game-server/src/combat/mod.rs",
+        "crates/gameplay/content/src/content/cw2_b1_import.rs",
+        "crates/gameplay/content/src/content/reference_playable.rs",
+        "crates/gameplay/combat/src/ability/mod.rs",
+        "crates/gameplay/combat/src/combat/mod.rs",
+        "crates/gameplay/monster-ai/src/ai/mod.rs",
+        "crates/gameplay/social/src/interaction/mod.rs",
         "apps/game-server/tests/durability_postgres.rs",
         "apps/game-server/examples/materialize_content_world_project_v2.rs",
         "apps/client/src/main.rs",

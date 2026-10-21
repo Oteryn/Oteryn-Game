@@ -352,15 +352,15 @@ fn proficiency_familiar_and_quest_writes_share_the_0073_progression_guard() -> T
     use crate::durability::character_familiar::{
         DurableFamiliarState, FamiliarStateOccurrence, FamiliarStateOutcome, FamiliarStateRequest,
     };
-    use crate::durability::quest_state::quest::{
-        QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack,
-        QuestTransition,
-    };
     use crate::durability::quest_state::{
         QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
     };
     use crate::foundation::{CommandId, CommandRef};
     use fixture::SESSION;
+    use oteryn_gameplay_quests::quest::{
+        QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack,
+        QuestTransition,
+    };
     run("prof1_familiar_guard", true, async |a| {
         let familiar = |tag: u8, before: DurableFamiliarState, after: DurableFamiliarState| {
             Ok::<_, Box<dyn std::error::Error>>(FamiliarStateRequest {

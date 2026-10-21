@@ -30,38 +30,56 @@ const SQL_KEY33_FUNCTIONS: [(&str, &str); 3] = [
 
 /// Production Rust functions that take the key-33 lock or write a key-33 table.
 const RUST_KEY33_SITES: [(&str, &str); 13] = [
-    ("src/durability/item_decay_retire.rs", "apply_retire"),
-    ("src/durability/item_loop_move.rs", "apply_loop_move"),
     (
-        "src/durability/item_mint.rs",
+        "crates/gameplay/durability/src/durability/item_decay_retire.rs",
+        "apply_retire",
+    ),
+    (
+        "crates/gameplay/durability/src/durability/item_loop_move.rs",
+        "apply_loop_move",
+    ),
+    (
+        "crates/gameplay/durability/src/durability/item_mint.rs",
         "insert_mint_with_corpse_attribution",
     ),
-    ("src/durability/item_mint.rs", "insert_corpse_loot_mint"),
-    ("src/durability/item_transfer.rs", "apply_transfer"),
-    ("src/durability/map_item_mint.rs", "apply_mint"),
     (
-        "src/durability/native_map_items.rs",
+        "crates/gameplay/durability/src/durability/item_mint.rs",
+        "insert_corpse_loot_mint",
+    ),
+    (
+        "crates/gameplay/durability/src/durability/item_transfer.rs",
+        "apply_transfer",
+    ),
+    (
+        "crates/gameplay/durability/src/durability/map_item_mint.rs",
+        "apply_mint",
+    ),
+    (
+        "crates/gameplay/durability/src/durability/native_map_items.rs",
         "initialize_in_transaction",
     ),
-    ("src/durability/native_map_items.rs", "adopt_current_ground"),
     (
-        "src/durability/spell_item_temporal.rs",
+        "crates/gameplay/durability/src/durability/native_map_items.rs",
+        "adopt_current_ground",
+    ),
+    (
+        "crates/gameplay/durability/src/durability/spell_item_temporal.rs",
         "drain_due_items_in_transaction",
     ),
     (
-        "src/durability/spell_item_temporal.rs",
+        "crates/gameplay/durability/src/durability/spell_item_temporal.rs",
         "drain_due_field_chains_in_transaction",
     ),
     (
-        "src/durability/spell_item_transaction.rs",
+        "crates/gameplay/durability/src/durability/spell_item_transaction.rs",
         "assert_spell_item_scope_with_recovery",
     ),
     (
-        "src/durability/spell_item_transaction.rs",
+        "crates/gameplay/durability/src/durability/spell_item_transaction.rs",
         "expire_due_spell_items_bounded",
     ),
     (
-        "src/durability/spell_item_transaction.rs",
+        "crates/gameplay/durability/src/durability/spell_item_transaction.rs",
         "assert_spell_item_authority_with_recovery",
     ),
 ];
@@ -77,13 +95,31 @@ const LANE_PROOFS: [&str; 4] = [
 
 /// Private helpers without a proof parameter, pinned to the proof-holding caller in the same file.
 const DELEGATED: [(&str, &str, &str); 1] = [(
-    "src/durability/native_map_items.rs",
+    "crates/gameplay/durability/src/durability/native_map_items.rs",
     "adopt_current_ground",
     "initialize_in_transaction",
 )];
 
 fn root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+}
+
+fn repository() -> PathBuf {
+    root().join("../..")
+}
+
+/// Every crate whose production source can write a key-33 table: game-server and each
+/// carved gameplay crate, listed from disk so a newly carved crate is scanned too.
+fn source_roots() -> Vec<PathBuf> {
+    let mut roots = vec![root()];
+    let mut carved: Vec<_> = fs::read_dir(repository().join("crates/gameplay"))
+        .expect("gameplay crates")
+        .map(|entry| entry.expect("gameplay crate").path())
+        .filter(|path| path.join("src").is_dir())
+        .collect();
+    carved.sort();
+    roots.extend(carved);
+    roots
 }
 
 fn collapse(text: &str) -> String {
@@ -215,13 +251,18 @@ fn sql_key33_lock_functions_and_triggers_are_pinned() {
 
 #[test]
 fn rust_key33_writers_are_pinned_and_hold_a_lane_proof() {
+    let repository = repository().canonicalize().expect("repository root");
     let mut files = Vec::new();
-    rs_files(&root().join("src"), &mut files);
+    for crate_root in source_roots() {
+        rs_files(&crate_root.join("src"), &mut files);
+    }
     let mut found = BTreeSet::new();
     for path in files {
         let relative = path
-            .strip_prefix(root())
-            .expect("under manifest")
+            .canonicalize()
+            .expect("source path")
+            .strip_prefix(&repository)
+            .expect("under repository")
             .to_string_lossy()
             .replace('\\', "/");
         let raw = fs::read_to_string(&path).expect("source text");
@@ -268,8 +309,11 @@ fn rust_key33_writers_are_pinned_and_hold_a_lane_proof() {
 #[test]
 fn lane_proof_authorities_are_minted_only_behind_a_permit() {
     let text = collapse(
-        &fs::read_to_string(root().join("src/durability/spell_item_transaction.rs"))
-            .expect("source"),
+        &fs::read_to_string(
+            repository()
+                .join("crates/gameplay/durability/src/durability/spell_item_transaction.rs"),
+        )
+        .expect("source"),
     );
     let text = production(&text).to_owned();
     for (literal, minters) in [
@@ -310,7 +354,7 @@ fn lane_proof_authorities_are_minted_only_behind_a_permit() {
 fn guarded_cast_writers_reserve_in_s_and_release_a_definite_rejection() {
     for (file, refusal, releases) in [
         (
-            "src/gameplay_transport/native_combat_cast.rs",
+            "../../crates/gameplay/dispatch/src/gameplay_transport/native_combat_cast.rs",
             "Rejected(NATIVE_NEW_WRITE_REFUSED))=>{",
             &[
                 "release_definitely_uncommitted_spell_batch(&installation.physical)",
@@ -318,7 +362,7 @@ fn guarded_cast_writers_reserve_in_s_and_release_a_definite_rejection() {
             ][..],
         ),
         (
-            "src/gameplay_transport/world_item_cast.rs",
+            "../../crates/gameplay/dispatch/src/gameplay_transport/world_item_cast.rs",
             "Rejected(WORLD_ITEM_NEW_GRANT_REFUSED))=>{",
             &[
                 "release_definitely_uncommitted_spell_batch(&attempt.physical)",
@@ -326,7 +370,7 @@ fn guarded_cast_writers_reserve_in_s_and_release_a_definite_rejection() {
             ][..],
         ),
         (
-            "src/gameplay_transport/parameter_cast.rs",
+            "../../crates/gameplay/dispatch/src/gameplay_transport/parameter_cast.rs",
             "Rejected(PARAMETER_NEW_GRANT_REFUSED))=>{",
             &["release_definitely_uncommitted_spell_batch(&installation.physical)"][..],
         ),
@@ -370,8 +414,10 @@ fn guarded_cast_writers_reserve_in_s_and_release_a_definite_rejection() {
 
 #[test]
 fn familiar_history_marks_the_window_before_any_fallible_reconciliation() {
-    let raw =
-        fs::read_to_string(root().join("src/durability/character_familiar.rs")).expect("source");
+    let raw = fs::read_to_string(
+        repository().join("crates/gameplay/durability/src/durability/character_familiar.rs"),
+    )
+    .expect("source");
     // The whole file: `character_familiar.rs` keeps a test module above its writer.
     let text = collapse(&raw).replace(' ', "");
     let start = text
@@ -409,7 +455,7 @@ fn familiar_history_marks_the_window_before_any_fallible_reconciliation() {
 fn guarded_cast_writers_mark_history_before_any_fallible_follow_up() {
     for (file, outcome, follow_ups) in [
         (
-            "src/gameplay_transport/native_combat_cast.rs",
+            "../../crates/gameplay/dispatch/src/gameplay_transport/native_combat_cast.rs",
             "letitems=matchitem_tx::apply_spell_items_in_transaction_guarded(",
             &[
                 "write_parameter_result_in_transaction(",
@@ -418,7 +464,7 @@ fn guarded_cast_writers_mark_history_before_any_fallible_follow_up() {
             ][..],
         ),
         (
-            "src/gameplay_transport/world_item_cast.rs",
+            "../../crates/gameplay/dispatch/src/gameplay_transport/world_item_cast.rs",
             "letoutcome=matchitems::apply_spell_items_in_transaction_guarded(",
             &[
                 "prepare_character_build_in_transaction(",
@@ -426,7 +472,7 @@ fn guarded_cast_writers_mark_history_before_any_fallible_follow_up() {
             ][..],
         ),
         (
-            "src/gameplay_transport/parameter_cast.rs",
+            "../../crates/gameplay/dispatch/src/gameplay_transport/parameter_cast.rs",
             "letoutcome=matchitems::apply_spell_items_in_transaction_guarded(",
             &[
                 "write_parameter_result_in_transaction(",
@@ -469,10 +515,10 @@ fn guarded_cast_writers_mark_history_before_any_fallible_follow_up() {
 #[test]
 fn every_cast_writer_runs_its_pass_under_a_cancel_safe_guard() {
     for file in [
-        "src/gameplay_transport/native_combat_cast.rs",
-        "src/gameplay_transport/world_item_cast.rs",
-        "src/gameplay_transport/parameter_cast.rs",
-        "src/gameplay_transport/familiar_cast.rs",
+        "../../crates/gameplay/dispatch/src/gameplay_transport/native_combat_cast.rs",
+        "../../crates/gameplay/dispatch/src/gameplay_transport/world_item_cast.rs",
+        "../../crates/gameplay/dispatch/src/gameplay_transport/parameter_cast.rs",
+        "../../crates/gameplay/dispatch/src/gameplay_transport/familiar_cast.rs",
     ] {
         let raw = fs::read_to_string(root().join(file)).expect("source");
         let text = collapse(&raw).replace(' ', "");
@@ -504,10 +550,10 @@ fn every_cast_writer_runs_its_pass_under_a_cancel_safe_guard() {
 #[test]
 fn no_cast_writer_awaits_after_its_window_gives_up_the_attempt() {
     for file in [
-        "src/gameplay_transport/native_combat_cast.rs",
-        "src/gameplay_transport/world_item_cast.rs",
-        "src/gameplay_transport/parameter_cast.rs",
-        "src/gameplay_transport/familiar_cast.rs",
+        "../../crates/gameplay/dispatch/src/gameplay_transport/native_combat_cast.rs",
+        "../../crates/gameplay/dispatch/src/gameplay_transport/world_item_cast.rs",
+        "../../crates/gameplay/dispatch/src/gameplay_transport/parameter_cast.rs",
+        "../../crates/gameplay/dispatch/src/gameplay_transport/familiar_cast.rs",
     ] {
         let raw = fs::read_to_string(root().join(file)).expect("source");
         let text = collapse(&raw).replace(' ', "");
@@ -526,8 +572,10 @@ fn no_cast_writer_awaits_after_its_window_gives_up_the_attempt() {
             );
         }
     }
-    let raw = fs::read_to_string(root().join("src/gameplay_transport/native_combat_cast.rs"))
-        .expect("source");
+    let raw = fs::read_to_string(
+        root().join("../../crates/gameplay/dispatch/src/gameplay_transport/native_combat_cast.rs"),
+    )
+    .expect("source");
     let text = collapse(&raw).replace(' ', "");
     let lock = text
         // LOOP-PROGRESS-1: the guard is `mut` because the committed batch also records

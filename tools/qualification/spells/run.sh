@@ -13,14 +13,14 @@ case "$mode" in
   runtime)
     # Existing composed-content tests require a larger test stack, not a production change.
     export RUST_MIN_STACK="${RUST_MIN_STACK:-16777216}"
-    exec cargo +1.95.0 test --locked -p oteryn-game-server --lib "${1:-spell::}" -- --nocapture
+    exec cargo +1.95.0 test --locked -p oteryn-gameplay-spell -p oteryn-gameplay-dispatch --lib "${1:-spell::}" -- --nocapture
     ;;
   map)
     export RUST_MIN_STACK="${RUST_MIN_STACK:-16777216}"
     if [[ $# -eq 0 ]]; then prepare_current_manifest; fi
     export OTERYN_FULL_SPELL_TEST_MANIFEST="${1:-${SPELL_CURRENT_MANIFEST:-}}"
     [[ -f "$OTERYN_FULL_SPELL_TEST_MANIFEST" ]] || { echo 'Spell map manifest missing' >&2; exit 2; }
-    cargo +1.95.0 test --locked -p oteryn-game-server --lib \
+    cargo +1.95.0 test --locked -p oteryn-gameplay-content --lib \
       content::native_gameplay::tests::actual_full_manifest_qualifies_source_world_and_all_owner_profiles \
       -- --ignored --exact --nocapture
     ;;

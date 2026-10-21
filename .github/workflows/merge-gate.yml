@@ -11,16 +11,17 @@ on:
       - reopened
       - synchronize
       - edited
-      - labeled
-      - unlabeled
 
 permissions: {}
 
 concurrency:
-  # Metadata and label edits cannot cancel a product qualification.
-  # Base retargets and new commits keep the per-PR cancellation group.
-  group: ${{ ((github.event.action == 'edited' && github.event.changes.base == null) || (github.event.action == 'labeled' || github.event.action == 'unlabeled')) && format('merge-gate-edit-{0}-{1}', github.event.pull_request.number, github.run_id) || format('merge-gate-{0}', github.event.pull_request.number) }}
-  cancel-in-progress: true
+  # One group per PR. Metadata edits never cancel a product qualification:
+  # they wait for it and then reuse its job-result markers instead of running
+  # a second full gate on the same head. Base retargets and new commits cancel
+  # whatever is running. Labels select nothing, so label changes do not run
+  # the gate at all.
+  group: ${{ format('merge-gate-{0}', github.event.pull_request.number) }}
+  cancel-in-progress: ${{ !(github.event.action == 'edited' && github.event.changes.base == null) }}
 
 jobs:
   scope:
@@ -338,14 +339,54 @@ jobs:
           EXPECTED_SHA: ${{ needs.scope.outputs.target_sha }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
+      # Job-result cache (pull-request gate only; Merge Queue never caches). The key hashes
+      # every input this job can read; a hit means the same job already succeeded on
+      # identical inputs for this pull request. Failures are never recorded.
+      - name: Compute job-result key
+        id: jr_key
+        env:
+          JOB: governance
+          BASE_SHA: ${{ needs.scope.outputs.base_sha }}
+        run: python -I tools/repository/job_result_key.py key --job "$JOB" --mode tree --extra "base=$BASE_SHA" --extra "image=${ImageVersion:-unknown}" --extra "os=${RUNNER_OS:-}-${RUNNER_ARCH:-}"
+
+      - name: Restore job-result marker
+        id: jr_restore
+        if: steps.jr_key.outputs.key != ''
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ${{ runner.temp }}/jobresult
+          key: ${{ steps.jr_key.outputs.key }}
+
+      - name: Evaluate job-result marker
+        id: jr_hit
+        env:
+          KEY: ${{ steps.jr_key.outputs.key }}
+        run: python -I tools/repository/job_result_key.py verify --key "$KEY" --dir "$RUNNER_TEMP/jobresult"
+
       - name: Validate agent governance
+        if: steps.jr_hit.outputs.hit != 'true'
         run: python tools/agents/validate_governance.py
 
       - name: Validate repository policy
+        if: steps.jr_hit.outputs.hit != 'true'
         run: python tools/repository/validate_repository_policy.py
 
       - name: Test canonical PG/SIM gate regressions
+        if: steps.jr_hit.outputs.hit != 'true'
         run: python tools/repository/test_validate_pr_gate_pg_sim.py
+
+      - name: Record job-result marker
+        if: success() && steps.jr_key.outputs.key != '' && steps.jr_hit.outputs.hit != 'true'
+        env:
+          KEY: ${{ steps.jr_key.outputs.key }}
+        run: python -I tools/repository/job_result_key.py marker --key "$KEY" --dir "$RUNNER_TEMP/jobresult"
+
+      - name: Save job-result marker
+        if: success() && steps.jr_key.outputs.key != '' && steps.jr_hit.outputs.hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ${{ runner.temp }}/jobresult
+          key: ${{ steps.jr_key.outputs.key }}
 
   dependency_review:
     name: Merge gate / dependency review
@@ -463,19 +504,48 @@ jobs:
           ref: ${{ needs.scope.outputs.target_sha }}
           persist-credentials: false
 
+      # Job-result cache (pull-request gate only; Merge Queue never caches). The key hashes
+      # every input this job can read; a hit means the same job already succeeded on
+      # identical inputs for this pull request. Failures are never recorded.
+      - name: Compute job-result key
+        id: jr_key
+        env:
+          JOB: rust_policy
+          BASE_SHA: ${{ needs.scope.outputs.base_sha }}
+        run: python -I tools/repository/job_result_key.py key --job "$JOB" --mode rust-workspace --extra "base=$BASE_SHA" --extra "image=${ImageVersion:-unknown}" --extra "os=${RUNNER_OS:-}-${RUNNER_ARCH:-}"
+
+      - name: Restore job-result marker
+        id: jr_restore
+        if: steps.jr_key.outputs.key != ''
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ${{ runner.temp }}/jobresult
+          key: ${{ steps.jr_key.outputs.key }}
+
+      - name: Evaluate job-result marker
+        id: jr_hit
+        env:
+          KEY: ${{ steps.jr_key.outputs.key }}
+        run: python -I tools/repository/job_result_key.py verify --key "$KEY" --dir "$RUNNER_TEMP/jobresult"
+
       - name: Install Rust toolchain
+        if: steps.jr_hit.outputs.hit != 'true'
         run: rustup toolchain install 1.95.0 --profile minimal --component clippy,rustfmt
 
       - name: Verify locked metadata
+        if: steps.jr_hit.outputs.hit != 'true'
         run: cargo +1.95.0 metadata --locked --format-version 1 >/dev/null
 
       - name: Verify formatting
+        if: steps.jr_hit.outputs.hit != 'true'
         run: cargo +1.95.0 fmt --all --check
 
       - name: Verify machine workspace boundaries
+        if: steps.jr_hit.outputs.hit != 'true'
         run: cargo +1.95.0 run --locked -p oteryn-architecture-check -- workspace .
 
       - name: Verify migration JSON
+        if: steps.jr_hit.outputs.hit != 'true'
         run: |
           python - <<'PY'
           import json
@@ -490,6 +560,7 @@ jobs:
           PY
 
       - name: Verify production closure negatives
+        if: steps.jr_hit.outputs.hit != 'true'
         run: |
           for package in oteryn-client oteryn-game-server; do
             cargo +1.95.0 tree --locked -p "$package" --edges normal,build > "${package}-production-tree.txt"
@@ -537,6 +608,19 @@ jobs:
               print(f'{package} production closure: PASS')
           PY
 
+      - name: Record job-result marker
+        if: success() && steps.jr_key.outputs.key != '' && steps.jr_hit.outputs.hit != 'true'
+        env:
+          KEY: ${{ steps.jr_key.outputs.key }}
+        run: python -I tools/repository/job_result_key.py marker --key "$KEY" --dir "$RUNNER_TEMP/jobresult"
+
+      - name: Save job-result marker
+        if: success() && steps.jr_key.outputs.key != '' && steps.jr_hit.outputs.hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ${{ runner.temp }}/jobresult
+          key: ${{ steps.jr_key.outputs.key }}
+
   # One job id, four parallel matrix legs: strict Clippy on one leg, and the unit tests of
   # the same changed crates hash-partitioned over three nextest shards. `needs.rust_fast.result`
   # is success only when every leg succeeds, so validate and game-gate keep their semantics.
@@ -553,15 +637,19 @@ jobs:
       matrix:
         include:
           - leg: clippy
+            slug: clippy
             kind: clippy
             shard: ''
           - leg: tests 1/3
+            slug: tests-1-3
             kind: tests
             shard: '1/3'
           - leg: tests 2/3
+            slug: tests-2-3
             kind: tests
             shard: '2/3'
           - leg: tests 3/3
+            slug: tests-3-3
             kind: tests
             shard: '3/3'
     steps:
@@ -578,25 +666,6 @@ jobs:
 
       - name: Install Rust toolchain
         run: rustup toolchain install 1.95.0 --profile minimal --component clippy,rustfmt
-
-      - name: Restore trimmed Cargo cache from protected main
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        with:
-          path: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: rust-linux-v2-1.95.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
-          restore-keys: |
-            rust-linux-v2-1.95.0-${{ hashFiles('Cargo.lock') }}-
-            rust-linux-v2-1.95.0-
-
-      # Restore only: the protected-main producer in rust.yml is the only cache writer.
-      # Old mtimes on files unchanged since the cached commit let Cargo reuse those units;
-      # changed files keep fresh mtimes, so this exact head is still built and tested.
-      - name: Normalize source mtimes for the restored Cargo cache
-        run: python tools/repository/normalize_cargo_mtimes.py
 
       - name: Select changed workspace crates
         env:
@@ -724,22 +793,69 @@ jobs:
               print(f'- {name}')
           PY
 
-      - name: Strict Clippy on changed crates
-        if: matrix.kind == 'clippy'
-        run: |
-          set -euo pipefail
-          args=()
-          while IFS=$'\t' read -r package _flags; do
-            args+=(-p "$package")
-          done < "$RUNNER_TEMP/rust-fast-packages.tsv"
-          test "${#args[@]}" -gt 0
-          cargo +1.95.0 clippy --locked "${args[@]}" --all-targets -- -D warnings
+      # Job-result ledger (pull-request gate only; Merge Queue never caches). Each test shard keys
+      # every selected crate on its own closure; Clippy keys all of them together. A crate is
+      # skipped only when its key passed in an earlier run of this pull request, and a failed
+      # crate is never recorded: a fix to one failing crate re-runs that crate and the selected
+      # crates that depend on it, not the whole leg.
+      - name: Plan job-result keys
+        id: jr_plan
+        env:
+          JOB: rust_fast-${{ matrix.leg }}
+          BASE_SHA: ${{ needs.scope.outputs.base_sha }}
+          PER_PACKAGE: ${{ matrix.kind == 'tests' && '--per-package' || '' }}
+        run: python -I tools/repository/job_result_key.py plan --job "$JOB" --metadata "$RUNNER_TEMP/rust-fast-metadata.json" --packages "$RUNNER_TEMP/rust-fast-packages.tsv" --out "$RUNNER_TEMP/jr-plan.json" --extra "base=$BASE_SHA" --extra "image=${ImageVersion:-unknown}" --extra "os=${RUNNER_OS:-}-${RUNNER_ARCH:-}" $PER_PACKAGE
+
+      - name: Restore job-result ledger
+        if: steps.jr_plan.outputs.keyed == 'true'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ${{ runner.temp }}/jobresult
+          key: job-result-ledger-v1-rust_fast-${{ matrix.slug }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            job-result-ledger-v1-rust_fast-${{ matrix.slug }}-
+
+      - name: Select crates without a passed result
+        id: jr_hit
+        run: python -I tools/repository/job_result_key.py select --plan "$RUNNER_TEMP/jr-plan.json" --packages "$RUNNER_TEMP/rust-fast-packages.tsv" --dir "$RUNNER_TEMP/jobresult" --out "$RUNNER_TEMP/rust-fast-run.tsv"
+
+      - name: Restore trimmed Cargo cache from protected main
+        if: steps.jr_hit.outputs.hit != 'true'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: rust-linux-v2-1.95.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
+          restore-keys: |
+            rust-linux-v2-1.95.0-${{ hashFiles('Cargo.lock') }}-
+            rust-linux-v2-1.95.0-
+
+      # Restore only: the protected-main producer in rust.yml is the only cache writer.
+      # Old mtimes on files unchanged since the cached commit let Cargo reuse those units;
+      # changed files keep fresh mtimes, so this exact head is still built and tested.
+      - name: Normalize source mtimes for the restored Cargo cache
+        if: steps.jr_hit.outputs.hit != 'true'
+        run: python tools/repository/normalize_cargo_mtimes.py
+
+      # One invocation over the whole workspace, as in the rust.yml cache producer: Cargo unifies
+      # features over the selected packages, so a `-p` subset resolves different features than
+      # the cached `--workspace` build and recompiles shared dependencies (serde, syn, tokio...).
+      # Clippy therefore lints every crate, as the Merge Queue does; crates unchanged since the
+      # cached commit are reused from the cache, and the shared key still covers the result
+      # because every unselected crate is identical to the keyed base.
+      - name: Strict Clippy (workspace)
+        id: clippy
+        if: matrix.kind == 'clippy' && steps.jr_hit.outputs.hit != 'true'
+        run: cargo +1.95.0 clippy --locked --workspace --all-targets -- -D warnings
 
       # cargo-nextest 0.9.146 (released 2026-09-21), pinned by SHA-256. nextest runs each test
       # in its own process; the game-server unit tests have no env mutation and no ordering or
       # shared-state dependence between tests (see the PR description for the audit).
       - name: Install pinned cargo-nextest
-        if: matrix.kind == 'tests'
+        if: matrix.kind == 'tests' && steps.jr_hit.outputs.hit != 'true'
         env:
           NEXTEST_VERSION: 0.9.146
           NEXTEST_SHA256: 682c21b777c333e96fd532e114d3a5a894e0729ab88d94c0a9f20f8419695428
@@ -753,36 +869,68 @@ jobs:
           tar -xzf "$archive" -C "$RUNNER_TEMP/nextest-bin"
           echo "$RUNNER_TEMP/nextest-bin" >> "$GITHUB_PATH"
 
-      # Same packages and target flags as the former `cargo test` loop; nextest only changes the
-      # runner. Every package runs the identical test set; hash partitioning splits each package's
-      # tests disjointly and exhaustively across the three shards. `--no-tests=pass` only covers a
-      # shard whose slice of a small package is empty; it never skips or filters a test.
+      # The lib and bin unit tests of the selected crates without a passed result, as in the
+      # former per-crate loop. The build covers the whole workspace (see Clippy above for why);
+      # the filter only selects which test binaries run. Hash partitioning splits each crate's
+      # tests disjointly and exhaustively across the three shards. `--no-tests=pass` only covers
+      # a shard whose slice is empty; it never skips or filters a test. Exit code 100 means
+      # test failures with every binary run, so the JUnit report then names the passed crates.
       - name: Unit-test changed crates (nextest shard ${{ matrix.shard }})
-        if: matrix.kind == 'tests'
+        id: nextest
+        if: matrix.kind == 'tests' && steps.jr_hit.outputs.hit != 'true'
         env:
           SHARD: ${{ matrix.shard }}
         run: |
           set -euo pipefail
-          : > "$RUNNER_TEMP/nextest-summary.txt"
+          filters=()
           while IFS=$'\t' read -r package flags; do
             if [[ -z "$flags" ]]; then
               echo "NOT_APPLICABLE: $package has no library or binary unit-test targets"
               continue
             fi
-            read -ra target_flags <<< "$flags"
-            cargo +1.95.0 nextest run --locked -p "$package" "${target_flags[@]}" \
-              --partition "hash:${SHARD}" --no-tests=pass --no-fail-fast \
-              < /dev/null 2>&1 | tee "$RUNNER_TEMP/nextest-one.txt"
-            echo "$package $(grep -E '^ *Summary' "$RUNNER_TEMP/nextest-one.txt" | tail -1 | sed -E 's/\x1b\[[0-9;]*m//g' || true)" >> "$RUNNER_TEMP/nextest-summary.txt"
-          done < "$RUNNER_TEMP/rust-fast-packages.tsv"
-          {
-            echo "### nextest shard ${SHARD}"
-            echo '```'
-            cat "$RUNNER_TEMP/nextest-summary.txt"
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
-          echo "== nextest shard ${SHARD} per-package summary =="
-          cat "$RUNNER_TEMP/nextest-summary.txt"
+            filters+=("package(=$package)")
+          done < "$RUNNER_TEMP/rust-fast-run.tsv"
+          if [[ "${#filters[@]}" -eq 0 ]]; then
+            echo 'code=0' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          expression="$(IFS='|'; echo "${filters[*]}")"
+          printf '[profile.rust-fast.junit]\npath = "junit.xml"\n' > "$RUNNER_TEMP/nextest.toml"
+          code=0
+          cargo +1.95.0 nextest run --locked --workspace --lib --bins \
+            --config-file "$RUNNER_TEMP/nextest.toml" --profile rust-fast -E "$expression" \
+            --partition "hash:${SHARD}" --no-tests=pass --no-fail-fast < /dev/null || code=$?
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          exit "$code"
+
+      - name: Record passed crates in the job-result ledger
+        id: jr_record
+        if: >-
+          always() && steps.jr_plan.outputs.keyed == 'true' && steps.jr_hit.outputs.hit == 'false'
+          && (steps.clippy.outcome == 'success'
+              || steps.nextest.outputs.code == '0' || steps.nextest.outputs.code == '100')
+        env:
+          KIND: ${{ matrix.kind }}
+        run: |
+          set -euo pipefail
+          if [[ "$KIND" == 'tests' ]]; then
+            junit="target/nextest/rust-fast/junit.xml"
+            if [[ ! -f "$junit" ]]; then
+              printf '<testsuites/>\n' > "$RUNNER_TEMP/empty-junit.xml"
+              junit="$RUNNER_TEMP/empty-junit.xml"
+            fi
+            python -I tools/repository/job_result_key.py junit-passed --junit "$junit" --packages "$RUNNER_TEMP/rust-fast-run.tsv" --out "$RUNNER_TEMP/rust-fast-passed.txt" | tee -a "$GITHUB_STEP_SUMMARY"
+            python -I tools/repository/job_result_key.py record --plan "$RUNNER_TEMP/jr-plan.json" --dir "$RUNNER_TEMP/jobresult" --passed "$RUNNER_TEMP/rust-fast-passed.txt"
+          else
+            python -I tools/repository/job_result_key.py record --plan "$RUNNER_TEMP/jr-plan.json" --dir "$RUNNER_TEMP/jobresult" --packages "$RUNNER_TEMP/rust-fast-run.tsv"
+          fi
+
+      - name: Save job-result ledger
+        if: always() && steps.jr_record.outcome == 'success'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ${{ runner.temp }}/jobresult
+          key: job-result-ledger-v1-rust_fast-${{ matrix.slug }}-${{ github.run_id }}-${{ github.run_attempt }}
 
   rust_supply_chain:
     name: Merge gate / Rust supply chain
@@ -799,12 +947,50 @@ jobs:
           ref: ${{ needs.scope.outputs.target_sha }}
           persist-credentials: false
 
+      # Job-result cache (pull-request gate only; Merge Queue never caches). The key hashes
+      # every input this job can read; a hit means the same job already succeeded on
+      # identical inputs for this pull request. Failures are never recorded.
+      - name: Compute job-result key
+        id: jr_key
+        env:
+          JOB: rust_supply_chain
+          BASE_SHA: ${{ needs.scope.outputs.base_sha }}
+        run: python -I tools/repository/job_result_key.py key --job "$JOB" --mode rust-workspace --extra "base=$BASE_SHA" --extra "image=${ImageVersion:-unknown}" --extra "os=${RUNNER_OS:-}-${RUNNER_ARCH:-}" --extra "advisory-day=$(date -u +%F)"
+
+      - name: Restore job-result marker
+        id: jr_restore
+        if: steps.jr_key.outputs.key != ''
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ${{ runner.temp }}/jobresult
+          key: ${{ steps.jr_key.outputs.key }}
+
+      - name: Evaluate job-result marker
+        id: jr_hit
+        env:
+          KEY: ${{ steps.jr_key.outputs.key }}
+        run: python -I tools/repository/job_result_key.py verify --key "$KEY" --dir "$RUNNER_TEMP/jobresult"
+
       - name: Check advisories licenses bans and sources
+        if: steps.jr_hit.outputs.hit != 'true'
         uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # cargo-deny 0.20.2
         with:
           rust-version: '1.95.0'
           command: check
           arguments: --all-features
+
+      - name: Record job-result marker
+        if: success() && steps.jr_key.outputs.key != '' && steps.jr_hit.outputs.hit != 'true'
+        env:
+          KEY: ${{ steps.jr_key.outputs.key }}
+        run: python -I tools/repository/job_result_key.py marker --key "$KEY" --dir "$RUNNER_TEMP/jobresult"
+
+      - name: Save job-result marker
+        if: success() && steps.jr_key.outputs.key != '' && steps.jr_hit.outputs.hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ${{ runner.temp }}/jobresult
+          key: ${{ steps.jr_key.outputs.key }}
 
   validate:
     name: Merge gate / validate
@@ -875,7 +1061,7 @@ jobs:
           LEGACY_VALIDATE: ${{ needs.validate.result }}
         run: test "$LEGACY_VALIDATE" = "success"
       - name: Revalidate isolated edit target before publishing game-gate
-        if: (github.event.action == 'edited' && github.event.changes.base == null) || (github.event.action == 'labeled' || github.event.action == 'unlabeled')
+        if: github.event.action == 'edited' && github.event.changes.base == null
         env:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}

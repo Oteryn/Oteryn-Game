@@ -20,20 +20,21 @@ extern crate oteryn_game_server as production_server;
 extern crate self as oteryn_game_server;
 pub use production_server::admission_evidence;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/character_bootstrap_intent.rs"]
+#[path = "../../../crates/gameplay/durability/src/character_bootstrap_intent.rs"]
 pub mod character_bootstrap_intent;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/character_recovery_fence.rs"]
-pub mod character_recovery_fence;
-pub use production_server::domain;
+pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
+#[path = "support/domain_shim.rs"]
+pub mod domain;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/durability/mod.rs"]
-mod durability;
+#[path = "../src/durability"]
+mod durability {
+    // Recompile the shared core; native world adapters use the full library Content context.
+    include!("../../../crates/gameplay/durability/src/durability/core_modules.rs");
+}
 #[allow(dead_code, unused_imports)]
-#[path = "../src/foundation/mod.rs"]
-pub mod foundation;
-#[path = "../src/native_admission_source/mod.rs"]
-pub mod native_admission_source;
+pub use oteryn_gameplay_entities as foundation;
+pub use oteryn_gameplay_native_admission_source as native_admission_source;
 
 #[allow(
     dead_code,
@@ -465,7 +466,10 @@ fn bound_capabilities(
 // Runtime readiness producer for the holder: the ownership generation is the
 // #415 assignment generation; the revision facts are the runtime's own.
 struct RuntimeReadiness(AdmissionAuthorityPublicationChangeV1);
-impl foundation::fnd04_verifier::fresh_source_sealed::Sealed for RuntimeReadiness {}
+impl oteryn_gameplay_foundation::foundation::fnd04_verifier::fresh_source_sealed::Sealed
+    for RuntimeReadiness
+{
+}
 impl AdmissionAuthorityOwningPublisherV1 for RuntimeReadiness {
     fn resolve_publication(
         &self,
@@ -1055,3 +1059,7 @@ fn s3b_pins_are_closed() {
     assert_eq!(uuid_text(&v7(1, 1)).len(), 36);
     let _ = CharacterId::decode;
 }
+
+#[allow(dead_code, unused_imports)]
+#[path = "support/content_spell_data_shim.rs"]
+mod content;

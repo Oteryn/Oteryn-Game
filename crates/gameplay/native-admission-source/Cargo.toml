@@ -1,0 +1,31 @@
+[package]
+name = "oteryn-gameplay-native-admission-source"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[package.metadata.oteryn]
+category = "gameplay"
+release-role = "production"
+
+[dependencies]
+oteryn-error-codes = { version = "=0.1.0", path = "../../error-codes" }
+oteryn-gameplay-admission-evidence = { version = "=0.1.0", path = "../admission-evidence" }
+rustls.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+sha2.workspace = true
+tokio.workspace = true
+tokio-rustls.workspace = true
+toml.workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
+cap-fs-ext.workspace = true
+cap-std.workspace = true
+rustix.workspace = true
+
+[lints]
+workspace = true

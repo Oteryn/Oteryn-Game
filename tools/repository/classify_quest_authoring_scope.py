@@ -16,7 +16,11 @@ Usage:
   classify_quest_authoring_scope.py --root DIR --pull-request N --repository OWNER/REPO
   classify_quest_authoring_scope.py --root DIR --records FILE.json
 
-With `GITHUB_OUTPUT` set it writes `full=true|false` and `reason=...`.
+It also decides whether the full check may leave out the donor-source regeneration
+(`quest_donor_source_authoring.py --check`, about 7 minutes). That is allowed only for a complete
+file list in which no path, old or new, is a donor input (see `DONOR_INPUTS`); anything else runs it.
+
+With `GITHUB_OUTPUT` set it writes `full=true|false`, `donor=true|false` and `reason=...`.
 """
 from __future__ import annotations
 
@@ -36,6 +40,11 @@ TOOL_DIR = "tools/content-schema/quest-authoring"
 DOC_STATUSES = {"added", "modified", "changed"}
 # The GitHub pull-request files endpoint lists at most 3000 files.
 MAX_ENUMERATED = 3000
+# Everything the donor-source check reads or runs. A traced run opened files only under the Quest
+# tool directory, `tools/content-schema/npc-authoring/samples/` and `content/quests/`; the whole
+# content-schema tree stands in for the tool code and its pinned requirements. Widen this before a
+# donor generator reads anything else.
+DONOR_INPUTS = ("tools/content-schema/", "content/quests/", ".github/workflows/quest-authoring-schema.yml")
 
 
 def referenced_docs(
@@ -187,6 +196,24 @@ def classify(
     return "docs_only", f"{len(docs)} unreferenced Quest tool doc(s)"
 
 
+def donor_check(records: object, *, complete: bool = True) -> tuple[bool, str]:
+    """Return (True, reason) when the donor-source check must run for these file records."""
+    if not complete:
+        return True, "changed-file list is incomplete"
+    if not isinstance(records, list) or not records or len(records) >= MAX_ENUMERATED:
+        return True, "changed-file list is empty or reached the API limit"
+    for record in records:
+        if not isinstance(record, dict):
+            return True, "malformed changed-file record"
+        paths = [record.get("filename"), *([record["previous_filename"]] if "previous_filename" in record else [])]
+        for path in paths:
+            if not isinstance(path, str) or not path or ".." in path.split("/") or path.startswith("/"):
+                return True, "malformed changed-file record"
+            if path.startswith(DONOR_INPUTS):
+                return True, f"donor input {path}"
+    return False, "no donor input changed"
+
+
 def fetch_records(repository: str, number: str, token: str) -> tuple[list[dict], bool]:
     records: list[dict] = []
     for page in range(1, 31):
@@ -291,14 +318,19 @@ def main(argv: list[str] | None = None) -> int:
             else None
         )
         verdict, reason = classify(records, root, complete=complete, base_blobs=base_blobs)
+        donor, donor_reason = donor_check(records, complete=complete)
     except (OSError, ValueError, KeyError, TypeError) as error:
         verdict, reason = "full", f"classification failed closed: {type(error).__name__}"
+        donor, donor_reason = True, reason
     reason = safe_reason(reason)
+    donor_reason = safe_reason(donor_reason)
     print(f"Quest scope: {verdict} ({reason})")
+    print(f"Donor-source check: {'run' if donor else 'skipped'} ({donor_reason})")
     output = os.environ.get("GITHUB_OUTPUT")
     if output:
         with open(output, "a", encoding="utf-8") as handle:
             handle.write(f"full={'false' if verdict == 'docs_only' else 'true'}\n")
+            handle.write(f"donor={'true' if donor else 'false'}\n")
             handle.write(f"reason={reason}\n")
     return 0
 

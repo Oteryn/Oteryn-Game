@@ -5,18 +5,16 @@
 
 extern crate self as oteryn_game_server;
 
-// Offline monster laboratory: reuse native components without enabling production AI dispatch.
-#[cfg(test)]
-mod monster_lab;
+// Keep the former module paths available to native composition and qualification consumers.
 
 #[allow(dead_code)]
-#[allow(clippy::duplicate_mod)] // Foundation's standalone tests include Ability source.
-mod ability;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_combat::ability;
 // Native source combat requires the actual Channel/Condition owners; it is
 // intentionally outside the standalone generic Ability fixture facade.
 #[allow(dead_code)] // Preserve the original Ability module lint scope for this native-only adapter.
-#[path = "ability/player_lethal.rs"]
-mod player_lethal;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_combat::player_lethal;
 // AI-3 (#162; GAME-AI-01-ACTION-INTEGRATION-FIRST-CREATURE-SLICE-V1 §4.4/§5): compiles the
 // bootstrap AI module into the server for the first time (previously only `tests/ai_bootstrap.rs`
 // built it standalone).
@@ -25,7 +23,7 @@ mod player_lethal;
     unused_imports,
     reason = "ai:: has no production caller yet; a later wiring task consumes it from ai_think"
 )]
-mod ai;
+use oteryn_gameplay_monster_ai::ai;
 // AI-3's composition root over `ai::`'s public API: builds one creature's per-think decision and,
 // for chase/wander, acts through the real Movement owner. A sibling of `ai`, not a child of it,
 // so `tests/ai_bootstrap.rs`'s standalone path-include of `ai/mod.rs` never pulls in
@@ -33,20 +31,22 @@ mod ai;
 // the composed per-creature think into `ChannelRuntimeV1`'s live owner cycle yet -- same pattern
 // as AI-1's `owner_timer` and AI-2's spawn/respawn code: complete, tested and uncalled, ready for
 // that wiring.
-mod ai_monster_melee;
-#[allow(
-    dead_code,
-    reason = "ai_think has no production caller yet; AI-4/a later wiring task composes it into ChannelRuntimeV1's owner cycle"
-)]
-mod ai_think;
 #[allow(
     dead_code,
     reason = "nonshipping fixed-one-creature Combat proof awaits production composition"
 )]
-mod combat;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_combat::combat;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_monster_ai::ai_monster_melee;
+#[allow(
+    dead_code,
+    reason = "ai_think has no production caller yet; AI-4/a later wiring task composes it into ChannelRuntimeV1's owner cycle"
+)]
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_monster_ai::ai_think;
 // A top-level module, not a submodule of `combat`: `combat.rs` is also recompiled standalone by
-// `foundation/mod.rs`'s `#[cfg(test)] #[path = "../combat.rs"] mod exact_actor_test_combat;` and
-// by several PG test binaries that need `combat::death_reward`/`combat::loot_plan` but not
+// several PG test binaries that need `combat::death_reward`/`combat::loot_plan` but not
 // Content, so a `crate::content` dependency inside `combat.rs`'s own module tree would force
 // every one of those to also carry a local `content` module. `combat_pickup` needs
 // `crate::content` (B3-2: definition facts bound to the current Content generation) and reaches
@@ -56,57 +56,64 @@ mod combat;
     dead_code,
     reason = "B3-2 has no production caller yet; a later admission stage wires one"
 )]
-#[path = "combat/pickup.rs"]
-mod combat_pickup;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_combat::combat_pickup;
 // ATTACK-1a, top-level for the same reason as `combat_pickup`: it evaluates its formulas with
 // `crate::spell::formula`, which the standalone `combat.rs` inclusions do not carry.
-#[path = "combat/attack/mod.rs"]
-mod combat_attack;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_combat::combat_attack;
 // PVP-RT-1 (pure half): PvP legality and combat lock; not wired until the PVP-0 §8 go-live gate.
 #[allow(
     dead_code,
     reason = "PvP stays off until the PVP-0 go-live gate; PVP-RT-1b wires the legality stage"
 )]
-#[path = "combat/pvp/mod.rs"]
-mod combat_pvp;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_combat::combat_pvp;
 // PARTY-1 (CP D1391): the party module and its PostgreSQL cases.
-mod party;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_social::party;
+#[cfg(test)]
+#[path = "lifted_tests/party_shared_xp_postgres_tests.rs"]
+mod party_shared_xp_postgres_tests;
 // D39 chest `USE` wiring, top-level for the same reason: `tests/interaction_workflow.rs`
 // recompiles `interaction/mod.rs` without Content or durability. C2 routes `USE_INTENT` to it.
-#[path = "interaction/chest_use.rs"]
-mod interaction_chest_use;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_social::interaction_chest_use;
 // ACHIEVEMENT: the runtime Achievement catalogue, loaded with the Content activation and read by
 // the chest `USE`.
-mod achievement_catalogue;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_social::achievement_catalogue;
 
-pub mod character_bootstrap_intent;
-pub mod character_recovery_fence;
+pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
+pub use oteryn_gameplay_content::content;
+use oteryn_gameplay_dispatch::gameplay_transport;
+pub use oteryn_gameplay_domain::domain;
+pub use oteryn_gameplay_durability::character_bootstrap_intent;
+pub use oteryn_gameplay_durability::durability;
+pub use oteryn_gameplay_entities as foundation;
 #[allow(
     dead_code,
     unused_imports,
     reason = "CHAT-1a local chat rules await the CHAT_V1 wire and runtime of CHAT-1b"
 )]
-mod chat;
-pub mod content;
-pub mod domain;
-pub mod durability;
-pub mod foundation;
-mod gameplay_transport;
-pub mod house_scope;
-pub mod map;
+use oteryn_gameplay_social::chat;
+pub use oteryn_gameplay_world::house_scope;
+pub use oteryn_gameplay_world::map;
 #[allow(
     dead_code,
     reason = "unactivated local Movement proof awaits the separate production composition lease"
 )]
-mod movement;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_world::movement;
 pub mod node;
-pub mod premium;
+pub use oteryn_gameplay_progression::wheel_gem_data;
+pub use oteryn_gameplay_social::premium;
 #[allow(
     dead_code,
     reason = "player spell core (P3a) awaits the cast protocol and runtime state contracts (P3b)"
 )]
-mod spell;
-pub mod wheel_gem_data;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_spell::spell;
 
 pub use gameplay_transport::{
     FreshEvidenceSource, GameplayListenerConfig, GameplaySeamOwners, GameplayServeError,
@@ -118,14 +125,16 @@ pub use gameplay_transport::{
     unused_imports,
     reason = "GAME-INTERACTION identity; the §7 revert driver is its first library consumer"
 )]
-mod interaction;
+use oteryn_gameplay_domain::domain::interaction;
 #[allow(
     dead_code,
     reason = "§7 timed-revert driver awaits its live Channel/Instance scope owner"
 )]
-mod world_object_revert;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_world::world_object_revert;
 #[allow(dead_code)]
-pub(crate) mod world_runtime;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_world::world_runtime;
 
 #[cfg(test)]
 #[allow(
@@ -143,14 +152,10 @@ mod spell_stance_runtime_postgres_cases;
 #[path = "../tests/support/spell_familiar_runtime_postgres_cases.rs"]
 mod spell_familiar_runtime_postgres_cases;
 
-#[cfg(test)]
-#[path = "durability/world_party_tests.rs"]
-mod world_party_runtime_postgres_cases;
-
 // LIMIT_RAISE value/audit regressions have one source mount; the canonical PG root
 // path-loads durability and must not collect these pure cases a second time.
 #[cfg(test)]
-#[path = "durability/forge_dust_limit_audit_tests.rs"]
+#[path = "../../../crates/gameplay/durability/src/durability/forge_dust_limit_audit_tests.rs"]
 mod forge_dust_limit_audit_tests;
 
 // RANK-1 ranking order has one source mount; the PG roots path-load durability (which owns the
@@ -160,19 +165,19 @@ mod forge_dust_limit_audit_tests;
 mod highscore_ranking_tests;
 
 #[cfg(test)]
-#[path = "foundation/recovery_tests.rs"]
+#[path = "lifted_tests/foundation_recovery_tests.rs"]
 mod foundation_recovery_tests;
 
 #[cfg(test)]
-#[path = "foundation/final_review_regressions.rs"]
+#[path = "lifted_tests/foundation_final_review_regressions.rs"]
 mod foundation_final_review_regressions;
 
 #[cfg(test)]
-#[path = "foundation/final_review_round2_regressions.rs"]
+#[path = "lifted_tests/foundation_final_review_round2_regressions.rs"]
 mod foundation_final_review_round2_regressions;
 
 #[cfg(test)]
-#[path = "foundation/final_review_round2_runtime_rollback.rs"]
+#[path = "lifted_tests/foundation_final_review_round2_runtime_rollback.rs"]
 mod foundation_final_review_round2_runtime_rollback;
 
 use oteryn_foundation::CancellationToken;
@@ -723,155 +728,278 @@ mod v2_reconciled_prepared_budget_regression_tests {
     }
 }
 
-pub mod admission_evidence;
-pub mod native_admission_source;
+pub use oteryn_gameplay_admission_evidence as admission_evidence;
+pub use oteryn_gameplay_native_admission_source as native_admission_source;
 
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod bone_phase_registry;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_combat::creature_appearance_content;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod creature_appearance_content;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_combat::creature_area_heal;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod creature_area_heal;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_combat::creature_auto_attack;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod creature_attack_geometry;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_combat::creature_chain_attack;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod creature_auto_attack;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_combat::creature_condition_content;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod creature_chain_attack;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_combat::creature_defense_presentation;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod creature_condition_content;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_content::content::creature_attack_geometry;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod creature_damage_spell;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_encounters::bosses::bone_overlord::bone_phase_registry;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod creature_defense_presentation;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_encounters::bosses::crystal_deaths::crystal_callbacks;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod crystal_callbacks;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_encounters::bosses::crystal_deaths::crystal_death_composition;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod crystal_death_composition;
-#[allow(
-    dead_code,
-    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
-)]
-mod crystal_herald_quest;
-#[allow(
-    dead_code,
-    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
-)]
-mod self_heal_qualification;
-#[allow(
-    dead_code,
-    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
-)]
-mod smelly_cheese;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_encounters::bosses::herald_of_fire::crystal_herald_quest;
 #[allow(dead_code)]
-mod smelly_encounter_dispatch;
-mod source_callback_intent;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_encounters::bosses::smelly_cheese::smelly_encounter_dispatch;
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_encounters::bosses::smelly_cheese::timers as smelly_cheese;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_intent;
 #[allow(dead_code)]
-mod source_callback_spawn;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_spawn;
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_encounters::self_heal_qualification;
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_spell::creature_damage_spell;
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_spell::creature_damage_spell_delayed;
 // Source-bound native library callbacks; shipping server activation remains separate.
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod smelly_damage;
-#[allow(
-    dead_code,
-    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
-)]
-mod source_critical_baseline;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_encounters::bosses::crystal_deaths::crystal_death_composition::speech as weak_spot_speech;
 #[allow(
     dead_code,
     reason = "Private native encounter owner ABI retained for source-qualified library dispatch; shipping AI loop is not activated"
 )]
-mod source_encounter_seven;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_encounters::bosses::seven_encounters::source_encounter_seven;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod source_threshold_heal;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_encounters::bosses::smelly_cheese::smelly_damage;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod weak_spot_speech;
+#[allow(unused_imports)]
+use oteryn_gameplay_encounters::bosses::the_welter::welter_consume;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod welter_consume;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_encounters::bosses::threshold_heals::source_threshold_heal;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_source_critical_baseline as source_critical_baseline;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_weather as world_weather;
 #[allow(
     dead_code,
     reason = "LOOP-CLOCK-1 registers the pure World clock; the WORLD_LIGHT_V1 offer composes it later"
 )]
-mod world_clock;
-#[allow(
-    dead_code,
-    reason = "CP D1448: the WeatherSource seam and the reserved real_world coordinates are an extension point for a later live binding; today only the shipped Oteryn design is consumed"
-)]
-mod world_weather;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_world::world_clock;
 
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod monster_combat_lane;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_encounters::bosses::native_combat::monster_combat_lane;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod monster_owner_cycle;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_monster_ai::monster_owner_cycle;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod monster_summon;
-
-#[cfg(test)]
-mod canonical_monster_successor_tests;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_monster_ai::monster_summon;
 
 #[allow(dead_code)]
-mod creature_icicle;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_encounters::bosses::icicle::creature_icicle;
 
-// Full native Creature callbacks stay outside standalone Durability path loads.
-#[path = "durability/creature_source_items.rs"]
-mod creature_source_items;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use durability::{native_world_items, native_world_read};
 
-// D1287: selection-source component tests, without a production runtime caller.
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use durability::creature_source_items;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use durability::mail_text_policy;
+
 #[cfg(test)]
-mod world_change;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_social::security;
 
 #[cfg(test)]
-mod security;
+#[path = "lifted_tests/domain_death_tests.rs"]
+mod domain_death_tests;
+#[cfg(test)]
+#[path = "../../../crates/gameplay/durability/src/durability/forge_tests.rs"]
+mod domain_forge_tests;
+#[cfg(test)]
+#[path = "lifted_tests/domain_market_tests.rs"]
+mod domain_market_tests;
+#[cfg(test)]
+#[path = "lifted_tests/domain_timed_item_host_tests.rs"]
+mod domain_timed_item_host_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/content_executable_catalog_tests.rs"]
+mod content_executable_catalog_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/content_native_spell_tests.rs"]
+mod content_native_spell_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/content_encounter_map_item_tests.rs"]
+mod content_encounter_map_item_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/content_creature_reward_tests.rs"]
+mod content_creature_reward_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/content_charm_source_effect_tests.rs"]
+mod content_charm_source_effect_tests;
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+#[path = "lifted_tests/foundation_ability_exact_actor_resolution_tests.rs"]
+mod foundation_ability_exact_actor_resolution_tests;
+#[cfg(test)]
+#[path = "lifted_tests/world_clock_world_config_tests.rs"]
+mod world_clock_world_config_tests;
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+#[path = "lifted_tests/foundation_channel_owner_ability_commit_tests.rs"]
+mod foundation_channel_owner_ability_commit_tests;
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+#[path = "lifted_tests/foundation_channel_owner_creature_bite_tests.rs"]
+mod foundation_channel_owner_creature_bite_tests;
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+#[path = "lifted_tests/foundation_channel_owner_combat_death_tests.rs"]
+mod foundation_channel_owner_combat_death_tests;
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+#[path = "lifted_tests/foundation_movement_static_kernel_structural_tests.rs"]
+mod foundation_movement_static_kernel_structural_tests;
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+#[path = "lifted_tests/foundation_attacker_fence_tests.rs"]
+mod foundation_attacker_fence_tests;
+// Higher-layer qualification tests stay in the native composition root.
+
+#[cfg(test)]
+#[path = "lifted_tests/creature_icicle_tests.rs"]
+mod creature_icicle_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/creature_appearance_content_tests.rs"]
+mod creature_appearance_content_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/creature_condition_content_tests.rs"]
+mod creature_condition_content_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/creature_condition_content_gate_tests.rs"]
+mod creature_condition_content_gate_tests;
+
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+#[allow(unused_imports, reason = "preserve the former server module path")]
+use oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_cast;
+
+#[cfg(test)]
+mod qualification;
+#[cfg(test)]
+mod quest_catalogue_boot_tests;
+
+#[cfg(test)]
+mod bundle_spawn_owner_tests;

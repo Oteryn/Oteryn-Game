@@ -11,6 +11,10 @@ publish.workspace = true
 category = "world-bundle"
 release-role = "production"
 
+[features]
+# The byte writer serves the compiler and test fixtures; production only reads bundles.
+writer = []
+
 [dependencies]
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
