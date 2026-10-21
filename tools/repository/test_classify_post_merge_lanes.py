@@ -142,14 +142,19 @@ def shared_cache_completion_regressions() -> None:
             assert f"            {prefix}\n" in block, (filename, job)
         if filename != "rust.yml":
             saves = re.findall(r"(?m)^( *)- name: [^\n]*\n(?:\1  [^\n]*\n)*?\1  uses: actions/cache/save@[^\n]*\n((?:\1  [^\n]*\n)*)", text)
-            # Only the merge gate's per-pull-request job-result marker may be saved
-            # outside the protected-main producer: a tiny marker under its own
-            # `jobresult-v1-` key that never shares a key or path with the Cargo cache.
+            # Only the merge gate's per-pull-request job-result markers and the rust_fast
+            # ledger may be saved outside the protected-main producer: tiny files under
+            # their own `jobresult-v1-` / `job-result-ledger-v1-` keys that never share a
+            # key or path with the Cargo cache.
             if filename == "merge-gate.yml":
-                assert text.count("actions/cache/save@") == len(saves) == text.count("name: Save job-result marker\n"), filename
+                markers = text.count("name: Save job-result marker\n")
+                ledgers = text.count("name: Save job-result ledger\n")
+                assert text.count("actions/cache/save@") == len(saves) == markers + ledgers, filename
+                assert ledgers == 1, filename
                 for _indent, body in saves:
                     assert "path: ${{ runner.temp }}/jobresult\n" in body, filename
-                    assert "key: ${{ steps.jr_key.outputs.key }}\n" in body, filename
+                    assert ("key: ${{ steps.jr_key.outputs.key }}\n" in body
+                            or "key: job-result-ledger-v1-rust_fast-${{ matrix.slug }}-${{ github.run_id }}-${{ github.run_attempt }}\n" in body), filename
                     assert "target/" not in body and ".cargo" not in body, filename
             else:
                 assert "actions/cache/save@" not in text, filename

@@ -40,8 +40,10 @@ The pull-request gate is light: heavy qualification runs once, in the Merge Queu
 - PR metadata, agent governance and repository policy;
 - Dependency Review;
 - when the Rust lane is selected: Rust policy/metadata/fmt/production closure, supply chain and
-  `Merge gate / Rust changed-crate Clippy and unit tests` (strict Clippy `--all-targets` and
-  `--lib`/`--bins` tests of the changed workspace crates; when the scope transport is incomplete
+  `Merge gate / Rust changed-crate Clippy and unit tests` (strict workspace Clippy `--all-targets`
+  and `--lib`/`--bins` tests of the changed workspace crates, built in one `--workspace`
+  invocation so the protected-main Cargo cache is reused; each test shard skips a crate whose
+  own closure already passed in an earlier run of the same PR, and never records a failed one; when the scope transport is incomplete
   (over 300 files or 32 KiB of records), the changed paths are recovered from the exact base/head
   Git trees as the trusted-base classifier does; unrecoverable enumeration, workspace-wide Rust
   inputs or no attributable crate select every workspace crate);
