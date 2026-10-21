@@ -59,7 +59,7 @@ repository = "https://github.com/Oteryn/Oteryn-Game"
 publish = false
 
 [workspace.dependencies]
-aws-lc-rs = { version = "=1.18.0", default-features = false, features = ["aws-lc-sys"] }
+aws-lc-rs = { version = "=1.18.2", default-features = false, features = ["aws-lc-sys"] }
 base64 = "=0.22.1"
 cap-fs-ext = "=4.0.3"
 cap-std = "=4.0.3"
