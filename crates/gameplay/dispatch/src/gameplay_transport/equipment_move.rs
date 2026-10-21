@@ -26,7 +26,7 @@ use crate::content::{ReferenceItemField, ReferenceItemTarget};
 use crate::domain::timed_item_host::resolve_timed_definition;
 use crate::durability::character_equipment::{self, EquipmentMoveContent};
 use crate::foundation::{ChannelRuntimeV1, CommandId, CommandRef, RuntimeScopeRefV1};
-use oteryn_protocol_oteryn::item_view::EquipmentSlot;
+use oteryn_protocol_oteryn::item_view::{EquipmentSlot, durable_slot, wire_slot};
 
 impl crate::foundation::equipment_policy_abi::policy_registration::Registered
     for NativeItemWeights<'_>
@@ -88,39 +88,6 @@ impl EquipmentMoveContent for NativeItemWeights<'_> {
             Ok(None)
         )
     }
-}
-
-/// The durable slot code of a wire slot, by its semantic key (ITEM-MOVE-WIRE-1 §2).
-pub(super) fn durable_slot(slot: EquipmentSlot) -> Option<u8> {
-    Some(match slot.semantic_key() {
-        "HEAD" => 1,
-        "TORSO" => 2,
-        "LEGS" => 3,
-        "FEET" => 4,
-        "WEAPON" => 5,
-        "SHIELD" => 6,
-        "AMULET" => 7,
-        "RING" => 8,
-        "EXTRA" => 10,
-        _ => return None,
-    })
-}
-
-/// The wire slot of a durable slot code; the backpack slot 9 and unknown codes have none.
-pub(super) fn wire_slot(code: u8) -> Option<EquipmentSlot> {
-    [
-        EquipmentSlot::Head,
-        EquipmentSlot::Necklace,
-        EquipmentSlot::Armor,
-        EquipmentSlot::RightHand,
-        EquipmentSlot::LeftHand,
-        EquipmentSlot::Legs,
-        EquipmentSlot::Feet,
-        EquipmentSlot::Ring,
-        EquipmentSlot::Ammo,
-    ]
-    .into_iter()
-    .find(|slot| durable_slot(*slot) == Some(code))
 }
 
 /// The durable move of one wire request: only an `INSTANCE` handle names a durable item.
@@ -320,18 +287,6 @@ pub(super) async fn move_equipment(
 mod tests {
     use super::*;
 
-    const SLOTS: [EquipmentSlot; 9] = [
-        EquipmentSlot::Head,
-        EquipmentSlot::Necklace,
-        EquipmentSlot::Armor,
-        EquipmentSlot::RightHand,
-        EquipmentSlot::LeftHand,
-        EquipmentSlot::Legs,
-        EquipmentSlot::Feet,
-        EquipmentSlot::Ring,
-        EquipmentSlot::Ammo,
-    ];
-
     #[test]
     #[allow(clippy::expect_used)]
     fn a_definition_the_generation_does_not_name_is_timed_and_never_enters_a_slot() {
@@ -348,23 +303,6 @@ mod tests {
             NativeItemWeights(native).equipment_stack_class("fixture:unknown", "definition-r1"),
             crate::durability::item_transfer::ItemStackClass::Unknown
         );
-    }
-
-    #[test]
-    fn every_wire_slot_maps_to_its_durable_code_and_back() {
-        let codes: Vec<Option<u8>> = SLOTS.into_iter().map(durable_slot).collect();
-        assert_eq!(
-            codes,
-            [1, 7, 2, 5, 6, 3, 4, 8, 10].map(Some).to_vec(),
-            "HEAD AMULET TORSO WEAPON SHIELD LEGS FEET RING EXTRA"
-        );
-        for slot in SLOTS {
-            assert_eq!(durable_slot(slot).and_then(wire_slot), Some(slot));
-        }
-        // The backpack slot is never an equipment destination.
-        assert_eq!(wire_slot(9), None);
-        assert_eq!(wire_slot(0), None);
-        assert_eq!(wire_slot(11), None);
     }
 
     #[test]

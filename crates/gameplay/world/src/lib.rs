@@ -2,6 +2,7 @@
 
 pub mod house_scope;
 pub mod map;
+pub mod map_view_diff;
 pub mod movement;
 pub mod world_clock;
 pub mod world_object_revert;
