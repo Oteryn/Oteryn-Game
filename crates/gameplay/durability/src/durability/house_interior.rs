@@ -5,8 +5,7 @@
 //! locks; historical handoff and request metadata are never current authority.
 //! Production property/tile admission stays fail-closed until its owning writer.
 
-use super::house_scope_handoff::HouseId;
-use crate::domain::ItemInstanceId;
+use super::house_scope_handoff::{HOUSE_TILE_MAX_BYTES, HouseId};
 use crate::foundation::CharacterId;
 
 pub use oteryn_gameplay_housing::house_interior::{
