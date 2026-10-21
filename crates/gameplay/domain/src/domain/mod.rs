@@ -8,6 +8,7 @@ pub mod charm;
 pub mod currency;
 pub mod cyclopedia;
 pub mod death;
+pub mod direction;
 pub mod equipment;
 pub mod forge;
 pub mod forge_dust;

@@ -24,6 +24,15 @@ use sqlx::Row;
 type Result<T> = std::result::Result<T, CharacterProgressionError>;
 const BINDING_VERSION: u8 = 1;
 
+/// Sample database wall time for familiar lifetime checks in the retained owner transaction.
+pub async fn read_familiar_unix_seconds_in_transaction(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+) -> std::result::Result<i64, sqlx::Error> {
+    sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+        .fetch_one(&mut **tx)
+        .await
+}
+
 /// Remaining owner-clock duration survives offline time. u64::MAX is the genuine
 /// infinite source condition; no monotonic origin or absolute deadline is persisted.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

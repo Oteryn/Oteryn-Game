@@ -48,7 +48,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if current.session_state()!=GameSessionState::Active||current.current_runtime_scope()!=scope||current.current_scope_generation().get()!=generation{return Err(crate::durability::DurabilityError::Unavailable)}
             let active=owner.active_generation.and_then(|g|g.native_gameplay()).ok_or(crate::durability::DurabilityError::Unavailable)?;
             let policies=active.familiar_defenses().ok_or(crate::durability::DurabilityError::Unavailable)?;
-            let now=owner.owner_now().get();let unix:i64=sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint").fetch_one(&mut *tx).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;
+            let now=owner.owner_now().get();let unix:i64=crate::durability::character_familiar::read_familiar_unix_seconds_in_transaction(&mut tx).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;
             let companions=runtime.owned_companions(actor,session).map_err(|_|crate::durability::DurabilityError::Unavailable)?;
             for snapshot in companions {
                 let Some(policy)=policies.defense(&snapshot.state.policy.definition_key,&snapshot.state.policy.definition_revision) else{continue};

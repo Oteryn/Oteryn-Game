@@ -228,12 +228,7 @@ pub fn step_in_channel_with_source_step(
         source_step.is_some(),
     );
     let pos = expected.position();
-    let (dx, dy) = match direction {
-        CardinalStep::North => (0, -1),
-        CardinalStep::East => (1, 0),
-        CardinalStep::South => (0, 1),
-        CardinalStep::West => (-1, 0),
-    };
+    let (dx, dy) = crate::domain::direction::CARDINAL_DIRECTION_DELTAS[direction as usize];
     let Some(x) = pos.x.checked_add(dx) else {
         return failure(MovementError::CoordinateOverflow);
     };
@@ -354,12 +349,7 @@ fn baseline_step(
             .map_err(MovementError::Actor);
     }
     let pos = expected.position();
-    let (dx, dy) = match direction {
-        CardinalStep::North => (0, -1),
-        CardinalStep::East => (1, 0),
-        CardinalStep::South => (0, 1),
-        CardinalStep::West => (-1, 0),
-    };
+    let (dx, dy) = crate::domain::direction::CARDINAL_DIRECTION_DELTAS[direction as usize];
     let x = pos
         .x
         .checked_add(dx)
@@ -513,6 +503,62 @@ mod tests {
             .unwrap()
             .position();
         (position.x, position.y, position.floor)
+    }
+
+    #[test]
+    fn shared_cardinal_deltas_drive_baseline_and_initialized_steps() {
+        for initialized in [false, true] {
+            let (mut runtime, mut states, room, actor, session) = owner();
+            if initialized {
+                states
+                    .initialize(
+                        &runtime,
+                        actor,
+                        session,
+                        CharacterCastFacts {
+                            vocation: crate::spell::Vocation::Knight,
+                            level: 291,
+                            magic_level: 10,
+                            max_health: 1000,
+                            max_mana: 500,
+                            max_soul: 100,
+                        },
+                        (0, 0),
+                        SemanticTimeMicros::from_micros(0),
+                    )
+                    .unwrap();
+            }
+            // Reach the den before stepping north: the tile north of the entry is blocked.
+            for (direction, dx, dy) in [
+                (CardinalStep::East, 1, 0),
+                (CardinalStep::East, 1, 0),
+                (CardinalStep::North, 0, -1),
+                (CardinalStep::South, 0, 1),
+                (CardinalStep::West, -1, 0),
+            ] {
+                let before = at(&mut runtime, actor);
+                let (snapshot, _) = step_in_channel(
+                    &mut runtime,
+                    &mut states,
+                    room.movement_cells(),
+                    actor,
+                    session,
+                    1,
+                    direction,
+                    &std::collections::BTreeSet::new(),
+                    None,
+                )
+                .unwrap();
+                assert_eq!(
+                    snapshot.position(),
+                    MovementLocalPosition {
+                        x: before.0 + dx,
+                        y: before.1 + dy,
+                        floor: before.2,
+                    },
+                );
+            }
+        }
     }
 
     #[test]

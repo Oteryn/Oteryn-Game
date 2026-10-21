@@ -138,8 +138,9 @@ async fn current_observer(
   tx,source.root,source.scope,source.runtime,source.actor,source.session,
  ).await?.ok_or(SpellItemError::Rejected("presentation current canonical observer unavailable"))?;
     // The canonical factory above locked and checked this exact current row independently.
-    let generation:String=sqlx::query_scalar("SELECT current_generation::text FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid FOR SHARE")
-  .bind(source.session.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+    let generation = crate::durability::admission_journal::party_target_binding::read_connection_generation_for_share_in_transaction(
+        tx, source.session,
+    ).await?;
     let generation = generation
         .parse()
         .map_err(|_| SpellItemError::Rejected("presentation connection generation"))?;

@@ -10,7 +10,7 @@ use super::character_authority::{
 use super::db::{begin_semantic_transaction, commit_semantic_transaction};
 use crate::domain::CharacterId;
 use crate::domain::character_name::CharacterName;
-use sqlx::Row;
+use sqlx::{Postgres, Row, Transaction};
 
 impl DurabilityRoot {
     /// The name of the active Character `character_id`; `None` when it has no active root or
@@ -44,4 +44,19 @@ impl DurabilityRoot {
             })
             .await?
     }
+}
+
+/// Read the caster's display name while retaining the caller's Character root share lock.
+/// The caller supplies its already fenced Character identity and keeps the transaction open.
+pub async fn read_character_name_for_share_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    character: &[u8; 16],
+) -> Result<String, sqlx::Error> {
+    sqlx::query(
+        "SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR SHARE",
+    )
+    .bind(character.as_slice())
+    .fetch_one(&mut **tx)
+    .await?
+    .try_get("name")
 }
