@@ -36,10 +36,7 @@ use crate::ability::exact_actor_resolution::{ExactActorProposal, resolve_exact_a
 use crate::ability::{
     AbilityIntent, AbilityOccurrence, CommitGroup, Effect, EffectPlan, ProposalSource, RevisionSet,
 };
-use crate::combat::charm_effects::{
-    CharmAssignment, CharmAttackerFacts, CharmCatalogueRead, CharmEvaluationInput, CharmHitSource,
-    CharmHookEvent, CharmStateRead, CharmStateUnavailable, evaluate_charm_hook,
-};
+use crate::combat::charm_effects::{CharmAttackerFacts, CharmHitSource, CharmHookEvent};
 use crate::combat_attack::{
     AttackConstants, AttackState, BlockBudget, CHASE_SEARCHES_PER_WINDOW, CREATURE_COST,
     ChaseDecision, ChaseSearchBudget, ChaseState, FightMode, SwingPoll, TargetFacts, TargetRefusal,
@@ -358,23 +355,20 @@ const fn fight_mode(mode: WireFightMode) -> FightMode {
     }
 }
 
+pub use oteryn_gameplay_combat_rules::dispatch_target::in_protection_zone as in_protection_zone_rule;
+
 fn in_protection_zone(
     room: &QualifiedNativeEntryRoom,
     position: MovementLocalPosition,
 ) -> Option<bool> {
-    let cells = room.movement_cells();
-    cells
-        .spell_tiles()
-        .lookup(
-            cells.scope(),
-            LogicalCell {
-                x: position.x,
-                y: position.y,
-                z: i32::from(position.floor),
-            },
-        )
-        .ok()
-        .map(|tile| tile.flags().protection_zone)
+    in_protection_zone_rule(
+        room,
+        LogicalCell {
+            x: position.x,
+            y: position.y,
+            z: i32::from(position.floor),
+        },
+    )
 }
 
 /// Whether an attacker at `from` sees `to` under the reference view. A source world's native
@@ -950,6 +944,8 @@ const fn actor_order(actor: ExactActorRef) -> (u32, u64) {
     (actor.actor_local_id(), actor.actor_local_generation())
 }
 
+pub use oteryn_gameplay_combat_rules::dispatch_target::chase_path_tile as chase_path_tile_rule;
+
 /// CHASE-1: whether a player chase may path over `cell` (CREATURE-AI-0 §5.3 with RANGED-0 §8). It
 /// is a Walkable cell of the Movement owner's cells, no closed door blocks it, and it is no
 /// teleport, protection-zone or floor-change tile: a chase never changes floors. Unknown tile
@@ -965,61 +961,15 @@ pub(super) fn chase_path_tile(
         y: cell.y,
         z: i32::from(cell.floor),
     };
-    let ordinary = match cells.spell_tiles().lookup(cells.scope(), target) {
-        Ok(tile) => !tile.flags().protection_zone && !tile.flags().floor_change,
-        Err(crate::content::SpellTileLookupError::Unknown) => {
-            matches!(
-                cells.index(),
-                crate::content::native_cell_lookup::NativeMovementCollisionIndex::Entry(_)
-            ) && !crate::movement::source_floor_change::is_source_profile(cells)
-        }
-        Err(_) => false,
-    };
-    ordinary
-        && cells.index().lookup(cells.scope(), target)
-            == Ok(crate::content::CollisionClass::Walkable)
-        && !blocking.blocks(target)
+    chase_path_tile_rule(
+        cells,
+        target,
+        crate::movement::source_floor_change::is_source_profile(cells),
+    ) && !blocking.blocks(target)
         && !crate::map::floor::is_teleport(cells, target)
 }
 
-/// ATTACK-1b has no Charm state reader: every hook is evaluated against no assignments and its
-/// outcomes are discarded. The Charm state wiring is a later stage.
-struct NoCharmAssignments([u8; 16]);
-
-impl CharmStateRead for NoCharmAssignments {
-    fn character(&self) -> [u8; 16] {
-        self.0
-    }
-
-    fn assignments_for_race(
-        &self,
-        _race_key: &str,
-    ) -> Result<Vec<CharmAssignment>, CharmStateUnavailable> {
-        Ok(Vec::new())
-    }
-}
-
-/// Evaluate one Charm hook and discard its outcomes (see [`NoCharmAssignments`]).
-pub(super) fn run_charm_hook(
-    catalogue: &dyn CharmCatalogueRead,
-    character: [u8; 16],
-    race_key: &str,
-    decision_root: &GameplayDecisionRoot,
-    occurrence: DecisionOccurrenceId,
-    event: CharmHookEvent,
-) {
-    let _ = evaluate_charm_hook(
-        &CharmEvaluationInput {
-            character,
-            race_key,
-            decision_root,
-            occurrence,
-            event,
-        },
-        &NoCharmAssignments(character),
-        catalogue,
-    );
-}
+pub use oteryn_gameplay_combat_rules::charm_hook::run_charm_hook;
 
 /// Translate the runtime swing identity into plain deterministic rule inputs.
 fn swing_occurrence(

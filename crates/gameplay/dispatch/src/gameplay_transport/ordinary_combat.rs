@@ -50,48 +50,8 @@ fn attack_target_origin(
         .map(|(origin, facing)| (cast_position(origin), facing.map(cast_direction)))
         .map_err(|_| SpellCastDisposition::Rejected)
 }
-#[derive(Debug)]
-struct World {
-    origin: TilePosition,
-    /// The position every populated sight path starts from: the caster for a directional
-    /// cast, otherwise the aimed origin. Area visibility must look up the same key.
-    sight_origin: TilePosition,
-    direction: Direction,
-    caster: ChainCreature,
-    creatures: Vec<ChainCreature>,
-    legal: BTreeSet<u64>,
-    sight: BTreeSet<(TilePosition, TilePosition)>,
-    tiles: BTreeMap<TilePosition, TileFlags>,
-}
-impl World {
-    /// Area targets, created items and tile cues are visible from the sight origin.
-    fn area_sight_clear(&self, p: TilePosition) -> bool {
-        self.sight_clear(self.sight_origin, p)
-    }
-}
-impl ChainWorld for World {
-    fn caster(&self) -> &ChainCreature {
-        &self.caster
-    }
-    fn creatures(&self) -> &[ChainCreature] {
-        &self.creatures
-    }
-    fn may_hit(&self, c: &ChainCreature) -> bool {
-        self.legal.contains(&c.id)
-    }
-    fn sight_clear(&self, a: TilePosition, b: TilePosition) -> bool {
-        a == b || self.sight.contains(&(a, b))
-    }
-    fn path(&self, from: TilePosition, to: TilePosition) -> Option<Vec<TilePosition>> {
-        plans::path(
-            plan_position(from),
-            plan_position(to),
-            crate::spell::chain::CHAIN_PATH_SEARCH_TILES,
-            |p| self.tiles.get(&cast_position(p)).copied(),
-        )
-        .map(|path| path.into_iter().map(cast_position).collect())
-    }
-}
+pub use oteryn_gameplay_spell_rules::ordinary_combat::World;
+
 fn element(key: &str) -> Result<Element, SpellCastDisposition> {
     Ok(match key {
         "physical" => Element::Physical,
@@ -958,7 +918,7 @@ fn lower(
     _caster: &crate::spell::CasterState,
     operational: &OperationalCastFacts,
     bindings: &[LiveActorBinding],
-    world: &World,
+    world: &World<Direction>,
     party: &Option<crate::gameplay_transport::party_spell_owner::SourcePartyWorld>,
     command: CommandRef,
     occurrence: &AbilityOccurrence,
@@ -2595,32 +2555,6 @@ mod tests {
         };
         assert!(amount(&second) > amount(&first));
         assert_eq!(paid.next.vitals().mana, 5000 - paid.anchor.paid_mana);
-    }
-
-    #[test]
-    fn tile_aimed_area_visibility_uses_the_populated_sight_origin() {
-        // A non-directional rune aimed at a tile populates (aimed tile, candidate) paths.
-        let at = |x| TilePosition { x, y: 0, floor: 7 };
-        let world = World {
-            origin: at(4),
-            sight_origin: at(4),
-            direction: Direction::East,
-            caster: ChainCreature {
-                id: 1,
-                actor: "actor:caster".into(),
-                position: at(0),
-            },
-            creatures: Vec::new(),
-            legal: BTreeSet::new(),
-            sight: BTreeSet::from([(at(0), at(4)), (at(4), at(5))]),
-            tiles: BTreeMap::new(),
-        };
-        // The neighbour of the aimed tile is visible from the aimed tile, which is the
-        // key the area paths were populated with; the caster has no path to it.
-        assert!(world.area_sight_clear(at(5)));
-        assert!(world.area_sight_clear(at(4)));
-        assert!(!world.sight_clear(world.caster.position, at(5)));
-        assert!(!world.area_sight_clear(at(6)));
     }
 
     #[test]
