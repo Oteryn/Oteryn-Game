@@ -38,9 +38,10 @@ the table, these list every current directory under `crates/gameplay/`.
 
 Normal and build dependencies between gameplay packages must go to a strictly
 lower layer. The explicit `[gameplay_same_layer_edges]` table preserves the
-existing directed L3 rule edges, and permits `entities -> foundation` at L2.
+existing directed L3 rule edges and L4 runtime edges, and permits
+`entities -> foundation` at L2.
 It is separate from `[edges]`: adding a declared dependency alone cannot bypass
-the layer rule. L3 peer exceptions are not a general permission for peer coupling;
+the layer rule. Peer exceptions are not a general permission for peer coupling;
 the graph must still be acyclic. L4 peers have no implicit exception. Dependencies
 on packages outside `crates/gameplay/` remain subject to the existing exact-edge
 and production-closure checks.
@@ -75,34 +76,38 @@ under `entities` and `foundation`, including methods and nested declarations.
 It normalizes case and underscores so Rust type names are covered. Comments
 and string literals are not declarations.
 
-The boss guard is temporarily configured as `warn`: findings are printed and
-do not cause a failing exit status. Once the concurrent boss-code move lands,
-set `boss_identifier_mode = "error"`. Both modes have checker unit tests.
-Layer, purity and naming failures are errors in either mode.
+The boss guard is configured as `error`: boss source ownership findings fail the
+workspace gate now that the boss-code move to `encounters/src/bosses/` has landed.
+Both error and warning modes retain checker unit tests. Layer, purity and naming
+failures are also errors.
 
-## Current migration gaps
+## L4 intra-layer order
 
-The graph at authoring time contains `content -> foundation` (L1 to L2) and
-L4-to-L4 dependencies, including runtime consumers of `durability` and `world`.
-These are real violations of the strict layer direction above. They are reported
-by the checker; this ADR does not silently grandfather them or change their code
-or edge declarations. Their owning refactor must remove the edges or obtain a
-separate accepted architecture amendment before the complete workspace gate can
-pass. The warning mode applies only to boss source ownership.
+The current L4 dependencies form a DAG with the order
+`durability < world < combat < spell < monster-ai < encounters`.
+`npc` sits above `world`; `social` sits above `world` and `combat` and also
+consumes `durability`. The exact direct peer edges are:
 
-All 20 existing offending dependency declarations remain in place because their
-crate code and dependency edges are outside this guard/documentation job:
-
-| Manifest | Dependency targets and declaration lines |
+| Source | L4 dependency targets |
 | --- | --- |
-| `crates/gameplay/combat/Cargo.toml` | `durability` (line 25), `world` (line 28) |
-| `crates/gameplay/content/Cargo.toml` | `foundation` (line 19) |
-| `crates/gameplay/encounters/Cargo.toml` | `combat` (line 18), `durability` (line 22), `monster-ai` (line 26), `spell` (line 29), `world` (line 31) |
-| `crates/gameplay/monster-ai/Cargo.toml` | `combat` (line 21), `durability` (line 23), `spell` (line 26), `world` (line 27) |
-| `crates/gameplay/npc/Cargo.toml` | `world` (line 24) |
-| `crates/gameplay/social/Cargo.toml` | `combat` (line 25), `durability` (line 28), `world` (line 31) |
-| `crates/gameplay/spell/Cargo.toml` | `combat` (line 25), `durability` (line 28), `world` (line 31) |
-| `crates/gameplay/world/Cargo.toml` | `durability` (line 24) |
+| `durability` | None |
+| `world` | `durability` |
+| `combat` | `durability`, `world` |
+| `spell` | `combat`, `durability`, `world` |
+| `monster-ai` | `combat`, `durability`, `spell`, `world` |
+| `encounters` | `combat`, `durability`, `monster-ai`, `spell`, `world` |
+| `npc` | `world` |
+| `social` | `combat`, `durability`, `world` |
+
+These are the existing manifest dependencies, deliberately declared in
+`[gameplay_same_layer_edges]` using the same mechanism as the L3 rule DAG.
+Any new same-layer edge must be added to that table deliberately, must match
+the manifest and `[edges]`, and must preserve the acyclic dependency order.
+
+## Remaining gap
+
+`content -> foundation` (L1 to L2) remains a layer violation; a parallel job is
+removing it. It has no same-layer exception and still fails the workspace gate.
 
 ## Consequences
 

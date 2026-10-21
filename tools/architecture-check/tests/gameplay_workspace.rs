@@ -109,6 +109,32 @@ kernel = []
     assert!(!error.status.success());
     assert!(String::from_utf8_lossy(&error.stderr).contains("boss-specific identifier welter"));
 
+    // The same explicit peer mechanism admits the L4 runtime DAG in error mode.
+    write(root, "crates/gameplay/entities/src/lib.rs", "")?;
+    let runtime_policy = policy
+        .replace("l2 =", "l4 =")
+        .replace("= \"warn\"", "= \"error\"");
+    write(root, "workspace-boundaries.toml", &runtime_policy)?;
+    let runtime = run(root)?;
+    assert!(
+        runtime.status.success(),
+        "{}",
+        String::from_utf8_lossy(&runtime.stderr)
+    );
+    write(
+        root,
+        "workspace-boundaries.toml",
+        &runtime_policy.replacen("carrier = [\"kernel\"]\n", "", 1),
+    )?;
+    let runtime_peer = run(root)?;
+    assert!(!runtime_peer.status.success());
+    assert!(String::from_utf8_lossy(&runtime_peer.stderr).contains("gameplay layer order"));
+    write(
+        root,
+        "crates/gameplay/entities/src/lib.rs",
+        "fn welter() {}",
+    )?;
+
     // Removing the explicit peer exception must fail even though [edges] still matches Cargo.
     write(
         root,

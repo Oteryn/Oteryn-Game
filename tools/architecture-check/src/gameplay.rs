@@ -15,8 +15,8 @@ pub(super) struct GameplayPolicy {
     forbidden_name_fragments: Vec<String>,
     boss_identifier_paths: Vec<String>,
     boss_identifier_fragments: Vec<String>,
-    /// Report only while the boss-code move is in progress. Switch the policy to `error`
-    /// once the move lands so source ownership violations fail the workspace gate.
+    /// The repository uses `error` so source ownership violations fail the workspace gate.
+    /// The `warn` mode remains available for migration policy fixtures.
     pub(super) boss_identifier_mode: String,
 }
 
@@ -98,7 +98,7 @@ fn validate_shape(policy: &Policy) -> Result<(), String> {
     for (member, targets) in &gameplay.same_layer_edges {
         let layer = gameplay.layers.get(member);
         for target in targets {
-            if !matches!(layer, Some(2 | 3))
+            if !matches!(layer, Some(2..=4))
                 || gameplay.layers.get(target) != layer
                 || !policy
                     .edges
@@ -383,8 +383,9 @@ mod tests {
             .insert("oteryn-gameplay-invented".to_owned(), 0);
         assert!(validate_shape(&unknown).is_err());
         for (member, target) in [
-            ("oteryn-gameplay-world", "oteryn-gameplay-durability"),
+            ("oteryn-gameplay-world", "oteryn-gameplay-spell"),
             ("oteryn-gameplay-characters", "oteryn-gameplay-quests"),
+            ("oteryn-gameplay-content", "oteryn-gameplay-foundation"),
         ] {
             let mut invalid = policy()?;
             invalid
@@ -510,6 +511,9 @@ mod tests {
     fn gameplay_boss_guard_warns_or_errors_as_configured() -> Result<(), String> {
         let mut policy = policy()?;
         let findings = vec!["src/actor.rs: boss-specific identifier welter".to_owned()];
+        assert_eq!(policy.gameplay.boss_identifier_mode, "error");
+        assert!(identifier_report(&policy.gameplay, &findings).is_err());
+        policy.gameplay.boss_identifier_mode = "warn".to_owned();
         assert_eq!(identifier_report(&policy.gameplay, &findings)?, findings);
         policy.gameplay.boss_identifier_mode = "error".to_owned();
         assert!(identifier_report(&policy.gameplay, &findings).is_err());

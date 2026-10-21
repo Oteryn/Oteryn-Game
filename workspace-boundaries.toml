@@ -18,7 +18,7 @@ l4 = ["oteryn-gameplay-durability","oteryn-gameplay-world","oteryn-gameplay-comb
 l5 = ["oteryn-gameplay-dispatch"]
 
 [gameplay_same_layer_edges]
-# The actor carrier may use the L2 kernel. L3 peers retain only these declared edges.
+# The actor carrier may use the L2 kernel. L3 and L4 peers retain only these declared edges.
 oteryn-gameplay-entities = ["oteryn-gameplay-foundation"]
 oteryn-gameplay-progression = ["oteryn-gameplay-characters"]
 oteryn-gameplay-items = ["oteryn-gameplay-characters"]
@@ -28,14 +28,21 @@ oteryn-gameplay-combat-rules = ["oteryn-gameplay-characters","oteryn-gameplay-it
 oteryn-gameplay-spell-rules = ["oteryn-gameplay-characters","oteryn-gameplay-combat-rules","oteryn-gameplay-items","oteryn-gameplay-progression"]
 oteryn-gameplay-encounter-rules = ["oteryn-gameplay-combat-rules"]
 oteryn-gameplay-social-rules = ["oteryn-gameplay-characters"]
+oteryn-gameplay-world = ["oteryn-gameplay-durability"]
+oteryn-gameplay-combat = ["oteryn-gameplay-durability","oteryn-gameplay-world"]
+oteryn-gameplay-spell = ["oteryn-gameplay-combat","oteryn-gameplay-durability","oteryn-gameplay-world"]
+oteryn-gameplay-monster-ai = ["oteryn-gameplay-combat","oteryn-gameplay-durability","oteryn-gameplay-spell","oteryn-gameplay-world"]
+oteryn-gameplay-encounters = ["oteryn-gameplay-combat","oteryn-gameplay-durability","oteryn-gameplay-monster-ai","oteryn-gameplay-spell","oteryn-gameplay-world"]
+oteryn-gameplay-npc = ["oteryn-gameplay-world"]
+oteryn-gameplay-social = ["oteryn-gameplay-combat","oteryn-gameplay-durability","oteryn-gameplay-world"]
 
 [gameplay_rules]
 forbidden_normal_dependencies = ["sqlx","tokio","oteryn-gameplay-entities"]
 forbidden_name_fragments = ["persistence"]
 boss_identifier_paths = ["crates/gameplay/entities","crates/gameplay/foundation"]
 boss_identifier_fragments = ["welter","smelly_cheese","bone_overlord","boreth","rum_barrel","crystal_tentacle","haragoth","icicle"]
-# Report only until the concurrent boss-code move lands; then set this to "error".
-boss_identifier_mode = "warn"
+# Boss code now lives in encounters; carrier/kernel ownership violations fail the gate.
+boss_identifier_mode = "error"
 
 [edges]
 oteryn-client = ["oteryn-client-assets","oteryn-client-runtime","oteryn-diagnostics","oteryn-foundation","oteryn-identity","oteryn-input-actions","oteryn-input-platform","oteryn-platform-client","oteryn-platform-contracts","oteryn-renderer","oteryn-session","oteryn-session-tcp","oteryn-world-bundle"]
