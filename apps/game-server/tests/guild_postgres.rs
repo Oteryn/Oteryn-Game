@@ -68,8 +68,7 @@ pub mod content;
 pub mod domain;
 #[path = "../../../crates/gameplay/durability/src/durability/mod.rs"]
 pub mod durability;
-#[path = "../../../crates/gameplay/foundation/src/foundation/mod.rs"]
-pub mod foundation;
+pub use oteryn_gameplay_entities as foundation;
 #[path = "../../../crates/gameplay/dispatch/src/gameplay_transport/mod.rs"]
 mod gameplay_transport;
 

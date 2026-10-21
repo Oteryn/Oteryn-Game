@@ -1,172 +1,13 @@
 //! Real companion entities in the Channel's existing fixed slots. Content policies are installed
 //! by the active artifact loader; client names only resolve those already qualified records.
 use super::*;
-use crate::foundation::condition::{ConditionStore, ConditionType};
+use oteryn_gameplay_foundation::foundation::condition::ConditionStore;
+pub use oteryn_gameplay_foundation::foundation::creature_policy::*;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct CreatureExactRatio {
-    pub numerator: i64,
-    pub denominator: u64,
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CreatureResistance {
-    pub damage_type: String,
-    pub percent: CreatureExactRatio,
-}
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct CreatureFlags {
-    pub attackable: bool,
-    pub illusionable: bool,
-    pub health_hidden: bool,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CompiledCreaturePolicy {
-    pub definition_key: String,
-    pub definition_revision: String,
-    pub display_name: String,
-    pub maximum_health: i64,
-    pub base_speed: i32,
-    pub outfit_look_type: u32,
-    /// Source lookTypeEx is an Object appearance, never an Outfit or an invisible actor.
-    pub object_look_type: Option<u32>,
-    pub summonable: bool,
-    pub convinceable: bool,
-    pub mana_cost: Option<u32>,
-    pub is_familiar: bool,
-    pub condition_immunities: Vec<ConditionType>,
-    /// The source defence a blocked melee hit draws from (`creature.cpp:966-967`).
-    pub defense: Option<u32>,
-    pub armor: Option<u32>,
-    pub mitigation: Option<CreatureExactRatio>,
-    pub resistances: Vec<CreatureResistance>,
-    pub damage_immunities: Vec<String>,
-    /// Separate source healingMap response, not an elemental resistance.
-    pub healing_from_damage: Vec<CreatureResistance>,
-    pub flags: CreatureFlags,
-    pub preferred_distance: Option<u32>,
-    pub reward_boss: Option<bool>,
-}
-impl CompiledCreaturePolicy {
-    /// Source game.cpp healingMap is evaluated before blockHit/immunity, from
-    /// the incoming pre-buff magnitude. No attacker means no damage-derived heal.
-    pub fn damage_healing(&self, damage_type: &str, magnitude: i64) -> Result<i64, CarrierError> {
-        if magnitude < 0 {
-            return Err(CarrierError::InvalidDamage);
-        }
-        let Some(response) = self
-            .healing_from_damage
-            .iter()
-            .find(|v| v.damage_type == damage_type)
-        else {
-            return Ok(0);
-        };
-        if response.percent.denominator == 0 || response.percent.numerator < 0 {
-            return Err(CarrierError::DamageOverflow);
-        }
-        let numerator = i128::from(magnitude)
-            .checked_mul(i128::from(response.percent.numerator))
-            .ok_or(CarrierError::DamageOverflow)?;
-        let denominator = i128::from(response.percent.denominator)
-            .checked_mul(100)
-            .ok_or(CarrierError::DamageOverflow)?;
-        let rounded = numerator
-            .checked_add(denominator - 1)
-            .ok_or(CarrierError::DamageOverflow)?
-            / denominator;
-        i64::try_from(rounded).map_err(|_| CarrierError::DamageOverflow)
-    }
-    pub fn outfit_appearance(&self) -> Option<u32> {
-        (self.object_look_type.is_none() && self.outfit_look_type != 0)
-            .then_some(self.outfit_look_type)
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CompiledCreaturePolicies {
-    source_digest: [u8; 32],
-    policies: Vec<Arc<CompiledCreaturePolicy>>,
-}
-impl CompiledCreaturePolicies {
-    /// Content's already-qualified outer artifact contains these exact decoded records.
-    /// Rebinding data does not issue runtime scope or current mutation authority.
-    pub fn bind_qualified_outer_artifact(&mut self, digest: [u8; 32]) -> Result<(), CarrierError> {
-        if digest == [0; 32] {
-            return Err(CarrierError::ContentPinWorldMismatch);
-        }
-        self.source_digest = digest;
-        Ok(())
-    }
-    /// The activation loader supplies only decoded, artifact-qualified CreatureAuthoring data.
-    /// Missing health/speed/outfit/details must be rejected there, never filled with prototypes.
-    pub fn from_active_artifact(
-        source_digest: [u8; 32],
-        records: Vec<CompiledCreaturePolicy>,
-    ) -> Result<Self, CarrierError> {
-        if source_digest == [0; 32] {
-            return Err(CarrierError::ContentPinWorldMismatch);
-        }
-        let mut policies = Vec::new();
-        for record in records {
-            if record.definition_key.is_empty()
-                || record.definition_revision.is_empty()
-                || record.display_name.trim().is_empty()
-                || record.maximum_health <= 0
-                || record.base_speed < 0
-                || record.object_look_type.is_some_and(|look| {
-                    look == 0 || record.outfit_look_type != 0 || record.is_familiar
-                })
-                || record.mitigation.is_some_and(|v| v.denominator == 0)
-                || record
-                    .resistances
-                    .iter()
-                    .any(|v| v.damage_type.is_empty() || v.percent.denominator == 0)
-                || record.resistances.iter().enumerate().any(|(i, v)| {
-                    record.resistances[..i]
-                        .iter()
-                        .any(|old| old.damage_type == v.damage_type)
-                })
-                || record.healing_from_damage.iter().enumerate().any(|(i, v)| {
-                    v.damage_type.is_empty()
-                        || v.percent.denominator == 0
-                        || v.percent.numerator < 0
-                        || record.healing_from_damage[..i]
-                            .iter()
-                            .any(|old| old.damage_type == v.damage_type)
-                })
-                || record.damage_immunities.iter().any(String::is_empty)
-                || (record.summonable || record.convinceable) != record.mana_cost.is_some()
-                || policies.iter().any(|p: &Arc<CompiledCreaturePolicy>| {
-                    p.definition_key == record.definition_key
-                })
-            {
-                return Err(CarrierError::InvalidCreatureTarget);
-            }
-            policies.push(Arc::new(record));
-        }
-        Ok(Self {
-            source_digest,
-            policies,
-        })
-    }
-}
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CompanionMaster {
     pub actor: ExactActorRef,
     pub session: GameSessionId,
-}
-/// Qualified active-Content data for a real familiar self-defense. The consumer
-/// independently proves actual actor/master/incarnation and the matching Content pin.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct FamiliarSelfHealDefense {
-    pub source_digest: [u8; 32],
-    pub creature_key: String,
-    pub creature_revision: String,
-    pub profile_digest: [u8; 32],
-    pub interval_ms: u32,
-    pub chance_percent: u8,
-    pub heal_min: i64,
-    pub heal_max: i64,
-    pub effect: String,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CompanionState {
@@ -224,15 +65,15 @@ impl ChannelRuntimeV1 {
     fn creature_transform_content_binding(&self) -> (WorldId, u64, [[u8; 32]; 4], LocalPosition) {
         let p = self.content_pin();
         (
-            p.world_id,
-            p.activation_sequence,
+            p.world_id(),
+            p.activation_sequence(),
             [
-                p.server_artifact_digest,
-                p.client_artifact_digest,
-                p.frame_binding_digest,
-                p.map_revision_digest,
+                p.server_artifact_digest(),
+                p.client_artifact_digest(),
+                p.frame_binding_digest(),
+                p.map_revision_digest(),
             ],
-            p.entry_start,
+            p.entry_start(),
         )
     }
     pub fn prepare_creature_profile_transformation(
@@ -469,13 +310,13 @@ impl ChannelRuntimeV1 {
         let local = head
             .checked_add(1)
             .ok_or(CarrierError::CapacityArithmeticOverflow)?;
-        let actor = ExactActorRef(ActorRef {
-            world_id: self.binding.world_id,
-            channel_id: self.binding.channel_id,
-            scope_generation: self.binding.scope_generation,
-            actor_local_id: ActorLocalId(local),
-            actor_local_generation: ActorLocalGeneration(generation),
-        });
+        let actor = ExactActorRef(ActorRef::from_owner_parts(
+            self.binding.world_id,
+            self.binding.channel_id,
+            self.binding.scope_generation,
+            ActorLocalId(local),
+            ActorLocalGeneration(generation),
+        ));
         let state = CompanionState {
             outfit_look_type: look.unwrap_or(policy.outfit_look_type),
             object_look_type: policy.object_look_type,
@@ -728,7 +569,7 @@ impl ChannelRuntimeV1 {
         table: CompiledCreaturePolicies,
     ) -> Result<(), CarrierError> {
         self.carrier.validate_current_continuity(&self.continuity)?;
-        if table.source_digest != self.content.server_artifact_digest {
+        if table.source_digest() != self.content.server_artifact_digest() {
             return Err(CarrierError::ContentPinWorldMismatch);
         }
         if let Some(existing) = &self.companion_policies {
@@ -750,20 +591,20 @@ impl ChannelRuntimeV1 {
             .companion_policies
             .as_ref()
             .ok_or(CarrierError::InvalidCreatureTarget)?;
-        if table.source_digest != self.content.server_artifact_digest {
+        if table.source_digest() != self.content.server_artifact_digest() {
             return Err(CarrierError::ContentPinWorldMismatch);
         }
         // Qualified exact identity always wins over the display-name fallback.
         // Source variants may share a real display name; never select one by export order.
         if let Some(exact) = table
-            .policies
+            .policies()
             .iter()
             .find(|p| p.definition_key == name_or_key)
         {
             return Ok(Arc::clone(exact));
         }
         let mut matches = table
-            .policies
+            .policies()
             .iter()
             .filter(|p| p.display_name.eq_ignore_ascii_case(name_or_key));
         let first = matches.next().ok_or(CarrierError::InvalidCreatureTarget)?;
@@ -897,7 +738,7 @@ impl ChannelRuntimeV1 {
         };
         if actor.0.world_id != self.binding.world_id
             || actor.0.channel_id != self.binding.channel_id
-            || actor.0.scope_generation != self.binding.scope_generation
+            || actor.scope_generation() != self.binding.scope_generation
         {
             return Err(CarrierError::WrongScope);
         }
@@ -944,13 +785,13 @@ impl ChannelRuntimeV1 {
             {
                 let local = u32::try_from(index + 1)
                     .map_err(|_| CarrierError::CapacityArithmeticOverflow)?;
-                let actor = ExactActorRef(ActorRef {
-                    world_id: self.binding.world_id,
-                    channel_id: self.binding.channel_id,
-                    scope_generation: self.binding.scope_generation,
-                    actor_local_id: ActorLocalId(local),
-                    actor_local_generation: ActorLocalGeneration(*generation),
-                });
+                let actor = ExactActorRef(ActorRef::from_owner_parts(
+                    self.binding.world_id,
+                    self.binding.channel_id,
+                    self.binding.scope_generation,
+                    ActorLocalId(local),
+                    ActorLocalGeneration(*generation),
+                ));
                 out.push(self.companion_snapshot(actor)?);
             }
         }
@@ -981,16 +822,16 @@ impl ChannelRuntimeV1 {
                 && state.policy.is_familiar
                 && *health == 0
             {
-                let actor = ExactActorRef(ActorRef {
-                    world_id: self.binding.world_id,
-                    channel_id: self.binding.channel_id,
-                    scope_generation: self.binding.scope_generation,
-                    actor_local_id: ActorLocalId(
+                let actor = ExactActorRef(ActorRef::from_owner_parts(
+                    self.binding.world_id,
+                    self.binding.channel_id,
+                    self.binding.scope_generation,
+                    ActorLocalId(
                         u32::try_from(index + 1)
                             .map_err(|_| CarrierError::CapacityArithmeticOverflow)?,
                     ),
-                    actor_local_generation: ActorLocalGeneration(*generation),
-                });
+                    ActorLocalGeneration(*generation),
+                ));
                 // A current foreign SQL reservation keeps its exact original death pending.
                 self.assert_actor_spell_unreserved(actor)?;
                 out.push(actor);
@@ -1955,7 +1796,10 @@ mod tests {
             caster: owner,
             attacker: CharacterId::decode(&id(5)).unwrap(),
             current_lease_generation: 1,
-            command: CommandRef::new(session, crate::foundation::CommandId::new(7).unwrap()),
+            command: CommandRef::new(
+                session,
+                oteryn_gameplay_foundation::foundation::CommandId::new(7).unwrap(),
+            ),
             occurrence: SpellOccurrenceBinding {
                 id: "test:actual-companion-pending".into(),
                 revisions: ["rules:1", "content:1", "world:1", "formula:1", "sim:1"]
@@ -2195,7 +2039,7 @@ mod tests {
         use super::super::runtime_actor_spell_types::{
             OwnerCombatBatch, OwnerCombatChange, OwnerCombatEffect, SpellOccurrenceBinding,
         };
-        use crate::foundation::condition::{
+        use oteryn_gameplay_foundation::foundation::condition::{
             ApplicationFacts, ConditionDefinition, ConditionSourceKind, ConditionValues,
         };
         let (mut runtime, owner, session) = owner();
@@ -2252,7 +2096,10 @@ mod tests {
             caster: owner,
             attacker: CharacterId::decode(&id(5)).unwrap(),
             current_lease_generation: 1,
-            command: CommandRef::new(session, crate::foundation::CommandId::new(1).unwrap()),
+            command: CommandRef::new(
+                session,
+                oteryn_gameplay_foundation::foundation::CommandId::new(1).unwrap(),
+            ),
             occurrence: SpellOccurrenceBinding {
                 id: "source-monster-drain-health".into(),
                 revisions: ["rules:1", "content:1", "world:1", "formula:1", "sim:1"]

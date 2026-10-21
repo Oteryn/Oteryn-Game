@@ -70,7 +70,7 @@ fn batch(f: &Fixture, sequence: u64, effects: Vec<OwnerCombatEffect>) -> OwnerCo
         current_lease_generation: 1,
         command: CommandRef::new(
             f.session,
-            super::super::super::CommandId::new(sequence).expect("command"),
+            oteryn_gameplay_foundation::foundation::CommandId::new(sequence).expect("command"),
         ),
         occurrence: SpellOccurrenceBinding {
             id: "spell-batch:qualified".into(),
@@ -572,8 +572,10 @@ fn committed_timer_phase_survives_control_loss_but_new_or_substituted_input_does
         .issue_owner_work()
         .expect("real current owner work");
     let binding = f.runtime.binding();
-    let scope =
-        super::super::super::RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id());
+    let scope = oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
+        binding.world_id(),
+        binding.channel_id(),
+    );
     due.deferred = Some(
         DeferredCommitAuthority::from_due(
             f.runtime.owner_fence().unwrap(),
@@ -1188,7 +1190,7 @@ fn master_assignment_payment_requires_real_player_preflight_and_cannot_be_deferr
         None
     );
     let mut due = original.clone();
-    let scope = super::super::super::RuntimeScopeRefV1::channel(
+    let scope = oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
         f.runtime.binding().world_id(),
         f.runtime.binding().channel_id(),
     );
@@ -1241,7 +1243,7 @@ fn condition_commit_on_a_reserved_slot_refuses_until_the_batch_ends() {
     assert_eq!(
         f.runtime
             .commit_actor_condition(&plan, SemanticTimeMicros::from_micros(0)),
-        Err(crate::foundation::ConditionOwnerError::Actor(
+        Err(crate::carrier::ConditionOwnerError::Actor(
             CarrierError::PlanConflict
         ))
     );
@@ -1346,8 +1348,10 @@ fn due_authority_binds_submillisecond_time_and_presence() {
     due.now_us = Some(SemanticTimeMicros::from_micros(100_123));
     let stamp = f.runtime.issue_owner_work().expect("owner work");
     let binding = f.runtime.binding();
-    let scope =
-        super::super::super::RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id());
+    let scope = oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
+        binding.world_id(),
+        binding.channel_id(),
+    );
     let token = DeferredCommitAuthority::from_due(
         f.runtime.owner_fence().expect("current fence"),
         scope,

@@ -2,7 +2,7 @@
 //! Candidate bounds are explicit; these do not widen the accepted two-effect Ability plan.
 
 use super::{CharacterId, CommandRef, ExactActorRef, OwnerDamageResult};
-use crate::foundation::{
+use oteryn_gameplay_foundation::foundation::{
     RuntimeScopeRefV1, RuntimeWorkStamp, ScopeOwnershipGeneration, ScopeRuntimeFence,
 };
 
@@ -46,8 +46,8 @@ pub struct MonsterAiState {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum OwnerCombatChange {
     PlayerConditions {
-        expected: Box<super::super::condition::ConditionStore<String>>,
-        next: Box<super::super::condition::ConditionStore<String>>,
+        expected: Box<oteryn_gameplay_foundation::foundation::condition::ConditionStore<String>>,
+        next: Box<oteryn_gameplay_foundation::foundation::condition::ConditionStore<String>>,
     },
     CompanionConditions(Box<CompanionConditionUpdate>),
     CompanionMaster(Box<super::runtime_actor_companion::PreparedCompanionAssignment>),
@@ -127,7 +127,7 @@ pub struct CombatBatchReceipt {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Error {
-    Owner(crate::foundation::CarrierError),
+    Owner(oteryn_gameplay_foundation::foundation::CarrierError),
     InvalidBatch,
     InvalidAnchor,
     InvalidMagnitude,
@@ -142,8 +142,8 @@ pub enum Error {
     AllocationFailed,
 }
 
-impl From<crate::foundation::CarrierError> for Error {
-    fn from(error: crate::foundation::CarrierError) -> Self {
+impl From<oteryn_gameplay_foundation::foundation::CarrierError> for Error {
+    fn from(error: oteryn_gameplay_foundation::foundation::CarrierError) -> Self {
         Self::Owner(error)
     }
 }
@@ -155,8 +155,12 @@ pub struct SpellOccurrenceBinding {
     pub revisions: [String; 5],
 }
 
-impl From<crate::foundation::ability_data::AbilityOccurrence> for SpellOccurrenceBinding {
-    fn from(value: crate::foundation::ability_data::AbilityOccurrence) -> Self {
+impl From<oteryn_gameplay_foundation::foundation::ability_data::AbilityOccurrence>
+    for SpellOccurrenceBinding
+{
+    fn from(
+        value: oteryn_gameplay_foundation::foundation::ability_data::AbilityOccurrence,
+    ) -> Self {
         let r = value.revisions();
         Self {
             id: value.id().as_str().to_owned(),

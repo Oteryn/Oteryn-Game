@@ -12,7 +12,7 @@ category = "gameplay"
 release-role = "production"
 
 [features]
-test-support = ["oteryn-gameplay-content/test-support", "oteryn-gameplay-durability/test-support", "oteryn-gameplay-foundation/test-support"]
+test-support = ["oteryn-gameplay-content/test-support", "oteryn-gameplay-durability/test-support", "oteryn-gameplay-entities/test-support", "oteryn-gameplay-foundation/test-support"]
 
 [dependencies]
 oteryn-gameplay-characters = { version = "=0.1.0", path = "../characters" }
@@ -26,6 +26,7 @@ oteryn-gameplay-combat = { version = "=0.1.0", path = "../combat" }
 oteryn-gameplay-content = { version = "=0.1.0", path = "../content" }
 oteryn-gameplay-domain = { version = "=0.1.0", path = "../domain" }
 oteryn-gameplay-durability = { version = "=0.1.0", path = "../durability" }
+oteryn-gameplay-entities = { version = "=0.1.0", path = "../entities" }
 oteryn-gameplay-foundation = { version = "=0.1.0", path = "../foundation" }
 oteryn-gameplay-world = { version = "=0.1.0", path = "../world" }
 oteryn-ntp-clock = { version = "=0.1.0", path = "../../ntp-clock" }
@@ -42,6 +43,7 @@ tokio-rustls.workspace = true
 [dev-dependencies]
 oteryn-gameplay-content = { version = "=0.1.0", path = "../../gameplay/content", features = ["test-support"] }
 oteryn-gameplay-durability = { version = "=0.1.0", path = "../../gameplay/durability", features = ["test-support"] }
+oteryn-gameplay-entities = { version = "=0.1.0", path = "../entities", features = ["test-support"] }
 oteryn-gameplay-foundation = { version = "=0.1.0", path = "../../gameplay/foundation", features = ["test-support"] }
 rcgen.workspace = true
 rustls = { workspace = true, features = ["tls12"] }

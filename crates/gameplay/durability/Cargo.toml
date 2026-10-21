@@ -12,7 +12,7 @@ category = "gameplay"
 release-role = "production"
 
 [features]
-test-support = ["oteryn-gameplay-foundation/test-support", "oteryn-gameplay-content/test-support"]
+test-support = ["oteryn-gameplay-content/test-support", "oteryn-gameplay-entities/test-support", "oteryn-gameplay-foundation/test-support"]
 
 [dependencies]
 oteryn-gameplay-characters = { version = "=0.1.0", path = "../characters" }
@@ -27,6 +27,7 @@ oteryn-gameplay-admission-evidence = { version = "=0.1.0", path = "../admission-
 oteryn-gameplay-character-recovery-fence = { version = "=0.1.0", path = "../character-recovery-fence" }
 oteryn-gameplay-content = { version = "=0.1.0", path = "../content" }
 oteryn-gameplay-domain = { version = "=0.1.0", path = "../domain" }
+oteryn-gameplay-entities = { version = "=0.1.0", path = "../entities" }
 oteryn-gameplay-foundation = { version = "=0.1.0", path = "../foundation" }
 oteryn-gameplay-native-admission-source = { version = "=0.1.0", path = "../native-admission-source" }
 oteryn-protocol-oteryn = { version = "=0.1.0", path = "../../protocol-oteryn" }
@@ -40,6 +41,7 @@ sqlx.workspace = true
 tokio = { workspace = true, features = ["signal"] }
 
 [dev-dependencies]
+oteryn-gameplay-entities = { version = "=0.1.0", path = "../entities", features = ["test-support"] }
 oteryn-gameplay-foundation = { version = "=0.1.0", path = "../foundation", features = ["test-support"] }
 oteryn-gameplay-content = { version = "=0.1.0", path = "../content", features = ["test-support"] }
 

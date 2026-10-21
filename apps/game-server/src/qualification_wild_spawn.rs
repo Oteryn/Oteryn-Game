@@ -7,6 +7,7 @@ use crate::durability::{DurabilityRoot, character_authority::ReconciledCharacter
 use crate::foundation::{
     ChannelRuntimeV1, CompanionSnapshot, MovementLocalPosition, RuntimeScopeRefV1,
 };
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 pub(super) const POSITION: MovementLocalPosition = MovementLocalPosition {
     x: 1,

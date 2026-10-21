@@ -12,7 +12,7 @@ category = "gameplay"
 release-role = "production"
 
 [features]
-test-support = ["oteryn-gameplay-encounters/test-support"]
+test-support = ["oteryn-gameplay-encounters/test-support", "oteryn-gameplay-entities/test-support"]
 
 [dependencies]
 oteryn-gameplay-characters = { version = "=0.1.0", path = "../characters" }
@@ -25,7 +25,6 @@ oteryn-gameplay-combat-rules = { version = "=0.1.0", path = "../combat-rules" }
 oteryn-gameplay-spell-rules = { version = "=0.1.0", path = "../spell-rules" }
 oteryn-gameplay-encounter-rules = { version = "=0.1.0", path = "../encounter-rules" }
 oteryn-gameplay-social-rules = { version = "=0.1.0", path = "../social-rules" }
-oteryn-gameplay-entities = { version = "=0.1.0", path = "../entities" }
 oteryn-gameplay-npc = { version = "=0.1.0", path = "../npc" }
 base64.workspace = true
 oteryn-error-codes = { version = "=0.1.0", path = "../../error-codes" }
@@ -37,6 +36,7 @@ oteryn-gameplay-content = { version = "=0.1.0", path = "../content" }
 oteryn-gameplay-domain = { version = "=0.1.0", path = "../domain" }
 oteryn-gameplay-durability = { version = "=0.1.0", path = "../durability" }
 oteryn-gameplay-encounters = { version = "=0.1.0", path = "../encounters" }
+oteryn-gameplay-entities = { version = "=0.1.0", path = "../entities" }
 oteryn-gameplay-foundation = { version = "=0.1.0", path = "../foundation" }
 oteryn-gameplay-monster-ai = { version = "=0.1.0", path = "../monster-ai" }
 oteryn-gameplay-native-admission-source = { version = "=0.1.0", path = "../native-admission-source" }
@@ -63,6 +63,7 @@ oteryn-dev-client = { version = "=0.1.0", path = "../../../tools/dev-client" }
 oteryn-gameplay-combat = { version = "=0.1.0", path = "../../gameplay/combat", features = ["test-support"] }
 oteryn-gameplay-content = { version = "=0.1.0", path = "../../gameplay/content", features = ["test-support"] }
 oteryn-gameplay-durability = { version = "=0.1.0", path = "../../gameplay/durability", features = ["test-support"] }
+oteryn-gameplay-entities = { version = "=0.1.0", path = "../entities", features = ["test-support"] }
 oteryn-gameplay-foundation = { version = "=0.1.0", path = "../../gameplay/foundation", features = ["test-support"] }
 oteryn-gameplay-monster-ai = { version = "=0.1.0", path = "../../gameplay/monster-ai", features = ["test-support"] }
 oteryn-gameplay-social = { version = "=0.1.0", path = "../../gameplay/social", features = ["test-support"] }

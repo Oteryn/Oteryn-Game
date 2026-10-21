@@ -56,6 +56,7 @@ use crate::native_admission_source::runtime_status::{RuntimeStatusDescriptor, Sy
 use crate::native_admission_source::{CHARACTER_BOOTSTRAP_INTENT_ISSUER, TransientCapacity};
 use crate::{GameplayListenerConfig, GameplaySeamOwners, serve_gameplay};
 use oteryn_foundation::CancellationToken;
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use rustls::pki_types::pem::PemObject;
 use rustls::pki_types::{CertificateDer, PrivateKeyDer};
 use std::future::{Future, poll_fn};

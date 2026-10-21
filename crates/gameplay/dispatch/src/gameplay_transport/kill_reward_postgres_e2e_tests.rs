@@ -8,6 +8,8 @@
 //! Nested under the monk-save PostgreSQL tests to reuse their fresh-admission fixture.
 #![allow(clippy::expect_used, clippy::unwrap_used)]
 
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+
 use super::fixture::{Harness, debug, id, run};
 use super::{TestResult, prepare_current_session};
 use crate::foundation::{

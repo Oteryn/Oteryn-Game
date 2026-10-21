@@ -33,7 +33,8 @@ fn attack(who: u8, session_seed: u8, sequence: u64, sub_ordinal: u16) -> Attacke
         u64::from(session_seed),
         CommandRef::new(
             session(session_seed),
-            super::super::CommandId::new(sequence).expect("non-zero command"),
+            oteryn_gameplay_foundation::foundation::CommandId::new(sequence)
+                .expect("non-zero command"),
         ),
         sub_ordinal,
     )

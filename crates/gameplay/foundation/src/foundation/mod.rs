@@ -1,6 +1,15 @@
 //! Protocol/runtime authority primitives for the native Oteryn game server.
 
 pub mod ability_data;
+pub mod actor_ref;
+pub use actor_ref::{ActorLocalGeneration, ActorLocalId, ActorRef, ExactActorRef};
+pub mod carrier_values;
+pub use carrier_values::{CarrierError, ChannelContentPin, LocalPosition};
+pub mod creature_policy;
+pub use creature_policy::{
+    CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureExactRatio, CreatureFlags,
+    CreatureResistance, FamiliarSelfHealDefense,
+};
 
 mod admission {
     include!("admission.rs");
@@ -11,10 +20,8 @@ pub mod fnd04_verifier;
 // AI-1 (#162; GAME-AI-01-ACTION-INTEGRATION-FIRST-CREATURE-SLICE-V1 §4.2): the Channel owner
 // timer lane (FND-03 §10). AI-3 (§4.4) is the first consumer outside this module's own tests
 // (`ai::think::{ThinkFamily, ThinkOccurrence, ThinkSequenceTracker, schedule_next_think}`), so
-// this module is now `pub` -- a pure visibility widening, no behavior change. Full live
-// wiring into `ChannelRuntimeV1`'s owner cycle still awaits a `foundation`-owned follow-up:
-// `ScopeRuntimeFence`'s own scope-bound constructor (`from_external_grant`/`with_scope`) stays
-// private to this module, so no outside caller can yet obtain a fence to schedule/drain with.
+// this module is now `pub` -- a pure visibility widening, no behavior change. The entities
+// carrier composes its owner cycle with the kernel's scope-bound fence constructors.
 #[allow(dead_code)]
 pub mod condition;
 #[allow(dead_code)]
@@ -27,57 +34,6 @@ pub mod speech;
 mod think_occurrence;
 #[allow(unused_imports)]
 pub use think_occurrence::ThinkOccurrence;
-#[allow(dead_code)]
-pub mod runtime_actor_carrier;
-pub use runtime_actor_carrier::npc_actor::{
-    NpcPlacement, NpcPlacementError, NpcPlacementTable, NpcPlacements,
-};
-#[allow(unused_imports)]
-pub use runtime_actor_carrier::runtime_actor_companion::{
-    CompanionMaster, CompanionSnapshot, CompanionState, CompiledCreaturePolicies,
-    CompiledCreaturePolicy, CreatureExactRatio, CreatureFlags, CreatureResistance,
-    FamiliarDefenseClock, FamiliarSelfHealDefense, PreparedCompanionAssignment,
-    PreparedCompanionSpawn, PreparedCreatureProfileTransformation,
-};
-pub use runtime_actor_carrier::runtime_actor_source_step::{
-    SourceStepCommitProof, source_step_seal,
-};
-#[allow(unused_imports)]
-pub use runtime_actor_carrier::runtime_actor_spell::{
-    CreatureCombatFacts, QualifiedCompanionTouches, QualifiedSpellRelocation, StagedSpellBatch,
-};
-pub use runtime_actor_carrier::runtime_actor_spell_types;
-#[allow(unused_imports)]
-pub use runtime_actor_carrier::runtime_actor_spell_types::DeferredCommitAuthority;
-#[allow(unused_imports)]
-pub use runtime_actor_carrier::{
-    ABILITY01_EFFECT_PLAN_ENTRIES_MAX, AI01_SPAWN_POPULATION_MAX, AI01_SPAWN_SOURCES_PER_SCOPE_MAX,
-    ActorConditionPlan, ActorConditionTickPlan, ActorConditionTransition, ActorMemoTable,
-    ApplicationFacts, AttackerCommand, AttributeModifier, AttributeModifiers,
-    BoneOverlordCagePhase, BoneOverlordPhase, BonePhaseError, BonePhaseTransition,
-    BoneSharedHpResult, BorethDeathLedger, BorethDeathResult,
-    COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX,
-    COMBAT01_DAMAGE_RECEIPTS_PER_CREATURE_GENERATION_MAX, CREATURE_DEFENCE_MEMOS_PER_CHANNEL_MAX,
-    CarrierError, ChannelContentPin, ChannelRuntimeV1, CombatSkill, CommittedLethalReceipt,
-    ConditionDefinition, ConditionOwnerError, ConditionRefusal, ConditionSource,
-    ConditionSourceKind, ConditionStore, ConditionTick, ConditionType, ConditionValues,
-    ControlLossMark, CreatureDeathOccurrenceKey, CreatureDeathOccurrenceRef,
-    CreatureSelfHealLedger, CreatureSelfHealRegistration, CurrentOwnerCombatDeath,
-    CurrentOwnerExactActorCommit, CurrentOwnerExactActorLookup, CurrentOwnerMovementPosition,
-    DamageSchedule, DamageSegment, DotElement, EncounterSpawnError, ExactActorRef, ExactSpeedRatio,
-    FirstEntryPosition, MovementFacing, MovementLocalPosition, MovementPositionContext,
-    MovementPositionSnapshot, NATIVE_SUMMON_MEMOS_PER_CHANNEL_MAX,
-    NATIVE_SUMMON_RETIREMENT_LINKS_PER_CALL_MAX, NativeEncounterSpawnSpec,
-    NativeSummonAdmissionSpec, NativeSummonDeath, NativeSummonMovementOutcome, NativeSummonOrigin,
-    OwnerDamageCommand, OwnerDamageResult, PlayerActorReservation, RationalSpeedRange,
-    RumBarrelDeathLedger, RumBarrelDeathResult, RuntimeCorpseProjection, SpeedRange, StatusKind,
-    TickFacts, TickKind, WelterConsumeError, WelterConsumeLedger, WelterConsumeResult, WelterPrey,
-    WelterSourceRegistration,
-};
-#[cfg(any(test, feature = "test-support"))]
-#[allow(unused_imports)] // Each path-included Foundation test crate uses only some fixtures.
-pub use runtime_actor_carrier::{CombatDeathFixture, MovementActorFixture};
-pub use runtime_actor_carrier::{SpellRelocationProof, relocation_seal};
 mod snapshot_facade;
 pub use admission::*;
 pub use admission_facade::{
@@ -963,7 +919,7 @@ pub struct ScopeRuntimeFence {
 
 impl ScopeRuntimeFence {
     #[must_use]
-    const fn from_external_grant(generation: ScopeOwnershipGeneration) -> Self {
+    pub const fn from_external_grant(generation: ScopeOwnershipGeneration) -> Self {
         Self {
             generation,
             scope: None,
@@ -972,12 +928,12 @@ impl ScopeRuntimeFence {
     }
 
     /// Binds this granted fence to one exact scope identity, so a caller-supplied scope claim
-    /// can be checked against the fence itself instead of trusted on its own. Only
-    /// `owner_timer`'s tests construct a scope-bound fence today (production wiring is AI-2's
-    /// `ChannelRuntimeV1` integration), so this is dead code outside `cfg(test)` for now.
+    /// can be checked against the fence itself instead of trusted on its own. The
+    /// independently committed assignment's carrier composes the production owner cycle.
+    /// Owner timer fixtures also use this binding to qualify cross-scope refusals.
     #[must_use]
     #[allow(dead_code)]
-    const fn with_scope(mut self, scope: RuntimeScopeRefV1) -> Self {
+    pub const fn with_scope(mut self, scope: RuntimeScopeRefV1) -> Self {
         self.scope = Some(scope);
         self
     }
@@ -1035,7 +991,7 @@ impl ScopeRuntimeFence {
         self.next_ordinal.is_some() && self.generation == generation && self.scope == Some(scope)
     }
 
-    fn invalidate(&mut self) {
+    pub fn invalidate(&mut self) {
         self.next_ordinal = None;
     }
 
@@ -1504,11 +1460,6 @@ pub mod admission_authority_publication;
 
 pub mod fresh_admission_durability;
 
-#[cfg(any(test, feature = "test-support"))]
-#[allow(unused_imports)]
-pub use runtime_actor_carrier::{
-    crystal_death_router_fixture, crystal_death_router_fixture_with_artifact,
-};
 // Append inside Foundation module. Test builds only; no production grant API.
 #[cfg(any(test, feature = "test-support"))]
 pub fn crystal_timer_fixture(
@@ -1520,22 +1471,6 @@ pub fn crystal_timer_fixture(
     let stamp = fence.stamp(ordinal);
     Ok((fence, stamp))
 }
-
-#[cfg(any(test, feature = "test-support"))]
-#[allow(unused_imports)]
-pub use runtime_actor_carrier::bone_shared_actual_owner_harness;
-#[allow(unused_imports)]
-pub use runtime_actor_carrier::runtime_actor_periodic::{
-    CreaturePeriodicReceipt, PreparedCreaturePeriodicTurn,
-};
-
-pub use runtime_actor_carrier::runtime_actor_familiar_defense::FamiliarDefenseReceipt;
-pub use runtime_actor_carrier::runtime_actor_party::{
-    PartyAction, PartyMemberSnapshot, PartyPresence, PartySnapshot,
-};
-pub use runtime_actor_carrier::runtime_actor_source_reservation::{
-    SourceActorReservation, SourceActorReservationProof, source_reservation_seal,
-};
 
 #[allow(
     dead_code,
@@ -1549,5 +1484,3 @@ pub mod map_position;
 pub mod melee_definition;
 
 pub mod spell_wheel_profile;
-
-pub use runtime_actor_carrier::project_fixed_one_creature_death;

@@ -5,7 +5,11 @@
 //! assignment that `serve` consumes before readiness; one runtime per
 //! ownership generation is enforced by that composition, not by this module.
 
-use super::{
+pub use oteryn_gameplay_foundation::foundation::{
+    ActorLocalGeneration, ActorLocalId, ActorRef, CarrierError, ChannelContentPin, ExactActorRef,
+    LocalPosition,
+};
+use oteryn_gameplay_foundation::foundation::{
     ChannelId, CharacterId, CharacterLease, CommandRef, GameSessionId, NodeId,
     ScopeOwnershipGeneration, WorldId,
 };
@@ -21,35 +25,35 @@ macro_rules! test_support_pub {
     };
 }
 
-#[path = "runtime_actor_companion.rs"]
+#[path = "carrier/runtime_actor_companion.rs"]
 pub mod runtime_actor_companion;
-#[path = "runtime_actor_spell_types.rs"]
+#[path = "carrier/runtime_actor_spell_types.rs"]
 pub mod runtime_actor_spell_types;
 
-#[path = "runtime_actor_familiar_defense.rs"]
+#[path = "carrier/runtime_actor_familiar_defense.rs"]
 pub mod runtime_actor_familiar_defense;
-#[path = "runtime_actor_party.rs"]
+#[path = "carrier/runtime_actor_party.rs"]
 pub mod runtime_actor_party;
-#[path = "runtime_actor_periodic.rs"]
+#[path = "carrier/runtime_actor_periodic.rs"]
 pub mod runtime_actor_periodic;
-#[path = "runtime_actor_reentry.rs"]
+#[path = "carrier/runtime_actor_reentry.rs"]
 pub mod runtime_actor_reentry;
-#[path = "runtime_actor_source_reservation.rs"]
+#[path = "carrier/runtime_actor_source_reservation.rs"]
 pub mod runtime_actor_source_reservation;
-#[path = "runtime_actor_source_step.rs"]
+#[path = "carrier/runtime_actor_source_step.rs"]
 pub mod runtime_actor_source_step;
-#[path = "runtime_actor_spell.rs"]
+#[path = "carrier/runtime_actor_spell.rs"]
 pub mod runtime_actor_spell;
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::mem::size_of;
 use std::sync::Arc;
 
-#[path = "runtime_actor_conditions.rs"]
+#[path = "carrier/runtime_actor_conditions.rs"]
 mod runtime_actor_conditions;
 // SPAWN-1a: the pure spawn schedule (std only) compiles with the carrier so every
 // path-included Foundation crate has it without the `ai` tree.
-#[path = "spawn.rs"]
+#[path = "carrier/spawn.rs"]
 mod spawn;
 #[allow(unused_imports)] // The Foundation facade is composed by the owning consumer child.
 pub use runtime_actor_conditions::{
@@ -60,98 +64,10 @@ pub use runtime_actor_conditions::{
     RationalSpeedRange, SpeedRange, StatusKind, TickFacts, TickKind,
 };
 use runtime_actor_conditions::{CreatureCommitState, PlayerRuntimeState};
-#[path = "npc_actor.rs"]
+#[path = "carrier/npc_actor.rs"]
 pub mod npc_actor;
-#[path = "runtime_actor_death.rs"]
+#[path = "carrier/runtime_actor_death.rs"]
 mod runtime_actor_death;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CarrierError {
-    InvalidCapacity,
-    CapacityArithmeticOverflow,
-    AllocationFailed,
-    CapacityExceeded,
-    InvalidAssignmentBinding,
-    ContentPinWorldMismatch,
-    PlayerReservationMismatch,
-    WrongScope,
-    InvalidActorIdentity,
-    StaleActorGeneration,
-    ActorGenerationExhausted,
-    InjectedAdmissionFailure,
-    NamespaceAlreadyClaimed,
-    ContinuityGenerationNotNewer,
-    PositionUnavailable,
-    PositionAlreadyInitialized,
-    ControlLossConflict,
-    InvalidPreProductionPositionContext,
-    PositionContextMismatch,
-    PositionSnapshotMismatch,
-    PositionRevisionExhausted,
-    MovementCreatureUnavailable,
-    MovementNonCardinal,
-    InvalidCreatureHealth,
-    InvalidCreatureTarget,
-    CreatureTargetMismatch,
-    NotCreature,
-    SummonHasNoRewards,
-    CreatureNotActionable,
-    InvalidDamage,
-    DamageOverflow,
-    InvalidCommitBinding,
-    CommitBindingTooLarge,
-    CommitAllocationFailed,
-    PlanConflict,
-    /// D4/D141: an attributed commit's `(sequence, sub_ordinal)` is at or below its attacker's
-    /// recorded high-water mark for the same `GameSessionId`. It was already resolved once
-    /// (whether or not its own receipt is still retained), so it is refused, never re-applied.
-    StaleAttackerSequence,
-    /// D4/D141: 16 receipts are retained, none is evictable and a new distinct occurrence
-    /// arrived (fail-closed, GAME-ABILITY-01 section 12). HP and every receipt stay untouched.
-    DamageReceiptCapacityExceeded,
-    /// D4/D141: `sub_ordinal` is at or past `ABILITY01_EFFECT_PLAN_ENTRIES_MAX`.
-    SubOrdinalOutOfRange,
-    /// D4/D141: an attributed command's `character_lease_generation` is lower than its
-    /// attacker's recorded one, or equal with a differing `GameSessionId`. Its session was
-    /// superseded, so it is refused and never applied even when its own receipt was evicted.
-    SupersededAttackerSession,
-    InjectedCommitFailure,
-    CommittedLethalUnavailable,
-    CorpseReceiptMismatch,
-    CorpseProjectionConflict,
-    InjectedCorpseProjectionFailure,
-    InjectedCorpseResponseFailure,
-    /// D2b: `reward_occurrence` was asked for a different reward principal
-    /// than the one already memoized for this committed death.
-    RewardPrincipalConflict,
-    /// AI-2 (§4.3/§4.9): a `SpawnDefinition`'s population/placement-cells violates its own or
-    /// the registered `CREATUREAI0-RL-03` points-per-source bound.
-    InvalidSpawnDefinition,
-    /// CREATURE-AI-1 §1.2 `PROFILE_MISSING`: a creature admitted to thinking without a
-    /// behaviour profile. Never defaulted.
-    ProfileMissing,
-    /// CREATURE-AI-1 §1.2 `PROFILE_INVALID` (including `CREATUREAI0-RL-07`).
-    ProfileInvalid,
-    /// AI-2: `realize_spawn` named a `SpawnSourceId` this carrier already realized.
-    DuplicateSpawnSource,
-    /// AI-2: a respawn call named a `SpawnSourceId`/cell index this carrier never realized.
-    UnknownSpawnSource,
-    UnknownSpawnCell,
-    /// CHARM-DESC-FENCE-LEASE §3 item 2: the slot already carries a write fence of another
-    /// transition of this session. The caller waits for that transition's settle step.
-    WriteFenceBusy,
-    /// A2: the slot is already bound to a different Character lease.
-    AttackerBindingConflict,
-    /// A2 / FND-04B §22: a same-session continuation whose reconcile is terminal or unprovable.
-    ContinuationRefused,
-}
-
-impl std::fmt::Display for CarrierError {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(formatter, "{self:?}")
-    }
-}
-impl std::error::Error for CarrierError {}
 
 /// Authority supplied by a future, independently accepted assignment consumer.
 ///
@@ -161,8 +77,8 @@ impl std::error::Error for CarrierError {}
 /// [`ChannelRuntimeV1`] facade, so no other crate can mint continuity for a retired runtime:
 ///
 /// ```
-/// use oteryn_gameplay_foundation::foundation::ChannelRuntimeV1;
-/// use oteryn_gameplay_foundation::foundation::runtime_actor_carrier::{
+/// use oteryn_gameplay_entities::ChannelRuntimeV1;
+/// use oteryn_gameplay_entities::carrier::{
 ///     CurrentOwnerExactActorCommit, NamespaceContinuityGuard, PreProductionContinuityGrant,
 /// };
 ///
@@ -174,8 +90,8 @@ impl std::error::Error for CarrierError {}
 /// ```
 ///
 /// ```compile_fail
-/// use oteryn_gameplay_foundation::foundation::ChannelRuntimeV1;
-/// use oteryn_gameplay_foundation::foundation::runtime_actor_carrier::PreProductionContinuityGrant;
+/// use oteryn_gameplay_entities::ChannelRuntimeV1;
+/// use oteryn_gameplay_entities::carrier::PreProductionContinuityGrant;
 ///
 /// fn forge(runtime: &ChannelRuntimeV1) -> PreProductionContinuityGrant {
 ///     let binding = runtime.binding();
@@ -189,7 +105,7 @@ impl std::error::Error for CarrierError {}
 ///
 /// ```compile_fail
 /// use oteryn_gameplay_foundation::foundation::ScopeOwnershipGeneration;
-/// use oteryn_gameplay_foundation::foundation::runtime_actor_carrier::NamespaceContinuityGuard;
+/// use oteryn_gameplay_entities::carrier::NamespaceContinuityGuard;
 ///
 /// fn rewind(guard: &mut NamespaceContinuityGuard, generation: ScopeOwnershipGeneration) {
 ///     guard.current_generation = generation;
@@ -197,7 +113,7 @@ impl std::error::Error for CarrierError {}
 /// ```
 ///
 /// ```compile_fail
-/// use oteryn_gameplay_foundation::foundation::ChannelRuntimeV1;
+/// use oteryn_gameplay_entities::ChannelRuntimeV1;
 ///
 /// fn escape(runtime: &mut ChannelRuntimeV1) {
 ///     let commit = runtime.borrow_exact_actor_commit();
@@ -320,104 +236,6 @@ impl NamespaceContinuityGuard {
             return Err(CarrierError::NamespaceAlreadyClaimed);
         }
         Ok(())
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct ActorLocalId(pub u32);
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct ActorLocalGeneration(pub u64);
-
-/// Carrier-issued actor reference. Its scope generation stays crate-private, so no other
-/// crate can mint one for a scope the carrier never owned:
-///
-/// ```
-/// use oteryn_gameplay_foundation::foundation::runtime_actor_carrier::ActorRef;
-/// fn local_id(actor: ActorRef) -> u32 { actor.actor_local_id.0 }
-/// ```
-///
-/// ```compile_fail
-/// use oteryn_gameplay_foundation::foundation::runtime_actor_carrier::ActorRef;
-/// fn forge(actor: ActorRef) -> ActorRef { ActorRef { ..actor } }
-/// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct ActorRef {
-    pub world_id: WorldId,
-    pub channel_id: ChannelId,
-    pub(crate) scope_generation: ScopeOwnershipGeneration,
-    pub actor_local_id: ActorLocalId,
-    pub actor_local_generation: ActorLocalGeneration,
-}
-
-#[cfg(any(test, feature = "test-support"))]
-impl ActorRef {
-    /// Test builds only: restamp the scope generation, so a test can present the carrier
-    /// with a reference from a scope it does not own.
-    pub fn set_scope_generation(&mut self, scope_generation: ScopeOwnershipGeneration) {
-        self.scope_generation = scope_generation;
-    }
-}
-
-/// Inseparable semantic actor handle issued by this one Channel carrier.
-/// Its internals are exposed within the crate for carrier qualification tests.
-/// It is never decoded from a client handle or derived from the fixture Ability `TargetId`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct ExactActorRef(pub ActorRef);
-
-impl ExactActorRef {
-    pub const fn world_id(self) -> WorldId {
-        self.0.world_id
-    }
-    pub const fn channel_id(self) -> ChannelId {
-        self.0.channel_id
-    }
-    pub const fn scope_generation(self) -> ScopeOwnershipGeneration {
-        self.0.scope_generation
-    }
-    pub const fn actor_local_id(self) -> u32 {
-        self.0.actor_local_id.0
-    }
-    pub const fn actor_local_generation(self) -> u64 {
-        self.0.actor_local_generation.0
-    }
-    /// Stable opaque placement identity: a domain-separated digest of the exact actor
-    /// reference in its runtime scope. It carries no position and reveals no slot layout.
-    pub fn placement_identity(self) -> [u8; 16] {
-        use sha2::{Digest, Sha256};
-        let ActorRef {
-            world_id,
-            channel_id,
-            scope_generation,
-            actor_local_id,
-            actor_local_generation,
-        } = self.0;
-        let digest = Sha256::new()
-            .chain_update(b"oteryn:runtime-player-placement:v1")
-            .chain_update(world_id.as_bytes())
-            .chain_update(channel_id.as_bytes())
-            .chain_update(scope_generation.get().to_be_bytes())
-            .chain_update(actor_local_id.0.to_be_bytes())
-            .chain_update(actor_local_generation.0.to_be_bytes())
-            .finalize();
-        let mut identity = [0_u8; 16];
-        identity.copy_from_slice(&digest[..16]);
-        identity
-    }
-}
-
-impl ExactActorRef {
-    /// Transport test fixture: an actor reference that names no runtime slot.
-    #[cfg(any(test, feature = "test-support"))]
-    #[allow(clippy::expect_used, dead_code)]
-    pub fn transport_fixture(world_id: WorldId, channel_id: ChannelId) -> Self {
-        Self(ActorRef {
-            world_id,
-            channel_id,
-            scope_generation: ScopeOwnershipGeneration::new(1).expect("generation"),
-            actor_local_id: ActorLocalId(1),
-            actor_local_generation: ActorLocalGeneration(1),
-        })
     }
 }
 
@@ -759,12 +577,12 @@ impl OwnerCommitRecord {
 /// Only the carrier appends receipts or advances the ordinal; no other crate can:
 ///
 /// ```
-/// use oteryn_gameplay_foundation::foundation::runtime_actor_carrier::DamageReceipts;
+/// use oteryn_gameplay_entities::carrier::DamageReceipts;
 /// let _empty = DamageReceipts::default();
 /// ```
 ///
 /// ```compile_fail
-/// use oteryn_gameplay_foundation::foundation::runtime_actor_carrier::DamageReceipts;
+/// use oteryn_gameplay_entities::carrier::DamageReceipts;
 /// fn forge(receipts: &mut DamageReceipts) { receipts.next_ordinal = 0; }
 /// ```
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -1083,7 +901,7 @@ impl CreatureDeathOccurrenceKey {
     }
 
     pub const fn scope_ownership_generation(self) -> ScopeOwnershipGeneration {
-        self.0.scope_generation
+        ExactActorRef(self.0).scope_generation()
     }
 
     pub const fn actor_local_id(self) -> u32 {
@@ -1474,13 +1292,6 @@ impl PreProductionPositionContext {
             content_generation_marker,
         }
     }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct LocalPosition {
-    pub x: i32,
-    pub y: i32,
-    pub floor: i16,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -2075,7 +1886,7 @@ pub enum RespawnFamily {
     Respawn,
 }
 
-impl super::owner_timer::TimerFamily for RespawnFamily {
+impl oteryn_gameplay_foundation::foundation::owner_timer::TimerFamily for RespawnFamily {
     fn registered_maximum(self) -> usize {
         match self {
             Self::Respawn => AI01_PENDING_RESPAWN_TIMERS_PER_DEAD_ACTOR,
@@ -2134,7 +1945,7 @@ fn mint_reward_occurrence_bytes(actor: ActorRef, character: [u8; 16]) -> [u8; 16
         .chain_update(b"oteryn:combat-death-xp-occurrence:v1")
         .chain_update(actor.world_id.as_bytes())
         .chain_update(actor.channel_id.as_bytes())
-        .chain_update(actor.scope_generation.get().to_be_bytes())
+        .chain_update(ExactActorRef(actor).scope_generation().get().to_be_bytes())
         .chain_update(actor.actor_local_id.0.to_be_bytes())
         .chain_update(actor.actor_local_generation.0.to_be_bytes())
         .chain_update(character)
@@ -2147,78 +1958,6 @@ fn mint_reward_occurrence_bytes(actor: ActorRef, character: [u8; 16]) -> [u8; 16
     bytes[8] = 0x80 | (digest[2] & 0x3f);
     bytes[9..16].copy_from_slice(&digest[3..10]);
     bytes
-}
-
-/// The exact active Content generation a Channel runtime is created with (#935 "Activation issuer
-/// and current pin"): scope World, activation sequence, pair digests and the source-qualified
-/// frame binding digest. In production it is minted only by the Content activation path from an
-/// activated native entry generation; it is fixed for the runtime's lifetime.
-#[derive(Debug, PartialEq, Eq)]
-#[cfg_attr(any(test, feature = "test-support"), derive(Clone))]
-pub struct ChannelContentPin {
-    world_id: WorldId,
-    activation_sequence: u64,
-    server_artifact_digest: [u8; 32],
-    client_artifact_digest: [u8; 32],
-    frame_binding_digest: [u8; 32],
-    map_revision_digest: [u8; 32],
-    /// The first-entry start cell the active generation attests as Walkable.
-    entry_start: LocalPosition,
-}
-
-impl ChannelContentPin {
-    pub const fn map_revision_digest(&self) -> [u8; 32] {
-        self.map_revision_digest
-    }
-    pub const fn from_activation(
-        world_id: WorldId,
-        activation_sequence: u64,
-        server_artifact_digest: [u8; 32],
-        client_artifact_digest: [u8; 32],
-        frame_binding_digest: [u8; 32],
-        map_revision_digest: [u8; 32],
-        entry_start: (i32, i32, i16),
-    ) -> Self {
-        Self {
-            world_id,
-            activation_sequence,
-            server_artifact_digest,
-            client_artifact_digest,
-            frame_binding_digest,
-            map_revision_digest,
-            entry_start: LocalPosition {
-                x: entry_start.0,
-                y: entry_start.1,
-                floor: entry_start.2,
-            },
-        }
-    }
-
-    /// Synthetic pin for runtime tests that do not exercise Content activation.
-    #[cfg(any(test, feature = "test-support"))]
-    pub const fn test(world_id: WorldId) -> Self {
-        Self::from_activation(world_id, 1, [1; 32], [2; 32], [3; 32], [4; 32], (0, 0, 0))
-    }
-
-    pub const fn world_id(&self) -> WorldId {
-        self.world_id
-    }
-
-    pub const fn activation_sequence(&self) -> u64 {
-        self.activation_sequence
-    }
-
-    pub const fn server_artifact_digest(&self) -> [u8; 32] {
-        self.server_artifact_digest
-    }
-
-    pub const fn client_artifact_digest(&self) -> [u8; 32] {
-        self.client_artifact_digest
-    }
-
-    pub const fn frame_binding_digest(&self) -> [u8; 32] {
-        self.frame_binding_digest
-    }
 }
 
 impl ChannelRuntimeV1 {
@@ -2271,7 +2010,7 @@ pub struct ChannelRuntimeV1 {
     carrier: ChannelActorCarrier,
     content: ChannelContentPin,
     companion_policies: Option<Arc<runtime_actor_companion::CompiledCreaturePolicies>>,
-    owner_cycle: super::ScopeRuntimeFence,
+    owner_cycle: oteryn_gameplay_foundation::foundation::ScopeRuntimeFence,
     /// SPAWN-1a: the pending respawn occurrences of the realized spawn sources (§6.3).
     spawn_schedule: spawn::RespawnSchedule,
     /// SPAWN-CEILINGS-1 (Codex 4243397472): the occurrences of `spawn_schedule` by (deadline,
@@ -2375,7 +2114,9 @@ struct SpawnDriveWindow {
 impl ChannelRuntimeV1 {
     /// Issue from the one non-clonable owner cycle installed by the independently committed
     /// assignment. A retired namespace can neither schedule nor commit further actor work.
-    pub fn issue_owner_work(&mut self) -> Result<super::RuntimeWorkStamp, CarrierError> {
+    pub fn issue_owner_work(
+        &mut self,
+    ) -> Result<oteryn_gameplay_foundation::foundation::RuntimeWorkStamp, CarrierError> {
         self.carrier.validate_current_continuity(&self.continuity)?;
         let ordinal = self
             .owner_cycle
@@ -2384,10 +2125,15 @@ impl ChannelRuntimeV1 {
         Ok(self.owner_cycle.stamp(ordinal))
     }
 
-    pub fn owner_fence(&self) -> Result<&super::ScopeRuntimeFence, CarrierError> {
+    pub fn owner_fence(
+        &self,
+    ) -> Result<&oteryn_gameplay_foundation::foundation::ScopeRuntimeFence, CarrierError> {
         self.carrier.validate_current_continuity(&self.continuity)?;
         if !self.owner_cycle.is_current_for_scope(
-            super::RuntimeScopeRefV1::channel(self.binding.world_id, self.binding.channel_id),
+            oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
+                self.binding.world_id,
+                self.binding.channel_id,
+            ),
             self.binding.scope_generation,
         ) {
             return Err(CarrierError::WrongScope);
@@ -2416,7 +2162,7 @@ impl ChannelRuntimeV1 {
         if node_registration_revision == 0 || source_revision == 0 {
             return Err(CarrierError::InvalidAssignmentBinding);
         }
-        if content.world_id != world_id {
+        if content.world_id() != world_id {
             return Err(CarrierError::ContentPinWorldMismatch);
         }
         let decision_revision = decision_identity
@@ -2448,8 +2194,15 @@ impl ChannelRuntimeV1 {
             carrier,
             content,
             companion_policies: None,
-            owner_cycle: super::ScopeRuntimeFence::from_external_grant(scope_generation)
-                .with_scope(super::RuntimeScopeRefV1::channel(world_id, channel_id)),
+            owner_cycle:
+                oteryn_gameplay_foundation::foundation::ScopeRuntimeFence::from_external_grant(
+                    scope_generation,
+                )
+                .with_scope(
+                    oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
+                        world_id, channel_id,
+                    ),
+                ),
             spawn_schedule: spawn::RespawnSchedule::default(),
             spawn_deadlines: BTreeSet::new(),
             spawn_scan_cursor: spawn::SpawnPoint {
@@ -2601,13 +2354,13 @@ impl ChannelRuntimeV1 {
         let context = self.pinned_position_context();
         let carrier = &self.carrier;
         let actor = |version: &VersionedPosition| VisibleRuntimeActor {
-            actor: ExactActorRef(ActorRef {
-                world_id: carrier.world_id,
-                channel_id: carrier.channel_id,
-                scope_generation: carrier.scope_generation,
-                actor_local_id: version.actor_local_id,
-                actor_local_generation: version.actor_local_generation,
-            }),
+            actor: ExactActorRef(ActorRef::from_owner_parts(
+                carrier.world_id,
+                carrier.channel_id,
+                carrier.scope_generation,
+                version.actor_local_id,
+                version.actor_local_generation,
+            )),
             generation: version.actor_local_generation.0,
             position: MovementLocalPosition {
                 x: version.position.x,
@@ -2758,16 +2511,16 @@ impl ChannelRuntimeV1 {
                 } if *health > 0 => (*generation, None),
                 _ => continue,
             };
-            let actor = ExactActorRef(ActorRef {
-                world_id: self.binding.world_id,
-                channel_id: self.binding.channel_id,
-                scope_generation: self.binding.scope_generation,
-                actor_local_id: ActorLocalId(
+            let actor = ExactActorRef(ActorRef::from_owner_parts(
+                self.binding.world_id,
+                self.binding.channel_id,
+                self.binding.scope_generation,
+                ActorLocalId(
                     u32::try_from(index + 1)
                         .map_err(|_| CarrierError::CapacityArithmeticOverflow)?,
                 ),
-                actor_local_generation: ActorLocalGeneration(generation),
-            });
+                ActorLocalGeneration(generation),
+            ));
             let position = self.read_actor_position(actor)?;
             if position.context() != self.pinned_movement_context() {
                 return Err(CarrierError::PositionContextMismatch);
@@ -2807,16 +2560,16 @@ impl ChannelRuntimeV1 {
                 } if *health > 0 => (*generation, None),
                 _ => continue,
             };
-            let actor = ExactActorRef(ActorRef {
-                world_id: self.binding.world_id,
-                channel_id: self.binding.channel_id,
-                scope_generation: self.binding.scope_generation,
-                actor_local_id: ActorLocalId(
+            let actor = ExactActorRef(ActorRef::from_owner_parts(
+                self.binding.world_id,
+                self.binding.channel_id,
+                self.binding.scope_generation,
+                ActorLocalId(
                     u32::try_from(index + 1)
                         .map_err(|_| CarrierError::CapacityArithmeticOverflow)?,
                 ),
-                actor_local_generation: ActorLocalGeneration(generation),
-            });
+                ActorLocalGeneration(generation),
+            ));
             let position = self.read_actor_position(actor)?;
             if position.context() != self.pinned_movement_context() {
                 return Err(CarrierError::PositionContextMismatch);
@@ -2858,16 +2611,16 @@ impl ChannelRuntimeV1 {
             if result.is_some() {
                 return Err(CarrierError::PlayerReservationMismatch);
             }
-            let actor = ExactActorRef(ActorRef {
-                world_id: self.binding.world_id,
-                channel_id: self.binding.channel_id,
-                scope_generation: self.binding.scope_generation,
-                actor_local_id: ActorLocalId(
+            let actor = ExactActorRef(ActorRef::from_owner_parts(
+                self.binding.world_id,
+                self.binding.channel_id,
+                self.binding.scope_generation,
+                ActorLocalId(
                     u32::try_from(index + 1)
                         .map_err(|_| CarrierError::CapacityArithmeticOverflow)?,
                 ),
-                actor_local_generation: ActorLocalGeneration(*generation),
-            });
+                ActorLocalGeneration(*generation),
+            ));
             let position = self.read_actor_position(actor)?;
             if position.context() != self.pinned_movement_context() {
                 return Err(CarrierError::PositionContextMismatch);
@@ -2926,9 +2679,9 @@ impl ChannelRuntimeV1 {
             world_id: self.binding.world_id,
             channel_id: self.binding.channel_id,
             scope_generation: self.binding.scope_generation,
-            coordinate_frame_marker: prefix(&self.content.frame_binding_digest),
-            map_revision_marker: prefix(&self.content.map_revision_digest),
-            content_generation_marker: self.content.activation_sequence,
+            coordinate_frame_marker: prefix(&self.content.frame_binding_digest()),
+            map_revision_marker: prefix(&self.content.map_revision_digest()),
+            content_generation_marker: self.content.activation_sequence(),
         }
     }
 
@@ -2947,7 +2700,7 @@ impl ChannelRuntimeV1 {
             &self.continuity,
             actor.0,
             context,
-            self.content.entry_start,
+            self.content.entry_start(),
         ) {
             Ok(snapshot) => Ok(FirstEntryPosition::Initialized(MovementPositionSnapshot(
                 snapshot,
@@ -3993,7 +3746,7 @@ impl ChannelRuntimeV1 {
                     committed: true,
                     position: Some(version),
                     ..
-                } if version.position == self.content.entry_start
+                } if version.position == self.content.entry_start()
                     && version.context == self.pinned_position_context() =>
                 {
                     Some(version.revision)
@@ -4039,7 +3792,7 @@ impl ChannelRuntimeV1 {
                     committed: true,
                     position: Some(version),
                     ..
-                } if version.position == self.content.entry_start
+                } if version.position == self.content.entry_start()
                     && version.revision == 1
                     && version.context == self.pinned_position_context())
             })
@@ -4448,13 +4201,13 @@ impl ChannelActorCarrier {
             .and_then(|value| u32::try_from(value).ok())
             .map(ActorLocalId)
             .ok_or(CarrierError::CapacityArithmeticOverflow)?;
-        let actor_ref = ActorRef {
-            world_id: self.world_id,
-            channel_id: self.channel_id,
-            scope_generation: self.scope_generation,
+        let actor_ref = ActorRef::from_owner_parts(
+            self.world_id,
+            self.channel_id,
+            self.scope_generation,
             actor_local_id,
-            actor_local_generation: ActorLocalGeneration(next_generation),
-        };
+            ActorLocalGeneration(next_generation),
+        );
 
         if fail_after_selection {
             return Err(CarrierError::InjectedAdmissionFailure);
@@ -4772,12 +4525,12 @@ impl ChannelActorCarrier {
             g.phylactery == ExactActorRef(actor_ref) || g.cages.contains(&ExactActorRef(actor_ref))
         }) {
             let pin = current_pin.ok_or(CarrierError::PositionContextMismatch)?;
-            if pin.world_id != g.world
-                || pin.activation_sequence != g.activation
-                || pin.server_artifact_digest != g.server
-                || pin.client_artifact_digest != g.client
-                || pin.frame_binding_digest != g.frame
-                || pin.map_revision_digest != g.map
+            if pin.world_id() != g.world
+                || pin.activation_sequence() != g.activation
+                || pin.server_artifact_digest() != g.server
+                || pin.client_artifact_digest() != g.client
+                || pin.frame_binding_digest() != g.frame
+                || pin.map_revision_digest() != g.map
             {
                 return Err(CarrierError::PositionContextMismatch);
             }
@@ -5139,9 +4892,9 @@ impl ChannelActorCarrier {
         // health drain. This is the target's actual condition owner; players
         // retain their invisibility and historical replay returns above.
         if let Some(companion) = companion {
-            companion
-                .conditions
-                .remove_type(super::condition::ConditionType::Invisible);
+            companion.conditions.remove_type(
+                oteryn_gameplay_foundation::foundation::condition::ConditionType::Invisible,
+            );
         }
         if next == 0 {
             committed.conditions.die();
@@ -5250,16 +5003,16 @@ impl ChannelActorCarrier {
             character: winner.character,
             lease_generation,
             session,
-            actor: ExactActorRef(ActorRef {
-                world_id: self.world_id,
-                channel_id: self.channel_id,
-                scope_generation: self.scope_generation,
-                actor_local_id: ActorLocalId(
+            actor: ExactActorRef(ActorRef::from_owner_parts(
+                self.world_id,
+                self.channel_id,
+                self.scope_generation,
+                ActorLocalId(
                     u32::try_from(slot_index + 1)
                         .map_err(|_| CarrierError::CapacityArithmeticOverflow)?,
                 ),
-                actor_local_generation: ActorLocalGeneration(slot_generation),
-            }),
+                ActorLocalGeneration(slot_generation),
+            )),
             last_damage_at_ms: winner.last_damage_at_ms,
         }))
     }
@@ -6090,10 +5843,10 @@ impl ChannelActorCarrier {
         self.validate_current_continuity(continuity)?;
         if actor_ref.world_id != continuity.world_id
             || actor_ref.channel_id != continuity.channel_id
-            || actor_ref.scope_generation != continuity.current_generation
+            || ExactActorRef(actor_ref).scope_generation() != continuity.current_generation
             || actor_ref.world_id != self.world_id
             || actor_ref.channel_id != self.channel_id
-            || actor_ref.scope_generation != self.scope_generation
+            || ExactActorRef(actor_ref).scope_generation() != self.scope_generation
         {
             return Err(CarrierError::WrongScope);
         }
@@ -6626,32 +6379,6 @@ struct CorpseItemBinding {
     item: RuntimeCorpseItem,
 }
 
-impl ExactActorRef {
-    /// MAP-ITEM-REF-1 Part B: the stable opaque identity of this actor's corpse, separate from
-    /// [`Self::placement_identity`] so a corpse never shares an identity with the actor it was.
-    pub fn corpse_identity(self) -> [u8; 16] {
-        use sha2::{Digest, Sha256};
-        let ActorRef {
-            world_id,
-            channel_id,
-            scope_generation,
-            actor_local_id,
-            actor_local_generation,
-        } = self.0;
-        let digest = Sha256::new()
-            .chain_update(b"oteryn:runtime-corpse-placement:v1")
-            .chain_update(world_id.as_bytes())
-            .chain_update(channel_id.as_bytes())
-            .chain_update(scope_generation.get().to_be_bytes())
-            .chain_update(actor_local_id.0.to_be_bytes())
-            .chain_update(actor_local_generation.0.to_be_bytes())
-            .finalize();
-        let mut identity = [0_u8; 16];
-        identity.copy_from_slice(&digest[..16]);
-        identity
-    }
-}
-
 impl ChannelActorCarrier {
     fn bind_corpse_item_inner(
         &mut self,
@@ -7093,7 +6820,8 @@ impl CombatDeathFixture {
         let attacker = self.attacker.ok_or(CarrierError::InvalidActorIdentity)?;
         let lineage = CommandRef::new(
             Self::swing_session()?,
-            super::CommandId::new(lineage).map_err(|_| CarrierError::InvalidActorIdentity)?,
+            oteryn_gameplay_foundation::foundation::CommandId::new(lineage)
+                .map_err(|_| CarrierError::InvalidActorIdentity)?,
         );
         let binding = format!(
             "fixture:attack.swing.v1\0{}\0{swing_ordinal}",
@@ -7200,7 +6928,8 @@ impl CombatDeathFixture {
         session[15] = 1;
         let command = CommandRef::new(
             GameSessionId::decode(&session).map_err(|_| CarrierError::InvalidActorIdentity)?,
-            super::CommandId::new(sequence).map_err(|_| CarrierError::InvalidActorIdentity)?,
+            oteryn_gameplay_foundation::foundation::CommandId::new(sequence)
+                .map_err(|_| CarrierError::InvalidActorIdentity)?,
         );
         let mut binding = occurrence.as_bytes().to_vec();
         binding.extend_from_slice(b"\0fixture:vsl-combat.strike.v1");
@@ -7276,13 +7005,13 @@ impl ChannelActorCarrier {
                     game_session_id: Some(bound),
                     committed: true,
                     ..
-                } if *bound == session => Some(ExactActorRef(ActorRef {
-                    world_id: self.world_id,
-                    channel_id: self.channel_id,
-                    scope_generation: self.scope_generation,
-                    actor_local_id: ActorLocalId(u32::try_from(index + 1).ok()?),
-                    actor_local_generation: ActorLocalGeneration(*generation),
-                })),
+                } if *bound == session => Some(ExactActorRef(ActorRef::from_owner_parts(
+                    self.world_id,
+                    self.channel_id,
+                    self.scope_generation,
+                    ActorLocalId(u32::try_from(index + 1).ok()?),
+                    ActorLocalGeneration(*generation),
+                ))),
                 _ => None,
             })
     }
@@ -7290,12 +7019,12 @@ impl ChannelActorCarrier {
 
 #[cfg(test)]
 #[allow(clippy::expect_used)]
-#[path = "damage_contributors_tests.rs"]
+#[path = "carrier/damage_contributors_tests.rs"]
 mod damage_contributors_tests;
 
 #[cfg(test)]
 #[allow(clippy::expect_used)]
-#[path = "channel_actor_position_tests.rs"]
+#[path = "carrier/channel_actor_position_tests.rs"]
 mod channel_actor_position_tests;
 
 #[cfg(test)]
@@ -7484,8 +7213,19 @@ mod tests {
             .initialize_first_entry_position(player)
             .expect("actual positioned owner");
         let before = current.positioned_actor_census().expect("current census");
-        let mut other_pin = pin.clone();
-        other_pin.activation_sequence += 1;
+        let other_pin = ChannelContentPin::from_activation(
+            pin.world_id(),
+            pin.activation_sequence() + 1,
+            pin.server_artifact_digest(),
+            pin.client_artifact_digest(),
+            pin.frame_binding_digest(),
+            pin.map_revision_digest(),
+            (
+                pin.entry_start().x,
+                pin.entry_start().y,
+                pin.entry_start().floor,
+            ),
+        );
         assert!(
             current
                 .realize_native_qualification_spawn(other_pin, "fixture:rat", position)
@@ -7856,7 +7596,7 @@ mod tests {
             Err(CarrierError::WrongScope)
         );
         let mut wrong_generation = actor_ref;
-        wrong_generation.scope_generation = ScopeOwnershipGeneration::new(2).expect("valid");
+        wrong_generation.set_scope_generation(ScopeOwnershipGeneration::new(2).expect("valid"));
         assert_eq!(
             carrier.lookup(&continuity, wrong_generation),
             Err(CarrierError::WrongScope)
@@ -8006,12 +7746,14 @@ mod tests {
     fn evicting_a_corpse_projection_evicts_its_reward_occurrence() {
         let (continuity, mut carrier) = carrier(4);
         let context = spawn_position_context(&continuity);
-        let actor = |local: u32| ActorRef {
-            world_id: continuity.world_id,
-            channel_id: continuity.channel_id,
-            scope_generation: continuity.current_generation,
-            actor_local_id: ActorLocalId(local),
-            actor_local_generation: ActorLocalGeneration(1),
+        let actor = |local: u32| {
+            ActorRef::from_owner_parts(
+                continuity.world_id,
+                continuity.channel_id,
+                continuity.current_generation,
+                ActorLocalId(local),
+                ActorLocalGeneration(1),
+            )
         };
         let projection = |local: u32| RuntimeCorpseProjection {
             death_at_ms: None,
@@ -8067,13 +7809,13 @@ mod tests {
     }
 
     fn corpse_actor_at(continuity: &NamespaceContinuityGuard, local: u32) -> ExactActorRef {
-        ExactActorRef(ActorRef {
-            world_id: continuity.world_id,
-            channel_id: continuity.channel_id,
-            scope_generation: continuity.current_generation,
-            actor_local_id: ActorLocalId(local),
-            actor_local_generation: ActorLocalGeneration(1),
-        })
+        ExactActorRef(ActorRef::from_owner_parts(
+            continuity.world_id,
+            continuity.channel_id,
+            continuity.current_generation,
+            ActorLocalId(local),
+            ActorLocalGeneration(1),
+        ))
     }
 
     /// A projected death of local actor `local` in `continuity`'s generation.
@@ -9961,11 +9703,11 @@ mod tests {
         let dead_0 = kill_spawn_cell(&continuity, &mut carrier, SpawnSourceId(1), 0);
         let dead_1 = kill_spawn_cell(&continuity, &mut carrier, SpawnSourceId(1), 1);
 
-        use crate::foundation::owner_timer::{
+        use oteryn_gameplay_foundation::foundation::owner_timer::{
             CatchUpPolicy, FamilyPolicy, OwnerTimerError, OwnerTimerLane, SemanticTimeMicros,
             VirtualOwnerClock,
         };
-        use crate::foundation::{RuntimeScopeRefV1, ScopeRuntimeFence};
+        use oteryn_gameplay_foundation::foundation::{RuntimeScopeRefV1, ScopeRuntimeFence};
 
         let scope = RuntimeScopeRefV1::channel(continuity.world_id, continuity.channel_id);
         let generation = continuity.current_generation;
@@ -10419,12 +10161,12 @@ impl ChannelRuntimeV1 {
             return Err(CarrierError::InvalidCreatureHealth);
         }
         Ok(CreatureSelfHealRegistration {
-            world: self.content.world_id,
-            activation: self.content.activation_sequence,
-            server: self.content.server_artifact_digest,
-            client: self.content.client_artifact_digest,
-            frame: self.content.frame_binding_digest,
-            map: self.content.map_revision_digest,
+            world: self.content.world_id(),
+            activation: self.content.activation_sequence(),
+            server: self.content.server_artifact_digest(),
+            client: self.content.client_artifact_digest(),
+            frame: self.content.frame_binding_digest(),
+            map: self.content.map_revision_digest(),
             target: target.into(),
             ability: ability.into(),
             max_health: max_health as i64,
@@ -10442,12 +10184,12 @@ impl ChannelRuntimeV1 {
         sequence: u64,
         server_draw: i64,
     ) -> Result<OwnerDamageResult, CarrierError> {
-        if registration.world != self.content.world_id
-            || registration.activation != self.content.activation_sequence
-            || registration.server != self.content.server_artifact_digest
-            || registration.client != self.content.client_artifact_digest
-            || registration.frame != self.content.frame_binding_digest
-            || registration.map != self.content.map_revision_digest
+        if registration.world != self.content.world_id()
+            || registration.activation != self.content.activation_sequence()
+            || registration.server != self.content.server_artifact_digest()
+            || registration.client != self.content.client_artifact_digest()
+            || registration.frame != self.content.frame_binding_digest()
+            || registration.map != self.content.map_revision_digest()
         {
             return Err(CarrierError::PositionContextMismatch);
         }
@@ -10709,7 +10451,7 @@ impl ChannelRuntimeV1 {
         content: [u8; 32],
         requests: &[(ExactActorRef, String, u64, u64)],
     ) -> Result<Vec<OwnerDamageResult>, CarrierError> {
-        if content != self.content.server_artifact_digest {
+        if content != self.content.server_artifact_digest() {
             return Err(CarrierError::PositionContextMismatch);
         }
         if requests.len() > 64 {
@@ -11103,22 +10845,25 @@ impl ChannelRuntimeV1 {
     }
     pub fn admit_native_summon(
         &mut self,
-        current: &super::ScopeRuntimeFence,
-        stamp: super::RuntimeWorkStamp,
+        current: &oteryn_gameplay_foundation::foundation::ScopeRuntimeFence,
+        stamp: oteryn_gameplay_foundation::foundation::RuntimeWorkStamp,
         parent: ExactActorRef,
         spec: &NativeSummonAdmissionSpec,
         at: MovementLocalPosition,
     ) -> Result<ExactActorRef, CarrierError> {
         let b = self.binding();
         if !current.is_current_for_scope(
-            super::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
+            oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
+                b.world_id(),
+                b.channel_id(),
+            ),
             b.scope_generation(),
         ) || !current.accepts_stamp(stamp)
         {
             return Err(CarrierError::WrongScope);
         }
         self.retire_native_summons(current, stamp)?;
-        if spec.content() != self.content.server_artifact_digest
+        if spec.content() != self.content.server_artifact_digest()
             || !self.matches_live_creature_identity(parent, spec.parent_key().as_bytes())
             || self.native_summon_master(parent).is_some()
         {
@@ -11503,12 +11248,15 @@ impl ChannelRuntimeV1 {
     /// Retained history is a replay receipt, never authority to mutate a current slot.
     pub fn retire_native_summons(
         &mut self,
-        current: &super::ScopeRuntimeFence,
-        stamp: super::RuntimeWorkStamp,
+        current: &oteryn_gameplay_foundation::foundation::ScopeRuntimeFence,
+        stamp: oteryn_gameplay_foundation::foundation::RuntimeWorkStamp,
     ) -> Result<usize, CarrierError> {
         let b = self.binding();
         if !current.is_current_for_scope(
-            super::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
+            oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
+                b.world_id(),
+                b.channel_id(),
+            ),
             b.scope_generation(),
         ) || !current.accepts_stamp(stamp)
         {
@@ -11549,13 +11297,16 @@ impl ChannelRuntimeV1 {
 impl ChannelRuntimeV1 {
     pub fn retire_native_summon_registration_failure(
         &mut self,
-        current: &super::ScopeRuntimeFence,
-        stamp: super::RuntimeWorkStamp,
+        current: &oteryn_gameplay_foundation::foundation::ScopeRuntimeFence,
+        stamp: oteryn_gameplay_foundation::foundation::RuntimeWorkStamp,
         actor: ExactActorRef,
     ) -> Result<(), CarrierError> {
         let b = self.binding();
         if !current.is_current_for_scope(
-            super::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
+            oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
+                b.world_id(),
+                b.channel_id(),
+            ),
             b.scope_generation(),
         ) || !current.accepts_stamp(stamp)
         {
@@ -11652,15 +11403,18 @@ pub enum NativeSummonMovementOutcome {
 impl ChannelRuntimeV1 {
     pub fn commit_native_summon_cardinal(
         &mut self,
-        current: &super::ScopeRuntimeFence,
-        stamp: super::RuntimeWorkStamp,
+        current: &oteryn_gameplay_foundation::foundation::ScopeRuntimeFence,
+        stamp: oteryn_gameplay_foundation::foundation::RuntimeWorkStamp,
         actor: ExactActorRef,
         expected: MovementPositionSnapshot,
         next: MovementLocalPosition,
     ) -> Result<NativeSummonMovementOutcome, CarrierError> {
         let b = self.binding();
         if !current.is_current_for_scope(
-            super::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
+            oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
+                b.world_id(),
+                b.channel_id(),
+            ),
             b.scope_generation(),
         ) || !current.accepts_stamp(stamp)
         {
@@ -11752,9 +11506,14 @@ mod native_summon_reconciliation_tests {
     }
     fn child(r: &mut ChannelRuntimeV1, p: ExactActorRef) -> ExactActorRef {
         let b = r.binding();
-        let scope = super::super::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id());
-        let mut f = super::super::ScopeRuntimeFence::from_external_grant(b.scope_generation())
-            .with_scope(scope);
+        let scope = oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
+            b.world_id(),
+            b.channel_id(),
+        );
+        let mut f = oteryn_gameplay_foundation::foundation::ScopeRuntimeFence::from_external_grant(
+            b.scope_generation(),
+        )
+        .with_scope(scope);
         let n = f
             .accept_input(b.scope_generation())
             .expect("valid native fixture operation must succeed");
@@ -11766,7 +11525,7 @@ mod native_summon_reconciliation_tests {
             0,
             2,
             2,
-            r.content.server_artifact_digest,
+            r.content.server_artifact_digest(),
         )
         .expect("valid native fixture operation must succeed");
         r.admit_native_summon(
@@ -11977,12 +11736,6 @@ mod native_summon_reconciliation_tests {
 }
 
 // Main reconciliation Foundation-3: source-qualified native boss helpers.
-impl ExactActorRef {
-    /// Current native actor slot ordinal for private source chain selection, never a wire ID.
-    pub fn chain_local_actor_id(self) -> u64 {
-        u64::from(self.0.actor_local_id.0)
-    }
-}
 // Source-specific proposal appended inside foundation/runtime_actor_carrier.rs.
 // Canary47dfd51f the_welter_heal.lua SHAead257f505dfcd8c6f2cd80bbaaff2185c0bc6e4e164e2d28d815ad328145cc6.
 // No generic Encounter dispatcher. Owner lock/cast scheduling and emitted cues remain caller work.
@@ -12066,12 +11819,12 @@ impl ChannelRuntimeV1 {
             return Err(WelterConsumeError::WrongBossDefinition);
         }
         Ok(WelterSourceRegistration {
-            world: self.content.world_id,
-            activation_sequence: self.content.activation_sequence,
-            server_digest: self.content.server_artifact_digest,
-            client_digest: self.content.client_artifact_digest,
-            frame_digest: self.content.frame_binding_digest,
-            map_digest: self.content.map_revision_digest,
+            world: self.content.world_id(),
+            activation_sequence: self.content.activation_sequence(),
+            server_digest: self.content.server_artifact_digest(),
+            client_digest: self.content.client_artifact_digest(),
+            frame_digest: self.content.frame_binding_digest(),
+            map_digest: self.content.map_revision_digest(),
             max_health: max_health as i64,
         })
     }
@@ -12098,12 +11851,12 @@ impl ChannelRuntimeV1 {
         sequence: u64,
         fail_before_write: bool,
     ) -> Result<WelterConsumeResult, WelterConsumeError> {
-        if registration.world != self.content.world_id
-            || registration.activation_sequence != self.content.activation_sequence
-            || registration.server_digest != self.content.server_artifact_digest
-            || registration.client_digest != self.content.client_artifact_digest
-            || registration.frame_digest != self.content.frame_binding_digest
-            || registration.map_digest != self.content.map_revision_digest
+        if registration.world != self.content.world_id()
+            || registration.activation_sequence != self.content.activation_sequence()
+            || registration.server_digest != self.content.server_artifact_digest()
+            || registration.client_digest != self.content.client_artifact_digest()
+            || registration.frame_digest != self.content.frame_binding_digest()
+            || registration.map_digest != self.content.map_revision_digest()
         {
             return Err(WelterConsumeError::RegistrationContentPinMismatch);
         }
@@ -12182,13 +11935,13 @@ impl ChannelRuntimeV1 {
                         _ => return None,
                     };
                     Some((
-                        ExactActorRef(ActorRef {
-                            world_id: self.carrier.world_id,
-                            channel_id: self.carrier.channel_id,
-                            scope_generation: self.carrier.scope_generation,
-                            actor_local_id: ActorLocalId((i + 1) as u32),
-                            actor_local_generation: ActorLocalGeneration(*generation),
-                        }),
+                        ExactActorRef(ActorRef::from_owner_parts(
+                            self.carrier.world_id,
+                            self.carrier.channel_id,
+                            self.carrier.scope_generation,
+                            ActorLocalId((i + 1) as u32),
+                            ActorLocalGeneration(*generation),
+                        )),
                         prey,
                         p.position,
                     ))
@@ -12352,13 +12105,13 @@ impl ChannelRuntimeV1 {
                     count += 1;
                     target = player.map(|session| {
                         (
-                            ExactActorRef(ActorRef {
-                                world_id: self.carrier.world_id,
-                                channel_id: self.carrier.channel_id,
-                                scope_generation: self.carrier.scope_generation,
-                                actor_local_id: ActorLocalId((index + 1) as u32),
-                                actor_local_generation: ActorLocalGeneration(generation),
-                            }),
+                            ExactActorRef(ActorRef::from_owner_parts(
+                                self.carrier.world_id,
+                                self.carrier.channel_id,
+                                self.carrier.scope_generation,
+                                ActorLocalId((index + 1) as u32),
+                                ActorLocalGeneration(generation),
+                            )),
                             session,
                         )
                     });
@@ -12455,7 +12208,7 @@ fn welter_native_source_owner_proof() {
         100,
         7,
     );
-    let values:serde_json::Value=serde_json::from_str(include_str!("../../../../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/encounters/welter-native-profiles.json")).expect("valid native fixture operation must succeed");
+    let values:serde_json::Value=serde_json::from_str(include_str!("../../../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/encounters/welter-native-profiles.json")).expect("valid native fixture operation must succeed");
     let reg = r
         .bind_welter_pinned_definition(
             values[0]["target"]["key"]
@@ -12605,12 +12358,12 @@ impl ChannelRuntimeV1 {
         caster: ExactActorRef,
         sequence: u64,
     ) -> Result<Option<(u64, WelterConsumeResult)>, WelterConsumeError> {
-        if registration.world != self.content.world_id
-            || registration.activation_sequence != self.content.activation_sequence
-            || registration.server_digest != self.content.server_artifact_digest
-            || registration.client_digest != self.content.client_artifact_digest
-            || registration.frame_digest != self.content.frame_binding_digest
-            || registration.map_digest != self.content.map_revision_digest
+        if registration.world != self.content.world_id()
+            || registration.activation_sequence != self.content.activation_sequence()
+            || registration.server_digest != self.content.server_artifact_digest()
+            || registration.client_digest != self.content.client_artifact_digest()
+            || registration.frame_digest != self.content.frame_binding_digest()
+            || registration.map_digest != self.content.map_revision_digest()
         {
             return Err(WelterConsumeError::RegistrationContentPinMismatch);
         }
@@ -12779,7 +12532,7 @@ impl ChannelRuntimeV1 {
         if encounter_fingerprint != BONE_CASE_FINGERPRINT {
             return Err(BonePhaseError::InvalidSource);
         }
-        if artifact_digest != self.content.server_artifact_digest {
+        if artifact_digest != self.content.server_artifact_digest() {
             return Err(BonePhaseError::ContentChanged);
         }
         for (i, a) in cages.iter().enumerate() {
@@ -12800,14 +12553,14 @@ impl ChannelRuntimeV1 {
             phylactery,
             dead_mask: 0,
             phase: BoneOverlordPhase::Soulcages,
-            world: self.content.world_id,
+            world: self.content.world_id(),
             channel: self.continuity.channel_id,
             generation: self.continuity.current_generation,
-            activation: self.content.activation_sequence,
-            server: self.content.server_artifact_digest,
-            client: self.content.client_artifact_digest,
-            frame: self.content.frame_binding_digest,
-            map: self.content.map_revision_digest,
+            activation: self.content.activation_sequence(),
+            server: self.content.server_artifact_digest(),
+            client: self.content.client_artifact_digest(),
+            frame: self.content.frame_binding_digest(),
+            map: self.content.map_revision_digest(),
         })
     }
     /// Called after actual current-owner corpse projection, before despawn, under the same owner
@@ -12817,14 +12570,14 @@ impl ChannelRuntimeV1 {
         state: &mut BoneOverlordCagePhase,
         actor: ExactActorRef,
     ) -> Result<BonePhaseTransition, BonePhaseError> {
-        if state.world != self.content.world_id
+        if state.world != self.content.world_id()
             || state.channel != self.continuity.channel_id
             || state.generation != self.continuity.current_generation
-            || state.activation != self.content.activation_sequence
-            || state.server != self.content.server_artifact_digest
-            || state.client != self.content.client_artifact_digest
-            || state.frame != self.content.frame_binding_digest
-            || state.map != self.content.map_revision_digest
+            || state.activation != self.content.activation_sequence()
+            || state.server != self.content.server_artifact_digest()
+            || state.client != self.content.client_artifact_digest()
+            || state.frame != self.content.frame_binding_digest()
+            || state.map != self.content.map_revision_digest()
         {
             return Err(BonePhaseError::ContentChanged);
         }
@@ -13098,16 +12851,16 @@ impl ChannelRuntimeV1 {
                 && (32936..=32944).contains(&p.position.x)
                 && (31474..=31482).contains(&p.position.y)
             {
-                removed.push(ExactActorRef(ActorRef {
-                    world_id: self.carrier.world_id,
-                    channel_id: self.carrier.channel_id,
-                    scope_generation: self.carrier.scope_generation,
-                    actor_local_id: ActorLocalId(
+                removed.push(ExactActorRef(ActorRef::from_owner_parts(
+                    self.carrier.world_id,
+                    self.carrier.channel_id,
+                    self.carrier.scope_generation,
+                    ActorLocalId(
                         u32::try_from(i + 1)
                             .map_err(|_| CarrierError::CapacityArithmeticOverflow)?,
                     ),
-                    actor_local_generation: ActorLocalGeneration(*generation),
-                }));
+                    ActorLocalGeneration(*generation),
+                )));
             }
         }
         // Preflight every fallible bound/ref/allocation before first physical owner mutation.
@@ -13331,16 +13084,16 @@ impl ChannelRuntimeV1 {
                         } = slot
                             && target_identity.as_ref() == b"oteryn:creature.weak_spot"
                         {
-                            target = Some(ExactActorRef(ActorRef {
-                                world_id: self.carrier.world_id,
-                                channel_id: self.carrier.channel_id,
-                                scope_generation: self.carrier.scope_generation,
-                                actor_local_id: ActorLocalId(
+                            target = Some(ExactActorRef(ActorRef::from_owner_parts(
+                                self.carrier.world_id,
+                                self.carrier.channel_id,
+                                self.carrier.scope_generation,
+                                ActorLocalId(
                                     u32::try_from(i + 1)
                                         .map_err(|_| CarrierError::CapacityArithmeticOverflow)?,
                                 ),
-                                actor_local_generation: ActorLocalGeneration(*generation),
-                            }));
+                                ActorLocalGeneration(*generation),
+                            )));
                         }
                     }
                     if count == 1
@@ -14012,13 +13765,13 @@ impl ChannelRuntimeV1 {
             }
             out.try_reserve(1)
                 .map_err(|_| CarrierError::AllocationFailed)?;
-            out.push(ExactActorRef(ActorRef {
-                world_id: self.carrier.world_id,
-                channel_id: self.carrier.channel_id,
-                scope_generation: self.carrier.scope_generation,
-                actor_local_id: ActorLocalId((i + 1) as u32),
-                actor_local_generation: ActorLocalGeneration(*generation),
-            }));
+            out.push(ExactActorRef(ActorRef::from_owner_parts(
+                self.carrier.world_id,
+                self.carrier.channel_id,
+                self.carrier.scope_generation,
+                ActorLocalId((i + 1) as u32),
+                ActorLocalGeneration(*generation),
+            )));
         }
         Ok(out)
     }
@@ -14225,8 +13978,8 @@ impl ChannelRuntimeV1 {
     pub fn register_bone_shared_hp(
         &mut self,
         state: &BoneOverlordCagePhase,
-        current: &super::ScopeRuntimeFence,
-        stamp: super::RuntimeWorkStamp,
+        current: &oteryn_gameplay_foundation::foundation::ScopeRuntimeFence,
+        stamp: oteryn_gameplay_foundation::foundation::RuntimeWorkStamp,
     ) -> Result<(), BonePhaseError> {
         let indexes = self.bone_shared_owner_guard(state, current, stamp)?;
         if indexes.iter().any(|i| {
@@ -14282,38 +14035,41 @@ impl ChannelRuntimeV1 {
         Ok(())
     }
     fn bone_shared_pin_matches(&self, g: &NativeBoneSharedGroup) -> bool {
-        g.world == self.content.world_id
+        g.world == self.content.world_id()
             && g.channel == self.continuity.channel_id
             && g.generation == self.continuity.current_generation
-            && g.activation == self.content.activation_sequence
-            && g.server == self.content.server_artifact_digest
-            && g.client == self.content.client_artifact_digest
-            && g.frame == self.content.frame_binding_digest
-            && g.map == self.content.map_revision_digest
+            && g.activation == self.content.activation_sequence()
+            && g.server == self.content.server_artifact_digest()
+            && g.client == self.content.client_artifact_digest()
+            && g.frame == self.content.frame_binding_digest()
+            && g.map == self.content.map_revision_digest()
     }
 }
 impl ChannelRuntimeV1 {
     fn bone_shared_owner_guard(
         &self,
         state: &BoneOverlordCagePhase,
-        current: &super::ScopeRuntimeFence,
-        stamp: super::RuntimeWorkStamp,
+        current: &oteryn_gameplay_foundation::foundation::ScopeRuntimeFence,
+        stamp: oteryn_gameplay_foundation::foundation::RuntimeWorkStamp,
     ) -> Result<[usize; 4], BonePhaseError> {
         let b = self.binding();
-        let scope = super::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id());
+        let scope = oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
+            b.world_id(),
+            b.channel_id(),
+        );
         if !current.is_current_for_scope(scope, b.scope_generation())
             || !current.accepts_stamp(stamp)
         {
             return Err(BonePhaseError::Carrier(CarrierError::WrongScope));
         }
-        if state.world != self.content.world_id
+        if state.world != self.content.world_id()
             || state.channel != self.continuity.channel_id
             || state.generation != self.continuity.current_generation
-            || state.activation != self.content.activation_sequence
-            || state.server != self.content.server_artifact_digest
-            || state.client != self.content.client_artifact_digest
-            || state.frame != self.content.frame_binding_digest
-            || state.map != self.content.map_revision_digest
+            || state.activation != self.content.activation_sequence()
+            || state.server != self.content.server_artifact_digest()
+            || state.client != self.content.client_artifact_digest()
+            || state.frame != self.content.frame_binding_digest()
+            || state.map != self.content.map_revision_digest()
         {
             return Err(BonePhaseError::ContentChanged);
         }
@@ -14356,8 +14112,8 @@ impl ChannelRuntimeV1 {
     pub fn commit_bone_shared_damage(
         &mut self,
         state: &BoneOverlordCagePhase,
-        current: &super::ScopeRuntimeFence,
-        stamp: super::RuntimeWorkStamp,
+        current: &oteryn_gameplay_foundation::foundation::ScopeRuntimeFence,
+        stamp: oteryn_gameplay_foundation::foundation::RuntimeWorkStamp,
         target: ExactActorRef,
         command: OwnerDamageCommand<'_>,
         attacker: Option<AttackerCommand>,
@@ -14653,7 +14409,10 @@ pub fn bone_shared_actual_owner_harness(
         b[15] = t;
         b
     }
-    fn runtime(world: super::WorldId, artifact_digest: [u8; 32]) -> ChannelRuntimeV1 {
+    fn runtime(
+        world: oteryn_gameplay_foundation::foundation::WorldId,
+        artifact_digest: [u8; 32],
+    ) -> ChannelRuntimeV1 {
         ChannelRuntimeV1::from_committed_assignment(
             world,
             ChannelId::decode(&id(2)).expect("valid native fixture operation must succeed"),
@@ -14732,9 +14491,14 @@ pub fn bone_shared_actual_owner_harness(
     let cages = BONE_CAGE_KEYS.map(|k| actor(&mut r, k, 120000));
     let phyl = actor(&mut r, b"oteryn:creature.bonelord_s_phylactery", 50000);
     let mut state = register(&r, cages, phyl);
-    let scope = super::RuntimeScopeRefV1::channel(world, r.binding().channel_id());
+    let scope = oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
+        world,
+        r.binding().channel_id(),
+    );
     let generation = r.binding().scope_generation();
-    let mut fence = super::ScopeRuntimeFence::from_external_grant(generation).with_scope(scope);
+    let mut fence =
+        oteryn_gameplay_foundation::foundation::ScopeRuntimeFence::from_external_grant(generation)
+            .with_scope(scope);
     let ordinal = fence
         .accept_input(generation)
         .expect("valid native fixture operation must succeed");
@@ -14744,12 +14508,14 @@ pub fn bone_shared_actual_owner_harness(
     wrong[6] = 0x70;
     wrong[8] = 0x80;
     wrong[15] = 99;
-    let wrong = super::ScopeRuntimeFence::from_external_grant(generation).with_scope(
-        super::RuntimeScopeRefV1::channel(
-            world,
-            ChannelId::decode(&wrong).expect("valid native fixture operation must succeed"),
-        ),
-    );
+    let wrong =
+        oteryn_gameplay_foundation::foundation::ScopeRuntimeFence::from_external_grant(generation)
+            .with_scope(
+                oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
+                    world,
+                    ChannelId::decode(&wrong).expect("valid native fixture operation must succeed"),
+                ),
+            );
     assert!(r.register_bone_shared_hp(&state, &wrong, stamp).is_err());
     r.register_bone_shared_hp(&state, &fence, stamp)
         .expect("valid native fixture operation must succeed");
@@ -14827,7 +14593,18 @@ pub fn bone_shared_actual_owner_harness(
     for a in cages {
         assert_eq!(hp(&r, a), 119700)
     }
-    r.content.map_revision_digest[0] ^= 1;
+    let mut map_revision_digest = r.content.map_revision_digest();
+    map_revision_digest[0] ^= 1;
+    let entry_start = r.content.entry_start();
+    r.content = ChannelContentPin::from_activation(
+        r.content.world_id(),
+        r.content.activation_sequence(),
+        r.content.server_artifact_digest(),
+        r.content.client_artifact_digest(),
+        r.content.frame_binding_digest(),
+        map_revision_digest,
+        (entry_start.x, entry_start.y, entry_start.floor),
+    );
     assert!(
         damage(
             &mut r,
@@ -14874,7 +14651,18 @@ pub fn bone_shared_actual_owner_harness(
     for a in cages {
         assert_eq!(hp(&r, a), 119700)
     }
-    r.content.map_revision_digest[0] ^= 1;
+    let mut map_revision_digest = r.content.map_revision_digest();
+    map_revision_digest[0] ^= 1;
+    let entry_start = r.content.entry_start();
+    r.content = ChannelContentPin::from_activation(
+        r.content.world_id(),
+        r.content.activation_sequence(),
+        r.content.server_artifact_digest(),
+        r.content.client_artifact_digest(),
+        r.content.frame_binding_digest(),
+        map_revision_digest,
+        (entry_start.x, entry_start.y, entry_start.floor),
+    );
     damage(
         &mut r,
         cages[0],
@@ -15258,7 +15046,7 @@ mod selfheal_generation_guard_tests {
     }
 }
 
-#[path = "runtime_actor_icicle.rs"]
+#[path = "carrier/runtime_actor_icicle.rs"]
 mod runtime_actor_icicle;
 
 type NativeSourceHealProjection = (Vec<(ExactActorRef, String, u64, u64)>, Vec<usize>);
@@ -15302,8 +15090,8 @@ impl ChannelRuntimeV1 {
     /// Current map proof is independently resolved under this same exclusive owner turn.
     pub fn admit_native_encounter_masterless(
         &mut self,
-        current: &super::ScopeRuntimeFence,
-        stamp: super::RuntimeWorkStamp,
+        current: &oteryn_gameplay_foundation::foundation::ScopeRuntimeFence,
+        stamp: oteryn_gameplay_foundation::foundation::RuntimeWorkStamp,
         parent: ExactActorRef,
         spec: &NativeEncounterSpawnSpec,
         at: MovementLocalPosition,
@@ -15312,13 +15100,16 @@ impl ChannelRuntimeV1 {
         use EncounterSpawnError as E;
         let b = self.binding();
         if !current.is_current_for_scope(
-            super::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
+            oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
+                b.world_id(),
+                b.channel_id(),
+            ),
             b.scope_generation(),
         ) || !current.accepts_stamp(stamp)
         {
             return Err(E::StaleOwner);
         }
-        if spec.content != self.content.server_artifact_digest
+        if spec.content != self.content.server_artifact_digest()
             || !self.matches_live_creature_identity(parent, spec.parent.as_bytes())
         {
             return Err(E::Native(CarrierError::CreatureTargetMismatch));
@@ -15386,15 +15177,18 @@ impl ChannelRuntimeV1 {
     /// Exact occupied generation + source policy are current; immutable source pins are not grants.
     pub fn remove_native_encounter_subject(
         &mut self,
-        current: &super::ScopeRuntimeFence,
-        stamp: super::RuntimeWorkStamp,
+        current: &oteryn_gameplay_foundation::foundation::ScopeRuntimeFence,
+        stamp: oteryn_gameplay_foundation::foundation::RuntimeWorkStamp,
         actor: ExactActorRef,
         expected_key: &str,
         expected_content: [u8; 32],
     ) -> Result<(), CarrierError> {
         let b = self.binding();
         if !current.is_current_for_scope(
-            super::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
+            oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
+                b.world_id(),
+                b.channel_id(),
+            ),
             b.scope_generation(),
         ) || !current.accepts_stamp(stamp)
         {
@@ -15519,8 +15313,11 @@ mod native_callback_origin_tests {
             )
             .expect("valid native fixture operation must succeed");
         let b = r.binding();
-        let (f, stamp) = super::super::crystal_timer_fixture(
-            super::super::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
+        let (f, stamp) = oteryn_gameplay_foundation::foundation::crystal_timer_fixture(
+            oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
+                b.world_id(),
+                b.channel_id(),
+            ),
             b.scope_generation(),
         )
         .expect("valid native fixture operation must succeed");
@@ -15552,9 +15349,12 @@ mod native_callback_origin_tests {
         assert!(
             matches!(r.native_summon_origin(child).expect("valid native fixture operation must succeed"),Some(NativeSummonOrigin::SourceCallback{ability,occurrence,..})if ability.as_ref()=="oteryn:ability.spell.gaz_haragoth_summon"&&occurrence.as_ref()=="ai-profile:source-fixture:0:attack:11")
         );
-        let (wrong, wrong_stamp) = super::super::crystal_timer_fixture(
-            super::super::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
-            super::super::ScopeOwnershipGeneration::new(2)
+        let (wrong, wrong_stamp) = oteryn_gameplay_foundation::foundation::crystal_timer_fixture(
+            oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
+                b.world_id(),
+                b.channel_id(),
+            ),
+            oteryn_gameplay_foundation::foundation::ScopeOwnershipGeneration::new(2)
                 .expect("valid native fixture operation must succeed"),
         )
         .expect("valid native fixture operation must succeed");
@@ -15589,8 +15389,11 @@ mod native_callback_origin_tests {
         const BUDGET: usize = NATIVE_SUMMON_RETIREMENT_LINKS_PER_CALL_MAX;
         let mut r = super::tests::runtime(SUMMONERS * (CHILDREN + 1) + 8);
         let b = r.binding();
-        let (f, stamp) = super::super::crystal_timer_fixture(
-            super::super::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
+        let (f, stamp) = oteryn_gameplay_foundation::foundation::crystal_timer_fixture(
+            oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
+                b.world_id(),
+                b.channel_id(),
+            ),
             b.scope_generation(),
         )
         .expect("the fixture fence is current");
@@ -15751,15 +15554,15 @@ pub fn project_fixed_one_creature_death<'a>(
 }
 
 #[cfg(any(test, feature = "test-support"))]
-impl crate::foundation::CombatDeathFixture {
+impl crate::carrier::CombatDeathFixture {
     /// Combat's idempotent projection of the committed lethal occurrence and
     /// the durable death key it names, with the corpse position.
     pub fn project_death(
         &mut self,
     ) -> Result<
         (
-            crate::foundation::CreatureDeathOccurrenceKey,
-            crate::foundation::MovementLocalPosition,
+            crate::carrier::CreatureDeathOccurrenceKey,
+            crate::carrier::MovementLocalPosition,
         ),
         CarrierError,
     > {

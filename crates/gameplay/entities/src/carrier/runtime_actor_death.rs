@@ -11,7 +11,7 @@ use super::*;
 impl ChannelRuntimeV1 {
     /// The respawn position: the pinned generation's first-entry start cell.
     pub const fn respawn_position(&self) -> MovementLocalPosition {
-        let start = self.content.entry_start;
+        let start = self.content.entry_start();
         MovementLocalPosition {
             x: start.x,
             y: start.y,
@@ -21,7 +21,7 @@ impl ChannelRuntimeV1 {
 
     /// The map revision the durable death cell records: the pinned generation's digest.
     pub const fn map_revision_digest(&self) -> [u8; 32] {
-        self.content.map_revision_digest
+        self.content.map_revision_digest()
     }
 
     /// Place the committed player of `game_session_id` at `position` as one position successor:

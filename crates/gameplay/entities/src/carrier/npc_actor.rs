@@ -247,13 +247,13 @@ impl ChannelRuntimeV1 {
             .ok_or(NpcPlacementError::Carrier(
                 CarrierError::CapacityArithmeticOverflow,
             ))?;
-        let actor_ref = ActorRef {
-            world_id: carrier.world_id,
-            channel_id: carrier.channel_id,
-            scope_generation: carrier.scope_generation,
+        let actor_ref = ActorRef::from_owner_parts(
+            carrier.world_id,
+            carrier.channel_id,
+            carrier.scope_generation,
             actor_local_id,
-            actor_local_generation: ActorLocalGeneration(generation),
-        };
+            ActorLocalGeneration(generation),
+        );
         carrier.slots[index] = Slot::NpcOccupied {
             generation,
             key,
@@ -288,7 +288,7 @@ impl ChannelRuntimeV1 {
 mod tests {
     use super::super::tests::runtime;
     use super::*;
-    use crate::foundation::MovementLocalPosition;
+    use crate::carrier::MovementLocalPosition;
 
     fn at(floor: i8, y: u16, x: u16) -> NpcPlacement {
         NpcPlacement {
@@ -499,8 +499,10 @@ mod tests {
             Err(CarrierError::PositionSnapshotMismatch)
         );
         let mut foreign = actor;
-        foreign.0.scope_generation =
-            crate::foundation::ScopeOwnershipGeneration::new(4).expect("foreign scope");
+        foreign.0.set_scope_generation(
+            oteryn_gameplay_foundation::foundation::ScopeOwnershipGeneration::new(4)
+                .expect("foreign scope"),
+        );
         assert_eq!(
             runtime.borrow_movement_position().read(foreign),
             Err(CarrierError::WrongScope)
