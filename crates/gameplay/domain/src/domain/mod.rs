@@ -15,6 +15,7 @@ pub mod forge;
 pub mod forge_dust;
 pub mod interaction;
 pub mod item_definition;
+pub mod loot_data;
 pub mod mail;
 pub mod market;
 pub mod premium;

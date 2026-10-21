@@ -19,32 +19,7 @@ use crate::durability::map_item_mint::{CommittedMapItemMint, MapItemPlacement};
 use oteryn_world_bundle::bundle::placement_key;
 use oteryn_world_bundle::sector::Tile;
 
-/// The largest quantity an entry can mint: `GAMEITEM01-STACK-QUANTITY-MAX`.
-const QUANTITY_MAX: u32 = 100;
-
-/// Why an entry stays in place.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Ineligible {
-    /// The ordinal names no top-level entry of the tile.
-    NotTopLevel,
-    /// The entry's item is not pickupable.
-    NotPickupable,
-    House,
-    Action,
-    Unique,
-    Door,
-    Depot,
-    Teleport,
-    /// The bundle dropped the entry's zero-destination teleport (ADR-0021 §4.5).
-    DroppedTeleport,
-    /// The entry holds items one level deeper.
-    Contents,
-    Text,
-    Description,
-    Charges,
-    /// The entry's count is zero or above the stack quantity maximum.
-    Quantity,
-}
+pub use oteryn_gameplay_items::map_pickup::Ineligible;
 
 /// An eligible origin: its placement and the whole quantity the MINT takes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -78,33 +53,24 @@ pub fn eligibility(
     let key = placement_key(floor, tile.x, tile.y, ordinal).ok_or(Ineligible::NotTopLevel)?;
     let item = &tile.items[at];
     let attrs = &item.attrs;
-    let refused = [
-        (!pickupable, Ineligible::NotPickupable),
-        (tile.house != 0, Ineligible::House),
-        (attrs.action.is_some(), Ineligible::Action),
-        (attrs.unique.is_some(), Ineligible::Unique),
-        (attrs.door.is_some(), Ineligible::Door),
-        (attrs.depot.is_some(), Ineligible::Depot),
-        (attrs.teleport.is_some(), Ineligible::Teleport),
-        (
-            dropped_teleports.binary_search(&key).is_ok(),
-            Ineligible::DroppedTeleport,
-        ),
-        (
-            tile.items.get(at + 1).is_some_and(|next| next.depth > 0),
-            Ineligible::Contents,
-        ),
-        (attrs.text.is_some(), Ineligible::Text),
-        (attrs.description.is_some(), Ineligible::Description),
-        (attrs.charges.is_some(), Ineligible::Charges),
-    ];
-    if let Some((_, reason)) = refused.into_iter().find(|(refused, _)| *refused) {
-        return Err(reason);
-    }
     let quantity = attrs.count.map_or(1, u32::from);
-    if !(1..=QUANTITY_MAX).contains(&quantity) {
-        return Err(Ineligible::Quantity);
-    }
+    oteryn_gameplay_items::map_pickup::eligibility(
+        oteryn_gameplay_items::map_pickup::PickupFacts {
+            pickupable,
+            house: tile.house != 0,
+            action: attrs.action.is_some(),
+            unique: attrs.unique.is_some(),
+            door: attrs.door.is_some(),
+            depot: attrs.depot.is_some(),
+            teleport: attrs.teleport.is_some(),
+            dropped_teleport: dropped_teleports.binary_search(&key).is_ok(),
+            contents: tile.items.get(at + 1).is_some_and(|next| next.depth > 0),
+            text: attrs.text.is_some(),
+            description: attrs.description.is_some(),
+            charges: attrs.charges.is_some(),
+            quantity,
+        },
+    )?;
     Ok(EligibleEntry {
         placement_key: key,
         origin: TilePos {
@@ -134,7 +100,14 @@ fn origin_of(key: u64) -> Option<(TilePos, u8)> {
 /// Whether a player at `player` reaches the item at `item`: the same floor and at most one tile
 /// away in each direction.
 pub fn within_reach(player: TilePos, item: TilePos) -> bool {
-    player.floor == item.floor && player.x.abs_diff(item.x) <= 1 && player.y.abs_diff(item.y) <= 1
+    oteryn_gameplay_items::reach::within_reach(
+        (
+            i32::from(player.x),
+            i32::from(player.y),
+            i32::from(player.floor),
+        ),
+        (i32::from(item.x), i32::from(item.y), i32::from(item.floor)),
+    )
 }
 
 /// Whether a player at `player` reaches the minted item before its TRANSFER, for a fresh MINT

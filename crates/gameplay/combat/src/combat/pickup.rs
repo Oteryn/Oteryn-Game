@@ -46,27 +46,8 @@ use crate::durability::item_transfer::{
 use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::foundation::CommandRef;
 
-/// The Content-binding half of B3-2: no admission, no identity check, no I/O.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum PickupContentError {
-    /// No definition in the current Content generation matches the claimed identity.
-    DefinitionNotFound,
-    /// The identity resolves to a definition that is not an Item.
-    NotAnItem,
-}
-
-impl std::fmt::Display for PickupContentError {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::DefinitionNotFound => {
-                formatter.write_str("pickup: no Content definition matches the claimed identity")
-            }
-            Self::NotAnItem => formatter.write_str("pickup: claimed identity is not an Item"),
-        }
-    }
-}
-
-impl std::error::Error for PickupContentError {}
+pub use oteryn_gameplay_items::pickup::PickupContentError;
+use oteryn_gameplay_items::pickup::{PickupItemFacts, PickupStackClass};
 
 const fn family_wire_name(family: DefinitionFamily) -> &'static str {
     match family {
@@ -103,19 +84,17 @@ pub fn resolve_item_definition_facts(
         return Err(PickupContentError::NotAnItem);
     };
 
-    let stack = match item.stack_class {
-        ReferenceItemStackClass::Unknown => ItemStackClass::Unknown,
-        ReferenceItemStackClass::NonStackable => ItemStackClass::NonStackable,
-        ReferenceItemStackClass::StackCapable => {
-            let proven_maximum = match &item.semantics.stack {
-                ReferenceItemField::Known(stack) => match stack.stack_max {
-                    ReferenceItemField::Known(maximum) => Some(u32::from(maximum)),
-                    _ => None,
-                },
-                _ => None,
-            };
-            ItemStackClass::Stackable { proven_maximum }
-        }
+    let stack_class = match item.stack_class {
+        ReferenceItemStackClass::Unknown => PickupStackClass::Unknown,
+        ReferenceItemStackClass::NonStackable => PickupStackClass::NonStackable,
+        ReferenceItemStackClass::StackCapable => PickupStackClass::StackCapable,
+    };
+    let proven_maximum = match &item.semantics.stack {
+        ReferenceItemField::Known(stack) => match stack.stack_max {
+            ReferenceItemField::Known(maximum) => Some(u32::from(maximum)),
+            _ => None,
+        },
+        _ => None,
     };
 
     // Only a definitively KNOWN capacity is surfaced; a container whose capacity is not
@@ -156,13 +135,18 @@ pub fn resolve_item_definition_facts(
         _ => None,
     };
 
-    Ok(ItemDefinitionFacts {
-        definition: definition.clone(),
-        weight,
-        stack,
-        container_capacity,
-        container_slot_equip_pattern,
-    })
+    Ok(
+        oteryn_gameplay_items::pickup::resolve_item_definition_facts(
+            definition,
+            PickupItemFacts {
+                weight,
+                stack_class,
+                proven_maximum,
+                container_capacity,
+                container_slot_equip_pattern,
+            },
+        ),
+    )
 }
 
 /// Compatibility for the existing canonical Reference pickup seam (no production caller).

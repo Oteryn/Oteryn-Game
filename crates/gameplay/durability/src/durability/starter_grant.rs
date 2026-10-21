@@ -8,46 +8,12 @@
 use super::character_authority::ReconciledCharacterAuthority;
 use super::character_equipment::{EquipmentError, assert_current_equipment_in_transaction};
 use super::item_loop_move::ItemLoopContent;
-use super::item_mint::TypedDefinitionRef;
 use super::item_transfer::{CurrentCharacterItemFence, scope_of};
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use serde_json::json;
 
-/// One starter template: its registered label and revision, and the one item it grants.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct StarterTemplate {
-    pub key: String,
-    pub revision: String,
-    pub definition: TypedDefinitionRef,
-    pub quantity: u32,
-}
-
-impl StarterTemplate {
-    /// `oteryn:starter-template.main` (record `oteryn:starter.main_backpack`): one backpack
-    /// `oteryn:item.tibia.i2854` into the `container` slot.
-    pub fn main() -> Self {
-        Self {
-            key: "oteryn:starter-template.main".to_owned(),
-            revision: "starter-kit-r1".to_owned(),
-            definition: TypedDefinitionRef {
-                family: "Item".to_owned(),
-                production_key: "oteryn:item.tibia.i2854".to_owned(),
-                revision_ref: "definition-r1".to_owned(),
-            },
-            quantity: 1,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum StarterGrantOutcome {
-    /// The fresh main backpack.
-    Minted([u8; 16]),
-    Skipped,
-    AlreadyGranted,
-    NotAdmitted,
-}
+pub use oteryn_gameplay_items::starter_grant::{StarterTemplate, StarterGrantOutcome};
 
 fn grant_error(error: EquipmentError) -> DurabilityError {
     match error {
