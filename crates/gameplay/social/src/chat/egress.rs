@@ -13,16 +13,17 @@ use std::collections::VecDeque;
 
 use oteryn_protocol_oteryn::chat::ChatLine;
 
-/// `CHAT0-RL-11`: undelivered lines per session.
-pub const EGRESS_MAX_LINES: usize = 64;
+pub use oteryn_gameplay_social_rules::egress::EGRESS_MAX_LINES;
+use oteryn_gameplay_social_rules::egress::{self, LineClass};
 
-/// Drop order: a higher rank is dropped first.
+/// Translate a wire line into its pure drop class.
 fn drop_rank(line: &ChatLine) -> u8 {
-    match line {
-        ChatLine::Room { .. } => 3,
-        ChatLine::Local { .. } => 2,
-        ChatLine::Private { .. } | ChatLine::Dropped => 1,
-    }
+    egress::drop_rank(match line {
+        ChatLine::Room { .. } => LineClass::Room,
+        ChatLine::Local { .. } => LineClass::Local,
+        ChatLine::Private { .. } => LineClass::Private,
+        ChatLine::Dropped => LineClass::Dropped,
+    })
 }
 
 /// One session's undelivered chat lines.
