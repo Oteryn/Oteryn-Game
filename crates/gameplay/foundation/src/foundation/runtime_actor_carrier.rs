@@ -632,12 +632,7 @@ impl CurrentOwnerMovementPosition<'_> {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct OwnerDamageResult {
-    pub applied: bool,
-    pub health_before: i64,
-    pub health_after: i64,
-}
+pub use oteryn_gameplay_domain::domain::charm_data::OwnerDamageResult;
 
 /// Immutable, borrowed Ability proposal. Authority is checked by the owner,
 /// independently of these bytes, before the single slot replacement.

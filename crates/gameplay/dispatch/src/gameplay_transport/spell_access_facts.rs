@@ -147,58 +147,9 @@ fn project_wheel_stages(
     if !allocation.current || binding.character_revision == 0 {
         return None;
     }
-    let promoted = matches!(
-        vocation,
-        "elder_druid" | "elite_knight" | "exalted_monk" | "royal_paladin" | "master_sorcerer"
-    );
-    let rules =
-        crate::durability::character_wheel::eligibility(ruleset, vocation, level, promoted).ok()?;
-    let stages = crate::durability::character_wheel::WheelStages::derive(
-        ruleset, allocation, vocation, level, promoted,
-    );
-    let mut value: BTreeMap<_, _> = rules
-        .revelations
-        .iter()
-        .map(|key| (key.clone(), stages.revelation_stage(key)))
-        .collect();
-    for key in rules.augment_targets.keys() {
-        value.insert(key.clone(), stages.augment_stage(key));
-    }
-    for target in rules.augment_targets.values().flatten() {
-        value.insert(target.clone(), stages.spell_augment_stage(target));
-    }
-    // Closed aliases from the existing Wheel spell ABI and admitted native profile labels.
-    // No case folding or inferred key authorizes an arbitrary perk.
-    for (label, key) in [
-        ("Executioner's Throw", "executioner_s_throw"),
-        ("Combat Mastery", "combat_mastery"),
-        ("Divine Grenade", "divine_grenade"),
-        ("Divine Empowerment", "divine_empowerment"),
-        ("Blessing of the Grove", "blessing_of_the_grove"),
-        ("Twin Burst", "twin_bursts"),
-        ("Beam Mastery", "beam_mastery"),
-        ("Lord of Destruction", "lord_of_destruction"),
-        ("Spiritual Outburst", "spiritual_outburst"),
-        ("Ascetic", "ascetic"),
-        ("Avatar of Steel", "avatar_of_steel"),
-        ("Avatar of Light", "avatar_of_light"),
-        ("Avatar of Nature", "avatar_of_nature"),
-        ("Avatar of Storm", "avatar_of_storm"),
-        ("Avatar of Balance", "avatar_of_balance"),
-        ("avatar of steel", "avatar_of_steel"),
-        ("avatar of light", "avatar_of_light"),
-        ("avatar of nature", "avatar_of_nature"),
-        ("avatar of storm", "avatar_of_storm"),
-        ("avatar of balance", "avatar_of_balance"),
-        ("energy wave", "Energy Wave"),
-        ("front sweep", "Front Sweep"),
-        ("mass healing", "Mass Healing"),
-        ("strong ice wave", "Strong Ice Wave"),
-    ] {
-        if let Some(stage) = value.get(key).copied() {
-            value.insert(label.to_owned(), stage);
-        }
-    }
+    let value = oteryn_gameplay_progression::spell_wheel::project_wheel_stages(
+        ruleset, allocation, vocation, level,
+    )?;
     // CharacterRevision is independently read under the Character lock. Every Wheel write
     // advances it, including reset; no-row allocation does not need a fictional Wheel revision.
     Some(CurrentProjection {
@@ -848,6 +799,99 @@ mod wheel_projection_tests {
                 !wheel_raw_matches_binding(&raw, &actual),
                 "durable field {field}"
             );
+        }
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+mod progression_dispatch_tests {
+    use crate::gameplay_transport::actor_spell::{
+        ChannelSpellStates,
+        tests::{FACTS, runtime_with_player},
+    };
+    use crate::spell::Vocation;
+    use crate::spell::cast::CharacterCastFacts;
+    use oteryn_simulation_determinism::SemanticTimeMicros;
+
+    #[test]
+    fn food_regeneration_credits_through_the_channel_owner_and_stops_at_expiry() {
+        use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, NodeId};
+        use crate::map::boot::tests::{floor_bundle, floor_items, floor_pins};
+
+        let (template, _, session) = runtime_with_player(0x78);
+        let world = template.binding().world_id();
+        let channel = template.binding().channel_id();
+        let room = crate::content::qualify_native_entry_room(world).expect("entry Content");
+        let (bytes, pins) = floor_bundle();
+        let map = crate::map::boot::boot(&bytes, &floor_pins(pins), world, channel, floor_items)
+            .expect("qualified map");
+        let cells = map
+            .movement_cells(room.movement_cells())
+            .expect("map cells");
+        let pin = ChannelContentPin::from_activation(
+            world,
+            1,
+            room.compiled().server_digest(),
+            room.compiled().client_digest(),
+            map.frame_binding_digest(world),
+            map.map_revision_digest(),
+            (0, 0, 8),
+        );
+        let mut node = [0x78; 16];
+        node[6] = 0x70;
+        node[8] = 0x80;
+        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+            world,
+            channel,
+            NodeId::decode(&node).expect("node"),
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            2,
+            pin,
+        )
+        .expect("Channel");
+        let reservation = runtime.reserve_fresh_session(session).expect("reservation");
+        let actor = runtime.commit_fresh_session(reservation).expect("actor");
+        runtime
+            .initialize_first_entry_position(actor)
+            .expect("position");
+        let mut states = ChannelSpellStates::default();
+        states
+            .initialize(
+                &runtime,
+                actor,
+                session,
+                CharacterCastFacts {
+                    vocation: Vocation::Knight,
+                    max_mana: 200,
+                    ..FACTS
+                },
+                (0, 0),
+                SemanticTimeMicros::from_micros(0),
+            )
+            .expect("current actor");
+        states
+            .get_mut(&runtime, actor, session)
+            .expect("current state")
+            .restore_saved_vitals(100, 100);
+        assert!(states.apply_food(&runtime, actor, session, 6, 0).is_some());
+        for second in 1..=12 {
+            let _ = states.tick_in_environment(
+                &mut runtime,
+                &cells,
+                actor,
+                session,
+                SemanticTimeMicros::from_micros(second * 1_000_000),
+            );
+            let vitals = states
+                .get(&runtime, actor, session)
+                .expect("current state")
+                .vitals();
+            let expected = if second < 6 { (100, 100) } else { (101, 102) };
+            assert_eq!((vitals.health, vitals.mana), expected, "second {second}");
         }
     }
 }

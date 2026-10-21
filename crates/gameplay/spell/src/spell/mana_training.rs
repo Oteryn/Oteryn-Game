@@ -3,7 +3,7 @@
 //! its genuine Character build receipt commits in the shared transaction.
 use crate::durability::character_build::{
     BuildCause, BuildChangeRequest, BuildFormula, BuildOccurrence, CommittedBuildChange,
-    DurableBuildState, MAX_BUILD_LEVEL, MAX_BUILD_PROGRESS,
+    DurableBuildState, MAX_BUILD_PROGRESS,
 };
 
 pub mod hit_training;
@@ -235,26 +235,7 @@ impl LiveManaTraining {
 
 /// Bank `pending` onto `(level, progress)` of `family` (0 magic, 1..=7 the skills): every level
 /// the formula reaches advances; progress saturates at the stored bound.
-fn advance(
-    formula: &CompiledTrainingFormula,
-    vocation: &str,
-    family: usize,
-    (mut level, stored): (u16, u64),
-    pending: u64,
-) -> (u16, u64) {
-    let mut progress = stored.saturating_add(pending).min(MAX_BUILD_PROGRESS);
-    while level < MAX_BUILD_LEVEL {
-        let Some(required) = formula.required(vocation, family, level + 1) else {
-            break;
-        };
-        if progress < required {
-            break;
-        }
-        progress -= required;
-        level += 1;
-    }
-    (level, progress)
-}
+pub use oteryn_gameplay_progression::mana_training::advance;
 
 impl PreparedManaTraining {
     pub fn commit(
