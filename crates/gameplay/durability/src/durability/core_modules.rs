@@ -17,7 +17,7 @@ pub mod bestiary_progress;
 )]
 pub mod character_appearance;
 pub mod character_authority;
-pub mod character_authority_audit;
+
 pub mod character_build;
 pub mod character_chat_name;
 pub mod character_chat_recipient;
@@ -34,13 +34,13 @@ pub mod character_proficiency_modification;
 pub mod character_progression;
 pub mod character_revision_sequencer;
 pub mod character_stance;
-pub mod character_vitals_soul;
-pub mod character_vitals_stamina;
+
+
 pub mod character_wheel;
 pub mod charm_state;
 pub mod chat_text;
 pub mod content_activation;
-pub mod creature_schedule;
+
 mod db;
 pub mod equipment_policy_abi;
 pub mod forge;
@@ -51,7 +51,7 @@ pub mod highscore_snapshot;
 pub mod house_interior;
 pub mod house_interior_audit;
 pub mod house_scope_handoff;
-pub mod item_capacity;
+
 pub mod item_decay_retire;
 pub mod item_decay_retire_audit;
 pub mod item_fee_burn;
@@ -99,10 +99,10 @@ pub mod spell_items_abi;
 pub mod spell_owner_commit;
 pub mod spell_parameter_result;
 pub mod spell_privacy;
-pub mod spell_wheel_abi;
+
 pub mod sqlstate_codes;
 pub mod starter_grant;
-pub mod uniform_draw;
+
 pub mod world_house_instance;
 pub mod world_party;
 
@@ -670,7 +670,7 @@ mod character_authority_linkage {
         let _ = DurabilityRoot::pending_character_audit;
         let _ = DurabilityRoot::acknowledge_character_audit;
         let _ = DurabilityRoot::expire_character_audit;
-        let _ = super::character_authority_audit::encode_bootstrap;
+        let _ = oteryn_gameplay_characters::character_authority_audit::encode_bootstrap;
     }
 }
 

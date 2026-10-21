@@ -8,9 +8,6 @@ use super::super::connection::{
 use super::super::item_view::{
     InventoryItems, ItemKey, ItemTargetObservation, ItemViewContinuity, SessionItemView, ViewItem,
 };
-use super::super::world_object::{
-    SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1, STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
-};
 use super::super::world_spatial::{
     ActorPosition, CAPABILITY_WORLD_SPATIAL_ENTITIES, SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
     STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY, StepDirection, StepDisposition, WorldSpatialObservation,
@@ -25,7 +22,15 @@ use crate::foundation::{
 };
 use crate::foundation::{DomainSnapshot, encode_single_chunk_snapshot};
 use oteryn_protocol_oteryn::achievement_notices::{
-    AchievementWatermark, SNAPSHOT_TYPE_ACHIEVEMENT_NOTICES_V1, encode_achievement_notices_snapshot,
+    AchievementWatermark, SNAPSHOT_TYPE_ACHIEVEMENT_NOTICES_V1,
+    STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES, encode_achievement_notices_snapshot,
+};
+use oteryn_protocol_oteryn::item_view::{
+    COMMAND_TYPE_ITEM_MOVE_INTENT, STATE_DOMAIN_CHARACTER_INVENTORY, STATE_DOMAIN_OPEN_CONTAINER,
+};
+use oteryn_protocol_oteryn::world_object::CAPABILITY_ITEM_USE_V1;
+use oteryn_protocol_oteryn::world_object::{
+    SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1, STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
 };
 use oteryn_protocol_oteryn::{
     ClientBootstrapValue, decode_server_accepted, encode_client_bootstrap,
@@ -171,31 +176,6 @@ fn the_production_offered_set_is_the_registry_offered_set_and_registered()
     assert!(accepted(&all).is_ok());
     assert!(accepted(&registered).is_ok());
     assert!(accepted(&[2]).is_err());
-    Ok(())
-}
-
-#[test]
-fn the_gated_commands_and_domains_are_the_registry_ones() -> Result<(), Box<dyn Error>> {
-    let mut expected = Vec::new();
-    for capability in registry_capabilities()? {
-        let id = u32::try_from(capability["id"].as_u64().ok_or("id")?)?;
-        // Capability 6 extends core domain 1 with a payload type; it gates no whole domain.
-        if id == CAPABILITY_WORLD_SPATIAL_ENTITIES {
-            assert!(ids(&capability["command_types"])?.is_empty());
-            assert_eq!(ids(&capability["state_domains"])?, [1]);
-            continue;
-        }
-        expected.push((
-            id,
-            ids(&capability["command_types"])?,
-            ids(&capability["state_domains"])?,
-        ));
-    }
-    let table: Vec<(u32, Vec<u32>, Vec<u32>)> = gated_table()
-        .iter()
-        .map(|(id, commands, domains)| (*id, commands.to_vec(), domains.to_vec()))
-        .collect();
-    assert_eq!(table, expected);
     Ok(())
 }
 
@@ -547,7 +527,7 @@ impl FreshAdmissionAuthority for NegotiatingAuthority {
     ) -> super::super::connection::UseOutcome {
         self.item_uses.borrow_mut().push(item);
         super::super::connection::UseOutcome {
-            disposition: super::super::world_object::UseDisposition::Full,
+            disposition: oteryn_protocol_oteryn::world_object::UseDisposition::Full,
             ..super::super::connection::UseOutcome::rejected()
         }
     }
@@ -1226,13 +1206,13 @@ type UseResult = (u64, crate::foundation::CommandStatus, Vec<u8>);
 #[test]
 fn item_use_wire_fields_4_and_5_are_rejected_without_capability_15() -> Result<(), Box<dyn Error>> {
     use super::super::item_view::UseItemTarget;
-    use super::super::world_object::{
-        COMMAND_TYPE_USE_INTENT, UseDisposition, UseIntent, UseTarget, encode_item_use_intent,
-        encode_use_result,
-    };
     use crate::foundation::CommandStatus;
     use oteryn_protocol_oteryn::decode_command_result;
     use oteryn_protocol_oteryn::item_view::ItemHandle;
+    use oteryn_protocol_oteryn::world_object::{
+        COMMAND_TYPE_USE_INTENT, UseDisposition, UseIntent, UseTarget, encode_item_use_intent,
+        encode_use_result,
+    };
     use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
     use std::num::NonZeroU32;
     run(async {
@@ -1425,15 +1405,15 @@ fn rune_wire_capability_21_is_registered_not_offered_and_requires_15() -> Result
 #[test]
 fn rune_wire_the_position_arm_is_rejected_with_or_without_capability_21()
 -> Result<(), Box<dyn Error>> {
-    use super::super::world_object::{
-        COMMAND_TYPE_USE_INTENT, UseDisposition, UseIntent, UseTarget, encode_item_use_intent,
-        encode_use_result,
-    };
     use crate::foundation::CommandStatus;
     use oteryn_protocol_oteryn::actor_spell::SpellTargetPosition;
     use oteryn_protocol_oteryn::decode_command_result;
     use oteryn_protocol_oteryn::item_view::ItemHandle;
     use oteryn_protocol_oteryn::world_object::CAPABILITY_RUNE_USE_V1;
+    use oteryn_protocol_oteryn::world_object::{
+        COMMAND_TYPE_USE_INTENT, UseDisposition, UseIntent, UseTarget, encode_item_use_intent,
+        encode_use_result,
+    };
     run(async {
         let authority = NegotiatingAuthority::new(Some(RUNE_USE_OFFERED));
         let at_position = encode_item_use_intent(&UseIntent {
@@ -1487,9 +1467,11 @@ fn rune_wire_the_position_arm_is_rejected_with_or_without_capability_21()
 /// keeps the corpse path and the use is never reached.
 #[test]
 fn a_backpack_entry_is_used_only_under_capability_15() -> Result<(), Box<dyn Error>> {
-    use super::super::world_object::{COMMAND_TYPE_USE_INTENT, UseDisposition, encode_use_result};
     use oteryn_protocol_oteryn::decode_command_result;
     use oteryn_protocol_oteryn::world_object::encode_use_item_intent;
+    use oteryn_protocol_oteryn::world_object::{
+        COMMAND_TYPE_USE_INTENT, UseDisposition, encode_use_result,
+    };
     run(async {
         let authority = NegotiatingAuthority::new(Some(ITEM_USE_OFFERED));
         authority.backpack_entry.set(true);

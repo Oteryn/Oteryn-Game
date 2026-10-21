@@ -8,12 +8,10 @@
 //! Nested under the monk-save PostgreSQL tests to reuse their fresh-admission fixture.
 #![allow(clippy::expect_used, clippy::unwrap_used)]
 
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+
 use super::fixture::{Harness, debug, id, run};
 use super::{TestResult, prepare_current_session};
-use crate::foundation::{
-    ChannelContentPin, ChannelId, ChannelRuntimeV1, GameSessionId, MovementLocalPosition, NodeId,
-    WorldId,
-};
 use crate::gameplay_transport::ComposedFreshAdmission;
 use crate::gameplay_transport::connection::{
     AdmittedSession, ControllerBinding, FirstEntryOutcome, SessionContinuity,
@@ -23,6 +21,12 @@ use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::time::Duration;
 use tokio::sync::Mutex;
+use {
+    crate::foundation::{
+        ChannelId, ChannelRuntimeV1, GameSessionId, MovementLocalPosition, NodeId, WorldId,
+    },
+    oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+};
 
 /// Thalom cells next to each other, neither in a protection zone.
 const OPEN_PLAYER: MovementLocalPosition = MovementLocalPosition {

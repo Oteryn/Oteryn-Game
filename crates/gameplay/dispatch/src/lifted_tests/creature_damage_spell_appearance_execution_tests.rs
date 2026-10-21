@@ -12,17 +12,20 @@ use crate::content::{
     ProjectReferenceRecord, ProjectV2AuthoringProfile, ProjectV2AuthoringProfileData as Data,
     ProjectV2DefinitionRef as Ref, ProjectV2Family,
 };
-use crate::creature_attack_geometry::Facing;
 use crate::creature_auto_attack::ProfileAbilityProposal;
 use crate::creature_auto_attack::{AttackError, AttackFacts, CurrentConditionPolicy};
 use crate::creature_damage_spell::*;
 use crate::foundation::owner_timer::SemanticTimeMicros;
-use crate::foundation::{ChannelContentPin, ChannelId, MovementLocalPosition, NodeId};
 use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, GameSessionId, RuntimeWorkStamp, ScopeRuntimeFence,
 };
 use crate::gameplay_transport::actor_spell::{ChannelSpellStates, tests::FACTS};
+use oteryn_gameplay_content::content::creature_attack_geometry::Facing;
 use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+use {
+    crate::foundation::{ChannelId, MovementLocalPosition, NodeId},
+    oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+};
 fn actual_content() -> (NativeGameplayState, ChannelContentPin) {
     let path = std::env::var_os("OTERYN_FULL_SPELL_TEST_MANIFEST")
         .expect("explicit actual source artifact manifest");
@@ -415,12 +418,12 @@ fn scheduled_appearance_real_player_store_projection_expiry_and_replay() {
             .owned_conditions();
         let shown = store.displayed_temporary_appearance_at(1).unwrap();
         match shown {
-            crate::ability::condition::TemporaryDisplayedAppearance::Item(v) => {
+            oteryn_gameplay_foundation::foundation::condition::TemporaryDisplayedAppearance::Item(v) => {
                 assert!(item);
                 assert_eq!(v.definition_key(), "oteryn:item.tibia.i2324");
                 assert_eq!(v.artifact_digest(), native.source_digest());
             }
-            crate::ability::condition::TemporaryDisplayedAppearance::Outfit(v) => {
+            oteryn_gameplay_foundation::foundation::condition::TemporaryDisplayedAppearance::Outfit(v) => {
                 assert!(!item);
                 assert_eq!(
                     *v,
@@ -609,13 +612,13 @@ fn appearance_area_late_player_clock_refusal_rolls_back_creature_and_players() {
     let (mut r, mut states, source, p, mut world, fence, stamp) =
         fixture(&native, pin, "dark_apprentice", 5, false);
     let root = GameplayDecisionRoot::from_bytes(native.source_digest());
-    let def = crate::ability::condition::ConditionDefinition::new(
+    let def = oteryn_gameplay_foundation::foundation::condition::ConditionDefinition::new(
         "fixture:future",
         1,
-        crate::ability::condition::ConditionValues::Invisible { duration_ms: 1000 },
+        oteryn_gameplay_domain::domain::condition::ConditionValues::Invisible { duration_ms: 1000 },
     )
     .unwrap();
-    let facts = crate::ability::condition::ApplicationFacts {
+    let facts = oteryn_gameplay_foundation::foundation::condition::ApplicationFacts {
         now: 10,
         base_speed: 180,
         mana_shield_capacity: 0,
@@ -698,10 +701,10 @@ fn mixed_appearance_receipts_keep_longer_player_outfit_and_apply_new_creature_it
         .for_creature("oteryn:creature.cyclops", "definition-r1")
         .unwrap();
     let selection = member.selection();
-    let def = crate::ability::condition::ConditionDefinition::new(
+    let def = oteryn_gameplay_foundation::foundation::condition::ConditionDefinition::new(
         "fixture:longer-outfit",
         1,
-        crate::ability::condition::ConditionValues::Outfit {
+        oteryn_gameplay_domain::domain::condition::ConditionValues::Outfit {
             duration_ms: 10000,
             look_type: member.look_type(),
         },
@@ -709,7 +712,7 @@ fn mixed_appearance_receipts_keep_longer_player_outfit_and_apply_new_creature_it
     .unwrap()
     .with_appearance(selection)
     .unwrap();
-    let facts = crate::ability::condition::ApplicationFacts {
+    let facts = oteryn_gameplay_foundation::foundation::condition::ApplicationFacts {
         now: 1,
         base_speed: 180,
         mana_shield_capacity: 0,
@@ -772,10 +775,10 @@ fn mixed_appearance_receipts_keep_longer_player_outfit_and_apply_new_creature_it
             .read_owned_player_state_test_snapshot(&r, p.target, world.session)
             .unwrap()
             .owned_conditions()
-            .get(crate::ability::condition::ConflictKey::Outfit),
+            .get(oteryn_gameplay_domain::domain::condition::ConflictKey::Outfit),
         player
             .owned_conditions()
-            .get(crate::ability::condition::ConflictKey::Outfit)
+            .get(oteryn_gameplay_domain::domain::condition::ConflictKey::Outfit)
     );
     assert!(
         r.actor_conditions(p.issuer, None)

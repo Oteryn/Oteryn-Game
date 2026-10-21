@@ -7,7 +7,6 @@ mod source_summon_composition_tests {
     use crate::content::ProjectV2DefinitionRef as Ref;
     use crate::content::ProjectV2Family;
     use crate::content::*;
-    use crate::creature_attack_geometry::Facing;
     use crate::creature_auto_attack::AttackFacts;
     use crate::creature_auto_attack::CurrentCombatFactsReader;
     use crate::creature_damage_spell::SpellCombatFacts;
@@ -23,6 +22,8 @@ mod source_summon_composition_tests {
     use crate::gameplay_transport::actor_spell::ChannelSpellStates;
     use crate::monster_combat_lane::native_invisibility::InvisibleTileCombatPolicy;
     use crate::monster_combat_lane::*;
+    use oteryn_gameplay_content::content::creature_attack_geometry::Facing;
+    use oteryn_gameplay_encounters::bosses::crystal_deaths::native_fixtures::CrystalRouterFixtureExt;
     struct World {
         target: ExactActorRef,
         session: GameSessionId,

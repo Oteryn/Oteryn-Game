@@ -14,10 +14,15 @@ use crate::foundation::runtime_actor_spell_types::{
     CombatBatchReceipt, OwnerCombatBatch, OwnerCombatChange, OwnerCombatEffect,
     SpellOccurrenceBinding,
 };
-use crate::foundation::{
-    ChannelContentPin, ChannelId, ChannelRuntimeV1, CharacterId, CharacterLease, CommandId,
-    CommandRef, CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureFlags, ExactActorRef,
-    GameSessionId, MovementLocalPosition, NodeId, WorldId,
+use {
+    crate::foundation::{
+        ChannelId, ChannelRuntimeV1, CharacterId, CharacterLease, CommandId, CommandRef,
+        ExactActorRef, GameSessionId, MovementLocalPosition, NodeId, WorldId,
+    },
+    oteryn_gameplay_content::content::{
+        channel_content_pin::ChannelContentPin,
+        creature_policy::{CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureFlags},
+    },
 };
 
 fn uuid(tag: u8) -> [u8; 16] {

@@ -27,10 +27,6 @@
 //! Bestiary takes the revision XP committed, so no other Character write can
 //! commit between them.
 
-use super::loot_plan::{
-    LootDefinitionRef, LootPlan, LootPlanDeathKey, LootPlanError, LootTableDefinition,
-    plan_creature_loot,
-};
 use crate::domain::CharacterRevision;
 use crate::domain::bestiary::{BestiaryError, BestiaryKillCredit, BestiaryRace};
 use crate::domain::progression::{FiniteProgressionPolicy, ProgressionRevisionContext};
@@ -54,11 +50,18 @@ use crate::durability::item_mint::{
 };
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 use crate::durability::spell_owner_commit::SpellLanePermit;
-use crate::foundation::{
-    CarrierError, CharacterId, CreatureDeathOccurrenceKey, CurrentOwnerCombatDeath, ExactActorRef,
-    GameSessionId, MovementLocalPosition,
+use oteryn_gameplay_items::loot_plan::{
+    LootDefinitionRef, LootPlan, LootPlanDeathKey, LootPlanError, LootTableDefinition,
+    plan_creature_loot,
 };
 use oteryn_simulation_determinism::ExactI64;
+use {
+    crate::foundation::{
+        CharacterId, CreatureDeathOccurrenceKey, CurrentOwnerCombatDeath, ExactActorRef,
+        GameSessionId, MovementLocalPosition,
+    },
+    oteryn_gameplay_domain::domain::carrier_values::CarrierError,
+};
 
 /// `COMBAT01-INFLIGHT-LOOT-MINTS-PER-SCOPE` (D78, resource rows decision
 /// §4.1, row 7): at most 64 in-flight loot MINTs per scope at once. Checked
@@ -886,7 +889,7 @@ mod tests {
         // Equal by construction to the accepted loot-plan ceiling.
         assert_eq!(
             GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX,
-            super::super::loot_plan::COMBAT01_LOOT_PLAN_ITEMS_MAX
+            oteryn_gameplay_items::loot_plan::COMBAT01_LOOT_PLAN_ITEMS_MAX
         );
         assert!(check_corpse_container_capacity(0).is_ok());
         assert!(check_corpse_container_capacity(GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX).is_ok());

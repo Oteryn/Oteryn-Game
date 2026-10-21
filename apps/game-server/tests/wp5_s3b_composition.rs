@@ -33,8 +33,7 @@ mod durability {
     include!("../../../crates/gameplay/durability/src/durability/core_modules.rs");
 }
 #[allow(dead_code, unused_imports)]
-#[path = "../../../crates/gameplay/foundation/src/foundation/mod.rs"]
-pub mod foundation;
+pub use oteryn_gameplay_entities as foundation;
 pub use oteryn_gameplay_native_admission_source as native_admission_source;
 
 #[allow(
@@ -467,7 +466,10 @@ fn bound_capabilities(
 // Runtime readiness producer for the holder: the ownership generation is the
 // #415 assignment generation; the revision facts are the runtime's own.
 struct RuntimeReadiness(AdmissionAuthorityPublicationChangeV1);
-impl foundation::fnd04_verifier::fresh_source_sealed::Sealed for RuntimeReadiness {}
+impl oteryn_gameplay_foundation::foundation::fnd04_verifier::fresh_source_sealed::Sealed
+    for RuntimeReadiness
+{
+}
 impl AdmissionAuthorityOwningPublisherV1 for RuntimeReadiness {
     fn resolve_publication(
         &self,

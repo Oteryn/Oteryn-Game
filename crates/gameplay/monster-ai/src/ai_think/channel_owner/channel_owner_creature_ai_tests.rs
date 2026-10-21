@@ -16,9 +16,12 @@ use crate::ai_think::{
     AttackReadiness, CreatureThinkInput, PerceivedPlayer, PerceivedPlayerId, StepKind,
 };
 use crate::foundation::owner_timer::SemanticTimeMicros;
-use crate::foundation::{ChannelContentPin, ChannelId, GameSessionId, NodeId, WorldId};
 use oteryn_simulation_determinism::DecisionOccurrenceId;
 use serde_json::{Value, json};
+use {
+    crate::foundation::{ChannelId, GameSessionId, NodeId, WorldId},
+    oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+};
 
 const SECOND: u64 = 1_000_000;
 

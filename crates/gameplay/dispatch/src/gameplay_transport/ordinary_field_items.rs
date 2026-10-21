@@ -4,9 +4,10 @@
 use super::*;
 use crate::durability::spell_item_transaction::{self as item_tx, SpellItemError};
 use crate::durability::spell_items_abi::SpellItemOperation;
-use crate::spell::world_items_execution::QualifiedItemDefinition;
+use oteryn_gameplay_durability::durability::native_world_items::QualifiedItemDefinition;
+use oteryn_gameplay_spell_rules::dispatch_plans::ordinary_field_items as field_rules;
 
-use crate::spell::world_items_execution::{
+use oteryn_gameplay_durability::durability::native_world_items::{
     qualify_source_field_chain as field_chain, source_magic_field as magic_field,
 };
 /// Equality of descriptions is not an authority issuer. The caller separately
@@ -56,15 +57,12 @@ fn select_safe_field(
     mode: crate::durability::spell_field_policy::FieldWorldType,
     target_no_pvp: Option<bool>,
 ) -> Result<u32, SpellItemError> {
-    let no_pvp = target_no_pvp.ok_or(SpellItemError::Rejected("field tile PvP policy unknown"))?;
-    // ATTACK-1b already holds disconnected actors using its current in-fight owner.
-    // Field creation/hits are not connected to that owner, and FIELD-1 excludes
-    // player-affecting PvP. Keep this slice restricted to qualified NoPvP contexts.
-    if !no_pvp && mode != crate::durability::spell_field_policy::FieldWorldType::NoPvp {
-        return Err(SpellItemError::Rejected("field in-fight owner required"));
-    }
-    // Canary999025 combat.cpp1189–1244 and utils_definitions.hpp589–603.
-    Ok(select_source_field_id(source_id, true, no_pvp, mode))
+    field_rules::select_safe_field(
+        source_id,
+        mode == crate::durability::spell_field_policy::FieldWorldType::NoPvp,
+        target_no_pvp,
+    )
+    .map_err(SpellItemError::Rejected)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -267,53 +265,13 @@ pub fn select_source_field_id(
     no_pvp: bool,
     mode: crate::durability::spell_field_policy::FieldWorldType,
 ) -> u32 {
-    let pvp = match source_id {
-        2123 => 2118,
-        2124 => 2119,
-        2125 => 2120,
-        2126 => 2122,
-        2121 => 105,
-        other => other,
-    };
-    if player_owned
-        && (no_pvp || mode == crate::durability::spell_field_policy::FieldWorldType::NoPvp)
-    {
-        match pvp {
-            2118 => 21465,
-            105 => 2134,
-            2122 => 2135,
-            other => other,
-        }
-    } else {
-        pvp
-    }
+    field_rules::select_source_field_id(
+        source_id,
+        player_owned,
+        no_pvp,
+        mode == crate::durability::spell_field_policy::FieldWorldType::NoPvp,
+    )
 }
-#[cfg(test)]
-mod source_field_selection_tests {
-    use super::*;
-    use crate::durability::spell_field_policy::FieldWorldType as M;
-    #[test]
-    fn source_field_ids_apply_safe_world_conversion_only_to_actual_player_owned_casters() {
-        for (source, safe) in [(2118, 21465), (2122, 2135), (105, 2134)] {
-            assert_eq!(
-                select_source_field_id(source, false, true, M::NoPvp),
-                source
-            );
-            assert_eq!(select_source_field_id(source, true, false, M::Pvp), source);
-            assert_eq!(select_source_field_id(source, true, true, M::Pvp), safe);
-            assert_eq!(select_source_field_id(source, true, false, M::NoPvp), safe);
-        }
-        assert_eq!(
-            select_source_field_id(2123, true, false, M::PvpEnforced),
-            2118
-        );
-        assert_eq!(
-            select_source_field_id(2123, true, true, M::PvpEnforced),
-            21465
-        );
-    }
-}
-
 #[cfg(test)]
 #[path = "ordinary_field_items_tests.rs"]
 mod tests;

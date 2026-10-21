@@ -76,10 +76,10 @@ impl ChannelSpellStates {
                 // other expired conditions. KeptCurrent is an explicit no-effect receipt.
                 let applied = before
                     .owned_conditions()
-                    .get(crate::ability::condition::ConflictKey::Outfit)
+                    .get(oteryn_gameplay_domain::domain::condition::ConflictKey::Outfit)
                     != next
                         .owned_conditions()
-                        .get(crate::ability::condition::ConflictKey::Outfit);
+                        .get(oteryn_gameplay_domain::domain::condition::ConflictKey::Outfit);
                 receipts.push(SourceAppearanceReceipt {
                     actor: target.actor,
                     applied,

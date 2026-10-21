@@ -3,10 +3,14 @@
 //! The scalar compatibility entry point remains limited to actors without owned
 //! familiars; `stage_haste` supports all four source-qualified haste profiles.
 use super::native::CompiledNativeSpell;
-use crate::ability::condition::{
-    ApplicationFacts, Applied, ConditionDefinition, ConditionStore, ConditionType, ConditionValues,
-    SpeedRange, SpellSpeedError,
-};
+use oteryn_gameplay_domain::domain::condition::ConditionType;
+use oteryn_gameplay_domain::domain::condition::ConditionValues;
+use oteryn_gameplay_domain::domain::condition::SpeedRange;
+use oteryn_gameplay_foundation::foundation::condition::ApplicationFacts;
+use oteryn_gameplay_foundation::foundation::condition::Applied;
+use oteryn_gameplay_foundation::foundation::condition::ConditionDefinition;
+use oteryn_gameplay_foundation::foundation::condition::ConditionStore;
+use oteryn_gameplay_foundation::foundation::condition::SpellSpeedError;
 
 #[derive(Debug)]
 pub struct PaidHasteCast {
@@ -37,7 +41,7 @@ pub fn prepare_haste_owner_cast_with_caster(
     facts: &ApplicationFacts<'_>,
     draw: &mut dyn FnMut(i64, i64) -> i64,
 ) -> Result<PaidHasteCast, oteryn_protocol_oteryn::actor_spell::SpellCastDisposition> {
-    use super::native_companions::{
+    use oteryn_gameplay_spell_rules::native_companions::{
         CompanionFacts, ConditionSlotId, HasteFacts, SpeedCondition, SpeedKind, SpeedRecipient,
         SwiftGrade,
     };
@@ -80,7 +84,9 @@ pub fn prepare_haste_owner_cast_with_caster(
     let recipient = |id,
                      base,
                      familiar,
-                     condition: Option<&crate::ability::condition::ConditionInstance<_>>|
+                     condition: Option<
+        &oteryn_gameplay_foundation::foundation::condition::ConditionInstance<_>,
+    >|
      -> Result<SpeedRecipient, SpellCastDisposition> {
         let conditions = condition
             .map(|instance| -> Result<SpeedCondition, SpellCastDisposition> {
@@ -121,18 +127,19 @@ pub fn prepare_haste_owner_cast_with_caster(
         1,
         i32::from(facts.base_speed),
         false,
-        state
-            .conditions
-            .active_at(crate::ability::condition::ConflictKey::Speed, facts.now),
+        state.conditions.active_at(
+            oteryn_gameplay_domain::domain::condition::ConflictKey::Speed,
+            facts.now,
+        ),
     )?;
     // String player provenance and ExactActorRef companion provenance are
     // distinct actual stores; construct companion snapshots without coercion.
     let mut owned_summons = Vec::with_capacity(companions.len());
     for (index, snapshot) in companions.iter().enumerate() {
-        let instance = snapshot
-            .state
-            .conditions
-            .active_at(crate::ability::condition::ConflictKey::Speed, facts.now);
+        let instance = snapshot.state.conditions.active_at(
+            oteryn_gameplay_domain::domain::condition::ConflictKey::Speed,
+            facts.now,
+        );
         let conditions = instance
             .map(|instance| -> Result<SpeedCondition, SpellCastDisposition> {
                 Ok(SpeedCondition {
@@ -311,8 +318,8 @@ mod tests {
     #![allow(clippy::items_after_test_module)]
     #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
     use super::*;
-    use crate::ability::condition::TickFacts;
     use crate::spell::native::spell_from_bundle;
+    use oteryn_gameplay_foundation::foundation::condition::TickFacts;
     use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
     use serde_json::{Value, json};
 
@@ -441,7 +448,7 @@ mod tests {
                 Some(0)
             ),
             Err(HasteExecutionError::Condition(SpellSpeedError::Admission(
-                crate::ability::condition::ConditionRefusal::Immune
+                oteryn_gameplay_domain::domain::condition::ConditionRefusal::Immune
             )))
         );
         assert_eq!(store, before);
@@ -461,10 +468,16 @@ mod tests {
 
     #[test]
     fn all_four_stage_real_player_and_familiar_stores_without_mutating_physical_slots() {
-        use crate::foundation::{
-            ChannelContentPin, ChannelId, ChannelRuntimeV1, CompiledCreaturePolicies,
-            CompiledCreaturePolicy, CreatureFlags, GameSessionId, MovementLocalPosition, NodeId,
-            WorldId,
+        use {
+            crate::foundation::{
+                ChannelId, ChannelRuntimeV1, GameSessionId, MovementLocalPosition, NodeId, WorldId,
+            },
+            oteryn_gameplay_content::content::{
+                channel_content_pin::ChannelContentPin,
+                creature_policy::{
+                    CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureFlags,
+                },
+            },
         };
         fn id(n: u8) -> [u8; 16] {
             [n, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, n]
@@ -621,15 +634,14 @@ mod tests {
                 assert!(next.conditions.attributes_at(end - 1).is_some());
                 assert_eq!(next.conditions.attributes_at(end), None);
                 assert!(next.conditions.pacified_applied_since(facts.now));
-                assert!(
-                    next.conditions
-                        .has_gate(crate::ability::condition::ConditionGate::Pacified, end - 1)
-                );
-                assert!(
-                    !next
-                        .conditions
-                        .has_gate(crate::ability::condition::ConditionGate::Pacified, end)
-                );
+                assert!(next.conditions.has_gate(
+                    oteryn_gameplay_domain::domain::condition::ConditionGate::Pacified,
+                    end - 1
+                ));
+                assert!(!next.conditions.has_gate(
+                    oteryn_gameplay_domain::domain::condition::ConditionGate::Pacified,
+                    end
+                ));
             }
             assert_eq!(runtime.owned_companions(actor, session).unwrap(), census);
             assert!(
@@ -819,7 +831,7 @@ pub fn stage_haste(
             "spell.swift_foot.pacified",
             1,
             ConditionValues::Gate {
-                gate: crate::ability::condition::ConditionGate::Pacified,
+                gate: oteryn_gameplay_domain::domain::condition::ConditionGate::Pacified,
                 duration_ms: duration,
             },
         )
@@ -828,11 +840,13 @@ pub fn stage_haste(
             match staged.conditions.apply(
                 definition,
                 None,
-                crate::ability::condition::ConditionSourceKind::SelfUse,
+                oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind::SelfUse,
                 &[],
                 facts,
             ) {
-                Ok(_) | Err(crate::ability::condition::ConditionRefusal::KeptCurrent) => {}
+                Ok(_)
+                | Err(oteryn_gameplay_domain::domain::condition::ConditionRefusal::KeptCurrent) => {
+                }
                 Err(error) => {
                     return Err(HasteExecutionError::Condition(SpellSpeedError::Admission(
                         error,

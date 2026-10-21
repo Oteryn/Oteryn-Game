@@ -516,7 +516,7 @@ fn ordinary_gain_reuses_exact_focus_profile_amount_and_sustain_distribution() {
         parameters("Focus Serenity")["harmony_gain_healing"]
     );
     let plan = |charges, serene, sustain| {
-        crate::spell::native_actor_states::plan_harmony_gain_healing(
+        oteryn_gameplay_spell_rules::native_actor_states::plan_harmony_gain_healing(
             profile, charges, 200, serene, sustain,
         )
         .expect("accepted profile")
@@ -531,7 +531,9 @@ fn ordinary_gain_reuses_exact_focus_profile_amount_and_sustain_distribution() {
         assert_eq!(serene.finish_draw(roll).expect("serene"), roll * 170 / 100);
     }
     assert!(
-        crate::spell::native_actor_states::plan_harmony_gain_healing(profile, 6, 200, false, false)
-            .is_err()
+        oteryn_gameplay_spell_rules::native_actor_states::plan_harmony_gain_healing(
+            profile, 6, 200, false, false
+        )
+        .is_err()
     );
 }

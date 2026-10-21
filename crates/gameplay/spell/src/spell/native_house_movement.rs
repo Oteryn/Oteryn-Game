@@ -8,7 +8,7 @@ use serde_json::Value;
 
 use crate::domain::appearance::AppearanceSelection;
 
-use super::locate::locate;
+use oteryn_gameplay_spell_rules::locate::locate;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Position {

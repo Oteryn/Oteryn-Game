@@ -19,192 +19,39 @@ pub(super) struct OrdinaryItemCreation {
     pub(super) item: DefinitionRef,
 }
 
-pub(super) fn applicable(spell: &SpellDefinition) -> bool {
-    matches!(
-        spell.execution,
-        Execution::Effects(_) | Execution::AbilityVariants(_) | Execution::PartyBuff(_)
-    )
-}
-pub(super) fn has_world_geometry(spell: &SpellDefinition) -> bool {
-    spell.chain.is_some()
-        || spell.authored.as_ref().is_some_and(|p| {
-            p.dependencies
-                .abilities
-                .iter()
-                .any(|a| a.area.is_some() || a.chain.is_some())
-        })
-}
+pub use oteryn_gameplay_spell_rules::dispatch_plans::ordinary_combat::applicable;
+use oteryn_gameplay_spell_rules::dispatch_plans::{geometry as plans, ordinary_combat as rules};
+
 fn ability<'a>(
     spell: &'a SpellDefinition,
     variant: Option<&DefinitionRef>,
 ) -> Result<&'a AbilityProfile, SpellCastDisposition> {
-    let p = spell
-        .authored
-        .as_ref()
-        .ok_or(SpellCastDisposition::Rejected)?;
-    let key = variant
-        .or(p.header.execution.ability.as_ref())
-        .ok_or(SpellCastDisposition::Rejected)?;
-    p.dependencies
-        .abilities
-        .iter()
-        .find(|a| a.identity.key == key.key && a.identity.revision == key.revision)
-        .ok_or(SpellCastDisposition::Rejected)
+    rules::ability(spell, variant).map_err(|_| SpellCastDisposition::Rejected)
 }
 fn geometry(
     a: &AbilityProfile,
     origin: TilePosition,
     facing: Direction,
 ) -> Result<BTreeSet<TilePosition>, SpellCastDisposition> {
-    let Some(area) = &a.area else {
-        return Ok(BTreeSet::from([origin]));
-    };
-    let matrix = |rows: &[String]| -> Result<Value, SpellCastDisposition> {
-        rows.iter()
-            .map(|r| {
-                r.bytes()
-                    .map(|c| match c {
-                        b'.' => Ok(json!(0)),
-                        b'x' => Ok(json!(1)),
-                        b'c' => Ok(json!(2)),
-                        b'C' => Ok(json!(3)),
-                        _ => reject(),
-                    })
-                    .collect::<Result<Vec<_>, _>>()
-                    .map(Value::Array)
-            })
-            .collect::<Result<Vec<_>, _>>()
-            .map(Value::Array)
-    };
-    let mut area_json =
-        json!({"directional":a.needs_direction,"orthogonal":matrix(&area.matrix.north)?});
-    if let Some(rows) = &area.matrix.diagonal {
-        area_json["diagonal"] = matrix(rows)?;
-    }
-    area_candidates(&json!({"area":area_json}), origin, facing)
+    plans::geometry(a, plan_position(origin), delta(facing))
+        .map(|tiles| tiles.into_iter().map(cast_position).collect())
+        .map_err(|_| SpellCastDisposition::Rejected)
 }
 fn facing_to(from: TilePosition, to: TilePosition) -> Direction {
-    match (
-        (i64::from(to.x) - i64::from(from.x)).signum(),
-        (i64::from(to.y) - i64::from(from.y)).signum(),
-    ) {
-        (0, -1) => Direction::North,
-        (1, -1) => Direction::NorthEast,
-        (1, 0) => Direction::East,
-        (1, 1) => Direction::SouthEast,
-        (0, 1) => Direction::South,
-        (-1, 1) => Direction::SouthWest,
-        (-1, 0) => Direction::West,
-        _ => Direction::NorthWest,
-    }
+    cast_direction(plans::facing_to(plan_position(from), plan_position(to)))
 }
-/// SPELL-TARGET-1: the geometry origin and facing of a held-target cast. A directional or aimed
-/// spell keeps the caster as origin (the tile in front of it) and takes only its facing from the
-/// target; a single-target spell is centred on the target tile.
+/// SPELL-TARGET-1: the geometry origin and facing of a held-target cast.
 fn attack_target_origin(
     caster: TilePosition,
     target: TilePosition,
     directional: bool,
 ) -> Result<(TilePosition, Option<Direction>), SpellCastDisposition> {
-    if directional && target != caster {
-        let facing = facing_to(caster, target);
-        let (dx, dy) = delta(facing);
-        Ok((offset(caster, dx, dy)?, Some(facing)))
-    } else {
-        Ok((target, None))
-    }
+    plans::attack_target_origin(plan_position(caster), plan_position(target), directional)
+        .map(|(origin, facing)| (cast_position(origin), facing.map(cast_direction)))
+        .map_err(|_| SpellCastDisposition::Rejected)
 }
-#[derive(Debug)]
-struct World {
-    origin: TilePosition,
-    /// The position every populated sight path starts from: the caster for a directional
-    /// cast, otherwise the aimed origin. Area visibility must look up the same key.
-    sight_origin: TilePosition,
-    direction: Direction,
-    caster: ChainCreature,
-    creatures: Vec<ChainCreature>,
-    legal: BTreeSet<u64>,
-    sight: BTreeSet<(TilePosition, TilePosition)>,
-    tiles: BTreeMap<TilePosition, TileFlags>,
-}
-impl World {
-    /// Area targets, created items and tile cues are visible from the sight origin.
-    fn area_sight_clear(&self, p: TilePosition) -> bool {
-        self.sight_clear(self.sight_origin, p)
-    }
-}
-impl ChainWorld for World {
-    fn caster(&self) -> &ChainCreature {
-        &self.caster
-    }
-    fn creatures(&self) -> &[ChainCreature] {
-        &self.creatures
-    }
-    fn may_hit(&self, c: &ChainCreature) -> bool {
-        self.legal.contains(&c.id)
-    }
-    fn sight_clear(&self, a: TilePosition, b: TilePosition) -> bool {
-        a == b || self.sight.contains(&(a, b))
-    }
-    fn path(&self, from: TilePosition, to: TilePosition) -> Option<Vec<TilePosition>> {
-        use std::collections::VecDeque;
-        if from.floor != to.floor {
-            return None;
-        }
-        let mut queue = VecDeque::from([from]);
-        let mut seen = BTreeMap::<TilePosition, Option<TilePosition>>::from([(from, None)]);
-        while let Some(p) = queue.pop_front() {
-            if p.x.abs_diff(to.x) <= 1 && p.y.abs_diff(to.y) <= 1 {
-                let mut path = Vec::new();
-                let mut cur = p;
-                while let Some(Some(previous)) = seen.get(&cur) {
-                    path.push(cur);
-                    cur = *previous;
-                }
-                path.reverse();
-                return Some(path);
-            }
-            for (dx, dy) in [
-                (0, -1),
-                (1, 0),
-                (0, 1),
-                (-1, 0),
-                (-1, -1),
-                (1, -1),
-                (1, 1),
-                (-1, 1),
-            ] {
-                let Ok(next) = offset(p, dx, dy) else {
-                    continue;
-                };
-                if next.x.abs_diff(from.x) > crate::spell::chain::CHAIN_PATH_SEARCH_TILES
-                    || next.y.abs_diff(from.y) > crate::spell::chain::CHAIN_PATH_SEARCH_TILES
-                    || seen.contains_key(&next)
-                    || !self
-                        .tiles
-                        .get(&next)
-                        .is_some_and(|t| t.present && !t.solid && !t.floor_change)
-                {
-                    continue;
-                }
-                if dx != 0
-                    && dy != 0
-                    && [offset(p, dx, 0).ok(), offset(p, 0, dy).ok()]
-                        .into_iter()
-                        .any(|side| {
-                            side.and_then(|s| self.tiles.get(&s))
-                                .is_none_or(|t| !t.present || t.solid)
-                        })
-                {
-                    continue;
-                }
-                seen.insert(next, Some(p));
-                queue.push_back(next);
-            }
-        }
-        None
-    }
-}
+pub use oteryn_gameplay_spell_rules::ordinary_combat::World;
+
 fn element(key: &str) -> Result<Element, SpellCastDisposition> {
     Ok(match key {
         "physical" => Element::Physical,
@@ -230,8 +77,9 @@ fn heals_health(effect: &ResolvedEffect) -> bool {
 }
 fn condition_kind(
     key: &str,
-) -> Result<crate::ability::condition::ConditionType, SpellCastDisposition> {
-    use crate::ability::condition::{ConditionType as T, DotElement as E};
+) -> Result<oteryn_gameplay_domain::domain::condition::ConditionType, SpellCastDisposition> {
+    use oteryn_gameplay_domain::domain::condition::ConditionType as T;
+    use oteryn_gameplay_domain::domain::condition::DotElement as E;
     Ok(match key {
         "paralyze" => T::Paralysis,
         "manashield" => T::ManaShield,
@@ -246,14 +94,15 @@ fn condition_kind(
     })
 }
 fn modify_conditions<S: Clone>(
-    store: &mut crate::ability::condition::ConditionStore<S>,
+    store: &mut oteryn_gameplay_foundation::foundation::condition::ConditionStore<S>,
     effects: &[ResolvedEffect],
     source: Option<S>,
-    immunities: &[crate::ability::condition::ConditionType],
-    facts: &crate::ability::condition::ApplicationFacts<'_>,
+    immunities: &[oteryn_gameplay_domain::domain::condition::ConditionType],
+    facts: &oteryn_gameplay_foundation::foundation::condition::ApplicationFacts<'_>,
     shield_required: bool,
 ) -> Result<(), SpellCastDisposition> {
-    use crate::ability::condition::{ConditionRefusal, ConditionSourceKind};
+    use oteryn_gameplay_domain::domain::condition::ConditionRefusal;
+    use oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind;
     if shield_required
         && effects.iter().any(|effect| {
             matches!(effect, ResolvedEffect::RemoveCondition { condition } if condition == "manashield")
@@ -1071,7 +920,7 @@ fn lower(
     _caster: &crate::spell::CasterState,
     operational: &OperationalCastFacts,
     bindings: &[LiveActorBinding],
-    world: &World,
+    world: &World<Direction>,
     party: &Option<crate::gameplay_transport::party_spell_owner::SourcePartyWorld>,
     command: CommandRef,
     occurrence: &AbilityOccurrence,
@@ -1101,22 +950,12 @@ fn lower(
             applications.push((member.creature, 0, member.effects.clone()));
         }
     } else {
-        let targets: Vec<u64> = if selected_ability.is_some_and(|a| a.area.is_some()) {
-            world
-                .creatures
-                .iter()
-                .filter(|c| {
-                    geometry.contains(&c.position)
-                        && world.legal.contains(&c.id)
-                        && world.area_sight_clear(c.position)
-                })
-                .map(|c| c.id)
-                .collect()
-        } else if let Some(t) = &operational.target {
-            vec![t.creature]
-        } else if spell.self_target {
-            vec![world.caster.id]
-        } else if spell.target_or_direction {
+        let has_area = selected_ability.is_some_and(|a| a.area.is_some());
+        let front = if !has_area
+            && operational.target.is_none()
+            && !spell.self_target
+            && spell.target_or_direction
+        {
             let facing = runtime
                 .read_actor_position(owned.binding().actor)
                 .map_err(|_| SpellCastDisposition::Rejected)?
@@ -1124,16 +963,28 @@ fn lower(
                 .map(direction)
                 .ok_or(SpellCastDisposition::TargetRequired)?;
             let (dx, dy) = delta(facing);
-            let front = offset(world.caster.position, dx, dy)?;
+            Some(plan_position(offset(world.caster.position, dx, dy)?))
+        } else {
+            None
+        };
+        let area = has_area.then(|| geometry.iter().copied().map(plan_position).collect());
+        let targets = rules::TargetSelection {
+            area: area.as_ref(),
+            target: operational.target.as_ref().map(|t| t.creature),
+            caster: world.caster.id,
+            self_target: spell.self_target,
+            target_or_direction: spell.target_or_direction,
+            front,
+        }
+        .select(
             world
                 .creatures
                 .iter()
-                .filter(|c| c.position == front && world.legal.contains(&c.id))
-                .map(|c| c.id)
-                .collect()
-        } else {
-            Vec::new()
-        };
+                .map(|c| (c.id, plan_position(c.position))),
+            &world.legal,
+            |p| world.area_sight_clear(cast_position(p)),
+        )
+        .map_err(|_| SpellCastDisposition::Rejected)?;
         // Source area combat computes one base roll before visiting its tiles.
         // Target mitigation remains independently resolved for each actual owner.
         for id in targets {
@@ -1152,7 +1003,7 @@ fn lower(
     let harmony_heal_target = if paid.harmony_gain_healing.is_some() {
         let profile = crate::spell::actor_execution::harmony_gain_profile()?;
         let party_world = party.as_ref().ok_or(SpellCastDisposition::Rejected)?;
-        let selected = crate::spell::native_actor_states::focus_healing_target(
+        let selected = oteryn_gameplay_spell_rules::native_actor_states::focus_healing_target(
             profile,
             party_world.caster_facts(),
             party_world.member_facts(),
@@ -1237,18 +1088,7 @@ fn lower(
             }
         }
     }
-    let block_armor = spell
-        .authored
-        .as_ref()
-        .ok_or(SpellCastDisposition::Rejected)?
-        .dependencies
-        .effects
-        .iter()
-        .any(|e| {
-            e.mitigated_by
-                .as_ref()
-                .is_some_and(|m| m.iter().any(|m| m == "armor"))
-        });
+    let block_armor = rules::block_armor(spell).map_err(|_| SpellCastDisposition::Rejected)?;
     let source_delays = hits
         .iter()
         .map(|h| (h.target, h.delay_ms))
@@ -1398,7 +1238,7 @@ fn lower(
                 .companion_snapshot(target.actor)
                 .map_err(|_| SpellCastDisposition::Rejected)?;
             let mut next = expected.state.clone();
-            let facts = crate::ability::condition::ApplicationFacts {
+            let facts = oteryn_gameplay_foundation::foundation::condition::ApplicationFacts {
                 now: now.get(),
                 base_speed: u16::try_from(next.policy.base_speed)
                     .map_err(|_| SpellCastDisposition::Rejected)?,
@@ -1436,7 +1276,7 @@ fn lower(
                 .ok_or(SpellCastDisposition::Rejected)?;
             let expected = actual.owned_conditions().clone();
             let mut next = expected.clone();
-            let facts = crate::ability::condition::ApplicationFacts {
+            let facts = oteryn_gameplay_foundation::foundation::condition::ApplicationFacts {
                 now: now.get(),
                 base_speed: u16::try_from(state.owned_base_speed())
                     .map_err(|_| SpellCastDisposition::Rejected)?,
@@ -1509,23 +1349,8 @@ fn lower(
             }
         }
     }
-    let selected_effects = if let Some(a) = selected_ability {
-        a.effects
-            .iter()
-            .map(|reference| {
-                source
-                    .dependencies
-                    .effects
-                    .iter()
-                    .find(|e| {
-                        e.identity.key == reference.key && e.identity.revision == reference.revision
-                    })
-                    .ok_or(SpellCastDisposition::Rejected)
-            })
-            .collect::<Result<Vec<_>, _>>()?
-    } else {
-        source.dependencies.effects.iter().collect::<Vec<_>>()
-    };
+    let selected_effects = rules::selected_effects(source, selected_ability)
+        .map_err(|_| SpellCastDisposition::Rejected)?;
     let is_area = selected_ability.is_some_and(|a| a.area.is_some());
     let tile_target =
         matches!(intent.target, SpellTarget::Position(_)) && operational.target.is_none();
@@ -1671,7 +1496,7 @@ fn lower(
 /// membership or authorize a commit.
 fn append_harmony_gain_healing(
     batch: &mut OwnerCombatBatch,
-    healing: Option<&crate::spell::native_actor_states::HealingRollPlan>,
+    healing: Option<&oteryn_gameplay_spell_rules::native_actor_states::HealingRollPlan>,
     target: Option<ExactActorRef>,
     ordinal: u16,
     delayed_count: usize,
@@ -1728,7 +1553,11 @@ mod tests {
             .iter()
             .find(|row| row["bundle"]["spell"]["identity"]["key"] == key)
             .unwrap();
-        crate::spell::authoring::spell_from_bundle(&row["bundle"], &row["dependencies"]).unwrap()
+        oteryn_gameplay_content::content::spell_data::authoring::spell_from_bundle(
+            &row["bundle"],
+            &row["dependencies"],
+        )
+        .unwrap()
     }
 
     #[test]
@@ -2038,7 +1867,7 @@ mod tests {
             .clone();
         let mut next = expected.clone();
         let root = oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes([31; 32]);
-        let facts = crate::ability::condition::ApplicationFacts {
+        let facts = oteryn_gameplay_foundation::foundation::condition::ApplicationFacts {
             now,
             base_speed: 110,
             mana_shield_capacity: 0,
@@ -2733,113 +2562,7 @@ mod tests {
         assert!(amount(&second) > amount(&first));
         assert_eq!(paid.next.vitals().mana, 5000 - paid.anchor.paid_mana);
     }
-    #[test]
-    fn directional_held_target_keeps_the_caster_as_geometry_origin() {
-        let tile = |x, y| TilePosition { x, y, floor: 7 };
-        let caster = tile(10, 10);
-        let target = tile(14, 10);
-        // Fire Wave / Energy Beam: origin is the tile in front of the caster, facing the target.
-        assert_eq!(
-            attack_target_origin(caster, target, true).unwrap(),
-            (tile(11, 10), Some(Direction::East))
-        );
-        assert_eq!(
-            attack_target_origin(caster, tile(8, 8), true).unwrap(),
-            (tile(9, 9), Some(Direction::NorthWest))
-        );
-        // A single-target spell is centred on the target.
-        assert_eq!(
-            attack_target_origin(caster, target, false).unwrap(),
-            (target, None)
-        );
-    }
 
-    #[test]
-    fn tile_aimed_area_visibility_uses_the_populated_sight_origin() {
-        // A non-directional rune aimed at a tile populates (aimed tile, candidate) paths.
-        let at = |x| TilePosition { x, y: 0, floor: 7 };
-        let world = World {
-            origin: at(4),
-            sight_origin: at(4),
-            direction: Direction::East,
-            caster: ChainCreature {
-                id: 1,
-                actor: "actor:caster".into(),
-                position: at(0),
-            },
-            creatures: Vec::new(),
-            legal: BTreeSet::new(),
-            sight: BTreeSet::from([(at(0), at(4)), (at(4), at(5))]),
-            tiles: BTreeMap::new(),
-        };
-        // The neighbour of the aimed tile is visible from the aimed tile, which is the
-        // key the area paths were populated with; the caster has no path to it.
-        assert!(world.area_sight_clear(at(5)));
-        assert!(world.area_sight_clear(at(4)));
-        assert!(!world.sight_clear(world.caster.position, at(5)));
-        assert!(!world.area_sight_clear(at(6)));
-    }
-
-    #[test]
-    fn genuine_berserk_and_cancel_invisibility_are_world_areas_not_self_mutations() {
-        let center = TilePosition {
-            x: 100,
-            y: 100,
-            floor: 7,
-        };
-        for key in [
-            "candidate:spell/berserk",
-            "candidate:spell/cancel_invisibility",
-        ] {
-            let spell = source(key);
-            assert!(applicable(&spell));
-            assert!(has_world_geometry(&spell));
-            assert!(!super::super::is_source_self(&spell));
-            let cells = geometry(ability(&spell, None).unwrap(), center, Direction::North).unwrap();
-            assert!(cells.contains(&center));
-            assert!(cells.contains(&TilePosition {
-                x: 101,
-                y: 100,
-                floor: 7
-            }));
-        }
-    }
-    #[test]
-    fn genuine_fire_wave_keeps_diagonal_matrix_and_rotates_owner_direction() {
-        let spell = source("candidate:spell/fire_wave");
-        let a = ability(&spell, None).unwrap();
-        let center = TilePosition {
-            x: 100,
-            y: 100,
-            floor: 7,
-        };
-        let north = geometry(a, center, Direction::North).unwrap();
-        let east = geometry(a, center, Direction::East).unwrap();
-        // Canary AREA_WAVE4 uses 3 (active origin), not 2 (origin only).
-        assert!(north.contains(&center));
-        assert_eq!(north.len(), 12);
-        assert!(north.contains(&TilePosition {
-            x: 100,
-            y: 99,
-            floor: 7
-        }));
-        assert_eq!(north.len(), east.len());
-        assert!(east.contains(&TilePosition {
-            x: 101,
-            y: 100,
-            floor: 7
-        }));
-        let northwest = geometry(a, center, Direction::NorthWest).unwrap();
-        assert!(northwest.contains(&center));
-        assert_eq!(northwest.len(), 16);
-        assert!(northwest.contains(&TilePosition {
-            x: 99,
-            y: 99,
-            floor: 7
-        }));
-        assert!(northwest.len() > north.len());
-        assert!(!super::super::is_source_self(&spell));
-    }
     #[test]
     fn source_presentation_only_has_no_state_effect_and_substituted_condition_is_refused() {
         let spell = source("candidate:spell/aura_of_exposed_weakness");

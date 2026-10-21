@@ -2,22 +2,23 @@
 
 pub mod house_scope;
 pub mod map;
+pub mod map_view_diff;
 pub mod movement;
 pub mod world_clock;
 pub mod world_object_revert;
 pub mod world_runtime;
 
 #[allow(unused_imports, reason = "preserve the former server module path")]
-pub(crate) use crate::durability::native_world_items;
+use crate::durability::native_world_items;
 #[allow(unused_imports, reason = "preserve the former server module path")]
-pub(crate) use crate::durability::native_world_read;
+use crate::durability::native_world_read;
 #[allow(unused_imports, reason = "preserve the former server module path")]
-pub(crate) use oteryn_gameplay_content::content;
+use oteryn_gameplay_content::content;
 #[allow(unused_imports, reason = "preserve the former server module path")]
-pub(crate) use oteryn_gameplay_domain::domain;
+use oteryn_gameplay_domain::domain;
 #[allow(unused_imports, reason = "preserve the former server module path")]
-pub(crate) use oteryn_gameplay_durability::character_bootstrap_intent;
+use oteryn_gameplay_durability::character_bootstrap_intent;
 #[allow(unused_imports, reason = "preserve the former server module path")]
-pub(crate) use oteryn_gameplay_durability::durability;
+use oteryn_gameplay_durability::durability;
 #[allow(unused_imports, reason = "preserve the former server module path")]
-pub(crate) use oteryn_gameplay_foundation::foundation;
+use oteryn_gameplay_entities as foundation;

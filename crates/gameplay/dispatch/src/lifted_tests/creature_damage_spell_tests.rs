@@ -7,7 +7,6 @@ use crate::content::{
     ProjectReferenceRecord, ProjectV2AbilityEffect, ProjectV2AuthoringProfile,
     ProjectV2AuthoringProfileData as Data, ProjectV2DefinitionRef as Ref, ProjectV2Family,
 };
-use crate::creature_attack_geometry::Facing;
 use crate::creature_auto_attack::ProfileAbilityProposal;
 use crate::creature_auto_attack::{AttackError, AttackFacts, CurrentConditionPolicy};
 use crate::creature_damage_spell::*;
@@ -18,6 +17,7 @@ use crate::foundation::{
 };
 use crate::gameplay_transport::actor_spell::{ChannelSpellStates, tests::FACTS};
 use crate::player_lethal::PlayerLethalVitals;
+use oteryn_gameplay_content::content::creature_attack_geometry::Facing;
 use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
 struct CurrentWorld {
     facts: SpellCombatFacts,
@@ -95,7 +95,10 @@ fn test_uuid(tag: u8) -> [u8; 16] {
     ]
 }
 fn runtime_three_slots() -> (ChannelRuntimeV1, ExactActorRef, GameSessionId) {
-    use crate::foundation::{ChannelContentPin, ChannelId, NodeId, WorldId};
+    use {
+        crate::foundation::{ChannelId, NodeId, WorldId},
+        oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+    };
     let w = WorldId::decode(&test_uuid(0x60)).expect("qualified fixture");
     let mut r = ChannelRuntimeV1::from_committed_assignment(
         w,
@@ -1135,13 +1138,16 @@ fn native_djinn_source_area_dispel_invisible_player_without_primary_hp_and_repla
             .clone();
         let native_root =
             GameplayDecisionRoot::from_bytes(r.content_pin().server_artifact_digest());
-        let invisible = crate::ability::condition::ConditionDefinition::new(
-            "test.source.djinn.invisible",
-            1,
-            crate::ability::condition::ConditionValues::Invisible { duration_ms: 5000 },
-        )
-        .expect("qualified fixture");
-        let seed_facts = crate::ability::condition::ApplicationFacts {
+        let invisible =
+            oteryn_gameplay_foundation::foundation::condition::ConditionDefinition::new(
+                "test.source.djinn.invisible",
+                1,
+                oteryn_gameplay_domain::domain::condition::ConditionValues::Invisible {
+                    duration_ms: 5000,
+                },
+            )
+            .expect("qualified fixture");
+        let seed_facts = oteryn_gameplay_foundation::foundation::condition::ApplicationFacts {
             now: 1_000_000,
             base_speed: 180,
             mana_shield_capacity: 0,

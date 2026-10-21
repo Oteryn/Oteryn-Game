@@ -10,9 +10,9 @@ use super::fixture::{Harness, debug, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
 use crate::foundation::MovementLocalPosition;
 use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
-use crate::gameplay_transport::world_object::{UseDisposition, WorldObjectTarget};
 use crate::map::boot::tests::{DOOR_AT, door_key, door_world};
 use oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1;
+use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
 fn door_target(digest: [u8; 32], expected_revision: u64) -> WorldObjectTarget {
     let mut placement = digest.to_vec();

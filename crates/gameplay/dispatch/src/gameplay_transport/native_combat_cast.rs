@@ -43,9 +43,9 @@ use crate::spell::native_combat::{
     Direction, ElementalStance, NativeCombatFacts, NativeCombatPlan, NativeTargetFact, TargetKind,
 };
 use crate::spell::owned_cast_facts::{OwnedCastFacts, OwnedFactsError};
-use crate::spell::world_items_execution::SpellGroundTarget;
 use crate::spell::{Execution, OperationalCastFacts, SpellBook, SpellDefinition};
 use crate::world_runtime::LocalObjectRuntime;
+use oteryn_gameplay_durability::durability::native_world_items::SpellGroundTarget;
 use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellCastIntent, SpellTarget};
 use oteryn_protocol_oteryn::actor_spell_item_v2::ItemSpellCastIntent;
 use oteryn_protocol_oteryn::actor_spell_v2::{
@@ -65,25 +65,45 @@ mod native_world_item_cast;
 mod ordinary_field_items;
 #[path = "rune_item_cast.rs"]
 mod rune_item_cast;
+use oteryn_gameplay_spell_rules::dispatch_plans::geometry as cast_plans;
 use serde_json::{Value, json};
 use sqlx::{Postgres, Transaction};
 use std::collections::{BTreeMap, BTreeSet};
+
+fn plan_position(p: TilePosition) -> cast_plans::TilePosition {
+    (p.x, p.y, p.floor)
+}
+fn cast_position(p: cast_plans::TilePosition) -> TilePosition {
+    TilePosition {
+        x: p.0,
+        y: p.1,
+        floor: p.2,
+    }
+}
+fn cast_direction(d: cast_plans::Direction) -> Direction {
+    match d {
+        (0, -1) => Direction::North,
+        (1, -1) => Direction::NorthEast,
+        (1, 0) => Direction::East,
+        (1, 1) => Direction::SouthEast,
+        (0, 1) => Direction::South,
+        (-1, 1) => Direction::SouthWest,
+        (-1, 0) => Direction::West,
+        _ => Direction::NorthWest,
+    }
+}
 
 fn wheel_stage_without_owner(
     wheel: &Value,
     error: OwnedFactsError,
     has_current_wheel: bool,
 ) -> Result<u8, SpellCastDisposition> {
-    // Source roles B/C keep their base behavior without a current Wheel grant. This is an
-    // execution fallback, never positive stage evidence; role A remains refused before costs.
-    if !has_current_wheel
-        && error == OwnedFactsError::UnavailableWheel
-        && wheel["stage_zero"].as_str() == Some("base_cast")
-    {
-        Ok(0)
-    } else {
-        Err(SpellCastDisposition::Rejected)
-    }
+    oteryn_gameplay_spell_rules::dispatch_plans::ordinary_combat::wheel_stage_without_owner(
+        wheel,
+        error == OwnedFactsError::UnavailableWheel,
+        has_current_wheel,
+    )
+    .map_err(|_| SpellCastDisposition::Rejected)
 }
 
 #[cfg(test)]
@@ -826,44 +846,9 @@ fn reject<T>() -> Result<T, SpellCastDisposition> {
     Err(SpellCastDisposition::Rejected)
 }
 
-fn is_source_self(spell: &SpellDefinition) -> bool {
-    !ordinary_combat::has_world_geometry(spell)
-        && matches!(spell.carrier, crate::spell::Carrier::Instant { .. })
-        && !spell.needs_target
-        && !spell.target_or_direction
-        && spell.chain.is_none()
-        && matches!(
-            &spell.execution,
-            Execution::Effects(_) | Execution::AbilityVariants(_) | Execution::ActorFocus { .. }
-        )
-        || matches!(&spell.execution, Execution::NativeProfile(p)
-            if matches!(p.spell()["execution"]["native_behavior"]["key"].as_str(),Some("monk_focus"|"companion_haste")))
-}
-
-/// LOOP-PROGRESS-1: shared-experience heal credit needs this attempt's transaction-qualified
-/// SourcePartyWorld, so every spell whose source effects can heal a player captures it,
-/// whatever the caster vocation (a druid's Heal Friend or Mass Healing). Any other
-/// execution captures nothing and therefore can never earn heal credit.
-fn may_heal_player(spell: &SpellDefinition) -> bool {
-    let heals = |effects: &[crate::spell::SpellEffect]| {
-        effects
-            .iter()
-            .any(|effect| matches!(effect, crate::spell::SpellEffect::Heal { .. }))
-    };
-    match &spell.execution {
-        Execution::Effects(effects) => heals(effects),
-        Execution::AbilityVariants(variants) => {
-            variants.iter().any(|variant| heals(&variant.effects))
-        }
-        Execution::NativeProfile(profile) => {
-            let behavior = &profile.spell()["execution"]["native_behavior"];
-            behavior["key"] == "mass_spirit_mend"
-                || (behavior["key"] == "wheel_combat"
-                    && behavior["parameters"]["element"] == "healing")
-        }
-        Execution::Conjure { .. } | Execution::PartyBuff(_) | Execution::ActorFocus { .. } => false,
-    }
-}
+pub use oteryn_gameplay_spell_rules::dispatch_plans::ordinary_combat::{
+    is_source_self, may_heal_player,
+};
 
 struct PaidOwnerSelf {
     next: PlayerSpellState,
@@ -920,7 +905,7 @@ fn prepare_paid_self(
             },
         )?;
         let party_heal = if let Some(healing) = &paid.plan.healing {
-            let selected = crate::spell::native_actor_states::focus_healing_target(
+            let selected = oteryn_gameplay_spell_rules::native_actor_states::focus_healing_target(
                 &parameters,
                 world.caster_facts(),
                 world.member_facts(),
@@ -959,7 +944,7 @@ fn prepare_paid_self(
         ));
         // These positive SPEED/ATTRIBUTES profiles do not consume shield capacity or
         // PvE damage re-entry flags; those nominal fields confer no such qualification.
-        let facts = crate::ability::condition::ApplicationFacts {
+        let facts = oteryn_gameplay_foundation::foundation::condition::ApplicationFacts {
             now: now.get(),
             base_speed: u16::try_from(before.owned_base_speed())
                 .map_err(|_| SpellCastDisposition::Rejected)?,
@@ -1408,11 +1393,9 @@ fn tile(p: MovementLocalPosition) -> TilePosition {
     }
 }
 fn offset(p: TilePosition, dx: i32, dy: i32) -> Result<TilePosition, SpellCastDisposition> {
-    Ok(TilePosition {
-        x: p.x.checked_add(dx).ok_or(SpellCastDisposition::Rejected)?,
-        y: p.y.checked_add(dy).ok_or(SpellCastDisposition::Rejected)?,
-        floor: p.floor,
-    })
+    cast_plans::offset(plan_position(p), dx, dy)
+        .map(cast_position)
+        .map_err(|_| SpellCastDisposition::Rejected)
 }
 fn direction(facing: MovementFacing) -> Direction {
     match facing {
@@ -1534,14 +1517,7 @@ fn replay_with_rune(
     Ok(Some(receipt))
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct TileFlags {
-    projectile: bool,
-    solid: bool,
-    floor_change: bool,
-    protection: bool,
-    present: bool,
-}
+pub use oteryn_gameplay_spell_rules::dispatch_plans::geometry::TileFlags;
 /// Only this constructor reads the flags: source tile metadata plus locked actual Item rows.
 async fn read_tile(
     tx: &mut Transaction<'_, Postgres>,
@@ -1628,70 +1604,9 @@ fn area_candidates(
     origin: TilePosition,
     d: Direction,
 ) -> Result<BTreeSet<TilePosition>, SpellCastDisposition> {
-    let mut out = BTreeSet::new();
-    let Some(area) = parameters.get("area") else {
-        return Ok(out);
-    };
-    let directional = area["directional"]
-        .as_bool()
-        .ok_or(SpellCastDisposition::Rejected)?;
-    let diagonal = area["diagonal"].is_array();
-    let (matrix, turn) = if !directional {
-        (&area["orthogonal"], 0)
-    } else {
-        match d {
-            Direction::NorthWest if diagonal => (&area["diagonal"], 0),
-            Direction::NorthEast if diagonal => (&area["diagonal"], 1),
-            Direction::SouthEast if diagonal => (&area["diagonal"], 2),
-            Direction::SouthWest if diagonal => (&area["diagonal"], 3),
-            Direction::North => (&area["orthogonal"], 0),
-            Direction::South => (&area["orthogonal"], 2),
-            Direction::West | Direction::NorthWest | Direction::SouthWest => {
-                (&area["orthogonal"], 3)
-            }
-            _ => (&area["orthogonal"], 1),
-        }
-    };
-    let rows = matrix.as_array().ok_or(SpellCastDisposition::Rejected)?;
-    let mut center = None;
-    let mut active = Vec::new();
-    for (y, row) in rows.iter().enumerate() {
-        for (x, v) in row
-            .as_array()
-            .ok_or(SpellCastDisposition::Rejected)?
-            .iter()
-            .enumerate()
-        {
-            let n = v.as_u64().ok_or(SpellCastDisposition::Rejected)?;
-            if n >= 2 && center.replace((x as i32, y as i32)).is_some() {
-                return reject();
-            }
-            if n == 1 || n == 3 {
-                active.push((x as i32, y as i32));
-            }
-        }
-    }
-    let (cx, cy) = center.ok_or(SpellCastDisposition::Rejected)?;
-    for (x, y) in active {
-        let (dx, dy) = (x - cx, y - cy);
-        let (dx, dy) = match turn {
-            0 => (dx, dy),
-            1 => (-dy, dx),
-            2 => (-dx, -dy),
-            _ => (dy, -dx),
-        };
-        out.insert(offset(origin, dx, dy)?);
-    }
-    // Read the full side footprint even at stage0. It is not granted to the plan unless unlocked.
-    if parameters.get("beam_mastery").is_some() {
-        let central = out.clone();
-        for p in central {
-            for (dx, dy) in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
-                out.insert(offset(p, dx, dy)?);
-            }
-        }
-    }
-    Ok(out)
+    cast_plans::area_candidates(parameters, plan_position(origin), delta(d))
+        .map(|tiles| tiles.into_iter().map(cast_position).collect())
+        .map_err(|_| SpellCastDisposition::Rejected)
 }
 
 /// All facts originate in the actual owner, static qualified content and the same SQL Item
@@ -1987,15 +1902,14 @@ pub async fn prepare_from_owners(
         let t = tiles
             .get(&target.position)
             .ok_or(SpellCastDisposition::Rejected)?;
-        // Actual PvE permission only. PvP requires its own independently owned policy.
-        target.legal = t.present
-            && !t.floor_change
-            && !t.solid
-            && target.health > 0
-            && (!spell.aggressive || (!t.protection && !caster_tile.protection))
-            && (!spell.aggressive
-                || (target.kind == TargetKind::MasterlessMonster
-                    && attackable.contains(&target.id)));
+        target.legal = cast_plans::target_legal(
+            t,
+            caster_tile,
+            target.health,
+            spell.aggressive,
+            target.kind == TargetKind::MasterlessMonster,
+            attackable.contains(&target.id),
+        );
     }
     let target_position = match intent.target {
         SpellTarget::Position(_) => Some(origin),
@@ -3666,17 +3580,5 @@ mod tests {
                 "{name} captures no party facts"
             );
         }
-    }
-    #[test]
-    fn source_area_rotation_and_origin_are_not_permission() {
-        let recipe = json!({"area":{"orthogonal":[[1],[2]],"diagonal":null,"directional":true}});
-        assert_eq!(
-            area_candidates(&recipe, p(9, 9), Direction::North).unwrap(),
-            BTreeSet::from([p(9, 8)])
-        );
-        assert_eq!(
-            area_candidates(&recipe, p(9, 9), Direction::East).unwrap(),
-            BTreeSet::from([p(10, 9)])
-        );
     }
 }

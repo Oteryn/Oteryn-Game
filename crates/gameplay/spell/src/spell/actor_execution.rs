@@ -15,7 +15,7 @@ use serde_json::Value;
 
 use super::Vocation;
 use super::cast::PlayerSpellState;
-use super::native_actor_states::{FocusFacts, FocusPlan, plan_focus};
+use oteryn_gameplay_spell_rules::native_actor_states::{FocusFacts, FocusPlan, plan_focus};
 
 const PROFILE_JSON: &str = include_str!(
     "../../../../../tools/content-schema/spell-authoring/samples/native-spell-profiles.json"
@@ -119,7 +119,7 @@ pub fn apply_focus(
             now,
             level: next.facts.level,
             sustain_active: next.stance
-                == Some(super::native_actor_states::StandardStance::Sustain),
+                == Some(oteryn_gameplay_spell_rules::native_actor_states::StandardStance::Sustain),
         },
     )
     .map_err(reject)?;

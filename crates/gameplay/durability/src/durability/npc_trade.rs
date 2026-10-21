@@ -24,6 +24,11 @@
 //! arms, so the caller refuses it before this commit (the database refuses a sold item with a
 //! timed state or contents).
 
+use oteryn_gameplay_economy::npc_trade as rules;
+pub use oteryn_gameplay_economy::npc_trade::{
+    Entry, NpcTradeCoins, NpcTradeLine, NpcTradeLineKind,
+};
+
 use super::character_authority::{
     ReconciledCharacterAuthority, SERVER_BUILD_ID, assert_recovery_fence,
 };
@@ -43,17 +48,14 @@ use super::item_transfer::{
 };
 use super::item_transfer_audit::{ITEM_LIFECYCLE_RETIRED, OneItemCommandRefV1};
 use super::npc_trade_audit::{
-    LINE_COIN_BURN, LINE_COIN_MINT, LINE_ITEM_BURN, LINE_ITEM_MINT, NPC_TRADE_BUY_GOLD_UNITS_MAX,
-    NPC_TRADE_QUANTITY_MAX, NPC_TRADE_SELL_GOLD_UNITS_MAX, NpcTradeEventIdentity,
+    LINE_COIN_BURN, LINE_COIN_MINT, LINE_ITEM_BURN, LINE_ITEM_MINT, NpcTradeEventIdentity,
     OneItemNpcTradeCauseV1, OneItemNpcTradeLineV1, OneItemNpcTradeV1, SIDE_BUY, SIDE_SELL,
-    buy_change_coins, encode_npc_trade_event, sell_coins,
+    encode_npc_trade_event,
 };
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use crate::domain::CharacterId;
-use crate::domain::currency::{
-    BACKPACK_ENTRIES_MAX, COIN_DEFINITION_FAMILY, Coin, CoinStack, FeePlanError, plan_fee_within,
-};
+use crate::domain::currency::{COIN_DEFINITION_FAMILY, Coin};
 use crate::foundation::{CommandRef, WorldId};
 use sha2::{Digest, Sha256};
 use sqlx::Row;
@@ -87,25 +89,6 @@ pub struct NpcTradeCause {
     pub occurrence: [u8; 16],
 }
 
-/// The three coin definitions at their current compatible revisions: every live coin stack a BUY
-/// pays from must be at its coin's revision, and change and proceeds are minted at them.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct NpcTradeCoins {
-    pub gold: TypedDefinitionRef,
-    pub platinum: TypedDefinitionRef,
-    pub crystal: TypedDefinitionRef,
-}
-
-impl NpcTradeCoins {
-    fn of(&self, coin: Coin) -> &TypedDefinitionRef {
-        match coin {
-            Coin::Gold => &self.gold,
-            Coin::Platinum => &self.platinum,
-            Coin::Crystal => &self.crystal,
-        }
-    }
-}
-
 /// One trade. The TransactionId, EventId, time and output identities are fixed before the first
 /// attempt and reused on every retry of the same occurrence.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -131,54 +114,32 @@ pub struct NpcTradeRequest {
     pub backpack: ItemDefinitionFacts,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum NpcTradeLineKind {
-    CoinBurn,
-    CoinMint,
-    ItemBurn,
-    ItemMint,
-}
-
-impl NpcTradeLineKind {
-    const fn code(self) -> u32 {
-        match self {
-            Self::CoinBurn => LINE_COIN_BURN,
-            Self::CoinMint => LINE_COIN_MINT,
-            Self::ItemBurn => LINE_ITEM_BURN,
-            Self::ItemMint => LINE_ITEM_MINT,
-        }
-    }
-
-    fn of(code: i16) -> Option<Self> {
-        [
-            Self::CoinBurn,
-            Self::CoinMint,
-            Self::ItemBurn,
-            Self::ItemMint,
-        ]
-        .into_iter()
-        .find(|kind| i64::from(kind.code()) == i64::from(code))
-    }
-
-    const fn is_burn(self) -> bool {
-        matches!(self, Self::CoinBurn | Self::ItemBurn)
+const fn line_kind_code(kind: NpcTradeLineKind) -> u32 {
+    match kind {
+        NpcTradeLineKind::CoinBurn => LINE_COIN_BURN,
+        NpcTradeLineKind::CoinMint => LINE_COIN_MINT,
+        NpcTradeLineKind::ItemBurn => LINE_ITEM_BURN,
+        NpcTradeLineKind::ItemMint => LINE_ITEM_MINT,
     }
 }
 
-/// One line: a BURN keeps its entry while units are left; a MINT is a fresh stack in a new entry.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct NpcTradeLine {
-    pub kind: NpcTradeLineKind,
-    pub item_instance_id: [u8; 16],
-    pub placement_ordinal: u64,
-    /// The coin of a coin line.
-    pub coin: Option<Coin>,
-    /// 0 for a MINT.
-    pub quantity_before: u32,
-    /// 0 for a whole BURN.
-    pub quantity_after: u32,
+fn line_kind_of(code: i16) -> Option<NpcTradeLineKind> {
+    [
+        NpcTradeLineKind::CoinBurn,
+        NpcTradeLineKind::CoinMint,
+        NpcTradeLineKind::ItemBurn,
+        NpcTradeLineKind::ItemMint,
+    ]
+    .into_iter()
+    .find(|kind| i64::from(line_kind_code(*kind)) == i64::from(code))
 }
 
+const fn line_is_burn(kind: NpcTradeLineKind) -> bool {
+    matches!(
+        kind,
+        NpcTradeLineKind::CoinBurn | NpcTradeLineKind::ItemBurn
+    )
+}
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CommittedNpcTrade {
     pub transaction_id: [u8; 16],
@@ -282,14 +243,7 @@ impl std::error::Error for NpcTradeError {}
 fn item_units(request: &NpcTradeRequest) -> Result<u32> {
     let (maximum, stackable) =
         stack_maximum(request.item.stack).map_err(|_| NpcTradeError::InvalidInput)?;
-    let units = request
-        .quantity
-        .checked_mul(request.offer_count)
-        .ok_or(NpcTradeError::InvalidInput)?;
-    if (!stackable && units != 1) || !(1..=maximum).contains(&units) {
-        return Err(NpcTradeError::InvalidInput);
-    }
-    Ok(units)
+    rules::item_units(request.quantity, request.offer_count, maximum, stackable).map_err(Into::into)
 }
 
 fn is_coin(definition: &TypedDefinitionRef) -> bool {
@@ -301,14 +255,11 @@ fn is_coin(definition: &TypedDefinitionRef) -> bool {
 /// backpack declaring a capacity within `GAMEITEM01-CONTAINER-ENTRIES-MAX`.
 fn validate(request: &NpcTradeRequest) -> Result<(u64, u32)> {
     let cause = &request.cause;
-    let total = request
-        .unit_price
-        .checked_mul(u64::from(request.quantity))
-        .ok_or(NpcTradeError::InvalidInput)?;
-    let total_max = match cause.side {
-        NpcTradeSide::Buy => NPC_TRADE_BUY_GOLD_UNITS_MAX,
-        NpcTradeSide::Sell => NPC_TRADE_SELL_GOLD_UNITS_MAX,
-    };
+    let total = rules::trade_total(
+        cause.side == NpcTradeSide::Buy,
+        request.quantity,
+        request.unit_price,
+    )?;
     let ids = [request.transaction_id, request.event_id]
         .into_iter()
         .chain(request.output_item_instance_ids)
@@ -327,8 +278,6 @@ fn validate(request: &NpcTradeRequest) -> Result<(u64, u32)> {
         || check_uuid_v7(&cause.occurrence).is_err()
         || ids.iter().any(|id| check_uuid_v7(id).is_err())
         || !distinct
-        || !(1..=NPC_TRADE_QUANTITY_MAX).contains(&request.quantity)
-        || total > total_max
         || request.occurred_at_unix_ms <= 0
         || !coin(&request.coins.gold, Coin::Gold)
         || !coin(&request.coins.platinum, Coin::Platinum)
@@ -382,18 +331,6 @@ fn request_binding(
     digest.finalize().to_vec()
 }
 
-/// One locked direct entry of the backpack, highest ordinal first.
-#[derive(Clone)]
-struct Entry {
-    item_instance_id: [u8; 16],
-    placement_ordinal: u64,
-    definition: TypedDefinitionRef,
-    quantity: u32,
-    live: bool,
-    /// Holds entries of its own or a timed state.
-    not_default: bool,
-}
-
 /// The trade materialized from the locked before-state.
 struct Plan {
     lines: Vec<NpcTradeLine>,
@@ -405,7 +342,42 @@ struct Plan {
     item_instance_id: [u8; 16],
 }
 
-/// Lines of a BUY: the fee plan's BURN lines, the change MINT and the item MINT.
+fn plan_input(request: &NpcTradeRequest) -> rules::PlanInput<'_> {
+    rules::PlanInput {
+        item: &request.item,
+        coins: &request.coins,
+        output_item_instance_ids: request.output_item_instance_ids,
+    }
+}
+
+impl From<rules::PlanError> for NpcTradeError {
+    fn from(error: rules::PlanError) -> Self {
+        match error {
+            rules::PlanError::InvalidInput => Self::InvalidInput,
+            rules::PlanError::InvalidState => {
+                Self::Unavailable(DurabilityError::InvalidStoredState)
+            }
+            rules::PlanError::InsufficientFunds => Self::InsufficientFunds,
+            rules::PlanError::CapacityExceeded => Self::CapacityExceeded,
+            rules::PlanError::DoesNotFit => Self::DoesNotFit,
+            rules::PlanError::ItemNotFound => Self::ItemNotFound,
+        }
+    }
+}
+
+impl From<rules::Plan> for Plan {
+    fn from(plan: rules::Plan) -> Self {
+        Self {
+            lines: plan.lines,
+            burned_gold_units: plan.burned_gold_units,
+            minted_gold_units: plan.minted_gold_units,
+            bank_debit_gold_units: plan.bank_debit_gold_units,
+            bank_debit: None,
+            item_instance_id: plan.item_instance_id,
+        }
+    }
+}
+
 fn plan_buy(
     request: &NpcTradeRequest,
     total: u64,
@@ -415,119 +387,17 @@ fn plan_buy(
     tuple: Type2EventTuple,
     junior: bool,
 ) -> Result<Plan> {
-    let mut inputs = Vec::new();
-    // §5.3: a price of 0 pays from no coin, so no coin stack is an input or refused.
-    for entry in entries.iter().filter(|entry| entry.live && total != 0) {
-        let Some(coin) = Coin::from_production_key(&entry.definition.production_key) else {
-            continue;
-        };
-        if entry.definition.family != COIN_DEFINITION_FAMILY {
-            continue;
-        }
-        // An input is at the compatible revision; a stack at another one is not skipped (the
-        // database plan guard counts every coin stack).
-        if entry.definition.revision_ref != request.coins.of(coin).revision_ref {
-            return Err(NpcTradeError::InvalidInput);
-        }
-        // A burned coin has no contents and its default state; a coin stack that is not
-        // default is refused rather than skipped (the database plan guard counts it).
-        if entry.not_default {
-            return Err(NpcTradeError::InvalidInput);
-        }
-        inputs.push((
-            CoinStack {
-                coin,
-                quantity: entry.quantity,
-                placement_ordinal: entry.placement_ordinal,
-            },
-            entry.item_instance_id,
-        ));
-    }
-    let stacks: Vec<CoinStack> = inputs.iter().map(|(stack, _)| *stack).collect();
-    let eligible = stacks
-        .iter()
-        .try_fold(0_u64, |total, stack| {
-            total.checked_add(u64::from(stack.quantity) * stack.coin.worth())
-        })
-        .ok_or(DurabilityError::InvalidStoredState)?;
-    let bank_debit_gold_units = super::item_fee_burn::bank_part(total, eligible, tuple, junior)
-        .map_err(|error| match error {
-            super::item_fee_burn::FeeBurnError::InsufficientFunds => {
-                NpcTradeError::InsufficientFunds
-            }
-            _ => NpcTradeError::Unavailable(DurabilityError::InvalidStoredState),
-        })?;
-    let coin_part = total - bank_debit_gold_units;
-    // §5.3: a price of 0 burns nothing and mints no change.
-    let (burns, change) = if coin_part == 0 {
-        (Vec::new(), 0)
-    } else {
-        match plan_fee_within(coin_part, &stacks, entries.len(), BACKPACK_ENTRIES_MAX) {
-            Ok(plan) => (plan.lines, plan.change),
-            Err(FeePlanError::InsufficientFunds) => return Err(NpcTradeError::InsufficientFunds),
-            Err(FeePlanError::CapacityExceeded) => return Err(NpcTradeError::CapacityExceeded),
-            Err(FeePlanError::ChangeDoesNotFit) => return Err(NpcTradeError::DoesNotFit),
-            Err(FeePlanError::InvalidInput) => {
-                return Err(DurabilityError::InvalidStoredState.into());
-            }
-        }
-    };
-    let mut lines: Vec<NpcTradeLine> = burns
-        .iter()
-        .map(|line| {
-            let (stack, item) = &inputs[line.input];
-            NpcTradeLine {
-                kind: NpcTradeLineKind::CoinBurn,
-                item_instance_id: *item,
-                placement_ordinal: stack.placement_ordinal,
-                coin: Some(stack.coin),
-                quantity_before: stack.quantity,
-                quantity_after: stack.quantity - line.burned,
-            }
-        })
-        .collect();
-    let whole = lines.iter().filter(|line| line.quantity_after == 0).count();
-    let change_coins = buy_change_coins(change);
-    // §5.3: the change and the item each take a new entry after the burn.
-    if entries.len() - whole + change_coins.len() + 1 > capacity {
-        return Err(NpcTradeError::DoesNotFit);
-    }
-    let [platinum, gold, item] = request.output_item_instance_ids;
-    let mut ordinal = first_mint_ordinal(entries)?;
-    for (coin, quantity) in change_coins {
-        lines.push(NpcTradeLine {
-            kind: NpcTradeLineKind::CoinMint,
-            item_instance_id: if coin == Coin::Platinum {
-                platinum
-            } else {
-                gold
-            },
-            placement_ordinal: ordinal,
-            coin: Some(coin),
-            quantity_before: 0,
-            quantity_after: quantity,
-        });
-        ordinal = ordinal.checked_add(1).ok_or(NpcTradeError::DoesNotFit)?;
-    }
-    lines.push(NpcTradeLine {
-        kind: NpcTradeLineKind::ItemMint,
-        item_instance_id: item,
-        placement_ordinal: ordinal,
-        coin: None,
-        quantity_before: 0,
-        quantity_after: units,
-    });
-    Ok(Plan {
-        lines,
-        burned_gold_units: coin_part + change,
-        bank_debit_gold_units,
-        bank_debit: None,
-        minted_gold_units: change,
-        item_instance_id: item,
-    })
+    Ok(rules::plan_buy(
+        &plan_input(request),
+        total,
+        units,
+        capacity,
+        entries,
+        tuple != Type2EventTuple::V1 && !junior,
+    )?
+    .into())
 }
 
-/// Lines of a SELL: the item BURN and the coin MINT of the price.
 fn plan_sell(
     request: &NpcTradeRequest,
     total: u64,
@@ -535,62 +405,7 @@ fn plan_sell(
     capacity: usize,
     entries: &[Entry],
 ) -> Result<Plan> {
-    let sold = entries
-        .iter()
-        .find(|entry| {
-            entry.live
-                && entry.definition == request.item.definition
-                && entry.quantity >= units
-                && !entry.not_default
-        })
-        .ok_or(NpcTradeError::ItemNotFound)?;
-    let coins = sell_coins(total).ok_or(NpcTradeError::InvalidInput)?;
-    let whole = sold.quantity == units;
-    if entries.len() - usize::from(whole) + coins.len() > capacity {
-        return Err(NpcTradeError::DoesNotFit);
-    }
-    let mut lines = vec![NpcTradeLine {
-        kind: NpcTradeLineKind::ItemBurn,
-        item_instance_id: sold.item_instance_id,
-        placement_ordinal: sold.placement_ordinal,
-        coin: None,
-        quantity_before: sold.quantity,
-        quantity_after: sold.quantity - units,
-    }];
-    let [crystal, platinum, gold] = request.output_item_instance_ids;
-    let mut ordinal = first_mint_ordinal(entries)?;
-    for (coin, quantity) in coins {
-        lines.push(NpcTradeLine {
-            kind: NpcTradeLineKind::CoinMint,
-            item_instance_id: match coin {
-                Coin::Crystal => crystal,
-                Coin::Platinum => platinum,
-                Coin::Gold => gold,
-            },
-            placement_ordinal: ordinal,
-            coin: Some(coin),
-            quantity_before: 0,
-            quantity_after: quantity,
-        });
-        ordinal = ordinal.checked_add(1).ok_or(NpcTradeError::DoesNotFit)?;
-    }
-    Ok(Plan {
-        bank_debit_gold_units: 0,
-        bank_debit: None,
-        lines,
-        burned_gold_units: 0,
-        minted_gold_units: total,
-        item_instance_id: sold.item_instance_id,
-    })
-}
-
-/// After the highest ordinal the backpack held before the trade (entries are highest first).
-fn first_mint_ordinal(entries: &[Entry]) -> Result<u64> {
-    entries
-        .first()
-        .map_or(0, |entry| entry.placement_ordinal)
-        .checked_add(1)
-        .ok_or(NpcTradeError::DoesNotFit)
+    Ok(rules::plan_sell(&plan_input(request), total, units, capacity, entries)?.into())
 }
 
 /// Takes the occurrence's trade lock: a commit and a replay read of one occurrence serialize.
@@ -956,11 +771,8 @@ fn trade_message(
             .lines
             .iter()
             .map(|line| OneItemNpcTradeLineV1 {
-                kind: line.kind.code(),
-                before: line
-                    .kind
-                    .is_burn()
-                    .then(|| state(line, line.quantity_before)),
+                kind: line_kind_code(line.kind),
+                before: line_is_burn(line.kind).then(|| state(line, line.quantity_before)),
                 after: Some(state(line, line.quantity_after)),
                 placement_ordinal: line.placement_ordinal,
             })
@@ -1039,7 +851,7 @@ async fn apply_trade(
             Some(coin) => request.coins.of(coin),
             None => item,
         };
-        if line.kind.is_burn() {
+        if line_is_burn(line.kind) {
             let changed = sqlx::query(
                 "UPDATE game_item_instances \
                     SET quantity = $2, lifecycle = $3, last_transaction_id = encode($4,'hex')::uuid \
@@ -1114,7 +926,10 @@ async fn apply_trade(
         )
         .bind(request.transaction_id.as_slice())
         .bind(ordinal)
-        .bind(i16::try_from(line.kind.code()).map_err(|_| DurabilityError::InvalidStoredState)?)
+        .bind(
+            i16::try_from(line_kind_code(line.kind))
+                .map_err(|_| DurabilityError::InvalidStoredState)?,
+        )
         .bind(line.item_instance_id.as_slice())
         .bind(line.placement_ordinal.to_string())
         .bind(line.coin.map(|coin| coin.worth()).map(gold).transpose()?)
@@ -1205,7 +1020,7 @@ async fn load_trade(
             ),
         };
         Ok(NpcTradeLine {
-            kind: NpcTradeLineKind::of(line.try_get("line_kind")?)
+            kind: line_kind_of(line.try_get("line_kind")?)
                 .ok_or(DurabilityError::InvalidStoredState)?,
             item_instance_id: uuid_text(&line.try_get::<String, _>("item_instance_id")?)?,
             placement_ordinal: numeric_u64(line, "placement_ordinal")?,
@@ -1227,5 +1042,7 @@ async fn load_trade(
     })))
 }
 
+#[cfg(test)]
+use rules::NPC_TRADE_BUY_GOLD_UNITS_MAX;
 #[cfg(test)]
 mod tests;

@@ -19,8 +19,7 @@ mod durability {
     include!("../../../crates/gameplay/durability/src/durability/core_modules.rs");
 }
 #[allow(dead_code, unused_imports)]
-#[path = "../../../crates/gameplay/foundation/src/foundation/mod.rs"]
-pub mod foundation;
+pub use oteryn_gameplay_entities as foundation;
 #[allow(dead_code, unused_imports)]
 pub use oteryn_gameplay_native_admission_source as native_admission_source;
 
@@ -300,7 +299,10 @@ async fn db_now(pool: &sqlx::PgPool) -> TestResult<i64> {
 
 // Test-only independently controlled Runtime publication owner.
 struct RuntimePublisher(AdmissionAuthorityPublicationChangeV1);
-impl foundation::fnd04_verifier::fresh_source_sealed::Sealed for RuntimePublisher {}
+impl oteryn_gameplay_foundation::foundation::fnd04_verifier::fresh_source_sealed::Sealed
+    for RuntimePublisher
+{
+}
 impl AdmissionAuthorityOwningPublisherV1 for RuntimePublisher {
     fn resolve_publication(
         &self,

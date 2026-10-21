@@ -1,4 +1,5 @@
 //! Node activation and transport owner-cycle integration.
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 /// End to end through the activation path: the bundle's spawn family is realized by
 /// `realize_bundle_spawns` against the production generation's served rat, a real lethal
 /// native hit kills the creature, and the owner-turn drive (no session involved) warns at
@@ -6,8 +7,11 @@
 #[test]
 #[allow(clippy::expect_used)]
 fn a_bundle_spawned_rat_killed_by_a_lethal_hit_respawns_on_the_owner_turn() {
-    use crate::foundation::{ChannelContentPin, ChannelId, NodeId, WorldId};
     use oteryn_world_bundle::spawn::{Creature, Direction, Period, Point, Source, Table};
+    use {
+        crate::foundation::{ChannelId, NodeId, WorldId},
+        oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+    };
     let world =
         WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1]).expect("world");
     let channel = ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])

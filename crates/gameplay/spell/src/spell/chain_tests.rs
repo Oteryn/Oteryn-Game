@@ -8,7 +8,6 @@ use std::collections::{BTreeSet, VecDeque};
 use oteryn_simulation_determinism::SemanticTimeMicros;
 use serde_json::Value;
 
-use super::authoring::spell_from_bundle;
 use super::chain::{
     CHAIN_PATH_SEARCH_TILES, ChainCreature, ChainShape, ChainStart, ChainWorld, TilePosition,
     step_value,
@@ -16,6 +15,7 @@ use super::chain::{
 use super::plan::{CastPlanError, chain_plans, effect_plan};
 use super::*;
 use crate::ability::{AbilityEngine, AbilityOccurrence, RevisionSet};
+use oteryn_gameplay_content::content::spell_data::authoring::spell_from_bundle;
 
 const SPELL: &str = include_str!(
     "../../../../../tools/content-schema/spell-authoring/samples/starter-bundles/instant-energy_strike/spell.json"

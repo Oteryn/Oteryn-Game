@@ -1,6 +1,8 @@
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 mod tests {
+    use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+
     use crate::ability::RevisionSet;
     use crate::ai_think::ThinkOccurrence;
     use crate::content::ProjectReferenceRecord;
@@ -9,7 +11,6 @@ mod tests {
     use crate::content::ProjectV2BehaviorAuthoring;
     use crate::content::ProjectV2DefinitionRef as Ref;
     use crate::content::ProjectV2Family;
-    use crate::creature_attack_geometry::Facing;
     use crate::creature_auto_attack::AttackError;
     use crate::creature_auto_attack::CurrentCombatFactsReader;
     use crate::creature_auto_attack::{AttackFacts, CurrentConditionPolicy};
@@ -36,6 +37,7 @@ mod tests {
     use crate::monster_combat_lane::*;
     use crate::monster_owner_cycle::CycleError;
     use crate::spell::chain::TilePosition;
+    use oteryn_gameplay_content::content::creature_attack_geometry::Facing;
     use oteryn_simulation_determinism::DecisionOccurrenceId;
     use oteryn_simulation_determinism::GameplayDecisionRoot;
     use sha2::Digest;
@@ -797,7 +799,10 @@ mod tests {
         MovementLocalPosition,
     ) {
         use crate::content::ProjectSnapshot;
-        use crate::foundation::{ChannelContentPin, NodeId};
+        use {
+            crate::foundation::NodeId,
+            oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+        };
         let (base, _, session) = runtime_with_player(0x59);
         let world = base.binding().world_id();
         let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -1162,8 +1167,9 @@ mod tests {
     fn aggregate_native_poison_ticks_with_actual_qualified_loader_room_and_refuses_missing_or_stale_inputs()
      {
         use crate::content::ProjectSnapshot;
-        use crate::foundation::{
-            ChannelContentPin, ConditionDefinition, ConditionValues, DotElement, NodeId,
+        use {
+            crate::foundation::{ConditionDefinition, ConditionValues, DotElement, NodeId},
+            oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
         };
         let (base, _, session) = runtime_with_player(0x59);
         let world = base.binding().world_id();
@@ -1600,7 +1606,7 @@ mod tests {
                 world.target,
                 world.session,
                 DecisionOccurrenceId::from_bytes([8; 16]),
-                crate::ability::condition::TickFacts::default(),
+                oteryn_gameplay_foundation::foundation::condition::TickFacts::default(),
                 clock.now(),
             )
             .expect("monster_combat_lane.rs:tests:3370: qualified fixture operation must succeed");

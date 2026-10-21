@@ -283,11 +283,14 @@ mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
     use super::*;
     use crate::foundation::owner_timer::OwnerClock;
-    use crate::foundation::{
-        ChannelContentPin, ChannelId, CommandId, GameSessionId, MovementLocalPosition, NodeId,
-        RuntimeScopeRefV1, WorldId,
-    };
     use crate::spell::delayed_execution::SpellTimerOwner;
+    use {
+        crate::foundation::{
+            ChannelId, CommandId, GameSessionId, MovementLocalPosition, NodeId, RuntimeScopeRefV1,
+            WorldId,
+        },
+        oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+    };
 
     #[test]
     fn actual_source_chain_schedules_zero_phase_and_refuses_unqualified_due_damage() {
@@ -329,9 +332,11 @@ mod tests {
                     .is_some_and(|name| name.eq_ignore_ascii_case("lightning"))
             })
             .unwrap();
-        let source =
-            crate::spell::authoring::spell_from_bundle(&row["bundle"], &row["dependencies"])
-                .unwrap();
+        let source = oteryn_gameplay_content::content::spell_data::authoring::spell_from_bundle(
+            &row["bundle"],
+            &row["dependencies"],
+        )
+        .unwrap();
         assert!(ordinary_chain(&source));
         let book = SpellBook::new(vec![source.clone()]).unwrap();
         let occurrence = AbilityOccurrence::new(

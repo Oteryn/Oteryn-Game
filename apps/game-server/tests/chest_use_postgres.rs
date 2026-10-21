@@ -34,17 +34,14 @@ mod durability {
     include!("../../../crates/gameplay/durability/src/durability/core_modules.rs");
 }
 #[allow(dead_code, unused_imports)]
-#[path = "../../../crates/gameplay/foundation/src/foundation/mod.rs"]
-pub mod foundation;
+pub use oteryn_gameplay_entities as foundation;
 #[allow(dead_code, unused_imports)]
 pub use oteryn_gameplay_native_admission_source as native_admission_source;
 
 #[allow(dead_code, unused_imports)]
 #[path = "../../../crates/gameplay/social/src/achievement_catalogue.rs"]
 pub mod achievement_catalogue;
-#[allow(dead_code, unused_imports)]
-#[path = "../../../crates/gameplay/social/src/interaction/mod.rs"]
-pub mod interaction;
+
 #[allow(dead_code, unused_imports)]
 #[path = "../../../crates/gameplay/social/src/interaction/chest_use.rs"]
 pub mod interaction_chest_use;

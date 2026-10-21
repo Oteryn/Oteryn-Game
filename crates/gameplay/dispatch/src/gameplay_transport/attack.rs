@@ -24,8 +24,9 @@ use oteryn_protocol_oteryn::attack::{
 };
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use oteryn_simulation_determinism::{
-    DecisionOccurrenceId, GameplayDecisionRoot, SemanticTimeMicros, deterministic_decision_u64,
+    DecisionOccurrenceId, GameplayDecisionRoot, SemanticTimeMicros,
 };
+#[cfg(test)]
 use sha2::{Digest, Sha256};
 use std::sync::{Arc, Weak};
 use tokio::time::{Duration, Instant};
@@ -35,19 +36,13 @@ use crate::ability::exact_actor_resolution::{ExactActorProposal, resolve_exact_a
 use crate::ability::{
     AbilityIntent, AbilityOccurrence, CommitGroup, Effect, EffectPlan, ProposalSource, RevisionSet,
 };
-use crate::combat::charm_effects::{
-    CharmAssignment, CharmAttackerFacts, CharmCatalogueRead, CharmEvaluationInput, CharmHitSource,
-    CharmHookEvent, CharmStateRead, CharmStateUnavailable, evaluate_charm_hook,
-};
 use crate::combat_attack::{
     AttackConstants, AttackState, BlockBudget, CHASE_SEARCHES_PER_WINDOW, CREATURE_COST,
     ChaseDecision, ChaseSearchBudget, ChaseState, FightMode, SwingPoll, TargetFacts, TargetRefusal,
-    armor_reduction_bounds, chase_search_order, player_fist_formula, player_melee_formula,
+    chase_search_order, player_fist_formula, player_melee_formula,
 };
 use crate::content::native_gameplay::NativeGameplayState;
-use crate::content::{
-    LogicalCell, QualifiedNativeEntryRoom, ReferenceItemField, ReferenceWeaponType,
-};
+use crate::content::{LogicalCell, QualifiedNativeEntryRoom};
 use crate::durability::character_equipment::EquippedItem;
 use crate::foundation::{
     ChannelRuntimeV1, CommandId, CommandRef, ExactActorRef, GameSessionId, MovementLocalPosition,
@@ -56,6 +51,9 @@ use crate::movement::CardinalStep;
 use crate::movement::interest::{VisibilityPosition, VisibilitySettings};
 use crate::spell::combat_execution::actor_atom;
 use crate::spell::formula::FormulaInputs;
+use oteryn_gameplay_progression::charm_effects::{
+    CharmAttackerFacts, CharmHitSource, CharmHookEvent,
+};
 
 /// `ATTACK0-RL-01` and `ATTACK0-RL-02`: intents per [`ATTACK_INTENT_WINDOW`].
 const MAX_INTENTS_PER_WINDOW: usize = 25;
@@ -152,16 +150,9 @@ impl CombatContinuity {
     }
 }
 
-/// How often the attacker's own connection re-reads its swing weapon while it holds a target.
-pub const WEAPON_REFRESH_MICROS: u64 = 1_000_000;
+pub use oteryn_gameplay_combat_rules::resolution::WEAPON_REFRESH_MICROS;
 
-/// The weapon a swing is drawn with (ATTACK-0 §4): fists, or a melee weapon's attack value. A
-/// distance weapon, a throwing weapon, a wand or a rod is no weapon.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SwingWeapon {
-    Fists,
-    Melee { attack: u32 },
-}
+pub use oteryn_gameplay_combat_rules::resolution::SwingWeapon;
 
 /// The swing weapon read from the equipment owner under `content_digest` at `read_at`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -171,71 +162,20 @@ struct WeaponFacts {
     read_at: SemanticTimeMicros,
 }
 
-/// The swing weapon of `items` (`player.cpp:405-464` `getWeapon`): the first hand, left (6) then
-/// right (5), that holds a weapon other than a shield, ammunition or a spellbook. A club, sword,
-/// axe or fist weapon swings with its attack; any other weapon, or none, swings with fists.
-/// `None` (fail closed) when a hand item's policy is unknown or its weapon facts are not Known.
+/// The swing weapon of equipped hands, resolved by the pure Combat Rules owner.
 pub fn swing_weapon(content: &NativeGameplayState, items: &[EquippedItem]) -> Option<SwingWeapon> {
-    for slot in [6_u8, 5] {
-        let Some(item) = items.iter().find(|item| item.slot == slot) else {
-            continue;
-        };
-        let policy = content.item_policy(
-            &item.definition.production_key,
-            &item.definition.revision_ref,
-        )?;
-        let weapon = match &policy.record().semantics.weapon {
-            ReferenceItemField::NotApplicable => continue,
-            ReferenceItemField::Known(weapon) => weapon,
-            ReferenceItemField::Unknown | ReferenceItemField::Conflict => return None,
-        };
-        let ReferenceItemField::Known(kind) = weapon.weapon_type else {
-            return None;
-        };
-        match kind {
-            ReferenceWeaponType::Shield
-            | ReferenceWeaponType::Ammunition
-            | ReferenceWeaponType::Spellbook => continue,
-            ReferenceWeaponType::Distance | ReferenceWeaponType::Wand => {
-                return Some(SwingWeapon::Fists);
-            }
-            ReferenceWeaponType::Club
-            | ReferenceWeaponType::Sword
-            | ReferenceWeaponType::Axe
-            | ReferenceWeaponType::Fist => {
-                let ReferenceItemField::Known(attack) = weapon.attack else {
-                    return None;
-                };
-                return Some(SwingWeapon::Melee {
-                    attack: u32::try_from(attack.0).ok()?,
-                });
-            }
-        }
-    }
-    Some(SwingWeapon::Fists)
+    oteryn_gameplay_combat_rules::resolution::swing_weapon(content, |slot| {
+        items.iter().find(|item| item.slot == slot).map(|item| {
+            (
+                item.definition.production_key.as_str(),
+                item.definition.revision_ref.as_str(),
+            )
+        })
+    })
 }
 
-/// PARTY-PVP0 §5.1 / PARTYPVP0-RL-06: two minutes, in the native semantic clock.
-#[allow(
-    dead_code,
-    reason = "The independently delivered D party-XP consumer uses this activity window"
-)]
-const SHARED_EXPERIENCE_ACTIVITY_MICROS: u64 = 120_000_000;
-
-#[derive(Debug, Clone, Copy)]
-struct SharedExperienceActivity {
-    character: [u8; 16],
-    lease_generation: u64,
-    at: SemanticTimeMicros,
-}
-
-/// Retained committed event time observed under current native actor/session/lease guards.
-/// Neither timestamp establishes current party membership or kill-settlement authority.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct SharedExperienceActivityObservation {
-    pub original_event_at: SemanticTimeMicros,
-    pub observed_at: SemanticTimeMicros,
-}
+pub use oteryn_gameplay_social_rules::shared_experience::SharedExperienceActivityObservation;
+use oteryn_gameplay_social_rules::shared_experience::{self, SharedExperienceActivity};
 
 /// The attack state of one player actor in one session.
 #[derive(Debug, Clone)]
@@ -417,23 +357,20 @@ const fn fight_mode(mode: WireFightMode) -> FightMode {
     }
 }
 
+pub use oteryn_gameplay_combat_rules::dispatch_target::in_protection_zone as in_protection_zone_rule;
+
 fn in_protection_zone(
     room: &QualifiedNativeEntryRoom,
     position: MovementLocalPosition,
 ) -> Option<bool> {
-    let cells = room.movement_cells();
-    cells
-        .spell_tiles()
-        .lookup(
-            cells.scope(),
-            LogicalCell {
-                x: position.x,
-                y: position.y,
-                z: i32::from(position.floor),
-            },
-        )
-        .ok()
-        .map(|tile| tile.flags().protection_zone)
+    in_protection_zone_rule(
+        room,
+        LogicalCell {
+            x: position.x,
+            y: position.y,
+            z: i32::from(position.floor),
+        },
+    )
 }
 
 /// Whether an attacker at `from` sees `to` under the reference view. A source world's native
@@ -1009,6 +946,8 @@ const fn actor_order(actor: ExactActorRef) -> (u32, u64) {
     (actor.actor_local_id(), actor.actor_local_generation())
 }
 
+pub use oteryn_gameplay_combat_rules::dispatch_target::chase_path_tile as chase_path_tile_rule;
+
 /// CHASE-1: whether a player chase may path over `cell` (CREATURE-AI-0 §5.3 with RANGED-0 §8). It
 /// is a Walkable cell of the Movement owner's cells, no closed door blocks it, and it is no
 /// teleport, protection-zone or floor-change tile: a chase never changes floors. Unknown tile
@@ -1024,84 +963,34 @@ pub(super) fn chase_path_tile(
         y: cell.y,
         z: i32::from(cell.floor),
     };
-    let ordinary = match cells.spell_tiles().lookup(cells.scope(), target) {
-        Ok(tile) => !tile.flags().protection_zone && !tile.flags().floor_change,
-        Err(crate::content::SpellTileLookupError::Unknown) => {
-            matches!(
-                cells.index(),
-                crate::content::native_cell_lookup::NativeMovementCollisionIndex::Entry(_)
-            ) && !crate::movement::source_floor_change::is_source_profile(cells)
-        }
-        Err(_) => false,
-    };
-    ordinary
-        && cells.index().lookup(cells.scope(), target)
-            == Ok(crate::content::CollisionClass::Walkable)
-        && !blocking.blocks(target)
+    chase_path_tile_rule(
+        cells,
+        target,
+        crate::movement::source_floor_change::is_source_profile(cells),
+    ) && !blocking.blocks(target)
         && !crate::map::floor::is_teleport(cells, target)
 }
 
-/// ATTACK-1b has no Charm state reader: every hook is evaluated against no assignments and its
-/// outcomes are discarded. The Charm state wiring is a later stage.
-struct NoCharmAssignments([u8; 16]);
+pub use oteryn_gameplay_combat_rules::charm_hook::run_charm_hook;
 
-impl CharmStateRead for NoCharmAssignments {
-    fn character(&self) -> [u8; 16] {
-        self.0
-    }
-
-    fn assignments_for_race(
-        &self,
-        _race_key: &str,
-    ) -> Result<Vec<CharmAssignment>, CharmStateUnavailable> {
-        Ok(Vec::new())
-    }
-}
-
-/// Evaluate one Charm hook and discard its outcomes (see [`NoCharmAssignments`]).
-pub(super) fn run_charm_hook(
-    catalogue: &dyn CharmCatalogueRead,
-    character: [u8; 16],
-    race_key: &str,
-    decision_root: &GameplayDecisionRoot,
-    occurrence: DecisionOccurrenceId,
-    event: CharmHookEvent,
-) {
-    let _ = evaluate_charm_hook(
-        &CharmEvaluationInput {
-            character,
-            race_key,
-            decision_root,
-            occurrence,
-            event,
-        },
-        &NoCharmAssignments(character),
-        catalogue,
-    );
-}
-
-/// The decision occurrence of one swing event: unique per attacker, lineage, ordinal and tag.
+/// Translate the runtime swing identity into plain deterministic rule inputs.
 fn swing_occurrence(
     attacker: ExactActorRef,
     lineage: CommandRef,
     ordinal: u16,
     tag: &[u8],
 ) -> DecisionOccurrenceId {
-    let hash = Sha256::new()
-        .chain_update(b"oteryn:auto-attack-swing:v1")
-        .chain_update(attacker.placement_identity())
-        .chain_update(lineage.game_session_id().as_bytes())
-        .chain_update(lineage.command_id().get().to_be_bytes())
-        .chain_update(ordinal.to_be_bytes())
-        .chain_update(tag)
-        .finalize();
-    let mut bytes = [0; 16];
-    bytes.copy_from_slice(&hash[..16]);
-    DecisionOccurrenceId::from_bytes(bytes)
+    oteryn_gameplay_combat_rules::resolution::swing_occurrence(
+        attacker.placement_identity(),
+        (
+            *lineage.game_session_id().as_bytes(),
+            lineage.command_id().get(),
+        ),
+        ordinal,
+        tag,
+    )
 }
 
-/// One draw in `[minimum, maximum]` of the swing's occurrence `tag` under `key`; a degenerate
-/// range is its bound without a draw. `None` on an RNG fault.
 #[allow(clippy::too_many_arguments)]
 fn swing_draw(
     root: &GameplayDecisionRoot,
@@ -1113,23 +1002,21 @@ fn swing_draw(
     minimum: i64,
     maximum: i64,
 ) -> Option<i64> {
-    if maximum <= minimum {
-        return Some(minimum);
-    }
-    let draw = deterministic_decision_u64(
+    oteryn_gameplay_combat_rules::resolution::swing_draw(
         root,
-        swing_occurrence(attacker, lineage, ordinal, tag),
+        attacker.placement_identity(),
+        (
+            *lineage.game_session_id().as_bytes(),
+            lineage.command_id().get(),
+        ),
+        ordinal,
+        tag,
         key,
-        0,
+        minimum,
+        maximum,
     )
-    .ok()?;
-    let span = u64::try_from(maximum - minimum).ok()?.saturating_add(1);
-    Some(minimum.saturating_add(i64::try_from(draw % span).ok()?))
 }
 
-/// What the creature's block (when its budget allows), defence and armor leave of `damage`
-/// (`creature.cpp:958-990`): defence draws in `[defense / 2, defense]` and, when it stops the
-/// whole hit, armor is not reached; armor draws in [`armor_reduction_bounds`].
 #[allow(clippy::too_many_arguments)]
 fn creature_mitigated(
     root: &GameplayDecisionRoot,
@@ -1142,35 +1029,20 @@ fn creature_mitigated(
     defense: u32,
     armor: u32,
 ) -> Option<i64> {
-    let mut remaining = damage;
-    if blocked {
-        let defence = swing_draw(
-            root,
-            attacker,
-            lineage,
-            ordinal,
-            b"defence-draw",
-            "attack.defence",
-            i64::from(defense / 2),
-            i64::from(defense),
-        )?;
-        remaining = remaining.saturating_sub(defence);
-        if remaining <= 0 {
-            return Some(0);
-        }
-    }
-    let (minimum, maximum) = armor_reduction_bounds(constants, armor);
-    let reduction = swing_draw(
+    oteryn_gameplay_combat_rules::resolution::creature_mitigated(
         root,
-        attacker,
-        lineage,
+        constants,
+        attacker.placement_identity(),
+        (
+            *lineage.game_session_id().as_bytes(),
+            lineage.command_id().get(),
+        ),
         ordinal,
-        b"armor-draw",
-        "attack.armor",
-        i64::from(minimum),
-        i64::from(maximum),
-    )?;
-    Some(remaining.saturating_sub(reduction).max(0))
+        damage,
+        blocked,
+        defense,
+        armor,
+    )
 }
 
 fn hex(bytes: &[u8]) -> String {
@@ -1796,63 +1668,6 @@ mod weapon_tests {
     fn uuid(tag: u8) -> [u8; 16] {
         [1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag]
     }
-
-    fn lineage() -> CommandRef {
-        CommandRef::new(
-            GameSessionId::decode(&uuid(3)).expect("session id"),
-            CommandId::new(1).expect("command id"),
-        )
-    }
-
-    fn mitigated(ordinal: u16, damage: i64, blocked: bool, defense: u32, armor: u32) -> i64 {
-        let constants = AttackConstants::checked_in().expect("constants");
-        creature_mitigated(
-            &GameplayDecisionRoot::from_bytes([7; 32]),
-            constants,
-            ExactActorRef::transport_fixture(
-                crate::foundation::WorldId::decode(&uuid(1)).expect("world id"),
-                crate::foundation::ChannelId::decode(&uuid(2)).expect("channel id"),
-            ),
-            lineage(),
-            ordinal,
-            damage,
-            blocked,
-            defense,
-            armor,
-        )
-        .expect("draws")
-    }
-
-    #[test]
-    fn defence_applies_only_to_a_blocked_hit_and_armor_draws_in_its_bounds() {
-        for ordinal in 0..64 {
-            assert_eq!(
-                mitigated(ordinal, 10, false, 1_000, 0),
-                10,
-                "no block, no armor"
-            );
-            assert_eq!(
-                mitigated(ordinal, 10, true, 1_000, 0),
-                0,
-                "defence stops the hit"
-            );
-            assert_eq!(
-                mitigated(ordinal, 10, false, 0, 2),
-                9,
-                "low armor reduces by 1"
-            );
-            let defended = mitigated(ordinal, 100, true, 10, 0);
-            assert!((90..=95).contains(&defended), "defence draws in [5, 10]");
-            let armored = mitigated(ordinal, 100, false, 0, 10);
-            assert!((91..=95).contains(&armored), "armor 10 draws in [5, 9]");
-            assert_eq!(mitigated(ordinal, 3, false, 0, 10), 0, "armor never heals");
-        }
-        assert_eq!(
-            mitigated(3, 100, true, 10, 10),
-            mitigated(3, 100, true, 10, 10),
-            "every draw is a pure function of the swing"
-        );
-    }
 }
 
 /// The active content owner, the exact physical definition/revision, and the master relation
@@ -1908,15 +1723,10 @@ impl ActorAttack {
             lease_generation: lease.generation(),
             at,
         };
-        if self.shared_experience_activity.is_some_and(|old| {
-            old.character == next.character
-                && old.lease_generation == next.lease_generation
-                && old.at > at
-        }) {
-            return false;
-        }
-        self.shared_experience_activity = Some(next);
-        true
+        shared_experience::record_shared_experience_activity(
+            &mut self.shared_experience_activity,
+            next,
+        )
     }
 }
 
@@ -1946,12 +1756,7 @@ impl ChannelAttackStates {
         now: SemanticTimeMicros,
     ) -> bool {
         self.committed_shared_experience_activity(runtime, actor, session, now)
-            .is_some_and(|activity| {
-                activity
-                    .observed_at
-                    .elapsed_since(activity.original_event_at)
-                    .is_ok_and(|age| age <= SHARED_EXPERIENCE_ACTIVITY_MICROS)
-            })
+            .is_some_and(shared_experience::shared_experience_active)
     }
 
     /// Read retained native data without renewing the event time. The caller supplies
@@ -1975,16 +1780,12 @@ impl ChannelAttackStates {
             return None;
         }
         let lease = runtime.bound_attacker_lease(actor, session).ok()?;
-        if lease.character_id().as_bytes() != &activity.character
-            || lease.generation() != activity.lease_generation
-            || observed_at.elapsed_since(activity.at).is_err()
-        {
-            return None;
-        }
-        Some(SharedExperienceActivityObservation {
-            original_event_at: activity.at,
+        shared_experience::committed_shared_experience_activity(
+            activity,
+            lease.character_id().as_bytes(),
+            lease.generation(),
             observed_at,
-        })
+        )
     }
 
     /// Call under the SAME runtime -> states -> attack guards after successful native owner
@@ -2083,11 +1884,11 @@ fn heal_credits_party_member(
     source: &crate::foundation::PartySnapshot,
     target_character: &[u8; 16],
 ) -> bool {
-    *target_character != source.character
-        && source
-            .members
-            .iter()
-            .any(|member| member.character == *target_character)
+    shared_experience::heal_credits_party_member(
+        &source.character,
+        source.members.iter().map(|member| &member.character),
+        target_character,
+    )
 }
 
 #[cfg(test)]
@@ -2095,37 +1896,6 @@ fn heal_credits_party_member(
 mod shared_experience_activity_tests {
     use super::*;
     use crate::foundation::{CharacterId, CharacterLease};
-
-    /// LOOP-PROGRESS-1 (Codex P2): a Mass Healing that heals only the caster earns no
-    /// activity; healing another member of the same party still does.
-    #[test]
-    fn heal_credits_only_another_party_member_never_the_caster() {
-        use crate::foundation::{PartyMemberSnapshot, PartyPresence, PartySnapshot};
-        let member = |character: [u8; 16], invitation_order| PartyMemberSnapshot {
-            character,
-            invitation_order,
-            presence_revision: 1,
-            presence: PartyPresence::Channel,
-            channel: Some([9; 16]),
-        };
-        let (caster, ally, stranger) = ([1; 16], [2; 16], [3; 16]);
-        let source = PartySnapshot {
-            world: [7; 16],
-            character: caster,
-            party_id: Some([5; 16]),
-            revision: Some(1),
-            leader: Some(caster),
-            shared_xp_enabled: true,
-            members: vec![member(caster, 0), member(ally, 1)],
-            observed_database_micros: 0,
-        };
-        assert!(
-            !heal_credits_party_member(&source, &caster),
-            "a self-heal earns no shared-experience activity"
-        );
-        assert!(heal_credits_party_member(&source, &ally));
-        assert!(!heal_credits_party_member(&source, &stranger));
-    }
 
     #[test]
     fn activity_uses_current_native_lease_and_two_minute_window_without_future_credit() {

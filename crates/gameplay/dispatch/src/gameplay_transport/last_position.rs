@@ -69,9 +69,12 @@ use crate::durability::character_last_position::{
 };
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::durability::fresh_admission::FreshAdmissionStore;
-use crate::foundation::{
-    CarrierError, ChannelRuntimeV1, ExactActorRef, FirstEntryPosition, GameSessionId,
-    MovementLocalPosition, WorldId,
+use {
+    crate::foundation::{
+        ChannelRuntimeV1, ExactActorRef, FirstEntryPosition, GameSessionId, MovementLocalPosition,
+        WorldId,
+    },
+    oteryn_gameplay_domain::domain::carrier_values::CarrierError,
 };
 
 /// `CHARPOS0-RL-01`: the interval between periodic last-position writes of one live Character
@@ -434,6 +437,8 @@ fn stored_position_applies(
         && stored.record.coordinate_frame_digest == coordinate_frame_digest
 }
 
+pub use oteryn_gameplay_housing::last_position::house_cell as house_cell_rule;
+
 /// §3.3 "valid": a house tile is invalid until HOUSE-OWN-0 decides entry. A bundle World reads
 /// its map facts; any other World reads its qualified house placements, and a cell whose
 /// placement is unknown counts as a house tile (fail closed).
@@ -460,13 +465,14 @@ fn house_cell(
                     floor: -z,
                 })
             });
-        return tile.is_none_or(|tile| index.map().facts.house_tile(tile));
+        return house_cell_rule(tile.map(|tile| index.map().facts.house_tile(tile)));
     }
-    !matches!(
+    house_cell_rule(
         movement_cells
             .house_tiles()
-            .house_at(movement_cells.scope(), logical),
-        Ok(None)
+            .house_at(movement_cells.scope(), logical)
+            .map(|house| house.is_some())
+            .ok(),
     )
 }
 
@@ -1183,7 +1189,10 @@ mod tests {
     /// The first-entry owner step's state: a runtime of `world(1)` whose pinned entry start is
     /// (3, 4, 7) and frame digest `[3; 32]`, with one committed player not yet positioned.
     fn admitted() -> (ChannelRuntimeV1, ExactActorRef, GameSessionId) {
-        use crate::foundation::{ChannelContentPin, ChannelId, NodeId};
+        use {
+            crate::foundation::{ChannelId, NodeId},
+            oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+        };
         let world_id = world(1);
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             world_id,

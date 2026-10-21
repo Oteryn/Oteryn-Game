@@ -242,9 +242,10 @@ fn ground_cell(x: i32, y: i32, floor: i16) -> Vec<u8> {
 
 /// Same floor and Chebyshev distance <= 1 in the native frame.
 fn in_reach(actor: (i32, i32, i16), cell: (i32, i32, i16)) -> bool {
-    actor.2 == cell.2
-        && (i64::from(actor.0) - i64::from(cell.0)).abs() <= 1
-        && (i64::from(actor.1) - i64::from(cell.1)).abs() <= 1
+    oteryn_gameplay_items::reach::within_reach(
+        (actor.0, actor.1, i32::from(actor.2)),
+        (cell.0, cell.1, i32::from(cell.2)),
+    )
 }
 
 fn sha256_revision(digest: [u8; 32]) -> String {

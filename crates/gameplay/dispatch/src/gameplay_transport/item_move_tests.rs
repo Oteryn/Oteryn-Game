@@ -8,9 +8,6 @@ use super::super::connection::{
     IDLE_LIVENESS, SessionContinuity, StepOutcome, serve_admitted,
 };
 use super::super::item_view::{InventoryItems, ItemKey, ItemViewContinuity, ViewItem};
-use super::super::world_object::{
-    COMMAND_TYPE_USE_INTENT, UseDisposition, encode_use_item_intent, encode_use_result,
-};
 use super::super::world_spatial::{
     ActorPosition, ENTITY_IDENTITY_BYTES, StepDirection, StepDisposition, WorldSpatialObservation,
 };
@@ -29,6 +26,9 @@ use oteryn_protocol_oteryn::item_view::{
     CAPABILITY_ITEM_VIEW_MOVE_V1_REQUIRES, COMMAND_TYPE_ITEM_MOVE_INTENT, EquipmentSlot,
     ItemHandle, ItemMoveIntent, decode_open_container, encode_item_move_intent,
     encode_item_move_intent_for, encode_item_move_result, encode_item_move_result_with_equip_drop,
+};
+use oteryn_protocol_oteryn::world_object::{
+    COMMAND_TYPE_USE_INTENT, UseDisposition, encode_use_item_intent, encode_use_result,
 };
 use oteryn_protocol_oteryn::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES;
 use oteryn_protocol_oteryn::{ClientCommandValue, encode_client_command};

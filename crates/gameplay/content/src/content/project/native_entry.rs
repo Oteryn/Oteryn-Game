@@ -808,7 +808,7 @@ impl QualifiedNativeEntryRoom {
 /// the native parser under the fixed limits, qualify and compile. Every caller (the activation
 /// issuer and the node) derives digests and frame binding this way; none is supplied externally.
 pub fn qualify_native_entry_room(
-    world_id: crate::foundation::WorldId,
+    world_id: oteryn_protocol_oteryn::WorldId,
 ) -> Result<QualifiedNativeEntryRoom, ProjectError> {
     let documents = native_entry_room_documents(world_id)?;
     let snapshot = ProjectSnapshot::new(
@@ -831,7 +831,7 @@ pub fn qualify_native_entry_room(
 /// Qualifies the exact pinned gameplay manifest selected by the operator and node.
 /// This computes content identity only; it grants no activation authority.
 pub fn qualify_native_entry_room_from_gameplay_manifest(
-    world_id: crate::foundation::WorldId,
+    world_id: oteryn_protocol_oteryn::WorldId,
     manifest: &std::path::Path,
 ) -> Result<QualifiedNativeEntryRoom, ProjectError> {
     let input = crate::content::native_gameplay::NativeGameplayInput::from_manifest(manifest)?;
@@ -840,7 +840,7 @@ pub fn qualify_native_entry_room_from_gameplay_manifest(
 
 /// Shared selection for operator issuance and node activation.
 pub fn qualify_selected_native_gameplay_room(
-    world_id: crate::foundation::WorldId,
+    world_id: oteryn_protocol_oteryn::WorldId,
     input: &crate::content::native_gameplay::NativeGameplayInput,
 ) -> Result<QualifiedNativeEntryRoom, ProjectError> {
     match input.source_world.as_ref() {
@@ -861,7 +861,7 @@ pub fn qualify_selected_native_gameplay_room(
 /// Qualify the same genuine native source with an explicitly supplied, pinned
 /// candidate gameplay envelope. This never loads a global/embedded catalogue.
 pub fn qualify_native_entry_room_with_gameplay(
-    world_id: crate::foundation::WorldId,
+    world_id: oteryn_protocol_oteryn::WorldId,
     input: &crate::content::native_gameplay::NativeGameplayInput,
 ) -> Result<QualifiedNativeEntryRoom, ProjectError> {
     let documents = native_entry_room_documents(world_id)?;
@@ -909,7 +909,7 @@ struct NativeEntryRoomSource {
 /// project documents. The writer re-admits its own output through the native parser, so the
 /// result is qualified or refused; a WorldId already present in the source refuses.
 pub fn native_entry_room_documents(
-    world_id: crate::foundation::WorldId,
+    world_id: oteryn_protocol_oteryn::WorldId,
 ) -> Result<CanonicalProjectDocuments, ProjectError> {
     native_room_documents_for(world_id, NATIVE_ENTRY_ROOM_SOURCE, false)
 }
@@ -917,12 +917,12 @@ pub const NATIVE_SPELL_ENTRY_ROOM_SOURCE: &[u8] = include_bytes!("native_spell_e
 pub const NATIVE_SPELL_ENTRY_ROOM_SOURCE_SCHEMA: &str = "OTERYN_NATIVE_SPELL_ENTRY_ROOM_SOURCE/v2";
 
 pub fn native_spell_entry_room_documents(
-    world_id: crate::foundation::WorldId,
+    world_id: oteryn_protocol_oteryn::WorldId,
 ) -> Result<CanonicalProjectDocuments, ProjectError> {
     native_room_documents_for(world_id, NATIVE_SPELL_ENTRY_ROOM_SOURCE, true)
 }
 fn native_room_documents_for(
-    world_id: crate::foundation::WorldId,
+    world_id: oteryn_protocol_oteryn::WorldId,
     bytes: &[u8],
     candidate: bool,
 ) -> Result<CanonicalProjectDocuments, ProjectError> {
@@ -2177,13 +2177,13 @@ mod tests {
     use super::*;
     use crate::content::LogicalCell;
 
-    fn test_world_id() -> crate::foundation::WorldId {
+    fn test_world_id() -> oteryn_protocol_oteryn::WorldId {
         let mut bytes = [0_u8; 16];
         bytes[0] = 1;
         bytes[6] = 0x70;
         bytes[8] = 0x80;
         bytes[15] = 1;
-        crate::foundation::WorldId::decode(&bytes).expect("valid UUIDv7 WorldId")
+        oteryn_protocol_oteryn::WorldId::decode(&bytes).expect("valid UUIDv7 WorldId")
     }
 
     #[test]
@@ -2345,7 +2345,7 @@ fn qualify_candidate_ground(
 /// Candidate only: exact source-provenance ground semantics on the four original
 /// cells, enriched under the explicitly supplied gameplay envelope outer digest.
 pub fn qualify_native_spell_entry_room_with_gameplay(
-    world_id: crate::foundation::WorldId,
+    world_id: oteryn_protocol_oteryn::WorldId,
     input: &crate::content::native_gameplay::NativeGameplayInput,
 ) -> Result<QualifiedNativeEntryRoom, ProjectError> {
     let documents = native_spell_entry_room_documents(world_id)?;
@@ -2366,8 +2366,8 @@ pub fn qualify_native_spell_entry_room_with_gameplay(
 mod spell_entry_candidate_tests {
     #![allow(clippy::unwrap_used)]
     use super::*;
-    fn world() -> crate::foundation::WorldId {
-        crate::foundation::WorldId::decode(&[
+    fn world() -> oteryn_protocol_oteryn::WorldId {
+        oteryn_protocol_oteryn::WorldId::decode(&[
             0x01, 0x9a, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 9,
         ])
         .unwrap()
@@ -2454,7 +2454,7 @@ mod spell_entry_candidate_tests {
 /// Explicit profile3 qualification. This wraps the actual source-safe client map
 /// and server source closure together; it never changes the original entry APIs.
 pub fn qualify_native_source_spell_world_with_gameplay(
-    world: crate::foundation::WorldId,
+    world: oteryn_protocol_oteryn::WorldId,
     input: &crate::content::native_gameplay::NativeGameplayInput,
     source: &[u8],
 ) -> Result<QualifiedNativeEntryRoom, ProjectError> {

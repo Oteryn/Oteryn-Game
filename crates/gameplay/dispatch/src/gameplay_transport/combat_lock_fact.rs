@@ -69,7 +69,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::foundation::{ChannelContentPin, ChannelId, ChannelRuntimeV1, NodeId, WorldId};
+    use {
+        crate::foundation::{ChannelId, ChannelRuntimeV1, NodeId, WorldId},
+        oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+    };
 
     fn id(last: u8) -> [u8; 16] {
         let mut bytes = [0; 16];

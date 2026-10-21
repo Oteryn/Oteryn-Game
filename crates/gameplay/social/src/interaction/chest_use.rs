@@ -67,7 +67,7 @@ use crate::durability::reward_claim_mint::{
     RewardClaimMintRequest, RewardClaimRefusal,
 };
 use crate::foundation::CommandRef;
-use crate::interaction::{
+use oteryn_gameplay_domain::domain::interaction::{
     ChildOccurrenceRef, InteractionError, RootSourceOccurrenceRef, SemanticRevisionContext,
 };
 use oteryn_protocol_oteryn::world_object::UseDisposition;

@@ -68,8 +68,7 @@ pub mod content;
 pub mod domain;
 #[path = "../../../crates/gameplay/durability/src/durability/mod.rs"]
 pub mod durability;
-#[path = "../../../crates/gameplay/foundation/src/foundation/mod.rs"]
-pub mod foundation;
+pub use oteryn_gameplay_entities as foundation;
 #[path = "../../../crates/gameplay/dispatch/src/gameplay_transport/mod.rs"]
 mod gameplay_transport;
 
@@ -92,16 +91,7 @@ pub mod premium;
 )]
 #[path = "../../../crates/gameplay/spell/src/spell/mod.rs"]
 mod spell;
-#[path = "../../../crates/gameplay/social/src/wheel_gem_data.rs"]
-pub mod wheel_gem_data;
 
-#[allow(
-    dead_code,
-    unused_imports,
-    reason = "GAME-INTERACTION identity; the §7 revert driver is its first library consumer"
-)]
-#[path = "../../../crates/gameplay/social/src/interaction/mod.rs"]
-mod interaction;
 #[allow(dead_code)] // Preserve the original Spell adapter lint scope.
 use durability::{native_world_items, native_world_read};
 #[allow(
@@ -152,12 +142,6 @@ pub use oteryn_gameplay_native_admission_source as native_admission_source;
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-#[path = "../../../crates/gameplay/monster-ai/src/bone_phase_registry.rs"]
-mod bone_phase_registry;
-#[allow(
-    dead_code,
-    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
-)]
 #[path = "../../../crates/gameplay/combat/src/creature_appearance_content.rs"]
 mod creature_appearance_content;
 #[allow(
@@ -166,12 +150,7 @@ mod creature_appearance_content;
 )]
 #[path = "../../../crates/gameplay/combat/src/creature_area_heal.rs"]
 mod creature_area_heal;
-#[allow(
-    dead_code,
-    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
-)]
-#[path = "../../../crates/gameplay/combat/src/creature_attack_geometry.rs"]
-mod creature_attack_geometry;
+
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
@@ -208,79 +187,20 @@ mod creature_damage_spell_delayed;
 )]
 #[path = "../../../crates/gameplay/combat/src/creature_defense_presentation.rs"]
 mod creature_defense_presentation;
-#[allow(
-    dead_code,
-    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
-)]
-#[path = "../../../crates/gameplay/encounters/src/crystal_callbacks.rs"]
-mod crystal_callbacks;
-#[allow(
-    dead_code,
-    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
-)]
-#[path = "../../../crates/gameplay/encounters/src/crystal_death_composition.rs"]
-mod crystal_death_composition;
-#[allow(
-    dead_code,
-    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
-)]
-#[path = "../../../crates/gameplay/encounters/src/crystal_herald_quest.rs"]
-mod crystal_herald_quest;
+
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
 #[path = "../../../crates/gameplay/encounters/src/self_heal_qualification.rs"]
 mod self_heal_qualification;
-#[allow(
-    dead_code,
-    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
-)]
-#[path = "../../../crates/gameplay/monster-ai/src/smelly_cheese.rs"]
-mod smelly_cheese;
-#[allow(
-    dead_code,
-    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
-)]
-#[path = "../../../crates/gameplay/monster-ai/src/smelly_damage.rs"]
-mod smelly_damage;
-#[allow(dead_code)]
-#[path = "../../../crates/gameplay/monster-ai/src/smelly_encounter_dispatch.rs"]
-mod smelly_encounter_dispatch;
-#[path = "../../../crates/gameplay/encounters/src/source_callback_intent.rs"]
-mod source_callback_intent;
-#[allow(dead_code)]
-#[path = "../../../crates/gameplay/encounters/src/source_callback_spawn.rs"]
-mod source_callback_spawn;
+
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
 use oteryn_gameplay_source_critical_baseline as source_critical_baseline;
-#[allow(
-    dead_code,
-    reason = "Private native encounter owner ABI retained for source-qualified library dispatch; shipping AI loop is not activated"
-)]
-#[path = "../../../crates/gameplay/encounters/src/source_encounter_seven.rs"]
-mod source_encounter_seven;
-#[allow(
-    dead_code,
-    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
-)]
-#[path = "../../../crates/gameplay/encounters/src/source_threshold_heal.rs"]
-mod source_threshold_heal;
-#[allow(
-    dead_code,
-    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
-)]
-#[path = "../../../crates/gameplay/monster-ai/src/weak_spot_speech.rs"]
-mod weak_spot_speech;
-#[allow(
-    dead_code,
-    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
-)]
-#[path = "../../../crates/gameplay/dispatch/src/welter_consume.rs"]
-mod welter_consume;
+
 #[allow(
     dead_code,
     reason = "LOOP-CLOCK-1 registers the pure World clock; the WORLD_LIGHT_V1 offer composes it later"
@@ -304,10 +224,6 @@ mod monster_summon;
 #[cfg(test)]
 #[path = "../../../crates/gameplay/dispatch/src/canonical_monster_successor_tests.rs"]
 mod canonical_monster_successor_tests;
-
-#[allow(dead_code)]
-#[path = "../../../crates/gameplay/combat/src/creature_icicle.rs"]
-mod creature_icicle;
 
 #[path = "../../../crates/gameplay/durability/src/durability/creature_source_items.rs"]
 mod creature_source_items;
@@ -341,12 +257,6 @@ mod durability_vip_tests;
 #[path = "../src/lifted_tests/durability_guild_disband_terminal_tests.rs"]
 mod durability_guild_disband_terminal_tests;
 
-#[allow(
-    dead_code,
-    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
-)]
-#[path = "../../../crates/gameplay/encounters/src/source_callback_cast.rs"]
-mod source_callback_cast;
 #[cfg(test)]
 #[path = "../../../crates/gameplay/dispatch/src/lifted_tests/source_callback_cast_tests.rs"]
 mod source_callback_cast_tests;

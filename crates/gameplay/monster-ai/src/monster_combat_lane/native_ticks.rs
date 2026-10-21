@@ -157,7 +157,7 @@ impl NativeRegenerationTickSource for NativeRegenerationRegistry {
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
 pub struct NativeOwnedPlayerTickReceipt {
-    pub ticks: Vec<crate::ability::condition::ConditionTick<String>>,
+    pub ticks: Vec<oteryn_gameplay_foundation::foundation::condition::ConditionTick<String>>,
     pub revision: u64,
     pub damage: u32,
     pub death: Option<PlayerDeath>,

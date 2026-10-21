@@ -1863,6 +1863,7 @@ name = "oteryn-architecture-check"
 version = "0.1.0"
 dependencies = [
  "serde_json",
+ "syn 2.0.119",
 ]
 
 [[package]]
@@ -1974,19 +1975,31 @@ dependencies = [
  "oteryn-foundation",
  "oteryn-gameplay-admission-evidence",
  "oteryn-gameplay-character-recovery-fence",
+ "oteryn-gameplay-characters",
  "oteryn-gameplay-combat",
+ "oteryn-gameplay-combat-rules",
  "oteryn-gameplay-content",
  "oteryn-gameplay-dispatch",
  "oteryn-gameplay-domain",
  "oteryn-gameplay-durability",
+ "oteryn-gameplay-economy",
+ "oteryn-gameplay-encounter-rules",
  "oteryn-gameplay-encounters",
+ "oteryn-gameplay-entities",
  "oteryn-gameplay-foundation",
+ "oteryn-gameplay-housing",
+ "oteryn-gameplay-items",
  "oteryn-gameplay-monster-ai",
  "oteryn-gameplay-native-admission-source",
  "oteryn-gameplay-node-files",
+ "oteryn-gameplay-npc",
+ "oteryn-gameplay-progression",
+ "oteryn-gameplay-quests",
  "oteryn-gameplay-social",
+ "oteryn-gameplay-social-rules",
  "oteryn-gameplay-source-critical-baseline",
  "oteryn-gameplay-spell",
+ "oteryn-gameplay-spell-rules",
  "oteryn-gameplay-weather",
  "oteryn-gameplay-world",
  "oteryn-ntp-clock",
@@ -2025,15 +2038,42 @@ dependencies = [
 ]
 
 [[package]]
-name = "oteryn-gameplay-combat"
+name = "oteryn-gameplay-characters"
 version = "0.1.0"
 dependencies = [
  "oteryn-gameplay-content",
  "oteryn-gameplay-domain",
+ "prost",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+]
+
+[[package]]
+name = "oteryn-gameplay-combat"
+version = "0.1.0"
+dependencies = [
+ "oteryn-gameplay-combat-rules",
+ "oteryn-gameplay-content",
+ "oteryn-gameplay-domain",
  "oteryn-gameplay-durability",
+ "oteryn-gameplay-entities",
  "oteryn-gameplay-foundation",
+ "oteryn-gameplay-items",
  "oteryn-gameplay-source-critical-baseline",
  "oteryn-gameplay-world",
+ "oteryn-simulation-determinism",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+]
+
+[[package]]
+name = "oteryn-gameplay-combat-rules"
+version = "0.1.0"
+dependencies = [
+ "oteryn-gameplay-content",
+ "oteryn-gameplay-progression",
  "oteryn-simulation-determinism",
  "serde",
  "serde_json",
@@ -2047,7 +2087,6 @@ dependencies = [
  "cap-fs-ext",
  "cap-std",
  "oteryn-gameplay-domain",
- "oteryn-gameplay-foundation",
  "oteryn-protocol-oteryn",
  "oteryn-simulation-determinism",
  "oteryn-world-bundle",
@@ -2070,17 +2109,28 @@ dependencies = [
  "oteryn-foundation",
  "oteryn-gameplay-admission-evidence",
  "oteryn-gameplay-character-recovery-fence",
+ "oteryn-gameplay-characters",
  "oteryn-gameplay-combat",
+ "oteryn-gameplay-combat-rules",
  "oteryn-gameplay-content",
  "oteryn-gameplay-domain",
  "oteryn-gameplay-durability",
+ "oteryn-gameplay-economy",
  "oteryn-gameplay-encounters",
+ "oteryn-gameplay-entities",
  "oteryn-gameplay-foundation",
+ "oteryn-gameplay-housing",
+ "oteryn-gameplay-items",
  "oteryn-gameplay-monster-ai",
  "oteryn-gameplay-native-admission-source",
  "oteryn-gameplay-node-files",
+ "oteryn-gameplay-npc",
+ "oteryn-gameplay-progression",
+ "oteryn-gameplay-quests",
  "oteryn-gameplay-social",
+ "oteryn-gameplay-social-rules",
  "oteryn-gameplay-spell",
+ "oteryn-gameplay-spell-rules",
  "oteryn-gameplay-weather",
  "oteryn-gameplay-world",
  "oteryn-protocol-oteryn",
@@ -2116,10 +2166,17 @@ dependencies = [
  "oteryn-error-codes",
  "oteryn-gameplay-admission-evidence",
  "oteryn-gameplay-character-recovery-fence",
+ "oteryn-gameplay-characters",
  "oteryn-gameplay-content",
  "oteryn-gameplay-domain",
+ "oteryn-gameplay-economy",
+ "oteryn-gameplay-entities",
  "oteryn-gameplay-foundation",
+ "oteryn-gameplay-housing",
+ "oteryn-gameplay-items",
  "oteryn-gameplay-native-admission-source",
+ "oteryn-gameplay-progression",
+ "oteryn-gameplay-quests",
  "oteryn-protocol-oteryn",
  "oteryn-simulation-determinism",
  "oteryn-world-bundle",
@@ -2132,6 +2189,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "oteryn-gameplay-economy"
+version = "0.1.0"
+dependencies = [
+ "oteryn-gameplay-domain",
+]
+
+[[package]]
+name = "oteryn-gameplay-encounter-rules"
+version = "0.1.0"
+dependencies = [
+ "oteryn-gameplay-content",
+]
+
+[[package]]
 name = "oteryn-gameplay-encounters"
 version = "0.1.0"
 dependencies = [
@@ -2139,7 +2210,11 @@ dependencies = [
  "oteryn-gameplay-content",
  "oteryn-gameplay-domain",
  "oteryn-gameplay-durability",
+ "oteryn-gameplay-encounter-rules",
+ "oteryn-gameplay-entities",
  "oteryn-gameplay-foundation",
+ "oteryn-gameplay-monster-ai",
+ "oteryn-gameplay-quests",
  "oteryn-gameplay-source-critical-baseline",
  "oteryn-gameplay-spell",
  "oteryn-gameplay-world",
@@ -2149,6 +2224,19 @@ dependencies = [
  "serde_json",
  "sha2 0.11.0",
  "tokio",
+]
+
+[[package]]
+name = "oteryn-gameplay-entities"
+version = "0.1.0"
+dependencies = [
+ "oteryn-gameplay-content",
+ "oteryn-gameplay-domain",
+ "oteryn-gameplay-foundation",
+ "oteryn-simulation-determinism",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
 ]
 
 [[package]]
@@ -2166,13 +2254,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "oteryn-gameplay-housing"
+version = "0.1.0"
+dependencies = [
+ "oteryn-gameplay-domain",
+ "sha2 0.11.0",
+]
+
+[[package]]
+name = "oteryn-gameplay-items"
+version = "0.1.0"
+dependencies = [
+ "oteryn-gameplay-content",
+ "oteryn-gameplay-domain",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+]
+
+[[package]]
 name = "oteryn-gameplay-monster-ai"
 version = "0.1.0"
 dependencies = [
  "oteryn-gameplay-combat",
  "oteryn-gameplay-content",
+ "oteryn-gameplay-domain",
  "oteryn-gameplay-durability",
- "oteryn-gameplay-encounters",
+ "oteryn-gameplay-entities",
  "oteryn-gameplay-foundation",
  "oteryn-gameplay-spell",
  "oteryn-gameplay-world",
@@ -2210,6 +2318,42 @@ dependencies = [
 ]
 
 [[package]]
+name = "oteryn-gameplay-npc"
+version = "0.1.0"
+dependencies = [
+ "oteryn-gameplay-content",
+ "oteryn-gameplay-domain",
+ "oteryn-gameplay-economy",
+ "oteryn-gameplay-entities",
+ "oteryn-gameplay-world",
+ "oteryn-protocol-oteryn",
+ "oteryn-simulation-determinism",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "oteryn-gameplay-progression"
+version = "0.1.0"
+dependencies = [
+ "oteryn-gameplay-content",
+ "oteryn-gameplay-domain",
+ "oteryn-simulation-determinism",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+]
+
+[[package]]
+name = "oteryn-gameplay-quests"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+]
+
+[[package]]
 name = "oteryn-gameplay-social"
 version = "0.1.0"
 dependencies = [
@@ -2219,7 +2363,10 @@ dependencies = [
  "oteryn-gameplay-content",
  "oteryn-gameplay-domain",
  "oteryn-gameplay-durability",
+ "oteryn-gameplay-entities",
  "oteryn-gameplay-foundation",
+ "oteryn-gameplay-progression",
+ "oteryn-gameplay-social-rules",
  "oteryn-gameplay-world",
  "oteryn-ntp-clock",
  "oteryn-protocol-oteryn",
@@ -2229,9 +2376,17 @@ dependencies = [
  "rustls",
  "serde",
  "serde_json",
- "sha2 0.11.0",
  "tokio",
  "tokio-rustls",
+]
+
+[[package]]
+name = "oteryn-gameplay-social-rules"
+version = "0.1.0"
+dependencies = [
+ "oteryn-simulation-determinism",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -2246,11 +2401,15 @@ name = "oteryn-gameplay-spell"
 version = "0.1.0"
 dependencies = [
  "oteryn-gameplay-combat",
+ "oteryn-gameplay-combat-rules",
  "oteryn-gameplay-content",
  "oteryn-gameplay-domain",
  "oteryn-gameplay-durability",
+ "oteryn-gameplay-entities",
  "oteryn-gameplay-foundation",
+ "oteryn-gameplay-progression",
  "oteryn-gameplay-source-critical-baseline",
+ "oteryn-gameplay-spell-rules",
  "oteryn-gameplay-world",
  "oteryn-protocol-oteryn",
  "oteryn-simulation-determinism",
@@ -2258,6 +2417,17 @@ dependencies = [
  "serde_json",
  "sha2 0.11.0",
  "sqlx",
+]
+
+[[package]]
+name = "oteryn-gameplay-spell-rules"
+version = "0.1.0"
+dependencies = [
+ "oteryn-gameplay-combat-rules",
+ "oteryn-gameplay-content",
+ "oteryn-simulation-determinism",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -2275,10 +2445,14 @@ name = "oteryn-gameplay-world"
 version = "0.1.0"
 dependencies = [
  "oteryn-foundation",
+ "oteryn-gameplay-characters",
  "oteryn-gameplay-content",
  "oteryn-gameplay-domain",
  "oteryn-gameplay-durability",
+ "oteryn-gameplay-entities",
  "oteryn-gameplay-foundation",
+ "oteryn-gameplay-housing",
+ "oteryn-gameplay-items",
  "oteryn-gameplay-node-files",
  "oteryn-protocol-oteryn",
  "oteryn-simulation-determinism",

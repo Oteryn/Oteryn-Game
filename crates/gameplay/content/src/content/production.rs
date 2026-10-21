@@ -3,7 +3,7 @@ use super::model::{
     CollisionClass, ContentError, EffectFamily, EligibilityScope, MultiplicityClass,
     SpawnRecoveryClass,
 };
-use crate::foundation::WorldId;
+use oteryn_protocol_oteryn::WorldId;
 use std::collections::BTreeSet;
 
 pub const FIRST_PRODUCTION_PROFILE_ID: &str = "FIRST_PRODUCTION_CONTENT_PROFILE/v1";

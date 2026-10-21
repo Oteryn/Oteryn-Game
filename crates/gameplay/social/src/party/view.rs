@@ -4,6 +4,7 @@ use std::collections::BTreeMap;
 use std::time::Duration;
 
 use crate::foundation::{PartyMemberSnapshot, PartySnapshot};
+pub use oteryn_gameplay_social_rules::party::{PartyMembership, ViewError, validate_memberships};
 
 const REVISION_INTERVAL: Duration = Duration::from_secs(5);
 const STALE_AFTER: Duration = Duration::from_secs(10);
@@ -13,14 +14,6 @@ type Id = [u8; 16];
 pub struct RefreshTicket {
     generation: u64,
     admission: Option<Id>,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ViewError {
-    Unavailable,
-    InvalidSnapshot,
-    Superseded,
-    RevisionRegressed,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -58,17 +51,6 @@ impl PartyView {
                         || (new.presence_revision == old.presence_revision && new == old))
             })
     }
-}
-
-/// Membership-only projection: deliberately has no channel, position, health or mana.
-/// It must never authorize harm, durable rewards, consent or a membership mutation.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PartyMembership {
-    pub party: Id,
-    pub revision: u64,
-    pub leader: Id,
-    pub shared_xp_enabled: bool,
-    pub members: Vec<Id>,
 }
 
 struct CollectedViews {
@@ -199,21 +181,12 @@ impl PartyViews {
         locals: &BTreeMap<Id, Option<Id>>,
         views: &BTreeMap<Id, PartyView>,
     ) -> Result<(), ViewError> {
-        let mut memberships = BTreeMap::new();
-        for (party, view) in views {
-            for member in &view.members {
-                if memberships.insert(member.character, *party).is_some() {
-                    return Err(ViewError::InvalidSnapshot);
-                }
-            }
-        }
-        if locals
-            .iter()
-            .any(|(character, party)| memberships.get(character).copied() != *party)
-        {
-            return Err(ViewError::InvalidSnapshot);
-        }
-        Ok(())
+        validate_memberships(
+            locals,
+            views
+                .iter()
+                .map(|(party, view)| (*party, view.members.iter().map(|member| member.character))),
+        )
     }
 
     /// Every admission/readmission/reconnect/entry withdraws the old local observation first.

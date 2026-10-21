@@ -561,7 +561,7 @@ impl ChannelSpellStates {
         session: GameSessionId,
         now: SemanticTimeMicros,
     ) -> Option<(u64, ActorVitals)> {
-        use crate::ability::condition::{TickFacts, TickKind};
+        use oteryn_gameplay_foundation::foundation::condition::{TickFacts, TickKind};
         if self.has_pending_spell_commit(actor, session) {
             return None;
         }
@@ -1015,7 +1015,7 @@ pub fn condition_gated_cast(
     game_session_id: GameSessionId,
     intent: &SpellCastIntent,
     now: SemanticTimeMicros,
-) -> Option<crate::ability::condition::ConditionGate> {
+) -> Option<oteryn_gameplay_domain::domain::condition::ConditionGate> {
     let (spell, _) = book.source_indexed(intent.spell)?;
     let state = states.get(runtime, actor, game_session_id)?;
     let slot = runtime
@@ -1125,10 +1125,10 @@ pub mod tests {
     use std::num::NonZeroU32;
 
     use super::*;
-    #[cfg(test)]
-    use crate::ability::condition::ConditionGate;
     use crate::foundation::{ChannelContentPin, ChannelId, NodeId, WorldId};
     use crate::spell::Vocation;
+    #[cfg(test)]
+    use oteryn_gameplay_domain::domain::condition::ConditionGate;
 
     const fn uuid_v7(tag: u8) -> [u8; 16] {
         [
@@ -1231,9 +1231,10 @@ pub mod tests {
         session: GameSessionId,
         gate: &str,
     ) {
-        use crate::ability::condition::{
-            ApplicationFacts, ConditionDefinition, ConditionSourceKind, ConditionValues,
-        };
+        use oteryn_gameplay_domain::domain::condition::ConditionValues;
+        use oteryn_gameplay_foundation::foundation::condition::ApplicationFacts;
+        use oteryn_gameplay_foundation::foundation::condition::ConditionDefinition;
+        use oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind;
         let root = oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes([5; 32]);
         let facts = ApplicationFacts {
             now: 0,
@@ -1787,7 +1788,7 @@ pub mod tests {
             .iter()
             .find(|r| r["name"] == "Protector")
             .expect("Protector");
-        let mut spell = crate::spell::authoring::spell_from_bundle(
+        let mut spell = oteryn_gameplay_content::content::spell_data::authoring::spell_from_bundle(
             &serde_json::json!({"spell":profile["spell"]}),
             &profile["dependencies"],
         )
@@ -3004,10 +3005,10 @@ impl ChannelSpellStates {
         target: ExactActorRef,
         session: GameSessionId,
         _occurrence: DecisionOccurrenceId,
-        facts: crate::ability::condition::TickFacts,
+        facts: oteryn_gameplay_foundation::foundation::condition::TickFacts,
         now: crate::foundation::owner_timer::SemanticTimeMicros,
     ) -> Option<NativeOwnedPlayerTickReceipt> {
-        use crate::ability::condition::{ConditionSourceKind, TickKind};
+        use oteryn_gameplay_foundation::foundation::condition::{ConditionSourceKind, TickKind};
         if self.is_dead(target)
             || self.has_pending_spell_commit(target, session)
             || runtime.assert_actor_spell_unreserved(target).is_err()
@@ -3136,10 +3137,13 @@ mod owned_source_tick_tests {
         reason = "test-only native outcome destructuring asserts impossible fixture variants; same scope as adjacent canonical owner tests"
     )]
     use super::*;
-    use crate::ability::condition::{
-        ApplicationFacts, ConditionDefinition, ConditionValues, DamageSchedule, DamageSegment,
-        DotElement, TickFacts,
-    };
+    use oteryn_gameplay_domain::domain::condition::ConditionValues;
+    use oteryn_gameplay_domain::domain::condition::DotElement;
+    use oteryn_gameplay_foundation::foundation::condition::ApplicationFacts;
+    use oteryn_gameplay_foundation::foundation::condition::ConditionDefinition;
+    use oteryn_gameplay_foundation::foundation::condition::DamageSchedule;
+    use oteryn_gameplay_foundation::foundation::condition::DamageSegment;
+    use oteryn_gameplay_foundation::foundation::condition::TickFacts;
     fn ready(
         tag: u8,
     ) -> (
@@ -3592,7 +3596,7 @@ impl ChannelSpellStates {
         runtime: &ChannelRuntimeV1,
         target: ExactActorRef,
         session: GameSessionId,
-    ) -> Option<crate::ability::condition::ConditionStore<String>> {
+    ) -> Option<oteryn_gameplay_foundation::foundation::condition::ConditionStore<String>> {
         Some(
             self.get(runtime, target, session)?
                 .owned_conditions()
@@ -3610,20 +3614,25 @@ impl ChannelSpellStates {
         target: ExactActorRef,
         facts: crate::foundation::TickFacts,
         now: crate::foundation::owner_timer::SemanticTimeMicros,
-    ) -> Result<crate::foundation::CreaturePeriodicReceipt, crate::foundation::CarrierError> {
+    ) -> Result<
+        crate::foundation::CreaturePeriodicReceipt,
+        oteryn_gameplay_domain::domain::carrier_values::CarrierError,
+    > {
         let mut lookup = |r: &ChannelRuntimeV1, source: ExactActorRef, at: u64| {
             if !r.borrow_exact_actor_lookup().contains(source) {
                 return Ok(None);
             }
             let position = r.read_actor_position(source)?;
             if position.context() != r.pinned_movement_context() {
-                return Err(crate::foundation::CarrierError::PositionContextMismatch);
+                return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PositionContextMismatch);
             }
             let Some((_, session, state)) = self.actors.iter().find(|(a, _, _)| *a == source)
             else {
                 // An extant live actor with no canonical state is UNKNOWN, not
                 // a positive no-attacker fact. A retired exact generation is absent.
-                return Err(crate::foundation::CarrierError::PlanConflict);
+                return Err(
+                    oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict,
+                );
             };
             let current = r.player_control_facts(source, *session)?;
             if current.control_loss.is_some() || self.is_dead(source) || state.vitals().health == 0
@@ -3631,13 +3640,17 @@ impl ChannelSpellStates {
                 return Ok(None);
             }
             if !state.owned_conditions().accepts_time(at) {
-                return Err(crate::foundation::CarrierError::PlanConflict);
+                return Err(
+                    oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict,
+                );
             }
             if self.has_pending_spell_commit(source, *session) {
-                return Err(crate::foundation::CarrierError::PlanConflict);
+                return Err(
+                    oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict,
+                );
             }
             r.assert_actor_spell_unreserved(source)?;
-            use crate::ability::condition::ConditionValues;
+            use oteryn_gameplay_domain::domain::condition::ConditionValues;
             let percent = match state.owned_conditions().attributes_at(at) {
                 Some(ConditionValues::Attributes {
                     damage_dealt_percent,
@@ -3654,15 +3667,20 @@ impl ChannelSpellStates {
 mod source_creature_dot_owner_tests {
     #![allow(clippy::expect_used, clippy::panic)]
     use super::*;
-    use crate::foundation::{
-        ApplicationFacts, CharacterId, CommandId, CommandRef, CompiledCreaturePolicies,
-        CompiledCreaturePolicy, ConditionDefinition, ConditionSourceKind, ConditionValues,
-        CreatureExactRatio, CreatureFlags, CreatureResistance, DotElement, MovementLocalPosition,
-    };
     use crate::spell::combat_batch::{
         OwnerCombatBatch, OwnerCombatChange, OwnerCombatEffect, SpellOccurrenceBinding,
     };
     use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+    use {
+        crate::foundation::{
+            ApplicationFacts, CharacterId, CommandId, CommandRef, ConditionDefinition,
+            ConditionSourceKind, ConditionValues, DotElement, MovementLocalPosition,
+        },
+        oteryn_gameplay_content::content::creature_policy::{
+            CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureExactRatio, CreatureFlags,
+            CreatureResistance,
+        },
+    };
     fn fixture() -> (
         ChannelRuntimeV1,
         ChannelSpellStates,
@@ -3754,18 +3772,19 @@ mod source_creature_dot_owner_tests {
         let root = GameplayDecisionRoot::from_bytes([8; 32]);
         // TEST_PARAMETERS: Attributes is a native Player combat modifier.
         // Source-player lowering intentionally does not accept this native kind.
-        let definition = crate::ability::condition::ConditionDefinition::new(
-            "test.source.attacker.buff",
-            1,
-            crate::ability::condition::ConditionValues::Attributes {
-                duration_ms: 5000,
-                critical_chance_percent: 0,
-                critical_extra_percentage_points: 0,
-                damage_dealt_percent: 50,
-                incoming_reduction_percent: 0,
-            },
-        )
-        .expect("typed native Player combat buff");
+        let definition =
+            oteryn_gameplay_foundation::foundation::condition::ConditionDefinition::new(
+                "test.source.attacker.buff",
+                1,
+                oteryn_gameplay_domain::domain::condition::ConditionValues::Attributes {
+                    duration_ms: 5000,
+                    critical_chance_percent: 0,
+                    critical_extra_percentage_points: 0,
+                    damage_dealt_percent: 50,
+                    incoming_reduction_percent: 0,
+                },
+            )
+            .expect("typed native Player combat buff");
         let facts = ApplicationFacts {
             now: 0,
             base_speed: 100,
@@ -3776,7 +3795,7 @@ mod source_creature_dot_owner_tests {
             decision_root: &root,
             occurrence: DecisionOccurrenceId::from_bytes([1; 16]),
         };
-        let native_facts = crate::ability::condition::ApplicationFacts {
+        let native_facts = oteryn_gameplay_foundation::foundation::condition::ApplicationFacts {
             now: facts.now,
             base_speed: facts.base_speed,
             mana_shield_capacity: facts.mana_shield_capacity,
@@ -4015,8 +4034,10 @@ mod source_creature_dot_owner_tests {
 #[derive(Debug)]
 pub(in crate::gameplay_transport) struct CreatureFieldContact {
     pub(in crate::gameplay_transport) source: String,
-    pub(in crate::gameplay_transport) definition: crate::ability::condition::ConditionDefinition,
-    pub(in crate::gameplay_transport) element: crate::ability::condition::DotElement,
+    pub(in crate::gameplay_transport) definition:
+        oteryn_gameplay_foundation::foundation::condition::ConditionDefinition,
+    pub(in crate::gameplay_transport) element:
+        oteryn_gameplay_domain::domain::condition::DotElement,
     pub(in crate::gameplay_transport) content: [u8; 32],
 }
 impl ChannelSpellStates {
@@ -4070,7 +4091,7 @@ impl ChannelSpellStates {
         let mut occurrence_bytes = [0; 16];
         let digest = Sha256::digest(contact.source.as_bytes());
         occurrence_bytes.copy_from_slice(&digest[..16]);
-        let facts = crate::ability::condition::ApplicationFacts {
+        let facts = oteryn_gameplay_foundation::foundation::condition::ApplicationFacts {
             now: now_us,
             base_speed: 1,
             mana_shield_capacity: 0,

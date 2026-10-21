@@ -20,7 +20,7 @@ use sqlx::{Postgres, Row, Transaction};
 pub enum Error {
     Items(SpellItemError),
     Admission(crate::durability::DurabilityError),
-    Actor(crate::foundation::CarrierError),
+    Actor(oteryn_gameplay_domain::domain::carrier_values::CarrierError),
     InvalidProfile,
     CurrentCasterMismatch,
     CrossScopeTarget,
@@ -194,7 +194,7 @@ pub async fn plan_find_person_in_transaction(
     }
     let source = expected.position();
     let target = target_position.position();
-    let located = super::locate::locate(
+    let located = oteryn_gameplay_spell_rules::locate::locate(
         source.x.checked_sub(target.x).ok_or(Error::Overflow)?,
         source.y.checked_sub(target.y).ok_or(Error::Overflow)?,
         i32::from(target.floor) - i32::from(source.floor),

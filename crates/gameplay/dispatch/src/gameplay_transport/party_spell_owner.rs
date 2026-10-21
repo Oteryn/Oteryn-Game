@@ -10,14 +10,16 @@ use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementPositionSnapshot, PartyPresence,
     PartySnapshot,
 };
-use crate::spell::{
-    cast::PlayerSpellState,
-    chain::{ChainCreature, TilePosition},
-    harmony::SereneWorld,
-    native_actor_states::PartyMemberFacts,
-    party::PartyWorld,
-};
 use sqlx::{Postgres, Transaction};
+use {
+    crate::spell::{
+        cast::PlayerSpellState,
+        chain::{ChainCreature, TilePosition},
+        harmony::SereneWorld,
+        party::PartyWorld,
+    },
+    oteryn_gameplay_spell_rules::native_actor_states::PartyMemberFacts,
+};
 
 #[derive(Debug)]
 pub struct SourcePartyWorld {

@@ -624,7 +624,10 @@ mod postgres {
         crate::foundation::ChannelRuntimeV1,
         crate::durability::spell_items_abi::SourceCasterOrigin,
     )> {
-        use crate::foundation::{ChannelContentPin, ChannelRuntimeV1};
+        use {
+            crate::foundation::ChannelRuntimeV1,
+            oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+        };
         let world = WorldId::decode(&id(WORLD)).map_err(debug)?;
         let channel = ChannelId::decode(&id(CHANNEL)).map_err(debug)?;
         // The pin is explicit native runtime test DATA, not Content activation

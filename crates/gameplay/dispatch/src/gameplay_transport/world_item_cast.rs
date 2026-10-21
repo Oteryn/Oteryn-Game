@@ -26,6 +26,7 @@ use crate::spell::mana_training::PreparedPlayerTraining;
 use crate::spell::native::{Facts, Plan};
 use crate::spell::owned_cast_facts::OwnedCastFacts;
 use crate::spell::{Execution, OperationalCastFacts, SpellDefinition};
+use oteryn_gameplay_spell_rules::dispatch_plans::world_item_cast as item_rules;
 use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
 use oteryn_simulation_determinism::SemanticTimeMicros;
 use serde_json::json;
@@ -176,6 +177,16 @@ fn current_facts_match(
         && current.durable_build() == expected_build
 }
 
+fn item_properties(item: &QualifiedItemDefinition) -> item_rules::ItemProperties {
+    item_rules::ItemProperties {
+        movable: item.movable,
+        stack_maximum: item.stack_maximum,
+        container_capacity: item.container_capacity,
+        inventory_destination: item.inventory_destination,
+        ground_destination: item.ground_destination,
+    }
+}
+
 /// Exact Item definitions are resolved from activated explicit bindings. A
 /// candidate numeric identifier never becomes a durable identity in this reader.
 fn resolve_item(
@@ -186,60 +197,23 @@ fn resolve_item(
     let policy = content
         .item_policy(key, revision)
         .ok_or(SpellCastDisposition::NotAvailable)?;
-    use crate::content::ReferenceItemField as F;
     let mut item = QualifiedItemDefinition::from_native_policy(policy)
         .map_err(|_| SpellCastDisposition::NotAvailable)?;
-    item.decay = match &policy.record().semantics.temporal {
-        F::NotApplicable => None,
-        F::Known(temporal)
-            if matches!(
-                temporal.duration,
-                F::Known(crate::content::ReferenceMilliseconds(0))
-            ) && matches!(temporal.decay_target, F::NotApplicable) =>
-        {
-            None
-        }
-        F::Known(temporal) if matches!(temporal.stop_duration, F::Known(false)) => {
-            let F::Known(crate::content::ReferenceMilliseconds(duration)) = temporal.duration
-            else {
-                return Err(SpellCastDisposition::NotAvailable);
-            };
-            let duration = u32::try_from(duration)
-                .ok()
-                .filter(|d| *d > 0)
-                .ok_or(SpellCastDisposition::NotAvailable)?;
-            let target = match &temporal.decay_target {
-                F::NotApplicable => None,
-                F::Known(target) => {
-                    let target_policy = content
-                        .item_policy(&target.key, &target.revision)
-                        .ok_or(SpellCastDisposition::NotAvailable)?;
-                    let target = QualifiedItemDefinition::from_native_policy(target_policy)
-                        .map_err(|_| SpellCastDisposition::NotAvailable)?;
-                    if target.stack_maximum != 1
-                        || target.container_capacity.is_some()
-                        || !target.inventory_destination
-                        || !target.ground_destination
-                    {
-                        return Err(SpellCastDisposition::NotAvailable);
-                    }
-                    Some(target.definition)
-                }
-                _ => return Err(SpellCastDisposition::NotAvailable),
-            };
-            Some(QualifiedItemDecay {
-                duration_millis: duration,
-                target,
-            })
-        }
-        _ => return Err(SpellCastDisposition::NotAvailable),
-    };
-    if !item.inventory_destination
-        || !item.ground_destination
-        || !item.movable
-        || item.stack_maximum == 0
-        || item.stack_maximum > 100
-    {
+    item.decay = item_rules::resolve_decay(&policy.record().semantics.temporal, |target| {
+        let target_policy = content
+            .item_policy(&target.key, &target.revision)
+            .ok_or(item_rules::PlanRejected)?;
+        let target = QualifiedItemDefinition::from_native_policy(target_policy)
+            .map_err(|_| item_rules::PlanRejected)?;
+        let properties = item_properties(&target);
+        Ok((target.definition, properties))
+    })
+    .map_err(|_| SpellCastDisposition::NotAvailable)?
+    .map(|(duration_millis, target)| QualifiedItemDecay {
+        duration_millis,
+        target,
+    });
+    if !item_rules::grant_allowed(item_properties(&item)) {
         return Err(SpellCastDisposition::NotAvailable);
     }
     Ok(item)
@@ -262,31 +236,12 @@ async fn prepare_item_grant(
     now: SemanticTimeMicros,
     draw: &mut (dyn FnMut(i64, i64) -> i64 + Send),
 ) -> Result<PreparedWorldItemCast, SpellCastDisposition> {
-    let food_profile = match &spell.execution {
-        Execution::NativeProfile(profile)
-            if profile.spell()["execution"]["native_behavior"]["key"] == "random_item_grant" =>
-        {
-            Some(profile)
-        }
-        _ => None,
-    };
-    let conjure = match &spell.execution {
-        Execution::Conjure { .. } => spell
-            .authored
-            .as_ref()
-            .and_then(|s| s.header.execution.conjure.as_ref()),
-        _ => None,
-    };
-    if food_profile.is_none() && conjure.is_none() {
-        return denied();
-    }
-    if intent.target != SpellTarget::None
-        || intent.aim_at_target
-        || spell.aggressive
-        || !matches!(spell.carrier, crate::spell::Carrier::Instant { .. })
-    {
-        return denied();
-    }
+    let (food_profile, conjure) = item_rules::source_profiles(
+        spell,
+        intent.target != SpellTarget::None,
+        intent.aim_at_target,
+    )
+    .map_err(|_| SpellCastDisposition::Rejected)?;
     let b = owned.binding();
     let actor = b.actor;
     let session = command.game_session_id();
@@ -341,31 +296,8 @@ async fn prepare_item_grant(
     let parameters = food_profile
         .map(|p| &p.spell()["execution"]["native_behavior"]["parameters"])
         .unwrap_or(&empty);
-    let refs: Vec<crate::spell::native_items::NativeItemRef> = if food_profile.is_some() {
-        parameters["pool"]
-            .as_array()
-            .ok_or(SpellCastDisposition::Rejected)?
-            .iter()
-            .map(|item| {
-                Ok(crate::spell::native_items::NativeItemRef {
-                    key: item["key"]
-                        .as_str()
-                        .ok_or(SpellCastDisposition::Rejected)?
-                        .into(),
-                    revision: item["revision"]
-                        .as_str()
-                        .ok_or(SpellCastDisposition::Rejected)?
-                        .into(),
-                })
-            })
-            .collect::<Result<_, SpellCastDisposition>>()?
-    } else {
-        let result = &conjure.ok_or(SpellCastDisposition::Rejected)?.result;
-        vec![crate::spell::native_items::NativeItemRef {
-            key: result.key.clone(),
-            revision: result.revision.clone(),
-        }]
-    };
+    let refs = item_rules::grant_references(food_profile.is_some(), parameters, conjure)
+        .map_err(|_| SpellCastDisposition::Rejected)?;
     // Qualify every possible grant before any draw or staged payment.
     let mut definitions = std::collections::BTreeMap::new();
     for item in &refs {
@@ -437,12 +369,15 @@ async fn prepare_item_grant(
         )?;
         let Plan::Food {
             items: outputs,
-            overflow: crate::spell::native_items::ItemGrantOverflow::DropOnCasterTile,
+            overflow: oteryn_gameplay_spell_rules::native_items::ItemGrantOverflow::DropOnCasterTile,
         } = paid.plan
         else {
             return denied();
         };
-        let mut grants: Vec<(crate::spell::native_items::NativeItemRef, u32)> = Vec::new();
+        let mut grants: Vec<(
+            oteryn_gameplay_spell_rules::native_items::NativeItemRef,
+            u32,
+        )> = Vec::new();
         for output in &outputs {
             if let Some((_, quantity)) = grants.iter_mut().find(|(item, _)| item == output) {
                 *quantity += 1;

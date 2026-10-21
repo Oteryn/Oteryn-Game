@@ -5,69 +5,11 @@ use super::*;
 use crate::content::native_gameplay::test_support::{
     activated_with_item_keys, activated_with_loot_tables,
 };
-use crate::content::{ReferenceItemField as F, ReferenceItemPresentation, ReferenceItemSemantics};
-use crate::foundation::{ChannelContentPin, ChannelId, NodeId, WorldId};
 use std::num::NonZeroU32;
-
-fn semantics(name: F<String>, description: F<String>) -> ReferenceItemSemantics {
-    ReferenceItemSemantics {
-        presentation: F::Known(ReferenceItemPresentation { name, description }),
-        ..Default::default()
-    }
-}
-
-#[test]
-fn formatter_uses_known_text_and_authoritative_count() {
-    let facts = semantics(
-        F::Known("cheese".into()),
-        F::Known("A cave-aged cheese.".into()),
-    );
-    assert_eq!(
-        text::item_text(&facts, NonZeroU32::new(2).unwrap()),
-        Some("You see cheese.\nCount: 2.\nA cave-aged cheese.".into())
-    );
-    for unknown in [F::Unknown, F::Conflict, F::NotApplicable] {
-        assert_eq!(
-            text::item_text(
-                &semantics(F::Known("cheese".into()), unknown.clone()),
-                NonZeroU32::MIN
-            ),
-            Some("You see cheese.\nCount: 1.".into())
-        );
-        assert_eq!(
-            text::item_text(&semantics(unknown, F::Unknown), NonZeroU32::MIN),
-            None
-        );
-    }
-    assert_eq!(
-        text::item_text(&ReferenceItemSemantics::default(), NonZeroU32::MIN),
-        None
-    );
-}
-
-#[test]
-fn formatter_preserves_existing_content_byte_limits() {
-    use crate::content::{
-        REFERENCE_ITEM_MAX_DESCRIPTION_BYTES as DESCRIPTION, REFERENCE_ITEM_MAX_NAME_BYTES as NAME,
-    };
-    let valid = semantics(
-        F::Known("é".repeat(NAME / 2)),
-        F::Known("é".repeat(DESCRIPTION / 2)),
-    );
-    assert!(text::item_text(&valid, NonZeroU32::MAX).is_some());
-    let bad_name = semantics(F::Known("é".repeat(NAME / 2 + 1)), F::Unknown);
-    let bad_description = semantics(
-        F::Known("cheese".into()),
-        F::Known("é".repeat(DESCRIPTION / 2 + 1)),
-    );
-    for invalid in [
-        bad_name,
-        bad_description,
-        semantics(F::Known(" ".into()), F::Unknown),
-    ] {
-        assert_eq!(text::item_text(&invalid, NonZeroU32::MIN), None);
-    }
-}
+use {
+    crate::foundation::{ChannelId, NodeId, WorldId},
+    oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+};
 
 fn id(tag: u8) -> [u8; 16] {
     [1, 0x90, 0, 0, 0, tag, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag]

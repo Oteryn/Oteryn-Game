@@ -490,11 +490,6 @@ mod connection {
         UseOutcome, serve_admitted,
     };
     use super::super::super::item_view::ItemViewSnapshotDomain;
-    use super::super::super::world_object::{
-        COMMAND_TYPE_USE_INTENT, SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
-        STATE_DOMAIN_WORLD_OBJECT_OVERLAY, UseDisposition, WorldObjectTarget,
-        encode_use_item_intent, encode_use_result,
-    };
     use super::super::super::world_spatial::{
         CAPABILITY_WORLD_SPATIAL_ENTITIES, EntityDetail, EntityKind, EntityRef,
         PLACEHOLDER_ACTOR_DIRECTION, PLACEHOLDER_APPEARANCE_REF, PLACEHOLDER_HEALTH_PERCENT,
@@ -515,6 +510,11 @@ mod connection {
     use oteryn_protocol_oteryn::item_view::{
         CAPABILITY_ITEM_EQUIP_DROP_V1, CAPABILITY_ITEM_EQUIP_DROP_V1_REQUIRES,
         CAPABILITY_ITEM_VIEW_MOVE_V1, CAPABILITY_ITEM_VIEW_MOVE_V1_REQUIRES,
+    };
+    use oteryn_protocol_oteryn::world_object::{
+        COMMAND_TYPE_USE_INTENT, SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+        STATE_DOMAIN_WORLD_OBJECT_OVERLAY, UseDisposition, WorldObjectTarget,
+        encode_use_item_intent, encode_use_result,
     };
     use oteryn_protocol_oteryn::{ClientCommandValue, encode_client_command};
     use std::cell::RefCell;

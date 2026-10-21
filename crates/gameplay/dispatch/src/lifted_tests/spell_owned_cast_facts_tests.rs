@@ -183,8 +183,11 @@ fn accepted_source_chain_due_keeps_numeric_owners_after_premium_expires() {
         .iter()
         .find(|row| row["bundle"]["spell"]["identity"]["key"] == "candidate:spell/lightning")
         .expect("source chain");
-    let spell = crate::spell::authoring::spell_from_bundle(&row["bundle"], &row["dependencies"])
-        .expect("closed genuine source");
+    let spell = oteryn_gameplay_content::content::spell_data::authoring::spell_from_bundle(
+        &row["bundle"],
+        &row["dependencies"],
+    )
+    .expect("closed genuine source");
     let state = PlayerSpellState::new(
         crate::spell::cast::CharacterCastFacts {
             vocation: crate::spell::Vocation::Sorcerer,

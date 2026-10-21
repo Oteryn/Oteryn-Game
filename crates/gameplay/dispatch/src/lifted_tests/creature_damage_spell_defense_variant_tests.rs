@@ -9,21 +9,22 @@ use crate::content::{
     ProjectReferenceRecord, ProjectV2AuthoringProfile, ProjectV2AuthoringProfileData as Data,
     ProjectV2DefinitionRef as Ref, ProjectV2Family,
 };
-use crate::creature_attack_geometry::Facing;
 use crate::creature_auto_attack::ProfileAbilityProposal;
 use crate::creature_auto_attack::{AttackError, AttackFacts, CurrentConditionPolicy};
 use crate::creature_damage_spell::*;
-use crate::durability::creature_schedule::ScheduleList;
 use crate::foundation::owner_timer::SemanticTimeMicros;
-use crate::foundation::{
-    ChannelContentPin, ChannelId, MovementLocalPosition, NodeId, RuntimeScopeRefV1, WorldId,
-};
 use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, GameSessionId, RuntimeWorkStamp, ScopeRuntimeFence,
 };
 use crate::gameplay_transport::actor_spell::{ChannelSpellStates, tests::FACTS};
 use crate::player_lethal::PlayerLethalVitals;
+use oteryn_gameplay_content::content::creature_attack_geometry::Facing;
+use oteryn_gameplay_foundation::foundation::profile_schedule::ScheduleList;
 use oteryn_simulation_determinism::GameplayDecisionRoot;
+use {
+    crate::foundation::{ChannelId, MovementLocalPosition, NodeId, RuntimeScopeRefV1, WorldId},
+    oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+};
 fn native() -> (Vec<ProjectReferenceRecord>, Vec<ProjectV2AuthoringProfile>) {
     let v:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/conditions/remaining-source-families/defense4/native-fixture.json"))).expect("qualified fixture");
     (

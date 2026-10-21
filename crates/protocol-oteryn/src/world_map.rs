@@ -44,6 +44,10 @@ pub const MAX_DELTA_ENTRIES: usize = 248;
 /// `MAPW-RL-04`: handle-bearing entries in one map view.
 pub const MAX_MAP_VIEW_HANDLES: usize = 1_024;
 
+/// The 40-byte placement of a `base_ordinal` entry's `USE`: the bundle digest and the
+/// big-endian bundle placement key (contract §4 Carriage).
+pub const MAP_TARGET_BYTES: usize = 40;
+
 /// Encoded bound of one `MapItemV1`, without its field tag and length.
 pub const MAX_MAP_ITEM_BYTES: usize = 32;
 /// Encoded bound of one `MapTileV1`, with its field tag and length.

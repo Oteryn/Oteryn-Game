@@ -6,11 +6,9 @@ use crate::content::{
     ProjectV2AbilityKind, ProjectV2AuthoringProfile, ProjectV2AuthoringProfileData as Data,
     ProjectV2DefinitionRef as Ref, ProjectV2Family, ProjectV2FormulaAuthoring, ProjectV2Magnitude,
 };
-use crate::creature_attack_geometry::{self as geometry, Facing};
 use crate::creature_auto_attack::ProfileAbilityProposal;
 use crate::creature_auto_attack::{AttackError, CurrentConditionPolicy};
 use crate::creature_damage_spell_delayed as delayed;
-use crate::durability::creature_schedule::ScheduleList;
 use crate::foundation::owner_timer::SemanticTimeMicros;
 use crate::foundation::{ApplicationFacts, ConditionDefinition};
 use crate::foundation::{
@@ -20,6 +18,8 @@ use crate::player_lethal::{PlayerDamageReceipt, PlayerLethalVitals, PlayerManaDr
 pub use composed::{
     ComposedOutcome, ComposedOwner, ComposedSource, ComposedWorldReader, CreatureCombatFacts,
 };
+use oteryn_gameplay_content::content::creature_attack_geometry::{self as geometry, Facing};
+use oteryn_gameplay_foundation::foundation::profile_schedule::ScheduleList;
 use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
 };
@@ -1177,12 +1177,13 @@ impl DamageSpellOwner {
                 source.entry_index as u64,
             )
             .map_err(|_| AttackError::InvalidPlan)?;
-            let selected = usize::try_from(crate::durability::uniform_draw::uniform_draw(
-                decision,
-                0,
-                (source.variants.len() - 1) as i64,
-            ))
-            .map_err(|_| AttackError::InvalidPlan)?;
+            let selected =
+                usize::try_from(oteryn_gameplay_domain::domain::uniform_draw::uniform_draw(
+                    decision,
+                    0,
+                    (source.variants.len() - 1) as i64,
+                ))
+                .map_err(|_| AttackError::InvalidPlan)?;
             match &source.variants[selected] {
                 Err(error) => Err(*error),
                 Ok(child) => {
@@ -1845,7 +1846,7 @@ impl DamageSpellOwner {
         let id = DecisionOccurrenceId::from_bytes(id);
         let draw = deterministic_decision_u64(&root, id, "damage_draw", source.entry_index as u64)
             .map_err(|_| AttackError::InvalidPlan)?;
-        let requested = u32::try_from(crate::durability::uniform_draw::uniform_draw(
+        let requested = u32::try_from(oteryn_gameplay_domain::domain::uniform_draw::uniform_draw(
             draw,
             i64::from(source.minimum),
             i64::from(source.maximum),
@@ -1889,7 +1890,7 @@ impl DamageSpellOwner {
                         source.entry_index as u64,
                     )
                     .map_err(|_| AttackError::InvalidPlan)?;
-                    u32::try_from(crate::durability::uniform_draw::uniform_draw(
+                    u32::try_from(oteryn_gameplay_domain::domain::uniform_draw::uniform_draw(
                         d,
                         i64::from(lo),
                         i64::from(hi),

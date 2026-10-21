@@ -361,16 +361,16 @@ impl crate::foundation::SourceStepCommitProof for SourceStepProof<'_> {
     fn validate_current(
         &self,
         runtime: &ChannelRuntimeV1,
-    ) -> Result<(), crate::foundation::CarrierError> {
+    ) -> Result<(), oteryn_gameplay_domain::domain::carrier_values::CarrierError> {
         SourceStepProof::validate_current(self, runtime).map_err(|error| match error {
             MovementError::Actor(error) => error,
             MovementError::SnapshotMismatch => {
-                crate::foundation::CarrierError::PositionSnapshotMismatch
+                oteryn_gameplay_domain::domain::carrier_values::CarrierError::PositionSnapshotMismatch
             }
             MovementError::ContextMismatch => {
-                crate::foundation::CarrierError::PositionContextMismatch
+                oteryn_gameplay_domain::domain::carrier_values::CarrierError::PositionContextMismatch
             }
-            _ => crate::foundation::CarrierError::PlanConflict,
+            _ => oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict,
         })
     }
     fn parts(
@@ -447,7 +447,7 @@ mod tests {
         )
         .unwrap();
         let start = room.entry_start();
-        let pin = crate::foundation::ChannelContentPin::from_activation(
+        let pin = oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::from_activation(
             world,
             1,
             room.compiled().server_digest(),

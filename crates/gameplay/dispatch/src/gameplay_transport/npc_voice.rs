@@ -13,130 +13,24 @@
     reason = "NPC voice consumer awaits content admission and CP owner wiring"
 )]
 
-use std::collections::BTreeMap;
-use std::num::NonZeroU64;
-
 use crate::ai_think::profile_schedule::decision_occurrence;
 use crate::ai_think::targeting::sees;
 use crate::ai_think::{CREATURE_THINK_INTERVAL_MILLIS, ThinkOccurrence};
-use crate::chat::{ChatPosition, ChatText, SpeechMode};
-use crate::content::{
-    NpcDataCatalogue, NpcServiceModel, ProjectV2CandidateField, ProjectV2CandidateValue,
-    ProjectV2Declaration, ProjectV2SpeechMode, ProjectV2Voice, ProjectV2Voices,
-};
+use crate::chat::ChatText;
+use crate::content::{NpcDataCatalogue, NpcServiceModel};
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, MovementPositionContext};
-use oteryn_protocol_oteryn::chat::{ChatLine, ChatSpeaker, ChatSpeechMode};
-use oteryn_protocol_oteryn::world_spatial::ActorPosition;
-use oteryn_simulation_determinism::{GameplayDecisionRoot, deterministic_decision_u64};
+use oteryn_simulation_determinism::GameplayDecisionRoot;
+use std::collections::BTreeMap;
 
-const PPM: u64 = 1_000_000;
-const PURPOSE: &str = "NPC_VOICE";
-const VOICE_INTERVAL: &str = "oteryn:source.npc.voice_interval_ms";
-const VOICE_CHANCE: &str = "oteryn:source.npc.voice_chance_percent";
-const VOICE_LINES: &str = "oteryn:source.npc.voice_lines";
+#[allow(unused_imports, reason = "preserve the former NPC module path")]
+pub use oteryn_gameplay_npc::npc_voice::{
+    NpcVoiceProposal, VoiceError, VoiceLine, VoiceProfile, VoiceThink,
+};
 
-/// Exact JSON line shape emitted into NPC-CONTENT-2's typed Text field. Missing or
-/// unknown fields do not default to an admitted line or a speech mode.
-#[derive(serde::Deserialize)]
-#[serde(deny_unknown_fields)]
-struct PresenceVoice {
-    text: String,
-    yell: bool,
-}
-
-fn presence_field<'a>(
-    fields: &'a [ProjectV2CandidateField],
-    path: &str,
-) -> Option<&'a ProjectV2CandidateValue> {
-    let mut matches = fields.iter().filter(|field| field.field_path == path);
-    let value = &matches.next()?.value;
-    matches.next().is_none().then_some(value)
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum VoiceError {
-    ContentSourceMismatch,
-    NotCurrentNpc,
-    OccurrenceSuperseded,
-    Draw,
-}
-
-#[derive(Debug, Clone)]
-struct VoiceLine {
-    text: ChatText,
-    mode: ProjectV2SpeechMode,
-}
-
-#[derive(Debug, Clone)]
-struct VoiceProfile {
-    name: String,
-    interval_ms: u64,
-    chance_ppm: u32,
-    lines: Vec<VoiceLine>,
-}
-
-impl VoiceProfile {
-    fn from_presence(name: &str, fields: &[ProjectV2CandidateField]) -> Option<Self> {
-        let ProjectV2CandidateValue::Integer(interval_ms) = presence_field(fields, VOICE_INTERVAL)?
-        else {
-            return None;
-        };
-        let ProjectV2CandidateValue::Integer(percent) = presence_field(fields, VOICE_CHANCE)?
-        else {
-            return None;
-        };
-        let ProjectV2CandidateValue::Text(lines) = presence_field(fields, VOICE_LINES)? else {
-            return None;
-        };
-        let interval_ms = u64::try_from(*interval_ms).ok()?;
-        let percent = u32::try_from(*percent).ok().filter(|value| *value <= 100)?;
-        // The native catalogue has already bounded the containing source Text. Decode this
-        // producer's JSON once at book construction, preserving its order and exact text.
-        let lines: Vec<PresenceVoice> = serde_json::from_str(lines).ok()?;
-        let source = ProjectV2Voices {
-            interval_ms,
-            chance_ppm: percent * 10_000,
-            entries: lines
-                .into_iter()
-                .map(|line| ProjectV2Voice {
-                    text: line.text,
-                    mode: if line.yell {
-                        ProjectV2SpeechMode::Yell
-                    } else {
-                        ProjectV2SpeechMode::Say
-                    },
-                })
-                .collect(),
-        };
-        Self::from_source(name, &source)
-    }
-
-    fn from_source(name: &str, source: &ProjectV2Voices) -> Option<Self> {
-        if source.interval_ms == 0 || u64::from(source.chance_ppm) > PPM {
-            return None;
-        }
-        let lines = source
-            .entries
-            .iter()
-            .filter_map(|line| {
-                // Source placeholders have no voice substitution owner. Fail closed rather than
-                // broadcasting a player's name token or an unresolved dialogue link verbatim.
-                if line.text.contains(['|', '{', '}']) {
-                    return None;
-                }
-                Some(VoiceLine {
-                    text: ChatText::parse(&line.text).ok()?,
-                    mode: line.mode,
-                })
-            })
-            .collect::<Vec<_>>();
-        (!lines.is_empty()).then(|| Self {
-            name: name.to_owned(),
-            interval_ms: source.interval_ms,
-            chance_ppm: source.chance_ppm,
-            lines,
-        })
-    }
+fn qualify_text(text: &str) -> Option<String> {
+    ChatText::parse(text)
+        .ok()
+        .map(|text| text.as_str().to_owned())
 }
 
 /// Candidate source profiles only; this is not a replacement for NPC-CONTENT-2 admission.
@@ -150,77 +44,9 @@ impl NpcVoiceBook {
         catalogue: &NpcDataCatalogue,
         model: &NpcServiceModel,
     ) -> Result<Self, VoiceError> {
-        if catalogue.source_tree_digest() != model.source_tree_digest()
-            || catalogue.project_revision() != model.project_revision()
-        {
-            return Err(VoiceError::ContentSourceMismatch);
-        }
-        let mut profiles = BTreeMap::new();
-        // The model excludes held NPCs. NPC-CONTENT-2's source-held or unsourced voices omit
-        // these fields. Never fall back to a linked Dialogue: that would bypass the hold.
-        for (reference, npc) in model.npcs() {
-            let Some(ProjectV2Declaration::Npc { fields, .. }) = catalogue.declaration(reference)
-            else {
-                continue;
-            };
-            if let Some(profile) = VoiceProfile::from_presence(&npc.name, fields) {
-                profiles.insert(reference.key.clone(), profile);
-            }
-        }
-        Ok(Self { profiles })
+        oteryn_gameplay_npc::npc_voice::profiles_from_catalogue(catalogue, model, qualify_text)
+            .map(|profiles| Self { profiles })
     }
-}
-
-/// A prepared line only. The chat owner must independently choose current, capable listeners
-/// and enqueue it once. Preparation confers no actor, content or delivery authority.
-#[derive(Debug, Clone)]
-pub struct NpcVoiceProposal {
-    pub occurrence: ThinkOccurrence,
-    pub position: ChatPosition,
-    pub name: String,
-    line: VoiceLine,
-}
-
-impl NpcVoiceProposal {
-    pub fn mode(&self) -> SpeechMode {
-        match self.line.mode {
-            ProjectV2SpeechMode::Say => SpeechMode::Say,
-            ProjectV2SpeechMode::Yell => SpeechMode::Yell,
-        }
-    }
-
-    /// Prepares the native value without the player-only yell uppercase transformation. The
-    /// chat owner's `local_listeners` selection still decides recipients and floor/range rules.
-    pub fn chat_line(&self) -> Result<ChatLine, VoiceError> {
-        let generation = NonZeroU64::new(self.occurrence.actor.actor_local_generation())
-            .ok_or(VoiceError::NotCurrentNpc)?;
-        Ok(ChatLine::Local {
-            speaker: ChatSpeaker {
-                identity: self.occurrence.actor.placement_identity(),
-                generation,
-            },
-            speaker_name: self.name.clone(),
-            mode: match self.line.mode {
-                ProjectV2SpeechMode::Yell => ChatSpeechMode::Yell,
-                ProjectV2SpeechMode::Say => ChatSpeechMode::Say,
-            },
-            text: self.line.text.as_str().to_owned(),
-            position: ActorPosition {
-                x: self.position.x,
-                y: self.position.y,
-                floor: i16::from(self.position.floor),
-            },
-        })
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum VoiceThink {
-    Idle,
-    Quiet,
-    Speak(NpcVoiceProposal),
-    /// The owner has already prepared this occurrence; never enqueue it a second time.
-    Replay,
 }
 
 /// One ephemeral state per exact actor, recreated from the source book at Channel restart.
@@ -293,60 +119,32 @@ impl NpcVoiceState {
             self.last_sequence = Some(occurrence.sequence);
             return Ok(VoiceThink::Idle);
         }
-        let ticks = self.ticks_ms.saturating_add(CREATURE_THINK_INTERVAL_MILLIS);
-        let result = if ticks < self.profile.interval_ms
-            || draw_below(root, occurrence, PPM, 0)? >= u64::from(self.profile.chance_ppm)
-        {
-            VoiceThink::Quiet
-        } else {
-            let count = u64::try_from(self.profile.lines.len()).map_err(|_| VoiceError::Draw)?;
-            let index = usize::try_from(draw_below(root, occurrence, count, 1)?)
-                .map_err(|_| VoiceError::Draw)?;
-            VoiceThink::Speak(NpcVoiceProposal {
-                occurrence,
-                position: ChatPosition {
-                    x: npc.position.x,
-                    y: npc.position.y,
-                    floor: u8::try_from(npc.position.floor)
-                        .map_err(|_| VoiceError::NotCurrentNpc)?,
-                },
-                name: self.profile.name.clone(),
-                line: self.profile.lines[index].clone(),
-            })
-        };
-        self.ticks_ms = if ticks >= self.profile.interval_ms {
-            0
-        } else {
-            ticks
-        };
+        let (result, ticks_ms) = self.profile.prepare(
+            occurrence,
+            npc.position,
+            self.ticks_ms,
+            CREATURE_THINK_INTERVAL_MILLIS,
+            root,
+            decision_occurrence(occurrence),
+        )?;
+        self.ticks_ms = ticks_ms;
         self.last_sequence = Some(occurrence.sequence);
         Ok(result)
     }
 }
 
-/// Rejection sampling keeps line choice uniform. Chance uses even draw indices; line choice
-/// uses odd ones, so a rejected draw cannot reuse the other decision's index. The native
-/// occurrence hashes the exact actor (World/Channel/owner/actor generations) and sequence.
-fn draw_below(
-    root: &GameplayDecisionRoot,
-    occurrence: ThinkOccurrence,
-    upper: u64,
-    mut index: u64,
-) -> Result<u64, VoiceError> {
-    if upper == 0 {
-        return Err(VoiceError::Draw);
-    }
-    let threshold = upper.wrapping_neg() % upper;
-    loop {
-        let draw =
-            deterministic_decision_u64(root, decision_occurrence(occurrence), PURPOSE, index)
-                .map_err(|_| VoiceError::Draw)?;
-        if draw >= threshold {
-            return Ok(draw % upper);
-        }
-        index = index.checked_add(2).ok_or(VoiceError::Draw)?;
-    }
-}
+#[cfg(test)]
+use crate::content::npc_catalogue::{VOICE_CHANCE, VOICE_INTERVAL, VOICE_LINES};
+#[cfg(test)]
+use crate::content::{
+    ProjectV2CandidateField, ProjectV2CandidateValue, ProjectV2Declaration, ProjectV2SpeechMode,
+    ProjectV2Voices,
+};
+
+#[cfg(test)]
+use oteryn_protocol_oteryn::chat::{ChatLine, ChatSpeechMode};
+#[cfg(test)]
+use oteryn_protocol_oteryn::world_spatial::ActorPosition;
 
 #[cfg(test)]
 #[allow(
@@ -413,7 +211,7 @@ mod tests {
         let book = NpcVoiceBook {
             profiles: BTreeMap::from([(
                 "oteryn:npc.alice".into(),
-                VoiceProfile::from_source("Alice", &source).expect("source"),
+                VoiceProfile::from_source("Alice", &source, qualify_text).expect("source"),
             )]),
         };
         (runtime, player, outcome.actors[0], book)
@@ -582,19 +380,19 @@ mod tests {
             mode: ProjectV2SpeechMode::Say,
         })
         .collect();
-        assert!(VoiceProfile::from_source("Alice", &input).is_none());
+        assert!(VoiceProfile::from_source("Alice", &input, qualify_text).is_none());
         input.entries.push(ProjectV2Voice {
             text: "Safe line".into(),
             mode: ProjectV2SpeechMode::Say,
         });
-        let profile = VoiceProfile::from_source("Alice", &input).expect("safe line");
+        let profile = VoiceProfile::from_source("Alice", &input, qualify_text).expect("safe line");
         assert_eq!(profile.lines.len(), 1);
         assert_eq!(profile.lines[0].text.as_str(), "Safe line");
         input.interval_ms = 0;
-        assert!(VoiceProfile::from_source("Alice", &input).is_none());
+        assert!(VoiceProfile::from_source("Alice", &input, qualify_text).is_none());
         input.interval_ms = 1_000;
         input.chance_ppm = 1_000_001;
-        assert!(VoiceProfile::from_source("Alice", &input).is_none());
+        assert!(VoiceProfile::from_source("Alice", &input, qualify_text).is_none());
     }
 
     #[test]
@@ -770,78 +568,6 @@ mod tests {
         assert_eq!(mode, ChatSpeechMode::Yell);
         assert_eq!(yelled, text);
         assert_eq!(line.line.text.as_str(), text);
-    }
-
-    #[test]
-    fn native_presence_projection_preserves_percent_cadence_line_order_and_yell() {
-        // NPC-CONTENT-2 emits Integer percent, Integer milliseconds and a Text JSON array
-        // of {text, yell}, with authored order and case retained.
-        let fields = presence_fields(
-            5_000,
-            17,
-            r#"[{"text":"Fresh fish!","yell":false},{"text":"Żółw mówi \"Hej\"!","yell":true}]"#,
-        );
-        let profile = VoiceProfile::from_presence("Alice", &fields).expect("native presence");
-        assert_eq!(profile.name, "Alice");
-        assert_eq!(profile.interval_ms, 5_000);
-        assert_eq!(profile.chance_ppm, 170_000);
-        assert_eq!(profile.lines.len(), 2);
-        assert_eq!(profile.lines[0].text.as_str(), "Fresh fish!");
-        assert_eq!(profile.lines[0].mode, ProjectV2SpeechMode::Say);
-        assert_eq!(profile.lines[1].text.as_str(), "Żółw mówi \"Hej\"!");
-        assert_eq!(profile.lines[1].mode, ProjectV2SpeechMode::Yell);
-    }
-
-    #[test]
-    fn presence_fields_fail_closed_on_missing_duplicate_mistyped_or_invalid_payloads() {
-        let fields = presence_fields(1_000, 100, r#"[{"text":"Fresh fish!","yell":false}]"#);
-        for missing in 0..fields.len() {
-            let mut changed = fields.clone();
-            changed.remove(missing);
-            assert!(VoiceProfile::from_presence("Alice", &changed).is_none());
-            let mut duplicated = fields.clone();
-            duplicated.push(fields[missing].clone());
-            assert!(VoiceProfile::from_presence("Alice", &duplicated).is_none());
-        }
-        for (index, value) in [
-            (0, ProjectV2CandidateValue::Integer(-1)),
-            (0, ProjectV2CandidateValue::Integer(101)),
-            (0, ProjectV2CandidateValue::Text("100".into())),
-            (1, ProjectV2CandidateValue::Integer(-1)),
-            (1, ProjectV2CandidateValue::Integer(0)),
-            (1, ProjectV2CandidateValue::Text("1000".into())),
-            (2, ProjectV2CandidateValue::Boolean(false)),
-        ] {
-            let mut changed = fields.clone();
-            changed[index].value = value;
-            assert!(VoiceProfile::from_presence("Alice", &changed).is_none());
-        }
-        for payload in [
-            "",
-            "[]",
-            "{}",
-            "[null]",
-            r#"[{"text":"Fresh fish!"}]"#,
-            r#"[{"text":"Fresh fish!","yell":"false"}]"#,
-            r#"[{"text":"Fresh fish!","yell":false,"unknown":0}]"#,
-            r#"[{"text":"Fresh fish!","text":"Duplicate","yell":false}]"#,
-            r#"[{"text":"|PLAYERNAME|","yell":false}]"#,
-            r#"[{"text":"{trade}","yell":true}]"#,
-        ] {
-            assert!(
-                VoiceProfile::from_presence("Alice", &presence_fields(1_000, 100, payload))
-                    .is_none()
-            );
-        }
-        let mixed = presence_fields(
-            1_000,
-            100,
-            r#"[{"text":"|PLAYERNAME|","yell":false},{"text":"Safe line","yell":true}]"#,
-        );
-        let profile = VoiceProfile::from_presence("Alice", &mixed).expect("one admitted line");
-        assert_eq!(profile.lines.len(), 1);
-        assert_eq!(profile.lines[0].text.as_str(), "Safe line");
-        assert_eq!(profile.lines[0].mode, ProjectV2SpeechMode::Yell);
     }
 
     #[test]

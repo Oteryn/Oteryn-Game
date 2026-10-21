@@ -22,14 +22,17 @@ use crate::foundation::admission_authority_publication::{
     AdmissionPublicationPreconditionV1, AdmissionPublicationPurposeV1,
     AdmissionPublicationSourceV1,
 };
-use crate::foundation::{
-    CarrierError, ChannelId, CombatDeathFixture, CreatureDeathOccurrenceKey, MovementLocalPosition,
-    RuntimeScopeRefV1, ScopeOwnershipGeneration, WorldId,
-};
 use sqlx::{Connection, Executor, Row};
 use std::future::Future;
 use std::task::Poll;
 use std::time::{Duration, Instant};
+use {
+    crate::foundation::{
+        ChannelId, CombatDeathFixture, CreatureDeathOccurrenceKey, MovementLocalPosition,
+        RuntimeScopeRefV1, ScopeOwnershipGeneration, WorldId,
+    },
+    oteryn_gameplay_domain::domain::carrier_values::CarrierError,
+};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 

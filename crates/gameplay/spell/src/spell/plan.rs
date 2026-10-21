@@ -13,11 +13,7 @@ use super::chain::TilePosition;
 use super::target::{AllowedTargets, CheckedTarget};
 use super::{CastResolution, ResolvedEffect, SpellDefinition};
 
-/// Calculation stages of a player cast, in the order the core ran them.
-const STAGES: [&str; 2] = [
-    "spell.formula.player_expression",
-    "spell.draw.world_distribution",
-];
+pub use oteryn_gameplay_spell_rules::plan::{MappedEffect, STAGES, healed, map_effect};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CastPlan {
@@ -72,15 +68,6 @@ pub fn effect_plan(
         occurrence,
         owner_scope,
     )
-}
-
-/// A heal of a self-target spell, or of a spell cast without a target, applies to the caster.
-fn healed<'a>(spell: &SpellDefinition, caster: &'a str, target: Option<&'a str>) -> &'a str {
-    if spell.self_target {
-        caster
-    } else {
-        target.unwrap_or(caster)
-    }
 }
 
 /// The plan of one party member a party buff affects.
@@ -180,19 +167,15 @@ fn plan(
     let mut effects = Vec::new();
     let mut side_effects = Vec::new();
     for resolved in resolved_effects {
-        match resolved {
-            ResolvedEffect::Damage { magnitude, .. } if *magnitude > 0 => {
-                effects.push(Effect::damage(
-                    target.ok_or(CastPlanError::MissingTarget)?,
-                    *magnitude,
-                )?);
+        match map_effect(resolved, target, healed).map_err(|_| CastPlanError::MissingTarget)? {
+            Some(MappedEffect::Damage { target, magnitude }) => {
+                effects.push(Effect::damage(target, magnitude)?);
             }
-            ResolvedEffect::Heal { magnitude } if *magnitude > 0 => {
-                effects.push(Effect::heal(healed, *magnitude)?);
+            Some(MappedEffect::Heal { target, magnitude }) => {
+                effects.push(Effect::heal(target, magnitude)?);
             }
-            // A zero draw changes no health; the Ability effects carry only positive magnitudes.
-            ResolvedEffect::Damage { .. } | ResolvedEffect::Heal { .. } => {}
-            other => side_effects.push(other.clone()),
+            Some(MappedEffect::SideEffect(other)) => side_effects.push(other.clone()),
+            None => {}
         }
     }
     if effects.is_empty() {

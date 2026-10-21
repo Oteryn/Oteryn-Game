@@ -198,8 +198,14 @@ impl ChannelSpellStates {
         };
         let store = state.owned_conditions();
         store.accepts_time(now.get())
-            && !store.has_status(crate::ability::condition::StatusKind::Rooted, now.get())
-            && !store.has_status(crate::ability::condition::StatusKind::Feared, now.get())
+            && !store.has_status(
+                oteryn_gameplay_domain::domain::condition::StatusKind::Rooted,
+                now.get(),
+            )
+            && !store.has_status(
+                oteryn_gameplay_domain::domain::condition::StatusKind::Feared,
+                now.get(),
+            )
     }
     pub fn native_effective_attributes(
         &self,
@@ -216,12 +222,14 @@ impl ChannelSpellStates {
             return None;
         }
         let values = store.effective_attributes(now.get());
-        let map = |value: Option<crate::ability::condition::AttributeModifier>| {
+        let map = |value: Option<
+            oteryn_gameplay_domain::domain::condition::attributes::AttributeModifier,
+        >| {
             value.map(|v| match v {
-                crate::ability::condition::AttributeModifier::Add(n) => {
+                oteryn_gameplay_domain::domain::condition::attributes::AttributeModifier::Add(n) => {
                     crate::foundation::AttributeModifier::Add(n)
                 }
-                crate::ability::condition::AttributeModifier::PercentOfBase(n) => {
+                oteryn_gameplay_domain::domain::condition::attributes::AttributeModifier::PercentOfBase(n) => {
                     crate::foundation::AttributeModifier::PercentOfBase(n)
                 }
             })
@@ -359,9 +367,12 @@ impl ChannelSpellStates {
         now: u64,
         fence: &ScopeRuntimeFence,
         stamp: RuntimeWorkStamp,
-    ) -> Result<Vec<crate::foundation::OwnerDamageResult>, crate::foundation::CarrierError> {
+    ) -> Result<
+        Vec<crate::foundation::OwnerDamageResult>,
+        oteryn_gameplay_domain::domain::carrier_values::CarrierError,
+    > {
         if !current_owner(runtime, fence, stamp) {
-            return Err(crate::foundation::CarrierError::WrongScope);
+            return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::WrongScope);
         }
         runtime.commit_source_creature_heal_and_cure(content, heal, cure, now)
     }
@@ -378,9 +389,12 @@ impl ChannelSpellStates {
         now: u64,
         fence: &ScopeRuntimeFence,
         stamp: RuntimeWorkStamp,
-    ) -> Result<crate::foundation::OwnerDamageResult, crate::foundation::CarrierError> {
+    ) -> Result<
+        crate::foundation::OwnerDamageResult,
+        oteryn_gameplay_domain::domain::carrier_values::CarrierError,
+    > {
         if !current_owner(runtime, fence, stamp) {
-            return Err(crate::foundation::CarrierError::WrongScope);
+            return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::WrongScope);
         }
         runtime.commit_creature_self_heal_and_cure(ledger, registration, actor, sequence, draw, now)
     }
@@ -885,8 +899,8 @@ impl ChannelSpellStates {
         stamp: RuntimeWorkStamp,
         target: ExactActorRef,
         session: GameSessionId,
-        definition: &crate::ability::condition::ConditionDefinition,
-        facts: &crate::ability::condition::ApplicationFacts<'_>,
+        definition: &oteryn_gameplay_foundation::foundation::condition::ConditionDefinition,
+        facts: &oteryn_gameplay_foundation::foundation::condition::ApplicationFacts<'_>,
     ) -> bool {
         if !current_owner(runtime, fence, stamp)
             || !self.condition_player_current(runtime, target, session)
@@ -908,7 +922,7 @@ impl ChannelSpellStates {
                     "player:{}",
                     super::hex(&target.placement_identity())
                 )),
-                crate::ability::condition::ConditionSourceKind::SelfUse,
+                oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind::SelfUse,
                 &[],
                 facts,
             )
@@ -941,7 +955,10 @@ impl crate::creature_area_heal::AreaHealStates for ChannelSpellStates {
         now: u64,
         fence: &ScopeRuntimeFence,
         stamp: RuntimeWorkStamp,
-    ) -> Result<Vec<crate::foundation::OwnerDamageResult>, crate::foundation::CarrierError> {
+    ) -> Result<
+        Vec<crate::foundation::OwnerDamageResult>,
+        oteryn_gameplay_domain::domain::carrier_values::CarrierError,
+    > {
         Self::commit_source_area_heal_and_paralysis_removal(
             self, runtime, content, heal, cure, now, fence, stamp,
         )

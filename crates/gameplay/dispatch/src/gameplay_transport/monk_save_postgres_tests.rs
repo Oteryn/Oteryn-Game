@@ -21,7 +21,6 @@ mod weather_wire;
 use super::{ComposedFreshAdmission, MonkSave};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::fresh_admission::FreshAdmissionStore;
-use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, ExactActorRef, GameSessionId};
 use crate::gameplay_transport::connection::{
     AdmittedSession, ControllerBinding, FirstEntryOutcome, GraceExpiryResult, SessionContinuity,
 };
@@ -30,6 +29,10 @@ use fixture::{Harness, debug, fence, id, run};
 use std::cell::Cell;
 use std::time::Duration;
 use tokio::sync::Mutex;
+use {
+    crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId},
+    oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 thread_local! {
@@ -696,7 +699,7 @@ mod death_ml_loss_composed {
     use crate::gameplay_transport::actor_spell::TrainingSave;
     use crate::spell::cast::CharacterCastFacts;
     use crate::spell::mana_training::RetainedTrainingCheckpoint;
-    use crate::spell::mana_training::hit_training::SkillFamily;
+    use oteryn_gameplay_progression::hit_training::SkillFamily;
     use oteryn_simulation_determinism::ExactI64;
 
     /// The debug-build death settle chain is deeper than the default test stack (as in the

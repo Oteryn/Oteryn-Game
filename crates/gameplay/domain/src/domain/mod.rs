@@ -2,23 +2,33 @@
 
 pub mod appearance;
 pub mod bestiary;
+pub mod carrier_values;
 pub mod character_build;
 pub mod character_name;
 pub mod charm;
+pub mod charm_data;
+pub mod condition;
 pub mod currency;
 pub mod cyclopedia;
 pub mod death;
+pub mod direction;
 pub mod equipment;
+pub mod equipment_policy_abi;
 pub mod forge;
 pub mod forge_dust;
 pub mod interaction;
 pub mod item_definition;
+pub mod loot_data;
+pub mod magnitude_policy;
 pub mod mail;
+pub mod map_position;
 pub mod market;
+pub mod melee_definition;
 pub mod premium;
 pub mod progression;
 pub mod timed_item;
 pub mod timed_item_host;
+pub mod uniform_draw;
 pub mod weapon_proficiency;
 
 use std::collections::{BTreeMap, BTreeSet};

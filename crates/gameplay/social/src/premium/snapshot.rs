@@ -19,6 +19,11 @@ use crate::durability::premium_fence::{
 };
 use serde::Deserialize;
 
+pub use oteryn_gameplay_social_rules::premium_snapshot::{
+    MAX_WIRE_REVISION, authority_timing_valid, canonical_uuid, lower_hex, rfc3339_utc_micros,
+    uuid_v7,
+};
+
 /// `PREMDEL0-RL-01`.
 pub const MAX_SNAPSHOT_BYTES: usize = 1024;
 
@@ -221,27 +226,14 @@ pub fn validate(
 
 /// `YYYY-MM-DDTHH:MM:SSZ`: the only timestamp form of the Platform wire (PREM-P §5.1).
 const WHOLE_SECOND_LEN: usize = 20;
-/// The largest revision on the wire, 2^53 - 1 (PREM-P §5.1).
-pub const MAX_WIRE_REVISION: u64 = (1 << 53) - 1;
-
 /// The rules Platform's contract for `oteryn.premium_time` v1 fixes on a supported envelope
 /// (`OTERYN_V2_PREMIUM_TIME_SNAPSHOT_CONTRACT.md` §5, §7 `cross_field_rules`; PREMIUM-DELIVERY-0
 /// §12): the identifier forms, the revision bounds, and the cutoff, refresh and state arithmetic.
 /// They are product-version rules, so they run after the compatibility comparison; a body that
 /// breaks one is malformed (a failed pull), never a durable semantic failure.
 fn product_v1_rules(e: &PremiumEvidence) -> bool {
-    const SECOND_US: i64 = 1_000_000;
     let issued = e.authority_issued_at_us;
     let valid = e.authority_valid_until_us;
-    let cutoff = match e.state {
-        EntitlementState::Active | EntitlementState::NotYetEffective => {
-            (issued + MAX_AUTHORITY_LEASE_US).min(e.effective_until_us)
-        }
-        EntitlementState::Expired | EntitlementState::Revoked | EntitlementState::None => {
-            issued + MAX_AUTHORITY_LEASE_US
-        }
-    };
-    let lease_s = (valid - issued) / SECOND_US;
     let state_at_issue = match e.state {
         EntitlementState::None => true,
         EntitlementState::Revoked => e.effective_from_us < e.effective_until_us,
@@ -257,28 +249,21 @@ fn product_v1_rules(e: &PremiumEvidence) -> bool {
         && e.entitlement_id.as_deref().is_none_or(uuid_v7)
         && (1..=MAX_WIRE_REVISION).contains(&e.authority_revision)
         && e.lifecycle_revision <= MAX_WIRE_REVISION
-        && valid == cutoff
-        && e.refresh_after_us == issued + 2 * lease_s / 3 * SECOND_US
-        && e.refresh_after_us < valid
+        && authority_timing_valid(
+            issued,
+            valid,
+            e.refresh_after_us,
+            match e.state {
+                EntitlementState::Active | EntitlementState::NotYetEffective => {
+                    Some(e.effective_until_us)
+                }
+                EntitlementState::Expired | EntitlementState::Revoked | EntitlementState::None => {
+                    None
+                }
+            },
+            MAX_AUTHORITY_LEASE_US,
+        )
         && state_at_issue
-}
-
-fn lower_hex(value: &str, len: usize) -> bool {
-    value.len() == len
-        && value
-            .bytes()
-            .all(|b| matches!(b, b'0'..=b'9' | b'a'..=b'f'))
-}
-
-/// A lowercase hyphenated RFC 9562 UUIDv7 (version 7, RFC variant).
-pub fn uuid_v7(value: &str) -> bool {
-    let b = value.as_bytes();
-    b.len() == 36
-        && [8, 13, 18, 23].iter().all(|&i| b[i] == b'-')
-        && value.split('-').map(str::len).eq([8, 4, 4, 4, 12])
-        && lower_hex(&value.replace('-', ""), 32)
-        && b[14] == b'7'
-        && matches!(b[19], b'8' | b'9' | b'a' | b'b')
 }
 
 /// An opaque producer token: the 0029 CHECK grammar.
@@ -287,80 +272,4 @@ fn token(value: &str) -> bool {
         && value
             .bytes()
             .all(|b| b.is_ascii_alphanumeric() || b"._:-".contains(&b))
-}
-
-/// Lowercase hyphenated UUID text of an AccountId.
-pub fn canonical_uuid(id: [u8; 16]) -> String {
-    let hex: String = id.iter().map(|b| format!("{b:02x}")).collect();
-    format!(
-        "{}-{}-{}-{}-{}",
-        &hex[..8],
-        &hex[8..12],
-        &hex[12..16],
-        &hex[16..20],
-        &hex[20..]
-    )
-}
-
-/// `YYYY-MM-DDTHH:MM:SS[.ffffff]Z` (at most six fraction digits, no leap second, year 1970 or
-/// later) as Unix microseconds. Any other form, offset included, is refused.
-pub fn rfc3339_utc_micros(text: &str) -> Option<i64> {
-    let b = text.as_bytes();
-    if b.len() < 20 || b[4] != b'-' || b[7] != b'-' || b[10] != b'T' || b[13] != b':' {
-        return None;
-    }
-    if b[16] != b':' || *b.last()? != b'Z' {
-        return None;
-    }
-    let number = |range: std::ops::Range<usize>| -> Option<i64> {
-        let digits = b.get(range)?;
-        digits
-            .iter()
-            .all(u8::is_ascii_digit)
-            .then(|| std::str::from_utf8(digits).ok()?.parse().ok())?
-    };
-    let (year, month, day) = (number(0..4)?, number(5..7)?, number(8..10)?);
-    let (hour, minute, second) = (number(11..13)?, number(14..16)?, number(17..19)?);
-    let fraction = &b[19..b.len() - 1];
-    let micros = match fraction {
-        [] => 0,
-        [b'.', digits @ ..] if (1..=6).contains(&digits.len()) => {
-            let value = number(20..20 + digits.len())?;
-            value * 10_i64.pow(6 - digits.len() as u32)
-        }
-        _ => return None,
-    };
-    let leap = (year % 4 == 0 && year % 100 != 0) || year % 400 == 0;
-    let month_days = [
-        31,
-        if leap { 29 } else { 28 },
-        31,
-        30,
-        31,
-        30,
-        31,
-        31,
-        30,
-        31,
-        30,
-        31,
-    ];
-    if year < 1970
-        || !(1..=12).contains(&month)
-        || day < 1
-        || day > month_days[usize::try_from(month - 1).ok()?]
-        || hour > 23
-        || minute > 59
-        || second > 59
-    {
-        return None;
-    }
-    // Days from civil (Howard Hinnant), valid for the proleptic Gregorian calendar.
-    let y = if month <= 2 { year - 1 } else { year };
-    let era = y / 400;
-    let yoe = y - era * 400;
-    let doy = (153 * ((month + 9) % 12) + 2) / 5 + day - 1;
-    let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
-    let days = era * 146_097 + doe - 719_468;
-    Some(((days * 86_400 + hour * 3_600 + minute * 60 + second) * 1_000_000) + micros)
 }

@@ -381,8 +381,12 @@ impl CreatureGroundCause {
             return Err(SpellItemError::Rejected("Creature source schedule kind"));
         };
         let list = match proposal.list {
-            crate::durability::creature_schedule::ScheduleList::Attack => &behavior.attacks,
-            crate::durability::creature_schedule::ScheduleList::Defence => &behavior.defenses,
+            oteryn_gameplay_foundation::foundation::profile_schedule::ScheduleList::Attack => {
+                &behavior.attacks
+            }
+            oteryn_gameplay_foundation::foundation::profile_schedule::ScheduleList::Defence => {
+                &behavior.defenses
+            }
         };
         if list
             .get(proposal.entry_index)
@@ -456,8 +460,12 @@ impl CreatureGroundCause {
             .parse::<u64>()
             .map_err(|_| SpellItemError::Rejected("Creature AI sequence"))?;
         let label = match proposal.list {
-            crate::durability::creature_schedule::ScheduleList::Attack => "attack",
-            crate::durability::creature_schedule::ScheduleList::Defence => "defence",
+            oteryn_gameplay_foundation::foundation::profile_schedule::ScheduleList::Attack => {
+                "attack"
+            }
+            oteryn_gameplay_foundation::foundation::profile_schedule::ScheduleList::Defence => {
+                "defence"
+            }
         };
         if sequence != parsed.to_string() || suffix != format!("{label}:{}", proposal.entry_index) {
             return Err(SpellItemError::Rejected(

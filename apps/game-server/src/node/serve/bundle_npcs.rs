@@ -399,7 +399,7 @@ mod tests {
             1,
             "runtime-scope-assignment:1",
             8,
-            crate::foundation::ChannelContentPin::test(world),
+            oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::test(world),
         )
         .expect("runtime")
     }

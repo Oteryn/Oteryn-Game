@@ -7,6 +7,7 @@ use crate::durability::{DurabilityRoot, character_authority::ReconciledCharacter
 use crate::foundation::{
     ChannelRuntimeV1, CompanionSnapshot, MovementLocalPosition, RuntimeScopeRefV1,
 };
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 pub(super) const POSITION: MovementLocalPosition = MovementLocalPosition {
     x: 1,
@@ -63,7 +64,7 @@ pub(super) async fn realize_rat_in_transaction(
     if !tile.ground_present() || flags.block_solid || flags.protection_zone || flags.floor_change {
         return Err("qualification spawn ground/solidity/PZ/floor eligibility refused".into());
     }
-    let target = crate::spell::world_items_execution::SpellGroundTarget::for_native_tile_read(
+    let target = oteryn_gameplay_durability::durability::native_world_items::SpellGroundTarget::for_native_tile_read(
         room, runtime, POSITION,
     )
     .map_err(str::to_owned)?;

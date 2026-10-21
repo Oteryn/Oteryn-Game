@@ -1564,11 +1564,12 @@ fn measure_viewports<F: MapFacts>(label: &str, overlay: &ChannelOverlay, facts: 
 #[test]
 fn map_cutover_a_bundle_world_plans_domain_17_at_the_runtime_position() {
     use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
-    use crate::foundation::{
-        ChannelContentPin, ChannelRuntimeV1, GameSessionId, MovementLocalPosition, NodeId,
-    };
     use crate::movement::{
         CardinalStep, MovementEngineeringSelection, MovementOwnerTurn, MovementTurnOutcome,
+    };
+    use {
+        crate::foundation::{ChannelRuntimeV1, GameSessionId, MovementLocalPosition, NodeId},
+        oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
     };
 
     let mut tiles: Vec<(TilePos, Vec<Item>)> = (16..=24)

@@ -14,32 +14,19 @@
 pub(in crate::durability) mod read;
 pub use read::{CommittedProficiencyChange, StoredProficiencyTrack};
 
-use super::character_progression::{CharacterProgressionError, valid_revision};
-use crate::domain::weapon_proficiency::{
-    PROFICIENCY_PERK_LEVELS_MAX, PROFICIENCY_PERKS_PER_LEVEL_MAX, ProficiencySelectionShape,
-};
+use super::character_progression::CharacterProgressionError;
+use crate::domain::weapon_proficiency::ProficiencySelectionShape;
 
 type Result<T> = std::result::Result<T, CharacterProgressionError>;
 
 /// Nonnegative PostgreSQL BIGINT storage bound, not a Mastery or progression rule.
-pub const MAX_PROFICIENCY_PROGRESS: u64 = i64::MAX.unsigned_abs();
+pub use oteryn_gameplay_progression::proficiency::MAX_PROFICIENCY_PROGRESS;
 
-/// Checked track values, without committed receipt metadata or admission/authority evidence.
-/// No row has progress 0 and unfilled choices; its definition comes from the future resolver.
-/// Level/Mastery are derived elsewhere and are never stored here.
+/// Checked track values, with the existing durability error API.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct DurableProficiencyState {
-    item_key: String,
-    definition_key: String,
-    definition_revision: String,
-    progress: u64,
-    selections: Vec<Option<u8>>,
-}
+pub struct DurableProficiencyState(oteryn_gameplay_progression::proficiency::DurableProficiencyState);
 
 impl DurableProficiencyState {
-    /// Bounds raw reference spelling with existing durability syntax (128 bytes) and family
-    /// prefixes. This is neither canonical-key validation nor content admission. A choice is
-    /// zero-based; None is an unfilled slot. Actual per-level bounds require `validate_shape`.
     pub fn new(
         item_key: impl Into<String>,
         definition_key: impl Into<String>,
@@ -47,97 +34,49 @@ impl DurableProficiencyState {
         progress: u64,
         selections: Vec<Option<u8>>,
     ) -> Result<Self> {
-        let item_key = item_key.into();
-        let definition_key = definition_key.into();
-        let definition_revision = definition_revision.into();
-        let family_key = |key: &str, prefix: &str| {
-            valid_revision(key)
-                && key
-                    .strip_prefix(prefix)
-                    .is_some_and(|tail| !tail.is_empty())
-        };
-        if !family_key(&item_key, "oteryn:item.")
-            || !family_key(&definition_key, "oteryn:proficiency.")
-            || !valid_revision(&definition_revision)
-            || progress > MAX_PROFICIENCY_PROGRESS
-            || selections.is_empty()
-            || selections.len() > usize::from(PROFICIENCY_PERK_LEVELS_MAX)
-            || selections
-                .iter()
-                .any(|choice| choice.is_some_and(|index| index >= PROFICIENCY_PERKS_PER_LEVEL_MAX))
-        {
-            return Err(CharacterProgressionError::InvalidInput);
-        }
-        Ok(Self {
+        oteryn_gameplay_progression::proficiency::DurableProficiencyState::new(
             item_key,
             definition_key,
             definition_revision,
             progress,
             selections,
-        })
+        )
+        .map(Self)
+        .map_err(|_| CharacterProgressionError::InvalidInput)
     }
 
     pub fn item_key(&self) -> &str {
-        &self.item_key
+        self.0.item_key()
     }
 
     pub fn definition_key(&self) -> &str {
-        &self.definition_key
+        self.0.definition_key()
     }
 
     pub fn definition_revision(&self) -> &str {
-        &self.definition_revision
+        self.0.definition_revision()
     }
 
-    /// Exact retained progress, including above u32::MAX or a subsequently lowered threshold.
     pub const fn progress(&self) -> u64 {
-        self.progress
+        self.0.progress()
     }
 
-    /// Includes inactive choices; no threshold or level check clears them.
     pub fn selections(&self) -> &[Option<u8>] {
-        &self.selections
+        self.0.selections()
     }
 
-    /// Checks every choice against independently supplied actual definition shape, including
-    /// inactive levels. The caller still has to resolve and bind the shape to this definition.
     pub fn validate_shape(&self, shape: ProficiencySelectionShape) -> Result<()> {
-        shape
-            .validate_stored_selections(&self.selections)
+        self.0
+            .validate_shape(shape)
             .map_err(|_| CharacterProgressionError::InvalidInput)
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ProficiencyCause {
-    Training,
-    PerkSelection,
-    Migration,
-    /// PROFICIENCY-1B §4.3: the track line only advances the track's committed revision; the
-    /// change is the receipt's one modification line. Only the modification writer uses it.
-    PerkModification,
-}
+pub use oteryn_gameplay_progression::proficiency::{
+    ProficiencyInputError, command_binding, normalize_request_lines,
+};
 
-impl ProficiencyCause {
-    pub const fn key(self) -> &'static str {
-        match self {
-            Self::Training => "training",
-            Self::PerkSelection => "perk_selection",
-            Self::Migration => "migration",
-            Self::PerkModification => "perk_modification",
-        }
-    }
-
-    pub(in crate::durability) fn from_key(key: &str) -> Option<Self> {
-        Some(match key {
-            "training" => Self::Training,
-            "perk_selection" => Self::PerkSelection,
-            "migration" => Self::Migration,
-            "perk_modification" => Self::PerkModification,
-            _ => return None,
-        })
-    }
-}
+pub use oteryn_gameplay_progression::proficiency::ProficiencyCause;
 
 /// A structurally legal pending line, not an admitted write or a verified migration.
 /// Unlock, PZ, current authority, content binding, receipt cardinality and lineage are outside
@@ -155,34 +94,7 @@ impl ProficiencyLineCandidate {
         before: DurableProficiencyState,
         after: DurableProficiencyState,
     ) -> Result<Self> {
-        if before.item_key != after.item_key || before.definition_key != after.definition_key {
-            return Err(CharacterProgressionError::InvalidInput);
-        }
-        let same_revision = before.definition_revision == after.definition_revision;
-        let same_progress = before.progress == after.progress;
-        let legal = match cause {
-            ProficiencyCause::Training => {
-                after.progress > before.progress
-                    && same_revision
-                    && before.selections == after.selections
-            }
-            ProficiencyCause::PerkSelection => {
-                same_progress
-                    && same_revision
-                    && before.selections.len() == after.selections.len()
-                    && before
-                        .selections
-                        .iter()
-                        .zip(&after.selections)
-                        .filter(|(old, new)| old != new)
-                        .count()
-                        == 1
-            }
-            ProficiencyCause::Migration => same_progress && !same_revision,
-            ProficiencyCause::PerkModification => {
-                same_progress && same_revision && before.selections == after.selections
-            }
-        };
+        let legal = oteryn_gameplay_progression::proficiency::legal_change(cause, track_values(&before), track_values(&after));
         if !legal {
             return Err(CharacterProgressionError::InvalidInput);
         }
@@ -216,7 +128,6 @@ impl ProficiencyLineCandidate {
 #[allow(clippy::expect_used)]
 mod tests {
     use super::*;
-    use crate::domain::weapon_proficiency::ProficiencyThresholdClass;
     use ProficiencyCause::{Migration, PerkModification, PerkSelection, Training};
 
     const ITEM: &str = "oteryn:item.tibia.i3295";
@@ -244,6 +155,21 @@ mod tests {
         values(ITEM, DEFINITION, "definition-r1", progress, choices).expect("bounded track values")
     }
 
+    type StateValues = (String, String, String, u64, Vec<Option<u8>>);
+
+    fn mutate_state(state: &mut DurableProficiencyState, edit: impl FnOnce(&mut StateValues)) {
+        let mut values = (
+            state.item_key().to_owned(),
+            state.definition_key().to_owned(),
+            state.definition_revision().to_owned(),
+            state.progress(),
+            state.selections().to_vec(),
+        );
+        edit(&mut values);
+        *state = DurableProficiencyState::new(values.0, values.1, values.2, values.3, values.4)
+            .expect("bounded edited fixture");
+    }
+
     fn invalid<T: std::fmt::Debug>(result: Result<T>) {
         assert!(
             matches!(result, Err(CharacterProgressionError::InvalidInput)),
@@ -252,61 +178,10 @@ mod tests {
     }
 
     #[test]
-    fn progress_preserves_bigint_width_and_rejects_overflow() {
-        for progress in [0, u64::from(u32::MAX) + 1, MAX_PROFICIENCY_PROGRESS] {
-            assert_eq!(state(progress, &[None]).progress(), progress);
-        }
-        for progress in [MAX_PROFICIENCY_PROGRESS + 1, u64::MAX] {
-            invalid(values(ITEM, DEFINITION, "r1", progress, &[None]));
-        }
-    }
-
-    #[test]
-    fn references_are_lexically_bounded_without_admission_claims() {
-        let good = state(0, &[None]);
-        assert_eq!(good.item_key(), "oteryn:item.tibia.i3295");
-        assert_eq!(good.definition_key(), "oteryn:proficiency.tibia.p1");
-        assert_eq!(good.definition_revision(), "definition-r1");
-        for item in ["oteryn:creature.rat", "oteryn:item.", "oteryn:item.bad key"] {
-            invalid(values(item, DEFINITION, "r1", 0, &[None]));
-        }
-        for definition in ["oteryn:item.synthetic.i1", "oteryn:proficiency.", "bad"] {
-            invalid(values(ITEM, definition, "r1", 0, &[None]));
-        }
-        for revision in ["".to_owned(), "r 1".to_owned(), "r".repeat(129)] {
-            invalid(values(ITEM, DEFINITION, &revision, 0, &[None]));
-        }
-        // Lexical success intentionally cannot prove canonical numeric spelling or admission.
-        assert!(values("oteryn:item.tibia.i01", DEFINITION, "r1", 0, &[None]).is_ok());
-    }
-
-    #[test]
-    fn selections_require_storage_and_actual_definition_bounds() {
-        for choices in [vec![], vec![None; 8], vec![Some(3)]] {
-            invalid(values(ITEM, DEFINITION, "r1", 0, &choices));
-        }
-        let shape = ProficiencySelectionShape::new(ProficiencyThresholdClass::Standard, &[1, 3])
-            .expect("shape");
-        let inactive = state(0, &[Some(0), Some(2)]);
-        assert!(inactive.validate_shape(shape).is_ok());
-        assert_eq!(inactive.selections(), &[Some(0), Some(2)]);
-        invalid(state(0, &[Some(1), Some(2)]).validate_shape(shape));
-        invalid(state(0, &[None]).validate_shape(shape));
-        assert!(
-            state(0, &[None; 7])
-                .validate_shape(
-                    ProficiencySelectionShape::new(ProficiencyThresholdClass::Knight, &[3; 7])
-                        .expect("shape")
-                )
-                .is_ok()
-        );
-    }
-
-    #[test]
     fn training_requires_strict_progress_and_preserves_binding_and_choices() {
         let before = state(u64::from(u32::MAX) + 1, &[Some(2)]);
         let mut after = before.clone();
-        after.progress += 1;
+        mutate_state(&mut after, |state| state.3 += 1);
         let candidate = line(Training, before.clone(), after.clone()).expect("training");
         assert_eq!(candidate.cause().key(), "training");
         assert_eq!(candidate.before(), &before);
@@ -314,12 +189,12 @@ mod tests {
         assert!(!candidate.requires_mapping_verification());
         invalid(line(Training, before.clone(), before.clone()));
         let mut lower = after.clone();
-        lower.progress = before.progress - 1;
+        mutate_state(&mut lower, |state| state.3 = before.progress() - 1);
         invalid(line(Training, before.clone(), lower));
         let mut changed_choice = after.clone();
-        changed_choice.selections[0] = None;
+        mutate_state(&mut changed_choice, |state| state.4[0] = None);
         invalid(line(Training, before.clone(), changed_choice));
-        after.definition_revision = "definition-r2".into();
+        mutate_state(&mut after, |state| state.2 = "definition-r2".into());
         invalid(line(Training, before, after));
     }
 
@@ -353,7 +228,7 @@ mod tests {
             state(101, &[Some(0)]),
         ));
         let mut after = state(100, &[Some(0)]);
-        after.definition_revision = "definition-r2".into();
+        mutate_state(&mut after, |state| state.2 = "definition-r2".into());
         invalid(line(PerkSelection, state(100, &[None]), after));
     }
 
@@ -361,13 +236,13 @@ mod tests {
     fn migration_remains_unverified_and_preserves_progress() {
         let before = state(MAX_PROFICIENCY_PROGRESS, &[Some(2), None]);
         let mut after = state(MAX_PROFICIENCY_PROGRESS, &[None]);
-        after.definition_revision = "definition-r2".into();
+        mutate_state(&mut after, |state| state.2 = "definition-r2".into());
         let candidate = line(Migration, before.clone(), after.clone()).expect("pending mapping");
         assert_eq!(candidate.cause().key(), "migration");
         assert!(candidate.requires_mapping_verification());
         // Arbitrary changed choices above are not proof of an accepted remap/clear.
         let mut decreased = after;
-        decreased.progress -= 1;
+        mutate_state(&mut decreased, |state| state.3 -= 1);
         invalid(line(Migration, before.clone(), decreased));
         invalid(line(Migration, before.clone(), before));
     }
@@ -377,13 +252,13 @@ mod tests {
         let before = state(100, &[Some(0)]);
         assert!(line(PerkModification, before.clone(), before.clone()).is_ok());
         let mut progressed = before.clone();
-        progressed.progress += 1;
+        mutate_state(&mut progressed, |state| state.3 += 1);
         invalid(line(PerkModification, before.clone(), progressed));
         let mut selected = before.clone();
-        selected.selections[0] = None;
+        mutate_state(&mut selected, |state| state.4[0] = None);
         invalid(line(PerkModification, before.clone(), selected));
         let mut migrated = before.clone();
-        migrated.definition_revision = "r2".into();
+        mutate_state(&mut migrated, |state| state.2 = "r2".into());
         invalid(line(PerkModification, before, migrated));
     }
 
@@ -393,15 +268,15 @@ mod tests {
             let before = state(100, &[None]);
             let mut after = before.clone();
             match cause {
-                Training => after.progress += 1,
-                PerkSelection => after.selections[0] = Some(0),
-                Migration => after.definition_revision = "r2".into(),
+                Training => mutate_state(&mut after, |state| state.3 += 1),
+                PerkSelection => mutate_state(&mut after, |state| state.4[0] = Some(0)),
+                Migration => mutate_state(&mut after, |state| state.2 = "r2".into()),
                 PerkModification => {}
             }
             let mut other_item = after.clone();
-            other_item.item_key = "oteryn:item.tibia.i3305".into();
+            mutate_state(&mut other_item, |state| state.0 = "oteryn:item.tibia.i3305".into());
             invalid(line(cause, before.clone(), other_item));
-            after.definition_key = "oteryn:proficiency.tibia.p2".into();
+            mutate_state(&mut after, |state| state.1 = "oteryn:proficiency.tibia.p2".into());
             invalid(line(cause, before, after));
         }
     }
@@ -409,16 +284,17 @@ mod tests {
 
 // Preparatory writer intent only: no persistence, content resolver or authority capability.
 use crate::domain::{CharacterId, CharacterRevision};
-use sha2::{Digest, Sha256};
 
 /// Stable UUIDv7 identity retained until a future commit's outcome is known (§4.3).
 /// CommandId derivation belongs to the owning command path, not this constructor.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct ProficiencyOccurrence(super::character_progression::ExperienceRewardOccurrence);
+pub struct ProficiencyOccurrence(oteryn_gameplay_progression::proficiency::ProficiencyOccurrence);
 
 impl ProficiencyOccurrence {
     pub fn from_bytes(bytes: [u8; 16]) -> Result<Self> {
-        super::character_progression::ExperienceRewardOccurrence::from_bytes(bytes).map(Self)
+        oteryn_gameplay_progression::proficiency::ProficiencyOccurrence::from_bytes(bytes)
+            .map(Self)
+            .map_err(|_| CharacterProgressionError::InvalidInput)
     }
 
     pub const fn as_bytes(&self) -> &[u8; 16] {
@@ -446,28 +322,17 @@ impl ProficiencyChangeRequest {
     pub fn new(
         occurrence: ProficiencyOccurrence,
         cause: ProficiencyCause,
-        mut lines: Vec<ProficiencyLineCandidate>,
+        lines: Vec<ProficiencyLineCandidate>,
         expected_track_revision: Option<CharacterRevision>,
         policy_digest: [u8; 32],
     ) -> Result<Self> {
-        if lines.is_empty()
-            || cause == ProficiencyCause::PerkModification
-            || lines.iter().any(|line| line.cause() != cause)
-            || (cause == ProficiencyCause::PerkSelection
-                && (lines.len() != 1 || expected_track_revision.is_none()))
-            || (cause != ProficiencyCause::PerkSelection && expected_track_revision.is_some())
-        {
-            return Err(CharacterProgressionError::InvalidInput);
-        }
-        lines.sort_unstable_by(|left, right| {
-            left.before().item_key().cmp(right.before().item_key())
-        });
-        if lines
-            .windows(2)
-            .any(|pair| pair[0].before().item_key() == pair[1].before().item_key())
-        {
-            return Err(CharacterProgressionError::InvalidInput);
-        }
+        let lines = normalize_request_lines(
+            cause,
+            lines,
+            expected_track_revision.is_some(),
+            |line| (line.cause(), line.before().item_key()),
+        )
+        .map_err(|_| CharacterProgressionError::InvalidInput)?;
         Ok(Self {
             occurrence,
             cause,
@@ -506,58 +371,26 @@ impl ProficiencyChangeRequest {
         character_id: CharacterId,
         expected_character_revision: CharacterRevision,
     ) -> [u8; 33] {
-        const VERSION: u8 = 1;
-        let mut semantic = b"oteryn:character-proficiency:command-binding\0".to_vec();
-        semantic.push(VERSION);
-        semantic.extend_from_slice(self.occurrence.as_bytes());
-        semantic.extend_from_slice(character_id.as_bytes());
-        semantic.extend_from_slice(&expected_character_revision.get().to_be_bytes());
-        semantic.extend_from_slice(self.cause.key().as_bytes());
-        semantic.push(0);
-        match self.expected_track_revision {
-            None => semantic.push(0),
-            Some(revision) => {
-                semantic.push(1);
-                semantic.extend_from_slice(&revision.get().to_be_bytes());
-            }
-        }
-        semantic.extend_from_slice(
-            &u64::try_from(self.lines.len())
-                .unwrap_or(u64::MAX)
-                .to_be_bytes(),
-        );
-        for line in &self.lines {
-            encode_proficiency_intent_state(line.before(), &mut semantic);
-            encode_proficiency_intent_state(line.after(), &mut semantic);
-        }
-        semantic.extend_from_slice(&self.policy_digest);
-        let mut binding = [VERSION; 33];
-        binding[1..].copy_from_slice(&Sha256::digest(&semantic));
-        binding
+        command_binding(
+            self.occurrence.as_bytes(),
+            character_id.as_bytes(),
+            expected_character_revision.get(),
+            self.cause,
+            self.expected_track_revision.map(CharacterRevision::get),
+            self.lines
+                .iter()
+                .map(|line| (track_values(line.before()), track_values(line.after()))),
+            &self.policy_digest,
+        )
     }
 }
 
+#[cfg(test)]
 fn encode_proficiency_intent_state(state: &DurableProficiencyState, semantic: &mut Vec<u8>) {
-    // Checked reference spellings cannot contain NUL; delimiters frame all three strings.
-    for text in [
-        state.item_key(),
-        state.definition_key(),
-        state.definition_revision(),
-    ] {
-        semantic.extend_from_slice(text.as_bytes());
-        semantic.push(0);
-    }
-    semantic.extend_from_slice(&state.progress().to_be_bytes());
-    semantic.push(u8::try_from(state.selections().len()).unwrap_or(u8::MAX));
-    for choice in state.selections() {
-        match choice {
-            None => semantic.push(0),
-            Some(index) => {
-                semantic.push(1);
-                semantic.push(*index);
-            }
-        }
-    }
+    oteryn_gameplay_progression::proficiency::encode_proficiency_intent_state(
+        track_values(state),
+        semantic,
+    );
 }
 
 #[cfg(test)]
@@ -565,6 +398,21 @@ fn encode_proficiency_intent_state(state: &DurableProficiencyState, semantic: &m
 mod request_tests {
     use super::*;
     use ProficiencyCause::{Migration, PerkSelection, Training};
+
+    type StateValues = (String, String, String, u64, Vec<Option<u8>>);
+
+    fn mutate_state(state: &mut DurableProficiencyState, edit: impl FnOnce(&mut StateValues)) {
+        let mut values = (
+            state.item_key().to_owned(),
+            state.definition_key().to_owned(),
+            state.definition_revision().to_owned(),
+            state.progress(),
+            state.selections().to_vec(),
+        );
+        edit(&mut values);
+        *state = DurableProficiencyState::new(values.0, values.1, values.2, values.3, values.4)
+            .expect("bounded edited fixture");
+    }
 
     fn id(tag: u8) -> [u8; 16] {
         [0, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag]
@@ -625,27 +473,6 @@ mod request_tests {
             CharacterId::from_bytes(id(2)).expect("character"),
             revision(9),
         )
-    }
-
-    #[test]
-    fn occurrence_reuses_uuidv7_validation() {
-        assert_eq!(occurrence(1).as_bytes(), &id(1));
-        for bytes in [
-            [0; 16],
-            [1; 16],
-            {
-                let mut bytes = id(1);
-                bytes[6] = 0x40;
-                bytes
-            },
-            {
-                let mut bytes = id(1);
-                bytes[8] = 0x40;
-                bytes
-            },
-        ] {
-            assert!(ProficiencyOccurrence::from_bytes(bytes).is_err());
-        }
     }
 
     #[test]
@@ -752,21 +579,51 @@ mod request_tests {
             |r: &mut ProficiencyChangeRequest| {
                 r.lines.pop();
             },
-            |r: &mut ProficiencyChangeRequest| r.lines[0].before.item_key.push('1'),
-            |r: &mut ProficiencyChangeRequest| r.lines[0].after.item_key.push('1'),
-            |r: &mut ProficiencyChangeRequest| r.lines[0].before.definition_key.push('1'),
-            |r: &mut ProficiencyChangeRequest| r.lines[0].after.definition_key.push('1'),
-            |r: &mut ProficiencyChangeRequest| r.lines[0].before.definition_revision.push('1'),
-            |r: &mut ProficiencyChangeRequest| r.lines[0].after.definition_revision.push('1'),
-            |r: &mut ProficiencyChangeRequest| r.lines[0].before.progress += 1,
-            |r: &mut ProficiencyChangeRequest| r.lines[0].after.progress += 1,
-            |r: &mut ProficiencyChangeRequest| r.lines[0].before.selections[0] = Some(0),
-            |r: &mut ProficiencyChangeRequest| r.lines[0].after.selections[0] = Some(0),
-            |r: &mut ProficiencyChangeRequest| r.lines[0].before.selections[1] = Some(1),
-            |r: &mut ProficiencyChangeRequest| r.lines[0].after.selections[1] = Some(2),
-            |r: &mut ProficiencyChangeRequest| r.lines[0].before.selections.push(None),
-            |r: &mut ProficiencyChangeRequest| r.lines[0].after.selections.push(None),
-            |r: &mut ProficiencyChangeRequest| r.lines[1].after.progress += 1,
+            |r: &mut ProficiencyChangeRequest| {
+                mutate_state(&mut r.lines[0].before, |state| state.0.push('1'))
+            },
+            |r: &mut ProficiencyChangeRequest| {
+                mutate_state(&mut r.lines[0].after, |state| state.0.push('1'))
+            },
+            |r: &mut ProficiencyChangeRequest| {
+                mutate_state(&mut r.lines[0].before, |state| state.1.push('1'))
+            },
+            |r: &mut ProficiencyChangeRequest| {
+                mutate_state(&mut r.lines[0].after, |state| state.1.push('1'))
+            },
+            |r: &mut ProficiencyChangeRequest| {
+                mutate_state(&mut r.lines[0].before, |state| state.2.push('1'))
+            },
+            |r: &mut ProficiencyChangeRequest| {
+                mutate_state(&mut r.lines[0].after, |state| state.2.push('1'))
+            },
+            |r: &mut ProficiencyChangeRequest| {
+                mutate_state(&mut r.lines[0].before, |state| state.3 += 1)
+            },
+            |r: &mut ProficiencyChangeRequest| {
+                mutate_state(&mut r.lines[0].after, |state| state.3 += 1)
+            },
+            |r: &mut ProficiencyChangeRequest| {
+                mutate_state(&mut r.lines[0].before, |state| state.4[0] = Some(0))
+            },
+            |r: &mut ProficiencyChangeRequest| {
+                mutate_state(&mut r.lines[0].after, |state| state.4[0] = Some(0))
+            },
+            |r: &mut ProficiencyChangeRequest| {
+                mutate_state(&mut r.lines[0].before, |state| state.4[1] = Some(1))
+            },
+            |r: &mut ProficiencyChangeRequest| {
+                mutate_state(&mut r.lines[0].after, |state| state.4[1] = Some(2))
+            },
+            |r: &mut ProficiencyChangeRequest| {
+                mutate_state(&mut r.lines[0].before, |state| state.4.push(None))
+            },
+            |r: &mut ProficiencyChangeRequest| {
+                mutate_state(&mut r.lines[0].after, |state| state.4.push(None))
+            },
+            |r: &mut ProficiencyChangeRequest| {
+                mutate_state(&mut r.lines[1].after, |state| state.3 += 1)
+            },
         ] {
             let mut changed = original.clone();
             mutate(&mut changed);
@@ -1473,3 +1330,7 @@ pub use writer::{
     DeclaredProficiencyMigration, ProficiencyCommitOutcome, ProficiencyDefinitions,
     ProficiencyLevelMigration, ProficiencyWriteRefusal, ResolvedProficiencyDefinition,
 };
+
+fn track_values(state: &DurableProficiencyState) -> oteryn_gameplay_progression::proficiency::TrackValues<'_> {
+    (state.item_key(), state.definition_key(), state.definition_revision(), state.progress(), state.selections())
+}

@@ -630,10 +630,15 @@ fn duke_lowered_content_binds_under_the_widened_rule_and_exposes_attributes_by_s
         std::sync::Arc::new(clock),
         crate::world_object_revert::RevertDriverLimits::registered(),
     );
-    let revisions =
-        crate::interaction::SemanticRevisionContext::new("content:r1", "ruleset:r1", "sim:v1")?;
-    let death = crate::interaction::ChildOccurrenceRef::for_root(
-        &crate::interaction::RootSourceOccurrenceRef::new("encounter:duke-death/1")?,
+    let revisions = oteryn_gameplay_domain::domain::interaction::SemanticRevisionContext::new(
+        "content:r1",
+        "ruleset:r1",
+        "sim:v1",
+    )?;
+    let death = oteryn_gameplay_domain::domain::interaction::ChildOccurrenceRef::for_root(
+        &oteryn_gameplay_domain::domain::interaction::RootSourceOccurrenceRef::new(
+            "encounter:duke-death/1",
+        )?,
         "encounter:map_item",
         "encounter:anchor",
         "transform",

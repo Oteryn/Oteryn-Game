@@ -46,18 +46,13 @@ use super::{
     V2_TERMINAL_SESSION, fresh_admission,
 };
 use crate::foundation::{CharacterId, GameSessionId, RuntimeScopeRefV1, WorldId};
-use sha2::{Digest, Sha256};
 use sqlx::{Postgres, Row, Transaction};
 
-/// HOUSERT0-RL-03: Characters inside one house, PREPARED entries included.
-pub const HOUSE_SCOPE_CHARACTERS_MAX: u64 = 200;
-/// Maximum UTF-8 bytes of a house key (migration 0025).
-pub const HOUSE_KEY_MAX_BYTES: usize = 512;
-/// Maximum bytes of an encoded HouseInterior spatial position (migration 0025).
-pub const HOUSE_TILE_MAX_BYTES: usize = 128;
+pub use oteryn_gameplay_housing::house_scope_handoff::{
+    HOUSE_KEY_MAX_BYTES, HOUSE_SCOPE_CHARACTERS_MAX, HOUSE_TILE_MAX_BYTES, HouseEntryRefusal,
+    HouseHandoffDirection, HouseHandoffState,
+};
 
-const HOUSE_KEY_PREFIX: &str = "oteryn:content.house.";
-const HOUSE_INSTANCE_DOMAIN: &[u8] = b"oteryn:house-scope-instance:v1";
 const SCOPE_KIND_HOUSE: i16 = 2;
 const ASSIGNMENT_ASSIGNED: i16 = 1;
 const ASSIGNMENT_REVOKED: i16 = 2;
@@ -68,27 +63,20 @@ const HANDOFF_ENTRY: i16 = 1;
 const COMMAND_VERSION: u8 = 1;
 const COMMAND_MAX_BYTES: usize = 1_024;
 
-/// Exact identity of one house: its World and its content house key (migration 0025).
+/// Exact house identity with the durability runtime-scope adapter.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct HouseId {
     world_id: WorldId,
-    house_key: String,
+    rules: oteryn_gameplay_housing::house_scope_handoff::HouseId,
 }
 
 impl HouseId {
     /// `None` unless the key is `oteryn:content.house.[a-z0-9_]+` within 512 bytes.
     #[must_use]
     pub fn new(world_id: WorldId, house_key: &str) -> Option<Self> {
-        let suffix = house_key.strip_prefix(HOUSE_KEY_PREFIX)?;
-        let valid = house_key.len() <= HOUSE_KEY_MAX_BYTES
-            && !suffix.is_empty()
-            && suffix
-                .bytes()
-                .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'_');
-        valid.then(|| Self {
-            world_id,
-            house_key: house_key.to_owned(),
-        })
+        let domain_world = crate::domain::WorldId::from_bytes(*world_id.as_bytes()).ok()?;
+        let rules = oteryn_gameplay_housing::house_scope_handoff::HouseId::new(domain_world, house_key)?;
+        Some(Self { world_id, rules })
     }
 
     #[must_use]
@@ -98,61 +86,25 @@ impl HouseId {
 
     #[must_use]
     pub fn house_key(&self) -> &str {
-        &self.house_key
+        self.rules.house_key()
     }
 
     /// The tagged assignment key: `\x02 || world || house key`.
     #[must_use]
     pub fn scope_key(&self) -> Vec<u8> {
-        let mut key = Vec::with_capacity(17 + self.house_key.len());
-        key.push(0x02);
-        key.extend_from_slice(self.world_id.as_bytes());
-        key.extend_from_slice(self.house_key.as_bytes());
-        key
+        self.rules.scope_key()
     }
 
     /// The UUIDv7-shaped instance id of this house; equal to `game_house_scope_instance_id`.
     #[must_use]
     pub fn instance_id(&self) -> [u8; 16] {
-        let digest = Sha256::new()
-            .chain_update(HOUSE_INSTANCE_DOMAIN)
-            .chain_update(self.world_id.as_bytes())
-            .chain_update(self.house_key.as_bytes())
-            .finalize();
-        let mut id = [0_u8; 16];
-        id.copy_from_slice(&digest[..16]);
-        id[6] = (id[6] & 0x0f) | 0x70;
-        id[8] = (id[8] & 0x3f) | 0x80;
-        id
+        self.rules.instance_id()
     }
 
     /// The runtime scope of a house session.
     pub fn runtime_scope(&self) -> Result<RuntimeScopeRefV1, DurabilityError> {
-        RuntimeScopeRefV1::instance(self.world_id, self.instance_id())
+        RuntimeScopeRefV1::instance(self.world_id(), self.instance_id())
             .map_err(|_| DurabilityError::InvalidStoredState)
-    }
-}
-
-/// Typed refusals of a house entry (HOUSE-RUNTIME-0 §4.1).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum HouseEntryRefusal {
-    NoAccess,
-    InCombat,
-    Busy,
-    HouseClosed,
-    NoRoom,
-}
-
-impl HouseEntryRefusal {
-    #[must_use]
-    pub const fn as_str(self) -> &'static str {
-        match self {
-            Self::NoAccess => "NO_ACCESS",
-            Self::InCombat => "IN_COMBAT",
-            Self::Busy => "BUSY",
-            Self::HouseClosed => "HOUSE_CLOSED",
-            Self::NoRoom => "NO_ROOM",
-        }
     }
 }
 
@@ -183,13 +135,6 @@ type Result<T, E = HouseHandoffError> = std::result::Result<T, E>;
 /// House access roles `game_house_access` admits (OTERYN_GAME_HOUSE_RT_INBOX_PACKETS §1.2).
 const HOUSE_ACCESS_ROLES: [&str; 3] = ["OWNER", "SUBOWNER", "GUEST"];
 
-/// Direction of a handoff. Only `Entry` is admitted.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum HouseHandoffDirection {
-    Entry,
-    Exit,
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HouseEntryRequest {
     pub direction: HouseHandoffDirection,
@@ -218,15 +163,6 @@ pub struct HouseEntryCommit {
     /// Caller-generated UUIDv7 for the house session.
     pub destination_game_session_id: GameSessionId,
     pub committed_at: i64,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum HouseHandoffState {
-    Prepared,
-    /// Committed; the entry tile stays reserved until the destination places the Character.
-    Committed,
-    /// Committed and the entry tile released; retained history.
-    Released,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -383,17 +319,17 @@ impl HouseScopeAssignmentRequest {
         }
         let house = self.command.house();
         let key_len =
-            u16::try_from(house.house_key.len()).map_err(|_| AssignmentError::InvalidInput)?;
-        let mut encoded = Vec::with_capacity(128 + house.house_key.len());
+            u16::try_from(house.house_key().len()).map_err(|_| AssignmentError::InvalidInput)?;
+        let mut encoded = Vec::with_capacity(128 + house.house_key().len());
         encoded.push(COMMAND_VERSION);
         encoded.push(self.command.kind());
         encoded.extend_from_slice(self.operation_key.as_bytes());
         encoded.push(u8::try_from(actor.len()).map_err(|_| AssignmentError::InvalidInput)?);
         encoded.extend_from_slice(actor);
         encoded.push(0x02);
-        encoded.extend_from_slice(house.world_id.as_bytes());
+        encoded.extend_from_slice(house.world_id().as_bytes());
         encoded.extend_from_slice(&key_len.to_be_bytes());
-        encoded.extend_from_slice(house.house_key.as_bytes());
+        encoded.extend_from_slice(house.house_key().as_bytes());
         match &self.command {
             HouseScopeAssignmentCommand::Replace { predecessor, .. }
             | HouseScopeAssignmentCommand::Revoke { predecessor, .. } => {
@@ -693,8 +629,8 @@ pub async fn assign_house_scope_in_transaction(
            AND house_key = $3 AND operation = $4)",
     )
     .bind(request.actor_role.as_str())
-    .bind(house.world_id.as_bytes().as_slice())
-    .bind(house.house_key.as_str())
+    .bind(house.world_id().as_bytes().as_slice())
+    .bind(house.house_key())
     .bind(i16::from(request.command.kind()))
     .fetch_one(&mut **tx)
     .await?;
@@ -709,8 +645,8 @@ pub async fn assign_house_scope_in_transaction(
         let bare: bool = sqlx::query_scalar(
             "SELECT game_house_scope_bare_session_exists(encode($1, 'hex')::uuid, $2)",
         )
-        .bind(house.world_id.as_bytes().as_slice())
-        .bind(house.house_key.as_str())
+        .bind(house.world_id().as_bytes().as_slice())
+        .bind(house.house_key())
         .fetch_one(&mut **tx)
         .await?;
         if bare {
@@ -817,8 +753,8 @@ pub async fn assign_house_scope_in_transaction(
              operation_key = EXCLUDED.operation_key, decided_at = EXCLUDED.decided_at",
     )
     .bind(key.as_slice())
-    .bind(house.world_id.as_bytes().as_slice())
-    .bind(house.house_key.as_str())
+    .bind(house.world_id().as_bytes().as_slice())
+    .bind(house.house_key())
     .bind(ownership_generation.to_string())
     .bind(state)
     .bind(holder_node.as_deref())
@@ -876,8 +812,8 @@ fn validate_request(request: &HouseEntryRequest) -> Result<()> {
         return Err(HouseHandoffError::ExitNotAdmitted);
     };
     let valid = is_uuid_v7(&request.handoff_id)
-        && world_id == request.house.world_id
-        && HouseId::new(request.house.world_id, &request.house.house_key).as_ref()
+        && world_id == request.house.world_id()
+        && HouseId::new(request.house.world_id(), request.house.house_key()).as_ref()
             == Some(&request.house)
         && (1..=HOUSE_TILE_MAX_BYTES).contains(&request.reserved_tile.len())
         && request.source_connection_generation >= 1
@@ -996,8 +932,8 @@ pub async fn prepare_house_entry_in_transaction(
                   WHERE world_id = encode($1,'hex')::uuid AND house_key = $2 AND state IN (1,2) \
                     AND reserved_tile = $3) AS tile_taken",
     )
-    .bind(request.house.world_id.as_bytes().as_slice())
-    .bind(request.house.house_key.as_str())
+    .bind(request.house.world_id().as_bytes().as_slice())
+    .bind(request.house.house_key())
     .bind(request.reserved_tile.as_slice())
     .fetch_one(&mut **tx)
     .await?;
@@ -1032,7 +968,7 @@ pub async fn prepare_house_entry_in_transaction(
     .bind(request.source_connection_generation.to_string())
     .bind(request.source_character_lease_generation.to_string())
     .bind(request.source_scope_ownership_generation.to_string())
-    .bind(request.house.house_key.as_str())
+    .bind(request.house.house_key())
     .bind(request.house_scope_ownership_generation.to_string())
     .bind(request.acl_revision.to_string())
     .bind(request.reserved_tile.as_slice())
@@ -1106,7 +1042,7 @@ pub async fn commit_house_entry_in_transaction(
     // The origin Channel is still held by the proving node at the source session's generation:
     // a replaced or revoked origin assignment fails the handoff.
     let mut origin_key = vec![1_u8];
-    origin_key.extend_from_slice(record.house.world_id.as_bytes());
+    origin_key.extend_from_slice(record.house.world_id().as_bytes());
     origin_key.extend_from_slice(&origin);
     if !origin_channel_held(tx, &origin_key, parse_u64(&source_scope)?, node).await? {
         return Err(HouseHandoffError::AuthorityRejected);
@@ -1249,9 +1185,9 @@ pub async fn commit_house_entry_in_transaction(
     .bind(commit.destination_game_session_id.as_bytes().as_slice())
     .bind(account)
     .bind(record.character_id.as_bytes().as_slice())
-    .bind(record.house.world_id.as_bytes().as_slice())
+    .bind(record.house.world_id().as_bytes().as_slice())
     .bind(record.house.instance_id().as_slice())
-    .bind(record.house.house_key.as_str())
+    .bind(record.house.house_key())
     .bind(origin.as_slice())
     .bind(grace_deadline)
     .bind(destination_lease.to_string())
@@ -1533,8 +1469,8 @@ async fn house_assigned(
           FOR SHARE",
     )
     .bind(house.scope_key().as_slice())
-    .bind(house.world_id.as_bytes().as_slice())
-    .bind(house.house_key.as_str())
+    .bind(house.world_id().as_bytes().as_slice())
+    .bind(house.house_key())
     .bind(generation.to_string())
     .fetch_optional(&mut **tx)
     .await?;
@@ -1684,29 +1620,8 @@ mod tests {
     }
 
     #[test]
-    fn house_ids_follow_the_content_key_grammar() -> TestResult {
-        let world = world()?;
-        assert!(HouseId::new(world, "oteryn:content.house.thais_1").is_some());
-        assert!(HouseId::new(world, "oteryn:content.house.").is_none());
-        assert!(HouseId::new(world, "oteryn:content.house.Thais").is_none());
-        assert!(HouseId::new(world, "oteryn:content.npc.thais").is_none());
-        let long = format!("{HOUSE_KEY_PREFIX}{}", "a".repeat(HOUSE_KEY_MAX_BYTES));
-        assert!(HouseId::new(world, &long).is_none());
-        Ok(())
-    }
-
-    #[test]
-    fn house_scope_identity_is_tagged_and_v7_shaped() -> TestResult {
-        let world = world()?;
-        let house = HouseId::new(world, "oteryn:content.house.thais_1").ok_or("house")?;
-        let key = house.scope_key();
-        assert_eq!(key[0], 0x02);
-        assert_eq!(&key[1..17], world.as_bytes());
-        let instance = house.instance_id();
-        assert!(is_uuid_v7(&instance));
-        assert_eq!(instance, house.instance_id());
-        let other = HouseId::new(world, "oteryn:content.house.thais_2").ok_or("house")?;
-        assert_ne!(instance, other.instance_id());
+    fn house_identity_runtime_scope_adapter_is_valid() -> TestResult {
+        let house = HouseId::new(world()?, "oteryn:content.house.thais_1").ok_or("house")?;
         assert!(house.runtime_scope().is_ok());
         Ok(())
     }
@@ -1794,12 +1709,4 @@ mod tests {
         assert_ne!(HouseHandoffDirection::Entry, HouseHandoffDirection::Exit);
     }
 
-    #[test]
-    fn refusals_use_their_wire_names() {
-        assert_eq!(HouseEntryRefusal::NoAccess.as_str(), "NO_ACCESS");
-        assert_eq!(HouseEntryRefusal::InCombat.as_str(), "IN_COMBAT");
-        assert_eq!(HouseEntryRefusal::Busy.as_str(), "BUSY");
-        assert_eq!(HouseEntryRefusal::HouseClosed.as_str(), "HOUSE_CLOSED");
-        assert_eq!(HouseEntryRefusal::NoRoom.as_str(), "NO_ROOM");
-    }
 }

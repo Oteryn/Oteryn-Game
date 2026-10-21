@@ -1132,7 +1132,10 @@ fn genuine_two_fresh_players_require_target_consent_and_block_policy_before_invi
 -> TestResult {
     run("party_genuine_fresh_players", async |h| {
         use crate::durability::admission_journal::party_target_binding::prove_visible_party_target_in_transaction;
-        use crate::foundation::{ChannelContentPin, ChannelId, ChannelRuntimeV1, WorldId};
+        use {
+            crate::foundation::{ChannelId, ChannelRuntimeV1, WorldId},
+            oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+        };
         let now: i64 =
             sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
                 .fetch_one(&h.pool)

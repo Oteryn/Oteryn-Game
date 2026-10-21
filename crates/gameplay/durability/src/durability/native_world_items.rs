@@ -320,24 +320,8 @@ impl QualifiedRuneDefinition {
 pub fn source_magic_field(
     policy: crate::content::native_gameplay::QualifiedItemPolicy<'_>,
 ) -> Result<bool, crate::durability::spell_item_transaction::SpellItemError> {
-    match &policy.record().semantics.classification {
-        crate::content::ReferenceItemField::Known(c) => match c.item_type {
-            crate::content::ReferenceItemField::Known(t) => {
-                Ok(t == crate::content::ReferenceItemType::MagicField)
-            }
-            crate::content::ReferenceItemField::NotApplicable => Ok(false),
-            _ => Err(
-                crate::durability::spell_item_transaction::SpellItemError::Rejected(
-                    "unknown source Item classification",
-                ),
-            ),
-        },
-        _ => Err(
-            crate::durability::spell_item_transaction::SpellItemError::Rejected(
-                "unknown source Item classification",
-            ),
-        ),
-    }
+    oteryn_gameplay_items::native_world_items::source_magic_field(policy)
+        .map_err(crate::durability::spell_item_transaction::SpellItemError::Rejected)
 }
 pub fn qualify_source_field_chain(
     content: &crate::content::native_gameplay::NativeGameplayState,

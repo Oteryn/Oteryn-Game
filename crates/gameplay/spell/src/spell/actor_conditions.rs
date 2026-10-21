@@ -3,10 +3,14 @@
 use super::cast::PlayerSpellState;
 use super::combat_batch::OwnerCombatChange;
 use super::executable_catalog::EffectProfile;
-use crate::ability::condition::{
-    ApplicationFacts, ConditionDefinition, ConditionSourceKind, ConditionTick, ConditionType,
-    ConditionValues, TickFacts, TickKind,
-};
+use oteryn_gameplay_domain::domain::condition::ConditionType;
+use oteryn_gameplay_domain::domain::condition::ConditionValues;
+use oteryn_gameplay_foundation::foundation::condition::ApplicationFacts;
+use oteryn_gameplay_foundation::foundation::condition::ConditionDefinition;
+use oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind;
+use oteryn_gameplay_foundation::foundation::condition::ConditionTick;
+use oteryn_gameplay_foundation::foundation::condition::TickFacts;
+use oteryn_gameplay_foundation::foundation::condition::TickKind;
 use oteryn_protocol_oteryn::actor_spell::SpellCastDisposition;
 use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
 
@@ -50,7 +54,9 @@ fn apply_definition(
         .conditions
         .apply(&definition, None, ConditionSourceKind::SelfUse, &[], &facts)
     {
-        Ok(_) | Err(crate::ability::condition::ConditionRefusal::KeptCurrent) => Ok(()),
+        Ok(_) | Err(oteryn_gameplay_domain::domain::condition::ConditionRefusal::KeptCurrent) => {
+            Ok(())
+        }
         Err(_) => Err(SpellCastDisposition::Rejected),
     }
 }
@@ -189,8 +195,9 @@ pub fn apply_effect(
 
 fn source_condition_kind(
     key: &str,
-) -> Result<crate::ability::condition::ConditionType, SpellCastDisposition> {
-    use crate::ability::condition::{ConditionType as T, DotElement as E};
+) -> Result<oteryn_gameplay_domain::domain::condition::ConditionType, SpellCastDisposition> {
+    use oteryn_gameplay_domain::domain::condition::ConditionType as T;
+    use oteryn_gameplay_domain::domain::condition::DotElement as E;
     Ok(match key {
         "paralyze" => T::Paralysis,
         "manashield" => T::ManaShield,
@@ -207,11 +214,15 @@ fn source_condition_kind(
 pub fn condition_definition(
     profile: &EffectProfile,
     dependencies: &crate::spell::executable_catalog::DependencyProfile,
-) -> Result<crate::ability::condition::ConditionDefinition, SpellCastDisposition> {
-    use crate::ability::condition::{
-        ConditionDefinition, ConditionValues as V, DotSequenceStep, MAX_DOT_SEQUENCE_STEPS,
-        SpeedRange,
-    };
+) -> Result<
+    oteryn_gameplay_foundation::foundation::condition::ConditionDefinition,
+    SpellCastDisposition,
+> {
+    use oteryn_gameplay_domain::domain::condition::ConditionValues as V;
+    use oteryn_gameplay_domain::domain::condition::DotSequenceStep;
+    use oteryn_gameplay_domain::domain::condition::MAX_DOT_SEQUENCE_STEPS;
+    use oteryn_gameplay_domain::domain::condition::SpeedRange;
+    use oteryn_gameplay_foundation::foundation::condition::ConditionDefinition;
     if profile.operation != "condition"
         || profile.formula.is_some()
         || profile.damage_type.is_some()
@@ -251,7 +262,7 @@ pub fn condition_definition(
         {
             return rejected();
         }
-        let crate::ability::condition::ConditionType::DamageOverTime(element) =
+        let oteryn_gameplay_domain::domain::condition::ConditionType::DamageOverTime(element) =
             source_condition_kind(&c.kind)?
         else {
             return rejected();
@@ -455,7 +466,7 @@ pub fn remove_condition_at(
 /// The same real store predicate is shared by both cast consumers. It neither
 /// removes the condition nor grants current actor or payment authority.
 pub fn require_active_mana_shield<S: Clone>(
-    store: &crate::ability::condition::ConditionStore<S>,
+    store: &oteryn_gameplay_foundation::foundation::condition::ConditionStore<S>,
     now_us: u64,
 ) -> Result<(), SpellCastDisposition> {
     if !store.accepts_time(now_us) {
@@ -474,7 +485,7 @@ pub fn remove_condition(
     state: &mut PlayerSpellState,
     name: &str,
 ) -> Result<bool, SpellCastDisposition> {
-    use crate::ability::condition::DotElement;
+    use oteryn_gameplay_domain::domain::condition::DotElement;
     let kind = match name {
         "poison" => ConditionType::DamageOverTime(DotElement::Poison),
         "fire" => ConditionType::DamageOverTime(DotElement::Fire),
@@ -538,7 +549,7 @@ fn tick_inner(
                 }
             }
             TickKind::Regeneration {
-                key: crate::ability::condition::ConflictKey::FoodRegeneration,
+                key: oteryn_gameplay_domain::domain::condition::ConflictKey::FoodRegeneration,
                 suppressed,
             } => {
                 if !suppressed {
@@ -654,7 +665,7 @@ fn stage_hit(
     ),
     SpellCastDisposition,
 > {
-    use crate::ability::condition::ConflictKey;
+    use oteryn_gameplay_domain::domain::condition::ConflictKey;
     if !state.conditions.accepts_time(now)
         || state.health == 0
         || state.health > state.facts.max_health
@@ -1284,16 +1295,16 @@ impl PlayerSpellState {
 /// Every percent delta is computed from the independently provided immutable base.
 #[derive(Debug, Clone, Copy)]
 pub struct OwnedSkillAdjustments {
-    native: crate::ability::condition::SkillAdjustments,
-    source: crate::ability::condition::AttributeModifiers,
+    native: oteryn_gameplay_foundation::foundation::condition::SkillAdjustments,
+    source: oteryn_gameplay_domain::domain::condition::attributes::AttributeModifiers,
 }
 impl OwnedSkillAdjustments {
     fn adjust(
         base: u32,
         native: i32,
-        modifier: Option<crate::ability::condition::AttributeModifier>,
+        modifier: Option<oteryn_gameplay_domain::domain::condition::attributes::AttributeModifier>,
     ) -> Option<u32> {
-        use crate::ability::condition::AttributeModifier;
+        use oteryn_gameplay_domain::domain::condition::attributes::AttributeModifier;
         let source = match modifier {
             None | Some(AttributeModifier::PercentOfBase(0)) => 0,
             Some(AttributeModifier::Add(delta)) => i128::from(delta),
@@ -1329,9 +1340,10 @@ impl OwnedSkillAdjustments {
 mod source_attribute_projection_tests {
     #![allow(clippy::unwrap_used)]
     use super::*;
-    use crate::ability::condition::{
-        AttributeModifier as M, AttributeModifiers, ConditionDefinition, ConditionValues,
-    };
+    use oteryn_gameplay_domain::domain::condition::ConditionValues;
+    use oteryn_gameplay_domain::domain::condition::attributes::AttributeModifier as M;
+    use oteryn_gameplay_domain::domain::condition::attributes::AttributeModifiers;
+    use oteryn_gameplay_foundation::foundation::condition::ConditionDefinition;
     fn actor(magic: u32) -> PlayerSpellState {
         PlayerSpellState::new(
             super::super::cast::CharacterCastFacts {
@@ -1492,7 +1504,7 @@ mod source_attribute_projection_tests {
         assert_eq!(state, before);
         state.conditions.take_due(
             2000,
-            crate::ability::condition::TickFacts {
+            oteryn_gameplay_foundation::foundation::condition::TickFacts {
                 in_protection_zone: false,
                 standing_on_field: None,
             },

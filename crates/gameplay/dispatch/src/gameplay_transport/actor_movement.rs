@@ -228,12 +228,7 @@ pub fn step_in_channel_with_source_step(
         source_step.is_some(),
     );
     let pos = expected.position();
-    let (dx, dy) = match direction {
-        CardinalStep::North => (0, -1),
-        CardinalStep::East => (1, 0),
-        CardinalStep::South => (0, 1),
-        CardinalStep::West => (-1, 0),
-    };
+    let (dx, dy) = crate::domain::direction::CARDINAL_DIRECTION_DELTAS[direction as usize];
     let Some(x) = pos.x.checked_add(dx) else {
         return failure(MovementError::CoordinateOverflow);
     };
@@ -354,12 +349,7 @@ fn baseline_step(
             .map_err(MovementError::Actor);
     }
     let pos = expected.position();
-    let (dx, dy) = match direction {
-        CardinalStep::North => (0, -1),
-        CardinalStep::East => (1, 0),
-        CardinalStep::South => (0, 1),
-        CardinalStep::West => (-1, 0),
-    };
+    let (dx, dy) = crate::domain::direction::CARDINAL_DIRECTION_DELTAS[direction as usize];
     let x = pos
         .x
         .checked_add(dx)
@@ -398,10 +388,13 @@ mod tests {
     #![allow(clippy::items_after_test_module)]
     #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
     use super::*;
-    use crate::foundation::{ChannelContentPin, ChannelId, NodeId, WorldId};
     use crate::spell::cast::CharacterCastFacts;
     use oteryn_simulation_determinism::{
         DecisionOccurrenceId, GameplayDecisionRoot, SemanticTimeMicros,
+    };
+    use {
+        crate::foundation::{ChannelId, NodeId, WorldId},
+        oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
     };
     fn id(n: u8) -> [u8; 16] {
         [1, 0, 0, 0, 0, n, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, n]
@@ -513,6 +506,62 @@ mod tests {
             .unwrap()
             .position();
         (position.x, position.y, position.floor)
+    }
+
+    #[test]
+    fn shared_cardinal_deltas_drive_baseline_and_initialized_steps() {
+        for initialized in [false, true] {
+            let (mut runtime, mut states, room, actor, session) = owner();
+            if initialized {
+                states
+                    .initialize(
+                        &runtime,
+                        actor,
+                        session,
+                        CharacterCastFacts {
+                            vocation: crate::spell::Vocation::Knight,
+                            level: 291,
+                            magic_level: 10,
+                            max_health: 1000,
+                            max_mana: 500,
+                            max_soul: 100,
+                        },
+                        (0, 0),
+                        SemanticTimeMicros::from_micros(0),
+                    )
+                    .unwrap();
+            }
+            // Reach the den before stepping north: the tile north of the entry is blocked.
+            for (direction, dx, dy) in [
+                (CardinalStep::East, 1, 0),
+                (CardinalStep::East, 1, 0),
+                (CardinalStep::North, 0, -1),
+                (CardinalStep::South, 0, 1),
+                (CardinalStep::West, -1, 0),
+            ] {
+                let before = at(&mut runtime, actor);
+                let (snapshot, _) = step_in_channel(
+                    &mut runtime,
+                    &mut states,
+                    room.movement_cells(),
+                    actor,
+                    session,
+                    1,
+                    direction,
+                    &std::collections::BTreeSet::new(),
+                    None,
+                )
+                .unwrap();
+                assert_eq!(
+                    snapshot.position(),
+                    MovementLocalPosition {
+                        x: before.0 + dx,
+                        y: before.1 + dy,
+                        floor: before.2,
+                    },
+                );
+            }
+        }
     }
 
     #[test]
@@ -943,7 +992,7 @@ mod tests {
         )
         .unwrap();
         let root = GameplayDecisionRoot::from_bytes([1; 32]);
-        let application = crate::ability::condition::ApplicationFacts {
+        let application = oteryn_gameplay_foundation::foundation::condition::ApplicationFacts {
             now: 0,
             base_speed: 400,
             mana_shield_capacity: 0,
@@ -1034,9 +1083,9 @@ mod creature_field_step_tests {
             .unwrap()
             .iter()
             .map(|v| {
-                serde_json::from_value::<crate::ability::field_condition::QualifiedFieldCondition>(
-                    v.clone(),
-                )
+                serde_json::from_value::<
+                    oteryn_gameplay_content::content::field_condition::QualifiedFieldCondition,
+                >(v.clone())
                 .unwrap()
             })
             .find(|r| r.source.server == "canary" && r.source.server_item_id == 2118)
@@ -1044,12 +1093,13 @@ mod creature_field_step_tests {
         let values = recipe.condition_values().unwrap().unwrap();
         super::super::CreatureFieldContact {
             source: "creature:field:owner-component-fixture".into(),
-            definition: crate::ability::condition::ConditionDefinition::new(
-                "native.field.i2118",
-                1,
-                values,
-            )
-            .unwrap(),
+            definition:
+                oteryn_gameplay_foundation::foundation::condition::ConditionDefinition::new(
+                    "native.field.i2118",
+                    1,
+                    values,
+                )
+                .unwrap(),
             element: recipe.element().unwrap().unwrap(),
             content: runtime.content_pin().server_artifact_digest(),
         }
@@ -1083,7 +1133,7 @@ mod creature_field_step_tests {
                 .instances()
                 .iter()
                 .any(|i| i.provenance().source_kind
-                    == crate::ability::condition::ConditionSourceKind::Creature)
+                    == oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind::Creature)
         );
         assert_eq!(runtime.read_actor_position(actor).unwrap().position().x, 1);
     }

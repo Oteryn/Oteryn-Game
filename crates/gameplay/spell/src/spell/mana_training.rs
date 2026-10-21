@@ -3,11 +3,10 @@
 //! its genuine Character build receipt commits in the shared transaction.
 use crate::durability::character_build::{
     BuildCause, BuildChangeRequest, BuildFormula, BuildOccurrence, CommittedBuildChange,
-    DurableBuildState, MAX_BUILD_LEVEL, MAX_BUILD_PROGRESS,
+    DurableBuildState, MAX_BUILD_PROGRESS,
 };
 
-pub mod hit_training;
-use hit_training::{HitTrainingCounters, SkillFamily};
+use oteryn_gameplay_progression::hit_training::{HitTrainingCounters, SkillFamily};
 
 pub use crate::content::training_formula::{CompiledTrainingFormula, TrainingError};
 
@@ -68,32 +67,24 @@ impl LiveManaTraining {
         formula: &CompiledTrainingFormula,
         family: SkillFamily,
     ) -> Result<bool, TrainingError> {
-        let vocation = self.durable.vocation();
-        if formula.required(vocation, 0, 1).is_none() {
-            return Err(TrainingError::UnknownVocation);
-        }
-        let index = family.index();
-        let skill = self.durable.skills()[index];
-        Ok(advance(
+        skill_level_due(
             formula,
-            vocation,
-            index + 1,
-            skill,
-            self.pending_skills[index],
+            self.durable.vocation(),
+            family,
+            self.durable.skills()[family.index()],
+            self.pending_skills[family.index()],
         )
-        .0 != skill.0)
     }
     /// Whether pending mana or any pending skill tries reach a level now.
     fn level_due(&self, formula: &CompiledTrainingFormula) -> bool {
-        let vocation = self.durable.vocation();
-        if formula.required(vocation, 0, 1).is_none() {
-            return false;
-        }
-        let magic = self.durable.magic();
-        advance(formula, vocation, 0, magic, self.pending_mana).0 != magic.0
-            || SkillFamily::ALL
-                .iter()
-                .any(|family| self.skill_level_due(formula, *family).unwrap_or(false))
+        level_due(
+            formula,
+            self.durable.vocation(),
+            self.durable.magic(),
+            self.pending_mana,
+            self.durable.skills(),
+            self.pending_skills,
+        )
     }
     /// The hit streaks the caller resolves a hit with, before it records the tries.
     pub fn hits_mut(&mut self) -> &mut HitTrainingCounters {
@@ -235,26 +226,7 @@ impl LiveManaTraining {
 
 /// Bank `pending` onto `(level, progress)` of `family` (0 magic, 1..=7 the skills): every level
 /// the formula reaches advances; progress saturates at the stored bound.
-fn advance(
-    formula: &CompiledTrainingFormula,
-    vocation: &str,
-    family: usize,
-    (mut level, stored): (u16, u64),
-    pending: u64,
-) -> (u16, u64) {
-    let mut progress = stored.saturating_add(pending).min(MAX_BUILD_PROGRESS);
-    while level < MAX_BUILD_LEVEL {
-        let Some(required) = formula.required(vocation, family, level + 1) else {
-            break;
-        };
-        if progress < required {
-            break;
-        }
-        progress -= required;
-        level += 1;
-    }
-    (level, progress)
-}
+pub use oteryn_gameplay_progression::mana_training::{advance, level_due, skill_level_due};
 
 impl PreparedManaTraining {
     pub fn commit(
@@ -309,50 +281,6 @@ mod tests {
     }
     fn seed() -> DurableBuildState {
         DurableBuildState::new("druid", (0, 0), [(10, 0); 7]).unwrap()
-    }
-    #[test]
-    fn source_float_storage_and_all_vocations_are_preserved() {
-        let f = formula();
-        assert_eq!(f.required("druid", 0, 1), Some(1600));
-        assert_eq!(f.required("druid", 0, 2), Some(1760));
-        assert_eq!(f.required("knight", 0, 2), Some(4800));
-        assert_eq!(f.required("none", 0, 2), Some(6400));
-        assert_eq!(f.required("missing", 0, 1), None);
-        assert_eq!(f.required("druid", 7, 11), Some(20));
-        // SKILLS-0 §2: the elite knight trains skills on the knight row, not the swapped one.
-        assert_eq!(f.required("elite_knight", 1, 12), Some(55));
-        // 30 x 1.4f (binary32, 1.39999998) floors to 41, as the pinned source computes it.
-        assert_eq!(f.required("elite_knight", 5, 12), Some(41));
-        assert_eq!(
-            f.required("elite_knight", 5, 12),
-            f.required("knight", 5, 12)
-        );
-        for (promoted, base) in [
-            ("elder_druid", "druid"),
-            ("elite_knight", "knight"),
-            ("exalted_monk", "monk"),
-            ("master_sorcerer", "sorcerer"),
-            ("royal_paladin", "paladin"),
-        ] {
-            for family in 0..=7 {
-                assert_eq!(
-                    f.required(promoted, family, 12),
-                    f.required(base, family, 12)
-                );
-            }
-        }
-        let mut profile: serde_json::Value = serde_json::from_slice(include_bytes!(
-            "../../../../../tools/content-schema/native-gameplay/build-training.json"
-        ))
-        .unwrap();
-        profile["magic_base"] = 1700.into();
-        assert!(
-            CompiledTrainingFormula::from_profile(
-                &serde_json::to_vec(&profile).unwrap(),
-                "actual-content-r1"
-            )
-            .is_err()
-        );
     }
     #[test]
     fn live_cost_does_not_write_until_advance_or_sixty_second_checkpoint() {
@@ -510,8 +438,9 @@ mod tests {
         // Without owned training (the production off switch) nothing trains.
         assert_eq!(
             state
-                .train_skill(SkillFamily::Sword, 1, &f, |c| c
-                    .melee_hit(hit_training::HitBlock::Unblocked))
+                .train_skill(SkillFamily::Sword, 1, &f, |c| c.melee_hit(
+                    oteryn_gameplay_progression::hit_training::HitBlock::Unblocked
+                ))
                 .unwrap(),
             TrainedSkill::default()
         );
@@ -740,7 +669,9 @@ mod tests {
     #[test]
     fn hit_streaks_feed_the_pending_tries() {
         let mut live = LiveManaTraining::from_owned_build(&seed());
-        let tries = live.hits_mut().melee_hit(hit_training::HitBlock::Unblocked);
+        let tries = live
+            .hits_mut()
+            .melee_hit(oteryn_gameplay_progression::hit_training::HitBlock::Unblocked);
         live.record_skill_tries(SkillFamily::Club, tries, 1)
             .unwrap();
         let tries = live.hits_mut().block_hit(true);

@@ -38,31 +38,7 @@ use sqlx::{Postgres, Transaction};
 
 const MAX_PENDING_PARAMETERS: usize = 256;
 
-/// The `native_behavior` key of a native profile spell, empty for any other execution.
-fn native_key(spell: &SpellDefinition) -> &str {
-    match &spell.execution {
-        Execution::NativeProfile(profile) => profile.spell()["execution"]["native_behavior"]["key"]
-            .as_str()
-            .unwrap_or(""),
-        _ => "",
-    }
-}
-
-pub(super) fn named_player_spell(spell: &SpellDefinition) -> bool {
-    matches!(
-        spell.name.as_str(),
-        "Heal Friend" | "Nature's Embrace" | "Restore Balance"
-    ) && spell
-        .authored
-        .as_ref()
-        .is_some_and(|p| p.header.targeting.parameter == "player_name")
-        && matches!(
-            spell.execution,
-            Execution::Effects(_) | Execution::AbilityVariants(_)
-        )
-        && spell.needs_target
-        && !spell.aggressive
-}
+pub use oteryn_gameplay_spell_rules::parameter_cast::{named_player_spell, native_key};
 #[allow(
     clippy::large_enum_variant,
     reason = "transient owner result; boxing would add an allocation to the owner turn"
@@ -329,23 +305,14 @@ pub(super) fn source_feedback(
     reason: &str,
     effect: Option<&str>,
 ) -> Result<Option<PrivateSpellFeedback>, SpellCastDisposition> {
-    let text = match reason {
-        "source_no_error" => "No error.",
-        "player_with_this_name_is_not_online" => "A player with this name is not online.",
-        "exiva_protected" => {
-            "The character you are trying to find with Exiva is currently protected from your spell."
-        }
-        "name_is_ambiguous" => "Player name is ambiguous.",
-        "not_possible" => "Sorry, not possible.",
-        "not_enough_room" => "There is not enough room.",
-        _ => return Err(SpellCastDisposition::NotAvailable),
-    };
+    let (text, poff) = oteryn_gameplay_spell_rules::parameter_cast::source_feedback(reason, effect)
+        .map_err(|_| SpellCastDisposition::NotAvailable)?;
     Ok(Some(PrivateSpellFeedback {
         text: text.into(),
-        effect: match effect {
-            None => PrivateSpellEffect::None,
-            Some("poff") => PrivateSpellEffect::Poff,
-            _ => return Err(SpellCastDisposition::NotAvailable),
+        effect: if poff {
+            PrivateSpellEffect::Poff
+        } else {
+            PrivateSpellEffect::None
         },
     }))
 }

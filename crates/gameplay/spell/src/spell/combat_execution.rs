@@ -11,8 +11,11 @@ use crate::ability::exact_actor_resolution::{
     ExactActorProposal, ExactActorResolutionError, ResolvedExactActor, resolve_exact_actor,
 };
 use crate::ability::{CommitGroupMode, Effect, EffectPlan, ProposalSource};
-use crate::foundation::{
-    CarrierError, ChannelRuntimeV1, CharacterId, CommandRef, ExactActorRef, OwnerDamageResult,
+use {
+    crate::foundation::{
+        ChannelRuntimeV1, CharacterId, CommandRef, ExactActorRef, OwnerDamageResult,
+    },
+    oteryn_gameplay_domain::domain::carrier_values::CarrierError,
 };
 
 use super::plan::CastPlan;

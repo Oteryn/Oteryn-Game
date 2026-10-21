@@ -2,55 +2,52 @@
 
 pub mod achievement_catalogue;
 pub mod chat;
-pub mod interaction;
+
 pub mod party;
 pub mod premium;
 pub mod security;
-pub mod wheel_gem_data;
 
 #[allow(unused_imports, reason = "preserve the former server module path")]
-pub(crate) use oteryn_gameplay_combat::ability;
+use oteryn_gameplay_combat::ability;
 #[allow(unused_imports, reason = "preserve the former server module path")]
-pub(crate) use oteryn_gameplay_combat::combat;
+use oteryn_gameplay_combat::combat;
 #[allow(unused_imports, reason = "preserve the former server module path")]
-pub(crate) use oteryn_gameplay_combat::creature_appearance_content;
+use oteryn_gameplay_combat::creature_appearance_content;
 #[allow(unused_imports, reason = "preserve the former server module path")]
-pub(crate) use oteryn_gameplay_combat::creature_area_heal;
+use oteryn_gameplay_combat::creature_area_heal;
 #[allow(unused_imports, reason = "preserve the former server module path")]
-pub(crate) use oteryn_gameplay_combat::creature_attack_geometry;
+use oteryn_gameplay_combat::creature_auto_attack;
 #[allow(unused_imports, reason = "preserve the former server module path")]
-pub(crate) use oteryn_gameplay_combat::creature_auto_attack;
+use oteryn_gameplay_combat::creature_chain_attack;
 #[allow(unused_imports, reason = "preserve the former server module path")]
-pub(crate) use oteryn_gameplay_combat::creature_chain_attack;
+use oteryn_gameplay_combat::creature_condition_content;
 #[allow(unused_imports, reason = "preserve the former server module path")]
-pub(crate) use oteryn_gameplay_combat::creature_condition_content;
+use oteryn_gameplay_combat::creature_defense_presentation;
 #[allow(unused_imports, reason = "preserve the former server module path")]
-pub(crate) use oteryn_gameplay_combat::creature_defense_presentation;
+use oteryn_gameplay_content::content;
 #[allow(unused_imports, reason = "preserve the former server module path")]
-pub(crate) use oteryn_gameplay_combat::creature_icicle;
+use oteryn_gameplay_content::content::creature_attack_geometry;
 #[allow(unused_imports, reason = "preserve the former server module path")]
-pub(crate) use oteryn_gameplay_content::content;
+use oteryn_gameplay_domain::domain;
 #[allow(unused_imports, reason = "preserve the former server module path")]
-pub(crate) use oteryn_gameplay_domain::domain;
+use oteryn_gameplay_durability::character_bootstrap_intent;
 #[allow(unused_imports, reason = "preserve the former server module path")]
-pub(crate) use oteryn_gameplay_durability::character_bootstrap_intent;
+use oteryn_gameplay_durability::durability;
 #[allow(unused_imports, reason = "preserve the former server module path")]
-pub(crate) use oteryn_gameplay_durability::durability;
+use oteryn_gameplay_entities as foundation;
 #[allow(unused_imports, reason = "preserve the former server module path")]
-pub(crate) use oteryn_gameplay_foundation::foundation;
+use oteryn_gameplay_world::house_scope;
 #[allow(unused_imports, reason = "preserve the former server module path")]
-pub(crate) use oteryn_gameplay_world::house_scope;
+use oteryn_gameplay_world::map;
 #[allow(unused_imports, reason = "preserve the former server module path")]
-pub(crate) use oteryn_gameplay_world::map;
+use oteryn_gameplay_world::movement;
 #[allow(unused_imports, reason = "preserve the former server module path")]
-pub(crate) use oteryn_gameplay_world::movement;
+use oteryn_gameplay_world::world_clock;
 #[allow(unused_imports, reason = "preserve the former server module path")]
-pub(crate) use oteryn_gameplay_world::world_clock;
+use oteryn_gameplay_world::world_object_revert;
 #[allow(unused_imports, reason = "preserve the former server module path")]
-pub(crate) use oteryn_gameplay_world::world_object_revert;
-#[allow(unused_imports, reason = "preserve the former server module path")]
-pub(crate) use oteryn_gameplay_world::world_runtime;
+use oteryn_gameplay_world::world_runtime;
 
 #[path = "interaction/chest_use.rs"]
 pub mod interaction_chest_use;
-pub(crate) use oteryn_gameplay_combat::combat_pickup;
+use oteryn_gameplay_combat::combat_pickup;

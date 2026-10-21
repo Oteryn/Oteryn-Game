@@ -17,12 +17,15 @@ use crate::content::character_progression_content::{
 use crate::durability::DurabilityError;
 use crate::durability::character_death::{ConsumedRespawn, PlayerDeathOccurrence};
 use crate::durability::character_progression::CharacterProgressionError;
-use crate::foundation::{
-    ChannelContentPin, ChannelId, ChannelRuntimeV1, CharacterId, CharacterLease, ExactActorRef,
-    GameSessionId, MovementLocalPosition, NodeId, ScopeOwnershipGeneration, WorldId,
-};
 use std::cell::{Cell, RefCell};
 use std::sync::Arc;
+use {
+    crate::foundation::{
+        ChannelId, ChannelRuntimeV1, CharacterId, CharacterLease, ExactActorRef, GameSessionId,
+        MovementLocalPosition, NodeId, ScopeOwnershipGeneration, WorldId,
+    },
+    oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+};
 
 const ID: [u8; 16] = [
     0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x72, 0x22, 0x92, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
