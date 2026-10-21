@@ -9,6 +9,8 @@ use crate::foundation::{
     ScopeOwnershipGeneration, ScopeRuntimeFence,
 };
 
+pub use oteryn_gameplay_encounter_rules::timers::saturating_deadline;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SmellyPulse {
     Damage500,
@@ -155,7 +157,7 @@ impl SmellyCheeseTimers {
             SmellyPulse::Damage500,
             occurrence,
             Some(occurrence.caster),
-            now.saturating_add_micros(500_000),
+            SemanticTimeMicros::from_micros(saturating_deadline(now.get(), 500_000)),
         )?;
         if let Err(error) = self.lane.schedule(
             fence,
@@ -163,7 +165,7 @@ impl SmellyCheeseTimers {
             SmellyPulse::Presentation700,
             occurrence,
             Some(occurrence.caster),
-            now.saturating_add_micros(700_000),
+            SemanticTimeMicros::from_micros(saturating_deadline(now.get(), 700_000)),
         ) {
             self.lane.cancel(SmellyPulse::Damage500, occurrence);
             return Err(error);
