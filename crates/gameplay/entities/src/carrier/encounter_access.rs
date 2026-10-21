@@ -166,6 +166,18 @@ impl ChannelRuntimeV1 {
         (&mut self.carrier, &self.continuity)
     }
 
+    /// As [`Self::encounter_parts_mut`], plus the pinned Content for owner checks made during the
+    /// write. The pin is `Clone` only in test builds, so production borrows it.
+    pub fn encounter_parts_with_content_mut(
+        &mut self,
+    ) -> (
+        &mut ChannelActorCarrier,
+        &NamespaceContinuityGuard,
+        &oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+    ) {
+        (&mut self.carrier, &self.continuity, &self.content)
+    }
+
     pub fn encounter_hooks(&self) -> Option<&dyn EncounterHooks> {
         self.carrier.encounter_hooks.as_deref()
     }

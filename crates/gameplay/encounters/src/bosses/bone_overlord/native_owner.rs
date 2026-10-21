@@ -336,10 +336,9 @@ impl BoneSharedCarrierExt for ChannelRuntimeV1 {
         if command.target != BONE_CAGE_KEYS[target_index] {
             return Err(BonePhaseError::WrongParticipant);
         }
-        let content = self.content_pin().clone();
         let binding = self.binding();
         let owner_scope = self.encounter_owner_scope();
-        let (carrier, continuity) = self.encounter_parts_mut();
+        let (carrier, continuity, content) = self.encounter_parts_with_content_mut();
         let results = carrier.commit_encounter_damage_batch(
             continuity,
             state.cages,
@@ -363,7 +362,7 @@ impl BoneSharedCarrierExt for ChannelRuntimeV1 {
                 if bone_shared_owner_guard(
                     carrier,
                     continuity,
-                    &content,
+                    content,
                     binding,
                     owner_scope,
                     state,

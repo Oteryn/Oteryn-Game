@@ -1158,7 +1158,10 @@ mod tests {
 
     #[test]
     fn retained_sql_reads_postgres_preserve_values_missing_rows_and_share_locks() -> TestResult {
-        let admin = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL")?;
+        // Unset outside the PostgreSQL lanes; skip there, as the relay tests' `run_postgres_test` does.
+        let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+            return Ok(());
+        };
         harness::runtime()?.block_on(async move {
             use sqlx::Connection;
             let options: sqlx::postgres::PgConnectOptions = admin.parse()?;

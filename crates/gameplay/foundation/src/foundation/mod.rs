@@ -13,8 +13,9 @@ pub mod fnd04_verifier;
 // AI-1 (#162; GAME-AI-01-ACTION-INTEGRATION-FIRST-CREATURE-SLICE-V1 §4.2): the Channel owner
 // timer lane (FND-03 §10). AI-3 (§4.4) is the first consumer outside this module's own tests
 // (`ai::think::{ThinkFamily, ThinkOccurrence, ThinkSequenceTracker, schedule_next_think}`), so
-// this module is now `pub` -- a pure visibility widening, no behavior change. The entities
-// carrier composes its owner cycle with the kernel's scope-bound fence constructors.
+// this module is now `pub` -- a pure visibility widening, no behavior change. `ScopeRuntimeFence`'s
+// bare constructors (`from_external_grant`/`with_scope`) stay private to this module; the entities
+// carrier mints its owner cycle from a sealed `OwnerCycleGrant`.
 #[allow(dead_code)]
 pub mod condition;
 #[allow(dead_code)]
@@ -912,7 +913,7 @@ pub struct ScopeRuntimeFence {
 
 impl ScopeRuntimeFence {
     #[must_use]
-    pub const fn from_external_grant(generation: ScopeOwnershipGeneration) -> Self {
+    const fn from_external_grant(generation: ScopeOwnershipGeneration) -> Self {
         Self {
             generation,
             scope: None,
@@ -922,11 +923,12 @@ impl ScopeRuntimeFence {
 
     /// Binds this granted fence to one exact scope identity, so a caller-supplied scope claim
     /// can be checked against the fence itself instead of trusted on its own. The
-    /// independently committed assignment's carrier composes the production owner cycle.
-    /// Owner timer fixtures also use this binding to qualify cross-scope refusals.
+    /// independently committed assignment's carrier composes the production owner cycle
+    /// through [`ScopeRuntimeFence::from_owner_cycle_grant`]. Owner timer fixtures also use
+    /// this binding to qualify cross-scope refusals.
     #[must_use]
     #[allow(dead_code)]
-    pub const fn with_scope(mut self, scope: RuntimeScopeRefV1) -> Self {
+    const fn with_scope(mut self, scope: RuntimeScopeRefV1) -> Self {
         self.scope = Some(scope);
         self
     }
@@ -1463,6 +1465,36 @@ pub fn crystal_timer_fixture(
     let ordinal = fence.accept_input(generation)?;
     let stamp = fence.stamp(ordinal);
     Ok((fence, stamp))
+}
+
+// Test builds only; no production grant API. Fixtures outside this crate bind a fence to a scope.
+#[cfg(any(test, feature = "test-support"))]
+#[must_use]
+pub const fn scoped_fence_fixture(
+    scope: RuntimeScopeRefV1,
+    generation: ScopeOwnershipGeneration,
+) -> ScopeRuntimeFence {
+    ScopeRuntimeFence::from_external_grant(generation).with_scope(scope)
+}
+
+/// Rust has no friend crates: the entities carrier installs each Channel runtime's owner cycle
+/// from its independently committed assignment, so outside this crate a fence is minted only
+/// from a sealed grant. `apps/game-server/tests/sealed_impl_allowlist.txt` pins the implementers.
+pub mod owner_cycle_grant_seal {
+    pub trait Sealed {}
+}
+
+/// One scope-bound owner-cycle grant. Minting consumes it, so one grant yields one fence.
+pub trait OwnerCycleGrant: owner_cycle_grant_seal::Sealed {
+    fn owner_scope(&self) -> RuntimeScopeRefV1;
+    fn owner_generation(&self) -> ScopeOwnershipGeneration;
+}
+
+impl ScopeRuntimeFence {
+    #[must_use]
+    pub fn from_owner_cycle_grant<G: OwnerCycleGrant>(grant: G) -> Self {
+        Self::from_external_grant(grant.owner_generation()).with_scope(grant.owner_scope())
+    }
 }
 
 #[allow(

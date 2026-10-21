@@ -2007,6 +2007,32 @@ pub enum FirstEntryPosition {
     Reconciled(MovementPositionSnapshot),
 }
 
+/// The owner cycle an independently committed assignment installs. Only
+/// [`ChannelRuntimeV1::from_committed_assignment`] builds one, once per runtime.
+struct CommittedAssignmentOwnerCycle {
+    world_id: WorldId,
+    channel_id: ChannelId,
+    scope_generation: ScopeOwnershipGeneration,
+}
+
+impl oteryn_gameplay_foundation::foundation::owner_cycle_grant_seal::Sealed
+    for CommittedAssignmentOwnerCycle
+{
+}
+
+impl oteryn_gameplay_foundation::foundation::OwnerCycleGrant for CommittedAssignmentOwnerCycle {
+    fn owner_scope(&self) -> oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1 {
+        oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
+            self.world_id,
+            self.channel_id,
+        )
+    }
+
+    fn owner_generation(&self) -> ScopeOwnershipGeneration {
+        self.scope_generation
+    }
+}
+
 /// The first composed Channel runtime. The fixed-slot carrier is the only actor
 /// resource: no session map or second index is introduced.
 #[derive(Debug)]
@@ -2201,13 +2227,12 @@ impl ChannelRuntimeV1 {
             content,
             companion_policies: None,
             owner_cycle:
-                oteryn_gameplay_foundation::foundation::ScopeRuntimeFence::from_external_grant(
-                    scope_generation,
-                )
-                .with_scope(
-                    oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
-                        world_id, channel_id,
-                    ),
+                oteryn_gameplay_foundation::foundation::ScopeRuntimeFence::from_owner_cycle_grant(
+                    CommittedAssignmentOwnerCycle {
+                        world_id,
+                        channel_id,
+                        scope_generation,
+                    },
                 ),
             spawn_schedule: spawn::RespawnSchedule::default(),
             spawn_deadlines: BTreeSet::new(),
@@ -9685,11 +9710,11 @@ mod tests {
         let dead_0 = kill_spawn_cell(&continuity, &mut carrier, SpawnSourceId(1), 0);
         let dead_1 = kill_spawn_cell(&continuity, &mut carrier, SpawnSourceId(1), 1);
 
+        use oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1;
         use oteryn_gameplay_foundation::foundation::owner_timer::{
             CatchUpPolicy, FamilyPolicy, OwnerTimerError, OwnerTimerLane, SemanticTimeMicros,
             VirtualOwnerClock,
         };
-        use oteryn_gameplay_foundation::foundation::{RuntimeScopeRefV1, ScopeRuntimeFence};
 
         let scope = RuntimeScopeRefV1::channel(continuity.world_id, continuity.channel_id);
         let generation = continuity.current_generation;
@@ -9706,7 +9731,8 @@ mod tests {
                 )],
             )
             .expect("cap within its registered maximum");
-        let mut owner_fence = ScopeRuntimeFence::from_external_grant(generation).with_scope(scope);
+        let mut owner_fence =
+            oteryn_gameplay_foundation::foundation::scoped_fence_fixture(scope, generation);
         let due = SemanticTimeMicros::from_micros(60_000_000);
 
         for (dead, index) in [(dead_0, 0_u8), (dead_1, 1_u8)] {
@@ -11348,10 +11374,10 @@ mod native_summon_reconciliation_tests {
             b.world_id(),
             b.channel_id(),
         );
-        let mut f = oteryn_gameplay_foundation::foundation::ScopeRuntimeFence::from_external_grant(
+        let mut f = oteryn_gameplay_foundation::foundation::scoped_fence_fixture(
+            scope,
             b.scope_generation(),
-        )
-        .with_scope(scope);
+        );
         let n = f
             .accept_input(b.scope_generation())
             .expect("valid native fixture operation must succeed");

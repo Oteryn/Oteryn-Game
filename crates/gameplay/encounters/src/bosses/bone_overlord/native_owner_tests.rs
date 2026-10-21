@@ -259,9 +259,7 @@ pub fn bone_shared_actual_owner_harness(
         r.binding().channel_id(),
     );
     let generation = r.binding().scope_generation();
-    let mut fence =
-        oteryn_gameplay_foundation::foundation::ScopeRuntimeFence::from_external_grant(generation)
-            .with_scope(scope);
+    let mut fence = oteryn_gameplay_foundation::foundation::scoped_fence_fixture(scope, generation);
     let ordinal = fence
         .accept_input(generation)
         .expect("valid native fixture operation must succeed");
@@ -271,14 +269,13 @@ pub fn bone_shared_actual_owner_harness(
     wrong[6] = 0x70;
     wrong[8] = 0x80;
     wrong[15] = 99;
-    let wrong =
-        oteryn_gameplay_foundation::foundation::ScopeRuntimeFence::from_external_grant(generation)
-            .with_scope(
-                oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
-                    world,
-                    ChannelId::decode(&wrong).expect("valid native fixture operation must succeed"),
-                ),
-            );
+    let wrong = oteryn_gameplay_foundation::foundation::scoped_fence_fixture(
+        oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
+            world,
+            ChannelId::decode(&wrong).expect("valid native fixture operation must succeed"),
+        ),
+        generation,
+    );
     assert!(r.register_bone_shared_hp(&state, &wrong, stamp).is_err());
     r.register_bone_shared_hp(&state, &fence, stamp)
         .expect("valid native fixture operation must succeed");
