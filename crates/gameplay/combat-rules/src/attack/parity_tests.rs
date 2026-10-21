@@ -3,11 +3,11 @@
 #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
 
 use super::*;
-use crate::combat::formula::FormulaInputs;
+use crate::formula::FormulaInputs;
 use serde_json::Value;
 
 const FIXTURE: &str =
-    include_str!("../../../../../../content/combat/parity/tibiapal_auto_attack_v1.json");
+    include_str!("../../../../../content/combat/parity/tibiapal_auto_attack_v1.json");
 
 /// Weapon rows whose Oteryn `weapon.attack` is unknown or differs from the catalogue attack
 /// (packet 1.4): `(item key, oteryn attack or none, tibiatools attack)`. Empty: all 15 selected

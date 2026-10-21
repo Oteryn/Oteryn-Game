@@ -9,10 +9,8 @@
 //! creature-only and nothing here changes a live decision. The durable write-ahead of the
 //! deadlines needs the PVP-1 tables and is not part of this slice.
 
-mod legality;
-mod lock;
-#[cfg(test)]
-mod tests;
+pub mod legality;
+pub mod lock;
 
 #[cfg(test)]
 pub use legality::{
