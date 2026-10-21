@@ -7,13 +7,13 @@ use crate::content::{
 use crate::creature_auto_attack::{AutoAttackOwner, ProfileAbilityProposal};
 use crate::creature_icicle::hex;
 use crate::creature_icicle::*;
-use crate::durability::creature_schedule::ScheduleList;
 use crate::foundation::owner_timer::SemanticTimeMicros;
 use crate::foundation::{
     ChannelContentPin, ChannelId, ChannelRuntimeV1, ExactActorRef, GameSessionId,
     MovementLocalPosition, NodeId, RuntimeScopeRefV1, RuntimeWorkStamp, ScopeRuntimeFence, WorldId,
 };
 use oteryn_gameplay_encounters::bosses::icicle::native_owner::IcicleCarrierExt;
+use oteryn_gameplay_foundation::foundation::profile_schedule::ScheduleList;
 
 fn fixture() -> (
     ChannelRuntimeV1,

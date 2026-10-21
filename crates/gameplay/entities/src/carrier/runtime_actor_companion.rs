@@ -37,7 +37,7 @@ impl CompanionState {
         i32::try_from(total)
             .ok()
             .filter(|speed| *speed >= 0)
-            .ok_or(CarrierError::PlanConflict)
+            .ok_or(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict)
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -96,18 +96,16 @@ impl ChannelRuntimeV1 {
             || expected.health <= 0
             || expected.health > policy.maximum_health
         {
-            return Err(CarrierError::PlanConflict);
+            return Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict);
         }
         let target_identity = Arc::from(copy_bounded_binding(policy.definition_key.as_bytes())?);
         let mut resulting = expected.clone();
         resulting.maximum_health = policy.maximum_health;
         resulting.state.outfit_look_type = policy.outfit_look_type;
         resulting.state.object_look_type = policy.object_look_type;
-        resulting.state.lifecycle_epoch = expected
-            .state
-            .lifecycle_epoch
-            .checked_add(1)
-            .ok_or(CarrierError::CapacityArithmeticOverflow)?;
+        resulting.state.lifecycle_epoch = expected.state.lifecycle_epoch.checked_add(1).ok_or(
+            oteryn_gameplay_foundation::foundation::CarrierError::CapacityArithmeticOverflow,
+        )?;
         resulting.state.policy = policy;
         Ok(PreparedCreatureProfileTransformation {
             expected: expected.clone(),
@@ -123,12 +121,14 @@ impl ChannelRuntimeV1 {
     ) -> Result<CompanionSnapshot, CarrierError> {
         self.assert_actor_spell_unreserved(prepared.expected.actor)?;
         if self.creature_transform_content_binding() != prepared.content {
-            return Err(CarrierError::ContentPinWorldMismatch);
+            return Err(
+                oteryn_gameplay_foundation::foundation::CarrierError::ContentPinWorldMismatch,
+            );
         }
         self.validate_companion_snapshot(&prepared.expected)?;
         let policy = self.companion_policy(&prepared.resulting.state.policy.definition_key)?;
         if policy.as_ref() != prepared.resulting.state.policy.as_ref() {
-            return Err(CarrierError::PlanConflict);
+            return Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict);
         }
         let index = self
             .carrier
@@ -142,7 +142,7 @@ impl ChannelRuntimeV1 {
             ..
         } = &mut self.carrier.slots[index]
         else {
-            return Err(CarrierError::NotCreature);
+            return Err(oteryn_gameplay_foundation::foundation::CarrierError::NotCreature);
         };
         *target_identity = prepared.target_identity;
         *companion = Some(replacement);
@@ -200,7 +200,7 @@ impl ChannelRuntimeV1 {
                 .as_ref()
                 != expected.state.policy.as_ref()
         {
-            return Err(CarrierError::PlanConflict);
+            return Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict);
         }
         Ok(PreparedCompanionAssignment {
             owner,
@@ -221,7 +221,7 @@ impl ChannelRuntimeV1 {
                 .as_ref()
                 != prepared.expected.state.policy.as_ref()
         {
-            return Err(CarrierError::PlanConflict);
+            return Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict);
         }
         Ok(())
     }
@@ -244,17 +244,17 @@ impl PreparedCompanionSpawn {
     /// Unknown source time is retained as None, never inferred from expiry/observation.
     pub fn bind_semantic_creation(&mut self, at_us: u64) -> Result<(), CarrierError> {
         if self.state.created_at_us.is_some_and(|v| v != at_us) {
-            return Err(CarrierError::PlanConflict);
+            return Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict);
         }
         let Some(planned) = self.planned.as_mut() else {
-            return Err(CarrierError::PlanConflict);
+            return Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict);
         };
         let Slot::CreatureOccupied {
             companion: Some(state),
             ..
         } = planned.as_mut()
         else {
-            return Err(CarrierError::PlanConflict);
+            return Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict);
         };
         self.state.created_at_us = Some(at_us);
         state.created_at_us = Some(at_us);
@@ -294,29 +294,33 @@ impl ChannelRuntimeV1 {
             || (policy.is_familiar && epoch == 0)
             || i64::from(policy.base_speed) + i64::from(creation_speed_delta) < 0
         {
-            return Err(CarrierError::PlanConflict);
+            return Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict);
         }
         let head = self
             .carrier
             .free_head
-            .ok_or(CarrierError::CapacityExceeded)?;
-        let index = usize::try_from(head).map_err(|_| CarrierError::CapacityArithmeticOverflow)?;
+            .ok_or(oteryn_gameplay_foundation::foundation::CarrierError::CapacityExceeded)?;
+        let index = usize::try_from(head).map_err(|_| {
+            oteryn_gameplay_foundation::foundation::CarrierError::CapacityArithmeticOverflow
+        })?;
         let Slot::VacantReusable { generation, .. } = self.carrier.slots[index] else {
-            return Err(CarrierError::PlanConflict);
+            return Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict);
         };
-        let generation = generation
-            .checked_add(1)
-            .ok_or(CarrierError::ActorGenerationExhausted)?;
-        let local = head
-            .checked_add(1)
-            .ok_or(CarrierError::CapacityArithmeticOverflow)?;
-        let actor = ExactActorRef(ActorRef::from_owner_parts(
-            self.binding.world_id,
-            self.binding.channel_id,
-            self.binding.scope_generation,
-            ActorLocalId(local),
-            ActorLocalGeneration(generation),
-        ));
+        let generation = generation.checked_add(1).ok_or(
+            oteryn_gameplay_foundation::foundation::CarrierError::ActorGenerationExhausted,
+        )?;
+        let local = head.checked_add(1).ok_or(
+            oteryn_gameplay_foundation::foundation::CarrierError::CapacityArithmeticOverflow,
+        )?;
+        let actor = ExactActorRef(
+            oteryn_gameplay_foundation::foundation::ActorRef::from_owner_parts(
+                self.binding.world_id,
+                self.binding.channel_id,
+                self.binding.scope_generation,
+                ActorLocalId(local),
+                ActorLocalGeneration(generation),
+            ),
+        );
         let state = CompanionState {
             outfit_look_type: look.unwrap_or(policy.outfit_look_type),
             object_look_type: policy.object_look_type,
@@ -339,7 +343,9 @@ impl ChannelRuntimeV1 {
                 .bytes()
                 .all(|v| v.is_ascii_alphanumeric() || matches!(v, b':' | b'.' | b'_' | b'-' | b'/'))
         {
-            return Err(CarrierError::InvalidCreatureTarget);
+            return Err(
+                oteryn_gameplay_foundation::foundation::CarrierError::InvalidCreatureTarget,
+            );
         }
         let target_identity = Arc::from(copy_bounded_binding(policy.definition_key.as_bytes())?);
         let planned = Box::new(Slot::CreatureOccupied {
@@ -386,7 +392,7 @@ impl ChannelRuntimeV1 {
             .validate_ref(&self.continuity, prepared.actor.0)?;
         let policy = self.companion_policy(&prepared.state.policy.definition_key)?;
         if policy.as_ref() != prepared.state.policy.as_ref() {
-            return Err(CarrierError::PlanConflict);
+            return Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict);
         }
         match &self.carrier.slots[index] {
             Slot::VacantReusable { generation, .. }
@@ -397,7 +403,7 @@ impl ChannelRuntimeV1 {
                 let planned = prepared
                     .planned
                     .as_deref()
-                    .ok_or(CarrierError::PlanConflict)?;
+                    .ok_or(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict)?;
                 self.validate_planned_companion_payload(prepared, planned)?;
             }
             Slot::CreatureReserved {
@@ -411,10 +417,12 @@ impl ChannelRuntimeV1 {
             {
                 self.validate_planned_companion_payload(prepared, planned)?;
             }
-            _ => return Err(CarrierError::PlanConflict),
+            _ => return Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict),
         }
         if !self.companion_position_clear_except(prepared.position, Some(prepared.actor)) {
-            return Err(CarrierError::PositionSnapshotMismatch);
+            return Err(
+                oteryn_gameplay_foundation::foundation::CarrierError::PositionSnapshotMismatch,
+            );
         }
         Ok(())
     }
@@ -433,7 +441,7 @@ impl ChannelRuntimeV1 {
             ..
         } = planned
         else {
-            return Err(CarrierError::PlanConflict);
+            return Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict);
         };
         if *generation != prepared.actor.0.actor_local_generation.0
             || position.actor_local_id != prepared.actor.0.actor_local_id
@@ -449,7 +457,7 @@ impl ChannelRuntimeV1 {
             || state.as_ref() != &prepared.state
             || target_identity.as_ref() != prepared.state.policy.definition_key.as_bytes()
         {
-            return Err(CarrierError::PlanConflict);
+            return Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict);
         }
         Ok(())
     }
@@ -506,10 +514,15 @@ impl ChannelRuntimeV1 {
             return Ok(());
         }
         let Slot::VacantReusable { next_free, .. } = self.carrier.slots[index] else {
-            return Err(CarrierError::PlanConflict);
+            return Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict);
         };
-        let entry = u32::try_from(index).map_err(|_| CarrierError::CapacityArithmeticOverflow)?;
-        let planned = prepared.planned.take().ok_or(CarrierError::PlanConflict)?;
+        let entry = u32::try_from(index).map_err(|_| {
+            oteryn_gameplay_foundation::foundation::CarrierError::CapacityArithmeticOverflow
+        })?;
+        let planned = prepared
+            .planned
+            .take()
+            .ok_or(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict)?;
         self.carrier.slots[index] = Slot::CreatureReserved {
             generation: prepared.actor.0.actor_local_generation.0,
             owner: prepared.owner,
@@ -533,9 +546,11 @@ impl ChannelRuntimeV1 {
             .carrier
             .validate_ref(&self.continuity, prepared.actor.0)?;
         if !matches!(&self.carrier.slots[index], Slot::CreatureReserved { .. }) {
-            return Err(CarrierError::PlanConflict);
+            return Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict);
         }
-        let free = u32::try_from(index).map_err(|_| CarrierError::CapacityArithmeticOverflow)?;
+        let free = u32::try_from(index).map_err(|_| {
+            oteryn_gameplay_foundation::foundation::CarrierError::CapacityArithmeticOverflow
+        })?;
         self.carrier.slots[index] = Slot::VacantReusable {
             generation: prepared.actor.0.actor_local_generation.0,
             next_free: self.carrier.free_head,
@@ -570,13 +585,15 @@ impl ChannelRuntimeV1 {
     ) -> Result<(), CarrierError> {
         self.carrier.validate_current_continuity(&self.continuity)?;
         if table.source_digest() != self.content.server_artifact_digest() {
-            return Err(CarrierError::ContentPinWorldMismatch);
+            return Err(
+                oteryn_gameplay_foundation::foundation::CarrierError::ContentPinWorldMismatch,
+            );
         }
         if let Some(existing) = &self.companion_policies {
             return if existing.as_ref() == &table {
                 Ok(())
             } else {
-                Err(CarrierError::PlanConflict)
+                Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict)
             };
         }
         self.companion_policies = Some(Arc::new(table));
@@ -590,9 +607,11 @@ impl ChannelRuntimeV1 {
         let table = self
             .companion_policies
             .as_ref()
-            .ok_or(CarrierError::InvalidCreatureTarget)?;
+            .ok_or(oteryn_gameplay_foundation::foundation::CarrierError::InvalidCreatureTarget)?;
         if table.source_digest() != self.content.server_artifact_digest() {
-            return Err(CarrierError::ContentPinWorldMismatch);
+            return Err(
+                oteryn_gameplay_foundation::foundation::CarrierError::ContentPinWorldMismatch,
+            );
         }
         // Qualified exact identity always wins over the display-name fallback.
         // Source variants may share a real display name; never select one by export order.
@@ -607,9 +626,13 @@ impl ChannelRuntimeV1 {
             .policies()
             .iter()
             .filter(|p| p.display_name.eq_ignore_ascii_case(name_or_key));
-        let first = matches.next().ok_or(CarrierError::InvalidCreatureTarget)?;
+        let first = matches
+            .next()
+            .ok_or(oteryn_gameplay_foundation::foundation::CarrierError::InvalidCreatureTarget)?;
         if matches.next().is_some() {
-            return Err(CarrierError::InvalidCreatureTarget);
+            return Err(
+                oteryn_gameplay_foundation::foundation::CarrierError::InvalidCreatureTarget,
+            );
         }
         Ok(Arc::clone(first))
     }
@@ -630,10 +653,12 @@ impl ChannelRuntimeV1 {
             ..
         } = &mut self.carrier.slots[index]
         else {
-            return Err(CarrierError::NotCreature);
+            return Err(oteryn_gameplay_foundation::foundation::CarrierError::NotCreature);
         };
         if *health <= 0 || spell_combat.maximum_health != policy.maximum_health {
-            return Err(CarrierError::InvalidCreatureHealth);
+            return Err(
+                oteryn_gameplay_foundation::foundation::CarrierError::InvalidCreatureHealth,
+            );
         }
         let state = CompanionState {
             creation_speed_delta: 0,
@@ -652,7 +677,7 @@ impl ChannelRuntimeV1 {
             return if existing.as_ref() == &state {
                 Ok(())
             } else {
-                Err(CarrierError::PlanConflict)
+                Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict)
             };
         }
         *companion = Some(Box::new(state));
@@ -664,7 +689,9 @@ impl ChannelRuntimeV1 {
     ) -> Result<CompanionSnapshot, CarrierError> {
         let snapshot = self.companion_snapshot_including_dead(actor)?;
         if snapshot.health <= 0 {
-            return Err(CarrierError::CreatureNotActionable);
+            return Err(
+                oteryn_gameplay_foundation::foundation::CarrierError::CreatureNotActionable,
+            );
         }
         Ok(snapshot)
     }
@@ -688,7 +715,9 @@ impl ChannelRuntimeV1 {
             ..
         } = &self.carrier.slots[index]
         else {
-            return Err(CarrierError::InvalidCreatureTarget);
+            return Err(
+                oteryn_gameplay_foundation::foundation::CarrierError::InvalidCreatureTarget,
+            );
         };
         if *generation != expected.actor.0.actor_local_generation.0
             || position.context != self.pinned_position_context()
@@ -702,7 +731,7 @@ impl ChannelRuntimeV1 {
             || spell_combat.maximum_health != expected.maximum_health
             || state.as_ref() != &expected.state
         {
-            return Err(CarrierError::PlanConflict);
+            return Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict);
         }
         Ok(())
     }
@@ -713,14 +742,11 @@ impl ChannelRuntimeV1 {
     ) -> Result<CompanionSnapshot, CarrierError> {
         self.carrier.validate_current_continuity(&self.continuity)?;
         let index = usize::try_from(
-            actor
-                .0
-                .actor_local_id
-                .0
-                .checked_sub(1)
-                .ok_or(CarrierError::InvalidActorIdentity)?,
+            actor.0.actor_local_id.0.checked_sub(1).ok_or(
+                oteryn_gameplay_foundation::foundation::CarrierError::InvalidActorIdentity,
+            )?,
         )
-        .map_err(|_| CarrierError::InvalidActorIdentity)?;
+        .map_err(|_| oteryn_gameplay_foundation::foundation::CarrierError::InvalidActorIdentity)?;
         let Slot::CreatureOccupied {
             generation,
             health,
@@ -728,25 +754,26 @@ impl ChannelRuntimeV1 {
             position: Some(position),
             companion: Some(state),
             ..
-        } = self
-            .carrier
-            .slots
-            .get(index)
-            .ok_or(CarrierError::InvalidActorIdentity)?
+        } =
+            self.carrier.slots.get(index).ok_or(
+                oteryn_gameplay_foundation::foundation::CarrierError::InvalidActorIdentity,
+            )?
         else {
-            return Err(CarrierError::NotCreature);
+            return Err(oteryn_gameplay_foundation::foundation::CarrierError::NotCreature);
         };
         if actor.0.world_id != self.binding.world_id
             || actor.0.channel_id != self.binding.channel_id
             || actor.scope_generation() != self.binding.scope_generation
         {
-            return Err(CarrierError::WrongScope);
+            return Err(oteryn_gameplay_foundation::foundation::CarrierError::WrongScope);
         }
         if *generation != actor.0.actor_local_generation.0 {
-            return Err(CarrierError::StaleActorGeneration);
+            return Err(oteryn_gameplay_foundation::foundation::CarrierError::StaleActorGeneration);
         }
         if position.context != self.pinned_position_context() {
-            return Err(CarrierError::PositionContextMismatch);
+            return Err(
+                oteryn_gameplay_foundation::foundation::CarrierError::PositionContextMismatch,
+            );
         }
         Ok(CompanionSnapshot {
             actor,
@@ -783,15 +810,18 @@ impl ChannelRuntimeV1 {
                 && state.master == Some(master)
                 && *health > 0
             {
-                let local = u32::try_from(index + 1)
-                    .map_err(|_| CarrierError::CapacityArithmeticOverflow)?;
-                let actor = ExactActorRef(ActorRef::from_owner_parts(
-                    self.binding.world_id,
-                    self.binding.channel_id,
-                    self.binding.scope_generation,
-                    ActorLocalId(local),
-                    ActorLocalGeneration(*generation),
-                ));
+                let local = u32::try_from(index + 1).map_err(|_| {
+                    oteryn_gameplay_foundation::foundation::CarrierError::CapacityArithmeticOverflow
+                })?;
+                let actor = ExactActorRef(
+                    oteryn_gameplay_foundation::foundation::ActorRef::from_owner_parts(
+                        self.binding.world_id,
+                        self.binding.channel_id,
+                        self.binding.scope_generation,
+                        ActorLocalId(local),
+                        ActorLocalGeneration(*generation),
+                    ),
+                );
                 out.push(self.companion_snapshot(actor)?);
             }
         }
@@ -822,13 +852,13 @@ impl ChannelRuntimeV1 {
                 && state.policy.is_familiar
                 && *health == 0
             {
-                let actor = ExactActorRef(ActorRef::from_owner_parts(
+                let actor = ExactActorRef(oteryn_gameplay_foundation::foundation::ActorRef::from_owner_parts(
                     self.binding.world_id,
                     self.binding.channel_id,
                     self.binding.scope_generation,
                     ActorLocalId(
                         u32::try_from(index + 1)
-                            .map_err(|_| CarrierError::CapacityArithmeticOverflow)?,
+                            .map_err(|_| oteryn_gameplay_foundation::foundation::CarrierError::CapacityArithmeticOverflow)?,
                     ),
                     ActorLocalGeneration(*generation),
                 ));
@@ -867,17 +897,19 @@ impl ChannelRuntimeV1 {
             {
                 continue;
             }
-            let snapshot = expected.get(cursor).ok_or(CarrierError::PlanConflict)?;
+            let snapshot = expected
+                .get(cursor)
+                .ok_or(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict)?;
             if usize::try_from(snapshot.actor.0.actor_local_id.0).ok() != index.checked_add(1)
                 || snapshot.actor.0.actor_local_generation.0 != *generation
             {
-                return Err(CarrierError::PlanConflict);
+                return Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict);
             }
             self.validate_companion_snapshot(snapshot)?;
             cursor += 1;
         }
         if cursor != expected.len() {
-            return Err(CarrierError::PlanConflict);
+            return Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict);
         }
         Ok(())
     }
@@ -889,7 +921,9 @@ impl ChannelRuntimeV1 {
         let Some(head) = self.carrier.free_head else {
             return Ok(false);
         };
-        let index = usize::try_from(head).map_err(|_| CarrierError::CapacityArithmeticOverflow)?;
+        let index = usize::try_from(head).map_err(|_| {
+            oteryn_gameplay_foundation::foundation::CarrierError::CapacityArithmeticOverflow
+        })?;
         if !matches!(self.carrier.slots.get(index),Some(Slot::VacantReusable {generation,..}) if generation.checked_add(1).is_some())
         {
             return Ok(false);
@@ -918,10 +952,12 @@ impl ChannelRuntimeV1 {
             || (policy.is_familiar && epoch == 0)
             || (policy.object_look_type.is_some() && look.is_some())
         {
-            return Err(CarrierError::InvalidCommitBinding);
+            return Err(oteryn_gameplay_foundation::foundation::CarrierError::InvalidCommitBinding);
         }
         if !self.companion_position_clear_except(position, None) {
-            return Err(CarrierError::PositionSnapshotMismatch);
+            return Err(
+                oteryn_gameplay_foundation::foundation::CarrierError::PositionSnapshotMismatch,
+            );
         }
         let state = Box::new(CompanionState {
             master: Some(CompanionMaster {
@@ -947,8 +983,9 @@ impl ChannelRuntimeV1 {
         )?;
         // Admission has established an unpositioned live slot. Direct initialization uses the
         // exact context already validated above, so no fallible operation follows allocation.
-        let index = usize::try_from(actor.actor_local_id.0 - 1)
-            .map_err(|_| CarrierError::CapacityArithmeticOverflow)?;
+        let index = usize::try_from(actor.actor_local_id.0 - 1).map_err(|_| {
+            oteryn_gameplay_foundation::foundation::CarrierError::CapacityArithmeticOverflow
+        })?;
         if let Slot::CreatureOccupied {
             position: slot_position,
             companion,
@@ -982,7 +1019,7 @@ impl ChannelRuntimeV1 {
             .player_slot_index(&self.continuity, owner.0, session)?;
         let current = self.companion_snapshot(expected.actor)?;
         if &current != expected {
-            return Err(CarrierError::PlanConflict);
+            return Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict);
         }
         let index = self
             .carrier
@@ -1020,7 +1057,7 @@ impl ChannelRuntimeV1 {
                 .is_none_or(|speed| speed < 0)
             || next.expires_at_unix.is_some_and(|time| time < 0)
         {
-            return Err(CarrierError::PlanConflict);
+            return Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict);
         }
         if let Some(master) = next.master {
             self.carrier
@@ -1050,7 +1087,9 @@ impl ChannelRuntimeV1 {
             ..
         } = &mut self.carrier.slots[index]
         else {
-            return Err(CarrierError::InvalidCreatureTarget);
+            return Err(
+                oteryn_gameplay_foundation::foundation::CarrierError::InvalidCreatureTarget,
+            );
         };
         state.party_protection = true;
         Ok(())
@@ -1070,7 +1109,7 @@ impl ChannelRuntimeV1 {
                 session,
             })
         {
-            return Err(CarrierError::PlanConflict);
+            return Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict);
         }
         self.validate_companion_snapshot(expected)?;
         self.carrier
@@ -1108,7 +1147,7 @@ impl ChannelRuntimeV1 {
                 session,
             })
         {
-            return Err(CarrierError::PlanConflict);
+            return Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict);
         }
         self.validate_companion_snapshot(expected)?;
         let current = self
@@ -1170,26 +1209,27 @@ mod tests {
     fn owner_with_policies(
         records: Vec<CompiledCreaturePolicy>,
     ) -> (ChannelRuntimeV1, ExactActorRef, GameSessionId) {
-        let world = WorldId::decode(&id(1)).unwrap();
+        let world = oteryn_gameplay_foundation::foundation::WorldId::decode(&id(1)).unwrap();
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             world,
-            ChannelId::decode(&id(2)).unwrap(),
-            NodeId::decode(&id(3)).unwrap(),
+            oteryn_gameplay_foundation::foundation::ChannelId::decode(&id(2)).unwrap(),
+            oteryn_gameplay_foundation::foundation::NodeId::decode(&id(3)).unwrap(),
             1,
             1,
             1,
             "runtime-scope-assignment:1",
             4,
-            ChannelContentPin::test(world),
+            oteryn_gameplay_foundation::foundation::ChannelContentPin::test(world),
         )
         .unwrap();
-        let session = GameSessionId::decode(&id(4)).unwrap();
+        let session =
+            oteryn_gameplay_foundation::foundation::GameSessionId::decode(&id(4)).unwrap();
         let reserved = runtime.reserve_fresh_session(session).unwrap();
         let actor = runtime.commit_fresh_session(reserved).unwrap();
         runtime.initialize_first_entry_position(actor).unwrap();
         runtime
             .install_companion_policies(
-                CompiledCreaturePolicies::from_active_artifact([1; 32], records).unwrap(),
+                oteryn_gameplay_foundation::foundation::CompiledCreaturePolicies::from_active_artifact([1; 32], records).unwrap(),
             )
             .unwrap();
         (runtime, actor, session)
@@ -1372,11 +1412,11 @@ mod tests {
             );
             assert!(matches!(
                 runtime.companion_policy("rat"),
-                Err(CarrierError::InvalidCreatureTarget)
+                Err(oteryn_gameplay_foundation::foundation::CarrierError::InvalidCreatureTarget)
             ));
             assert!(matches!(
                 runtime.companion_policy("RaT"),
-                Err(CarrierError::InvalidCreatureTarget)
+                Err(oteryn_gameplay_foundation::foundation::CarrierError::InvalidCreatureTarget)
             ));
             assert_eq!(
                 runtime.companion_policy("WOLF").unwrap().definition_key,
@@ -1384,14 +1424,17 @@ mod tests {
             );
             assert!(matches!(
                 runtime.companion_policy("unknown"),
-                Err(CarrierError::InvalidCreatureTarget)
+                Err(oteryn_gameplay_foundation::foundation::CarrierError::InvalidCreatureTarget)
             ));
         }
         let mut duplicate = first.clone();
         duplicate.display_name = "different-name".into();
         assert!(matches!(
-            CompiledCreaturePolicies::from_active_artifact([1; 32], vec![first, duplicate]),
-            Err(CarrierError::InvalidCreatureTarget)
+            oteryn_gameplay_foundation::foundation::CompiledCreaturePolicies::from_active_artifact(
+                [1; 32],
+                vec![first, duplicate]
+            ),
+            Err(oteryn_gameplay_foundation::foundation::CarrierError::InvalidCreatureTarget)
         ));
     }
     #[test]
@@ -1533,7 +1576,11 @@ mod tests {
         let mut object = policy("object-creature");
         object.outfit_look_type = 0;
         object.object_look_type = Some(2122);
-        CompiledCreaturePolicies::from_active_artifact([1; 32], vec![object.clone()]).unwrap();
+        oteryn_gameplay_foundation::foundation::CompiledCreaturePolicies::from_active_artifact(
+            [1; 32],
+            vec![object.clone()],
+        )
+        .unwrap();
         for change in 0..4 {
             let mut altered = object.clone();
             match change {
@@ -1545,10 +1592,10 @@ mod tests {
             if change == 2 {
                 assert!(altered.flags.illusionable);
                 assert_eq!(altered.outfit_appearance(), None);
-                CompiledCreaturePolicies::from_active_artifact([1; 32], vec![altered]).unwrap();
+                oteryn_gameplay_foundation::foundation::CompiledCreaturePolicies::from_active_artifact([1; 32], vec![altered]).unwrap();
             } else {
                 assert!(
-                    CompiledCreaturePolicies::from_active_artifact([1; 32], vec![altered]).is_err()
+                    oteryn_gameplay_foundation::foundation::CompiledCreaturePolicies::from_active_artifact([1; 32], vec![altered]).is_err()
                 );
             }
         }
@@ -1794,9 +1841,9 @@ mod tests {
         let before = runtime.companion_snapshot(second).unwrap();
         let batch = OwnerCombatBatch {
             caster: owner,
-            attacker: CharacterId::decode(&id(5)).unwrap(),
+            attacker: oteryn_gameplay_foundation::foundation::CharacterId::decode(&id(5)).unwrap(),
             current_lease_generation: 1,
-            command: CommandRef::new(
+            command: oteryn_gameplay_foundation::foundation::CommandRef::new(
                 session,
                 oteryn_gameplay_foundation::foundation::CommandId::new(7).unwrap(),
             ),
@@ -1824,7 +1871,7 @@ mod tests {
         assert!(runtime.actor_spell_reserved(second));
         assert_eq!(
             runtime.despawn_companion(owner, session, &before),
-            Err(CarrierError::PlanConflict)
+            Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict)
         );
         assert_eq!(
             runtime.follow_companion(
@@ -1837,19 +1884,19 @@ mod tests {
                     floor: 0
                 }
             ),
-            Err(CarrierError::PlanConflict)
+            Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict)
         );
         assert_eq!(
             runtime.compare_companion_state(&before, before.state.clone()),
-            Err(CarrierError::PlanConflict)
+            Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict)
         );
         assert_eq!(
             runtime.mark_companion_party_protection(&before),
-            Err(CarrierError::PlanConflict)
+            Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict)
         );
         assert_eq!(
             runtime.remove_owned_companions(owner, session),
-            Err(CarrierError::PlanConflict)
+            Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict)
         );
         assert!(runtime.contains_live_creature(first));
         runtime.validate_companion_snapshot(&before).unwrap();
@@ -1924,7 +1971,7 @@ mod tests {
         assert_ne!(creature, replacement);
         assert!(matches!(
             runtime.despawn_companion(owner, session, &before),
-            Err(CarrierError::StaleActorGeneration)
+            Err(oteryn_gameplay_foundation::foundation::CarrierError::StaleActorGeneration)
         ));
         assert!(runtime.contains_live_creature(replacement));
         assert_eq!(runtime.owned_companions(owner, session).unwrap().len(), 1);
@@ -1933,10 +1980,14 @@ mod tests {
     fn artifact_policy_unknown_prototypes_and_occupancy_refuse_before_allocation() {
         let (mut runtime, owner, session) = owner();
         let wrong =
-            CompiledCreaturePolicies::from_active_artifact([2; 32], vec![policy("dog")]).unwrap();
+            oteryn_gameplay_foundation::foundation::CompiledCreaturePolicies::from_active_artifact(
+                [2; 32],
+                vec![policy("dog")],
+            )
+            .unwrap();
         assert_eq!(
             runtime.install_companion_policies(wrong),
-            Err(CarrierError::ContentPinWorldMismatch)
+            Err(oteryn_gameplay_foundation::foundation::CarrierError::ContentPinWorldMismatch)
         );
         let pos = MovementLocalPosition {
             x: 1,
@@ -1968,7 +2019,7 @@ mod tests {
         assert_eq!(runtime.owned_companions(owner, session).unwrap().len(), 0);
         assert!(runtime.companion_creation_available(pos).unwrap());
         assert!(
-            CompiledCreaturePolicies::from_active_artifact(
+            oteryn_gameplay_foundation::foundation::CompiledCreaturePolicies::from_active_artifact(
                 [1; 32],
                 vec![policy("rat"), {
                     let mut duplicate = policy("RAT");
@@ -1980,7 +2031,13 @@ mod tests {
         );
         let mut undefined = policy("unknown");
         undefined.mana_cost = None;
-        assert!(CompiledCreaturePolicies::from_active_artifact([1; 32], vec![undefined]).is_err());
+        assert!(
+            oteryn_gameplay_foundation::foundation::CompiledCreaturePolicies::from_active_artifact(
+                [1; 32],
+                vec![undefined]
+            )
+            .is_err()
+        );
     }
     #[test]
     fn owner_removal_drops_physical_summons_and_snapshot_update_is_compared() {
@@ -2008,7 +2065,7 @@ mod tests {
         let current = runtime.companion_snapshot(creature).unwrap();
         assert_eq!(
             runtime.validate_companion_snapshot(&before),
-            Err(CarrierError::PlanConflict)
+            Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict)
         );
         runtime.validate_companion_snapshot(&current).unwrap();
         for field in 0..4 {
@@ -2021,13 +2078,13 @@ mod tests {
             }
             assert_eq!(
                 runtime.validate_companion_snapshot(&substituted),
-                Err(CarrierError::PlanConflict)
+                Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict)
             );
         }
         assert_eq!(current.state.current_speed(0).unwrap(), 270);
         assert_eq!(
             runtime.compare_companion_state(&before, before.state.clone()),
-            Err(CarrierError::PlanConflict)
+            Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict)
         );
         assert_eq!(runtime.remove_owned_companions(owner, session).unwrap(), 1);
         assert!(!runtime.contains_live_creature(creature));
@@ -2094,9 +2151,9 @@ mod tests {
         install(&mut runtime);
         let batch = OwnerCombatBatch {
             caster: owner,
-            attacker: CharacterId::decode(&id(5)).unwrap(),
+            attacker: oteryn_gameplay_foundation::foundation::CharacterId::decode(&id(5)).unwrap(),
             current_lease_generation: 1,
-            command: CommandRef::new(
+            command: oteryn_gameplay_foundation::foundation::CommandRef::new(
                 session,
                 oteryn_gameplay_foundation::foundation::CommandId::new(1).unwrap(),
             ),

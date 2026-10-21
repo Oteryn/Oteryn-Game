@@ -1,9 +1,12 @@
 //! Fixed source text captured after current source/fence admission; no arbitrary text API.
 use crate::creature_auto_attack::AttackError;
-use crate::foundation::{ChannelRuntimeV1, ExactActorRef, MovementLocalPosition};
 use oteryn_protocol_oteryn::chat::{ChatLine, ChatSpeaker, ChatSpeechMode};
 use oteryn_protocol_oteryn::world_spatial::ActorPosition;
 use std::num::NonZeroU64;
+use {
+    oteryn_gameplay_entities::{ChannelRuntimeV1, MovementLocalPosition},
+    oteryn_gameplay_foundation::foundation::ExactActorRef,
+};
 pub struct CallbackSpeech {
     at: MovementLocalPosition,
     line: ChatLine,

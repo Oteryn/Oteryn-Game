@@ -87,7 +87,7 @@ impl crate::monster_combat_lane::MonsterCombatStates for ChannelSpellStates {
         target: ExactActorRef,
         session: GameSessionId,
         _occurrence: DecisionOccurrenceId,
-        facts: crate::ability::condition::TickFacts,
+        facts: oteryn_gameplay_foundation::foundation::condition::TickFacts,
         now: crate::foundation::owner_timer::SemanticTimeMicros,
     ) -> Option<NativeOwnedPlayerTickReceipt> {
         ChannelSpellStates::tick_source_player_conditions(

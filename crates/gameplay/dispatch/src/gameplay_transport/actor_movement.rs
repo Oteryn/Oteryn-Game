@@ -989,7 +989,7 @@ mod tests {
         )
         .unwrap();
         let root = GameplayDecisionRoot::from_bytes([1; 32]);
-        let application = crate::ability::condition::ApplicationFacts {
+        let application = oteryn_gameplay_foundation::foundation::condition::ApplicationFacts {
             now: 0,
             base_speed: 400,
             mana_shield_capacity: 0,
@@ -1080,7 +1080,7 @@ mod creature_field_step_tests {
             .unwrap()
             .iter()
             .map(|v| {
-                serde_json::from_value::<crate::ability::field_condition::QualifiedFieldCondition>(
+                serde_json::from_value::<oteryn_gameplay_foundation::foundation::condition::field_condition::QualifiedFieldCondition>(
                     v.clone(),
                 )
                 .unwrap()
@@ -1090,12 +1090,13 @@ mod creature_field_step_tests {
         let values = recipe.condition_values().unwrap().unwrap();
         super::super::CreatureFieldContact {
             source: "creature:field:owner-component-fixture".into(),
-            definition: crate::ability::condition::ConditionDefinition::new(
-                "native.field.i2118",
-                1,
-                values,
-            )
-            .unwrap(),
+            definition:
+                oteryn_gameplay_foundation::foundation::condition::ConditionDefinition::new(
+                    "native.field.i2118",
+                    1,
+                    values,
+                )
+                .unwrap(),
             element: recipe.element().unwrap().unwrap(),
             content: runtime.content_pin().server_artifact_digest(),
         }
@@ -1129,7 +1130,7 @@ mod creature_field_step_tests {
                 .instances()
                 .iter()
                 .any(|i| i.provenance().source_kind
-                    == crate::ability::condition::ConditionSourceKind::Creature)
+                    == oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind::Creature)
         );
         assert_eq!(runtime.read_actor_position(actor).unwrap().position().x, 1);
     }

@@ -4,13 +4,13 @@ use crate::content::{
     ProjectV2Family as Family,
 };
 use crate::creature_auto_attack::ProfileAbilityProposal;
-use crate::durability::creature_schedule::ScheduleList;
 use crate::foundation::{ChannelContentPin, ChannelId, MovementLocalPosition, NodeId, WorldId};
 use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, RuntimeScopeRefV1, RuntimeWorkStamp, ScopeRuntimeFence,
 };
 use crate::source_threshold_heal::*;
 use oteryn_gameplay_encounters::bosses::crystal_deaths::native_fixtures::CrystalRouterFixtureExt;
+use oteryn_gameplay_foundation::foundation::profile_schedule::ScheduleList;
 
 fn fixture(name: &str) -> (ChannelRuntimeV1, ProjectV2Draft, Ref, ThresholdHealSource) {
     let v:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/encounters/callback18/threshold-heal-native-fixture-v2.json"))).expect("qualified fixture");
@@ -388,7 +388,7 @@ impl crate::creature_damage_spell::SpellWorldReader for ThresholdWorld {
         _: &ChannelRuntimeV1,
         _: ExactActorRef,
         _: RuntimeWorkStamp,
-    ) -> Option<crate::creature_attack_geometry::Facing> {
+    ) -> Option<oteryn_gameplay_content::content::creature_attack_geometry::Facing> {
         None
     }
     fn tile_allowed(

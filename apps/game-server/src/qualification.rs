@@ -791,7 +791,7 @@ fn first_control_frames(world: WorldId) -> TestResult<Vec<Vec<u8>>> {
             &at(x),
         )
     };
-    let door_overlay = crate::gameplay_transport::world_object::WorldObjectOverlayEntry {
+    let door_overlay = oteryn_protocol_oteryn::world_object::WorldObjectOverlayEntry {
         content_generation: room.compiled().client_digest(),
         placement: crate::content::accepted::DOOR_CELL.0.as_bytes().to_vec(),
         state: crate::content::accepted::DOOR_CLOSED_STATE
@@ -811,15 +811,14 @@ fn first_control_frames(world: WorldId) -> TestResult<Vec<Vec<u8>>> {
                 payload: &at(0),
             },
             DomainSnapshot {
-                domain_id:
-                    crate::gameplay_transport::world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+                domain_id: oteryn_protocol_oteryn::world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
                 revision: 0,
                 snapshot_type:
-                    crate::gameplay_transport::world_object::SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+                    oteryn_protocol_oteryn::world_object::SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
                 payload:
-                    &crate::gameplay_transport::world_object::encode_world_object_overlay_snapshot(
-                        &[door_overlay],
-                    )
+                    &oteryn_protocol_oteryn::world_object::encode_world_object_overlay_snapshot(&[
+                        door_overlay,
+                    ])
                     .map_err(|_| "encode door overlay snapshot")?,
             },
         ],
@@ -862,7 +861,7 @@ fn first_control_frames(world: WorldId) -> TestResult<Vec<Vec<u8>>> {
 /// so a genuine TOO_FAR case cannot be exercised through real movement here; it is covered by
 /// `gameplay_transport::tests::use_object_reachable_is_chebyshev_one_same_floor_only` instead.
 fn use_wire_frames(world: WorldId) -> TestResult<Vec<Vec<u8>>> {
-    use crate::gameplay_transport::world_object::{
+    use oteryn_protocol_oteryn::world_object::{
         DELTA_TYPE_WORLD_OBJECT_OVERLAY_V1, SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
         STATE_DOMAIN_WORLD_OBJECT_OVERLAY, UseDisposition, WorldObjectOverlayEntry,
         encode_use_result, encode_world_object_overlay_delta, encode_world_object_overlay_snapshot,
@@ -1601,7 +1600,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
     let address = listener.local_addr()?;
     let shutdown = CancellationToken::new();
     let quest_catalogue = std::sync::Arc::new(
-        crate::durability::quest_state::quest::loader::load_embedded_quest_state("content-s3b-1")
+        oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-s3b-1")
             .map_err(|error| format!("quest catalogue: {error:?}"))?
             .catalogue()
             .clone(),
@@ -2460,7 +2459,7 @@ fn resume_frames(
     // USE-WIRE-V1 (#162 5868482467): the resync join snapshot also carries the door's current
     // `WORLD_OBJECT_OVERLAY`; nothing in this scenario touches the door, so it is still closed
     // at revision 0.
-    let door_overlay = crate::gameplay_transport::world_object::WorldObjectOverlayEntry {
+    let door_overlay = oteryn_protocol_oteryn::world_object::WorldObjectOverlayEntry {
         content_generation: room.compiled().client_digest(),
         placement: crate::content::accepted::DOOR_CELL.0.as_bytes().to_vec(),
         state: crate::content::accepted::DOOR_CLOSED_STATE
@@ -2480,15 +2479,14 @@ fn resume_frames(
                 payload: &at(x),
             },
             DomainSnapshot {
-                domain_id:
-                    crate::gameplay_transport::world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+                domain_id: oteryn_protocol_oteryn::world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
                 revision: 0,
                 snapshot_type:
-                    crate::gameplay_transport::world_object::SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+                    oteryn_protocol_oteryn::world_object::SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
                 payload:
-                    &crate::gameplay_transport::world_object::encode_world_object_overlay_snapshot(
-                        &[door_overlay],
-                    )
+                    &oteryn_protocol_oteryn::world_object::encode_world_object_overlay_snapshot(&[
+                        door_overlay,
+                    ])
                     .map_err(|_| "encode door overlay snapshot")?,
             },
         ],
@@ -3143,7 +3141,7 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
     // character[0] as well, breaking `seam_flow`'s final invariant (exactly the P1 this ordering
     // fixes: r4122215795's companion CI finding).
     let use_session = {
-        use crate::gameplay_transport::world_object::{
+        use oteryn_protocol_oteryn::world_object::{
             COMMAND_TYPE_USE_INTENT, WorldObjectTarget, encode_use_intent,
         };
         let door_key = crate::content::accepted::DOOR_CELL.0;
@@ -3377,8 +3375,8 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
         .into());
     }
     {
-        use crate::gameplay_transport::world_object::{UseDisposition, WorldObjectOverlayEntry};
         use oteryn_dev_client::{AppliedDelta, CommandOutcome, SessionEvent};
+        use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectOverlayEntry};
         let spatial_baseline = dev_client_snapshot.world_spatial_revision;
         let content_generation = dev_client_content_generation;
         let moved =

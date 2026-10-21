@@ -251,7 +251,7 @@ fn bounded_exclusions_narrow_static_placement_without_granting_absent_cells() {
 fn dynamic_payment_is_once_and_cooldown_rejection_does_not_mutate_the_owner() {
     let (runtime, room, reservation, mut current) = target_fixture(500, false);
     let p = profile("target_creature");
-    let spell = crate::spell::authoring::spell_from_bundle(
+    let spell = oteryn_gameplay_content::content::spell_data::authoring::spell_from_bundle(
         &serde_json::json!({"spell":p.spell()}),
         p.dependencies(),
     )

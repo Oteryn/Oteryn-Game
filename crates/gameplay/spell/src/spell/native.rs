@@ -4,10 +4,14 @@
 //! dependencies. Plans use owner-supplied facts and never write world or durable state.
 //! Registration here does not expand the admitted V1 spell book or its wire protocol.
 
-use super::{
-    Vocation, native_actor_states as actor, native_combat as combat,
-    native_companions as companions, native_delayed as delayed, native_house_movement as house,
-    native_items as items,
+use {
+    super::{
+        Vocation, native_combat as combat, native_delayed as delayed,
+        native_house_movement as house,
+    },
+    oteryn_gameplay_spell_rules::{
+        native_actor_states as actor, native_companions as companions, native_items as items,
+    },
 };
 
 pub use crate::content::spell_data::native::*;

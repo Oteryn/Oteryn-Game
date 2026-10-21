@@ -3,146 +3,146 @@
 pub mod gameplay_transport;
 
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_admission_evidence as admission_evidence;
+use oteryn_gameplay_admission_evidence as admission_evidence;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
+use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_combat::ability;
+use oteryn_gameplay_combat::ability;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_combat::combat;
+use oteryn_gameplay_combat::combat;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_combat::combat_attack;
+use oteryn_gameplay_combat::combat_attack;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_combat::combat_pickup;
+use oteryn_gameplay_combat::combat_pickup;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_combat::combat_pvp;
+use oteryn_gameplay_combat::combat_pvp;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_combat::creature_appearance_content;
+use oteryn_gameplay_combat::creature_appearance_content;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_combat::creature_area_heal;
+use oteryn_gameplay_combat::creature_area_heal;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_combat::creature_attack_geometry;
+use oteryn_gameplay_combat::creature_auto_attack;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_combat::creature_auto_attack;
+use oteryn_gameplay_combat::creature_chain_attack;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_combat::creature_chain_attack;
+use oteryn_gameplay_combat::creature_condition_content;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_combat::creature_condition_content;
+use oteryn_gameplay_combat::creature_defense_presentation;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_combat::creature_defense_presentation;
+use oteryn_gameplay_combat::creature_spell_facts;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_combat::creature_spell_facts;
+use oteryn_gameplay_combat::player_lethal;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_combat::player_lethal;
+use oteryn_gameplay_content::content;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_content::content;
+use oteryn_gameplay_content::content::creature_attack_geometry;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_domain::domain;
+use oteryn_gameplay_domain::domain;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_durability::character_bootstrap_intent;
+use oteryn_gameplay_domain::domain::interaction;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_durability::durability;
+use oteryn_gameplay_durability::character_bootstrap_intent;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_encounters::bone_phase_registry;
+use oteryn_gameplay_durability::durability;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_encounters::creature_icicle;
+use oteryn_gameplay_encounters::bosses::bone_overlord::bone_phase_registry;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_encounters::crystal_callbacks;
+use oteryn_gameplay_encounters::bosses::crystal_deaths::crystal_callbacks;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_encounters::crystal_death_composition;
+use oteryn_gameplay_encounters::bosses::crystal_deaths::crystal_death_composition;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_encounters::crystal_herald_quest;
+use oteryn_gameplay_encounters::bosses::crystal_deaths::crystal_death_composition::speech as weak_spot_speech;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_encounters::monster_combat_lane;
+use oteryn_gameplay_encounters::bosses::herald_of_fire::crystal_herald_quest;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_encounters::self_heal_qualification;
+use oteryn_gameplay_encounters::bosses::icicle::creature_icicle;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_encounters::smelly_cheese;
+use oteryn_gameplay_encounters::bosses::native_combat::monster_combat_lane;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_encounters::smelly_damage;
+use oteryn_gameplay_encounters::bosses::seven_encounters::source_encounter_seven;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_encounters::smelly_encounter_dispatch;
+use oteryn_gameplay_encounters::bosses::smelly_cheese::smelly_damage;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_encounters::source_callback_cast;
+use oteryn_gameplay_encounters::bosses::smelly_cheese::smelly_encounter_dispatch;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_encounters::source_callback_intent;
+use oteryn_gameplay_encounters::bosses::smelly_cheese::timers as smelly_cheese;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_encounters::source_callback_spawn;
+use oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_cast;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_encounters::source_encounter_seven;
+use oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_intent;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_encounters::source_threshold_heal;
+use oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_spawn;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_encounters::weak_spot_speech;
+use oteryn_gameplay_encounters::bosses::threshold_heals::source_threshold_heal;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_entities as foundation;
+use oteryn_gameplay_encounters::self_heal_qualification;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_monster_ai::ai;
+use oteryn_gameplay_entities as foundation;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_monster_ai::ai_monster_melee;
+use oteryn_gameplay_monster_ai::ai;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_monster_ai::ai_think;
+use oteryn_gameplay_monster_ai::ai_monster_melee;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_monster_ai::monster_owner_cycle;
+use oteryn_gameplay_monster_ai::ai_think;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_monster_ai::monster_summon;
+use oteryn_gameplay_monster_ai::monster_owner_cycle;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_native_admission_source as native_admission_source;
+use oteryn_gameplay_monster_ai::monster_summon;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_native_admission_source::account_characters;
+use oteryn_gameplay_native_admission_source as native_admission_source;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_native_admission_source::character_commands;
+use oteryn_gameplay_native_admission_source::account_characters;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_native_admission_source::descriptor;
+use oteryn_gameplay_native_admission_source::character_commands;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_native_admission_source::http1_mtls;
+use oteryn_gameplay_native_admission_source::descriptor;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_native_admission_source::public_projections;
+use oteryn_gameplay_native_admission_source::http1_mtls;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_native_admission_source::runtime_status;
+use oteryn_gameplay_native_admission_source::public_projections;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_native_admission_source::scope_assignment;
+use oteryn_gameplay_native_admission_source::runtime_status;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_node_files::operator_files;
+use oteryn_gameplay_native_admission_source::scope_assignment;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_node_files::secure_file;
+use oteryn_gameplay_node_files::operator_files;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_social::achievement_catalogue;
+use oteryn_gameplay_node_files::secure_file;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_social::chat;
+use oteryn_gameplay_progression::wheel_gem_data;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_social::interaction;
+use oteryn_gameplay_social::achievement_catalogue;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_social::interaction_chest_use;
+use oteryn_gameplay_social::chat;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_social::party;
+use oteryn_gameplay_social::interaction_chest_use;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_social::premium;
+use oteryn_gameplay_social::party;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_social::security;
+use oteryn_gameplay_social::premium;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_social::wheel_gem_data;
+use oteryn_gameplay_social::security;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_spell::creature_damage_spell;
+use oteryn_gameplay_spell::creature_damage_spell;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_spell::creature_damage_spell_delayed;
+use oteryn_gameplay_spell::creature_damage_spell_delayed;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_spell::spell;
+use oteryn_gameplay_spell::spell;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_world::house_scope;
+use oteryn_gameplay_world::house_scope;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_world::map;
+use oteryn_gameplay_world::map;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_world::movement;
+use oteryn_gameplay_world::movement;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_world::world_clock;
+use oteryn_gameplay_world::world_clock;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_world::world_object_revert;
+use oteryn_gameplay_world::world_object_revert;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_world::world_runtime;
+use oteryn_gameplay_world::world_runtime;
 
 pub use gameplay_transport::{GameplayListenerConfig, GameplaySeamOwners, serve_gameplay};
-pub(crate) use oteryn_gameplay_weather as world_weather;
+use oteryn_gameplay_weather as world_weather;
 
 #[cfg(test)]
 #[path = "lifted_tests/durability_world_party_tests.rs"]
@@ -263,9 +263,6 @@ mod monster_combat_lane_defense_speed_test;
 #[cfg(test)]
 #[path = "lifted_tests/monster_combat_lane_source_summon_composition_tests.rs"]
 mod monster_combat_lane_source_summon_composition_tests;
-
-#[allow(dead_code)]
-pub mod welter_consume;
 
 #[cfg(test)]
 mod canonical_monster_successor_tests;

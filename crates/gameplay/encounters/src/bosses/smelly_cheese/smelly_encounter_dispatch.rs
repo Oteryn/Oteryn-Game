@@ -8,15 +8,20 @@ use crate::content::{
 use crate::creature_auto_attack::AttackError;
 use crate::creature_auto_attack::ProfileAbilityProposal;
 use crate::creature_damage_spell::{SourcePresentationEvent, SpellWorldReader};
-use crate::durability::creature_schedule::ScheduleList;
-use crate::foundation::owner_timer::{OwnerClock, SemanticTimeMicros};
-use crate::foundation::{
-    ChannelRuntimeV1, ExactActorRef, RuntimeScopeRefV1, RuntimeWorkStamp, ScopeRuntimeFence,
-};
 use crate::player_lethal::{PlayerDamageReceipt, PlayerLethalVitals};
-use crate::smelly_cheese::{SmellyCastOccurrence, SmellyCheeseTimers, SmellyPulse};
+use oteryn_gameplay_encounters::bosses::smelly_cheese::timers::{
+    SmellyCastOccurrence, SmellyCheeseTimers, SmellyPulse,
+};
+use oteryn_gameplay_foundation::foundation::owner_timer::{OwnerClock, SemanticTimeMicros};
+use oteryn_gameplay_foundation::foundation::profile_schedule::ScheduleList;
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
+use {
+    oteryn_gameplay_entities::ChannelRuntimeV1,
+    oteryn_gameplay_foundation::foundation::{
+        ExactActorRef, RuntimeScopeRefV1, RuntimeWorkStamp, ScopeRuntimeFence,
+    },
+};
 pub const CREATURE: &str = "oteryn:creature.smelly_cheese";
 pub const PARENT: &str = "oteryn:ability.creature.smelly_cheese.berserk_bridge";
 #[derive(Clone)]
@@ -316,7 +321,7 @@ fn execute_pulse(
     v: &mut impl PlayerLethalVitals,
     reader: &mut impl SpellWorldReader,
     s: &SourceSmelly,
-    p: crate::smelly_cheese::SmellyDuePulse,
+    p: oteryn_gameplay_encounters::bosses::smelly_cheese::timers::SmellyDuePulse,
     now: SemanticTimeMicros,
 ) -> Result<SmellyEffect, AttackError> {
     let b = r.binding();

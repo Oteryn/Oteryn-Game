@@ -10,7 +10,6 @@ mod defense_composition_tests {
     use crate::content::ProjectV2DefinitionRef as Ref;
     use crate::content::ProjectV2Family;
     use crate::content::*;
-    use crate::creature_attack_geometry::Facing;
     use crate::creature_auto_attack::AttackFacts;
     use crate::creature_auto_attack::CurrentCombatFactsReader;
     use crate::creature_damage_spell::SpellCombatFacts;
@@ -33,6 +32,7 @@ mod defense_composition_tests {
     use crate::monster_combat_lane::native_invisibility::InvisibleTileCombatPolicy;
     use crate::monster_combat_lane::native_invisibility::SelfSpeedSource;
     use crate::monster_combat_lane::*;
+    use oteryn_gameplay_content::content::creature_attack_geometry::Facing;
     /// Explicit no-target test owner. Unknown attack/condition facts never grant admission.
     struct DefenseWorld;
     impl CurrentCombatFactsReader for DefenseWorld {

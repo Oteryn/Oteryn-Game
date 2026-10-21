@@ -9,10 +9,10 @@
 use super::cast::PlayerSpellState;
 use super::combat_batch::{Error, LiveActorBinding, MAX_EFFECTS};
 use super::native_combat::{Element, MagnitudePlan, NativeCombatPlan};
-use crate::ability::condition::ConditionValues;
 use crate::foundation::{
     ChannelRuntimeV1, CharacterId, CompanionSnapshot, ExactActorRef, GameSessionId,
 };
+use oteryn_gameplay_foundation::foundation::condition::ConditionValues;
 
 pub use crate::foundation::magnitude_policy::MagnitudePolicy;
 

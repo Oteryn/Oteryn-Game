@@ -6,7 +6,6 @@
     reason = "spell import candidate; awaits its production owner caller"
 )]
 use super::actor_spell::ChannelSpellStates;
-use crate::ability::condition::{ConditionStore, TemporaryDisplayedAppearance};
 use crate::content::QualifiedNativeEntryRoom;
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::durability::spell_item_transaction::{SpellItemAuthority, check_transaction};
@@ -16,6 +15,9 @@ use crate::foundation::{
 use crate::spell::cast::PlayerSpellState;
 use crate::spell::owned_cast_facts::{CastFactsBinding, OwnedCastFacts};
 use crate::world_runtime::LocalObjectRuntime;
+use oteryn_gameplay_foundation::foundation::condition::{
+    ConditionStore, TemporaryDisplayedAppearance,
+};
 use oteryn_protocol_oteryn::actor_condition_snapshot_candidate::{
     self as codec, Snapshot, TemporaryAppearance,
 };
@@ -249,7 +251,7 @@ pub async fn prepare_current_player_in_transaction(
 mod tests {
     #![allow(clippy::expect_used)]
     use super::*;
-    use crate::ability::condition::{
+    use oteryn_gameplay_foundation::foundation::condition::{
         ApplicationFacts, ConditionDefinition, ConditionSourceKind, ConditionValues,
     };
     use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
@@ -278,8 +280,11 @@ mod tests {
             .find(|r| r["bundle"]["spell"]["identity"]["key"] == "candidate:spell/light")
             .expect("actual Light");
         let definition =
-            crate::spell::authoring::spell_from_bundle(&row["bundle"], &row["dependencies"])
-                .expect("source Light definition");
+            oteryn_gameplay_content::content::spell_data::authoring::spell_from_bundle(
+                &row["bundle"],
+                &row["dependencies"],
+            )
+            .expect("source Light definition");
         let source = definition.authored.as_ref().expect("authored source");
         let light = crate::spell::actor_conditions::condition_definition(
             &source.dependencies.effects[0],
@@ -512,7 +517,7 @@ mod source_player_owner_regressions {
         assert_eq!(current.owned_conditions().active_speed_delta(0), -70);
         assert_eq!(
             110 + current.owned_conditions().active_speed_delta(0),
-            crate::ability::condition::PARALYSIS_SPEED_FLOOR
+            oteryn_gameplay_foundation::foundation::condition::PARALYSIS_SPEED_FLOOR
         );
         assert_eq!(
             s.native_effective_attributes(&r, a, g, SemanticTimeMicros::from_micros(0))
@@ -556,10 +561,12 @@ mod source_player_owner_regressions {
         let cycle = crate::spell::actor_conditions::stage_source_owner_cycle(
             cured,
             SemanticTimeMicros::from_micros(1_000_000),
-            Some(crate::ability::condition::TickFacts {
-                in_protection_zone: false,
-                standing_on_field: None,
-            }),
+            Some(
+                oteryn_gameplay_foundation::foundation::condition::TickFacts {
+                    in_protection_zone: false,
+                    standing_on_field: None,
+                },
+            ),
             None,
         )
         .unwrap()
@@ -567,7 +574,7 @@ mod source_player_owner_regressions {
         assert_eq!(cycle.combat_ticks.len(), 1);
         assert!(matches!(
             cycle.combat_ticks[0].kind,
-            crate::ability::condition::TickKind::Damage {
+            oteryn_gameplay_foundation::foundation::condition::TickKind::Damage {
                 amount: 10,
                 refused: false,
                 ..

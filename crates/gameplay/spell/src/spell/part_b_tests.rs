@@ -7,8 +7,6 @@
 
 use serde_json::{Value, json};
 
-use super::authoring::spell_from_bundle;
-use super::locate::{Compass, LocateDistance, LocateLevel, locate};
 use super::part_d_tests::{
     CASTER, HEALING, OTHER_PLAYER, SUMMON, at_ms, caster, lowest, occurrence, target,
     ultimate_healing_rune,
@@ -17,6 +15,8 @@ use super::plan::effect_plan;
 use super::target::AllowedTargets;
 use super::*;
 use crate::ability::AbilityEngine;
+use oteryn_gameplay_content::content::spell_data::authoring::spell_from_bundle;
+use oteryn_gameplay_spell_rules::locate::{Compass, LocateDistance, LocateLevel, locate};
 
 const LIGHT_HEALING: &str = include_str!(
     "../../../../../tools/content-schema/spell-authoring/samples/starter-bundles/instant-light_healing/spell.json"
@@ -405,7 +405,7 @@ fn locate_gives_the_band_level_and_direction() {
     assert_eq!(phrase(0, 300, 0), "is very far to the north");
     assert_eq!(
         locate(0, 300, 0),
-        super::locate::Located {
+        oteryn_gameplay_spell_rules::locate::Located {
             distance: LocateDistance::VeryFar,
             level: LocateLevel::Same,
             direction: Some(Compass::North),

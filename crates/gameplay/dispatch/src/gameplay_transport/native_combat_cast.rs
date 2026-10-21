@@ -43,9 +43,9 @@ use crate::spell::native_combat::{
     Direction, ElementalStance, NativeCombatFacts, NativeCombatPlan, NativeTargetFact, TargetKind,
 };
 use crate::spell::owned_cast_facts::{OwnedCastFacts, OwnedFactsError};
-use crate::spell::world_items_execution::SpellGroundTarget;
 use crate::spell::{Execution, OperationalCastFacts, SpellBook, SpellDefinition};
 use crate::world_runtime::LocalObjectRuntime;
+use oteryn_gameplay_durability::durability::native_world_items::SpellGroundTarget;
 use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellCastIntent, SpellTarget};
 use oteryn_protocol_oteryn::actor_spell_item_v2::ItemSpellCastIntent;
 use oteryn_protocol_oteryn::actor_spell_v2::{
@@ -905,7 +905,7 @@ fn prepare_paid_self(
             },
         )?;
         let party_heal = if let Some(healing) = &paid.plan.healing {
-            let selected = crate::spell::native_actor_states::focus_healing_target(
+            let selected = oteryn_gameplay_spell_rules::native_actor_states::focus_healing_target(
                 &parameters,
                 world.caster_facts(),
                 world.member_facts(),
@@ -944,7 +944,7 @@ fn prepare_paid_self(
         ));
         // These positive SPEED/ATTRIBUTES profiles do not consume shield capacity or
         // PvE damage re-entry flags; those nominal fields confer no such qualification.
-        let facts = crate::ability::condition::ApplicationFacts {
+        let facts = oteryn_gameplay_foundation::foundation::condition::ApplicationFacts {
             now: now.get(),
             base_speed: u16::try_from(before.owned_base_speed())
                 .map_err(|_| SpellCastDisposition::Rejected)?,

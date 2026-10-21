@@ -198,8 +198,14 @@ impl ChannelSpellStates {
         };
         let store = state.owned_conditions();
         store.accepts_time(now.get())
-            && !store.has_status(crate::ability::condition::StatusKind::Rooted, now.get())
-            && !store.has_status(crate::ability::condition::StatusKind::Feared, now.get())
+            && !store.has_status(
+                oteryn_gameplay_foundation::foundation::condition::StatusKind::Rooted,
+                now.get(),
+            )
+            && !store.has_status(
+                oteryn_gameplay_foundation::foundation::condition::StatusKind::Feared,
+                now.get(),
+            )
     }
     pub fn native_effective_attributes(
         &self,
@@ -216,12 +222,14 @@ impl ChannelSpellStates {
             return None;
         }
         let values = store.effective_attributes(now.get());
-        let map = |value: Option<crate::ability::condition::AttributeModifier>| {
+        let map = |value: Option<
+            oteryn_gameplay_foundation::foundation::condition::AttributeModifier,
+        >| {
             value.map(|v| match v {
-                crate::ability::condition::AttributeModifier::Add(n) => {
+                oteryn_gameplay_foundation::foundation::condition::AttributeModifier::Add(n) => {
                     crate::foundation::AttributeModifier::Add(n)
                 }
-                crate::ability::condition::AttributeModifier::PercentOfBase(n) => {
+                oteryn_gameplay_foundation::foundation::condition::AttributeModifier::PercentOfBase(n) => {
                     crate::foundation::AttributeModifier::PercentOfBase(n)
                 }
             })
@@ -885,8 +893,8 @@ impl ChannelSpellStates {
         stamp: RuntimeWorkStamp,
         target: ExactActorRef,
         session: GameSessionId,
-        definition: &crate::ability::condition::ConditionDefinition,
-        facts: &crate::ability::condition::ApplicationFacts<'_>,
+        definition: &oteryn_gameplay_foundation::foundation::condition::ConditionDefinition,
+        facts: &oteryn_gameplay_foundation::foundation::condition::ApplicationFacts<'_>,
     ) -> bool {
         if !current_owner(runtime, fence, stamp)
             || !self.condition_player_current(runtime, target, session)
@@ -908,7 +916,7 @@ impl ChannelSpellStates {
                     "player:{}",
                     super::hex(&target.placement_identity())
                 )),
-                crate::ability::condition::ConditionSourceKind::SelfUse,
+                oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind::SelfUse,
                 &[],
                 facts,
             )

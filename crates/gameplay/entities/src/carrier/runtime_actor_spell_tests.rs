@@ -21,20 +21,22 @@ fn fixture(generation: u64) -> Fixture {
     fixture_with_position(generation, false)
 }
 fn fixture_with_position(generation: u64, at_entry: bool) -> Fixture {
-    let world = WorldId::decode(&uuid(0x40)).expect("world");
+    let world =
+        oteryn_gameplay_foundation::foundation::WorldId::decode(&uuid(0x40)).expect("world");
     let mut runtime = ChannelRuntimeV1::from_committed_assignment(
         world,
-        ChannelId::decode(&uuid(0x41)).expect("channel"),
-        NodeId::decode(&uuid(0x42)).expect("node"),
+        oteryn_gameplay_foundation::foundation::ChannelId::decode(&uuid(0x41)).expect("channel"),
+        oteryn_gameplay_foundation::foundation::NodeId::decode(&uuid(0x42)).expect("node"),
         1,
         generation,
         1,
         "runtime-scope-assignment:1",
         4,
-        ChannelContentPin::test(world),
+        oteryn_gameplay_foundation::foundation::ChannelContentPin::test(world),
     )
     .expect("real runtime");
-    let session = GameSessionId::decode(&uuid(0x21)).expect("session");
+    let session = oteryn_gameplay_foundation::foundation::GameSessionId::decode(&uuid(0x21))
+        .expect("session");
     let reservation = runtime.reserve_fresh_session(session).expect("reserve");
     let caster = runtime.commit_fresh_session(reservation).expect("commit");
     if at_entry {
@@ -66,9 +68,10 @@ fn fixture_with_position(generation: u64, at_entry: bool) -> Fixture {
 fn batch(f: &Fixture, sequence: u64, effects: Vec<OwnerCombatEffect>) -> OwnerCombatBatch {
     OwnerCombatBatch {
         caster: f.caster,
-        attacker: CharacterId::decode(&uuid(0x22)).expect("character"),
+        attacker: oteryn_gameplay_foundation::foundation::CharacterId::decode(&uuid(0x22))
+            .expect("character"),
         current_lease_generation: 1,
-        command: CommandRef::new(
+        command: oteryn_gameplay_foundation::foundation::CommandRef::new(
             f.session,
             oteryn_gameplay_foundation::foundation::CommandId::new(sequence).expect("command"),
         ),
@@ -179,7 +182,7 @@ fn original_typed_batch_retention_survives_lethal_targets_and_is_not_an_alias() 
         f.runtime
             .retained_spell_batch(
                 f.caster,
-                CharacterId::decode(&uuid(0x24)).unwrap(),
+                oteryn_gameplay_foundation::foundation::CharacterId::decode(&uuid(0x24)).unwrap(),
                 1,
                 original.command
             )
@@ -202,7 +205,9 @@ fn failed_last_effect_does_not_write_earlier_staged_damage_or_caster_receipt() {
     );
     assert!(matches!(
         f.runtime.stage_spell_batch(&b),
-        Err(Error::Owner(CarrierError::InvalidDamage))
+        Err(Error::Owner(
+            oteryn_gameplay_foundation::foundation::CarrierError::InvalidDamage
+        ))
     ));
     assert_eq!((health(&f, 0), health(&f, 1)), (20, 20));
     b.effects[1] = damage(f.targets[1], 1, 3);
@@ -269,7 +274,7 @@ fn pending_source_reserves_all_actual_touched_slots_and_only_original_batch_can_
         assert!(f.runtime.actor_spell_reserved(actor));
         assert_eq!(
             f.runtime.assert_actor_spell_unreserved(actor),
-            Err(CarrierError::PlanConflict)
+            Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict)
         );
     }
     assert!(!f.runtime.actor_spell_reserved(f.targets[2]));
@@ -312,7 +317,7 @@ fn pending_source_reserves_all_actual_touched_slots_and_only_original_batch_can_
     assert!(f.runtime.actor_spell_reserved(stale));
     assert_eq!(
         f.runtime.assert_actor_spell_unreserved(stale),
-        Err(CarrierError::StaleActorGeneration)
+        Err(oteryn_gameplay_foundation::foundation::CarrierError::StaleActorGeneration)
     );
 }
 
@@ -477,7 +482,9 @@ fn stale_target_and_replaced_namespace_reject_without_any_slot_mutation() {
     let newer = fixture(2);
     assert!(matches!(
         newer.runtime.stage_spell_batch(&b),
-        Err(Error::Owner(CarrierError::WrongScope))
+        Err(Error::Owner(
+            oteryn_gameplay_foundation::foundation::CarrierError::WrongScope
+        ))
     ));
 }
 
@@ -491,7 +498,8 @@ fn player_session_lookup_requires_actual_current_control_and_pinned_position_con
         .expect("committed actual entry");
     assert_eq!(actor, f.caster);
     assert_eq!(position.context(), f.runtime.pinned_movement_context());
-    let absent = GameSessionId::decode(&uuid(0x25)).expect("different session");
+    let absent = oteryn_gameplay_foundation::foundation::GameSessionId::decode(&uuid(0x25))
+        .expect("different session");
     assert_eq!(
         f.runtime
             .positioned_player_for_session(absent)
@@ -519,7 +527,7 @@ fn player_session_lookup_requires_actual_current_control_and_pinned_position_con
         wrong_context
             .runtime
             .positioned_player_for_session(wrong_context.session),
-        Err(CarrierError::PositionContextMismatch)
+        Err(oteryn_gameplay_foundation::foundation::CarrierError::PositionContextMismatch)
     );
 }
 
@@ -636,8 +644,8 @@ fn committed_timer_phase_survives_control_loss_but_new_or_substituted_input_does
         Err(Error::InvalidBatch)
     ));
     let mut foreign_session = due.clone();
-    foreign_session.command = CommandRef::new(
-        GameSessionId::decode(&uuid(0x25)).unwrap(),
+    foreign_session.command = oteryn_gameplay_foundation::foundation::CommandRef::new(
+        oteryn_gameplay_foundation::foundation::GameSessionId::decode(&uuid(0x25)).unwrap(),
         foreign_session.command.command_id(),
     );
     assert!(f.runtime.stage_spell_batch(&foreign_session).is_err());
@@ -693,17 +701,19 @@ fn real_assignment_owner_issues_scoped_work_and_retirement_refuses_staged_mutati
             .expect("current actual owner")
             .accepts_stamp(stamp)
     );
-    let other_world = WorldId::decode(&uuid(0x50)).expect("other world");
+    let other_world =
+        oteryn_gameplay_foundation::foundation::WorldId::decode(&uuid(0x50)).expect("other world");
     let mut other = ChannelRuntimeV1::from_committed_assignment(
         other_world,
-        ChannelId::decode(&uuid(0x51)).expect("other channel"),
-        NodeId::decode(&uuid(0x52)).expect("node"),
+        oteryn_gameplay_foundation::foundation::ChannelId::decode(&uuid(0x51))
+            .expect("other channel"),
+        oteryn_gameplay_foundation::foundation::NodeId::decode(&uuid(0x52)).expect("node"),
         1,
         1,
         1,
         "runtime-scope-assignment:1",
         4,
-        ChannelContentPin::test(other_world),
+        oteryn_gameplay_foundation::foundation::ChannelContentPin::test(other_world),
     )
     .expect("independent same-generation owner");
     let foreign_stamp = other.issue_owner_work().expect("foreign owner work");
@@ -891,7 +901,7 @@ fn source_metadata_touches_reserve_real_slots_without_synthesized_combat_effects
     assert!(f.runtime.actor_spell_reserved(f.targets[0]));
     assert_eq!(
         f.runtime.mark_companion_party_protection(&snapshot),
-        Err(CarrierError::PlanConflict)
+        Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict)
     );
     assert_eq!(health(&f, 0), 20);
     // Retention and rebuilding preserve the exact actual slot reservation, with no zero hit.
@@ -1081,7 +1091,7 @@ fn actual_master_assignment_reserves_and_retries_without_early_install_or_second
     assert_eq!(
         f.runtime
             .compare_assign_companion(f.caster, f.session, &before),
-        Err(CarrierError::PlanConflict)
+        Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict)
     );
     let competing = batch(&f, 2, vec![damage(f.targets[0], 0, 1)]);
     assert!(matches!(
@@ -1128,8 +1138,8 @@ fn master_assignment_refuses_substituted_target_session_and_stale_actual_predece
         Err(Error::InvalidCondition)
     ));
     let mut foreign_session = original.clone();
-    foreign_session.command = CommandRef::new(
-        GameSessionId::decode(&uuid(0x25)).unwrap(),
+    foreign_session.command = oteryn_gameplay_foundation::foundation::CommandRef::new(
+        oteryn_gameplay_foundation::foundation::GameSessionId::decode(&uuid(0x25)).unwrap(),
         original.command.command_id(),
     );
     assert!(f.runtime.stage_spell_batch(&foreign_session).is_err());
@@ -1244,7 +1254,7 @@ fn condition_commit_on_a_reserved_slot_refuses_until_the_batch_ends() {
         f.runtime
             .commit_actor_condition(&plan, SemanticTimeMicros::from_micros(0)),
         Err(crate::carrier::ConditionOwnerError::Actor(
-            CarrierError::PlanConflict
+            oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict
         ))
     );
     assert_eq!(f.runtime.validate_staged_spell_batch(&staged), Ok(()));
@@ -1271,7 +1281,7 @@ fn cure_only_actor_on_a_reserved_slot_refuses_heal_and_cure() {
     assert_eq!(
         f.runtime
             .commit_source_creature_heal_and_cure(content, &[], &[f.targets[0]], 100),
-        Err(CarrierError::PlanConflict)
+        Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict)
     );
     assert_eq!(
         f.runtime.actor_conditions(f.targets[0], None).unwrap(),

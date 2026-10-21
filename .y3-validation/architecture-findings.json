@@ -1,0 +1,122 @@
+[
+  {
+    "from": "oteryn-gameplay-combat",
+    "to": "oteryn-gameplay-durability",
+    "owner": "y1",
+    "existed_at_HEAD": true
+  },
+  {
+    "from": "oteryn-gameplay-combat",
+    "to": "oteryn-gameplay-world",
+    "owner": "y1",
+    "existed_at_HEAD": true
+  },
+  {
+    "from": "oteryn-gameplay-content",
+    "to": "oteryn-gameplay-foundation",
+    "owner": "y2",
+    "existed_at_HEAD": true
+  },
+  {
+    "from": "oteryn-gameplay-encounters",
+    "to": "oteryn-gameplay-combat",
+    "owner": "y1",
+    "existed_at_HEAD": true
+  },
+  {
+    "from": "oteryn-gameplay-encounters",
+    "to": "oteryn-gameplay-durability",
+    "owner": "y1",
+    "existed_at_HEAD": true
+  },
+  {
+    "from": "oteryn-gameplay-encounters",
+    "to": "oteryn-gameplay-monster-ai",
+    "owner": "y1",
+    "existed_at_HEAD": true
+  },
+  {
+    "from": "oteryn-gameplay-encounters",
+    "to": "oteryn-gameplay-spell",
+    "owner": "y1",
+    "existed_at_HEAD": true
+  },
+  {
+    "from": "oteryn-gameplay-encounters",
+    "to": "oteryn-gameplay-world",
+    "owner": "y1",
+    "existed_at_HEAD": true
+  },
+  {
+    "from": "oteryn-gameplay-monster-ai",
+    "to": "oteryn-gameplay-combat",
+    "owner": "y1",
+    "existed_at_HEAD": true
+  },
+  {
+    "from": "oteryn-gameplay-monster-ai",
+    "to": "oteryn-gameplay-durability",
+    "owner": "y1",
+    "existed_at_HEAD": true
+  },
+  {
+    "from": "oteryn-gameplay-monster-ai",
+    "to": "oteryn-gameplay-spell",
+    "owner": "y1",
+    "existed_at_HEAD": true
+  },
+  {
+    "from": "oteryn-gameplay-monster-ai",
+    "to": "oteryn-gameplay-world",
+    "owner": "y1",
+    "existed_at_HEAD": true
+  },
+  {
+    "from": "oteryn-gameplay-npc",
+    "to": "oteryn-gameplay-world",
+    "owner": "y1",
+    "existed_at_HEAD": true
+  },
+  {
+    "from": "oteryn-gameplay-social",
+    "to": "oteryn-gameplay-combat",
+    "owner": "y1",
+    "existed_at_HEAD": true
+  },
+  {
+    "from": "oteryn-gameplay-social",
+    "to": "oteryn-gameplay-durability",
+    "owner": "y1",
+    "existed_at_HEAD": true
+  },
+  {
+    "from": "oteryn-gameplay-social",
+    "to": "oteryn-gameplay-world",
+    "owner": "y1",
+    "existed_at_HEAD": true
+  },
+  {
+    "from": "oteryn-gameplay-spell",
+    "to": "oteryn-gameplay-combat",
+    "owner": "y1",
+    "existed_at_HEAD": true
+  },
+  {
+    "from": "oteryn-gameplay-spell",
+    "to": "oteryn-gameplay-durability",
+    "owner": "y1",
+    "existed_at_HEAD": true
+  },
+  {
+    "from": "oteryn-gameplay-spell",
+    "to": "oteryn-gameplay-world",
+    "owner": "y1",
+    "existed_at_HEAD": true
+  },
+  {
+    "from": "oteryn-gameplay-world",
+    "to": "oteryn-gameplay-durability",
+    "owner": "y1",
+    "existed_at_HEAD": true
+  }
+]

@@ -301,7 +301,8 @@ fn a_gate_in_the_runtime_condition_slot_refuses_a_cast_as_well() {
         gate(&mut runtime, player, session, key);
         assert_eq!(
             gated(&runtime, at(1)),
-            refused.then_some(crate::ability::condition::ConditionGate::Muted),
+            refused
+                .then_some(oteryn_gameplay_foundation::foundation::condition::ConditionGate::Muted),
             "{key}"
         );
         assert_eq!(gated(&runtime, at(10_000)), None);

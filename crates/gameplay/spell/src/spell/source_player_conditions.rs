@@ -1,7 +1,7 @@
 //! Source conditions lower into the actual PlayerSpellState owner. Creature slots are separate.
 use super::cast::PlayerSpellState;
-use crate::ability::condition as native;
 use crate::foundation as source;
+use oteryn_gameplay_foundation::foundation::condition as native;
 
 fn element(value: source::DotElement) -> native::DotElement {
     match value {

@@ -1,0 +1,235 @@
+{
+  "libraries": [
+    {
+      "package": "oteryn_game_server",
+      "status": "ok",
+      "passed": 306,
+      "failed": 0,
+      "ignored": 3,
+      "filtered_out": 0
+    },
+    {
+      "package": "oteryn_gameplay_combat",
+      "status": "ok",
+      "passed": 36,
+      "failed": 0,
+      "ignored": 0,
+      "filtered_out": 0
+    },
+    {
+      "package": "oteryn_gameplay_combat_rules",
+      "status": "ok",
+      "passed": 46,
+      "failed": 0,
+      "ignored": 0,
+      "filtered_out": 0
+    },
+    {
+      "package": "oteryn_gameplay_dispatch",
+      "status": "ok",
+      "passed": 883,
+      "failed": 0,
+      "ignored": 14,
+      "filtered_out": 0
+    },
+    {
+      "package": "oteryn_gameplay_durability",
+      "status": "ok",
+      "passed": 384,
+      "failed": 0,
+      "ignored": 0,
+      "filtered_out": 0
+    },
+    {
+      "package": "oteryn_gameplay_encounters",
+      "status": "ok",
+      "passed": 20,
+      "failed": 0,
+      "ignored": 7,
+      "filtered_out": 0
+    },
+    {
+      "package": "oteryn_gameplay_entities",
+      "status": "ok",
+      "passed": 167,
+      "failed": 0,
+      "ignored": 0,
+      "filtered_out": 0
+    },
+    {
+      "package": "oteryn_gameplay_foundation",
+      "status": "ok",
+      "passed": 340,
+      "failed": 0,
+      "ignored": 0,
+      "filtered_out": 0
+    },
+    {
+      "package": "oteryn_gameplay_monster_ai",
+      "status": "ok",
+      "passed": 72,
+      "failed": 0,
+      "ignored": 2,
+      "filtered_out": 0
+    },
+    {
+      "package": "oteryn_gameplay_npc",
+      "status": "ok",
+      "passed": 9,
+      "failed": 0,
+      "ignored": 0,
+      "filtered_out": 0
+    },
+    {
+      "package": "oteryn_gameplay_social",
+      "status": "ok",
+      "passed": 103,
+      "failed": 0,
+      "ignored": 0,
+      "filtered_out": 0
+    },
+    {
+      "package": "oteryn_gameplay_spell",
+      "status": "ok",
+      "passed": 221,
+      "failed": 0,
+      "ignored": 0,
+      "filtered_out": 0
+    },
+    {
+      "package": "oteryn_gameplay_world",
+      "status": "ok",
+      "passed": 172,
+      "failed": 0,
+      "ignored": 1,
+      "filtered_out": 0
+    }
+  ],
+  "library_totals": {
+    "passed": 2759,
+    "failed": 0,
+    "ignored": 27
+  },
+  "integration": {
+    "pure": [
+      {
+        "package": null,
+        "status": "ok",
+        "passed": 90,
+        "failed": 0,
+        "ignored": 0,
+        "filtered_out": 0
+      },
+      {
+        "package": null,
+        "status": "ok",
+        "passed": 14,
+        "failed": 0,
+        "ignored": 0,
+        "filtered_out": 0
+      },
+      {
+        "package": null,
+        "status": "ok",
+        "passed": 8,
+        "failed": 0,
+        "ignored": 0,
+        "filtered_out": 0
+      }
+    ],
+    "chest": [
+      {
+        "package": null,
+        "status": "ok",
+        "passed": 8,
+        "failed": 0,
+        "ignored": 0,
+        "filtered_out": 433
+      }
+    ],
+    "bank": [
+      {
+        "package": null,
+        "status": "FAILED",
+        "passed": 5,
+        "failed": 1,
+        "ignored": 0,
+        "filtered_out": 385
+      }
+    ],
+    "pickup": [
+      {
+        "package": null,
+        "status": "ok",
+        "passed": 3,
+        "failed": 0,
+        "ignored": 0,
+        "filtered_out": 424
+      }
+    ]
+  },
+  "integration_totals": {
+    "passed": 128,
+    "failed": 1,
+    "ignored": 0
+  },
+  "bank_failure_preexisting": true,
+  "baseline_bank_result": [
+    {
+      "package": null,
+      "status": "FAILED",
+      "passed": 0,
+      "failed": 1,
+      "ignored": 0,
+      "filtered_out": 390
+    }
+  ],
+  "bank_source_proof": [
+    {
+      "path": "apps/game-server/tests/support/bank_postgres_cases.rs",
+      "current_equals_HEAD": true,
+      "snapshot_equals_HEAD": true,
+      "sha256": "ae969300bd4b3d4180e2a4490109ea56a3959142a82c26f60fed3b762b3a8df6"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/bank.rs",
+      "current_equals_HEAD": true,
+      "snapshot_equals_HEAD": true,
+      "sha256": "070cd1710c4f7d91c7dcba91d38428c9d95aa6b79cd409149101cb9f717673f4"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/bank_audit.rs",
+      "current_equals_HEAD": true,
+      "snapshot_equals_HEAD": true,
+      "sha256": "29c49955f07595318e7e0ed1e98aa09ecf957f4fcb7db2973c34a4d9f5b0fa3f"
+    }
+  ],
+  "starting_head": "5e3f585d4d0440247d20635347605267a39ba056",
+  "baseline_route": "read-only git archive HEAD, separate manifest and target directory inside tmp/y3; no stash or Git worktree/index/ref mutation",
+  "bank_fixed_event_UTC": "2026-09-21T14:13:20Z",
+  "bank_fixed_expiry_UTC": "2026-10-21T14:13:20Z",
+  "sandbox_only_failures": [],
+  "checks": {
+    "workspace_check": {
+      "result": "PASS",
+      "command": "cargo +1.95.0 check --workspace --all-targets"
+    },
+    "workspace_clippy": {
+      "result": "PASS",
+      "command": "cargo +1.95.0 clippy --workspace --all-targets -- -D warnings"
+    },
+    "rustfmt": {
+      "result": "PASS",
+      "command": "cargo +1.95.0 fmt --all --check"
+    },
+    "architecture": {
+      "result": "FAIL",
+      "command": "cargo +1.95.0 run -p oteryn-architecture-check -- workspace .",
+      "unchanged_findings": 20,
+      "wave_owners": {
+        "y1": 19,
+        "y2": 1
+      }
+    }
+  }
+}

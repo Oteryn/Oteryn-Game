@@ -6,16 +6,19 @@ use crate::content::{
     ProjectV2DefinitionRef as Ref, ProjectV2Family, ProjectV2SourceIdentityBinding,
     ProjectV2SourceIdentityDisposition,
 };
-use crate::foundation::owner_timer::SemanticTimeMicros;
-use crate::foundation::{
-    ChannelRuntimeV1, ExactActorRef, WelterConsumeError, WelterConsumeLedger, WelterConsumeResult,
-    WelterSourceRegistration,
-};
+use oteryn_gameplay_foundation::foundation::owner_timer::SemanticTimeMicros;
 use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
 };
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
+use {
+    oteryn_gameplay_encounters::bosses::the_welter::native_owner::{
+        WelterConsumeError, WelterConsumeLedger, WelterConsumeResult, WelterSourceRegistration,
+    },
+    oteryn_gameplay_entities::ChannelRuntimeV1,
+    oteryn_gameplay_foundation::foundation::ExactActorRef,
+};
 const SOURCE_REVISION: &str = "47dfd51f45280a59a1d3e50ba7edd573d7234446";
 const INTERVAL_MICROS: u64 = 2_000_000;
 const CHANCE_PPM: u64 = 80_000;
@@ -305,11 +308,14 @@ mod native_source_tests {
         use crate::content::{
             ProjectReferenceRecord, ProjectV2AuthoringProfile, ProjectV2SourceIdentityBinding,
         };
-        use crate::foundation::owner_timer::SemanticTimeMicros;
-        use crate::foundation::{
-            ChannelContentPin, ChannelId, GameSessionId, MovementLocalPosition, NodeId, WorldId,
-        };
+        use oteryn_gameplay_foundation::foundation::owner_timer::SemanticTimeMicros;
         use oteryn_simulation_determinism::GameplayDecisionRoot;
+        use {
+            oteryn_gameplay_entities::MovementLocalPosition,
+            oteryn_gameplay_foundation::foundation::{
+                ChannelContentPin, ChannelId, GameSessionId, NodeId, WorldId,
+            },
+        };
         fn time(v: u64) -> SemanticTimeMicros {
             SemanticTimeMicros::from_micros(v)
         }
@@ -494,7 +500,7 @@ mod native_source_tests {
         .expect(
             "welter_consume.rs:native_source_tests:476: qualified fixture operation must succeed",
         );
-        let mut mailbox = crate::weak_spot_speech::WeakSpotSpeechMailbox::default();
+        let mut mailbox = oteryn_gameplay_encounters::bosses::crystal_deaths::crystal_death_composition::speech::WeakSpotSpeechMailbox::default();
         let delivered = mailbox
             .publish_welter_consume(
                 &r,

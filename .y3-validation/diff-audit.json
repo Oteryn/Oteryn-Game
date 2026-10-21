@@ -1,0 +1,14 @@
+{
+  "non_import_module_path_differences": [
+    "crates/gameplay/encounters/src/lib.rs",
+    "crates/gameplay/entities/src/carrier/runtime_actor_periodic.rs"
+  ],
+  "executable_literal_differences": [],
+  "reviewed_explanations": {
+    "crates/gameplay/encounters/src/lib.rs": "removal of the forwarding-only inline foundation module",
+    "crates/gameplay/entities/src/carrier/runtime_actor_periodic.rs": "rustfmt inserts an equivalent semicolon after a return expression"
+  },
+  "new_enum_variants_struct_fields_trait_methods_or_pub_fns": [],
+  "test_declaration_differences": [],
+  "checklist": "/home/mole/oteryn-cache/CODEX-CHECKLIST.md"
+}

@@ -12,7 +12,7 @@ use crate::foundation::{
 };
 use crate::movement::{CardinalStep, MovementError};
 use crate::spell::cast::PlayerSpellState;
-use crate::spell::world_items_execution::SpellGroundTarget;
+use oteryn_gameplay_durability::durability::native_world_items::SpellGroundTarget;
 
 /// Detached read evidence grants no movement or damage authority. The private
 /// constructor binds actual origin, source destination and predecessor owner.
@@ -163,7 +163,7 @@ impl StepIngressRead<'_, '_> {
                             .element()
                             .map_err(|_| MovementError::NotQualified)?
                             .ok_or(MovementError::NotQualified)?;
-                        let definition = crate::ability::condition::ConditionDefinition::new(
+                        let definition = oteryn_gameplay_foundation::foundation::condition::ConditionDefinition::new(
                             &format!(
                                 "native.field.{}",
                                 historical

@@ -201,7 +201,7 @@ fn command(value: u64) -> TestResult<CommandRef> {
 }
 fn ruleset() -> TestResult<Arc<WheelRuleset>> {
     Ok(Arc::new(
-        crate::wheel_gem_data::WheelGemData::embedded()
+        oteryn_gameplay_progression::wheel_gem_data::WheelGemData::embedded()
             .map_err(debug)?
             .wheel_ruleset()
             .map_err(debug)?,

@@ -18,6 +18,7 @@ mod effects;
 pub mod exact_actor_resolution;
 mod intent;
 mod occurrence;
+
 mod plan;
 
 pub use commit::{AbilityEngine, CommitReceipt};
@@ -38,8 +39,6 @@ pub use crate::foundation::ability_data::{
 mod charm_desc_fence_gate_tests;
 #[cfg(test)]
 mod tests;
-
-pub mod field_condition;
 
 /// Stable source-chain child identity, shared by native monster HP/MP consumers.
 #[allow(dead_code)] // Standalone Ability fixtures do not compose native chain attacks.

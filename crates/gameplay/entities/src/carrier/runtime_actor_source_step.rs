@@ -24,7 +24,9 @@ impl ChannelRuntimeV1 {
         proof.validate_current(self)?;
         let (actor, expected, next, facing) = proof.parts();
         if actor.0 != expected.0.actor_ref {
-            return Err(CarrierError::PositionSnapshotMismatch);
+            return Err(
+                oteryn_gameplay_foundation::foundation::CarrierError::PositionSnapshotMismatch,
+            );
         }
         // Obtain the exact slot before committing. No fallible lookup follows
         // the physical mutation; the uninterrupted owner turn owns this slot.

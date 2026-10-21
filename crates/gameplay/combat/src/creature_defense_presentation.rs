@@ -4,10 +4,10 @@ use crate::content::{
     ProjectV2AuthoringProfile, ProjectV2AuthoringProfileData as Data,
     ProjectV2DefinitionRef as Ref, ProjectV2Family, ProjectV2InlineEffectOperation,
 };
-use crate::creature_attack_geometry::{self as geometry, Facing};
 use crate::creature_auto_attack::{AttackError, ProfileAbilityProposal};
-use crate::durability::creature_schedule::ScheduleList;
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, RuntimeWorkStamp, ScopeRuntimeFence};
+use oteryn_gameplay_content::content::creature_attack_geometry::{self as geometry, Facing};
+use oteryn_gameplay_foundation::foundation::profile_schedule::ScheduleList;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SourcePresentationEvent {

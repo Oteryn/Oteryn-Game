@@ -9,13 +9,13 @@ use crate::ai::{AiProvenance, AiProvenanceInput, ResourceLimit};
 use crate::ai_monster_melee::{Dispatch, MeleeDefinition, think_target_only};
 use crate::ai_think::targeting::TargetCandidate;
 use crate::ai_think::{AttackReadiness, CreatureThinkInput, PerceivedPlayer, PerceivedPlayerId};
-use crate::combat::charm_effects::CharmHookEvent;
 use crate::content::QualifiedNativeEntryRoom;
 use crate::content::{LogicalCell, ProjectV2AuthoringProfileData, ProjectV2BehaviorAuthoring};
 use crate::foundation::owner_timer::SemanticTimeMicros;
 use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition, MovementPositionSnapshot,
 };
+use oteryn_gameplay_progression::charm_effects::CharmHookEvent;
 use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
 
 impl ComposedFreshAdmission<'_, '_, '_> {

@@ -7,19 +7,17 @@
 //! (`gameplay_transport::attack`) and the GAME-ABILITY-01 pipeline; ATTACK-2 composes weapon
 //! melee and the creature's block budget, defence and armor there.
 
-mod block;
 mod chase;
-mod constants;
-mod formulas;
-mod target;
 
-pub use block::BlockBudget;
 pub use chase::{
     CHASE_SEARCHES_PER_WINDOW, CHASE_WINDOW_MICROS, CREATURE_COST, ChaseDecision,
     ChaseSearchBudget, ChaseState, chase_search_order,
 };
-pub use constants::{AttackConstants, FightMode};
-pub use formulas::{
+pub use oteryn_gameplay_combat_rules::attack::block::BlockBudget;
+pub use oteryn_gameplay_combat_rules::attack::constants::{AttackConstants, FightMode};
+pub use oteryn_gameplay_combat_rules::attack::formulas::{
     armor_reduction_bounds, creature_melee_formula, player_fist_formula, player_melee_formula,
 };
-pub use target::{AttackState, SwingPoll, TargetFacts, TargetRefusal};
+pub use oteryn_gameplay_combat_rules::attack::target::{
+    AttackState, SwingPoll, TargetFacts, TargetRefusal,
+};

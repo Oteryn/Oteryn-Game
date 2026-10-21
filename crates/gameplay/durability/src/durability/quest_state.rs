@@ -35,17 +35,13 @@
 //! `QUESTSTATE0-RL-01`, `-05`, `-07`, `-08` and `QUESTGATE0-RL-10`; over a bound the load fails
 //! closed.
 
-pub mod quest;
+
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use oteryn_simulation_determinism::ExactI64;
-use quest::{
-    QUESTGATE0_RL_10, QUESTSTATE0_RL_01, QUESTSTATE0_RL_05, QUESTSTATE0_RL_07,
-    QUESTSTATE0_RL_08_STATES, QUESTSTATE0_RL_08_TRACKS, QuestRefusal, QuestStateCatalogue,
-    QuestTrackChange, valid_quest_key,
-};
+use oteryn_gameplay_quests::quest::{QUESTGATE0_RL_10, QUESTSTATE0_RL_01, QUESTSTATE0_RL_05, QUESTSTATE0_RL_07, QUESTSTATE0_RL_08_STATES, QUESTSTATE0_RL_08_TRACKS, QuestRefusal, QuestStateCatalogue, QuestTrackChange, valid_quest_key};
 use sha2::{Digest, Sha256};
 use sqlx::Row;
 
@@ -1257,15 +1253,15 @@ fn decode_receipt(row: &sqlx::postgres::PgRow) -> StoredResult<CommittedQuestTra
 }
 
 /// The production session copy (QUEST-STATE-0 §7).
-impl quest::log::QuestLogFacts for QuestStateCopy {
+impl oteryn_gameplay_quests::quest::log::QuestLogFacts for QuestStateCopy {
     fn track_value(&self, track: &str) -> Option<i64> {
         self.tracks().get(track).copied()
     }
 
-    fn quest_state(&self, quest: &str) -> Option<quest::log::QuestLogState<'_>> {
+    fn quest_state(&self, quest: &str) -> Option<oteryn_gameplay_quests::quest::log::QuestLogState<'_>> {
         self.states()
             .get(quest)
-            .map(|state| quest::log::QuestLogState {
+            .map(|state| oteryn_gameplay_quests::quest::log::QuestLogState {
                 pinned_content_revision: &state.pinned_content_revision,
                 completed: state.completed,
             })
@@ -1301,7 +1297,7 @@ mod tests {
         let _ = DurabilityRoot::commit_character_quest_transition;
         let _ = DurabilityRoot::reconcile_character_quest_transition;
         let _ = DurabilityRoot::read_character_quest_state;
-        let _ = quest::QuestStateCatalogue::track;
+        let _ = oteryn_gameplay_quests::quest::QuestStateCatalogue::track;
         let _ = admit_character_quest_state;
         let _ = request_pending_obligations;
         let _ = request_pending_quest_experience::<2>;
@@ -1315,7 +1311,7 @@ mod tests {
         let base = request(QuestCause::Command(command(2, 7)), "oteryn:t/1");
         let binding = request_binding(character, &base);
         assert_eq!(binding[0], 1);
-        assert!(binding.len() <= quest::QUESTSTATE0_RL_04, "RL-04");
+        assert!(binding.len() <= oteryn_gameplay_quests::quest::QUESTSTATE0_RL_04, "RL-04");
         assert_eq!(binding, request_binding(character, &base.clone()));
         let death = ExperienceRewardOccurrence::from_bytes(id(2)).expect("occurrence");
         for changed in [

@@ -15,10 +15,7 @@ release-role = "production"
 test-support = ["oteryn-gameplay-content/test-support", "oteryn-gameplay-durability/test-support", "oteryn-gameplay-entities/test-support", "oteryn-gameplay-foundation/test-support"]
 
 [dependencies]
-oteryn-gameplay-characters = { version = "=0.1.0", path = "../characters" }
 oteryn-gameplay-progression = { version = "=0.1.0", path = "../progression" }
-oteryn-gameplay-items = { version = "=0.1.0", path = "../items" }
-oteryn-gameplay-quests = { version = "=0.1.0", path = "../quests" }
 oteryn-gameplay-social-rules = { version = "=0.1.0", path = "../social-rules" }
 aws-lc-rs.workspace = true
 base64.workspace = true

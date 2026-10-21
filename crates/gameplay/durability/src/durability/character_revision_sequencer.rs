@@ -48,7 +48,7 @@ use super::character_wheel::{
 };
 use super::charm_state::{CharmCommandOutcome, CharmCommandRequest, CharmFacts, CharmStateError};
 use super::monk_state::{MonkStateSaveOutcome, MonkStateSaveRequest};
-use super::quest_state::quest::QuestStateCatalogue;
+use oteryn_gameplay_quests::quest::QuestStateCatalogue;
 use super::quest_state::{
     QuestTransitionAward, QuestTransitionOutcome, QuestTransitionRequest, QuestXpObligation,
     report_refused_experience,

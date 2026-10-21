@@ -7,20 +7,25 @@ use crate::content::{
 };
 use crate::creature_auto_attack::AttackError;
 use crate::creature_auto_attack::ProfileAbilityProposal;
-use crate::durability::creature_schedule::ScheduleList;
-use crate::foundation::owner_timer::{
+use oteryn_gameplay_entities::{ConditionType, DotElement};
+use oteryn_gameplay_foundation::foundation::owner_timer::{
     CatchUpPolicy, FamilyPolicy, OwnerClock, OwnerTimerLane, SemanticTimeMicros, TimerFamily,
 };
-use crate::foundation::{
-    ChannelRuntimeV1, ExactActorRef, MovementLocalPosition, NativeEncounterSpawnSpec,
-    NativeSummonAdmissionSpec, RuntimeScopeRefV1, RuntimeWorkStamp, ScopeOwnershipGeneration,
-    ScopeRuntimeFence,
-};
-use crate::foundation::{ConditionType, DotElement};
+use oteryn_gameplay_foundation::foundation::profile_schedule::ScheduleList;
 use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
 };
 use std::collections::BTreeMap;
+use {
+    oteryn_gameplay_entities::{
+        ChannelRuntimeV1, MovementLocalPosition, NativeEncounterSpawnSpec,
+        NativeSummonAdmissionSpec,
+    },
+    oteryn_gameplay_foundation::foundation::{
+        ExactActorRef, RuntimeScopeRefV1, RuntimeWorkStamp, ScopeOwnershipGeneration,
+        ScopeRuntimeFence,
+    },
+};
 #[derive(serde::Deserialize)]
 pub struct Witness {
     pub cases: Vec<Case>,
@@ -457,7 +462,7 @@ pub struct SpawnChildReceipt {
     pub creature: Ref,
     pub result: Result<ExactActorRef, AttackError>,
     pub intrinsic: bool,
-    pub cleanup: Option<Result<(), crate::foundation::CarrierError>>,
+    pub cleanup: Option<Result<(), oteryn_gameplay_foundation::foundation::CarrierError>>,
 }
 #[derive(Debug)]
 pub struct CallbackSpawnReceipt {
@@ -465,7 +470,7 @@ pub struct CallbackSpawnReceipt {
     pub ability: Ref,
     pub requested: u32,
     pub children: Vec<SpawnChildReceipt>,
-    pub remove: Option<Result<(), crate::foundation::CarrierError>>,
+    pub remove: Option<Result<(), oteryn_gameplay_foundation::foundation::CarrierError>>,
     pub flags: &'static [&'static str],
 }
 pub struct CallbackSpawnOwner {
@@ -475,7 +480,9 @@ pub struct CallbackSpawnOwner {
     pub pending: Vec<Pending>,
     pub memos: Vec<Memo>,
     next: u64,
-    speech: Vec<crate::source_callback_cast::CallbackSpeech>,
+    speech: Vec<
+        oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_cast::CallbackSpeech,
+    >,
     speech_errors: Vec<(ExactActorRef, AttackError)>,
 }
 impl CallbackSpawnOwner {
@@ -509,7 +516,11 @@ impl CallbackSpawnOwner {
             speech_errors: Vec::new(),
         })
     }
-    pub fn take_source_speech(&mut self) -> Vec<crate::source_callback_cast::CallbackSpeech> {
+    pub fn take_source_speech(
+        &mut self,
+    ) -> Vec<
+        oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_cast::CallbackSpeech,
+    > {
         std::mem::take(&mut self.speech)
     }
     pub fn take_speech_errors(&mut self) -> Vec<(ExactActorRef, AttackError)> {
@@ -543,7 +554,9 @@ impl CallbackSpawnOwner {
             return Err(AttackError::StaleIssuer);
         }
         let sequence = s.sequence(p)?;
-        crate::source_callback_intent::validate(r, p)?;
+        oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_intent::validate(
+            r, p,
+        )?;
         for c in &self.pending {
             if !c.source.current(r, c.proposal.issuer) {
                 self.timers.cancel(Timer, Work(c.token));
@@ -913,13 +926,13 @@ impl CallbackSpawnOwner {
             };
             if let Ok(new) = &result {
                 let line = match s.kind {
-                    Kind::Tenebris => crate::source_callback_cast::CallbackSpeech::spawn(
+                    Kind::Tenebris => oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_cast::CallbackSpeech::spawn(
                         r,
                         *new,
                         &child.creature.key,
                     ),
                     Kind::Maxxen => {
-                        crate::source_callback_cast::CallbackSpeech::generator_warning(r, *new)
+                        oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_cast::CallbackSpeech::generator_warning(r, *new)
                             .map(Some)
                     }
                     _ => Ok(None),
@@ -954,7 +967,7 @@ impl CallbackSpawnOwner {
         if output.children.iter().any(|c| c.result.is_ok())
             && matches!(s.kind, Kind::Gaz | Kind::GeneratorRelease)
         {
-            match crate::source_callback_cast::CallbackSpeech::spawn(r, actor, &s.creature) {
+            match oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_cast::CallbackSpeech::spawn(r, actor, &s.creature) {
                 Ok(Some(line)) => self.speech.push(line),
                 Err(e) => self.speech_errors.push((actor, e)),
                 Ok(None) => {}

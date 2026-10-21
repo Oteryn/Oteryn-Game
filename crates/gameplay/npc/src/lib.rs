@@ -9,7 +9,7 @@ pub mod npc_travel;
 pub mod npc_voice;
 pub mod vocation_choice;
 
-pub(crate) use oteryn_gameplay_content::content;
-pub(crate) use oteryn_gameplay_domain::domain;
-pub(crate) use oteryn_gameplay_entities as foundation;
-pub(crate) use oteryn_gameplay_world::{map, movement};
+use oteryn_gameplay_content::content;
+use oteryn_gameplay_domain::domain;
+use oteryn_gameplay_entities as foundation;
+use oteryn_gameplay_world::{map, movement};

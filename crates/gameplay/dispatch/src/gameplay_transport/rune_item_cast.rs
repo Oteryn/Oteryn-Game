@@ -10,10 +10,10 @@ use crate::durability::spell_items_abi::{
     DurableInventoryConsumption, DurableRuneUseReservation, InventoryCustody,
 };
 use crate::foundation::ChannelRuntimeV1;
-use crate::spell::world_items_execution::{
+use crate::spell::{Carrier, SpellDefinition};
+use oteryn_gameplay_durability::durability::native_world_items::{
     QualifiedItemDefinition, QualifiedRuneDefinition, SpellGroundTarget,
 };
-use crate::spell::{Carrier, SpellDefinition};
 use oteryn_protocol_oteryn::actor_spell_item_v2::ItemSpellCastIntent;
 use sqlx::{Postgres, Transaction};
 

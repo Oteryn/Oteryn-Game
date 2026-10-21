@@ -23,7 +23,7 @@
 
 use std::sync::Arc;
 
-use crate::durability::quest_state::quest::log::{ProjectedLine, QuestLogContent, QuestLogFacts};
+use oteryn_gameplay_quests::quest::log::{ProjectedLine, QuestLogContent, QuestLogFacts};
 use oteryn_protocol_oteryn::quest_log::{
     MAX_QUEST_LINE_BYTES, MAX_QUEST_LOG_QUERIES_PER_SECOND, MAX_TRACKED_QUESTS, QuestLine,
     QuestListEntry, QuestLog, QuestLogQuery, QuestLogView, QuestMission, encode_quest_log,

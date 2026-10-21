@@ -16,7 +16,6 @@ use oteryn_protocol_oteryn::actor_spell::{
 use oteryn_simulation_determinism::SemanticTimeMicros;
 use serde_json::Value;
 
-use super::authoring::spell_from_bundle;
 use super::chain::{ChainCreature, TilePosition};
 use super::harmony::{HarmonyMultiplier, MonkState, MonkStateError};
 use super::party::SoloParty;
@@ -27,6 +26,7 @@ use super::{
 };
 use crate::ability::creature_bite::{FlooredDamage, floor_creature_damage};
 use crate::ability::{AbilityOccurrence, Effect};
+use oteryn_gameplay_content::content::spell_data::authoring::spell_from_bundle;
 
 macro_rules! starter {
     ($dir:literal) => {
@@ -110,9 +110,9 @@ pub struct PlayerSpellState {
     pub(super) revision: u64,
     /// SPELL-D8 §8.2: a monk's live Harmony and Serene; `None` for every other vocation.
     pub monk: Option<MonkState>,
-    pub conditions: crate::ability::condition::ConditionStore<String>,
+    pub conditions: oteryn_gameplay_foundation::foundation::condition::ConditionStore<String>,
     pub(super) base_speed: u32,
-    pub(super) stance: Option<super::native_actor_states::StandardStance>,
+    pub(super) stance: Option<oteryn_gameplay_spell_rules::native_actor_states::StandardStance>,
     pub(super) stance_key: Option<String>,
     pub(super) pending_stance: Option<Box<super::stance_execution::PreparedStance>>,
     pub(super) owned_skills: Option<[u16; 7]>,
@@ -173,7 +173,9 @@ impl PlayerSpellState {
     pub const fn owned_base_speed(&self) -> u32 {
         self.base_speed
     }
-    pub const fn standard_stance(&self) -> Option<super::native_actor_states::StandardStance> {
+    pub const fn standard_stance(
+        &self,
+    ) -> Option<oteryn_gameplay_spell_rules::native_actor_states::StandardStance> {
         self.stance
     }
     pub fn durable_stance_key(&self) -> Option<&str> {
@@ -255,7 +257,8 @@ impl PlayerSpellState {
                 cooldowns: Cooldowns::default(),
                 revision: 1,
                 monk,
-                conditions: crate::ability::condition::ConditionStore::new(),
+                conditions: oteryn_gameplay_foundation::foundation::condition::ConditionStore::new(
+                ),
                 base_speed,
                 stance: None,
                 stance_key: None,
@@ -556,7 +559,10 @@ impl PlayerSpellState {
         if spell.harmony_role == Some(HarmonyRole::Spender) {
             monk.spender_multiplier(
                 self.facts.level,
-                self.stance == Some(super::native_actor_states::StandardStance::Harmony),
+                self.stance
+                    == Some(
+                        oteryn_gameplay_spell_rules::native_actor_states::StandardStance::Harmony,
+                    ),
             )
             .map_err(|_| SpellCastDisposition::Rejected)
         } else {
@@ -572,16 +578,16 @@ pub fn condition_gate(
     state: &PlayerSpellState,
     spell: &SpellDefinition,
     now: SemanticTimeMicros,
-) -> Result<(), crate::ability::condition::ConditionGate> {
+) -> Result<(), oteryn_gameplay_foundation::foundation::condition::ConditionGate> {
     store_condition_gate(&state.conditions, spell, now)
 }
 
 /// [`condition_gate`] over any condition store, such as the actor's runtime condition slot.
 pub fn store_condition_gate<S: Clone>(
-    store: &crate::ability::condition::ConditionStore<S>,
+    store: &oteryn_gameplay_foundation::foundation::condition::ConditionStore<S>,
     spell: &SpellDefinition,
     now: SemanticTimeMicros,
-) -> Result<(), crate::ability::condition::ConditionGate> {
+) -> Result<(), oteryn_gameplay_foundation::foundation::condition::ConditionGate> {
     if matches!(spell.carrier, super::Carrier::Rune { .. }) {
         store.rune_gate(spell.aggressive, now.get())
     } else {
@@ -648,7 +654,7 @@ fn cast_resolved(
                 Some(HarmonyRole::Spender) => monk
                     .spender_multiplier(
                         state.facts.level,
-                        state.stance == Some(super::native_actor_states::StandardStance::Harmony),
+                        state.stance == Some(oteryn_gameplay_spell_rules::native_actor_states::StandardStance::Harmony),
                     )
                     .map_err(|_| SpellCastDisposition::Rejected)?,
                 Some(HarmonyRole::Builder) | None => HarmonyMultiplier::ONE,
@@ -707,16 +713,16 @@ fn cast_resolved(
     if let Some(profile) = focus_profile {
         if qualified.is_some() {
             let monk = state.monk.as_ref().ok_or(SpellCastDisposition::Rejected)?;
-            let planned = super::native_actor_states::plan_focus(
+            let planned = oteryn_gameplay_spell_rules::native_actor_states::plan_focus(
                 profile,
-                super::native_actor_states::FocusFacts {
+                oteryn_gameplay_spell_rules::native_actor_states::FocusFacts {
                     harmony: monk.harmony(),
                     serene: monk.serene(),
                     forced_until: monk.serene_forced_until(),
                     now: context.now,
                     level: state.facts.level,
                     sustain_active: state.stance
-                        == Some(super::native_actor_states::StandardStance::Sustain),
+                        == Some(oteryn_gameplay_spell_rules::native_actor_states::StandardStance::Sustain),
                 },
             )
             .map_err(|_| SpellCastDisposition::Rejected)?;
@@ -810,7 +816,7 @@ pub struct PaidSourceSelfCast {
 pub struct PaidFocusOwnerCast {
     pub next: PlayerSpellState,
     pub anchor: super::combat_batch::SpellAnchor,
-    pub plan: super::native_actor_states::FocusPlan,
+    pub plan: oteryn_gameplay_spell_rules::native_actor_states::FocusPlan,
 }
 /// Fill/Serenity/cooldowns on the genuine caster successor. Healing remains
 /// a typed source roll for the real party compositor to target and draw once.
@@ -835,13 +841,14 @@ pub fn prepare_focus_owner_cast_with_caster(
     let monk = state.monk.as_ref().ok_or(SpellCastDisposition::Rejected)?;
     monk.accept_command()
         .map_err(|_| SpellCastDisposition::Rejected)?;
-    let facts = super::native_actor_states::FocusFacts {
+    let facts = oteryn_gameplay_spell_rules::native_actor_states::FocusFacts {
         harmony: monk.harmony(),
         serene: monk.serene(),
         forced_until: monk.serene_forced_until(),
         now: context.now,
         level: state.facts.level,
-        sustain_active: state.stance == Some(super::native_actor_states::StandardStance::Sustain),
+        sustain_active: state.stance
+            == Some(oteryn_gameplay_spell_rules::native_actor_states::StandardStance::Sustain),
     };
     let mut paid = prepare_native_owner_cast_with_caster(
         state,
@@ -911,14 +918,14 @@ pub fn prepare_source_self_cast_with_caster(
         let monk = state.monk.as_ref().ok_or(SpellCastDisposition::Rejected)?;
         monk.accept_command()
             .map_err(|_| SpellCastDisposition::Rejected)?;
-        let facts = super::native_actor_states::FocusFacts {
+        let facts = oteryn_gameplay_spell_rules::native_actor_states::FocusFacts {
             harmony: monk.harmony(),
             serene: monk.serene(),
             forced_until: monk.serene_forced_until(),
             now: context.now,
             level: state.facts.level,
             sustain_active: state.stance
-                == Some(super::native_actor_states::StandardStance::Sustain),
+                == Some(oteryn_gameplay_spell_rules::native_actor_states::StandardStance::Sustain),
         };
         let mut paid = prepare_native_owner_cast_with_caster(
             state,
@@ -1011,7 +1018,8 @@ pub struct PaidOrdinaryCast {
     pub anchor: super::combat_batch::SpellAnchor,
     pub resolution: super::CastResolution,
     pub harmony_gained: u8,
-    pub harmony_gain_healing: Option<super::native_actor_states::HealingRollPlan>,
+    pub harmony_gain_healing:
+        Option<oteryn_gameplay_spell_rules::native_actor_states::HealingRollPlan>,
 }
 #[allow(clippy::too_many_arguments)]
 pub fn prepare_ordinary_owner_cast_with_caster(
@@ -1104,12 +1112,12 @@ pub fn prepare_ordinary_owner_cast_with_caster(
                     .commit_builder()
                     .map_err(|_| SpellCastDisposition::Rejected)?;
                 if harmony_gained > 0 {
-                    harmony_gain_healing = super::native_actor_states::plan_harmony_gain_healing(
+                    harmony_gain_healing = oteryn_gameplay_spell_rules::native_actor_states::plan_harmony_gain_healing(
                         super::actor_execution::harmony_gain_profile()?,
                         harmony_gained,
                         next.facts.level,
                         monk.serene(),
-                        next.stance == Some(super::native_actor_states::StandardStance::Sustain),
+                        next.stance == Some(oteryn_gameplay_spell_rules::native_actor_states::StandardStance::Sustain),
                     )
                     .map_err(|_| SpellCastDisposition::Rejected)?;
                 }
@@ -1171,13 +1179,15 @@ pub fn resolve_ordinary_due_effects(
 }
 
 impl PlayerSpellState {
-    pub fn owned_conditions(&self) -> &crate::ability::condition::ConditionStore<String> {
+    pub fn owned_conditions(
+        &self,
+    ) -> &oteryn_gameplay_foundation::foundation::condition::ConditionStore<String> {
         &self.conditions
     }
     pub fn apply_batch_conditions(
         &mut self,
-        expected: &crate::ability::condition::ConditionStore<String>,
-        next: &crate::ability::condition::ConditionStore<String>,
+        expected: &oteryn_gameplay_foundation::foundation::condition::ConditionStore<String>,
+        next: &oteryn_gameplay_foundation::foundation::condition::ConditionStore<String>,
     ) -> Result<(), SpellCastDisposition> {
         if &self.conditions != expected {
             return Err(SpellCastDisposition::Rejected);
@@ -1239,7 +1249,7 @@ fn prepare_native_owner_cast_impl(
             if spell.harmony_role == Some(HarmonyRole::Spender) {
                 monk.spender_multiplier(
                     state.facts.level,
-                    state.stance == Some(super::native_actor_states::StandardStance::Harmony),
+                    state.stance == Some(oteryn_gameplay_spell_rules::native_actor_states::StandardStance::Harmony),
                 )
                 .map_err(|_| SpellCastDisposition::Rejected)?
             } else {
@@ -1396,7 +1406,7 @@ fn prepare_native_callback_owner_cast_core(
             if spell.harmony_role == Some(HarmonyRole::Spender) {
                 monk.spender_multiplier(
                     state.facts.level,
-                    state.stance == Some(super::native_actor_states::StandardStance::Harmony),
+                    state.stance == Some(oteryn_gameplay_spell_rules::native_actor_states::StandardStance::Harmony),
                 )
                 .map_err(|_| SpellCastDisposition::Rejected)?
             } else {
@@ -1501,7 +1511,7 @@ pub fn prepare_conjure_owner_cast_with_caster(
             if spell.harmony_role == Some(HarmonyRole::Spender) {
                 monk.spender_multiplier(
                     state.facts.level,
-                    state.stance == Some(super::native_actor_states::StandardStance::Harmony),
+                    state.stance == Some(oteryn_gameplay_spell_rules::native_actor_states::StandardStance::Harmony),
                 )
                 .map_err(|_| SpellCastDisposition::Rejected)?
             } else {

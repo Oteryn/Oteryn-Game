@@ -1,8 +1,8 @@
 #![allow(clippy::expect_used, clippy::panic)]
 use crate::creature_auto_attack::AttackError;
-use crate::foundation::MovementLocalPosition;
 use crate::gameplay_transport::actor_spell::tests::runtime_with_player;
-use oteryn_gameplay_encounters::callback_speech::CallbackSpeech;
+use oteryn_gameplay_encounters::bosses::source_callbacks::callback_speech::CallbackSpeech;
+use oteryn_gameplay_entities::MovementLocalPosition;
 use oteryn_protocol_oteryn::chat::{ChatLine, ChatSpeechMode};
 #[test]
 fn fixed_source_chatline_current_recipient_historical_speaker_and_stale_refusal() {
@@ -20,7 +20,7 @@ fn fixed_source_chatline_current_recipient_historical_speaker_and_stale_refusal(
     let line = CallbackSpeech::cast(&r, actor, "oteryn:creature.gaz_haragoth", false)
         .expect("qualified fixture")
         .expect("qualified fixture");
-    let mut box_ = crate::weak_spot_speech::WeakSpotSpeechMailbox::default();
+    let mut box_ = oteryn_gameplay_encounters::bosses::crystal_deaths::crystal_death_composition::speech::WeakSpotSpeechMailbox::default();
     assert_eq!(
         box_.publish_callback(&r, &line, &[(player, session), (player, session)])
             .expect("qualified fixture"),
@@ -91,7 +91,7 @@ fn callback_say_and_yell_use_existing_distinct_hearing_and_fixed_spawn_text() {
     let yell = CallbackSpeech::cast(&r, gaz, "oteryn:creature.gaz_haragoth", true)
         .expect("qualified fixture")
         .expect("qualified fixture");
-    let mut box_ = crate::weak_spot_speech::WeakSpotSpeechMailbox::default();
+    let mut box_ = oteryn_gameplay_encounters::bosses::crystal_deaths::crystal_death_composition::speech::WeakSpotSpeechMailbox::default();
     assert_eq!(
         box_.publish_callback(&r, &say, &[(player, session)])
             .expect("qualified fixture"),

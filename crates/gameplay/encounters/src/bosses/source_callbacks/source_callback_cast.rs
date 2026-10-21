@@ -7,20 +7,23 @@ use crate::content::{
 };
 use crate::creature_auto_attack::{AttackError, ProfileAbilityProposal};
 use crate::creature_damage_spell::*;
-use crate::durability::creature_schedule::ScheduleList;
-use crate::foundation::owner_timer::SemanticTimeMicros;
-use crate::foundation::{ChannelRuntimeV1, ExactActorRef, RuntimeWorkStamp, ScopeRuntimeFence};
 use crate::player_lethal::PlayerLethalVitals;
+use oteryn_gameplay_foundation::foundation::owner_timer::SemanticTimeMicros;
+use oteryn_gameplay_foundation::foundation::profile_schedule::ScheduleList;
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
+use {
+    oteryn_gameplay_entities::ChannelRuntimeV1,
+    oteryn_gameplay_foundation::foundation::{ExactActorRef, RuntimeWorkStamp, ScopeRuntimeFence},
+};
 pub type CallbackPulseBatch =
     Result<Vec<(ExactActorRef, Ref, usize, Result<SpellOutcome, AttackError>)>, AttackError>;
-pub use crate::callback_speech::CallbackSpeech;
 use crate::content::{ProjectV2Draft, ProjectV2SourceIdentityBinding};
-use crate::foundation::owner_timer::{
+pub use oteryn_gameplay_encounters::bosses::source_callbacks::callback_speech::CallbackSpeech;
+use oteryn_gameplay_foundation::foundation::owner_timer::{
     CatchUpPolicy, FamilyPolicy, OwnerClock, OwnerTimerLane, TimerFamily,
 };
-use crate::foundation::{RuntimeScopeRefV1, ScopeOwnershipGeneration};
+use oteryn_gameplay_foundation::foundation::{RuntimeScopeRefV1, ScopeOwnershipGeneration};
 #[derive(serde::Deserialize)]
 pub struct Witness {
     pub cases: BTreeMap<String, Case>,
@@ -383,7 +386,10 @@ pub struct CallbackCastOwner {
     memos: Vec<Memo>,
     next: u64,
     speech: Vec<CallbackSpeech>,
-    removals: Vec<(ExactActorRef, Result<(), crate::foundation::CarrierError>)>,
+    removals: Vec<(
+        ExactActorRef,
+        Result<(), oteryn_gameplay_foundation::foundation::CarrierError>,
+    )>,
 }
 impl CallbackCastOwner {
     pub fn new(r: &ChannelRuntimeV1, f: &ScopeRuntimeFence) -> Result<Self, AttackError> {
@@ -423,7 +429,10 @@ impl CallbackCastOwner {
     }
     pub fn take_source_removals(
         &mut self,
-    ) -> Vec<(ExactActorRef, Result<(), crate::foundation::CarrierError>)> {
+    ) -> Vec<(
+        ExactActorRef,
+        Result<(), oteryn_gameplay_foundation::foundation::CarrierError>,
+    )> {
         std::mem::take(&mut self.removals)
     }
     fn current(
@@ -472,7 +481,9 @@ impl CallbackCastOwner {
             return Err(AttackError::StaleIssuer);
         }
         let sequence = s.sequence(p)?;
-        crate::source_callback_intent::validate(r, p)?;
+        oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_intent::validate(
+            r, p,
+        )?;
         self.prune(r);
         if let Some(m) = self
             .memos

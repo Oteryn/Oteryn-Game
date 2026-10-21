@@ -1,0 +1,35 @@
+{
+  "oteryn-gameplay-combat": [
+    "oteryn-gameplay-characters",
+    "oteryn-gameplay-progression"
+  ],
+  "oteryn-gameplay-combat-rules": [
+    "oteryn-gameplay-domain"
+  ],
+  "oteryn-gameplay-encounters": [
+    "oteryn-gameplay-combat-rules",
+    "oteryn-gameplay-spell-rules"
+  ],
+  "oteryn-gameplay-monster-ai": [
+    "oteryn-gameplay-combat-rules",
+    "oteryn-gameplay-spell-rules",
+    "oteryn-gameplay-encounter-rules"
+  ],
+  "oteryn-gameplay-npc": [
+    "oteryn-gameplay-characters",
+    "oteryn-gameplay-foundation",
+    "oteryn-gameplay-items",
+    "oteryn-gameplay-quests",
+    "oteryn-gameplay-social-rules"
+  ],
+  "oteryn-gameplay-social": [
+    "oteryn-gameplay-characters",
+    "oteryn-gameplay-items",
+    "oteryn-gameplay-quests"
+  ],
+  "oteryn-gameplay-spell": [
+    "oteryn-gameplay-characters",
+    "oteryn-gameplay-items",
+    "oteryn-gameplay-housing"
+  ]
+}

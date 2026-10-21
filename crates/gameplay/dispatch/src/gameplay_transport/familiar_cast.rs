@@ -288,8 +288,8 @@ use crate::spell::delayed_execution::{
     CastBinding, ScheduleRequest, SpellTimerOccurrence, TimerPayload,
 };
 use crate::spell::mana_training::PreparedPlayerTraining;
-use crate::spell::native_companions::{CompanionFacts, FamiliarEvent};
 use crate::spell::{Execution, OperationalCastFacts};
+use oteryn_gameplay_spell_rules::native_companions::{CompanionFacts, FamiliarEvent};
 use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
 use sha2::{Digest, Sha256};
 fn nonce(tag: &[u8], actor: ExactActorRef, session: GameSessionId, command: u64) -> [u8; 16] {

@@ -28,7 +28,6 @@ mod premium;
 
 use durability::DurabilityRoot;
 use durability::character_authority::CharacterAuthorityError;
-use durability::character_authority_audit as audit;
 use durability::native_admission_source::{
     DescriptorRegistration, FreshStoreProvenance, NativeSourceOperation, NativeSourceSubject,
     SourceObservation,
@@ -46,6 +45,7 @@ use oteryn_game_server::character_recovery_fence::{
     recovery_record_digest,
 };
 use oteryn_game_server::domain::{AccountId, CharacterId, WorldId};
+use oteryn_gameplay_characters::character_authority_audit as audit;
 use prost::Message;
 use sqlx::{Connection, Executor};
 
@@ -293,9 +293,10 @@ async fn register(
 ) -> TestResult<NodeIncarnationProof> {
     let secret = BootstrapSecret::from_bytes([tag; 32]);
     let launch = LaunchBinding::new(&format!("launch-{tag}")).map_err(|e| format!("{e:?}"))?;
-    let node = foundation::NodeId::decode(&id(tag)).map_err(|e| format!("{e:?}"))?;
+    let node = oteryn_gameplay_foundation::foundation::NodeId::decode(&id(tag))
+        .map_err(|e| format!("{e:?}"))?;
     let supersedes = supersedes
-        .map(|previous| foundation::NodeId::decode(&id(previous)))
+        .map(|previous| oteryn_gameplay_foundation::foundation::NodeId::decode(&id(previous)))
         .transpose()
         .map_err(|e| format!("{e:?}"))?;
     root.issue_node_bootstrap_authorization(&secret, &launch, supersedes)
@@ -447,9 +448,11 @@ async fn assign_world(
     let writer = RuntimeScopeAssignmentWriter::open(root.clone(), "writer-a")
         .await
         .map_err(|e| format!("{e:?}"))?;
-    let scope = foundation::RuntimeScopeRefV1::channel(
-        foundation::WorldId::decode(&id(world)).map_err(|e| format!("{e:?}"))?,
-        foundation::ChannelId::decode(&id(tag)).map_err(|e| format!("{e:?}"))?,
+    let scope = oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
+        oteryn_gameplay_foundation::foundation::WorldId::decode(&id(world))
+            .map_err(|e| format!("{e:?}"))?,
+        oteryn_gameplay_foundation::foundation::ChannelId::decode(&id(tag))
+            .map_err(|e| format!("{e:?}"))?,
     );
     // Owner-written exact-scope grant for the session role, which is also
     // the recorded actor (OPS-NODE-BOOT-01 D2).
@@ -3067,9 +3070,7 @@ pub mod content;
 pub mod achievement_catalogue;
 #[path = "support/chest_use_postgres_cases.rs"]
 mod chest_use_postgres_cases;
-#[allow(dead_code, unused_imports)]
-#[path = "../../../crates/gameplay/social/src/interaction/mod.rs"]
-pub mod interaction;
+
 #[allow(dead_code, unused_imports)]
 #[path = "../../../crates/gameplay/social/src/interaction/chest_use.rs"]
 pub mod interaction_chest_use;

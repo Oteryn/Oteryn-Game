@@ -5,11 +5,8 @@
 //! defined here by the current Channel owner and its exact Ability commit.
 
 // A directory module keeps one child-module layout in native and standalone test roots.
-pub mod chain;
-pub mod charm_effects;
+
 mod death_reward;
-pub mod formula;
-mod loot_plan;
 
 // The live kill-reward caller (`gameplay_transport::kill_reward`) uses only
 // part of these re-exports; the rest serve the path-loaded test harnesses.
@@ -33,7 +30,7 @@ pub use death_reward::{
     unused_imports,
     reason = "partly used by the live caller; the rest serve path-loaded test crates"
 )]
-pub use loot_plan::{
+pub use oteryn_gameplay_items::loot_plan::{
     COMBAT01_LOOT_PLAN_BYTES_MAX, COMBAT01_LOOT_PLAN_ENTRIES_MAX, COMBAT01_LOOT_PLAN_ITEMS_MAX,
     COMBAT01_LOOT_RNG_DRAWS_MAX, LootDefinitionRef, LootPlan, LootPlanDeathKey, LootPlanEntry,
     LootPlanError, LootSelectionAlgorithm, LootTableDefinition, LootTableEntry, plan_creature_loot,

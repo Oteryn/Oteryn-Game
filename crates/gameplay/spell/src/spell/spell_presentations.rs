@@ -44,7 +44,7 @@ impl QualifiedCueTile {
         runtime: &ChannelRuntimeV1,
         position: MovementLocalPosition,
     ) -> Result<Self, Error> {
-        crate::spell::world_items_execution::SpellGroundTarget::from_native_owner(
+        oteryn_gameplay_durability::durability::native_world_items::SpellGroundTarget::from_native_owner(
             room, runtime, position,
         )
         .map_err(|_| Error::UnqualifiedSource)?;
@@ -66,7 +66,7 @@ impl QualifiedCueTile {
         if !fact.matches_runtime(runtime) {
             return Err(Error::UnqualifiedSource);
         }
-        crate::spell::world_items_execution::SpellGroundTarget::for_native_tile_read(
+        oteryn_gameplay_durability::durability::native_world_items::SpellGroundTarget::for_native_tile_read(
             room,
             runtime,
             fact.position(),
@@ -99,7 +99,7 @@ impl QualifiedCueTile {
         ) {
             return Err(Error::UnqualifiedSource);
         }
-        crate::spell::world_items_execution::SpellGroundTarget::for_native_tile_read(
+        oteryn_gameplay_durability::durability::native_world_items::SpellGroundTarget::for_native_tile_read(
             room, runtime, position,
         )
         .map_err(|_| Error::UnqualifiedSource)?;

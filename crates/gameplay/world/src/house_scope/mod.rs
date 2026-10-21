@@ -3,8 +3,6 @@
 //! The durable scope and handoff live in `crate::durability::house_scope_handoff`; this module adds the pure entry checks that run
 //! before a handoff is prepared. Actor wiring is HOUSE-RUNTIME-1.
 
-pub mod handoff;
-
 pub use crate::durability::house_scope_handoff::{
     HOUSE_SCOPE_CHARACTERS_MAX, HouseAbortOutcome, HouseCommitOutcome, HouseEntryCommit,
     HouseEntryRefusal, HouseEntryRequest, HouseHandoffDirection, HouseHandoffError,

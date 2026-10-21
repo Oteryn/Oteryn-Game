@@ -967,7 +967,7 @@ mod tests {
     #[test]
     fn source_death_cleanup_does_not_read_commercial_benefits_but_requires_matching_owner_and_creature()
      {
-        use crate::spell::native_companions::{
+        use oteryn_gameplay_spell_rules::native_companions::{
             CompanionFacts, CompanionPlan, FamiliarAction, FamiliarFacts, plan,
         };
         let source = profile("Knight familiar");

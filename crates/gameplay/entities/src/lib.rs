@@ -3,7 +3,7 @@
 //! The physical Channel actor carrier composes the Foundation kernel and qualified Content.
 
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_domain::domain;
+use oteryn_gameplay_domain::domain;
 #[allow(unused_imports)]
 pub use oteryn_gameplay_foundation::foundation::*;
 

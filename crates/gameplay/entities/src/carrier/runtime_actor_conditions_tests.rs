@@ -219,8 +219,10 @@ fn stale_session_generation_scope_and_future_time_never_mutate_native_conditions
         runtime.commit_actor_condition(&plan, at(0)),
         Err(ConditionOwnerError::TimeMismatch)
     );
-    let wrong =
-        GameSessionId::decode(&[0x70, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1]).unwrap();
+    let wrong = oteryn_gameplay_foundation::foundation::GameSessionId::decode(&[
+        0x70, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1,
+    ])
+    .unwrap();
     assert!(runtime.actor_conditions(player, Some(wrong)).is_err());
     let mut foreign_session = plan.clone();
     foreign_session.receipt.source.as_mut().unwrap().session = Some(wrong);
@@ -235,7 +237,9 @@ fn stale_session_generation_scope_and_future_time_never_mutate_native_conditions
         oteryn_gameplay_foundation::foundation::ScopeOwnershipGeneration::new(2).unwrap();
     assert_eq!(
         other.commit_actor_condition(&plan, at(1)),
-        Err(ConditionOwnerError::Actor(CarrierError::WrongScope))
+        Err(ConditionOwnerError::Actor(
+            oteryn_gameplay_foundation::foundation::CarrierError::WrongScope
+        ))
     );
     runtime.remove_test_actor(creature).unwrap();
     let replacement = runtime
@@ -384,8 +388,10 @@ fn native_expiry_revalidates_session_generation_and_monotonic_time_at_commit() {
         runtime.commit_actor_condition(&plan, at(0)),
         Err(ConditionOwnerError::TimeMismatch)
     );
-    let wrong =
-        GameSessionId::decode(&[0x70, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1]).unwrap();
+    let wrong = oteryn_gameplay_foundation::foundation::GameSessionId::decode(&[
+        0x70, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1,
+    ])
+    .unwrap();
     let mut foreign_session = plan.clone();
     foreign_session.session = Some(wrong);
     assert!(

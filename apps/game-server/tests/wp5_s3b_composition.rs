@@ -466,7 +466,10 @@ fn bound_capabilities(
 // Runtime readiness producer for the holder: the ownership generation is the
 // #415 assignment generation; the revision facts are the runtime's own.
 struct RuntimeReadiness(AdmissionAuthorityPublicationChangeV1);
-impl foundation::fnd04_verifier::fresh_source_sealed::Sealed for RuntimeReadiness {}
+impl oteryn_gameplay_foundation::foundation::fnd04_verifier::fresh_source_sealed::Sealed
+    for RuntimeReadiness
+{
+}
 impl AdmissionAuthorityOwningPublisherV1 for RuntimeReadiness {
     fn resolve_publication(
         &self,

@@ -6,17 +6,19 @@ use crate::content::{
     ProjectV2SourceIdentityDisposition as Disposition,
 };
 use crate::creature_auto_attack::ProfileAbilityProposal;
-use crate::durability::creature_schedule::ScheduleList;
-use crate::foundation::{
-    CarrierError, ChannelRuntimeV1, ExactActorRef, OwnerDamageResult, RuntimeScopeRefV1,
-    RuntimeWorkStamp, ScopeRuntimeFence,
-};
 pub use oteryn_gameplay_encounter_rules::thresholds::below_health_threshold;
 pub use oteryn_gameplay_encounter_rules::timers::checked_deadline;
+use oteryn_gameplay_foundation::foundation::profile_schedule::ScheduleList;
 use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
 };
 use sha2::{Digest, Sha256};
+use {
+    oteryn_gameplay_entities::{ChannelRuntimeV1, OwnerDamageResult},
+    oteryn_gameplay_foundation::foundation::{
+        CarrierError, ExactActorRef, RuntimeScopeRefV1, RuntimeWorkStamp, ScopeRuntimeFence,
+    },
+};
 
 const QUALIFICATION: &str = "PROJECT_SOURCE_MARKER_LOCAL;SOURCE_THRESHOLD_RANGE_DELAY_COOLDOWN;GLOBAL_CONDITION88888_INTEROPERABILITY_UNVERIFIED;PROJECT_UNIFORM_DRAW;SPEECH_VFX_NOT_DELIVERED";
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -184,7 +184,7 @@ impl ChannelRuntimeV1 {
         let result = if let Some(state) = hooks.as_any_mut().downcast_mut::<T>() {
             operation(self, state)
         } else {
-            Err(CarrierError::PlanConflict.into())
+            Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict.into())
         };
         self.carrier.encounter_hooks = Some(hooks);
         result
@@ -200,19 +200,21 @@ impl ChannelRuntimeV1 {
         let mut expanded = Vec::new();
         expanded
             .try_reserve(64)
-            .map_err(|_| CarrierError::AllocationFailed)?;
+            .map_err(|_| oteryn_gameplay_foundation::foundation::CarrierError::AllocationFailed)?;
         let mut map = Vec::new();
         map.try_reserve(requests.len())
-            .map_err(|_| CarrierError::AllocationFailed)?;
+            .map_err(|_| oteryn_gameplay_foundation::foundation::CarrierError::AllocationFailed)?;
         for (n, (actor, key, max, draw)) in requests.iter().enumerate() {
             if *max == 0 || *max > i64::MAX as u64 || *draw > i64::MAX as u64 {
-                return Err(CarrierError::InvalidCreatureHealth);
+                return Err(
+                    oteryn_gameplay_foundation::foundation::CarrierError::InvalidCreatureHealth,
+                );
             }
             if requests[..n].iter().any(|r| r.0 == *actor) {
-                return Err(CarrierError::PlanConflict);
+                return Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict);
             }
             if expanded.len() >= 64 {
-                return Err(CarrierError::AllocationFailed);
+                return Err(oteryn_gameplay_foundation::foundation::CarrierError::AllocationFailed);
             }
             map.push(expanded.len());
             expanded.push((*actor, key.clone(), *max, *draw));
@@ -325,7 +327,7 @@ impl ChannelRuntimeV1 {
         if !matches!(&self.carrier.slots[index], Slot::CreatureOccupied { generation, .. }
             if *generation == consumer.actor_local_generation())
         {
-            return Err(CarrierError::StaleActorGeneration);
+            return Err(oteryn_gameplay_foundation::foundation::CarrierError::StaleActorGeneration);
         }
         self.carrier.remove(&self.continuity, prey.0)?;
         if let Slot::CreatureOccupied { health, .. } = &mut self.carrier.slots[index] {
@@ -352,7 +354,7 @@ impl ChannelRuntimeV1 {
             *generation += 1;
             Ok(())
         } else {
-            Err(CarrierError::NotCreature)
+            Err(oteryn_gameplay_foundation::foundation::CarrierError::NotCreature)
         }
     }
 

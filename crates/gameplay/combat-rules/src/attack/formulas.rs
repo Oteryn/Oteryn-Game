@@ -8,7 +8,9 @@
 //! `shielding_skill` and the defence value as `shield_defense`.
 
 use super::constants::{AttackConstants, FightMode};
-use crate::formula::{Binary, Expression, Formula, Input, Unary};
+use oteryn_gameplay_content::content::spell_data::formula::{
+    Binary, Expression, Formula, Input, Unary,
+};
 
 fn constant(value: f64) -> Expression {
     Expression::Const(value)

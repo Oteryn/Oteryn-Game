@@ -3,7 +3,7 @@
 
 use super::constants::CHECKED_IN_JSON;
 use super::*;
-use crate::formula::{FormulaInputs, Input};
+use oteryn_gameplay_content::content::spell_data::formula::{FormulaInputs, Input};
 use oteryn_simulation_determinism::SemanticTimeMicros;
 
 fn table() -> &'static AttackConstants {

@@ -12,15 +12,10 @@ category = "gameplay"
 release-role = "production"
 
 [dependencies]
-oteryn-gameplay-characters = { version = "=0.1.0", path = "../characters" }
 oteryn-gameplay-content = { version = "=0.1.0", path = "../content" }
 oteryn-gameplay-domain = { version = "=0.1.0", path = "../domain" }
 oteryn-gameplay-economy = { version = "=0.1.0", path = "../economy" }
 oteryn-gameplay-entities = { version = "=0.1.0", path = "../entities" }
-oteryn-gameplay-foundation = { version = "=0.1.0", path = "../foundation" }
-oteryn-gameplay-items = { version = "=0.1.0", path = "../items" }
-oteryn-gameplay-quests = { version = "=0.1.0", path = "../quests" }
-oteryn-gameplay-social-rules = { version = "=0.1.0", path = "../social-rules" }
 oteryn-gameplay-world = { version = "=0.1.0", path = "../world" }
 oteryn-protocol-oteryn = { version = "=0.1.0", path = "../../protocol-oteryn" }
 oteryn-simulation-determinism = { version = "=0.1.0", path = "../../simulation-determinism" }

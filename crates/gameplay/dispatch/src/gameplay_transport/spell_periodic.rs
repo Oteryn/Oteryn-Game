@@ -2,7 +2,6 @@
 //! condition store. A historical field creator is never a current PvP grant.
 use super::super::ComposedFreshAdmission;
 use super::{ChannelSpellStates, qualified_protection_zone};
-use crate::ability::condition::{DotElement, TickFacts};
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::content::{ReferenceItemField, ReferenceItemType};
 use crate::durability::fresh_admission::FreshAdmissionStore;
@@ -11,7 +10,8 @@ use crate::durability::spell_item_transaction::StandingTileRead;
 use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, GameSessionId, GameSessionState, RuntimeScopeRefV1,
 };
-use crate::spell::world_items_execution::SpellGroundTarget;
+use oteryn_gameplay_durability::durability::native_world_items::SpellGroundTarget;
+use oteryn_gameplay_foundation::foundation::condition::{DotElement, TickFacts};
 use oteryn_protocol_oteryn::actor_spell::ActorVitals;
 
 fn standing_element(
@@ -121,7 +121,7 @@ impl ChannelSpellStates {
         facts: TickFacts,
         native: Option<&NativeGameplayState>,
     ) -> Option<Option<(u64, ActorVitals)>> {
-        use crate::ability::condition::{ConditionSourceKind, TickKind};
+        use oteryn_gameplay_foundation::foundation::condition::{ConditionSourceKind, TickKind};
         let before = self.get(runtime, actor, session)?;
         let preview = crate::spell::actor_conditions::stage_source_owner_cycle(
             before,

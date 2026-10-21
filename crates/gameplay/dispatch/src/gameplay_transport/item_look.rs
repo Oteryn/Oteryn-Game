@@ -14,8 +14,6 @@ use oteryn_protocol_oteryn::item_view::ItemHandle;
 
 // The examine text is mounted here, not in `interaction/mod.rs`: the test targets that recompile
 // `interaction/mod.rs` carry no `crate::content` (the `item_view::corpse_open` pattern).
-#[path = "look.rs"]
-mod text;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ItemLookOutcome {
@@ -92,7 +90,7 @@ fn examine_qualified_item(
     {
         return ItemLookOutcome::Unavailable;
     }
-    text::item_text(&record.semantics, observed.item.count)
+    oteryn_gameplay_items::look::item_text(&record.semantics, observed.item.count)
         .map(ItemLookOutcome::Text)
         .unwrap_or(ItemLookOutcome::Unavailable)
 }

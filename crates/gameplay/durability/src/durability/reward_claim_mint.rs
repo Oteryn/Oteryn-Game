@@ -99,7 +99,7 @@ use super::item_transfer::{
     validate_facts,
 };
 use super::item_transfer_audit::{OneItemCommandRefV1, OneItemInventoryV1};
-use super::quest_state::quest::{QUESTSTATE0_RL_07, valid_quest_key};
+use oteryn_gameplay_quests::quest::{QUESTSTATE0_RL_07, valid_quest_key};
 use super::reward_claim_mint_audit::{
     self as audit, OneItemRewardClaimCauseV1, OneItemRewardClaimMintV1,
     REWARD_CLAIM_MINT_TYPED_CAUSE, RewardClaimMintEventIdentity,

@@ -1,9 +1,9 @@
-use crate::combat::charm_effects::{
-    CharmCategory, CharmDefinition, CharmDefinitionError, CharmStageValue,
-};
 use crate::content::ContentError;
 use crate::content::charm_source_effect::{lower_effect, percent};
 use crate::foundation::charm_data::{CharmDamageKind, CharmEffect, CharmElement, CharmResource};
+use oteryn_gameplay_progression::charm_effects::{
+    CharmCategory, CharmDefinition, CharmDefinitionError, CharmStageValue,
+};
 use serde::Deserialize;
 use serde_json::Value;
 use serde_json::value::RawValue;

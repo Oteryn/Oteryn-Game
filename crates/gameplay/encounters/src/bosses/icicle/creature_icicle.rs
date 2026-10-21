@@ -4,14 +4,16 @@ use crate::content::{
     ProjectV2AuthoringProfileData as Data, ProjectV2DefinitionRef as Ref, ProjectV2Draft,
 };
 use crate::creature_auto_attack::{AutoAttackOwner, ProfileAbilityProposal};
-use crate::durability::creature_schedule::ScheduleList;
-use crate::foundation::owner_timer::SemanticTimeMicros;
-use crate::foundation::{
-    ChannelRuntimeV1, ExactActorRef, GameSessionId, OwnerDamageResult, RuntimeScopeRefV1,
-    RuntimeWorkStamp, ScopeRuntimeFence,
-};
 use oteryn_gameplay_encounters::bosses::icicle::native_owner::IcicleCarrierExt;
+use oteryn_gameplay_foundation::foundation::owner_timer::SemanticTimeMicros;
+use oteryn_gameplay_foundation::foundation::profile_schedule::ScheduleList;
 use sha2::{Digest, Sha256};
+use {
+    oteryn_gameplay_entities::{ChannelRuntimeV1, OwnerDamageResult},
+    oteryn_gameplay_foundation::foundation::{
+        ExactActorRef, GameSessionId, RuntimeScopeRefV1, RuntimeWorkStamp, ScopeRuntimeFence,
+    },
+};
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum IcicleError {
     Source,
@@ -20,7 +22,7 @@ pub enum IcicleError {
     MissingFacts,
     Replay,
     Capacity,
-    Carrier(crate::foundation::CarrierError),
+    Carrier(oteryn_gameplay_foundation::foundation::CarrierError),
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IcicleOutcome {
@@ -304,13 +306,12 @@ impl IcicleOwner {
                     cleared_target: clear,
                     eggs: Vec::new(),
                 };
-                out.eggs
-                    .try_reserve(eggs.len())
-                    .map_err(|_| crate::foundation::CarrierError::AllocationFailed)?;
-                retained
-                    .eggs
-                    .try_reserve(eggs.len())
-                    .map_err(|_| crate::foundation::CarrierError::AllocationFailed)?;
+                out.eggs.try_reserve(eggs.len()).map_err(|_| {
+                    oteryn_gameplay_foundation::foundation::CarrierError::AllocationFailed
+                })?;
+                retained.eggs.try_reserve(eggs.len()).map_err(|_| {
+                    oteryn_gameplay_foundation::foundation::CarrierError::AllocationFailed
+                })?;
                 for (actor, receipt) in eggs.iter().copied().zip(receipts.iter().copied()) {
                     out.eggs.push((actor, receipt));
                     retained.eggs.push((actor, receipt));

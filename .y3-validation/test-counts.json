@@ -1,0 +1,32 @@
+{
+  "before": {
+    "oteryn_game_server": 309,
+    "oteryn_gameplay_combat": 36,
+    "oteryn_gameplay_combat_rules": 46,
+    "oteryn_gameplay_dispatch": 897,
+    "oteryn_gameplay_durability": 384,
+    "oteryn_gameplay_encounters": 27,
+    "oteryn_gameplay_entities": 167,
+    "oteryn_gameplay_foundation": 340,
+    "oteryn_gameplay_monster_ai": 74,
+    "oteryn_gameplay_social": 103,
+    "oteryn_gameplay_spell": 221,
+    "oteryn_gameplay_world": 173,
+    "oteryn_gameplay_npc": 9
+  },
+  "after": {
+    "oteryn_game_server": 309,
+    "oteryn_gameplay_combat": 36,
+    "oteryn_gameplay_combat_rules": 46,
+    "oteryn_gameplay_dispatch": 897,
+    "oteryn_gameplay_durability": 384,
+    "oteryn_gameplay_encounters": 27,
+    "oteryn_gameplay_entities": 167,
+    "oteryn_gameplay_foundation": 340,
+    "oteryn_gameplay_monster_ai": 74,
+    "oteryn_gameplay_npc": 9,
+    "oteryn_gameplay_social": 103,
+    "oteryn_gameplay_spell": 221,
+    "oteryn_gameplay_world": 173
+  }
+}

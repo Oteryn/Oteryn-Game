@@ -1,0 +1,2110 @@
+{
+  "file_and_inline_facades": [
+    {
+      "path": "apps/game-server/src/lifted_tests/domain_death_tests.rs",
+      "line": 6,
+      "kind": "inline module",
+      "name": "parent_imports",
+      "disposition": "kept: deliberate source-mounted qualification interface"
+    },
+    {
+      "path": "apps/game-server/src/lifted_tests/domain_timed_item_host_tests.rs",
+      "line": 5,
+      "kind": "inline module",
+      "name": "parent_imports",
+      "disposition": "kept: deliberate source-mounted qualification interface"
+    },
+    {
+      "path": "apps/game-server/tests/ability_engine.rs",
+      "line": 6,
+      "kind": "inline module",
+      "name": "domain",
+      "disposition": "kept: deliberate source-mounted qualification interface"
+    },
+    {
+      "path": "apps/game-server/tests/item_timed_postgres.rs",
+      "line": 5,
+      "kind": "file",
+      "disposition": "kept: source-mounted qualification interface; mounts real modules and their tests"
+    },
+    {
+      "path": "apps/game-server/tests/support/content_shim.rs",
+      "line": 33,
+      "kind": "file",
+      "disposition": "kept: source-mounted qualification interface; mounts real modules and their tests"
+    },
+    {
+      "path": "apps/game-server/tests/support/domain_shim.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "kept: source-mounted qualification interface; mounts real modules and their tests"
+    },
+    {
+      "path": "crates/gameplay/combat-rules/src/formula.rs",
+      "line": 6,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/combat/src/ability/condition.rs",
+      "line": 3,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/combat/src/ability/field_condition.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/combat/src/ability/occurrence.rs",
+      "line": 1,
+      "kind": "file",
+      "disposition": "kept: documented standalone Ability API preserves local AbilityError/occurrence type identity"
+    },
+    {
+      "path": "crates/gameplay/combat/src/combat/attack/block.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/combat/src/combat/attack/constants.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/combat/src/combat/attack/formulas.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/combat/src/combat/attack/target.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/combat/src/combat/chain.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/combat/src/combat/charm_effects.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/combat/src/combat/formula.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/combat/src/combat/loot_plan.rs",
+      "line": 1,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/combat/src/combat/mod.rs",
+      "line": 20,
+      "kind": "file",
+      "disposition": "kept: canonical public module API with owned implementations"
+    },
+    {
+      "path": "crates/gameplay/combat/src/combat/pvp/legality.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/combat/src/creature_attack_geometry.rs",
+      "line": 3,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/combat/src/creature_icicle.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/combat/src/lib.rs",
+      "line": 15,
+      "kind": "file",
+      "disposition": "kept: canonical public module API with owned implementations"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/spell_wheel_profile.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "kept: content-facing foundation surface is owned by y2"
+    },
+    {
+      "path": "crates/gameplay/content/src/lib.rs",
+      "line": 6,
+      "kind": "file",
+      "disposition": "kept: content-facing foundation surface is owned by y2"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/highscores.rs",
+      "line": 5,
+      "kind": "file",
+      "disposition": "kept: canonical public module API with owned implementations"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/look.rs",
+      "line": 1,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/world_object.rs",
+      "line": 8,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "line": 6,
+      "kind": "file",
+      "disposition": "kept: canonical public module API with owned implementations"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/welter_consume.rs",
+      "line": 6,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/character_authority_audit.rs",
+      "line": 3,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/character_vitals_soul.rs",
+      "line": 6,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/character_vitals_stamina/stamina_math.rs",
+      "line": 5,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/creature_schedule.rs",
+      "line": 1,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/item_capacity.rs",
+      "line": 1,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/quest_state/quest/mod.rs",
+      "line": 3,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/spell_wheel_abi.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/uniform_draw.rs",
+      "line": 1,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/time_guardian/mod.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/weak_spot/weak_spot_speech.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/crystal_callbacks.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/crystal_death_composition.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/crystal_herald_quest.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/lib.rs",
+      "line": 43,
+      "kind": "inline module",
+      "name": "foundation",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/monster_combat_lane.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/source_callback_cast.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/source_callback_intent.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/source_callback_spawn.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/source_encounter_seven.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/source_threshold_heal.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/entities/src/lib.rs",
+      "line": 6,
+      "kind": "file",
+      "disposition": "kept: canonical public module API with owned implementations"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/charm_data.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "kept: content-facing foundation surface is owned by y2"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/loot_data.rs",
+      "line": 1,
+      "kind": "file",
+      "disposition": "kept: content-facing foundation surface is owned by y2"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/lib.rs",
+      "line": 5,
+      "kind": "file",
+      "disposition": "kept: canonical public module API with owned implementations"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/bone_phase_registry.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/lib.rs",
+      "line": 13,
+      "kind": "file",
+      "disposition": "kept: canonical public module API with owned implementations"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/monster_combat_lane/source_time_profile_bundle.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/smelly_cheese.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/smelly_damage.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/smelly_encounter_dispatch.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/weak_spot_speech.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/npc/src/lib.rs",
+      "line": 12,
+      "kind": "file",
+      "disposition": "kept: canonical public module API with owned implementations"
+    },
+    {
+      "path": "crates/gameplay/social/src/chat/mod.rs",
+      "line": 19,
+      "kind": "file",
+      "disposition": "kept: canonical public module API with owned implementations"
+    },
+    {
+      "path": "crates/gameplay/social/src/interaction/mod.rs",
+      "line": 5,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/social/src/lib.rs",
+      "line": 12,
+      "kind": "file",
+      "disposition": "kept: canonical public module API with owned implementations"
+    },
+    {
+      "path": "crates/gameplay/social/src/security/release_policy.rs",
+      "line": 3,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/social/src/security/trust_policy.rs",
+      "line": 3,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/social/src/wheel_gem_data.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/spell/src/lib.rs",
+      "line": 8,
+      "kind": "file",
+      "disposition": "kept: canonical public module API with owned implementations"
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/authoring.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/callback_speech.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/locate.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/mana_training/hit_training.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/native_actor_states.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/native_companions.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/native_items.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/spell/src/spell/world_items_execution.rs",
+      "line": 2,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/world/src/house_scope/handoff.rs",
+      "line": 3,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    },
+    {
+      "path": "crates/gameplay/world/src/lib.rs",
+      "line": 12,
+      "kind": "file",
+      "disposition": "kept: canonical public module API with owned implementations"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/character_vitals_stamina.rs",
+      "line": 7,
+      "kind": "file",
+      "disposition": "removed; callers name the owning crate/module"
+    }
+  ],
+  "private_names_converted_to_imports": [
+    {
+      "path": "crates/gameplay/foundation/src/lib.rs",
+      "kind": "alias",
+      "name": "domain",
+      "target": "oteryn_gameplay_domain::domain"
+    },
+    {
+      "path": "crates/gameplay/durability/src/lib.rs",
+      "kind": "alias",
+      "name": "admission_evidence",
+      "target": "oteryn_gameplay_admission_evidence"
+    },
+    {
+      "path": "crates/gameplay/durability/src/lib.rs",
+      "kind": "alias",
+      "name": "character_recovery_fence",
+      "target": "oteryn_gameplay_character_recovery_fence"
+    },
+    {
+      "path": "crates/gameplay/durability/src/lib.rs",
+      "kind": "alias",
+      "name": "content",
+      "target": "oteryn_gameplay_content::content"
+    },
+    {
+      "path": "crates/gameplay/durability/src/lib.rs",
+      "kind": "alias",
+      "name": "domain",
+      "target": "oteryn_gameplay_domain::domain"
+    },
+    {
+      "path": "crates/gameplay/durability/src/lib.rs",
+      "kind": "alias",
+      "name": "foundation",
+      "target": "oteryn_gameplay_entities"
+    },
+    {
+      "path": "crates/gameplay/durability/src/lib.rs",
+      "kind": "alias",
+      "name": "native_admission_source",
+      "target": "oteryn_gameplay_native_admission_source"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "admission_evidence",
+      "target": "oteryn_gameplay_admission_evidence"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "character_recovery_fence",
+      "target": "oteryn_gameplay_character_recovery_fence"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "ability",
+      "target": "oteryn_gameplay_combat::ability"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "combat",
+      "target": "oteryn_gameplay_combat::combat"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "combat_attack",
+      "target": "oteryn_gameplay_combat::combat_attack"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "combat_pickup",
+      "target": "oteryn_gameplay_combat::combat_pickup"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "combat_pvp",
+      "target": "oteryn_gameplay_combat::combat_pvp"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_appearance_content",
+      "target": "oteryn_gameplay_combat::creature_appearance_content"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_area_heal",
+      "target": "oteryn_gameplay_combat::creature_area_heal"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_attack_geometry",
+      "target": "oteryn_gameplay_combat::creature_attack_geometry"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_auto_attack",
+      "target": "oteryn_gameplay_combat::creature_auto_attack"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_chain_attack",
+      "target": "oteryn_gameplay_combat::creature_chain_attack"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_condition_content",
+      "target": "oteryn_gameplay_combat::creature_condition_content"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_defense_presentation",
+      "target": "oteryn_gameplay_combat::creature_defense_presentation"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_spell_facts",
+      "target": "oteryn_gameplay_combat::creature_spell_facts"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "player_lethal",
+      "target": "oteryn_gameplay_combat::player_lethal"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "content",
+      "target": "oteryn_gameplay_content::content"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "domain",
+      "target": "oteryn_gameplay_domain::domain"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "character_bootstrap_intent",
+      "target": "oteryn_gameplay_durability::character_bootstrap_intent"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "durability",
+      "target": "oteryn_gameplay_durability::durability"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "bone_phase_registry",
+      "target": "oteryn_gameplay_encounters::bone_phase_registry"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_icicle",
+      "target": "oteryn_gameplay_encounters::creature_icicle"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "crystal_callbacks",
+      "target": "oteryn_gameplay_encounters::crystal_callbacks"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "crystal_death_composition",
+      "target": "oteryn_gameplay_encounters::crystal_death_composition"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "crystal_herald_quest",
+      "target": "oteryn_gameplay_encounters::crystal_herald_quest"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "monster_combat_lane",
+      "target": "oteryn_gameplay_encounters::monster_combat_lane"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "self_heal_qualification",
+      "target": "oteryn_gameplay_encounters::self_heal_qualification"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "smelly_cheese",
+      "target": "oteryn_gameplay_encounters::smelly_cheese"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "smelly_damage",
+      "target": "oteryn_gameplay_encounters::smelly_damage"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "smelly_encounter_dispatch",
+      "target": "oteryn_gameplay_encounters::smelly_encounter_dispatch"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "source_callback_cast",
+      "target": "oteryn_gameplay_encounters::source_callback_cast"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "source_callback_intent",
+      "target": "oteryn_gameplay_encounters::source_callback_intent"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "source_callback_spawn",
+      "target": "oteryn_gameplay_encounters::source_callback_spawn"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "source_encounter_seven",
+      "target": "oteryn_gameplay_encounters::source_encounter_seven"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "source_threshold_heal",
+      "target": "oteryn_gameplay_encounters::source_threshold_heal"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "weak_spot_speech",
+      "target": "oteryn_gameplay_encounters::weak_spot_speech"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "foundation",
+      "target": "oteryn_gameplay_entities"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "ai",
+      "target": "oteryn_gameplay_monster_ai::ai"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "ai_monster_melee",
+      "target": "oteryn_gameplay_monster_ai::ai_monster_melee"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "ai_think",
+      "target": "oteryn_gameplay_monster_ai::ai_think"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "monster_owner_cycle",
+      "target": "oteryn_gameplay_monster_ai::monster_owner_cycle"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "monster_summon",
+      "target": "oteryn_gameplay_monster_ai::monster_summon"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "native_admission_source",
+      "target": "oteryn_gameplay_native_admission_source"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "account_characters",
+      "target": "oteryn_gameplay_native_admission_source::account_characters"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "character_commands",
+      "target": "oteryn_gameplay_native_admission_source::character_commands"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "descriptor",
+      "target": "oteryn_gameplay_native_admission_source::descriptor"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "http1_mtls",
+      "target": "oteryn_gameplay_native_admission_source::http1_mtls"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "public_projections",
+      "target": "oteryn_gameplay_native_admission_source::public_projections"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "runtime_status",
+      "target": "oteryn_gameplay_native_admission_source::runtime_status"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "scope_assignment",
+      "target": "oteryn_gameplay_native_admission_source::scope_assignment"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "operator_files",
+      "target": "oteryn_gameplay_node_files::operator_files"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "secure_file",
+      "target": "oteryn_gameplay_node_files::secure_file"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "achievement_catalogue",
+      "target": "oteryn_gameplay_social::achievement_catalogue"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "chat",
+      "target": "oteryn_gameplay_social::chat"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "interaction",
+      "target": "oteryn_gameplay_social::interaction"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "interaction_chest_use",
+      "target": "oteryn_gameplay_social::interaction_chest_use"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "party",
+      "target": "oteryn_gameplay_social::party"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "premium",
+      "target": "oteryn_gameplay_social::premium"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "security",
+      "target": "oteryn_gameplay_social::security"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "wheel_gem_data",
+      "target": "oteryn_gameplay_social::wheel_gem_data"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_damage_spell",
+      "target": "oteryn_gameplay_spell::creature_damage_spell"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_damage_spell_delayed",
+      "target": "oteryn_gameplay_spell::creature_damage_spell_delayed"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "spell",
+      "target": "oteryn_gameplay_spell::spell"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "house_scope",
+      "target": "oteryn_gameplay_world::house_scope"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "map",
+      "target": "oteryn_gameplay_world::map"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "movement",
+      "target": "oteryn_gameplay_world::movement"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "world_clock",
+      "target": "oteryn_gameplay_world::world_clock"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "world_object_revert",
+      "target": "oteryn_gameplay_world::world_object_revert"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "world_runtime",
+      "target": "oteryn_gameplay_world::world_runtime"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "kind": "alias",
+      "name": "world_weather",
+      "target": "oteryn_gameplay_weather"
+    },
+    {
+      "path": "crates/gameplay/npc/src/lib.rs",
+      "kind": "alias",
+      "name": "content",
+      "target": "oteryn_gameplay_content::content"
+    },
+    {
+      "path": "crates/gameplay/npc/src/lib.rs",
+      "kind": "alias",
+      "name": "domain",
+      "target": "oteryn_gameplay_domain::domain"
+    },
+    {
+      "path": "crates/gameplay/npc/src/lib.rs",
+      "kind": "alias",
+      "name": "foundation",
+      "target": "oteryn_gameplay_entities"
+    },
+    {
+      "path": "crates/gameplay/npc/src/lib.rs",
+      "kind": "alias",
+      "name": "map",
+      "target": "oteryn_gameplay_world::map"
+    },
+    {
+      "path": "crates/gameplay/npc/src/lib.rs",
+      "kind": "alias",
+      "name": "movement",
+      "target": "oteryn_gameplay_world::movement"
+    },
+    {
+      "path": "crates/gameplay/social/src/lib.rs",
+      "kind": "alias",
+      "name": "ability",
+      "target": "oteryn_gameplay_combat::ability"
+    },
+    {
+      "path": "crates/gameplay/social/src/lib.rs",
+      "kind": "alias",
+      "name": "combat",
+      "target": "oteryn_gameplay_combat::combat"
+    },
+    {
+      "path": "crates/gameplay/social/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_appearance_content",
+      "target": "oteryn_gameplay_combat::creature_appearance_content"
+    },
+    {
+      "path": "crates/gameplay/social/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_area_heal",
+      "target": "oteryn_gameplay_combat::creature_area_heal"
+    },
+    {
+      "path": "crates/gameplay/social/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_attack_geometry",
+      "target": "oteryn_gameplay_combat::creature_attack_geometry"
+    },
+    {
+      "path": "crates/gameplay/social/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_auto_attack",
+      "target": "oteryn_gameplay_combat::creature_auto_attack"
+    },
+    {
+      "path": "crates/gameplay/social/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_chain_attack",
+      "target": "oteryn_gameplay_combat::creature_chain_attack"
+    },
+    {
+      "path": "crates/gameplay/social/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_condition_content",
+      "target": "oteryn_gameplay_combat::creature_condition_content"
+    },
+    {
+      "path": "crates/gameplay/social/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_defense_presentation",
+      "target": "oteryn_gameplay_combat::creature_defense_presentation"
+    },
+    {
+      "path": "crates/gameplay/social/src/lib.rs",
+      "kind": "alias",
+      "name": "content",
+      "target": "oteryn_gameplay_content::content"
+    },
+    {
+      "path": "crates/gameplay/social/src/lib.rs",
+      "kind": "alias",
+      "name": "domain",
+      "target": "oteryn_gameplay_domain::domain"
+    },
+    {
+      "path": "crates/gameplay/social/src/lib.rs",
+      "kind": "alias",
+      "name": "character_bootstrap_intent",
+      "target": "oteryn_gameplay_durability::character_bootstrap_intent"
+    },
+    {
+      "path": "crates/gameplay/social/src/lib.rs",
+      "kind": "alias",
+      "name": "durability",
+      "target": "oteryn_gameplay_durability::durability"
+    },
+    {
+      "path": "crates/gameplay/social/src/lib.rs",
+      "kind": "alias",
+      "name": "foundation",
+      "target": "oteryn_gameplay_entities"
+    },
+    {
+      "path": "crates/gameplay/social/src/lib.rs",
+      "kind": "alias",
+      "name": "house_scope",
+      "target": "oteryn_gameplay_world::house_scope"
+    },
+    {
+      "path": "crates/gameplay/social/src/lib.rs",
+      "kind": "alias",
+      "name": "map",
+      "target": "oteryn_gameplay_world::map"
+    },
+    {
+      "path": "crates/gameplay/social/src/lib.rs",
+      "kind": "alias",
+      "name": "movement",
+      "target": "oteryn_gameplay_world::movement"
+    },
+    {
+      "path": "crates/gameplay/social/src/lib.rs",
+      "kind": "alias",
+      "name": "world_clock",
+      "target": "oteryn_gameplay_world::world_clock"
+    },
+    {
+      "path": "crates/gameplay/social/src/lib.rs",
+      "kind": "alias",
+      "name": "world_object_revert",
+      "target": "oteryn_gameplay_world::world_object_revert"
+    },
+    {
+      "path": "crates/gameplay/social/src/lib.rs",
+      "kind": "alias",
+      "name": "world_runtime",
+      "target": "oteryn_gameplay_world::world_runtime"
+    },
+    {
+      "path": "crates/gameplay/social/src/lib.rs",
+      "kind": "alias",
+      "name": "combat_pickup",
+      "target": "oteryn_gameplay_combat::combat_pickup"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/lib.rs",
+      "kind": "alias",
+      "name": "ability",
+      "target": "oteryn_gameplay_combat::ability"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/lib.rs",
+      "kind": "alias",
+      "name": "combat",
+      "target": "oteryn_gameplay_combat::combat"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_appearance_content",
+      "target": "oteryn_gameplay_combat::creature_appearance_content"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_area_heal",
+      "target": "oteryn_gameplay_combat::creature_area_heal"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_attack_geometry",
+      "target": "oteryn_gameplay_combat::creature_attack_geometry"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_auto_attack",
+      "target": "oteryn_gameplay_combat::creature_auto_attack"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_chain_attack",
+      "target": "oteryn_gameplay_combat::creature_chain_attack"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_condition_content",
+      "target": "oteryn_gameplay_combat::creature_condition_content"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_defense_presentation",
+      "target": "oteryn_gameplay_combat::creature_defense_presentation"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/lib.rs",
+      "kind": "alias",
+      "name": "content",
+      "target": "oteryn_gameplay_content::content"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/lib.rs",
+      "kind": "alias",
+      "name": "domain",
+      "target": "oteryn_gameplay_domain::domain"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/lib.rs",
+      "kind": "alias",
+      "name": "character_bootstrap_intent",
+      "target": "oteryn_gameplay_durability::character_bootstrap_intent"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/lib.rs",
+      "kind": "alias",
+      "name": "durability",
+      "target": "oteryn_gameplay_durability::durability"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_damage_spell",
+      "target": "oteryn_gameplay_spell::creature_damage_spell"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_damage_spell_delayed",
+      "target": "oteryn_gameplay_spell::creature_damage_spell_delayed"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/lib.rs",
+      "kind": "alias",
+      "name": "spell",
+      "target": "oteryn_gameplay_spell::spell"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/lib.rs",
+      "kind": "alias",
+      "name": "house_scope",
+      "target": "oteryn_gameplay_world::house_scope"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/lib.rs",
+      "kind": "alias",
+      "name": "map",
+      "target": "oteryn_gameplay_world::map"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/lib.rs",
+      "kind": "alias",
+      "name": "movement",
+      "target": "oteryn_gameplay_world::movement"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/lib.rs",
+      "kind": "alias",
+      "name": "world_clock",
+      "target": "oteryn_gameplay_world::world_clock"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/lib.rs",
+      "kind": "alias",
+      "name": "world_object_revert",
+      "target": "oteryn_gameplay_world::world_object_revert"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/lib.rs",
+      "kind": "alias",
+      "name": "world_runtime",
+      "target": "oteryn_gameplay_world::world_runtime"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/lib.rs",
+      "kind": "alias",
+      "name": "player_lethal",
+      "target": "oteryn_gameplay_combat::player_lethal"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/lib.rs",
+      "kind": "alias",
+      "name": "source_critical_baseline",
+      "target": "oteryn_gameplay_source_critical_baseline"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/lib.rs",
+      "kind": "alias",
+      "name": "ai_think",
+      "target": "oteryn_gameplay_monster_ai::ai_think"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/lib.rs",
+      "kind": "alias",
+      "name": "monster_owner_cycle",
+      "target": "oteryn_gameplay_monster_ai::monster_owner_cycle"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/lib.rs",
+      "kind": "alias",
+      "name": "monster_summon",
+      "target": "oteryn_gameplay_monster_ai::monster_summon"
+    },
+    {
+      "path": "crates/gameplay/encounters/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_source_items",
+      "target": "oteryn_gameplay_encounters::durability::creature_source_items"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_source_items",
+      "target": "oteryn_gameplay_monster_ai::durability::creature_source_items"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/lib.rs",
+      "kind": "alias",
+      "name": "ability",
+      "target": "oteryn_gameplay_combat::ability"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/lib.rs",
+      "kind": "alias",
+      "name": "combat",
+      "target": "oteryn_gameplay_combat::combat"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_appearance_content",
+      "target": "oteryn_gameplay_combat::creature_appearance_content"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_area_heal",
+      "target": "oteryn_gameplay_combat::creature_area_heal"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_attack_geometry",
+      "target": "oteryn_gameplay_combat::creature_attack_geometry"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_auto_attack",
+      "target": "oteryn_gameplay_combat::creature_auto_attack"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_chain_attack",
+      "target": "oteryn_gameplay_combat::creature_chain_attack"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_condition_content",
+      "target": "oteryn_gameplay_combat::creature_condition_content"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_defense_presentation",
+      "target": "oteryn_gameplay_combat::creature_defense_presentation"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/lib.rs",
+      "kind": "alias",
+      "name": "content",
+      "target": "oteryn_gameplay_content::content"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/lib.rs",
+      "kind": "alias",
+      "name": "character_bootstrap_intent",
+      "target": "oteryn_gameplay_durability::character_bootstrap_intent"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/lib.rs",
+      "kind": "alias",
+      "name": "durability",
+      "target": "oteryn_gameplay_durability::durability"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/lib.rs",
+      "kind": "alias",
+      "name": "foundation",
+      "target": "oteryn_gameplay_entities"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_damage_spell",
+      "target": "oteryn_gameplay_spell::creature_damage_spell"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_damage_spell_delayed",
+      "target": "oteryn_gameplay_spell::creature_damage_spell_delayed"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/lib.rs",
+      "kind": "alias",
+      "name": "spell",
+      "target": "oteryn_gameplay_spell::spell"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/lib.rs",
+      "kind": "alias",
+      "name": "house_scope",
+      "target": "oteryn_gameplay_world::house_scope"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/lib.rs",
+      "kind": "alias",
+      "name": "map",
+      "target": "oteryn_gameplay_world::map"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/lib.rs",
+      "kind": "alias",
+      "name": "movement",
+      "target": "oteryn_gameplay_world::movement"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/lib.rs",
+      "kind": "alias",
+      "name": "world_clock",
+      "target": "oteryn_gameplay_world::world_clock"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/lib.rs",
+      "kind": "alias",
+      "name": "world_object_revert",
+      "target": "oteryn_gameplay_world::world_object_revert"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/lib.rs",
+      "kind": "alias",
+      "name": "world_runtime",
+      "target": "oteryn_gameplay_world::world_runtime"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/lib.rs",
+      "kind": "alias",
+      "name": "player_lethal",
+      "target": "oteryn_gameplay_combat::player_lethal"
+    },
+    {
+      "path": "crates/gameplay/world/src/lib.rs",
+      "kind": "alias",
+      "name": "native_world_items",
+      "target": "oteryn_gameplay_world::durability::native_world_items"
+    },
+    {
+      "path": "crates/gameplay/world/src/lib.rs",
+      "kind": "alias",
+      "name": "native_world_read",
+      "target": "oteryn_gameplay_world::durability::native_world_read"
+    },
+    {
+      "path": "crates/gameplay/world/src/lib.rs",
+      "kind": "alias",
+      "name": "content",
+      "target": "oteryn_gameplay_content::content"
+    },
+    {
+      "path": "crates/gameplay/world/src/lib.rs",
+      "kind": "alias",
+      "name": "domain",
+      "target": "oteryn_gameplay_domain::domain"
+    },
+    {
+      "path": "crates/gameplay/world/src/lib.rs",
+      "kind": "alias",
+      "name": "character_bootstrap_intent",
+      "target": "oteryn_gameplay_durability::character_bootstrap_intent"
+    },
+    {
+      "path": "crates/gameplay/world/src/lib.rs",
+      "kind": "alias",
+      "name": "durability",
+      "target": "oteryn_gameplay_durability::durability"
+    },
+    {
+      "path": "crates/gameplay/world/src/lib.rs",
+      "kind": "alias",
+      "name": "foundation",
+      "target": "oteryn_gameplay_entities"
+    },
+    {
+      "path": "crates/gameplay/combat/src/lib.rs",
+      "kind": "alias",
+      "name": "content",
+      "target": "oteryn_gameplay_content::content"
+    },
+    {
+      "path": "crates/gameplay/combat/src/lib.rs",
+      "kind": "alias",
+      "name": "domain",
+      "target": "oteryn_gameplay_domain::domain"
+    },
+    {
+      "path": "crates/gameplay/combat/src/lib.rs",
+      "kind": "alias",
+      "name": "character_bootstrap_intent",
+      "target": "oteryn_gameplay_durability::character_bootstrap_intent"
+    },
+    {
+      "path": "crates/gameplay/combat/src/lib.rs",
+      "kind": "alias",
+      "name": "durability",
+      "target": "oteryn_gameplay_durability::durability"
+    },
+    {
+      "path": "crates/gameplay/combat/src/lib.rs",
+      "kind": "alias",
+      "name": "foundation",
+      "target": "oteryn_gameplay_entities"
+    },
+    {
+      "path": "crates/gameplay/combat/src/lib.rs",
+      "kind": "alias",
+      "name": "house_scope",
+      "target": "oteryn_gameplay_world::house_scope"
+    },
+    {
+      "path": "crates/gameplay/combat/src/lib.rs",
+      "kind": "alias",
+      "name": "map",
+      "target": "oteryn_gameplay_world::map"
+    },
+    {
+      "path": "crates/gameplay/combat/src/lib.rs",
+      "kind": "alias",
+      "name": "movement",
+      "target": "oteryn_gameplay_world::movement"
+    },
+    {
+      "path": "crates/gameplay/combat/src/lib.rs",
+      "kind": "alias",
+      "name": "world_clock",
+      "target": "oteryn_gameplay_world::world_clock"
+    },
+    {
+      "path": "crates/gameplay/combat/src/lib.rs",
+      "kind": "alias",
+      "name": "world_object_revert",
+      "target": "oteryn_gameplay_world::world_object_revert"
+    },
+    {
+      "path": "crates/gameplay/combat/src/lib.rs",
+      "kind": "alias",
+      "name": "world_runtime",
+      "target": "oteryn_gameplay_world::world_runtime"
+    },
+    {
+      "path": "crates/gameplay/combat/src/lib.rs",
+      "kind": "alias",
+      "name": "source_critical_baseline",
+      "target": "oteryn_gameplay_source_critical_baseline"
+    },
+    {
+      "path": "crates/gameplay/entities/src/lib.rs",
+      "kind": "alias",
+      "name": "domain",
+      "target": "oteryn_gameplay_domain::domain"
+    },
+    {
+      "path": "crates/gameplay/spell/src/lib.rs",
+      "kind": "alias",
+      "name": "native_world_items",
+      "target": "oteryn_gameplay_spell::durability::native_world_items"
+    },
+    {
+      "path": "crates/gameplay/spell/src/lib.rs",
+      "kind": "alias",
+      "name": "native_world_read",
+      "target": "oteryn_gameplay_spell::durability::native_world_read"
+    },
+    {
+      "path": "crates/gameplay/spell/src/lib.rs",
+      "kind": "alias",
+      "name": "ability",
+      "target": "oteryn_gameplay_combat::ability"
+    },
+    {
+      "path": "crates/gameplay/spell/src/lib.rs",
+      "kind": "alias",
+      "name": "combat",
+      "target": "oteryn_gameplay_combat::combat"
+    },
+    {
+      "path": "crates/gameplay/spell/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_appearance_content",
+      "target": "oteryn_gameplay_combat::creature_appearance_content"
+    },
+    {
+      "path": "crates/gameplay/spell/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_area_heal",
+      "target": "oteryn_gameplay_combat::creature_area_heal"
+    },
+    {
+      "path": "crates/gameplay/spell/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_attack_geometry",
+      "target": "oteryn_gameplay_combat::creature_attack_geometry"
+    },
+    {
+      "path": "crates/gameplay/spell/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_auto_attack",
+      "target": "oteryn_gameplay_combat::creature_auto_attack"
+    },
+    {
+      "path": "crates/gameplay/spell/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_chain_attack",
+      "target": "oteryn_gameplay_combat::creature_chain_attack"
+    },
+    {
+      "path": "crates/gameplay/spell/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_condition_content",
+      "target": "oteryn_gameplay_combat::creature_condition_content"
+    },
+    {
+      "path": "crates/gameplay/spell/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_defense_presentation",
+      "target": "oteryn_gameplay_combat::creature_defense_presentation"
+    },
+    {
+      "path": "crates/gameplay/spell/src/lib.rs",
+      "kind": "alias",
+      "name": "content",
+      "target": "oteryn_gameplay_content::content"
+    },
+    {
+      "path": "crates/gameplay/spell/src/lib.rs",
+      "kind": "alias",
+      "name": "domain",
+      "target": "oteryn_gameplay_domain::domain"
+    },
+    {
+      "path": "crates/gameplay/spell/src/lib.rs",
+      "kind": "alias",
+      "name": "character_bootstrap_intent",
+      "target": "oteryn_gameplay_durability::character_bootstrap_intent"
+    },
+    {
+      "path": "crates/gameplay/spell/src/lib.rs",
+      "kind": "alias",
+      "name": "durability",
+      "target": "oteryn_gameplay_durability::durability"
+    },
+    {
+      "path": "crates/gameplay/spell/src/lib.rs",
+      "kind": "alias",
+      "name": "foundation",
+      "target": "oteryn_gameplay_entities"
+    },
+    {
+      "path": "crates/gameplay/spell/src/lib.rs",
+      "kind": "alias",
+      "name": "house_scope",
+      "target": "oteryn_gameplay_world::house_scope"
+    },
+    {
+      "path": "crates/gameplay/spell/src/lib.rs",
+      "kind": "alias",
+      "name": "map",
+      "target": "oteryn_gameplay_world::map"
+    },
+    {
+      "path": "crates/gameplay/spell/src/lib.rs",
+      "kind": "alias",
+      "name": "movement",
+      "target": "oteryn_gameplay_world::movement"
+    },
+    {
+      "path": "crates/gameplay/spell/src/lib.rs",
+      "kind": "alias",
+      "name": "world_clock",
+      "target": "oteryn_gameplay_world::world_clock"
+    },
+    {
+      "path": "crates/gameplay/spell/src/lib.rs",
+      "kind": "alias",
+      "name": "world_object_revert",
+      "target": "oteryn_gameplay_world::world_object_revert"
+    },
+    {
+      "path": "crates/gameplay/spell/src/lib.rs",
+      "kind": "alias",
+      "name": "world_runtime",
+      "target": "oteryn_gameplay_world::world_runtime"
+    },
+    {
+      "path": "crates/gameplay/spell/src/lib.rs",
+      "kind": "alias",
+      "name": "player_lethal",
+      "target": "oteryn_gameplay_combat::player_lethal"
+    },
+    {
+      "path": "crates/gameplay/spell/src/lib.rs",
+      "kind": "alias",
+      "name": "source_critical_baseline",
+      "target": "oteryn_gameplay_source_critical_baseline"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "ability",
+      "target": "oteryn_gameplay_combat::ability"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "player_lethal",
+      "target": "oteryn_gameplay_combat::player_lethal"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "ai",
+      "target": "oteryn_gameplay_monster_ai::ai"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "combat",
+      "target": "oteryn_gameplay_combat::combat"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "ai_monster_melee",
+      "target": "oteryn_gameplay_monster_ai::ai_monster_melee"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "ai_think",
+      "target": "oteryn_gameplay_monster_ai::ai_think"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "combat_pickup",
+      "target": "oteryn_gameplay_combat::combat_pickup"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "combat_attack",
+      "target": "oteryn_gameplay_combat::combat_attack"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "combat_pvp",
+      "target": "oteryn_gameplay_combat::combat_pvp"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "party",
+      "target": "oteryn_gameplay_social::party"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "interaction_chest_use",
+      "target": "oteryn_gameplay_social::interaction_chest_use"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "achievement_catalogue",
+      "target": "oteryn_gameplay_social::achievement_catalogue"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "gameplay_transport",
+      "target": "oteryn_gameplay_dispatch::gameplay_transport"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "chat",
+      "target": "oteryn_gameplay_social::chat"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "movement",
+      "target": "oteryn_gameplay_world::movement"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "spell",
+      "target": "oteryn_gameplay_spell::spell"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "interaction",
+      "target": "oteryn_gameplay_social::interaction"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "world_object_revert",
+      "target": "oteryn_gameplay_world::world_object_revert"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "world_runtime",
+      "target": "oteryn_gameplay_world::world_runtime"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_appearance_content",
+      "target": "oteryn_gameplay_combat::creature_appearance_content"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_area_heal",
+      "target": "oteryn_gameplay_combat::creature_area_heal"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_attack_geometry",
+      "target": "oteryn_gameplay_combat::creature_attack_geometry"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_auto_attack",
+      "target": "oteryn_gameplay_combat::creature_auto_attack"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_chain_attack",
+      "target": "oteryn_gameplay_combat::creature_chain_attack"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_condition_content",
+      "target": "oteryn_gameplay_combat::creature_condition_content"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_defense_presentation",
+      "target": "oteryn_gameplay_combat::creature_defense_presentation"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "bone_phase_registry",
+      "target": "oteryn_gameplay_encounters::bone_phase_registry"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "crystal_callbacks",
+      "target": "oteryn_gameplay_encounters::crystal_callbacks"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "crystal_death_composition",
+      "target": "oteryn_gameplay_encounters::crystal_death_composition"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "crystal_herald_quest",
+      "target": "oteryn_gameplay_encounters::crystal_herald_quest"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "self_heal_qualification",
+      "target": "oteryn_gameplay_encounters::self_heal_qualification"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "smelly_cheese",
+      "target": "oteryn_gameplay_encounters::smelly_cheese"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "smelly_encounter_dispatch",
+      "target": "oteryn_gameplay_encounters::smelly_encounter_dispatch"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "source_callback_intent",
+      "target": "oteryn_gameplay_encounters::source_callback_intent"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "source_callback_spawn",
+      "target": "oteryn_gameplay_encounters::source_callback_spawn"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_damage_spell",
+      "target": "oteryn_gameplay_spell::creature_damage_spell"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_damage_spell_delayed",
+      "target": "oteryn_gameplay_spell::creature_damage_spell_delayed"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "smelly_damage",
+      "target": "oteryn_gameplay_encounters::smelly_damage"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "source_encounter_seven",
+      "target": "oteryn_gameplay_encounters::source_encounter_seven"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "source_threshold_heal",
+      "target": "oteryn_gameplay_encounters::source_threshold_heal"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "weak_spot_speech",
+      "target": "oteryn_gameplay_encounters::weak_spot_speech"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "world_clock",
+      "target": "oteryn_gameplay_world::world_clock"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "monster_combat_lane",
+      "target": "oteryn_gameplay_encounters::monster_combat_lane"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "monster_owner_cycle",
+      "target": "oteryn_gameplay_monster_ai::monster_owner_cycle"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "monster_summon",
+      "target": "oteryn_gameplay_monster_ai::monster_summon"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "creature_icicle",
+      "target": "oteryn_gameplay_encounters::creature_icicle"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "security",
+      "target": "oteryn_gameplay_social::security"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "kind": "alias",
+      "name": "source_callback_cast",
+      "target": "oteryn_gameplay_encounters::source_callback_cast"
+    }
+  ],
+  "stable_public_server_aliases": [
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "line": 87,
+      "target": "oteryn_gameplay_character_recovery_fence as character_recovery_fence",
+      "disposition": "kept: deliberate Game Server public API for native composition and qualification consumers"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "line": 88,
+      "target": "oteryn_gameplay_content::content",
+      "disposition": "kept: deliberate Game Server public API for native composition and qualification consumers"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "line": 90,
+      "target": "oteryn_gameplay_domain::domain",
+      "disposition": "kept: deliberate Game Server public API for native composition and qualification consumers"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "line": 91,
+      "target": "oteryn_gameplay_durability::character_bootstrap_intent",
+      "disposition": "kept: deliberate Game Server public API for native composition and qualification consumers"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "line": 92,
+      "target": "oteryn_gameplay_durability::durability",
+      "disposition": "kept: deliberate Game Server public API for native composition and qualification consumers"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "line": 93,
+      "target": "oteryn_gameplay_entities as foundation",
+      "disposition": "kept: deliberate Game Server public API for native composition and qualification consumers"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "line": 100,
+      "target": "oteryn_gameplay_world::house_scope",
+      "disposition": "kept: deliberate Game Server public API for native composition and qualification consumers"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "line": 101,
+      "target": "oteryn_gameplay_world::map",
+      "disposition": "kept: deliberate Game Server public API for native composition and qualification consumers"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "line": 109,
+      "target": "oteryn_gameplay_social::premium",
+      "disposition": "kept: deliberate Game Server public API for native composition and qualification consumers"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "line": 110,
+      "target": "oteryn_gameplay_social::wheel_gem_data",
+      "disposition": "kept: deliberate Game Server public API for native composition and qualification consumers"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "line": 731,
+      "target": "oteryn_gameplay_admission_evidence as admission_evidence",
+      "disposition": "kept: deliberate Game Server public API for native composition and qualification consumers"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "line": 732,
+      "target": "oteryn_gameplay_native_admission_source as native_admission_source",
+      "disposition": "kept: deliberate Game Server public API for native composition and qualification consumers"
+    }
+  ],
+  "removed_shim_files": [
+    "crates/gameplay/durability/src/durability/character_authority_audit.rs",
+    "crates/gameplay/durability/src/durability/item_capacity.rs",
+    "crates/gameplay/durability/src/durability/creature_schedule.rs",
+    "crates/gameplay/durability/src/durability/spell_wheel_abi.rs",
+    "crates/gameplay/durability/src/durability/character_vitals_soul.rs",
+    "crates/gameplay/durability/src/durability/uniform_draw.rs",
+    "crates/gameplay/durability/src/durability/character_vitals_stamina/stamina_math.rs",
+    "crates/gameplay/durability/src/durability/quest_state/quest/mod.rs",
+    "crates/gameplay/combat-rules/src/formula.rs",
+    "crates/gameplay/dispatch/src/welter_consume.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/look.rs",
+    "crates/gameplay/social/src/wheel_gem_data.rs",
+    "crates/gameplay/social/src/security/release_policy.rs",
+    "crates/gameplay/social/src/security/trust_policy.rs",
+    "crates/gameplay/encounters/src/source_callback_intent.rs",
+    "crates/gameplay/encounters/src/crystal_herald_quest.rs",
+    "crates/gameplay/encounters/src/source_callback_cast.rs",
+    "crates/gameplay/encounters/src/monster_combat_lane.rs",
+    "crates/gameplay/encounters/src/crystal_death_composition.rs",
+    "crates/gameplay/encounters/src/source_threshold_heal.rs",
+    "crates/gameplay/encounters/src/source_callback_spawn.rs",
+    "crates/gameplay/encounters/src/crystal_callbacks.rs",
+    "crates/gameplay/encounters/src/source_encounter_seven.rs",
+    "crates/gameplay/monster-ai/src/bone_phase_registry.rs",
+    "crates/gameplay/monster-ai/src/smelly_encounter_dispatch.rs",
+    "crates/gameplay/monster-ai/src/weak_spot_speech.rs",
+    "crates/gameplay/monster-ai/src/smelly_cheese.rs",
+    "crates/gameplay/monster-ai/src/smelly_damage.rs",
+    "crates/gameplay/monster-ai/src/monster_combat_lane/source_time_profile_bundle.rs",
+    "crates/gameplay/world/src/house_scope/handoff.rs",
+    "crates/gameplay/combat/src/creature_icicle.rs",
+    "crates/gameplay/combat/src/combat/charm_effects.rs",
+    "crates/gameplay/combat/src/combat/chain.rs",
+    "crates/gameplay/combat/src/combat/loot_plan.rs",
+    "crates/gameplay/combat/src/combat/formula.rs",
+    "crates/gameplay/combat/src/ability/field_condition.rs",
+    "crates/gameplay/combat/src/ability/condition.rs",
+    "crates/gameplay/combat/src/combat/attack/target.rs",
+    "crates/gameplay/combat/src/combat/attack/constants.rs",
+    "crates/gameplay/combat/src/combat/attack/block.rs",
+    "crates/gameplay/combat/src/combat/attack/formulas.rs",
+    "crates/gameplay/combat/src/combat/pvp/legality.rs",
+    "crates/gameplay/spell/src/spell/callback_speech.rs",
+    "crates/gameplay/spell/src/spell/native_companions.rs",
+    "crates/gameplay/spell/src/spell/native_actor_states.rs",
+    "crates/gameplay/spell/src/spell/native_items.rs",
+    "crates/gameplay/spell/src/spell/locate.rs",
+    "crates/gameplay/spell/src/spell/mana_training/hit_training.rs",
+    "crates/gameplay/durability/src/durability/character_vitals_stamina.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/world_object.rs",
+    "crates/gameplay/social/src/interaction/mod.rs",
+    "crates/gameplay/encounters/src/bosses/weak_spot/weak_spot_speech.rs",
+    "crates/gameplay/encounters/src/bosses/time_guardian/mod.rs",
+    "crates/gameplay/combat/src/creature_attack_geometry.rs",
+    "crates/gameplay/spell/src/spell/authoring.rs",
+    "crates/gameplay/spell/src/spell/world_items_execution.rs"
+  ],
+  "remaining_thin_shims": [
+    "crates/gameplay/foundation/src/foundation/charm_data.rs:2",
+    "crates/gameplay/foundation/src/foundation/loot_data.rs:1",
+    "crates/gameplay/combat/src/ability/occurrence.rs:1",
+    "crates/gameplay/content/src/content/spell_wheel_profile.rs:2"
+  ]
+}

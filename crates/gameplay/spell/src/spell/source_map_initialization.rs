@@ -95,7 +95,7 @@ impl<'owner> CurrentNativeMapInitialization<'owner> {
                 return Err("source map alias does not bind active native Item");
             }
             let item =
-                super::world_items_execution::QualifiedItemDefinition::from_native_policy(policy)?;
+                oteryn_gameplay_durability::durability::native_world_items::QualifiedItemDefinition::from_native_policy(policy)?;
             if !item.ground_destination || item.decay.is_some() {
                 return Err("source map Item needs unavailable Ground/temporal owner");
             }
@@ -127,7 +127,7 @@ impl<'owner> CurrentNativeMapInitialization<'owner> {
             }
             let cell = placement.cell();
             let floor = i16::try_from(cell.z).map_err(|_| "source floor overflow")?;
-            let target = super::world_items_execution::SpellGroundTarget::for_native_tile_read(
+            let target = oteryn_gameplay_durability::durability::native_world_items::SpellGroundTarget::for_native_tile_read(
                 room,
                 runtime,
                 crate::foundation::MovementLocalPosition {

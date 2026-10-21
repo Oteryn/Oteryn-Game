@@ -19,9 +19,6 @@ use super::{
     CharmCommandIdentity, CharmCommandReply, CharmPortUnavailable, CharmProgressionPort,
     dispatch_charm_command,
 };
-use crate::combat::charm_effects::{
-    CharmCatalogueRead, CharmCategory as EffectCategory, CharmDefinition as EffectDefinition,
-};
 use crate::domain::CharacterRevision;
 use crate::domain::bestiary::BestiaryRace;
 use crate::domain::charm::{
@@ -37,6 +34,9 @@ use crate::durability::charm_state::{
     CharmStateError, CommittedCharmCommand,
 };
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
+use oteryn_gameplay_progression::charm_effects::{
+    CharmCatalogueRead, CharmCategory as EffectCategory, CharmDefinition as EffectDefinition,
+};
 
 /// The supplier provides validated CHARM-4 definitions for both wire indices and combat lookup.
 /// Comparing its revision with the Character root checks expected binding only. Content-owner

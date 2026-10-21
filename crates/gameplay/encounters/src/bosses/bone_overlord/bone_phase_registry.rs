@@ -6,7 +6,13 @@ use crate::content::{
     ProjectV2DefinitionRef as Ref, ProjectV2Family, ProjectV2SourceIdentityBinding,
     ProjectV2SourceIdentityDisposition,
 };
-use crate::foundation::{BoneOverlordCagePhase, BonePhaseError, ChannelRuntimeV1, ExactActorRef};
+use {
+    oteryn_gameplay_encounters::bosses::bone_overlord::native_owner::{
+        BoneOverlordCagePhase, BonePhaseError,
+    },
+    oteryn_gameplay_entities::ChannelRuntimeV1,
+    oteryn_gameplay_foundation::foundation::ExactActorRef,
+};
 const SOURCE_REVISION: &str =
     "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f";
 const ENCOUNTER: &str = "cc3143372125a5bd4bff66bbd1dc0b3cf2989e6892e3135901f5083f2cd689ef";
@@ -108,21 +114,21 @@ pub fn register_bone_phase_shared(
     native: &crate::content::native_gameplay::NativeGameplayState,
     map: &crate::content::CanonicalReferencePlayableContent,
     map_fence: &crate::world_runtime::ScopeContentGenerationFence,
-    current: &crate::foundation::ScopeRuntimeFence,
-    stamp: crate::foundation::RuntimeWorkStamp,
+    current: &oteryn_gameplay_foundation::foundation::ScopeRuntimeFence,
+    stamp: oteryn_gameplay_foundation::foundation::RuntimeWorkStamp,
     placements: [&crate::content::PlacementKey; 5],
     cages: [ExactActorRef; 4],
     phylactery: ExactActorRef,
 ) -> Result<BoneOverlordCagePhase, BonePhaseError> {
     use crate::content::DefinitionFamily;
-    use crate::foundation::RuntimeScopeRefV1;
+    use oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1;
     let binding = runtime.binding();
     let scope = RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id());
     if !current.is_current_for_scope(scope, binding.scope_generation())
         || !current.accepts_stamp(stamp)
     {
         return Err(BonePhaseError::Carrier(
-            crate::foundation::CarrierError::WrongScope,
+            oteryn_gameplay_foundation::foundation::CarrierError::WrongScope,
         ));
     }
     if project
@@ -228,7 +234,7 @@ mod shared_hp_actual_source_tests {
         let world = project.lower_reference_source()?.world_id;
         let draft = project.migrate_to_v2();
         let native = crate::content::native_gameplay::retained_callback_native_fixture(world);
-        crate::foundation::bone_shared_actual_owner_harness(
+        oteryn_gameplay_encounters::bosses::bone_overlord::native_owner::bone_shared_actual_owner_harness(
             world,
             native.source_digest(),
             |runtime, cages, phyl| {

@@ -609,7 +609,7 @@ pub(super) async fn prepare_with_current_restrictions(
         .item_policy(&reference.production_key, &reference.revision_ref)
         .ok_or(SpellCastDisposition::NotAvailable)?;
     let definition =
-        crate::spell::world_items_execution::QualifiedItemDefinition::from_native_policy(policy)
+        oteryn_gameplay_durability::durability::native_world_items::QualifiedItemDefinition::from_native_policy(policy)
             .map_err(|_| SpellCastDisposition::NotAvailable)?;
     let corpse = item_tx::prepare_corpse_in_transaction(tx, authority, &address, &definition)
         .await

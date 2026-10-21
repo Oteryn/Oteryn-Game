@@ -535,7 +535,7 @@ fn changed_actual_target_or_caster_condition_refuses_prepared_magnitude() {
     let mut changed = f.state.clone();
     changed
         .conditions
-        .remove_type(crate::ability::condition::ConditionType::Attributes);
+        .remove_type(oteryn_gameplay_foundation::foundation::condition::ConditionType::Attributes);
     assert_eq!(
         prepared.validate_current(&f.runtime, &changed, &f.attributes, &[]),
         Err(Error::SnapshotChanged)

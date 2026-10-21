@@ -225,10 +225,10 @@ fn changed_actual_player_predecessor_refuses_the_entire_prepared_transaction() {
 fn source_light_successor(
     f: &Fixture,
 ) -> (
-    crate::ability::condition::ConditionStore<String>,
-    crate::ability::condition::ConditionStore<String>,
+    oteryn_gameplay_foundation::foundation::condition::ConditionStore<String>,
+    oteryn_gameplay_foundation::foundation::condition::ConditionStore<String>,
 ) {
-    use crate::ability::condition::{
+    use oteryn_gameplay_foundation::foundation::condition::{
         ApplicationFacts, ConditionDefinition, ConditionSourceKind, ConditionValues,
     };
     let source: serde_json::Value = serde_json::from_slice(include_bytes!(
@@ -363,7 +363,7 @@ fn source_condition_predecessor_substitution_refuses_entire_hp_and_cost_batch() 
 // Canary/Crystal healing removes paralysis in the same owner transaction as HP.
 // This verifies the real condition owner, rather than a planner-only effect list.
 fn fixture_with_paralysis() -> Result<Fixture, String> {
-    use crate::ability::condition::{
+    use oteryn_gameplay_foundation::foundation::condition::{
         ApplicationFacts, ConditionDefinition, ConditionSourceKind, ConditionValues, SpeedRange,
     };
     let mut f = fixture();
@@ -462,7 +462,7 @@ fn healing_dispels_actual_paralysis_atomically_and_replay_preserves_successor() 
             .instances()
             .iter()
             .any(|condition| condition.definition().condition_type()
-                == crate::ability::condition::ConditionType::Paralysis)
+                == oteryn_gameplay_foundation::foundation::condition::ConditionType::Paralysis)
     );
     let replay = f
         .runtime

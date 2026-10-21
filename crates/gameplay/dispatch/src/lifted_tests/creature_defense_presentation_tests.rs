@@ -7,7 +7,6 @@ use crate::content::{
     ProjectReferenceRecord, ProjectV2AuthoringProfile, ProjectV2AuthoringProfileData as Data,
     ProjectV2DefinitionRef as Ref, ProjectV2Family,
 };
-use crate::creature_attack_geometry::Facing;
 use crate::creature_auto_attack::AttackError;
 use crate::creature_damage_spell::{SpellPresentationReader, SpellWorldReader};
 use crate::creature_defense_presentation::*;
@@ -18,6 +17,7 @@ use crate::gameplay_transport::actor_spell::{
     ChannelSpellStates,
     tests::{FACTS, runtime_with_player},
 };
+use oteryn_gameplay_content::content::creature_attack_geometry::Facing;
 
 fn native() -> (Vec<ProjectReferenceRecord>, Vec<ProjectV2AuthoringProfile>) {
     let v: serde_json::Value = serde_json::from_str(include_str!(

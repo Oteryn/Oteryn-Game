@@ -1,9 +1,6 @@
 //! Source-bound sequential native chain work, using accepted picker and Foundation timers.
 //! Frozen targets are exact live ActorRefs, never manufactured network creature identities.
 use crate::ability::{AbilityIntent, ProposalSource};
-use crate::combat::chain::{
-    ChainCreature, ChainShape, ChainSpec, ChainStart, TilePosition, pick_chain,
-};
 use crate::creature_auto_attack::{AttackError, ProfileAbilityProposal};
 use crate::foundation::owner_timer::{
     AI01_PENDING_TIMERS_PER_ACTOR, CatchUpPolicy, FamilyPolicy, OwnerClock, OwnerTimerLane,
@@ -14,6 +11,9 @@ use crate::foundation::{
     ScopeOwnershipGeneration, ScopeRuntimeFence,
 };
 use crate::player_lethal::PlayerLethalVitals;
+use oteryn_gameplay_combat_rules::chain::{
+    ChainCreature, ChainShape, ChainSpec, ChainStart, TilePosition, pick_chain,
+};
 use sha2::{Digest, Sha256};
 /// Source validation stays with the higher-layer native spell owner.
 pub trait ChainSource: Clone {

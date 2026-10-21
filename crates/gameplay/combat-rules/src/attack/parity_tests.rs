@@ -3,7 +3,7 @@
 #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
 
 use super::*;
-use crate::formula::FormulaInputs;
+use oteryn_gameplay_content::content::spell_data::formula::FormulaInputs;
 use serde_json::Value;
 
 const FIXTURE: &str =

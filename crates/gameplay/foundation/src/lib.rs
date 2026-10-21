@@ -2,4 +2,4 @@
 
 pub mod foundation;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_domain::domain;
+use oteryn_gameplay_domain::domain;

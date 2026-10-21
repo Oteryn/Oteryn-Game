@@ -11,9 +11,14 @@ fn uuid_v7(seed: u64) -> [u8; 16] {
 
 fn grant(seed: u64, generation: u64) -> PreProductionContinuityGrant {
     PreProductionContinuityGrant {
-        world_id: WorldId::decode(&uuid_v7(seed)).expect("world fixture"),
-        channel_id: ChannelId::decode(&uuid_v7(seed + 1)).expect("channel fixture"),
-        scope_generation: ScopeOwnershipGeneration::new(generation).expect("nonzero scope"),
+        world_id: oteryn_gameplay_foundation::foundation::WorldId::decode(&uuid_v7(seed))
+            .expect("world fixture"),
+        channel_id: oteryn_gameplay_foundation::foundation::ChannelId::decode(&uuid_v7(seed + 1))
+            .expect("channel fixture"),
+        scope_generation: oteryn_gameplay_foundation::foundation::ScopeOwnershipGeneration::new(
+            generation,
+        )
+        .expect("nonzero scope"),
     }
 }
 
@@ -45,7 +50,7 @@ fn absent_then_initialized_single_slot_reads_and_commits_with_monotone_revision(
     let actor = carrier.admit(&continuity, ActorState(1)).expect("admit");
     assert_eq!(
         carrier.read_position(&continuity, actor),
-        Err(CarrierError::PositionUnavailable)
+        Err(oteryn_gameplay_foundation::foundation::CarrierError::PositionUnavailable)
     );
     let scope = context(&continuity);
     let initial = carrier
@@ -55,7 +60,7 @@ fn absent_then_initialized_single_slot_reads_and_commits_with_monotone_revision(
     assert_eq!(carrier.read_position(&continuity, actor), Ok(initial));
     assert_eq!(
         carrier.initialize_position(&continuity, actor, scope, position(7)),
-        Err(CarrierError::PositionAlreadyInitialized)
+        Err(oteryn_gameplay_foundation::foundation::CarrierError::PositionAlreadyInitialized)
     );
     let committed = carrier
         .compare_commit_position(&continuity, initial, scope, position(5))
@@ -65,7 +70,7 @@ fn absent_then_initialized_single_slot_reads_and_commits_with_monotone_revision(
     assert_eq!(carrier.read_position(&continuity, actor), Ok(committed));
     assert_eq!(
         carrier.compare_commit_position(&continuity, initial, scope, position(6)),
-        Err(CarrierError::PositionSnapshotMismatch)
+        Err(oteryn_gameplay_foundation::foundation::CarrierError::PositionSnapshotMismatch)
     );
     assert_eq!(carrier.read_position(&continuity, actor), Ok(committed));
 }
@@ -85,11 +90,13 @@ fn scope_and_context_fields_fail_independently_without_mutation() {
     let mut wrong_channel = actor;
     wrong_channel.channel_id = grant(30, 1).channel_id;
     let mut wrong_scope = actor;
-    wrong_scope.set_scope_generation(ScopeOwnershipGeneration::new(2).expect("scope"));
+    wrong_scope.set_scope_generation(
+        oteryn_gameplay_foundation::foundation::ScopeOwnershipGeneration::new(2).expect("scope"),
+    );
     for wrong in [wrong_world, wrong_channel, wrong_scope] {
         assert_eq!(
             carrier.read_position(&continuity, wrong),
-            Err(CarrierError::WrongScope)
+            Err(oteryn_gameplay_foundation::foundation::CarrierError::WrongScope)
         );
         assert_eq!(
             carrier.compare_commit_position(
@@ -101,7 +108,7 @@ fn scope_and_context_fields_fail_independently_without_mutation() {
                 scope,
                 position(5)
             ),
-            Err(CarrierError::WrongScope)
+            Err(oteryn_gameplay_foundation::foundation::CarrierError::WrongScope)
         );
         assert_eq!(carrier.slots, before);
     }
@@ -111,15 +118,19 @@ fn scope_and_context_fields_fail_independently_without_mutation() {
         match changed {
             0 => wrong.world_id = grant(31, 1).world_id,
             1 => wrong.channel_id = grant(31, 1).channel_id,
-            2 => wrong.scope_generation = ScopeOwnershipGeneration::new(2).expect("scope"),
+            2 => {
+                wrong.scope_generation =
+                    oteryn_gameplay_foundation::foundation::ScopeOwnershipGeneration::new(2)
+                        .expect("scope")
+            }
             3 => wrong.coordinate_frame_marker += 1,
             4 => wrong.map_revision_marker += 1,
             _ => wrong.content_generation_marker += 1,
         }
         let expected_error = if changed < 3 {
-            CarrierError::InvalidPreProductionPositionContext
+            oteryn_gameplay_foundation::foundation::CarrierError::InvalidPreProductionPositionContext
         } else {
-            CarrierError::PositionContextMismatch
+            oteryn_gameplay_foundation::foundation::CarrierError::PositionContextMismatch
         };
         assert_eq!(
             carrier.compare_commit_position(&continuity, initial, wrong, position(5)),
@@ -136,7 +147,7 @@ fn scope_and_context_fields_fail_independently_without_mutation() {
         }
         assert_eq!(
             carrier.compare_commit_position(&continuity, initial, invalid, position(5)),
-            Err(CarrierError::InvalidPreProductionPositionContext)
+            Err(oteryn_gameplay_foundation::foundation::CarrierError::InvalidPreProductionPositionContext)
         );
         assert_eq!(carrier.slots, before);
     }
@@ -159,7 +170,7 @@ fn recycled_wrong_actor_and_stale_owner_cannot_read_or_commit() {
     changed.actor_ref = other;
     assert_eq!(
         carrier.compare_commit_position(&continuity, changed, scope, position(6)),
-        Err(CarrierError::PositionSnapshotMismatch)
+        Err(oteryn_gameplay_foundation::foundation::CarrierError::PositionSnapshotMismatch)
     );
     assert_eq!(carrier.slots, before);
 
@@ -173,26 +184,26 @@ fn recycled_wrong_actor_and_stale_owner_cannot_read_or_commit() {
     let after_recycle = carrier.slots.clone();
     assert_eq!(
         carrier.read_position(&continuity, first),
-        Err(CarrierError::StaleActorGeneration)
+        Err(oteryn_gameplay_foundation::foundation::CarrierError::StaleActorGeneration)
     );
     assert_eq!(
         carrier.compare_commit_position(&continuity, initial, scope, position(6)),
-        Err(CarrierError::PositionSnapshotMismatch)
+        Err(oteryn_gameplay_foundation::foundation::CarrierError::PositionSnapshotMismatch)
     );
     assert_eq!(
         carrier.read_position(&continuity, recycled),
-        Err(CarrierError::PositionUnavailable)
+        Err(oteryn_gameplay_foundation::foundation::CarrierError::PositionUnavailable)
     );
     assert_eq!(carrier.slots, after_recycle);
 
     continuity.advance(grant(40, 2)).expect("owner advance");
     assert_eq!(
         carrier.read_position(&continuity, recycled),
-        Err(CarrierError::WrongScope)
+        Err(oteryn_gameplay_foundation::foundation::CarrierError::WrongScope)
     );
     assert_eq!(
         carrier.compare_commit_position(&continuity, initial, scope, position(7)),
-        Err(CarrierError::WrongScope)
+        Err(oteryn_gameplay_foundation::foundation::CarrierError::WrongScope)
     );
     assert_eq!(carrier.slots, after_recycle);
 }
@@ -210,7 +221,7 @@ fn stale_position_and_revision_overflow_reject_without_mutation() {
     let before = carrier.slots.clone();
     assert_eq!(
         carrier.compare_commit_position(&continuity, wrong, scope, position(5)),
-        Err(CarrierError::PositionSnapshotMismatch)
+        Err(oteryn_gameplay_foundation::foundation::CarrierError::PositionSnapshotMismatch)
     );
     assert_eq!(carrier.slots, before);
 
@@ -225,7 +236,7 @@ fn stale_position_and_revision_overflow_reject_without_mutation() {
     let before = carrier.slots.clone();
     assert_eq!(
         carrier.compare_commit_position(&continuity, overflow_snapshot, scope, position(5)),
-        Err(CarrierError::PositionRevisionExhausted)
+        Err(oteryn_gameplay_foundation::foundation::CarrierError::PositionRevisionExhausted)
     );
     assert_eq!(carrier.slots, before);
 }

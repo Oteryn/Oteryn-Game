@@ -2,12 +2,14 @@
 //! Not a whole Encounter or elemental/presentation owner. Caller qualifies Earth mitigation
 //! and wall legality through their actual native owners before enabling this partial route.
 use crate::bosses::smelly_cheese::native_owner::SmellyCheeseCarrierExt;
-use crate::foundation::{
-    CarrierError, ChannelRuntimeV1, ExactActorRef, RuntimeScopeRefV1, RuntimeWorkStamp,
-    ScopeRuntimeFence,
-};
 use crate::player_lethal::{PlayerDamageReceipt, PlayerLethalVitals};
-use crate::smelly_cheese::{SmellyDuePulse, SmellyPulse};
+use oteryn_gameplay_encounters::bosses::smelly_cheese::timers::{SmellyDuePulse, SmellyPulse};
+use {
+    oteryn_gameplay_entities::ChannelRuntimeV1,
+    oteryn_gameplay_foundation::foundation::{
+        CarrierError, ExactActorRef, RuntimeScopeRefV1, RuntimeWorkStamp, ScopeRuntimeFence,
+    },
+};
 #[derive(Debug)]
 pub enum SmellyDamageError {
     Owner(CarrierError),
@@ -28,7 +30,7 @@ pub fn commit_smelly_unambiguous_damage(
     pulse: SmellyDuePulse,
     mut draw: impl FnMut() -> u32,
     mut native_legal: impl FnMut(ExactActorRef, ExactActorRef) -> bool,
-    now: crate::foundation::owner_timer::SemanticTimeMicros,
+    now: oteryn_gameplay_foundation::foundation::owner_timer::SemanticTimeMicros,
 ) -> Result<Vec<PlayerDamageReceipt>, SmellyDamageError> {
     let binding = runtime.binding();
     if !fence.is_current_for_scope(

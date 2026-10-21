@@ -4,10 +4,10 @@
 use super::*;
 use crate::durability::spell_item_transaction::{self as item_tx, SpellItemError};
 use crate::durability::spell_items_abi::SpellItemOperation;
-use crate::spell::world_items_execution::QualifiedItemDefinition;
+use oteryn_gameplay_durability::durability::native_world_items::QualifiedItemDefinition;
 use oteryn_gameplay_spell_rules::dispatch_plans::ordinary_field_items as field_rules;
 
-use crate::spell::world_items_execution::{
+use oteryn_gameplay_durability::durability::native_world_items::{
     qualify_source_field_chain as field_chain, source_magic_field as magic_field,
 };
 /// Equality of descriptions is not an authority issuer. The caller separately

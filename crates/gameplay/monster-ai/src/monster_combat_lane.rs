@@ -89,23 +89,33 @@ pub trait MonsterCombatReader:
         actor: ExactActorRef,
         session: GameSessionId,
         stamp: RuntimeWorkStamp,
-    ) -> Option<crate::ability::condition::TickFacts> {
+    ) -> Option<oteryn_gameplay_foundation::foundation::condition::TickFacts> {
         let current = self.condition_tick_facts(runtime, actor, session, stamp)?;
         let standing = current.standing_on_field.map(|field| match field {
-            crate::foundation::DotElement::Poison => crate::ability::condition::DotElement::Poison,
-            crate::foundation::DotElement::Fire => crate::ability::condition::DotElement::Fire,
-            crate::foundation::DotElement::Energy => crate::ability::condition::DotElement::Energy,
-            crate::foundation::DotElement::Bleeding => {
-                crate::ability::condition::DotElement::Bleeding
+            crate::foundation::DotElement::Poison => {
+                oteryn_gameplay_foundation::foundation::condition::DotElement::Poison
             }
-            crate::foundation::DotElement::Drown => crate::ability::condition::DotElement::Drown,
+            crate::foundation::DotElement::Fire => {
+                oteryn_gameplay_foundation::foundation::condition::DotElement::Fire
+            }
+            crate::foundation::DotElement::Energy => {
+                oteryn_gameplay_foundation::foundation::condition::DotElement::Energy
+            }
+            crate::foundation::DotElement::Bleeding => {
+                oteryn_gameplay_foundation::foundation::condition::DotElement::Bleeding
+            }
+            crate::foundation::DotElement::Drown => {
+                oteryn_gameplay_foundation::foundation::condition::DotElement::Drown
+            }
             crate::foundation::DotElement::Freezing => {
-                crate::ability::condition::DotElement::Freezing
+                oteryn_gameplay_foundation::foundation::condition::DotElement::Freezing
             }
             crate::foundation::DotElement::Dazzled => {
-                crate::ability::condition::DotElement::Dazzled
+                oteryn_gameplay_foundation::foundation::condition::DotElement::Dazzled
             }
-            crate::foundation::DotElement::Cursed => crate::ability::condition::DotElement::Cursed,
+            crate::foundation::DotElement::Cursed => {
+                oteryn_gameplay_foundation::foundation::condition::DotElement::Cursed
+            }
         });
         let (cells, _) = self.native_condition_tick_inputs(runtime, stamp)?;
         qualified_source_player_tick_spatial_facts(runtime, cells, actor, session, Some(standing))
@@ -445,8 +455,10 @@ impl TrustedMonsterConditionTickInputs {
         runtime: &ChannelRuntimeV1,
         actor: ExactActorRef,
         session: GameSessionId,
-        current_standing_field: Option<Option<crate::ability::condition::DotElement>>,
-    ) -> Option<crate::ability::condition::TickFacts> {
+        current_standing_field: Option<
+            Option<oteryn_gameplay_foundation::foundation::condition::DotElement>,
+        >,
+    ) -> Option<oteryn_gameplay_foundation::foundation::condition::TickFacts> {
         let (cells, _) = self.current(runtime)?;
         qualified_source_player_tick_spatial_facts(
             runtime,
@@ -463,8 +475,10 @@ fn qualified_source_player_tick_spatial_facts(
     cells: &crate::content::NativeEntryMovementCells,
     actor: ExactActorRef,
     session: GameSessionId,
-    current_standing_field: Option<Option<crate::ability::condition::DotElement>>,
-) -> Option<crate::ability::condition::TickFacts> {
+    current_standing_field: Option<
+        Option<oteryn_gameplay_foundation::foundation::condition::DotElement>,
+    >,
+) -> Option<oteryn_gameplay_foundation::foundation::condition::TickFacts> {
     let standing_on_field = current_standing_field?;
     if cells.scope().world_id != runtime.binding().world_id()
         || cells.scope().generation_digest != runtime.content_pin().server_artifact_digest()
@@ -489,10 +503,12 @@ fn qualified_source_player_tick_spatial_facts(
         return None;
     }
     let tile = cells.spell_tiles().lookup(cells.scope(), cell).ok()?;
-    Some(crate::ability::condition::TickFacts {
-        in_protection_zone: tile.flags().protection_zone,
-        standing_on_field,
-    })
+    Some(
+        oteryn_gameplay_foundation::foundation::condition::TickFacts {
+            in_protection_zone: tile.flags().protection_zone,
+            standing_on_field,
+        },
+    )
 }
 
 /// Source-specific combat composition supplied by the owning encounter crate.

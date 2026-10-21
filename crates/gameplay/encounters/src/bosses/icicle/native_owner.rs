@@ -1,7 +1,9 @@
 //! Source Icicle raw addHealth(-100): reuse native damage staging, no armor/resistance pipeline.
-use oteryn_gameplay_entities::{
-    CarrierError, CurrentOwnerExactActorCommit, ExactActorRef, OwnerDamageCommand,
-    OwnerDamageResult,
+use {
+    oteryn_gameplay_entities::{
+        CurrentOwnerExactActorCommit, OwnerDamageCommand, OwnerDamageResult,
+    },
+    oteryn_gameplay_foundation::foundation::{CarrierError, ExactActorRef},
 };
 
 pub trait IcicleCarrierExt {

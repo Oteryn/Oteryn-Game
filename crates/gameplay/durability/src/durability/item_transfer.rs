@@ -1236,7 +1236,7 @@ async fn check_transfer_capacity(
             .checked_add(u64::from(unit) * u64::from(quantity))
             .ok_or(DurabilityError::InvalidStoredState)?;
     }
-    use super::item_capacity::{CapacityMove, CapacityRefusal, IncomingWeight, plan_capacity};
+    use oteryn_gameplay_items::item_capacity::{CapacityMove, CapacityRefusal, IncomingWeight, plan_capacity};
     let incoming = [IncomingWeight {
         item: source,
         weight_definition: &request.item.definition,
@@ -1302,7 +1302,7 @@ pub(super) async fn read_derived_transfer_capacity_centi_oz(
     let vocation = vocation
         .as_deref()
         .unwrap_or(super::character_build::NO_VOCATION);
-    super::item_capacity::project_global_capacity_centi_oz(level, vocation)
+    oteryn_gameplay_items::item_capacity::project_global_capacity_centi_oz(level, vocation)
         .map_err(|_| DurabilityError::InvalidStoredState)
 }
 

@@ -329,9 +329,11 @@ mod tests {
                     .is_some_and(|name| name.eq_ignore_ascii_case("lightning"))
             })
             .unwrap();
-        let source =
-            crate::spell::authoring::spell_from_bundle(&row["bundle"], &row["dependencies"])
-                .unwrap();
+        let source = oteryn_gameplay_content::content::spell_data::authoring::spell_from_bundle(
+            &row["bundle"],
+            &row["dependencies"],
+        )
+        .unwrap();
         assert!(ordinary_chain(&source));
         let book = SpellBook::new(vec![source.clone()]).unwrap();
         let occurrence = AbilityOccurrence::new(

@@ -6,13 +6,13 @@ use crate::content::{
     ProjectV2DefinitionRef as Ref, ProjectV2Draft, ProjectV2EffectAffects, ProjectV2Family,
     ProjectV2FormulaAuthoring, ProjectV2InlineEffectOperation, ProjectV2SourceIdentityDisposition,
 };
-use crate::creature_attack_geometry::{self as geometry, Facing};
 use crate::creature_auto_attack::ProfileAbilityProposal;
-use crate::durability::creature_schedule::ScheduleList;
 use crate::foundation::{
     CarrierError, ChannelRuntimeV1, ExactActorRef, OwnerDamageResult, RuntimeScopeRefV1,
     RuntimeWorkStamp, ScopeRuntimeFence,
 };
+use oteryn_gameplay_content::content::creature_attack_geometry::{self as geometry, Facing};
+use oteryn_gameplay_foundation::foundation::profile_schedule::ScheduleList;
 use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
 };
@@ -587,7 +587,7 @@ impl AreaHealOwner {
                 )
                 .map_err(|_| E::Numeric)?;
                 let draw = source.source_load_magnitude.unwrap_or_else(|| {
-                    crate::durability::uniform_draw::uniform_draw(
+                    oteryn_gameplay_domain::domain::uniform_draw::uniform_draw(
                         draw,
                         source.minimum as i64,
                         source.maximum as i64,
@@ -666,5 +666,6 @@ fn project_prophet_source_load_magnitude(source: [u8; 32]) -> u64 {
         .finalize();
     let mut bytes = [0; 8];
     bytes.copy_from_slice(&digest[..8]);
-    crate::durability::uniform_draw::uniform_draw(u64::from_le_bytes(bytes), 200, 350) as u64
+    oteryn_gameplay_domain::domain::uniform_draw::uniform_draw(u64::from_le_bytes(bytes), 200, 350)
+        as u64
 }

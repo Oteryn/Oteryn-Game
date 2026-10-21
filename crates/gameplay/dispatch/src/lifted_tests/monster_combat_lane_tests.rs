@@ -11,7 +11,6 @@ mod tests {
     use crate::content::ProjectV2BehaviorAuthoring;
     use crate::content::ProjectV2DefinitionRef as Ref;
     use crate::content::ProjectV2Family;
-    use crate::creature_attack_geometry::Facing;
     use crate::creature_auto_attack::AttackError;
     use crate::creature_auto_attack::CurrentCombatFactsReader;
     use crate::creature_auto_attack::{AttackFacts, CurrentConditionPolicy};
@@ -38,6 +37,7 @@ mod tests {
     use crate::monster_combat_lane::*;
     use crate::monster_owner_cycle::CycleError;
     use crate::spell::chain::TilePosition;
+    use oteryn_gameplay_content::content::creature_attack_geometry::Facing;
     use oteryn_simulation_determinism::DecisionOccurrenceId;
     use oteryn_simulation_determinism::GameplayDecisionRoot;
     use sha2::Digest;
@@ -1602,7 +1602,7 @@ mod tests {
                 world.target,
                 world.session,
                 DecisionOccurrenceId::from_bytes([8; 16]),
-                crate::ability::condition::TickFacts::default(),
+                oteryn_gameplay_foundation::foundation::condition::TickFacts::default(),
                 clock.now(),
             )
             .expect("monster_combat_lane.rs:tests:3370: qualified fixture operation must succeed");

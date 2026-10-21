@@ -43,14 +43,6 @@ use super::npc_command::{NpcContinuity, NpcTalkOutcome, NpcUpdate};
 use super::npc_trade_command::NpcTradeStep;
 use super::tcp_tls::{FrameReader, read_frame, write_frame};
 use super::world_map::{MapUpdate, MapViewError, SessionMapView};
-use super::world_object::{
-    CAPABILITY_ITEM_USE_V1, CAPABILITY_RUNE_USE_V1, CAPABILITY_WORLD_INTERACTION_V1,
-    COMMAND_TYPE_USE_INTENT, DELTA_TYPE_WORLD_OBJECT_OVERLAY_V1, MAX_GATE_MESSAGE_ID,
-    SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1, STATE_DOMAIN_WORLD_OBJECT_OVERLAY, UseDisposition,
-    UseIntent, UseTarget, WorldObjectOverlayEntry, decode_use_intent_target, encode_use_result,
-    encode_use_result_with_gate, encode_world_object_overlay_delta,
-    encode_world_object_overlay_snapshot,
-};
 use super::world_spatial::{
     CAPABILITY_WORLD_SPATIAL_ENTITIES, COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, ChannelEntities,
     ChannelEntity, DELTA_TYPE_WORLD_SPATIAL_V1, EntityLights, SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
@@ -124,6 +116,14 @@ use oteryn_protocol_oteryn::world_clock::{
     STATE_DOMAIN_WORLD_CLOCK, WorldClock, encode_world_clock,
 };
 use oteryn_protocol_oteryn::world_map::STATE_DOMAIN_WORLD_MAP_VIEW;
+use oteryn_protocol_oteryn::world_object::{
+    CAPABILITY_ITEM_USE_V1, CAPABILITY_RUNE_USE_V1, CAPABILITY_WORLD_INTERACTION_V1,
+    COMMAND_TYPE_USE_INTENT, DELTA_TYPE_WORLD_OBJECT_OVERLAY_V1, MAX_GATE_MESSAGE_ID,
+    SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1, STATE_DOMAIN_WORLD_OBJECT_OVERLAY, UseDisposition,
+    UseIntent, UseTarget, WorldObjectOverlayEntry, decode_use_intent_target, encode_use_result,
+    encode_use_result_with_gate, encode_world_object_overlay_delta,
+    encode_world_object_overlay_snapshot,
+};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef as WireEntityRef;
 use oteryn_protocol_oteryn::world_weather::{
     CAPABILITY_WORLD_WEATHER_V1, DELTA_TYPE_WORLD_WEATHER_V1, SNAPSHOT_TYPE_WORLD_WEATHER_V1,
@@ -544,7 +544,7 @@ pub trait FreshAdmissionAuthority {
         &self,
         _actor: ExactActorRef,
         _use: UseCommand,
-        _target: super::world_object::WorldObjectTarget,
+        _target: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
     ) -> impl Future<Output = UseOutcome> {
         async { UseOutcome::rejected() }
     }
@@ -1039,8 +1039,8 @@ pub struct UseCommand {
 /// the resulting `WORLD_OBJECT_OVERLAY` delta entry (USE-WIRE-V1, #162 5868482467).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UseOutcome {
-    pub disposition: super::world_object::UseDisposition,
-    pub committed: Option<super::world_object::WorldObjectOverlayEntry>,
+    pub disposition: oteryn_protocol_oteryn::world_object::UseDisposition,
+    pub committed: Option<oteryn_protocol_oteryn::world_object::WorldObjectOverlayEntry>,
     /// ACH-NOTIFY-1/2: what the grant of this `USE` earned, after its commit. The loop acts on
     /// it only for a session that selected capability 8.
     pub earned: EarnedNotice,
@@ -1052,7 +1052,7 @@ pub struct UseOutcome {
 impl UseOutcome {
     pub const fn rejected() -> Self {
         Self {
-            disposition: super::world_object::UseDisposition::Rejected,
+            disposition: oteryn_protocol_oteryn::world_object::UseDisposition::Rejected,
             committed: None,
             earned: EarnedNotice::NoneEarned,
             gate_message_id: None,
@@ -4223,9 +4223,9 @@ async fn send_error<S: AsyncWrite + Unpin>(
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 mod tests {
-    use super::super::world_object::decode_use_result_with_gate;
     use super::*;
     use crate::gameplay_transport::world_spatial::encode_step_result;
+    use oteryn_protocol_oteryn::world_object::decode_use_result_with_gate;
     use std::cell::{Cell, RefCell};
     use std::error::Error;
     use tokio::io::{AsyncReadExt, AsyncWriteExt, DuplexStream};
@@ -4843,7 +4843,7 @@ mod tests {
     /// A fixture authority for USE_INTENT dispatch (USE-WIRE-V1, #162 5868482467): every call is
     /// recorded and answered with one canned `UseOutcome`, independent of `target`.
     struct UseAuthority {
-        uses: RefCell<Vec<super::super::world_object::WorldObjectTarget>>,
+        uses: RefCell<Vec<oteryn_protocol_oteryn::world_object::WorldObjectTarget>>,
         commands: RefCell<Vec<UseCommand>>,
         overlay: Option<WorldObjectOverlayEntry>,
         /// The account watermark the domain-13 snapshot reads.
@@ -4878,7 +4878,7 @@ mod tests {
             &self,
             _actor: ExactActorRef,
             command: UseCommand,
-            target: super::super::world_object::WorldObjectTarget,
+            target: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
         ) -> UseOutcome {
             self.commands.borrow_mut().push(command);
             self.uses.borrow_mut().push(target);
@@ -4896,8 +4896,8 @@ mod tests {
         let mut payload = Vec::new();
         scalar(&mut payload, 1, id);
         scalar(&mut payload, 2, command_type);
-        let intent = super::super::world_object::encode_use_intent(
-            &super::super::world_object::WorldObjectTarget {
+        let intent = oteryn_protocol_oteryn::world_object::encode_use_intent(
+            &oteryn_protocol_oteryn::world_object::WorldObjectTarget {
                 placement: placement.to_vec(),
                 expected_revision,
             },
@@ -6021,7 +6021,7 @@ mod tests {
             assert_eq!(authority.uses.borrow().len(), 1);
             assert_eq!(
                 authority.uses.borrow()[0],
-                super::super::world_object::WorldObjectTarget {
+                oteryn_protocol_oteryn::world_object::WorldObjectTarget {
                     placement: b"oteryn:cell/entry-door".to_vec(),
                     expected_revision: 0,
                 }

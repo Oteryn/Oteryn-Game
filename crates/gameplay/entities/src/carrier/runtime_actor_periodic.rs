@@ -60,7 +60,7 @@ impl ChannelRuntimeV1 {
         mut player_source: Option<&mut CurrentPlayerPeriodicSource<'_>>,
     ) -> Result<PreparedCreaturePeriodicTurn, CarrierError> {
         if self.actor_spell_reserved(actor) {
-            return Err(CarrierError::PlanConflict);
+            return Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict);
         }
         let before = self.companion_snapshot(actor)?;
         if self
@@ -68,16 +68,18 @@ impl ChannelRuntimeV1 {
             .as_ref()
             != before.state.policy.as_ref()
         {
-            return Err(CarrierError::PlanConflict);
+            return Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict);
         }
         if self
             .encounter_hooks()
             .is_some_and(|hooks| hooks.contains(actor))
         {
-            return Err(CarrierError::PositionContextMismatch);
+            return Err(
+                oteryn_gameplay_foundation::foundation::CarrierError::PositionContextMismatch,
+            );
         }
         if !before.state.conditions.accepts_time(now_us) {
-            return Err(CarrierError::PlanConflict);
+            return Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict);
         }
         let stamp = self.issue_owner_work()?;
         let mut after = before.state.clone();
@@ -103,7 +105,9 @@ impl ChannelRuntimeV1 {
                                 || lineage.source_scope_generation
                                     != source.scope_generation().get())
                         {
-                            return Err(CarrierError::PlanConflict);
+                            return Err(
+                                oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict,
+                            );
                         }
                         let source_percent = match self.companion_snapshot_including_dead(source) {
                             Ok(snapshot) if snapshot.health <= 0 => None,
@@ -113,19 +117,19 @@ impl ChannelRuntimeV1 {
                                     .as_ref()
                                     != snapshot.state.policy.as_ref()
                                 {
-                                    return Err(CarrierError::PlanConflict);
+                                    return Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict);
                                 }
                                 self.assert_actor_spell_unreserved(source)?;
                                 let position = self.read_actor_position(source)?;
                                 if position.context() != self.pinned_movement_context() {
-                                    return Err(CarrierError::PositionContextMismatch);
+                                    return Err(oteryn_gameplay_foundation::foundation::CarrierError::PositionContextMismatch);
                                 }
                                 use oteryn_gameplay_foundation::foundation::condition::{
                                     ConditionValues, ConflictKey,
                                 };
                                 let source_store = self
                                     .actor_conditions_at(source, None, now_us)
-                                    .map_err(|_| CarrierError::PlanConflict)?;
+                                    .map_err(|_| oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict)?;
                                 let native = snapshot
                                     .state
                                     .conditions
@@ -139,7 +143,7 @@ impl ChannelRuntimeV1 {
                                     {
                                         Some(a)
                                     }
-                                    (Some(_), Some(_)) => return Err(CarrierError::PlanConflict),
+                                    (Some(_), Some(_)) => return Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict),
                                     (a, b) => a.or(b),
                                 };
                                 Some(match chosen.map(|a| a.definition().values()) {
@@ -156,13 +160,13 @@ impl ChannelRuntimeV1 {
                                 } else if !self.borrow_exact_actor_lookup().contains(source) {
                                     None
                                 } else {
-                                    return Err(CarrierError::PlanConflict);
+                                    return Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict);
                                 }
                             }
                         };
                         if let Some(percent) = source_percent {
                             let TickKind::Damage { element, .. } = tick.kind else {
-                                return Err(CarrierError::PlanConflict);
+                                return Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict);
                             };
                             if before.state.policy.flags.attackable {
                                 healing = before.state.policy.damage_healing(
@@ -175,39 +179,45 @@ impl ChannelRuntimeV1 {
                         attributed.provenance.source = None;
                         attributed.provenance.lineage = None;
                     } else if tick.provenance.lineage.is_some() {
-                        return Err(CarrierError::PlanConflict);
+                        return Err(
+                            oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict,
+                        );
                     }
                     let adjusted = (u64::from(amount) * u64::from(dealt_percent)) / 100;
-                    let adjusted =
-                        u32::try_from(adjusted).map_err(|_| CarrierError::DamageOverflow)?;
+                    let adjusted = u32::try_from(adjusted).map_err(|_| {
+                        oteryn_gameplay_foundation::foundation::CarrierError::DamageOverflow
+                    })?;
                     use oteryn_gameplay_foundation::foundation::condition::{
                         ConditionValues, ConflictKey,
                     };
-                    let imported = self
-                        .actor_conditions_at(actor, None, now_us)
-                        .map_err(|_| CarrierError::PlanConflict)?;
+                    let imported = self.actor_conditions_at(actor, None, now_us).map_err(|_| {
+                        oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict
+                    })?;
                     let a = before
                         .state
                         .conditions
                         .active_at(ConflictKey::Attributes, now_us);
                     let b = imported.active_at(ConflictKey::Attributes, now_us);
-                    let chosen = match (a, b) {
-                        (Some(a), Some(b))
-                            if a.definition() == b.definition()
-                                && a.provenance() == b.provenance() =>
-                        {
-                            Some(a)
-                        }
-                        (Some(_), Some(_)) => return Err(CarrierError::PlanConflict),
-                        (a, b) => a.or(b),
-                    };
+                    let chosen =
+                        match (a, b) {
+                            (Some(a), Some(b))
+                                if a.definition() == b.definition()
+                                    && a.provenance() == b.provenance() =>
+                            {
+                                Some(a)
+                            }
+                            (Some(_), Some(_)) => return Err(
+                                oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict,
+                            ),
+                            (a, b) => a.or(b),
+                        };
                     let received = match chosen.map(|a| a.definition().values()) {
                         Some(ConditionValues::Attributes {
                             incoming_reduction_percent,
                             ..
-                        }) => 100u32
-                            .checked_sub(incoming_reduction_percent)
-                            .ok_or(CarrierError::PlanConflict)?,
+                        }) => 100u32.checked_sub(incoming_reduction_percent).ok_or(
+                            oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict,
+                        )?,
                         _ => 100,
                     };
                     let damage = finish_condition_tick_with_received(
@@ -230,12 +240,13 @@ impl ChannelRuntimeV1 {
                         .min(before.state.policy.maximum_health);
                     health_after = health_after
                         .checked_sub(damage)
-                        .ok_or(CarrierError::DamageOverflow)?
+                        .ok_or(
+                            oteryn_gameplay_foundation::foundation::CarrierError::DamageOverflow,
+                        )?
                         .max(0);
-                    total = before
-                        .health
-                        .checked_sub(health_after)
-                        .ok_or(CarrierError::DamageOverflow)?;
+                    total = before.health.checked_sub(health_after).ok_or(
+                        oteryn_gameplay_foundation::foundation::CarrierError::DamageOverflow,
+                    )?;
                     if health_after == 0 {
                         after.conditions.clear_on_death();
                         break;
@@ -260,12 +271,13 @@ impl ChannelRuntimeV1 {
                     }
                     health_after = health_after
                         .checked_sub(damage)
-                        .ok_or(CarrierError::DamageOverflow)?
+                        .ok_or(
+                            oteryn_gameplay_foundation::foundation::CarrierError::DamageOverflow,
+                        )?
                         .max(0);
-                    total = before
-                        .health
-                        .checked_sub(health_after)
-                        .ok_or(CarrierError::DamageOverflow)?;
+                    total = before.health.checked_sub(health_after).ok_or(
+                        oteryn_gameplay_foundation::foundation::CarrierError::DamageOverflow,
+                    )?;
                     if health_after == 0 {
                         after.conditions.clear_on_death();
                         break;
@@ -281,19 +293,21 @@ impl ChannelRuntimeV1 {
                 } => {}
                 // Creature regeneration needs its actual source vitals recipe,
                 // and is not inferred from the player's regeneration rules.
-                _ => return Err(CarrierError::PlanConflict),
+                _ => {
+                    return Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict);
+                }
             }
         }
         let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
         let Slot::CreatureOccupied { committed, .. } = &self.carrier.slots[index] else {
-            return Err(CarrierError::NotCreature);
+            return Err(oteryn_gameplay_foundation::foundation::CarrierError::NotCreature);
         };
         let original_slot = self.carrier.slots[index].clone();
         let ordinal = committed.next_ordinal;
         let next_ordinal = if had_damage {
-            ordinal
-                .checked_add(1)
-                .ok_or(CarrierError::CapacityArithmeticOverflow)?
+            ordinal.checked_add(1).ok_or(
+                oteryn_gameplay_foundation::foundation::CarrierError::CapacityArithmeticOverflow,
+            )?
         } else {
             ordinal
         };
@@ -302,7 +316,7 @@ impl ChannelRuntimeV1 {
             // Nonlethal replay is fenced by complete store+HP comparison; no
             // unsequenced command receipt is consumed for every DOT pulse.
             if committed.entries.len() >= COMBAT01_DAMAGE_RECEIPTS_PER_CREATURE_GENERATION_MAX {
-                return Err(CarrierError::DamageReceiptCapacityExceeded);
+                return Err(oteryn_gameplay_foundation::foundation::CarrierError::DamageReceiptCapacityExceeded);
             }
             let occurrence = format!(
                 "owner-tick/{}/{}/{}/{}",
@@ -353,7 +367,7 @@ impl ChannelRuntimeV1 {
             || !self.owner_fence()?.accepts_stamp(prepared.stamp)
             || self.companion_snapshot(prepared.before.actor)? != prepared.before
         {
-            return Err(CarrierError::PlanConflict);
+            return Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict);
         }
         if let Some(master) = prepared.before.state.master {
             self.carrier
@@ -363,7 +377,7 @@ impl ChannelRuntimeV1 {
             .carrier
             .validate_ref(&self.continuity, prepared.before.actor.0)?;
         if self.carrier.slots.get(index) != Some(&prepared.original_slot) {
-            return Err(CarrierError::PlanConflict);
+            return Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict);
         }
         let Slot::CreatureOccupied {
             health,
@@ -372,18 +386,17 @@ impl ChannelRuntimeV1 {
             ..
         } = &mut self.carrier.slots[index]
         else {
-            return Err(CarrierError::NotCreature);
+            return Err(oteryn_gameplay_foundation::foundation::CarrierError::NotCreature);
         };
         if let Some(record) = &prepared.lethal_record {
             if record.ordinal != committed.next_ordinal
                 || committed.entries.len() >= COMBAT01_DAMAGE_RECEIPTS_PER_CREATURE_GENERATION_MAX
             {
-                return Err(CarrierError::PlanConflict);
+                return Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict);
             }
-            committed
-                .entries
-                .try_reserve(1)
-                .map_err(|_| CarrierError::CapacityArithmeticOverflow)?;
+            committed.entries.try_reserve(1).map_err(|_| {
+                oteryn_gameplay_foundation::foundation::CarrierError::CapacityArithmeticOverflow
+            })?;
         }
         // Box allocation precedes HP/store/ordinal installation.
         let next = Box::new(prepared.after);
@@ -440,10 +453,10 @@ fn finish_condition_tick_with_received(
 ) -> Result<i64, CarrierError> {
     use oteryn_gameplay_foundation::foundation::condition::{ConditionValues, ConflictKey};
     if tick.provenance.source.is_some() || tick.provenance.lineage.is_some() {
-        return Err(CarrierError::PlanConflict);
+        return Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict);
     }
     let TickKind::Damage { element, .. } = tick.kind else {
-        return Err(CarrierError::PlanConflict);
+        return Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict);
     };
     let key = periodic_element_key(element);
     let policy = &target.state.policy;
@@ -466,14 +479,16 @@ fn finish_condition_tick_with_received(
     }
     if let Some(current) = received_override {
         if current > 100 {
-            return Err(CarrierError::PlanConflict);
+            return Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict);
         }
         received_percent = current;
         value = (i64::from(amount) as f64 * f64::from(current) / 100.0).trunc() as i64;
     }
-    let mitigation = policy.mitigation.ok_or(CarrierError::PlanConflict)?;
+    let mitigation = policy
+        .mitigation
+        .ok_or(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict)?;
     if mitigation.denominator == 0 || mitigation.numerator < 0 {
-        return Err(CarrierError::PlanConflict);
+        return Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict);
     }
     let mitigation =
         ((mitigation.numerator as f64 / mitigation.denominator as f64) as f32).min(30.0);
@@ -481,13 +496,13 @@ fn finish_condition_tick_with_received(
     value = (value as f64 - f64::from(value as f32 * mitigation) / 100.0).trunc() as i64;
     if let Some(resistance) = policy.resistances.iter().find(|v| v.damage_type == key) {
         if resistance.percent.denominator == 0 {
-            return Err(CarrierError::PlanConflict);
+            return Err(oteryn_gameplay_foundation::foundation::CarrierError::PlanConflict);
         }
         let sensitivity =
             100.0 - resistance.percent.numerator as f64 / resistance.percent.denominator as f64;
         let result = (value as f64 * sensitivity / 100.0).round();
         if !result.is_finite() || result >= i64::MAX as f64 {
-            return Err(CarrierError::DamageOverflow);
+            return Err(oteryn_gameplay_foundation::foundation::CarrierError::DamageOverflow);
         }
         value = (result as i64).max(0);
     }
@@ -548,20 +563,21 @@ mod tests {
         owner_with(policy("rat"))
     }
     fn owner_with(rat: CompiledCreaturePolicy) -> (ChannelRuntimeV1, ExactActorRef, GameSessionId) {
-        let world = WorldId::decode(&id(1)).unwrap();
+        let world = oteryn_gameplay_foundation::foundation::WorldId::decode(&id(1)).unwrap();
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             world,
-            ChannelId::decode(&id(2)).unwrap(),
-            NodeId::decode(&id(3)).unwrap(),
+            oteryn_gameplay_foundation::foundation::ChannelId::decode(&id(2)).unwrap(),
+            oteryn_gameplay_foundation::foundation::NodeId::decode(&id(3)).unwrap(),
             1,
             1,
             1,
             "runtime-scope-assignment:1",
             4,
-            ChannelContentPin::test(world),
+            oteryn_gameplay_foundation::foundation::ChannelContentPin::test(world),
         )
         .unwrap();
-        let session = GameSessionId::decode(&id(4)).unwrap();
+        let session =
+            oteryn_gameplay_foundation::foundation::GameSessionId::decode(&id(4)).unwrap();
         let reserved = runtime.reserve_fresh_session(session).unwrap();
         let actor = runtime.commit_fresh_session(reserved).unwrap();
         runtime.initialize_first_entry_position(actor).unwrap();

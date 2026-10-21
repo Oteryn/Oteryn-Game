@@ -11,20 +11,23 @@ mod tests {
     use crate::creature_auto_attack::AttackFacts;
     use crate::creature_damage_spell::SpellCombatFacts;
     use crate::creature_damage_spell::SpellWorldReader;
-    use crate::foundation::ChannelRuntimeV1;
-    use crate::foundation::ExactActorRef;
-    use crate::foundation::RuntimeScopeRefV1;
-    use crate::foundation::RuntimeWorkStamp;
-    use crate::foundation::ScopeRuntimeFence;
-    use crate::foundation::owner_timer::OwnerClock;
-    use crate::foundation::owner_timer::SemanticTimeMicros;
-    use crate::foundation::owner_timer::VirtualOwnerClock;
-    use crate::foundation::{GameSessionId, MovementLocalPosition};
     use crate::gameplay_transport::actor_spell::{
         ChannelSpellStates,
         tests::{FACTS, runtime_with_player},
     };
-    use crate::smelly_encounter_dispatch::*;
+    use oteryn_gameplay_encounters::bosses::smelly_cheese::smelly_encounter_dispatch::*;
+    use oteryn_gameplay_entities::ChannelRuntimeV1;
+    use oteryn_gameplay_foundation::foundation::ExactActorRef;
+    use oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1;
+    use oteryn_gameplay_foundation::foundation::RuntimeWorkStamp;
+    use oteryn_gameplay_foundation::foundation::ScopeRuntimeFence;
+    use oteryn_gameplay_foundation::foundation::owner_timer::OwnerClock;
+    use oteryn_gameplay_foundation::foundation::owner_timer::SemanticTimeMicros;
+    use oteryn_gameplay_foundation::foundation::owner_timer::VirtualOwnerClock;
+    use {
+        oteryn_gameplay_entities::MovementLocalPosition,
+        oteryn_gameplay_foundation::foundation::GameSessionId,
+    };
     fn setup() -> (
         ChannelRuntimeV1,
         ExactActorRef,
@@ -163,8 +166,8 @@ mod tests {
             _: &ChannelRuntimeV1,
             _: ExactActorRef,
             _: RuntimeWorkStamp,
-        ) -> Option<crate::creature_attack_geometry::Facing> {
-            Some(crate::creature_attack_geometry::Facing::North)
+        ) -> Option<oteryn_gameplay_content::content::creature_attack_geometry::Facing> {
+            Some(oteryn_gameplay_content::content::creature_attack_geometry::Facing::North)
         }
         fn tile_allowed(
             &mut self,
@@ -209,7 +212,7 @@ mod tests {
     }
     fn fence(r: &ChannelRuntimeV1) -> (ScopeRuntimeFence, RuntimeWorkStamp) {
         let b = r.binding();
-        crate::foundation::crystal_timer_fixture(
+        oteryn_gameplay_foundation::foundation::crystal_timer_fixture(
             RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
             b.scope_generation(),
         )
@@ -450,9 +453,9 @@ mod tests {
         let b = r.binding();
         let mut world = *b.world_id().as_bytes();
         world[15] ^= 1;
-        let (foreign, _) = crate::foundation::crystal_timer_fixture(
+        let (foreign, _) = oteryn_gameplay_foundation::foundation::crystal_timer_fixture(
             RuntimeScopeRefV1::channel(
-                crate::foundation::WorldId::decode(&world).expect("smelly_encounter_dispatch.rs:tests:858: qualified fixture operation must succeed"),
+                oteryn_gameplay_foundation::foundation::WorldId::decode(&world).expect("smelly_encounter_dispatch.rs:tests:858: qualified fixture operation must succeed"),
                 b.channel_id(),
             ),
             b.scope_generation(),
