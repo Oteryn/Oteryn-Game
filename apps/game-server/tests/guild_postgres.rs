@@ -70,7 +70,7 @@ pub mod domain;
 pub mod durability;
 #[path = "../../../crates/gameplay/foundation/src/foundation/mod.rs"]
 pub mod foundation;
-#[path = "../src/gameplay_transport/mod.rs"]
+#[path = "../../../crates/gameplay/transport/src/gameplay_transport/mod.rs"]
 mod gameplay_transport;
 
 pub use gameplay_transport::{

@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "crates/gameplay/transport",
     "crates/gameplay/social",
     "crates/gameplay/monster-ai",
     "crates/gameplay/encounters",

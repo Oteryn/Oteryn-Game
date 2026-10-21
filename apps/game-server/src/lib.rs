@@ -96,7 +96,7 @@ pub use oteryn_gameplay_foundation::foundation;
     reason = "CHAT-1a local chat rules await the CHAT_V1 wire and runtime of CHAT-1b"
 )]
 pub(crate) use oteryn_gameplay_social::chat;
-mod gameplay_transport;
+pub(crate) use oteryn_gameplay_transport::gameplay_transport;
 pub use oteryn_gameplay_world::house_scope;
 pub use oteryn_gameplay_world::map;
 #[allow(
