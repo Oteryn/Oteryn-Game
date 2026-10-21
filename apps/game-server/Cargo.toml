@@ -17,6 +17,18 @@ release-role = "production"
 test-support = []
 
 [dependencies]
+oteryn-gameplay-characters = { version = "=0.1.0", path = "../../crates/gameplay/characters" }
+oteryn-gameplay-progression = { version = "=0.1.0", path = "../../crates/gameplay/progression" }
+oteryn-gameplay-items = { version = "=0.1.0", path = "../../crates/gameplay/items" }
+oteryn-gameplay-economy = { version = "=0.1.0", path = "../../crates/gameplay/economy" }
+oteryn-gameplay-quests = { version = "=0.1.0", path = "../../crates/gameplay/quests" }
+oteryn-gameplay-housing = { version = "=0.1.0", path = "../../crates/gameplay/housing" }
+oteryn-gameplay-combat-rules = { version = "=0.1.0", path = "../../crates/gameplay/combat-rules" }
+oteryn-gameplay-spell-rules = { version = "=0.1.0", path = "../../crates/gameplay/spell-rules" }
+oteryn-gameplay-encounter-rules = { version = "=0.1.0", path = "../../crates/gameplay/encounter-rules" }
+oteryn-gameplay-social-rules = { version = "=0.1.0", path = "../../crates/gameplay/social-rules" }
+oteryn-gameplay-entities = { version = "=0.1.0", path = "../../crates/gameplay/entities" }
+oteryn-gameplay-npc = { version = "=0.1.0", path = "../../crates/gameplay/npc" }
 oteryn-gameplay-dispatch = { version = "=0.1.0", path = "../../crates/gameplay/dispatch" }
 oteryn-gameplay-social = { version = "=0.1.0", path = "../../crates/gameplay/social" }
 oteryn-gameplay-monster-ai = { version = "=0.1.0", path = "../../crates/gameplay/monster-ai" }

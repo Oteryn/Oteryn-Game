@@ -15,6 +15,10 @@ release-role = "production"
 test-support = ["oteryn-gameplay-content/test-support", "oteryn-gameplay-durability/test-support", "oteryn-gameplay-foundation/test-support"]
 
 [dependencies]
+oteryn-gameplay-characters = { version = "=0.1.0", path = "../characters" }
+oteryn-gameplay-items = { version = "=0.1.0", path = "../items" }
+oteryn-gameplay-progression = { version = "=0.1.0", path = "../progression" }
+oteryn-gameplay-combat-rules = { version = "=0.1.0", path = "../combat-rules" }
 oteryn-gameplay-source-critical-baseline = { version = "=0.1.0", path = "../source-critical-baseline" }
 oteryn-gameplay-content = { version = "=0.1.0", path = "../content" }
 oteryn-gameplay-domain = { version = "=0.1.0", path = "../domain" }

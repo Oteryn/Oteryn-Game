@@ -15,6 +15,18 @@ release-role = "production"
 test-support = []
 
 [dependencies]
+oteryn-gameplay-characters = { version = "=0.1.0", path = "../characters" }
+oteryn-gameplay-progression = { version = "=0.1.0", path = "../progression" }
+oteryn-gameplay-items = { version = "=0.1.0", path = "../items" }
+oteryn-gameplay-economy = { version = "=0.1.0", path = "../economy" }
+oteryn-gameplay-quests = { version = "=0.1.0", path = "../quests" }
+oteryn-gameplay-housing = { version = "=0.1.0", path = "../housing" }
+oteryn-gameplay-combat-rules = { version = "=0.1.0", path = "../combat-rules" }
+oteryn-gameplay-spell-rules = { version = "=0.1.0", path = "../spell-rules" }
+oteryn-gameplay-encounter-rules = { version = "=0.1.0", path = "../encounter-rules" }
+oteryn-gameplay-social-rules = { version = "=0.1.0", path = "../social-rules" }
+oteryn-gameplay-entities = { version = "=0.1.0", path = "../entities" }
+oteryn-gameplay-npc = { version = "=0.1.0", path = "../npc" }
 base64.workspace = true
 oteryn-error-codes = { version = "=0.1.0", path = "../../error-codes" }
 oteryn-foundation = { version = "=0.1.0", path = "../../foundation" }
