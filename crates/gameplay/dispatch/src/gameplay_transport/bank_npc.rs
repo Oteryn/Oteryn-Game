@@ -7,47 +7,17 @@
 //! bound to the confirming CommandRef and call the existing fenced bank writer. It must keep
 //! unknown commit outcomes unsequenced; a storage error is never a BankResult refusal.
 
-use oteryn_protocol_oteryn::GameSessionId;
-use oteryn_protocol_oteryn::npc_service::{
-    MAX_TALK_TEXT_BYTES, TRAVEL_CONFIRMATION_TIMEOUT_SECONDS,
-};
-use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
+use oteryn_protocol_oteryn::npc_service::MAX_TALK_TEXT_BYTES;
 
 use crate::domain::character_name::CharacterName;
-use crate::domain::{CharacterId, WorldId};
 use crate::durability::bank::{
     BankDepositRequest, BankResult, BankTransferRequest, BankWithdrawRequest,
 };
 use crate::durability::bank_audit::{BANK_DEPOSIT_MAX, BANK_TRANSFER_MAX, BANK_WITHDRAW_MAX};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum BankNpcError {
-    InvalidInput,
-    AmountOutOfRange,
-    UnknownRecipient,
-    InvalidContext,
-    TimeOverflow,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum BankNpcIntent {
-    Balance,
-    Deposit(u64),
-    DepositAll,
-    Withdraw(u64),
-    Transfer { amount: u64, name: CharacterName },
-}
-
-impl BankNpcIntent {
-    /// Deposit and withdraw move coin custody and need current backpack coin facts; balance
-    /// and transfer read only the Bank account and never resolve item custody.
-    pub const fn uses_coin_custody(&self) -> bool {
-        matches!(
-            self,
-            Self::Deposit(_) | Self::DepositAll | Self::Withdraw(_)
-        )
-    }
-}
+pub use oteryn_gameplay_npc::bank_npc::{
+    BankDialogueContext, BankNpcError, BankNpcIntent, BankNpcOperation,
+};
 
 fn amount(value: &str, cap: u64) -> Result<u64, BankNpcError> {
     if value.is_empty() || !value.bytes().all(|byte| byte.is_ascii_digit()) {
@@ -88,49 +58,25 @@ pub fn parse(text: &str) -> Result<BankNpcIntent, BankNpcError> {
     }
 }
 
-/// Prompt data after caller-owned resolution. `deposit all` is already an exact amount here.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum BankNpcOperation {
-    Deposit(u64),
-    Withdraw(u64),
-    Transfer {
-        amount: u64,
-        recipient: CharacterId,
-        name: CharacterName,
-    },
+/// Matching current durable request values and classifying native writer results stay in dispatch.
+pub trait BankNpcOperationDurability {
+    fn matches_deposit(&self, request: &BankDepositRequest) -> bool;
+    fn matches_withdraw(&self, request: &BankWithdrawRequest) -> bool;
+    fn matches_transfer(&self, request: &BankTransferRequest) -> bool;
+    fn reply(&self, result: BankResult) -> String;
 }
 
-impl BankNpcOperation {
-    pub fn prompt(&self) -> String {
-        match self {
-            Self::Deposit(amount) => format!("Do you want to deposit {amount} gold?"),
-            Self::Withdraw(amount) => format!("Do you want to withdraw {amount} gold?"),
-            Self::Transfer { amount, name, .. } => format!(
-                "Do you want to transfer {amount} gold to {}?",
-                name.as_str()
-            ),
-        }
-    }
-
-    fn valid_amount(&self) -> bool {
-        let (amount, cap) = match self {
-            Self::Deposit(amount) => (amount, BANK_DEPOSIT_MAX),
-            Self::Withdraw(amount) => (amount, BANK_WITHDRAW_MAX),
-            Self::Transfer { amount, .. } => (amount, BANK_TRANSFER_MAX),
-        };
-        (1..=cap).contains(amount)
-    }
-
+impl BankNpcOperationDurability for BankNpcOperation {
     /// Consistency checks only; native identities, coin facts and fences remain writer-owned.
-    pub fn matches_deposit(&self, request: &BankDepositRequest) -> bool {
+    fn matches_deposit(&self, request: &BankDepositRequest) -> bool {
         matches!(self, Self::Deposit(amount) if *amount == request.amount)
     }
 
-    pub fn matches_withdraw(&self, request: &BankWithdrawRequest) -> bool {
+    fn matches_withdraw(&self, request: &BankWithdrawRequest) -> bool {
         matches!(self, Self::Withdraw(amount) if *amount == request.amount)
     }
 
-    pub fn matches_transfer(&self, request: &BankTransferRequest) -> bool {
+    fn matches_transfer(&self, request: &BankTransferRequest) -> bool {
         matches!(self, Self::Transfer { amount, recipient, name }
             if *amount == request.amount && *recipient == request.recipient_character_id
                 && name.comparison_key() == request.recipient_name_key)
@@ -138,7 +84,7 @@ impl BankNpcOperation {
 
     /// Only a terminal BankResult of this operation, returned by the native writer, belongs
     /// here. The caller must check the request/record and occurrence binding before replying.
-    pub fn reply(&self, result: BankResult) -> String {
+    fn reply(&self, result: BankResult) -> String {
         match result {
             BankResult::Ok => match self {
                 Self::Deposit(amount) => format!("You have deposited {amount} gold."),
@@ -167,25 +113,18 @@ impl BankNpcOperation {
     }
 }
 
-/// Unqualified binding data, not proof of current authority. The owner must independently
-/// resolve an open, in-range Bank conversation and retire pending data on reconnect/transfer.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct BankDialogueContext {
-    pub session: GameSessionId,
-    pub character: CharacterId,
-    pub world: WorldId,
-    pub npc: EntityRef,
-    pub conversation_revision: u64,
+fn valid_amount(operation: &BankNpcOperation) -> bool {
+    let (amount, cap) = match operation {
+        BankNpcOperation::Deposit(amount) => (amount, BANK_DEPOSIT_MAX),
+        BankNpcOperation::Withdraw(amount) => (amount, BANK_WITHDRAW_MAX),
+        BankNpcOperation::Transfer { amount, .. } => (amount, BANK_TRANSFER_MAX),
+    };
+    (1..=cap).contains(amount)
 }
 
-/// One pending invocation. Not Clone: a response consumes it, including cancellation.
+/// One pending invocation. The adapter qualifies the operation's amount before retaining it.
 #[derive(Debug)]
-pub struct BankConfirmation {
-    operation: BankNpcOperation,
-    context: BankDialogueContext,
-    opened_at_ms: u64,
-    expires_at_ms: u64,
-}
+pub struct BankConfirmation(oteryn_gameplay_npc::bank_npc::BankConfirmation);
 
 impl BankConfirmation {
     pub fn new(
@@ -193,39 +132,19 @@ impl BankConfirmation {
         context: BankDialogueContext,
         now_ms: u64,
     ) -> Result<Self, BankNpcError> {
-        if !operation.valid_amount() {
+        if !valid_amount(&operation) {
             return Err(BankNpcError::AmountOutOfRange);
         }
-        if context.npc.generation == 0 || context.conversation_revision == 0 {
-            return Err(BankNpcError::InvalidContext);
-        }
-        let expires_at_ms = now_ms
-            .checked_add(u64::from(TRAVEL_CONFIRMATION_TIMEOUT_SECONDS) * 1_000)
-            .ok_or(BankNpcError::TimeOverflow)?;
-        Ok(Self {
-            operation,
-            context,
-            opened_at_ms: now_ms,
-            expires_at_ms,
-        })
+        oteryn_gameplay_npc::bank_npc::BankConfirmation::new(operation, context, now_ms).map(Self)
     }
 
-    /// Only an exact ASCII-folded `yes` before expiry matches. Every other response, missing
-    /// or changed context, expired/non-monotonic time cancels. The returned value is data;
-    /// it cannot qualify current authority or replace the native writer's rechecks.
     pub fn respond(
         self,
         current_context: Option<&BankDialogueContext>,
         text: &str,
         now_ms: u64,
     ) -> Option<BankNpcOperation> {
-        (current_context == Some(&self.context)
-            && now_ms >= self.opened_at_ms
-            && now_ms < self.expires_at_ms
-            && text.len() <= MAX_TALK_TEXT_BYTES
-            && !text.chars().any(char::is_control)
-            && text.trim_matches(' ').eq_ignore_ascii_case("yes"))
-        .then_some(self.operation)
+        self.0.respond(current_context, text, now_ms)
     }
 }
 

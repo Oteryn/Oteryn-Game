@@ -58,17 +58,13 @@ use crate::gameplay_transport::chat_intent::ChatRuntime;
 use crate::gameplay_transport::npc_command::NpcTalkOutcome;
 use crate::gameplay_transport::spell_character_facts::{CastFactsLoad, load_character_cast_facts};
 use crate::gameplay_transport::{ComposedFreshAdmission, SecureIdentifiers};
-use oteryn_protocol_oteryn::npc_service::{
-    NpcConversation, NpcConversationState, NpcIntentDisposition, NpcTalkIntent, TALK_RANGE_TILES,
-};
+use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent, TALK_RANGE_TILES};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 
-pub const DAWNPORT_CHOICE_NPC: &str = "oteryn:npc.oressa";
-// Pinned Oressa BR revid 417244 names these four choices. Monk is a real vocation,
-// but its acquisition through this NPC needs its own qualified Reference evidence.
-const BASE_VOCATIONS: [&str; 4] = ["knight", "paladin", "druid", "sorcerer"];
+use oteryn_gameplay_npc::vocation_choice::answer;
 
-#[derive(Debug, Clone)]
+pub const DAWNPORT_CHOICE_NPC: &str = "oteryn:npc.oressa";
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RetainedNpcVocation {
     #[allow(
         dead_code,
@@ -87,94 +83,34 @@ pub struct RetainedNpcVocation {
     pub formula_digest: [u8; 32],
 }
 
-#[derive(Debug, Clone)]
-pub struct ConfirmedNpcVocation {
-    #[allow(
-        dead_code,
-        reason = "D1220: A2 native NPC retained-intent consumer reads this field; D1173 integration is pending."
-    )]
-    pub actor: ExactActorRef,
-    #[allow(
-        dead_code,
-        reason = "D1220: A2 native NPC retained-intent consumer reads this field; D1173 integration is pending."
-    )]
-    pub npc: EntityRef,
-    #[allow(
-        dead_code,
-        reason = "D1220: A2 native NPC retained-intent consumer reads this field; D1173 integration is pending."
-    )]
-    pub selected: &'static str,
-    #[allow(
-        dead_code,
-        reason = "D1220: A2 native NPC retained-intent consumer reads this field; D1173 integration is pending."
-    )]
-    pub occurrence: BuildOccurrence,
-    pub retained: Option<RetainedNpcVocation>,
-}
+pub type ConfirmedNpcVocation = oteryn_gameplay_npc::vocation_choice::ConfirmedNpcVocation<
+    BuildOccurrence,
+    RetainedNpcVocation,
+>;
+pub type NpcVocationConversation = oteryn_gameplay_npc::vocation_choice::NpcVocationConversation<
+    BuildOccurrence,
+    RetainedNpcVocation,
+>;
 
-/// A topic inside the existing per-session NPC owner, not another build/training store.
-#[derive(Debug, Clone)]
-pub struct NpcVocationConversation {
-    actor: ExactActorRef,
-    npc: EntityRef,
-    selected: Option<&'static str>,
-    confirmed: Option<ConfirmedNpcVocation>,
-}
+impl oteryn_gameplay_npc::vocation_choice::NpcDialogueOwner for ChatRuntime {
+    fn converse<R>(
+        &self,
+        session: GameSessionId,
+        f: impl FnOnce(&mut Option<ExactActorRef>) -> R,
+    ) -> Option<R> {
+        ChatRuntime::converse(self, session, f)
+    }
 
-impl NpcVocationConversation {
-    pub fn confirmed(&self) -> Option<ConfirmedNpcVocation> {
-        self.confirmed.clone()
+    fn engaged(&self, session: GameSessionId) -> Option<ExactActorRef> {
+        ChatRuntime::engaged(self, session)
     }
-    #[allow(
-        dead_code,
-        reason = "D1220: A2 NPC rollback path retains this occurrence-specific operation; D1173 integration is pending."
-    )]
-    pub fn rollback_request(&mut self, occurrence: BuildOccurrence) {
-        if let Some(choice) = self
-            .confirmed
-            .as_mut()
-            .filter(|choice| choice.occurrence == occurrence)
-        {
-            choice.retained = None;
-        }
-    }
-    #[allow(
-        dead_code,
-        reason = "D1220: A2 native NPC caller retains the exact build intent through this operation; D1173 integration is pending."
-    )]
-    pub fn retain(&mut self, occurrence: BuildOccurrence, request: RetainedNpcVocation) -> bool {
-        let Some(choice) = self
-            .confirmed
-            .as_mut()
-            .filter(|choice| choice.occurrence == occurrence)
-        else {
-            return false;
-        };
-        if let Some(old) = &choice.retained {
-            return old.request == request.request
-                && old.fence == request.fence
-                && old.formula_digest == request.formula_digest;
-        }
-        choice.retained = Some(request);
-        true
-    }
-}
 
-fn answer(npc: EntityRef, disposition: NpcIntentDisposition, line: &str) -> NpcTalkOutcome {
-    NpcTalkOutcome {
-        unknown: false,
-        inventory_changed: false,
-        disposition,
-        conversation: Some(NpcConversation {
-            open: Some((npc, NpcConversationState::Open)),
-            lines: vec![line.to_owned()],
-        }),
-        window: None,
+    fn end_engagement(&self, session: GameSessionId, npc: ExactActorRef) {
+        ChatRuntime::end_engagement(self, session, npc);
     }
 }
 
 /// Called only after the existing NPC owner applies rate, exact NPC-generation and range checks.
-/// The normal conversation owner supplies capacity and engagement; an unquoted `yes` commits nothing.
 #[allow(
     clippy::too_many_arguments,
     reason = "native NPC owner context after its rate/generation/range admission"
@@ -188,131 +124,21 @@ pub fn dawnport_choice_dialogue(
     npc_actor: ExactActorRef,
     text: &str,
 ) -> NpcTalkOutcome {
-    use NpcIntentDisposition as D;
-    let text = text.trim().to_ascii_lowercase();
-    if topic
-        .as_ref()
-        .is_some_and(|value| value.actor != actor || value.npc != npc)
-    {
-        if topic
-            .as_ref()
-            .and_then(NpcVocationConversation::confirmed)
-            .is_some_and(|value| value.retained.is_some())
-        {
-            return answer(
-                npc,
-                D::Rejected,
-                "The previous choice is still being checked.",
-            );
-        }
-        *topic = None;
-    }
-    if topic
-        .as_ref()
-        .and_then(NpcVocationConversation::confirmed)
-        .is_some()
-    {
-        return answer(npc, D::Ok, "Your confirmed choice is being checked.");
-    }
-    if matches!(text.as_str(), "hi" | "hello" | "hail") {
-        if chat
-            .converse(session, |engaged| *engaged = Some(npc_actor))
-            .is_none()
-        {
-            return answer(npc, D::Rejected, "Please try again shortly.");
-        }
-        *topic = Some(NpcVocationConversation {
-            actor,
-            npc,
-            selected: None,
-            confirmed: None,
-        });
-        return answer(
-            npc,
-            D::Ok,
-            "Welcome. Ask about a vocation when you are ready to choose.",
-        );
-    }
-    if chat.engaged(session) != Some(npc_actor) {
-        return NpcTalkOutcome {
-            unknown: false,
-            inventory_changed: false,
-            disposition: D::NoConversation,
-            conversation: None,
-            window: None,
-        };
-    }
-    if matches!(text.as_str(), "bye" | "farewell" | "goodbye") {
-        chat.end_engagement(session, npc_actor);
-        *topic = None;
-        return NpcTalkOutcome {
-            unknown: false,
-            inventory_changed: false,
-            disposition: D::Ok,
-            conversation: Some(NpcConversation {
-                open: None,
-                lines: vec!["Farewell.".into()],
-            }),
-            window: None,
-        };
-    }
-    let Some(topic) = topic.as_mut() else {
-        return NpcTalkOutcome {
-            unknown: false,
-            inventory_changed: false,
-            disposition: D::NoConversation,
-            conversation: None,
-            window: None,
-        };
-    };
-    // Oressa's pinned source redirects Monk elsewhere. It must never leave an old
-    // four-vocation quote armed when the player asks about this different path.
-    if text == "monk" {
-        topic.selected = None;
-        return answer(
-            npc,
-            D::Ok,
-            "Monks follow a different path. I cannot confirm that choice here.",
-        );
-    }
-    if let Some(selected) = BASE_VOCATIONS.into_iter().find(|key| *key == text) {
-        topic.selected = Some(selected);
-        return answer(
-            npc,
-            D::Ok,
-            &format!(
-                "Do you wish to become a {selected}? Say yes to confirm, or no to reconsider."
-            ),
-        );
-    }
-    if text == "no" {
-        topic.selected = None;
-        return answer(npc, D::Ok, "Take your time before choosing your vocation.");
-    }
-    if text == "yes" {
-        let Some(selected) = topic.selected else {
-            return answer(npc, D::Rejected, "Choose a vocation before confirming.");
-        };
-        let Some(occurrence) = SecureIdentifiers::random::<16>().and_then(|mut bytes| {
-            bytes[6] = (bytes[6] & 15) | 0x70;
-            bytes[8] = (bytes[8] & 63) | 0x80;
-            BuildOccurrence::from_bytes(bytes).ok()
-        }) else {
-            return answer(npc, D::Rejected, "Please try again shortly.");
-        };
-        topic.confirmed = Some(ConfirmedNpcVocation {
-            actor,
-            npc,
-            selected,
-            occurrence,
-            retained: None,
-        });
-        return answer(npc, D::Ok, "Your choice is being checked.");
-    }
-    answer(
+    oteryn_gameplay_npc::vocation_choice::dawnport_choice_dialogue(
+        topic,
+        chat,
+        actor,
+        session,
         npc,
-        D::Ok,
-        "You can choose knight, paladin, druid or sorcerer after reaching level 8.",
+        npc_actor,
+        text,
+        || {
+            SecureIdentifiers::random::<16>().and_then(|mut bytes| {
+                bytes[6] = (bytes[6] & 15) | 0x70;
+                bytes[8] = (bytes[8] & 63) | 0x80;
+                BuildOccurrence::from_bytes(bytes).ok()
+            })
+        },
     )
 }
 
@@ -683,3 +509,258 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 #[cfg(test)]
 #[path = "../../../../../apps/game-server/tests/support/dawnport_vocation_cases.rs"]
 mod dawnport_vocation_cases;
+
+#[cfg(test)]
+mod dawnport_native_receipt_postgres {
+    //! Durable qualification of the existing choice adapter, not native NPC admission.
+    //! The fixture has no stance; no unknown stance-fit, island or departure rule is inferred.
+    //! Training is committed through the real sequencer before current build/stance are read.
+
+    use crate::{domain, durability};
+
+    use crate::bestiary_postgres_harness;
+
+    use crate::gameplay_transport::vocation_choice::{
+        RetainedNpcVocation, commit_retained_npc_vocation, vocation_choice_request,
+    };
+
+    use bestiary_postgres_harness::{
+        CHARACTER, Harness, TestResult, configured_admin, debug, fence, id, runtime,
+    };
+    use domain::CharacterId;
+    use durability::DurabilityRoot;
+    use durability::character_build::{
+        BuildCause, BuildChangeRequest, BuildCommitOutcome, BuildFormula, BuildOccurrence,
+        DurableBuildState, MAX_BUILD_LEVEL, MIN_SKILL_LEVEL, NO_VOCATION, cumulative_progress,
+    };
+    use durability::character_progression::CharacterProgressionError;
+    use durability::character_revision_sequencer::CharacterRevisionSequencer;
+
+    /// Synthetic formula data exercises re-levelling of all eight families. It is not a
+    /// qualified Reference formula or evidence for native Dawnport availability.
+    struct Table;
+
+    impl BuildFormula for Table {
+        fn required(&self, vocation: &str, family: usize, level: u16) -> Option<u64> {
+            let floor = if family == 0 { 0 } else { MIN_SKILL_LEVEL };
+            if family > 7 || !(floor + 1..=MAX_BUILD_LEVEL).contains(&level) {
+                return None;
+            }
+            let base = match vocation {
+                NO_VOCATION => 100,
+                "knight" => 50,
+                _ => return None,
+            };
+            Some(base * (family as u64 + 1))
+        }
+
+        fn digest(&self) -> [u8; 32] {
+            [7; 32]
+        }
+
+        fn content_revision(&self) -> &str {
+            "content-1"
+        }
+    }
+
+    fn assert_progress_preserved(before: &DurableBuildState, after: &DurableBuildState) {
+        let old = std::iter::once(before.magic()).chain(before.skills());
+        let new = std::iter::once(after.magic()).chain(after.skills());
+        for (family, ((old_level, old_progress), (new_level, new_progress))) in
+            old.zip(new).enumerate()
+        {
+            let floor = if family == 0 { 0 } else { MIN_SKILL_LEVEL };
+            assert_eq!(
+                cumulative_progress(old_level, old_progress, floor, |level| {
+                    Table.required(before.vocation(), family, level)
+                }),
+                cumulative_progress(new_level, new_progress, floor, |level| {
+                    Table.required(after.vocation(), family, level)
+                }),
+                "family {family}"
+            );
+        }
+    }
+
+    #[test]
+    fn native_npc_receipt_core_preserves_training_and_replays_after_reopen() -> TestResult {
+        let Some(admin) = configured_admin() else {
+            return Ok(());
+        };
+        runtime()?.block_on(async move {
+            let harness = Harness::create(admin, "dawnport_choice", true).await?;
+            let seal = harness.recovery.seal_current().map_err(debug)?;
+            let authority = harness
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let character = CharacterId::from_bytes(id(CHARACTER)).map_err(debug)?;
+            let sequencer = CharacterRevisionSequencer::new();
+            let mut slot = sequencer.acquire(character).await;
+            let seed = harness
+                .root
+                .read_character_build_state(&authority, character)
+                .await
+                .map_err(debug)?;
+            let trained = DurableBuildState::new(NO_VOCATION, (3, 17), [(12, 3); 7]).map_err(debug)?;
+            let training = BuildChangeRequest {
+                occurrence: BuildOccurrence::from_bytes(id(80)).map_err(debug)?,
+                cause: BuildCause::Training,
+                before: seed.clone(),
+                after: trained.clone(),
+                pruned_stance: None,
+            };
+            let outcome = slot
+                .commit_build(
+                    &harness.root,
+                    &authority,
+                    &harness.node,
+                    fence(1)?,
+                    training,
+                    &Table,
+                    None,
+                )
+                .await
+                .map_err(debug)?;
+            assert!(matches!(outcome, BuildCommitOutcome::Committed(_)));
+
+            // A pre-flush build cannot discard the newly committed training, even with the
+            // current revision. This negative changes only the build predecessor.
+            let occurrence = BuildOccurrence::from_bytes(id(81)).map_err(debug)?;
+            let stale =
+                vocation_choice_request(occurrence, seed, "knight", &Table, None).map_err(debug)?;
+            let outcome = slot
+                .commit_build(
+                    &harness.root,
+                    &authority,
+                    &harness.node,
+                    fence(2)?,
+                    stale,
+                    &Table,
+                    None,
+                )
+                .await;
+            assert!(matches!(
+                outcome,
+                Err(CharacterProgressionError::BuildStateMismatch)
+            ));
+            assert_eq!(harness.root_revision().await?, "2");
+            assert_eq!(harness.count("game_character_build_receipts").await?, 1);
+
+            let before = harness
+                .root
+                .read_character_build_state(&authority, character)
+                .await
+                .map_err(debug)?;
+            let stance = harness
+                .root
+                .read_character_stance(&authority, character)
+                .await
+                .map_err(debug)?;
+            assert_eq!(before, trained);
+            assert_eq!(stance, Default::default());
+            let choice =
+                vocation_choice_request(occurrence, before, "knight", &Table, None).map_err(debug)?;
+            let retained = RetainedNpcVocation {
+                fence: fence(2)?,
+                request: choice.clone(),
+                formula_digest: Table.digest(),
+            };
+            let receipt = commit_retained_npc_vocation(
+                &mut slot,
+                &harness.root,
+                &authority,
+                &harness.node,
+                &retained,
+                &Table,
+            )
+            .await
+            .map_err(debug)?;
+            assert_eq!(receipt.original_character_revision.get(), 2);
+            assert_eq!(receipt.committed_character_revision.get(), 3);
+            assert_eq!(receipt.before, trained);
+            assert_eq!(receipt.after, choice.after);
+            assert_ne!(receipt.before.magic(), receipt.after.magic());
+            assert_progress_preserved(&receipt.before, &receipt.after);
+            drop(slot);
+            drop(authority);
+
+            // A new root and sequencer have no cached cursor or choice state. Admission verifies
+            // the persisted chain; reconcile recovers a response lost after the original commit.
+            let restarted = DurabilityRoot::connect_test_runtime(&harness.database.url)?;
+            assert!(restarted.maintain_ready_once().await?);
+            let reopened = restarted
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            assert_eq!(
+                restarted
+                    .reconcile_character_build(&reopened, occurrence)
+                    .await
+                    .map_err(debug)?,
+                Some(receipt.clone())
+            );
+            let sequencer = CharacterRevisionSequencer::new();
+            let mut slot = sequencer.acquire(character).await;
+            let replay = commit_retained_npc_vocation(
+                &mut slot,
+                &restarted,
+                &reopened,
+                &harness.node,
+                &retained,
+                &Table,
+            )
+            .await
+            .map_err(debug)?;
+            assert_eq!(replay, receipt);
+            assert_eq!(
+                restarted
+                    .read_character_build_state(&reopened, character)
+                    .await
+                    .map_err(debug)?,
+                receipt.after
+            );
+            // The same occurrence with a changed intent conflicts, including after reopen.
+            let mut conflicting = choice;
+            conflicting.pruned_stance = Some("guard".into());
+            let conflicting = RetainedNpcVocation {
+                request: conflicting,
+                ..retained
+            };
+            let outcome = commit_retained_npc_vocation(
+                &mut slot,
+                &restarted,
+                &reopened,
+                &harness.node,
+                &conflicting,
+                &Table,
+            )
+            .await;
+            assert!(matches!(
+                outcome,
+                Err(CharacterProgressionError::ConflictingOccurrence)
+            ));
+            assert_eq!(harness.root_revision().await?, "3");
+            assert_eq!(harness.count("game_character_build_receipts").await?, 2);
+            let choices: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_character_build_receipts WHERE cause = 'vocation_choice'",
+            )
+            .fetch_one(&harness.pool)
+            .await?;
+            assert_eq!(choices, 1);
+            assert_eq!(harness.count("game_character_stance_receipts").await?, 0);
+            assert_eq!(
+                restarted
+                    .read_character_stance(&reopened, character)
+                    .await
+                    .map_err(debug)?,
+                stance
+            );
+            drop(slot);
+            drop(reopened);
+            drop(seal);
+            harness.cleanup().await
+        })
+    }
+}
