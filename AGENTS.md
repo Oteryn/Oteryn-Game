@@ -47,6 +47,21 @@ Run the checks selected by changed paths and preserve `game-gate`, repository pr
 - **CI:** run the local checks for every changed path before pushing and fix all failures of a run in one push. Push and CI economy: `docs/agents/CONTEXT_ROUTING.md`, *Push and CI economy*.
 - **Task records:** archive the task record in the final authoring commit of the PR that completes the task (`docs/agents/tasks/archive/README.md`). An archive-only PR is opened only under that README's exception, for records that could not close in their own PR.
 
+## Review guidelines
+
+These rules bind automated pull-request reviewers (Codex, Claude review) and the authors who answer them. `docs/agents/review/CODEX-CHECKLIST.md` lists the defect classes to check.
+
+- **One complete pass.** Report every finding on the reviewed head in one review. Do not hold findings back for a later round.
+- **Re-review covers the delta.** A review of a head that only answers earlier findings reviews the commits since the last reviewed head. It raises no new finding on unchanged code unless it is a P0.
+- **P0 and P1 need a concrete path.** Name the input or state, the caller that reaches it and the wrong result. A hypothetical without a reachable caller is at most P2. P0: security, data loss, broken `main`. P1: wrong behaviour that a real caller reaches.
+- **P2 and lower never block.** Style, naming, refactor suggestions, missing optional tests and speculative hardening are P2 or lower. The author may fix them in the same push if it is cheap; otherwise they go to the next batch of that module. A P2 never starts a new push or review round on its own.
+- **No repeat findings.** A finding the author answered on its thread (fixed, or declined with the traced reason) is not raised again unless the code it names changed.
+- **Whole class in round one.** A finding names its defect class and lists every instance of it in the diff. A later round does not report a sibling instance that the first round could have seen.
+- **A clean review is a clean review.** A thumbs-up reaction or "Didn't find any major issues" on the reviewed head counts as a clean review. Nobody re-triggers a review on an unchanged head.
+- **Request review once per frozen head.** Keep the PR in draft until the head is frozen. Only the coordinator (or the standalone task owner) posts `@codex review`: once per head, and only when the head changes non-evidence code since the last reviewed head.
+- **Narrow repair pushes.** A push that answers findings changes only what those findings need. It adds no new feature or refactor that would open a new review surface.
+- **Converge.** After two review rounds with findings, a further round is requested only for a P0 or P1 fixed in the last push. P2 threads may be resolved with `deferred: #<issue>`.
+
 ## Silent operation
 
 Silent operation binds every role, the control plane included: end every turn with `.`, the pending owner questions, `BLOCKER`, or `DONE <task_id> <PR>`; no status narration. Ask the owner in batches, never one at a time. Rules: `docs/agents/CONTEXT_ROUTING.md`, *Silent operation* and *Owner questions in batches*.

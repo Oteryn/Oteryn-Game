@@ -471,17 +471,35 @@ jobs:
           python tools/repository/test_check_duplicate_test_sources.py
           python tools/repository/check_duplicate_test_sources.py "$RUNNER_TEMP/clippy-messages.jsonl"
 
-      # The two library legs split every library test by name: the filter runs the tests whose
-      # path contains `content::` and `--skip` runs all the others.
+      # cargo-nextest 0.9.146 (released 2026-09-21), pinned by SHA-256, the same release as the
+      # PR fast gate. nextest runs each test in its own process and runs the test binaries in
+      # parallel instead of one after another. Doctests stay on `cargo test` in build-smoke.
+      - name: Install pinned cargo-nextest
+        if: startsWith(matrix.shard, 'lib-') || startsWith(matrix.shard, 'integration-')
+        env:
+          NEXTEST_VERSION: 0.9.146
+          NEXTEST_SHA256: 682c21b777c333e96fd532e114d3a5a894e0729ab88d94c0a9f20f8419695428
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/cargo-nextest.tar.gz"
+          curl --proto '=https' --tlsv1.2 -fsSL --retry 3 -o "$archive" \
+            "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-${NEXTEST_VERSION}/cargo-nextest-${NEXTEST_VERSION}-x86_64-unknown-linux-gnu.tar.gz"
+          echo "${NEXTEST_SHA256}  ${archive}" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/nextest-bin"
+          tar -xzf "$archive" -C "$RUNNER_TEMP/nextest-bin"
+          echo "$RUNNER_TEMP/nextest-bin" >> "$GITHUB_PATH"
+
+      # The two library legs split every library test by name: `test(content::)` runs the tests
+      # whose name contains `content::` and its negation runs all the others.
       - name: Test workspace libraries (Content modules)
         if: matrix.shard == 'lib-content'
         run: |
-          cargo +1.95.0 test --locked --workspace --lib --no-fail-fast -- content::
+          cargo +1.95.0 nextest run --locked --workspace --lib --no-fail-fast -E 'test(content::)'
 
       - name: Test workspace libraries (all other modules)
         if: matrix.shard == 'lib-rest'
         run: |
-          cargo +1.95.0 test --locked --workspace --lib --no-fail-fast -- --skip content::
+          cargo +1.95.0 nextest run --locked --workspace --lib --no-fail-fast -E 'not test(content::)'
 
       - name: Test workspace integration targets
         if: matrix.shard == 'integration-heavy' || matrix.shard == 'integration-rest'
@@ -494,7 +512,7 @@ jobs:
           python tools/repository/plan_rust_test_shards.py "$RUNNER_TEMP/metadata.json" "$SHARD" > "$RUNNER_TEMP/shard-args.txt"
           mapfile -t shard_args < "$RUNNER_TEMP/shard-args.txt"
           test "${#shard_args[@]}" -gt 0
-          cargo +1.95.0 test --locked --workspace "${shard_args[@]}" --no-fail-fast
+          cargo +1.95.0 nextest run --locked --workspace "${shard_args[@]}" --no-fail-fast
 
       # Library and integration-test harnesses compile in the test legs; this leg builds the
       # remaining targets, runs the binary unit tests and doctests, the harness and the smoke.
@@ -866,6 +884,23 @@ jobs:
       - name: Install pinned Rust toolchain
         run: rustup toolchain install 1.95.0 --profile minimal
 
+      # The qualification builds game-server in target/debug; protected-main artifacts make
+      # that build incremental. A cache hit never substitutes for running the qualification.
+      - name: Restore trimmed Cargo cache from protected main
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: rust-linux-v2-1.95.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
+          restore-keys: |
+            rust-linux-v2-1.95.0-${{ hashFiles('Cargo.lock') }}-
+
+      - name: Normalize source mtimes for the restored Cargo cache
+        run: python tools/repository/normalize_cargo_mtimes.py
+
       - name: Run node boot qualification
         env:
           PLATFORM_SOURCE: ${{ github.workspace }}/_platform
@@ -925,6 +960,23 @@ jobs:
 
       - name: Install pinned Rust toolchain
         run: rustup toolchain install 1.95.0 --profile minimal
+
+      # The qualification builds game-server in target/debug; protected-main artifacts make
+      # that build incremental. A cache hit never substitutes for running the qualification.
+      - name: Restore trimmed Cargo cache from protected main
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: rust-linux-v2-1.95.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
+          restore-keys: |
+            rust-linux-v2-1.95.0-${{ hashFiles('Cargo.lock') }}-
+
+      - name: Normalize source mtimes for the restored Cargo cache
+        run: python tools/repository/normalize_cargo_mtimes.py
 
       - name: Run real composed qualification
         env:

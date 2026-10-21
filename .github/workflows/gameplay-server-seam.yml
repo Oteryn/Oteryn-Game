@@ -1,9 +1,8 @@
 name: Server Seam physical qualification
 
+# Manual only: the Merge Queue server_seam job runs this qualification on every
+# applicable candidate.
 on:
-  push:
-    branches:
-      - agent/otv2-gameplay-server-seam-01
   workflow_dispatch:
 
 permissions:
