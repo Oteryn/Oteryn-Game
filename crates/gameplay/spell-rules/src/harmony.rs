@@ -1,5 +1,7 @@
 //! Pure Harmony multiplier arithmetic for monk spell plans.
 
+use oteryn_gameplay_combat_rules::chain::ChainCreature;
+
 /// Most Harmony a monk holds (§8.2: 0..5).
 pub const MAX_HARMONY: u8 = 5;
 
@@ -51,4 +53,40 @@ impl HarmonyMultiplier {
             i128::from(bound) * i128::from(self.numerator) / i128::from(MULTIPLIER_DENOMINATOR);
         i64::try_from(scaled).unwrap_or(if scaled < 0 { i64::MIN } else { i64::MAX })
     }
+}
+
+/// Time between two Serene evaluations (Canary player think, §8.2).
+pub const SERENE_EVALUATION_MICROS: u64 = 1_000_000;
+
+/// How long Focus Serenity forces Serene (Canary `focus_serenity.lua`, §8.2).
+pub const FOCUS_SERENITY_MICROS: u64 = 7_000_000;
+
+/// Adjacent creatures that end Serene when a party member is visible (§A.2 step 6, news 8944).
+pub const SERENE_CROWD: u32 = 8;
+
+/// World facts the Serene evaluation reads.
+pub trait SereneWorld {
+    fn monk(&self) -> &ChainCreature;
+    /// The monk's party (the monk included); `None` without a party.
+    fn party(&self) -> Option<&[ChainCreature]>;
+    /// Creatures adjacent to the monk that count against Serene (which ones is §A.2 Q6).
+    fn adjacent_creatures(&self) -> u32;
+}
+
+/// The §A.2 step 6 rule without a forced state: Serene unless another party member is visible
+/// (same floor, dx in [-8, 9], dy in [-6, 7]) and [`SERENE_CROWD`] or more creatures are adjacent.
+pub fn serene_by_rule(world: &dyn SereneWorld) -> bool {
+    let Some(party) = world.party() else {
+        return true;
+    };
+    let monk = world.monk();
+    let visible = party.iter().any(|member| {
+        let dx = i64::from(member.position.x) - i64::from(monk.position.x);
+        let dy = i64::from(member.position.y) - i64::from(monk.position.y);
+        member.id != monk.id
+            && member.position.floor == monk.position.floor
+            && (-8..=9).contains(&dx)
+            && (-6..=7).contains(&dy)
+    });
+    !(visible && world.adjacent_creatures() >= SERENE_CROWD)
 }

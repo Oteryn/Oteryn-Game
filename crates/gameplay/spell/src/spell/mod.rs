@@ -71,36 +71,7 @@ pub use crate::content::spell_data::*;
 
 pub use oteryn_gameplay_spell_rules::cast::*;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[allow(
-    clippy::large_enum_variant,
-    reason = "transient owner result; boxing would add an allocation to the owner turn"
-)]
-pub enum ResolvedEffect {
-    Damage {
-        damage_type: String,
-        magnitude: i64,
-    },
-    Heal {
-        magnitude: i64,
-    },
-    RemoveCondition {
-        condition: String,
-    },
-    Conjure {
-        reagent: Option<u32>,
-        result: u32,
-        count: u32,
-    },
-    Unresolved {
-        operation: String,
-        effect: String,
-    },
-    ResolvedOther {
-        profile: executable_catalog::EffectProfile,
-        dependencies: executable_catalog::DependencyProfile,
-    },
-}
+pub use oteryn_gameplay_spell_rules::plan::ResolvedEffect;
 
 /// One creature of a chain cast and the spell's effects on it, scaled by its step.
 #[derive(Debug, Clone, PartialEq, Eq)]
