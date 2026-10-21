@@ -39,17 +39,15 @@ EXPECTED_MERGE_GATE_TRIGGER_BLOCK = """on:
       - reopened
       - synchronize
       - edited
-      - labeled
-      - unlabeled
 """
 EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256 = "ff75ac35780038e15ba648e99b8540ef474d2b34b093fe684c045dc302265bd4"
 EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = "331213b6a65f8852cd43eaeba80d7cb4bc9b5dc928399cf679475c85bf0a589e"
-EXPECTED_MERGE_GATE_FINAL_JOB_SHA256 = "4c22cdc4906cff602998291a0c9c608e777aee4c70d6354ca75b2c37b147ac4e"
+EXPECTED_MERGE_GATE_FINAL_JOB_SHA256 = "9c5223ecee21f441d85fec7995135e8361f0c711876810b5a076de28e010e032"
 EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "5bed54ebea7f88cc67262280053a06d2fba60a385601c7260b8ee2641e68d70e"
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "ebfafb92bf321b9e0fd794f32dfca7f84eb8f00c345fb550bfa5bede99ee501b"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
 EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256 = "5581be5d2fda53c0f56d91d3f49f19966dd369a5bdb59adf2dbbabc8786f4c00"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "377cbf1f1196a7eb597d6754d154eda4124b805a"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "2b03be2e35d7fba9eb1f55526a5f1cf603475e0d"
 EXPECTED_POST_MERGE_RUST_SHA256 = "29dd4e3b9e734fd26c9ff741d2a45f23f394d0abf6c5cb1ff3a7b46489588ef9"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
@@ -378,7 +376,7 @@ def main() -> int:
             errors.append("merge gate must not execute pull-request code through workflow_dispatch")
         if "  group: ${{ format('merge-gate-{0}', github.event.pull_request.number) }}\n" not in text:
             errors.append("merge gate runs of one pull request must share one concurrency group")
-        if "  cancel-in-progress: ${{ !((github.event.action == 'edited' && github.event.changes.base == null) || (github.event.action == 'labeled' || github.event.action == 'unlabeled')) }}\n" not in text:
+        if "  cancel-in-progress: ${{ !(github.event.action == 'edited' && github.event.changes.base == null) }}\n" not in text:
             errors.append("merge gate metadata edits must not cancel product qualifications")
         scope_block = indented_yaml_mapping_block(text, "scope", 2)
         scope_digest = hashlib.sha256(scope_block.encode("utf-8")).hexdigest() if scope_block else None
@@ -525,10 +523,12 @@ def main() -> int:
                 "cargo +1.95.0 clippy --locked --workspace --all-targets -- -D warnings",
                 "python tools/repository/test_check_duplicate_test_sources.py",
                 'python tools/repository/check_duplicate_test_sources.py "$RUNNER_TEMP/clippy-messages.jsonl"',
-                "cargo +1.95.0 test --locked --workspace --lib --no-fail-fast -- content::",
-                "cargo +1.95.0 test --locked --workspace --lib --no-fail-fast -- --skip content::",
+                "NEXTEST_SHA256: 682c21b777c333e96fd532e114d3a5a894e0729ab88d94c0a9f20f8419695428",
+                "echo \"${NEXTEST_SHA256}  ${archive}\" | sha256sum -c -",
+                "cargo +1.95.0 nextest run --locked --workspace --lib --no-fail-fast -E 'test(content::)'",
+                "cargo +1.95.0 nextest run --locked --workspace --lib --no-fail-fast -E 'not test(content::)'",
                 'python tools/repository/plan_rust_test_shards.py "$RUNNER_TEMP/metadata.json" "$SHARD"',
-                'cargo +1.95.0 test --locked --workspace "${shard_args[@]}"',
+                'cargo +1.95.0 nextest run --locked --workspace "${shard_args[@]}" --no-fail-fast',
                 "cargo +1.95.0 build --locked --workspace --bins --examples --benches",
                 "cargo +1.95.0 test --locked --workspace --bins",
                 "cargo +1.95.0 test --locked --workspace --doc",
