@@ -208,6 +208,84 @@ class CliAndMarker(KeyFixture):
         self.assertEqual(text, "key=\n")
 
 
+class Ledger(CliAndMarker):
+    def plan(self, per_package=True, extras=()):
+        args = ["plan", "--job", "rust_fast-tests 1/3", "--root", str(self.root), "--metadata", str(self.metadata),
+                "--packages", str(self.packages), "--out", str(self.root / "plan.json")]
+        for extra in extras:
+            args += ["--extra", extra]
+        self.invoke(*args, *(["--per-package"] if per_package else []))
+        return json.loads((self.root / "plan.json").read_text())["units"]
+
+    def select(self):
+        self.invoke("select", "--plan", str(self.root / "plan.json"), "--packages", str(self.packages),
+                    "--dir", str(self.root / "ledger"), "--out", str(self.root / "run.tsv"))
+        return [line.split("\t")[0] for line in (self.root / "run.tsv").read_text().splitlines()]
+
+    def record(self, passed):
+        (self.root / "passed.txt").write_text("".join(f"{name}\n" for name in passed))
+        self.invoke("record", "--plan", str(self.root / "plan.json"), "--dir", str(self.root / "ledger"),
+                    "--passed", str(self.root / "passed.txt"))
+
+    def test_per_package_keys_follow_each_closure(self):
+        self.set_packages(["a", "c"])
+        before = self.plan()
+        self.assertEqual(set(before), {"a", "c"})
+        self.assertNotEqual(before["a"], before["c"])
+        self.write("crates/b/src/lib.rs", "pub fn b2() {}")
+        after = self.plan()
+        self.assertNotEqual(before["a"], after["a"])
+        self.assertEqual(before["c"], after["c"])
+        self.assertNotEqual(after["c"], self.plan(extras=["base=1"])["c"])
+
+    def test_shared_key_mode_gives_every_package_one_key(self):
+        self.set_packages(["a", "c"])
+        units = self.plan(per_package=False)
+        self.assertEqual(units["a"], units["c"])
+        self.assertTrue(units["a"])
+
+    def test_only_passed_packages_are_skipped_after_a_partial_failure(self):
+        self.set_packages(["a", "c"])
+        self.plan()
+        self.assertEqual(self.select(), ["a", "c"])
+        self.record(["c"])
+        self.assertEqual(self.select(), ["a"])
+        self.write("crates/a/src/lib.rs", "pub fn fixed() {}")
+        self.plan()
+        self.assertEqual(self.select(), ["a"])
+        self.record(["a"])
+        self.assertIn("hit=true", self.invoke("select", "--plan", str(self.root / "plan.json"), "--packages", str(self.packages),
+                                              "--dir", str(self.root / "ledger"), "--out", str(self.root / "run.tsv")))
+        self.write("crates/b/src/lib.rs", "pub fn dep() {}")
+        self.plan()
+        self.assertEqual(self.select(), ["a"])
+
+    def test_unkeyed_plan_and_corrupt_ledger_run_everything(self):
+        self.set_packages(["a", "c"])
+        self.plan()
+        self.record(["a", "c"])
+        (self.root / "ledger" / "ledger.json").write_text("{not json")
+        self.assertEqual(self.select(), ["a", "c"])
+        (self.root / "plan.json").write_text('{"version": 1, "units": {"a": "", "c": ""}}')
+        self.record(["a", "c"])
+        self.assertEqual(self.select(), ["a", "c"])
+        self.set_packages(["missing"])
+        self.assertEqual(self.plan(), {"missing": ""})
+
+    def test_junit_lists_packages_without_a_failed_suite(self):
+        self.set_packages(["a", "b", "c"])
+        (self.root / "junit.xml").write_text(
+            '<testsuites><testsuite name="a" tests="1" failures="0" errors="0"><testcase name="t"/></testsuite>'
+            '<testsuite name="b::bin/x" tests="1" failures="0" errors="0"><testcase name="t"><failure/></testcase></testsuite>'
+            '<testsuite name="b" tests="1" failures="0" errors="0"><testcase name="u"/></testsuite></testsuites>')
+        out = self.root / "passed.txt"
+        self.invoke("junit-passed", "--junit", str(self.root / "junit.xml"), "--packages", str(self.packages), "--out", str(out))
+        self.assertEqual(out.read_text().split(), ["a", "c"])
+        (self.root / "junit.xml").write_text("<testsuites><testsuite")
+        self.invoke("junit-passed", "--junit", str(self.root / "junit.xml"), "--packages", str(self.packages), "--out", str(out))
+        self.assertEqual(out.read_text(), "")
+
+
 class RepositoryGuards(unittest.TestCase):
     """The unread prefixes must stay unread by Rust, or the relaxed fallback is unsound."""
 

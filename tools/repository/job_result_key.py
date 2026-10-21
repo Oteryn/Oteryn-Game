@@ -19,23 +19,35 @@ Modes
                   Cargo-adjacent file (Rust policy, supply chain).
   tree            every tracked file (governance and policy validators).
 
+Ledger (rust_fast legs)
+  `plan` keys every selected crate on its own closure (`--per-package`, test
+  shards) or all of them on one shared key (Clippy). `select` drops the crates
+  whose key is in the restored ledger, `junit-passed` lists the crates none of
+  whose nextest suites failed, and `record` adds only those keys. A fix to one
+  failing crate then re-runs that crate and its dependents, not the whole leg.
+
 Failures are never cached and any error here yields an empty key, which means
 "no caching, run everything". Only the standard library is used.
 """
 from __future__ import annotations
 
 import argparse
+import functools
 import hashlib
 import json
 import os
 import re
 import subprocess
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path, PurePosixPath
 
 KEY_VERSION = "jobresult-v1"
 DOMAIN = "oteryn:merge-gate/job-result/v1"
 MARKER_NAME = "marker.json"
+LEDGER_NAME = "ledger.json"
+# Oldest entries are dropped first; a dropped entry only costs a re-run.
+LEDGER_LIMIT = 2000
 
 # Always part of every key, in every mode.
 COMMON_FILES = (
@@ -177,20 +189,23 @@ def closure_directories(root: Path, metadata: dict, selected: list[str]) -> tupl
     return directories, external
 
 
+@functools.lru_cache(maxsize=None)
+def file_escapes(root: Path, path: str) -> bool:
+    try:
+        text = (root / path).read_text(encoding="utf-8", errors="replace")
+    except OSError as error:
+        raise KeyError_(f"cannot read {path}") from error
+    return ESCAPE.search(text) is not None
+
+
 def escapes_crate(root: Path, files: dict[str, tuple[str, str, str]], directories: set[str]) -> bool:
-    for path in files:
-        if not path.endswith(".rs") or not any(under(path, directory) for directory in directories):
-            continue
-        try:
-            text = (root / path).read_text(encoding="utf-8", errors="replace")
-        except OSError as error:
-            raise KeyError_(f"cannot read {path}") from error
-        if ESCAPE.search(text):
-            return True
-    return False
+    return any(
+        path.endswith(".rs") and any(under(path, directory) for directory in directories) and file_escapes(root, path)
+        for path in files
+    )
 
 
-def select_paths(mode: str, root: Path, files: dict[str, tuple[str, str, str]], metadata: Path | None, packages: Path | None) -> tuple[set[str], list[str]]:
+def select_paths(mode: str, root: Path, files: dict[str, tuple[str, str, str]], metadata: Path | None, rows: list[tuple[str, str]] | None) -> tuple[set[str], list[str]]:
     """Return (keyed tracked paths, human notes)."""
     selected = {path for path in files if path in COMMON_FILES or is_cargo_input(path)}
     notes: list[str] = []
@@ -201,9 +216,8 @@ def select_paths(mode: str, root: Path, files: dict[str, tuple[str, str, str]], 
         return selected, ["rust workspace inputs"]
     if mode != "rust-fast":
         raise KeyError_(f"unknown mode {mode}")
-    if metadata is None or packages is None:
+    if metadata is None or rows is None:
         raise KeyError_("rust-fast needs --metadata and --packages")
-    rows = read_packages(packages)
     directories, external = closure_directories(root, json.loads(metadata.read_text(encoding="utf-8")), [name for name, _ in rows])
     notes.append(f"closure directories={len(directories)}")
     if external or escapes_crate(root, files, directories):
@@ -215,21 +229,27 @@ def select_paths(mode: str, root: Path, files: dict[str, tuple[str, str, str]], 
 
 
 def compute_key(job: str, mode: str, root: Path, extras: list[str], metadata: Path | None = None, packages: Path | None = None) -> tuple[str, list[str]]:
+    return compute_rows_key(job, mode, root, extras, metadata, read_packages(packages) if packages is not None else None)
+
+
+def compute_rows_key(job: str, mode: str, root: Path, extras: list[str], metadata: Path | None, rows: list[tuple[str, str]] | None, files: dict[str, tuple[str, str, str]] | None = None) -> tuple[str, list[str]]:
+    if rows is not None and not rows:
+        raise KeyError_("empty selected package list")
     label = re.sub(r"[^A-Za-z0-9._-]+", "-", job).strip("-")
     if not label:
         raise KeyError_("empty job label")
-    files = tracked(root)
+    files = tracked(root) if files is None else files
     for path in COMMON_FILES:
         if path not in files:
             raise KeyError_(f"{path} is not tracked")
-    keyed, notes = select_paths(mode, root, files, metadata, packages)
+    keyed, notes = select_paths(mode, root, files, metadata, rows)
     digest = hashlib.sha256()
     digest.update(DOMAIN.encode() + b"\n")
     digest.update(f"job {label}\nmode {mode}\n".encode())
     for extra in sorted(extras):
         digest.update(f"extra {extra}\n".encode())
-    if packages is not None:
-        digest.update(b"packages\n" + packages.read_bytes() + b"\n")
+    if rows is not None:
+        digest.update(b"packages\n" + "".join(f"{name}\t{flags}\n" for name, flags in rows).encode() + b"\n")
     for path in sorted(keyed):
         mode_bits, blob, stage = files[path]
         digest.update(f"{mode_bits} {blob} {stage} {path}\n".encode("utf-8", "surrogateescape"))
@@ -296,6 +316,122 @@ def command_verify(args: argparse.Namespace) -> int:
     return 0
 
 
+def read_ledger(directory: Path) -> dict[str, dict]:
+    try:
+        ledger = json.loads((directory / LEDGER_NAME).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    entries = ledger.get("entries") if isinstance(ledger, dict) and ledger.get("version") == 1 else None
+    return {key: value for key, value in entries.items() if isinstance(value, dict)} if isinstance(entries, dict) else {}
+
+
+def command_plan(args: argparse.Namespace) -> int:
+    """One key per selected package (--per-package) or one key shared by all of them."""
+    units: dict[str, str] = {}
+    try:
+        root, metadata = Path(args.root), Path(args.metadata)
+        rows = read_packages(Path(args.packages))
+        if args.per_package:
+            files = tracked(root)
+            for name, flags in rows:
+                try:
+                    units[name] = compute_rows_key(f"{args.job}-{name}", "rust-fast", root, args.extra, metadata, [(name, flags)], files)[0]
+                except (KeyError_, OSError, ValueError, KeyError) as error:
+                    print(f"::warning title=job-result cache disabled for {name}::{type(error).__name__}: {error}")
+                    units[name] = ""
+        else:
+            key = compute_rows_key(args.job, "rust-fast", root, args.extra, metadata, rows)[0]
+            units = {name: key for name, _ in rows}
+    except (KeyError_, OSError, ValueError, KeyError) as error:
+        print(f"::warning title=job-result cache disabled::{type(error).__name__}: {error}")
+        units = {}
+    Path(args.out).write_text(json.dumps({"version": 1, "units": units}, sort_keys=True) + "\n", encoding="utf-8")
+    keyed = sum(1 for key in units.values() if key)
+    print(f"job-result plan {args.job}: {keyed}/{len(units)} units keyed")
+    write_output("keyed", "true" if keyed else "false")
+    return 0
+
+
+def read_plan(path: Path) -> dict[str, str]:
+    try:
+        plan = json.loads(path.read_text(encoding="utf-8"))
+        units = plan["units"] if plan.get("version") == 1 else {}
+    except (OSError, ValueError, AttributeError, KeyError, TypeError):
+        return {}
+    return {name: key for name, key in units.items() if isinstance(key, str)} if isinstance(units, dict) else {}
+
+
+def command_select(args: argparse.Namespace) -> int:
+    """Write the selected packages whose unit key is not in the restored ledger."""
+    units = read_plan(Path(args.plan))
+    entries = read_ledger(Path(args.dir))
+    remaining = []
+    for name, flags in read_packages(Path(args.packages)):
+        key = units.get(name, "")
+        if key and key in entries:
+            print(f"::notice title=job-result cache hit::{name} passed earlier in {entries[key].get('run_url')} (sha {entries[key].get('sha')}); skipped")
+        else:
+            remaining.append(f"{name}\t{flags}\n")
+    Path(args.out).write_text("".join(remaining), encoding="utf-8")
+    print(f"job-result ledger: {len(remaining)} package(s) to run")
+    write_output("hit", "false" if remaining else "true")
+    return 0
+
+
+def command_record(args: argparse.Namespace) -> int:
+    """Add the unit keys of the passed packages to the ledger; never a failed one."""
+    units = read_plan(Path(args.plan))
+    if args.passed:
+        try:
+            passed = [line.strip() for line in Path(args.passed).read_text(encoding="utf-8").splitlines() if line.strip()]
+        except OSError:
+            passed = []
+    else:
+        passed = [name for name, _ in read_packages(Path(args.packages))]
+    directory = Path(args.dir)
+    directory.mkdir(parents=True, exist_ok=True)
+    entries = read_ledger(directory)
+    server = os.environ.get("GITHUB_SERVER_URL", "")
+    repository = os.environ.get("GITHUB_REPOSITORY", "")
+    run_id = os.environ.get("GITHUB_RUN_ID", "")
+    recorded = 0
+    for name in passed:
+        key = units.get(name, "")
+        if not key:
+            continue
+        entries.pop(key, None)
+        entries[key] = {"unit": name, "run_url": f"{server}/{repository}/actions/runs/{run_id}", "sha": os.environ.get("GITHUB_SHA", "")}
+        recorded += 1
+    entries = dict(list(entries.items())[-LEDGER_LIMIT:])
+    (directory / LEDGER_NAME).write_text(json.dumps({"version": 1, "entries": entries}) + "\n", encoding="utf-8")
+    print(f"job-result ledger: recorded {recorded} unit(s), {len(entries)} total")
+    return 0
+
+
+def command_junit_passed(args: argparse.Namespace) -> int:
+    """Packages none of whose nextest test suites (binary ids `pkg` or `pkg::kind/name`) failed."""
+    failed: set[str] = set()
+    try:
+        tree = ET.parse(args.junit)
+    except (OSError, ET.ParseError) as error:
+        print(f"::warning title=job-result cache::unreadable JUnit report: {error}")
+        Path(args.out).write_text("", encoding="utf-8")
+        return 0
+    for suite in tree.iter("testsuite"):
+        package = suite.get("name", "").split("::", 1)[0]
+        bad = any(int(suite.get(field, "0") or 0) for field in ("failures", "errors"))
+        bad = bad or any(case.find(tag) is not None for case in suite.iter("testcase") for tag in ("failure", "error", "flakyFailure", "rerunFailure"))
+        if bad or not package:
+            failed.add(package)
+    if "" in failed:
+        Path(args.out).write_text("", encoding="utf-8")
+        return 0
+    passed = [name for name, _ in read_packages(Path(args.packages)) if name not in failed]
+    Path(args.out).write_text("".join(f"{name}\n" for name in passed), encoding="utf-8")
+    print(f"JUnit: {len(passed)} package(s) passed, failed: {', '.join(sorted(failed)) or 'none'}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -315,6 +451,33 @@ def main(argv: list[str] | None = None) -> int:
     verify.add_argument("--key", default="")
     verify.add_argument("--dir", required=True)
     verify.set_defaults(handler=command_verify)
+    plan = sub.add_parser("plan")
+    plan.add_argument("--job", required=True)
+    plan.add_argument("--root", default=".")
+    plan.add_argument("--metadata", required=True)
+    plan.add_argument("--packages", required=True)
+    plan.add_argument("--extra", action="append", default=[])
+    plan.add_argument("--per-package", action="store_true")
+    plan.add_argument("--out", required=True)
+    plan.set_defaults(handler=command_plan)
+    select = sub.add_parser("select")
+    select.add_argument("--plan", required=True)
+    select.add_argument("--packages", required=True)
+    select.add_argument("--dir", required=True)
+    select.add_argument("--out", required=True)
+    select.set_defaults(handler=command_select)
+    record = sub.add_parser("record")
+    record.add_argument("--plan", required=True)
+    record.add_argument("--dir", required=True)
+    group = record.add_mutually_exclusive_group(required=True)
+    group.add_argument("--passed", help="file with one passed package name per line")
+    group.add_argument("--packages", help="TSV whose every package passed")
+    record.set_defaults(handler=command_record)
+    junit = sub.add_parser("junit-passed")
+    junit.add_argument("--junit", required=True)
+    junit.add_argument("--packages", required=True)
+    junit.add_argument("--out", required=True)
+    junit.set_defaults(handler=command_junit_passed)
     args = parser.parse_args(argv)
     return args.handler(args)
 
