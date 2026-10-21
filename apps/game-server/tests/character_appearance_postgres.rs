@@ -23,7 +23,7 @@ pub mod foundation;
 #[allow(dead_code, unused_imports)]
 pub use oteryn_gameplay_native_admission_source as native_admission_source;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/premium/mod.rs"]
+#[path = "../../../crates/gameplay/social/src/premium/mod.rs"]
 mod premium;
 
 // Actual registered native owner and unchanged migration/bootstrap/admission harness.

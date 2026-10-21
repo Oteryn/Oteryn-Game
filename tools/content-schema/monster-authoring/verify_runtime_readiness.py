@@ -19,15 +19,15 @@ PROFILE_FAMILIES = EXECUTION_FAMILIES | {'Creature', 'Behavior'}
 BOUNDARIES = {
     'content_entry': ('crates/gameplay/content/src/content/project/v2/creature.rs',
                       'pub struct ProjectV2AbilityDetails'),
-    'player_reader': ('apps/game-server/src/spell/authoring.rs',
-                      'pub(crate) fn spell_from_bundle'),
-    'player_resolution': ('apps/game-server/src/spell/mod.rs', 'fn resolve_effect('),
-    'player_plan': ('apps/game-server/src/spell/plan.rs', 'pub(crate) fn effect_plan('),
-    'player_owner_cast': ('apps/game-server/src/spell/cast.rs', 'pub(crate) fn cast('),
-    'ai_intent': ('apps/game-server/src/ai_think.rs', 'pub enum ThinkOutcome'),
-    'bite_only_commit': ('apps/game-server/src/ability/creature_bite.rs',
-                         'pub(crate) fn commit_ai_bite('),
-    'composition': ('apps/game-server/src/lib.rs', 'mod ai_think;'),
+    'player_reader': ('crates/gameplay/content/src/content/spell_data/authoring.rs',
+                      'pub fn spell_from_bundle('),
+    'player_resolution': ('crates/gameplay/spell/src/spell/mod.rs', 'fn resolve_effect('),
+    'player_plan': ('crates/gameplay/spell/src/spell/plan.rs', 'pub fn effect_plan('),
+    'player_owner_cast': ('crates/gameplay/spell/src/spell/cast.rs', 'pub fn cast('),
+    'ai_intent': ('crates/gameplay/monster-ai/src/ai_think.rs', 'pub enum ThinkOutcome'),
+    'bite_only_commit': ('crates/gameplay/combat/src/ability/creature_bite.rs',
+                         'pub fn commit_ai_bite('),
+    'composition': ('apps/game-server/src/lib.rs', 'use oteryn_gameplay_monster_ai::ai_think;'),
 }
 
 

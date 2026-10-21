@@ -648,6 +648,7 @@ def test_server_qualification(module):
 
     for path in (
         "apps/game-server/src/gameplay_transport/resume.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/resume.rs",
         "apps/game-server/src/durability/fresh_admission.rs",
         "apps/game-server/src/foundation/protocol.rs",
         "apps/game-server/src/node/serve.rs",
@@ -694,6 +695,10 @@ def test_server_qualification(module):
         "apps/game-server/src/combat/mod.rs",
         "crates/gameplay/content/src/content/cw2_b1_import.rs",
         "crates/gameplay/content/src/content/reference_playable.rs",
+        "crates/gameplay/combat/src/ability/mod.rs",
+        "crates/gameplay/combat/src/combat/mod.rs",
+        "crates/gameplay/monster-ai/src/ai/mod.rs",
+        "crates/gameplay/social/src/interaction/mod.rs",
         "apps/game-server/tests/durability_postgres.rs",
         "apps/game-server/examples/materialize_content_world_project_v2.rs",
         "apps/client/src/main.rs",

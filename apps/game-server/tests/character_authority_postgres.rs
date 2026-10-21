@@ -24,7 +24,7 @@ pub mod foundation;
 #[allow(dead_code, unused_imports)]
 pub use oteryn_gameplay_native_admission_source as native_admission_source;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/premium/mod.rs"]
+#[path = "../../../crates/gameplay/social/src/premium/mod.rs"]
 mod premium;
 
 use durability::DurabilityRoot;
@@ -2292,7 +2292,7 @@ mod character_stance_postgres_cases;
 // cases with the focused standalone target through the same protected lane.
 #[path = "support/charm_state_postgres_cases.rs"]
 mod charm_state_postgres_cases;
-#[path = "../src/gameplay_transport/charm.rs"]
+#[path = "../../../crates/gameplay/dispatch/src/gameplay_transport/charm.rs"]
 mod charm_transport;
 
 // CHEST-1 reward-claim MINT (a `once` RewardClaim into a new main backpack
@@ -3038,7 +3038,7 @@ mod monk_state_postgres_cases {
 #[path = "support/attack_kill_reward_postgres_cases.rs"]
 mod attack_kill_reward_postgres_cases;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/combat/mod.rs"]
+#[path = "../../../crates/gameplay/combat/src/combat/mod.rs"]
 pub mod combat;
 #[path = "support/combat_death_reward_postgres_cases.rs"]
 mod combat_death_reward_postgres_cases;
@@ -3053,7 +3053,7 @@ mod combat_bestiary_postgres_cases;
 // and D3-4 cases included above. `combat_pickup` is a top-level module and
 // `content` is the test shim for the same reasons as in that target.
 #[allow(dead_code, unused_imports)]
-#[path = "../src/combat/pickup.rs"]
+#[path = "../../../crates/gameplay/combat/src/combat/pickup.rs"]
 pub mod combat_pickup;
 #[path = "support/combat_pickup_postgres_cases.rs"]
 mod combat_pickup_postgres_cases;
@@ -3064,15 +3064,15 @@ pub mod content;
 // D39 chest `USE` wiring to the CHEST-1 reward-claim MINT shares its cases with
 // the focused standalone target through the same protected lane.
 #[allow(dead_code, unused_imports)]
-#[path = "../src/achievement_catalogue.rs"]
+#[path = "../../../crates/gameplay/social/src/achievement_catalogue.rs"]
 pub mod achievement_catalogue;
 #[path = "support/chest_use_postgres_cases.rs"]
 mod chest_use_postgres_cases;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/interaction/mod.rs"]
+#[path = "../../../crates/gameplay/social/src/interaction/mod.rs"]
 pub mod interaction;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/interaction/chest_use.rs"]
+#[path = "../../../crates/gameplay/social/src/interaction/chest_use.rs"]
 pub mod interaction_chest_use;
 
 // GOLD-FEE-1a in-transaction gold fee BURN (migration 0023) shares its cases

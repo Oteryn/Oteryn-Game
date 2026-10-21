@@ -1,7 +1,7 @@
 //! PvP readmission cases routed through the existing canonical authority PostgreSQL root.
 #![allow(clippy::expect_used)]
 #[allow(dead_code)]
-#[path = "../../src/combat/pvp/lock.rs"]
+#[path = "../../../../crates/gameplay/combat/src/combat/pvp/lock.rs"]
 mod pvp_readmission_lock;
 
 mod readmission_cases {

@@ -1,0 +1,35 @@
+[package]
+name = "oteryn-gameplay-combat"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[package.metadata.oteryn]
+category = "gameplay"
+release-role = "production"
+
+[features]
+test-support = ["oteryn-gameplay-content/test-support", "oteryn-gameplay-durability/test-support", "oteryn-gameplay-foundation/test-support"]
+
+[dependencies]
+oteryn-gameplay-source-critical-baseline = { version = "=0.1.0", path = "../source-critical-baseline" }
+oteryn-gameplay-content = { version = "=0.1.0", path = "../content" }
+oteryn-gameplay-domain = { version = "=0.1.0", path = "../domain" }
+oteryn-gameplay-durability = { version = "=0.1.0", path = "../durability" }
+oteryn-gameplay-foundation = { version = "=0.1.0", path = "../foundation" }
+oteryn-gameplay-world = { version = "=0.1.0", path = "../world" }
+oteryn-simulation-determinism = { version = "=0.1.0", path = "../../simulation-determinism" }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true, features = ["raw_value"] }
+sha2.workspace = true
+
+[dev-dependencies]
+oteryn-gameplay-content = { version = "=0.1.0", path = "../../gameplay/content", features = ["test-support"] }
+oteryn-gameplay-durability = { version = "=0.1.0", path = "../../gameplay/durability", features = ["test-support"] }
+oteryn-gameplay-foundation = { version = "=0.1.0", path = "../../gameplay/foundation", features = ["test-support"] }
+
+[lints]
+workspace = true

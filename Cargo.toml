@@ -1,5 +1,12 @@
 [workspace]
 members = [
+    "crates/gameplay/dispatch",
+    "crates/gameplay/social",
+    "crates/gameplay/monster-ai",
+    "crates/gameplay/encounters",
+    "crates/gameplay/spell",
+    "crates/gameplay/combat",
+    "crates/gameplay/world",
     "crates/gameplay/durability",
     "crates/gameplay/content",
     "crates/gameplay/foundation",

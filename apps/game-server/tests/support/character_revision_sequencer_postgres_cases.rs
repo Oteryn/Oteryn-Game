@@ -128,7 +128,9 @@ impl Database {
             .fetch_one(&mut connection)
             .await?;
         assert_eq!(version, "170006", "canonical target is PostgreSQL 17.6");
-        sqlx::migrate!("./migrations").run(&mut connection).await?;
+        oteryn_gameplay_durability::GAME_MIGRATOR
+            .run(&mut connection)
+            .await?;
         connection.close().await?;
         Ok(Self {
             admin_url,

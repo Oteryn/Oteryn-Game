@@ -38,12 +38,12 @@ case "${WP5_QUALIFICATION:-s3b}" in
     ;;
   seam)
     TEST_TARGET=(--lib)
-    TEST_NAME=gameplay_transport::qualification::server_seam_real_owners_over_tcp_tls
+    TEST_NAME=qualification::server_seam_real_owners_over_tcp_tls
     PASS_RESULT=SEAM_PASS
     ;;
   spell-seam)
     TEST_TARGET=(--lib)
-    TEST_NAME=gameplay_transport::qualification::server_seam_real_owners_over_tcp_tls
+    TEST_NAME=qualification::server_seam_real_owners_over_tcp_tls
     PASS_RESULT=SPELL_SEAM_PASS
     ;;
   *)

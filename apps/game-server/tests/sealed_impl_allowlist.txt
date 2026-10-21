@@ -1,25 +1,18 @@
 # Allowlist of `impl <seal>::Sealed for T` and `impl PremiumGateOwner for T` sites (file | trait | type).
 # Seals must stay inside the owning crate. Add entries only with CP review.
-apps/game-server/src/gameplay_transport/actor_spell_commit.rs | player_proof_seal::Sealed | PlayerBatchPreflight
-apps/game-server/src/gameplay_transport/familiar_cast.rs | source_reservation_seal::Sealed | PreparedFamiliarLifecycle
-apps/game-server/src/gameplay_transport/mod.rs | recovery_source_sealed::Sealed | ChannelOwnedLossSource
-apps/game-server/src/gameplay_transport/monk_save_fresh_fixture.rs | fresh_source_sealed::Sealed | Source
-apps/game-server/src/gameplay_transport/qualification.rs | fresh_source_sealed::Sealed | RuntimeReadiness
-apps/game-server/src/gameplay_transport/resume.rs | recovery_source_sealed::Sealed | ChannelResumeSource
-apps/game-server/src/gameplay_transport/resume.rs | recovery_source_sealed::Sealed | Completion
-apps/game-server/src/gameplay_transport/spell_premium_coordinator.rs | PremiumGateOwner | SpellPremiumCoordinator
-apps/game-server/src/gameplay_transport/spell_timer_callbacks.rs | due_read_seal::Sealed | DueEvidence<'_>
-apps/game-server/src/lifted_tests/durability_world_party_tests.rs | fresh_source_sealed::Sealed | Source
+crates/gameplay/dispatch/src/gameplay_transport/actor_spell_commit.rs | player_proof_seal::Sealed | PlayerBatchPreflight
+crates/gameplay/dispatch/src/gameplay_transport/familiar_cast.rs | source_reservation_seal::Sealed | PreparedFamiliarLifecycle
+crates/gameplay/dispatch/src/gameplay_transport/mod.rs | recovery_source_sealed::Sealed | ChannelOwnedLossSource
+crates/gameplay/dispatch/src/gameplay_transport/monk_save_fresh_fixture.rs | fresh_source_sealed::Sealed | Source
+apps/game-server/src/qualification.rs | fresh_source_sealed::Sealed | RuntimeReadiness
+crates/gameplay/dispatch/src/gameplay_transport/resume.rs | recovery_source_sealed::Sealed | ChannelResumeSource
+crates/gameplay/dispatch/src/gameplay_transport/resume.rs | recovery_source_sealed::Sealed | Completion
+crates/gameplay/dispatch/src/gameplay_transport/spell_premium_coordinator.rs | PremiumGateOwner | SpellPremiumCoordinator
+crates/gameplay/dispatch/src/gameplay_transport/spell_timer_callbacks.rs | due_read_seal::Sealed | DueEvidence<'_>
+crates/gameplay/dispatch/src/lifted_tests/durability_world_party_tests.rs | fresh_source_sealed::Sealed | Source
 apps/game-server/src/lifted_tests/party_shared_xp_postgres_tests.rs | fresh_source_sealed::Sealed | Source
-apps/game-server/src/map/floor.rs | source_step_seal::Sealed | BundleStepProof<'_>
-apps/game-server/src/movement/source_floor_change.rs | source_step_seal::Sealed | SourceStepProof<'_>
 apps/game-server/src/node/runtime_status.rs | fresh_source_sealed::Sealed | Committed
 apps/game-server/src/node/serve.rs | fresh_source_sealed::Sealed | RuntimeReadiness
-apps/game-server/src/spell/companion_lifecycle.rs | companion_source_seal::Sealed | CompanionSpawnReservation
-apps/game-server/src/spell/companion_lifecycle.rs | direct_companion_source_seal::Sealed | DirectCompanionReservation
-apps/game-server/src/spell/house_execution.rs | house_presence_seal::Sealed | CurrentHousePresence<'_>
-apps/game-server/src/spell/source_map_initialization.rs | map_initializer_seal::Sealed | CurrentNativeMapInitialization<'_>
-apps/game-server/src/spell/world_execution.rs | relocation_seal::Sealed | SpellRelocationProof<'_, '_>
 apps/game-server/tests/durability_postgres.rs | fresh_source_sealed::Sealed | LifecycleOwner
 apps/game-server/tests/durability_postgres.rs | fresh_source_sealed::Sealed | Source
 apps/game-server/tests/durability_postgres.rs | recovery_source_sealed::Sealed | LossSource
@@ -94,3 +87,10 @@ crates/gameplay/foundation/src/foundation/post_grace_recovery_tests.rs | recover
 crates/gameplay/foundation/src/foundation/runtime_actor_carrier.rs | source_reservation_seal::Sealed | Proof
 crates/gameplay/foundation/src/foundation/runtime_actor_source_reservation.rs | source_reservation_seal::Sealed | Proof
 crates/gameplay/foundation/src/foundation/runtime_actor_spell_tests.rs | relocation_seal::Sealed | Proof
+crates/gameplay/spell/src/spell/companion_lifecycle.rs | companion_source_seal::Sealed | CompanionSpawnReservation
+crates/gameplay/spell/src/spell/companion_lifecycle.rs | direct_companion_source_seal::Sealed | DirectCompanionReservation
+crates/gameplay/spell/src/spell/house_execution.rs | house_presence_seal::Sealed | CurrentHousePresence<'_>
+crates/gameplay/spell/src/spell/source_map_initialization.rs | map_initializer_seal::Sealed | CurrentNativeMapInitialization<'_>
+crates/gameplay/spell/src/spell/world_execution.rs | relocation_seal::Sealed | SpellRelocationProof<'_, '_>
+crates/gameplay/world/src/map/floor.rs | source_step_seal::Sealed | BundleStepProof<'_>
+crates/gameplay/world/src/movement/source_floor_change.rs | source_step_seal::Sealed | SourceStepProof<'_>

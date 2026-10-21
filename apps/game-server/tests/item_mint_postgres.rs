@@ -13,7 +13,7 @@ pub mod character_bootstrap_intent;
 pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
 // Combat owns the death-projection extension used by these corpse fixtures.
 #[allow(dead_code, unused_imports)]
-#[path = "../src/combat/mod.rs"]
+#[path = "../../../crates/gameplay/combat/src/combat/mod.rs"]
 pub mod combat;
 #[path = "support/domain_shim.rs"]
 pub mod domain;

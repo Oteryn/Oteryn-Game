@@ -24,10 +24,10 @@ pub mod foundation;
 #[allow(dead_code, unused_imports)]
 pub use oteryn_gameplay_native_admission_source as native_admission_source;
 
-#[path = "../src/gameplay_transport/charm.rs"]
+#[path = "../../../crates/gameplay/dispatch/src/gameplay_transport/charm.rs"]
 mod charm_transport;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/combat/mod.rs"]
+#[path = "../../../crates/gameplay/combat/src/combat/mod.rs"]
 pub mod combat;
 
 // Standalone target for local focused runs. The cases need only the path-loaded crate root

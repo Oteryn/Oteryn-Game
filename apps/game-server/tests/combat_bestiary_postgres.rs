@@ -27,7 +27,7 @@ pub mod foundation;
 pub use oteryn_gameplay_native_admission_source as native_admission_source;
 
 #[allow(dead_code, unused_imports)]
-#[path = "../src/combat/mod.rs"]
+#[path = "../../../crates/gameplay/combat/src/combat/mod.rs"]
 pub mod combat;
 
 #[allow(dead_code)]
