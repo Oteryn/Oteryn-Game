@@ -23,9 +23,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Three parts on separate runners, so the wall time is the slowest part (the donor source,
+  # about 7 minutes) instead of their sum. run_checks.py --part defines what each one runs.
   quest-authoring:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [checks, donor, unit-tests]
     env:
       PYTHONDONTWRITEBYTECODE: '1'
     steps:
@@ -83,11 +89,12 @@ jobs:
         if: ${{ steps.scope.outputs.full == 'true' }}
         env:
           QUEST_DONOR: ${{ steps.scope.outputs.donor }}
+          QUEST_PART: ${{ matrix.part }}
         run: |
           if [ "$QUEST_DONOR" = "false" ]; then
-            python tools/content-schema/quest-authoring/run_checks.py --skip-donor-source
+            python tools/content-schema/quest-authoring/run_checks.py --part "$QUEST_PART" --skip-donor-source
           else
-            python tools/content-schema/quest-authoring/run_checks.py
+            python tools/content-schema/quest-authoring/run_checks.py --part "$QUEST_PART"
           fi
 
       - name: Verify the checkout stayed clean

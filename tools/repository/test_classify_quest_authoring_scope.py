@@ -354,7 +354,15 @@ class WorkflowWiring(unittest.TestCase):
         self.assertEqual(self.text.count("--skip-donor-source"), 1)
         self.assertNotIn("donor=false\n", self.text)  # only the protected-base classifier writes it
         checks = (REPO / TOOL / "run_checks.py").read_text(encoding="utf-8")
-        self.assertIn("commands.remove(['quest_donor_source_authoring.py', '--check'])", checks)
+        self.assertIn("DONOR_SOURCE_CHECK = ['quest_donor_source_authoring.py', '--check']", checks)
+        self.assertIn("if args.skip_donor_source and DONOR_SOURCE_CHECK in commands:", checks)
+
+    def test_matrix_runs_every_part_once(self):
+        self.assertIn("        part: [checks, donor, unit-tests]\n", self.text)
+        self.assertIn("      fail-fast: false\n", self.text)
+        self.assertEqual(self.text.count('--part "$QUEST_PART"'), 2)
+        checks = (REPO / TOOL / "run_checks.py").read_text(encoding="utf-8")
+        self.assertIn("PARTS = ('all', 'checks', 'donor', 'unit-tests')", checks)
 
     def test_job_name_and_triggers_are_unchanged(self):
         self.assertIn("\n  quest-authoring:\n", self.text)
