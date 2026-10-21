@@ -8,6 +8,7 @@ pub mod hit_training;
 pub mod mana_training;
 pub mod proficiency;
 pub mod proficiency_modification;
+pub mod ranking;
 pub mod regeneration;
 pub mod spell_wheel;
 pub mod wheel;

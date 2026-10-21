@@ -2043,6 +2043,7 @@ dependencies = [
  "oteryn-gameplay-content",
  "oteryn-gameplay-domain",
  "oteryn-simulation-determinism",
+ "prost",
  "serde",
  "serde_json",
  "sha2 0.11.0",

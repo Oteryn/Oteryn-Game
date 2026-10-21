@@ -9,6 +9,7 @@ use super::house_scope_handoff::{HOUSE_TILE_MAX_BYTES, HouseId};
 use crate::foundation::CharacterId;
 
 pub use oteryn_gameplay_housing::house_interior::{
+    HouseCharacterSource, HouseItemAction, HouseItemReceipt, HouseItemOutcome,
     HOUSE_INTERIOR_ITEMS_MAX, HouseInteriorError, HouseItemRole,
 };
 
@@ -207,55 +208,6 @@ impl From<audit::AuditError> for HouseWriterError {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum HouseCharacterSource {
-    Inventory { parent: [u8; 16], ordinal: u64 },
-    ContainerSlot,
-    Equipment { slot: u8 },
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum HouseItemAction {
-    Place {
-        source: HouseCharacterSource,
-        position: Vec<u8>,
-    },
-    Take {
-        placement: [u8; 16],
-        provenance_revision: u64,
-    },
-    TileMove {
-        placement: [u8; 16],
-        provenance_revision: u64,
-        position: Vec<u8>,
-    },
-}
-impl HouseItemAction {
-    fn shape(&self) -> i16 {
-        match self {
-            Self::Place { .. } => 5,
-            Self::Take { .. } => 6,
-            Self::TileMove { .. } => 7,
-        }
-    }
-    fn source_kind(&self) -> i16 {
-        match self {
-            Self::Place {
-                source: HouseCharacterSource::Inventory { .. },
-                ..
-            } => 1,
-            Self::Place {
-                source: HouseCharacterSource::ContainerSlot,
-                ..
-            } => 2,
-            Self::Place {
-                source: HouseCharacterSource::Equipment { .. },
-                ..
-            } => 3,
-            _ => 4,
-        }
-    }
-}
-
 /// Current compatible Content data for the equipped backpack, exactly as for native
 /// item-transfer. This is not a grant: SQL compares the complete stored definition and
 /// Character root content/rules revisions and independently allocates the actual entry.
@@ -293,21 +245,6 @@ struct FrozenHouseItem {
     event: [u8; 16],
     occurred_at: i64,
 }
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct HouseItemReceipt {
-    pub transaction_id: [u8; 16],
-    pub event_id: [u8; 16],
-    pub occurred_at_unix_ms: i64,
-    pub envelope_sha256: [u8; 32],
-    /// Present only while the independently expirable audit outbox retains it.
-    pub envelope: Option<Vec<u8>>,
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum HouseItemOutcome {
-    Committed(HouseItemReceipt),
-    AlreadyCommitted(HouseItemReceipt),
-}
-
 fn hex(bytes: &[u8]) -> String {
     use std::fmt::Write;
     let mut text = String::with_capacity(bytes.len() * 2);
