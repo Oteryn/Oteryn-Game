@@ -716,7 +716,7 @@ fn charm_native_declared_child_order_preserves_canonical_constructor() {
 
 #[test]
 fn charm_native_evaluator_runs_after_real_primary_and_leaf_damage_replays_without_chaining() {
-    use crate::combat::charm_effects::*;
+    use oteryn_gameplay_progression::charm_effects::*;
     use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
     struct Inputs(CharmDefinition);
     impl CharmCatalogueRead for Inputs {

@@ -1,15 +1,22 @@
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 mod tests {
-    use crate::foundation::owner_timer::{OwnerClock, SemanticTimeMicros, VirtualOwnerClock};
-    use crate::foundation::{MovementLocalPosition, RuntimeScopeRefV1};
     use crate::gameplay_transport::actor_spell::{
         ChannelSpellStates,
         tests::{FACTS, runtime_with_player},
     };
     use crate::player_lethal::PlayerLethalVitals;
-    use crate::smelly_cheese::{SmellyCastOccurrence, SmellyCheeseTimers, SmellyPulse};
-    use crate::smelly_damage::*;
+    use oteryn_gameplay_encounters::bosses::smelly_cheese::smelly_damage::*;
+    use oteryn_gameplay_encounters::bosses::smelly_cheese::timers::{
+        SmellyCastOccurrence, SmellyCheeseTimers, SmellyPulse,
+    };
+    use oteryn_gameplay_foundation::foundation::owner_timer::{
+        OwnerClock, SemanticTimeMicros, VirtualOwnerClock,
+    };
+    use {
+        oteryn_gameplay_entities::MovementLocalPosition,
+        oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1,
+    };
 
     #[test]
     fn actual_hp_nonlethal_a_b_retry_a_and_presentation_never_redamage() {
@@ -55,8 +62,9 @@ mod tests {
             runtime.binding().channel_id(),
         );
         let generation = runtime.binding().scope_generation();
-        let (fence, stamp) = crate::foundation::crystal_timer_fixture(scope, generation)
-            .expect("smelly_damage.rs:tests:135: qualified fixture operation must succeed");
+        let (fence, stamp) =
+            oteryn_gameplay_foundation::foundation::crystal_timer_fixture(scope, generation)
+                .expect("smelly_damage.rs:tests:135: qualified fixture operation must succeed");
         let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(0));
         let mut timers = SmellyCheeseTimers::new(scope, generation)
             .expect("smelly_damage.rs:tests:137: qualified fixture operation must succeed");
@@ -185,8 +193,9 @@ mod tests {
         let binding = runtime.binding();
         let scope = RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id());
         let generation = binding.scope_generation();
-        let (mut fence, stamp) = crate::foundation::crystal_timer_fixture(scope, generation)
-            .expect("smelly_damage.rs:tests:264: qualified fixture operation must succeed");
+        let (mut fence, stamp) =
+            oteryn_gameplay_foundation::foundation::crystal_timer_fixture(scope, generation)
+                .expect("smelly_damage.rs:tests:264: qualified fixture operation must succeed");
         let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(0));
         let mut timers = SmellyCheeseTimers::new(scope, generation)
             .expect("smelly_damage.rs:tests:266: qualified fixture operation must succeed");
@@ -212,7 +221,7 @@ mod tests {
         // Change only independent current authority after preparing the sealed pulse.
         fence
             .apply_external_grant(
-                crate::foundation::ScopeOwnershipGeneration::new(2)
+                oteryn_gameplay_foundation::foundation::ScopeOwnershipGeneration::new(2)
                     .expect("smelly_damage.rs:tests:288: qualified fixture operation must succeed"),
             )
             .expect("smelly_damage.rs:tests:289: qualified fixture operation must succeed");

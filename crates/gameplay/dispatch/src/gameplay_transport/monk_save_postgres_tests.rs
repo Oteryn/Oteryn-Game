@@ -699,7 +699,7 @@ mod death_ml_loss_composed {
     use crate::gameplay_transport::actor_spell::TrainingSave;
     use crate::spell::cast::CharacterCastFacts;
     use crate::spell::mana_training::RetainedTrainingCheckpoint;
-    use crate::spell::mana_training::hit_training::SkillFamily;
+    use oteryn_gameplay_progression::hit_training::SkillFamily;
     use oteryn_simulation_determinism::ExactI64;
 
     /// The debug-build death settle chain is deeper than the default test stack (as in the

@@ -10,7 +10,9 @@ use crate::gameplay_transport::spell_presentations::{
 };
 use crate::spell::combat_batch::{OwnerCombatChange, OwnerCombatEffect};
 use crate::spell::native::CompiledNativeSpellPlanExt;
-use crate::spell::native_items::{ItemOperation, ItemWorldSnapshot, NativeItemRef, WorldItemFacts};
+use oteryn_gameplay_spell_rules::native_items::{
+    ItemOperation, ItemWorldSnapshot, NativeItemRef, WorldItemFacts,
+};
 
 pub(super) fn applicable(spell: &SpellDefinition) -> bool {
     matches!(&spell.execution, Execution::NativeProfile(p) if p.spell()["execution"]["native_behavior"]["key"]=="tile_item_operation" || is_barrier(p))
@@ -329,21 +331,22 @@ pub(super) async fn prepare(
                 .item_policy(&item.key, &item.revision)
                 .ok_or(SpellCastDisposition::NotAvailable)?;
             let definition = &policy.record().production_definition;
-            let condition = crate::ability::condition::ConditionDefinition::new(
-                "spell.chameleon",
-                0,
-                oteryn_gameplay_domain::domain::condition::ConditionValues::ItemOutfit {
-                    duration_ms: *duration_ms,
-                },
-            )
-            .and_then(|d| {
-                d.with_item_appearance(
-                    &definition.production_key,
-                    &definition.revision_ref,
-                    runtime.content_pin().server_artifact_digest(),
+            let condition =
+                oteryn_gameplay_foundation::foundation::condition::ConditionDefinition::new(
+                    "spell.chameleon",
+                    0,
+                    oteryn_gameplay_domain::domain::condition::ConditionValues::ItemOutfit {
+                        duration_ms: *duration_ms,
+                    },
                 )
-            })
-            .ok_or(SpellCastDisposition::Rejected)?;
+                .and_then(|d| {
+                    d.with_item_appearance(
+                        &definition.production_key,
+                        &definition.revision_ref,
+                        runtime.content_pin().server_artifact_digest(),
+                    )
+                })
+                .ok_or(SpellCastDisposition::Rejected)?;
             let expected = before.owned_conditions().clone();
             let mut next = expected.clone();
             let root = oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(
@@ -356,7 +359,7 @@ pub(super) async fn prepare(
                 command.command_id().get(),
                 &[],
             ));
-            let application = crate::ability::condition::ApplicationFacts {
+            let application = oteryn_gameplay_foundation::foundation::condition::ApplicationFacts {
                 now: now.get(),
                 base_speed: u16::try_from(before.owned_base_speed())
                     .map_err(|_| SpellCastDisposition::Rejected)?,
@@ -374,7 +377,7 @@ pub(super) async fn prepare(
             next.apply(
                 &condition,
                 Some(crate::spell::combat_execution::actor_atom(b.actor)),
-                crate::ability::condition::ConditionSourceKind::SelfUse,
+                oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind::SelfUse,
                 &[],
                 &application,
             )
@@ -393,8 +396,10 @@ pub(super) async fn prepare(
         binding:serde_json::to_vec(&json!({"intent":source_cast_intent(intent,rune),"source_definition":format!("{profile:?}"),"source_tile_items":format!("{current:?}"),"source_item_facts":format!("{facts:?}"),"source_item_plan":format!("{plan:?}"),"item_operations":format!("{operations:?}")})).map_err(|_|SpellCastDisposition::Rejected)?};
     let mut cues = Vec::new();
     let cue_target = match plan.success_presentation.position {
-        crate::spell::native_items::EffectPosition::Caster => CueTarget::Actor(b.actor),
-        crate::spell::native_items::EffectPosition::TargetTile => {
+        oteryn_gameplay_spell_rules::native_items::EffectPosition::Caster => {
+            CueTarget::Actor(b.actor)
+        }
+        oteryn_gameplay_spell_rules::native_items::EffectPosition::TargetTile => {
             CueTarget::Tile(cue_tile(tx, authority, room, runtime, objects, target).await?)
         }
     };
@@ -598,7 +603,7 @@ async fn prepare_barrier(
         .as_u64()
         .and_then(|v| u32::try_from(v / 1000).ok())
         .ok_or(SpellCastDisposition::Rejected)?;
-    let facts = crate::spell::native_items::BarrierTileFacts {
+    let facts = oteryn_gameplay_spell_rules::native_items::BarrierTileFacts {
         exists: flags.present,
         floor_change: flags.floor_change,
         creature_on_tile: occupied,
@@ -621,7 +626,7 @@ async fn prepare_barrier(
         .item_policy(&preview.item.key, &preview.item.revision)
         .ok_or(SpellCastDisposition::NotAvailable)?;
     let definition =
-        crate::spell::world_items_execution::QualifiedItemDefinition::from_native_policy(policy)
+        oteryn_gameplay_durability::durability::native_world_items::QualifiedItemDefinition::from_native_policy(policy)
             .map_err(|_| SpellCastDisposition::NotAvailable)?;
     let record = policy.record();
     let blocks_movement = record
@@ -809,7 +814,7 @@ async fn prepare_carried(
         content
             .item_policy(&r.production_key, &r.revision_ref)
             .and_then(|p| {
-                crate::spell::world_items_execution::QualifiedItemDefinition::from_native_policy(p)
+                oteryn_gameplay_durability::durability::native_world_items::QualifiedItemDefinition::from_native_policy(p)
                     .ok()
             })
     };
@@ -919,7 +924,7 @@ async fn prepare_carried(
     }
     let mut facts = ItemWorldSnapshot {
         caster_in_pz: flags.protection,
-        target: crate::spell::native_items::ItemTarget::ContainerOrEquipment,
+        target: oteryn_gameplay_spell_rules::native_items::ItemTarget::ContainerOrEquipment,
         ..Default::default()
     };
     match carried.custody() {
@@ -948,7 +953,7 @@ async fn prepare_carried(
         return reject();
     }
     let production = &record.production_definition;
-    let definition = crate::ability::condition::ConditionDefinition::new(
+    let definition = oteryn_gameplay_foundation::foundation::condition::ConditionDefinition::new(
         "spell.chameleon",
         0,
         oteryn_gameplay_domain::domain::condition::ConditionValues::ItemOutfit {
@@ -977,7 +982,7 @@ async fn prepare_carried(
     let protected = runtime
         .current_player_reentry_protection(b.actor, b.session, now.get())
         .map_err(|_| SpellCastDisposition::Rejected)?;
-    let application = crate::ability::condition::ApplicationFacts {
+    let application = oteryn_gameplay_foundation::foundation::condition::ApplicationFacts {
         now: now.get(),
         base_speed: u16::try_from(before.owned_base_speed())
             .map_err(|_| SpellCastDisposition::Rejected)?,
@@ -991,7 +996,7 @@ async fn prepare_carried(
     next.apply(
         &definition,
         Some(crate::spell::combat_execution::actor_atom(b.actor)),
-        crate::ability::condition::ConditionSourceKind::SelfUse,
+        oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind::SelfUse,
         &[],
         &application,
     )
@@ -1125,7 +1130,7 @@ pub(super) async fn carried_target_is_current(
         content
             .item_policy(&r.production_key, &r.revision_ref)
             .and_then(|p| {
-                crate::spell::world_items_execution::QualifiedItemDefinition::from_native_policy(p)
+                oteryn_gameplay_durability::durability::native_world_items::QualifiedItemDefinition::from_native_policy(p)
                     .ok()
             })
     };

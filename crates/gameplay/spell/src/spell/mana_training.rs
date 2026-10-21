@@ -6,8 +6,7 @@ use crate::durability::character_build::{
     DurableBuildState, MAX_BUILD_PROGRESS,
 };
 
-pub mod hit_training;
-use hit_training::{HitTrainingCounters, SkillFamily};
+use oteryn_gameplay_progression::hit_training::{HitTrainingCounters, SkillFamily};
 
 pub use crate::content::training_formula::{CompiledTrainingFormula, TrainingError};
 
@@ -439,8 +438,9 @@ mod tests {
         // Without owned training (the production off switch) nothing trains.
         assert_eq!(
             state
-                .train_skill(SkillFamily::Sword, 1, &f, |c| c
-                    .melee_hit(hit_training::HitBlock::Unblocked))
+                .train_skill(SkillFamily::Sword, 1, &f, |c| c.melee_hit(
+                    oteryn_gameplay_progression::hit_training::HitBlock::Unblocked
+                ))
                 .unwrap(),
             TrainedSkill::default()
         );
@@ -669,7 +669,9 @@ mod tests {
     #[test]
     fn hit_streaks_feed_the_pending_tries() {
         let mut live = LiveManaTraining::from_owned_build(&seed());
-        let tries = live.hits_mut().melee_hit(hit_training::HitBlock::Unblocked);
+        let tries = live
+            .hits_mut()
+            .melee_hit(oteryn_gameplay_progression::hit_training::HitBlock::Unblocked);
         live.record_skill_tries(SkillFamily::Club, tries, 1)
             .unwrap();
         let tries = live.hits_mut().block_hit(true);

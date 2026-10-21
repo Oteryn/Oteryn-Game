@@ -1,11 +1,11 @@
 #![allow(clippy::expect_used)]
 
 use super::*;
-use crate::combat::charm_effects::{
-    CharmDamageKind, CharmEffect, CharmElement, CharmPercent, CharmStageValue,
-};
 use crate::domain::charm::{CharmBalance, CharmDefinition, CharmSlotEntitlement, CharmStage};
 use crate::durability::charm_state::CharacterCharmState;
+use oteryn_gameplay_progression::charm_effects::{
+    CharmDamageKind, CharmEffect, CharmElement, CharmPercent, CharmStageValue,
+};
 
 struct Effects(BTreeMap<String, EffectDefinition>);
 impl CharmCatalogueRead for Effects {

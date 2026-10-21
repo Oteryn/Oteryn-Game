@@ -7,17 +7,20 @@ use crate::content::{
 };
 use crate::creature_auto_attack::AttackError;
 use crate::creature_auto_attack::ProfileAbilityProposal;
-use crate::durability::creature_schedule::ScheduleList;
-use crate::foundation::owner_timer::{
+pub use oteryn_gameplay_encounter_rules::timers::checked_deadline;
+use oteryn_gameplay_foundation::foundation::owner_timer::{
     CatchUpPolicy, FamilyPolicy, OwnerClock, OwnerTimerLane, SemanticTimeMicros, TimerFamily,
 };
-use crate::foundation::{
-    ChannelRuntimeV1, ExactActorRef, MovementPositionContext,
-    PreparedCreatureProfileTransformation, RuntimeScopeRefV1, RuntimeWorkStamp, ScopeRuntimeFence,
-    WorldId,
-};
-pub use oteryn_gameplay_encounter_rules::timers::checked_deadline;
+use oteryn_gameplay_foundation::foundation::profile_schedule::ScheduleList;
 use sha2::{Digest, Sha256};
+use {
+    oteryn_gameplay_entities::{
+        ChannelRuntimeV1, MovementPositionContext, PreparedCreatureProfileTransformation,
+    },
+    oteryn_gameplay_foundation::foundation::{
+        ExactActorRef, RuntimeScopeRefV1, RuntimeWorkStamp, ScopeRuntimeFence, WorldId,
+    },
+};
 
 pub const BASE: &str = "oteryn:creature.the_time_guardian";
 pub const BLAZING: &str = "oteryn:creature.the_blazing_time_guardian";

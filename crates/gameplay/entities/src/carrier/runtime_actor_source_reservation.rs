@@ -163,10 +163,13 @@ impl ChannelRuntimeV1 {
 mod tests {
     #![allow(clippy::unwrap_used)]
     use super::*;
-    use crate::{
-        ChannelContentPin, ChannelId, ControlLossMark, MovementLocalPosition,
-        MovementPositionSnapshot, NodeId, WorldId,
-    };
+    use crate::ControlLossMark;
+    use crate::MovementLocalPosition;
+    use crate::MovementPositionSnapshot;
+    use oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin;
+    use oteryn_gameplay_foundation::foundation::ChannelId;
+    use oteryn_gameplay_foundation::foundation::NodeId;
+    use oteryn_gameplay_foundation::foundation::WorldId;
     fn id(tag: u8) -> [u8; 16] {
         [1, 0x90, 0, 0, 0, tag, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag]
     }

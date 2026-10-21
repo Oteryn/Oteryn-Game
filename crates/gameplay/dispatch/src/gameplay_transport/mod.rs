@@ -68,7 +68,7 @@ mod spell_presentation_publisher;
 pub use spell_presentations::PreparedPresentation as PreparedSpellPresentation;
 mod tcp_tls;
 mod world_map;
-pub mod world_object;
+
 /// ADMIT0: the boot-bound Channel required gameplay capabilities (D1081-D1084).
 pub mod world_required_capabilities;
 pub mod world_spatial;
@@ -451,8 +451,7 @@ pub struct GameplaySeamOwners<'a, 'f, 's> {
     /// generation authority or effect availability; gameplay composition is a separate step.
     pub imported_charms: &'a crate::content::charm_source::CanonicalCharmCatalogue,
     /// The quest catalogue loaded at boot for the served content revision (QUEST-CAT-BOOT-1).
-    pub quest_catalogue:
-        &'a std::sync::Arc<crate::durability::quest_state::quest::QuestStateCatalogue>,
+    pub quest_catalogue: &'a std::sync::Arc<oteryn_gameplay_quests::quest::QuestStateCatalogue>,
     /// CHAR-POSITION-1: the node's shutdown write of the tracked last positions; `None` when the
     /// caller never withdraws readiness through it.
     pub last_position_flush: Option<&'a LastPositionFlush>,
@@ -789,8 +788,7 @@ pub struct ComposedFreshAdmission<'a, 'f, 's> {
         crate::durability::character_revision_sequencer::CharacterRevisionSequencer,
     /// The quest catalogue of the served content revision (QUEST-STATE-0 §4); `None` while no
     /// quest content is loaded.
-    pub quest_catalogue:
-        Option<std::sync::Arc<crate::durability::quest_state::quest::QuestStateCatalogue>>,
+    pub quest_catalogue: Option<std::sync::Arc<oteryn_gameplay_quests::quest::QuestStateCatalogue>>,
     /// The quest copy of each admitted session (QUEST-STATE-0 §7), loaded at fresh admission
     /// and resume. Never held across an await.
     pub quest_sessions: std::sync::Mutex<std::collections::HashMap<GameSessionId, QuestSession>>,
@@ -2877,7 +2875,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
         map: &crate::map::boot::BundleMap,
-        target: &world_object::WorldObjectTarget,
+        target: &oteryn_protocol_oteryn::world_object::WorldObjectTarget,
     ) -> UseOutcome {
         let mut runtime = self.runtime.lock().await;
         if self.spell_states.lock().await.is_dead(actor) {
@@ -2901,7 +2899,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .is_ok_and(|mut gate| gate.admit(actor, self.clock_origin.elapsed()));
         if !admitted {
             return UseOutcome {
-                disposition: world_object::UseDisposition::Exhausted,
+                disposition: oteryn_protocol_oteryn::world_object::UseDisposition::Exhausted,
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
                 gate_message_id: None,
@@ -2965,7 +2963,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 &cells,
             ) {
                 return UseOutcome {
-                    disposition: world_object::UseDisposition::TooFar,
+                    disposition: oteryn_protocol_oteryn::world_object::UseDisposition::TooFar,
                     committed: None,
                     earned: connection::EarnedNotice::NoneEarned,
                     gate_message_id: None,
@@ -3002,11 +3000,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .is_ok_and(|resolved| resolved.quest_transition.is_some())
         {
             match disposition {
-                world_object::UseDisposition::Committed => {
+                oteryn_protocol_oteryn::world_object::UseDisposition::Committed => {
                     self.refresh_quest_session(command.game_session_id, false)
                         .await;
                 }
-                world_object::UseDisposition::Rejected => {
+                oteryn_protocol_oteryn::world_object::UseDisposition::Rejected => {
                     self.schedule_quest_refresh(command.game_session_id);
                 }
                 _ => {}
@@ -3495,7 +3493,9 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
 
     /// The Channel's current door `WORLD_OBJECT_OVERLAY` (USE-WIRE-V1, #162 5868482467), for
     /// the join/resync snapshot. Channel-global, unlike `observe`: no actor is involved.
-    async fn observe_world_object_overlay(&self) -> Option<world_object::WorldObjectOverlayEntry> {
+    async fn observe_world_object_overlay(
+        &self,
+    ) -> Option<oteryn_protocol_oteryn::world_object::WorldObjectOverlayEntry> {
         if self
             .rooms
             .gate_source_world()
@@ -3506,12 +3506,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         }
         let runtime = self.runtime.lock().await;
         let door = self.door.lock().await;
-        Some(world_object::WorldObjectOverlayEntry {
-            content_generation: runtime.content_pin().client_artifact_digest(),
-            placement: door.placement_key().as_str().as_bytes().to_vec(),
-            state: door.state_key().as_str().as_bytes().to_vec(),
-            revision: door.revision(),
-        })
+        Some(
+            oteryn_protocol_oteryn::world_object::WorldObjectOverlayEntry {
+                content_generation: runtime.content_pin().client_artifact_digest(),
+                placement: door.placement_key().as_str().as_bytes().to_vec(),
+                state: door.state_key().as_str().as_bytes().to_vec(),
+                revision: door.revision(),
+            },
+        )
     }
 
     /// One Channel-owner work item for one actor (`MOVE-RL-02` = 1): the pinned context, one
@@ -3695,7 +3697,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         &self,
         actor: ExactActorRef,
         command: connection::UseCommand,
-        target: world_object::WorldObjectTarget,
+        target: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
     ) -> UseOutcome {
         if self
             .rooms
@@ -3724,7 +3726,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         let mut door = self.door.lock().await;
         if target.placement.as_slice() != door.placement_key().as_str().as_bytes() {
             return UseOutcome {
-                disposition: world_object::UseDisposition::NothingToUse,
+                disposition: oteryn_protocol_oteryn::world_object::UseDisposition::NothingToUse,
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
                 gate_message_id: None,
@@ -3734,7 +3736,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         if !Self::use_object_reachable(position.x, position.y, actor_floor, door.collision_cells())
         {
             return UseOutcome {
-                disposition: world_object::UseDisposition::TooFar,
+                disposition: oteryn_protocol_oteryn::world_object::UseDisposition::TooFar,
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
                 gate_message_id: None,
@@ -3759,31 +3761,33 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         match door.attempt_use(target.expected_revision, &occupied) {
             Ok(crate::world_runtime::LocalObjectUseOutcome::Committed { state, revision }) => {
                 UseOutcome {
-                    disposition: world_object::UseDisposition::Committed,
-                    committed: Some(world_object::WorldObjectOverlayEntry {
-                        content_generation,
-                        placement: door.placement_key().as_str().as_bytes().to_vec(),
-                        state: state.as_str().as_bytes().to_vec(),
-                        revision,
-                    }),
+                    disposition: oteryn_protocol_oteryn::world_object::UseDisposition::Committed,
+                    committed: Some(
+                        oteryn_protocol_oteryn::world_object::WorldObjectOverlayEntry {
+                            content_generation,
+                            placement: door.placement_key().as_str().as_bytes().to_vec(),
+                            state: state.as_str().as_bytes().to_vec(),
+                            revision,
+                        },
+                    ),
                     earned: connection::EarnedNotice::NoneEarned,
                     gate_message_id: None,
                 }
             }
             Ok(crate::world_runtime::LocalObjectUseOutcome::NothingToUse) => UseOutcome {
-                disposition: world_object::UseDisposition::NothingToUse,
+                disposition: oteryn_protocol_oteryn::world_object::UseDisposition::NothingToUse,
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
                 gate_message_id: None,
             },
             Ok(crate::world_runtime::LocalObjectUseOutcome::Occupied) => UseOutcome {
-                disposition: world_object::UseDisposition::Occupied,
+                disposition: oteryn_protocol_oteryn::world_object::UseDisposition::Occupied,
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
                 gate_message_id: None,
             },
             Ok(crate::world_runtime::LocalObjectUseOutcome::StaleState) => UseOutcome {
-                disposition: world_object::UseDisposition::StaleState,
+                disposition: oteryn_protocol_oteryn::world_object::UseDisposition::StaleState,
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
                 gate_message_id: None,
@@ -7593,7 +7597,7 @@ mod death_ml_loss_postgres {
     use crate::foundation::{ChannelId, WorldId};
     use crate::spell::cast::{CharacterCastFacts, PlayerSpellState};
     use crate::spell::mana_training::CompiledTrainingFormula;
-    use crate::spell::mana_training::hit_training::SkillFamily;
+    use oteryn_gameplay_progression::hit_training::SkillFamily;
     use oteryn_simulation_determinism::{ExactI64, RoundingMode};
 
     fn death(tag: u8) -> TestResult<CharacterDeathRequest<50>> {

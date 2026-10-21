@@ -287,10 +287,16 @@ fn formula_bounds(p: &Value, actor: &CasterSnapshot) -> Result<(f64, f64), Error
         .get("formula")
         .ok_or_else(|| Error("missing formula".into()))?;
     let formula = Formula {
-        minimum: super::authoring::expression(&fp["minimum"], 1)
-            .map_err(|e| Error(e.to_string()))?,
-        maximum: super::authoring::expression(&fp["maximum"], 1)
-            .map_err(|e| Error(e.to_string()))?,
+        minimum: oteryn_gameplay_content::content::spell_data::authoring::expression(
+            &fp["minimum"],
+            1,
+        )
+        .map_err(|e| Error(e.to_string()))?,
+        maximum: oteryn_gameplay_content::content::spell_data::authoring::expression(
+            &fp["maximum"],
+            1,
+        )
+        .map_err(|e| Error(e.to_string()))?,
     };
     let mut inputs = actor.inputs;
     inputs.base_power = Some(

@@ -8,10 +8,10 @@ use oteryn_simulation_determinism::SemanticTimeMicros;
 use serde_json::{Value, json};
 
 use super::Vocation;
-use super::authoring::spell_from_bundle;
 use super::chain::{ChainCreature, TilePosition};
 use super::harmony::{FOCUS_SERENITY_MICROS, MonkState, MonkStateError, SereneWorld};
 use super::party::SoloParty;
+use oteryn_gameplay_content::content::spell_data::authoring::spell_from_bundle;
 use oteryn_gameplay_spell_rules::harmony::MULTIPLIER_DENOMINATOR;
 
 const SPELL: &str = include_str!(

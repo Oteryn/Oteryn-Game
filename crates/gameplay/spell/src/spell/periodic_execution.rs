@@ -1,8 +1,8 @@
 //! Player periodic effects consume only ticks issued by the actual condition
 //! store during this staged owner turn. They carry no client cast command.
 use super::cast::PlayerSpellState;
-use crate::ability::condition::{ConditionTick, TickFacts, TickKind};
 use crate::foundation::{ExactActorRef, GameSessionId, RuntimeWorkStamp};
+use oteryn_gameplay_foundation::foundation::condition::{ConditionTick, TickFacts, TickKind};
 use oteryn_protocol_oteryn::actor_spell::SpellCastDisposition;
 use oteryn_simulation_determinism::SemanticTimeMicros;
 

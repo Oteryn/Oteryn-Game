@@ -1,7 +1,7 @@
 //! Current spell combat facts shared with the lower-layer chain picker.
-use crate::creature_attack_geometry::Facing;
 use crate::creature_auto_attack::{AttackFacts, CurrentConditionPolicy};
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, RuntimeWorkStamp};
+use oteryn_gameplay_content::content::creature_attack_geometry::Facing;
 
 #[derive(Clone)]
 pub struct SpellCombatFacts {

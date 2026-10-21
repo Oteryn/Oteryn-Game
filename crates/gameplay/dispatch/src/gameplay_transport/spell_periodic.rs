@@ -10,9 +10,10 @@ use crate::durability::spell_item_transaction::StandingTileRead;
 use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, GameSessionId, GameSessionState, RuntimeScopeRefV1,
 };
-use crate::spell::world_items_execution::SpellGroundTarget;
+use oteryn_gameplay_domain::domain::condition::DotElement;
+use oteryn_gameplay_durability::durability::native_world_items::SpellGroundTarget;
+use oteryn_gameplay_foundation::foundation::condition::TickFacts;
 use oteryn_protocol_oteryn::actor_spell::ActorVitals;
-use {crate::ability::condition::TickFacts, oteryn_gameplay_domain::domain::condition::DotElement};
 
 fn standing_element(
     read: &StandingTileRead,
@@ -121,7 +122,7 @@ impl ChannelSpellStates {
         facts: TickFacts,
         native: Option<&NativeGameplayState>,
     ) -> Option<Option<(u64, ActorVitals)>> {
-        use crate::ability::condition::{ConditionSourceKind, TickKind};
+        use oteryn_gameplay_foundation::foundation::condition::{ConditionSourceKind, TickKind};
         let before = self.get(runtime, actor, session)?;
         let preview = crate::spell::actor_conditions::stage_source_owner_cycle(
             before,

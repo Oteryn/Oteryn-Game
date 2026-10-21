@@ -15,14 +15,15 @@ fn character(seed: u8) -> CharacterId {
     let mut bytes = [seed; 16];
     bytes[6] = 0x70;
     bytes[8] = (bytes[8] & 0x3f) | 0x80;
-    CharacterId::decode(&bytes).expect("uuid v7 fixture")
+    oteryn_gameplay_foundation::foundation::CharacterId::decode(&bytes).expect("uuid v7 fixture")
 }
 
 fn session(seed: u8) -> GameSessionId {
     let mut bytes = [seed; 16];
     bytes[6] = 0x70;
     bytes[8] = (bytes[8] & 0x3f) | 0x80;
-    GameSessionId::decode(&bytes).expect("uuid v7 session fixture")
+    oteryn_gameplay_foundation::foundation::GameSessionId::decode(&bytes)
+        .expect("uuid v7 session fixture")
 }
 
 /// `character(who)`'s command `sequence` (sub-occurrence `sub_ordinal`) of session `session_seed`.
@@ -31,7 +32,7 @@ fn attack(who: u8, session_seed: u8, sequence: u64, sub_ordinal: u16) -> Attacke
     AttackerCommand::new(
         character(who),
         u64::from(session_seed),
-        CommandRef::new(
+        oteryn_gameplay_foundation::foundation::CommandRef::new(
             session(session_seed),
             oteryn_gameplay_foundation::foundation::CommandId::new(sequence)
                 .expect("non-zero command"),
@@ -49,9 +50,14 @@ fn grant(seed: u64, generation: u64) -> PreProductionContinuityGrant {
         bytes
     }
     PreProductionContinuityGrant {
-        world_id: WorldId::decode(&uuid_v7(seed)).expect("world"),
-        channel_id: ChannelId::decode(&uuid_v7(seed + 1)).expect("channel"),
-        scope_generation: ScopeOwnershipGeneration::new(generation).expect("scope"),
+        world_id: oteryn_gameplay_foundation::foundation::WorldId::decode(&uuid_v7(seed))
+            .expect("world"),
+        channel_id: oteryn_gameplay_foundation::foundation::ChannelId::decode(&uuid_v7(seed + 1))
+            .expect("channel"),
+        scope_generation: oteryn_gameplay_foundation::foundation::ScopeOwnershipGeneration::new(
+            generation,
+        )
+        .expect("scope"),
     }
 }
 

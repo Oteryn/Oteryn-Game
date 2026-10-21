@@ -7,9 +7,9 @@ use std::collections::BTreeMap;
 use std::error::Error;
 use std::sync::Arc;
 
-use crate::durability::quest_state::quest::loader::{load_embedded_quest_state, parse_quest_state};
-use crate::durability::quest_state::quest::{QuestRefusal, QuestStateCatalogue};
 use crate::node::serve::{BootError, check_chest_quest_transitions, load_quest_catalogue};
+use oteryn_gameplay_quests::quest::loader::{load_embedded_quest_state, parse_quest_state};
+use oteryn_gameplay_quests::quest::{QuestRefusal, QuestStateCatalogue};
 
 type TestResult = Result<(), Box<dyn Error>>;
 

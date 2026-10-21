@@ -163,7 +163,7 @@ fn source_familiar_look_and_genuine_lethal_cleanup_require_matching_durable_rece
             FamiliarOwnerFacts, commit_familiar, prepare_familiar_hook,
         };
         use crate::spell::delayed_execution::CastBinding;
-        use crate::spell::native_companions::FamiliarEvent;
+        use oteryn_gameplay_spell_rules::native_companions::FamiliarEvent;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root
@@ -545,7 +545,7 @@ async fn familiar_end_closes_the_durable_row_before_the_despawn(
             FamiliarLifecycleBinding, FamiliarOwnerFacts, LeverBossRoomMembership,
             commit_lifecycle_familiar, prepare_lifecycle_familiar,
         };
-        use crate::spell::native_companions::FamiliarAction;
+        use oteryn_gameplay_spell_rules::native_companions::FamiliarAction;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root

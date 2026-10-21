@@ -67,7 +67,7 @@ pub struct ProfileSummonProposal {
     pub maximum_of_creature: u32,
 }
 
-pub use crate::durability::creature_schedule::ScheduleList;
+pub use oteryn_gameplay_foundation::foundation::profile_schedule::ScheduleList;
 
 /// Target facts read by the owner, not coordinates or an actor reconstructed from content IDs.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

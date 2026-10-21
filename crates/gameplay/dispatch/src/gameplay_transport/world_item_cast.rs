@@ -369,12 +369,15 @@ async fn prepare_item_grant(
         )?;
         let Plan::Food {
             items: outputs,
-            overflow: crate::spell::native_items::ItemGrantOverflow::DropOnCasterTile,
+            overflow: oteryn_gameplay_spell_rules::native_items::ItemGrantOverflow::DropOnCasterTile,
         } = paid.plan
         else {
             return denied();
         };
-        let mut grants: Vec<(crate::spell::native_items::NativeItemRef, u32)> = Vec::new();
+        let mut grants: Vec<(
+            oteryn_gameplay_spell_rules::native_items::NativeItemRef,
+            u32,
+        )> = Vec::new();
         for output in &outputs {
             if let Some((_, quantity)) = grants.iter_mut().find(|(item, _)| item == output) {
                 *quantity += 1;

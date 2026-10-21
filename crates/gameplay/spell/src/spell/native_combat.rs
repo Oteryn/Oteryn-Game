@@ -255,8 +255,10 @@ fn distance(a: TilePosition, b: TilePosition) -> u128 {
     dx * dx + dy * dy
 }
 fn formula(v: &Value, f: &NativeCombatFacts) -> Result<(i64, i64), Error> {
-    let expression =
-        |k| super::authoring::expression(field(v, k)?, 1).map_err(|e| Error(e.to_string()));
+    let expression = |k| {
+        oteryn_gameplay_content::content::spell_data::authoring::expression(field(v, k)?, 1)
+            .map_err(|e| Error(e.to_string()))
+    };
     Formula {
         minimum: expression("minimum")?,
         maximum: expression("maximum")?,
@@ -544,7 +546,7 @@ pub fn plan(
             }
             let mut expr = field(p, "capacity")?.clone();
             replace(&mut expr, f.maximum_mana);
-            let raw = super::authoring::expression(&expr, 1)
+            let raw = oteryn_gameplay_content::content::spell_data::authoring::expression(&expr, 1)
                 .map_err(|e| Error(e.to_string()))?
                 .evaluate(&f.inputs)
                 .map_err(|e| Error(e.to_string()))?;

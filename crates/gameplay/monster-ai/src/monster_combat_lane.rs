@@ -92,7 +92,7 @@ pub trait MonsterCombatReader:
         actor: ExactActorRef,
         session: GameSessionId,
         stamp: RuntimeWorkStamp,
-    ) -> Option<crate::ability::condition::TickFacts> {
+    ) -> Option<oteryn_gameplay_foundation::foundation::condition::TickFacts> {
         let current = self.condition_tick_facts(runtime, actor, session, stamp)?;
         let standing = current.standing_on_field.map(|field| match field {
             crate::foundation::DotElement::Poison => {
@@ -461,7 +461,7 @@ impl TrustedMonsterConditionTickInputs {
         current_standing_field: Option<
             Option<oteryn_gameplay_domain::domain::condition::DotElement>,
         >,
-    ) -> Option<crate::ability::condition::TickFacts> {
+    ) -> Option<oteryn_gameplay_foundation::foundation::condition::TickFacts> {
         let (cells, _) = self.current(runtime)?;
         qualified_source_player_tick_spatial_facts(
             runtime,
@@ -479,7 +479,7 @@ fn qualified_source_player_tick_spatial_facts(
     actor: ExactActorRef,
     session: GameSessionId,
     current_standing_field: Option<Option<oteryn_gameplay_domain::domain::condition::DotElement>>,
-) -> Option<crate::ability::condition::TickFacts> {
+) -> Option<oteryn_gameplay_foundation::foundation::condition::TickFacts> {
     let standing_on_field = current_standing_field?;
     if cells.scope().world_id != runtime.binding().world_id()
         || cells.scope().generation_digest != runtime.content_pin().server_artifact_digest()
@@ -504,10 +504,12 @@ fn qualified_source_player_tick_spatial_facts(
         return None;
     }
     let tile = cells.spell_tiles().lookup(cells.scope(), cell).ok()?;
-    Some(crate::ability::condition::TickFacts {
-        in_protection_zone: tile.flags().protection_zone,
-        standing_on_field,
-    })
+    Some(
+        oteryn_gameplay_foundation::foundation::condition::TickFacts {
+            in_protection_zone: tile.flags().protection_zone,
+            standing_on_field,
+        },
+    )
 }
 
 /// Source-specific combat composition supplied by the owning encounter crate.

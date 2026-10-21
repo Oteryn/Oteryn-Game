@@ -14,7 +14,6 @@ use super::ComposedFreshAdmission;
 use super::actor_spell::ChannelSpellStates;
 use super::connection::{EarnedNotice, UseCommand, UseOutcome};
 use super::item_view::ItemKey;
-use super::world_object::UseDisposition;
 use crate::content::native_gameplay::{ItemProfileRecord, NativeGameplayState};
 use crate::content::{
     ActiveGeneration, ReferenceBaseVocation, ReferenceItemConsumption, ReferenceItemField,
@@ -34,6 +33,7 @@ use crate::interaction_chest_use::entry_chest;
 use crate::spell::Vocation;
 use crate::spell::actor_conditions::eat_food;
 use crate::spell::cast::CharacterCastFacts;
+use oteryn_protocol_oteryn::world_object::UseDisposition;
 
 /// `ITEMUSE0-RL-01`: item uses per actor per second.
 pub(super) const ITEMUSE0_RL_01_USES_PER_SECOND: usize = 5;

@@ -29,7 +29,7 @@ pub type ProfileAbilityProposal =
 /// Existing main formula evaluator and checked ATTACK constants are the only arithmetic owner.
 pub fn canonical_melee_bounds(attack: u32, skill: u32) -> Result<(u64, u64), AttackError> {
     let constants = AttackConstants::checked_in().ok_or(AttackError::InvalidSource)?;
-    let inputs = crate::combat::formula::FormulaInputs {
+    let inputs = oteryn_gameplay_content::content::spell_data::formula::FormulaInputs {
         level: 1,
         magic_level: 0,
         base_power: None,
@@ -933,7 +933,7 @@ impl AutoAttackOwner {
         let draw = |purpose: &str, min: u32, max: u32| -> Result<u32, AttackError> {
             let d = deterministic_decision_u64(root, id, purpose, source.entry_index as u64)
                 .map_err(|_| AttackError::InvalidPlan)?;
-            u32::try_from(crate::durability::uniform_draw::uniform_draw(
+            u32::try_from(oteryn_gameplay_domain::domain::uniform_draw::uniform_draw(
                 d,
                 i64::from(min),
                 i64::from(max),

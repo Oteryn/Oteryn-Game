@@ -246,7 +246,9 @@ fn state(slot: &Slot) -> Result<&ActorCombatState, Error> {
         Slot::Occupied { spell_combat, .. } | Slot::CreatureOccupied { spell_combat, .. } => {
             Ok(spell_combat)
         }
-        _ => Err(Error::Owner(CarrierError::StaleActorGeneration)),
+        _ => Err(Error::Owner(
+            oteryn_gameplay_domain::domain::carrier_values::CarrierError::StaleActorGeneration,
+        )),
     }
 }
 fn state_mut(slot: &mut Slot) -> Result<&mut ActorCombatState, Error> {
@@ -254,7 +256,9 @@ fn state_mut(slot: &mut Slot) -> Result<&mut ActorCombatState, Error> {
         Slot::Occupied { spell_combat, .. } | Slot::CreatureOccupied { spell_combat, .. } => {
             Ok(spell_combat)
         }
-        _ => Err(Error::Owner(CarrierError::StaleActorGeneration)),
+        _ => Err(Error::Owner(
+            oteryn_gameplay_domain::domain::carrier_values::CarrierError::StaleActorGeneration,
+        )),
     }
 }
 
@@ -486,18 +490,24 @@ impl ChannelRuntimeV1 {
         if !matches!(&self.carrier.slots[index],Slot::Occupied{generation,..}|Slot::CreatureOccupied{generation,..}
             if *generation==actor.0.actor_local_generation.0)
         {
-            return Err(CarrierError::StaleActorGeneration);
+            return Err(
+                oteryn_gameplay_domain::domain::carrier_values::CarrierError::StaleActorGeneration,
+            );
         }
         if state(&self.carrier.slots[index])
-            .map_err(|_| CarrierError::StaleActorGeneration)?
+            .map_err(|_| {
+                oteryn_gameplay_domain::domain::carrier_values::CarrierError::StaleActorGeneration
+            })?
             .pending_source
             .is_some()
             || state(&self.carrier.slots[index])
-                .map_err(|_| CarrierError::StaleActorGeneration)?
+                .map_err(|_| {
+                    oteryn_gameplay_domain::domain::carrier_values::CarrierError::StaleActorGeneration
+                })?
                 .pending_owner
                 .is_some()
         {
-            return Err(CarrierError::PlanConflict);
+            return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
         }
         Ok(())
     }
@@ -758,23 +768,28 @@ impl ChannelRuntimeV1 {
     ) -> Result<(), CarrierError> {
         let unreserved = |actor: ExactActorRef| -> Result<(), CarrierError> {
             let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
-            let spell = match &self.carrier.slots[index] {
-                Slot::Occupied {
-                    generation,
-                    spell_combat,
-                    ..
-                }
-                | Slot::CreatureOccupied {
-                    generation,
-                    spell_combat,
-                    ..
-                } if *generation == actor.0.actor_local_generation.0 => spell_combat,
-                _ => return Err(CarrierError::StaleActorGeneration),
-            };
+            let spell =
+                match &self.carrier.slots[index] {
+                    Slot::Occupied {
+                        generation,
+                        spell_combat,
+                        ..
+                    }
+                    | Slot::CreatureOccupied {
+                        generation,
+                        spell_combat,
+                        ..
+                    } if *generation == actor.0.actor_local_generation.0 => spell_combat,
+                    _ => return Err(
+                        oteryn_gameplay_domain::domain::carrier_values::CarrierError::StaleActorGeneration,
+                    ),
+                };
             if spell.pending_source.is_some()
                 || (spell.pending_owner.is_some() && !released.contains(&index))
             {
-                return Err(CarrierError::PlanConflict);
+                return Err(
+                    oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict,
+                );
             }
             Ok(())
         };
@@ -783,7 +798,9 @@ impl ChannelRuntimeV1 {
             if marks[..at].iter().any(|v| v.actor == snapshot.actor)
                 || dead.is_some_and(|v| v.actor == snapshot.actor)
             {
-                return Err(CarrierError::PlanConflict);
+                return Err(
+                    oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict,
+                );
             }
             unreserved(snapshot.actor)?;
             self.validate_companion_snapshot(snapshot)?;
@@ -798,7 +815,9 @@ impl ChannelRuntimeV1 {
                     session,
                 })
             {
-                return Err(CarrierError::PlanConflict);
+                return Err(
+                    oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict,
+                );
             }
             self.validate_companion_snapshot(dead)?;
             self.carrier
@@ -811,7 +830,9 @@ impl ChannelRuntimeV1 {
                 .validate_ref(&self.continuity, spawn.actor().0)?;
             // Only the already reserved slot stays valid across the despawn above.
             if !matches!(&self.carrier.slots[index], Slot::CreatureReserved { .. }) {
-                return Err(CarrierError::PlanConflict);
+                return Err(
+                    oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict,
+                );
             }
         }
         Ok(())
@@ -1038,7 +1059,9 @@ impl ChannelRuntimeV1 {
             if !matches!(&self.carrier.slots[index],Slot::Occupied{generation,..}|Slot::CreatureOccupied{generation,..}
                 if *generation==effect.target.0.actor_local_generation.0)
             {
-                return Err(Error::Owner(CarrierError::StaleActorGeneration));
+                return Err(Error::Owner(
+                    oteryn_gameplay_domain::domain::carrier_values::CarrierError::StaleActorGeneration,
+                ));
             }
             if state(&self.carrier.slots[index])?.pending_source.is_some() {
                 return Err(Error::SnapshotChanged);
@@ -1169,10 +1192,10 @@ impl ChannelRuntimeV1 {
                                 return Err(Error::InvalidBatch);
                             };
                             if target_identity.as_ref() != target_atom.as_bytes() {
-                                return Err(Error::Owner(CarrierError::CreatureTargetMismatch));
+                                return Err(Error::Owner(oteryn_gameplay_domain::domain::carrier_values::CarrierError::CreatureTargetMismatch));
                             }
                             if *health <= 0 || spell_combat.maximum_health <= 0 {
-                                return Err(Error::Owner(CarrierError::CreatureNotActionable));
+                                return Err(Error::Owner(oteryn_gameplay_domain::domain::carrier_values::CarrierError::CreatureNotActionable));
                             }
                             before_health = *health;
                             *health = health
@@ -1226,13 +1249,13 @@ impl ChannelRuntimeV1 {
                             return Err(Error::InvalidBatch);
                         };
                         if target_identity.as_ref() != target_atom.as_bytes() {
-                            return Err(Error::Owner(CarrierError::CreatureTargetMismatch));
+                            return Err(Error::Owner(oteryn_gameplay_domain::domain::carrier_values::CarrierError::CreatureTargetMismatch));
                         }
                         if *magnitude <= 0 {
                             return Err(Error::InvalidMagnitude);
                         }
                         if *health <= 0 || spell_combat.maximum_health <= 0 {
-                            return Err(Error::Owner(CarrierError::CreatureNotActionable));
+                            return Err(Error::Owner(oteryn_gameplay_domain::domain::carrier_values::CarrierError::CreatureNotActionable));
                         }
                         let before = *health;
                         *health = before
@@ -1249,7 +1272,7 @@ impl ChannelRuntimeV1 {
                             next.slots[index],
                             Slot::CreatureOccupied { health: 1.., .. }
                         ) {
-                            return Err(Error::Owner(CarrierError::CreatureNotActionable));
+                            return Err(Error::Owner(oteryn_gameplay_domain::domain::carrier_values::CarrierError::CreatureNotActionable));
                         }
                         if ai.forced_distance.is_none() && ai.challenged_to.is_none() {
                             return Err(Error::InvalidCondition);
@@ -1415,7 +1438,9 @@ impl ChannelRuntimeV1 {
             ..
         } = &self.carrier.slots[index]
         else {
-            return Err(Error::Owner(CarrierError::NotCreature));
+            return Err(Error::Owner(
+                oteryn_gameplay_domain::domain::carrier_values::CarrierError::NotCreature,
+            ));
         };
         let mut ai = spell_combat.monster_ai.clone();
         if let Some(ai) = &mut ai {

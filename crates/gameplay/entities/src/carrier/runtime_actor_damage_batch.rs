@@ -8,16 +8,18 @@ impl CurrentOwnerExactActorCommit<'_> {
         prepare_receipt: impl FnOnce(&[OwnerDamageResult]) -> Result<T, CarrierError>,
     ) -> Result<T, CarrierError> {
         if actors.len() > 64 {
-            return Err(CarrierError::AllocationFailed);
+            return Err(
+                oteryn_gameplay_domain::domain::carrier_values::CarrierError::AllocationFailed,
+            );
         }
         let mut prepared = Vec::new();
         let mut results = Vec::new();
-        prepared
-            .try_reserve(actors.len())
-            .map_err(|_| CarrierError::AllocationFailed)?;
-        results
-            .try_reserve(actors.len())
-            .map_err(|_| CarrierError::AllocationFailed)?;
+        prepared.try_reserve(actors.len()).map_err(|_| {
+            oteryn_gameplay_domain::domain::carrier_values::CarrierError::AllocationFailed
+        })?;
+        results.try_reserve(actors.len()).map_err(|_| {
+            oteryn_gameplay_domain::domain::carrier_values::CarrierError::AllocationFailed
+        })?;
         for actor in actors {
             let (index, next, result) = self.carrier.prepare_creature_damage_inner(
                 self.continuity,
@@ -27,7 +29,9 @@ impl CurrentOwnerExactActorCommit<'_> {
                 false,
             )?;
             if prepared.iter().any(|(prior, _)| *prior == index) {
-                return Err(CarrierError::PlanConflict);
+                return Err(
+                    oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict,
+                );
             }
             prepared.push((index, next));
             results.push(result);

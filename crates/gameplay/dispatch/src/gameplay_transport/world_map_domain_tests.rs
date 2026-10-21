@@ -17,15 +17,15 @@ use crate::gameplay_transport::connection::{
     UseCommand, UseOutcome, serve_admitted,
 };
 use crate::gameplay_transport::item_view::InventoryItems;
-use crate::gameplay_transport::world_object::{
-    COMMAND_TYPE_USE_INTENT, STATE_DOMAIN_WORLD_OBJECT_OVERLAY, UseDisposition,
-    WorldObjectOverlayEntry, encode_use_intent,
-};
 use crate::gameplay_transport::world_spatial::{
     COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition, WorldSpatialObservation,
     encode_step_intent,
 };
 use oteryn_protocol_oteryn::world_map::WorldMapViewSnapshot;
+use oteryn_protocol_oteryn::world_object::{
+    COMMAND_TYPE_USE_INTENT, STATE_DOMAIN_WORLD_OBJECT_OVERLAY, UseDisposition,
+    WorldObjectOverlayEntry, encode_use_intent,
+};
 use oteryn_protocol_oteryn::{
     ClientCommandValue, decode_snapshot_chunk, decode_state_delta, encode_client_command,
 };

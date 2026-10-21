@@ -2,7 +2,7 @@
 use crate::content::spell_data::native::{profiles, spell_from_bundle};
 use crate::spell::native::CompiledNativeSpellPlanExt;
 use crate::spell::native::{Facts, Plan};
-use crate::spell::native_items as items;
+use oteryn_gameplay_spell_rules::native_items as items;
 use serde_json::json;
 
 #[test]

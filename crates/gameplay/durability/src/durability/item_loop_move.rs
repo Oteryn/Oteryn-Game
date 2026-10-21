@@ -22,7 +22,7 @@ use super::character_equipment::{EquipmentError, assert_current_equipment_in_tra
 use super::ground_cell_limit::{
     GroundCellAdmissionError, GroundCellLimitError, check_ground_cell_root_insert_with_recovery,
 };
-use super::item_capacity::{CapacityMove, CapacityRefusal, IncomingWeight, plan_capacity};
+use oteryn_gameplay_items::item_capacity::{CapacityMove, CapacityRefusal, IncomingWeight, plan_capacity};
 use super::item_mint::{GroundItemInstance, GroundPlacement, TypedDefinitionRef, uuid_text};
 use super::item_transfer::{
     BackpackEntry, CurrentCharacterItemFence, GAMEITEM01_CONTAINER_ENTRIES_MAX, InventoryItem,

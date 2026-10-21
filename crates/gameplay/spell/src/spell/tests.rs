@@ -6,11 +6,11 @@ use std::collections::BTreeSet;
 use oteryn_simulation_determinism::SemanticTimeMicros;
 use serde_json::Value;
 
-use super::authoring::spell_from_bundle;
 use super::formula::level_base_damage_healing;
 use super::plan::{CastPlanError, effect_plan};
 use super::*;
 use crate::ability::{AbilityEngine, AbilityOccurrence, RevisionSet};
+use oteryn_gameplay_content::content::spell_data::authoring::spell_from_bundle;
 
 macro_rules! bundle {
     ($dir:literal) => {

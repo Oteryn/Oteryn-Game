@@ -1,21 +1,21 @@
 //! Herald death -> existing serialized Character QuestState writer.
 //! PROJECT selection: only the physical owner's top-damage Character. Party fan-out,
 //! permanent portal publication and speech delivery are separate owning consumers.
-use crate::durability::{
-    DurabilityRoot,
-    character_authority::ReconciledCharacterAuthority,
-    character_progression::{
-        CharacterProgressionError, CurrentCharacterGameplayFence, ExperienceRewardOccurrence,
-    },
-    character_revision_sequencer::CharacterRevisionSequencer,
-    quest_state::{
-        QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
-        quest::{QuestComparison, QuestEffectKind, QuestStateCatalogue},
-    },
-    runtime_scope_assignment::NodeIncarnationProof,
-};
-use crate::foundation::{RuntimeWorkStamp, ScopeRuntimeFence};
+use oteryn_gameplay_foundation::foundation::{RuntimeWorkStamp, ScopeRuntimeFence};
 use std::sync::Arc;
+use {
+    crate::durability::{
+        DurabilityRoot,
+        character_authority::ReconciledCharacterAuthority,
+        character_progression::{
+            CharacterProgressionError, CurrentCharacterGameplayFence, ExperienceRewardOccurrence,
+        },
+        character_revision_sequencer::CharacterRevisionSequencer,
+        quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest},
+        runtime_scope_assignment::NodeIncarnationProof,
+    },
+    oteryn_gameplay_quests::quest::{QuestComparison, QuestEffectKind, QuestStateCatalogue},
+};
 
 pub const MISSION: &str =
     "oteryn:quest-progress/crystalserver/quest/u15_24/targuna/burning_heart/mission";
@@ -138,8 +138,8 @@ impl HeraldQuestRequest {
         node: &NodeIncarnationProof,
         current: CurrentCharacterGameplayFence,
         source_fence: &ScopeRuntimeFence,
-        runtime: &tokio::sync::Mutex<crate::foundation::ChannelRuntimeV1>,
-        qualified: &crate::crystal_death_composition::QualifiedCrystalDeaths,
+        runtime: &tokio::sync::Mutex<oteryn_gameplay_entities::ChannelRuntimeV1>,
+        qualified: &oteryn_gameplay_encounters::bosses::crystal_deaths::crystal_death_composition::QualifiedCrystalDeaths,
     ) -> Result<QuestTransitionOutcome, HeraldQuestError> {
         if self.fence.character_id != current.character_id
             || self.fence.game_session_id != current.game_session_id
@@ -182,7 +182,7 @@ impl HeraldQuestRequest {
 #[allow(clippy::expect_used)]
 mod tests {
     use super::*;
-    use crate::durability::quest_state::quest::loader::load_embedded_quest_state;
+    use oteryn_gameplay_quests::quest::loader::load_embedded_quest_state;
     #[test]
     fn actual_grouped_herald_transition_guards_both_tracks_and_preserves_later_mission() {
         let lowered =

@@ -899,8 +899,8 @@ impl ChannelSpellStates {
         stamp: RuntimeWorkStamp,
         target: ExactActorRef,
         session: GameSessionId,
-        definition: &crate::ability::condition::ConditionDefinition,
-        facts: &crate::ability::condition::ApplicationFacts<'_>,
+        definition: &oteryn_gameplay_foundation::foundation::condition::ConditionDefinition,
+        facts: &oteryn_gameplay_foundation::foundation::condition::ApplicationFacts<'_>,
     ) -> bool {
         if !current_owner(runtime, fence, stamp)
             || !self.condition_player_current(runtime, target, session)
@@ -922,7 +922,7 @@ impl ChannelSpellStates {
                     "player:{}",
                     super::hex(&target.placement_identity())
                 )),
-                crate::ability::condition::ConditionSourceKind::SelfUse,
+                oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind::SelfUse,
                 &[],
                 facts,
             )

@@ -10,12 +10,12 @@ pub struct TimeProfileBundle {
     unqualified: Vec<(usize, AttackError)>,
     native_speed: Option<crate::movement::speed::NativeCreatureSpeed>,
     presentations: Vec<(usize, DefensePresentationSource)>,
-    callback_spawn_sources: Vec<crate::source_callback_spawn::SourceCallbackSpawn>,
+    callback_spawn_sources: Vec<oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_spawn::SourceCallbackSpawn>,
 }
 impl TimeProfileBundle {
     pub fn prepare(
         runtime: &ChannelRuntimeV1,
-        source: &crate::source_encounter_seven::SevenSource,
+        source: &oteryn_gameplay_encounters::bosses::seven_encounters::source_encounter_seven::SevenSource,
         key: &str,
         draft: &ProjectV2Draft,
     ) -> Result<Self, AttackError> {
@@ -118,7 +118,7 @@ impl TimeProfileBundle {
             .collect();
         let mut callback_spawn_sources = Vec::new();
         for (i, _) in b.defenses.iter().enumerate() {
-            if let Some(s) = crate::source_callback_spawn::SourceCallbackSpawn::qualify(
+            if let Some(s) = oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_spawn::SourceCallbackSpawn::qualify(
                 draft,
                 &creature,
                 i,
@@ -195,11 +195,11 @@ impl NativeActor {
         r: &mut ChannelRuntimeV1,
         f: &ScopeRuntimeFence,
         stamp: RuntimeWorkStamp,
-        owner: &mut crate::source_encounter_seven::TimeGuardianOwner,
-        source: &crate::source_encounter_seven::SevenSource,
+        owner: &mut oteryn_gameplay_encounters::bosses::seven_encounters::source_encounter_seven::TimeGuardianOwner,
+        source: &oteryn_gameplay_encounters::bosses::seven_encounters::source_encounter_seven::SevenSource,
         proposal: &crate::ai_think::profile_schedule::ProfileAbilityProposal,
         now: SemanticTimeMicros,
-    ) -> Result<crate::source_encounter_seven::TimePhaseOutcome, AttackError> {
+    ) -> Result<oteryn_gameplay_encounters::bosses::seven_encounters::source_encounter_seven::TimePhaseOutcome, AttackError> {
         match owner.prepare_cast(r, f, stamp, source, proposal, now)? {
             Err(retained) => Ok(retained),
             Ok(prepared) => {
@@ -208,7 +208,7 @@ impl NativeActor {
                     .as_ref()
                     .and_then(|p| {
                         p.get(
-                            crate::source_encounter_seven::TimeGuardianOwner::planned_definition(
+                            oteryn_gameplay_encounters::bosses::seven_encounters::source_encounter_seven::TimeGuardianOwner::planned_definition(
                                 &prepared,
                             ),
                         )
@@ -226,9 +226,9 @@ impl NativeActor {
         r: &mut ChannelRuntimeV1,
         f: &ScopeRuntimeFence,
         stamp: RuntimeWorkStamp,
-        owner: &mut crate::source_encounter_seven::TimeGuardianOwner,
-        prepared: crate::source_encounter_seven::DueTimeReturn,
-    ) -> Result<crate::source_encounter_seven::TimePhaseOutcome, AttackError> {
+        owner: &mut oteryn_gameplay_encounters::bosses::seven_encounters::source_encounter_seven::TimeGuardianOwner,
+        prepared: oteryn_gameplay_encounters::bosses::seven_encounters::source_encounter_seven::DueTimeReturn,
+    ) -> Result<oteryn_gameplay_encounters::bosses::seven_encounters::source_encounter_seven::TimePhaseOutcome, AttackError> {
         let bundle = self
             .time_profiles
             .as_ref()

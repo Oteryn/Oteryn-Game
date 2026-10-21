@@ -159,7 +159,7 @@ impl ChannelRuntimeV1 {
                     Ok(index)
                 } else {
                     Err(ConditionOwnerError::Actor(
-                        CarrierError::PlayerReservationMismatch,
+                        oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlayerReservationMismatch,
                     ))
                 }
             }
@@ -582,19 +582,23 @@ impl ChannelRuntimeV1 {
         now: u64,
     ) -> Result<(usize, ActorConditionState), CarrierError> {
         if !self.contains_live_creature(actor) {
-            return Err(CarrierError::StaleActorGeneration);
+            return Err(
+                oteryn_gameplay_domain::domain::carrier_values::CarrierError::StaleActorGeneration,
+            );
         }
-        let index = self
-            .condition_index(actor, None)
-            .map_err(|_| CarrierError::StaleActorGeneration)?;
+        let index = self.condition_index(actor, None).map_err(|_| {
+            oteryn_gameplay_domain::domain::carrier_values::CarrierError::StaleActorGeneration
+        })?;
         let current = self.condition_state(index);
         if now < current.at {
-            return Err(CarrierError::StaleAttackerSequence);
+            return Err(
+                oteryn_gameplay_domain::domain::carrier_values::CarrierError::StaleAttackerSequence,
+            );
         }
         let revision = current
             .revision
             .checked_add(1)
-            .ok_or(CarrierError::PlanConflict)?;
+            .ok_or(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict)?;
         let mut store = current.store.clone();
         store.remove_type(ConditionType::Paralysis);
         Ok((
@@ -623,18 +627,24 @@ impl ChannelRuntimeV1 {
         now: u64,
     ) -> Result<Vec<OwnerDamageResult>, CarrierError> {
         if content != self.content_pin().server_artifact_digest() {
-            return Err(CarrierError::PositionContextMismatch);
+            return Err(
+                oteryn_gameplay_domain::domain::carrier_values::CarrierError::PositionContextMismatch,
+            );
         }
         if cure.len() > 64 {
-            return Err(CarrierError::AllocationFailed);
+            return Err(
+                oteryn_gameplay_domain::domain::carrier_values::CarrierError::AllocationFailed,
+            );
         }
         let mut prepared = Vec::new();
-        prepared
-            .try_reserve(cure.len())
-            .map_err(|_| CarrierError::AllocationFailed)?;
+        prepared.try_reserve(cure.len()).map_err(|_| {
+            oteryn_gameplay_domain::domain::carrier_values::CarrierError::AllocationFailed
+        })?;
         for (n, actor) in cure.iter().enumerate() {
             if cure[..n].contains(actor) {
-                return Err(CarrierError::PlanConflict);
+                return Err(
+                    oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict,
+                );
             }
             // SPELL-LOCK-2 §1.3: a cure-only actor is outside the heal batch's own check, so
             // every distinct cure slot refuses retryably here, before any HP or condition write.

@@ -5,7 +5,6 @@ use crate::content::{
 };
 use crate::creature_auto_attack::AttackError;
 use crate::creature_auto_attack::ProfileAbilityProposal;
-use crate::durability::creature_schedule::ScheduleList;
 use crate::foundation::owner_timer::SemanticTimeMicros;
 use crate::foundation::owner_timer::VirtualOwnerClock;
 use crate::foundation::{
@@ -14,6 +13,7 @@ use crate::foundation::{
 };
 use crate::gameplay_transport::actor_spell::tests::runtime_with_player;
 use crate::source_encounter_seven::*;
+use oteryn_gameplay_foundation::foundation::profile_schedule::ScheduleList;
 use {
     crate::foundation::{ConditionType, MovementLocalPosition},
     oteryn_gameplay_content::content::creature_policy::{

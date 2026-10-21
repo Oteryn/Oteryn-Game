@@ -260,8 +260,11 @@ async fn read_items(
     room: &crate::content::QualifiedNativeEntryRoom,
     runtime: &ChannelRuntimeV1,
     position: MovementLocalPosition,
-) -> Result<super::world_items_execution::DurableTileItems, WorldRelocationError> {
-    let target = super::world_items_execution::SpellGroundTarget::for_native_tile_read(
+) -> Result<
+    oteryn_gameplay_durability::durability::native_world_items::DurableTileItems,
+    WorldRelocationError,
+> {
+    let target = oteryn_gameplay_durability::durability::native_world_items::SpellGroundTarget::for_native_tile_read(
         room, runtime, position,
     )
     .map_err(WorldRelocationError::GroundAddress)?;

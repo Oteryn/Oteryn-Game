@@ -13,7 +13,6 @@ use super::connection::{
     AdmissionRefusal, AdmittedSession, ControllerBinding, FreshAdmissionAuthority,
     GraceExpiryResult, ResumeAttempt,
 };
-use super::world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY;
 use super::world_required_capabilities::{
     AuthenticatedSessionCapabilities, SessionCapabilityError,
 };
@@ -45,6 +44,7 @@ use oteryn_protocol_oteryn::container_tree::STATE_DOMAIN_CONTAINER_VIEWS;
 use oteryn_protocol_oteryn::item_view::{
     STATE_DOMAIN_CHARACTER_INVENTORY, STATE_DOMAIN_OPEN_CONTAINER,
 };
+use oteryn_protocol_oteryn::world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY;
 use std::sync::{Arc, Mutex};
 
 /// Candidate lifetime: the widest the 5 s evidence freshness allows (FND-04B §18).

@@ -1,9 +1,13 @@
 // Actual source-specific ChatLine mailbox; no synthetic CHAT_INTENT or durable ledger.
 use crate::bosses::the_welter::native_owner::WelterCarrierExt;
 use crate::durability::chat_text::ChatText;
-use crate::foundation::speech::{ChatPosition, SpeechMode, hears};
-pub use crate::callback_speech as callback;
-use {oteryn_gameplay_domain::domain::carrier_values::CarrierError, crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition}};
+use oteryn_gameplay_foundation::foundation::speech::{ChatPosition, SpeechMode, hears};
+pub use oteryn_gameplay_encounters::bosses::source_callbacks::callback_speech as callback;
+use oteryn_gameplay_domain::domain::carrier_values::CarrierError;
+use oteryn_gameplay_foundation::foundation::ExactActorRef;
+use oteryn_gameplay_foundation::foundation::GameSessionId;
+use oteryn_gameplay_entities::ChannelRuntimeV1;
+use oteryn_gameplay_entities::MovementLocalPosition;
 use oteryn_protocol_oteryn::chat::{
     ChatLine, ChatSpeaker, ChatSpeechMode, ChatWireError, encode_chat_line,
 };
@@ -385,8 +389,8 @@ impl WeakSpotSpeechMailbox {
     pub fn publish_welter_consume(
         &mut self,
         runtime: &ChannelRuntimeV1,
-        ledger: &crate::foundation::WelterConsumeLedger,
-        registration: &crate::foundation::WelterSourceRegistration,
+        ledger: &oteryn_gameplay_encounters::bosses::the_welter::native_owner::WelterConsumeLedger,
+        registration: &oteryn_gameplay_encounters::bosses::the_welter::native_owner::WelterSourceRegistration,
         caster: ExactActorRef,
         sequence: u64,
         candidates: &[(ExactActorRef, GameSessionId)],
@@ -414,7 +418,7 @@ impl WeakSpotSpeechMailbox {
             speaker: ChatSpeaker {
                 identity: caster.placement_identity(),
                 generation: NonZeroU64::new(generation).ok_or(
-                    crate::foundation::WelterConsumeError::Carrier(
+                    oteryn_gameplay_encounters::bosses::the_welter::native_owner::WelterConsumeError::Carrier(
                         CarrierError::StaleActorGeneration,
                     ),
                 )?,
@@ -430,7 +434,7 @@ impl WeakSpotSpeechMailbox {
         };
         let prey_at = result
             .prey_position
-            .ok_or(crate::foundation::WelterConsumeError::MissingPosition)?;
+            .ok_or(oteryn_gameplay_encounters::bosses::the_welter::native_owner::WelterConsumeError::MissingPosition)?;
         let payload = encode_chat_line(&line)?;
         self.welter_delivered
             .retain(|(actor, _)| runtime.contains_live_creature(*actor));
@@ -497,8 +501,8 @@ impl WeakSpotSpeechMailbox {
             self.welter_delivered.push((caster, sequence))
         }
         let prey_asset = match prey {
-            crate::foundation::WelterPrey::Egg => "canary.appearance:effect/hitbypoison",
-            crate::foundation::WelterPrey::Spawn => "canary.appearance:effect/drawblood",
+            oteryn_gameplay_encounters::bosses::the_welter::native_owner::WelterPrey::Egg => "canary.appearance:effect/hitbypoison",
+            oteryn_gameplay_encounters::bosses::the_welter::native_owner::WelterPrey::Spawn => "canary.appearance:effect/drawblood",
         };
         Ok(Some((
             added,
@@ -517,11 +521,11 @@ impl WeakSpotSpeechMailbox {
 }
 #[derive(Debug)]
 pub enum WelterSpeechError {
-    Owner(crate::foundation::WelterConsumeError),
+    Owner(oteryn_gameplay_encounters::bosses::the_welter::native_owner::WelterConsumeError),
     Wire(ChatWireError),
 }
-impl From<crate::foundation::WelterConsumeError> for WelterSpeechError {
-    fn from(e: crate::foundation::WelterConsumeError) -> Self {
+impl From<oteryn_gameplay_encounters::bosses::the_welter::native_owner::WelterConsumeError> for WelterSpeechError {
+    fn from(e: oteryn_gameplay_encounters::bosses::the_welter::native_owner::WelterConsumeError) -> Self {
         Self::Owner(e)
     }
 }

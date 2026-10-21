@@ -1,16 +1,16 @@
 //! Source-specific two-pulse scheduler on the existing physical-owner timer lane.
 //! This does not implement a generic Encounter engine, target lookup, damage or presentation.
 use crate::bosses::smelly_cheese::native_owner::SmellyCheeseCarrierExt;
-use crate::foundation::owner_timer::{
+use oteryn_gameplay_domain::domain::carrier_values::CarrierError;
+use oteryn_gameplay_entities::ChannelRuntimeV1;
+use oteryn_gameplay_foundation::foundation::ExactActorRef;
+use oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1;
+use oteryn_gameplay_foundation::foundation::RuntimeWorkStamp;
+use oteryn_gameplay_foundation::foundation::ScopeOwnershipGeneration;
+use oteryn_gameplay_foundation::foundation::ScopeRuntimeFence;
+use oteryn_gameplay_foundation::foundation::owner_timer::{
     CatchUpPolicy, FamilyPolicy, FiredTimer, OwnerClock, OwnerTimerError, OwnerTimerLane,
     SemanticTimeMicros, TimerFamily,
-};
-use {
-    crate::foundation::{
-        ChannelRuntimeV1, ExactActorRef, RuntimeScopeRefV1, RuntimeWorkStamp,
-        ScopeOwnershipGeneration, ScopeRuntimeFence,
-    },
-    oteryn_gameplay_domain::domain::carrier_values::CarrierError,
 };
 
 pub use oteryn_gameplay_encounter_rules::timers::saturating_deadline;
@@ -125,7 +125,9 @@ impl SmellyCheeseTimers {
             .iter()
             .any(|old| old.caster == occurrence.caster)
         {
-            use crate::foundation::{AI01_SPAWN_POPULATION_MAX, AI01_SPAWN_SOURCES_PER_SCOPE_MAX};
+            use oteryn_gameplay_entities::{
+                AI01_SPAWN_POPULATION_MAX, AI01_SPAWN_SOURCES_PER_SCOPE_MAX,
+            };
             if self.accepted.len() >= AI01_SPAWN_SOURCES_PER_SCOPE_MAX * AI01_SPAWN_POPULATION_MAX {
                 return Err(SmellyScheduleError::Capacity);
             }
@@ -196,13 +198,17 @@ impl SmellyCheeseTimers {
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 mod tests {
-    use crate::foundation::owner_timer::{OwnerClock, SemanticTimeMicros, VirtualOwnerClock};
-    use crate::foundation::{ChannelId, WorldId};
-    use crate::foundation::{
+    use oteryn_gameplay_encounters::bosses::smelly_cheese::timers::{
+        SmellyCastOccurrence, SmellyCheeseTimers, SmellyPulse,
+    };
+    use oteryn_gameplay_foundation::foundation::owner_timer::{
+        OwnerClock, SemanticTimeMicros, VirtualOwnerClock,
+    };
+    use oteryn_gameplay_foundation::foundation::{ChannelId, WorldId};
+    use oteryn_gameplay_foundation::foundation::{
         ExactActorRef, RuntimeScopeRefV1, RuntimeWorkStamp, ScopeOwnershipGeneration,
         ScopeRuntimeFence,
     };
-    use crate::smelly_cheese::{SmellyCastOccurrence, SmellyCheeseTimers, SmellyPulse};
     fn uuid(seed: u8) -> [u8; 16] {
         let mut v = [0; 16];
         v[0] = 1;
@@ -224,8 +230,9 @@ mod tests {
         let generation = ScopeOwnershipGeneration::new(1)
             .expect("smelly_cheese.rs:tests:215: qualified fixture operation must succeed");
         let scope = RuntimeScopeRefV1::channel(world, channel);
-        let (fence, stamp) = crate::foundation::crystal_timer_fixture(scope, generation)
-            .expect("smelly_cheese.rs:tests:217: qualified fixture operation must succeed");
+        let (fence, stamp) =
+            oteryn_gameplay_foundation::foundation::crystal_timer_fixture(scope, generation)
+                .expect("smelly_cheese.rs:tests:217: qualified fixture operation must succeed");
         // Existing Foundation test constructor; timer tests do not claim real actor admission.
         let caster = ExactActorRef::transport_fixture(world, channel);
         (

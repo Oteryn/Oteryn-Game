@@ -78,7 +78,8 @@ fn heals_health(effect: &ResolvedEffect) -> bool {
 fn condition_kind(
     key: &str,
 ) -> Result<oteryn_gameplay_domain::domain::condition::ConditionType, SpellCastDisposition> {
-    use oteryn_gameplay_domain::domain::condition::{ConditionType as T, DotElement as E};
+    use oteryn_gameplay_domain::domain::condition::ConditionType as T;
+    use oteryn_gameplay_domain::domain::condition::DotElement as E;
     Ok(match key {
         "paralyze" => T::Paralysis,
         "manashield" => T::ManaShield,
@@ -93,17 +94,15 @@ fn condition_kind(
     })
 }
 fn modify_conditions<S: Clone>(
-    store: &mut crate::ability::condition::ConditionStore<S>,
+    store: &mut oteryn_gameplay_foundation::foundation::condition::ConditionStore<S>,
     effects: &[ResolvedEffect],
     source: Option<S>,
     immunities: &[oteryn_gameplay_domain::domain::condition::ConditionType],
-    facts: &crate::ability::condition::ApplicationFacts<'_>,
+    facts: &oteryn_gameplay_foundation::foundation::condition::ApplicationFacts<'_>,
     shield_required: bool,
 ) -> Result<(), SpellCastDisposition> {
-    use {
-        crate::ability::condition::ConditionSourceKind,
-        oteryn_gameplay_domain::domain::condition::ConditionRefusal,
-    };
+    use oteryn_gameplay_domain::domain::condition::ConditionRefusal;
+    use oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind;
     if shield_required
         && effects.iter().any(|effect| {
             matches!(effect, ResolvedEffect::RemoveCondition { condition } if condition == "manashield")
@@ -1004,7 +1003,7 @@ fn lower(
     let harmony_heal_target = if paid.harmony_gain_healing.is_some() {
         let profile = crate::spell::actor_execution::harmony_gain_profile()?;
         let party_world = party.as_ref().ok_or(SpellCastDisposition::Rejected)?;
-        let selected = crate::spell::native_actor_states::focus_healing_target(
+        let selected = oteryn_gameplay_spell_rules::native_actor_states::focus_healing_target(
             profile,
             party_world.caster_facts(),
             party_world.member_facts(),
@@ -1239,7 +1238,7 @@ fn lower(
                 .companion_snapshot(target.actor)
                 .map_err(|_| SpellCastDisposition::Rejected)?;
             let mut next = expected.state.clone();
-            let facts = crate::ability::condition::ApplicationFacts {
+            let facts = oteryn_gameplay_foundation::foundation::condition::ApplicationFacts {
                 now: now.get(),
                 base_speed: u16::try_from(next.policy.base_speed)
                     .map_err(|_| SpellCastDisposition::Rejected)?,
@@ -1277,7 +1276,7 @@ fn lower(
                 .ok_or(SpellCastDisposition::Rejected)?;
             let expected = actual.owned_conditions().clone();
             let mut next = expected.clone();
-            let facts = crate::ability::condition::ApplicationFacts {
+            let facts = oteryn_gameplay_foundation::foundation::condition::ApplicationFacts {
                 now: now.get(),
                 base_speed: u16::try_from(state.owned_base_speed())
                     .map_err(|_| SpellCastDisposition::Rejected)?,
@@ -1497,7 +1496,7 @@ fn lower(
 /// membership or authorize a commit.
 fn append_harmony_gain_healing(
     batch: &mut OwnerCombatBatch,
-    healing: Option<&crate::spell::native_actor_states::HealingRollPlan>,
+    healing: Option<&oteryn_gameplay_spell_rules::native_actor_states::HealingRollPlan>,
     target: Option<ExactActorRef>,
     ordinal: u16,
     delayed_count: usize,
@@ -1554,7 +1553,11 @@ mod tests {
             .iter()
             .find(|row| row["bundle"]["spell"]["identity"]["key"] == key)
             .unwrap();
-        crate::spell::authoring::spell_from_bundle(&row["bundle"], &row["dependencies"]).unwrap()
+        oteryn_gameplay_content::content::spell_data::authoring::spell_from_bundle(
+            &row["bundle"],
+            &row["dependencies"],
+        )
+        .unwrap()
     }
 
     #[test]
@@ -1864,7 +1867,7 @@ mod tests {
             .clone();
         let mut next = expected.clone();
         let root = oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes([31; 32]);
-        let facts = crate::ability::condition::ApplicationFacts {
+        let facts = oteryn_gameplay_foundation::foundation::condition::ApplicationFacts {
             now,
             base_speed: 110,
             mana_shield_capacity: 0,

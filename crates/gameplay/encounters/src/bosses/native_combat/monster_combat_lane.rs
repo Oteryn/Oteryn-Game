@@ -27,23 +27,24 @@ use crate::creature_damage_spell::{
     DamageSpellOwner, SpellOutcome, SpellSource, SpellWorldReader,
 };
 use crate::creature_defense_presentation::DefensePresentationSource;
-use crate::foundation::ApplicationFacts;
-use crate::foundation::owner_timer::{OwnerClock, SemanticTimeMicros};
-use crate::foundation::{
-    ChannelRuntimeV1, ExactActorRef, GameSessionId, RuntimeWorkStamp, ScopeRuntimeFence,
-};
 use crate::monster_owner_cycle::{CycleError, MonsterThinkLane};
 use crate::self_heal_qualification::QualifiedCreatureSelfHeal;
-use crate::source_threshold_heal::{
-    ThresholdHealError, ThresholdHealOutcome, ThresholdHealOwner, ThresholdHealSource,
-};
 use crate::spell::chain::TilePosition;
 use native_invisibility::{
     InvisibilityError, InvisibleTileCombatPolicy, SelfInvisibleSource, SelfSpeedSource,
 };
 use native_ticks::NativeOwnedPlayerTickReceipt;
+use oteryn_gameplay_domain::domain::carrier_values::CarrierError;
 #[cfg(test)]
 use oteryn_gameplay_encounters::bosses::crystal_deaths::native_fixtures::CrystalRouterFixtureExt;
+use oteryn_gameplay_encounters::bosses::threshold_heals::source_threshold_heal::{
+    ThresholdHealError, ThresholdHealOutcome, ThresholdHealOwner, ThresholdHealSource,
+};
+use oteryn_gameplay_entities::ApplicationFacts;
+use oteryn_gameplay_entities::CreatureSelfHealLedger;
+use oteryn_gameplay_entities::CreatureSelfHealRegistration;
+use oteryn_gameplay_entities::OwnerDamageResult;
+use oteryn_gameplay_foundation::foundation::owner_timer::{OwnerClock, SemanticTimeMicros};
 pub use oteryn_gameplay_monster_ai::monster_combat_lane::{
     MonsterCombatReader, MonsterCombatStates, RegularCreatureMovementFacts, SelfConditionFacts,
     SummonFollowError, SummonFollowFacts, TrustedMonsterConditionTickInputs, native_conditions,
@@ -54,8 +55,10 @@ use oteryn_simulation_determinism::{DecisionOccurrenceId, deterministic_decision
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 use {
-    crate::foundation::{CreatureSelfHealLedger, CreatureSelfHealRegistration, OwnerDamageResult},
-    oteryn_gameplay_domain::domain::carrier_values::CarrierError,
+    oteryn_gameplay_entities::ChannelRuntimeV1,
+    oteryn_gameplay_foundation::foundation::{
+        ExactActorRef, GameSessionId, RuntimeWorkStamp, ScopeRuntimeFence,
+    },
 };
 #[derive(Clone)]
 pub struct NativeHeal {
@@ -70,7 +73,7 @@ pub struct NativeHeal {
 pub enum DefenseOutcome {
     SelfHeal(OwnerDamageResult),
     ThresholdHeal(ThresholdHealOutcome),
-    Icicle(crate::creature_icicle::IcicleOutcome),
+    Icicle(oteryn_gameplay_encounters::bosses::icicle::creature_icicle::IcicleOutcome),
     AreaHeal(AreaHealOutcome),
     Invisible(bool),
     Presentation(crate::creature_damage_spell::SourcePresentationEvent),
@@ -87,7 +90,7 @@ pub enum DefenseError {
     Presentation(AttackError),
     AreaHeal(AreaHealError),
     ThresholdHeal(ThresholdHealError),
-    Icicle(crate::creature_icicle::IcicleError),
+    Icicle(oteryn_gameplay_encounters::bosses::icicle::creature_icicle::IcicleError),
 }
 
 struct ChainSpellReader<'a, 'b, R: MonsterCombatReader>(&'a std::cell::RefCell<&'b mut R>);
@@ -105,7 +108,7 @@ impl<R: MonsterCombatReader> SpellWorldReader for ChainSpellReader<'_, '_, R> {
         r: &ChannelRuntimeV1,
         a: ExactActorRef,
         s: RuntimeWorkStamp,
-    ) -> Option<crate::creature_attack_geometry::Facing> {
+    ) -> Option<oteryn_gameplay_content::content::creature_attack_geometry::Facing> {
         self.0.borrow_mut().current_facing(r, a, s)
     }
     fn tile_allowed(
@@ -170,7 +173,7 @@ impl<R: MonsterCombatReader> crate::monster_summon::SummonLocationPolicy
         r: &ChannelRuntimeV1,
         p: ExactActorRef,
         c: &Ref,
-        a: crate::foundation::MovementLocalPosition,
+        a: oteryn_gameplay_entities::MovementLocalPosition,
         s: RuntimeWorkStamp,
     ) -> Option<bool> {
         self.0.summon_cell_admits(r, p, c, a, s)
@@ -186,7 +189,7 @@ impl<R: MonsterCombatReader> AreaHealPolicy for AreaHealMapReader<'_, R> {
         r: &ChannelRuntimeV1,
         a: ExactActorRef,
         s: RuntimeWorkStamp,
-    ) -> Option<crate::creature_attack_geometry::Facing> {
+    ) -> Option<oteryn_gameplay_content::content::creature_attack_geometry::Facing> {
         self.inner.current_facing(r, a, s)
     }
     fn tile_allowed(
@@ -237,11 +240,11 @@ impl<R: MonsterCombatReader> AreaHealPolicy for AreaHealMapReader<'_, R> {
 }
 include!("../time_guardian/source_time_profile_bundle.rs");
 pub struct NativeActor {
-    pub seven_sources: Vec<crate::source_encounter_seven::SevenSource>,
+    pub seven_sources: Vec<oteryn_gameplay_encounters::bosses::seven_encounters::source_encounter_seven::SevenSource>,
     pub time_profiles: Option<std::sync::Arc<BTreeMap<String, TimeProfileBundle>>>,
-    pub callback_spawn_sources: Vec<crate::source_callback_spawn::SourceCallbackSpawn>,
-    callback_casts: Vec<crate::source_callback_cast::SourceCallbackCast>,
-    smelly_source: Option<crate::smelly_encounter_dispatch::SourceSmelly>,
+    pub callback_spawn_sources: Vec<oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_spawn::SourceCallbackSpawn>,
+    callback_casts: Vec<oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_cast::SourceCallbackCast>,
+    smelly_source: Option<oteryn_gameplay_encounters::bosses::smelly_cheese::smelly_encounter_dispatch::SourceSmelly>,
     movement_cadence: Option<crate::movement::speed::CreatureMovementCadence>,
     pub native_speed: Option<crate::movement::speed::NativeCreatureSpeed>,
     move_pacer: crate::movement::pacing::CreatureStepPacer,
@@ -260,7 +263,7 @@ pub struct NativeActor {
     pub heals: Vec<NativeHeal>,
     area_heals: Vec<(usize, AreaHealSource)>,
     threshold_heals: Vec<ThresholdHealSource>,
-    icicle: Option<crate::creature_icicle::IcicleSource>,
+    icicle: Option<oteryn_gameplay_encounters::bosses::icicle::creature_icicle::IcicleSource>,
     pub invisible: Vec<(usize, SelfInvisibleSource)>,
     pub speed: Vec<(usize, SelfSpeedSource)>,
     presentations: Vec<(usize, DefensePresentationSource)>,
@@ -279,11 +282,11 @@ pub enum CombatLaneError {
 pub struct ThinkCombatResult {
     pub seven_map_pending: Vec<(
         Ref,
-        Result<crate::source_encounter_seven::SourceMapWork, AttackError>,
+        Result<oteryn_gameplay_encounters::bosses::seven_encounters::source_encounter_seven::SourceMapWork, AttackError>,
     )>,
     pub time_phases: Vec<(
         Ref,
-        Result<crate::source_encounter_seven::TimePhaseOutcome, AttackError>,
+        Result<oteryn_gameplay_encounters::bosses::seven_encounters::source_encounter_seven::TimePhaseOutcome, AttackError>,
     )>,
     pub callback_spawns: Vec<(Ref, Result<bool, AttackError>)>,
     /// Real existing AI proposals; physical SQL owner must return a COMMIT receipt.
@@ -313,7 +316,7 @@ pub struct ThinkCombatResult {
     )>,
     pub deferred_summons: usize,
     pub follow:
-        Option<Result<Option<crate::foundation::NativeSummonMovementOutcome>, SummonFollowError>>,
+        Option<Result<Option<oteryn_gameplay_entities::NativeSummonMovementOutcome>, SummonFollowError>>,
     pub summons: Vec<(
         Ref,
         Result<crate::monster_summon::SummonReceipt, crate::monster_summon::SummonError>,
@@ -322,27 +325,24 @@ pub struct ThinkCombatResult {
 #[derive(Debug)]
 pub struct CombatPulse {
     pub callback_speech_delivery:
-        Option<Result<usize, crate::weak_spot_speech::WeakSpotSpeechError>>,
+        Option<Result<usize, oteryn_gameplay_encounters::bosses::crystal_deaths::crystal_death_composition::speech::WeakSpotSpeechError>>,
     pub callback_speech_errors: Vec<(ExactActorRef, AttackError)>,
-    pub time_returns: Vec<Result<crate::source_encounter_seven::TimePhaseOutcome, AttackError>>,
-    pub callback_removals: Vec<(
-        ExactActorRef,
-        Result<(), oteryn_gameplay_domain::domain::carrier_values::CarrierError>,
-    )>,
+    pub time_returns: Vec<Result<oteryn_gameplay_encounters::bosses::seven_encounters::source_encounter_seven::TimePhaseOutcome, AttackError>>,
+    pub callback_removals: Vec<(ExactActorRef, Result<(), oteryn_gameplay_domain::domain::carrier_values::CarrierError>)>,
     pub callback_spawn_pulses: Result<
-        Vec<Result<crate::source_callback_spawn::CallbackSpawnReceipt, AttackError>>,
+        Vec<Result<oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_spawn::CallbackSpawnReceipt, AttackError>>,
         AttackError,
     >,
     pub creature_conditions: Vec<(
         ExactActorRef,
-        Result<crate::foundation::CreaturePeriodicReceipt, CarrierError>,
+        Result<oteryn_gameplay_entities::CreaturePeriodicReceipt, CarrierError>,
     )>,
-    pub callback_pulses: crate::source_callback_cast::CallbackPulseBatch,
-    pub smelly_pulses: crate::smelly_encounter_dispatch::SmellyPulseResults,
+    pub callback_pulses: oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_cast::CallbackPulseBatch,
+    pub smelly_pulses: oteryn_gameplay_encounters::bosses::smelly_cheese::smelly_encounter_dispatch::SmellyPulseResults,
     pub movements: Vec<(
         ExactActorRef,
         Result<
-            Option<crate::foundation::MovementPositionSnapshot>,
+            Option<oteryn_gameplay_entities::MovementPositionSnapshot>,
             crate::movement::speed::CreatureCadenceError,
         >,
     )>,
@@ -355,15 +355,15 @@ pub struct CombatPulse {
     pub conditions: Result<Vec<(ExactActorRef, Option<NativeOwnedPlayerTickReceipt>)>, AttackError>,
 }
 pub struct MonsterCombatLane {
-    callback_speech: crate::weak_spot_speech::WeakSpotSpeechMailbox,
-    pub time_guardian_owner: crate::source_encounter_seven::TimeGuardianOwner,
-    callback_spawn_owner: Option<crate::source_callback_spawn::CallbackSpawnOwner>,
-    callback_casts: Option<crate::source_callback_cast::CallbackCastOwner>,
+    callback_speech: oteryn_gameplay_encounters::bosses::crystal_deaths::crystal_death_composition::speech::WeakSpotSpeechMailbox,
+    pub time_guardian_owner: oteryn_gameplay_encounters::bosses::seven_encounters::source_encounter_seven::TimeGuardianOwner,
+    callback_spawn_owner: Option<oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_spawn::CallbackSpawnOwner>,
+    callback_casts: Option<oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_cast::CallbackCastOwner>,
     native_appearance_content:
         Option<std::sync::Arc<crate::content::native_gameplay::NativeGameplayState>>,
-    smelly: crate::smelly_encounter_dispatch::SmellyEncounterOwner,
+    smelly: oteryn_gameplay_encounters::bosses::smelly_cheese::smelly_encounter_dispatch::SmellyEncounterOwner,
     bone_encounters: Vec<BoneCombatInstance>,
-    crystal_deaths: Option<crate::crystal_death_composition::CrystalDeathOwner>,
+    crystal_deaths: Option<oteryn_gameplay_encounters::bosses::crystal_deaths::crystal_death_composition::CrystalDeathOwner>,
     timer: MonsterThinkLane,
     pub actors: Vec<NativeActor>,
     melee: AutoAttackOwner,
@@ -375,7 +375,7 @@ pub struct MonsterCombatLane {
     area_catalog: Option<CreatureHealCatalog>,
     area_owner: AreaHealOwner,
     threshold_heal_owner: ThresholdHealOwner,
-    icicle_owner: crate::creature_icicle::IcicleOwner,
+    icicle_owner: oteryn_gameplay_encounters::bosses::icicle::creature_icicle::IcicleOwner,
     defense_summon_owner: crate::monster_summon::DefenseSummonOwner,
     summons: crate::monster_summon::NativeSummonOwner,
     pub child_closure: Option<std::sync::Arc<NativeChildClosure>>,
@@ -386,13 +386,13 @@ impl MonsterCombatLane {
         current: &ScopeRuntimeFence,
     ) -> Result<Self, CombatLaneError> {
         Ok(Self {
-            time_guardian_owner: crate::source_encounter_seven::TimeGuardianOwner::new(runtime)
+            time_guardian_owner: oteryn_gameplay_encounters::bosses::seven_encounters::source_encounter_seven::TimeGuardianOwner::new(runtime)
                 .map_err(CombatLaneError::Attack)?,
             callback_speech: Default::default(),
             callback_spawn_owner: None,
             callback_casts: None,
             native_appearance_content: None,
-            smelly: crate::smelly_encounter_dispatch::SmellyEncounterOwner::default(),
+            smelly: oteryn_gameplay_encounters::bosses::smelly_cheese::smelly_encounter_dispatch::SmellyEncounterOwner::default(),
             timer: MonsterThinkLane::new(runtime, current).map_err(CombatLaneError::Cycle)?,
             actors: Vec::new(),
             melee: AutoAttackOwner::default(),
@@ -405,7 +405,7 @@ impl MonsterCombatLane {
             area_catalog: None,
             area_owner: AreaHealOwner::default(),
             threshold_heal_owner: ThresholdHealOwner::default(),
-            icicle_owner: crate::creature_icicle::IcicleOwner::default(),
+            icicle_owner: oteryn_gameplay_encounters::bosses::icicle::creature_icicle::IcicleOwner::default(),
             defense_summon_owner: crate::monster_summon::DefenseSummonOwner::default(),
             summons: crate::monster_summon::NativeSummonOwner::default(),
             child_closure: None,
@@ -429,7 +429,10 @@ impl MonsterCombatLane {
     ) -> Result<ThinkOccurrence, CombatLaneError> {
         let binding = runtime.binding();
         if !current.is_current_for_scope(
-            crate::foundation::RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
+            oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
+                binding.world_id(),
+                binding.channel_id(),
+            ),
             binding.scope_generation(),
         ) {
             return Err(CombatLaneError::Cycle(CycleError::StaleOwner));
@@ -821,7 +824,7 @@ impl MonsterCombatLane {
             (ScheduleList::Defence, &behavior.defenses),
         ] {
             for index in 0..entries.len() {
-                if let Some(source) = crate::source_encounter_seven::SevenSource::qualify(
+                if let Some(source) = oteryn_gameplay_encounters::bosses::seven_encounters::source_encounter_seven::SevenSource::qualify(
                     draft,
                     creature,
                     index,
@@ -837,8 +840,8 @@ impl MonsterCombatLane {
         let time_profiles = if let Some(source) = seven_sources.iter().find(|s| {
             matches!(
                 s.kind(),
-                crate::source_encounter_seven::SevenKind::TimeGuardian
-                    | crate::source_encounter_seven::SevenKind::TimeGuardiann
+                oteryn_gameplay_encounters::bosses::seven_encounters::source_encounter_seven::SevenKind::TimeGuardian
+                    | oteryn_gameplay_encounters::bosses::seven_encounters::source_encounter_seven::SevenKind::TimeGuardiann
             )
         }) {
             let mut phases = BTreeMap::new();
@@ -863,7 +866,7 @@ impl MonsterCombatLane {
             (ScheduleList::Defence, &behavior.defenses),
         ] {
             for index in 0..entries.len() {
-                if let Some(source) = crate::source_callback_spawn::SourceCallbackSpawn::qualify(
+                if let Some(source) = oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_spawn::SourceCallbackSpawn::qualify(
                     draft,
                     creature,
                     index,
@@ -878,7 +881,7 @@ impl MonsterCombatLane {
         }
         let mut callback_casts = Vec::new();
         for index in 0..behavior.attacks.len() {
-            if let Some(source) = crate::source_callback_cast::SourceCallbackCast::qualify(
+            if let Some(source) = oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_cast::SourceCallbackCast::qualify(
                 draft,
                 creature,
                 index,
@@ -891,7 +894,7 @@ impl MonsterCombatLane {
         }
         let smelly_source = if creature.key == "oteryn:creature.smelly_cheese" {
             Some(
-                crate::smelly_encounter_dispatch::SourceSmelly::qualify(
+                oteryn_gameplay_encounters::bosses::smelly_cheese::smelly_encounter_dispatch::SourceSmelly::qualify(
                     draft,
                     creature,
                     loader_digest,
@@ -926,7 +929,13 @@ impl MonsterCombatLane {
         registered.heals = heals;
         registered.area_heals = area_heals;
         registered.icicle =
-            crate::creature_icicle::IcicleSource::qualify(draft, creature, 0, loader_digest).ok();
+            oteryn_gameplay_encounters::bosses::icicle::creature_icicle::IcicleSource::qualify(
+                draft,
+                creature,
+                0,
+                loader_digest,
+            )
+            .ok();
         registered.threshold_heals = behavior
             .defenses
             .iter()
@@ -985,7 +994,7 @@ impl MonsterCombatLane {
         let summons = &mut self.summons;
         if self.callback_casts.is_none() {
             self.callback_casts = Some(
-                crate::source_callback_cast::CallbackCastOwner::new(runtime, current)
+                oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_cast::CallbackCastOwner::new(runtime, current)
                     .map_err(CombatLaneError::Attack)?,
             );
         }
@@ -995,7 +1004,7 @@ impl MonsterCombatLane {
             .ok_or(CombatLaneError::Attack(AttackError::InvalidPlan))?;
         if self.callback_spawn_owner.is_none() {
             self.callback_spawn_owner = Some(
-                crate::source_callback_spawn::CallbackSpawnOwner::new(runtime, current)
+                oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_spawn::CallbackSpawnOwner::new(runtime, current)
                     .map_err(CombatLaneError::Attack)?,
             );
         }
@@ -1257,7 +1266,7 @@ impl MonsterCombatLane {
                     }
                     for proposal in plan.proposals {
                         if let Some(source)=a.seven_sources.iter().find(|s|s.ability()==proposal.ability).cloned() {
-                            if matches!(source.kind(),crate::source_encounter_seven::SevenKind::TimeGuardian|crate::source_encounter_seven::SevenKind::TimeGuardiann) {
+                            if matches!(source.kind(),oteryn_gameplay_encounters::bosses::seven_encounters::source_encounter_seven::SevenKind::TimeGuardian|oteryn_gameplay_encounters::bosses::seven_encounters::source_encounter_seven::SevenKind::TimeGuardiann) {
                                 let hit=a.dispatch_time_phase(runtime,fence,stamp,time_guardian_owner,&source,&proposal,due);
                                 result.time_phases.push((proposal.ability,hit));
                             } else {
@@ -1561,7 +1570,7 @@ impl MonsterCombatLane {
             let result = (|| {
                 let prepared = due?;
                 let actor =
-                    crate::source_encounter_seven::TimeGuardianOwner::returned_actor(&prepared);
+                    oteryn_gameplay_encounters::bosses::seven_encounters::source_encounter_seven::TimeGuardianOwner::returned_actor(&prepared);
                 let native = self
                     .actors
                     .iter_mut()
@@ -1764,15 +1773,15 @@ impl MonsterCombatLane {
         project: &crate::content::WorldProject,
         runtime: &ChannelRuntimeV1,
         native: &crate::content::native_gameplay::NativeGameplayState,
-    ) -> Result<(), crate::crystal_death_composition::CrystalDeathCompositionError> {
+    ) -> Result<(), oteryn_gameplay_encounters::bosses::crystal_deaths::crystal_death_composition::CrystalDeathCompositionError>{
         if self.crystal_deaths.is_some() {
             return Err(
-                crate::crystal_death_composition::CrystalDeathCompositionError::Source(
+                oteryn_gameplay_encounters::bosses::crystal_deaths::crystal_death_composition::CrystalDeathCompositionError::Source(
                     "Crystal death owner already bound",
                 ),
             );
         }
-        self.crystal_deaths = Some(crate::crystal_death_composition::CrystalDeathOwner::bind(
+        self.crystal_deaths = Some(oteryn_gameplay_encounters::bosses::crystal_deaths::crystal_death_composition::CrystalDeathOwner::bind(
             project, runtime, native,
         )?);
         Ok(())
@@ -1786,11 +1795,11 @@ impl MonsterCombatLane {
         listeners: &[(ExactActorRef, GameSessionId)],
         server_rum_draw: Option<i64>,
     ) -> Result<
-        crate::crystal_death_composition::CrystalProjectedDeath,
-        crate::crystal_death_composition::CrystalDeathCompositionError,
-    > {
+        oteryn_gameplay_encounters::bosses::crystal_deaths::crystal_death_composition::CrystalProjectedDeath,
+        oteryn_gameplay_encounters::bosses::crystal_deaths::crystal_death_composition::CrystalDeathCompositionError,
+    >{
         let owner = self.crystal_deaths.as_mut().ok_or(
-            crate::crystal_death_composition::CrystalDeathCompositionError::Source(
+            oteryn_gameplay_encounters::bosses::crystal_deaths::crystal_death_composition::CrystalDeathCompositionError::Source(
                 "actual project Crystal death owner not bound",
             ),
         )?;
@@ -1801,7 +1810,10 @@ impl MonsterCombatLane {
         runtime: &ChannelRuntimeV1,
         actor: ExactActorRef,
         session: GameSessionId,
-    ) -> Result<Vec<Vec<u8>>, crate::weak_spot_speech::WeakSpotSpeechError> {
+    ) -> Result<
+        Vec<Vec<u8>>,
+        oteryn_gameplay_encounters::bosses::crystal_deaths::crystal_death_composition::speech::WeakSpotSpeechError,
+    >{
         self.callback_speech.drain(runtime, actor, session)
     }
     pub fn clear_source_callback_speech_session(&mut self, session: GameSessionId) {
@@ -1812,7 +1824,10 @@ impl MonsterCombatLane {
         runtime: &ChannelRuntimeV1,
         actor: ExactActorRef,
         session: GameSessionId,
-    ) -> Result<Vec<Vec<u8>>, crate::weak_spot_speech::WeakSpotSpeechError> {
+    ) -> Result<
+        Vec<Vec<u8>>,
+        oteryn_gameplay_encounters::bosses::crystal_deaths::crystal_death_composition::speech::WeakSpotSpeechError,
+    >{
         match self.crystal_deaths.as_mut() {
             Some(owner) => owner.drain_speech(runtime, actor, session),
             None => Ok(Vec::new()),
@@ -1830,8 +1845,8 @@ impl MonsterCombatLane {
 pub struct NativeChildClosure {
     callback_children: Vec<(
         Ref,
-        Vec<crate::source_callback_cast::SourceCallbackCast>,
-        Vec<crate::source_callback_spawn::SourceCallbackSpawn>,
+        Vec<oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_cast::SourceCallbackCast>,
+        Vec<oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_spawn::SourceCallbackSpawn>,
     )>,
     records: Vec<ProjectReferenceRecord>,
     profiles: Vec<ProjectV2AuthoringProfile>,
@@ -1878,7 +1893,7 @@ impl NativeChildClosure {
         }
 
         children.extend(
-            crate::source_callback_spawn::qualified_native_children(draft)
+            oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_spawn::qualified_native_children(draft)
                 .map_err(CombatLaneError::Attack)?,
         );
         let mut needed = children.clone();
@@ -2025,7 +2040,7 @@ impl NativeChildClosure {
                 for index in 0..entries.len() {
                     if list == ScheduleList::Attack
                         && let Some(source) =
-                            crate::source_callback_cast::SourceCallbackCast::qualify(
+                            oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_cast::SourceCallbackCast::qualify(
                                 draft, &creature, index, content,
                             )
                             .map_err(CombatLaneError::Attack)?
@@ -2033,7 +2048,7 @@ impl NativeChildClosure {
                         casts.push(source);
                     }
                     if let Some(source) =
-                        crate::source_callback_spawn::SourceCallbackSpawn::qualify(
+                        oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_spawn::SourceCallbackSpawn::qualify(
                             draft, &creature, index, list, content,
                         )
                         .map_err(CombatLaneError::Attack)?
@@ -2062,10 +2077,13 @@ fn commit_summon_follow(
     child: ExactActorRef,
     parent: ExactActorRef,
     facts: SummonFollowFacts<'_>,
-) -> Result<Option<crate::foundation::NativeSummonMovementOutcome>, SummonFollowError> {
+) -> Result<Option<oteryn_gameplay_entities::NativeSummonMovementOutcome>, SummonFollowError> {
     let b = runtime.binding();
     if !fence.is_current_for_scope(
-        crate::foundation::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
+        oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
+            b.world_id(),
+            b.channel_id(),
+        ),
         b.scope_generation(),
     ) || !fence.accepts_stamp(stamp)
     {
@@ -2088,7 +2106,7 @@ fn commit_summon_follow(
         .read_actor_position(parent)
         .map_err(SummonFollowError::Carrier)?
         .position();
-    let distance = |p: crate::foundation::MovementLocalPosition| {
+    let distance = |p: oteryn_gameplay_entities::MovementLocalPosition| {
         (i64::from(p.x) - i64::from(owner.x))
             .abs()
             .max((i64::from(p.y) - i64::from(owner.y)).abs())
@@ -2108,7 +2126,7 @@ fn commit_summon_follow(
         crate::movement::CardinalStep::South => (0, 1),
         crate::movement::CardinalStep::West => (-1, 0),
     };
-    let next = crate::foundation::MovementLocalPosition {
+    let next = oteryn_gameplay_entities::MovementLocalPosition {
         x: at
             .x
             .checked_add(dx)
@@ -2163,7 +2181,7 @@ mod native_summon_follow_tests {
                 id[6] = 0x70;
                 id[8] = 0x80;
                 id[15] = 1;
-                crate::foundation::WorldId::decode(&id).expect("monster_combat_lane.rs:native_summon_follow_tests:4881: qualified fixture operation must succeed")
+                oteryn_gameplay_foundation::foundation::WorldId::decode(&id).expect("monster_combat_lane.rs:native_summon_follow_tests:4881: qualified fixture operation must succeed")
             });
         let ordinal = f.accept_input(r.binding().scope_generation()).expect("monster_combat_lane.rs:native_summon_follow_tests:4883: qualified fixture operation must succeed");
         let stamp = f.stamp(ordinal);
@@ -2231,13 +2249,13 @@ mod native_summon_follow_tests {
             .expect("monster_combat_lane.rs:native_summon_follow_tests:4946: qualified fixture operation must succeed")
             .expect("monster_combat_lane.rs:native_summon_follow_tests:4947: qualified fixture operation must succeed");
         let moved = match outcome {
-            crate::foundation::NativeSummonMovementOutcome::Moved(moved) => Some(moved),
+            oteryn_gameplay_entities::NativeSummonMovementOutcome::Moved(moved) => Some(moved),
             _ => None,
         }
         .expect("qualified toward-master step must keep source child alive");
         assert_eq!(moved.position(), next);
         assert_eq!(r.read_actor_position(child).expect("monster_combat_lane.rs:native_summon_follow_tests:4952: qualified fixture operation must succeed"), moved);
-        f.apply_external_grant(crate::foundation::ScopeOwnershipGeneration::new(2).expect("monster_combat_lane.rs:native_summon_follow_tests:4953: qualified fixture operation must succeed"))
+        f.apply_external_grant(oteryn_gameplay_foundation::foundation::ScopeOwnershipGeneration::new(2).expect("monster_combat_lane.rs:native_summon_follow_tests:4953: qualified fixture operation must succeed"))
             .expect("monster_combat_lane.rs:native_summon_follow_tests:4954: qualified fixture operation must succeed");
         assert!(matches!(
             commit_summon_follow(&mut r, &f, stamp, child, parent, facts(Some(true))),
@@ -2263,7 +2281,7 @@ mod native_summon_follow_tests {
             _: &ChannelRuntimeV1,
             _: ExactActorRef,
             _: &Ref,
-            _: crate::foundation::MovementLocalPosition,
+            _: oteryn_gameplay_entities::MovementLocalPosition,
             _: RuntimeWorkStamp,
         ) -> Option<bool> {
             Some(true)
@@ -2290,7 +2308,10 @@ impl MonsterCombatLane {
         for (actor, creature, due, stamp) in pending {
             let b = runtime.binding();
             let current_job = current.is_current_for_scope(
-                crate::foundation::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
+                oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
+                    b.world_id(),
+                    b.channel_id(),
+                ),
                 b.scope_generation(),
             ) && current.accepts_stamp(stamp);
             let result = if !current_job {
@@ -2362,7 +2383,7 @@ mod native_summon_typed_outward_test {
                 id[6] = 0x70;
                 id[8] = 0x80;
                 id[15] = 1;
-                crate::foundation::WorldId::decode(&id).expect("monster_combat_lane.rs:native_summon_typed_outward_test:5077: qualified fixture operation must succeed")
+                oteryn_gameplay_foundation::foundation::WorldId::decode(&id).expect("monster_combat_lane.rs:native_summon_typed_outward_test:5077: qualified fixture operation must succeed")
             });
         let ordinal = f.accept_input(r.binding().scope_generation()).expect("monster_combat_lane.rs:native_summon_typed_outward_test:5079: qualified fixture operation must succeed");
         let stamp = f.stamp(ordinal);
@@ -2433,7 +2454,7 @@ mod native_summon_typed_outward_test {
         .expect("monster_combat_lane.rs:native_summon_typed_outward_test:5145: qualified fixture operation must succeed");
         assert_eq!(
             result,
-            crate::foundation::NativeSummonMovementOutcome::Removed(child)
+            oteryn_gameplay_entities::NativeSummonMovementOutcome::Removed(child)
         );
         assert_eq!(
             r.native_summon_role(child),
@@ -2556,12 +2577,12 @@ mod pending_summon_failure_regression {
 struct BoneCombatInstance {
     cages: [ExactActorRef; 4],
     phylactery: ExactActorRef,
-    state: crate::foundation::BoneOverlordCagePhase,
+    state: oteryn_gameplay_encounters::bosses::bone_overlord::native_owner::BoneOverlordCagePhase,
 }
 pub struct MonsterDeathWithBone {
-    pub projected: crate::crystal_death_composition::CrystalProjectedDeath,
+    pub projected: oteryn_gameplay_encounters::bosses::crystal_deaths::crystal_death_composition::CrystalProjectedDeath,
     pub bone:
-        Vec<Result<crate::foundation::BonePhaseTransition, crate::foundation::BonePhaseError>>,
+        Vec<Result<oteryn_gameplay_encounters::bosses::bone_overlord::native_owner::BonePhaseTransition, oteryn_gameplay_encounters::bosses::bone_overlord::native_owner::BonePhaseError>>,
 }
 impl MonsterCombatLane {
     /// Only the native encounter admission caller supplies explicit actor/placement associations.
@@ -2580,11 +2601,10 @@ impl MonsterCombatLane {
         placements: [&crate::content::PlacementKey; 5],
         cages: [ExactActorRef; 4],
         phylactery: ExactActorRef,
-    ) -> Result<(), crate::foundation::BonePhaseError> {
-        use {
-            crate::foundation::BonePhaseError,
-            oteryn_gameplay_domain::domain::carrier_values::CarrierError,
-        };
+    ) -> Result<(), oteryn_gameplay_encounters::bosses::bone_overlord::native_owner::BonePhaseError>
+    {
+        use oteryn_gameplay_domain::domain::carrier_values::CarrierError;
+        use oteryn_gameplay_encounters::bosses::bone_overlord::native_owner::BonePhaseError;
         if self
             .bone_encounters
             .iter()
@@ -2604,7 +2624,7 @@ impl MonsterCombatLane {
         self.bone_encounters
             .try_reserve(1)
             .map_err(|_| BonePhaseError::Carrier(CarrierError::AllocationFailed))?;
-        let state = crate::bone_phase_registry::register_bone_phase_shared(
+        let state = oteryn_gameplay_encounters::bosses::bone_overlord::bone_phase_registry::register_bone_phase_shared(
             runtime, project, native, map, map_fence, current, stamp, placements, cages, phylactery,
         )?;
         self.bone_encounters.push(BoneCombatInstance {
@@ -2624,11 +2644,11 @@ impl MonsterCombatLane {
         actor: ExactActorRef,
         listeners: &[(ExactActorRef, GameSessionId)],
         server_rum_draw: Option<i64>,
-    ) -> Result<MonsterDeathWithBone, crate::crystal_death_composition::CrystalDeathCompositionError>
+    ) -> Result<MonsterDeathWithBone, oteryn_gameplay_encounters::bosses::crystal_deaths::crystal_death_composition::CrystalDeathCompositionError>
     {
         let mut bone = Vec::new();
         bone.try_reserve(self.bone_encounters.len()).map_err(|_| {
-            crate::crystal_death_composition::CrystalDeathCompositionError::Owner(
+            oteryn_gameplay_encounters::bosses::crystal_deaths::crystal_death_composition::CrystalDeathCompositionError::Owner(
                 oteryn_gameplay_domain::domain::carrier_values::CarrierError::AllocationFailed,
             )
         })?;
@@ -2654,9 +2674,12 @@ impl MonsterCombatLane {
 mod bone_map_admission_actual_tests {
     use super::*;
     use crate::content::*;
-    use crate::foundation::{MovementLocalPosition, RuntimeScopeRefV1};
     use crate::world_runtime::{ReferenceContentGeneration, ScopeContentGenerationFence};
     use std::collections::BTreeMap;
+    use {
+        oteryn_gameplay_entities::MovementLocalPosition,
+        oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1,
+    };
     #[test]
     #[ignore = "Retained actual native eleven-document source capture; isolated PROJECT positions, not donor map admission"]
     fn actual_source_map_association_admits_native_shared_hp_and_phase() {
@@ -2691,7 +2714,7 @@ mod bone_map_admission_actual_tests {
         let mut map = link_reference_playable(project.lower_reference_source().expect("monster_combat_lane.rs:bone_map_admission_actual_tests:5397: qualified fixture operation must succeed")).expect("monster_combat_lane.rs:bone_map_admission_actual_tests:5397: qualified fixture operation must succeed");
         let native =
             crate::content::native_gameplay::retained_callback_native_fixture(map.world_id);
-        let mut runtime = crate::foundation::crystal_death_router_fixture_with_artifact(
+        let mut runtime = oteryn_gameplay_encounters::bosses::crystal_deaths::native_fixtures::crystal_death_router_fixture_with_artifact(
             map.world_id,
             native.source_digest(),
         );
@@ -2771,7 +2794,7 @@ mod bone_map_admission_actual_tests {
         let b = runtime.binding();
         let scope = RuntimeScopeRefV1::channel(b.world_id(), b.channel_id());
         let generation = b.scope_generation();
-        let (fence, stamp) = crate::foundation::crystal_timer_fixture(scope, generation).expect("monster_combat_lane.rs:bone_map_admission_actual_tests:5475: qualified fixture operation must succeed");
+        let (fence, stamp) = oteryn_gameplay_foundation::foundation::crystal_timer_fixture(scope, generation).expect("monster_combat_lane.rs:bone_map_admission_actual_tests:5475: qualified fixture operation must succeed");
         let map_fence = ScopeContentGenerationFence::for_test(
             scope,
             generation,
@@ -2903,7 +2926,7 @@ impl<R: MonsterCombatReader> SpellWorldReader for ComposedReader<'_, R> {
         r: &ChannelRuntimeV1,
         a: ExactActorRef,
         s: RuntimeWorkStamp,
-    ) -> Option<crate::creature_attack_geometry::Facing> {
+    ) -> Option<oteryn_gameplay_content::content::creature_attack_geometry::Facing> {
         self.0.current_facing(r, a, s)
     }
     fn tile_allowed(
@@ -2982,7 +3005,7 @@ enum NativeSelfConditionSource<'a> {
         dead_code,
         reason = "retained source-qualified metadata; shipping activation remains separate"
     )]
-    Appearance(&'a [crate::foundation::ConditionDefinition]),
+    Appearance(&'a [oteryn_gameplay_entities::ConditionDefinition]),
     Invisible(&'a SelfInvisibleSource),
     Speed(&'a SelfSpeedSource),
 }
@@ -2994,7 +3017,7 @@ impl<T: InvisibleTileCombatPolicy> native_conditions::NativeConditionAdmission
         &mut self,
         runtime: &ChannelRuntimeV1,
         target: ExactActorRef,
-        source: crate::foundation::ConditionSource,
+        source: oteryn_gameplay_entities::ConditionSource,
     ) -> Option<bool> {
         if source.actor != target || source.session.is_some() {
             return Some(false);
@@ -3020,7 +3043,10 @@ fn commit_native_defense_condition(
     use native_conditions::NativeConditionError;
     let b = runtime.binding();
     if !current.is_current_for_scope(
-        crate::foundation::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
+        oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
+            b.world_id(),
+            b.channel_id(),
+        ),
         b.scope_generation(),
     ) || !current.accepts_stamp(stamp)
     {
@@ -3084,10 +3110,10 @@ fn commit_native_defense_condition(
             stamp,
             actor,
             None,
-            crate::foundation::ConditionSource {
+            oteryn_gameplay_entities::ConditionSource {
                 actor,
                 session: None,
-                kind: crate::foundation::ConditionSourceKind::Creature,
+                kind: oteryn_gameplay_entities::ConditionSourceKind::Creature,
             },
             definitions,
             &[],
@@ -3146,10 +3172,13 @@ fn commit_paced_summon_follow(
     source: Option<&crate::movement::speed::NativeCreatureSpeed>,
     pacer: &mut crate::movement::pacing::CreatureStepPacer,
     now: SemanticTimeMicros,
-) -> Result<Option<crate::foundation::NativeSummonMovementOutcome>, SummonFollowError> {
+) -> Result<Option<oteryn_gameplay_entities::NativeSummonMovementOutcome>, SummonFollowError> {
     let b = runtime.binding();
     if !fence.is_current_for_scope(
-        crate::foundation::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
+        oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
+            b.world_id(),
+            b.channel_id(),
+        ),
         b.scope_generation(),
     ) || !fence.accepts_stamp(stamp)
     {
@@ -3201,7 +3230,7 @@ fn commit_paced_summon_follow(
     let outcome = commit_summon_follow(runtime, fence, stamp, child, parent, facts)?;
     if matches!(
         &outcome,
-        Some(crate::foundation::NativeSummonMovementOutcome::Moved(_))
+        Some(oteryn_gameplay_entities::NativeSummonMovementOutcome::Moved(_))
     ) {
         pacer.record(native_now, Some(duration));
     }
@@ -3219,7 +3248,7 @@ impl MonsterCombatLane {
     ) -> Vec<(
         ExactActorRef,
         Result<
-            Option<crate::foundation::MovementPositionSnapshot>,
+            Option<oteryn_gameplay_entities::MovementPositionSnapshot>,
             crate::movement::speed::CreatureCadenceError,
         >,
     )> {
@@ -3280,7 +3309,10 @@ struct IcicleMapReader<'a, R> {
     inner: &'a mut R,
     ability: &'a Ref,
 }
-impl<R: MonsterCombatReader> crate::creature_icicle::IcicleWorldReader for IcicleMapReader<'_, R> {
+impl<R: MonsterCombatReader>
+    oteryn_gameplay_encounters::bosses::icicle::creature_icicle::IcicleWorldReader
+    for IcicleMapReader<'_, R>
+{
     fn icicle_callback_allowed(
         &mut self,
         r: &ChannelRuntimeV1,
@@ -3307,25 +3339,26 @@ impl<R: MonsterCombatReader> crate::creature_icicle::IcicleWorldReader for Icicl
 struct CallbackSpawnMapReader<'a, T: MonsterCombatReader> {
     inner: &'a mut T,
 }
-impl<T: MonsterCombatReader> crate::source_callback_spawn::SourceSpawnFacts
+impl<T: MonsterCombatReader>
+    oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_spawn::SourceSpawnFacts
     for CallbackSpawnMapReader<'_, T>
 {
     fn source_spawn_position(
         &mut self,
         r: &ChannelRuntimeV1,
         p: ExactActorRef,
-        l: &crate::source_callback_spawn::SourceSpawnPlacement,
+        l: &oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_spawn::SourceSpawnPlacement,
         d: u64,
         o: usize,
         s: RuntimeWorkStamp,
-    ) -> Option<crate::foundation::MovementLocalPosition> {
+    ) -> Option<oteryn_gameplay_entities::MovementLocalPosition> {
         self.inner.source_callback_spawn_position(r, p, l, d, o, s)
     }
     fn source_spawn_tile_allowed(
         &mut self,
         r: &ChannelRuntimeV1,
         p: ExactActorRef,
-        l: crate::foundation::MovementLocalPosition,
+        l: oteryn_gameplay_entities::MovementLocalPosition,
         s: RuntimeWorkStamp,
     ) -> Option<bool> {
         self.inner.source_callback_spawn_tile_allowed(r, p, l, s)
@@ -3346,7 +3379,7 @@ impl MonsterCombatLane {
         r: &mut ChannelRuntimeV1,
         f: &mut ScopeRuntimeFence,
         stamp: RuntimeWorkStamp,
-        batches: &[Result<crate::source_callback_spawn::CallbackSpawnReceipt, AttackError>],
+        batches: &[Result<oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_spawn::CallbackSpawnReceipt, AttackError>],
         closure: Option<&std::sync::Arc<NativeChildClosure>>,
         now: SemanticTimeMicros,
     ) -> Vec<ChildRegistrationReceipt> {
@@ -3486,8 +3519,8 @@ mod project_native_registration_membership_tests {
         );
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             world,
-            crate::foundation::ChannelId::decode(&channel_id).unwrap(),
-            crate::foundation::NodeId::decode(&node_id).unwrap(),
+            oteryn_gameplay_foundation::foundation::ChannelId::decode(&channel_id).unwrap(),
+            oteryn_gameplay_foundation::foundation::NodeId::decode(&node_id).unwrap(),
             1,
             1,
             1,
@@ -3504,15 +3537,18 @@ mod project_native_registration_membership_tests {
         let actor = runtime.crystal_router_fixture_actor(
             &creature.key,
             20,
-            crate::foundation::MovementLocalPosition {
+            oteryn_gameplay_entities::MovementLocalPosition {
                 x: 100,
                 y: 100,
                 floor: 7,
             },
         );
         let b = runtime.binding();
-        let (mut fence, _) = crate::foundation::crystal_timer_fixture(
-            crate::foundation::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
+        let (mut fence, _) = oteryn_gameplay_foundation::foundation::crystal_timer_fixture(
+            oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
+                b.world_id(),
+                b.channel_id(),
+            ),
             b.scope_generation(),
         )
         .unwrap();

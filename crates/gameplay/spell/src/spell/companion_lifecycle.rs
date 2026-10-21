@@ -3,11 +3,11 @@
 //! and commits all participants in one owner turn. This module never admits client prototypes.
 use super::delayed_execution::CastBinding;
 use super::native::{CompiledNativeSpell, Facts, Plan};
-use super::native_companions::{
-    AcquisitionFacts, AcquisitionKind, AcquisitionPlan, CompanionFacts,
-};
 use crate::content::{CollisionClass, LogicalCell, NativeEntryMovementCells};
 use crate::spell::native::CompiledNativeSpellPlanExt;
+use oteryn_gameplay_spell_rules::native_companions::{
+    AcquisitionFacts, AcquisitionKind, AcquisitionPlan, CompanionFacts,
+};
 use {
     crate::foundation::{
         ChannelRuntimeV1, CompanionMaster, CompanionSnapshot, ExactActorRef, GameSessionId,
@@ -545,7 +545,9 @@ fn prepare_acquisition_excluding(
         .map_err(|e| CompanionExecutionError::Refused(e.0))?
     {
         Plan::Companion(plan) => match *plan {
-            super::native_companions::CompanionPlan::Acquisition(plan) => plan,
+            oteryn_gameplay_spell_rules::native_companions::CompanionPlan::Acquisition(plan) => {
+                plan
+            }
             _ => return Err(CompanionExecutionError::UnqualifiedProfile),
         },
         _ => return Err(CompanionExecutionError::UnqualifiedProfile),
@@ -736,7 +738,6 @@ pub fn commit_familiar_timer(
     })
 }
 
-use super::native_companions::{FamiliarAction, FamiliarEvent, FamiliarFacts};
 use crate::durability::character_familiar::{
     CommittedCharacterFamiliar, DurableFamiliarState, FamiliarLifecycleWriter,
     FamiliarStateOccurrence, FamiliarStateRequest, FamiliarUnixTime,
@@ -744,6 +745,9 @@ use crate::durability::character_familiar::{
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::foundation::PreparedCompanionSpawn;
 use crate::foundation::owner_timer::SemanticTimeMicros;
+use oteryn_gameplay_spell_rules::native_companions::{
+    FamiliarAction, FamiliarEvent, FamiliarFacts,
+};
 
 /// These values come from the current Character/account/config owners. The source's Unix
 /// lifetime is a separately sealed database-clock sample, never the monotonic timer clock.
@@ -1216,7 +1220,9 @@ fn plan_familiar_event_actions(
             .map_err(|e| CompanionExecutionError::Refused(e.0))?
         {
             Plan::Companion(plan) => match *plan {
-                super::native_companions::CompanionPlan::Familiar(actions) => Ok(actions),
+                oteryn_gameplay_spell_rules::native_companions::CompanionPlan::Familiar(
+                    actions,
+                ) => Ok(actions),
                 _ => Err(CompanionExecutionError::UnqualifiedProfile),
             },
             _ => Err(CompanionExecutionError::UnqualifiedProfile),
@@ -1928,7 +1934,7 @@ pub fn prepare_animate_dead(
     session: GameSessionId,
     character_id: crate::domain::CharacterId,
     spell: &CompiledNativeSpell,
-    corpse: &super::world_items_execution::DurableCorpseReservation,
+    corpse: &oteryn_gameplay_durability::durability::native_world_items::DurableCorpseReservation,
     current: &AcquisitionOwnerFacts,
 ) -> Result<CompanionSpawnReservation, CompanionExecutionError> {
     let p = parameters(spell, "acquire_summon")?;
@@ -1987,7 +1993,9 @@ pub fn prepare_animate_dead(
         .map_err(|e| CompanionExecutionError::Refused(e.0))?
     {
         Plan::Companion(plan) => match *plan {
-            super::native_companions::CompanionPlan::Acquisition(plan) => plan,
+            oteryn_gameplay_spell_rules::native_companions::CompanionPlan::Acquisition(plan) => {
+                plan
+            }
             _ => return Err(CompanionExecutionError::UnqualifiedProfile),
         },
         _ => return Err(CompanionExecutionError::UnqualifiedProfile),

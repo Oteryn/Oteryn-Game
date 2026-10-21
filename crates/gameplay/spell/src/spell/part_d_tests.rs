@@ -10,11 +10,11 @@ use std::collections::BTreeSet;
 use oteryn_simulation_determinism::SemanticTimeMicros;
 use serde_json::{Value, json};
 
-use super::authoring::spell_from_bundle;
 use super::plan::{CastPlanError, effect_plan};
 use super::target::{AllowedTargets, CastTarget};
 use super::*;
 use crate::ability::{AbilityEngine, AbilityOccurrence, RevisionSet};
+use oteryn_gameplay_content::content::spell_data::authoring::spell_from_bundle;
 
 const RUNE: &str = include_str!(
     "../../../../../tools/content-schema/spell-authoring/samples/starter-bundles/rune-sudden_death_rune/spell.json"

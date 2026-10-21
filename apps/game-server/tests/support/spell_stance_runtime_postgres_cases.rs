@@ -52,7 +52,7 @@ fn stance_real_receipt_pays_actual_actor_once_and_preserves_intervening_hp() -> 
             .iter()
             .find(|r| r["name"] == "Protector")
             .ok_or("Protector")?;
-        let mut spell = crate::spell::authoring::spell_from_bundle(
+        let mut spell = oteryn_gameplay_content::content::spell_data::authoring::spell_from_bundle(
             &serde_json::json!({"spell":profile["spell"]}),
             &profile["dependencies"],
         )
@@ -166,7 +166,7 @@ fn stance_real_receipt_pays_actual_actor_once_and_preserves_intervening_hp() -> 
         reloaded.load_owned_stance(&durable, &book).map_err(debug)?;
         assert_eq!(
             reloaded.standard_stance(),
-            Some(crate::spell::native_actor_states::StandardStance::Protector)
+            Some(oteryn_gameplay_spell_rules::native_actor_states::StandardStance::Protector)
         );
         let mut out_of_book =
             PlayerSpellState::new(state.character_facts(), 0, 0).ok_or("reload")?;

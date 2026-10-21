@@ -131,13 +131,13 @@ impl ChannelRuntimeV1 {
             || projection.world != *self.binding.world_id.as_bytes()
             || !projection.is_well_formed()
         {
-            return Err(CarrierError::PlanConflict);
+            return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
         }
         let index = self
             .carrier
             .player_slot_index(&self.continuity, actor.0, session)?;
         let Slot::Occupied { spell_combat, .. } = &mut self.carrier.slots[index] else {
-            return Err(CarrierError::PlanConflict);
+            return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
         };
         spell_combat.party.projection = Some(projection);
         Ok(())
@@ -151,7 +151,7 @@ impl ChannelRuntimeV1 {
             .carrier
             .player_slot_index(&self.continuity, actor.0, session)?;
         let Slot::Occupied { spell_combat, .. } = &self.carrier.slots[index] else {
-            return Err(CarrierError::PlanConflict);
+            return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
         };
         Ok(spell_combat.party.projection.as_ref())
     }

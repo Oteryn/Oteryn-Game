@@ -36,7 +36,7 @@ mod tests {
     use super::super::actor_conditions::{eat_food, tick};
     use super::super::cast::CharacterCastFacts;
     use super::*;
-    use crate::ability::condition::TickFacts;
+    use oteryn_gameplay_foundation::foundation::condition::TickFacts;
 
     fn actor(vocation: Vocation) -> PlayerSpellState {
         let mut state = PlayerSpellState::new(

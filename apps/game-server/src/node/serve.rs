@@ -1506,7 +1506,7 @@ async fn establish_custody(
 /// can apply, so boot refuses it instead.
 pub(crate) fn check_chest_quest_transitions(
     content: &crate::content::CanonicalReferencePlayableContent,
-    catalogue: &crate::durability::quest_state::quest::QuestStateCatalogue,
+    catalogue: &oteryn_gameplay_quests::quest::QuestStateCatalogue,
 ) -> Result<(), BootError> {
     let unbound = content
         .definitions
@@ -1535,13 +1535,13 @@ pub(crate) fn load_quest_catalogue(
     load: impl FnOnce(
         &str,
     ) -> Result<
-        crate::durability::quest_state::quest::loader::LoweredQuestState,
-        crate::durability::quest_state::quest::loader::QuestLoadError,
+        oteryn_gameplay_quests::quest::loader::LoweredQuestState,
+        oteryn_gameplay_quests::quest::loader::QuestLoadError,
     >,
     content_revision: &str,
 ) -> Result<
     (
-        std::sync::Arc<crate::durability::quest_state::quest::QuestStateCatalogue>,
+        std::sync::Arc<oteryn_gameplay_quests::quest::QuestStateCatalogue>,
         String,
     ),
     BootError,
@@ -2556,7 +2556,7 @@ async fn boot_and_serve(
     ));
     // Data import only: retain the qualified reference catalogue for this boot. Loading
     // it does not admit Wheel stages, effects, paid Atelier operations or Item definitions.
-    let _wheel_gem_data = crate::wheel_gem_data::WheelGemData::embedded()
+    let _wheel_gem_data = oteryn_gameplay_progression::wheel_gem_data::WheelGemData::embedded()
         .map_err(|_| BootError::ContentActivation("Wheel/Gem reference data"))?;
     event("event=wheel_gem_data state=loaded runtime_admitted=false");
     // ACHIEVEMENT: the Achievement catalogue loads with the Content activation as well; a
@@ -2574,7 +2574,7 @@ async fn boot_and_serve(
         ));
     }
     let (quest_catalogue, quest_event) = load_quest_catalogue(
-        crate::durability::quest_state::quest::loader::load_embedded_quest_state,
+        oteryn_gameplay_quests::quest::loader::load_embedded_quest_state,
         &config.readiness.content_revision,
     )?;
     event(&quest_event);

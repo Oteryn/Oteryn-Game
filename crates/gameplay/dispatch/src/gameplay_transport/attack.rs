@@ -36,7 +36,6 @@ use crate::ability::exact_actor_resolution::{ExactActorProposal, resolve_exact_a
 use crate::ability::{
     AbilityIntent, AbilityOccurrence, CommitGroup, Effect, EffectPlan, ProposalSource, RevisionSet,
 };
-use crate::combat::charm_effects::{CharmAttackerFacts, CharmHitSource, CharmHookEvent};
 use crate::combat_attack::{
     AttackConstants, AttackState, BlockBudget, CHASE_SEARCHES_PER_WINDOW, CREATURE_COST,
     ChaseDecision, ChaseSearchBudget, ChaseState, FightMode, SwingPoll, TargetFacts, TargetRefusal,
@@ -52,6 +51,9 @@ use crate::movement::CardinalStep;
 use crate::movement::interest::{VisibilityPosition, VisibilitySettings};
 use crate::spell::combat_execution::actor_atom;
 use crate::spell::formula::FormulaInputs;
+use oteryn_gameplay_progression::charm_effects::{
+    CharmAttackerFacts, CharmHitSource, CharmHookEvent,
+};
 
 /// `ATTACK0-RL-01` and `ATTACK0-RL-02`: intents per [`ATTACK_INTENT_WINDOW`].
 const MAX_INTENTS_PER_WINDOW: usize = 25;

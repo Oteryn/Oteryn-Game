@@ -4,15 +4,18 @@ use crate::bosses::rum_barrel::native_death::{
     RumBarrelCarrierExt, RumBarrelDeathLedger, RumBarrelDeathResult,
 };
 use crate::content::{ProjectV2AuthoringProfile, ProjectV2SourceIdentityBinding, WorldProject};
+use oteryn_gameplay_domain::domain::carrier_values::CarrierError;
 #[cfg(test)]
 use oteryn_gameplay_encounters::bosses::crystal_deaths::native_fixtures::CrystalRouterFixtureExt;
-use {
-    crate::foundation::{
-        ChannelId, ChannelRuntimeV1, ExactActorRef, GameSessionId, RuntimeScopeRefV1,
-        RuntimeWorkStamp, ScopeOwnershipGeneration, ScopeRuntimeFence, WorldId,
-    },
-    oteryn_gameplay_domain::domain::carrier_values::CarrierError,
-};
+use oteryn_gameplay_entities::ChannelRuntimeV1;
+use oteryn_gameplay_foundation::foundation::ChannelId;
+use oteryn_gameplay_foundation::foundation::ExactActorRef;
+use oteryn_gameplay_foundation::foundation::GameSessionId;
+use oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1;
+use oteryn_gameplay_foundation::foundation::RuntimeWorkStamp;
+use oteryn_gameplay_foundation::foundation::ScopeOwnershipGeneration;
+use oteryn_gameplay_foundation::foundation::ScopeRuntimeFence;
+use oteryn_gameplay_foundation::foundation::WorldId;
 pub mod speech {
     include!("crystal_death_composition/speech.rs");
 }
@@ -275,14 +278,14 @@ mod retained_native_source_tests {
         )?;
         let world = project.lower_reference_source()?.world_id;
         let native = crate::content::native_gameplay::retained_callback_native_fixture(world);
-        let mut runtime = crate::foundation::crystal_death_router_fixture_with_artifact(
+        let mut runtime = oteryn_gameplay_encounters::bosses::crystal_deaths::native_fixtures::crystal_death_router_fixture_with_artifact(
             world,
             native.source_digest(),
         );
         assert!(
             QualifiedCrystalDeaths::qualify(
                 &project,
-                &crate::foundation::crystal_death_router_fixture(world),
+                &oteryn_gameplay_encounters::bosses::crystal_deaths::native_fixtures::crystal_death_router_fixture(world),
                 &native
             )
             .is_err(),
@@ -291,9 +294,11 @@ mod retained_native_source_tests {
         let registry = QualifiedCrystalDeaths::qualify(&project, &runtime, &native)
             .expect("actual captured15 source memberships");
         let scope = RuntimeScopeRefV1::channel(world, runtime.binding().channel_id());
-        let (fence, stamp) =
-            crate::foundation::crystal_timer_fixture(scope, runtime.binding().scope_generation())?;
-        let at = crate::foundation::MovementLocalPosition {
+        let (fence, stamp) = oteryn_gameplay_foundation::foundation::crystal_timer_fixture(
+            scope,
+            runtime.binding().scope_generation(),
+        )?;
+        let at = oteryn_gameplay_entities::MovementLocalPosition {
             x: 100,
             y: 100,
             floor: 7,
@@ -302,7 +307,7 @@ mod retained_native_source_tests {
         let prey = runtime.crystal_router_fixture_actor(
             "oteryn:creature.plaguethrower",
             10,
-            crate::foundation::MovementLocalPosition {
+            oteryn_gameplay_entities::MovementLocalPosition {
                 x: 32936,
                 y: 31474,
                 floor: 1,
@@ -348,7 +353,7 @@ mod retained_native_source_tests {
         let weak = runtime.crystal_router_fixture_actor(
             "oteryn:creature.weak_spot",
             200000,
-            crate::foundation::MovementLocalPosition {
+            oteryn_gameplay_entities::MovementLocalPosition {
                 x: 101,
                 y: 100,
                 floor: 7,
@@ -417,8 +422,8 @@ pub struct CrystalSecondaryDeath {
     pub actor: ExactActorRef,
     pub result: Result<
         (
-            crate::foundation::CreatureDeathOccurrenceKey,
-            crate::foundation::MovementLocalPosition,
+            oteryn_gameplay_entities::CreatureDeathOccurrenceKey,
+            oteryn_gameplay_entities::MovementLocalPosition,
             usize,
         ),
         CrystalDeathCompositionError,
@@ -426,8 +431,8 @@ pub struct CrystalSecondaryDeath {
 }
 #[derive(Debug)]
 pub struct CrystalProjectedDeath {
-    pub death: crate::foundation::CreatureDeathOccurrenceKey,
-    pub position: crate::foundation::MovementLocalPosition,
+    pub death: oteryn_gameplay_entities::CreatureDeathOccurrenceKey,
+    pub position: oteryn_gameplay_entities::MovementLocalPosition,
     /// Callback failure after a successful projection remains explicit; it is not rolled back or
     /// confused with a failed lethal transition. Missing durable/map owners remain typed outcomes.
     pub callback: Result<CrystalDeathApplied, CrystalDeathCompositionError>,
@@ -586,15 +591,17 @@ mod retained_projection_owner_tests {
         )?;
         let world = project.lower_reference_source()?.world_id;
         let native = crate::content::native_gameplay::retained_callback_native_fixture(world);
-        let mut runtime = crate::foundation::crystal_death_router_fixture_with_artifact(
+        let mut runtime = oteryn_gameplay_encounters::bosses::crystal_deaths::native_fixtures::crystal_death_router_fixture_with_artifact(
             world,
             native.source_digest(),
         );
         let mut composition = CrystalDeathOwner::bind(&project, &runtime, &native).expect("crystal_death_composition.rs:retained_projection_owner_tests:552: qualified fixture operation must succeed");
         let scope = RuntimeScopeRefV1::channel(world, runtime.binding().channel_id());
-        let (fence, stamp) =
-            crate::foundation::crystal_timer_fixture(scope, runtime.binding().scope_generation())?;
-        let at = crate::foundation::MovementLocalPosition {
+        let (fence, stamp) = oteryn_gameplay_foundation::foundation::crystal_timer_fixture(
+            scope,
+            runtime.binding().scope_generation(),
+        )?;
+        let at = oteryn_gameplay_entities::MovementLocalPosition {
             x: 100,
             y: 100,
             floor: 7,
@@ -603,7 +610,7 @@ mod retained_projection_owner_tests {
         let prey = runtime.crystal_router_fixture_actor(
             "oteryn:creature.plaguethrower",
             10,
-            crate::foundation::MovementLocalPosition {
+            oteryn_gameplay_entities::MovementLocalPosition {
                 x: 32936,
                 y: 31474,
                 floor: 1,
@@ -615,10 +622,11 @@ mod retained_projection_owner_tests {
         other[8] = 0x80;
         other[15] = 94;
         let wrongscope = RuntimeScopeRefV1::channel(world, ChannelId::decode(&other)?);
-        let (wrongfence, wrongstamp) = crate::foundation::crystal_timer_fixture(
-            wrongscope,
-            runtime.binding().scope_generation(),
-        )?;
+        let (wrongfence, wrongstamp) =
+            oteryn_gameplay_foundation::foundation::crystal_timer_fixture(
+                wrongscope,
+                runtime.binding().scope_generation(),
+            )?;
         assert!(
             composition
                 .project_and_dispatch(&mut runtime, &wrongfence, wrongstamp, source, &[], None)
@@ -650,7 +658,7 @@ mod retained_projection_owner_tests {
         let replacement = runtime.crystal_router_fixture_actor(
             "oteryn:creature.plaguethrower",
             10,
-            crate::foundation::MovementLocalPosition {
+            oteryn_gameplay_entities::MovementLocalPosition {
                 x: 32936,
                 y: 31474,
                 floor: 1,
@@ -665,7 +673,7 @@ mod retained_projection_owner_tests {
         let weak = runtime.crystal_router_fixture_actor(
             "oteryn:creature.weak_spot",
             50000,
-            crate::foundation::MovementLocalPosition {
+            oteryn_gameplay_entities::MovementLocalPosition {
                 x: 101,
                 y: 100,
                 floor: 7,
@@ -722,8 +730,10 @@ impl CrystalDeathOwner {
         operation: &crate::world_runtime::ScopeLocalObjectOperation,
         occupied: &std::collections::BTreeSet<crate::content::LogicalCell>,
         publish: impl FnOnce(&crate::world_runtime::ScopePublish<'_>) -> Result<(), E>,
-    ) -> Result<Result<crate::foundation::TerminalSemanticOutcome, E>, CrystalDeathCompositionError>
-    {
+    ) -> Result<
+        Result<oteryn_gameplay_foundation::foundation::TerminalSemanticOutcome, E>,
+        CrystalDeathCompositionError,
+    > {
         self.registry.current_owner(runtime, fence, stamp)?;
         if runtime
             .native_summon_role(actor)
@@ -795,8 +805,8 @@ impl QualifiedCrystalDeaths {
         actor: ExactActorRef,
         character_fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
         copy: &crate::durability::quest_state::QuestStateCopy,
-        catalogue: std::sync::Arc<crate::durability::quest_state::quest::QuestStateCatalogue>,
-    ) -> Result<Option<crate::crystal_herald_quest::HeraldQuestRequest>, CrystalDeathCompositionError>
+        catalogue: std::sync::Arc<oteryn_gameplay_quests::quest::QuestStateCatalogue>,
+    ) -> Result<Option<oteryn_gameplay_encounters::bosses::herald_of_fire::crystal_herald_quest::HeraldQuestRequest>, CrystalDeathCompositionError>
     {
         self.current_owner(runtime, fence, stamp)?;
         if character_fence.runtime_scope != RuntimeScopeRefV1::channel(self.world, self.channel)
@@ -839,7 +849,7 @@ impl QualifiedCrystalDeaths {
             ));
         }
         let Some(transition) =
-            crate::crystal_herald_quest::select_transition(&catalogue, copy.tracks()).map_err(
+            oteryn_gameplay_encounters::bosses::herald_of_fire::crystal_herald_quest::select_transition(&catalogue, copy.tracks()).map_err(
                 |_| {
                     CrystalDeathCompositionError::Source(
                         "Herald exact grouped quest definition unavailable",
@@ -858,7 +868,7 @@ impl QualifiedCrystalDeaths {
                     CrystalDeathCompositionError::Source("Herald actual owner occurrence invalid")
                 })?;
         Ok(Some(
-            crate::crystal_herald_quest::HeraldQuestRequest::from_owner(
+            oteryn_gameplay_encounters::bosses::herald_of_fire::crystal_herald_quest::HeraldQuestRequest::from_owner(
                 character_fence,
                 occurrence,
                 transition,
@@ -892,10 +902,15 @@ impl QualifiedCrystalDeaths {
 mod herald_actual_source_tests {
     use super::*;
     use crate::content::*;
-    use crate::crystal_herald_quest::{MISSION, QUEST};
-    use crate::durability::quest_state::quest::loader::load_embedded_quest_state;
     use crate::durability::quest_state::{CommittedQuestTransition, QuestCause, QuestStateCopy};
-    use crate::foundation::{AttackerCommand, CommandId, CommandRef, OwnerDamageCommand};
+    use oteryn_gameplay_encounters::bosses::herald_of_fire::crystal_herald_quest::{
+        MISSION, QUEST,
+    };
+    use oteryn_gameplay_quests::quest::loader::load_embedded_quest_state;
+    use {
+        oteryn_gameplay_entities::{AttackerCommand, OwnerDamageCommand},
+        oteryn_gameplay_foundation::foundation::{CommandId, CommandRef},
+    };
     #[test]
     #[ignore = "Retained actual eleven-document native source capture; PROJECT Character/runtime positions, not shipping map admission"]
     fn actual_herald_death_source_produces_stable_request_only_after_projection_and_for_top_character()
@@ -927,15 +942,17 @@ mod herald_actual_source_tests {
         )?;
         let world = project.lower_reference_source()?.world_id;
         let native = crate::content::native_gameplay::retained_callback_native_fixture(world);
-        let mut runtime = crate::foundation::crystal_death_router_fixture_with_artifact(
+        let mut runtime = oteryn_gameplay_encounters::bosses::crystal_deaths::native_fixtures::crystal_death_router_fixture_with_artifact(
             world,
             native.source_digest(),
         );
         let mut owner =
             CrystalDeathOwner::bind(&project, &runtime, &native).map_err(|e| format!("{e:?}"))?;
         let scope = RuntimeScopeRefV1::channel(world, runtime.binding().channel_id());
-        let (fence, stamp) =
-            crate::foundation::crystal_timer_fixture(scope, runtime.binding().scope_generation())?;
+        let (fence, stamp) = oteryn_gameplay_foundation::foundation::crystal_timer_fixture(
+            scope,
+            runtime.binding().scope_generation(),
+        )?;
         let mut id = [41u8; 16];
         id[6] = 0x70;
         id[8] = 0x80;
@@ -946,7 +963,8 @@ mod herald_actual_source_tests {
             crate::durability::character_progression::CurrentCharacterGameplayFence {
                 character_id: character,
                 game_session_id: session,
-                connection_generation: crate::foundation::ConnectionGeneration::new(1)?,
+                connection_generation:
+                    oteryn_gameplay_foundation::foundation::ConnectionGeneration::new(1)?,
                 character_lease_generation: 1,
                 runtime_scope: scope,
                 scope_ownership_generation: runtime.binding().scope_generation(),
@@ -985,7 +1003,7 @@ mod herald_actual_source_tests {
         let actor = runtime.crystal_router_fixture_actor(
             "oteryn:creature.herald_of_fire",
             10,
-            crate::foundation::MovementLocalPosition {
+            oteryn_gameplay_entities::MovementLocalPosition {
                 x: 100,
                 y: 100,
                 floor: 7,
@@ -997,7 +1015,9 @@ mod herald_actual_source_tests {
             .commit_damage_for_attacker(
                 actor,
                 AttackerCommand::new(
-                    crate::foundation::CharacterId::decode(character.as_bytes())?,
+                    oteryn_gameplay_foundation::foundation::CharacterId::decode(
+                        character.as_bytes(),
+                    )?,
                     1,
                     CommandRef::new(session, CommandId::new(2)?),
                     0,
@@ -1097,8 +1117,10 @@ mod herald_actual_source_tests {
                 .is_none()
         );
         let mut stale = character_fence;
-        stale.runtime_scope =
-            RuntimeScopeRefV1::channel(world, crate::foundation::ChannelId::decode(&id)?);
+        stale.runtime_scope = RuntimeScopeRefV1::channel(
+            world,
+            oteryn_gameplay_foundation::foundation::ChannelId::decode(&id)?,
+        );
         assert!(
             owner
                 .qualified_registry()

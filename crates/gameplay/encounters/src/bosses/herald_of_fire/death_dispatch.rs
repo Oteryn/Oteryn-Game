@@ -1,9 +1,11 @@
 //! Source-specific physical-death consumer using the existing Character QuestState owner.
 //! No runtime/party cache or inbox is a durable quest writer.
-use crate::crystal_death_composition::QualifiedCrystalDeaths;
-use crate::crystal_herald_quest::HeraldQuestError;
 use crate::durability::quest_state::QuestTransitionOutcome;
-use crate::foundation::{ExactActorRef, GameSessionId, RuntimeWorkStamp, ScopeRuntimeFence};
+use oteryn_gameplay_encounters::bosses::crystal_deaths::crystal_death_composition::QualifiedCrystalDeaths;
+use oteryn_gameplay_encounters::bosses::herald_of_fire::crystal_herald_quest::HeraldQuestError;
+use oteryn_gameplay_foundation::foundation::{
+    ExactActorRef, GameSessionId, RuntimeWorkStamp, ScopeRuntimeFence,
+};
 
 use crate::durability::{
     DurabilityRoot, character_authority::ReconciledCharacterAuthority,
@@ -11,7 +13,7 @@ use crate::durability::{
     character_revision_sequencer::CharacterRevisionSequencer,
     runtime_scope_assignment::NodeIncarnationProof,
 };
-use crate::foundation::ChannelRuntimeV1;
+use oteryn_gameplay_entities::ChannelRuntimeV1;
 use std::future::Future;
 
 /// Existing Character and Channel owners borrowed for a source-qualified death handoff.
@@ -47,7 +49,7 @@ impl HeraldDeathContext<'_, '_, '_> {
         // A stable explicit source catalogue revision; unrelated monster stat edits do not
         // change existing Targuna quest pins. Existing incompatible definitions still refuse
         // in the original writer; this consumer never migrates or overwrites them.
-        let catalogue = crate::durability::quest_state::quest::loader::load_embedded_quest_state(
+        let catalogue = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state(
             "source-herald-crystal00ce-r1",
         )
         .map_err(|_| HeraldQuestError::InvalidCatalogue)?;
@@ -88,7 +90,7 @@ impl HeraldDeathContext<'_, '_, '_> {
 /// durable descendant refuses. No postprojection SQL error claims physical rollback.
 #[derive(Debug)]
 pub struct CrystalDeathQuestOutcome {
-    pub projected: crate::crystal_death_composition::CrystalProjectedDeath,
+    pub projected: oteryn_gameplay_encounters::bosses::crystal_deaths::crystal_death_composition::CrystalProjectedDeath,
     pub herald: Option<Result<Option<QuestTransitionOutcome>, HeraldQuestError>>,
 }
 impl HeraldDeathContext<'_, '_, '_> {
@@ -100,7 +102,7 @@ impl HeraldDeathContext<'_, '_, '_> {
     #[allow(clippy::too_many_arguments)]
     pub async fn project_and_consume_crystal_death(
         &self,
-        owner: &mut crate::crystal_death_composition::CrystalDeathOwner,
+        owner: &mut oteryn_gameplay_encounters::bosses::crystal_deaths::crystal_death_composition::CrystalDeathOwner,
         current: &ScopeRuntimeFence,
         stamp: RuntimeWorkStamp,
         actor: ExactActorRef,
@@ -109,15 +111,15 @@ impl HeraldDeathContext<'_, '_, '_> {
         current_quest_fence: impl Future<Output = Result<Option<CurrentCharacterGameplayFence>, ()>>,
     ) -> Result<
         CrystalDeathQuestOutcome,
-        crate::crystal_death_composition::CrystalDeathCompositionError,
-    > {
+        oteryn_gameplay_encounters::bosses::crystal_deaths::crystal_death_composition::CrystalDeathCompositionError,
+    >{
         let (projected, is_herald) = {
             let mut runtime = self.runtime.lock().await;
             // Identity belongs to the actual native slot, not a supplied callback name.
             let is_herald = runtime
                 .borrow_combat_death()
                 .creature_target_identity(actor)
-                .map_err(crate::crystal_death_composition::CrystalDeathCompositionError::Owner)?
+                .map_err(oteryn_gameplay_encounters::bosses::crystal_deaths::crystal_death_composition::CrystalDeathCompositionError::Owner)?
                 == b"oteryn:creature.herald_of_fire";
             let projected = owner.project_and_dispatch(
                 &mut runtime,

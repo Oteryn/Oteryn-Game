@@ -2760,13 +2760,13 @@ mod quest_obligations {
     use super::*;
     use crate::durability::character_progression::CharacterProgressionError;
     use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
-    use crate::durability::quest_state::quest::{
-        QuestComparison, QuestEffect, QuestEffectKind, QuestRefusal, QuestStateCatalogue,
-        QuestTrack, QuestTransition,
-    };
     use crate::durability::quest_state::{
         QuestAdmission, QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
         admit_character_quest_state,
+    };
+    use oteryn_gameplay_quests::quest::{
+        QuestComparison, QuestEffect, QuestEffectKind, QuestRefusal, QuestStateCatalogue,
+        QuestTrack, QuestTransition,
     };
     use std::sync::Arc;
 

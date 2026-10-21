@@ -1,13 +1,13 @@
 //! One actor-owned retained durable stance intent. Historical receipts prove a
 //! particular writer result; the Channel independently proves current ownership.
 use super::cast::{PaidNativeCast, PlayerSpellState};
-use super::native_actor_states::{StancePlan, StandardStance};
 use super::{Execution, SpellDefinition};
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::durability::character_stance::{
     CommittedCharacterStance, StanceChangeOccurrence, StanceChangeRequest,
 };
 use crate::foundation::{ExactActorRef, GameSessionId};
+use oteryn_gameplay_spell_rules::native_actor_states::{StancePlan, StandardStance};
 use oteryn_protocol_oteryn::actor_spell::SpellCastDisposition;
 use oteryn_simulation_determinism::SemanticTimeMicros;
 use sha2::{Digest, Sha256};
@@ -215,9 +215,12 @@ pub fn active_stance_from_book(
             if native["key"] != "stance_toggle" || native["parameters"]["stance"] != key {
                 return None;
             }
-            let plan =
-                super::native_actor_states::plan_stance(&native["parameters"], None, vocation)
-                    .ok()?;
+            let plan = oteryn_gameplay_spell_rules::native_actor_states::plan_stance(
+                &native["parameters"],
+                None,
+                vocation,
+            )
+            .ok()?;
             plan.after
         })
 }

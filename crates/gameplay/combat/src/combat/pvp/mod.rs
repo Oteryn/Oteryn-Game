@@ -9,13 +9,12 @@
 //! creature-only and nothing here changes a live decision. The durable write-ahead of the
 //! deadlines needs the PVP-1 tables and is not part of this slice.
 
-pub mod legality;
 pub mod lock;
 
 #[cfg(test)]
-pub use legality::{
+pub use lock::{AggressionOutcome, AggressionRelations, CombatLock};
+#[cfg(test)]
+pub use oteryn_gameplay_combat_rules::pvp::legality::{
     ExpertMode, PvpActor, PvpRefusal, PvpRelation, PvpTarget, WorldPvpType, check_pvp_legality,
     pvp_damage,
 };
-#[cfg(test)]
-pub use lock::{AggressionOutcome, AggressionRelations, CombatLock};

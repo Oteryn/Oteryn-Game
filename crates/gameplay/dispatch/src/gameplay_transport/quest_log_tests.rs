@@ -4,11 +4,11 @@ use std::collections::BTreeMap;
 
 use super::*;
 use crate::durability::quest_state::QuestStateCopy;
-use crate::durability::quest_state::quest::log::QuestLogState as CopyQuestState;
-use crate::durability::quest_state::quest::log::{
+use oteryn_gameplay_quests::quest::log::QuestLogState as CopyQuestState;
+use oteryn_gameplay_quests::quest::log::{
     JournalText, QuestJournal, QuestLogCatalogue, QuestLogKind, QuestLogMission, QuestLogQuest,
 };
-use crate::durability::quest_state::quest::{QuestStateCatalogue, QuestTrack};
+use oteryn_gameplay_quests::quest::{QuestStateCatalogue, QuestTrack};
 use oteryn_protocol_oteryn::quest_log::{
     MAX_JOURNAL_TEXT_BYTES, MAX_MISSION_NAME_BYTES, decode_quest_log,
 };
@@ -216,9 +216,9 @@ fn content_whose_worst_case_line_is_over_the_bound_does_not_load() {
 #[test]
 fn the_session_copy_is_read_as_the_projection_facts() {
     use crate::domain::{CharacterId, CharacterRevision};
-    use crate::durability::quest_state::quest::QuestTrackChange;
     use crate::durability::quest_state::{CommittedQuestTransition, QuestCause};
     use crate::foundation::{CommandId, CommandRef, GameSessionId};
+    use oteryn_gameplay_quests::quest::QuestTrackChange;
 
     let mut id = [0x42; 16];
     id[6] = 0x72;

@@ -11,20 +11,30 @@ fn uuid_v7(tag: u8) -> [u8; 16] {
 
 /// A runtime whose pinned entry start is (3, 4, 7), with one player positioned at (10, 10, 7).
 fn owner() -> (ChannelRuntimeV1, ExactActorRef, GameSessionId) {
-    let world = WorldId::decode(&uuid_v7(0x60)).expect("world");
+    let world =
+        oteryn_gameplay_foundation::foundation::WorldId::decode(&uuid_v7(0x60)).expect("world");
     let mut runtime = ChannelRuntimeV1::from_committed_assignment(
         world,
-        ChannelId::decode(&uuid_v7(0x61)).expect("channel"),
-        NodeId::decode(&uuid_v7(0x62)).expect("node"),
+        oteryn_gameplay_foundation::foundation::ChannelId::decode(&uuid_v7(0x61)).expect("channel"),
+        oteryn_gameplay_foundation::foundation::NodeId::decode(&uuid_v7(0x62)).expect("node"),
         1,
         1,
         1,
         "runtime-scope-assignment:1",
         4,
-        ChannelContentPin::from_activation(world, 1, [1; 32], [2; 32], [3; 32], [4; 32], (3, 4, 7)),
+        oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::from_activation(
+            world,
+            1,
+            [1; 32],
+            [2; 32],
+            [3; 32],
+            [4; 32],
+            (3, 4, 7),
+        ),
     )
     .expect("runtime");
-    let session = GameSessionId::decode(&uuid_v7(0x21)).expect("session");
+    let session = oteryn_gameplay_foundation::foundation::GameSessionId::decode(&uuid_v7(0x21))
+        .expect("session");
     let reservation = runtime.reserve_fresh_session(session).expect("reserve");
     let player = runtime.commit_fresh_session(reservation).expect("commit");
     runtime
@@ -66,14 +76,17 @@ fn a_respawn_places_the_same_actor_at_the_entry_spawn_as_one_position_successor(
 fn a_respawn_of_another_session_or_a_stale_actor_moves_nothing() {
     let (mut runtime, player, _) = owner();
     let before = runtime.read_actor_position(player).expect("position");
-    let other = GameSessionId::decode(&uuid_v7(0x22)).expect("session");
+    let other = oteryn_gameplay_foundation::foundation::GameSessionId::decode(&uuid_v7(0x22))
+        .expect("session");
     let entry = runtime.respawn_position();
     assert!(
         runtime
             .place_respawned_player(player, other, entry)
             .is_err()
     );
-    let unpositioned_session = GameSessionId::decode(&uuid_v7(0x23)).expect("session");
+    let unpositioned_session =
+        oteryn_gameplay_foundation::foundation::GameSessionId::decode(&uuid_v7(0x23))
+            .expect("session");
     let reservation = runtime
         .reserve_fresh_session(unpositioned_session)
         .expect("reserve");
@@ -183,7 +196,9 @@ fn a_blocked_recorded_cell_falls_back_to_the_nearest_valid_cell() {
 #[test]
 fn an_occupied_recorded_cell_falls_back_and_the_own_cell_is_free() {
     let (mut runtime, player, session) = owner();
-    let other_session = GameSessionId::decode(&uuid_v7(0x24)).expect("session");
+    let other_session =
+        oteryn_gameplay_foundation::foundation::GameSessionId::decode(&uuid_v7(0x24))
+            .expect("session");
     let reservation = runtime
         .reserve_fresh_session(other_session)
         .expect("reserve");
@@ -211,7 +226,9 @@ fn another_actor_on_the_players_own_recorded_cell_still_falls_back() {
     runtime
         .place_respawned_player(player, session, entry)
         .expect("player at the entry start");
-    let other_session = GameSessionId::decode(&uuid_v7(0x25)).expect("session");
+    let other_session =
+        oteryn_gameplay_foundation::foundation::GameSessionId::decode(&uuid_v7(0x25))
+            .expect("session");
     let reservation = runtime
         .reserve_fresh_session(other_session)
         .expect("reserve");
@@ -251,7 +268,8 @@ fn no_fallback_cell_places_the_actor_at_the_respawn_position() {
 fn an_admitted_respawn_of_another_session_moves_nothing() {
     let (mut runtime, player, _) = owner();
     let before = runtime.read_actor_position(player).expect("position");
-    let other = GameSessionId::decode(&uuid_v7(0x22)).expect("session");
+    let other = oteryn_gameplay_foundation::foundation::GameSessionId::decode(&uuid_v7(0x22))
+        .expect("session");
     assert!(
         runtime
             .place_admitted_respawn(player, other, Some(at(20, 20)), |_| true)

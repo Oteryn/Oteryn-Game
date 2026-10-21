@@ -12,7 +12,6 @@ category = "gameplay"
 release-role = "production"
 
 [dependencies]
-oteryn-gameplay-characters = { version = "=0.1.0", path = "../characters" }
 oteryn-gameplay-content = { version = "=0.1.0", path = "../content" }
 oteryn-gameplay-domain = { version = "=0.1.0", path = "../domain" }
 oteryn-simulation-determinism = { version = "=0.1.0", path = "../../simulation-determinism" }

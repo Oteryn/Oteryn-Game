@@ -11,10 +11,10 @@
 
 pub mod actor_conditions;
 pub mod actor_execution;
-pub mod authoring;
+
 pub mod cast;
-pub use crate::combat::chain;
 use crate::spell::native::CompiledNativeSpellPlanExt;
+pub use oteryn_gameplay_combat_rules::chain;
 #[cfg(test)]
 mod chain_tests;
 pub mod combat_batch;
@@ -26,21 +26,21 @@ pub mod executable_catalog;
 pub mod field_history;
 pub mod find_person_execution;
 pub mod food_regeneration;
-pub use crate::combat::formula;
+pub use oteryn_gameplay_content::content::spell_data::formula;
 pub mod harmony;
 #[cfg(test)]
 mod harmony_tests;
-pub mod locate;
+
 pub mod magnitude_owner;
 pub mod mana_training;
 pub mod native;
-pub mod native_actor_states;
+
 pub mod native_cast_commit;
 pub mod native_combat;
-pub mod native_companions;
+
 pub mod native_delayed;
 pub mod native_house_movement;
-pub mod native_items;
+
 pub mod ordinary_timer;
 pub mod owned_cast_facts;
 #[cfg(test)]
@@ -57,7 +57,6 @@ pub mod target;
 #[cfg(test)]
 mod tests;
 pub mod world_execution;
-pub mod world_items_execution;
 
 use oteryn_simulation_determinism::SemanticTimeMicros;
 
@@ -786,7 +785,7 @@ fn resolve_effect(
     })
 }
 
-pub use crate::durability::uniform_draw::uniform_draw;
+pub use oteryn_gameplay_domain::domain::uniform_draw::uniform_draw;
 
 pub mod house_execution;
 pub mod source_map_initialization;

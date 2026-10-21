@@ -9,12 +9,12 @@ use std::collections::BTreeSet;
 use oteryn_simulation_determinism::SemanticTimeMicros;
 use serde_json::{Value, json};
 
-use super::authoring::spell_from_bundle;
 use super::chain::{ChainCreature, TilePosition};
 use super::party::{PartyWorld, SoloParty};
 use super::plan::{CastPlanError, effect_plan, party_plans};
 use super::*;
 use crate::ability::{AbilityOccurrence, RevisionSet};
+use oteryn_gameplay_content::content::spell_data::authoring::spell_from_bundle;
 
 const SPELL: &str = include_str!(
     "../../../../../tools/content-schema/spell-authoring/samples/starter-bundles/instant-cure_poison/spell.json"

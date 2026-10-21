@@ -3,12 +3,14 @@
 //! The scalar compatibility entry point remains limited to actors without owned
 //! familiars; `stage_haste` supports all four source-qualified haste profiles.
 use super::native::CompiledNativeSpell;
-use {
-    crate::ability::condition::{
-        ApplicationFacts, Applied, ConditionDefinition, ConditionStore, SpellSpeedError,
-    },
-    oteryn_gameplay_domain::domain::condition::{ConditionType, ConditionValues, SpeedRange},
-};
+use oteryn_gameplay_domain::domain::condition::ConditionType;
+use oteryn_gameplay_domain::domain::condition::ConditionValues;
+use oteryn_gameplay_domain::domain::condition::SpeedRange;
+use oteryn_gameplay_foundation::foundation::condition::ApplicationFacts;
+use oteryn_gameplay_foundation::foundation::condition::Applied;
+use oteryn_gameplay_foundation::foundation::condition::ConditionDefinition;
+use oteryn_gameplay_foundation::foundation::condition::ConditionStore;
+use oteryn_gameplay_foundation::foundation::condition::SpellSpeedError;
 
 #[derive(Debug)]
 pub struct PaidHasteCast {
@@ -39,7 +41,7 @@ pub fn prepare_haste_owner_cast_with_caster(
     facts: &ApplicationFacts<'_>,
     draw: &mut dyn FnMut(i64, i64) -> i64,
 ) -> Result<PaidHasteCast, oteryn_protocol_oteryn::actor_spell::SpellCastDisposition> {
-    use super::native_companions::{
+    use oteryn_gameplay_spell_rules::native_companions::{
         CompanionFacts, ConditionSlotId, HasteFacts, SpeedCondition, SpeedKind, SpeedRecipient,
         SwiftGrade,
     };
@@ -82,7 +84,9 @@ pub fn prepare_haste_owner_cast_with_caster(
     let recipient = |id,
                      base,
                      familiar,
-                     condition: Option<&crate::ability::condition::ConditionInstance<_>>|
+                     condition: Option<
+        &oteryn_gameplay_foundation::foundation::condition::ConditionInstance<_>,
+    >|
      -> Result<SpeedRecipient, SpellCastDisposition> {
         let conditions = condition
             .map(|instance| -> Result<SpeedCondition, SpellCastDisposition> {
@@ -314,8 +318,8 @@ mod tests {
     #![allow(clippy::items_after_test_module)]
     #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
     use super::*;
-    use crate::ability::condition::TickFacts;
     use crate::spell::native::spell_from_bundle;
+    use oteryn_gameplay_foundation::foundation::condition::TickFacts;
     use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
     use serde_json::{Value, json};
 
@@ -836,7 +840,7 @@ pub fn stage_haste(
             match staged.conditions.apply(
                 definition,
                 None,
-                crate::ability::condition::ConditionSourceKind::SelfUse,
+                oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind::SelfUse,
                 &[],
                 facts,
             ) {

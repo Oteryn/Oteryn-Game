@@ -4,18 +4,18 @@ use crate::content::{
     ProjectV2AuthoringProfileData as Data, ProjectV2DefinitionRef as Ref, ProjectV2Family,
 };
 use crate::creature_area_heal::CreatureHealCatalog;
-use crate::creature_attack_geometry::Facing;
 use crate::creature_auto_attack::ProfileAbilityProposal;
 use crate::creature_auto_attack::{AttackError, AttackFacts};
 use crate::creature_damage_spell::composed::*;
 use crate::creature_damage_spell::{SpellCombatFacts, SpellWorldReader, hex};
-use crate::durability::creature_schedule::ScheduleList;
 use crate::foundation::owner_timer::SemanticTimeMicros;
 use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, GameSessionId, RuntimeWorkStamp, ScopeRuntimeFence,
 };
 use crate::gameplay_transport::actor_spell::{ChannelSpellStates, tests::FACTS};
 use crate::player_lethal::{PlayerDamageReceipt, PlayerLethalVitals};
+use oteryn_gameplay_content::content::creature_attack_geometry::Facing;
+use oteryn_gameplay_foundation::foundation::profile_schedule::ScheduleList;
 use {
     crate::foundation::{ChannelId, MovementLocalPosition, NodeId, RuntimeScopeRefV1, WorldId},
     oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,

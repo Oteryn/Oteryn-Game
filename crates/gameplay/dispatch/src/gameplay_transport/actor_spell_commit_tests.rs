@@ -225,13 +225,13 @@ fn changed_actual_player_predecessor_refuses_the_entire_prepared_transaction() {
 fn source_light_successor(
     f: &Fixture,
 ) -> (
-    crate::ability::condition::ConditionStore<String>,
-    crate::ability::condition::ConditionStore<String>,
+    oteryn_gameplay_foundation::foundation::condition::ConditionStore<String>,
+    oteryn_gameplay_foundation::foundation::condition::ConditionStore<String>,
 ) {
-    use {
-        crate::ability::condition::{ApplicationFacts, ConditionDefinition, ConditionSourceKind},
-        oteryn_gameplay_domain::domain::condition::ConditionValues,
-    };
+    use oteryn_gameplay_domain::domain::condition::ConditionValues;
+    use oteryn_gameplay_foundation::foundation::condition::ApplicationFacts;
+    use oteryn_gameplay_foundation::foundation::condition::ConditionDefinition;
+    use oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind;
     let source: serde_json::Value = serde_json::from_slice(include_bytes!(
         "../../../../../tools/content-schema/spell-authoring/samples/executable-spell-catalog.json"
     ))
@@ -364,10 +364,11 @@ fn source_condition_predecessor_substitution_refuses_entire_hp_and_cost_batch() 
 // Canary/Crystal healing removes paralysis in the same owner transaction as HP.
 // This verifies the real condition owner, rather than a planner-only effect list.
 fn fixture_with_paralysis() -> Result<Fixture, String> {
-    use {
-        crate::ability::condition::{ApplicationFacts, ConditionDefinition, ConditionSourceKind},
-        oteryn_gameplay_domain::domain::condition::{ConditionValues, SpeedRange},
-    };
+    use oteryn_gameplay_domain::domain::condition::ConditionValues;
+    use oteryn_gameplay_domain::domain::condition::SpeedRange;
+    use oteryn_gameplay_foundation::foundation::condition::ApplicationFacts;
+    use oteryn_gameplay_foundation::foundation::condition::ConditionDefinition;
+    use oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind;
     let mut f = fixture();
     let before = f
         .states

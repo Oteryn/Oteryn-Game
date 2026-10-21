@@ -1,8 +1,8 @@
 //! Canonical AI proposal grammar, checked before callback timer/memo/speech mutation.
 use crate::creature_auto_attack::AttackError;
 use crate::creature_auto_attack::ProfileAbilityProposal;
-use crate::durability::creature_schedule::ScheduleList;
-use crate::foundation::ChannelRuntimeV1;
+use oteryn_gameplay_entities::ChannelRuntimeV1;
+use oteryn_gameplay_foundation::foundation::profile_schedule::ScheduleList;
 pub fn validate(r: &ChannelRuntimeV1, p: &ProfileAbilityProposal) -> Result<(), AttackError> {
     let issuer = format!("actor:{}", hex(p.issuer.placement_identity()));
     let target = format!("actor:{}", hex(p.target.placement_identity()));

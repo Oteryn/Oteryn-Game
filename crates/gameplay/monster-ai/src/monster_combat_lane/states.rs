@@ -62,7 +62,7 @@ pub trait MonsterCombatStates:
         target: ExactActorRef,
         session: GameSessionId,
         _occurrence: DecisionOccurrenceId,
-        facts: crate::ability::condition::TickFacts,
+        facts: oteryn_gameplay_foundation::foundation::condition::TickFacts,
         now: crate::foundation::owner_timer::SemanticTimeMicros,
     ) -> Option<NativeOwnedPlayerTickReceipt>;
     fn tick_source_creature_conditions(

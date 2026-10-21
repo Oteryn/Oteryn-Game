@@ -16,9 +16,6 @@ test-support = ["oteryn-gameplay-combat/test-support", "oteryn-gameplay-content/
 
 [dependencies]
 oteryn-gameplay-domain = { version = "=0.1.0", path = "../domain" }
-oteryn-gameplay-combat-rules = { version = "=0.1.0", path = "../combat-rules" }
-oteryn-gameplay-spell-rules = { version = "=0.1.0", path = "../spell-rules" }
-oteryn-gameplay-encounter-rules = { version = "=0.1.0", path = "../encounter-rules" }
 oteryn-gameplay-combat = { version = "=0.1.0", path = "../combat" }
 oteryn-gameplay-content = { version = "=0.1.0", path = "../content" }
 oteryn-gameplay-durability = { version = "=0.1.0", path = "../durability" }

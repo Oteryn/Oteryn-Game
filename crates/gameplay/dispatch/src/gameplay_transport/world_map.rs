@@ -32,7 +32,6 @@
 use super::item_view::{
     ItemHandleTable, ItemKey, ItemViewDelta, ItemViewError, ItemViewSnapshotDomain, SessionItemView,
 };
-use super::world_object::{UseDisposition, WorldObjectTarget};
 use super::world_spatial::{ActorPosition, EntityKind};
 use crate::map::overlay::{ChannelOverlay, TileOverlayView, TilePos};
 use crate::map::view::{
@@ -49,6 +48,7 @@ use oteryn_protocol_oteryn::world_map::{
 use oteryn_protocol_oteryn::world_map::{
     MAX_DELTA_ENTRIES, WorldMapViewDelta, in_window, tile_order,
 };
+use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
 /// What a map view reads: the Channel overlay over its base, the per-entry facts, and the
 /// binding of the view.

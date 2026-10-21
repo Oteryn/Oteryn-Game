@@ -3,13 +3,13 @@
 //! and wall legality through their actual native owners before enabling this partial route.
 use crate::bosses::smelly_cheese::native_owner::SmellyCheeseCarrierExt;
 use crate::player_lethal::{PlayerDamageReceipt, PlayerLethalVitals};
-use crate::smelly_cheese::{SmellyDuePulse, SmellyPulse};
-use {
-    crate::foundation::{
-        ChannelRuntimeV1, ExactActorRef, RuntimeScopeRefV1, RuntimeWorkStamp, ScopeRuntimeFence,
-    },
-    oteryn_gameplay_domain::domain::carrier_values::CarrierError,
-};
+use oteryn_gameplay_domain::domain::carrier_values::CarrierError;
+use oteryn_gameplay_encounters::bosses::smelly_cheese::timers::{SmellyDuePulse, SmellyPulse};
+use oteryn_gameplay_entities::ChannelRuntimeV1;
+use oteryn_gameplay_foundation::foundation::ExactActorRef;
+use oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1;
+use oteryn_gameplay_foundation::foundation::RuntimeWorkStamp;
+use oteryn_gameplay_foundation::foundation::ScopeRuntimeFence;
 #[derive(Debug)]
 pub enum SmellyDamageError {
     Owner(CarrierError),
@@ -30,7 +30,7 @@ pub fn commit_smelly_unambiguous_damage(
     pulse: SmellyDuePulse,
     mut draw: impl FnMut() -> u32,
     mut native_legal: impl FnMut(ExactActorRef, ExactActorRef) -> bool,
-    now: crate::foundation::owner_timer::SemanticTimeMicros,
+    now: oteryn_gameplay_foundation::foundation::owner_timer::SemanticTimeMicros,
 ) -> Result<Vec<PlayerDamageReceipt>, SmellyDamageError> {
     let binding = runtime.binding();
     if !fence.is_current_for_scope(

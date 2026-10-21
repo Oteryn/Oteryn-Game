@@ -166,7 +166,7 @@ type WheelFlatObservation = ((i32, i32), u64);
 fn project_current_wheel_flat(
     binding: &CastFactsBinding,
     vocation: &str,
-    profile: Option<&crate::durability::spell_wheel_abi::CompiledWheelProfile>,
+    profile: Option<&oteryn_gameplay_content::content::spell_wheel_profile::CompiledWheelProfile>,
     wheel: Option<&CurrentProjection<BTreeMap<String, u8>>>,
     premium: Option<&CurrentProjection<bool>>,
     now: u64,
@@ -219,7 +219,7 @@ fn project_current_wheel_flat(
 #[allow(clippy::expect_used)]
 mod wheel_magnitude_tests {
     use super::*;
-    use crate::durability::spell_wheel_abi::CompiledWheelProfile;
+    use oteryn_gameplay_content::content::spell_wheel_profile::CompiledWheelProfile;
     fn binding() -> CastFactsBinding {
         let (_, actor, session) =
             crate::gameplay_transport::actor_spell::tests::runtime_with_player(87);

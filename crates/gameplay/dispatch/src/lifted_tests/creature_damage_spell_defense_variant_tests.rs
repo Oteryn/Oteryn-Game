@@ -9,17 +9,17 @@ use crate::content::{
     ProjectReferenceRecord, ProjectV2AuthoringProfile, ProjectV2AuthoringProfileData as Data,
     ProjectV2DefinitionRef as Ref, ProjectV2Family,
 };
-use crate::creature_attack_geometry::Facing;
 use crate::creature_auto_attack::ProfileAbilityProposal;
 use crate::creature_auto_attack::{AttackError, AttackFacts, CurrentConditionPolicy};
 use crate::creature_damage_spell::*;
-use crate::durability::creature_schedule::ScheduleList;
 use crate::foundation::owner_timer::SemanticTimeMicros;
 use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, GameSessionId, RuntimeWorkStamp, ScopeRuntimeFence,
 };
 use crate::gameplay_transport::actor_spell::{ChannelSpellStates, tests::FACTS};
 use crate::player_lethal::PlayerLethalVitals;
+use oteryn_gameplay_content::content::creature_attack_geometry::Facing;
+use oteryn_gameplay_foundation::foundation::profile_schedule::ScheduleList;
 use oteryn_simulation_determinism::GameplayDecisionRoot;
 use {
     crate::foundation::{ChannelId, MovementLocalPosition, NodeId, RuntimeScopeRefV1, WorldId},

@@ -4,16 +4,13 @@ use crate::content::{
     ProjectV2DefinitionRef as Ref, ProjectV2Draft, ProjectV2Family,
 };
 use crate::creature_area_heal::*;
-use crate::creature_attack_geometry::Facing;
 use crate::creature_auto_attack::ProfileAbilityProposal;
-use crate::durability::creature_schedule::ScheduleList;
-use {
-    crate::foundation::{
-        ChannelId, ChannelRuntimeV1, ExactActorRef, MovementLocalPosition, NodeId,
-        RuntimeScopeRefV1, RuntimeWorkStamp, WorldId,
-    },
-    oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+use crate::foundation::{
+    ChannelContentPin, ChannelId, ChannelRuntimeV1, ExactActorRef, MovementLocalPosition, NodeId,
+    RuntimeScopeRefV1, RuntimeWorkStamp, WorldId,
 };
+use oteryn_gameplay_content::content::creature_attack_geometry::Facing;
+use oteryn_gameplay_foundation::foundation::profile_schedule::ScheduleList;
 
 fn fixture() -> (ChannelRuntimeV1, ProjectV2Draft, Ref) {
     let v:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/encounters/area-heal-native-fixture.json"))).expect("qualified fixture");

@@ -5,11 +5,12 @@
 use super::*;
 use crate::spell::OperationalCastFacts;
 use crate::spell::chain::TilePosition;
+use oteryn_gameplay_domain::domain::condition::ConditionGate;
+use oteryn_gameplay_domain::domain::condition::ConditionValues;
+use oteryn_gameplay_foundation::foundation::condition::ApplicationFacts;
+use oteryn_gameplay_foundation::foundation::condition::ConditionDefinition;
+use oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind;
 use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
-use {
-    crate::ability::condition::{ApplicationFacts, ConditionDefinition, ConditionSourceKind},
-    oteryn_gameplay_domain::domain::condition::{ConditionGate, ConditionValues},
-};
 
 fn at(millis: u64) -> SemanticTimeMicros {
     SemanticTimeMicros::from_micros(millis * 1000)

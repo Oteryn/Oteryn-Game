@@ -29,9 +29,9 @@ impl QualifiedCreatureSelfHeal {
 
     pub fn register(
         &self,
-        runtime: &crate::foundation::ChannelRuntimeV1,
+        runtime: &oteryn_gameplay_entities::ChannelRuntimeV1,
     ) -> Result<
-        crate::foundation::CreatureSelfHealRegistration,
+        oteryn_gameplay_entities::CreatureSelfHealRegistration,
         oteryn_gameplay_domain::domain::carrier_values::CarrierError,
     > {
         let (target, ability, max_health, minimum, maximum) = self.0.registration_inputs();

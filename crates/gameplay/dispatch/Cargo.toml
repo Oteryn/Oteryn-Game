@@ -23,7 +23,6 @@ oteryn-gameplay-quests = { version = "=0.1.0", path = "../quests" }
 oteryn-gameplay-housing = { version = "=0.1.0", path = "../housing" }
 oteryn-gameplay-combat-rules = { version = "=0.1.0", path = "../combat-rules" }
 oteryn-gameplay-spell-rules = { version = "=0.1.0", path = "../spell-rules" }
-oteryn-gameplay-encounter-rules = { version = "=0.1.0", path = "../encounter-rules" }
 oteryn-gameplay-social-rules = { version = "=0.1.0", path = "../social-rules" }
 oteryn-gameplay-npc = { version = "=0.1.0", path = "../npc" }
 base64.workspace = true

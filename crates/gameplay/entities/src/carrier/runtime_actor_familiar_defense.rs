@@ -81,21 +81,24 @@ fn due(
     let born = snapshot
         .state
         .created_at_us
-        .ok_or(CarrierError::PlanConflict)?;
+        .ok_or(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict)?;
     if now_us < born {
-        return Err(CarrierError::PlanConflict);
+        return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
     }
     let interval = u64::from(policy.interval_ms)
         .checked_mul(1000)
-        .ok_or(CarrierError::PlanConflict)?;
+        .ok_or(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict)?;
     let (next_due, ordinal) = match &snapshot.state.familiar_defense {
         Some(clock) if clock.profile_digest == policy.profile_digest => {
             (clock.next_due_us, clock.ordinal)
         }
-        Some(_) => return Err(CarrierError::PlanConflict),
+        Some(_) => {
+            return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
+        }
         None => (
-            born.checked_add(interval)
-                .ok_or(CarrierError::PlanConflict)?,
+            born.checked_add(interval).ok_or(
+                oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict,
+            )?,
             0,
         ),
     };
@@ -117,14 +120,13 @@ impl ChannelRuntimeV1 {
             || policy.heal_min != policy.heal_max
             || policy.effect != "CONST_ME_MAGIC_GREEN"
         {
-            return Err(CarrierError::PlanConflict);
+            return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
         }
         let snapshot = self.companion_snapshot(actor)?;
-        let master = snapshot
-            .state
-            .master
-            .as_ref()
-            .ok_or(CarrierError::PlanConflict)?;
+        let master =
+            snapshot.state.master.as_ref().ok_or(
+                oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict,
+            )?;
         if !snapshot.state.policy.is_familiar
             || snapshot.state.policy.definition_key != policy.creature_key
             || snapshot.state.policy.definition_revision != policy.creature_revision
@@ -141,7 +143,7 @@ impl ChannelRuntimeV1 {
                 .is_ok_and(|f| f.control_loss.is_none())
             || self.actor_spell_reserved(master.actor)
         {
-            return Err(CarrierError::PlanConflict);
+            return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
         }
         Ok(snapshot)
     }
@@ -167,12 +169,14 @@ impl ChannelRuntimeV1 {
         let Some((source_due, ordinal)) = due(&before, policy, now_us)? else {
             return Ok(None);
         };
-        let next_ordinal = ordinal.checked_add(1).ok_or(CarrierError::PlanConflict)?;
+        let next_ordinal = ordinal
+            .checked_add(1)
+            .ok_or(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict)?;
         // Source onThinkDefense resets the single due spell's accumulated ticks;
         // one delayed owner cycle casts at most once, never an offline catch-up.
         let next_due = now_us
             .checked_add(u64::from(policy.interval_ms) * 1000)
-            .ok_or(CarrierError::PlanConflict)?;
+            .ok_or(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict)?;
         let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
         let slot = Box::new(self.carrier.slots[index].clone());
         let mut bytes = Sha256::new();
@@ -192,20 +196,23 @@ impl ChannelRuntimeV1 {
             "familiar.defense.chance",
             0,
         )
-        .map_err(|_| CarrierError::PlanConflict)?;
-        let roll = 1 + u8::try_from((u128::from(sample) * 100) >> 64)
-            .map_err(|_| CarrierError::PlanConflict)?;
+        .map_err(|_| oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict)?;
+        let roll = 1 + u8::try_from((u128::from(sample) * 100) >> 64).map_err(|_| {
+            oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict
+        })?;
         let successful = roll <= policy.chance_percent;
         // Canonical selected source vectors have a fixed positive heal. An
         // unowned variable range is refused before any physical mutation.
         if policy.heal_min != policy.heal_max {
-            return Err(CarrierError::PlanConflict);
+            return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
         }
         let health_after = if successful {
             before
                 .health
                 .checked_add(policy.heal_min)
-                .ok_or(CarrierError::DamageOverflow)?
+                .ok_or(
+                    oteryn_gameplay_domain::domain::carrier_values::CarrierError::DamageOverflow,
+                )?
                 .min(before.maximum_health)
         } else {
             before.health
@@ -234,27 +241,26 @@ impl ChannelRuntimeV1 {
         if !self.owner_fence()?.accepts_stamp(prepared.stamp)
             || self.actor_spell_reserved(prepared.before.actor)
         {
-            return Err(CarrierError::PlanConflict);
+            return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
         }
         let current = self.companion_snapshot(prepared.before.actor)?;
-        let master = current
-            .state
-            .master
-            .as_ref()
-            .ok_or(CarrierError::PlanConflict)?;
+        let master =
+            current.state.master.as_ref().ok_or(
+                oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict,
+            )?;
         if current != prepared.before
             || !self
                 .player_control_facts(master.actor, master.session)
                 .is_ok_and(|f| f.control_loss.is_none())
             || self.actor_spell_reserved(master.actor)
         {
-            return Err(CarrierError::PlanConflict);
+            return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
         }
         let index = self
             .carrier
             .validate_ref(&self.continuity, prepared.before.actor.0)?;
         if self.carrier.slots[index] != *prepared.slot {
-            return Err(CarrierError::PlanConflict);
+            return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
         }
         let mut next_slot = *prepared.slot;
         let Slot::CreatureOccupied {
@@ -263,14 +269,14 @@ impl ChannelRuntimeV1 {
             ..
         } = &mut next_slot
         else {
-            return Err(CarrierError::PlanConflict);
+            return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
         };
         *health = prepared.health_after;
         **state = prepared.next;
         let ordinal = state
             .familiar_defense
             .as_ref()
-            .ok_or(CarrierError::PlanConflict)?
+            .ok_or(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict)?
             .ordinal;
         let receipt = FamiliarDefenseReceipt {
             actor: prepared.before.actor,

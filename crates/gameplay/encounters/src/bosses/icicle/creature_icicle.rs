@@ -4,14 +4,16 @@ use crate::content::{
     ProjectV2AuthoringProfileData as Data, ProjectV2DefinitionRef as Ref, ProjectV2Draft,
 };
 use crate::creature_auto_attack::{AutoAttackOwner, ProfileAbilityProposal};
-use crate::durability::creature_schedule::ScheduleList;
-use crate::foundation::owner_timer::SemanticTimeMicros;
-use crate::foundation::{
-    ChannelRuntimeV1, ExactActorRef, GameSessionId, OwnerDamageResult, RuntimeScopeRefV1,
-    RuntimeWorkStamp, ScopeRuntimeFence,
-};
 use oteryn_gameplay_encounters::bosses::icicle::native_owner::IcicleCarrierExt;
+use oteryn_gameplay_foundation::foundation::owner_timer::SemanticTimeMicros;
+use oteryn_gameplay_foundation::foundation::profile_schedule::ScheduleList;
 use sha2::{Digest, Sha256};
+use {
+    oteryn_gameplay_entities::{ChannelRuntimeV1, OwnerDamageResult},
+    oteryn_gameplay_foundation::foundation::{
+        ExactActorRef, GameSessionId, RuntimeScopeRefV1, RuntimeWorkStamp, ScopeRuntimeFence,
+    },
+};
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum IcicleError {
     Source,

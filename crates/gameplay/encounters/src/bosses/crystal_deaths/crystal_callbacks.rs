@@ -1,12 +1,11 @@
 //! Source-specific Crystal death handoff. No general Encounter interpreter and no persistence.
 //! Consumers must implement their existing owner's mutation/publication contract.
-use {
-    crate::foundation::{
-        CharacterId, CreatureDeathOccurrenceKey, CurrentOwnerCombatDeath, ExactActorRef,
-        MovementLocalPosition,
-    },
-    oteryn_gameplay_domain::domain::carrier_values::CarrierError,
-};
+use oteryn_gameplay_domain::domain::carrier_values::CarrierError;
+use oteryn_gameplay_entities::CreatureDeathOccurrenceKey;
+use oteryn_gameplay_entities::CurrentOwnerCombatDeath;
+use oteryn_gameplay_entities::MovementLocalPosition;
+use oteryn_gameplay_foundation::foundation::CharacterId;
+use oteryn_gameplay_foundation::foundation::ExactActorRef;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CrystalDeathSource {
