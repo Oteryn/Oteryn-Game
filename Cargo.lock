@@ -2350,6 +2350,7 @@ dependencies = [
  "oteryn-protocol-oteryn",
  "oteryn-simulation-determinism",
  "serde",
+ "serde_json",
 ]
 
 [[package]]

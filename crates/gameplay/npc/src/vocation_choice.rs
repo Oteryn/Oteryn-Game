@@ -1,15 +1,13 @@
 //! Dawnport vocation-choice dialogue; durable requests and secure occurrences stay in dispatch.
 
-use crate::foundation::{ExactActorRef, GameSessionId};
+use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId};
 use crate::npc_command::NpcTalkOutcome;
 use oteryn_protocol_oteryn::npc_service::{
-    NpcConversation, NpcConversationState, NpcIntentDisposition,
+    NpcConversation, NpcConversationState, NpcIntentDisposition, TALK_RANGE_TILES,
 };
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 
-// Pinned Oressa BR revid 417244 names these four choices. Monk is a real vocation,
-// but its acquisition through this NPC needs its own qualified Reference evidence.
-const BASE_VOCATIONS: [&str; 4] = ["knight", "paladin", "druid", "sorcerer"];
+use crate::content::npc_catalogue::BASE_VOCATIONS;
 
 /// The dispatch chat owner supplies its actual session lock, engagement and capacity checks.
 pub trait NpcDialogueOwner {
@@ -244,4 +242,38 @@ pub fn dawnport_choice_dialogue<O: Copy + PartialEq, R: Clone + PartialEq>(
         D::Ok,
         "You can choose knight, paladin, druid or sorcerer after reaching level 8.",
     )
+}
+
+/// Recheck current actor, NPC generation, engagement and range. The dispatch adapter also
+/// compares the independently loaded durable session and scope fence before committing.
+pub fn current_npc_owner<O, R>(
+    runtime: &ChannelRuntimeV1,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    choice: &ConfirmedNpcVocation<O, R>,
+    chat: &impl NpcDialogueOwner,
+) -> bool {
+    if choice.actor != actor
+        || runtime.owner_fence().is_err()
+        || !runtime
+            .player_control_facts(actor, session)
+            .is_ok_and(|facts| facts.control_loss.is_none())
+    {
+        return false;
+    }
+    let visible = runtime.visible_entities();
+    let Some(npc) = visible.npcs.iter().find(|npc| {
+        npc.actor.placement_identity() == choice.npc.identity
+            && npc.generation == choice.npc.generation
+    }) else {
+        return false;
+    };
+    let Some(player) = visible.players.iter().find(|player| player.actor == actor) else {
+        return false;
+    };
+    runtime.npc_key(npc.actor) == Some(crate::content::npc_catalogue::DAWNPORT_CHOICE_NPC)
+        && chat.engaged(session) == Some(npc.actor)
+        && player.position.floor == npc.position.floor
+        && player.position.x.abs_diff(npc.position.x) <= TALK_RANGE_TILES
+        && player.position.y.abs_diff(npc.position.y) <= TALK_RANGE_TILES
 }

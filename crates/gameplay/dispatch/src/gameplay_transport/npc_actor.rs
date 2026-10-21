@@ -20,16 +20,6 @@ use crate::foundation::{
 pub use oteryn_gameplay_npc::npc_actor::*;
 use oteryn_simulation_determinism::GameplayDecisionRoot;
 
-#[derive(Debug)]
-pub enum WalkThink {
-    Idle,
-    Talking,
-    Waiting,
-    Propose(Box<NpcWalkProposal>),
-    /// No second interval advance or proposal for the same native occurrence.
-    Replay,
-}
-
 /// Ephemeral interval state for one exact NPC. `anchor` is the immutable, real initial
 /// placement; this type never stores or replaces the actor's mutable current position.
 #[derive(Debug)]
@@ -120,28 +110,17 @@ impl NpcWalkState {
         // The composing Channel owner must supply its own ChatRuntime: this type itself does
         // not certify a Channel binding. None means unavailable, never an empty queue.
         chat.with_npc_customer_state(self.actor, |talking| {
-            let (next_ticks, result) = if talking {
-                (0, WalkThink::Talking)
-            } else if !perceived {
-                (self.ticks_ms, WalkThink::Idle)
-            } else {
-                let ticks = self.ticks_ms.saturating_add(CREATURE_THINK_INTERVAL_MILLIS);
-                if ticks < self.profile.interval_ms {
-                    (ticks, WalkThink::Waiting)
-                } else {
-                    (
-                        0,
-                        WalkThink::Propose(Box::new(NpcWalkProposal::new(
-                            occurrence,
-                            expected,
-                            self.anchor,
-                            self.profile,
-                            root,
-                            decision_occurrence(occurrence),
-                        )?)),
-                    )
-                }
-            };
+            let (next_ticks, result) = self.profile.prepare(
+                occurrence,
+                expected,
+                self.anchor,
+                self.ticks_ms,
+                talking,
+                perceived,
+                CREATURE_THINK_INTERVAL_MILLIS,
+                root,
+                decision_occurrence(occurrence),
+            )?;
             // A failed decision leaves both counters unchanged, allowing the same occurrence
             // to be retried deterministically. A successful preparation is never replayed.
             self.ticks_ms = next_ticks;

@@ -1,5 +1,13 @@
 //! Read-only import of existing NPC authoring data. This catalogue does not create actors,
 //! execute dialogue/services, or modify the active world's Content generation.
+
+/// The source-bound Dawnport vocation-choice NPC.
+pub const DAWNPORT_CHOICE_NPC: &str = "oteryn:npc.oressa";
+
+// Pinned Oressa BR revid 417244 names these four choices. Monk is a real vocation,
+// but its acquisition through this NPC needs its own qualified Reference evidence.
+pub const BASE_VOCATIONS: [&str; 4] = ["knight", "paladin", "druid", "sorcerer"];
+
 use super::{
     CW2_B1_FULL_ITEM_FAMILY_COUNT, ProjectError, ProjectEvidenceLimits, ProjectFilesystemError,
     ProjectFilesystemLimits, ProjectV2AuthoringProfile, ProjectV2Declaration,
@@ -247,3 +255,7 @@ impl NpcDataCatalogue {
             .map_or(&[], |state| state.source_identity_bindings.as_slice())
     }
 }
+
+pub const VOICE_INTERVAL: &str = "oteryn:source.npc.voice_interval_ms";
+pub const VOICE_CHANCE: &str = "oteryn:source.npc.voice_chance_percent";
+pub const VOICE_LINES: &str = "oteryn:source.npc.voice_lines";

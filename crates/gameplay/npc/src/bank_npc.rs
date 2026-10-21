@@ -9,6 +9,7 @@
 
 use crate::domain::character_name::CharacterName;
 use crate::domain::{CharacterId, WorldId};
+use oteryn_gameplay_economy::bank::BankResult;
 use oteryn_protocol_oteryn::GameSessionId;
 use oteryn_protocol_oteryn::npc_service::{
     MAX_TALK_TEXT_BYTES, TRAVEL_CONFIRMATION_TIMEOUT_SECONDS,
@@ -126,5 +127,101 @@ impl BankConfirmation {
             && !text.chars().any(char::is_control)
             && text.trim_matches(' ').eq_ignore_ascii_case("yes"))
         .then_some(self.operation)
+    }
+}
+
+fn amount(value: &str, cap: u64) -> Result<u64, BankNpcError> {
+    if value.is_empty() || !value.bytes().all(|byte| byte.is_ascii_digit()) {
+        return Err(BankNpcError::InvalidInput);
+    }
+    value
+        .parse::<u64>()
+        .ok()
+        .filter(|amount| (1..=cap).contains(amount))
+        .ok_or(BankNpcError::AmountOutOfRange)
+}
+
+/// Exact bounded bank commands; no substring matches, coin exchange or promotion command.
+pub fn parse(
+    text: &str,
+    deposit_max: u64,
+    withdraw_max: u64,
+    transfer_max: u64,
+) -> Result<BankNpcIntent, BankNpcError> {
+    if text.len() > MAX_TALK_TEXT_BYTES || text.chars().any(char::is_control) {
+        return Err(BankNpcError::InvalidInput);
+    }
+    let words = text.trim_matches(' ').splitn(5, ' ').collect::<Vec<_>>();
+    let is = |word: &str, expected: &str| word.eq_ignore_ascii_case(expected);
+    match words.as_slice() {
+        [word] if is(word, "balance") => Ok(BankNpcIntent::Balance),
+        [verb, all] if is(verb, "deposit") && is(all, "all") => Ok(BankNpcIntent::DepositAll),
+        [verb, value, gold] if is(verb, "deposit") && is(gold, "gold") => {
+            amount(value, deposit_max).map(BankNpcIntent::Deposit)
+        }
+        [verb, value, gold] if is(verb, "withdraw") && is(gold, "gold") => {
+            amount(value, withdraw_max).map(BankNpcIntent::Withdraw)
+        }
+        [verb, value, gold, to, name]
+            if is(verb, "transfer") && is(gold, "gold") && is(to, "to") =>
+        {
+            Ok(BankNpcIntent::Transfer {
+                amount: amount(value, transfer_max)?,
+                name: CharacterName::parse(name).map_err(|_| BankNpcError::UnknownRecipient)?,
+            })
+        }
+        _ => Err(BankNpcError::InvalidInput),
+    }
+}
+
+/// Only a terminal BankResult of this operation, returned by the native writer, belongs
+/// here. The caller must check the request/record and occurrence binding before replying.
+pub fn reply(operation: &BankNpcOperation, result: BankResult) -> String {
+    match result {
+        BankResult::Ok => match operation {
+            BankNpcOperation::Deposit(amount) => format!("You have deposited {amount} gold."),
+            BankNpcOperation::Withdraw(amount) => format!("You have withdrawn {amount} gold."),
+            BankNpcOperation::Transfer { amount, name, .. } => format!(
+                "Very well. You have transferred {amount} gold to {}.",
+                name.as_str()
+            ),
+        },
+        BankResult::UnknownRecipient => "This player does not exist.".into(),
+        BankResult::RecipientCannotReceiveTransfers => {
+            "You cannot transfer money to this account.".into()
+        }
+        BankResult::SameAccount => "This character already shares your bank balance.".into(),
+        BankResult::InsufficientBalance => "There is not enough gold on your account.".into(),
+        BankResult::JuniorAccount => "You can use the bank once you have left the island.".into(),
+        BankResult::BalanceLimit if matches!(operation, BankNpcOperation::Transfer { .. }) => {
+            "You cannot transfer money to this account.".into()
+        }
+        BankResult::BalanceLimit => "Your bank balance cannot receive that amount.".into(),
+        BankResult::InsufficientCoins => "You do not have enough gold in your backpack.".into(),
+        BankResult::NoRoom => "There is not enough room in your backpack.".into(),
+    }
+}
+
+pub fn valid_amount(
+    operation: &BankNpcOperation,
+    deposit_max: u64,
+    withdraw_max: u64,
+    transfer_max: u64,
+) -> bool {
+    let (amount, cap) = match operation {
+        BankNpcOperation::Deposit(amount) => (amount, deposit_max),
+        BankNpcOperation::Withdraw(amount) => (amount, withdraw_max),
+        BankNpcOperation::Transfer { amount, .. } => (amount, transfer_max),
+    };
+    (1..=cap).contains(amount)
+}
+
+/// Privacy-safe refusals before a transfer prompt; no unresolved recipient identity is made up.
+pub fn refusal_reply(result: BankResult) -> &'static str {
+    match result {
+        BankResult::UnknownRecipient => "This player does not exist.",
+        BankResult::SameAccount => "This character already shares your bank balance.",
+        BankResult::JuniorAccount => "You can use the bank once you have left the island.",
+        _ => "You cannot transfer money to this account.",
     }
 }

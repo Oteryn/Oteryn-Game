@@ -8,6 +8,11 @@
 //! There is no native source-catalogue-to-active-runtime-pin binding port here: matching the
 //! catalogue and model does not establish that their voices belong to the running bundle.
 
+use crate::content::npc_catalogue::{VOICE_CHANCE, VOICE_INTERVAL, VOICE_LINES};
+use crate::content::{
+    NpcDataCatalogue, NpcServiceModel, ProjectV2CandidateField, ProjectV2CandidateValue,
+    ProjectV2Declaration, ProjectV2Voice,
+};
 use crate::content::{ProjectV2SpeechMode, ProjectV2Voices};
 use crate::foundation::speech::{ChatPosition, SpeechMode};
 use crate::foundation::{MovementLocalPosition, ThinkOccurrence};
@@ -16,6 +21,7 @@ use oteryn_protocol_oteryn::world_spatial::ActorPosition;
 use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
 };
+use std::collections::BTreeMap;
 use std::num::NonZeroU64;
 
 const PPM: u64 = 1_000_000;
@@ -183,5 +189,188 @@ fn draw_below(
             return Ok(draw % upper);
         }
         index = index.checked_add(2).ok_or(VoiceError::Draw)?;
+    }
+}
+
+/// Exact JSON line shape emitted into NPC-CONTENT-2's typed Text field. Missing or
+/// unknown fields do not default to an admitted line or a speech mode.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct PresenceVoice {
+    text: String,
+    yell: bool,
+}
+
+fn presence_field<'a>(
+    fields: &'a [ProjectV2CandidateField],
+    path: &str,
+) -> Option<&'a ProjectV2CandidateValue> {
+    let mut matches = fields.iter().filter(|field| field.field_path == path);
+    let value = &matches.next()?.value;
+    matches.next().is_none().then_some(value)
+}
+
+pub fn profile_from_presence(
+    name: &str,
+    fields: &[ProjectV2CandidateField],
+    qualify_text: impl Fn(&str) -> Option<String>,
+) -> Option<VoiceProfile> {
+    let ProjectV2CandidateValue::Integer(interval_ms) = presence_field(fields, VOICE_INTERVAL)?
+    else {
+        return None;
+    };
+    let ProjectV2CandidateValue::Integer(percent) = presence_field(fields, VOICE_CHANCE)? else {
+        return None;
+    };
+    let ProjectV2CandidateValue::Text(lines) = presence_field(fields, VOICE_LINES)? else {
+        return None;
+    };
+    let interval_ms = u64::try_from(*interval_ms).ok()?;
+    let percent = u32::try_from(*percent).ok().filter(|value| *value <= 100)?;
+    // The native catalogue has already bounded the containing source Text. Decode this
+    // producer's JSON once at book construction, preserving its order and exact text.
+    let lines: Vec<PresenceVoice> = serde_json::from_str(lines).ok()?;
+    let source = ProjectV2Voices {
+        interval_ms,
+        chance_ppm: percent * 10_000,
+        entries: lines
+            .into_iter()
+            .map(|line| ProjectV2Voice {
+                text: line.text,
+                mode: if line.yell {
+                    ProjectV2SpeechMode::Yell
+                } else {
+                    ProjectV2SpeechMode::Say
+                },
+            })
+            .collect(),
+    };
+    VoiceProfile::from_source(name, &source, qualify_text)
+}
+
+/// Candidate source profiles only; this is not a replacement for NPC-CONTENT-2 admission.
+pub fn profiles_from_catalogue(
+    catalogue: &NpcDataCatalogue,
+    model: &NpcServiceModel,
+    qualify_text: impl Fn(&str) -> Option<String>,
+) -> Result<BTreeMap<String, VoiceProfile>, VoiceError> {
+    if catalogue.source_tree_digest() != model.source_tree_digest()
+        || catalogue.project_revision() != model.project_revision()
+    {
+        return Err(VoiceError::ContentSourceMismatch);
+    }
+    let mut profiles = BTreeMap::new();
+    // The model excludes held NPCs. NPC-CONTENT-2's source-held or unsourced voices omit
+    // these fields. Never fall back to a linked Dialogue: that would bypass the hold.
+    for (reference, npc) in model.npcs() {
+        let Some(ProjectV2Declaration::Npc { fields, .. }) = catalogue.declaration(reference)
+        else {
+            continue;
+        };
+        if let Some(profile) = profile_from_presence(&npc.name, fields, &qualify_text) {
+            profiles.insert(reference.key.clone(), profile);
+        }
+    }
+    Ok(profiles)
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used, reason = "native NPC voice fixtures")]
+mod tests {
+    use super::*;
+
+    fn qualify_text(text: &str) -> Option<String> {
+        Some(text.to_owned())
+    }
+
+    fn presence_fields(interval: i64, percent: i64, lines: &str) -> Vec<ProjectV2CandidateField> {
+        vec![
+            ProjectV2CandidateField {
+                field_path: VOICE_CHANCE.into(),
+                value: ProjectV2CandidateValue::Integer(percent),
+            },
+            ProjectV2CandidateField {
+                field_path: VOICE_INTERVAL.into(),
+                value: ProjectV2CandidateValue::Integer(interval),
+            },
+            ProjectV2CandidateField {
+                field_path: VOICE_LINES.into(),
+                value: ProjectV2CandidateValue::Text(lines.into()),
+            },
+        ]
+    }
+
+    #[test]
+    fn native_presence_projection_preserves_percent_cadence_line_order_and_yell() {
+        // NPC-CONTENT-2 emits Integer percent, Integer milliseconds and a Text JSON array
+        // of {text, yell}, with authored order and case retained.
+        let fields = presence_fields(
+            5_000,
+            17,
+            r#"[{"text":"Fresh fish!","yell":false},{"text":"Żółw mówi \"Hej\"!","yell":true}]"#,
+        );
+        let profile =
+            profile_from_presence("Alice", &fields, qualify_text).expect("native presence");
+        assert_eq!(profile.name, "Alice");
+        assert_eq!(profile.interval_ms, 5_000);
+        assert_eq!(profile.chance_ppm, 170_000);
+        assert_eq!(profile.lines.len(), 2);
+        assert_eq!(profile.lines[0].text.as_str(), "Fresh fish!");
+        assert_eq!(profile.lines[0].mode, ProjectV2SpeechMode::Say);
+        assert_eq!(profile.lines[1].text.as_str(), "Żółw mówi \"Hej\"!");
+        assert_eq!(profile.lines[1].mode, ProjectV2SpeechMode::Yell);
+    }
+
+    #[test]
+    fn presence_fields_fail_closed_on_missing_duplicate_mistyped_or_invalid_payloads() {
+        let fields = presence_fields(1_000, 100, r#"[{"text":"Fresh fish!","yell":false}]"#);
+        for missing in 0..fields.len() {
+            let mut changed = fields.clone();
+            changed.remove(missing);
+            assert!(profile_from_presence("Alice", &changed, qualify_text).is_none());
+            let mut duplicated = fields.clone();
+            duplicated.push(fields[missing].clone());
+            assert!(profile_from_presence("Alice", &duplicated, qualify_text).is_none());
+        }
+        for (index, value) in [
+            (0, ProjectV2CandidateValue::Integer(-1)),
+            (0, ProjectV2CandidateValue::Integer(101)),
+            (0, ProjectV2CandidateValue::Text("100".into())),
+            (1, ProjectV2CandidateValue::Integer(-1)),
+            (1, ProjectV2CandidateValue::Integer(0)),
+            (1, ProjectV2CandidateValue::Text("1000".into())),
+            (2, ProjectV2CandidateValue::Boolean(false)),
+        ] {
+            let mut changed = fields.clone();
+            changed[index].value = value;
+            assert!(profile_from_presence("Alice", &changed, qualify_text).is_none());
+        }
+        for payload in [
+            "",
+            "[]",
+            "{}",
+            "[null]",
+            r#"[{"text":"Fresh fish!"}]"#,
+            r#"[{"text":"Fresh fish!","yell":"false"}]"#,
+            r#"[{"text":"Fresh fish!","yell":false,"unknown":0}]"#,
+            r#"[{"text":"Fresh fish!","text":"Duplicate","yell":false}]"#,
+            r#"[{"text":"|PLAYERNAME|","yell":false}]"#,
+            r#"[{"text":"{trade}","yell":true}]"#,
+        ] {
+            assert!(
+                profile_from_presence("Alice", &presence_fields(1_000, 100, payload), qualify_text)
+                    .is_none()
+            );
+        }
+        let mixed = presence_fields(
+            1_000,
+            100,
+            r#"[{"text":"|PLAYERNAME|","yell":false},{"text":"Safe line","yell":true}]"#,
+        );
+        let profile =
+            profile_from_presence("Alice", &mixed, qualify_text).expect("one admitted line");
+        assert_eq!(profile.lines.len(), 1);
+        assert_eq!(profile.lines[0].text.as_str(), "Safe line");
+        assert_eq!(profile.lines[0].mode, ProjectV2SpeechMode::Yell);
     }
 }
