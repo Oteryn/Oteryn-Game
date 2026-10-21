@@ -1,47 +1,15 @@
-//! TIMED-ITEM-0 §7 repair planning only; no transaction, permission or durable outcome.
-//!
-//! The owner must independently resolve the admitted Aldo offer and current Content (including
-//! an inactive target's paired active full values), current session/NPC eligibility and locked
-//! inventory/bank facts. These snapshots cannot qualify that authority or activation. Applying
-//! the plan requires a single native fenced transaction, NpcRepair fee/audit support and timed
-//! record CAS/replay hooks; those shared hooks do not exist yet. Do not commit separate writers.
+//! Native timed repair snapshot adapter; planning lives in the pure Item rules crate.
 
-use crate::domain::currency::{
-    BACKPACK_ENTRIES_MAX, COIN_DEFINITION_FAMILY, Coin, CoinStack, FeePlan, FeePlanError,
-    plan_fee_within,
-};
+use crate::domain::currency::{BACKPACK_ENTRIES_MAX, CoinStack};
 use crate::durability::item_fee_burn::FeeChangeFacts;
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_mint_audit::Type2EventTuple;
 use crate::durability::item_timed_state::{StoredTimedState, TimedDefinitionFacts};
-use std::collections::BTreeSet;
+use oteryn_gameplay_items::item_timed_repair as rules;
 
-pub const REPAIR_PRICE: u64 = 10_000;
-pub const REPAIR_COIN_INPUTS_MAX: usize = 19;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum RepairPlanError {
-    InvalidSnapshot,
-    ItemMissing,
-    InvalidTimedState,
-    RevisionExhausted,
-    InsufficientFunds,
-    BudgetExceeded,
-    CoinPlan(FeePlanError),
-}
-
-/// Raw read data; `parent == None` is not a direct container entry (e.g. equipment).
-#[derive(Debug, Clone)]
-pub struct RepairEntry {
-    pub item_instance_id: [u8; 16],
-    pub parent: Option<[u8; 16]>,
-    pub placement_ordinal: u64,
-    pub definition: TypedDefinitionRef,
-    pub quantity: u32,
-    pub live: bool,
-    pub has_contents: bool,
-    pub timed: Option<StoredTimedState>,
-}
+pub use rules::*;
+pub type RepairEntry = rules::RepairEntry<StoredTimedState>;
+pub type RepairPlan = rules::RepairPlan<StoredTimedState>;
 
 /// A raw fee-planning input, not the transaction's independently fenced activation/account read.
 #[derive(Debug, Clone, Copy)]
@@ -49,92 +17,6 @@ pub struct RepairFunds {
     pub tuple: Type2EventTuple,
     pub junior: bool,
     pub bank_balance: u64,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct RepairPayment {
-    /// Native lines index the supplied CoinStack slice; never the full entry slice.
-    pub coins: FeePlan,
-    pub bank_debit: u64,
-}
-
-/// Reuses native coin validation, denomination order, whole/partial burns and change capacity.
-pub fn plan_repair_payment(
-    stacks: &[CoinStack],
-    entries: usize,
-    capacity: usize,
-    funds: RepairFunds,
-) -> Result<RepairPayment, RepairPlanError> {
-    if entries > capacity || entries > BACKPACK_ENTRIES_MAX {
-        return Err(RepairPlanError::InvalidSnapshot);
-    }
-    let (coins, bank_debit) = match plan_fee_within(REPAIR_PRICE, stacks, entries, capacity) {
-        Ok(coins) => (coins, 0),
-        Err(FeePlanError::InsufficientFunds) => {
-            if funds.tuple == Type2EventTuple::V1 || funds.junior {
-                return Err(RepairPlanError::InsufficientFunds);
-            }
-            // Native planning validated every stack and unique ordinal before InsufficientFunds.
-            let eligible: u64 = stacks
-                .iter()
-                .map(|stack| u64::from(stack.quantity) * stack.coin.worth())
-                .sum();
-            let debit = REPAIR_PRICE - eligible;
-            if funds.bank_balance < debit {
-                return Err(RepairPlanError::InsufficientFunds);
-            }
-            let coins = if eligible == 0 {
-                FeePlan {
-                    lines: Vec::new(),
-                    change: 0,
-                    change_platinum: 0,
-                    change_gold: 0,
-                }
-            } else {
-                plan_fee_within(eligible, stacks, entries, capacity)
-                    .map_err(RepairPlanError::CoinPlan)?
-            };
-            (coins, debit)
-        }
-        Err(error) => return Err(RepairPlanError::CoinPlan(error)),
-    };
-    if coins.lines.len() > REPAIR_COIN_INPUTS_MAX {
-        return Err(RepairPlanError::BudgetExceeded);
-    }
-    Ok(RepairPayment { coins, bank_debit })
-}
-
-/// Counts derived from actual native burn/change lines, plus the repaired item and its work.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct RepairUsage {
-    pub touched: u64,
-    pub participants: u64,
-    pub work: u64,
-}
-
-impl RepairUsage {
-    /// TIMED-ITEM-0 §7; registration and combined-envelope byte measurement remain CP work.
-    pub fn check(self) -> Result<(), RepairPlanError> {
-        if self.touched > 22 || self.participants > 22 || self.work > 68 {
-            Err(RepairPlanError::BudgetExceeded)
-        } else {
-            Ok(())
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct RepairPlan {
-    pub item_instance_id: [u8; 16],
-    pub placement_ordinal: u64,
-    pub before_definition: TypedDefinitionRef,
-    pub after_definition: TypedDefinitionRef,
-    pub timed_before: Option<StoredTimedState>,
-    pub timed_after: StoredTimedState,
-    /// Mapping in the exact order of native payment input indices.
-    pub coin_item_ids: Vec<[u8; 16]>,
-    pub payment: RepairPayment,
-    pub usage: RepairUsage,
 }
 
 /// All references are unqualified input facts, including the exact source/target offer binding.
@@ -149,123 +31,86 @@ pub struct RepairSnapshot<'a> {
     pub funds: RepairFunds,
 }
 
-pub fn plan_soft_boots_repair(snapshot: RepairSnapshot<'_>) -> Result<RepairPlan, RepairPlanError> {
-    let capacity = snapshot
-        .change
-        .backpack
-        .container_capacity
-        .and_then(|value| usize::try_from(value).ok())
-        .filter(|value| (1..=BACKPACK_ENTRIES_MAX).contains(value))
-        .ok_or(RepairPlanError::InvalidSnapshot)?;
-    if snapshot.from == &snapshot.target.definition
-        || (snapshot.from.family == COIN_DEFINITION_FAMILY
-            && Coin::from_production_key(&snapshot.from.production_key).is_some())
-        || snapshot.target.lit_continuous
-        || snapshot.target.full.remaining_ms() == Some(0)
-    {
-        return Err(RepairPlanError::InvalidSnapshot);
+fn funds(funds: RepairFunds) -> rules::RepairFunds {
+    rules::RepairFunds {
+        bank_eligible: funds.tuple != Type2EventTuple::V1 && !funds.junior,
+        bank_balance: funds.bank_balance,
     }
-    let direct: Vec<_> = snapshot
+}
+
+fn timed(row: StoredTimedState) -> rules::RepairTimedState {
+    rules::RepairTimedState {
+        revision: row.revision,
+        values: row.values,
+        deadline_at: row.deadline_at,
+    }
+}
+
+fn stored(row: rules::RepairTimedState) -> StoredTimedState {
+    StoredTimedState {
+        revision: row.revision,
+        values: row.values,
+        deadline_at: row.deadline_at,
+    }
+}
+
+/// Reuses native coin validation, denomination order, whole/partial burns and change capacity.
+pub fn plan_repair_payment(
+    stacks: &[CoinStack],
+    entries: usize,
+    capacity: usize,
+    native_funds: RepairFunds,
+) -> Result<RepairPayment, RepairPlanError> {
+    rules::plan_repair_payment(stacks, entries, capacity, funds(native_funds))
+}
+
+pub fn plan_soft_boots_repair(snapshot: RepairSnapshot<'_>) -> Result<RepairPlan, RepairPlanError> {
+    // One extra direct entry preserves the core's over-capacity refusal without copying
+    // unrelated inventory or an unbounded invalid snapshot.
+    let entries: Vec<_> = snapshot
         .entries
         .iter()
         .filter(|entry| entry.live && entry.parent == Some(snapshot.backpack))
-        .collect();
-    let mut ids = BTreeSet::new();
-    let mut ordinals = BTreeSet::new();
-    for entry in &direct {
-        if entry.item_instance_id == snapshot.backpack
-            || entry.placement_ordinal == 0
-            || !ids.insert(entry.item_instance_id)
-            || !ordinals.insert(entry.placement_ordinal)
-        {
-            return Err(RepairPlanError::InvalidSnapshot);
-        }
-    }
-    if direct.len() > capacity {
-        return Err(RepairPlanError::InvalidSnapshot);
-    }
-    let repaired = direct
-        .iter()
-        .filter(|entry| &entry.definition == snapshot.from)
-        .max_by_key(|entry| entry.placement_ordinal)
-        .ok_or(RepairPlanError::ItemMissing)?;
-    if repaired.quantity != 1 || repaired.has_contents {
-        return Err(RepairPlanError::InvalidSnapshot);
-    }
-    let revision = match repaired.timed {
-        Some(row) if row.revision == 0 || row.values.is_some() || row.deadline_at.is_some() => {
-            return Err(RepairPlanError::InvalidTimedState);
-        }
-        Some(row) => row.revision,
-        None => 0,
-    };
-    let next_revision = revision
-        .checked_add(1)
-        .ok_or(RepairPlanError::RevisionExhausted)?;
-    let mut stacks = Vec::new();
-    let mut coin_item_ids = Vec::new();
-    for entry in &direct {
-        let Some(coin) = Coin::from_production_key(&entry.definition.production_key) else {
-            continue;
-        };
-        if entry.definition.family != COIN_DEFINITION_FAMILY {
-            continue;
-        }
-        let compatible = match coin {
-            Coin::Gold => &snapshot.change.gold,
-            Coin::Platinum => &snapshot.change.platinum,
-            Coin::Crystal => &snapshot.change.crystal,
-        };
-        if &entry.definition != compatible || entry.has_contents || entry.timed.is_some() {
-            return Err(RepairPlanError::InvalidSnapshot);
-        }
-        stacks.push(CoinStack {
-            coin,
-            quantity: entry.quantity,
+        .take(BACKPACK_ENTRIES_MAX + 1)
+        .map(|entry| rules::RepairEntry {
+            item_instance_id: entry.item_instance_id,
+            parent: entry.parent,
             placement_ordinal: entry.placement_ordinal,
-        });
-        coin_item_ids.push(entry.item_instance_id);
-    }
-    let payment = plan_repair_payment(&stacks, direct.len(), capacity, snapshot.funds)?;
-    let inputs = payment.coins.lines.len() as u64;
-    let change = payment.coins.change_outputs() as u64;
-    if change != 0
-        && direct
-            .iter()
-            .map(|entry| entry.placement_ordinal)
-            .max()
-            .and_then(|ordinal| ordinal.checked_add(change))
-            .is_none()
-    {
-        return Err(RepairPlanError::CoinPlan(FeePlanError::ChangeDoesNotFit));
-    }
-    let bank = u64::from(payment.bank_debit != 0);
-    let whole = payment
-        .coins
-        .lines
-        .iter()
-        .filter(|line| line.burned == stacks[line.input].quantity)
-        .count() as u64;
-    // Native fee usage formula, plus repair's transform/timed reset/participant work (§7).
-    let usage = RepairUsage {
-        touched: inputs + change + 1,
-        participants: inputs + change + bank + 1,
-        work: 3 * whole + 2 * (inputs - whole) + 2 * change + 2 * bank + 4,
+            definition: entry.definition.clone(),
+            quantity: entry.quantity,
+            live: entry.live,
+            has_contents: entry.has_contents,
+            timed: entry.timed.map(timed),
+        })
+        .collect();
+    let target = rules::RepairTargetFacts {
+        definition: snapshot.target.definition.clone(),
+        full: snapshot.target.full,
+        lit_continuous: snapshot.target.lit_continuous,
     };
-    usage.check()?;
-    Ok(RepairPlan {
-        item_instance_id: repaired.item_instance_id,
-        placement_ordinal: repaired.placement_ordinal,
-        before_definition: repaired.definition.clone(),
-        after_definition: snapshot.target.definition.clone(),
-        timed_before: repaired.timed,
-        timed_after: StoredTimedState {
-            revision: next_revision,
-            values: Some(snapshot.target.full),
-            deadline_at: None,
-        },
-        coin_item_ids,
-        payment,
-        usage,
+    let change = rules::RepairChangeFacts {
+        platinum: snapshot.change.platinum.clone(),
+        gold: snapshot.change.gold.clone(),
+        crystal: snapshot.change.crystal.clone(),
+        backpack: snapshot.change.backpack.clone(),
+    };
+    let plan = rules::plan_soft_boots_repair(rules::RepairSnapshot {
+        backpack: snapshot.backpack,
+        entries: &entries,
+        from: snapshot.from,
+        target: &target,
+        change: &change,
+        funds: funds(snapshot.funds),
+    })?;
+    Ok(rules::RepairPlan {
+        item_instance_id: plan.item_instance_id,
+        placement_ordinal: plan.placement_ordinal,
+        before_definition: plan.before_definition,
+        after_definition: plan.after_definition,
+        timed_before: plan.timed_before.map(stored),
+        timed_after: stored(plan.timed_after),
+        coin_item_ids: plan.coin_item_ids,
+        payment: plan.payment,
+        usage: plan.usage,
     })
 }

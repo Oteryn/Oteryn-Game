@@ -94,6 +94,22 @@ impl HouseEntryRefusal {
     }
 }
 
+/// Direction of a handoff. Only `Entry` is admitted.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HouseHandoffDirection {
+    Entry,
+    Exit,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HouseHandoffState {
+    Prepared,
+    /// Committed; the entry tile stays reserved until the destination places the Character.
+    Committed,
+    /// Committed and the entry tile released; retained history.
+    Released,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

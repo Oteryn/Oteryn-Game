@@ -154,6 +154,70 @@ impl HouseItemRole {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum HouseCharacterSource {
+    Inventory { parent: [u8; 16], ordinal: u64 },
+    ContainerSlot,
+    Equipment { slot: u8 },
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum HouseItemAction {
+    Place {
+        source: HouseCharacterSource,
+        position: Vec<u8>,
+    },
+    Take {
+        placement: [u8; 16],
+        provenance_revision: u64,
+    },
+    TileMove {
+        placement: [u8; 16],
+        provenance_revision: u64,
+        position: Vec<u8>,
+    },
+}
+impl HouseItemAction {
+    pub fn shape(&self) -> i16 {
+        match self {
+            Self::Place { .. } => 5,
+            Self::Take { .. } => 6,
+            Self::TileMove { .. } => 7,
+        }
+    }
+    pub fn source_kind(&self) -> i16 {
+        match self {
+            Self::Place {
+                source: HouseCharacterSource::Inventory { .. },
+                ..
+            } => 1,
+            Self::Place {
+                source: HouseCharacterSource::ContainerSlot,
+                ..
+            } => 2,
+            Self::Place {
+                source: HouseCharacterSource::Equipment { .. },
+                ..
+            } => 3,
+            _ => 4,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HouseItemReceipt {
+    pub transaction_id: [u8; 16],
+    pub event_id: [u8; 16],
+    pub occurred_at_unix_ms: i64,
+    pub envelope_sha256: [u8; 32],
+    /// Present only while the independently expirable audit outbox retains it.
+    pub envelope: Option<Vec<u8>>,
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum HouseItemOutcome {
+    Committed(HouseItemReceipt),
+    AlreadyCommitted(HouseItemReceipt),
+}
+
 #[cfg(test)]
 #[path = "house_interior_tests.rs"]
 mod tests;

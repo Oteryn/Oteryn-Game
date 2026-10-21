@@ -50,6 +50,7 @@ use sqlx::{Postgres, Row, Transaction};
 
 pub use oteryn_gameplay_housing::house_scope_handoff::{
     HOUSE_KEY_MAX_BYTES, HOUSE_SCOPE_CHARACTERS_MAX, HOUSE_TILE_MAX_BYTES, HouseEntryRefusal,
+    HouseHandoffDirection, HouseHandoffState,
 };
 
 const SCOPE_KIND_HOUSE: i16 = 2;
@@ -134,13 +135,6 @@ type Result<T, E = HouseHandoffError> = std::result::Result<T, E>;
 /// House access roles `game_house_access` admits (OTERYN_GAME_HOUSE_RT_INBOX_PACKETS §1.2).
 const HOUSE_ACCESS_ROLES: [&str; 3] = ["OWNER", "SUBOWNER", "GUEST"];
 
-/// Direction of a handoff. Only `Entry` is admitted.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum HouseHandoffDirection {
-    Entry,
-    Exit,
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HouseEntryRequest {
     pub direction: HouseHandoffDirection,
@@ -169,15 +163,6 @@ pub struct HouseEntryCommit {
     /// Caller-generated UUIDv7 for the house session.
     pub destination_game_session_id: GameSessionId,
     pub committed_at: i64,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum HouseHandoffState {
-    Prepared,
-    /// Committed; the entry tile stays reserved until the destination places the Character.
-    Committed,
-    /// Committed and the entry tile released; retained history.
-    Released,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
