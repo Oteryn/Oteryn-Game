@@ -2847,9 +2847,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         target_cells: &std::collections::BTreeSet<crate::content::LogicalCell>,
     ) -> bool {
         target_cells.iter().any(|cell| {
-            cell.z == actor_floor
-                && (i64::from(cell.x) - i64::from(actor_x)).abs() <= 1
-                && (i64::from(cell.y) - i64::from(actor_y)).abs() <= 1
+            oteryn_gameplay_items::reach::within_reach(
+                (actor_x, actor_y, actor_floor),
+                (cell.x, cell.y, cell.z),
+            )
         })
     }
 

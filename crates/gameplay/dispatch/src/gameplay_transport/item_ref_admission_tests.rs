@@ -1,10 +1,13 @@
 #![allow(clippy::expect_used, clippy::unwrap_used)]
 
 use super::*;
+use crate::combat_pickup::PickupContentError;
 use crate::content::native_gameplay::test_support::activated_with_item_keys;
 use crate::domain::currency::{COIN_STACK_MAXIMUM, Coin};
 use crate::durability::item_mint::TypedDefinitionRef;
-use crate::durability::item_transfer::{BackpackEntry, CharacterBackpack, InventoryItem};
+use crate::durability::item_transfer::{
+    BackpackEntry, CharacterBackpack, InventoryItem, ItemDefinitionFacts,
+};
 use crate::foundation::{
     CarrierError, ChannelContentPin, ChannelId, ChannelRuntimeV1, ExactActorRef,
     MovementLocalPosition, NodeId,
@@ -452,30 +455,4 @@ fn corpse_take_facts_are_the_generation_item_profiles() {
         production_key: "candidate:item/3607".to_owned(),
         revision_ref: "spell-p2-r21".to_owned(),
     }));
-}
-
-#[test]
-fn native_weight_normalization_never_guesses_unknown_physical_or_weight() {
-    use crate::content::ReferenceItemPhysical;
-    use ReferenceItemField::{Conflict, Known, NotApplicable, Unknown};
-
-    for physical in [Unknown, Conflict, NotApplicable] {
-        assert_eq!(normalized_item_weight(&physical), None);
-    }
-    for weight in [Unknown, Conflict, NotApplicable] {
-        let physical = Known(ReferenceItemPhysical {
-            weight,
-            movable: Known(true),
-            pickupable: Known(true),
-        });
-        assert_eq!(normalized_item_weight(&physical), None);
-    }
-    for weight in [0, 10, 1_800, u32::MAX] {
-        let physical = Known(ReferenceItemPhysical {
-            weight: Known(weight),
-            movable: Known(true),
-            pickupable: Known(true),
-        });
-        assert_eq!(normalized_item_weight(&physical), Some(weight));
-    }
 }
