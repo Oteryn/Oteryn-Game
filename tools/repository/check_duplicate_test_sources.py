@@ -54,7 +54,7 @@ ALLOWED_DUPLICATING_TARGETS: dict[tuple[str, str], tuple[tuple[str, ...], str]] 
             ("wp5_s3b_composition", CARVED_GAMEPLAY_SRC),
         )
     },
-    ("oteryn-game-server", "oteryn_game_server"): (
+    ("oteryn-gameplay-dispatch", "oteryn_gameplay_dispatch"): (
         ("apps/game-server/tests/support/character_revision_sequencer_postgres_cases.rs",),
         "the library's monk-save PostgreSQL tests reuse this case file as their fixture; "
         "durability_postgres runs its cases against PostgreSQL",
