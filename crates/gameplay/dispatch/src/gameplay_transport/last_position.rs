@@ -434,6 +434,8 @@ fn stored_position_applies(
         && stored.record.coordinate_frame_digest == coordinate_frame_digest
 }
 
+pub use oteryn_gameplay_housing::last_position::house_cell as house_cell_rule;
+
 /// §3.3 "valid": a house tile is invalid until HOUSE-OWN-0 decides entry. A bundle World reads
 /// its map facts; any other World reads its qualified house placements, and a cell whose
 /// placement is unknown counts as a house tile (fail closed).
@@ -460,13 +462,14 @@ fn house_cell(
                     floor: -z,
                 })
             });
-        return tile.is_none_or(|tile| index.map().facts.house_tile(tile));
+        return house_cell_rule(tile.map(|tile| index.map().facts.house_tile(tile)));
     }
-    !matches!(
+    house_cell_rule(
         movement_cells
             .house_tiles()
-            .house_at(movement_cells.scope(), logical),
-        Ok(None)
+            .house_at(movement_cells.scope(), logical)
+            .map(|house| house.is_some())
+            .ok(),
     )
 }
 

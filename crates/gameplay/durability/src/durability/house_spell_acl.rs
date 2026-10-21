@@ -8,32 +8,18 @@ use super::spell_house_abi::{HouseAccess, HouseList, HousePresenceProof};
 use super::spell_item_transaction::{SpellItemAuthority, SpellItemError, check_transaction};
 use sqlx::{Postgres, Row, Transaction};
 use std::collections::BTreeSet;
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct HouseEditor {
-    pub editor_id: [u8; 16],
-    pub house_key: String,
-    pub list: HouseList,
-    pub ownership_revision: u64,
-    pub acl_revision: u64,
-    pub allow_everyone: bool,
-    pub members: Vec<[u8; 16]>,
-    pub text: String,
-}
+pub use oteryn_gameplay_housing::house_spell_acl::{
+    HouseEditor, HouseListLine, list_access, list_lines, parse_list_line, permission,
+};
+pub use oteryn_gameplay_housing::house_spell_acl::list_id as house_list_id;
+
 fn list_id(list: HouseList) -> Result<i64, SpellItemError> {
-    match list {
-        HouseList::Guest => Ok(-1),
-        HouseList::Subowner => Ok(-2),
-        HouseList::Door(id) if id > 0 => Ok(i64::from(id)),
-        _ => Err(SpellItemError::Rejected("zero House door")),
-    }
+    house_list_id(list).map_err(SpellItemError::Rejected)
 }
 fn number(row: &sqlx::postgres::PgRow, column: &str) -> Result<u64, SpellItemError> {
     row.try_get::<String, _>(column)?
         .parse()
         .map_err(|_| SpellItemError::Rejected("stored House revision"))
-}
-fn permission(access: HouseAccess, list: HouseList) -> bool {
-    access == HouseAccess::Owner || access == HouseAccess::Subowner && list == HouseList::Guest
 }
 async fn owner_access(
     tx: &mut Transaction<'_, Postgres>,
@@ -64,12 +50,11 @@ pub async fn house_access_for_character(
         .bind(world.as_bytes().as_slice()).bind(house).bind(character.as_slice()).fetch_all(&mut **tx).await?;
     let mut access = HouseAccess::NotInvited;
     for row in rows {
-        if row.try_get::<bool, _>("allow_everyone")? || row.try_get::<bool, _>("member")? {
-            access = access.max(if row.try_get::<i64, _>("list_id")? == -2 {
-                HouseAccess::Subowner
-            } else {
-                HouseAccess::Guest
-            });
+        // Preserve the original short-circuit membership read.
+        let allow_everyone = row.try_get::<bool, _>("allow_everyone")?;
+        let member = !allow_everyone && row.try_get::<bool, _>("member")?;
+        if allow_everyone || member {
+            access = access.max(list_access(row.try_get("list_id")?, allow_everyone, member));
         }
     }
     Ok((ownership, access))
@@ -217,34 +202,18 @@ async fn resolve_list(
     authority: &SpellItemAuthority,
     text: &str,
 ) -> Result<(bool, Vec<[u8; 16]>), SpellItemError> {
-    if text.len() > 10_000 {
-        return Err(SpellItemError::Rejected("House list bound"));
-    }
     let mut allow = false;
     let mut members = BTreeSet::new();
-    let lines: Vec<_> = text.lines().collect();
-    if lines.len() > 100 {
-        return Err(SpellItemError::Rejected("House list line bound"));
-    }
+    let lines = list_lines(text).map_err(SpellItemError::Rejected)?;
     for line in lines {
-        let line = line.trim();
-        if line.is_empty() || line.starts_with('#') {
-            continue;
-        }
-        if line == "*" {
-            allow = true;
-            continue;
-        }
-        if line.contains('@') {
-            return Err(SpellItemError::Rejected(
-                "House guild authority unavailable",
-            ));
-        }
-        if line.len() > 100 || line.contains(['!', '*', '?']) {
-            continue;
-        }
-        let name = crate::domain::character_name::CharacterName::parse(line)
-            .map_err(|_| SpellItemError::Rejected("invalid native House member name"))?;
+        let name = match parse_list_line(line).map_err(SpellItemError::Rejected)? {
+            HouseListLine::Ignore => continue,
+            HouseListLine::Everyone => {
+                allow = true;
+                continue;
+            }
+            HouseListLine::Member(name) => name,
+        };
         let id:Option<Vec<u8>>=sqlx::query_scalar("SELECT uuid_send(character_id) FROM game_character_roots WHERE world_id=encode($1,'hex')::uuid AND name_key=$2 AND lifecycle=1 FOR SHARE")
             .bind(authority.runtime_scope().world_id().as_bytes().as_slice()).bind(name.comparison_key()).fetch_optional(&mut **tx).await?;
         if let Some(id) = id {
@@ -324,16 +293,4 @@ pub async fn save_editor_in_transaction(
     .await?;
     check_transaction(tx, authority).await?;
     Ok((house, list, next))
-}
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn guest_only_subowner_and_no_zero_door() {
-        assert!(permission(HouseAccess::Subowner, HouseList::Guest));
-        assert!(!permission(HouseAccess::Subowner, HouseList::Subowner));
-        assert!(!permission(HouseAccess::Subowner, HouseList::Door(1)));
-        assert!(permission(HouseAccess::Owner, HouseList::Door(1)));
-        assert!(list_id(HouseList::Door(0)).is_err());
-    }
 }

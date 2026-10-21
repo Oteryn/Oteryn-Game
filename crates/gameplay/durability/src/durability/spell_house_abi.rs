@@ -1,17 +1,6 @@
 //! Neutral House owner contract; no gameplay or spell implementation dependency.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub enum HouseAccess {
-    NotInvited,
-    Guest,
-    Subowner,
-    Owner,
-}
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum HouseList {
-    Guest,
-    Subowner,
-    Door(u32),
-}
+pub use oteryn_gameplay_housing::house_spell_acl::{HouseAccess, HouseList};
+
 pub mod house_presence_seal {
     pub trait Sealed {}
 }
