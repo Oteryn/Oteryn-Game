@@ -354,11 +354,7 @@ impl ChatRuntime {
     /// (NPC-BEHAVIOUR-0 §7, `NPC0-RL-07`): a conversation whose NPC is gone, on another floor or
     /// more than [`TALK_RANGE_TILES`] tiles away closes, and the NPC's walk-away line waits for
     /// the session's next domain 7 payload. Whether it closed.
-    pub fn close_out_of_range(
-        &self,
-        runtime: &ChannelRuntimeV1,
-        session: GameSessionId,
-    ) -> bool {
+    pub fn close_out_of_range(&self, runtime: &ChannelRuntimeV1, session: GameSessionId) -> bool {
         let Some(npc) = self.engaged(session) else {
             return false;
         };

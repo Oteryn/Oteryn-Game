@@ -28,7 +28,6 @@ oteryn-gameplay-durability = { version = "=0.1.0", path = "../../crates/gameplay
 oteryn-gameplay-content = { version = "=0.1.0", path = "../../crates/gameplay/content" }
 oteryn-gameplay-foundation = { version = "=0.1.0", path = "../../crates/gameplay/foundation" }
 oteryn-gameplay-domain = { version = "=0.1.0", path = "../../crates/gameplay/domain" }
-aws-lc-rs.workspace = true
 base64.workspace = true
 ed25519-dalek.workspace = true
 oteryn-error-codes = { version = "=0.1.0", path = "../../crates/error-codes" }
@@ -44,7 +43,6 @@ oteryn-protocol-oteryn = { version = "=0.1.0", path = "../../crates/protocol-ote
 oteryn-simulation-determinism = { version = "=0.1.0", path = "../../crates/simulation-determinism" }
 oteryn-world-bundle = { version = "=0.1.0", path = "../../crates/world-bundle" }
 prost.workspace = true
-reqwest.workspace = true
 serde.workspace = true
 sha2.workspace = true
 serde_json = { workspace = true, features = ["raw_value"] }
@@ -55,6 +53,8 @@ tokio-rustls.workspace = true
 toml.workspace = true
 
 [dev-dependencies]
+reqwest.workspace = true
+oteryn-gameplay-transport = { version = "=0.1.0", path = "../../crates/gameplay/transport", features = ["test-support"] }
 oteryn-gameplay-social = { version = "=0.1.0", path = "../../crates/gameplay/social", features = ["test-support"] }
 oteryn-gameplay-monster-ai = { version = "=0.1.0", path = "../../crates/gameplay/monster-ai", features = ["test-support"] }
 oteryn-gameplay-spell = { version = "=0.1.0", path = "../../crates/gameplay/spell", features = ["test-support"] }
@@ -70,16 +70,12 @@ oteryn-dev-client = { version = "=0.1.0", path = "../../tools/dev-client" }
 # Test-only (MAP-LOAD-1): the map_load tests compile their fixture bundle with the compiler.
 oteryn-world-bundle-compiler = { version = "=0.1.0", path = "../../tools/world-bundle-compiler" }
 rcgen.workspace = true
-# Test-only (BUNDLE-GATES-1): the gate inventory parses the seam sources to find each room read.
-syn.workspace = true
 # Test-only: a TLS 1.2-constrained client proves the seam rejects TLS 1.2.
 rustls = { workspace = true, features = ["tls12"] }
 # Test-only (MAP-LOAD-1): the map_load tests assemble and reseal bundles byte by byte.
 zstd.workspace = true
 
 [target.'cfg(target_os = "linux")'.dependencies]
-cap-fs-ext.workspace = true
-cap-std.workspace = true
 rustix = { workspace = true, features = ["process"] }
 
 # Thin wrappers kept for focused local runs (`cargo test --test <name>`). Their

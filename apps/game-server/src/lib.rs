@@ -152,10 +152,6 @@ mod spell_stance_runtime_postgres_cases;
 #[path = "../tests/support/spell_familiar_runtime_postgres_cases.rs"]
 mod spell_familiar_runtime_postgres_cases;
 
-#[cfg(test)]
-#[path = "lifted_tests/durability_world_party_tests.rs"]
-mod world_party_runtime_postgres_cases;
-
 // LIMIT_RAISE value/audit regressions have one source mount; the canonical PG root
 // path-loads durability and must not collect these pure cases a second time.
 #[cfg(test)]
@@ -864,7 +860,8 @@ use oteryn_gameplay_source_critical_baseline as source_critical_baseline;
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-mod welter_consume;
+#[allow(unused_imports)]
+use oteryn_gameplay_transport::welter_consume;
 #[allow(unused_imports, reason = "preserve the former server module path")]
 use oteryn_gameplay_weather as world_weather;
 #[allow(
@@ -892,9 +889,6 @@ pub(crate) use oteryn_gameplay_monster_ai::monster_owner_cycle;
 )]
 #[allow(unused_imports, reason = "preserve the former server module path")]
 pub(crate) use oteryn_gameplay_monster_ai::monster_summon;
-
-#[cfg(test)]
-mod canonical_monster_successor_tests;
 
 #[allow(dead_code)]
 #[allow(unused_imports, reason = "preserve the former server module path")]
@@ -946,14 +940,6 @@ mod content_creature_reward_tests;
 mod content_charm_source_effect_tests;
 
 #[cfg(test)]
-#[path = "lifted_tests/content_npc_service_tests.rs"]
-mod content_npc_service_tests;
-
-#[cfg(test)]
-#[path = "lifted_tests/movement_speed_runtime_tests.rs"]
-mod movement_speed_runtime_tests;
-
-#[cfg(test)]
 #[allow(clippy::expect_used)]
 #[path = "lifted_tests/foundation_ability_exact_actor_resolution_tests.rs"]
 mod foundation_ability_exact_actor_resolution_tests;
@@ -986,25 +972,14 @@ mod foundation_movement_static_kernel_structural_tests;
 #[path = "lifted_tests/foundation_attacker_fence_tests.rs"]
 mod foundation_attacker_fence_tests;
 // Higher-layer qualification tests stay in the native composition root.
-#[cfg(test)]
-#[path = "lifted_tests/creature_area_heal_tests.rs"]
-mod creature_area_heal_tests;
 
 #[cfg(test)]
 #[path = "lifted_tests/creature_icicle_tests.rs"]
 mod creature_icicle_tests;
 
 #[cfg(test)]
-#[path = "lifted_tests/creature_auto_attack_tests.rs"]
-mod creature_auto_attack_tests;
-
-#[cfg(test)]
 #[path = "lifted_tests/creature_appearance_content_tests.rs"]
 mod creature_appearance_content_tests;
-
-#[cfg(test)]
-#[path = "lifted_tests/creature_defense_presentation_tests.rs"]
-mod creature_defense_presentation_tests;
 
 #[cfg(test)]
 #[path = "lifted_tests/creature_condition_content_tests.rs"]
@@ -1022,101 +997,9 @@ mod creature_condition_content_gate_tests;
 pub(crate) use oteryn_gameplay_encounters::source_callback_cast;
 
 #[cfg(test)]
-#[path = "lifted_tests/creature_damage_spell_tests.rs"]
-mod creature_damage_spell_tests;
+mod qualification;
+#[cfg(test)]
+mod quest_catalogue_boot_tests;
 
 #[cfg(test)]
-#[path = "lifted_tests/creature_damage_spell_defense_variant_tests.rs"]
-mod creature_damage_spell_defense_variant_tests;
-
-#[cfg(test)]
-#[path = "lifted_tests/creature_damage_spell_appearance_execution_tests.rs"]
-mod creature_damage_spell_appearance_execution_tests;
-
-#[cfg(test)]
-#[path = "lifted_tests/creature_damage_spell_composed_tests.rs"]
-mod creature_damage_spell_composed_tests;
-
-#[cfg(test)]
-#[path = "lifted_tests/spell_house_execution_tests.rs"]
-mod spell_house_execution_tests;
-
-#[cfg(test)]
-#[path = "lifted_tests/spell_owned_cast_facts_tests.rs"]
-mod spell_owned_cast_facts_tests;
-
-#[cfg(test)]
-#[path = "lifted_tests/spell_field_history_tests.rs"]
-mod spell_field_history_tests;
-
-#[cfg(test)]
-#[path = "lifted_tests/spell_companion_lifecycle_direct_acquisition_owner_tests.rs"]
-mod spell_companion_lifecycle_direct_acquisition_owner_tests;
-
-#[cfg(test)]
-#[path = "lifted_tests/spell_actor_execution_tests.rs"]
-mod spell_actor_execution_tests;
-
-#[cfg(test)]
-#[path = "lifted_tests/spell_magnitude_owner_tests.rs"]
-mod spell_magnitude_owner_tests;
-
-#[cfg(test)]
-#[path = "lifted_tests/spell_native_cast_commit_tests.rs"]
-mod spell_native_cast_commit_tests;
-
-#[cfg(test)]
-#[path = "lifted_tests/spell_delayed_execution_tests.rs"]
-mod spell_delayed_execution_tests;
-
-#[cfg(test)]
-#[path = "lifted_tests/spell_callback_speech_tests.rs"]
-mod spell_callback_speech_tests;
-
-#[cfg(test)]
-#[path = "lifted_tests/source_callback_cast_tests.rs"]
-mod source_callback_cast_tests;
-
-#[cfg(test)]
-#[path = "lifted_tests/source_callback_spawn_tests.rs"]
-mod source_callback_spawn_tests;
-
-#[cfg(test)]
-#[path = "lifted_tests/source_encounter_seven_tests.rs"]
-mod source_encounter_seven_tests;
-
-#[cfg(test)]
-#[path = "lifted_tests/source_threshold_heal_tests.rs"]
-mod source_threshold_heal_tests;
-
-#[cfg(test)]
-#[path = "lifted_tests/monster_owner_cycle_tests.rs"]
-mod monster_owner_cycle_tests;
-
-#[cfg(test)]
-#[path = "lifted_tests/smelly_damage_tests.rs"]
-mod smelly_damage_tests;
-
-#[cfg(test)]
-#[path = "lifted_tests/smelly_encounter_dispatch_tests.rs"]
-mod smelly_encounter_dispatch_tests;
-
-#[cfg(test)]
-#[path = "lifted_tests/monster_combat_lane_tests.rs"]
-mod monster_combat_lane_tests;
-
-#[cfg(test)]
-#[path = "lifted_tests/monster_combat_lane_defense_composition_tests.rs"]
-mod monster_combat_lane_defense_composition_tests;
-
-#[cfg(test)]
-#[path = "lifted_tests/monster_combat_lane_defense_speed_test.rs"]
-mod monster_combat_lane_defense_speed_test;
-
-#[cfg(test)]
-#[path = "lifted_tests/monster_combat_lane_source_summon_composition_tests.rs"]
-mod monster_combat_lane_source_summon_composition_tests;
-
-#[cfg(test)]
-#[path = "lifted_tests/source_time_profile_bundle_tests.rs"]
-mod source_time_profile_bundle_tests;
+mod bundle_spawn_owner_tests;

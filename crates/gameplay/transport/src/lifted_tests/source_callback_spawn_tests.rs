@@ -40,9 +40,10 @@ fn runtime_with_player(
     (runtime, player, session)
 }
 fn draft(r: &ChannelRuntimeV1) -> ProjectV2Draft {
-    let v: serde_json::Value =
-        serde_json::from_str(include_str!("../source_callback_spawn_native_fixture.json"))
-            .expect("qualified fixture");
+    let v: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../apps/game-server/src/source_callback_spawn_native_fixture.json"
+    ))
+    .expect("qualified fixture");
     ProjectV2Draft {
         core: crate::content::ProjectDraft {
             project_revision: "g4-npc-wave-a-r9".into(),
@@ -69,8 +70,8 @@ fn draft(r: &ChannelRuntimeV1) -> ProjectV2Draft {
 }
 fn policies(r: &ChannelRuntimeV1) -> CompiledCreaturePolicies {
     crate::content::native_gameplay::callback_source_native_test_policies(
-        include_bytes!("../callback_native_child_profiles.json"),
-        include_bytes!("../callback_native_child_looks.json"),
+        include_bytes!("../../../../../apps/game-server/src/callback_native_child_profiles.json"),
+        include_bytes!("../../../../../apps/game-server/src/callback_native_child_looks.json"),
         r.content_pin().server_artifact_digest(),
     )
     .expect("qualified fixture")

@@ -20,9 +20,10 @@ use crate::gameplay_transport::actor_spell::tests::runtime_with_player;
 use crate::source_encounter_seven::*;
 
 fn draft(r: &ChannelRuntimeV1) -> ProjectV2Draft {
-    let v: serde_json::Value =
-        serde_json::from_str(include_str!("../source_encounter_seven_fixture.json"))
-            .expect("qualified fixture");
+    let v: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../apps/game-server/src/source_encounter_seven_fixture.json"
+    ))
+    .expect("qualified fixture");
     ProjectV2Draft {
         core: crate::content::ProjectDraft {
             project_revision: "g4-npc-wave-a-r9".into(),
@@ -429,8 +430,10 @@ fn distinct_time_source_entries_qualify_and_foreign_owner_source_substitution_ne
 #[test]
 fn exact_seven_descriptors_preserve_map_dependency_and_original_two_actor_rules() {
     let (r, d, _, _, _) = fixture();
-    let w: Witness = serde_json::from_str(include_str!("../source_encounter_seven_fixture.json"))
-        .expect("qualified fixture");
+    let w: Witness = serde_json::from_str(include_str!(
+        "../../../../../apps/game-server/src/source_encounter_seven_fixture.json"
+    ))
+    .expect("qualified fixture");
     assert_eq!(w.cases.len(), 7);
     for c in &w.cases {
         let reference = Ref {
@@ -455,9 +458,10 @@ fn exact_seven_descriptors_preserve_map_dependency_and_original_two_actor_rules(
             .is_some()
         );
     }
-    let raw: serde_json::Value =
-        serde_json::from_str(include_str!("../source_encounter_seven_fixture.json"))
-            .expect("qualified fixture");
+    let raw: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../apps/game-server/src/source_encounter_seven_fixture.json"
+    ))
+    .expect("qualified fixture");
     let cases = raw["cases"].as_array().expect("qualified fixture");
     assert!(cases.iter().filter(|c| c["creature"] == BASE).all(|c| {
         c["raw_rules_preserved"]

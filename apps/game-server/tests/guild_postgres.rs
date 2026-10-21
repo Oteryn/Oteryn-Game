@@ -126,7 +126,7 @@ mod bestiary_postgres_harness;
 // Spell owner is available without importing it into neutral durability test roots.
 
 #[cfg(test)]
-#[path = "../src/lifted_tests/durability_world_party_tests.rs"]
+#[path = "../../../crates/gameplay/transport/src/lifted_tests/durability_world_party_tests.rs"]
 mod world_party_runtime_postgres_cases;
 
 #[cfg(test)]
@@ -279,7 +279,7 @@ mod weak_spot_speech;
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-#[path = "../src/welter_consume.rs"]
+#[path = "../../../crates/gameplay/transport/src/welter_consume.rs"]
 mod welter_consume;
 #[allow(
     dead_code,
@@ -302,7 +302,7 @@ mod monster_owner_cycle;
 mod monster_summon;
 
 #[cfg(test)]
-#[path = "../src/canonical_monster_successor_tests.rs"]
+#[path = "../../../crates/gameplay/transport/src/canonical_monster_successor_tests.rs"]
 mod canonical_monster_successor_tests;
 
 #[allow(dead_code)]
@@ -322,7 +322,7 @@ mod creature_source_items;
 mod item_transfer_postgres_cases;
 
 #[cfg(test)]
-#[path = "../src/lifted_tests/movement_speed_runtime_tests.rs"]
+#[path = "../../../crates/gameplay/transport/src/lifted_tests/movement_speed_runtime_tests.rs"]
 mod movement_speed_runtime_tests;
 
 #[cfg(test)]
@@ -348,49 +348,49 @@ mod durability_guild_disband_terminal_tests;
 #[path = "../../../crates/gameplay/encounters/src/source_callback_cast.rs"]
 mod source_callback_cast;
 #[cfg(test)]
-#[path = "../src/lifted_tests/source_callback_cast_tests.rs"]
+#[path = "../../../crates/gameplay/transport/src/lifted_tests/source_callback_cast_tests.rs"]
 mod source_callback_cast_tests;
 
 #[cfg(test)]
-#[path = "../src/lifted_tests/source_callback_spawn_tests.rs"]
+#[path = "../../../crates/gameplay/transport/src/lifted_tests/source_callback_spawn_tests.rs"]
 mod source_callback_spawn_tests;
 
 #[cfg(test)]
-#[path = "../src/lifted_tests/source_encounter_seven_tests.rs"]
+#[path = "../../../crates/gameplay/transport/src/lifted_tests/source_encounter_seven_tests.rs"]
 mod source_encounter_seven_tests;
 
 #[cfg(test)]
-#[path = "../src/lifted_tests/source_threshold_heal_tests.rs"]
+#[path = "../../../crates/gameplay/transport/src/lifted_tests/source_threshold_heal_tests.rs"]
 mod source_threshold_heal_tests;
 
 #[cfg(test)]
-#[path = "../src/lifted_tests/monster_owner_cycle_tests.rs"]
+#[path = "../../../crates/gameplay/transport/src/lifted_tests/monster_owner_cycle_tests.rs"]
 mod monster_owner_cycle_tests;
 
 #[cfg(test)]
-#[path = "../src/lifted_tests/smelly_damage_tests.rs"]
+#[path = "../../../crates/gameplay/transport/src/lifted_tests/smelly_damage_tests.rs"]
 mod smelly_damage_tests;
 
 #[cfg(test)]
-#[path = "../src/lifted_tests/smelly_encounter_dispatch_tests.rs"]
+#[path = "../../../crates/gameplay/transport/src/lifted_tests/smelly_encounter_dispatch_tests.rs"]
 mod smelly_encounter_dispatch_tests;
 
 #[cfg(test)]
-#[path = "../src/lifted_tests/monster_combat_lane_tests.rs"]
+#[path = "../../../crates/gameplay/transport/src/lifted_tests/monster_combat_lane_tests.rs"]
 mod monster_combat_lane_tests;
 
 #[cfg(test)]
-#[path = "../src/lifted_tests/monster_combat_lane_defense_composition_tests.rs"]
+#[path = "../../../crates/gameplay/transport/src/lifted_tests/monster_combat_lane_defense_composition_tests.rs"]
 mod monster_combat_lane_defense_composition_tests;
 
 #[cfg(test)]
-#[path = "../src/lifted_tests/monster_combat_lane_defense_speed_test.rs"]
+#[path = "../../../crates/gameplay/transport/src/lifted_tests/monster_combat_lane_defense_speed_test.rs"]
 mod monster_combat_lane_defense_speed_test;
 
 #[cfg(test)]
-#[path = "../src/lifted_tests/monster_combat_lane_source_summon_composition_tests.rs"]
+#[path = "../../../crates/gameplay/transport/src/lifted_tests/monster_combat_lane_source_summon_composition_tests.rs"]
 mod monster_combat_lane_source_summon_composition_tests;
 
 #[cfg(test)]
-#[path = "../src/lifted_tests/source_time_profile_bundle_tests.rs"]
+#[path = "../../../crates/gameplay/transport/src/lifted_tests/source_time_profile_bundle_tests.rs"]
 mod source_time_profile_bundle_tests;

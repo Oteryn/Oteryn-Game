@@ -210,12 +210,7 @@ impl BoundRequiredCapabilities {
         &self.required.effective
     }
 
-    pub fn matches_current(
-        &self,
-        scope: RuntimeScopeRefV1,
-        generation: u64,
-        policy: &str,
-    ) -> bool {
+    pub fn matches_current(&self, scope: RuntimeScopeRefV1, generation: u64, policy: &str) -> bool {
         self.scope == scope && self.generation == generation && self.world_policy_revision == policy
     }
 
@@ -330,9 +325,7 @@ impl AuthenticatedSessionCapabilities {
             .select_for_session(&self.supported, &bound.native_profile)
     }
 
-    pub fn current_check(
-        &self,
-    ) -> crate::durability::fresh_admission::CurrentCapabilityCheck {
+    pub fn current_check(&self) -> crate::durability::fresh_admission::CurrentCapabilityCheck {
         let support = self.clone();
         Arc::new(move |scope, generation, policy| {
             support.revalidate(scope, generation, policy).is_ok()

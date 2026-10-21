@@ -247,7 +247,9 @@ mod wheel_magnitude_tests {
     }
     fn profile(digest: [u8; 32]) -> CompiledWheelProfile {
         CompiledWheelProfile::from_active_artifact(
-            include_bytes!("../../../../../tools/content-schema/native-gameplay/wheel-profile.json"),
+            include_bytes!(
+                "../../../../../tools/content-schema/native-gameplay/wheel-profile.json"
+            ),
             digest,
         )
         .expect("actual accepted source profile")

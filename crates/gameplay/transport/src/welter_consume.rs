@@ -342,8 +342,8 @@ mod native_source_tests {
         r.commit_monster_lab_damage(caster, b"damage1", 20000)
             .expect("welter_consume.rs:native_source_tests:340: qualified fixture operation must succeed");
         let egg = actor(&mut r, "oteryn:creature.egg", 800, 101, 100);
-        let profiles:Vec<ProjectV2AuthoringProfile>=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/encounters/welter-native-profiles.json"))).expect("welter_consume.rs:native_source_tests:342: qualified fixture operation must succeed");
-        let v:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/encounters/welter-native-records-bindings.json"))).expect("welter_consume.rs:native_source_tests:343: qualified fixture operation must succeed");
+        let profiles:Vec<ProjectV2AuthoringProfile>=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/encounters/welter-native-profiles.json"))).expect("welter_consume.rs:native_source_tests:342: qualified fixture operation must succeed");
+        let v:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/encounters/welter-native-records-bindings.json"))).expect("welter_consume.rs:native_source_tests:343: qualified fixture operation must succeed");
         let records: Vec<ProjectReferenceRecord> =
             serde_json::from_value(v["records"].clone()).expect("welter_consume.rs:native_source_tests:345: qualified fixture operation must succeed");
         let bindings: Vec<ProjectV2SourceIdentityBinding> = serde_json::from_value(

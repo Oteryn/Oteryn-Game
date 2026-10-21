@@ -25,9 +25,7 @@ pub use crate::monster_combat_lane::native_conditions::{
 pub use crate::monster_combat_lane::native_invisibility::{
     CreatureVision, InvisibleTileCombatPolicy,
 };
-pub use crate::monster_combat_lane::native_invisibility::{
-    SelfInvisibleSource, SelfSpeedSource,
-};
+pub use crate::monster_combat_lane::native_invisibility::{SelfInvisibleSource, SelfSpeedSource};
 
 #[path = "actor_movement.rs"]
 mod actor_movement;
@@ -303,11 +301,7 @@ fn mint_player_death_occurrence() -> Option<PlayerDeathOccurrence> {
 
 impl ChannelSpellStates {
     /// Unknown durable outcomes retain their original prepared owner state.
-    pub fn has_pending_spell_commit(
-        &self,
-        actor: ExactActorRef,
-        session: GameSessionId,
-    ) -> bool {
+    pub fn has_pending_spell_commit(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
         self.has_pending_native(actor, session)
             || self.has_pending_world_items(actor, session)
             || self.has_pending_parameters(actor, session)
@@ -1125,12 +1119,13 @@ fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 #[allow(clippy::expect_used)]
 pub mod tests {
     use std::num::NonZeroU32;
 
     use super::*;
+    #[cfg(test)]
     use crate::ability::condition::ConditionGate;
     use crate::foundation::{ChannelContentPin, ChannelId, NodeId, WorldId};
     use crate::spell::Vocation;
@@ -1201,10 +1196,12 @@ pub mod tests {
         }
     }
 
+    #[cfg(test)]
     fn now(millis: u64) -> SemanticTimeMicros {
         SemanticTimeMicros::from_micros(millis * 1000)
     }
 
+    #[cfg(test)]
     fn cast_at(
         runtime: &ChannelRuntimeV1,
         states: &mut ChannelSpellStates,
@@ -1227,6 +1224,7 @@ pub mod tests {
     }
 
     /// Test only: `gate` (a §3.5 key) for 10 s from time 0 in the player store.
+    #[cfg(test)]
     fn gate_player(
         states: &mut ChannelSpellStates,
         actor: ExactActorRef,
@@ -1983,6 +1981,7 @@ pub mod tests {
 
     /// A runtime with one positioned player at (10, 10), its vitals at a wounded `health`, and one
     /// live creature beside it.
+    #[cfg(test)]
     fn bitten_player(
         tag: u8,
         health: u32,
@@ -1997,6 +1996,7 @@ pub mod tests {
     }
 
     /// [`bitten_player`] with the actor's cast facts and durable monk values.
+    #[cfg(test)]
     fn bitten_actor(
         tag: u8,
         health: u32,
@@ -2024,6 +2024,7 @@ pub mod tests {
         (runtime, states, actor, session, creature)
     }
 
+    #[cfg(test)]
     fn bite_at(
         runtime: &mut ChannelRuntimeV1,
         states: &mut ChannelSpellStates,
@@ -2988,9 +2989,7 @@ mod source_native_vitals_tests {
         );
     }
 }
-pub use crate::monster_combat_lane::native_ticks::{
-    NativeOwnedPlayerTickReceipt, PlayerDeath,
-};
+pub use crate::monster_combat_lane::native_ticks::{NativeOwnedPlayerTickReceipt, PlayerDeath};
 impl ChannelSpellStates {
     /// Independently qualified map/field facts are supplied by the same source owner turn.
     /// Creature provenance is frozen by native source application, never reacquired from a

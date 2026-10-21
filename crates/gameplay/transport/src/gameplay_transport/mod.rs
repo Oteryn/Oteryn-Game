@@ -3,7 +3,6 @@
 
 pub mod actor_spell;
 mod attack;
-#[path = "../../../social/src/interaction/bank_npc.rs"]
 mod bank_npc;
 #[cfg(test)]
 mod bundle_gates_tests;
@@ -53,10 +52,6 @@ mod npc_trade_command;
 mod npc_travel;
 mod npc_voice;
 pub use npc_talk::NpcTalkBook;
-#[cfg(test)]
-mod qualification;
-#[cfg(test)]
-mod quest_catalogue_boot_tests;
 mod resume;
 mod seam_rooms;
 pub use seam_rooms::SeamRooms;
@@ -412,6 +407,8 @@ async fn first<T>(primary: impl Future<Output = T>, stop: impl Future<Output = (
 /// #414 Character authority, and this GameNode's #415 incarnation holding the
 /// served Channel.
 pub struct GameplaySeamOwners<'a, 'f, 's> {
+    /// The composition root's leveled diagnostic writer.
+    pub emit: fn(&str, &oteryn_error_codes::Line<'_>),
     pub root: &'a DurabilityRoot,
     pub character: &'a ReconciledCharacterAuthority<'f, 's>,
     pub holder: &'a NodeIncarnationProof,
@@ -543,6 +540,7 @@ pub async fn serve_gameplay(
     let tls = tcp_tls::tls_config(config.certificates, config.private_key)
         .map_err(GameplayServeError::InvalidTls)?;
     let authority = ComposedFreshAdmission {
+        emit: owners.emit,
         root: owners.root,
         character: owners.character,
         holder: owners.holder,
@@ -740,6 +738,8 @@ impl ConnectionIdentifiers for SecureIdentifiers {
 /// supplies account security and signing trust, and the durable commit
 /// revalidates all of them.
 pub struct ComposedFreshAdmission<'a, 'f, 's> {
+    /// The diagnostic writer supplied with the composed gameplay owners.
+    pub emit: fn(&str, &oteryn_error_codes::Line<'_>),
     pub root: &'a DurabilityRoot,
     pub character: &'a ReconciledCharacterAuthority<'f, 's>,
     pub holder: &'a NodeIncarnationProof,
@@ -790,16 +790,14 @@ pub struct ComposedFreshAdmission<'a, 'f, 's> {
         Option<std::sync::Arc<crate::durability::quest_state::quest::QuestStateCatalogue>>,
     /// The quest copy of each admitted session (QUEST-STATE-0 §7), loaded at fresh admission
     /// and resume. Never held across an await.
-    pub quest_sessions:
-        std::sync::Mutex<std::collections::HashMap<GameSessionId, QuestSession>>,
+    pub quest_sessions: std::sync::Mutex<std::collections::HashMap<GameSessionId, QuestSession>>,
     /// CHAT-WIRE-1: speaker name, spam limiter and queued lines of each chatting session.
     pub chat: chat_intent::ChatRuntime,
     /// NPC-CMD-1a: the NPC conversation and talk limit of each session with capability 3.
     pub npc_conversations: npc_command::NpcConversations,
     /// The active Wheel ruleset (WHEEL-0 §4, §5.1); `None` when the embedded catalogue does not
     /// read, and every Wheel load then fails closed.
-    pub wheel_ruleset:
-        Option<std::sync::Arc<crate::durability::character_wheel::WheelRuleset>>,
+    pub wheel_ruleset: Option<std::sync::Arc<crate::durability::character_wheel::WheelRuleset>>,
     /// The Wheel allocation of each admitted session (WHEEL-0 §4 "Load"), after the admission
     /// Wheel reset; `None` when the load failed. The allocation only, never an eligibility
     /// result. Never held across an await.
@@ -7554,7 +7552,7 @@ mod spell_parameter_cast;
 pub use actor_spell::ChannelSpellStates;
 #[cfg(test)]
 pub use party_spell_owner::read_source_party_world_in_transaction;
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 pub use spell_character_facts::{CastFactsLoad, load_character_cast_facts};
 #[cfg(test)]
 pub use spell_presentation_publisher::{
@@ -7637,7 +7635,9 @@ mod death_ml_loss_postgres {
 
     async fn train_die_respawn_train(h: &Harness) -> TestResult {
         let formula = CompiledTrainingFormula::from_profile(
-            include_bytes!("../../../../../tools/content-schema/native-gameplay/build-training.json"),
+            include_bytes!(
+                "../../../../../tools/content-schema/native-gameplay/build-training.json"
+            ),
             &harness::context().content,
         )
         .map_err(debug)?;
@@ -7863,7 +7863,9 @@ mod death_ml_loss_postgres {
         };
         use crate::gameplay_transport::{CastFactsLoad, load_character_cast_facts};
         let formula = CompiledTrainingFormula::from_profile(
-            include_bytes!("../../../../../tools/content-schema/native-gameplay/build-training.json"),
+            include_bytes!(
+                "../../../../../tools/content-schema/native-gameplay/build-training.json"
+            ),
             &harness::context().content,
         )
         .map_err(debug)?;
@@ -8123,3 +8125,8 @@ mod death_ml_loss_postgres {
 mod vocation_choice;
 
 mod monster_combat_states;
+
+#[cfg(any(test, feature = "test-support"))]
+pub use connection::SERVER_SCHEMA_REVISION;
+#[cfg(any(test, feature = "test-support"))]
+pub use monster_ai_cycle::drive_owner_spawns;

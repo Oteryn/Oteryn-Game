@@ -621,7 +621,7 @@ fn all_twenty_canonical_combat_profiles_lower_against_real_slots_and_qualified_m
     use std::collections::BTreeSet;
     let document: serde_json::Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/../../tools/content-schema/spell-authoring/samples/native-spell-profiles.json"
+        "/../../../tools/content-schema/spell-authoring/samples/native-spell-profiles.json"
     )))
     .expect("canonical profiles");
     let profiles = document["profiles"].as_array().expect("profiles");

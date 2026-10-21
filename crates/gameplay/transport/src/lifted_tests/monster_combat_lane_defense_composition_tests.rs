@@ -438,7 +438,7 @@ mod defense_composition_tests {
     #[test]
     fn real_profile_defense_schedule_installs_native_creature_speed_once_without_player_base_default()
      {
-        let packet:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/conditions/creature-speed/native-fixtures.json"))).expect("monster_combat_lane.rs:defense_composition_tests:3824: qualified fixture operation must succeed");
+        let packet:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/conditions/creature-speed/native-fixtures.json"))).expect("monster_combat_lane.rs:defense_composition_tests:3824: qualified fixture operation must succeed");
         let records: Vec<ProjectReferenceRecord> =
             serde_json::from_value(packet["records"].clone()).expect("monster_combat_lane.rs:defense_composition_tests:3826: qualified fixture operation must succeed");
         let profiles: Vec<ProjectV2AuthoringProfile> =

@@ -43,7 +43,7 @@ fn actual_owner_due_applies_ai_lifetime_at_callback_and_never_replays() {
         .unwrap();
     let document: serde_json::Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/../../tools/content-schema/spell-authoring/samples/native-spell-profiles.json"
+        "/../../../tools/content-schema/spell-authoring/samples/native-spell-profiles.json"
     )))
     .unwrap();
     let row = document["profiles"]
@@ -536,7 +536,7 @@ fn due_familiar_expiry_is_handed_to_the_owner_cadence_without_a_despawn() {
         .unwrap();
     let document: serde_json::Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/../../tools/content-schema/spell-authoring/samples/native-spell-profiles.json"
+        "/../../../tools/content-schema/spell-authoring/samples/native-spell-profiles.json"
     )))
     .unwrap();
     let row = document["profiles"]

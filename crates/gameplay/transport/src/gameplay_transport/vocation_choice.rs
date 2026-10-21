@@ -142,11 +142,7 @@ impl NpcVocationConversation {
         dead_code,
         reason = "D1220: A2 native NPC caller retains the exact build intent through this operation; D1173 integration is pending."
     )]
-    pub fn retain(
-        &mut self,
-        occurrence: BuildOccurrence,
-        request: RetainedNpcVocation,
-    ) -> bool {
+    pub fn retain(&mut self, occurrence: BuildOccurrence, request: RetainedNpcVocation) -> bool {
         let Some(choice) = self
             .confirmed
             .as_mut()

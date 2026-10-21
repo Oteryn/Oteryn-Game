@@ -218,6 +218,7 @@ fn scenario() -> TestResult {
             item_fence: None,
         };
         let mut owner = ComposedFreshAdmission {
+            emit: |_, _| {},
             root: &harness.root,
             character: &authority,
             holder: &harness.node,

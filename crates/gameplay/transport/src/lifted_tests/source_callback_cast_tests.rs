@@ -19,9 +19,10 @@ use crate::gameplay_transport::actor_spell::{
 use crate::source_callback_cast::*;
 
 fn draft(r: &ChannelRuntimeV1) -> ProjectV2Draft {
-    let v: serde_json::Value =
-        serde_json::from_str(include_str!("../source_callback_native_fixture.json"))
-            .expect("qualified fixture");
+    let v: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../apps/game-server/src/source_callback_native_fixture.json"
+    ))
+    .expect("qualified fixture");
     ProjectV2Draft {
         core: crate::content::ProjectDraft {
             project_revision: "g4-npc-wave-a-r9".into(),
@@ -148,8 +149,10 @@ impl SpellWorldReader for Reader {
 }
 #[test]
 fn nine_source_callbacks_actual_native_damage_delays_stages_and_replay() {
-    let w: Witness = serde_json::from_str(include_str!("../source_callback_cast_fixture.json"))
-        .expect("qualified fixture");
+    let w: Witness = serde_json::from_str(include_str!(
+        "../../../../../apps/game-server/src/source_callback_cast_fixture.json"
+    ))
+    .expect("qualified fixture");
     for case in w.cases.values() {
         let (mut r, p, session) = runtime_with_player(0x78);
         let at = if case.caster.ends_with("rootthing_amber_shaper") {
@@ -363,8 +366,10 @@ fn nine_source_callbacks_actual_native_damage_delays_stages_and_replay() {
 }
 #[test]
 fn every_source_callback_missing_facts_provenance_scope_dead_parent_refuses() {
-    let w: Witness = serde_json::from_str(include_str!("../source_callback_cast_fixture.json"))
-        .expect("qualified fixture");
+    let w: Witness = serde_json::from_str(include_str!(
+        "../../../../../apps/game-server/src/source_callback_cast_fixture.json"
+    ))
+    .expect("qualified fixture");
     for case in w.cases.values() {
         let (mut r, p, session) = runtime_with_player(0x79);
         r.initialize_movement_test_position(

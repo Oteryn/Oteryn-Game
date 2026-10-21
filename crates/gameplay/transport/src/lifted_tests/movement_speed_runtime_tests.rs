@@ -10,7 +10,7 @@ mod player_speed_tests {
     fn charm(name: &str) -> crate::foundation::ConditionDefinition {
         use crate::foundation::{ConditionDefinition, ConditionValues, SpeedRange};
         let rows: serde_json::Value = serde_json::from_str(include_str!(
-            "../../../../tools/content-schema/condition-authoring/authored-conditions.json"
+            "../../../../../tools/content-schema/condition-authoring/authored-conditions.json"
         ))
         .expect("authored conditions");
         let row = rows["rows"]

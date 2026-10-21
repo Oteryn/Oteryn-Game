@@ -31,7 +31,7 @@
 
 #![cfg_attr(not(test), allow(dead_code))]
 
-#[path = "../../../social/src/interaction/corpse_open.rs"]
+#[path = "corpse_open.rs"]
 pub mod corpse_open;
 
 use super::container_view::ViewCommandWindow;

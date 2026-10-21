@@ -7,7 +7,7 @@ mod defense_speed_test {
     use crate::monster_combat_lane::native_invisibility::SelfSpeedSource;
     #[test]
     fn defense_speed_descriptor_census_uses_all268_native_phase_entries_once() {
-        let packet:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/conditions/creature-speed/native-fixtures.json"))).expect("monster_combat_lane.rs:defense_speed_test:3954: qualified fixture operation must succeed");
+        let packet:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/conditions/creature-speed/native-fixtures.json"))).expect("monster_combat_lane.rs:defense_speed_test:3954: qualified fixture operation must succeed");
         let records: Vec<ProjectReferenceRecord> =
             serde_json::from_value(packet["records"].clone()).expect("monster_combat_lane.rs:defense_speed_test:3956: qualified fixture operation must succeed");
         let profiles: Vec<ProjectV2AuthoringProfile> =

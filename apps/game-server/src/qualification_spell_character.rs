@@ -195,7 +195,7 @@ pub(super) async fn prepare_free_character(
         .map_err(debug)?
         .revision;
     let formula = crate::spell::mana_training::CompiledTrainingFormula::from_profile(
-        include_bytes!("../../../../../tools/content-schema/native-gameplay/build-training.json"),
+        include_bytes!("../../../tools/content-schema/native-gameplay/build-training.json"),
         &context.content,
     )
     .map_err(debug)?;
@@ -217,11 +217,9 @@ pub(super) async fn prepare_free_character(
     )
     .await
     .map_err(debug)?;
-    let facts = crate::gameplay_transport::spell_character_facts::load_character_cast_facts(
-        root, authority, character,
-    )
-    .await;
-    if !matches!(facts, crate::gameplay_transport::spell_character_facts::CastFactsLoad::Ready { facts, .. } if facts.level == level && Some(facts.vocation) == crate::spell::Vocation::from_key(vocation))
+    let facts =
+        crate::gameplay_transport::load_character_cast_facts(root, authority, character).await;
+    if !matches!(facts, crate::gameplay_transport::CastFactsLoad::Ready { facts, .. } if facts.level == level && Some(facts.vocation) == crate::spell::Vocation::from_key(vocation))
     {
         return Err("fenced spell fixture did not produce requested source build".into());
     }

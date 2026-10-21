@@ -13,7 +13,7 @@ use crate::node::serve::{BootError, check_chest_quest_transitions, load_quest_ca
 
 type TestResult = Result<(), Box<dyn Error>>;
 
-const DOCUMENT: &str = include_str!("../../../../../content/quests/missions/quest-state.json");
+const DOCUMENT: &str = include_str!("../../../content/quests/missions/quest-state.json");
 
 /// A served content revision as `readiness.content_revision` declares it; boot loads the
 /// catalogue for the node's declared revision (D634), here the WP5 qualification's.

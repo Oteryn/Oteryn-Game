@@ -74,7 +74,7 @@ mod tests {
                 "smelly_encounter_dispatch.rs:tests:510: qualified fixture operation must succeed",
             );
         let v: serde_json::Value = serde_json::from_str(include_str!(
-            "../smelly_encounter_native_fixture.json"
+            "../../../../../apps/game-server/src/smelly_encounter_native_fixture.json"
         ))
         .expect("smelly_encounter_dispatch.rs:tests:512: qualified fixture operation must succeed");
         let d = ProjectV2Draft {

@@ -184,12 +184,24 @@ const INVENTORY: &[Entry] = &[
 ];
 
 fn repository_root() -> PathBuf {
-    Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server")).join("../..")
+    Path::new(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../apps/game-server"
+    ))
+    .join("../..")
 }
 
 #[allow(clippy::expect_used)]
 fn parse_source(relative: &str) -> syn::File {
-    let path = Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server")).join(relative);
+    let package = if relative.starts_with("src/gameplay_transport/") {
+        Path::new(env!("CARGO_MANIFEST_DIR"))
+    } else {
+        Path::new(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../apps/game-server"
+        ))
+    };
+    let path = package.join(relative);
     let source = std::fs::read_to_string(&path).expect("production source");
     syn::parse_file(&source).expect("production source parses")
 }
@@ -437,9 +449,14 @@ fn mentions(mut cursor: syn::buffer::Cursor<'_>, name: &str) -> usize {
 /// leaving out `seam_rooms.rs` and this module's inventory.
 #[allow(clippy::expect_used)]
 fn mentions_of(names: &[&str]) -> BTreeMap<(String, String), usize> {
-    let root = Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server")).join("src");
+    let root = Path::new(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../apps/game-server"
+    ))
+    .join("src");
     let mut calls = BTreeMap::new();
-    let mut sources = vec![root.clone()];
+    let transport_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+    let mut sources = vec![root.clone(), transport_root.clone()];
     while let Some(path) = sources.pop() {
         if path.is_dir() {
             let entries = std::fs::read_dir(&path).expect("source directory");
@@ -451,6 +468,7 @@ fn mentions_of(names: &[&str]) -> BTreeMap<(String, String), usize> {
         }
         let relative = path
             .strip_prefix(&root)
+            .or_else(|_| path.strip_prefix(&transport_root))
             .expect("source under src")
             .to_string_lossy()
             .replace('\\', "/");
@@ -620,7 +638,7 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     ("gameplay_transport/mod.rs", 3),
     ("gameplay_transport/monk_save_postgres_tests.rs", 1),
     ("gameplay_transport/parameter_cast.rs", 3),
-    ("gameplay_transport/qualification.rs", 1),
+    ("qualification.rs", 1),
     ("node/serve.rs", 1),
 ];
 

@@ -119,7 +119,7 @@ fn runtime_three_slots() -> (ChannelRuntimeV1, ExactActorRef, GameSessionId) {
 fn native() -> (Vec<ProjectReferenceRecord>, Vec<ProjectV2AuthoringProfile>) {
     let v: serde_json::Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/src/creature_auto_attack_test_data.json"
+        "/../../../apps/game-server/src/creature_auto_attack_test_data.json"
     )))
     .expect("qualified fixture");
     (
@@ -179,7 +179,7 @@ fn setup_named(
                 .expect("qualified fixture"),
         )
     } else if matches!(name, "blue_djinn" | "green_djinn") {
-        let packet:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/conditions/remaining-source-families/dispel/native-fixture.json"))).expect("qualified fixture");
+        let packet:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/conditions/remaining-source-families/dispel/native-fixture.json"))).expect("qualified fixture");
         (
             serde_json::from_value(packet["records"].clone()).expect("qualified fixture"),
             serde_json::from_value(packet["authoring_profiles"].clone())
@@ -400,7 +400,7 @@ fn composed_readonly_preflight_defers_actual_hp_and_rejects_missing_policy() {
     );
 }
 fn native_windup_packet() -> serde_json::Value {
-    serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/conditions/remaining-source-families/windup/native-fixture.json"))).expect("qualified fixture")
+    serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/conditions/remaining-source-families/windup/native-fixture.json"))).expect("qualified fixture")
 }
 fn windup_setup() -> (
     ChannelRuntimeV1,
@@ -730,7 +730,7 @@ fn native_delayed_fear_overflow_pending_cap_and_retired_scope_are_explicit() {
 }
 
 fn native_variant_packet() -> serde_json::Value {
-    serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/conditions/remaining-source-families/variants/native-fixture.json"))).expect("qualified fixture")
+    serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/conditions/remaining-source-families/variants/native-fixture.json"))).expect("qualified fixture")
 }
 #[test]
 fn native_all42_parent_variants_have_exact_child_membership_without_creature_aliases() {
@@ -1286,7 +1286,7 @@ fn native_djinn_dispel_visibility_exception_keeps_current_pz_and_source_guards()
         )
         .is_err()
     );
-    let packet:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/conditions/remaining-source-families/dispel/native-fixture.json"))).expect("qualified fixture");
+    let packet:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/conditions/remaining-source-families/dispel/native-fixture.json"))).expect("qualified fixture");
     profiles = (
         serde_json::from_value(packet["records"].clone()).expect("qualified fixture"),
         serde_json::from_value(packet["authoring_profiles"].clone()).expect("qualified fixture"),

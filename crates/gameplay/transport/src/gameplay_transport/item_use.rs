@@ -252,8 +252,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ItemUseFlaskPlan::None | ItemUseFlaskPlan::Missing => None,
             })
             .collect();
-        let ids = crate::node::operator_files::uuid_v7()
-            .and_then(|transaction| Ok((transaction, crate::node::operator_files::uuid_v7()?)));
+        let ids = crate::operator_files::uuid_v7()
+            .and_then(|transaction| Ok((transaction, crate::operator_files::uuid_v7()?)));
         let (Ok((transaction_id, event_id)), Ok(occurred_at_unix_ms)) = (ids, unix_ms()) else {
             return Err(UseDisposition::Rejected);
         };
@@ -397,7 +397,7 @@ fn flask_plan(
     }
     let highest = entries.iter().map(|entry| entry.placement_ordinal).max();
     let placement_ordinal = highest.unwrap_or(0).checked_add(1);
-    let item_instance_id = crate::node::operator_files::uuid_v7().ok();
+    let item_instance_id = crate::operator_files::uuid_v7().ok();
     let (Some(placement_ordinal), Some(item_instance_id)) = (placement_ordinal, item_instance_id)
     else {
         return Err(UseDisposition::Rejected);

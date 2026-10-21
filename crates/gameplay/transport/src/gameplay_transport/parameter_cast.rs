@@ -723,11 +723,7 @@ async fn prepare_parameter(
     })
 }
 impl ChannelSpellStates {
-    pub fn has_pending_parameters(
-        &self,
-        actor: ExactActorRef,
-        session: GameSessionId,
-    ) -> bool {
+    pub fn has_pending_parameters(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
         self.pending_parameters
             .iter()
             .any(|p| p.is_for(actor, session))

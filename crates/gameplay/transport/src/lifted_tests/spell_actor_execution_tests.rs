@@ -26,7 +26,7 @@ fn at(ms: u64) -> SemanticTimeMicros {
 fn parameters(name: &str) -> Value {
     let export: Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/../../tools/content-schema/spell-authoring/samples/native-spell-profiles.json"
+        "/../../../tools/content-schema/spell-authoring/samples/native-spell-profiles.json"
     )))
     .expect("canonical profiles");
     export["profiles"]

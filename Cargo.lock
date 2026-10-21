@@ -1967,10 +1967,7 @@ dependencies = [
 name = "oteryn-game-server"
 version = "0.1.0"
 dependencies = [
- "aws-lc-rs",
  "base64",
- "cap-fs-ext",
- "cap-std",
  "ed25519-dalek",
  "oteryn-dev-client",
  "oteryn-error-codes",
@@ -2006,7 +2003,6 @@ dependencies = [
  "serde_json",
  "sha2 0.11.0",
  "sqlx",
- "syn 2.0.119",
  "tokio",
  "tokio-rustls",
  "toml",
@@ -2229,7 +2225,6 @@ dependencies = [
 name = "oteryn-gameplay-transport"
 version = "0.1.0"
 dependencies = [
- "aws-lc-rs",
  "base64",
  "ed25519-dalek",
  "oteryn-dev-client",
@@ -2247,11 +2242,9 @@ dependencies = [
  "oteryn-gameplay-native-admission-source",
  "oteryn-gameplay-node-files",
  "oteryn-gameplay-social",
- "oteryn-gameplay-source-critical-baseline",
  "oteryn-gameplay-spell",
  "oteryn-gameplay-weather",
  "oteryn-gameplay-world",
- "oteryn-gameplay-world-change",
  "oteryn-protocol-oteryn",
  "oteryn-simulation-determinism",
  "oteryn-world-bundle",

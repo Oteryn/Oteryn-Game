@@ -31,9 +31,7 @@ use std::sync::{Arc, OnceLock};
 pub mod clock_registration {
     pub trait Registered {}
 }
-pub trait RegisteredPremiumClock:
-    clock_registration::Registered + Send + Sync
-{
+pub trait RegisteredPremiumClock: clock_registration::Registered + Send + Sync {
     /// The current trusted window (consumer contract §7), or `None` while unsynchronized.
     fn read_current_window(&self) -> Option<TrustedNow>;
 }
@@ -299,17 +297,17 @@ impl SpellPremiumCoordinator {
         Arc::clone(&self.consumer)
     }
     /// The configured activation: `None` in production composition.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn activation(&self) -> Option<&PremiumActivation> {
         self.delivery.activation.as_ref()
     }
     /// Whether the gate reads the durable latch.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub const fn reads_latch(&self) -> bool {
         self.latch.is_some()
     }
     /// Whether a clock owner is registered.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub const fn has_clock(&self) -> bool {
         self.clock.is_some()
     }

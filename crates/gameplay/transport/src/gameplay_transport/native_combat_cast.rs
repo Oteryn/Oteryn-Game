@@ -311,7 +311,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 permit
                     .open_commit_window(other, std::convert::identity)
                     .park();
-                log_unresolved_spell_commit(&permit, "unknown", "foreign_attempt");
+                log_unresolved_spell_commit(self.emit, &permit, "unknown", "foreign_attempt");
                 return permit;
             }
         };
@@ -355,7 +355,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         };
         let permit = fence.finish();
         if permit.has_unresolved() {
-            log_unresolved_spell_commit(&permit, writer, outcome);
+            log_unresolved_spell_commit(self.emit, &permit, writer, outcome);
         }
         permit
     }
@@ -388,9 +388,14 @@ fn restore_parked_native(
 }
 
 /// A resolution that a retry cannot complete keeps the lane fenced until a Channel reload.
-fn log_unresolved_spell_commit(_permit: &SpellLanePermit, writer: &str, outcome: &str) {
+fn log_unresolved_spell_commit(
+    emit: fn(&str, &oteryn_error_codes::Line<'_>),
+    _permit: &SpellLanePermit,
+    writer: &str,
+    outcome: &str,
+) {
     let detail = format!("writer={writer} outcome={outcome}");
-    crate::node::serve::emit(
+    emit(
         "oteryn-game-server",
         &oteryn_error_codes::Line::new(
             oteryn_error_codes::Level::Error,
@@ -3623,8 +3628,11 @@ mod tests {
     /// facts that its committed heal credit requires; druid damage or haste captures none.
     #[test]
     fn druid_party_heal_captures_source_party_facts() {
-        let manifest = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server"))
-            .join("../../content/spells.manifest.json");
+        let manifest = std::path::Path::new(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../apps/game-server"
+        ))
+        .join("../../content/spells.manifest.json");
         let input =
             crate::content::native_gameplay::NativeGameplayInput::from_manifest(&manifest).unwrap();
         let catalog =

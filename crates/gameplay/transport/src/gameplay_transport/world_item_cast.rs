@@ -666,11 +666,7 @@ async fn prepare_item_grant(
 }
 
 impl ChannelSpellStates {
-    pub fn has_pending_world_items(
-        &self,
-        actor: ExactActorRef,
-        session: GameSessionId,
-    ) -> bool {
+    pub fn has_pending_world_items(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
         self.pending_world_items
             .iter()
             .any(|p| p.is_for(actor, session))

@@ -13,7 +13,7 @@ use crate::foundation::{
 };
 
 fn fixture() -> (ChannelRuntimeV1, ProjectV2Draft, Ref) {
-    let v:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/encounters/area-heal-native-fixture.json"))).expect("qualified fixture");
+    let v:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/encounters/area-heal-native-fixture.json"))).expect("qualified fixture");
     let id = |t: u8| [1, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, t];
     let w = WorldId::decode(&id(1)).expect("qualified fixture");
     let r = ChannelRuntimeV1::from_committed_assignment(
@@ -715,7 +715,7 @@ impl AreaHealPolicy for ProphetPolicy {
 #[test]
 fn prophet_source_load_snapshot_named_top_target_self_and_atomic_missing_policy() {
     let (mut r, mut d, _) = fixture();
-    let v:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/reconcile-main/lanes/main95-source-compositions/prophet-native-fixture.json"))).expect("qualified fixture");
+    let v:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../../docs/agents/evidence/monster-full-mechanics-20261004/reconcile-main/lanes/main95-source-compositions/prophet-native-fixture.json"))).expect("qualified fixture");
     d.core.records.extend(
         serde_json::from_value::<Vec<Record>>(v["records"].clone()).expect("qualified fixture"),
     );

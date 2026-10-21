@@ -25,7 +25,7 @@ use crate::gameplay_transport::actor_spell::{ChannelSpellStates, tests::FACTS};
 use crate::player_lethal::PlayerLethalVitals;
 use oteryn_simulation_determinism::GameplayDecisionRoot;
 fn native() -> (Vec<ProjectReferenceRecord>, Vec<ProjectV2AuthoringProfile>) {
-    let v:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/conditions/remaining-source-families/defense4/native-fixture.json"))).expect("qualified fixture");
+    let v:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/conditions/remaining-source-families/defense4/native-fixture.json"))).expect("qualified fixture");
     (
         serde_json::from_value(v["records"].clone()).expect("qualified fixture"),
         serde_json::from_value(v["authoring_profiles"].clone()).expect("qualified fixture"),

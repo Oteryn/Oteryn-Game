@@ -143,19 +143,19 @@ fn accepted_source_chain_due_keeps_numeric_owners_after_premium_expires() {
         native_map_profile: NativeGameplayMapProfile::AcceptedEntryR1,
         catalog: pinned(include_bytes!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../../tools/content-schema/spell-authoring/samples/executable-spell-catalog.json"
+            "/../../../tools/content-schema/spell-authoring/samples/executable-spell-catalog.json"
         ))),
         source_selection: pinned(include_bytes!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../../tools/content-schema/spell-authoring/samples/executable-spell-source-selection.json"
+            "/../../../tools/content-schema/spell-authoring/samples/executable-spell-source-selection.json"
         ))),
         creature_profiles: pinned(include_bytes!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../../tools/content-schema/native-gameplay/creature_profiles.json"
+            "/../../../tools/content-schema/native-gameplay/creature_profiles.json"
         ))),
         presentation_profiles: pinned(include_bytes!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../../tools/content-schema/native-gameplay/presentation_profiles.json"
+            "/../../../tools/content-schema/native-gameplay/presentation_profiles.json"
         ))),
         item_profiles: None,
         spell_appearances: None,

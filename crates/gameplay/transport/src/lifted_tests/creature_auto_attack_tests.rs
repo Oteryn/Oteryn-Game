@@ -111,9 +111,10 @@ fn revisions() -> RevisionSet {
     .expect("revisions")
 }
 fn native_data() -> (Vec<ProjectReferenceRecord>, Vec<ProjectV2AuthoringProfile>) {
-    let value: serde_json::Value =
-        serde_json::from_str(include_str!("../creature_auto_attack_test_data.json"))
-            .expect("source fixture");
+    let value: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../apps/game-server/src/creature_auto_attack_test_data.json"
+    ))
+    .expect("source fixture");
     (
         serde_json::from_value(value["records"].clone()).expect("records"),
         serde_json::from_value(value["authoring_profiles"].clone()).expect("profiles"),

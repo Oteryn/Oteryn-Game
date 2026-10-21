@@ -216,11 +216,7 @@ pub(in crate::gameplay_transport) fn prune_familiar_returns(
     }
 }
 impl ChannelSpellStates {
-    pub fn has_pending_familiar(
-        &self,
-        actor: ExactActorRef,
-        session: GameSessionId,
-    ) -> bool {
+    pub fn has_pending_familiar(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
         self.pending_familiars
             .iter()
             .any(|v| v.is_for(actor, session))
@@ -1471,9 +1467,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
 /// Administrative false is explicit current ordinary-group data. Missing group/God ownership
 /// remains Unknown; no inferred player type or unauthenticated client flag supplies this port.
-pub trait CurrentFamiliarAdministrativeOwner:
-    source_registration::Registered
-{
+pub trait CurrentFamiliarAdministrativeOwner: source_registration::Registered {
     fn read_current_group(
         &self,
         binding: &CastFactsBinding,

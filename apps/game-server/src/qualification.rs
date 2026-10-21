@@ -8,12 +8,6 @@
 //!
 //! This is Server Seam integration evidence, not ADR-0007 QA Tier 1/Tier 2.
 
-use super::world_spatial::{
-    ActorPosition, COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, DELTA_TYPE_WORLD_SPATIAL_V1,
-    SNAPSHOT_TYPE_WORLD_SPATIAL_V1, STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY, StepDirection,
-    StepDisposition, WorldSpatialObservation, encode_step_intent, encode_step_result,
-    encode_world_spatial,
-};
 use crate::admission_evidence::{self, Facts, Request, Response, decode_response, encode_request};
 use crate::character_bootstrap_intent::read_authenticated_intent;
 use crate::character_recovery_fence::CharacterRecoveryStore;
@@ -38,6 +32,12 @@ use crate::foundation::{
     ChannelId, CharacterId, CommandStatus, DomainSnapshot, FoundationProtocolError, MessageType,
     NodeId, RuntimeScopeRefV1, WorldId, decode_wire_envelope, encode_command_protocol_error,
     encode_command_result, encode_protocol_error, encode_single_chunk_snapshot, encode_state_delta,
+};
+use crate::gameplay_transport::world_spatial::{
+    ActorPosition, COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, DELTA_TYPE_WORLD_SPATIAL_V1,
+    SNAPSHOT_TYPE_WORLD_SPATIAL_V1, STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY, StepDirection,
+    StepDisposition, WorldSpatialObservation, encode_step_intent, encode_step_result,
+    encode_world_spatial,
 };
 use crate::native_admission_source::{self, TransientCapacity, descriptor::ProducerDescriptor};
 use crate::{GameplayListenerConfig, GameplaySeamOwners, serve_gameplay};
@@ -341,7 +341,7 @@ struct Grant<'a> {
 }
 
 fn uuid_text(bytes: &[u8; 16]) -> String {
-    super::canonical_uuid(bytes)
+    crate::node::uuid_text(bytes)
 }
 
 fn sign_grant(grant: &Grant<'_>, issued_at: i64) -> String {
@@ -417,7 +417,7 @@ async fn database() -> TestResult<(String, String)> {
             format!("the seam qualification requires PostgreSQL 17.6, found {version}").into(),
         );
     }
-    sqlx::migrate!("../../../apps/game-server/migrations").run(&mut connection).await?;
+    sqlx::migrate!("./migrations").run(&mut connection).await?;
     connection.close().await?;
     Ok((url, version))
 }
@@ -1115,11 +1115,11 @@ fn node_boot_spells_against_running_node() -> TestResult {
             let unknown = client
                 .cast_spell(
                     std::num::NonZeroU32::new(u32::MAX).ok_or("invalid probe index")?,
-                    super::actor_spell::SpellTarget::None,
+                    crate::gameplay_transport::actor_spell::SpellTarget::None,
                     false,
                 )
                 .await?;
-            if unknown.disposition != super::actor_spell::SpellCastDisposition::Rejected
+            if unknown.disposition != crate::gameplay_transport::actor_spell::SpellCastDisposition::Rejected
                 || unknown.actor_vitals_delta.is_some()
                 || client.actor_vitals().copied() != before_unknown
             {
@@ -1132,16 +1132,16 @@ fn node_boot_spells_against_running_node() -> TestResult {
                     .ok_or("invalid spell index")?;
                 let (spell, selected) = book.source_indexed(index).ok_or("missing source index")?;
                 let outcome = client
-                    .cast_spell(index, super::actor_spell::SpellTarget::None, false)
+                    .cast_spell(index, crate::gameplay_transport::actor_spell::SpellTarget::None, false)
                     .await?;
-                if outcome.disposition == super::actor_spell::SpellCastDisposition::Cast {
+                if outcome.disposition == crate::gameplay_transport::actor_spell::SpellCastDisposition::Cast {
                     cast += 1;
                     if spell.cooldown_micros >= 1_000_000 {
                         let before_retry = client.actor_vitals().copied();
                         let retry = client
-                            .cast_spell(index, super::actor_spell::SpellTarget::None, false)
+                            .cast_spell(index, crate::gameplay_transport::actor_spell::SpellTarget::None, false)
                             .await?;
-                        if retry.disposition != super::actor_spell::SpellCastDisposition::CoolingDown
+                        if retry.disposition != crate::gameplay_transport::actor_spell::SpellCastDisposition::CoolingDown
                             || retry.actor_vitals_delta.is_some()
                             || client.actor_vitals().copied() != before_retry
                         {
@@ -1616,6 +1616,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
             entry_deadline: Duration::from_secs(20),
         },
         GameplaySeamOwners {
+            emit: crate::node::serve::emit,
             root: &root,
             character: &authority,
             holder: &holder,
@@ -1886,14 +1887,18 @@ async fn seam_spell_clients(
         "spell_seam stage=exura_command_send index={index}"
     ));
     let healed = client
-        .cast_spell(index, super::actor_spell::SpellTarget::None, false)
+        .cast_spell(
+            index,
+            crate::gameplay_transport::actor_spell::SpellTarget::None,
+            false,
+        )
         .await?;
     evidence(&format!(
         "spell_seam stage=exura_command_result disposition={:?}",
         healed.disposition
     ));
     let after = client.actor_vitals().copied().ok_or("cast lost vitals")?;
-    if healed.disposition != super::actor_spell::SpellCastDisposition::Cast
+    if healed.disposition != crate::gameplay_transport::actor_spell::SpellCastDisposition::Cast
         || healed.actor_vitals_delta.is_none()
         || after.mana >= before.mana
         || after.health > after.max_health
@@ -1905,9 +1910,14 @@ async fn seam_spell_clients(
         .into());
     }
     let retry = client
-        .cast_spell(index, super::actor_spell::SpellTarget::None, false)
+        .cast_spell(
+            index,
+            crate::gameplay_transport::actor_spell::SpellTarget::None,
+            false,
+        )
         .await?;
-    if retry.disposition != super::actor_spell::SpellCastDisposition::CoolingDown
+    if retry.disposition
+        != crate::gameplay_transport::actor_spell::SpellCastDisposition::CoolingDown
         || retry.actor_vitals_delta.is_some()
         || client.actor_vitals().copied() != Some(after)
     {
@@ -1928,7 +1938,11 @@ async fn seam_spell_clients(
                 .source_indexed(index)
                 .ok_or("missing spell catalog index")?;
             let outcome = client
-                .cast_spell(index, super::actor_spell::SpellTarget::None, false)
+                .cast_spell(
+                    index,
+                    crate::gameplay_transport::actor_spell::SpellTarget::None,
+                    false,
+                )
                 .await?;
             evidence(&format!(
                 "spell_probe index={index} key={} selected={selected} caster=free_sorcerer_level8 target=none disposition={:?} vitals_delta={} scope=untargeted_catalog_probe gameplay_complete=false",
@@ -2041,7 +2055,7 @@ async fn seam_spell_clients(
                     "Thalom protection-zone route requires its qualified temple start".into(),
                 );
             }
-            let protected_target = super::actor_spell::SpellTarget::Position(
+            let protected_target = crate::gameplay_transport::actor_spell::SpellTarget::Position(
                 oteryn_protocol_oteryn::actor_spell::SpellTargetPosition {
                     x: 1,
                     y: 0,
@@ -2055,7 +2069,8 @@ async fn seam_spell_clients(
             let refused = client
                 .cast_spell(source_index, protected_target, false)
                 .await?;
-            if refused.disposition != super::actor_spell::SpellCastDisposition::Rejected
+            if refused.disposition
+                != crate::gameplay_transport::actor_spell::SpellCastDisposition::Rejected
                 || refused.actor_vitals_delta.is_some()
                 || client.actor_vitals().copied() != Some(protected_vitals)
             {
@@ -2163,7 +2178,7 @@ async fn seam_spell_clients(
         }
         let position = client.world_spatial().actor_position;
         let target = if position_target {
-            super::actor_spell::SpellTarget::Position(
+            crate::gameplay_transport::actor_spell::SpellTarget::Position(
                 oteryn_protocol_oteryn::actor_spell::SpellTargetPosition {
                     x: position
                         .x
@@ -2174,7 +2189,7 @@ async fn seam_spell_clients(
                 },
             )
         } else {
-            super::actor_spell::SpellTarget::None
+            crate::gameplay_transport::actor_spell::SpellTarget::None
         };
         let before = client
             .actor_vitals()
@@ -2185,7 +2200,7 @@ async fn seam_spell_clients(
             .actor_vitals()
             .copied()
             .ok_or("representative cast lost vitals")?;
-        if outcome.disposition != super::actor_spell::SpellCastDisposition::Cast
+        if outcome.disposition != crate::gameplay_transport::actor_spell::SpellCastDisposition::Cast
             || outcome.actor_vitals_delta.is_none()
             || after.mana >= before.mana
             || after.health > after.max_health
@@ -2258,7 +2273,11 @@ async fn seam_spell_clients(
             .source_indexed(index)
             .ok_or("missing spell catalog index")?;
         let outcome = client
-            .cast_spell(index, super::actor_spell::SpellTarget::None, false)
+            .cast_spell(
+                index,
+                crate::gameplay_transport::actor_spell::SpellTarget::None,
+                false,
+            )
             .await?;
         evidence(&format!(
             "spell_probe index={index} key={} selected={selected} caster=free_sorcerer_level1000 target=none disposition={:?} vitals_delta={} scope=untargeted_catalog_probe gameplay_complete=false",
@@ -2275,7 +2294,7 @@ async fn seam_spell_clients(
         .await
         .map_err(|error| format!("spell final save: {error:?}"))?;
     let formula = crate::spell::mana_training::CompiledTrainingFormula::from_profile(
-        include_bytes!("../../../../../tools/content-schema/native-gameplay/build-training.json"),
+        include_bytes!("../../../tools/content-schema/native-gameplay/build-training.json"),
         INTERPRETATION[2],
     )
     .map_err(|error| format!("spell training formula: {error:?}"))?;
@@ -2434,7 +2453,7 @@ fn resume_frames(
             connection_generation: generation,
             current_server_sequence: sequence,
             next_command_id: next,
-            schema_revision: super::connection::SERVER_SCHEMA_REVISION,
+            schema_revision: crate::gameplay_transport::SERVER_SCHEMA_REVISION,
             selected_capabilities: SEAM_REQUIRED_CAPABILITIES,
         },
     )?];

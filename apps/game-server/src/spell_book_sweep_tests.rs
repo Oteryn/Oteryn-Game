@@ -42,7 +42,7 @@ const VOCATIONS: [Vocation; 10] = [
 ];
 
 fn book() -> SpellBook {
-    let manifest = Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server")).join("../../content/spells.manifest.json");
+    let manifest = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content/spells.manifest.json");
     let input = crate::content::native_gameplay::NativeGameplayInput::from_manifest(&manifest)
         .expect("canonical manifest decodes");
     let catalog =

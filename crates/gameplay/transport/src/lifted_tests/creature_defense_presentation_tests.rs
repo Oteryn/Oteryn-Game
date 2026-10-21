@@ -20,9 +20,10 @@ use crate::gameplay_transport::actor_spell::{
 };
 
 fn native() -> (Vec<ProjectReferenceRecord>, Vec<ProjectV2AuthoringProfile>) {
-    let v: serde_json::Value =
-        serde_json::from_str(include_str!("../creature_auto_attack_test_data.json"))
-            .expect("qualified fixture");
+    let v: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../apps/game-server/src/creature_auto_attack_test_data.json"
+    ))
+    .expect("qualified fixture");
     (
         serde_json::from_value(v["records"].clone()).expect("qualified fixture"),
         serde_json::from_value(v["authoring_profiles"].clone()).expect("qualified fixture"),
@@ -75,7 +76,7 @@ impl SpellWorldReader for TilePolicy {
 fn all_twelve_actual_native_defense_presentation_sources_qualify() {
     let (records, profiles) = native();
     let packet: serde_json::Value = serde_json::from_str(include_str!(
-        "../creature_defense_presentation_test_data.json"
+        "../../../../../apps/game-server/src/creature_defense_presentation_test_data.json"
     ))
     .expect("qualified fixture");
     let mut count = 0;

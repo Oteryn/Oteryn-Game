@@ -123,10 +123,10 @@ fn uuid_text(bytes: &[u8; 16]) -> String {
 /// configuration is unusable (reported once, by reason only).
 pub fn configured(world: [u8; 16], options: Option<PgConnectOptions>) -> Option<ChatRelay> {
     let path = std::env::var_os(KEYS_FILE_ENV)?;
-    let relay = crate::node::secure_file::read_checked(
+    let relay = crate::secure_file::read_checked(
         std::path::Path::new(&path),
-        crate::node::secure_file::FileClass::Secret,
-        crate::node::secure_file::effective_uid(),
+        crate::secure_file::FileClass::Secret,
+        crate::secure_file::effective_uid(),
         KEYS_FILE_MAX_BYTES,
     )
     .map_err(|_| RelayConfigError::File)

@@ -10,7 +10,7 @@ use std::collections::BTreeSet;
 fn profile(source: &str) -> CompiledNativeSpell {
     let document: serde_json::Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/../../tools/content-schema/spell-authoring/samples/native-spell-profiles.json"
+        "/../../../tools/content-schema/spell-authoring/samples/native-spell-profiles.json"
     )))
     .expect("actual source profiles");
     let row = document["profiles"]

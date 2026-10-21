@@ -46,7 +46,7 @@ fn actual_content() -> (NativeGameplayState, ChannelContentPin) {
 fn packet() -> serde_json::Value {
     serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/src/creature_appearance_execution_data.json"
+        "/../../../apps/game-server/src/creature_appearance_execution_data.json"
     )))
     .unwrap()
 }

@@ -12,7 +12,7 @@ use crate::foundation::{
 use crate::source_threshold_heal::*;
 
 fn fixture(name: &str) -> (ChannelRuntimeV1, ProjectV2Draft, Ref, ThresholdHealSource) {
-    let v:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/encounters/callback18/threshold-heal-native-fixture-v2.json"))).expect("qualified fixture");
+    let v:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/encounters/callback18/threshold-heal-native-fixture-v2.json"))).expect("qualified fixture");
     let id = |t: u8| [1, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, t];
     let w = WorldId::decode(&id(1)).expect("qualified fixture");
     let r = ChannelRuntimeV1::from_committed_assignment(
@@ -907,9 +907,10 @@ pub(crate) fn complete_retained_threshold_aggregate_fixture(
         .iter()
         .any(|p| p.target.key == "oteryn:creature.professor_maxxen")
     {
-        let seven: serde_json::Value =
-            serde_json::from_str(include_str!("../source_encounter_seven_fixture.json"))
-                .map_err(|e| e.to_string())?;
+        let seven: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../apps/game-server/src/source_encounter_seven_fixture.json"
+        ))
+        .map_err(|e| e.to_string())?;
         profiles(
             draft,
             seven["profiles"]
@@ -945,9 +946,10 @@ pub(crate) fn complete_retained_threshold_aggregate_fixture(
         }
         // Add only already selected callback parents (Maxxen generator and its
         // retained children), never the unrelated sixteen-source population.
-        let spawn: serde_json::Value =
-            serde_json::from_str(include_str!("../source_callback_spawn_fixture.json"))
-                .map_err(|e| e.to_string())?;
+        let spawn: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../apps/game-server/src/source_callback_spawn_fixture.json"
+        ))
+        .map_err(|e| e.to_string())?;
         for case in spawn["cases"].as_array().ok_or("actual callback cases")? {
             let parent = case["parent"].as_str().ok_or("actual callback parent")?;
             if !draft
@@ -1002,9 +1004,10 @@ pub(crate) fn complete_retained_threshold_aggregate_fixture(
         // The selected energy_pulse child executes a source callback cast. Its
         // production qualifier deliberately checks the entire pinned callback
         // witness, so retain that witness too rather than bypass its closure.
-        let casts: serde_json::Value =
-            serde_json::from_str(include_str!("../source_callback_cast_fixture.json"))
-                .map_err(|e| e.to_string())?;
+        let casts: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../apps/game-server/src/source_callback_cast_fixture.json"
+        ))
+        .map_err(|e| e.to_string())?;
         for (key, data) in casts["profiles"]
             .as_object()
             .ok_or("actual callback cast profiles")?

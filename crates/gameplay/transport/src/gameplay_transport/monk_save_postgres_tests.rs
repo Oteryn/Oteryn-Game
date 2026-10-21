@@ -200,6 +200,7 @@ impl Dependencies {
         authority: &'a ReconciledCharacterAuthority<'f, 's>,
     ) -> ComposedFreshAdmission<'a, 'f, 's> {
         ComposedFreshAdmission {
+            emit: |_, _| {},
             root: &harness.root,
             character: authority,
             holder: &harness.node,
@@ -781,8 +782,11 @@ mod death_ml_loss_composed {
         world: WorldId,
         content: &str,
     ) -> TestResult<ContentActivationController> {
-        let manifest = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server"))
-            .join("../../content/spells.manifest.json");
+        let manifest = std::path::Path::new(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../apps/game-server"
+        ))
+        .join("../../content/spells.manifest.json");
         let mut supplied = NativeGameplayInput::from_manifest(&manifest).map_err(debug)?;
         supplied.source_world = None;
         supplied

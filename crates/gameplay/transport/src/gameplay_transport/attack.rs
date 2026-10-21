@@ -175,10 +175,7 @@ struct WeaponFacts {
 /// right (5), that holds a weapon other than a shield, ammunition or a spellbook. A club, sword,
 /// axe or fist weapon swings with its attack; any other weapon, or none, swings with fists.
 /// `None` (fail closed) when a hand item's policy is unknown or its weapon facts are not Known.
-pub fn swing_weapon(
-    content: &NativeGameplayState,
-    items: &[EquippedItem],
-) -> Option<SwingWeapon> {
+pub fn swing_weapon(content: &NativeGameplayState, items: &[EquippedItem]) -> Option<SwingWeapon> {
     for slot in [6_u8, 5] {
         let Some(item) = items.iter().find(|item| item.slot == slot) else {
             continue;
@@ -956,11 +953,7 @@ impl ChannelAttackStates {
 
     /// CHASE-1: whether `actor`'s chase has a due search the Channel budget has not admitted
     /// yet (`RANGED0-RL-03`), which its connection retries in the next owner window.
-    pub fn chase_search_waiting(
-        &self,
-        actor: ExactActorRef,
-        session: GameSessionId,
-    ) -> bool {
+    pub fn chase_search_waiting(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
         self.index(actor, session)
             .is_some_and(|index| self.entries[index].chase.search_waiting_since().is_some())
     }

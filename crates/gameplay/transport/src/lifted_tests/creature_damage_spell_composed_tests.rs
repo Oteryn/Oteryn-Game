@@ -20,7 +20,7 @@ use crate::foundation::{
 use crate::gameplay_transport::actor_spell::{ChannelSpellStates, tests::FACTS};
 use crate::player_lethal::{PlayerDamageReceipt, PlayerLethalVitals};
 fn fixture() -> (ChannelRuntimeV1, ProjectV2Draft) {
-    let v:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/conditions/remaining-source-families/multi/composed/native-fixture.json"))).expect("qualified fixture");
+    let v:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/conditions/remaining-source-families/multi/composed/native-fixture.json"))).expect("qualified fixture");
     let id = |t: u8| [1, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, t];
     let w = WorldId::decode(&id(1)).expect("qualified fixture");
     let r = ChannelRuntimeV1::from_committed_assignment(

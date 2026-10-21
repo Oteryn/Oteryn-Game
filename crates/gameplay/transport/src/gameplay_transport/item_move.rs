@@ -30,9 +30,7 @@ use super::item_view::{
     InventoryItems, ItemKey, ItemTargetObservation, ItemViewDelta, SessionItemView, UseItemTarget,
 };
 use crate::combat_pickup::GroundPickupError;
-pub use crate::durability::character_equipment::{
-    EquipmentMoveRefusal, EquipmentMoveReplay,
-};
+pub use crate::durability::character_equipment::{EquipmentMoveRefusal, EquipmentMoveReplay};
 pub use crate::durability::item_loop_move::{LoopMoveRefusal, LoopMoveReplay};
 use crate::durability::item_transfer::{
     ItemTransferError, ItemTransferOutcome, ItemTransferRefusal,

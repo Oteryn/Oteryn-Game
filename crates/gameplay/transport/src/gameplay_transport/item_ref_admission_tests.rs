@@ -347,8 +347,11 @@ fn corpse_take_facts_are_the_generation_item_profiles() {
     };
     // The committed production manifest's pins (its 121 canonical Item profiles among them), on
     // the accepted entry room rather than the separately produced source world.
-    let manifest =
-        std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server")).join("../../content/spells.manifest.json");
+    let manifest = std::path::Path::new(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../apps/game-server"
+    ))
+    .join("../../content/spells.manifest.json");
     let mut supplied = NativeGameplayInput::from_manifest(&manifest).unwrap();
     supplied.source_world = None;
     let world = activated_with_item_keys(None)

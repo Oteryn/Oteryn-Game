@@ -53,9 +53,7 @@ impl SourcePartyWorld {
             && self.source.members == current.members
     }
 
-    pub fn player_predecessors(
-        &self,
-    ) -> Vec<(ExactActorRef, GameSessionId, PlayerSpellState)> {
+    pub fn player_predecessors(&self) -> Vec<(ExactActorRef, GameSessionId, PlayerSpellState)> {
         self.physical
             .iter()
             .map(|(a, s, _, state)| (*a, *s, state.clone()))

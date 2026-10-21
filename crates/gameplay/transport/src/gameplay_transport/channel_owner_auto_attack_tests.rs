@@ -101,7 +101,9 @@ fn source_world() -> QualifiedNativeEntryRoom {
     qualify_native_source_spell_world_with_gameplay(
         WorldId::decode(&uuid(1)).unwrap(),
         &input,
-        include_bytes!("../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"),
+        include_bytes!(
+            "../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
+        ),
     )
     .unwrap()
 }

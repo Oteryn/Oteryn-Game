@@ -289,7 +289,7 @@ mod tests {
         )
         .expect("monster_combat_lane.rs:tests:2229: qualified fixture operation must succeed");
         let value: serde_json::Value = serde_json::from_str(include_str!(
-            "../creature_auto_attack_test_data.json"
+            "../../../../../apps/game-server/src/creature_auto_attack_test_data.json"
         ))
         .expect("monster_combat_lane.rs:tests:2231: qualified fixture operation must succeed");
         let records: Vec<ProjectReferenceRecord> = serde_json::from_value(value["records"].clone())
@@ -383,7 +383,7 @@ mod tests {
         r.remove_test_actor(old)
             .expect("monster_combat_lane.rs:tests:2317: qualified fixture operation must succeed");
         let value: serde_json::Value = serde_json::from_str(include_str!(
-            "../creature_auto_attack_test_data.json"
+            "../../../../../apps/game-server/src/creature_auto_attack_test_data.json"
         ))
         .expect("monster_combat_lane.rs:tests:2319: qualified fixture operation must succeed");
         let records: Vec<ProjectReferenceRecord> = serde_json::from_value(value["records"].clone())
@@ -801,7 +801,7 @@ mod tests {
         let (base, _, session) = runtime_with_player(0x59);
         let world = base.binding().world_id();
         let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../../content/spells.manifest.json");
+            .join("../../../content/spells.manifest.json");
         // Load exact committed v5 artifact pins, selecting only the local four-cell map.
         // The separately optional real-world addon is not needed by this component fixture.
         // Native compiler independently validates every included artifact SHA below.
@@ -983,7 +983,7 @@ mod tests {
             .install_creature_policy(actor, &key.key)
             .expect("monster_combat_lane.rs:tests:2835: qualified fixture operation must succeed");
         let value: serde_json::Value = serde_json::from_str(include_str!(
-            "../creature_auto_attack_test_data.json"
+            "../../../../../apps/game-server/src/creature_auto_attack_test_data.json"
         ))
         .expect("monster_combat_lane.rs:tests:2837: qualified fixture operation must succeed");
         let records: Vec<ProjectReferenceRecord> = serde_json::from_value(value["records"].clone())
@@ -1168,7 +1168,7 @@ mod tests {
         let (base, _, session) = runtime_with_player(0x59);
         let world = base.binding().world_id();
         let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../../content/spells.manifest.json");
+            .join("../../../content/spells.manifest.json");
         // Load exact committed v5 artifact pins, selecting only the local four-cell map.
         // The separately optional real-world addon is not needed by this component fixture.
         // Native compiler independently validates every included artifact SHA below.
