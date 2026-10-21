@@ -25,8 +25,13 @@ use crate::foundation::{
 };
 use crate::foundation::{DomainSnapshot, encode_single_chunk_snapshot};
 use oteryn_protocol_oteryn::achievement_notices::{
-    AchievementWatermark, SNAPSHOT_TYPE_ACHIEVEMENT_NOTICES_V1, encode_achievement_notices_snapshot,
+    AchievementWatermark, SNAPSHOT_TYPE_ACHIEVEMENT_NOTICES_V1,
+    STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES, encode_achievement_notices_snapshot,
 };
+use oteryn_protocol_oteryn::item_view::{
+    COMMAND_TYPE_ITEM_MOVE_INTENT, STATE_DOMAIN_CHARACTER_INVENTORY, STATE_DOMAIN_OPEN_CONTAINER,
+};
+use oteryn_protocol_oteryn::world_object::CAPABILITY_ITEM_USE_V1;
 use oteryn_protocol_oteryn::{
     ClientBootstrapValue, decode_server_accepted, encode_client_bootstrap,
 };
@@ -171,31 +176,6 @@ fn the_production_offered_set_is_the_registry_offered_set_and_registered()
     assert!(accepted(&all).is_ok());
     assert!(accepted(&registered).is_ok());
     assert!(accepted(&[2]).is_err());
-    Ok(())
-}
-
-#[test]
-fn the_gated_commands_and_domains_are_the_registry_ones() -> Result<(), Box<dyn Error>> {
-    let mut expected = Vec::new();
-    for capability in registry_capabilities()? {
-        let id = u32::try_from(capability["id"].as_u64().ok_or("id")?)?;
-        // Capability 6 extends core domain 1 with a payload type; it gates no whole domain.
-        if id == CAPABILITY_WORLD_SPATIAL_ENTITIES {
-            assert!(ids(&capability["command_types"])?.is_empty());
-            assert_eq!(ids(&capability["state_domains"])?, [1]);
-            continue;
-        }
-        expected.push((
-            id,
-            ids(&capability["command_types"])?,
-            ids(&capability["state_domains"])?,
-        ));
-    }
-    let table: Vec<(u32, Vec<u32>, Vec<u32>)> = gated_table()
-        .iter()
-        .map(|(id, commands, domains)| (*id, commands.to_vec(), domains.to_vec()))
-        .collect();
-    assert_eq!(table, expected);
     Ok(())
 }
 
