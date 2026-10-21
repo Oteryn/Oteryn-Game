@@ -27,8 +27,6 @@ pub(crate) use oteryn_gameplay_combat::creature_condition_content;
 #[allow(unused_imports, reason = "preserve the former server module path")]
 pub(crate) use oteryn_gameplay_combat::creature_defense_presentation;
 #[allow(unused_imports, reason = "preserve the former server module path")]
-pub(crate) use oteryn_gameplay_combat::creature_icicle;
-#[allow(unused_imports, reason = "preserve the former server module path")]
 pub(crate) use oteryn_gameplay_content::content;
 #[allow(unused_imports, reason = "preserve the former server module path")]
 pub(crate) use oteryn_gameplay_domain::domain;

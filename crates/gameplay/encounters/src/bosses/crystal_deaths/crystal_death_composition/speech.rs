@@ -1,7 +1,7 @@
 // Actual source-specific ChatLine mailbox; no synthetic CHAT_INTENT or durable ledger.
 use crate::durability::chat_text::ChatText;
 use crate::foundation::speech::{ChatPosition, SpeechMode, hears};
-pub use crate::spell::callback_speech as callback;
+pub use crate::callback_speech as callback;
 use crate::foundation::{
     CarrierError, ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition,
 };

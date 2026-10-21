@@ -190,3 +190,5 @@ pub fn qualified_native_gameplay_test_state(
 pub mod spell_data;
 
 mod timed_item_definition;
+
+pub mod bosses;

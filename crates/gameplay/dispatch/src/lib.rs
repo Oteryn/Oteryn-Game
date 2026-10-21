@@ -31,8 +31,6 @@ pub(crate) use oteryn_gameplay_combat::creature_condition_content;
 #[allow(unused_imports)]
 pub(crate) use oteryn_gameplay_combat::creature_defense_presentation;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_combat::creature_icicle;
-#[allow(unused_imports)]
 pub(crate) use oteryn_gameplay_combat::creature_spell_facts;
 #[allow(unused_imports)]
 pub(crate) use oteryn_gameplay_combat::player_lethal;
@@ -45,13 +43,25 @@ pub(crate) use oteryn_gameplay_durability::character_bootstrap_intent;
 #[allow(unused_imports)]
 pub(crate) use oteryn_gameplay_durability::durability;
 #[allow(unused_imports)]
+pub(crate) use oteryn_gameplay_encounters::bone_phase_registry;
+#[allow(unused_imports)]
+pub(crate) use oteryn_gameplay_encounters::creature_icicle;
+#[allow(unused_imports)]
 pub(crate) use oteryn_gameplay_encounters::crystal_callbacks;
 #[allow(unused_imports)]
 pub(crate) use oteryn_gameplay_encounters::crystal_death_composition;
 #[allow(unused_imports)]
 pub(crate) use oteryn_gameplay_encounters::crystal_herald_quest;
 #[allow(unused_imports)]
+pub(crate) use oteryn_gameplay_encounters::monster_combat_lane;
+#[allow(unused_imports)]
 pub(crate) use oteryn_gameplay_encounters::self_heal_qualification;
+#[allow(unused_imports)]
+pub(crate) use oteryn_gameplay_encounters::smelly_cheese;
+#[allow(unused_imports)]
+pub(crate) use oteryn_gameplay_encounters::smelly_damage;
+#[allow(unused_imports)]
+pub(crate) use oteryn_gameplay_encounters::smelly_encounter_dispatch;
 #[allow(unused_imports)]
 pub(crate) use oteryn_gameplay_encounters::source_callback_cast;
 #[allow(unused_imports)]
@@ -63,6 +73,8 @@ pub(crate) use oteryn_gameplay_encounters::source_encounter_seven;
 #[allow(unused_imports)]
 pub(crate) use oteryn_gameplay_encounters::source_threshold_heal;
 #[allow(unused_imports)]
+pub(crate) use oteryn_gameplay_encounters::weak_spot_speech;
+#[allow(unused_imports)]
 pub(crate) use oteryn_gameplay_foundation::foundation;
 #[allow(unused_imports)]
 pub(crate) use oteryn_gameplay_monster_ai::ai;
@@ -71,21 +83,9 @@ pub(crate) use oteryn_gameplay_monster_ai::ai_monster_melee;
 #[allow(unused_imports)]
 pub(crate) use oteryn_gameplay_monster_ai::ai_think;
 #[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_monster_ai::bone_phase_registry;
-#[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_monster_ai::monster_combat_lane;
-#[allow(unused_imports)]
 pub(crate) use oteryn_gameplay_monster_ai::monster_owner_cycle;
 #[allow(unused_imports)]
 pub(crate) use oteryn_gameplay_monster_ai::monster_summon;
-#[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_monster_ai::smelly_cheese;
-#[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_monster_ai::smelly_damage;
-#[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_monster_ai::smelly_encounter_dispatch;
-#[allow(unused_imports)]
-pub(crate) use oteryn_gameplay_monster_ai::weak_spot_speech;
 #[allow(unused_imports)]
 pub(crate) use oteryn_gameplay_native_admission_source as native_admission_source;
 #[allow(unused_imports)]
@@ -217,7 +217,7 @@ mod spell_native_cast_commit_tests;
 mod spell_delayed_execution_tests;
 
 #[cfg(test)]
-#[path = "lifted_tests/spell_callback_speech_tests.rs"]
+#[path = "../../encounters/src/bosses/source_callbacks/spell_callback_speech_tests.rs"]
 mod spell_callback_speech_tests;
 
 #[cfg(test)]
@@ -241,11 +241,11 @@ mod source_threshold_heal_tests;
 mod monster_owner_cycle_tests;
 
 #[cfg(test)]
-#[path = "lifted_tests/smelly_damage_tests.rs"]
+#[path = "../../encounters/src/bosses/smelly_cheese/smelly_damage_tests.rs"]
 mod smelly_damage_tests;
 
 #[cfg(test)]
-#[path = "lifted_tests/smelly_encounter_dispatch_tests.rs"]
+#[path = "../../encounters/src/bosses/smelly_cheese/smelly_encounter_dispatch_tests.rs"]
 mod smelly_encounter_dispatch_tests;
 
 #[cfg(test)]
