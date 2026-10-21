@@ -130,8 +130,7 @@ impl NpcTradeRefusal {
     }
 }
 
-/// `NPC0` §5: at most this many offer rows in one trade.
-const MAX_TRADE_QUANTITY: u32 = 100;
+use oteryn_gameplay_economy::npc_trade::NPC_TRADE_QUANTITY_MAX as MAX_TRADE_QUANTITY;
 
 impl NpcConversations {
     #[allow(

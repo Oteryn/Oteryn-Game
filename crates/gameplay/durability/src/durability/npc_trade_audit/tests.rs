@@ -148,27 +148,6 @@ fn identity() -> NpcTradeEventIdentity<'static> {
 }
 
 #[test]
-fn coin_outputs_follow_the_decision() {
-    assert_eq!(
-        sell_coins(1_009_999),
-        Some(vec![
-            (Coin::Crystal, 100),
-            (Coin::Platinum, 99),
-            (Coin::Gold, 99)
-        ])
-    );
-    assert_eq!(sell_coins(1_010_000), None);
-    assert_eq!(sell_coins(10_000), Some(vec![(Coin::Crystal, 1)]));
-    assert_eq!(sell_coins(7), Some(vec![(Coin::Gold, 7)]));
-    assert_eq!(
-        buy_change_coins(9_999),
-        vec![(Coin::Platinum, 99), (Coin::Gold, 99)]
-    );
-    assert_eq!(buy_change_coins(200), vec![(Coin::Platinum, 2)]);
-    assert!(buy_change_coins(0).is_empty());
-}
-
-#[test]
 fn a_buy_and_a_sell_round_trip() {
     for (value, usage) in [
         (

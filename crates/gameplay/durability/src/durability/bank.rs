@@ -21,6 +21,12 @@
 //! event, and no balance change. The same occurrence and binding replay the first outcome; a
 //! changed binding conflicts. No `CharacterRevision` advance.
 
+pub use oteryn_gameplay_economy::bank::{
+    BankCoinDirection, BankCoinFacts, BankCoinLine, BankResult, StarterIslandFact, amount_within,
+    credit, debit, is_junior, outputs, transfer_party_refusal, valid_recipient_name_key,
+    withdraw_split,
+};
+
 use super::bank_audit::{
     self as audit, ASSET_GOLD, BANK_BALANCE_MAX, BANK_DEPOSIT_MAX, BANK_TRANSFER_MAX,
     BANK_WITHDRAW_MAX, BankCauseV1, BankCoinLineV1, BankConversionCauseV1, BankEventIdentity,
@@ -75,17 +81,6 @@ pub struct BankOperationIdentity {
     pub event_id: [u8; 16],
     pub occurred_at_unix_ms: i64,
     pub server_build_id: String,
-}
-
-/// The current compatible coin definitions and the main backpack's definition (the caller's
-/// Content facts): every live coin stack a deposit reads must be at its coin's revision, outputs
-/// are created at these revisions, and the backpack's declared capacity bounds them.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct BankCoinFacts {
-    pub gold: TypedDefinitionRef,
-    pub platinum: TypedDefinitionRef,
-    pub crystal: TypedDefinitionRef,
-    pub backpack: ItemDefinitionFacts,
 }
 
 /// `deposit <amount> gold`: `deposit all` is resolved to an exact amount at the prompt.
@@ -144,56 +139,6 @@ impl BankOperationKind {
     }
 }
 
-/// The typed results of BANK-0 §4.1 and §4.3. BANK-NPC-1 maps them to the banker's replies.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum BankResult {
-    Ok,
-    /// A deposit's credit above `BANK0-RL-01`.
-    BalanceLimit,
-    InsufficientBalance,
-    /// The main backpack's coins cannot pay a deposit.
-    InsufficientCoins,
-    /// A deposit's change or a withdrawal's coins do not fit the main backpack.
-    NoRoom,
-    JuniorAccount,
-    UnknownRecipient,
-    /// A junior recipient, or a credit above `BANK0-RL-01` on the recipient's balance.
-    RecipientCannotReceiveTransfers,
-    SameAccount,
-}
-
-impl BankResult {
-    fn code(self) -> i16 {
-        match self {
-            Self::Ok => 0,
-            Self::BalanceLimit => 1,
-            Self::InsufficientBalance => 2,
-            Self::InsufficientCoins => 3,
-            Self::NoRoom => 4,
-            Self::JuniorAccount => 5,
-            Self::UnknownRecipient => 6,
-            Self::RecipientCannotReceiveTransfers => 7,
-            Self::SameAccount => 8,
-        }
-    }
-
-    fn from_code(code: i16) -> Option<Self> {
-        [
-            Self::Ok,
-            Self::BalanceLimit,
-            Self::InsufficientBalance,
-            Self::InsufficientCoins,
-            Self::NoRoom,
-            Self::JuniorAccount,
-            Self::UnknownRecipient,
-            Self::RecipientCannotReceiveTransfers,
-            Self::SameAccount,
-        ]
-        .into_iter()
-        .find(|result| result.code() == code)
-    }
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BankLedgerKind {
     Deposit,
@@ -233,24 +178,6 @@ pub struct BankLedgerEntry {
     pub amount: u64,
     pub balance_before: u64,
     pub balance_after: u64,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum BankCoinDirection {
-    Input,
-    Output,
-}
-
-/// One coin line: an input a deposit consumed (wholly when `quantity_after` is 0) or an output
-/// created in a new backpack entry (`quantity_before` 0).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct BankCoinLine {
-    pub direction: BankCoinDirection,
-    pub item_instance_id: [u8; 16],
-    pub coin: Coin,
-    pub placement_ordinal: u64,
-    pub quantity_before: u32,
-    pub quantity_after: u32,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -717,40 +644,10 @@ async fn read_npc_bank_command(
     }))
 }
 
-/// The junior state of a character (BANK-0 §4.4, Q1 b): junior until it has left the starter
-/// island (D119, DAWNPORT-1).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum StarterIslandFact {
-    /// No starter island and departure fact exist yet: no character is junior.
-    NoStarterIsland,
-    OnIsland,
-    Departed,
-}
-
-/// Whether the fact makes the character junior: only a character still on the island is.
-pub fn is_junior(fact: StarterIslandFact) -> bool {
-    matches!(fact, StarterIslandFact::OnIsland)
-}
-
 /// The departure fact of a character. Until the starter island exists (D119, DAWNPORT-1) there
 /// is no fact to read, so every character is [`StarterIslandFact::NoStarterIsland`].
 fn starter_island_fact(_character: CharacterId) -> StarterIslandFact {
     StarterIslandFact::NoStarterIsland
-}
-
-/// The party refusal of a transfer (BANK-0 §4.3): a junior sender is `JUNIOR_ACCOUNT`, a junior
-/// recipient `RECIPIENT_CANNOT_RECEIVE_TRANSFERS`.
-pub fn transfer_party_refusal(
-    sender: StarterIslandFact,
-    recipient: StarterIslandFact,
-) -> Option<BankResult> {
-    if is_junior(sender) {
-        Some(BankResult::JuniorAccount)
-    } else if is_junior(recipient) {
-        Some(BankResult::RecipientCannotReceiveTransfers)
-    } else {
-        None
-    }
 }
 
 /// Prompt facts read through the same native session, node, admission and Character fences as
@@ -919,10 +816,7 @@ impl DurabilityRoot {
 
 /// The request's own shape, before any read: identities, the amount within its row, the planned
 /// slots and the coin facts.
-pub fn validate_request(
-    fence: &CurrentCharacterItemFence,
-    request: &BankRequest,
-) -> Result<()> {
+pub fn validate_request(fence: &CurrentCharacterItemFence, request: &BankRequest) -> Result<()> {
     let identity = request.identity();
     let cap = match request {
         BankRequest::Deposit(_) => BANK_DEPOSIT_MAX,
@@ -941,7 +835,7 @@ pub fn validate_request(
         .enumerate()
         .all(|(index, id)| !identities[..index].contains(id));
     if !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
-        || !(1..=cap).contains(&request.amount())
+        || !amount_within(request.amount(), cap)
         || identity.occurred_at_unix_ms <= 0
         || check_uuid_v7(&identity.transaction_id).is_err()
         || check_uuid_v7(&identity.event_id).is_err()
@@ -971,8 +865,7 @@ pub fn validate_request(
         }
         BankRequest::Transfer(request) => {
             let key = &request.recipient_name_key;
-            if !(2..=29).contains(&key.len()) || !key.bytes().all(|byte| byte.is_ascii_lowercase())
-            {
+            if !valid_recipient_name_key(key) {
                 return Err(BankError::InvalidInput);
             }
         }
@@ -1345,44 +1238,6 @@ async fn lock_backpack(
         highest_ordinal,
         coins: stacks,
     }))
-}
-
-/// The output coins of `split` in `slots` (crystal, platinum, gold) from `first_ordinal`, each
-/// only when positive, in consecutive new entries. `None` past `u64::MAX`.
-fn outputs(
-    split: [(Coin, u64); 3],
-    slots: [[u8; 16]; 3],
-    first_ordinal: u64,
-) -> Option<Vec<BankCoinLine>> {
-    let mut ordinal = first_ordinal;
-    let mut lines = Vec::new();
-    for ((coin, quantity), slot) in split.into_iter().zip(slots) {
-        if quantity == 0 {
-            continue;
-        }
-        if ordinal == 0 {
-            return None;
-        }
-        lines.push(BankCoinLine {
-            direction: BankCoinDirection::Output,
-            item_instance_id: slot,
-            coin,
-            placement_ordinal: ordinal,
-            quantity_before: 0,
-            quantity_after: u32::try_from(quantity).ok()?,
-        });
-        ordinal = ordinal.checked_add(1).unwrap_or(0);
-    }
-    Some(lines)
-}
-
-/// A withdrawal's canonical split: crystal, then platinum, then gold (BANK-0 §4.2).
-fn withdraw_split(amount: u64) -> [(Coin, u64); 3] {
-    [
-        (Coin::Crystal, amount / 10_000),
-        (Coin::Platinum, amount % 10_000 / 100),
-        (Coin::Gold, amount % 100),
-    ]
 }
 
 async fn new_entry_id(connection: &mut PgConnection) -> Result<[u8; 16]> {
@@ -1978,11 +1833,7 @@ async fn deposit(
     let [balance] = lock_balances(tx, acting.world_id, &[acting.account_id]).await?[..] else {
         return Err(DurabilityError::InvalidStoredState.into());
     };
-    let Some(after) = balance
-        .balance
-        .checked_add(deposit.amount)
-        .filter(|after| *after <= BANK_BALANCE_MAX)
-    else {
+    let Some(after) = credit(balance.balance, deposit.amount, BANK_BALANCE_MAX) else {
         return refuse(tx, acting, &request, binding, BankResult::BalanceLimit).await;
     };
 
@@ -2162,7 +2013,7 @@ async fn withdraw(
     let [balance] = lock_balances(tx, acting.world_id, &[acting.account_id]).await?[..] else {
         return Err(DurabilityError::InvalidStoredState.into());
     };
-    let Some(after) = balance.balance.checked_sub(withdraw.amount) else {
+    let Some(after) = debit(balance.balance, withdraw.amount) else {
         return refuse(
             tx,
             acting,
@@ -2276,7 +2127,7 @@ async fn transfer(
     else {
         return Err(DurabilityError::InvalidStoredState.into());
     };
-    let Some(sender_after) = sender.balance.checked_sub(transfer.amount) else {
+    let Some(sender_after) = debit(sender.balance, transfer.amount) else {
         return refuse(
             tx,
             acting,
@@ -2286,11 +2137,7 @@ async fn transfer(
         )
         .await;
     };
-    let Some(receiver_after) = receiver
-        .balance
-        .checked_add(transfer.amount)
-        .filter(|after| *after <= BANK_BALANCE_MAX)
-    else {
+    let Some(receiver_after) = credit(receiver.balance, transfer.amount, BANK_BALANCE_MAX) else {
         return refuse(
             tx,
             acting,
@@ -2652,39 +2499,6 @@ mod tests {
             request_binding(&fence, &transfer(5, "bankfriend")),
             request_binding(&fence, &transfer(5, "bankfoe"))
         );
-    }
-
-    #[test]
-    fn a_withdrawal_is_the_canonical_split_in_consecutive_entries() {
-        let lines = outputs(withdraw_split(1_009_999), [id(10), id(11), id(12)], 7).unwrap();
-        assert_eq!(
-            lines
-                .iter()
-                .map(|l| (
-                    l.item_instance_id,
-                    l.coin,
-                    l.quantity_after,
-                    l.placement_ordinal
-                ))
-                .collect::<Vec<_>>(),
-            vec![
-                (id(10), Coin::Crystal, 100, 7),
-                (id(11), Coin::Platinum, 99, 8),
-                (id(12), Coin::Gold, 99, 9),
-            ]
-        );
-        // Only the needed slots are used.
-        let lines = outputs(withdraw_split(10_005), [id(10), id(11), id(12)], 1).unwrap();
-        assert_eq!(
-            lines
-                .iter()
-                .map(|l| (l.item_instance_id, l.placement_ordinal))
-                .collect::<Vec<_>>(),
-            vec![(id(10), 1), (id(12), 2)]
-        );
-        // No ordinal past u64::MAX.
-        assert!(outputs(withdraw_split(101), [id(10), id(11), id(12)], u64::MAX).is_none());
-        assert!(outputs(withdraw_split(101), [id(10), id(11), id(12)], 0).is_none());
     }
 
     #[test]

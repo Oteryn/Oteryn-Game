@@ -9,6 +9,12 @@
     reason = "Market atomic writer and module registration await CP integration"
 )]
 
+use oteryn_gameplay_economy::market as rules;
+pub use oteryn_gameplay_economy::market::{
+    EndReason, EndState, HARD_CREDIT_CEILING, LIFETIME_US, MAX_TOTAL, OfferState, PlanError, Side,
+    has_nonproduction_marker, offer_total, placement_fee, valid_key_bytes,
+};
+
 use super::DurabilityError;
 use super::character_progression::{numeric_u64, uuid_text};
 use crate::domain::{AccountId, CharacterId, ItemInstanceId, WorldId};
@@ -37,25 +43,6 @@ impl MarketDefinitionKey {
     pub fn as_str(&self) -> &str {
         &self.0
     }
-}
-
-fn has_nonproduction_marker(value: &str) -> bool {
-    let lower = value.to_ascii_lowercase();
-    let has_test_segment = lower
-        .split([':', '.', '/', '_', '-'])
-        .any(|segment| segment == "test");
-    lower.contains("fixture")
-        || lower.contains("synthetic")
-        || lower.contains("evidence")
-        || lower.contains("test-only")
-        || has_test_segment
-}
-fn valid_key_bytes(value: &str) -> bool {
-    !value.is_empty()
-        && value.is_ascii()
-        && value.bytes().all(|byte| {
-            byte.is_ascii_alphanumeric() || matches!(byte, b':' | b'.' | b'_' | b'-' | b'/')
-        })
 }
 
 /// Accepted durable definition ABI, privately checked before use as a Market ITEM ware.
@@ -91,10 +78,6 @@ impl StoredItemDefinition {
     }
 }
 
-pub const MAX_TOTAL: u64 = 999_999_999_999;
-pub const HARD_CREDIT_CEILING: u64 = 9_000_000_000_000_000;
-pub const LIFETIME_US: i64 = 30 * 24 * 60 * 60 * 1_000_000;
-
 /// The accepted Game MarketOfferId, private until its owning registration slot.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct MarketOfferId([u8; 16]);
@@ -112,23 +95,6 @@ impl MarketOfferId {
 pub struct BookKey {
     pub world: WorldId,
     pub definition: MarketDefinitionKey,
-}
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Side {
-    Buy,
-    Sell,
-}
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum EndState {
-    Filled,
-    Cancelled,
-    Expired,
-}
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum OfferState {
-    Open,
-    Ended(EndState),
-    CreditHeld(EndState),
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Offer {
@@ -149,28 +115,6 @@ pub struct Offer {
     pub held_credit_gold: u64,
     pub matching_pending: bool,
 }
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum PlanError {
-    InvalidState,
-    NotOpen,
-    NotExpired,
-    SameAccount,
-    NotCrossed,
-    InvalidAmount,
-}
-
-pub fn offer_total(amount: u32, price: u64) -> Result<u64, PlanError> {
-    let total = u128::from(amount)
-        .checked_mul(u128::from(price))
-        .ok_or(PlanError::InvalidAmount)?;
-    if !(1..=64_000).contains(&amount) || price == 0 || total > u128::from(MAX_TOTAL) {
-        return Err(PlanError::InvalidAmount);
-    }
-    u64::try_from(total).map_err(|_| PlanError::InvalidAmount)
-}
-pub fn placement_fee(amount: u32, price: u64) -> Result<u64, PlanError> {
-    Ok((offer_total(amount, price)? / 50).clamp(20, 1_000_000))
-}
 impl Offer {
     pub fn book(&self) -> BookKey {
         BookKey {
@@ -178,56 +122,28 @@ impl Offer {
             definition: MarketDefinitionKey(self.definition.key().to_owned()),
         }
     }
-    pub fn validate(&self) -> Result<(), PlanError> {
-        offer_total(self.amount, self.piece_price)?;
-        if self.definition.family() != "Item"
-            || self.remaining > self.amount
-            || self.created_at_us < 0
-            || self.created_at_us.checked_add(LIFETIME_US) != Some(self.expires_at_us)
-        {
-            return Err(PlanError::InvalidState);
+    fn rules(&self) -> rules::Offer<'_> {
+        rules::Offer {
+            id: *self.id.as_bytes(),
+            world: self.world,
+            definition: &self.definition.0,
+            side: self.side,
+            account: self.account,
+            character: self.character,
+            piece_price: self.piece_price,
+            amount: self.amount,
+            remaining: self.remaining,
+            anonymous: self.anonymous,
+            created_at_us: self.created_at_us,
+            expires_at_us: self.expires_at_us,
+            state: self.state,
+            escrow_gold: self.escrow_gold,
+            held_credit_gold: self.held_credit_gold,
+            matching_pending: self.matching_pending,
         }
-        let expected_escrow = if self.side == Side::Buy && self.state == OfferState::Open {
-            u64::from(self.remaining)
-                .checked_mul(self.piece_price)
-                .ok_or(PlanError::InvalidState)?
-        } else {
-            0
-        };
-        if self.escrow_gold != expected_escrow {
-            return Err(PlanError::InvalidState);
-        }
-        match self.state {
-            OfferState::Open if self.remaining == 0 || self.held_credit_gold != 0 => {
-                return Err(PlanError::InvalidState);
-            }
-            OfferState::CreditHeld(end)
-                if self.held_credit_gold == 0
-                    || self.matching_pending
-                    || (end == EndState::Filled && self.remaining != 0) =>
-            {
-                return Err(PlanError::InvalidState);
-            }
-            OfferState::Ended(end)
-                if self.held_credit_gold != 0
-                    || self.matching_pending
-                    || (end == EndState::Filled && self.remaining != 0) =>
-            {
-                return Err(PlanError::InvalidState);
-            }
-            _ => {}
-        }
-        Ok(())
     }
-    fn open_at(&self, now_us: i64) -> Result<(), PlanError> {
-        self.validate()?;
-        if self.state != OfferState::Open
-            || now_us < self.created_at_us
-            || now_us >= self.expires_at_us
-        {
-            return Err(PlanError::NotOpen);
-        }
-        Ok(())
+    pub fn validate(&self) -> Result<(), PlanError> {
+        self.rules().validate()
     }
 }
 
@@ -251,47 +167,19 @@ pub fn match_terms(
     amount: u32,
     now_us: i64,
 ) -> Result<MatchTerms, PlanError> {
-    a.open_at(now_us)?;
-    b.open_at(now_us)?;
-    if a.id == b.id || a.book() != b.book() || a.side == b.side {
-        return Err(PlanError::InvalidState);
-    }
-    if a.account == b.account {
-        return Err(PlanError::SameAccount);
-    }
-    let (buy, sell) = if a.side == Side::Buy { (a, b) } else { (b, a) };
-    if buy.piece_price < sell.piece_price {
-        return Err(PlanError::NotCrossed);
-    }
-    if amount == 0 || amount > buy.remaining || amount > sell.remaining {
-        return Err(PlanError::InvalidAmount);
-    }
-    let maker = if (a.created_at_us, a.id) < (b.created_at_us, b.id) {
-        a
-    } else {
-        b
-    };
-    let sale_gold = offer_total(amount, maker.piece_price)?;
-    let buy_escrow_debit = offer_total(amount, buy.piece_price)?;
+    let terms = rules::match_terms(&a.rules(), &b.rules(), amount, now_us)?;
     Ok(MatchTerms {
-        maker: maker.id,
-        buyer: buy.id,
-        seller: sell.id,
-        amount,
-        piece_price: maker.piece_price,
-        sale_gold,
-        buy_escrow_debit,
-        buyer_refund_gold: buy_escrow_debit
-            .checked_sub(sale_gold)
-            .ok_or(PlanError::InvalidState)?,
+        maker: MarketOfferId(terms.maker),
+        buyer: MarketOfferId(terms.buyer),
+        seller: MarketOfferId(terms.seller),
+        amount: terms.amount,
+        piece_price: terms.piece_price,
+        sale_gold: terms.sale_gold,
+        buy_escrow_debit: terms.buy_escrow_debit,
+        buyer_refund_gold: terms.buyer_refund_gold,
     })
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum EndReason {
-    Cancel,
-    Expire,
-}
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EndPlan {
     pub offer: MarketOfferId,
@@ -299,48 +187,20 @@ pub struct EndPlan {
     pub return_gold: u64,
     pub return_item_units: u32,
 }
-pub fn end_plan(
-    offer: &Offer,
-    reason: EndReason,
-    now_us: i64,
-) -> Result<EndPlan, PlanError> {
-    offer.validate()?;
-    if offer.state != OfferState::Open || now_us < offer.created_at_us {
-        return Err(PlanError::NotOpen);
-    }
-    if reason == EndReason::Expire && now_us < offer.expires_at_us {
-        return Err(PlanError::NotExpired);
-    }
+pub fn end_plan(offer: &Offer, reason: EndReason, now_us: i64) -> Result<EndPlan, PlanError> {
+    let plan = rules::end_plan(&offer.rules(), reason, now_us)?;
     Ok(EndPlan {
-        offer: offer.id,
-        ended_as: if reason == EndReason::Cancel {
-            EndState::Cancelled
-        } else {
-            EndState::Expired
-        },
-        return_gold: offer.escrow_gold,
-        return_item_units: if offer.side == Side::Sell {
-            offer.remaining
-        } else {
-            0
-        },
+        offer: MarketOfferId(plan.offer),
+        ended_as: plan.ended_as,
+        return_gold: plan.return_gold,
+        return_item_units: plan.return_item_units,
     })
 }
 
 /// An owner's credit that does not fit remains explicit custody, never a refused/lost credit.
 /// The caller supplies the independently locked current balance; no balance write occurs here.
-pub fn held_credit_release(
-    offer: &Offer,
-    locked_balance: u64,
-) -> Result<Option<u64>, PlanError> {
-    offer.validate()?;
-    if !matches!(offer.state, OfferState::CreditHeld(_)) || locked_balance > HARD_CREDIT_CEILING {
-        return Err(PlanError::InvalidState);
-    }
-    Ok(locked_balance
-        .checked_add(offer.held_credit_gold)
-        .filter(|value| *value <= HARD_CREDIT_CEILING)
-        .map(|_| offer.held_credit_gold))
+pub fn held_credit_release(offer: &Offer, locked_balance: u64) -> Result<Option<u64>, PlanError> {
+    rules::held_credit_release(&offer.rules(), locked_balance)
 }
 
 fn state(code: i16, ended: Option<i16>) -> Result<OfferState> {

@@ -41,12 +41,10 @@ pub const NPC_TRADE_RL07_EVENTS_MAX: u64 = 1;
 pub const NPC_TRADE_RL07_PAYLOAD_BYTES_MAX: usize = 27_094;
 pub const NPC_TRADE_RL07_ENVELOPE_BYTES_MAX: usize = 27_408;
 
-/// The largest BUY price: what 20 stacks of 100 crystal coins hold (NPC-0 §5.3).
-pub const NPC_TRADE_BUY_GOLD_UNITS_MAX: u64 = 20_000_000 + super::bank_audit::BANK_BALANCE_MAX;
-/// The largest SELL value: 100 crystal, 99 platinum and 99 gold coins (NPC-0 §5.4).
-pub const NPC_TRADE_SELL_GOLD_UNITS_MAX: u64 = 1_009_999;
-/// Units of one trade: at most one stack (D82).
-pub const NPC_TRADE_QUANTITY_MAX: u32 = 100;
+pub use oteryn_gameplay_economy::npc_trade::{
+    NPC_TRADE_BUY_GOLD_UNITS_MAX, NPC_TRADE_QUANTITY_MAX, NPC_TRADE_SELL_GOLD_UNITS_MAX,
+    buy_change_coins, sell_coins,
+};
 
 pub const SIDE_BUY: u32 = 1;
 pub const SIDE_SELL: u32 = 2;
@@ -185,39 +183,6 @@ fn check_npc_trade_usage(side: u32, usage: &TransactionResourceUsage) -> Result<
         return Err(AuditError::CapacityExceeded);
     }
     Ok(())
-}
-
-/// The coins a SELL of `value` gold units mints: crystal, platinum, gold, each only when
-/// positive (NPC-0 §5.4). `None` when a stack would exceed 100.
-pub fn sell_coins(value: u64) -> Option<Vec<(Coin, u32)>> {
-    let crystal = value / Coin::Crystal.worth();
-    if crystal > u64::from(COIN_STACK_MAXIMUM) {
-        return None;
-    }
-    Some(
-        [
-            (Coin::Crystal, crystal),
-            (
-                Coin::Platinum,
-                value % Coin::Crystal.worth() / Coin::Platinum.worth(),
-            ),
-            (Coin::Gold, value % Coin::Platinum.worth()),
-        ]
-        .into_iter()
-        .filter(|(_, quantity)| *quantity > 0)
-        .map(|(coin, quantity)| (coin, u32::try_from(quantity).unwrap_or(u32::MAX)))
-        .collect(),
-    )
-}
-
-/// The change a BUY mints: `change / 100` platinum, then `change % 100` gold, each only when
-/// positive (D175).
-pub fn buy_change_coins(change: u64) -> Vec<(Coin, u32)> {
-    [(Coin::Platinum, change / 100), (Coin::Gold, change % 100)]
-        .into_iter()
-        .filter(|(_, quantity)| *quantity > 0)
-        .map(|(coin, quantity)| (coin, u32::try_from(quantity).unwrap_or(u32::MAX)))
-        .collect()
 }
 
 /// The coin of a coin line's state: one of the closed worth table's definitions.
