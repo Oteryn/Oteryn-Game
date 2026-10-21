@@ -271,12 +271,7 @@ fn destination(
         .destination());
     }
     let p = origin.position();
-    let (dx, dy) = match direction {
-        CardinalStep::North => (0, -1),
-        CardinalStep::East => (1, 0),
-        CardinalStep::South => (0, 1),
-        CardinalStep::West => (-1, 0),
-    };
+    let (dx, dy) = crate::domain::direction::CARDINAL_DIRECTION_DELTAS[direction as usize];
     Ok(MovementLocalPosition {
         x: p.x
             .checked_add(dx)
@@ -433,5 +428,64 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let _ = result;
             fail()
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn shared_cardinal_deltas_match_field_entry_destinations()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let world = crate::foundation::WorldId::decode(&[
+            1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1,
+        ])?;
+        let room = crate::content::qualify_native_entry_room(world)?;
+        let session =
+            GameSessionId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])?;
+        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+            world,
+            crate::foundation::ChannelId::decode(&[
+                1, 0, 0, 0, 0, 3, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 3,
+            ])?,
+            crate::foundation::NodeId::decode(&[
+                1, 0, 0, 0, 0, 4, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 4,
+            ])?,
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            2,
+            crate::foundation::ChannelContentPin::test(world),
+        )?;
+        let reservation = runtime.reserve_fresh_session(session)?;
+        let actor = runtime.commit_fresh_session(reservation)?;
+        runtime.initialize_first_entry_position(actor)?;
+        let origin = runtime.read_actor_position(actor)?;
+        for (direction, dx, dy) in [
+            (CardinalStep::North, 0, -1),
+            (CardinalStep::East, 1, 0),
+            (CardinalStep::South, 0, 1),
+            (CardinalStep::West, -1, 0),
+        ] {
+            assert_eq!(
+                destination(
+                    &runtime,
+                    room.movement_cells(),
+                    actor,
+                    session,
+                    origin,
+                    direction
+                )?,
+                MovementLocalPosition {
+                    x: origin.position().x + dx,
+                    y: origin.position().y + dy,
+                    floor: origin.position().floor,
+                },
+            );
+        }
+        assert_eq!(runtime.read_actor_position(actor)?, origin);
+        Ok(())
     }
 }

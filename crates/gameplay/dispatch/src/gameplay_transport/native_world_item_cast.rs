@@ -481,7 +481,6 @@ async fn prepare_barrier(
     rune: Option<&ItemSpellCastIntent>,
     draw: &mut (dyn FnMut(i64, i64) -> i64 + Send),
 ) -> Result<PreparedNativeCombatCast, SpellCastDisposition> {
-    use sqlx::Row;
     let Execution::NativeProfile(profile) = &spell.execution else {
         return reject();
     };
@@ -583,15 +582,13 @@ async fn prepare_barrier(
             read.revision().to_owned(),
         )
     };
-    let name: String = sqlx::query(
-        "SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR SHARE",
-    )
-    .bind(authority.character_id_bytes().as_slice())
-    .fetch_one(&mut **tx)
-    .await
-    .map_err(|_| SpellCastDisposition::Rejected)?
-    .try_get("name")
-    .map_err(|_| SpellCastDisposition::Rejected)?;
+    let name =
+        crate::durability::character_chat_name::read_character_name_for_share_in_transaction(
+            tx,
+            &authority.character_id_bytes(),
+        )
+        .await
+        .map_err(|_| SpellCastDisposition::Rejected)?;
     let effect = &profile.dependencies()["effects"][0];
     let minimum = effect["duration_range_ms"]["minimum"]
         .as_u64()
@@ -1143,5 +1140,236 @@ pub(super) async fn carried_target_is_current(
     {
         Ok(current) => CarriedTargetBinding::from_current(&current) == *target,
         Err(_) => false,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::bestiary_postgres_harness::{self as harness, TestResult, debug, id};
+    use crate::durability::admission_journal::party_target_binding::read_connection_generation_for_share_in_transaction;
+    use crate::durability::character_chat_name::read_character_name_for_share_in_transaction;
+    use crate::durability::character_familiar::read_familiar_unix_seconds_in_transaction;
+    use crate::foundation::GameSessionId;
+
+    #[test]
+    fn retained_sql_reads_postgres_preserve_values_missing_rows_and_share_locks() -> TestResult {
+        let admin = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL")?;
+        harness::runtime()?.block_on(async move {
+            use sqlx::Connection;
+            let options: sqlx::postgres::PgConnectOptions = admin.parse()?;
+            if options.get_host() != "127.0.0.1"
+                || ![5432, 55432].contains(&options.get_port())
+                || options.get_database() != Some("postgres")
+            {
+                return Err("SQL read regression requires the local test PostgreSQL admin".into());
+            }
+            let name = format!(
+                "dispatch_sql_reads_{}_{}",
+                std::process::id(),
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)?
+                    .as_nanos(),
+            );
+            let mut admin = sqlx::PgConnection::connect_with(&options).await?;
+            sqlx::query(sqlx::AssertSqlSafe(format!("CREATE DATABASE {name}")))
+                .execute(&mut admin)
+                .await?;
+            let result = run_in_test_database(options.database(&name)).await;
+            sqlx::query(sqlx::AssertSqlSafe(format!(
+                "DROP DATABASE {name} WITH (FORCE)"
+            )))
+            .execute(&mut admin)
+            .await?;
+            result
+        })
+    }
+
+    async fn run_in_test_database(options: sqlx::postgres::PgConnectOptions) -> TestResult {
+        let pool = sqlx::postgres::PgPoolOptions::new()
+            .max_connections(3)
+            .connect_with(options)
+            .await?;
+        let result = async {
+            let version: String = sqlx::query_scalar("SHOW server_version_num")
+                .fetch_one(&pool)
+                .await?;
+            assert_eq!(version, "170006", "canonical target is PostgreSQL 17.6");
+            oteryn_gameplay_durability::GAME_MIGRATOR.run(&pool).await?;
+            seed_character(&pool).await?;
+            check_retained_reads(&pool).await
+        }
+        .await;
+        pool.close().await;
+        result
+    }
+
+    async fn check_retained_reads(pool: &sqlx::PgPool) -> TestResult {
+        let mut tx = pool.begin().await?;
+        let session = GameSessionId::decode(&id(harness::SESSION)).map_err(debug)?;
+        assert_eq!(
+            read_character_name_for_share_in_transaction(&mut tx, &id(harness::CHARACTER)).await?,
+            "Fixture Hero",
+        );
+        assert_eq!(
+            read_connection_generation_for_share_in_transaction(&mut tx, session).await?,
+            "1",
+        );
+        let before: i64 =
+            sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+                .fetch_one(pool)
+                .await?;
+        let sampled = read_familiar_unix_seconds_in_transaction(&mut tx).await?;
+        let after: i64 =
+            sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+                .fetch_one(pool)
+                .await?;
+        assert!((before..=after).contains(&sampled));
+
+        // Both caller-owned share locks must remain live after each helper returns.
+        for statement in [
+            "UPDATE game_character_roots SET name=name WHERE character_id=encode($1,'hex')::uuid",
+            "UPDATE game_durability_reconnect_sessions SET current_generation=current_generation WHERE character_id=encode($1,'hex')::uuid",
+        ] {
+            let mut writer = pool.begin().await?;
+            sqlx::query("SET LOCAL lock_timeout='50ms'")
+                .execute(&mut *writer)
+                .await?;
+            let blocked = sqlx::query(statement)
+                .bind(id(harness::CHARACTER).as_slice())
+                .execute(&mut *writer)
+                .await;
+            assert!(
+                matches!(blocked, Err(sqlx::Error::Database(ref error)) if error.code().as_deref() == Some("55P03"))
+            );
+            writer.rollback().await?;
+        }
+        tx.rollback().await?;
+
+        // A missing identity is still an error, rather than a synthesized name or generation.
+        let mut tx = pool.begin().await?;
+        assert!(matches!(
+            read_character_name_for_share_in_transaction(&mut tx, &id(99)).await,
+            Err(sqlx::Error::RowNotFound),
+        ));
+        assert!(matches!(
+            read_connection_generation_for_share_in_transaction(
+                &mut tx,
+                GameSessionId::decode(&id(99)).map_err(debug)?,
+            )
+            .await,
+            Err(sqlx::Error::RowNotFound),
+        ));
+        tx.rollback().await?;
+        Ok(())
+    }
+
+    fn bootstrap_binding() -> Vec<u8> {
+        let mut binding = vec![2];
+        binding.extend_from_slice(&id(31));
+        binding.extend_from_slice(&1_i64.to_be_bytes());
+        binding.extend_from_slice(&id(30));
+        binding.extend_from_slice(&id(40));
+        binding.extend_from_slice(&id(harness::WORLD));
+        binding.extend_from_slice(&1_i64.to_be_bytes());
+        binding.extend_from_slice(&120_i64.to_be_bytes());
+        for value in ["profile-1", "ruleset-1", "content-1", "starter-1"] {
+            let length = u16::try_from(value.len()).unwrap_or(u16::MAX);
+            binding.extend_from_slice(&length.to_be_bytes());
+            binding.extend_from_slice(value.as_bytes());
+        }
+        // Contract version 2 binds the requested name last (CHAR-NAME-1).
+        binding.extend_from_slice(&12_u16.to_be_bytes());
+        binding.extend_from_slice(b"Fixture Hero");
+        binding
+    }
+
+    async fn seed_character(pool: &sqlx::PgPool) -> TestResult {
+        sqlx::query(
+            "INSERT INTO game_character_interpretations VALUES \
+             (1,'profile-1','ruleset-1','content-1','starter-1',1)",
+        )
+        .execute(pool)
+        .await?;
+        sqlx::query("INSERT INTO game_character_account_guards VALUES (encode($1,'hex')::uuid)")
+            .bind(id(40).as_slice())
+            .execute(pool)
+            .await?;
+        sqlx::query(
+            "INSERT INTO game_character_roots VALUES \
+             (encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,\
+              1,1,'profile-1','ruleset-1','content-1','starter-1','Fixture Hero')",
+        )
+        .bind(id(harness::CHARACTER).as_slice())
+        .bind(id(40).as_slice())
+        .bind(id(harness::WORLD).as_slice())
+        .execute(pool)
+        .await?;
+        sqlx::query(
+            "INSERT INTO game_character_operation_receipts(\
+               operation_id,command_binding,account_id,character_id,world_id,character_revision,\
+               event_id,occurred_at,server_build_id,transaction_id,issuer_decision_id,\
+               intent_source_revision,issued_at_source,expires_at_source) \
+             VALUES (encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,encode($4,'hex')::uuid,\
+               encode($5,'hex')::uuid,1,encode($6,'hex')::uuid,1,'test/1',\
+               encode($7,'hex')::uuid,encode($8,'hex')::uuid,1,1,120)",
+        )
+        .bind(id(30).as_slice())
+        .bind(bootstrap_binding())
+        .bind(id(40).as_slice())
+        .bind(id(harness::CHARACTER).as_slice())
+        .bind(id(harness::WORLD).as_slice())
+        .bind(id(32).as_slice())
+        .bind(id(33).as_slice())
+        .bind(id(31).as_slice())
+        .execute(pool)
+        .await?;
+        sqlx::query(
+            "INSERT INTO game_character_bootstrap_intent_floors VALUES \
+             (1,1,encode($1,'hex')::uuid,$2)",
+        )
+        .bind(id(31).as_slice())
+        .bind(bootstrap_binding())
+        .execute(pool)
+        .await?;
+        sqlx::query(
+            "INSERT INTO game_durability_reconnect_sessions(\
+               game_session_id,account_id,character_id,world_id,runtime_scope_kind,\
+               runtime_scope_world_id,runtime_scope_channel_id,control_loss_epoch,\
+               original_grace_deadline,predecessor_generation,character_lease_generation,\
+               scope_ownership_generation,current_generation,current_transport_ref,session_state) \
+             VALUES (encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,\
+               encode($4,'hex')::uuid,1,encode($4,'hex')::uuid,encode($5,'hex')::uuid,\
+               1,999999,1,1,1,1,$6,1)",
+        )
+        .bind(id(harness::SESSION).as_slice())
+        .bind(id(40).as_slice())
+        .bind(id(harness::CHARACTER).as_slice())
+        .bind(id(harness::WORLD).as_slice())
+        .bind(id(harness::CHANNEL).as_slice())
+        .bind([9_u8; 16].as_slice())
+        .execute(pool)
+        .await?;
+        sqlx::query(
+            "INSERT INTO game_durability_admission_account_guards VALUES \
+             (encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,\
+              1,'test',1,'account-current',1,0,'{}')",
+        )
+        .bind(id(40).as_slice())
+        .bind(id(harness::CHARACTER).as_slice())
+        .bind(id(harness::SESSION).as_slice())
+        .execute(pool)
+        .await?;
+        sqlx::query(
+            "INSERT INTO game_durability_admission_character_guards VALUES \
+             (encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,\
+              true,1,encode($4,'hex')::uuid,1,'test',1,'character-current',1,0,'{}')",
+        )
+        .bind(id(harness::CHARACTER).as_slice())
+        .bind(id(40).as_slice())
+        .bind(id(harness::WORLD).as_slice())
+        .bind(id(harness::SESSION).as_slice())
+        .execute(pool)
+        .await?;
+        Ok(())
     }
 }

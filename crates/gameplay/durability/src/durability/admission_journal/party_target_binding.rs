@@ -316,3 +316,15 @@ async fn canonical_current_party_session(
         && row.try_get::<Option<i64>, _>("original_grace_deadline")?
             == current.current_original_grace_deadline())
 }
+
+/// Read the generation of the exact session already checked by the canonical observer factory.
+/// Its share lock remains held until the caller finishes the presentation transaction.
+pub async fn read_connection_generation_for_share_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    session: GameSessionId,
+) -> Result<String, sqlx::Error> {
+    sqlx::query_scalar("SELECT current_generation::text FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid FOR SHARE")
+        .bind(session.as_bytes().as_slice())
+        .fetch_one(&mut **tx)
+        .await
+}
