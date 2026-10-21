@@ -84,6 +84,55 @@ impl WalkProfile {
     }
 }
 
+#[derive(Debug)]
+pub enum WalkThink {
+    Idle,
+    Talking,
+    Waiting,
+    Propose(Box<NpcWalkProposal>),
+    /// No second interval advance or proposal for the same native occurrence.
+    Replay,
+}
+
+impl WalkProfile {
+    /// Prepare the interval and proposal from current owner observations. The caller keeps
+    /// its conversation lock held and advances counters only after successful preparation.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "one native think and its owner observations"
+    )]
+    pub fn prepare(
+        self,
+        occurrence: ThinkOccurrence,
+        expected: MovementPositionSnapshot,
+        anchor: MovementLocalPosition,
+        ticks_ms: u64,
+        talking: bool,
+        perceived: bool,
+        interval_millis: u64,
+        root: &GameplayDecisionRoot,
+        decision: DecisionOccurrenceId,
+    ) -> Result<(u64, WalkThink), WalkError> {
+        Ok(if talking {
+            (0, WalkThink::Talking)
+        } else if !perceived {
+            (ticks_ms, WalkThink::Idle)
+        } else {
+            let ticks = ticks_ms.saturating_add(interval_millis);
+            if ticks < self.interval_ms {
+                (ticks, WalkThink::Waiting)
+            } else {
+                (
+                    0,
+                    WalkThink::Propose(Box::new(NpcWalkProposal::new(
+                        occurrence, expected, anchor, self, root, decision,
+                    )?)),
+                )
+            }
+        })
+    }
+}
+
 /// Candidate source data. Matching this catalogue and model does not bind either to the
 /// running bundle; the still-missing catalogue→active-runtime producer must establish that.
 #[derive(Debug)]

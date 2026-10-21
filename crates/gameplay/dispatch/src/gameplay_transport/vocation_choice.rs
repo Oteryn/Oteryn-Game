@@ -58,12 +58,12 @@ use crate::gameplay_transport::chat_intent::ChatRuntime;
 use crate::gameplay_transport::npc_command::NpcTalkOutcome;
 use crate::gameplay_transport::spell_character_facts::{CastFactsLoad, load_character_cast_facts};
 use crate::gameplay_transport::{ComposedFreshAdmission, SecureIdentifiers};
-use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent, TALK_RANGE_TILES};
+use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 
 use oteryn_gameplay_npc::vocation_choice::answer;
 
-pub const DAWNPORT_CHOICE_NPC: &str = "oteryn:npc.oressa";
+pub use oteryn_gameplay_content::content::npc_catalogue::DAWNPORT_CHOICE_NPC;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RetainedNpcVocation {
     #[allow(
@@ -155,33 +155,20 @@ fn current_npc_owner(
     fence: &CurrentCharacterGameplayFence,
 ) -> bool {
     let binding = runtime.binding();
-    if choice.actor != actor
-        || fence.game_session_id != session
-        || runtime.owner_fence().is_err()
-        || !runtime
-            .player_control_facts(actor, session)
-            .is_ok_and(|facts| facts.control_loss.is_none())
+    if fence.game_session_id != session
         || fence.runtime_scope
             != RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id())
         || fence.scope_ownership_generation != binding.scope_generation()
     {
         return false;
     }
-    let visible = runtime.visible_entities();
-    let Some(npc) = visible.npcs.iter().find(|npc| {
-        npc.actor.placement_identity() == choice.npc.identity
-            && npc.generation == choice.npc.generation
-    }) else {
-        return false;
-    };
-    let Some(player) = visible.players.iter().find(|player| player.actor == actor) else {
-        return false;
-    };
-    runtime.npc_key(npc.actor) == Some(DAWNPORT_CHOICE_NPC)
-        && owner.chat.engaged(session) == Some(npc.actor)
-        && player.position.floor == npc.position.floor
-        && player.position.x.abs_diff(npc.position.x) <= TALK_RANGE_TILES
-        && player.position.y.abs_diff(npc.position.y) <= TALK_RANGE_TILES
+    oteryn_gameplay_npc::vocation_choice::current_npc_owner(
+        runtime,
+        actor,
+        session,
+        choice,
+        &owner.chat,
+    )
 }
 
 #[allow(
@@ -762,5 +749,90 @@ mod dawnport_native_receipt_postgres {
             drop(seal);
             harness.cleanup().await
         })
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used, reason = "native NPC owner fixture")]
+mod current_npc_owner_tests {
+    use super::*;
+    use crate::foundation::{MovementFacing, NpcPlacement, NpcPlacementTable, NpcPlacements};
+    use crate::gameplay_transport::actor_spell::tests::runtime_with_capacity;
+    use crate::gameplay_transport::npc_command::NpcConversations;
+    use crate::gameplay_transport::npc_talk::NpcTalkBook;
+    use oteryn_simulation_determinism::SemanticTimeMicros;
+    use std::sync::Arc;
+
+    #[test]
+    fn dispatched_choice_rechecks_current_npc_generation_engagement_and_owner() {
+        let (mut runtime, actor, session) = runtime_with_capacity(0x72, 3);
+        runtime
+            .initialize_first_entry_position(actor)
+            .expect("position");
+        let at = runtime
+            .read_actor_position(actor)
+            .expect("position")
+            .position();
+        runtime
+            .place_npcs(
+                &NpcPlacementTable {
+                    npcs: vec![NpcPlacements {
+                        key: DAWNPORT_CHOICE_NPC.into(),
+                        placements: vec![NpcPlacement {
+                            floor: -i8::try_from(at.floor).expect("floor"),
+                            x: u16::try_from(at.x + 1).expect("x"),
+                            y: u16::try_from(at.y).expect("y"),
+                            direction: MovementFacing::South,
+                        }],
+                    }],
+                },
+                |_| true,
+                true,
+            )
+            .expect("native NPC");
+        let placed = runtime.visible_entities().npcs[0];
+        let npc = EntityRef {
+            identity: placed.actor.placement_identity(),
+            generation: placed.generation,
+        };
+        let chat = ChatRuntime::default();
+        chat.admit(
+            session,
+            "Dawnport candidate",
+            SemanticTimeMicros::from_micros(1),
+        );
+        chat.set_npc_service(session);
+        chat.install_npc_talk(Arc::new(NpcTalkBook::default()));
+        let conversations = NpcConversations::default();
+        for (text, now) in [("hi", 1), ("knight", 300_000), ("yes", 600_000)] {
+            let outcome = conversations.talk_in(
+                &chat,
+                &runtime,
+                actor,
+                session,
+                &NpcTalkIntent {
+                    npc_actor: npc,
+                    text: text.into(),
+                },
+                SemanticTimeMicros::from_micros(now),
+                None,
+            );
+            assert_eq!(outcome.disposition, NpcIntentDisposition::Ok);
+        }
+        let choice = conversations
+            .dawnport_choice(session)
+            .expect("dispatched choice");
+        let current = oteryn_gameplay_npc::vocation_choice::current_npc_owner;
+        assert!(current(&runtime, actor, session, &choice, &chat));
+        let mut stale = choice.clone();
+        stale.npc.generation += 1;
+        assert!(!current(&runtime, actor, session, &stale, &chat));
+        assert!(chat.end_engagement(session, placed.actor));
+        assert!(!current(&runtime, actor, session, &choice, &chat));
+        chat.converse(session, |engaged| *engaged = Some(placed.actor))
+            .expect("reengagement");
+        assert!(current(&runtime, actor, session, &choice, &chat));
+        runtime.retire_owner_cycle();
+        assert!(!current(&runtime, actor, session, &choice, &chat));
     }
 }
