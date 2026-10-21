@@ -1495,11 +1495,11 @@ fn charm_effect_d186_secondary_and_generated_sources_cover_the_full_catalogue() 
 #[test]
 fn charm_effect_speed_definitions_match_authored_condition_bindings_and_remain_dormant() {
     let conditions: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../../../../tools/content-schema/condition-authoring/authored-conditions.json"
+        "../../../../../tools/content-schema/condition-authoring/authored-conditions.json"
     ))
     .expect("authored condition inputs");
     let charms: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../../../../tools/content-schema/charm-authoring/samples/charms-candidate.json"
+        "../../../../../tools/content-schema/charm-authoring/samples/charms-candidate.json"
     ))
     .expect("Charm catalogue");
     let catalogue = forced_catalogue();

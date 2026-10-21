@@ -14,15 +14,13 @@
 pub(in crate::durability) mod read;
 pub use read::{CommittedProficiencyChange, StoredProficiencyTrack};
 
-use super::character_progression::{CharacterProgressionError, valid_revision};
-use crate::domain::weapon_proficiency::{
-    PROFICIENCY_PERK_LEVELS_MAX, PROFICIENCY_PERKS_PER_LEVEL_MAX, ProficiencySelectionShape,
-};
+use super::character_progression::CharacterProgressionError;
+use crate::domain::weapon_proficiency::ProficiencySelectionShape;
 
 type Result<T> = std::result::Result<T, CharacterProgressionError>;
 
 /// Nonnegative PostgreSQL BIGINT storage bound, not a Mastery or progression rule.
-pub const MAX_PROFICIENCY_PROGRESS: u64 = i64::MAX.unsigned_abs();
+pub use oteryn_gameplay_progression::proficiency::MAX_PROFICIENCY_PROGRESS;
 
 /// Checked track values, without committed receipt metadata or admission/authority evidence.
 /// No row has progress 0 and unfilled choices; its definition comes from the future resolver.
@@ -50,22 +48,7 @@ impl DurableProficiencyState {
         let item_key = item_key.into();
         let definition_key = definition_key.into();
         let definition_revision = definition_revision.into();
-        let family_key = |key: &str, prefix: &str| {
-            valid_revision(key)
-                && key
-                    .strip_prefix(prefix)
-                    .is_some_and(|tail| !tail.is_empty())
-        };
-        if !family_key(&item_key, "oteryn:item.")
-            || !family_key(&definition_key, "oteryn:proficiency.")
-            || !valid_revision(&definition_revision)
-            || progress > MAX_PROFICIENCY_PROGRESS
-            || selections.is_empty()
-            || selections.len() > usize::from(PROFICIENCY_PERK_LEVELS_MAX)
-            || selections
-                .iter()
-                .any(|choice| choice.is_some_and(|index| index >= PROFICIENCY_PERKS_PER_LEVEL_MAX))
-        {
+        if !oteryn_gameplay_progression::proficiency::valid_state(&item_key, &definition_key, &definition_revision, progress, &selections) {
             return Err(CharacterProgressionError::InvalidInput);
         }
         Ok(Self {
@@ -108,36 +91,7 @@ impl DurableProficiencyState {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ProficiencyCause {
-    Training,
-    PerkSelection,
-    Migration,
-    /// PROFICIENCY-1B §4.3: the track line only advances the track's committed revision; the
-    /// change is the receipt's one modification line. Only the modification writer uses it.
-    PerkModification,
-}
-
-impl ProficiencyCause {
-    pub const fn key(self) -> &'static str {
-        match self {
-            Self::Training => "training",
-            Self::PerkSelection => "perk_selection",
-            Self::Migration => "migration",
-            Self::PerkModification => "perk_modification",
-        }
-    }
-
-    pub(in crate::durability) fn from_key(key: &str) -> Option<Self> {
-        Some(match key {
-            "training" => Self::Training,
-            "perk_selection" => Self::PerkSelection,
-            "migration" => Self::Migration,
-            "perk_modification" => Self::PerkModification,
-            _ => return None,
-        })
-    }
-}
+pub use oteryn_gameplay_progression::proficiency::ProficiencyCause;
 
 /// A structurally legal pending line, not an admitted write or a verified migration.
 /// Unlock, PZ, current authority, content binding, receipt cardinality and lineage are outside
@@ -155,34 +109,7 @@ impl ProficiencyLineCandidate {
         before: DurableProficiencyState,
         after: DurableProficiencyState,
     ) -> Result<Self> {
-        if before.item_key != after.item_key || before.definition_key != after.definition_key {
-            return Err(CharacterProgressionError::InvalidInput);
-        }
-        let same_revision = before.definition_revision == after.definition_revision;
-        let same_progress = before.progress == after.progress;
-        let legal = match cause {
-            ProficiencyCause::Training => {
-                after.progress > before.progress
-                    && same_revision
-                    && before.selections == after.selections
-            }
-            ProficiencyCause::PerkSelection => {
-                same_progress
-                    && same_revision
-                    && before.selections.len() == after.selections.len()
-                    && before
-                        .selections
-                        .iter()
-                        .zip(&after.selections)
-                        .filter(|(old, new)| old != new)
-                        .count()
-                        == 1
-            }
-            ProficiencyCause::Migration => same_progress && !same_revision,
-            ProficiencyCause::PerkModification => {
-                same_progress && same_revision && before.selections == after.selections
-            }
-        };
+        let legal = oteryn_gameplay_progression::proficiency::legal_change(cause, track_values(&before), track_values(&after));
         if !legal {
             return Err(CharacterProgressionError::InvalidInput);
         }
@@ -1473,3 +1400,7 @@ pub use writer::{
     DeclaredProficiencyMigration, ProficiencyCommitOutcome, ProficiencyDefinitions,
     ProficiencyLevelMigration, ProficiencyWriteRefusal, ResolvedProficiencyDefinition,
 };
+
+fn track_values(state: &DurableProficiencyState) -> oteryn_gameplay_progression::proficiency::TrackValues<'_> {
+    (state.item_key(), state.definition_key(), state.definition_revision(), state.progress(), state.selections())
+}

@@ -205,20 +205,10 @@ fn project_current_wheel_flat(
     let rules = ruleset
         .vocation(vocation)
         .ok_or(AccessFactsError::Unavailable("Wheel magnitude vocation"))?;
-    let mut colours = BTreeMap::new();
-    for (colour, key) in ["green", "red", "purple", "blue"]
-        .iter()
-        .zip(&rules.revelations)
-    {
-        let stage = wheel
-            .value
-            .get(key)
-            .copied()
-            .ok_or(AccessFactsError::Unavailable(
-                "Wheel magnitude complete stage read",
-            ))?;
-        colours.insert((*colour).to_owned(), stage);
-    }
+    let colours = oteryn_gameplay_progression::spell_wheel::revelation_colours(rules, &wheel.value)
+        .ok_or(AccessFactsError::Unavailable(
+            "Wheel magnitude complete stage read",
+        ))?;
     let flat = profile
         .flat_stats(&colours)
         .map_err(|_| AccessFactsError::Unavailable("Wheel magnitude source stages"))?;
