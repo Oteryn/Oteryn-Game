@@ -12,7 +12,7 @@ category = "gameplay"
 release-role = "production"
 
 [features]
-test-support = []
+test-support = ["oteryn-gameplay-encounters/test-support"]
 
 [dependencies]
 oteryn-gameplay-characters = { version = "=0.1.0", path = "../characters" }
@@ -57,6 +57,7 @@ tokio.workspace = true
 tokio-rustls.workspace = true
 
 [dev-dependencies]
+oteryn-gameplay-encounters = { version = "=0.1.0", path = "../encounters", features = ["test-support"] }
 ed25519-dalek.workspace = true
 oteryn-dev-client = { version = "=0.1.0", path = "../../../tools/dev-client" }
 oteryn-gameplay-combat = { version = "=0.1.0", path = "../../gameplay/combat", features = ["test-support"] }

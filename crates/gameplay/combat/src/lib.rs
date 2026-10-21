@@ -9,7 +9,6 @@ pub mod creature_auto_attack;
 pub mod creature_chain_attack;
 pub mod creature_condition_content;
 pub mod creature_defense_presentation;
-pub mod creature_icicle;
 pub mod creature_spell_facts;
 
 #[allow(unused_imports, reason = "preserve the former server module path")]

@@ -1,5 +1,6 @@
 //! ADR-0019 gameplay crate `oteryn-gameplay-encounters`: modules moved verbatim from `oteryn-game-server` (re-exported there at the old path).
 
+pub mod bosses;
 pub mod crystal_callbacks;
 pub mod crystal_death_composition;
 pub mod crystal_herald_quest;
@@ -10,6 +11,8 @@ pub mod source_callback_spawn;
 pub mod source_encounter_seven;
 pub mod source_threshold_heal;
 
+#[allow(unused_imports, reason = "preserve the former server module path")]
+pub use bosses::icicle::creature_icicle;
 #[allow(unused_imports, reason = "preserve the former server module path")]
 pub(crate) use oteryn_gameplay_combat::ability;
 #[allow(unused_imports, reason = "preserve the former server module path")]
@@ -28,8 +31,6 @@ pub(crate) use oteryn_gameplay_combat::creature_chain_attack;
 pub(crate) use oteryn_gameplay_combat::creature_condition_content;
 #[allow(unused_imports, reason = "preserve the former server module path")]
 pub(crate) use oteryn_gameplay_combat::creature_defense_presentation;
-#[allow(unused_imports, reason = "preserve the former server module path")]
-pub(crate) use oteryn_gameplay_combat::creature_icicle;
 #[allow(unused_imports, reason = "preserve the former server module path")]
 pub(crate) use oteryn_gameplay_content::content;
 #[allow(unused_imports, reason = "preserve the former server module path")]
@@ -62,3 +63,21 @@ pub(crate) use oteryn_gameplay_world::world_runtime;
 pub(crate) use oteryn_gameplay_combat::player_lethal;
 
 pub(crate) use oteryn_gameplay_source_critical_baseline as source_critical_baseline;
+
+pub use bosses::smelly_cheese::timers as smelly_cheese;
+
+pub use bosses::smelly_cheese::smelly_damage;
+
+pub use bosses::smelly_cheese::smelly_encounter_dispatch;
+
+pub use bosses::bone_overlord::bone_phase_registry;
+
+pub use bosses::weak_spot::weak_spot_speech;
+
+pub mod monster_combat_lane;
+pub(crate) use oteryn_gameplay_monster_ai::{ai_think, monster_owner_cycle, monster_summon};
+
+pub(crate) use crate::durability::creature_source_items;
+extern crate self as oteryn_gameplay_encounters;
+
+pub use bosses::source_callbacks::callback_speech;

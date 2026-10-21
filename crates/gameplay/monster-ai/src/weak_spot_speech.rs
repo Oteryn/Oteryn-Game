@@ -1,2 +1,2 @@
-//! Compatibility re-exports for the source speech owner.
-pub use crate::crystal_death_composition::speech::*;
+//! Compatibility exports for direct source inclusions; crate callers use the dispatch facade.
+pub use oteryn_gameplay_encounters::bosses::weak_spot::weak_spot_speech::*;

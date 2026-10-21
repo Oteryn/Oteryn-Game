@@ -12,7 +12,6 @@
 pub mod actor_conditions;
 pub mod actor_execution;
 pub mod authoring;
-pub mod callback_speech;
 pub mod cast;
 pub use crate::combat::chain;
 use crate::spell::native::CompiledNativeSpellPlanExt;
