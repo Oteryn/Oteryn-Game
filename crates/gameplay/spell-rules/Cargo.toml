@@ -20,6 +20,7 @@ oteryn-gameplay-items = { version = "=0.1.0", path = "../items" }
 oteryn-gameplay-progression = { version = "=0.1.0", path = "../progression" }
 oteryn-simulation-determinism = { version = "=0.1.0", path = "../../simulation-determinism" }
 serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
 
 serde_json = { workspace = true }
 
