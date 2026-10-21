@@ -16,6 +16,7 @@ oteryn-gameplay-content = { version = "=0.1.0", path = "../content" }
 oteryn-gameplay-domain = { version = "=0.1.0", path = "../domain" }
 oteryn-simulation-determinism = { version = "=0.1.0", path = "../../simulation-determinism" }
 serde = { workspace = true, features = ["derive"] }
+sha2.workspace = true
 
 [lints]
 workspace = true
