@@ -2,23 +2,27 @@
 use super::cast::PlayerSpellState;
 use crate::ability::condition as native;
 use crate::foundation as source;
+use oteryn_gameplay_domain::domain::condition as values;
+use oteryn_gameplay_domain::domain::condition::attributes;
 
-fn element(value: source::DotElement) -> native::DotElement {
+fn element(value: source::DotElement) -> values::DotElement {
     match value {
-        source::DotElement::Poison => native::DotElement::Poison,
-        source::DotElement::Fire => native::DotElement::Fire,
-        source::DotElement::Energy => native::DotElement::Energy,
-        source::DotElement::Bleeding => native::DotElement::Bleeding,
-        source::DotElement::Drown => native::DotElement::Drown,
-        source::DotElement::Freezing => native::DotElement::Freezing,
-        source::DotElement::Dazzled => native::DotElement::Dazzled,
-        source::DotElement::Cursed => native::DotElement::Cursed,
+        source::DotElement::Poison => values::DotElement::Poison,
+        source::DotElement::Fire => values::DotElement::Fire,
+        source::DotElement::Energy => values::DotElement::Energy,
+        source::DotElement::Bleeding => values::DotElement::Bleeding,
+        source::DotElement::Drown => values::DotElement::Drown,
+        source::DotElement::Freezing => values::DotElement::Freezing,
+        source::DotElement::Dazzled => values::DotElement::Dazzled,
+        source::DotElement::Cursed => values::DotElement::Cursed,
     }
 }
-fn modifier(value: Option<source::AttributeModifier>) -> Option<native::AttributeModifier> {
+fn modifier(value: Option<source::AttributeModifier>) -> Option<attributes::AttributeModifier> {
     value.map(|value| match value {
-        source::AttributeModifier::Add(v) => native::AttributeModifier::Add(v),
-        source::AttributeModifier::PercentOfBase(v) => native::AttributeModifier::PercentOfBase(v),
+        source::AttributeModifier::Add(v) => attributes::AttributeModifier::Add(v),
+        source::AttributeModifier::PercentOfBase(v) => {
+            attributes::AttributeModifier::PercentOfBase(v)
+        }
     })
 }
 fn schedule(value: &source::DamageSchedule) -> native::DamageSchedule {
@@ -67,8 +71,8 @@ fn schedule(value: &source::DamageSchedule) -> native::DamageSchedule {
     }
 }
 pub fn definition(value: &source::ConditionDefinition) -> Option<native::ConditionDefinition> {
-    use native::ConditionValues as N;
     use source::ConditionValues as S;
+    use values::ConditionValues as N;
     let values = match value.values() {
         S::Outfit {
             duration_ms,
@@ -111,10 +115,10 @@ pub fn definition(value: &source::ConditionDefinition) -> Option<native::Conditi
         } => N::Invisible { duration_ms },
         S::TimedStatus { kind, duration_ms } => N::TimedStatus {
             kind: match kind {
-                source::StatusKind::Drunk => native::StatusKind::Drunk,
-                source::StatusKind::Rooted => native::StatusKind::Rooted,
-                source::StatusKind::Feared => native::StatusKind::Feared,
-                source::StatusKind::Invisible => native::StatusKind::Invisible,
+                source::StatusKind::Drunk => values::StatusKind::Drunk,
+                source::StatusKind::Rooted => values::StatusKind::Rooted,
+                source::StatusKind::Feared => values::StatusKind::Feared,
+                source::StatusKind::Invisible => values::StatusKind::Invisible,
             },
             duration_ms,
         },
@@ -122,7 +126,7 @@ pub fn definition(value: &source::ConditionDefinition) -> Option<native::Conditi
             modifiers,
             duration_ms,
         } => N::SourceAttributes {
-            modifiers: native::AttributeModifiers {
+            modifiers: attributes::AttributeModifiers {
                 melee: modifier(modifiers.melee),
                 distance: modifier(modifiers.distance),
                 magic_points: modifier(modifiers.magic_points),
@@ -135,13 +139,13 @@ pub fn definition(value: &source::ConditionDefinition) -> Option<native::Conditi
             duration_ms,
         } => N::RationalSpeed {
             paralysis,
-            range: native::RationalSpeedRange {
-                a_min: native::ExactSpeedRatio {
+            range: values::RationalSpeedRange {
+                a_min: values::ExactSpeedRatio {
                     numerator: range.a_min.numerator,
                     denominator: range.a_min.denominator,
                 },
                 b_min: range.b_min,
-                a_max: native::ExactSpeedRatio {
+                a_max: values::ExactSpeedRatio {
                     numerator: range.a_max.numerator,
                     denominator: range.a_max.denominator,
                 },
@@ -155,7 +159,7 @@ pub fn definition(value: &source::ConditionDefinition) -> Option<native::Conditi
             duration_ms,
         } => N::Speed {
             paralysis,
-            range: native::SpeedRange {
+            range: values::SpeedRange {
                 a_min: range.a_min,
                 b_min: range.b_min,
                 a_max: range.a_max,
@@ -206,14 +210,14 @@ pub fn definition(value: &source::ConditionDefinition) -> Option<native::Conditi
     };
     native::ConditionDefinition::new(value.key(), value.revision(), values)
 }
-fn immunity(kind: source::ConditionType) -> Option<native::ConditionType> {
-    use native::ConditionType as N;
+fn immunity(kind: source::ConditionType) -> Option<values::ConditionType> {
     use source::ConditionType as S;
+    use values::ConditionType as N;
     Some(match kind {
         S::Status(source::StatusKind::Invisible) => N::Invisible,
-        S::Status(source::StatusKind::Drunk) => N::Status(native::StatusKind::Drunk),
-        S::Status(source::StatusKind::Rooted) => N::Status(native::StatusKind::Rooted),
-        S::Status(source::StatusKind::Feared) => N::Status(native::StatusKind::Feared),
+        S::Status(source::StatusKind::Drunk) => N::Status(values::StatusKind::Drunk),
+        S::Status(source::StatusKind::Rooted) => N::Status(values::StatusKind::Rooted),
+        S::Status(source::StatusKind::Feared) => N::Status(values::StatusKind::Feared),
         S::Outfit => N::Outfit,
         S::Attributes => N::Attributes,
         S::Haste => N::Haste,
@@ -268,9 +272,9 @@ impl PlayerSpellState {
             ) {
                 Ok(_) => {}
                 Err(
-                    native::ConditionRefusal::Immune
-                    | native::ConditionRefusal::ReentryProtected
-                    | native::ConditionRefusal::KeptCurrent,
+                    values::ConditionRefusal::Immune
+                    | values::ConditionRefusal::ReentryProtected
+                    | values::ConditionRefusal::KeptCurrent,
                 ) => {}
                 Err(_) => return None,
             }
@@ -287,10 +291,10 @@ impl PlayerSpellState {
         let mut next = self.clone();
         let changed = next
             .conditions
-            .remove_type(native::ConditionType::Invisible)
+            .remove_type(values::ConditionType::Invisible)
             | next
                 .conditions
-                .remove_type(native::ConditionType::Status(native::StatusKind::Invisible));
+                .remove_type(values::ConditionType::Status(values::StatusKind::Invisible));
         if changed {
             next.revision = self.revision.checked_add(1)?
         }
@@ -343,7 +347,7 @@ impl PlayerSpellState {
         source: String,
         definition: &native::ConditionDefinition,
         facts: &native::ApplicationFacts<'_>,
-        element: native::DotElement,
+        element: values::DotElement,
     ) -> Option<(Self, u32)> {
         if self.health == 0
             || !facts.target_is_player
@@ -362,9 +366,9 @@ impl PlayerSpellState {
         ) {
             Ok(_) => {}
             Err(
-                native::ConditionRefusal::Immune
-                | native::ConditionRefusal::ReentryProtected
-                | native::ConditionRefusal::KeptCurrent,
+                values::ConditionRefusal::Immune
+                | values::ConditionRefusal::ReentryProtected
+                | values::ConditionRefusal::KeptCurrent,
             ) => return Some((self.clone(), 0)),
             Err(_) => return None,
         }
@@ -441,8 +445,8 @@ mod creature_field_initial_tests {
         let old = native::ConditionDefinition::new(
             "native.field.old-poison",
             1,
-            native::ConditionValues::DamageOverTime {
-                element: native::DotElement::Poison,
+            values::ConditionValues::DamageOverTime {
+                element: values::DotElement::Poison,
                 total_min: 100,
                 total_max: 100,
                 per_tick: 10,
@@ -464,14 +468,14 @@ mod creature_field_initial_tests {
             .expect("qualified fixture");
         let original = state
             .conditions
-            .get(native::ConflictKey::Element(native::DotElement::Poison))
+            .get(values::ConflictKey::Element(values::DotElement::Poison))
             .expect("qualified fixture")
             .clone();
         let fresh = native::ConditionDefinition::new(
             "native.field.fresh-fire",
             1,
-            native::ConditionValues::DamageOverTime {
-                element: native::DotElement::Fire,
+            values::ConditionValues::DamageOverTime {
+                element: values::DotElement::Fire,
                 total_min: 40,
                 total_max: 40,
                 per_tick: 20,
@@ -485,13 +489,13 @@ mod creature_field_initial_tests {
                 "creature:field:fixture".into(),
                 &fresh,
                 &facts,
-                native::DotElement::Fire,
+                values::DotElement::Fire,
             )
             .expect("qualified fixture");
         assert_eq!(damage, 20);
         assert_eq!(
             next.conditions
-                .get(native::ConflictKey::Element(native::DotElement::Poison)),
+                .get(values::ConflictKey::Element(values::DotElement::Poison)),
             Some(&original)
         );
         assert_eq!(next.health, 980);

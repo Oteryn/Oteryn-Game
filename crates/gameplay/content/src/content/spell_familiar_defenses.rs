@@ -4,7 +4,7 @@
     dead_code,
     reason = "spell import candidate; awaits its production owner caller"
 )]
-use crate::foundation::{CompiledCreaturePolicy, FamiliarSelfHealDefense};
+use crate::content::creature_policy::{CompiledCreaturePolicy, FamiliarSelfHealDefense};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -159,7 +159,7 @@ mod tests {
             resistances: Vec::new(),
             damage_immunities: Vec::new(),
             healing_from_damage: vec![],
-            flags: crate::foundation::CreatureFlags {
+            flags: crate::content::creature_policy::CreatureFlags {
                 attackable: true,
                 illusionable: false,
                 health_hidden: false,

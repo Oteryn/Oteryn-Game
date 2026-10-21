@@ -28,11 +28,13 @@ use crate::durability::character_equipment::{self, EquipmentMoveContent};
 use crate::foundation::{ChannelRuntimeV1, CommandId, CommandRef, RuntimeScopeRefV1};
 use oteryn_protocol_oteryn::item_view::{EquipmentSlot, durable_slot, wire_slot};
 
-impl crate::foundation::equipment_policy_abi::policy_registration::Registered
+impl oteryn_gameplay_domain::domain::equipment_policy_abi::policy_registration::Registered
     for NativeItemWeights<'_>
 {
 }
-impl crate::foundation::equipment_policy_abi::EquipmentPolicyLookup for NativeItemWeights<'_> {
+impl oteryn_gameplay_domain::domain::equipment_policy_abi::EquipmentPolicyLookup
+    for NativeItemWeights<'_>
+{
     fn source_digest(&self) -> [u8; 32] {
         self.0.source_digest()
     }
@@ -40,7 +42,8 @@ impl crate::foundation::equipment_policy_abi::EquipmentPolicyLookup for NativeIt
         &self,
         key: &str,
         revision: &str,
-    ) -> Option<crate::foundation::equipment_policy_abi::QualifiedEquipmentPolicy> {
+    ) -> Option<oteryn_gameplay_domain::domain::equipment_policy_abi::QualifiedEquipmentPolicy>
+    {
         self.0.equipment_policy(key, revision)
     }
 }

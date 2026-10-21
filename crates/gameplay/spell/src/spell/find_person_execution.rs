@@ -20,7 +20,7 @@ use sqlx::{Postgres, Row, Transaction};
 pub enum Error {
     Items(SpellItemError),
     Admission(crate::durability::DurabilityError),
-    Actor(crate::foundation::CarrierError),
+    Actor(oteryn_gameplay_domain::domain::carrier_values::CarrierError),
     InvalidProfile,
     CurrentCasterMismatch,
     CrossScopeTarget,

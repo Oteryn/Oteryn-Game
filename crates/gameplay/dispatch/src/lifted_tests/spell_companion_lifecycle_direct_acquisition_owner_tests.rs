@@ -1,10 +1,12 @@
 #![allow(clippy::expect_used)]
 use crate::foundation::{ChannelRuntimeV1, MovementLocalPosition};
-use crate::foundation::{CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureFlags};
 use crate::spell::cast::{CharacterCastFacts, PlayerSpellState};
 use crate::spell::companion_lifecycle::*;
 use crate::spell::native::CompiledNativeSpell;
 use crate::spell::{CasterState, Vocation};
+use oteryn_gameplay_content::content::creature_policy::{
+    CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureFlags,
+};
 use std::collections::BTreeSet;
 
 fn profile(source: &str) -> CompiledNativeSpell {
@@ -179,15 +181,16 @@ fn bounded_exclusions_narrow_static_placement_without_granting_absent_cells() {
     .expect("native test node");
     // A test runtime uses the actual qualified map/frame digests. This is
     // not a production content activation or a dynamic door/Item grant.
-    let pin = crate::foundation::ChannelContentPin::from_activation(
-        world,
-        1,
-        room.compiled().server_digest(),
-        room.compiled().client_digest(),
-        room.frame_binding().digest(),
-        room.map_revision_digest(),
-        (start.x, start.y, start.floor),
-    );
+    let pin =
+        oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::from_activation(
+            world,
+            1,
+            room.compiled().server_digest(),
+            room.compiled().client_digest(),
+            room.frame_binding().digest(),
+            room.map_revision_digest(),
+            (start.x, start.y, start.floor),
+        );
     let mut runtime = ChannelRuntimeV1::from_committed_assignment(
         world,
         reference.binding().channel_id(),

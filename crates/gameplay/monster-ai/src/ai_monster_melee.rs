@@ -20,7 +20,7 @@ use crate::foundation::owner_timer::SemanticTimeMicros;
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId};
 use oteryn_simulation_determinism::deterministic_decision_u64;
 
-pub use crate::foundation::melee_definition::MeleeDefinition;
+pub use oteryn_gameplay_domain::domain::melee_definition::MeleeDefinition;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Dispatch {
@@ -232,8 +232,11 @@ fn swing_decision(
 mod tests {
     use super::*;
     use crate::ability::creature_bite::{CreatureHit, creature_damage};
-    use crate::foundation::{ChannelContentPin, ChannelId, MovementLocalPosition, NodeId, WorldId};
     use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+    use {
+        crate::foundation::{ChannelId, MovementLocalPosition, NodeId, WorldId},
+        oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+    };
 
     struct Vitals {
         health: u32,

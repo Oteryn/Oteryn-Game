@@ -679,7 +679,10 @@ mod tests {
     #[test]
     #[allow(clippy::expect_used)]
     fn a_fixture_rat_respawns_without_native_gameplay_content() {
-        use crate::foundation::{ChannelContentPin, ChannelId, NodeId, WorldId};
+        use {
+            crate::foundation::{ChannelId, NodeId, WorldId},
+            oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+        };
         let world = WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1])
             .expect("world");
         let channel = ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])
@@ -1055,7 +1058,10 @@ mod tests {
     #[test]
     #[allow(clippy::expect_used)]
     fn a_spawned_rat_commits_a_chase_step_in_the_accepted_entry_room() {
-        use crate::foundation::{ChannelContentPin, ChannelId, NodeId, WorldId};
+        use {
+            crate::foundation::{ChannelId, NodeId, WorldId},
+            oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+        };
         let world = WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1])
             .expect("world");
         let channel = ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])

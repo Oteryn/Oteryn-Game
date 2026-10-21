@@ -54,11 +54,14 @@ use crate::durability::item_mint::{
 };
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 use crate::durability::spell_owner_commit::SpellLanePermit;
-use crate::foundation::{
-    CarrierError, CharacterId, CreatureDeathOccurrenceKey, CurrentOwnerCombatDeath, ExactActorRef,
-    GameSessionId, MovementLocalPosition,
-};
 use oteryn_simulation_determinism::ExactI64;
+use {
+    crate::foundation::{
+        CharacterId, CreatureDeathOccurrenceKey, CurrentOwnerCombatDeath, ExactActorRef,
+        GameSessionId, MovementLocalPosition,
+    },
+    oteryn_gameplay_domain::domain::carrier_values::CarrierError,
+};
 
 /// `COMBAT01-INFLIGHT-LOOT-MINTS-PER-SCOPE` (D78, resource rows decision
 /// §4.1, row 7): at most 64 in-flight loot MINTs per scope at once. Checked

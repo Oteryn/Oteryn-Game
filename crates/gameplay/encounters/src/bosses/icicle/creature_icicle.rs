@@ -20,7 +20,7 @@ pub enum IcicleError {
     MissingFacts,
     Replay,
     Capacity,
-    Carrier(crate::foundation::CarrierError),
+    Carrier(oteryn_gameplay_domain::domain::carrier_values::CarrierError),
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IcicleOutcome {
@@ -304,13 +304,12 @@ impl IcicleOwner {
                     cleared_target: clear,
                     eggs: Vec::new(),
                 };
-                out.eggs
-                    .try_reserve(eggs.len())
-                    .map_err(|_| crate::foundation::CarrierError::AllocationFailed)?;
-                retained
-                    .eggs
-                    .try_reserve(eggs.len())
-                    .map_err(|_| crate::foundation::CarrierError::AllocationFailed)?;
+                out.eggs.try_reserve(eggs.len()).map_err(|_| {
+                    oteryn_gameplay_domain::domain::carrier_values::CarrierError::AllocationFailed
+                })?;
+                retained.eggs.try_reserve(eggs.len()).map_err(|_| {
+                    oteryn_gameplay_domain::domain::carrier_values::CarrierError::AllocationFailed
+                })?;
                 for (actor, receipt) in eggs.iter().copied().zip(receipts.iter().copied()) {
                     out.eggs.push((actor, receipt));
                     retained.eggs.push((actor, receipt));

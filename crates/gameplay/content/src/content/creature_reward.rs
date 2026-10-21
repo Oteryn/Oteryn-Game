@@ -15,7 +15,7 @@ use super::{
     ProjectV2DefinitionRef,
 };
 use crate::domain::bestiary::BestiaryRace;
-use crate::foundation::loot_data::{
+use oteryn_gameplay_domain::domain::loot_data::{
     GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX, LootDefinitionRef, LootSelectionAlgorithm,
     LootTableDefinition, LootTableEntry,
 };

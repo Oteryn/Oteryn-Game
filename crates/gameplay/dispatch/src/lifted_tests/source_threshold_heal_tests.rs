@@ -5,12 +5,15 @@ use crate::content::{
 };
 use crate::creature_auto_attack::ProfileAbilityProposal;
 use crate::durability::creature_schedule::ScheduleList;
-use crate::foundation::{ChannelContentPin, ChannelId, MovementLocalPosition, NodeId, WorldId};
 use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, RuntimeScopeRefV1, RuntimeWorkStamp, ScopeRuntimeFence,
 };
 use crate::source_threshold_heal::*;
 use oteryn_gameplay_encounters::bosses::crystal_deaths::native_fixtures::CrystalRouterFixtureExt;
+use {
+    crate::foundation::{ChannelId, MovementLocalPosition, NodeId, WorldId},
+    oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+};
 
 fn fixture(name: &str) -> (ChannelRuntimeV1, ProjectV2Draft, Ref, ThresholdHealSource) {
     let v:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/encounters/callback18/threshold-heal-native-fixture-v2.json"))).expect("qualified fixture");

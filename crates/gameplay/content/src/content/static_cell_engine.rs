@@ -10,7 +10,7 @@ use super::{
     CollisionClass, ContentLockBinding, ContentLockEntry, CoordinateFrameRef, LogicalCell,
     MapRevisionRef, ProductionAtom, ProductionKey, Sha256HexDigest,
 };
-use crate::foundation::WorldId;
+use oteryn_protocol_oteryn::WorldId;
 use std::collections::BTreeMap;
 
 pub const STATIC_CELL_ENGINE_PROFILE: &str = "ENGINE_STATIC_CELL_CARRIER/v1";

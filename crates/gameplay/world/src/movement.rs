@@ -17,11 +17,14 @@ use crate::content::native_cell_lookup::NativeStaticCellLookup;
 use crate::content::static_cell_engine::EngineeringStaticCellIndex;
 use crate::content::static_cell_engine::{EngineeringStaticCellScope, StaticCellEngineError};
 use crate::content::{CollisionClass, LogicalCell};
-use crate::foundation::{
-    CarrierError, ChannelRuntimeV1, CurrentOwnerMovementPosition, ExactActorRef,
-    MovementLocalPosition, MovementPositionContext, MovementPositionSnapshot,
-};
 use std::num::NonZeroUsize;
+use {
+    crate::foundation::{
+        ChannelRuntimeV1, CurrentOwnerMovementPosition, ExactActorRef, MovementLocalPosition,
+        MovementPositionContext, MovementPositionSnapshot,
+    },
+    oteryn_gameplay_domain::domain::carrier_values::CarrierError,
+};
 pub mod interest;
 pub mod pacing;
 pub mod path_search;
@@ -490,7 +493,9 @@ mod tests {
             11,
             "runtime-scope-assignment:11",
             capacity,
-            crate::foundation::ChannelContentPin::test(WorldId::decode(&uuid_v7(20))?),
+            oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::test(
+                WorldId::decode(&uuid_v7(20))?,
+            ),
         )?)
     }
 

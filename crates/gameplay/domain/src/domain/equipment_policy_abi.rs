@@ -76,7 +76,7 @@ impl QualifiedEquipmentPolicy {
     /// replace them after `from_qualified_content` validated them.
     ///
     /// ```compile_fail
-    /// use oteryn_gameplay_foundation::foundation::equipment_policy_abi::QualifiedEquipmentPolicy;
+    /// use oteryn_gameplay_domain::domain::equipment_policy_abi::QualifiedEquipmentPolicy;
     /// fn forge(policy: &mut QualifiedEquipmentPolicy) { policy.claims.clear(); }
     /// ```
     pub fn claims(&self) -> &[(u8, Result<EquipmentClaims, &'static str>)] {

@@ -3,12 +3,13 @@
 #![allow(clippy::expect_used)]
 
 use super::*;
-use crate::ability::condition::{
-    ApplicationFacts, ConditionDefinition, ConditionGate, ConditionSourceKind, ConditionValues,
-};
 use crate::spell::OperationalCastFacts;
 use crate::spell::chain::TilePosition;
 use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+use {
+    crate::ability::condition::{ApplicationFacts, ConditionDefinition, ConditionSourceKind},
+    oteryn_gameplay_domain::domain::condition::{ConditionGate, ConditionValues},
+};
 
 fn at(millis: u64) -> SemanticTimeMicros {
     SemanticTimeMicros::from_micros(millis * 1000)

@@ -25,7 +25,7 @@ fn actual_owner_due_applies_ai_lifetime_at_callback_and_never_replays() {
         1,
         "runtime-scope-assignment:1",
         3,
-        crate::foundation::ChannelContentPin::test(world),
+        oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::test(world),
     )
     .unwrap();
     let session = GameSessionId::decode(&id(91)).unwrap();
@@ -419,7 +419,7 @@ fn stored_familiar_return_is_one_due_entry_per_actor() {
         1,
         "runtime-scope-assignment:1",
         3,
-        crate::foundation::ChannelContentPin::test(world),
+        oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::test(world),
     )
     .unwrap();
     let session = GameSessionId::decode(&id(91)).unwrap();
@@ -470,9 +470,11 @@ fn stored_familiar_return_is_one_due_entry_per_actor() {
 #[allow(clippy::expect_used, clippy::unwrap_used)]
 #[test]
 fn due_familiar_expiry_is_handed_to_the_owner_cadence_without_a_despawn() {
-    use crate::foundation::{CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureFlags};
     use crate::spell::companion_lifecycle::{
         FamiliarTimerEvent, SavedFamiliarTimer, commit_familiar_timer, stage_familiar_timer,
+    };
+    use oteryn_gameplay_content::content::creature_policy::{
+        CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureFlags,
     };
     struct Clock(u64);
     impl OwnerClock for Clock {

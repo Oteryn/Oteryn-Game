@@ -5,9 +5,12 @@ use crate::foundation::owner_timer::{
     CatchUpPolicy, FamilyPolicy, FiredTimer, OwnerClock, OwnerTimerError, OwnerTimerLane,
     SemanticTimeMicros, TimerFamily,
 };
-use crate::foundation::{
-    CarrierError, ChannelRuntimeV1, ExactActorRef, RuntimeScopeRefV1, RuntimeWorkStamp,
-    ScopeOwnershipGeneration, ScopeRuntimeFence,
+use {
+    crate::foundation::{
+        ChannelRuntimeV1, ExactActorRef, RuntimeScopeRefV1, RuntimeWorkStamp,
+        ScopeOwnershipGeneration, ScopeRuntimeFence,
+    },
+    oteryn_gameplay_domain::domain::carrier_values::CarrierError,
 };
 
 pub use oteryn_gameplay_encounter_rules::timers::saturating_deadline;

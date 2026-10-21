@@ -19,12 +19,12 @@
 //!
 //! ```compile_fail
 //! use oteryn_gameplay_domain::domain;
-//! use oteryn_gameplay_foundation::foundation;
+//! use oteryn_protocol_oteryn::WorldId;
 //! let domain_world = domain::WorldId::from_bytes([
 //!     0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0x70, 0xcd,
 //!     0x8e, 0xf0, 0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc,
 //! ]).unwrap();
-//! let _: foundation::WorldId = domain_world;
+//! let _: WorldId = domain_world;
 //! ```
 
 #![forbid(unsafe_code)]
@@ -32,17 +32,20 @@
 mod activation;
 mod artifact;
 pub mod bundle_spell_tiles;
+pub mod channel_content_pin;
 pub mod character_progression_content;
 pub mod charm_source;
 pub mod charm_source_effect;
 pub mod charm_source_json;
 mod compiler;
 pub mod creature_attack_geometry;
+pub mod creature_policy;
 pub mod creature_reward;
 mod cw2_b1_import;
 mod cw2_b4_import;
 mod digest;
 pub mod encounter_map_item;
+pub mod field_condition;
 mod fixture;
 pub mod item_abilities;
 pub mod item_admission;
@@ -166,7 +169,7 @@ pub use project::SourceFloorChange;
 // Crate test composition may inspect an actually staged native pair; the Stage owner
 // and its complete runtime generation remain private to CONTENT and absent downstream.
 #[cfg(any(test, feature = "test-support"))]
-pub fn native_gameplay_test_world_id() -> Result<crate::foundation::WorldId, ContentError> {
+pub fn native_gameplay_test_world_id() -> Result<oteryn_protocol_oteryn::WorldId, ContentError> {
     Ok(production::test_source(1)?.world_id)
 }
 #[cfg(any(test, feature = "test-support"))]

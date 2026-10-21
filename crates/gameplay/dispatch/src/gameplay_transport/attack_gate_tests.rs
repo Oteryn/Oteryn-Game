@@ -7,9 +7,12 @@ use crate::content::native_gameplay::{
     NativeGameplayInput, NativeGameplayMapProfile, PinnedGameplayBytes,
 };
 use crate::content::qualify_native_source_spell_world_with_gameplay;
-use crate::foundation::{
-    ActorConditionTransition, ApplicationFacts, ChannelContentPin, ChannelId, ConditionDefinition,
-    ConditionSource, ConditionSourceKind, ConditionValues, NodeId, WorldId,
+use {
+    crate::foundation::{
+        ActorConditionTransition, ApplicationFacts, ChannelId, ConditionDefinition,
+        ConditionSource, ConditionSourceKind, ConditionValues, NodeId, WorldId,
+    },
+    oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
 };
 
 fn uuid(raw: u8) -> [u8; 16] {
@@ -301,7 +304,7 @@ fn a_gate_in_the_runtime_condition_slot_refuses_a_cast_as_well() {
         gate(&mut runtime, player, session, key);
         assert_eq!(
             gated(&runtime, at(1)),
-            refused.then_some(crate::ability::condition::ConditionGate::Muted),
+            refused.then_some(oteryn_gameplay_domain::domain::condition::ConditionGate::Muted),
             "{key}"
         );
         assert_eq!(gated(&runtime, at(10_000)), None);

@@ -2,7 +2,6 @@
 //! condition store. A historical field creator is never a current PvP grant.
 use super::super::ComposedFreshAdmission;
 use super::{ChannelSpellStates, qualified_protection_zone};
-use crate::ability::condition::{DotElement, TickFacts};
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::content::{ReferenceItemField, ReferenceItemType};
 use crate::durability::fresh_admission::FreshAdmissionStore;
@@ -13,6 +12,7 @@ use crate::foundation::{
 };
 use crate::spell::world_items_execution::SpellGroundTarget;
 use oteryn_protocol_oteryn::actor_spell::ActorVitals;
+use {crate::ability::condition::TickFacts, oteryn_gameplay_domain::domain::condition::DotElement};
 
 fn standing_element(
     read: &StandingTileRead,

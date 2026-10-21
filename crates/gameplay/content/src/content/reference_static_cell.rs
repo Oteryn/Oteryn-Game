@@ -5,7 +5,7 @@
 //! connect to Reference activation, a production artifact, OTS material, or a runtime owner.
 
 use super::{CollisionClass, CoordinateFrameRef, MapRevisionRef, ProductionAtom};
-use crate::foundation::WorldId;
+use oteryn_protocol_oteryn::WorldId;
 use std::collections::BTreeMap;
 use std::error::Error;
 use std::fmt;
@@ -161,7 +161,7 @@ impl ReferenceStaticCellIndex {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::foundation::WorldId;
+    use oteryn_protocol_oteryn::WorldId;
 
     fn uuid_v7(seed: u8) -> [u8; 16] {
         let mut bytes = [seed; 16];

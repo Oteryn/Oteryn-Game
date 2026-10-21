@@ -619,7 +619,7 @@ mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
     use super::*;
     fn scope() -> EngineeringStaticCellScope {
-        let world = crate::foundation::WorldId::decode(&[
+        let world = oteryn_protocol_oteryn::WorldId::decode(&[
             0, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1,
         ])
         .unwrap();

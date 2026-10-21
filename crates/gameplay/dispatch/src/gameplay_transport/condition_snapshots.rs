@@ -249,10 +249,11 @@ pub async fn prepare_current_player_in_transaction(
 mod tests {
     #![allow(clippy::expect_used)]
     use super::*;
-    use crate::ability::condition::{
-        ApplicationFacts, ConditionDefinition, ConditionSourceKind, ConditionValues,
-    };
     use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+    use {
+        crate::ability::condition::{ApplicationFacts, ConditionDefinition, ConditionSourceKind},
+        oteryn_gameplay_domain::domain::condition::ConditionValues,
+    };
     #[test]
     fn source_current_light_invisible_item_expiry_never_overwrites_persistent_selection() {
         let root = GameplayDecisionRoot::from_bytes([1; 32]);

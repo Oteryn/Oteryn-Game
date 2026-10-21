@@ -7,15 +7,18 @@ use crate::content::{
     ProjectReferenceRecord, ProjectV2AuthoringProfileData as Data, ProjectV2DefinitionRef as Ref,
     ProjectV2Draft, ProjectV2Family, ProjectV2SourceIdentityDisposition,
 };
-use crate::foundation::{
-    ActorMemoTable, CREATURE_DEFENCE_MEMOS_PER_CHANNEL_MAX, CarrierError, ChannelRuntimeV1,
-    ExactActorRef, MovementLocalPosition, NATIVE_SUMMON_MEMOS_PER_CHANNEL_MAX,
-    NativeSummonAdmissionSpec, RuntimeScopeRefV1, RuntimeWorkStamp, ScopeRuntimeFence,
-};
 use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
 };
 use sha2::{Digest, Sha256};
+use {
+    crate::foundation::{
+        ActorMemoTable, CREATURE_DEFENCE_MEMOS_PER_CHANNEL_MAX, ChannelRuntimeV1, ExactActorRef,
+        MovementLocalPosition, NATIVE_SUMMON_MEMOS_PER_CHANNEL_MAX, NativeSummonAdmissionSpec,
+        RuntimeScopeRefV1, RuntimeWorkStamp, ScopeRuntimeFence,
+    },
+    oteryn_gameplay_domain::domain::carrier_values::CarrierError,
+};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SummonError {
     InvalidSource,
@@ -417,7 +420,10 @@ impl NativeSummonOwner {
 #[allow(clippy::expect_used)]
 mod tests {
     use super::*;
-    use crate::foundation::{ChannelContentPin, ChannelId, NodeId, WorldId, crystal_timer_fixture};
+    use {
+        crate::foundation::{ChannelId, NodeId, WorldId, crystal_timer_fixture},
+        oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+    };
     fn reference(key: &str) -> Ref {
         Ref {
             family: ProjectV2Family::Creature,

@@ -30,9 +30,6 @@ use crate::creature_defense_presentation::DefensePresentationSource;
 use crate::foundation::ApplicationFacts;
 use crate::foundation::owner_timer::{OwnerClock, SemanticTimeMicros};
 use crate::foundation::{
-    CarrierError, CreatureSelfHealLedger, CreatureSelfHealRegistration, OwnerDamageResult,
-};
-use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, GameSessionId, RuntimeWorkStamp, ScopeRuntimeFence,
 };
 use crate::monster_owner_cycle::{CycleError, MonsterThinkLane};
@@ -56,6 +53,10 @@ use oteryn_simulation_determinism::GameplayDecisionRoot;
 use oteryn_simulation_determinism::{DecisionOccurrenceId, deterministic_decision_u64};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
+use {
+    crate::foundation::{CreatureSelfHealLedger, CreatureSelfHealRegistration, OwnerDamageResult},
+    oteryn_gameplay_domain::domain::carrier_values::CarrierError,
+};
 #[derive(Clone)]
 pub struct NativeHeal {
     index: usize,
@@ -324,7 +325,10 @@ pub struct CombatPulse {
         Option<Result<usize, crate::weak_spot_speech::WeakSpotSpeechError>>,
     pub callback_speech_errors: Vec<(ExactActorRef, AttackError)>,
     pub time_returns: Vec<Result<crate::source_encounter_seven::TimePhaseOutcome, AttackError>>,
-    pub callback_removals: Vec<(ExactActorRef, Result<(), crate::foundation::CarrierError>)>,
+    pub callback_removals: Vec<(
+        ExactActorRef,
+        Result<(), oteryn_gameplay_domain::domain::carrier_values::CarrierError>,
+    )>,
     pub callback_spawn_pulses: Result<
         Vec<Result<crate::source_callback_spawn::CallbackSpawnReceipt, AttackError>>,
         AttackError,
@@ -2577,7 +2581,10 @@ impl MonsterCombatLane {
         cages: [ExactActorRef; 4],
         phylactery: ExactActorRef,
     ) -> Result<(), crate::foundation::BonePhaseError> {
-        use crate::foundation::{BonePhaseError, CarrierError};
+        use {
+            crate::foundation::BonePhaseError,
+            oteryn_gameplay_domain::domain::carrier_values::CarrierError,
+        };
         if self
             .bone_encounters
             .iter()
@@ -2622,7 +2629,7 @@ impl MonsterCombatLane {
         let mut bone = Vec::new();
         bone.try_reserve(self.bone_encounters.len()).map_err(|_| {
             crate::crystal_death_composition::CrystalDeathCompositionError::Owner(
-                crate::foundation::CarrierError::AllocationFailed,
+                oteryn_gameplay_domain::domain::carrier_values::CarrierError::AllocationFailed,
             )
         })?;
         let projected = self.project_crystal_creature_death(
@@ -3468,7 +3475,7 @@ mod project_native_registration_membership_tests {
         let mut node_id = channel_id;
         node_id[15] = 93;
         let start = room.entry_start();
-        let pin = crate::foundation::ChannelContentPin::from_activation(
+        let pin = oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::from_activation(
             world,
             1,
             room.compiled().server_digest(),

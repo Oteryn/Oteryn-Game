@@ -77,8 +77,8 @@ fn heals_health(effect: &ResolvedEffect) -> bool {
 }
 fn condition_kind(
     key: &str,
-) -> Result<crate::ability::condition::ConditionType, SpellCastDisposition> {
-    use crate::ability::condition::{ConditionType as T, DotElement as E};
+) -> Result<oteryn_gameplay_domain::domain::condition::ConditionType, SpellCastDisposition> {
+    use oteryn_gameplay_domain::domain::condition::{ConditionType as T, DotElement as E};
     Ok(match key {
         "paralyze" => T::Paralysis,
         "manashield" => T::ManaShield,
@@ -96,11 +96,14 @@ fn modify_conditions<S: Clone>(
     store: &mut crate::ability::condition::ConditionStore<S>,
     effects: &[ResolvedEffect],
     source: Option<S>,
-    immunities: &[crate::ability::condition::ConditionType],
+    immunities: &[oteryn_gameplay_domain::domain::condition::ConditionType],
     facts: &crate::ability::condition::ApplicationFacts<'_>,
     shield_required: bool,
 ) -> Result<(), SpellCastDisposition> {
-    use crate::ability::condition::{ConditionRefusal, ConditionSourceKind};
+    use {
+        crate::ability::condition::ConditionSourceKind,
+        oteryn_gameplay_domain::domain::condition::ConditionRefusal,
+    };
     if shield_required
         && effects.iter().any(|effect| {
             matches!(effect, ResolvedEffect::RemoveCondition { condition } if condition == "manashield")

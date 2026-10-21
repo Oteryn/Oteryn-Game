@@ -108,12 +108,6 @@ use crate::foundation::{
     ControlLossOutcomeV1, ControlLossSourceV1, ReconnectDurabilityErrorV1,
     RecoveryProtectionContinuityV1, RecoveryProtectionRearmV1, RecoveryProtectionUseV1,
 };
-use crate::foundation::{
-    AuthenticatedTransportRefV1, CarrierError, ChannelId, ChannelRuntimeV1,
-    CharacterWorldEligibilityClaimV1, ExactActorRef, FirstEntryPosition,
-    GameSessionAuthoritySnapshot, GameSessionId, GameSessionState, PlayerActorReservation,
-    RuntimeScopeRefV1, ScopeOwnershipGeneration, WorldId,
-};
 use connection::{
     AccountAchievementsReply, AdmissionRefusal, AdmittedSession, ConnectionIdentifiers,
     ControlLossResult, ControllerBinding, FirstEntryOutcome, FreshAdmissionAttempt,
@@ -123,6 +117,15 @@ use connection::{
 pub use fresh_evidence::FreshEvidenceSource;
 use kill_reward::{KillRelease, KillReleaseMark, ReleaseEnd};
 use oteryn_foundation::CancellationToken;
+use {
+    crate::foundation::{
+        AuthenticatedTransportRefV1, ChannelId, ChannelRuntimeV1, CharacterWorldEligibilityClaimV1,
+        ExactActorRef, FirstEntryPosition, GameSessionAuthoritySnapshot, GameSessionId,
+        GameSessionState, PlayerActorReservation, RuntimeScopeRefV1, ScopeOwnershipGeneration,
+        WorldId,
+    },
+    oteryn_gameplay_domain::domain::carrier_values::CarrierError,
+};
 mod condition_snapshots;
 use std::future::{Future, poll_fn};
 use std::pin::{Pin, pin};
@@ -5952,10 +5955,13 @@ mod tests {
     -> Result<(), Box<dyn std::error::Error>> {
         use crate::content::LogicalCell;
         use crate::content::accepted;
-        use crate::foundation::{ChannelContentPin, MovementLocalPosition, NodeId};
         use crate::world_runtime::{
             LocalObjectUseOutcome, ReferenceContentGeneration, ScopeContentGenerationFence,
             bind_native_entry_door,
+        };
+        use {
+            crate::foundation::{MovementLocalPosition, NodeId},
+            oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
         };
 
         let world_id = WorldId::decode(&uuid_v7(0x50)).expect("world");
@@ -7057,7 +7063,10 @@ mod tests {
     /// afterwards, so an unproven mismatch release never leaves a fence behind a resumed session.
     /// A slot whose bound session lost control at epoch 1.
     fn lost_slot() -> (ChannelRuntimeV1, ExactActorRef, GameSessionId) {
-        use crate::foundation::{ChannelContentPin, CharacterLease, NodeId};
+        use {
+            crate::foundation::{CharacterLease, NodeId},
+            oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+        };
         let world_id = WorldId::decode(&uuid_v7(0x60)).expect("world");
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             world_id,

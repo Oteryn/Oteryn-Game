@@ -9,10 +9,7 @@ use super::character_equipment::EquipmentError;
     unused_imports,
     reason = "compatibility exports for existing equipment consumers"
 )]
-pub use crate::foundation::equipment_policy_abi::{
-    EquipmentBaseVocation, EquipmentClaims, EquipmentPolicyLookup, QualifiedEquipmentPolicy,
-    policy_registration,
-};
+pub use oteryn_gameplay_domain::domain::equipment_policy_abi::{EquipmentBaseVocation, EquipmentClaims, EquipmentPolicyLookup, QualifiedEquipmentPolicy, policy_registration};
 pub fn claims(
     policy: &QualifiedEquipmentPolicy,
     slot: u8,
@@ -29,7 +26,7 @@ pub fn claims(
 mod tests {
     #![allow(clippy::expect_used)]
     use super::*;
-    use crate::foundation::equipment_policy_abi::SLOTS;
+    use oteryn_gameplay_domain::domain::equipment_policy_abi::SLOTS;
     fn unknown_slots() -> Vec<(u8, Result<EquipmentClaims, &'static str>)> {
         SLOTS
             .into_iter()

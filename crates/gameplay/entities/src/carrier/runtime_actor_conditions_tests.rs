@@ -1,6 +1,6 @@
 #![allow(clippy::expect_used, clippy::unwrap_used)]
 use super::*;
-use oteryn_gameplay_foundation::foundation::condition::{ConditionValues, ConflictKey, SpeedRange};
+use oteryn_gameplay_domain::domain::condition::{ConditionValues, ConflictKey, SpeedRange};
 use oteryn_simulation_determinism::GameplayDecisionRoot;
 
 fn fixture() -> (

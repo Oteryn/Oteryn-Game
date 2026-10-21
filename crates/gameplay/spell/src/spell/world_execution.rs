@@ -11,8 +11,11 @@ use super::native::CompiledNativeSpell;
 use super::native_house_movement::HouseMovementPlan;
 use crate::content::static_cell_engine::StaticCellEngineError;
 use crate::content::{CollisionClass, LogicalCell, NativeEntryMovementCells};
-use crate::foundation::{
-    CarrierError, ChannelRuntimeV1, ExactActorRef, MovementLocalPosition, MovementPositionSnapshot,
+use {
+    crate::foundation::{
+        ChannelRuntimeV1, ExactActorRef, MovementLocalPosition, MovementPositionSnapshot,
+    },
+    oteryn_gameplay_domain::domain::carrier_values::CarrierError,
 };
 
 /// The transaction and current LocalObject owner remain borrowed until the actual
@@ -814,8 +817,11 @@ mod tests {
     #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
     use super::*;
     use crate::content::{QualifiedNativeEntryRoom, qualify_native_entry_room};
-    use crate::foundation::{ChannelContentPin, ChannelId, GameSessionId, NodeId, WorldId};
     use serde_json::{Value, json};
+    use {
+        crate::foundation::{ChannelId, GameSessionId, NodeId, WorldId},
+        oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+    };
 
     fn uuid(raw: u8) -> [u8; 16] {
         let mut bytes = [0; 16];

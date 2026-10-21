@@ -2292,23 +2292,25 @@ fn activate_floor_changes(world: &crate::map::boot::BundleWorld) -> Result<usize
 /// frame binding and map-revision identities and its start (native floor `-z`) as the
 /// first-entry start.
 fn bundle_channel_pin(
-    pin: &crate::foundation::ChannelContentPin,
+    pin: &oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
     world: &crate::map::boot::BundleWorld,
-) -> Result<crate::foundation::ChannelContentPin, BootError> {
+) -> Result<oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin, BootError> {
     let start = world.start();
     let floor = start
         .floor
         .checked_neg()
         .ok_or(BootError::ContentActivation("world bundle start floor"))?;
-    Ok(crate::foundation::ChannelContentPin::from_activation(
-        pin.world_id(),
-        pin.activation_sequence(),
-        pin.server_artifact_digest(),
-        pin.client_artifact_digest(),
-        world.frame_binding_digest(pin.world_id()),
-        world.map_revision_digest(),
-        (i32::from(start.x), i32::from(start.y), i16::from(floor)),
-    ))
+    Ok(
+        oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::from_activation(
+            pin.world_id(),
+            pin.activation_sequence(),
+            pin.server_artifact_digest(),
+            pin.client_artifact_digest(),
+            world.frame_binding_digest(pin.world_id()),
+            world.map_revision_digest(),
+            (i32::from(start.x), i32::from(start.y), i16::from(floor)),
+        ),
+    )
 }
 
 /// BUNDLE-COMBAT-ENABLE-1: the combat room of a bundle World, the qualified room's bundle view
@@ -3259,7 +3261,9 @@ mod tests {
                 1,
                 "runtime-scope-assignment:1",
                 8,
-                crate::foundation::ChannelContentPin::test(world),
+                oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::test(
+                    world,
+                ),
             )
             .expect("runtime")
         };
@@ -3304,7 +3308,9 @@ mod tests {
                 1,
                 "runtime-scope-assignment:1",
                 9_000,
-                crate::foundation::ChannelContentPin::test(world),
+                oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::test(
+                    world,
+                ),
             )
             .expect("runtime")
         };
@@ -3422,7 +3428,7 @@ mod tests {
             1,
             "runtime-scope-assignment:1",
             POINTS + 1_000,
-            crate::foundation::ChannelContentPin::test(world),
+            oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::test(world),
         )
         .expect("runtime");
         let executor = tokio::runtime::Builder::new_current_thread()
@@ -3517,14 +3523,15 @@ mod tests {
         }
         // #1916: the Channel pin of the booted World carries the bundle's map-revision and frame
         // identities, never the entry room's, and starts at the bundle start (legacy `z` 7).
-        let entry = crate::foundation::ChannelContentPin::test(world);
+        let entry =
+            oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::test(world);
         let pin = bundle_channel_pin(&entry, &booted).expect("pin");
         let map_revision: [u8; 32] =
             <sha2::Sha256 as sha2::Digest>::digest(boot_pins.map_revision.as_bytes()).into();
         assert_eq!(booted.map_revision_digest(), map_revision);
         assert_eq!(
             pin,
-            crate::foundation::ChannelContentPin::from_activation(
+            oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::from_activation(
                 world,
                 entry.activation_sequence(),
                 entry.server_artifact_digest(),

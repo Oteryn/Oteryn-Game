@@ -388,10 +388,13 @@ mod tests {
     #![allow(clippy::items_after_test_module)]
     #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
     use super::*;
-    use crate::foundation::{ChannelContentPin, ChannelId, NodeId, WorldId};
     use crate::spell::cast::CharacterCastFacts;
     use oteryn_simulation_determinism::{
         DecisionOccurrenceId, GameplayDecisionRoot, SemanticTimeMicros,
+    };
+    use {
+        crate::foundation::{ChannelId, NodeId, WorldId},
+        oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
     };
     fn id(n: u8) -> [u8; 16] {
         [1, 0, 0, 0, 0, n, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, n]

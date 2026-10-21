@@ -14,11 +14,14 @@ use crate::durability::character_wheel::{
     WHEEL_SLOTS, WheelChangeFacts, WheelChangeRequest, WheelCommitOutcome, WheelDomain,
     WheelOccurrence, WheelRuleset, WheelSlots, read_current_allocation_in_transaction,
 };
-use crate::foundation::{
-    ChannelContentPin, ChannelId, CommandId, ConnectionGeneration, GameSessionId,
-    ScopeOwnershipGeneration, WorldId,
-};
 use std::sync::Arc;
+use {
+    crate::foundation::{
+        ChannelId, CommandId, ConnectionGeneration, GameSessionId, ScopeOwnershipGeneration,
+        WorldId,
+    },
+    oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+};
 
 const DIGEST: [u8; 32] = [1; 32];
 const LEVEL: i64 = 1050;

@@ -1,2 +1,2 @@
 //! Compatibility path for Foundation-owned field recipes.
-pub use crate::foundation::condition::field_condition::*;
+pub use oteryn_gameplay_content::content::field_condition::*;

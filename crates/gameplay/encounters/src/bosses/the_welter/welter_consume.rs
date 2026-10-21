@@ -306,10 +306,11 @@ mod native_source_tests {
             ProjectReferenceRecord, ProjectV2AuthoringProfile, ProjectV2SourceIdentityBinding,
         };
         use crate::foundation::owner_timer::SemanticTimeMicros;
-        use crate::foundation::{
-            ChannelContentPin, ChannelId, GameSessionId, MovementLocalPosition, NodeId, WorldId,
-        };
         use oteryn_simulation_determinism::GameplayDecisionRoot;
+        use {
+            crate::foundation::{ChannelId, GameSessionId, MovementLocalPosition, NodeId, WorldId},
+            oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+        };
         fn time(v: u64) -> SemanticTimeMicros {
             SemanticTimeMicros::from_micros(v)
         }

@@ -126,7 +126,7 @@ mod tests {
     use super::*;
     #[test]
     fn actual_map_pair_has_independent_client_pin_and_strict_corruption_refusal() {
-        let world = crate::foundation::WorldId::decode(&[
+        let world = oteryn_protocol_oteryn::WorldId::decode(&[
             0, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1,
         ])
         .unwrap();

@@ -32,8 +32,11 @@ use crate::durability::bestiary_progress::BestiaryProgressError;
 use crate::durability::character_progression::CharacterProgressionError;
 use crate::durability::item_mint::ItemMintError;
 use crate::foundation::runtime_actor_spell_types::CombatBatchReceipt;
-use crate::foundation::{
-    CarrierError, ChannelRuntimeV1, CreatureDeathOccurrenceKey, ExactActorRef, GameSessionId,
+use {
+    crate::foundation::{
+        ChannelRuntimeV1, CreatureDeathOccurrenceKey, ExactActorRef, GameSessionId,
+    },
+    oteryn_gameplay_domain::domain::carrier_values::CarrierError,
 };
 
 use super::attack::ChannelAttackStates;

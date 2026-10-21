@@ -1,11 +1,13 @@
 #![cfg_attr(not(test), allow(dead_code, unused_imports))]
 #![allow(clippy::unwrap_used)]
 use super::*;
-use crate::foundation::{
-    ChannelContentPin, ChannelId, CharacterId, CommandId, CommandRef, GameSessionId, NodeId,
-    WorldId,
-};
 use crate::spell::combat_batch::{OwnerCombatChange, OwnerCombatEffect, SpellOccurrenceBinding};
+use {
+    crate::foundation::{
+        ChannelId, CharacterId, CommandId, CommandRef, GameSessionId, NodeId, WorldId,
+    },
+    oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+};
 
 fn id(tag: u8) -> [u8; 16] {
     [1, 0x90, 0, 0, 0, tag, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag]

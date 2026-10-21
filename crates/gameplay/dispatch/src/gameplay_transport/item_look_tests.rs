@@ -5,8 +5,11 @@ use super::*;
 use crate::content::native_gameplay::test_support::{
     activated_with_item_keys, activated_with_loot_tables,
 };
-use crate::foundation::{ChannelContentPin, ChannelId, NodeId, WorldId};
 use std::num::NonZeroU32;
+use {
+    crate::foundation::{ChannelId, NodeId, WorldId},
+    oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+};
 
 fn id(tag: u8) -> [u8; 16] {
     [1, 0x90, 0, 0, 0, tag, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag]

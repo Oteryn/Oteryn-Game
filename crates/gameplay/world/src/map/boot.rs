@@ -593,15 +593,16 @@ pub mod tests {
     #![cfg_attr(not(test), allow(dead_code, unused_imports))]
     #![allow(clippy::expect_used)]
     use super::*;
-    use crate::foundation::{
-        ChannelContentPin, ChannelRuntimeV1, GameSessionId, MovementLocalPosition, NodeId,
-    };
     use crate::movement::{
         CardinalStep, MovementEngineeringSelection, MovementError, MovementOwnerTurn,
         MovementTurnOutcome,
     };
     use std::error::Error;
     use std::num::NonZeroUsize;
+    use {
+        crate::foundation::{ChannelRuntimeV1, GameSessionId, MovementLocalPosition, NodeId},
+        oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+    };
 
     /// SPAWN-1b (Codex P1 on #1981): a bundle source stays one runtime source whatever its
     /// points mix; night points and sources left with no point are outside the activation.

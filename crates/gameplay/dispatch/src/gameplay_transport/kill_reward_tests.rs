@@ -715,15 +715,16 @@ fn parked_entries_count_toward_killrw_rl_01() {
 /// hit has killed, its death projected as `record_creature_kill` leaves it.
 fn runtime_with_killed_creature() -> (ChannelRuntimeV1, ExactActorRef) {
     let world = WorldId::decode(&id(1)).expect("world");
-    let pin = crate::foundation::ChannelContentPin::from_activation(
-        world,
-        1,
-        [1; 32],
-        [2; 32],
-        [3; 32],
-        [4; 32],
-        (100, 100, 7),
-    );
+    let pin =
+        oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::from_activation(
+            world,
+            1,
+            [1; 32],
+            [2; 32],
+            [3; 32],
+            [4; 32],
+            (100, 100, 7),
+        );
     let mut runtime = ChannelRuntimeV1::from_committed_assignment(
         world,
         ChannelId::decode(&id(0x61)).expect("channel"),

@@ -17,12 +17,15 @@ use crate::creature_auto_attack::ProfileAbilityProposal;
 use crate::creature_auto_attack::{AttackError, AttackFacts, CurrentConditionPolicy};
 use crate::creature_damage_spell::*;
 use crate::foundation::owner_timer::SemanticTimeMicros;
-use crate::foundation::{ChannelContentPin, ChannelId, MovementLocalPosition, NodeId};
 use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, GameSessionId, RuntimeWorkStamp, ScopeRuntimeFence,
 };
 use crate::gameplay_transport::actor_spell::{ChannelSpellStates, tests::FACTS};
 use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+use {
+    crate::foundation::{ChannelId, MovementLocalPosition, NodeId},
+    oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+};
 fn actual_content() -> (NativeGameplayState, ChannelContentPin) {
     let path = std::env::var_os("OTERYN_FULL_SPELL_TEST_MANIFEST")
         .expect("explicit actual source artifact manifest");
@@ -612,7 +615,7 @@ fn appearance_area_late_player_clock_refusal_rolls_back_creature_and_players() {
     let def = crate::ability::condition::ConditionDefinition::new(
         "fixture:future",
         1,
-        crate::ability::condition::ConditionValues::Invisible { duration_ms: 1000 },
+        oteryn_gameplay_domain::domain::condition::ConditionValues::Invisible { duration_ms: 1000 },
     )
     .unwrap();
     let facts = crate::ability::condition::ApplicationFacts {
@@ -701,7 +704,7 @@ fn mixed_appearance_receipts_keep_longer_player_outfit_and_apply_new_creature_it
     let def = crate::ability::condition::ConditionDefinition::new(
         "fixture:longer-outfit",
         1,
-        crate::ability::condition::ConditionValues::Outfit {
+        oteryn_gameplay_domain::domain::condition::ConditionValues::Outfit {
             duration_ms: 10000,
             look_type: member.look_type(),
         },
@@ -772,10 +775,10 @@ fn mixed_appearance_receipts_keep_longer_player_outfit_and_apply_new_creature_it
             .read_owned_player_state_test_snapshot(&r, p.target, world.session)
             .unwrap()
             .owned_conditions()
-            .get(crate::ability::condition::ConflictKey::Outfit),
+            .get(oteryn_gameplay_domain::domain::condition::ConflictKey::Outfit),
         player
             .owned_conditions()
-            .get(crate::ability::condition::ConflictKey::Outfit)
+            .get(oteryn_gameplay_domain::domain::condition::ConflictKey::Outfit)
     );
     assert!(
         r.actor_conditions(p.issuer, None)

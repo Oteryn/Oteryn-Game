@@ -7,11 +7,14 @@ use super::native_companions::{
     AcquisitionFacts, AcquisitionKind, AcquisitionPlan, CompanionFacts,
 };
 use crate::content::{CollisionClass, LogicalCell, NativeEntryMovementCells};
-use crate::foundation::{
-    CarrierError, ChannelRuntimeV1, CompanionMaster, CompanionSnapshot, ExactActorRef,
-    GameSessionId, MovementLocalPosition,
-};
 use crate::spell::native::CompiledNativeSpellPlanExt;
+use {
+    crate::foundation::{
+        ChannelRuntimeV1, CompanionMaster, CompanionSnapshot, ExactActorRef, GameSessionId,
+        MovementLocalPosition,
+    },
+    oteryn_gameplay_domain::domain::carrier_values::CarrierError,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CompanionExecutionError {

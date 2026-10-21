@@ -5,13 +5,16 @@
 //! assignment that `serve` consumes before readiness; one runtime per
 //! ownership generation is enforced by that composition, not by this module.
 
-pub use oteryn_gameplay_foundation::foundation::{
-    ActorLocalGeneration, ActorLocalId, ActorRef, CarrierError, ChannelContentPin, ExactActorRef,
-    LocalPosition,
-};
 use oteryn_gameplay_foundation::foundation::{
     ChannelId, CharacterId, CharacterLease, CommandRef, GameSessionId, NodeId,
     ScopeOwnershipGeneration, WorldId,
+};
+pub use {
+    oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+    oteryn_gameplay_domain::domain::carrier_values::{CarrierError, LocalPosition},
+    oteryn_gameplay_foundation::foundation::{
+        ActorLocalGeneration, ActorLocalId, ActorRef, ExactActorRef,
+    },
 };
 /// Carrier entry points the crate's runtime uses and that the lifted qualification tests
 /// drive directly: `pub` only in test builds, crate-private everywhere else, so no other
@@ -4869,9 +4872,9 @@ impl ChannelActorCarrier {
         // health drain. This is the target's actual condition owner; players
         // retain their invisibility and historical replay returns above.
         if let Some(companion) = companion {
-            companion.conditions.remove_type(
-                oteryn_gameplay_foundation::foundation::condition::ConditionType::Invisible,
-            );
+            companion
+                .conditions
+                .remove_type(oteryn_gameplay_domain::domain::condition::ConditionType::Invisible);
         }
         if next == 0 {
             committed.conditions.die();

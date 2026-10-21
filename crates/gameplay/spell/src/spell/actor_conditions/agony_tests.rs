@@ -6,7 +6,7 @@ use super::super::Vocation;
 use super::super::cast::CharacterCastFacts;
 use super::super::combat_batch::{AvatarState, ManaShieldState};
 use super::*;
-use crate::ability::condition::DotElement;
+use oteryn_gameplay_domain::domain::condition::DotElement;
 
 fn shielded() -> PlayerSpellState {
     let mut state = PlayerSpellState::new(
@@ -133,7 +133,7 @@ fn the_cycle_deals_a_non_lethal_creature_agony_tick_past_the_mana_shield() {
     assert!(
         state
             .conditions
-            .get(crate::ability::condition::ConflictKey::Agony)
+            .get(oteryn_gameplay_domain::domain::condition::ConflictKey::Agony)
             .is_none()
     );
 }
@@ -171,7 +171,7 @@ fn the_cycle_uses_up_a_refused_agony_tick_in_a_protection_zone() {
     assert!(
         state
             .conditions
-            .get(crate::ability::condition::ConflictKey::Agony)
+            .get(oteryn_gameplay_domain::domain::condition::ConflictKey::Agony)
             .is_none()
     );
     assert!(has_periodic_damage(&with_agony(

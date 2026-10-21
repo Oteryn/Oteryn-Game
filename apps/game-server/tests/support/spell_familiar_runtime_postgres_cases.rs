@@ -70,9 +70,12 @@ fn knight_familiar_runtime(
     crate::foundation::GameSessionId,
     serde_json::Value,
 )> {
-    use crate::foundation::{
-        ChannelContentPin, ChannelId, ChannelRuntimeV1, CompiledCreaturePolicies,
-        CompiledCreaturePolicy, CreatureFlags, GameSessionId, WorldId,
+    use {
+        crate::foundation::{ChannelId, ChannelRuntimeV1, GameSessionId, WorldId},
+        oteryn_gameplay_content::content::{
+            channel_content_pin::ChannelContentPin,
+            creature_policy::{CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureFlags},
+        },
     };
     let world = WorldId::decode(&id(crate::bestiary_postgres_harness::WORLD)).map_err(debug)?;
     let mut physical = ChannelRuntimeV1::from_committed_assignment(

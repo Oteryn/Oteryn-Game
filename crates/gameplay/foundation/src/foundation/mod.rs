@@ -3,13 +3,6 @@
 pub mod ability_data;
 pub mod actor_ref;
 pub use actor_ref::{ActorLocalGeneration, ActorLocalId, ActorRef, ExactActorRef};
-pub mod carrier_values;
-pub use carrier_values::{CarrierError, ChannelContentPin, LocalPosition};
-pub mod creature_policy;
-pub use creature_policy::{
-    CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureExactRatio, CreatureFlags,
-    CreatureResistance, FamiliarSelfHealDefense,
-};
 
 mod admission {
     include!("admission.rs");
@@ -1477,10 +1470,4 @@ pub fn crystal_timer_fixture(
     reason = "preserves the existing Combat data lint scope for unmounted charm hooks"
 )]
 pub mod charm_data;
-pub mod equipment_policy_abi;
 pub mod loot_data;
-pub mod magnitude_policy;
-pub mod map_position;
-pub mod melee_definition;
-
-pub mod spell_wheel_profile;

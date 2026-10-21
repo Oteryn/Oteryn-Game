@@ -413,7 +413,7 @@ mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
     use super::*;
     use crate::content::{native_entry_room_documents, qualify_native_entry_room};
-    use crate::foundation::WorldId;
+    use oteryn_protocol_oteryn::WorldId;
     use serde_json::json;
 
     fn world() -> WorldId {

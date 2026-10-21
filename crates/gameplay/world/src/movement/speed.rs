@@ -332,7 +332,7 @@ pub enum CreatureCadenceError {
     MissingSpeed,
     MissingMap,
     ClockOverflow,
-    Carrier(crate::foundation::CarrierError),
+    Carrier(oteryn_gameplay_domain::domain::carrier_values::CarrierError),
     Movement(crate::movement::MovementError),
 }
 impl CreatureMovementCadence {

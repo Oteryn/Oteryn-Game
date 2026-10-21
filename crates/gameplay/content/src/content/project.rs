@@ -33,7 +33,7 @@ use super::{
     ReferenceLootDefinition, ReferenceLootEntry, ReferenceLootSelectionAlgorithm,
     ReferencePlayableContentSource, Sha256HexDigest, TypedDefinitionRef, link_reference_playable,
 };
-use crate::foundation::WorldId;
+use oteryn_protocol_oteryn::WorldId;
 use serde::de::{self, DeserializeSeed, MapAccess, SeqAccess, Visitor};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::{BTreeMap, BTreeSet};

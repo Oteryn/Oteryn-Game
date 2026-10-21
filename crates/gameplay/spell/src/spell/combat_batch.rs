@@ -108,7 +108,7 @@ pub fn lower_native(
         }
         if !runtime.borrow_exact_actor_lookup().contains(binding.actor) {
             return Err(Error::Owner(
-                crate::foundation::CarrierError::StaleActorGeneration,
+                oteryn_gameplay_domain::domain::carrier_values::CarrierError::StaleActorGeneration,
             ));
         }
     }

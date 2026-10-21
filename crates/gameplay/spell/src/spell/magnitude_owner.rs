@@ -9,12 +9,12 @@
 use super::cast::PlayerSpellState;
 use super::combat_batch::{Error, LiveActorBinding, MAX_EFFECTS};
 use super::native_combat::{Element, MagnitudePlan, NativeCombatPlan};
-use crate::ability::condition::ConditionValues;
 use crate::foundation::{
     ChannelRuntimeV1, CharacterId, CompanionSnapshot, ExactActorRef, GameSessionId,
 };
+use oteryn_gameplay_domain::domain::condition::ConditionValues;
 
-pub use crate::foundation::magnitude_policy::MagnitudePolicy;
+pub use oteryn_gameplay_domain::domain::magnitude_policy::MagnitudePolicy;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ExactRatio {

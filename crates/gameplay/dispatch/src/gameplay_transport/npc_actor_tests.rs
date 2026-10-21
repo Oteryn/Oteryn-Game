@@ -11,12 +11,14 @@ use crate::content::{
     ProjectV2Identity, ProjectV2Movement, ProjectV2State, ProjectV2Targeting, ProjectV2Wander,
     ProjectionDocument, npc_catalogue_preproduction_limits, qualify_native_entry_room,
 };
-use crate::foundation::{
-    ChannelContentPin, ChannelId, GameSessionId, NodeId, NpcPlacement, NpcPlacementTable,
-    NpcPlacements, WorldId,
-};
 use crate::gameplay_transport::actor_spell::tests::runtime_with_capacity;
 use oteryn_simulation_determinism::SemanticTimeMicros;
+use {
+    crate::foundation::{
+        ChannelId, GameSessionId, NodeId, NpcPlacement, NpcPlacementTable, NpcPlacements, WorldId,
+    },
+    oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+};
 
 const NPC: &str = "oteryn:npc.alice";
 const BEHAVIOR: &str = "oteryn:behavior.npc.alice";

@@ -383,7 +383,10 @@ pub struct CallbackCastOwner {
     memos: Vec<Memo>,
     next: u64,
     speech: Vec<CallbackSpeech>,
-    removals: Vec<(ExactActorRef, Result<(), crate::foundation::CarrierError>)>,
+    removals: Vec<(
+        ExactActorRef,
+        Result<(), oteryn_gameplay_domain::domain::carrier_values::CarrierError>,
+    )>,
 }
 impl CallbackCastOwner {
     pub fn new(r: &ChannelRuntimeV1, f: &ScopeRuntimeFence) -> Result<Self, AttackError> {
@@ -423,7 +426,10 @@ impl CallbackCastOwner {
     }
     pub fn take_source_removals(
         &mut self,
-    ) -> Vec<(ExactActorRef, Result<(), crate::foundation::CarrierError>)> {
+    ) -> Vec<(
+        ExactActorRef,
+        Result<(), oteryn_gameplay_domain::domain::carrier_values::CarrierError>,
+    )> {
         std::mem::take(&mut self.removals)
     }
     fn current(

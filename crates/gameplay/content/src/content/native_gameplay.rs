@@ -15,9 +15,9 @@ use super::project::{
     ProjectV2DefinitionRef, ProjectV2Family,
 };
 use super::spell_data::{SpellBook, executable_catalog};
+use crate::content::creature_policy::{CompiledCreaturePolicies, CompiledCreaturePolicy};
 use crate::domain::appearance::AppearanceContent;
-use crate::foundation::condition::{ConditionType, DotElement};
-use crate::foundation::{CompiledCreaturePolicies, CompiledCreaturePolicy};
+use oteryn_gameplay_domain::domain::condition::{ConditionType, DotElement};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -556,7 +556,7 @@ pub struct NativeGameplayInput {
 pub struct NativeTrainingInput {
     pub profile: PinnedGameplayBytes,
     pub content_revision: String,
-    pub magnitude_policy: crate::foundation::magnitude_policy::MagnitudePolicy,
+    pub magnitude_policy: oteryn_gameplay_domain::domain::magnitude_policy::MagnitudePolicy,
 }
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -565,7 +565,7 @@ struct TrainingFilePin {
     sha256: String,
     content_revision: String,
     #[serde(default)]
-    magnitude_policy: crate::foundation::magnitude_policy::MagnitudePolicy,
+    magnitude_policy: oteryn_gameplay_domain::domain::magnitude_policy::MagnitudePolicy,
 }
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -573,10 +573,12 @@ struct TrainingEnvelope {
     content_revision: String,
     profile: serde_json::Value,
     #[serde(default, skip_serializing_if = "strict_magnitude_policy")]
-    magnitude_policy: crate::foundation::magnitude_policy::MagnitudePolicy,
+    magnitude_policy: oteryn_gameplay_domain::domain::magnitude_policy::MagnitudePolicy,
 }
-fn strict_magnitude_policy(policy: &crate::foundation::magnitude_policy::MagnitudePolicy) -> bool {
-    *policy == crate::foundation::magnitude_policy::MagnitudePolicy::Strict
+fn strict_magnitude_policy(
+    policy: &oteryn_gameplay_domain::domain::magnitude_policy::MagnitudePolicy,
+) -> bool {
+    *policy == oteryn_gameplay_domain::domain::magnitude_policy::MagnitudePolicy::Strict
 }
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -693,7 +695,7 @@ impl NativeMonsterMeleeProfile {
                     && a.chance_ppm == self.chance_ppm
                     && a.range_tiles.is_none_or(|range| range == 1)
             })
-            || crate::foundation::melee_definition::MeleeDefinition::new(
+            || oteryn_gameplay_domain::domain::melee_definition::MeleeDefinition::new(
                 [0; 32],
                 self.interval_ms,
                 self.chance_ppm,
@@ -733,8 +735,7 @@ pub struct NativeItemAttributes {
     pub blocks_projectile: Option<bool>,
     pub immovable_block_solid: Option<bool>,
     /// Missing is Unknown; only a source-qualified recipe may assert a non-damaging field.
-    pub field_condition:
-        Option<crate::foundation::condition::field_condition::QualifiedFieldCondition>,
+    pub field_condition: Option<crate::content::field_condition::QualifiedFieldCondition>,
     /// Explicit activated source/config policy; absence stays Unknown.
     pub rune_consumption: Option<NativeRuneConsumption>,
     pub field_replaceable: Option<bool>,
@@ -816,7 +817,7 @@ pub struct NativeGameplayState {
     items: Option<ItemProfilesDocument>,
     appearances: Option<super::native_spell_appearances::CompiledSpellAppearances>,
     training: Option<crate::content::training_formula::CompiledTrainingFormula>,
-    magnitude_policy: crate::foundation::magnitude_policy::MagnitudePolicy,
+    magnitude_policy: oteryn_gameplay_domain::domain::magnitude_policy::MagnitudePolicy,
     familiar_config: Option<super::spell_familiar_config::CompiledFamiliarConfig>,
     familiar_defenses: Option<super::spell_familiar_defenses::CompiledFamiliarDefenses>,
     wheel_profile: Option<super::spell_wheel_profile::CompiledWheelProfile>,
@@ -916,7 +917,9 @@ impl NativeGameplayState {
     pub fn presentation_profiles(&self) -> &PresentationProfilesDocument {
         &self.presentations
     }
-    pub fn magnitude_policy(&self) -> crate::foundation::magnitude_policy::MagnitudePolicy {
+    pub fn magnitude_policy(
+        &self,
+    ) -> oteryn_gameplay_domain::domain::magnitude_policy::MagnitudePolicy {
         self.magnitude_policy
     }
     pub fn training_formula(
@@ -1688,7 +1691,7 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
     } else {
         (
             None,
-            crate::foundation::magnitude_policy::MagnitudePolicy::Strict,
+            oteryn_gameplay_domain::domain::magnitude_policy::MagnitudePolicy::Strict,
         )
     };
     let (familiar_config, familiar_defenses, wheel_profile, native_map_profile) = if is_v5 {
@@ -1949,18 +1952,18 @@ fn creature_policies(
             reward_boss: Some(details.system_eligibility.reward_boss),
             defense: Some(details.defense),
             armor: value.armor,
-            mitigation: value
-                .mitigation
-                .map(|v| crate::foundation::CreatureExactRatio {
+            mitigation: value.mitigation.map(|v| {
+                crate::content::creature_policy::CreatureExactRatio {
                     numerator: v.numerator,
                     denominator: v.denominator,
-                }),
+                }
+            }),
             resistances: value
                 .resistances
                 .iter()
-                .map(|v| crate::foundation::CreatureResistance {
+                .map(|v| crate::content::creature_policy::CreatureResistance {
                     damage_type: v.damage_type.clone(),
-                    percent: crate::foundation::CreatureExactRatio {
+                    percent: crate::content::creature_policy::CreatureExactRatio {
                         numerator: v.percent.numerator,
                         denominator: v.percent.denominator,
                     },
@@ -1970,15 +1973,15 @@ fn creature_policies(
             healing_from_damage: details
                 .healing_from_damage
                 .iter()
-                .map(|v| crate::foundation::CreatureResistance {
+                .map(|v| crate::content::creature_policy::CreatureResistance {
                     damage_type: v.damage_type.clone(),
-                    percent: crate::foundation::CreatureExactRatio {
+                    percent: crate::content::creature_policy::CreatureExactRatio {
                         numerator: v.percent.numerator,
                         denominator: v.percent.denominator,
                     },
                 })
                 .collect(),
-            flags: crate::foundation::CreatureFlags {
+            flags: crate::content::creature_policy::CreatureFlags {
                 attackable: details.flags.attackable,
                 illusionable: details.flags.illusionable,
                 health_hidden: details.flags.health_hidden,
@@ -2058,7 +2061,8 @@ pub mod test_support {
                 "../../../../../tools/content-schema/native-gameplay/build-training.json"
             )),
             content_revision: "build-content-r1".into(),
-            magnitude_policy: crate::foundation::magnitude_policy::MagnitudePolicy::Strict,
+            magnitude_policy:
+                oteryn_gameplay_domain::domain::magnitude_policy::MagnitudePolicy::Strict,
         });
         supplied.familiar_config = Some(pinned(include_bytes!(
             "../../../../../tools/content-schema/native-gameplay/familiar-config.json"
@@ -2110,7 +2114,7 @@ pub mod test_support {
     /// manifest's optional source-world addon (`None`: the accepted entry room). The returned pin
     /// is the activation's own, which the Channel runtime and its combat room are built from.
     pub fn activated_with_loot_tables(
-        world: crate::foundation::WorldId,
+        world: oteryn_protocol_oteryn::WorldId,
         source_world: Option<&[u8]>,
     ) -> (
         ContentActivationController,
@@ -2708,7 +2712,8 @@ mod tests {
                 "../../../../../tools/content-schema/native-gameplay/build-training.json"
             )),
             content_revision: "build-content-r1".into(),
-            magnitude_policy: crate::foundation::magnitude_policy::MagnitudePolicy::Strict,
+            magnitude_policy:
+                oteryn_gameplay_domain::domain::magnitude_policy::MagnitudePolicy::Strict,
         });
         let artifact = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
         assert!(artifact.server_artifact.starts_with(MAGIC_V4));
@@ -2719,19 +2724,20 @@ mod tests {
         );
         assert_eq!(
             state.magnitude_policy(),
-            crate::foundation::magnitude_policy::MagnitudePolicy::Strict
+            oteryn_gameplay_domain::domain::magnitude_policy::MagnitudePolicy::Strict
         );
         let mut baseline_test = supplied.clone();
         baseline_test
             .build_training
             .as_mut()
             .unwrap()
-            .magnitude_policy = crate::foundation::magnitude_policy::MagnitudePolicy::BaselineTest;
+            .magnitude_policy =
+            oteryn_gameplay_domain::domain::magnitude_policy::MagnitudePolicy::BaselineTest;
         let test_artifact = compile_native_gameplay(baseline.compiled(), &baseline_test).unwrap();
         let test_state = decode(&test_artifact.server_artifact).unwrap().state;
         assert_eq!(
             test_state.magnitude_policy(),
-            crate::foundation::magnitude_policy::MagnitudePolicy::BaselineTest
+            oteryn_gameplay_domain::domain::magnitude_policy::MagnitudePolicy::BaselineTest
         );
         assert_ne!(test_artifact.server_digest(), artifact.server_digest());
         let appearances = state.spell_appearances().unwrap();
@@ -3344,7 +3350,8 @@ mod tests {
                 "../../../../../tools/content-schema/native-gameplay/build-training.json"
             )),
             content_revision: "build-content-r1".into(),
-            magnitude_policy: crate::foundation::magnitude_policy::MagnitudePolicy::Strict,
+            magnitude_policy:
+                oteryn_gameplay_domain::domain::magnitude_policy::MagnitudePolicy::Strict,
         });
         supplied.familiar_config = Some(pinned(include_bytes!(
             "../../../../../tools/content-schema/native-gameplay/familiar-config.json"
@@ -3426,11 +3433,13 @@ mod tests {
     }
 }
 
-impl crate::foundation::equipment_policy_abi::policy_registration::Registered
+impl oteryn_gameplay_domain::domain::equipment_policy_abi::policy_registration::Registered
     for NativeGameplayState
 {
 }
-impl crate::foundation::equipment_policy_abi::EquipmentPolicyLookup for NativeGameplayState {
+impl oteryn_gameplay_domain::domain::equipment_policy_abi::EquipmentPolicyLookup
+    for NativeGameplayState
+{
     fn source_digest(&self) -> [u8; 32] {
         self.source_digest
     }
@@ -3438,7 +3447,8 @@ impl crate::foundation::equipment_policy_abi::EquipmentPolicyLookup for NativeGa
         &self,
         key: &str,
         revision: &str,
-    ) -> Option<crate::foundation::equipment_policy_abi::QualifiedEquipmentPolicy> {
+    ) -> Option<oteryn_gameplay_domain::domain::equipment_policy_abi::QualifiedEquipmentPolicy>
+    {
         use super::ReferenceItemField;
         let policy = self.item_policy(key, revision)?;
         let semantics = &policy.record().semantics;
@@ -3453,7 +3463,7 @@ impl crate::foundation::equipment_policy_abi::EquipmentPolicyLookup for NativeGa
             },
             _ => None,
         };
-        crate::foundation::equipment_policy_abi::QualifiedEquipmentPolicy::from_qualified_content(
+        oteryn_gameplay_domain::domain::equipment_policy_abi::QualifiedEquipmentPolicy::from_qualified_content(
             self.source_digest,
             claims,
             capacity,
@@ -3464,9 +3474,11 @@ impl crate::foundation::equipment_policy_abi::EquipmentPolicyLookup for NativeGa
 fn projected_equipment_claims(
     semantics: &super::ReferenceItemSemantics,
     slot: u8,
-) -> Result<crate::foundation::equipment_policy_abi::EquipmentClaims, &'static str> {
+) -> Result<oteryn_gameplay_domain::domain::equipment_policy_abi::EquipmentClaims, &'static str> {
     use super::{ReferenceBaseVocation, ReferenceEquipmentSlot, ReferenceItemField};
-    use crate::foundation::equipment_policy_abi::{EquipmentBaseVocation, EquipmentClaims};
+    use oteryn_gameplay_domain::domain::equipment_policy_abi::{
+        EquipmentBaseVocation, EquipmentClaims,
+    };
     let rejected = |s| s;
     let ReferenceItemField::Known(equipment) = &semantics.equipment else {
         return Err(rejected("unknown equipment pattern"));
@@ -3581,7 +3593,7 @@ mod equipment_projection_tests {
         assert_eq!(claims.level, 20);
         assert_eq!(
             claims.vocations,
-            vec![crate::foundation::equipment_policy_abi::EquipmentBaseVocation::Paladin]
+            vec![oteryn_gameplay_domain::domain::equipment_policy_abi::EquipmentBaseVocation::Paladin]
         );
         assert!(projected_equipment_claims(&semantics, 6).is_err());
         let mut incomplete = pattern.clone();
@@ -3767,7 +3779,9 @@ pub fn callback_source_native_test_policies(
 
 #[cfg(any(test, feature = "test-support"))]
 #[allow(clippy::expect_used)]
-pub fn retained_callback_native_fixture(world: crate::foundation::WorldId) -> NativeGameplayState {
+pub fn retained_callback_native_fixture(
+    world: oteryn_protocol_oteryn::WorldId,
+) -> NativeGameplayState {
     let path = std::env::var_os("OTERYN_FULL_SPELL_TEST_MANIFEST")
         .expect("explicit actual native manifest required for callback authority test");
     let input = NativeGameplayInput::from_manifest(Path::new(&path))
@@ -3794,7 +3808,7 @@ mod callback_membership_tests {
     #[test]
     fn callback_membership_requires_current_digest_and_exact_loaded_profile() {
         let input = super::test_support::input();
-        let world = crate::foundation::WorldId::decode(&[
+        let world = oteryn_protocol_oteryn::WorldId::decode(&[
             1, 144, 0, 0, 0, 8, 112, 0, 128, 0, 0, 0, 0, 0, 0, 8,
         ])
         .expect("qualified native callback test fixture");

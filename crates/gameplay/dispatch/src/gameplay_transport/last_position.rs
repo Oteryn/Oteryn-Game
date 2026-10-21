@@ -69,9 +69,12 @@ use crate::durability::character_last_position::{
 };
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::durability::fresh_admission::FreshAdmissionStore;
-use crate::foundation::{
-    CarrierError, ChannelRuntimeV1, ExactActorRef, FirstEntryPosition, GameSessionId,
-    MovementLocalPosition, WorldId,
+use {
+    crate::foundation::{
+        ChannelRuntimeV1, ExactActorRef, FirstEntryPosition, GameSessionId, MovementLocalPosition,
+        WorldId,
+    },
+    oteryn_gameplay_domain::domain::carrier_values::CarrierError,
 };
 
 /// `CHARPOS0-RL-01`: the interval between periodic last-position writes of one live Character
@@ -1186,7 +1189,10 @@ mod tests {
     /// The first-entry owner step's state: a runtime of `world(1)` whose pinned entry start is
     /// (3, 4, 7) and frame digest `[3; 32]`, with one committed player not yet positioned.
     fn admitted() -> (ChannelRuntimeV1, ExactActorRef, GameSessionId) {
-        use crate::foundation::{ChannelContentPin, ChannelId, NodeId};
+        use {
+            crate::foundation::{ChannelId, NodeId},
+            oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+        };
         let world_id = world(1);
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             world_id,
