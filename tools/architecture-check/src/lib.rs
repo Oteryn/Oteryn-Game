@@ -1,6 +1,11 @@
 //! Machine validation for workspace membership, roles and internal edges.
 
+mod gameplay;
+mod sources;
+
+use gameplay::GameplayPolicy;
 use serde_json::Value;
+use sources::collect_rust_sources;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Component, Path};
@@ -26,6 +31,7 @@ struct Policy {
     /// dev edge is not part of the shipped production closure. Unlisted members default to no
     /// dev edges.
     dev_edges: BTreeMap<String, BTreeSet<String>>,
+    gameplay: GameplayPolicy,
 }
 
 /// One workspace member's internal dependency edges, split by `cargo metadata` dependency
@@ -52,6 +58,7 @@ pub fn validate_workspace(root: &Path) -> Result<(), String> {
     validate_declared_edges(&policy, &actual_edges)?;
     validate_acyclic(&policy.edges)?;
     validate_production_closure(&policy)?;
+    gameplay::validate(root, &policy, &metadata)?;
     validate_restricted_calls(root)?;
     for member in &policy.members {
         if policy
@@ -130,6 +137,9 @@ enum Section {
     None,
     Edges,
     DevEdges,
+    GameplayLayers,
+    GameplaySameLayerEdges,
+    GameplayRules,
 }
 
 fn parse_policy(path: &Path) -> Result<Policy, String> {
@@ -139,6 +149,7 @@ fn parse_policy(path: &Path) -> Result<Policy, String> {
     let mut forbidden_fragments = Vec::new();
     let mut edges = BTreeMap::new();
     let mut dev_edges = BTreeMap::new();
+    let mut gameplay = GameplayPolicy::default();
     let mut section = Section::None;
     for raw_line in content.lines() {
         let line = raw_line.trim();
@@ -153,6 +164,21 @@ fn parse_policy(path: &Path) -> Result<Policy, String> {
             section = Section::DevEdges;
             continue;
         }
+        if line == "[gameplay_layers]" {
+            section = Section::GameplayLayers;
+            continue;
+        }
+        if line == "[gameplay_same_layer_edges]" {
+            section = Section::GameplaySameLayerEdges;
+            continue;
+        }
+        if line == "[gameplay_rules]" {
+            section = Section::GameplayRules;
+            continue;
+        }
+        if line.starts_with('[') {
+            return Err(format!("unknown workspace boundary section {line}"));
+        }
         let Some((key, value)) = line.split_once(" = ") else {
             continue;
         };
@@ -162,9 +188,21 @@ fn parse_policy(path: &Path) -> Result<Policy, String> {
             }
             continue;
         }
+        if section == Section::GameplayRules && key == "boss_identifier_mode" {
+            gameplay.boss_identifier_mode = serde_json::from_str(value)
+                .map_err(|error| format!("invalid boss identifier mode: {error}"))?;
+            continue;
+        }
         let parsed: Vec<String> = serde_json::from_str(value)
             .map_err(|error| format!("invalid array for {key}: {error}"))?;
         match section {
+            Section::GameplayLayers => gameplay.add_layer(key, parsed)?,
+            Section::GameplaySameLayerEdges => {
+                gameplay
+                    .same_layer_edges
+                    .insert(key.to_owned(), parsed.into_iter().collect());
+            }
+            Section::GameplayRules => gameplay.set_rule(key, parsed)?,
             Section::Edges => {
                 edges.insert(key.to_owned(), parsed.into_iter().collect());
             }
@@ -201,6 +239,7 @@ fn parse_policy(path: &Path) -> Result<Policy, String> {
         forbidden_fragments,
         edges,
         dev_edges,
+        gameplay,
     })
 }
 
@@ -304,7 +343,8 @@ fn cargo_metadata(root: &Path) -> Result<Value, String> {
         .current_dir(root)
         .args([
             "metadata",
-            "--locked",
+            "--offline",
+            "--no-deps",
             "--format-version",
             "1",
             "--manifest-path",
@@ -550,32 +590,6 @@ fn validate_restricted_calls(root: &Path) -> Result<(), String> {
     }
 }
 
-/// Every `.rs` file under `dir` as (portable path relative to `root`, contents).
-fn collect_rust_sources(
-    root: &Path,
-    dir: &Path,
-    files: &mut Vec<(String, String)>,
-) -> Result<(), String> {
-    let entries =
-        fs::read_dir(dir).map_err(|error| format!("cannot read {}: {error}", dir.display()))?;
-    for entry in entries {
-        let path = entry
-            .map_err(|error| format!("cannot read {}: {error}", dir.display()))?
-            .path();
-        if path.is_dir() {
-            collect_rust_sources(root, &path, files)?;
-        } else if path.extension().is_some_and(|extension| extension == "rs") {
-            let relative = path
-                .strip_prefix(root)
-                .map_err(|_| format!("{} is outside the workspace", path.display()))?;
-            let contents = fs::read_to_string(&path)
-                .map_err(|error| format!("cannot read {}: {error}", path.display()))?;
-            files.push((portable_relative_path(relative)?, contents));
-        }
-    }
-    Ok(())
-}
-
 /// `file: symbol` for every restricted symbol named in a file outside its allowed list.
 fn restricted_call_violations(files: &[(String, String)]) -> Vec<String> {
     let mut violations = Vec::new();
@@ -613,6 +627,7 @@ mod tests {
                 ("foundation".to_owned(), BTreeSet::new()),
             ]),
             dev_edges: BTreeMap::new(),
+            gameplay: GameplayPolicy::default(),
         }
     }
 

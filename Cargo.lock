@@ -1863,6 +1863,7 @@ name = "oteryn-architecture-check"
 version = "0.1.0"
 dependencies = [
  "serde_json",
+ "syn 2.0.119",
 ]
 
 [[package]]

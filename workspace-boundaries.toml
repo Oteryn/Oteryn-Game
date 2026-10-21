@@ -8,6 +8,35 @@ test = ["oteryn-test-support","oteryn-security-auth-tests","oteryn-pre-native-cl
 tool = ["oteryn-architecture-check","oteryn-synthetic-asset-compiler","oteryn-dev-client","oteryn-world-bundle-compiler"]
 forbidden_package_fragments = ["canary","protocol-core","transport","game-session","session-lease","persistence"]
 
+# Every crates/gameplay member has a layer, including the existing supporting leaf crates.
+[gameplay_layers]
+l0 = ["oteryn-gameplay-domain","oteryn-gameplay-weather","oteryn-gameplay-world-change","oteryn-gameplay-source-critical-baseline","oteryn-gameplay-character-recovery-fence","oteryn-gameplay-admission-evidence","oteryn-gameplay-node-files"]
+l1 = ["oteryn-gameplay-content","oteryn-gameplay-native-admission-source"]
+l2 = ["oteryn-gameplay-foundation","oteryn-gameplay-entities"]
+l3 = ["oteryn-gameplay-characters","oteryn-gameplay-progression","oteryn-gameplay-items","oteryn-gameplay-economy","oteryn-gameplay-quests","oteryn-gameplay-housing","oteryn-gameplay-combat-rules","oteryn-gameplay-spell-rules","oteryn-gameplay-encounter-rules","oteryn-gameplay-social-rules"]
+l4 = ["oteryn-gameplay-durability","oteryn-gameplay-world","oteryn-gameplay-combat","oteryn-gameplay-spell","oteryn-gameplay-monster-ai","oteryn-gameplay-npc","oteryn-gameplay-encounters","oteryn-gameplay-social"]
+l5 = ["oteryn-gameplay-dispatch"]
+
+[gameplay_same_layer_edges]
+# The actor carrier may use the L2 kernel. L3 peers retain only these declared edges.
+oteryn-gameplay-entities = ["oteryn-gameplay-foundation"]
+oteryn-gameplay-progression = ["oteryn-gameplay-characters"]
+oteryn-gameplay-items = ["oteryn-gameplay-characters"]
+oteryn-gameplay-economy = ["oteryn-gameplay-items"]
+oteryn-gameplay-quests = ["oteryn-gameplay-items","oteryn-gameplay-progression"]
+oteryn-gameplay-combat-rules = ["oteryn-gameplay-characters","oteryn-gameplay-items","oteryn-gameplay-progression"]
+oteryn-gameplay-spell-rules = ["oteryn-gameplay-characters","oteryn-gameplay-combat-rules","oteryn-gameplay-items","oteryn-gameplay-progression"]
+oteryn-gameplay-encounter-rules = ["oteryn-gameplay-combat-rules"]
+oteryn-gameplay-social-rules = ["oteryn-gameplay-characters"]
+
+[gameplay_rules]
+forbidden_normal_dependencies = ["sqlx","tokio","oteryn-gameplay-entities"]
+forbidden_name_fragments = ["persistence"]
+boss_identifier_paths = ["crates/gameplay/entities","crates/gameplay/foundation"]
+boss_identifier_fragments = ["welter","smelly_cheese","bone_overlord","boreth","rum_barrel","crystal_tentacle","haragoth","icicle"]
+# Report only until the concurrent boss-code move lands; then set this to "error".
+boss_identifier_mode = "warn"
+
 [edges]
 oteryn-client = ["oteryn-client-assets","oteryn-client-runtime","oteryn-diagnostics","oteryn-foundation","oteryn-identity","oteryn-input-actions","oteryn-input-platform","oteryn-platform-client","oteryn-platform-contracts","oteryn-renderer","oteryn-session","oteryn-session-tcp","oteryn-world-bundle"]
 oteryn-game-server = ["oteryn-error-codes","oteryn-foundation","oteryn-gameplay-admission-evidence","oteryn-gameplay-character-recovery-fence","oteryn-gameplay-characters","oteryn-gameplay-combat","oteryn-gameplay-combat-rules","oteryn-gameplay-content","oteryn-gameplay-dispatch","oteryn-gameplay-domain","oteryn-gameplay-durability","oteryn-gameplay-economy","oteryn-gameplay-encounter-rules","oteryn-gameplay-encounters","oteryn-gameplay-entities","oteryn-gameplay-foundation","oteryn-gameplay-housing","oteryn-gameplay-items","oteryn-gameplay-monster-ai","oteryn-gameplay-native-admission-source","oteryn-gameplay-node-files","oteryn-gameplay-npc","oteryn-gameplay-progression","oteryn-gameplay-quests","oteryn-gameplay-social","oteryn-gameplay-social-rules","oteryn-gameplay-source-critical-baseline","oteryn-gameplay-spell","oteryn-gameplay-spell-rules","oteryn-gameplay-weather","oteryn-gameplay-world","oteryn-ntp-clock","oteryn-protocol-oteryn","oteryn-simulation-determinism","oteryn-world-bundle"]
