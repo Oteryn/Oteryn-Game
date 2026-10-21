@@ -18,8 +18,6 @@ ed25519-dalek.workspace = true
 oteryn-error-codes = { version = "=0.1.0", path = "../../error-codes" }
 oteryn-foundation = { version = "=0.1.0", path = "../../foundation" }
 oteryn-gameplay-admission-evidence = { version = "=0.1.0", path = "../admission-evidence" }
-oteryn-gameplay-admission-evidence = { version = "=0.1.0", path = "../admission-evidence" }
-oteryn-gameplay-character-recovery-fence = { version = "=0.1.0", path = "../character-recovery-fence" }
 oteryn-gameplay-character-recovery-fence = { version = "=0.1.0", path = "../character-recovery-fence" }
 oteryn-gameplay-combat = { version = "=0.1.0", path = "../combat" }
 oteryn-gameplay-content = { version = "=0.1.0", path = "../content" }
@@ -28,7 +26,6 @@ oteryn-gameplay-durability = { version = "=0.1.0", path = "../durability" }
 oteryn-gameplay-encounters = { version = "=0.1.0", path = "../encounters" }
 oteryn-gameplay-foundation = { version = "=0.1.0", path = "../foundation" }
 oteryn-gameplay-monster-ai = { version = "=0.1.0", path = "../monster-ai" }
-oteryn-gameplay-native-admission-source = { version = "=0.1.0", path = "../native-admission-source" }
 oteryn-gameplay-native-admission-source = { version = "=0.1.0", path = "../native-admission-source" }
 oteryn-gameplay-node-files = { version = "=0.1.0", path = "../node-files" }
 oteryn-gameplay-social = { version = "=0.1.0", path = "../social" }
