@@ -4380,11 +4380,9 @@ mod tests {
     #[test]
     fn a_pushed_delta_mismatch_during_an_exchange_poisons_the_session() -> Result<(), BoxError> {
         block_on(async {
-            let (client, peer) = script_peer(vec![
-                Step::ReadCommand,
-                spatial_push(41, 4, 6, 1)?,
-                result_frame(42, 7, StepDisposition::Blocked)?,
-            ]);
+            // The poisoning push ends the script: the client never reads past it, so a frame
+            // after it would race the drop below and could fail the peer with a broken pipe.
+            let (client, peer) = script_peer(vec![Step::ReadCommand, spatial_push(41, 4, 6, 1)?]);
             let mut session = Session::admit(client, admission()?).await?;
             assert!(matches!(
                 session.step(StepDirection::East).await,
