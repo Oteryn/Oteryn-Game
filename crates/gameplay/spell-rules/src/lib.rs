@@ -10,6 +10,7 @@ pub mod locate;
 pub mod native_actor_states;
 pub mod native_companions;
 pub mod native_items;
+pub mod plan;
 pub mod target;
 
 use oteryn_gameplay_content::content::spell_data::Vocation;

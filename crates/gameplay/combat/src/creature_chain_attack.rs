@@ -2,7 +2,7 @@
 //! Frozen targets are exact live ActorRefs, never manufactured network creature identities.
 use crate::ability::{AbilityIntent, ProposalSource};
 use crate::combat::chain::{
-    ChainCreature, ChainShape, ChainSpec, ChainStart, ChainWorld, TilePosition, pick_chain,
+    ChainCreature, ChainShape, ChainSpec, ChainStart, TilePosition, pick_chain,
 };
 use crate::creature_auto_attack::{AttackError, ProfileAbilityProposal};
 use crate::foundation::owner_timer::{
@@ -81,30 +81,7 @@ pub trait ChainMapFacts {
         stamp: RuntimeWorkStamp,
     ) -> Option<Vec<TilePosition>>;
 }
-struct PickWorld {
-    caster: ChainCreature,
-    players: Vec<ChainCreature>,
-    allowed: std::collections::BTreeSet<u64>,
-    sight: std::collections::BTreeMap<(TilePosition, TilePosition), bool>,
-    paths: std::collections::BTreeMap<(TilePosition, TilePosition), Vec<TilePosition>>,
-}
-impl ChainWorld for PickWorld {
-    fn caster(&self) -> &ChainCreature {
-        &self.caster
-    }
-    fn creatures(&self) -> &[ChainCreature] {
-        &self.players
-    }
-    fn may_hit(&self, c: &ChainCreature) -> bool {
-        self.allowed.contains(&c.id)
-    }
-    fn sight_clear(&self, a: TilePosition, b: TilePosition) -> bool {
-        self.sight.get(&(a, b)).copied().unwrap_or(false)
-    }
-    fn path(&self, a: TilePosition, b: TilePosition) -> Option<Vec<TilePosition>> {
-        self.paths.get(&(a, b)).cloned()
-    }
-}
+pub use oteryn_gameplay_combat_rules::chain::PickWorld;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct Family(u8);
 impl TimerFamily for Family {

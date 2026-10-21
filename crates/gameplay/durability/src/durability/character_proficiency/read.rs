@@ -356,8 +356,7 @@ mod tests {
     #[test]
     fn proficiency_read_history_rejects_nonzero_or_filled_seed_independently() {
         for before in [state(1, vec![None]), state(0, vec![Some(0)])] {
-            let mut after = before.clone();
-            after.progress += 1;
+            let after = state(before.progress() + 1, before.selections().to_vec());
             let line = ProficiencyLineCandidate::new(ProficiencyCause::Training, before, after)
                 .expect("line");
             assert!(validate_transition(None, &line).is_err());

@@ -91,33 +91,7 @@ pub async fn read_current_allocation_in_transaction(
         .await
         .map_err(|_| DurabilityError::Unavailable)?;
     let stored = read_wheel_state(tx, raw.fence.character_id, false).await?;
-    let allocation = match stored {
-        None => WheelAllocation {
-            wheel_ruleset_revision: None,
-            wheel_revision: 0,
-            slots: WheelSlots::ZERO,
-            current: currency(tx, ruleset.revision(), ruleset).await? == Currency::Current,
-        },
-        Some(stored) => {
-            let capacities = stored_capacities(tx, &stored.wheel_ruleset_revision).await?;
-            if stored
-                .slots
-                .points()
-                .iter()
-                .zip(capacities)
-                .any(|(points, capacity)| *points > capacity)
-            {
-                return Err(DurabilityError::InvalidStoredState);
-            }
-            WheelAllocation {
-                current: currency(tx, &stored.wheel_ruleset_revision, ruleset).await?
-                    == Currency::Current,
-                wheel_ruleset_revision: Some(stored.wheel_ruleset_revision),
-                wheel_revision: stored.wheel_revision,
-                slots: stored.slots,
-            }
-        }
-    };
+    let allocation = allocation_from_stored(tx, stored, ruleset).await?;
     Ok(CurrentWheelCastRead {
         raw,
         allocation,
@@ -207,13 +181,9 @@ pub enum WheelResetOutcome {
     Unresolved,
 }
 
-/// The stored revision against the active one.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Currency {
-    Current,
-    NeedsReset,
-    Unresolved,
-}
+pub use oteryn_gameplay_progression::wheel_read::{
+    Currency, derive_currency, read_allocation, revision_range,
+};
 
 impl DurabilityRoot {
     /// Commit one full replacement of the Character's slot vector. Exact occurrence replay
@@ -474,40 +444,7 @@ impl DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     let stored = read_wheel_state(&mut tx, character_id, false).await?;
-                    let allocation = match stored {
-                        None => WheelAllocation {
-                            wheel_ruleset_revision: None,
-                            wheel_revision: 0,
-                            slots: WheelSlots::ZERO,
-                            current: currency(&mut tx, ruleset.revision(), &ruleset).await?
-                                == Currency::Current,
-                        },
-                        Some(stored) => {
-                            let capacities =
-                                stored_capacities(&mut tx, &stored.wheel_ruleset_revision).await?;
-                            if stored
-                                .slots
-                                .points()
-                                .iter()
-                                .zip(capacities)
-                                .any(|(points, capacity)| *points > capacity)
-                            {
-                                return Err(DurabilityError::InvalidStoredState);
-                            }
-                            WheelAllocation {
-                                current: currency(
-                                    &mut tx,
-                                    &stored.wheel_ruleset_revision,
-                                    &ruleset,
-                                )
-                                .await?
-                                    == Currency::Current,
-                                wheel_ruleset_revision: Some(stored.wheel_ruleset_revision),
-                                wheel_revision: stored.wheel_revision,
-                                slots: stored.slots,
-                            }
-                        }
-                    };
+                    let allocation = allocation_from_stored(&mut tx, stored, &ruleset).await?;
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(Ok(allocation))
                 })
@@ -653,6 +590,38 @@ async fn read_wheel_state(
     }))
 }
 
+async fn allocation_from_stored(
+    tx: &mut Transaction<'_>,
+    stored: Option<StoredWheel>,
+    ruleset: &WheelRuleset,
+) -> std::result::Result<WheelAllocation, DurabilityError> {
+    let stored = match stored {
+        None => None,
+        Some(stored) => {
+            let capacities = stored_capacities(tx, &stored.wheel_ruleset_revision).await?;
+            Some((
+                stored.wheel_ruleset_revision,
+                stored.wheel_revision,
+                stored.slots,
+                capacities,
+            ))
+        }
+    };
+    let mut allocation =
+        read_allocation(stored, false).map_err(|_| DurabilityError::InvalidStoredState)?;
+    allocation.current = currency(
+        tx,
+        allocation
+            .wheel_ruleset_revision
+            .as_deref()
+            .unwrap_or(ruleset.revision()),
+        ruleset,
+    )
+    .await?
+        == Currency::Current;
+    Ok(allocation)
+}
+
 /// The Character's vocation key; `none` without a build row.
 async fn read_vocation(
     tx: &mut Transaction<'_>,
@@ -718,24 +687,17 @@ async fn currency(
             ),
         );
     }
-    let (Some((stored_ordinal, _)), Some((active_ordinal, _))) =
-        (order.get(stored), order.get(ruleset.revision()))
+    let Some((stored_ordinal, active_ordinal)) = revision_range(&order, stored, ruleset.revision())
     else {
         return Ok(Currency::Unresolved);
     };
-    if *stored_ordinal > *active_ordinal
-        || stored_capacities(tx, ruleset.revision()).await? != ruleset.capacities()
-    {
-        return Ok(Currency::Unresolved);
-    }
-    let reset = order.values().any(|(ordinal, kind)| {
-        *ordinal > *stored_ordinal && *ordinal <= *active_ordinal && kind == "RESET"
-    });
-    Ok(if reset {
-        Currency::NeedsReset
-    } else {
-        Currency::Current
-    })
+    let capacities = stored_capacities(tx, ruleset.revision()).await?;
+    Ok(derive_currency(
+        &order,
+        stored_ordinal,
+        active_ordinal,
+        capacities == ruleset.capacities(),
+    ))
 }
 
 /// Write one planned change: the root and typed-state successor, the receipt, the state row and

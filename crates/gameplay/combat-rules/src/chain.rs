@@ -232,3 +232,29 @@ fn hit(
         effect_tiles,
     }
 }
+
+/// Read-only map and creature facts captured by the runtime chain adapter.
+pub struct PickWorld {
+    pub caster: ChainCreature,
+    pub players: Vec<ChainCreature>,
+    pub allowed: std::collections::BTreeSet<u64>,
+    pub sight: std::collections::BTreeMap<(TilePosition, TilePosition), bool>,
+    pub paths: std::collections::BTreeMap<(TilePosition, TilePosition), Vec<TilePosition>>,
+}
+impl ChainWorld for PickWorld {
+    fn caster(&self) -> &ChainCreature {
+        &self.caster
+    }
+    fn creatures(&self) -> &[ChainCreature] {
+        &self.players
+    }
+    fn may_hit(&self, c: &ChainCreature) -> bool {
+        self.allowed.contains(&c.id)
+    }
+    fn sight_clear(&self, a: TilePosition, b: TilePosition) -> bool {
+        self.sight.get(&(a, b)).copied().unwrap_or(false)
+    }
+    fn path(&self, a: TilePosition, b: TilePosition) -> Option<Vec<TilePosition>> {
+        self.paths.get(&(a, b)).cloned()
+    }
+}
