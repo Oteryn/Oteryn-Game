@@ -8,6 +8,9 @@ import sys
 import time
 from pathlib import Path
 
+DONOR_SOURCE_CHECK = ['quest_donor_source_authoring.py', '--check']
+# CI runs each part as its own job; `all` is the local default and runs them in sequence.
+PARTS = ('all', 'checks', 'donor', 'unit-tests')
 SERIAL_UNIT_TESTS = ['-m', 'unittest', 'discover', '-s', '.', '-p', 'test_*.py']
 # Started first so the longest modules do not finish last; the order only affects wall time.
 SLOW_TEST_MODULES = ('test_quest_tree_authoring', 'test_quest_donor_refinements', 'test_quest_donor_attachment',
@@ -87,6 +90,9 @@ def main():
                         help='leave out quest_donor_source_authoring.py --check')
     parser.add_argument('--jobs', type=int, default=os.cpu_count() or 1,
                         help='parallel unit-test processes; 1 runs plain discover')
+    parser.add_argument('--part', choices=PARTS, default='all',
+                        help='checks: every check but the donor source; donor: only the donor source; '
+                             'unit-tests: only the unit tests')
     args = parser.parse_args()
     root = args.root.resolve()
     here = root / 'tools/content-schema/quest-authoring'
@@ -138,12 +144,18 @@ def main():
         ['quest_state_lowering.py', '--check'],
         ['source_lowered_binding_plan.py', '--check'],
         ['quest_completion_import.py', '--check'],
-        ['quest_donor_source_authoring.py', '--check'],
+        DONOR_SOURCE_CHECK,
         ['bundle_authoring.py', '--check'],
         ['quest_tree_authoring.py', 'content', '--check', '--source-packet', str(packet)],
     ]
-    if args.skip_donor_source:
-        commands.remove(['quest_donor_source_authoring.py', '--check'])
+    if args.part == 'checks':
+        commands.remove(DONOR_SOURCE_CHECK)
+    elif args.part == 'donor':
+        commands = [DONOR_SOURCE_CHECK]
+    elif args.part == 'unit-tests':
+        commands = []
+    if args.skip_donor_source and DONOR_SOURCE_CHECK in commands:
+        commands.remove(DONOR_SOURCE_CHECK)
         print('Quest check skipped: quest_donor_source_authoring.py --check (no donor input changed)', flush=True)
     env = {**os.environ, 'PYTHONDONTWRITEBYTECODE': '1'}
     for arguments in commands:
@@ -151,6 +163,8 @@ def main():
         result = subprocess.run([sys.executable, *arguments], cwd=here, env=env)
         if result.returncode:
             return result.returncode
+    if args.part not in ('all', 'unit-tests'):
+        return 0
     # Slowest step last: the cheap evidence-consistency checks above fail first.
     return run_unit_tests(here, env, max(1, args.jobs))
 
