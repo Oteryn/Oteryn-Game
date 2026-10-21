@@ -1,4 +1,5 @@
 // Actual source-specific ChatLine mailbox; no synthetic CHAT_INTENT or durable ledger.
+use crate::bosses::the_welter::native_owner::WelterCarrierExt;
 use crate::durability::chat_text::ChatText;
 use crate::foundation::speech::{ChatPosition, SpeechMode, hears};
 pub use crate::callback_speech as callback;

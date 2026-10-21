@@ -10,6 +10,7 @@ use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, GameSessionId, OwnerDamageResult, RuntimeScopeRefV1,
     RuntimeWorkStamp, ScopeRuntimeFence,
 };
+use oteryn_gameplay_encounters::bosses::icicle::native_owner::IcicleCarrierExt;
 use sha2::{Digest, Sha256};
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum IcicleError {

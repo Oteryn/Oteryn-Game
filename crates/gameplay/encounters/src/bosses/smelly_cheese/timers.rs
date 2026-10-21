@@ -1,5 +1,6 @@
 //! Source-specific two-pulse scheduler on the existing physical-owner timer lane.
 //! This does not implement a generic Encounter engine, target lookup, damage or presentation.
+use crate::bosses::smelly_cheese::native_owner::SmellyCheeseCarrierExt;
 use crate::foundation::owner_timer::{
     CatchUpPolicy, FamilyPolicy, FiredTimer, OwnerClock, OwnerTimerError, OwnerTimerLane,
     SemanticTimeMicros, TimerFamily,

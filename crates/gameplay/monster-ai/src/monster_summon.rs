@@ -957,7 +957,7 @@ mod retained_native_source_test {
             .child;
         assert_eq!(runtime.native_summon_role(child), Ok(Some(parent)));
         assert!(runtime.matches_live_creature_identity(child, source.child.key.as_bytes()));
-        assert_eq!(runtime.crystal_router_fixture_health(child), source.health);
+        assert_eq!(runtime.read_encounter_fixture_health(child), source.health);
     }
     fn reference() -> Ref {
         Ref {
@@ -2003,7 +2003,7 @@ mod captured_defense_summon_test {
             assert_eq!(r.native_summon_role(child.child), Ok(Some(parent)));
             assert!(r.matches_live_creature_identity(child.child, source.child().key.as_bytes()));
             assert_eq!(
-                r.crystal_router_fixture_health(child.child),
+                r.read_encounter_fixture_health(child.child),
                 source.spec.health
             );
         }

@@ -13,6 +13,7 @@ use crate::foundation::{
     ChannelContentPin, ChannelId, ChannelRuntimeV1, ExactActorRef, GameSessionId,
     MovementLocalPosition, NodeId, RuntimeScopeRefV1, RuntimeWorkStamp, ScopeRuntimeFence, WorldId,
 };
+use oteryn_gameplay_encounters::bosses::icicle::native_owner::IcicleCarrierExt;
 
 fn fixture() -> (
     ChannelRuntimeV1,

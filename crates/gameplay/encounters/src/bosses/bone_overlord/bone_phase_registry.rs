@@ -1,5 +1,6 @@
 //! Source-specific authored phase state registry, with actual pinned Crystal participant bindings.
 //! Does NOT assert a donor Lua producer or full shared-life/spawn/quest implementation.
+use crate::bosses::bone_overlord::native_owner::{BoneOverlordCarrierExt, BoneSharedCarrierExt};
 use crate::content::{
     ProjectReferenceRecord, ProjectV2AuthoringProfile, ProjectV2AuthoringProfileData as Data,
     ProjectV2DefinitionRef as Ref, ProjectV2Family, ProjectV2SourceIdentityBinding,

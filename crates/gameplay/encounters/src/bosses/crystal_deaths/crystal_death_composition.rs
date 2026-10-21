@@ -1,10 +1,15 @@
 //! Source-bound native death composition. Exact imported memberships, no general interpreter.
+use crate::bosses::boreth::native_death::{BorethCarrierExt, BorethDeathLedger, BorethDeathResult};
+use crate::bosses::rum_barrel::native_death::{
+    RumBarrelCarrierExt, RumBarrelDeathLedger, RumBarrelDeathResult,
+};
 use crate::content::{ProjectV2AuthoringProfile, ProjectV2SourceIdentityBinding, WorldProject};
 use crate::foundation::{
-    BorethDeathLedger, BorethDeathResult, CarrierError, ChannelId, ChannelRuntimeV1, ExactActorRef,
-    GameSessionId, RumBarrelDeathLedger, RumBarrelDeathResult, RuntimeScopeRefV1, RuntimeWorkStamp,
-    ScopeOwnershipGeneration, ScopeRuntimeFence, WorldId,
+    CarrierError, ChannelId, ChannelRuntimeV1, ExactActorRef, GameSessionId, RuntimeScopeRefV1,
+    RuntimeWorkStamp, ScopeOwnershipGeneration, ScopeRuntimeFence, WorldId,
 };
+#[cfg(test)]
+use oteryn_gameplay_encounters::bosses::crystal_deaths::native_fixtures::CrystalRouterFixtureExt;
 pub mod speech {
     include!("crystal_death_composition/speech.rs");
 }

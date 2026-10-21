@@ -35,8 +35,6 @@ pub use runtime_actor_carrier::{
     ABILITY01_EFFECT_PLAN_ENTRIES_MAX, AI01_SPAWN_POPULATION_MAX, AI01_SPAWN_SOURCES_PER_SCOPE_MAX,
     ActorConditionPlan, ActorConditionTickPlan, ActorConditionTransition, ActorMemoTable,
     ApplicationFacts, AttackerCommand, AttributeModifier, AttributeModifiers,
-    BoneOverlordCagePhase, BoneOverlordPhase, BonePhaseError, BonePhaseTransition,
-    BoneSharedHpResult, BorethDeathLedger, BorethDeathResult,
     COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX,
     COMBAT01_DAMAGE_RECEIPTS_PER_CREATURE_GENERATION_MAX, CREATURE_DEFENCE_MEMOS_PER_CHANNEL_MAX,
     ChannelRuntimeV1, CombatSkill, CommittedLethalReceipt, ConditionDefinition,
@@ -50,24 +48,13 @@ pub use runtime_actor_carrier::{
     NATIVE_SUMMON_RETIREMENT_LINKS_PER_CALL_MAX, NativeEncounterSpawnSpec,
     NativeSummonAdmissionSpec, NativeSummonDeath, NativeSummonMovementOutcome, NativeSummonOrigin,
     OwnerDamageCommand, OwnerDamageResult, PlayerActorReservation, RationalSpeedRange,
-    RumBarrelDeathLedger, RumBarrelDeathResult, RuntimeCorpseProjection, SpeedRange, StatusKind,
-    TickFacts, TickKind, WelterConsumeError, WelterConsumeLedger, WelterConsumeResult, WelterPrey,
-    WelterSourceRegistration,
+    RuntimeCorpseProjection, SpeedRange, StatusKind, TickFacts, TickKind,
 };
 #[cfg(any(test, feature = "test-support"))]
 #[allow(unused_imports)] // Each path-included Foundation test crate uses only some fixtures.
 pub use runtime_actor_carrier::{CombatDeathFixture, MovementActorFixture};
 pub use runtime_actor_carrier::{SpellRelocationProof, relocation_seal};
 
-#[cfg(any(test, feature = "test-support"))]
-#[allow(unused_imports)]
-pub use runtime_actor_carrier::{
-    crystal_death_router_fixture, crystal_death_router_fixture_with_artifact,
-};
-
-#[cfg(any(test, feature = "test-support"))]
-#[allow(unused_imports)]
-pub use runtime_actor_carrier::bone_shared_actual_owner_harness;
 #[allow(unused_imports)]
 pub use runtime_actor_carrier::runtime_actor_periodic::{
     CreaturePeriodicReceipt, PreparedCreaturePeriodicTurn,

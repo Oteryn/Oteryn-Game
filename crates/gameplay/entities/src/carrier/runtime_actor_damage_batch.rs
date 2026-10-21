@@ -1,11 +1,10 @@
-//! Source Icicle raw addHealth(-100): reuse native damage staging, no armor/resistance pipeline.
+//! Bounded raw damage staging with receipt preflight before publication.
 use super::*;
 impl CurrentOwnerExactActorCommit<'_> {
-    pub fn commit_icicle_egg_raw_batch<T>(
+    pub fn commit_raw_creature_damage_batch<T>(
         &mut self,
         actors: &[ExactActorRef],
-        occurrence: &[u8],
-        binding: &[u8],
+        command: OwnerDamageCommand<'_>,
         prepare_receipt: impl FnOnce(&[OwnerDamageResult]) -> Result<T, CarrierError>,
     ) -> Result<T, CarrierError> {
         if actors.len() > 64 {
@@ -23,12 +22,7 @@ impl CurrentOwnerExactActorCommit<'_> {
             let (index, next, result) = self.carrier.prepare_creature_damage_inner(
                 self.continuity,
                 actor.0,
-                OwnerDamageCommand {
-                    target: b"oteryn:creature.dragon_egg",
-                    occurrence,
-                    binding,
-                    damage: 100,
-                },
+                command,
                 None,
                 false,
             )?;

@@ -1,5 +1,6 @@
 //! Exact Crystal Smelly schedule adapter to existing owner timers and native player HP.
 //! No declarative Encounter interpreter; ambiguous top-creature tiles remain refused.
+use crate::bosses::smelly_cheese::native_owner::SmellyCheeseCarrierExt;
 use crate::content::{
     ProjectReferenceRecord as Record, ProjectV2AuthoringProfileData as Data,
     ProjectV2DefinitionRef as Ref, ProjectV2Draft, ProjectV2Family as Family,
