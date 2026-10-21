@@ -24,10 +24,16 @@ from pathlib import Path
 # (package, test target) -> (source path prefixes it may duplicate, reason). Only shrinks.
 GAME_SERVER_SRC = "apps/game-server/src/"
 CARVED_GAMEPLAY_SRC = (
+    "crates/gameplay/combat/src/",
     "crates/gameplay/content/src/",
     "crates/gameplay/domain/src/",
     "crates/gameplay/durability/src/",
+    "crates/gameplay/encounters/src/",
     "crates/gameplay/foundation/src/",
+    "crates/gameplay/monster-ai/src/",
+    "crates/gameplay/social/src/",
+    "crates/gameplay/spell/src/",
+    "crates/gameplay/world/src/",
 )
 COPY_REASON = (
     "path-includes crate-private game-server modules (including the gameplay modules carved out "
@@ -39,7 +45,7 @@ ALLOWED_DUPLICATING_TARGETS: dict[tuple[str, str], tuple[tuple[str, ...], str]] 
         ("oteryn-game-server", target): (prefixes, COPY_REASON)
         for target, prefixes in (
             ("ability_engine", (GAME_SERVER_SRC, *CARVED_GAMEPLAY_SRC)),
-            ("ai_bootstrap", (GAME_SERVER_SRC,)),
+            ("ai_bootstrap", ("crates/gameplay/monster-ai/src/",)),
             ("character_authority_postgres", (GAME_SERVER_SRC, *CARVED_GAMEPLAY_SRC)),
             ("durability_postgres", CARVED_GAMEPLAY_SRC),
             ("native_admission_source_postgres", CARVED_GAMEPLAY_SRC),
