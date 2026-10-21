@@ -1,5 +1,5 @@
 [package]
-name = "oteryn-gameplay-transport"
+name = "oteryn-gameplay-dispatch"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

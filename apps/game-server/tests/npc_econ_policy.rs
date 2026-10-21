@@ -2,7 +2,7 @@
 //! Exact adapter source exercised against the genuine native server dependency graph.
 pub use oteryn_game_server::{domain, durability};
 
-#[path = "../../../crates/gameplay/transport/src/gameplay_transport/bank_npc.rs"]
+#[path = "../../../crates/gameplay/dispatch/src/gameplay_transport/bank_npc.rs"]
 mod bank_npc;
 
 use self::domain::character_name::CharacterName;

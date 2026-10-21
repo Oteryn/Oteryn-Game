@@ -514,7 +514,7 @@ const RESTRICTED_CALLS: &[(&str, &[&str])] = &[
         "read_premium_activation_with",
         &[
             "crates/gameplay/durability/src/durability/premium_activation_latch.rs",
-            "apps/game-server/src/gameplay_transport/spell_premium_coordinator.rs",
+            "crates/gameplay/dispatch/src/gameplay_transport/spell_premium_coordinator.rs",
             "apps/game-server/tests/support/premium_activation_latch_postgres_cases.rs",
         ],
     ),
@@ -912,7 +912,7 @@ mod tests {
         let call = "root.read_premium_activation_with(&mut slot).await";
         let allowed = [
             "crates/gameplay/durability/src/durability/premium_activation_latch.rs",
-            "apps/game-server/src/gameplay_transport/spell_premium_coordinator.rs",
+            "crates/gameplay/dispatch/src/gameplay_transport/spell_premium_coordinator.rs",
             "apps/game-server/tests/support/premium_activation_latch_postgres_cases.rs",
         ];
         let files: Vec<(String, String)> = allowed
@@ -922,19 +922,19 @@ mod tests {
         assert!(restricted_call_violations(&files).is_empty());
 
         let sibling = vec![(
-            "apps/game-server/src/gameplay_transport/guild_daily.rs".to_owned(),
+            "crates/gameplay/dispatch/src/gameplay_transport/guild_daily.rs".to_owned(),
             call.to_owned(),
         )];
         assert_eq!(
             restricted_call_violations(&sibling),
             vec![
-                "apps/game-server/src/gameplay_transport/guild_daily.rs: \
+                "crates/gameplay/dispatch/src/gameplay_transport/guild_daily.rs: \
                  read_premium_activation_with"
                     .to_owned()
             ]
         );
         let unrelated = vec![(
-            "apps/game-server/src/gameplay_transport/guild_daily.rs".to_owned(),
+            "crates/gameplay/dispatch/src/gameplay_transport/guild_daily.rs".to_owned(),
             "root.read_premium_activation().await".to_owned(),
         )];
         assert!(restricted_call_violations(&unrelated).is_empty());
@@ -950,19 +950,21 @@ mod tests {
         assert!(restricted_call_violations(&allowed).is_empty());
 
         let forged = vec![(
-            "apps/game-server/src/gameplay_transport/spell_premium_coordinator.rs".to_owned(),
+            "crates/gameplay/dispatch/src/gameplay_transport/spell_premium_coordinator.rs"
+                .to_owned(),
             mint.to_owned(),
         )];
         assert_eq!(
             restricted_call_violations(&forged),
             vec![
-                "apps/game-server/src/gameplay_transport/spell_premium_coordinator.rs: \
+                "crates/gameplay/dispatch/src/gameplay_transport/spell_premium_coordinator.rs: \
                  EmptyLatchHeld::inside_gate"
                     .to_owned()
             ]
         );
         let lent = vec![(
-            "apps/game-server/src/gameplay_transport/spell_premium_coordinator.rs".to_owned(),
+            "crates/gameplay/dispatch/src/gameplay_transport/spell_premium_coordinator.rs"
+                .to_owned(),
             "PremiumStatus::NotActivated(PreDelivery::inside_gate(held))".to_owned(),
         )];
         assert!(restricted_call_violations(&lent).is_empty());

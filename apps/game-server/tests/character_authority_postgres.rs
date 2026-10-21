@@ -2292,7 +2292,7 @@ mod character_stance_postgres_cases;
 // cases with the focused standalone target through the same protected lane.
 #[path = "support/charm_state_postgres_cases.rs"]
 mod charm_state_postgres_cases;
-#[path = "../../../crates/gameplay/transport/src/gameplay_transport/charm.rs"]
+#[path = "../../../crates/gameplay/dispatch/src/gameplay_transport/charm.rs"]
 mod charm_transport;
 
 // CHEST-1 reward-claim MINT (a `once` RewardClaim into a new main backpack

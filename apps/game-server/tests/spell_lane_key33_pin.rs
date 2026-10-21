@@ -354,7 +354,7 @@ fn lane_proof_authorities_are_minted_only_behind_a_permit() {
 fn guarded_cast_writers_reserve_in_s_and_release_a_definite_rejection() {
     for (file, refusal, releases) in [
         (
-            "../../crates/gameplay/transport/src/gameplay_transport/native_combat_cast.rs",
+            "../../crates/gameplay/dispatch/src/gameplay_transport/native_combat_cast.rs",
             "Rejected(NATIVE_NEW_WRITE_REFUSED))=>{",
             &[
                 "release_definitely_uncommitted_spell_batch(&installation.physical)",
@@ -362,7 +362,7 @@ fn guarded_cast_writers_reserve_in_s_and_release_a_definite_rejection() {
             ][..],
         ),
         (
-            "../../crates/gameplay/transport/src/gameplay_transport/world_item_cast.rs",
+            "../../crates/gameplay/dispatch/src/gameplay_transport/world_item_cast.rs",
             "Rejected(WORLD_ITEM_NEW_GRANT_REFUSED))=>{",
             &[
                 "release_definitely_uncommitted_spell_batch(&attempt.physical)",
@@ -370,7 +370,7 @@ fn guarded_cast_writers_reserve_in_s_and_release_a_definite_rejection() {
             ][..],
         ),
         (
-            "../../crates/gameplay/transport/src/gameplay_transport/parameter_cast.rs",
+            "../../crates/gameplay/dispatch/src/gameplay_transport/parameter_cast.rs",
             "Rejected(PARAMETER_NEW_GRANT_REFUSED))=>{",
             &["release_definitely_uncommitted_spell_batch(&installation.physical)"][..],
         ),
@@ -455,7 +455,7 @@ fn familiar_history_marks_the_window_before_any_fallible_reconciliation() {
 fn guarded_cast_writers_mark_history_before_any_fallible_follow_up() {
     for (file, outcome, follow_ups) in [
         (
-            "../../crates/gameplay/transport/src/gameplay_transport/native_combat_cast.rs",
+            "../../crates/gameplay/dispatch/src/gameplay_transport/native_combat_cast.rs",
             "letitems=matchitem_tx::apply_spell_items_in_transaction_guarded(",
             &[
                 "write_parameter_result_in_transaction(",
@@ -464,7 +464,7 @@ fn guarded_cast_writers_mark_history_before_any_fallible_follow_up() {
             ][..],
         ),
         (
-            "../../crates/gameplay/transport/src/gameplay_transport/world_item_cast.rs",
+            "../../crates/gameplay/dispatch/src/gameplay_transport/world_item_cast.rs",
             "letoutcome=matchitems::apply_spell_items_in_transaction_guarded(",
             &[
                 "prepare_character_build_in_transaction(",
@@ -472,7 +472,7 @@ fn guarded_cast_writers_mark_history_before_any_fallible_follow_up() {
             ][..],
         ),
         (
-            "../../crates/gameplay/transport/src/gameplay_transport/parameter_cast.rs",
+            "../../crates/gameplay/dispatch/src/gameplay_transport/parameter_cast.rs",
             "letoutcome=matchitems::apply_spell_items_in_transaction_guarded(",
             &[
                 "write_parameter_result_in_transaction(",
@@ -515,10 +515,10 @@ fn guarded_cast_writers_mark_history_before_any_fallible_follow_up() {
 #[test]
 fn every_cast_writer_runs_its_pass_under_a_cancel_safe_guard() {
     for file in [
-        "../../crates/gameplay/transport/src/gameplay_transport/native_combat_cast.rs",
-        "../../crates/gameplay/transport/src/gameplay_transport/world_item_cast.rs",
-        "../../crates/gameplay/transport/src/gameplay_transport/parameter_cast.rs",
-        "../../crates/gameplay/transport/src/gameplay_transport/familiar_cast.rs",
+        "../../crates/gameplay/dispatch/src/gameplay_transport/native_combat_cast.rs",
+        "../../crates/gameplay/dispatch/src/gameplay_transport/world_item_cast.rs",
+        "../../crates/gameplay/dispatch/src/gameplay_transport/parameter_cast.rs",
+        "../../crates/gameplay/dispatch/src/gameplay_transport/familiar_cast.rs",
     ] {
         let raw = fs::read_to_string(root().join(file)).expect("source");
         let text = collapse(&raw).replace(' ', "");
@@ -550,10 +550,10 @@ fn every_cast_writer_runs_its_pass_under_a_cancel_safe_guard() {
 #[test]
 fn no_cast_writer_awaits_after_its_window_gives_up_the_attempt() {
     for file in [
-        "../../crates/gameplay/transport/src/gameplay_transport/native_combat_cast.rs",
-        "../../crates/gameplay/transport/src/gameplay_transport/world_item_cast.rs",
-        "../../crates/gameplay/transport/src/gameplay_transport/parameter_cast.rs",
-        "../../crates/gameplay/transport/src/gameplay_transport/familiar_cast.rs",
+        "../../crates/gameplay/dispatch/src/gameplay_transport/native_combat_cast.rs",
+        "../../crates/gameplay/dispatch/src/gameplay_transport/world_item_cast.rs",
+        "../../crates/gameplay/dispatch/src/gameplay_transport/parameter_cast.rs",
+        "../../crates/gameplay/dispatch/src/gameplay_transport/familiar_cast.rs",
     ] {
         let raw = fs::read_to_string(root().join(file)).expect("source");
         let text = collapse(&raw).replace(' ', "");
@@ -573,7 +573,7 @@ fn no_cast_writer_awaits_after_its_window_gives_up_the_attempt() {
         }
     }
     let raw = fs::read_to_string(
-        root().join("../../crates/gameplay/transport/src/gameplay_transport/native_combat_cast.rs"),
+        root().join("../../crates/gameplay/dispatch/src/gameplay_transport/native_combat_cast.rs"),
     )
     .expect("source");
     let text = collapse(&raw).replace(' ', "");

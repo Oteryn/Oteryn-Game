@@ -86,6 +86,7 @@ pub(crate) use oteryn_gameplay_social::achievement_catalogue;
 
 pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
 pub use oteryn_gameplay_content::content;
+pub(crate) use oteryn_gameplay_dispatch::gameplay_transport;
 pub use oteryn_gameplay_domain::domain;
 pub use oteryn_gameplay_durability::character_bootstrap_intent;
 pub use oteryn_gameplay_durability::durability;
@@ -96,7 +97,6 @@ pub use oteryn_gameplay_foundation::foundation;
     reason = "CHAT-1a local chat rules await the CHAT_V1 wire and runtime of CHAT-1b"
 )]
 pub(crate) use oteryn_gameplay_social::chat;
-pub(crate) use oteryn_gameplay_transport::gameplay_transport;
 pub use oteryn_gameplay_world::house_scope;
 pub use oteryn_gameplay_world::map;
 #[allow(
@@ -832,6 +832,12 @@ pub(crate) use oteryn_gameplay_spell::creature_damage_spell_delayed;
 // Source-bound native library callbacks; shipping server activation remains separate.
 #[allow(
     dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+#[allow(unused_imports)]
+use oteryn_gameplay_dispatch::welter_consume;
+#[allow(
+    dead_code,
     reason = "Private native encounter owner ABI retained for source-qualified library dispatch; shipping AI loop is not activated"
 )]
 #[allow(unused_imports, reason = "preserve the former server module path")]
@@ -856,12 +862,6 @@ pub(crate) use oteryn_gameplay_monster_ai::smelly_damage;
 pub(crate) use oteryn_gameplay_monster_ai::weak_spot_speech;
 #[allow(unused_imports, reason = "preserve the former server module path")]
 use oteryn_gameplay_source_critical_baseline as source_critical_baseline;
-#[allow(
-    dead_code,
-    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
-)]
-#[allow(unused_imports)]
-use oteryn_gameplay_transport::welter_consume;
 #[allow(unused_imports, reason = "preserve the former server module path")]
 use oteryn_gameplay_weather as world_weather;
 #[allow(

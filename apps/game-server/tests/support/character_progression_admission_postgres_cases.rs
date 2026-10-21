@@ -13,7 +13,7 @@ use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
 use oteryn_simulation_determinism::{ExactI64, RoundingMode};
 
 #[allow(dead_code)]
-#[path = "../../../../crates/gameplay/transport/src/gameplay_transport/character_progression_binding.rs"]
+#[path = "../../../../crates/gameplay/dispatch/src/gameplay_transport/character_progression_binding.rs"]
 mod character_progression_binding;
 
 use character_progression_binding::seam::{InitializerFault, scoped};

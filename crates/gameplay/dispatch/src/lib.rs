@@ -1,4 +1,4 @@
-//! ADR-0019 gameplay crate `oteryn-gameplay-transport`: modules moved verbatim from `oteryn-game-server` (re-exported there at the old path).
+//! ADR-0019 gameplay crate `oteryn-gameplay-dispatch`: modules moved verbatim from `oteryn-game-server` (re-exported there at the old path).
 
 pub mod gameplay_transport;
 

@@ -26,6 +26,7 @@ GAME_SERVER_SRC = "apps/game-server/src/"
 CARVED_GAMEPLAY_SRC = (
     "crates/gameplay/combat/src/",
     "crates/gameplay/content/src/",
+    "crates/gameplay/dispatch/src/",
     "crates/gameplay/domain/src/",
     "crates/gameplay/durability/src/",
     "crates/gameplay/encounters/src/",

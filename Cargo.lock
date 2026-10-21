@@ -1976,6 +1976,7 @@ dependencies = [
  "oteryn-gameplay-character-recovery-fence",
  "oteryn-gameplay-combat",
  "oteryn-gameplay-content",
+ "oteryn-gameplay-dispatch",
  "oteryn-gameplay-domain",
  "oteryn-gameplay-durability",
  "oteryn-gameplay-encounters",
@@ -1986,7 +1987,6 @@ dependencies = [
  "oteryn-gameplay-social",
  "oteryn-gameplay-source-critical-baseline",
  "oteryn-gameplay-spell",
- "oteryn-gameplay-transport",
  "oteryn-gameplay-weather",
  "oteryn-gameplay-world",
  "oteryn-ntp-clock",
@@ -2057,6 +2057,45 @@ dependencies = [
  "serde_json",
  "sha2 0.11.0",
  "zstd",
+]
+
+[[package]]
+name = "oteryn-gameplay-dispatch"
+version = "0.1.0"
+dependencies = [
+ "base64",
+ "ed25519-dalek",
+ "oteryn-dev-client",
+ "oteryn-error-codes",
+ "oteryn-foundation",
+ "oteryn-gameplay-admission-evidence",
+ "oteryn-gameplay-character-recovery-fence",
+ "oteryn-gameplay-combat",
+ "oteryn-gameplay-content",
+ "oteryn-gameplay-domain",
+ "oteryn-gameplay-durability",
+ "oteryn-gameplay-encounters",
+ "oteryn-gameplay-foundation",
+ "oteryn-gameplay-monster-ai",
+ "oteryn-gameplay-native-admission-source",
+ "oteryn-gameplay-node-files",
+ "oteryn-gameplay-social",
+ "oteryn-gameplay-spell",
+ "oteryn-gameplay-weather",
+ "oteryn-gameplay-world",
+ "oteryn-protocol-oteryn",
+ "oteryn-simulation-determinism",
+ "oteryn-world-bundle",
+ "oteryn-world-bundle-compiler",
+ "rcgen",
+ "rustls",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+ "sqlx",
+ "syn 2.0.119",
+ "tokio",
+ "tokio-rustls",
 ]
 
 [[package]]
@@ -2219,45 +2258,6 @@ dependencies = [
  "serde_json",
  "sha2 0.11.0",
  "sqlx",
-]
-
-[[package]]
-name = "oteryn-gameplay-transport"
-version = "0.1.0"
-dependencies = [
- "base64",
- "ed25519-dalek",
- "oteryn-dev-client",
- "oteryn-error-codes",
- "oteryn-foundation",
- "oteryn-gameplay-admission-evidence",
- "oteryn-gameplay-character-recovery-fence",
- "oteryn-gameplay-combat",
- "oteryn-gameplay-content",
- "oteryn-gameplay-domain",
- "oteryn-gameplay-durability",
- "oteryn-gameplay-encounters",
- "oteryn-gameplay-foundation",
- "oteryn-gameplay-monster-ai",
- "oteryn-gameplay-native-admission-source",
- "oteryn-gameplay-node-files",
- "oteryn-gameplay-social",
- "oteryn-gameplay-spell",
- "oteryn-gameplay-weather",
- "oteryn-gameplay-world",
- "oteryn-protocol-oteryn",
- "oteryn-simulation-determinism",
- "oteryn-world-bundle",
- "oteryn-world-bundle-compiler",
- "rcgen",
- "rustls",
- "serde",
- "serde_json",
- "sha2 0.11.0",
- "sqlx",
- "syn 2.0.119",
- "tokio",
- "tokio-rustls",
 ]
 
 [[package]]
