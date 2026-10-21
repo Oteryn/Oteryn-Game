@@ -49,7 +49,7 @@ EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "5bed54ebea7f88cc67262280053a06d2fba60a38
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "ebfafb92bf321b9e0fd794f32dfca7f84eb8f00c345fb550bfa5bede99ee501b"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
 EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256 = "5581be5d2fda53c0f56d91d3f49f19966dd369a5bdb59adf2dbbabc8786f4c00"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "bbb9ee1d7483753df0fddd508b15f850205c9445"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "377cbf1f1196a7eb597d6754d154eda4124b805a"
 EXPECTED_POST_MERGE_RUST_SHA256 = "29dd4e3b9e734fd26c9ff741d2a45f23f394d0abf6c5cb1ff3a7b46489588ef9"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
@@ -523,8 +523,8 @@ def main() -> int:
                 "cargo +1.95.0 clippy --locked --workspace --all-targets -- -D warnings",
                 "python tools/repository/test_check_duplicate_test_sources.py",
                 'python tools/repository/check_duplicate_test_sources.py "$RUNNER_TEMP/clippy-messages.jsonl"',
-                "cargo +1.95.0 test --locked --workspace --lib -- content::",
-                "cargo +1.95.0 test --locked --workspace --lib -- --skip content::",
+                "cargo +1.95.0 test --locked --workspace --lib --no-fail-fast -- content::",
+                "cargo +1.95.0 test --locked --workspace --lib --no-fail-fast -- --skip content::",
                 'python tools/repository/plan_rust_test_shards.py "$RUNNER_TEMP/metadata.json" "$SHARD"',
                 'cargo +1.95.0 test --locked --workspace "${shard_args[@]}"',
                 "cargo +1.95.0 build --locked --workspace --bins --examples --benches",
