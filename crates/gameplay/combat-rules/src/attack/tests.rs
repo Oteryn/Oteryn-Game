@@ -3,7 +3,7 @@
 
 use super::constants::CHECKED_IN_JSON;
 use super::*;
-use crate::combat::formula::{FormulaInputs, Input};
+use crate::formula::{FormulaInputs, Input};
 use oteryn_simulation_determinism::SemanticTimeMicros;
 
 fn table() -> &'static AttackConstants {
@@ -610,7 +610,7 @@ fn swung_within_interval_tracks_the_last_swing() {
 #[test]
 fn the_resource_limits_bind_the_in_fight_deadline() {
     let registry: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json"
+        "../../../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json"
     ))
     .unwrap();
     let row = registry["entries"]

@@ -11,11 +11,7 @@ mod block;
 mod chase;
 mod constants;
 mod formulas;
-#[cfg(test)]
-mod parity_tests;
 mod target;
-#[cfg(test)]
-mod tests;
 
 pub use block::BlockBudget;
 pub use chase::{
@@ -23,11 +19,7 @@ pub use chase::{
     ChaseSearchBudget, ChaseState, chase_search_order,
 };
 pub use constants::{AttackConstants, FightMode};
-#[cfg(test)]
-use formulas::{DefenceSource, defence_formula, defence_mode_factor, zero_skill_defence_bounds};
 pub use formulas::{
     armor_reduction_bounds, creature_melee_formula, player_fist_formula, player_melee_formula,
 };
 pub use target::{AttackState, SwingPoll, TargetFacts, TargetRefusal};
-#[cfg(test)]
-use target::{SwingWait, TargetCleared, TargetValidity};

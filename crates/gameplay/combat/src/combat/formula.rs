@@ -1,6 +1,2 @@
-//! Compatibility path for Content-owned formula.
-#[allow(
-    unused_imports,
-    reason = "Foundation test fixtures path-load combat without formula callers"
-)]
-pub use crate::content::spell_data::formula::*;
+//! Compatibility path for Combat Rules-owned formula.
+pub use oteryn_gameplay_combat_rules::formula::*;
