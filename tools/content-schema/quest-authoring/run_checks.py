@@ -9,7 +9,11 @@ from pathlib import Path
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', type=Path, default=Path(__file__).resolve().parents[3])
-    root = parser.parse_args().root.resolve()
+    # CI passes this only when the protected-base classifier found no donor input in the diff.
+    parser.add_argument('--skip-donor-source', action='store_true',
+                        help='leave out quest_donor_source_authoring.py --check')
+    args = parser.parse_args()
+    root = args.root.resolve()
     here = root / 'tools/content-schema/quest-authoring'
     packet = here / 'samples/migration/quest-source-packet.json'
     scripts = ['verify_quest_schema.py', 'validate_quest_content.py',
@@ -65,6 +69,9 @@ def main():
         # Slowest step last: the cheap evidence-consistency checks above fail first.
         ['-m', 'unittest', 'discover', '-s', '.', '-p', 'test_*.py'],
     ]
+    if args.skip_donor_source:
+        commands.remove(['quest_donor_source_authoring.py', '--check'])
+        print('Quest check skipped: quest_donor_source_authoring.py --check (no donor input changed)', flush=True)
     env = {**os.environ, 'PYTHONDONTWRITEBYTECODE': '1'}
     for arguments in commands:
         print('Quest check: ' + ' '.join(arguments), flush=True)
