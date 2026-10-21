@@ -11,10 +11,13 @@ use crate::foundation::{
     CarrierError, ChannelRuntimeV1, ExactActorRef, OwnerDamageResult, RuntimeScopeRefV1,
     RuntimeWorkStamp, ScopeRuntimeFence,
 };
+pub use oteryn_gameplay_encounter_rules::thresholds::below_health_threshold;
+pub use oteryn_gameplay_encounter_rules::timers::checked_deadline;
 use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
 };
 use sha2::{Digest, Sha256};
+
 const QUALIFICATION: &str = "PROJECT_SOURCE_MARKER_LOCAL;SOURCE_THRESHOLD_RANGE_DELAY_COOLDOWN;GLOBAL_CONDITION88888_INTEROPERABILITY_UNVERIFIED;PROJECT_UNIFORM_DRAW;SPEECH_VFX_NOT_DELIVERED";
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ThresholdHealError {
@@ -324,8 +327,7 @@ impl ThresholdHealOwner {
             .map_err(E::Carrier)?;
         let locked = existing
             .is_some_and(|i| now < self.markers[i].unlock_us || self.markers[i].pending.is_some());
-        let started = !locked
-            && u128::from(health) * 1000000 < u128::from(s.maximum) * u128::from(s.threshold_ppm);
+        let started = !locked && below_health_threshold(health, s.maximum, s.threshold_ppm);
         let mut pending = existing.and_then(|i| self.markers[i].pending);
         let mut unlock = existing.map_or(0, |i| self.markers[i].unlock_us);
         let mut healed = None;
@@ -347,8 +349,8 @@ impl ThresholdHealOwner {
             self.markers.try_reserve(1).map_err(|_| E::Capacity)?;
         }
         if started {
-            unlock = now.checked_add(s.cooldown_us).ok_or(E::Clock)?;
-            let due = now.checked_add(s.delay_us).ok_or(E::Clock)?;
+            unlock = checked_deadline(now, s.cooldown_us).ok_or(E::Clock)?;
+            let due = checked_deadline(now, s.delay_us).ok_or(E::Clock)?;
             let digest = Sha256::new()
                 .chain_update(b"oteryn:threshold-heal:v1")
                 .chain_update(occurrence.as_bytes())

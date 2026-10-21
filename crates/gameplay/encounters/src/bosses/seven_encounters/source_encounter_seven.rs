@@ -16,7 +16,9 @@ use crate::foundation::{
     PreparedCreatureProfileTransformation, RuntimeScopeRefV1, RuntimeWorkStamp, ScopeRuntimeFence,
     WorldId,
 };
+pub use oteryn_gameplay_encounter_rules::timers::checked_deadline;
 use sha2::{Digest, Sha256};
+
 pub const BASE: &str = "oteryn:creature.the_time_guardian";
 pub const BLAZING: &str = "oteryn:creature.the_blazing_time_guardian";
 pub const FREEZING: &str = "oteryn:creature.the_freezing_time_guardian";
@@ -461,9 +463,7 @@ impl TimeGuardianOwner {
             .try_reserve(1)
             .map_err(|_| AttackError::LedgerFull)?;
         let deadline = SemanticTimeMicros::from_micros(
-            now.get()
-                .checked_add(30_000_000)
-                .ok_or(AttackError::NumericOverflow)?,
+            checked_deadline(now.get(), 30_000_000).ok_or(AttackError::NumericOverflow)?,
         );
         let draw = Sha256::new()
             .chain_update(s.content)
