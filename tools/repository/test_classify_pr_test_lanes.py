@@ -525,32 +525,46 @@ def test_metadata_events():
     assert "    name: game-gate\n" in final and "    needs: [scope, validate]\n" in final
     assert '        run: test "$LEGACY_VALIDATE" = "success"\n' in final
 
-    # Evaluate the exact hosted group expression for overlapping runs. An edit
-    # gets its own group; retarget and synchronize still supersede stale product
-    # qualification, and unrelated PRs never share a cancellation group.
-    line = next(line for line in gate.splitlines() if line.startswith("  group:"))
-    expected = "  group: ${{ ((github.event.action == 'edited' && github.event.changes.base == null) || (github.event.action == 'labeled' || github.event.action == 'unlabeled')) && format('merge-gate-edit-{0}-{1}', github.event.pull_request.number, github.run_id) || format('merge-gate-{0}', github.event.pull_request.number) }}"
-    assert line == expected
-    def group(action, base_changed, number, run_id):
-        expression = line.split("${{", 1)[1].rsplit("}}", 1)[0].strip()
+    # Evaluate the exact hosted concurrency expressions for overlapping runs.
+    # Every run of one PR shares one group, so an edit queues behind the active
+    # qualification and reuses its job-result markers. Only edits and label
+    # changes leave the running qualification alone; retarget and synchronize
+    # supersede it, and unrelated PRs never share a group.
+    def expression_of(prefix):
+        line = next(line for line in gate.splitlines() if line.startswith(prefix))
+        return line, line.split("${{", 1)[1].rsplit("}}", 1)[0].strip()
+    group_line, group_expression = expression_of("  group:")
+    cancel_line, cancel_expression = expression_of("  cancel-in-progress:")
+    assert group_line == "  group: ${{ format('merge-gate-{0}', github.event.pull_request.number) }}"
+    assert cancel_line == "  cancel-in-progress: ${{ !((github.event.action == 'edited' && github.event.changes.base == null) || (github.event.action == 'labeled' || github.event.action == 'unlabeled')) }}"
+    def evaluate(expression, action, base_changed, number, run_id):
         expression = expression.replace("github.event.action", "action")
         expression = expression.replace("github.event.changes.base", "base")
         expression = expression.replace("github.event.pull_request.number", "number")
         expression = expression.replace("github.run_id", "run_id")
-        expression = expression.replace("&&", "and").replace("||", "or").replace("null", "None")
+        expression = expression.replace("&&", " and ").replace("||", " or ").replace("null", "None")
+        expression = expression.replace("!(", "not (").replace("==", " == ")
         return eval(expression, {"__builtins__": {}}, {
             "action": action, "base": {"ref": {"from": "other"}} if base_changed else None,
             "number": number, "run_id": run_id,
             "format": lambda template, *args: template.format(*args),
         })
+    def group(action, base_changed, number, run_id):
+        return evaluate(group_expression, action, base_changed, number, run_id)
+    def cancels(action, base_changed):
+        return evaluate(cancel_expression, action, base_changed, 42, 1)
     product = group("synchronize", False, 42, 1)
-    edits = [group("edited", False, 42, n) for n in (2, 3)]
-    assert len(set([product, *edits])) == 3
-    assert group("edited", True, 42, 4) == product
-    assert group("synchronize", False, 42, 5) == product
+    assert product == "merge-gate-42"
+    for action, base_changed in (("edited", False), ("edited", True), ("labeled", False),
+                                 ("unlabeled", False), ("synchronize", False), ("opened", False),
+                                 ("reopened", False)):
+        assert group(action, base_changed, 42, 9) == product
     assert group("synchronize", False, 43, 6) != product
-    for action in ("labeled", "unlabeled"):
-        assert group(action, False, 42, 7) != product
+    for action in ("synchronize", "opened", "reopened"):
+        assert cancels(action, False) is True
+    assert cancels("edited", True) is True
+    for action in ("edited", "labeled", "unlabeled"):
+        assert cancels(action, False) is False
     # Execute the actual final fence with fresh/retargeted live responses. A
     # returning main with a newer base must never publish the old edit's gate.
     import urllib.request

@@ -376,7 +376,9 @@ def main() -> int:
             )
         if "workflow_dispatch:" in text:
             errors.append("merge gate must not execute pull-request code through workflow_dispatch")
-        if "  group: ${{ ((github.event.action == 'edited' && github.event.changes.base == null) || (github.event.action == 'labeled' || github.event.action == 'unlabeled')) && format('merge-gate-edit-{0}-{1}', github.event.pull_request.number, github.run_id) || format('merge-gate-{0}', github.event.pull_request.number) }}\n" not in text:
+        if "  group: ${{ format('merge-gate-{0}', github.event.pull_request.number) }}\n" not in text:
+            errors.append("merge gate runs of one pull request must share one concurrency group")
+        if "  cancel-in-progress: ${{ !((github.event.action == 'edited' && github.event.changes.base == null) || (github.event.action == 'labeled' || github.event.action == 'unlabeled')) }}\n" not in text:
             errors.append("merge gate metadata edits must not cancel product qualifications")
         scope_block = indented_yaml_mapping_block(text, "scope", 2)
         scope_digest = hashlib.sha256(scope_block.encode("utf-8")).hexdigest() if scope_block else None
