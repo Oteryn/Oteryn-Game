@@ -1,0 +1,139 @@
+{
+  "identity": {
+    "key": "crystal:encounter/goshnars_cruelty_crystal",
+    "revision": "crystal-00ce02a5"
+  },
+  "display_name": "Soul War: Goshnar's Cruelty (Crystal reconstruction)",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "goshnars_cruelty",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/goshnar_s_cruelty",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "greedy_eye",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/a_greedy_eye",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "arena",
+      "kind": "area",
+      "description": "Crystal x 33847-33864, y 31858-31874, z 7.",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              33847,
+              33864
+            ],
+            "y": [
+              31858,
+              31874
+            ],
+            "floor": 7
+          }
+        ]
+      }
+    },
+    {
+      "key": "boss",
+      "kind": "point",
+      "description": "Crystal (33856, 31866, 7).",
+      "location": {
+        "x": 33856,
+        "y": 31866,
+        "floor": 7
+      }
+    },
+    {
+      "key": "greedy_eye",
+      "kind": "point",
+      "description": "Crystal (33856, 31858, 7).",
+      "location": {
+        "x": 33856,
+        "y": 31858,
+        "floor": 7
+      }
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": [
+      {
+        "name": "defense_growth",
+        "duration_ms": 15000,
+        "repeat": true
+      }
+    ]
+  },
+  "rules": [
+    {
+      "key": "start_defense_growth",
+      "trigger": {
+        "kind": "encounter_started"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "timer",
+          "timer": "defense_growth",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "unchecked_cruelty_grows_harder",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "defense_growth"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "attribute",
+          "role": "goshnars_cruelty",
+          "attribute": "defense",
+          "operation": "add",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "key": "boss_death_removes_eye",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "goshnars_cruelty"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "remove",
+          "role": "greedy_eye"
+        },
+        {
+          "kind": "emit_outcome",
+          "outcome": "boss_defeated",
+          "credited": "damage_contributors"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "boss_defeated"
+  ]
+}

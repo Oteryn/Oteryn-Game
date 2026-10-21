@@ -1,0 +1,217 @@
+{
+  "identity": {
+    "key": "crystal:encounter/goshnars_spite_crystal",
+    "revision": "crystal-00ce02a5"
+  },
+  "display_name": "Soul War: Goshnar's Spite (Crystal reconstruction)",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "goshnars_spite",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/goshnar_s_spite",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "weeping_soul",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/weeping_soul",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "arena",
+      "kind": "area",
+      "description": "Crystal x 33734-33751, y 31624-31640, z 14.",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              33734,
+              33751
+            ],
+            "y": [
+              31624,
+              31640
+            ],
+            "floor": 14
+          }
+        ]
+      }
+    },
+    {
+      "key": "fire_north",
+      "kind": "point",
+      "description": "Crystal (33743, 31628, 14).",
+      "location": {
+        "x": 33743,
+        "y": 31628,
+        "floor": 14
+      }
+    },
+    {
+      "key": "fire_east",
+      "kind": "point",
+      "description": "Crystal (33736, 31632, 14).",
+      "location": {
+        "x": 33736,
+        "y": 31632,
+        "floor": 14
+      }
+    },
+    {
+      "key": "fire_west",
+      "kind": "point",
+      "description": "Crystal (33750, 31632, 14).",
+      "location": {
+        "x": 33750,
+        "y": 31632,
+        "floor": 14
+      }
+    },
+    {
+      "key": "fire_south",
+      "kind": "point",
+      "description": "Crystal (33742, 31637, 14).",
+      "location": {
+        "x": 33742,
+        "y": 31637,
+        "floor": 14
+      }
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": [
+      {
+        "name": "searing_fire_cycle",
+        "duration_ms": 14000,
+        "repeat": true
+      }
+    ]
+  },
+  "rules": [
+    {
+      "key": "start_searing_fire_cycle",
+      "trigger": {
+        "kind": "encounter_started"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "timer",
+          "timer": "searing_fire_cycle",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "create_one_searing_fire",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "searing_fire_cycle"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "one_of",
+          "branches": [
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "map_item",
+                  "operation": "create",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/33877",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "anchor": "fire_north",
+                  "revert_after_ms": 5000
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "map_item",
+                  "operation": "create",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/33877",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "anchor": "fire_east",
+                  "revert_after_ms": 5000
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "map_item",
+                  "operation": "create",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/33877",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "anchor": "fire_west",
+                  "revert_after_ms": 5000
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "map_item",
+                  "operation": "create",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/33877",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "anchor": "fire_south",
+                  "revert_after_ms": 5000
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "boss_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "goshnars_spite"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "emit_outcome",
+          "outcome": "boss_defeated",
+          "credited": "damage_contributors"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "boss_defeated"
+  ]
+}

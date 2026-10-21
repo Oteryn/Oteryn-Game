@@ -41,17 +41,17 @@ class QuestNativeBindingPreflightTest(unittest.TestCase):
 
     def test_every_stage_has_real_owner_and_is_unbound(self):
         summary = self.report["summary"]
-        self.assertEqual(1891, summary["plan_stages"])
-        self.assertEqual(1891, summary["unbound_dispatch_stages"])
+        self.assertEqual(1887, summary["plan_stages"])
+        self.assertEqual(1887, summary["unbound_dispatch_stages"])
         self.assertEqual(0, summary["native_dispatch_bindings"])
         self.assertEqual(0, summary["native_reward_delivery_bindings"])
         self.assertEqual(
             {
                 "collect": 277,
                 "complete": 304,
-                "explore": 248,
-                "kill": 275,
-                "talk": 329,
+                "explore": 247,
+                "kill": 271,
+                "talk": 330,
                 "use": 458,
             },
             summary["event_kinds"],
@@ -68,7 +68,7 @@ class QuestNativeBindingPreflightTest(unittest.TestCase):
             summary["target_association_statuses"],
         )
         self.assertEqual(25, summary["consumer_seam_statuses"]["EXISTING_DECLARED_ENCOUNTER_OUTCOME"])
-        self.assertEqual(656, summary["reward_intents"])
+        self.assertEqual(657, summary["reward_intents"])
 
     def test_playability_never_inferred_from_source_or_identity(self):
         self.assertEqual(0, self.report["summary"]["playable_verified"])
@@ -80,6 +80,17 @@ class QuestNativeBindingPreflightTest(unittest.TestCase):
             row["playable_verification"] == "NOT_ASSESSED"
             for row in self.report["records"]
         ))
+
+    def test_soul_war_accepted_projection_keeps_native_holds(self):
+        row = next(row for row in self.report["records"]
+                   if row["quest"] == "oteryn:quest.soul_war_quest")
+        self.assertEqual("CHOSEN_STAGE_CONSUMERS", row["lane"])
+        self.assertEqual(5, row["plan_stage_count"])
+        self.assertEqual({"complete": 1, "explore": 1, "kill": 2, "talk": 1}, row["event_kinds"])
+        self.assertEqual(2, row["reward_intents"])
+        self.assertEqual(0, row["native_dispatch_binding_count"])
+        self.assertEqual(0, row["native_reward_delivery_binding_count"])
+        self.assertEqual("NOT_ASSESSED", row["playable_verification"])
 
     def test_retained_json_is_deterministic(self):
         path = ROOT / preflight.OUTPUT
