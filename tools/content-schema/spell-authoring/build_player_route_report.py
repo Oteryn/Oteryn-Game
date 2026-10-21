@@ -93,7 +93,7 @@ def build():
                                      "mechanics_qualification": "Fresh factual evidence does not prove gameplay execution or a damage formula."})
         rows.append({"identity": spell["identity"], "name": spell["name"], "carrier": spell["carrier"],
                      "mechanic": mechanic, "import_status": "catalog_present", "route_status": status,
-                     "route": "apps/game-server/src/gameplay_transport/" + route if route else None,
+                     "route": "crates/gameplay/dispatch/src/gameplay_transport/" + route if route else None,
                      "reason": reason, "premium_required": spell["requirements"].get("premium", False),
                      "premium_live_limit": "Node premium_coordinator is None; no fabricated entitlement" if spell["requirements"].get("premium") else None,
                      "source_identities": entry["source_identities"],
@@ -108,7 +108,7 @@ def build():
              "crates/gameplay/spell/src/spell/house_execution.rs",
              "crates/gameplay/spell/src/spell/executable_catalog.rs",
              "apps/game-server/src/node/serve.rs"]
-    paths += ["apps/game-server/src/gameplay_transport/" + route for route in sorted(set(ROUTES.values()))]
+    paths += ["crates/gameplay/dispatch/src/gameplay_transport/" + route for route in sorted(set(ROUTES.values()))]
     return {"schema": "OTERYN_PLAYER_SPELL_ROUTE_INVENTORY/v1", "sources": [evidence(path) for path in paths],
             "summary": {"catalog_records": len(rows), "route_status": dict(sorted(Counter(row["route_status"] for row in rows).items()))},
             "scope": "Static, exact-file-bound route inventory; import completeness is separate from successful cast or production admission.",

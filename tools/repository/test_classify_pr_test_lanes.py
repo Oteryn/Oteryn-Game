@@ -650,6 +650,7 @@ def test_server_qualification(module):
 
     for path in (
         "apps/game-server/src/gameplay_transport/resume.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/resume.rs",
         "apps/game-server/src/durability/fresh_admission.rs",
         "apps/game-server/src/foundation/protocol.rs",
         "apps/game-server/src/node/serve.rs",

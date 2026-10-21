@@ -1,7 +1,7 @@
 //! FND-02 wire codecs shared by the Oteryn game server and the future native client.
 //!
 //! Extracted from `apps/game-server/src/foundation/protocol.rs` and
-//! `apps/game-server/src/gameplay_transport/{world_spatial,world_object}.rs` per ADR-0011 §2
+//! `crates/gameplay/dispatch/src/gameplay_transport/{world_spatial,world_object}.rs` per ADR-0011 §2
 //! (move exactly the real items that have a consumer, no speculative API) and the #162 A6 owner
 //! acceptance of task `OTV2-20260928-protocol-oteryn-crate-c1a`. This crate is the FND-02 wire
 //! boundary: bounded frame length-prefixing, the top-level envelope message types and their
