@@ -36,6 +36,7 @@ use crate::foundation::{
     CarrierError, ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementFacing,
     MovementLocalPosition, MovementPositionSnapshot,
 };
+use crate::map::boot::BundleCollisionIndexExt;
 use crate::movement::{CardinalStep, MovementError};
 use oteryn_world_bundle::bundle::Family;
 use std::collections::{BTreeMap, BTreeSet};

@@ -70,7 +70,7 @@ pub(crate) fn lower_current_appearance(
     }
 }
 
-fn lower_creature_member(
+pub(crate) fn lower_creature_member(
     registry: &crate::content::native_spell_appearances::CompiledSpellAppearances,
     creature: &crate::content::ProjectV2DefinitionRef,
     effect_key: &str,
@@ -93,6 +93,3 @@ fn lower_creature_member(
     .and_then(|definition| definition.with_appearance(member.selection()))
     .ok_or(AppearanceContentError::InvalidDefinition)
 }
-#[cfg(test)]
-#[path = "creature_appearance_content_tests.rs"]
-mod tests;

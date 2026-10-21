@@ -14,14 +14,7 @@ use crate::foundation::{
     ChannelRuntimeV1, CharacterId, CompanionSnapshot, ExactActorRef, GameSessionId,
 };
 
-/// Content-bound test policy. Numerical approximation never grants target or session authority.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub(crate) enum MagnitudePolicy {
-    #[default]
-    Strict,
-    BaselineTest,
-}
+pub(crate) use crate::foundation::magnitude_policy::MagnitudePolicy;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct ExactRatio {
@@ -211,7 +204,7 @@ struct Target {
 }
 #[derive(Debug)]
 pub(crate) struct PreparedMagnitudeOwner {
-    attributes: MagnitudeOwnedAttributes,
+    pub(crate) attributes: MagnitudeOwnedAttributes,
     resolved_attributes: MagnitudeOwnedAttributes,
     caster: PlayerSpellState,
     now_ms: u64,
@@ -769,7 +762,3 @@ fn checked_draw(draw: &mut dyn FnMut(i64, i64) -> i64, min: i64, max: i64) -> Re
     }
     Ok(value)
 }
-
-#[cfg(test)]
-#[path = "magnitude_owner_tests.rs"]
-mod tests;

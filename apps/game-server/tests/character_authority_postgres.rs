@@ -6,21 +6,23 @@ extern crate oteryn_game_server as production_server;
 extern crate self as oteryn_game_server;
 pub use production_server::admission_evidence;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/character_bootstrap_intent.rs"]
+#[path = "../../../crates/gameplay/durability/src/character_bootstrap_intent.rs"]
 pub mod character_bootstrap_intent;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/character_recovery_fence.rs"]
-pub mod character_recovery_fence;
-pub use production_server::domain;
+pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
+#[path = "support/domain_shim.rs"]
+pub mod domain;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/durability/mod.rs"]
-mod durability;
+#[path = "../src/durability"]
+mod durability {
+    // Recompile the shared core; native world adapters use the full library Content context.
+    include!("../../../crates/gameplay/durability/src/durability/core_modules.rs");
+}
 #[allow(dead_code, unused_imports)]
-#[path = "../src/foundation/mod.rs"]
+#[path = "../../../crates/gameplay/foundation/src/foundation/mod.rs"]
 pub mod foundation;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/native_admission_source/mod.rs"]
-pub mod native_admission_source;
+pub use oteryn_gameplay_native_admission_source as native_admission_source;
 #[allow(dead_code, unused_imports)]
 #[path = "../src/premium/mod.rs"]
 mod premium;
@@ -2319,7 +2321,7 @@ mod bestiary_progress_postgres_cases;
 
 // LOOP-GROUND-1 Ground64 same-transaction admission (pure and native PostgreSQL
 // cases) on the CHARM-2 harness included above; its only test mount.
-#[path = "../src/durability/ground_cell_limit_tests.rs"]
+#[path = "../../../crates/gameplay/durability/src/durability/ground_cell_limit_tests.rs"]
 mod ground_cell_limit_tests;
 
 // RANK-1 HS-1 World highscore snapshots (migration 0129): the job, its 11 categories and the
@@ -3036,7 +3038,7 @@ mod monk_state_postgres_cases {
 #[path = "support/attack_kill_reward_postgres_cases.rs"]
 mod attack_kill_reward_postgres_cases;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/combat.rs"]
+#[path = "../src/combat/mod.rs"]
 pub mod combat;
 #[path = "support/combat_death_reward_postgres_cases.rs"]
 mod combat_death_reward_postgres_cases;
@@ -3443,3 +3445,7 @@ mod pvp_readmission_postgres_cases;
 mod character_appearance_native_postgres_cases;
 #[path = "support/character_appearance_postgres_cases.rs"]
 mod character_appearance_postgres_cases;
+
+#[cfg(test)]
+#[path = "../src/lifted_tests/durability_npc_travel_postgres_fixture.rs"]
+mod durability_npc_travel_postgres_fixture;

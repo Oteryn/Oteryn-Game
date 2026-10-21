@@ -19,10 +19,11 @@ use super::connection::UseCommand;
 use super::container_view::ContainerObservation;
 use super::equipment_move::native_for_move;
 use super::item_move::{LoopMove, LoopMoveRefusal, LoopMoveReplay, LoopMoveResult, LoopTarget};
-use super::item_ref_admission::{definition_ref, generation_item_facts, pinned_index};
+use super::item_ref_admission::{
+    NativeItemWeights, definition_ref, generation_item_facts, pinned_index,
+};
 use super::item_view::{ItemKey, ViewItem};
 use crate::content::item_ref::ItemDefinitionIndex;
-use crate::content::native_gameplay::NativeGameplayState;
 use crate::durability::item_loop_move::{
     ItemLoopContent, LoopDestination, LoopGround, LoopMoveRequest,
 };
@@ -40,13 +41,13 @@ use std::num::NonZeroU32;
 use std::sync::{Arc, Mutex};
 
 /// D1211: the loop decides every touched definition from this exact admitted native generation.
-impl ItemLoopContent for NativeGameplayState {
+impl ItemLoopContent for NativeItemWeights<'_> {
     fn loop_content_digest(&self) -> [u8; 32] {
-        self.source_digest()
+        self.0.source_digest()
     }
 
     fn loop_facts(&self, definition: &TypedDefinitionRef) -> Option<ItemDefinitionFacts> {
-        generation_item_facts(self, definition).ok()
+        generation_item_facts(self.0, definition).ok()
     }
 }
 
@@ -350,7 +351,7 @@ pub(super) async fn move_loop_item(
             admission.holder,
             &fence,
             CommandRef::new(command.game_session_id, command_id),
-            native,
+            &NativeItemWeights(native),
             LoopMoveRequest {
                 item,
                 count: None,

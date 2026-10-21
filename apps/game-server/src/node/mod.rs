@@ -4,10 +4,10 @@
 
 pub mod config;
 pub mod descriptor_facts;
-pub mod operator_files;
 mod runtime_status;
-pub mod secure_file;
 pub mod serve;
+
+pub use oteryn_gameplay_node_files::{operator_files, secure_file};
 
 use crate::durability::{DurabilityError, DurabilityRoot, DurabilityRootConfig};
 use config::DatabaseConfig;

@@ -7,7 +7,7 @@
 //! payload is `oteryn_protocol_oteryn::world_clock`.
 
 use crate::foundation::WorldId;
-use crate::node::secure_file::{self, FileClass, FileError};
+use oteryn_gameplay_node_files::secure_file::{self, FileClass, FileError};
 use oteryn_protocol_oteryn::world_clock::{TIBIAN_MINUTES_PER_DAY, WorldClock};
 use oteryn_simulation_determinism::GameplayDecisionRoot;
 
@@ -368,7 +368,3 @@ mod tests {
         assert!(pacer.due(&source, at(368)).is_some());
     }
 }
-
-#[cfg(test)]
-#[path = "world_clock_world_config_tests.rs"]
-mod world_config_tests;

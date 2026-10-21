@@ -40,19 +40,29 @@
 //! OTS_HYPOTHESIS_ONLY.
 
 use super::WorldBase;
-use super::boot::tile_pos;
 use super::door::DoorBook;
 use super::facts::ItemDefinition;
 use super::overlay::TilePos;
 use super::view::placement_of;
-use crate::content::{LogicalCell, NativeSpellTileFlags, QualifiedSpellTile, SpellTileLookupError};
+use crate::content::{NativeSpellTileFlags, QualifiedSpellTile};
+#[cfg(test)]
+use crate::map::boot::BundleCollisionIndexExt;
 use oteryn_world_bundle::bundle::{Family, Manifest, Sector, TerrainKind};
 use std::collections::{BTreeSet, HashMap};
-use std::fmt;
 use std::sync::Arc;
 
-/// A tile whose facts are unknown.
-const UNKNOWN: u32 = u32::MAX;
+pub(crate) use crate::content::bundle_spell_tiles::BundleSpellTiles;
+use crate::content::bundle_spell_tiles::UNKNOWN;
+
+impl crate::content::bundle_spell_tiles::BundleTileBase for WorldBase {
+    fn digest(&self) -> [u8; 32] {
+        self.digest()
+    }
+
+    fn tile_index(&self, x: u16, y: u16, floor: i8) -> Option<usize> {
+        self.tile_index(x, y, floor)
+    }
+}
 
 /// OTBM `PROTECTIONZONE`, tile flag bit 0.
 const PROTECTION_ZONE: u32 = 1;
@@ -256,64 +266,11 @@ impl SpellTilesBuilder {
     }
 }
 
-/// The spell tile facts of every tile of a bundle World, one interned [`QualifiedSpellTile`] per
-/// distinct tile. It holds no scope: [`crate::content::QualifiedSpellTiles`] binds it to the
-/// Channel's bundle scope before any lookup.
-pub(crate) struct BundleSpellTiles {
-    base: Arc<WorldBase>,
-    /// Per base tile ([`WorldBase::tile_index`]): an index into `shapes`, or [`UNKNOWN`].
-    tiles: Vec<u32>,
-    shapes: Vec<QualifiedSpellTile>,
-}
-
-impl fmt::Debug for BundleSpellTiles {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("BundleSpellTiles")
-            .field("digest", &self.base.digest())
-            .field("tiles", &self.tiles.len())
-            .field("shapes", &self.shapes.len())
-            .finish()
-    }
-}
-
-impl PartialEq for BundleSpellTiles {
-    fn eq(&self, other: &Self) -> bool {
-        std::ptr::eq(self, other)
-            || (self.base.digest() == other.base.digest()
-                && self.tiles == other.tiles
-                && self.shapes == other.shapes)
-    }
-}
-
-impl Eq for BundleSpellTiles {}
-
-impl BundleSpellTiles {
-    /// The facts of `cell` (legacy `z`, native floor `-z`): absent where the bundle holds no
-    /// tile, unknown where a fact has no source (see the module documentation).
-    pub(crate) fn lookup(
-        &self,
-        cell: LogicalCell,
-    ) -> Result<&QualifiedSpellTile, SpellTileLookupError> {
-        let pos = tile_pos(cell).ok_or(SpellTileLookupError::Absent)?;
-        let index = self
-            .base
-            .tile_index(pos.x, pos.y, pos.floor)
-            .ok_or(SpellTileLookupError::Absent)?;
-        match self.tiles.get(index).copied() {
-            Some(UNKNOWN) | None => Err(SpellTileLookupError::Unknown),
-            Some(shape) => self
-                .shapes
-                .get(shape as usize)
-                .ok_or(SpellTileLookupError::Unknown),
-        }
-    }
-}
-
 #[cfg(test)]
 pub(crate) mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
     use super::*;
-    use crate::content::NativeEntryMovementCells;
+    use crate::content::{LogicalCell, NativeEntryMovementCells, SpellTileLookupError};
     use crate::foundation::{ChannelId, WorldId};
     use crate::map::BundlePins;
     use crate::map::boot::{BootPins, BundleWorld, boot};
@@ -781,8 +738,9 @@ pub(crate) mod tests {
             map_revision: format!("sha256:{hex}"),
             start,
         };
-        let controller =
-            crate::content::native_gameplay::tests::activated_with_item_keys(Some(ITEM_KEYS));
+        let controller = crate::content::native_gameplay::test_support::activated_with_item_keys(
+            Some(ITEM_KEYS),
+        );
         let state = controller
             .active()
             .expect("active")

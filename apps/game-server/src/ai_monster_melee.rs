@@ -20,45 +20,8 @@ use crate::foundation::owner_timer::SemanticTimeMicros;
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId};
 use oteryn_simulation_determinism::deterministic_decision_u64;
 
-/// A qualified physical melee entry; the active artifact supplies its digest.
-/// This value is content, never an issuer, current actor or mutation grant.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct MeleeDefinition {
-    content_digest: [u8; 32],
-    interval_us: u64,
-    chance_ppm: u32,
-    entry_index: u16,
-    minimum: u32,
-    maximum: u32,
-}
-impl MeleeDefinition {
-    pub(crate) fn new(
-        content_digest: [u8; 32],
-        interval_ms: u64,
-        chance_ppm: u32,
-        minimum: u32,
-        maximum: u32,
-    ) -> Option<Self> {
-        if interval_ms == 0 || chance_ppm > 1_000_000 || maximum == 0 || minimum > maximum {
-            return None;
-        }
-        Some(Self {
-            content_digest,
-            interval_us: interval_ms.checked_mul(1_000)?,
-            chance_ppm,
-            entry_index: 0,
-            minimum,
-            maximum,
-        })
-    }
+pub(crate) use crate::foundation::melee_definition::MeleeDefinition;
 
-    /// The melee entry's index in the profile's `attacks[]`: the `AI_ATTACK` draw index.
-    #[must_use]
-    pub(crate) const fn with_entry_index(mut self, entry_index: u16) -> Self {
-        self.entry_index = entry_index;
-        self
-    }
-}
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Dispatch {
     Decision(ThinkOutcome),

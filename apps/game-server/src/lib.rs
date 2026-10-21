@@ -10,7 +10,6 @@ extern crate self as oteryn_game_server;
 mod monster_lab;
 
 #[allow(dead_code)]
-#[allow(clippy::duplicate_mod)] // Foundation's standalone tests include Ability source.
 mod ability;
 // Native source combat requires the actual Channel/Condition owners; it is
 // intentionally outside the standalone generic Ability fixture facade.
@@ -45,8 +44,7 @@ mod ai_think;
 )]
 mod combat;
 // A top-level module, not a submodule of `combat`: `combat.rs` is also recompiled standalone by
-// `foundation/mod.rs`'s `#[cfg(test)] #[path = "../combat.rs"] mod exact_actor_test_combat;` and
-// by several PG test binaries that need `combat::death_reward`/`combat::loot_plan` but not
+// several PG test binaries that need `combat::death_reward`/`combat::loot_plan` but not
 // Content, so a `crate::content` dependency inside `combat.rs`'s own module tree would force
 // every one of those to also carry a local `content` module. `combat_pickup` needs
 // `crate::content` (B3-2: definition facts bound to the current Content generation) and reaches
@@ -71,6 +69,9 @@ mod combat_attack;
 mod combat_pvp;
 // PARTY-1 (CP D1391): the party module and its PostgreSQL cases.
 mod party;
+#[cfg(test)]
+#[path = "lifted_tests/party_shared_xp_postgres_tests.rs"]
+mod party_shared_xp_postgres_tests;
 // D39 chest `USE` wiring, top-level for the same reason: `tests/interaction_workflow.rs`
 // recompiles `interaction/mod.rs` without Content or durability. C2 routes `USE_INTENT` to it.
 #[path = "interaction/chest_use.rs"]
@@ -79,18 +80,18 @@ mod interaction_chest_use;
 // the chest `USE`.
 mod achievement_catalogue;
 
-pub mod character_bootstrap_intent;
-pub mod character_recovery_fence;
+pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
+pub use oteryn_gameplay_durability::character_bootstrap_intent;
 #[allow(
     dead_code,
     unused_imports,
     reason = "CHAT-1a local chat rules await the CHAT_V1 wire and runtime of CHAT-1b"
 )]
 mod chat;
-pub mod content;
-pub mod domain;
-pub mod durability;
-pub mod foundation;
+pub use oteryn_gameplay_content::content;
+pub use oteryn_gameplay_domain::domain;
+pub use oteryn_gameplay_durability::durability;
+pub use oteryn_gameplay_foundation::foundation;
 mod gameplay_transport;
 pub mod house_scope;
 pub mod map;
@@ -144,13 +145,13 @@ mod spell_stance_runtime_postgres_cases;
 mod spell_familiar_runtime_postgres_cases;
 
 #[cfg(test)]
-#[path = "durability/world_party_tests.rs"]
+#[path = "lifted_tests/durability_world_party_tests.rs"]
 mod world_party_runtime_postgres_cases;
 
 // LIMIT_RAISE value/audit regressions have one source mount; the canonical PG root
 // path-loads durability and must not collect these pure cases a second time.
 #[cfg(test)]
-#[path = "durability/forge_dust_limit_audit_tests.rs"]
+#[path = "../../../crates/gameplay/durability/src/durability/forge_dust_limit_audit_tests.rs"]
 mod forge_dust_limit_audit_tests;
 
 // RANK-1 ranking order has one source mount; the PG roots path-load durability (which owns the
@@ -160,19 +161,19 @@ mod forge_dust_limit_audit_tests;
 mod highscore_ranking_tests;
 
 #[cfg(test)]
-#[path = "foundation/recovery_tests.rs"]
+#[path = "lifted_tests/foundation_recovery_tests.rs"]
 mod foundation_recovery_tests;
 
 #[cfg(test)]
-#[path = "foundation/final_review_regressions.rs"]
+#[path = "lifted_tests/foundation_final_review_regressions.rs"]
 mod foundation_final_review_regressions;
 
 #[cfg(test)]
-#[path = "foundation/final_review_round2_regressions.rs"]
+#[path = "lifted_tests/foundation_final_review_round2_regressions.rs"]
 mod foundation_final_review_round2_regressions;
 
 #[cfg(test)]
-#[path = "foundation/final_review_round2_runtime_rollback.rs"]
+#[path = "lifted_tests/foundation_final_review_round2_runtime_rollback.rs"]
 mod foundation_final_review_round2_runtime_rollback;
 
 use oteryn_foundation::CancellationToken;
@@ -723,8 +724,8 @@ mod v2_reconciled_prepared_budget_regression_tests {
     }
 }
 
-pub mod admission_evidence;
-pub mod native_admission_source;
+pub use oteryn_gameplay_admission_evidence as admission_evidence;
+pub use oteryn_gameplay_native_admission_source as native_admission_source;
 
 #[allow(
     dead_code,
@@ -770,6 +771,11 @@ mod creature_damage_spell;
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
+mod creature_damage_spell_delayed;
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
 mod creature_defense_presentation;
 #[allow(
     dead_code,
@@ -807,11 +813,7 @@ mod source_callback_spawn;
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
 mod smelly_damage;
-#[allow(
-    dead_code,
-    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
-)]
-mod source_critical_baseline;
+use oteryn_gameplay_source_critical_baseline as source_critical_baseline;
 #[allow(
     dead_code,
     reason = "Private native encounter owner ABI retained for source-qualified library dispatch; shipping AI loop is not activated"
@@ -861,9 +863,219 @@ mod canonical_monster_successor_tests;
 #[allow(dead_code)]
 mod creature_icicle;
 
-// Full native Creature callbacks stay outside standalone Durability path loads.
-#[path = "durability/creature_source_items.rs"]
-mod creature_source_items;
+pub(crate) use durability::{native_world_items, native_world_read};
+
+pub(crate) use durability::creature_source_items;
+#[allow(unused_imports, reason = "preserve the former server module path")]
+pub(crate) use durability::mail_text_policy;
 
 #[cfg(test)]
 mod security;
+
+#[cfg(test)]
+#[path = "lifted_tests/domain_death_tests.rs"]
+mod domain_death_tests;
+#[cfg(test)]
+#[path = "../../../crates/gameplay/durability/src/durability/forge_tests.rs"]
+mod domain_forge_tests;
+#[cfg(test)]
+#[path = "lifted_tests/domain_market_tests.rs"]
+mod domain_market_tests;
+#[cfg(test)]
+#[path = "lifted_tests/domain_timed_item_host_tests.rs"]
+mod domain_timed_item_host_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/content_executable_catalog_tests.rs"]
+mod content_executable_catalog_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/content_native_spell_tests.rs"]
+mod content_native_spell_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/content_encounter_map_item_tests.rs"]
+mod content_encounter_map_item_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/content_creature_reward_tests.rs"]
+mod content_creature_reward_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/content_charm_source_effect_tests.rs"]
+mod content_charm_source_effect_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/content_npc_service_tests.rs"]
+mod content_npc_service_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/movement_speed_runtime_tests.rs"]
+mod movement_speed_runtime_tests;
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+#[path = "lifted_tests/foundation_ability_exact_actor_resolution_tests.rs"]
+mod foundation_ability_exact_actor_resolution_tests;
+#[cfg(test)]
+#[path = "lifted_tests/world_clock_world_config_tests.rs"]
+mod world_clock_world_config_tests;
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+#[path = "lifted_tests/foundation_channel_owner_ability_commit_tests.rs"]
+mod foundation_channel_owner_ability_commit_tests;
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+#[path = "lifted_tests/foundation_channel_owner_creature_bite_tests.rs"]
+mod foundation_channel_owner_creature_bite_tests;
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+#[path = "lifted_tests/foundation_channel_owner_combat_death_tests.rs"]
+mod foundation_channel_owner_combat_death_tests;
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+#[path = "lifted_tests/foundation_movement_static_kernel_structural_tests.rs"]
+mod foundation_movement_static_kernel_structural_tests;
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+#[path = "lifted_tests/foundation_attacker_fence_tests.rs"]
+mod foundation_attacker_fence_tests;
+// Higher-layer qualification tests stay in the native composition root.
+#[cfg(test)]
+#[path = "lifted_tests/creature_area_heal_tests.rs"]
+mod creature_area_heal_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/creature_icicle_tests.rs"]
+mod creature_icicle_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/creature_auto_attack_tests.rs"]
+mod creature_auto_attack_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/creature_appearance_content_tests.rs"]
+mod creature_appearance_content_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/creature_defense_presentation_tests.rs"]
+mod creature_defense_presentation_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/creature_condition_content_tests.rs"]
+mod creature_condition_content_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/creature_condition_content_gate_tests.rs"]
+mod creature_condition_content_gate_tests;
+
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+mod source_callback_cast;
+
+#[cfg(test)]
+#[path = "lifted_tests/creature_damage_spell_tests.rs"]
+mod creature_damage_spell_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/creature_damage_spell_defense_variant_tests.rs"]
+mod creature_damage_spell_defense_variant_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/creature_damage_spell_appearance_execution_tests.rs"]
+mod creature_damage_spell_appearance_execution_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/creature_damage_spell_composed_tests.rs"]
+mod creature_damage_spell_composed_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/spell_house_execution_tests.rs"]
+mod spell_house_execution_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/spell_owned_cast_facts_tests.rs"]
+mod spell_owned_cast_facts_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/spell_field_history_tests.rs"]
+mod spell_field_history_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/spell_companion_lifecycle_direct_acquisition_owner_tests.rs"]
+mod spell_companion_lifecycle_direct_acquisition_owner_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/spell_actor_execution_tests.rs"]
+mod spell_actor_execution_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/spell_magnitude_owner_tests.rs"]
+mod spell_magnitude_owner_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/spell_native_cast_commit_tests.rs"]
+mod spell_native_cast_commit_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/spell_delayed_execution_tests.rs"]
+mod spell_delayed_execution_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/spell_callback_speech_tests.rs"]
+mod spell_callback_speech_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/source_callback_cast_tests.rs"]
+mod source_callback_cast_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/source_callback_spawn_tests.rs"]
+mod source_callback_spawn_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/source_encounter_seven_tests.rs"]
+mod source_encounter_seven_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/source_threshold_heal_tests.rs"]
+mod source_threshold_heal_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/monster_owner_cycle_tests.rs"]
+mod monster_owner_cycle_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/smelly_damage_tests.rs"]
+mod smelly_damage_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/smelly_encounter_dispatch_tests.rs"]
+mod smelly_encounter_dispatch_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/monster_combat_lane_tests.rs"]
+mod monster_combat_lane_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/monster_combat_lane_defense_composition_tests.rs"]
+mod monster_combat_lane_defense_composition_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/monster_combat_lane_defense_speed_test.rs"]
+mod monster_combat_lane_defense_speed_test;
+
+#[cfg(test)]
+#[path = "lifted_tests/monster_combat_lane_source_summon_composition_tests.rs"]
+mod monster_combat_lane_source_summon_composition_tests;
+
+#[cfg(test)]
+#[path = "lifted_tests/source_time_profile_bundle_tests.rs"]
+mod source_time_profile_bundle_tests;

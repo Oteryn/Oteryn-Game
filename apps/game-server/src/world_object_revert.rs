@@ -26,11 +26,11 @@ use crate::content::{
     LocalObjectIntentFamily, LogicalCell, LoweredActionId, PlacementKey, ProductionKey,
     TransitionBinding, TransitionEventOwner, TransitionKey,
 };
+use crate::domain::interaction::{ChildOccurrenceRef, InteractionError, SemanticRevisionContext};
 use crate::foundation::{
     GenerationError, RuntimeExecutionOrdinal, RuntimeScopeRefV1, ScopeOwnershipGeneration,
     ScopeRuntimeFence, TerminalSemanticOutcome,
 };
-use crate::interaction::{ChildOccurrenceRef, InteractionError, SemanticRevisionContext};
 use crate::world_runtime::{
     LocalObjectOperation, LocalObjectRuntime, ReferenceContentGeneration,
     ScopeLocalObjectOperation, WorldRuntimeError,
@@ -828,12 +828,12 @@ mod tests {
         Sha256HexDigest, SpatialAddress, TransitionBinding, TransitionEventOwner,
         TypedDefinitionRef, link_reference_playable,
     };
+    use crate::domain::interaction::RootSourceOccurrenceRef;
     use crate::foundation::{
         ChannelId, CharacterId, CharacterLease, CommandId, CommandIngress, CommandRef,
         ConnectionGeneration, FreshAdmissionCommit, FreshAdmissionFacts,
         GameSessionAuthoritySnapshot, GameSessionId, GameSessionState, WorldId,
     };
-    use crate::interaction::RootSourceOccurrenceRef;
     use crate::world_runtime::{
         LocalObjectCommand, LocalObjectUseOutcome, ScopeContentGenerationFence,
     };

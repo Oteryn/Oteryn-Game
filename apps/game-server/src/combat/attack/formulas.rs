@@ -8,7 +8,7 @@
 //! `shielding_skill` and the defence value as `shield_defense`.
 
 use super::constants::{AttackConstants, FightMode};
-use crate::spell::formula::{Binary, Expression, Formula, Input, Unary};
+use crate::combat::formula::{Binary, Expression, Formula, Input, Unary};
 
 fn constant(value: f64) -> Expression {
     Expression::Const(value)

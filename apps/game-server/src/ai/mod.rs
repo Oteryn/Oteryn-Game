@@ -9,7 +9,7 @@
 //! rather than a child of it (`ResourceLimit`/`AiError` and everything below stay `pub` for that
 //! reason too). It lives next to `ai/` instead of inside it because `tests/ai_bootstrap.rs`
 //! path-includes this whole module tree as its own standalone crate root
-//! (`#[path = "../src/ai/mod.rs"] mod ai;`, no `foundation`/`content`/`movement` available
+//! (the standalone `ai` module, no `foundation`/`content`/`movement` available
 //! there); see `ai_think.rs`'s module doc for the rest of that reasoning.
 
 #![forbid(unsafe_code)]

@@ -95,10 +95,10 @@ pub(crate) struct CharacterCastFacts {
 /// evaluation that changes Serene.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct PlayerSpellState {
-    pub(super) facts: CharacterCastFacts,
+    pub(crate) facts: CharacterCastFacts,
     pub(super) premium_current: bool,
     pub(super) premium_valid_until_micros: Option<u64>,
-    pub(super) health: u32,
+    pub(crate) health: u32,
     pub(super) field_attack_history: super::field_history::FieldAttackHistory,
     pub(super) mana: u32,
     /// FOOD-REGEN-1: milliseconds of fed time accumulated toward the next health and mana credit.
@@ -106,11 +106,11 @@ pub(crate) struct PlayerSpellState {
     pub(super) regen_health_ms: u32,
     pub(super) regen_mana_ms: u32,
     pub(super) soul: u32,
-    pub(super) cooldowns: Cooldowns,
+    pub(crate) cooldowns: Cooldowns,
     pub(super) revision: u64,
     /// SPELL-D8 §8.2: a monk's live Harmony and Serene; `None` for every other vocation.
-    pub(super) monk: Option<MonkState>,
-    pub(super) conditions: crate::ability::condition::ConditionStore<String>,
+    pub(crate) monk: Option<MonkState>,
+    pub(crate) conditions: crate::ability::condition::ConditionStore<String>,
     pub(super) base_speed: u32,
     pub(super) stance: Option<super::native_actor_states::StandardStance>,
     pub(super) stance_key: Option<String>,
@@ -1727,10 +1727,8 @@ fn commit_effect(
 }
 
 #[cfg(test)]
-#[path = "cast_gate_tests.rs"]
 mod gate_tests;
 #[cfg(test)]
-#[path = "cast_tests.rs"]
 mod tests;
 
 impl PlayerSpellState {

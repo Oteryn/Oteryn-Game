@@ -17,7 +17,7 @@ from pathlib import Path
 EXECUTION_FAMILIES = {'Ability', 'Effect', 'Formula'}
 PROFILE_FAMILIES = EXECUTION_FAMILIES | {'Creature', 'Behavior'}
 BOUNDARIES = {
-    'content_entry': ('apps/game-server/src/content/project/v2/creature.rs',
+    'content_entry': ('crates/gameplay/content/src/content/project/v2/creature.rs',
                       'pub struct ProjectV2AbilityDetails'),
     'player_reader': ('apps/game-server/src/spell/authoring.rs',
                       'pub(crate) fn spell_from_bundle'),

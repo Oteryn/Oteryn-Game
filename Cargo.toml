@@ -1,5 +1,9 @@
 [workspace]
 members = [
+    "crates/gameplay/durability",
+    "crates/gameplay/content",
+    "crates/gameplay/foundation",
+    "crates/gameplay/domain",
     "apps/client",
     "apps/game-server",
     "crates/foundation",
@@ -25,6 +29,11 @@ members = [
     "crates/world-bundle",
     "crates/gameplay/weather",
     "crates/gameplay/world-change",
+    "crates/gameplay/source-critical-baseline",
+    "crates/gameplay/character-recovery-fence",
+    "crates/gameplay/admission-evidence",
+    "crates/gameplay/native-admission-source",
+    "crates/gameplay/node-files",
     "tests/security/auth",
     "tests/pre-native-client",
     "tools/architecture-check",

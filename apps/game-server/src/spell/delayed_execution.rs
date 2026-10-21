@@ -67,7 +67,7 @@ pub(crate) struct FamiliarLifecycleOccurrence {
     phase: u16,
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum OwnerSpellTimerKey {
+pub(crate) enum OwnerSpellTimerKey {
     Cast(SpellTimerOccurrence),
     Lifecycle(FamiliarLifecycleOccurrence),
 }
@@ -261,7 +261,7 @@ impl TimerPayload {
             Self::OrdinaryCombat(v) => v.binding.metadata(),
         }
     }
-    fn family(&self) -> SpellTimerFamily {
+    pub(crate) fn family(&self) -> SpellTimerFamily {
         match self {
             Self::Strike(_) => SpellTimerFamily::Strike,
             Self::ChainHit(_) => SpellTimerFamily::ChainHit,
@@ -281,7 +281,7 @@ impl TimerPayload {
             Self::MarkerExpiry(_) | Self::FieldEvaluate(_) | Self::FieldExpiry(_)
         )
     }
-    fn target(&self) -> Option<ExactActorRef> {
+    pub(crate) fn target(&self) -> Option<ExactActorRef> {
         if let Self::Familiar(saved) = self {
             return Some(saved.creature);
         }
@@ -328,10 +328,10 @@ impl From<OwnerTimerError> for Error {
 }
 
 #[derive(Debug, Clone)]
-struct Pending {
-    occurrence: SpellTimerOccurrence,
-    due: SemanticTimeMicros,
-    payload: TimerPayload,
+pub(crate) struct Pending {
+    pub(crate) occurrence: SpellTimerOccurrence,
+    pub(crate) due: SemanticTimeMicros,
+    pub(crate) payload: TimerPayload,
 }
 #[derive(Debug, Clone)]
 pub(crate) struct NativeAiTimerSource {
@@ -460,13 +460,13 @@ impl ValidatedTimerInstall {
 /// fired-input queue, never an independent timer scheduler.
 #[derive(Debug)]
 pub(crate) struct SpellTimerOwner {
-    lane: OwnerTimerLane<SpellTimerFamily, OwnerSpellTimerKey>,
-    payloads: Vec<Pending>,
+    pub(crate) lane: OwnerTimerLane<SpellTimerFamily, OwnerSpellTimerKey>,
+    pub(crate) payloads: Vec<Pending>,
     lifecycle_payloads: Vec<LifecyclePending>,
     ready: VecDeque<FiredTimer<SpellTimerFamily, OwnerSpellTimerKey>>,
     // Failed owner commit retains the exact typed effects and sealed token. A
     // retry must never reroll damage or manufacture a newer admission sequence.
-    prepared_due: Option<(SpellTimerOccurrence, OwnerCombatBatch)>,
+    pub(crate) prepared_due: Option<(SpellTimerOccurrence, OwnerCombatBatch)>,
     revision: u64,
     // #2199 Codex P2 4302041461: actors whose Login stored a familiar for lack of a free tile,
     // each with the earliest owner time of its next return attempt. Data only: every attempt
@@ -1534,10 +1534,5 @@ fn validate_request(r: &ScheduleRequest) -> Result<(), Error> {
     Ok(())
 }
 
-#[cfg(test)]
-#[path = "delayed_execution_tests.rs"]
-mod tests;
-
-#[path = "delayed_execution_lifecycle.rs"]
 mod lifecycle;
 use lifecycle::lifecycle_target_current;

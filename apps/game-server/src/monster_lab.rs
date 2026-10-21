@@ -460,7 +460,7 @@ fn monster_lab_rejects_invalid_format_before_stage_access() {
 fn monster_lab_refuses_wrong_source_hash() {
     let path = concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/src/content/project/native_entry_room.json"
+        "/../../crates/gameplay/content/src/content/project/native_entry_room.json"
     );
     assert!(pinned_json(path, &"0".repeat(64)).is_err());
 }
@@ -469,7 +469,7 @@ fn monster_lab_refuses_wrong_source_hash() {
 fn monster_lab_refuses_blocked_spawn_slot() {
     let path = concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/src/content/project/native_entry_room.json"
+        "/../../crates/gameplay/content/src/content/project/native_entry_room.json"
     );
     let bytes = std::fs::read(path).expect("native map source");
     let digest = hex(Sha256::digest(&bytes));

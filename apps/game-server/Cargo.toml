@@ -12,12 +12,25 @@ publish.workspace = true
 category = "app"
 release-role = "production"
 
+[features]
+# Recognized by the remaining path-loaded integration fixtures.
+test-support = []
+
 [dependencies]
+oteryn-gameplay-durability = { version = "=0.1.0", path = "../../crates/gameplay/durability" }
+oteryn-gameplay-content = { version = "=0.1.0", path = "../../crates/gameplay/content" }
+oteryn-gameplay-foundation = { version = "=0.1.0", path = "../../crates/gameplay/foundation" }
+oteryn-gameplay-domain = { version = "=0.1.0", path = "../../crates/gameplay/domain" }
 aws-lc-rs.workspace = true
 base64.workspace = true
 ed25519-dalek.workspace = true
 oteryn-error-codes = { version = "=0.1.0", path = "../../crates/error-codes" }
 oteryn-foundation = { version = "=0.1.0", path = "../../crates/foundation" }
+oteryn-gameplay-admission-evidence = { version = "=0.1.0", path = "../../crates/gameplay/admission-evidence" }
+oteryn-gameplay-character-recovery-fence = { version = "=0.1.0", path = "../../crates/gameplay/character-recovery-fence" }
+oteryn-gameplay-native-admission-source = { version = "=0.1.0", path = "../../crates/gameplay/native-admission-source" }
+oteryn-gameplay-node-files = { version = "=0.1.0", path = "../../crates/gameplay/node-files" }
+oteryn-gameplay-source-critical-baseline = { version = "=0.1.0", path = "../../crates/gameplay/source-critical-baseline" }
 oteryn-gameplay-weather = { version = "=0.1.0", path = "../../crates/gameplay/weather" }
 oteryn-ntp-clock = { version = "=0.1.0", path = "../../crates/ntp-clock" }
 oteryn-protocol-oteryn = { version = "=0.1.0", path = "../../crates/protocol-oteryn" }
@@ -35,6 +48,9 @@ tokio-rustls.workspace = true
 toml.workspace = true
 
 [dev-dependencies]
+oteryn-gameplay-foundation = { version = "=0.1.0", path = "../../crates/gameplay/foundation", features = ["test-support"] }
+oteryn-gameplay-durability = { version = "=0.1.0", path = "../../crates/gameplay/durability", features = ["test-support"] }
+oteryn-gameplay-content = { version = "=0.1.0", path = "../../crates/gameplay/content", features = ["test-support"] }
 # Dev/qualification-only (ADR-0011 §6, #162 C1b): drives the seam qualification's
 # `stage=dev_client`. Not part of either production closure (workspace-boundaries.toml
 # `[dev_edges]`, never walked by the production-closure check).

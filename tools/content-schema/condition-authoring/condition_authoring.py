@@ -212,7 +212,7 @@ def intervals(schedule: dict) -> list[int]:
 
 
 def schedule_errors(schedule: dict) -> list[str]:
-    """The ProjectV2DamageOverTime invariants (apps/game-server/src/content/project/v2/creature.rs)."""
+    """The ProjectV2DamageOverTime invariants (crates/gameplay/content/src/content/project/v2/creature.rs)."""
     profile = schedule["tick_profile"]
     if profile == "Decreasing" and not (
         0 < schedule["total_maximum"]

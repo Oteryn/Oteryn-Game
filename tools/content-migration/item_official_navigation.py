@@ -15,6 +15,7 @@ sys.path.insert(0, str(ROOT / "tools/content-census"))
 from appearance_membership import load_admitted
 from engine_items import CORPSE_FLAGS, GROUND_OR_BORDER_FLAGS, resolve_wiki_family_value
 from item_id_alias_table import tibia_key
+from source_relocations import read_text as relocated_text
 
 QUALIFICATION = Path(__file__).parent / "samples/official-rule-only-navigation-six.json"
 QUALIFICATION_SHA256 = (
@@ -56,7 +57,7 @@ def qualification_inputs():
         raise ValueError("OFFICIAL_NAVIGATION_QUALIFICATION_DIGEST")
     document = json.loads(raw)
     admission = document["admission_source"]
-    admission_ids((ROOT / admission["path"]).read_text(), admission)
+    admission_ids(relocated_text(ROOT, admission["path"]), admission)
     index, manifests = load_admitted()
     spec = index["files"][-1]
     expected = document["membership_manifest"]

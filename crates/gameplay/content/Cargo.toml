@@ -1,0 +1,38 @@
+[package]
+name = "oteryn-gameplay-content"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[package.metadata.oteryn]
+category = "gameplay"
+release-role = "production"
+
+[features]
+test-support = ["oteryn-gameplay-foundation/test-support"]
+
+[dependencies]
+oteryn-gameplay-domain = { version = "=0.1.0", path = "../domain" }
+oteryn-gameplay-foundation = { version = "=0.1.0", path = "../foundation" }
+oteryn-protocol-oteryn = { version = "=0.1.0", path = "../../protocol-oteryn" }
+oteryn-simulation-determinism = { version = "=0.1.0", path = "../../simulation-determinism" }
+oteryn-world-bundle = { version = "=0.1.0", path = "../../world-bundle" }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true, features = ["raw_value"] }
+sha2.workspace = true
+
+[dev-dependencies]
+oteryn-gameplay-foundation = { version = "=0.1.0", path = "../foundation", features = ["test-support"] }
+oteryn-world-bundle-compiler = { version = "=0.1.0", path = "../../../tools/world-bundle-compiler" }
+zstd.workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
+cap-fs-ext.workspace = true
+cap-std.workspace = true
+rustix = { workspace = true, features = ["process"] }
+
+[lints]
+workspace = true

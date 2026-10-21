@@ -4,6 +4,8 @@
 
 use super::chain::TilePosition;
 use super::formula::{Formula, FormulaInputs};
+#[cfg(test)]
+use crate::spell::native::CompiledNativeSpellPlanExt;
 use serde_json::Value;
 use std::collections::BTreeSet;
 use std::fmt::{Display, Formatter};

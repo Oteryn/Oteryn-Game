@@ -3,6 +3,8 @@
 use std::collections::BTreeMap;
 
 use super::*;
+use crate::durability::quest_state::QuestStateCopy;
+use crate::durability::quest_state::quest::log::QuestLogState as CopyQuestState;
 use crate::durability::quest_state::quest::log::{
     JournalText, QuestJournal, QuestLogCatalogue, QuestLogKind, QuestLogMission, QuestLogQuest,
 };

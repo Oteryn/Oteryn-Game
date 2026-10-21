@@ -1,6 +1,5 @@
 //! Source-known AREA/NAMED defense healing into actual native Creature HP.
 //! Creature-only partialcast; Player/NPC healing and presentation delivery remain explicit.
-use crate::ai_think::profile_schedule::{ProfileAbilityProposal, ScheduleList};
 use crate::content::{
     EffectFamilyDocument, ProjectReferenceRecord as Record, ProjectV2AbilityDetails,
     ProjectV2AbilityEffect, ProjectV2AffectsKind, ProjectV2AuthoringProfileData as Data,
@@ -8,6 +7,8 @@ use crate::content::{
     ProjectV2FormulaAuthoring, ProjectV2InlineEffectOperation, ProjectV2SourceIdentityDisposition,
 };
 use crate::creature_attack_geometry::{self as geometry, Facing};
+use crate::creature_auto_attack::ProfileAbilityProposal;
+use crate::durability::creature_schedule::ScheduleList;
 use crate::foundation::{
     CarrierError, ChannelRuntimeV1, ExactActorRef, OwnerDamageResult, RuntimeScopeRefV1,
     RuntimeWorkStamp, ScopeRuntimeFence,
@@ -32,8 +33,8 @@ pub(crate) enum AreaHealError {
 #[derive(Debug, Clone)]
 pub(crate) struct CreatureHealCatalog {
     content: [u8; 32],
-    world: crate::foundation::WorldId,
-    maximum: BTreeMap<String, u64>,
+    pub(crate) world: crate::foundation::WorldId,
+    pub(crate) maximum: BTreeMap<String, u64>,
 }
 impl CreatureHealCatalog {
     pub(crate) fn matches_current(&self, r: &ChannelRuntimeV1) -> bool {
@@ -119,15 +120,15 @@ impl CreatureHealCatalog {
 #[derive(Debug, Clone)]
 pub(crate) struct AreaHealSource {
     caster: Ref,
-    ability: Ref,
+    pub(crate) ability: Ref,
     index: usize,
     details: Box<ProjectV2AbilityDetails>,
-    minimum: u64,
-    maximum: u64,
-    filter: Option<ProjectV2EffectAffects>,
+    pub(crate) minimum: u64,
+    pub(crate) maximum: u64,
+    pub(crate) filter: Option<ProjectV2EffectAffects>,
     remove_paralysis: bool,
     fingerprint: [u8; 32],
-    source_load_magnitude: Option<u64>,
+    pub(crate) source_load_magnitude: Option<u64>,
 }
 impl AreaHealSource {
     pub(crate) fn from_native(
@@ -346,16 +347,30 @@ pub(crate) trait AreaHealPolicy {
         stamp: RuntimeWorkStamp,
     ) -> Option<bool>;
 }
+/// Atomic heal/cure publication supplied by the existing Channel spell-state owner.
+pub(crate) trait AreaHealStates {
+    #[allow(clippy::too_many_arguments)]
+    fn commit_source_area_heal_and_paralysis_removal(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        content: [u8; 32],
+        heal: &[(ExactActorRef, String, u64, u64)],
+        cure: &[ExactActorRef],
+        now: u64,
+        fence: &ScopeRuntimeFence,
+        stamp: RuntimeWorkStamp,
+    ) -> Result<Vec<OwnerDamageResult>, crate::foundation::CarrierError>;
+}
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct AreaHealOutcome {
     pub(crate) targets: Vec<(ExactActorRef, OwnerDamageResult)>,
     pub(crate) qualification: &'static str,
 }
-struct Memo {
+pub(crate) struct Memo {
     caster: ExactActorRef,
     ability: Ref,
     index: usize,
-    sequence: u64,
+    pub(crate) sequence: u64,
     occurrence: String,
     binding: [u8; 32],
     activation: u64,
@@ -363,7 +378,7 @@ struct Memo {
 }
 #[derive(Default)]
 pub(crate) struct AreaHealOwner {
-    memos: Vec<Memo>,
+    pub(crate) memos: Vec<Memo>,
 }
 impl AreaHealOwner {
     // Keep execute ABI explicit: current runtime owner, independent fence/stamp, exact actor/session/source and occurrence/policy facts are separate admission inputs.
@@ -377,7 +392,7 @@ impl AreaHealOwner {
         source: &AreaHealSource,
         proposal: &ProfileAbilityProposal,
         policy: &mut dyn AreaHealPolicy,
-        states: &mut crate::gameplay_transport::actor_spell::ChannelSpellStates,
+        states: &mut impl AreaHealStates,
         now: u64,
     ) -> Result<AreaHealOutcome, AreaHealError> {
         use AreaHealError as E;
@@ -575,8 +590,11 @@ impl AreaHealOwner {
                 )
                 .map_err(|_| E::Numeric)?;
                 let draw = source.source_load_magnitude.unwrap_or_else(|| {
-                    crate::spell::uniform_draw(draw, source.minimum as i64, source.maximum as i64)
-                        as u64
+                    crate::durability::uniform_draw::uniform_draw(
+                        draw,
+                        source.minimum as i64,
+                        source.maximum as i64,
+                    ) as u64
                 });
                 requests.try_reserve(1).map_err(|_| E::Capacity)?;
                 requests.push((*target, key.to_owned(), max, draw));
@@ -651,9 +669,5 @@ fn project_prophet_source_load_magnitude(source: [u8; 32]) -> u64 {
         .finalize();
     let mut bytes = [0; 8];
     bytes.copy_from_slice(&digest[..8]);
-    crate::spell::uniform_draw(u64::from_le_bytes(bytes), 200, 350) as u64
+    crate::durability::uniform_draw::uniform_draw(u64::from_le_bytes(bytes), 200, 350) as u64
 }
-
-#[cfg(test)]
-#[path = "creature_area_heal_tests.rs"]
-mod tests;

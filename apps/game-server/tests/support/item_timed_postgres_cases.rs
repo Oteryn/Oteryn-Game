@@ -3,7 +3,7 @@
 // root exposes `domain` and `durability` can include this file; the unwired planning module is
 // path-loaded here so every including target compiles the same single copy.
 
-#[path = "../../src/durability/item_timed_repair.rs"]
+#[path = "../../../../crates/gameplay/durability/src/durability/item_timed_repair.rs"]
 mod item_timed_repair;
 
 use crate::domain::currency::{Coin, CoinStack, FeePlanError, plan_fee_within};

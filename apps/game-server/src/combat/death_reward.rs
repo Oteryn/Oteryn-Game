@@ -48,9 +48,9 @@ use crate::durability::character_progression::{
 };
 use crate::durability::character_revision_sequencer::RevisionSlot;
 use crate::durability::item_mint::{
-    CORPSE_CONTAINER_ENTRIES_MAX, CORPSE_MATERIALIZATION_PURPOSE_KEY, CommittedItemMint,
-    CorpseContainerPlacement, CorpseLootMintRequest, GroundPlacement, ItemMintCause, ItemMintError,
-    ItemMintOutcome, ItemMintRequest, TypedDefinitionRef,
+    CORPSE_MATERIALIZATION_PURPOSE_KEY, CommittedItemMint, CorpseContainerPlacement,
+    CorpseLootMintRequest, GroundPlacement, ItemMintCause, ItemMintError, ItemMintOutcome,
+    ItemMintRequest, TypedDefinitionRef,
 };
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 use crate::durability::spell_owner_commit::SpellLanePermit;
@@ -65,12 +65,7 @@ use oteryn_simulation_determinism::ExactI64;
 /// before any entry of a death's plan is minted, against the caller-tracked
 /// count of MINTs already in flight elsewhere in the same scope.
 pub(crate) const COMBAT01_INFLIGHT_LOOT_MINTS_PER_SCOPE_MAX: usize = 64;
-/// `GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX` (D3 §4.2): a corpse container
-/// holds at most 16 entries, equal by construction to
-/// `COMBAT01-LOOT-PLAN-ITEMS`. Checked once, against the whole accepted plan,
-/// before the corpse or any entry is frozen.
-pub(crate) const GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX: usize =
-    CORPSE_CONTAINER_ENTRIES_MAX as usize;
+pub(crate) use crate::foundation::loot_data::GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX;
 /// `COMBAT01-XP-DESCENDANTS-PER-DEATH` (§4.1, row 9): exactly one. Enforced
 /// structurally: [`settle_creature_death_rewards`] issues at most one
 /// `commit_character_experience` call per invocation, keyed by an occurrence

@@ -5,7 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 
-SOURCE = "apps/game-server/src/content/project/native_entry_room.json"
+SOURCE = "crates/gameplay/content/src/content/project/native_entry_room.json"
 SOURCE_SHA256 = "5f7ba6cd2589e20adcf97975fd002ca7c6a6b5e1ad9390a69893c391c3de27f6"
 
 

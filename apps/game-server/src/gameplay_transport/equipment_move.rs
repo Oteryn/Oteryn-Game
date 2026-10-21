@@ -18,7 +18,7 @@ use super::connection::UseCommand;
 use super::item_move::{
     EquipmentMove, EquipmentMoveRefusal, EquipmentMoveReplay, EquipmentMoveResult,
 };
-use super::item_ref_admission::{definition_ref, pinned_index};
+use super::item_ref_admission::{NativeItemWeights, definition_ref, pinned_index};
 use super::item_view::{ItemKey, ViewItem};
 use super::{FreshAdmissionStore, GameSessionId, GameSessionState};
 use crate::content::native_gameplay::NativeGameplayState;
@@ -28,9 +28,26 @@ use crate::durability::character_equipment::{self, EquipmentMoveContent};
 use crate::foundation::{ChannelRuntimeV1, CommandId, CommandRef, RuntimeScopeRefV1};
 use oteryn_protocol_oteryn::item_view::EquipmentSlot;
 
+impl crate::foundation::equipment_policy_abi::policy_registration::Registered
+    for NativeItemWeights<'_>
+{
+}
+impl crate::foundation::equipment_policy_abi::EquipmentPolicyLookup for NativeItemWeights<'_> {
+    fn source_digest(&self) -> [u8; 32] {
+        self.0.source_digest()
+    }
+    fn equipment_policy(
+        &self,
+        key: &str,
+        revision: &str,
+    ) -> Option<crate::foundation::equipment_policy_abi::QualifiedEquipmentPolicy> {
+        self.0.equipment_policy(key, revision)
+    }
+}
+
 /// A plain item names a Known definition with container semantics `NotApplicable`; a container
 /// or an item with unknown container semantics never enters a slot in this slice.
-impl EquipmentMoveContent for NativeGameplayState {
+impl EquipmentMoveContent for NativeItemWeights<'_> {
     fn equipment_stack_class(
         &self,
         production_key: &str,
@@ -41,13 +58,14 @@ impl EquipmentMoveContent for NativeGameplayState {
             production_key: production_key.to_owned(),
             revision_ref: revision_ref.to_owned(),
         };
-        super::item_ref_admission::generation_item_facts(self, &definition)
+        super::item_ref_admission::generation_item_facts(self.0, &definition)
             .map(|facts| facts.stack)
             .unwrap_or(crate::durability::item_transfer::ItemStackClass::Unknown)
     }
 
     fn is_plain_item(&self, production_key: &str, revision_ref: &str) -> bool {
-        self.item_policy(production_key, revision_ref)
+        self.0
+            .item_policy(production_key, revision_ref)
             .is_some_and(|policy| {
                 matches!(
                     policy.record().semantics.container,
@@ -59,7 +77,7 @@ impl EquipmentMoveContent for NativeGameplayState {
     /// The hosting runtime's own reading of a timed definition (TIMED-RT-1b): a definition it
     /// would run, or one whose timed content conflicts, is timed.
     fn is_timed_item(&self, production_key: &str, revision_ref: &str) -> bool {
-        let Some(policy) = self.item_policy(production_key, revision_ref) else {
+        let Some(policy) = self.0.item_policy(production_key, revision_ref) else {
             return true;
         };
         let Ok(definition) = ReferenceItemTarget::new(production_key, revision_ref) else {
@@ -280,7 +298,7 @@ pub(super) async fn move_equipment(
             admission.holder,
             &fence,
             CommandRef::new(command.game_session_id, command_id),
-            native,
+            &NativeItemWeights(native),
             durable,
         )
         .await;
@@ -318,15 +336,16 @@ mod tests {
     #[allow(clippy::expect_used)]
     fn a_definition_the_generation_does_not_name_is_timed_and_never_enters_a_slot() {
         // The fixture generation has no Item profiles: no definition is known to be untimed.
-        let controller = crate::content::native_gameplay::tests::activated_with_item_keys(None);
+        let controller =
+            crate::content::native_gameplay::test_support::activated_with_item_keys(None);
         let native = controller
             .active()
             .and_then(|generation| generation.native_gameplay())
             .expect("native gameplay");
-        assert!(native.is_timed_item("fixture:unknown", "definition-r1"));
-        assert!(native.is_timed_item("", ""));
+        assert!(NativeItemWeights(native).is_timed_item("fixture:unknown", "definition-r1"));
+        assert!(NativeItemWeights(native).is_timed_item("", ""));
         assert_eq!(
-            native.equipment_stack_class("fixture:unknown", "definition-r1"),
+            NativeItemWeights(native).equipment_stack_class("fixture:unknown", "definition-r1"),
             crate::durability::item_transfer::ItemStackClass::Unknown
         );
     }

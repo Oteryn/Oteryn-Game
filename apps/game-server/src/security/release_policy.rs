@@ -62,5 +62,4 @@ pub(crate) fn check_release_key_membership(
 }
 
 #[cfg(test)]
-#[path = "release_policy_tests.rs"]
 mod tests;

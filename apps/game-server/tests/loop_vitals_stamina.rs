@@ -1,6 +1,6 @@
 //! Tests the one pure stamina arithmetic leaf used by the native durability owner.
 
-#[path = "../src/durability/character_vitals_stamina_math.rs"]
+#[path = "../../../crates/gameplay/durability/src/durability/character_vitals_stamina/stamina_math.rs"]
 mod character_vitals_stamina;
 
 use character_vitals_stamina::{

@@ -157,9 +157,12 @@ class DuplicateTestSources(unittest.TestCase):
 
     def test_repository_allowlist_entries_are_explained(self):
         self.assertTrue(guard.ALLOWED_DUPLICATING_TARGETS)
-        for (package, target), (prefix, reason) in guard.ALLOWED_DUPLICATING_TARGETS.items():
+        for (package, target), (prefixes, reason) in guard.ALLOWED_DUPLICATING_TARGETS.items():
             self.assertTrue(package and target and reason.strip(), (package, target))
-            self.assertTrue(prefix.startswith("apps/") and not prefix.startswith("/"), prefix)
+            self.assertIsInstance(prefixes, tuple, (package, target))
+            self.assertTrue(prefixes, (package, target))
+            for prefix in prefixes:
+                self.assertTrue(prefix.startswith(("apps/", "crates/")) and not prefix.startswith("/"), prefix)
 
 
 def metadata(targets, members=("app 0.1.0",)):

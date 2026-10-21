@@ -27,6 +27,20 @@ def load_module():
     return module
 
 
+# Under pytest the `module` argument of the test functions is this fixture; the plain
+# script runner (CI has no pytest) passes the loaded module explicitly from main().
+try:
+    import pytest
+except ImportError:  # pragma: no cover - CI runs these regressions without pytest
+    pytest = None
+
+if pytest is not None and __name__ != "__main__":
+
+    @pytest.fixture
+    def module():
+        return load_module()
+
+
 def fixture(workspace_root="/repo"):
     roots = {
         "oteryn-game-server": "apps/game-server",
@@ -631,6 +645,14 @@ def test_server_qualification(module):
         "apps/game-server/src/content/project/native_entry_room.json",
         "apps/game-server/src/content/project/v2.rs",
         "apps/game-server/src/content/project/v2/creature.rs",
+        "crates/gameplay/content/src/content/activation.rs",
+        "crates/gameplay/content/src/content/project/native_entry.rs",
+        "crates/gameplay/content/src/content/project/native_entry_room.json",
+        "crates/gameplay/content/src/content/project/v2.rs",
+        "crates/gameplay/content/src/content/project/v2/creature.rs",
+        "crates/gameplay/content/Cargo.toml",
+        "crates/gameplay/durability/src/durability/fresh_admission.rs",
+        "crates/gameplay/foundation/src/foundation/protocol.rs",
         "apps/game-server/migrations/0009_character_progression.sql",
         "apps/game-server/Cargo.toml",
         "crates/foundation/src/lib.rs",
@@ -640,6 +662,9 @@ def test_server_qualification(module):
         "crates/protocol-oteryn/Cargo.toml",
         "crates/simulation-determinism/Cargo.toml",
         "crates/gameplay/weather/src/lib.rs",
+        "crates/gameplay/source-critical-baseline/src/lib.rs",
+        "crates/gameplay/character-recovery-fence/src/lib.rs",
+        "crates/gameplay/admission-evidence/src/lib.rs",
         "Cargo.lock",
         "vendor/tokio-1.53.1/src/lib.rs",
         "tools/qualification/node_boot/run.sh",
@@ -654,6 +679,9 @@ def test_server_qualification(module):
         "apps/game-server/src/interaction/mod.rs",
         "apps/game-server/src/content/cw2_b1_import.rs",
         "apps/game-server/src/content/reference_playable.rs",
+        "apps/game-server/src/combat/mod.rs",
+        "crates/gameplay/content/src/content/cw2_b1_import.rs",
+        "crates/gameplay/content/src/content/reference_playable.rs",
         "apps/game-server/tests/durability_postgres.rs",
         "apps/game-server/examples/materialize_content_world_project_v2.rs",
         "apps/client/src/main.rs",

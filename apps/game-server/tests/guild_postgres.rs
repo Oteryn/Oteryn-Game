@@ -33,18 +33,20 @@ mod native_file_modules {
         reason = "ai_think has no production caller yet; AI-4/a later wiring task composes it into ChannelRuntimeV1's owner cycle"
     )]
     pub(crate) mod ai_think;
+    #[allow(dead_code)]
+    pub(crate) mod monster_combat_lane;
     #[allow(
         dead_code,
         reason = "unactivated local Movement proof awaits the separate production composition lease"
     )]
     pub(crate) mod movement;
 }
-use native_file_modules::{ai_think, movement};
+use native_file_modules::{ai_think, monster_combat_lane, movement};
 #[allow(
     dead_code,
     reason = "nonshipping fixed-one-creature Combat proof awaits production composition"
 )]
-#[path = "../src/combat.rs"]
+#[path = "../src/combat/mod.rs"]
 mod combat;
 #[path = "../src/combat/attack/mod.rs"]
 mod combat_attack;
@@ -66,10 +68,9 @@ mod interaction_chest_use;
 #[path = "../src/ability/player_lethal.rs"]
 mod player_lethal;
 
-#[path = "../src/character_bootstrap_intent.rs"]
+#[path = "../../../crates/gameplay/durability/src/character_bootstrap_intent.rs"]
 pub mod character_bootstrap_intent;
-#[path = "../src/character_recovery_fence.rs"]
-pub mod character_recovery_fence;
+pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
 #[allow(
     dead_code,
     unused_imports,
@@ -77,13 +78,13 @@ pub mod character_recovery_fence;
 )]
 #[path = "../src/chat/mod.rs"]
 mod chat;
-#[path = "../src/content/mod.rs"]
+#[path = "../../../crates/gameplay/content/src/content/mod.rs"]
 pub mod content;
-#[path = "../src/domain/mod.rs"]
+#[path = "../../../crates/gameplay/domain/src/domain/mod.rs"]
 pub mod domain;
-#[path = "../src/durability/mod.rs"]
+#[path = "../../../crates/gameplay/durability/src/durability/mod.rs"]
 pub mod durability;
-#[path = "../src/foundation/mod.rs"]
+#[path = "../../../crates/gameplay/foundation/src/foundation/mod.rs"]
 pub mod foundation;
 #[path = "../src/gameplay_transport/mod.rs"]
 mod gameplay_transport;
@@ -117,6 +118,8 @@ pub mod wheel_gem_data;
 )]
 #[path = "../src/interaction/mod.rs"]
 mod interaction;
+#[allow(dead_code)] // Preserve the original Spell adapter lint scope.
+use durability::{native_world_items, native_world_read};
 #[allow(
     dead_code,
     reason = "§7 timed-revert driver awaits its live Channel/Instance scope owner"
@@ -132,41 +135,34 @@ pub(crate) mod world_runtime;
     dead_code,
     reason = "shared PostgreSQL support; each mount uses a subset"
 )]
-#[path = "../src/../tests/support/bestiary_postgres_harness.rs"]
+#[path = "support/bestiary_postgres_harness.rs"]
 mod bestiary_postgres_harness;
 
-#[cfg(test)]
-#[path = "../src/../tests/support/spell_stance_runtime_postgres_cases.rs"]
-mod spell_stance_runtime_postgres_cases;
+// Spell Stance/Familiar PostgreSQL cases are registered by src/lib.rs, where their native
+// Spell owner is available without importing it into neutral durability test roots.
 
 #[cfg(test)]
-#[path = "../src/../tests/support/spell_familiar_runtime_postgres_cases.rs"]
-mod spell_familiar_runtime_postgres_cases;
-
-#[cfg(test)]
-#[path = "../src/durability/world_party_tests.rs"]
+#[path = "../src/lifted_tests/durability_world_party_tests.rs"]
 mod world_party_runtime_postgres_cases;
 
 #[cfg(test)]
-#[path = "../src/foundation/recovery_tests.rs"]
+#[path = "../src/lifted_tests/foundation_recovery_tests.rs"]
 mod foundation_recovery_tests;
 
 #[cfg(test)]
-#[path = "../src/foundation/final_review_regressions.rs"]
+#[path = "../src/lifted_tests/foundation_final_review_regressions.rs"]
 mod foundation_final_review_regressions;
 
 #[cfg(test)]
-#[path = "../src/foundation/final_review_round2_regressions.rs"]
+#[path = "../src/lifted_tests/foundation_final_review_round2_regressions.rs"]
 mod foundation_final_review_round2_regressions;
 
 #[cfg(test)]
-#[path = "../src/foundation/final_review_round2_runtime_rollback.rs"]
+#[path = "../src/lifted_tests/foundation_final_review_round2_runtime_rollback.rs"]
 mod foundation_final_review_round2_runtime_rollback;
 
-#[path = "../src/admission_evidence.rs"]
-pub mod admission_evidence;
-#[path = "../src/native_admission_source/mod.rs"]
-pub mod native_admission_source;
+pub use oteryn_gameplay_admission_evidence as admission_evidence;
+pub use oteryn_gameplay_native_admission_source as native_admission_source;
 
 #[allow(
     dead_code,
@@ -214,8 +210,14 @@ mod creature_condition_content;
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-#[path = "../src/creature_damage_spell.rs"]
+#[path = "../src/creature_damage_spell/mod.rs"]
 mod creature_damage_spell;
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+#[path = "../src/creature_damage_spell_delayed.rs"]
+mod creature_damage_spell_delayed;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
@@ -270,8 +272,7 @@ mod source_callback_spawn;
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-#[path = "../src/source_critical_baseline.rs"]
-mod source_critical_baseline;
+use oteryn_gameplay_source_critical_baseline as source_critical_baseline;
 #[allow(
     dead_code,
     reason = "Private native encounter owner ABI retained for source-qualified library dispatch; shipping AI loop is not activated"
@@ -307,12 +308,6 @@ mod world_clock;
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
-#[path = "../src/monster_combat_lane.rs"]
-mod monster_combat_lane;
-#[allow(
-    dead_code,
-    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
-)]
 #[path = "../src/monster_owner_cycle.rs"]
 mod monster_owner_cycle;
 #[allow(
@@ -330,7 +325,7 @@ mod canonical_monster_successor_tests;
 #[path = "../src/creature_icicle.rs"]
 mod creature_icicle;
 
-#[path = "../src/durability/creature_source_items.rs"]
+#[path = "../../../crates/gameplay/durability/src/durability/creature_source_items.rs"]
 mod creature_source_items;
 
 #[allow(
@@ -341,3 +336,77 @@ mod creature_source_items;
 )]
 #[path = "support/item_transfer_postgres_cases.rs"]
 mod item_transfer_postgres_cases;
+
+#[cfg(test)]
+#[path = "../src/lifted_tests/movement_speed_runtime_tests.rs"]
+mod movement_speed_runtime_tests;
+
+#[cfg(test)]
+#[path = "../src/lifted_tests/world_clock_world_config_tests.rs"]
+mod world_clock_world_config_tests;
+
+#[cfg(test)]
+#[path = "../src/lifted_tests/durability_guild_tests.rs"]
+mod durability_guild_tests;
+
+#[cfg(test)]
+#[path = "../src/lifted_tests/durability_vip_tests.rs"]
+mod durability_vip_tests;
+
+#[cfg(test)]
+#[path = "../src/lifted_tests/durability_guild_disband_terminal_tests.rs"]
+mod durability_guild_disband_terminal_tests;
+
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+#[path = "../src/source_callback_cast.rs"]
+mod source_callback_cast;
+#[cfg(test)]
+#[path = "../src/lifted_tests/source_callback_cast_tests.rs"]
+mod source_callback_cast_tests;
+
+#[cfg(test)]
+#[path = "../src/lifted_tests/source_callback_spawn_tests.rs"]
+mod source_callback_spawn_tests;
+
+#[cfg(test)]
+#[path = "../src/lifted_tests/source_encounter_seven_tests.rs"]
+mod source_encounter_seven_tests;
+
+#[cfg(test)]
+#[path = "../src/lifted_tests/source_threshold_heal_tests.rs"]
+mod source_threshold_heal_tests;
+
+#[cfg(test)]
+#[path = "../src/lifted_tests/monster_owner_cycle_tests.rs"]
+mod monster_owner_cycle_tests;
+
+#[cfg(test)]
+#[path = "../src/lifted_tests/smelly_damage_tests.rs"]
+mod smelly_damage_tests;
+
+#[cfg(test)]
+#[path = "../src/lifted_tests/smelly_encounter_dispatch_tests.rs"]
+mod smelly_encounter_dispatch_tests;
+
+#[cfg(test)]
+#[path = "../src/lifted_tests/monster_combat_lane_tests.rs"]
+mod monster_combat_lane_tests;
+
+#[cfg(test)]
+#[path = "../src/lifted_tests/monster_combat_lane_defense_composition_tests.rs"]
+mod monster_combat_lane_defense_composition_tests;
+
+#[cfg(test)]
+#[path = "../src/lifted_tests/monster_combat_lane_defense_speed_test.rs"]
+mod monster_combat_lane_defense_speed_test;
+
+#[cfg(test)]
+#[path = "../src/lifted_tests/monster_combat_lane_source_summon_composition_tests.rs"]
+mod monster_combat_lane_source_summon_composition_tests;
+
+#[cfg(test)]
+#[path = "../src/lifted_tests/source_time_profile_bundle_tests.rs"]
+mod source_time_profile_bundle_tests;

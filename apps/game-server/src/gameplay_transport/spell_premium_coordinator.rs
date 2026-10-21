@@ -103,46 +103,11 @@ enum EmptyLatch {
     NotCurrent,
     Latch { now: TrustedNow },
 }
-/// A Premium gate operation: runs once with the account's status and, for `NotActivated` only,
-/// the gate's transaction (PREMIUM-ACTIVATION-0 §1.2). It owns what it captures.
-pub(crate) trait PremiumGateOperation<T>:
-    for<'g, 't> FnOnce(
-        PremiumStatus<'g>,
-        Option<&'g mut PremiumGateTx<'t>>,
-    ) -> Pin<Box<dyn Future<Output = T> + Send + 'g>>
-    + Send
-    + 'static
-{
-}
-impl<T, F> PremiumGateOperation<T> for F where
-    F: for<'g, 't> FnOnce(
-            PremiumStatus<'g>,
-            Option<&'g mut PremiumGateTx<'t>>,
-        ) -> Pin<Box<dyn Future<Output = T> + Send + 'g>>
-        + Send
-        + 'static
-{
-}
-/// A multi-account Premium gate operation: runs once with one status per account, in order, and,
-/// for `NotActivated` only, the gate's transaction (PREMIUM-ACTIVATION-0 §1.2).
-pub(crate) trait PremiumBatchGateOperation<T>:
-    for<'g, 't> FnOnce(
-        Vec<PremiumStatus<'g>>,
-        Option<&'g mut PremiumGateTx<'t>>,
-    ) -> Pin<Box<dyn Future<Output = T> + Send + 'g>>
-    + Send
-    + 'static
-{
-}
-impl<T, F> PremiumBatchGateOperation<T> for F where
-    F: for<'g, 't> FnOnce(
-            Vec<PremiumStatus<'g>>,
-            Option<&'g mut PremiumGateTx<'t>>,
-        ) -> Pin<Box<dyn Future<Output = T> + Send + 'g>>
-        + Send
-        + 'static
-{
-}
+use crate::durability::premium_activation_latch::PremiumGateOwner;
+pub(crate) use crate::durability::premium_activation_latch::{
+    PremiumBatchGateOperation, PremiumGateOperation,
+};
+
 /// What the gate settled for one command: the bypass applied in its transaction, or handed back
 /// with whether a held row decides the status.
 enum Settled<B: PreDeliveryBypass> {
@@ -793,7 +758,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         F: PremiumGateOperation<T>,
     {
         match self.premium_coordinator {
-            Some(coordinator) => coordinator.with_premium_gate(account, operation).await,
+            Some(coordinator) => {
+                PremiumGateOwner::with_premium_gate(coordinator, account, operation).await
+            }
             None => Ok(run_delivered(operation, PremiumStatus::NotCurrent).await),
         }
     }
@@ -817,9 +784,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     {
         match self.premium_coordinator {
             Some(coordinator) => {
-                coordinator
-                    .with_premium_batch_gate(accounts, operation)
-                    .await
+                PremiumGateOwner::with_premium_batch_gate(coordinator, accounts, operation).await
             }
             None => {
                 let statuses = accounts.iter().map(|_| PremiumStatus::NotCurrent).collect();
@@ -852,6 +817,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 }
+
+impl PremiumGateOwner for SpellPremiumCoordinator {
+    async fn with_premium_gate<T: Send, F: PremiumGateOperation<T>>(
+        &self,
+        account: [u8; 16],
+        operation: F,
+    ) -> Result<T, DurabilityError> {
+        Self::with_premium_gate(self, account, operation).await
+    }
+
+    async fn with_premium_batch_gate<T: Send, F: PremiumBatchGateOperation<T>>(
+        &self,
+        accounts: &[[u8; 16]],
+        operation: F,
+    ) -> Result<T, DurabilityError> {
+        Self::with_premium_batch_gate(self, accounts, operation).await
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #![allow(clippy::unwrap_used)]
@@ -949,7 +933,7 @@ mod tests {
     fn gate(coordinator: &SpellPremiumCoordinator, account: [u8; 16]) -> PremiumGate {
         block_on(coordinator.premium_gate(account))
     }
-    fn status_name(coordinator: &SpellPremiumCoordinator) -> &'static str {
+    fn status_name(coordinator: &impl PremiumGateOwner) -> &'static str {
         block_on(coordinator.with_premium_gate(ACCOUNT, |status, tx| {
             Box::pin(async move {
                 match (status, tx.is_some()) {
@@ -1088,7 +1072,7 @@ mod tests {
     }
 
     fn batch_names(
-        coordinator: &SpellPremiumCoordinator,
+        coordinator: &impl PremiumGateOwner,
         accounts: &[[u8; 16]],
     ) -> Vec<&'static str> {
         block_on(

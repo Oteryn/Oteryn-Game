@@ -15,11 +15,9 @@
 //!
 //! This module intentionally does not import `crate::content` or
 //! `crate::durability`: `combat.rs` (and so this submodule) is also compiled,
-//! unchanged, as a standalone Foundation test crate
-//! (`foundation/mod.rs`'s `#[path = "../combat.rs"] mod
-//! exact_actor_test_combat;`, and several `apps/game-server/tests/*.rs`
-//! Postgres/composition harnesses that re-declare `foundation` at their own
-//! crate root), none of which also declare a `content` module. `[LootTableDefinition`],
+//! unchanged, by several `apps/game-server/tests/*.rs` PostgreSQL/composition
+//! harnesses that re-declare `foundation` at their own crate root without the
+//! full Content module. [`LootTableDefinition`],
 //! [`LootTableEntry`], [`LootSelectionAlgorithm`] and [`LootDefinitionRef`]
 //! are this module's own minimal shapes, deliberately field-compatible with
 //! `content::reference_playable::{ReferenceLootDefinition, ReferenceLootEntry,
@@ -86,58 +84,9 @@ const ENTRY_FIXED_OVERHEAD_BYTES: usize = DEFINITION_FAMILY_FIELD_BYTES + 128;
 /// plus the loot table's `production_key` and `revision_ref`.
 const HEADER_FIXED_OVERHEAD_BYTES: usize = DEFINITION_FAMILY_FIELD_BYTES + 896;
 
-/// This module's own minimal, `Clone`/`PartialEq` typed-identity shape:
-/// field-compatible with both `content::reference_playable::TypedDefinitionRef`
-/// (`family`/`key`/`revision`) and `durability::item_mint::TypedDefinitionRef`
-/// (`family`/`production_key`/`revision_ref`, all `String`) without importing
-/// either (see module docs).
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct LootDefinitionRef {
-    pub(crate) family: String,
-    pub(crate) production_key: String,
-    pub(crate) revision_ref: String,
-}
-
-impl LootDefinitionRef {
-    pub(crate) fn new(
-        family: impl Into<String>,
-        production_key: impl Into<String>,
-        revision_ref: impl Into<String>,
-    ) -> Self {
-        Self {
-            family: family.into(),
-            production_key: production_key.into(),
-            revision_ref: revision_ref.into(),
-        }
-    }
-}
-
-/// Mirrors `content::reference_playable::ReferenceLootSelectionAlgorithm`
-/// (same variant names); only `IndependentBernoulliPpm` is implemented here.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum LootSelectionAlgorithm {
-    IndependentBernoulliPpm,
-    WeightedSingleSelection,
-    GuaranteedEntries,
-    NestedGroups,
-}
-
-/// Mirrors `content::reference_playable::ReferenceLootEntry`.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct LootTableEntry {
-    pub(crate) item: LootDefinitionRef,
-    pub(crate) min_count: u32,
-    pub(crate) max_count: u32,
-    pub(crate) probability_ppm: Option<u32>,
-}
-
-/// Mirrors `content::reference_playable::ReferenceLootDefinition`: the
-/// already-loaded, already-validated loot table this module plans from.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct LootTableDefinition {
-    pub(crate) algorithm: LootSelectionAlgorithm,
-    pub(crate) entries: Vec<LootTableEntry>,
-}
+pub(crate) use crate::foundation::loot_data::{
+    LootDefinitionRef, LootSelectionAlgorithm, LootTableDefinition, LootTableEntry,
+};
 
 /// One accepted output of the loot plan.
 #[derive(Debug, Clone, PartialEq, Eq)]

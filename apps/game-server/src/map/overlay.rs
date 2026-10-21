@@ -33,13 +33,7 @@ pub const OVERLAY_BUDGET_BYTES: usize = 64 * 1024 * 1024;
 /// The reach of the hidden-item bitmask: top-level ordinals `0..64`.
 pub const HIDDEN_REACH: u8 = 64;
 
-/// A native tile position: `floor` is `-15..=0`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct TilePos {
-    pub x: u16,
-    pub y: u16,
-    pub floor: i8,
-}
+pub use crate::foundation::map_position::TilePos;
 
 /// The overlay-local identity of one added entry; never reused within an overlay.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]

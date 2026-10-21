@@ -25,17 +25,15 @@
 //!
 //! This lives as a sibling of `ai/`, not inside it: `tests/ai_bootstrap.rs` path-includes
 //! `ai/mod.rs` as its own standalone crate root without `foundation`/`content`/`movement`, so the
-//! modules that need them (`behaviour_profile`, `targeting`) are declared here with `#[path]`.
+//! modules that need them (`behaviour_profile`, `targeting`) are ordinary children here.
 //!
 //! Timer binding (AI-1 `owner_timer.rs`, `#162` binding items (a)/(b)): `ThinkSequenceTracker`
 //! derives every `ThinkOccurrence` sequence monotonically per actor, and `schedule_next_think`
 //! forwards only a stamp the caller's fence issued.
 
-#[path = "ai/behaviour_profile.rs"]
 pub mod behaviour_profile;
 mod channel_owner;
 pub mod profile_schedule;
-#[path = "ai/targeting.rs"]
 pub mod targeting;
 
 use std::collections::BTreeMap;
@@ -813,12 +811,7 @@ impl TimerFamily for ThinkFamily {
     }
 }
 
-/// §4.2: "a think occurrence is (creature `ExactActorRef`, per-actor think sequence number)."
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct ThinkOccurrence {
-    pub actor: ExactActorRef,
-    pub sequence: u64,
-}
+pub(crate) use crate::foundation::ThinkOccurrence;
 
 /// Binding item (a): the only place a `ThinkOccurrence`'s sequence is derived from. It advances
 /// monotonically per actor and never re-issues a value, so `(actor, sequence)` can never repeat

@@ -731,12 +731,13 @@ mod tests {
         let node =
             NodeId::decode(&[1, 0, 0, 0, 0, 3, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 3]).expect("node");
         // The production generation on the Thalom source world; its rat is the served policy.
-        let (controller, pin) = crate::content::native_gameplay::tests::activated_with_loot_tables(
-            world,
-            Some(include_bytes!(
-                "../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
-            )),
-        );
+        let (controller, pin) =
+            crate::content::native_gameplay::test_support::activated_with_loot_tables(
+                world,
+                Some(include_bytes!(
+                    "../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
+                )),
+            );
         let active = controller.active().expect("activated generation");
         let native = active.native_gameplay().expect("native gameplay state");
         let room = pin.qualified_room().clone();

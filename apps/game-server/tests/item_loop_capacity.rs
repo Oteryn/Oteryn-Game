@@ -6,7 +6,7 @@ use durability::item_mint::TypedDefinitionRef;
 use durability::item_transfer::InventoryItem;
 use oteryn_game_server::{content, durability};
 
-#[path = "../src/durability/item_capacity.rs"]
+#[path = "../../../crates/gameplay/durability/src/durability/item_capacity.rs"]
 mod item_capacity;
 
 use item_capacity::{

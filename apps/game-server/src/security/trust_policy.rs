@@ -140,5 +140,4 @@ pub(crate) fn check_fetch_after_step(
 }
 
 #[cfg(test)]
-#[path = "trust_policy_tests.rs"]
 mod tests;

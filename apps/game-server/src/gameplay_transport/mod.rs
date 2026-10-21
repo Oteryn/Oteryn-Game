@@ -36,6 +36,7 @@ mod logout;
 #[cfg(test)]
 mod logout_tests;
 mod loop_move;
+use crate::map::boot::BundleCollisionIndexExt;
 pub(crate) use last_position::LastPositionFlush;
 mod map_door;
 mod monk_save;
@@ -65,6 +66,10 @@ mod spell_character_facts;
 mod spell_magnitude_facts;
 pub(crate) mod spell_premium_coordinator;
 mod spell_presentation_publisher;
+#[allow(
+    unused_imports,
+    reason = "Retain the original presentation type path during the ADR-0019 carve"
+)]
 pub(crate) use spell_presentations::PreparedPresentation as PreparedSpellPresentation;
 mod tcp_tls;
 mod world_map;
@@ -5095,7 +5100,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     self.character,
                     self.holder,
                     &fence,
-                    native,
+                    &item_ref_admission::NativeItemWeights(native),
                     &crate::durability::starter_grant::StarterTemplate::main(),
                 )
                 .await
@@ -7558,7 +7563,7 @@ pub(crate) use spell_presentation_publisher::{
 #[cfg(test)]
 pub(crate) use spell_presentations::SpellPresentationOwner;
 
-mod spell_presentations;
+pub(crate) use crate::spell::spell_presentations;
 
 /// DEATH-ML-LOSS-1 (CP D1433, #2193 Codex P1 4304911165) on PostgreSQL 17.6: a trained actor
 /// whose death lowers its build is rebased onto the receipt's post-loss build at respawn, so its
@@ -8115,5 +8120,6 @@ mod death_ml_loss_postgres {
     }
 }
 
-#[path = "../interaction/vocation_choice.rs"]
 mod vocation_choice;
+
+mod monster_combat_states;

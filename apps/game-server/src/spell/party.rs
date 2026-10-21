@@ -6,36 +6,11 @@
 //! every party cast fails as for a caster without a party (C.3 step 1). The member condition is an
 //! ordinary Effect, applied by its owner.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
-use super::SpellEffect;
 use super::chain::{ChainCreature, TilePosition};
 
-/// How a party cast's mana is computed (C.3 steps 4 and 5).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum PartyMana {
-    /// The same cost for any number of members (Enlighten Party).
-    Fixed(u32),
-    /// `ceil(base * falloff^(X - 1) * X)`, X = affected members including the caster.
-    Scaled {
-        base: u32,
-        /// `falloff` as a reduced fraction `numerator / denominator` in (0, 1].
-        numerator: u32,
-        denominator: u32,
-    },
-}
-
-/// An admitted `party_buff`.
-#[derive(Debug, Clone, PartialEq)]
-pub(crate) struct PartyBuffSpec {
-    /// Tile offsets `(dx, dy)` from the caster that the area covers, on the caster's floor.
-    pub(crate) area: BTreeSet<(i32, i32)>,
-    /// Affected members needed, the caster included (C.3 step 3).
-    pub(crate) min_affected: u32,
-    pub(crate) mana: PartyMana,
-    /// The Effect each affected member receives.
-    pub(crate) effects: Vec<SpellEffect>,
-}
+pub(crate) use crate::content::spell_data::party::*;
 
 /// World facts one party cast reads.
 pub(crate) trait PartyWorld {
@@ -66,10 +41,18 @@ pub(crate) enum PartyFailure {
     CostOverflow,
 }
 
-impl PartyBuffSpec {
+pub(crate) trait PartyBuffSpecExt {
+    fn affected<'a>(
+        &self,
+        world: &'a dyn PartyWorld,
+    ) -> Result<Vec<&'a ChainCreature>, PartyFailure>;
+    fn mana_cost(&self, members: usize) -> Result<u32, PartyFailure>;
+}
+
+impl PartyBuffSpecExt for PartyBuffSpec {
     /// The members one cast affects, ordered by creature id: party members on the caster's floor
     /// inside the area. The caster must be listed in its own party.
-    pub(crate) fn affected<'a>(
+    fn affected<'a>(
         &self,
         world: &'a dyn PartyWorld,
     ) -> Result<Vec<&'a ChainCreature>, PartyFailure> {
@@ -80,7 +63,7 @@ impl PartyBuffSpec {
         }
         let affected: BTreeMap<u64, &ChainCreature> = party
             .iter()
-            .filter(|member| self.covers(caster.position, member.position))
+            .filter(|member| covers(self, caster.position, member.position))
             .map(|member| (member.id, member))
             .collect();
         if affected.len() < usize::try_from(self.min_affected).unwrap_or(usize::MAX) {
@@ -89,12 +72,8 @@ impl PartyBuffSpec {
         Ok(affected.into_values().collect())
     }
 
-    fn covers(&self, centre: TilePosition, tile: TilePosition) -> bool {
-        tile.floor == centre.floor && self.area.contains(&(tile.x - centre.x, tile.y - centre.y))
-    }
-
     /// Mana of a cast affecting `members` creatures, rounded up in exact integer arithmetic.
-    pub(crate) fn mana_cost(&self, members: usize) -> Result<u32, PartyFailure> {
+    fn mana_cost(&self, members: usize) -> Result<u32, PartyFailure> {
         let (base, numerator, denominator) = match self.mana {
             PartyMana::Fixed(mana) => return Ok(mana),
             PartyMana::Scaled {
@@ -113,4 +92,8 @@ impl PartyBuffSpec {
         let bottom = power(denominator).ok_or(PartyFailure::CostOverflow)?;
         u32::try_from(top.div_ceil(bottom)).map_err(|_| PartyFailure::CostOverflow)
     }
+}
+
+fn covers(spec: &PartyBuffSpec, centre: TilePosition, tile: TilePosition) -> bool {
+    tile.floor == centre.floor && spec.area.contains(&(tile.x - centre.x, tile.y - centre.y))
 }
