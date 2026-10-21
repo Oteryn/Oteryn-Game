@@ -22,5 +22,8 @@ serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 sha2.workspace = true
 
+[dev-dependencies]
+oteryn-gameplay-content = { version = "=0.1.0", path = "../content", features = ["test-support"] }
+
 [lints]
 workspace = true

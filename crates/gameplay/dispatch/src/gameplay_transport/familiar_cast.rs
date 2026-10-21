@@ -2195,16 +2195,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 
-fn base_familiar_vocation(vocation: crate::spell::Vocation) -> &'static str {
-    use crate::spell::Vocation::*;
-    match vocation {
-        Druid | ElderDruid => "druid",
-        Sorcerer | MasterSorcerer => "sorcerer",
-        Knight | EliteKnight => "knight",
-        Paladin | RoyalPaladin => "paladin",
-        Monk | ExaltedMonk => "monk",
-    }
-}
+pub use oteryn_gameplay_spell_rules::familiar_cast::base_familiar_vocation;
 
 /// Immutable explicit ordinary Game-group observation, minted only by the fenced persisted
 /// group's actual committed initializer/read. Root separately checks current actor/session/
