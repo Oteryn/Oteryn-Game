@@ -1,0 +1,168 @@
+{
+  "task": "SHARED-VITALS-CONTENT-1",
+  "review_date": "2026-10-19",
+  "scope": "SOURCE_REFERENCE_CONTROLLED_OBSERVATIONS_AND_OWNER_DERIVED_EQUIVALENCE",
+  "research_status": "ALL_NORMAL_VOCATION_REFERENCE_VALUES_PRESENT_PROMOTIONS_UNRESOLVED",
+  "runtime_admission": "BLOCKED",
+  "coverage": "Four unpromoted vocations have controlled regeneration observations. Sorcerer is copied1:1from measured Druid by explicit owner instruction and classified DERIVED, not measured. Ten promoted regeneration fields, party activity timeout and initial stamina debit remain unresolved. Knight fed HP has only two full gains and one3s interval; capped gain excluded. Food observations and prior owner choices unchanged; no runtime selection.",
+  "source_registry": "sources.json",
+  "record_counts": {
+    "docs/reference/content-prep/shared-vitals-content-1/admission-evidence/shared-experience-reference-evidence.json": 1,
+    "docs/reference/content-prep/shared-vitals-content-1/admission-evidence/stamina-reference-evidence.json": 1,
+    "docs/reference/content-prep/shared-vitals-content-1/admission-evidence/soul-reference-evidence.json": 1,
+    "docs/reference/content-prep/shared-vitals-content-1/regeneration.json": 7,
+    "docs/reference/content-prep/shared-vitals-content-1/food-durations.json": 146
+  },
+  "evidence_field_counts": {
+    "DERIVED": 151,
+    "PROVEN": 40,
+    "UNKNOWN": 12
+  },
+  "unresolved_fields": [
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/admission-evidence/shared-experience-reference-evidence.json/records/0/facts/activity_timeout",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/admission-evidence/stamina-reference-evidence.json/records/0/facts/initial_combat_drain_minutes",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/promoted_hp",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/promoted_mana",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/promoted_hp",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/promoted_mana",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/promoted_hp",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/promoted_mana",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/promoted_hp",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/promoted_mana",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/promoted_hp",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/promoted_mana",
+      "classification": "UNKNOWN"
+    }
+  ],
+  "limitations_policy": "Unproven external facts remain UNKNOWN/CONFLICT. Three Food fields use owner-authorized DERIVED reference defaults with original source limitations retained; they are not claimed as measured or official Tibia mechanics.",
+  "owner_selected_reference_defaults": [
+    {
+      "title": "Cheese Cookie",
+      "seconds": 24,
+      "source": "owner:food-defaults:20261018",
+      "direct_measurement": false
+    },
+    {
+      "title": "Cake (Item)",
+      "seconds": 240,
+      "source": "owner:food-defaults:20261018",
+      "direct_measurement": false
+    },
+    {
+      "title": "Cake with a Cherry",
+      "seconds": 240,
+      "source": "owner:food-defaults:20261018",
+      "direct_measurement": false
+    }
+  ],
+  "complete_source_sweep": {
+    "review_date": "2026-10-18",
+    "scope": "FANDOM_WIKI_BR_AND_PRIMARY_OFFICIAL_CROSS_CHECK",
+    "changes": [
+      "New official unified intervals; twenty obsolete community timer candidates explicitly held as historical"
+    ],
+    "qualification": "Reference only. No unsupported absence→false conversion, invented random distribution, arrival coordinate or architecture decision. Exact source fetches and failed direct primary fetches remain auditable."
+  },
+  "filled_parameter_fields": 5,
+  "remaining_unfilled_parameter_fields": 0,
+  "normalized_companion_fields": 0,
+  "global_source_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json",
+  "global_source_archive_counts": {
+    "UNKNOWN": 23,
+    "CONFLICT": 2
+  },
+  "counting_scope": "Active fields only; archived original Global evidence is excluded from active-field counts.",
+  "pending_index_metadata": [
+    {
+      "target_path": "docs/reference/content-prep/shared-vitals-content-1/admission-evidence/shared-experience-index.json",
+      "held_by_prs": [
+        2203
+      ],
+      "replacement": {
+        "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
+        "path": "rulesets/party/shared-experience/",
+        "kind": "ruleset",
+        "owner": "Party",
+        "repository": "Oteryn/Oteryn-Game",
+        "population_state": "POPULATED",
+        "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
+        "notes": "Party/shared-EXP rules.",
+        "runtime_admission": "BLOCKED",
+        "runtime_switch_authorized": false,
+        "evidence_completeness": "SOURCE_RECONCILED_WITH_EXPLICIT_GAMEPLAY_QUALIFICATION_GAPS",
+        "source_snapshot_target": "current-at-fetch-2026-10-18",
+        "payloads": [
+          {
+            "path": "docs/reference/content-prep/shared-vitals-content-1/admission-evidence/shared-experience-reference-evidence.json",
+            "sha256": "ceb906444a17f51daf0720d175b6d7261ce6d8f8a05bbc8e985b9be5d1f0355e"
+          }
+        ]
+      },
+      "reason": "Do not edit overlapping open PR files; coordinator applies metadata only with native qualification."
+    }
+  ],
+  "remaining_unresolved_source_fields": 12,
+  "source_repair": {
+    "source_check": "docs/reference/content-prep/shared-vitals-content-1/gameplay-source-reconciliation.json",
+    "remaining_unresolved_source_fields": 12,
+    "selected_for_native_runtime": false,
+    "summary": "Four unpromoted vocations have controlled regeneration observations. Sorcerer is copied1:1from measured Druid by explicit owner instruction and classified DERIVED, not measured. Ten promoted regeneration fields, party activity timeout and initial stamina debit remain unresolved. Knight fed HP has only two full gains and one3s interval; capped gain excluded. Food observations and prior owner choices unchanged; no runtime selection."
+  },
+  "counting_correction": "Includes the unchanged top-level non_regenerative_food_reference observation in addition to record facts.",
+  "live_client_measurements": {
+    "probe_document": "docs/reference/content-prep/shared-vitals-content-1/live-client-regeneration-probe.json",
+    "active_fields_resolved": 8,
+    "hungry_fed_observations": 16,
+    "qualified_recordings": 12,
+    "vocations": [
+      "Druid",
+      "Monk",
+      "Paladin",
+      "Knight"
+    ],
+    "active_promotion": false,
+    "selected_for_native_runtime": false,
+    "short_series": "Knight fed HP: two uncapped gains and one3s interval"
+  },
+  "owner_derived_sorcerer_equivalence": {
+    "source": "owner:sorcerer-druid-equivalence:20261019",
+    "field_count": 2,
+    "derived_from": "measured normal Druid",
+    "direct_sorcerer_measurement": false,
+    "runtime_selected": false
+  }
+}
