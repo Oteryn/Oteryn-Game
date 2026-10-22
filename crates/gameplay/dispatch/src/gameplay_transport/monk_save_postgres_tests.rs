@@ -27,6 +27,9 @@ mod weather_wire;
 #[path = "loop_map_pickup_tests.rs"]
 mod map_pickup;
 
+#[path = "equipment_effects_owner_tests/monk_scenario.rs"]
+pub(in crate::gameplay_transport) mod equipment_scenarios;
+
 use super::{ComposedFreshAdmission, MonkSave};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::fresh_admission::FreshAdmissionStore;

@@ -28,6 +28,9 @@ use crate::durability::character_equipment::{self, EquipmentMoveContent};
 use crate::foundation::{ChannelRuntimeV1, CommandId, CommandRef, RuntimeScopeRefV1};
 use oteryn_protocol_oteryn::item_view::{EquipmentSlot, durable_slot, wire_slot};
 
+#[path = "equipment_effects_owner.rs"]
+pub(super) mod equipment_effects_owner;
+
 impl oteryn_gameplay_domain::domain::equipment_policy_abi::policy_registration::Registered
     for NativeItemWeights<'_>
 {
@@ -280,7 +283,24 @@ pub(super) async fn move_equipment(
         .await
         .forget_weapon(actor, command.game_session_id);
     match committed {
-        Ok(Ok(_receipt)) => EquipmentMoveResult::Committed,
+        Ok(Ok(_receipt)) => {
+            // EQUIP-0 §4: only a committed owner move changes suppressions. Keep the lane
+            // permit across the fresh read, then obey runtime -> spell_states lock order.
+            let Some(effects) = read_current_equipment(admission, command.game_session_id)
+                .await
+                .and_then(|equipment| {
+                    equipment_effects_owner::equipment_effects(&equipment, native)
+                })
+            else {
+                return EquipmentMoveResult::Unknown;
+            };
+            let runtime = admission.runtime.lock().await;
+            let mut states = admission.spell_states.lock().await;
+            if let Some(state) = states.get_mut(&runtime, actor, command.game_session_id) {
+                equipment_effects_owner::install_suppressions(state, effects);
+            }
+            EquipmentMoveResult::Committed
+        }
         Ok(Err(refusal)) => EquipmentMoveResult::Refused(refusal),
         Err(_) => EquipmentMoveResult::Unknown,
     }
