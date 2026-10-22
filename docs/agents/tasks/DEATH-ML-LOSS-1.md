@@ -21,15 +21,15 @@ created_at: 2026-10-15
 updated_at: 2026-10-18
 execution_policy: continuous_progress
 owned_paths:
-  - apps/game-server/src/durability/character_death.rs
-  - apps/game-server/src/domain/death.rs
-  - apps/game-server/src/durability/character_revision_sequencer.rs
+  - crates/gameplay/durability/src/durability/character_death.rs
+  - crates/gameplay/domain/src/domain/death.rs
+  - crates/gameplay/durability/src/durability/character_revision_sequencer.rs
   - apps/game-server/tests/death_ml_loss_*.rs (new)
-  - apps/game-server/src/gameplay_transport/monk_save_postgres_tests.rs (CP D1440)
-  - apps/game-server/src/gameplay_transport/training_save.rs (CP D1452: re-fence of a proven-uncommitted checkpoint)
+  - crates/gameplay/dispatch/src/gameplay_transport/monk_save_postgres_tests.rs (CP D1440)
+  - crates/gameplay/dispatch/src/gameplay_transport/training_save.rs (CP D1452: re-fence of a proven-uncommitted checkpoint)
 slot_only_paths:
-  - apps/game-server/src/gameplay_transport/mod.rs (runtime caller; CP D1425-D1440 death hunks)
-  - apps/game-server/src/spell/mana_training.rs (CP D1433 `rebase_after_death`; CP D1452 `refence_uncommitted_training_checkpoint`)
+  - crates/gameplay/dispatch/src/gameplay_transport/mod.rs (runtime caller; CP D1425-D1440 death hunks)
+  - crates/gameplay/spell/src/spell/mana_training.rs (CP D1433 `rebase_after_death`; CP D1452 `refence_uncommitted_training_checkpoint`)
 public_contracts: []
 depends_on:
   - "CHAR-BUILD-1: MERGED"
@@ -62,10 +62,10 @@ Training/build progress is flushed before a death and the death receipt carries 
 
 ## Owned paths (builder edits freely)
 
-- `apps/game-server/src/durability/character_death.rs`
-- `apps/game-server/src/domain/death.rs`
+- `crates/gameplay/durability/src/durability/character_death.rs`
+- `crates/gameplay/domain/src/domain/death.rs`
 - apps/game-server/tests/death_ml_loss_*.rs (new)
-- `apps/game-server/src/gameplay_transport/monk_save_postgres_tests.rs` (CP D1440: the composed-owner death case; D1440 names it under `spell/`, the file lives under `gameplay_transport/`)
+- `crates/gameplay/dispatch/src/gameplay_transport/monk_save_postgres_tests.rs` (CP D1440: the composed-owner death case; D1440 names it under `spell/`, the file lives under `gameplay_transport/`)
 
 ## Slot-only paths (final commit only, at the merge-queue turn, after merging main)
 
@@ -540,7 +540,7 @@ action is taken; CP alone decides merge.
 ## CP D1440 checkpoint (2026-10-18)
 
 MERGE_AUTHORITY: CP_ONLY. CP D1440 allocates
-`apps/game-server/src/gameplay_transport/monk_save_postgres_tests.rs` to this
+`crates/gameplay/dispatch/src/gameplay_transport/monk_save_postgres_tests.rs` to this
 task (D1440 names it under `spell/`; the file is under `gameplay_transport/`)
 for the composed-owner case, and keeps the release-path behaviour.
 

@@ -49,12 +49,12 @@ Rows marked BLOCKING must merge (or be accepted) before the builder's slot commi
 
 ## owned_paths (builder edits freely)
 
-- `apps/game-server/src/domain/forge.rs`
-- `apps/game-server/src/durability/forge.rs`
-- `apps/game-server/src/durability/forge_tests.rs`
+- `crates/gameplay/domain/src/domain/forge.rs`
+- `crates/gameplay/durability/src/durability/forge.rs`
+- `crates/gameplay/durability/src/durability/forge_tests.rs`
 - `apps/game-server/src/combat/tier_effects.rs`
-- `apps/game-server/src/gameplay_transport/forge.rs`
-- `apps/game-server/src/gameplay_transport/forge_tests.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/forge.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/forge_tests.rs`
 - `crates/protocol-oteryn/src/forge.rs`
 - `crates/protocol-oteryn/src/forge_tests.rs`
 - `apps/game-server/tests/support/forge_cases.rs` (was `tests/forge_postgres.rs`, removed by D1430)
@@ -73,14 +73,14 @@ To compile on the branch the builder may add only the module registration lines 
 - Rust pins (pinned registries / fixtures regenerated from content)
 - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json, GAME_EVENT_FOUNDATION_REGISTRY.json, RESOURCE_LIMITS_REGISTRY.json, OTERYN_GAME_ERROR_CODE_REGISTRY.json
 - apps/game-server/migrations/NNNN_*.sql number (next free on main at queue turn; main ends at 0087)
-- apps/game-server/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
+- crates/gameplay/dispatch/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
 - crates/protocol-oteryn/src/lib.rs `pub mod` + registry constants
-- apps/game-server/src/durability/mod.rs, domain/mod.rs, lib.rs module registration
+- crates/gameplay/durability/src/durability/core_modules.rs, domain/mod.rs, lib.rs module registration
 
 ## Wiring points (verified on origin/main 5742f30f3)
 
-- apps/game-server/src/domain/forge_dust.rs, durability/character_forge_dust.rs, character_forge_dust_audit.rs (FORGE-1a; extend, do not fork)
-- apps/game-server/src/content/item_forge289_promotion.rs, item_forge3332_promotion.rs
+- crates/gameplay/domain/src/domain/forge_dust.rs, durability/character_forge_dust.rs, character_forge_dust_audit.rs (FORGE-1a; extend, do not fork)
+- crates/gameplay/content/src/content/item_forge289_promotion.rs, item_forge3332_promotion.rs
 - monster loot/death chain for FORGE-CREATURE-1
 - connection.rs dispatch; capabilities.rs `GATED` (`FORGE_V1`)
 
@@ -688,7 +688,7 @@ The native input receipt `feature2146-source-v4.json` has SHA256
 
 | Native GREEN source | Git blob | SHA256 |
 | --- | --- | --- |
-| `apps/game-server/src/durability/character_forge_dust.rs` | `66b2a2af899a30a50dc5093642b0ac1e015f540a` | `e81776ff2570c34c2457ea11fa33367e872c36e8563393c1a8655a0b2d857870` |
+| `crates/gameplay/durability/src/durability/character_forge_dust.rs` | `66b2a2af899a30a50dc5093642b0ac1e015f540a` | `e81776ff2570c34c2457ea11fa33367e872c36e8563393c1a8655a0b2d857870` |
 | `apps/game-server/tests/support/forge_dust_limit_postgres_cases.rs` | `40241422f4091586793a0a02a3a42483aa3b1472` | `74eea614a134a8ae37048893acf15a5ec3f23ec966cfb30c0dee572efcc617cf` |
 
 These are the two history-continuation sources on that complete base. The

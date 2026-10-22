@@ -49,12 +49,12 @@ Rows marked BLOCKING must merge (or be accepted) before the builder's slot commi
 
 ## owned_paths (builder edits freely)
 
-- `apps/game-server/src/domain/market.rs`
-- `apps/game-server/src/durability/market.rs`
-- `apps/game-server/src/durability/market_audit.rs`
-- `apps/game-server/src/durability/market_tests.rs`
-- `apps/game-server/src/gameplay_transport/market.rs`
-- `apps/game-server/src/gameplay_transport/market_tests.rs`
+- `crates/gameplay/domain/src/domain/market.rs`
+- `crates/gameplay/durability/src/durability/market.rs`
+- `crates/gameplay/durability/src/durability/market_audit.rs`
+- `crates/gameplay/durability/src/durability/market_tests.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/market.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/market_tests.rs`
 - `crates/protocol-oteryn/src/market.rs`
 - `crates/protocol-oteryn/src/market_tests.rs`
 - `apps/game-server/tests/market_postgres.rs`
@@ -74,15 +74,15 @@ To compile on the branch the builder may add only the module registration lines 
 - Rust pins (pinned registries / fixtures regenerated from content)
 - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json, GAME_EVENT_FOUNDATION_REGISTRY.json, RESOURCE_LIMITS_REGISTRY.json, OTERYN_GAME_ERROR_CODE_REGISTRY.json
 - apps/game-server/migrations/NNNN_*.sql number (next free on main at queue turn; main ends at 0087)
-- apps/game-server/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
+- crates/gameplay/dispatch/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
 - crates/protocol-oteryn/src/lib.rs `pub mod` + registry constants
-- apps/game-server/src/durability/mod.rs, domain/mod.rs, lib.rs module registration
+- crates/gameplay/durability/src/durability/core_modules.rs, domain/mod.rs, lib.rs module registration
 
 ## Wiring points (verified on origin/main 5742f30f3)
 
 - durability/bank.rs + bank_audit.rs (BANK-1) for escrow debit/credit; reuse, do not fork
 - durability/character_inbox.rs for delivery
-- apps/game-server/src/content/item_market_true_promotion.rs (existing market flag promotion)
+- crates/gameplay/content/src/content/item_market_true_promotion.rs (existing market flag promotion)
 - connection.rs dispatch chain; capabilities.rs `GATED` (`MARKET_V1`)
 - GAME_EVENT_FOUNDATION_REGISTRY.json (market event), RESOURCE_LIMITS_REGISTRY.json
 
@@ -116,7 +116,7 @@ python3 tools/content-migration/regenerate_content.py   # slot commit only; runs
 ## Reference evidence pointers
 
 - docs/architecture/reviews/OTERYN_GAME_MARKET0_WORLD_MARKET_DECISION_2026-09-30.md §3-§10, §13
-- apps/game-server/src/durability/bank.rs
+- crates/gameplay/durability/src/durability/bank.rs
 - archive OTV2-20261004-gold-fee-2.md
 - docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4, §5 (Wave 4), §7
 - docs/agents/cp/CP_WAVES.md (branch claude/beautiful-franklin-1tp8kj), 'Model pracy równoległej'

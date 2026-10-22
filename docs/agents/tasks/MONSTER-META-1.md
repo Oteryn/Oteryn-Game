@@ -47,11 +47,11 @@ Rows marked BLOCKING must merge (or be accepted/decided) before the builder's sl
 ## owned_paths (builder edits freely)
 
 - `content/bosses/**, content/raids/** (sources only)`
-- `apps/game-server/src/durability/character_bosstiary.rs`
-- `apps/game-server/src/durability/boss_encounter.rs`
-- `apps/game-server/src/durability/boss_encounter_tests.rs`
-- `apps/game-server/src/gameplay_transport/raid.rs`
-- `apps/game-server/src/gameplay_transport/raid_tests.rs`
+- `crates/gameplay/durability/src/durability/character_bosstiary.rs`
+- `crates/gameplay/durability/src/durability/boss_encounter.rs`
+- `crates/gameplay/durability/src/durability/boss_encounter/tests.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/raid.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/raid_tests.rs`
 - `crates/protocol-oteryn/src/bosstiary.rs`
 - `apps/game-server/tests/monster_meta_postgres.rs`
 - `docs/agents/evidence/MONSTER-META-1-*.md`
@@ -70,9 +70,9 @@ To compile on the branch the builder may add only the module registration lines 
 - Rust pins (pinned registries / fixtures regenerated from content)
 - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json, GAME_EVENT_FOUNDATION_REGISTRY.json, RESOURCE_LIMITS_REGISTRY.json, OTERYN_GAME_ERROR_CODE_REGISTRY.json
 - apps/game-server/migrations/NNNN_*.sql number (next free on main at queue turn; main ends at 0087)
-- apps/game-server/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
+- crates/gameplay/dispatch/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
 - crates/protocol-oteryn/src/lib.rs `pub mod` + registry constants
-- apps/game-server/src/durability/mod.rs, domain/mod.rs, lib.rs module registration
+- crates/gameplay/durability/src/durability/core_modules.rs, domain/mod.rs, lib.rs module registration
 
 ## Wiring points (verified on origin/main 5742f30f3)
 
@@ -269,8 +269,8 @@ the newer ROOT-AJ-F instruction confirms that the migration slot blocks its inst
 not preparation of the accepted logical storage behavior. This is AUTHORING, not a frozen
 candidate. The earlier report above describes only its original clock subset.
 
-Source manifest: `apps/game-server/src/durability/boss_encounter.rs`,
-`apps/game-server/src/durability/boss_encounter_tests.rs`, and this record. No other source,
+Source manifest: `crates/gameplay/durability/src/durability/boss_encounter.rs`,
+`crates/gameplay/durability/src/durability/boss_encounter/tests.rs`, and this record. No other source,
 migration, module registration, content, registry or runtime wiring is changed.
 EVENTS-RAID-1 remains the sole raid scheduler/content owner; no second raid core is added here.
 

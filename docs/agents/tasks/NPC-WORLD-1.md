@@ -50,16 +50,16 @@ Rows marked BLOCKING must merge (or be accepted/decided) before the builder's sl
 ## owned_paths (builder edits freely)
 
 - `content/npc/travel/** (sources only)`
-- `apps/game-server/src/gameplay_transport/npc_travel.rs`
-- `apps/game-server/src/gameplay_transport/npc_travel_tests.rs`
-- `apps/game-server/src/gameplay_transport/npc_actor.rs`
-- `apps/game-server/src/gameplay_transport/npc_actor_tests.rs`
-- `apps/game-server/src/gameplay_transport/npc_voice.rs`
-- `apps/game-server/src/gameplay_transport/chat_intent.rs` (D1344a: only the synchronous with_npc_customer_state read)
-- `apps/game-server/src/gameplay_transport/mod.rs` (D1160: one ordinary npc_actor module registration line)
-- `apps/game-server/src/foundation/runtime_actor_carrier.rs` (D1340b: read_movement_position and commit_movement_position only)
-- `apps/game-server/src/foundation/npc_actor.rs` (D1340b: six native Movement regression cases only)
-- `apps/game-server/src/durability/npc_travel.rs`
+- `crates/gameplay/npc/src/npc_travel.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/npc_travel_tests.rs`
+- `crates/gameplay/npc/src/npc_actor.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/npc_actor_tests.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/npc_voice.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/chat_intent.rs` (D1344a: only the synchronous with_npc_customer_state read)
+- `crates/gameplay/dispatch/src/gameplay_transport/mod.rs` (D1160: one ordinary npc_actor module registration line)
+- `crates/gameplay/entities/src/carrier.rs` (D1340b: read_movement_position and commit_movement_position only)
+- `crates/gameplay/entities/src/carrier/npc_actor.rs` (D1340b: six native Movement regression cases only)
+- `crates/gameplay/durability/src/durability/npc_travel.rs`
 - `apps/game-server/tests/npc_world_postgres.rs`
 - `docs/agents/evidence/NPC-WORLD-1-*.md`
 - `docs/agents/tasks/NPC-WORLD-1.md` (this record: status and notes only)
@@ -77,9 +77,9 @@ To compile on the branch the builder may add only the module registration lines 
 - Rust pins (pinned registries / fixtures regenerated from content)
 - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json, GAME_EVENT_FOUNDATION_REGISTRY.json, RESOURCE_LIMITS_REGISTRY.json, OTERYN_GAME_ERROR_CODE_REGISTRY.json
 - apps/game-server/migrations/NNNN_*.sql number (next free on main at queue turn; main ends at 0087)
-- apps/game-server/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
+- crates/gameplay/dispatch/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
 - crates/protocol-oteryn/src/lib.rs `pub mod` + registry constants
-- apps/game-server/src/durability/mod.rs, domain/mod.rs, lib.rs module registration
+- crates/gameplay/durability/src/durability/core_modules.rs, domain/mod.rs, lib.rs module registration
 
 ## Wiring points (verified on origin/main 5742f30f3)
 

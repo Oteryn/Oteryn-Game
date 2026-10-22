@@ -49,7 +49,7 @@ Rows marked BLOCKING must merge (or be accepted/decided) before the builder's sl
 
 ## owned_paths (exclusive root allocation for this preparation)
 
-- `apps/game-server/src/durability/item_timed_repair.rs` (new)
+- `crates/gameplay/items/src/item_timed_repair.rs` (new)
 - `apps/game-server/tests/item_timed_postgres.rs` (new; planning tests only here)
 - `docs/agents/tasks/ITEM-TIMED-1.md` (packet/notes)
 - `apps/game-server/Cargo.toml` (target registration; added per CP D1280 (https://github.com/Oteryn/Oteryn-Game/issues/2131#issuecomment-6227727089))
@@ -70,9 +70,9 @@ No module registration is permitted in this local preparation.
 - Rust pins (pinned registries / fixtures regenerated from content)
 - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json, GAME_EVENT_FOUNDATION_REGISTRY.json, RESOURCE_LIMITS_REGISTRY.json, OTERYN_GAME_ERROR_CODE_REGISTRY.json
 - apps/game-server/migrations/NNNN_*.sql number (next free on main at queue turn; main ends at 0087)
-- apps/game-server/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
+- crates/gameplay/dispatch/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
 - crates/protocol-oteryn/src/lib.rs `pub mod` + registry constants
-- apps/game-server/src/durability/mod.rs, domain/mod.rs, lib.rs module registration
+- crates/gameplay/durability/src/durability/core_modules.rs, domain/mod.rs, lib.rs module registration
 
 ## Wiring points (verified on origin/main 5742f30f3)
 

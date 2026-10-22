@@ -19,8 +19,8 @@ created_at: 2026-10-01
 updated_at: 2026-10-01
 execution_policy: continuous_progress
 owned_paths:
-  - apps/game-server/src/ability/condition.rs
-  - apps/game-server/src/ability/condition_tests.rs
+  - crates/gameplay/foundation/src/foundation/condition.rs
+  - crates/gameplay/foundation/src/foundation/condition_tests.rs
   - docs/agents/tasks/active/OTV2-20261001-charm-runtime-completion.md
 public_contracts: []
 depends_on: [CONDITIONS-0, CHARM-0]

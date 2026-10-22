@@ -48,12 +48,12 @@ Rows marked BLOCKING must merge (or be accepted) before the builder's slot commi
 
 ## owned_paths (builder edits freely)
 
-- `apps/game-server/src/domain/mail.rs`
-- `apps/game-server/src/durability/mail.rs`
-- `apps/game-server/src/durability/mail_tests.rs`
-- `apps/game-server/src/durability/item_text.rs`
-- `apps/game-server/src/gameplay_transport/mail.rs`
-- `apps/game-server/src/gameplay_transport/mail_tests.rs`
+- `crates/gameplay/domain/src/domain/mail.rs`
+- `crates/gameplay/durability/src/durability/mail.rs`
+- `crates/gameplay/durability/src/durability/mail/tests.rs`
+- `crates/gameplay/durability/src/durability/item_text.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/mail.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/mail_tests.rs`
 - `crates/protocol-oteryn/src/mail.rs`
 - `crates/protocol-oteryn/src/mail_tests.rs`
 - `apps/game-server/tests/mail_postgres.rs`
@@ -70,11 +70,11 @@ migration number; production activation remains after #2197. Owned additions:
 
 - `apps/game-server/migrations/0101_mail.sql` — existing TEXT schema plus the
   complete D1318 sink and fresh reward-mint/receipt/audit guards and grants.
-- `apps/game-server/src/durability/character_inbox.rs` and
+- `crates/gameplay/durability/src/durability/character_inbox.rs` and
   `character_inbox_reward_claim.rs` — actual native seam and bridge exports.
-- `apps/game-server/src/durability/character_inbox_reward_claim.sql` — remove
+- `crates/gameplay/durability/src/durability/character_inbox_reward_claim.sql` — remove
   the former private SQL copy after moving its full body into migration 0101.
-- `apps/game-server/src/durability/character_inbox_reward_claim_mint.rs` and
+- `crates/gameplay/durability/src/durability/character_inbox/reward_claim/mint.rs` and
   `character_inbox_reward_claim_mint_tests.rs` — native bridge and source tests.
 - `apps/game-server/tests/support/mail_postgres_cases.rs`,
   `character_inbox_reward_claim_postgres_cases.rs` and
@@ -83,13 +83,13 @@ migration number; production activation remains after #2197. Owned additions:
 
 The same D1356 commit includes only these **eight granted shared file scopes**:
 
-- `apps/game-server/src/durability/reward_claim_mint_audit.rs` — optional Inbox
+- `crates/gameplay/durability/src/durability/reward_claim_mint_audit.rs` — optional Inbox
   field 5 and its native encode/decode dispatch within existing operation tag 4.
-- `apps/game-server/src/durability/reward_claim_inbox_mint_audit.rs` and
+- `crates/gameplay/durability/src/durability/reward_claim_mint_audit/inbox.rs` and
   `reward_claim_inbox_mint_audit_tests.rs` — that field's native codec and tests.
-- `apps/game-server/src/durability/reward_claim_mint.rs` — only `inbox: None`
+- `crates/gameplay/durability/src/durability/reward_claim_mint.rs` — only `inbox: None`
   at existing CHEST struct construction sites; no legacy behavior change.
-- `apps/game-server/src/durability/item_mint_audit.rs` — only the real Inbox
+- `crates/gameplay/durability/src/durability/item_mint_audit.rs` — only the real Inbox
   outbox writer leaf in the existing insert-site inventory; retain TRADE's line
   when the second PR integrates main.
 - `docs/contracts/game-events/v1/native_one_item_transaction.proto` — optional
@@ -117,9 +117,9 @@ To compile on the branch the builder may add only the module registration lines 
 - Rust pins (pinned registries / fixtures regenerated from content)
 - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json, GAME_EVENT_FOUNDATION_REGISTRY.json, RESOURCE_LIMITS_REGISTRY.json, OTERYN_GAME_ERROR_CODE_REGISTRY.json
 - apps/game-server/migrations/NNNN_*.sql number (next free on main at queue turn; main ends at 0087)
-- apps/game-server/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
+- crates/gameplay/dispatch/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
 - crates/protocol-oteryn/src/lib.rs `pub mod` + registry constants
-- apps/game-server/src/durability/mod.rs, domain/mod.rs, lib.rs module registration
+- crates/gameplay/durability/src/durability/core_modules.rs, domain/mod.rs, lib.rs module registration
 
 ## Wiring points (verified on origin/main 5742f30f3)
 
@@ -160,7 +160,7 @@ python3 tools/content-migration/regenerate_content.py   # slot commit only; runs
 
 - docs/architecture/reviews/OTERYN_GAME_MAIL0_PARCELS_AND_LETTERS_DECISION_2026-09-30.md §3-§10, §14
 - docs/architecture/reviews/OTERYN_GAME_MARKET0_WORLD_MARKET_DECISION_2026-09-30.md §5 (CharacterInbox)
-- apps/game-server/src/durability/character_inbox.rs
+- crates/gameplay/durability/src/durability/character_inbox.rs
 - docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4, §5 (Wave 4), §7
 - docs/agents/cp/CP_WAVES.md (branch claude/beautiful-franklin-1tp8kj), 'Model pracy równoległej'
 
@@ -417,7 +417,7 @@ comprising **8 pure + 6 PostgreSQL** cases, with actual canonical server probe
 The broader gates remain **failed**: strict all-target Clippy and ordinary
 full-package `cargo test --locked --offline -p oteryn-game-server --no-run`
 both exited **101**. Actual diagnostics are **E0432/E0433**, at
-`apps/game-server/src/durability/item_text.rs:20–21`: integration crates that
+`crates/gameplay/durability/src/durability/item_text.rs:20–21`: integration crates that
 locally include Durability cannot resolve `crate::content` or its
 `native_gameplay` module. Logs identify `runtime_scope_assignment_postgres`,
 `wp5_s3b_composition`, `durability_postgres`, `character_authority_postgres`, and

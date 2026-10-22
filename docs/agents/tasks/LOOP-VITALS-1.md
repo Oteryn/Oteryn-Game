@@ -21,9 +21,9 @@ created_at: 2026-10-15
 updated_at: 2026-10-17
 execution_policy: continuous_progress
 owned_paths:
-  - apps/game-server/src/durability/character_vitals_soul.rs
-  - apps/game-server/src/durability/character_vitals_stamina.rs
-  - apps/game-server/src/durability/character_vitals_stamina_math.rs
+  - crates/gameplay/characters/src/soul.rs
+  - crates/gameplay/durability/src/durability/character_vitals_stamina.rs
+  - crates/gameplay/durability/src/durability/character_vitals_stamina_math.rs
   - apps/game-server/tests/loop_vitals_stamina.rs
   - docs/agents/tasks/LOOP-VITALS-1.md
 slot_only_paths:
@@ -62,9 +62,9 @@ Durable regeneration accumulator, food-time ingress, soul regen and soul orb, st
 
 ## Owned paths (builder edits freely)
 
-- apps/game-server/src/durability/character_vitals_soul.rs (CP-authorized bounded rebuild below)
-- apps/game-server/src/durability/character_vitals_stamina.rs
-- apps/game-server/src/durability/character_vitals_stamina_math.rs
+- crates/gameplay/characters/src/soul.rs (CP-authorized bounded rebuild below)
+- crates/gameplay/durability/src/durability/character_vitals_stamina.rs
+- crates/gameplay/durability/src/durability/character_vitals_stamina_math.rs
 - apps/game-server/tests/loop_vitals_stamina.rs
 - docs/agents/tasks/LOOP-VITALS-1.md
 

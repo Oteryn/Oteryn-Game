@@ -13,7 +13,7 @@ base_sha: d0b091b6b5ad4b9527d354df0043c6e55d5861cc
 owner: chatgpt-shards-reconstruction-lead
 execution_policy: continuous_progress
 owned_paths:
-  - apps/game-server/src/content/item_identity.rs
+  - crates/gameplay/content/src/content/item_identity.rs
   - apps/game-server/tests/content_item_identity.rs
   - docs/agents/tasks/OTV2-20261007-shards-i1-current-source-identity.md
 public_contracts:

@@ -20,11 +20,11 @@ created_at: 2026-09-29
 updated_at: 2026-09-29
 execution_policy: continuous_progress
 owned_paths:   # ITEM-ID-1b (1a's are on main)
-  - apps/game-server/src/content/item_identity.rs
-  - apps/game-server/src/content/mod.rs
-  - apps/game-server/src/content/cw2_b1_import.rs   # tests only; the importer stays history
-  - apps/game-server/src/combat/loot_plan.rs        # test keys
-  - apps/game-server/src/combat/pickup.rs           # doc comment
+  - crates/gameplay/content/src/content/item_identity.rs
+  - crates/gameplay/content/src/content/mod.rs
+  - crates/gameplay/content/src/content/cw2_b1_import.rs   # tests only; the importer stays history
+  - crates/gameplay/items/src/loot_plan.rs        # test keys
+  - crates/gameplay/combat/src/combat/pickup.rs           # doc comment
   - apps/game-server/examples/materialize_content_world_project_v2.rs
   - apps/game-server/tests/content_item_identity.rs
   - apps/game-server/tests/content_world_project_repository.rs
@@ -143,7 +143,7 @@ Recorded in #1279 (merged `47e865d4`); 1a counts are in "1a facts" above.
   approved rows with an engine binding (lists B/C) are in `owner-item-family-decisions.json`; 211
   approved rows wait for their record (client-only list A, WorldObject routes). Register:
   `OTV2-20260929-item-id-1b-q13d-family-decisions.json`.
-- Lease: no edit under `apps/game-server/src/durability/**`, `domain/progression.rs` or
+- Lease: no edit under `crates/gameplay/durability/src/durability/**`, `domain/progression.rs` or
   `apps/game-server/src/interaction/**`; a grep finds no Item key literal there, so no reconcile
   list is needed for 1b (1c covers durable readers).
 

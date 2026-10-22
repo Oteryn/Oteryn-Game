@@ -41,11 +41,11 @@ Rows marked BLOCKING must merge (or be accepted) before the builder's slot commi
 
 ## owned_paths (builder edits freely)
 
-- `apps/game-server/src/domain/vip.rs`
-- `apps/game-server/src/durability/vip.rs`
-- `apps/game-server/src/durability/vip_tests.rs`
-- `apps/game-server/src/gameplay_transport/vip.rs`
-- `apps/game-server/src/gameplay_transport/vip_tests.rs`
+- `crates/gameplay/domain/src/domain/vip.rs`
+- `crates/gameplay/durability/src/durability/vip.rs`
+- `apps/game-server/src/lifted_tests/durability_vip_tests.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/vip.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/vip_tests.rs`
 - `crates/protocol-oteryn/src/vip.rs`
 - `crates/protocol-oteryn/src/vip_tests.rs`
 - `apps/game-server/tests/vip_postgres.rs`
@@ -64,9 +64,9 @@ To compile on the branch the builder may add only the module registration lines 
 - Rust pins (pinned registries / fixtures regenerated from content)
 - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json, GAME_EVENT_FOUNDATION_REGISTRY.json, RESOURCE_LIMITS_REGISTRY.json, OTERYN_GAME_ERROR_CODE_REGISTRY.json
 - apps/game-server/migrations/NNNN_*.sql number (next free on main at queue turn; main ends at 0087)
-- apps/game-server/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
+- crates/gameplay/dispatch/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
 - crates/protocol-oteryn/src/lib.rs `pub mod` + registry constants
-- apps/game-server/src/durability/mod.rs, domain/mod.rs, lib.rs module registration
+- crates/gameplay/durability/src/durability/core_modules.rs, domain/mod.rs, lib.rs module registration
 
 ## Wiring points (verified on origin/main 5742f30f3)
 

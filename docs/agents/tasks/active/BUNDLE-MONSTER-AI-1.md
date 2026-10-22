@@ -15,8 +15,8 @@ created_at: 2026-10-13
 updated_at: 2026-10-13
 depends_on: ["BUNDLE-COMBAT-ENABLE-1 (#2025)", "SPAWN-1b (#1981)"]
 owned_paths:
-  - apps/game-server/src/gameplay_transport/monster_ai_cycle.rs
-  - apps/game-server/src/foundation/channel_owner_auto_attack_tests.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/monster_ai_cycle.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/channel_owner_auto_attack_tests.rs
   - docs/agents/tasks/active/BUNDLE-MONSTER-AI-1.md
 public_contracts: []
 external_repositories: []

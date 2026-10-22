@@ -23,10 +23,10 @@ owned_paths:
   - docs/agents/tasks/active/LOOP-WORLD-1.md
   - apps/game-server/migrations/0086_item_keys.sql
   - docs/contracts/game-events/v1/native_one_item_transaction.proto
-  - apps/game-server/src/durability/
-  - apps/game-server/src/content/reference_playable.rs
-  - apps/game-server/src/content/world_reward_claims.rs
-  - apps/game-server/src/interaction/chest_use.rs
+  - crates/gameplay/durability/src/durability/
+  - crates/gameplay/content/src/content/reference_playable.rs
+  - crates/gameplay/content/src/content/world_reward_claims.rs
+  - crates/gameplay/social/src/interaction/chest_use.rs
   - apps/game-server/tests/content_reference_playable.rs
   - apps/game-server/tests/world_reward_claims_binding.rs
   - apps/game-server/tests/support/chest_use_postgres_cases.rs

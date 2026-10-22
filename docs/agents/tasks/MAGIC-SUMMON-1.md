@@ -21,16 +21,16 @@ created_at: 2026-10-15
 updated_at: 2026-10-17
 execution_policy: continuous_progress
 owned_paths:
-  - apps/game-server/src/monster_summon.rs
-  - apps/game-server/src/gameplay_transport/familiar_cast*.rs
-  - apps/game-server/src/gameplay_transport/world_item_cast.rs
+  - crates/gameplay/monster-ai/src/monster_summon.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/familiar_cast*.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/world_item_cast.rs
   - apps/game-server/tests/summon_*.rs (new)
   - apps/game-server/migrations/0107_familiar_state_versioned_lifecycle.sql
-  - apps/game-server/src/durability/character_familiar.rs
-  - apps/game-server/src/gameplay_transport/familiar_cast.rs
-  - apps/game-server/src/spell/companion_lifecycle.rs
-  - apps/game-server/src/spell/delayed_execution.rs
-  - apps/game-server/src/spell/delayed_execution_tests.rs
+  - crates/gameplay/durability/src/durability/character_familiar.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/familiar_cast.rs
+  - crates/gameplay/spell/src/spell/companion_lifecycle.rs
+  - crates/gameplay/spell/src/spell/delayed_execution.rs
+  - crates/gameplay/dispatch/src/lifted_tests/spell_delayed_execution_tests.rs
   - apps/game-server/tests/character_authority_postgres.rs
   - apps/game-server/tests/support/character_familiar_writer_postgres_cases.rs
   - apps/game-server/tests/support/character_proficiency_postgres_cases.rs
@@ -80,19 +80,19 @@ Summons, familiars and magic fields; children MONSTER-SUMMON-1, SUMMON-1, SUMMON
 
 ## Owned paths (builder edits freely)
 
-- `apps/game-server/src/monster_summon.rs`
-- `apps/game-server/src/gameplay_transport/familiar_cast*.rs`
-- `apps/game-server/src/gameplay_transport/world_item_cast.rs`
+- `crates/gameplay/monster-ai/src/monster_summon.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/familiar_cast*.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/world_item_cast.rs`
 - apps/game-server/tests/summon_*.rs (new)
 
 Current D1296 PR-owned paths (in addition to the historical skeleton allocation):
 
 - `apps/game-server/migrations/0107_familiar_state_versioned_lifecycle.sql`
-- `apps/game-server/src/durability/character_familiar.rs`
-- `apps/game-server/src/gameplay_transport/familiar_cast.rs`
-- `apps/game-server/src/spell/companion_lifecycle.rs`
-- `apps/game-server/src/spell/delayed_execution.rs`
-- `apps/game-server/src/spell/delayed_execution_tests.rs`
+- `crates/gameplay/durability/src/durability/character_familiar.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/familiar_cast.rs`
+- `crates/gameplay/spell/src/spell/companion_lifecycle.rs`
+- `crates/gameplay/spell/src/spell/delayed_execution.rs`
+- `crates/gameplay/dispatch/src/lifted_tests/spell_delayed_execution_tests.rs`
 - `apps/game-server/tests/character_authority_postgres.rs`
 - `apps/game-server/tests/support/character_familiar_writer_postgres_cases.rs`
 - `apps/game-server/tests/support/character_proficiency_postgres_cases.rs`

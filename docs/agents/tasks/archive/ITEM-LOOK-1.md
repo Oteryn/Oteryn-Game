@@ -21,8 +21,8 @@ created_at: 2026-10-15
 updated_at: 2026-10-19
 execution_policy: continuous_progress
 owned_paths:
-  - apps/game-server/src/gameplay_transport/item_look.rs (new)
-  - apps/game-server/src/gameplay_transport/item_look_tests.rs (new)
+  - crates/gameplay/dispatch/src/gameplay_transport/item_look.rs (new)
+  - crates/gameplay/dispatch/src/gameplay_transport/item_look_tests.rs (new)
   - apps/game-server/src/interaction/look.rs (new)
   - crates/protocol-oteryn/src/item_look.rs (new codec)
   - crates/protocol-oteryn/src/item_look_tests.rs (new)
@@ -80,8 +80,8 @@ All dependencies merged; the task may start.
 
 ## Owned paths (builder edits freely)
 
-- apps/game-server/src/gameplay_transport/item_look.rs (new)
-- apps/game-server/src/gameplay_transport/item_look_tests.rs (new)
+- crates/gameplay/dispatch/src/gameplay_transport/item_look.rs (new)
+- crates/gameplay/dispatch/src/gameplay_transport/item_look_tests.rs (new)
 - apps/game-server/src/interaction/look.rs (new)
 - crates/protocol-oteryn/src/item_look.rs (new codec)
 - crates/protocol-oteryn/src/item_look_tests.rs (new)
@@ -228,7 +228,7 @@ pinning, migration or registry/wiring edits. Preserve local diff for lead review
 The isolated harness is `/tmp/oteryn-item-look-1-harness`. It mirrors this checkout
 with symlinks except two copied registration files:
 `crates/protocol-oteryn/src/lib.rs` appends `pub mod item_look;` and
-`apps/game-server/src/gameplay_transport/mod.rs` appends
+`crates/gameplay/dispatch/src/gameplay_transport/mod.rs` appends
 `#[allow(dead_code)] mod item_look;`. Only the isolated copies are registered;
 checkout originals remain untouched. The source files themselves are shared with
 this owned checkout. `/tmp/oteryn-item-look-1-harness/item-look-harness.json` records

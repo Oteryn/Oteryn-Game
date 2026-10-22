@@ -21,16 +21,16 @@ created_at: 2026-10-15
 updated_at: 2026-10-16
 execution_policy: continuous_progress
 owned_paths:
-  - apps/game-server/src/world_clock.rs
-  - apps/game-server/src/world_clock_world_config_tests.rs
-  - apps/game-server/src/world_weather.rs
-  - apps/game-server/src/world_weather_tests.rs
+  - crates/gameplay/world/src/world_clock.rs
+  - apps/game-server/src/lifted_tests/world_clock_world_config_tests.rs
+  - crates/gameplay/weather/src/lib.rs
+  - crates/gameplay/weather/src/tests.rs
   - crates/protocol-oteryn/src/world_weather.rs
   - docs/contracts/protocol-oteryn/v1/world_weather_v1.proto
   - apps/game-server/src/lib.rs
-  - apps/game-server/src/gameplay_transport/connection.rs
-  - apps/game-server/src/gameplay_transport/capabilities.rs
-  - apps/game-server/src/gameplay_transport/capabilities_tests.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/connection.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/capabilities.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/capabilities_tests.rs
   - crates/protocol-oteryn/src/lib.rs
   - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json
   - content/weather/**
