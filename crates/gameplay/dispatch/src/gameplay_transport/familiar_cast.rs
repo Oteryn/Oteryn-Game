@@ -936,7 +936,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if value.premium != caster.premium.is_current() {
                 return Some(SpellCastOutcome::rejected());
             }
-            let Ok(equipment_speed) = owned.equipment_speed_bonus(content) else {
+            let Some(equipment_speed) =
+                super::super::equipment_move::equipment_effects_owner::speed_term(
+                    owned.equipment(),
+                    content,
+                )
+            else {
                 return Some(SpellCastOutcome::rejected());
             };
             let facts = FamiliarOwnerFacts {
@@ -1821,7 +1826,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let equipment_speed = if is_end {
                 0
             } else {
-                owned.equipment_speed_bonus(content).map_err(|_| ())?
+                super::super::equipment_move::equipment_effects_owner::speed_term(
+                    owned.equipment(),
+                    content,
+                )
+                .ok_or(())?
             };
             let vocation =
                 crate::spell::Vocation::from_key(owned.durable_build().vocation()).ok_or(())?;

@@ -59,18 +59,7 @@ impl MovementEquipmentRead {
 }
 
 fn equipment_delta(equipment: &EquipmentSnapshot, source: &NativeGameplayState) -> Option<i32> {
-    if equipment.content_digest != source.source_digest() {
-        return None;
-    }
-    // Zero follows only from an actual initialized empty owner row. Missing
-    // source speed semantics on any equipped item make the sum unavailable.
-    equipment.items.iter().try_fold(0_i32, |sum, item| {
-        let policy = source.item_policy(
-            &item.definition.production_key,
-            &item.definition.revision_ref,
-        )?;
-        sum.checked_add(policy.record().attributes.speed_bonus?)
-    })
+    super::super::equipment_move::equipment_effects_owner::speed_term(equipment, source)
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {

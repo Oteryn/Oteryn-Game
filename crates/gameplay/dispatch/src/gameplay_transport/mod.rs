@@ -52,6 +52,7 @@ mod quest_admission;
 mod quest_log_source;
 pub use connection::quest_log;
 mod resume;
+mod rune_use_bridge;
 mod seam_rooms;
 pub use seam_rooms::SeamRooms;
 mod source_item_cycle;
@@ -3613,6 +3614,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.use_item_definition(actor, command, definition).await
     }
 
+    async fn use_rune(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        key: Option<item_view::ItemKey>,
+        visible: bool,
+    ) -> Option<UseOutcome> {
+        self.use_legacy_rune(actor, command, intent, key, visible)
+            .await
+    }
+
     /// One `USE_INTENT` for the admitted actor against the one entry-room door (#162
     /// 5868482467, USE-WIRE-V1). The client names only the target placement and its expected
     /// revision; the server selects the unique bound transition
@@ -4650,6 +4663,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             actor_spell::NativeCastDispatch::Outcome(outcome) => return Some(outcome),
             actor_spell::NativeCastDispatch::Pending => return None,
+            actor_spell::NativeCastDispatch::RuneRefused(_) => {
+                return Some(actor_spell::SpellCastOutcome::rejected());
+            }
             actor_spell::NativeCastDispatch::NotApplicable => (),
         }
         match self
@@ -4658,6 +4674,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             actor_spell::NativeCastDispatch::Outcome(outcome) => return Some(outcome),
             actor_spell::NativeCastDispatch::Pending => return None,
+            actor_spell::NativeCastDispatch::RuneRefused(_) => {
+                return Some(actor_spell::SpellCastOutcome::rejected());
+            }
             actor_spell::NativeCastDispatch::NotApplicable => (),
         }
         match self
@@ -4669,6 +4688,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Some(outcome)
             }
             actor_spell::NativeCastDispatch::Pending => None,
+            actor_spell::NativeCastDispatch::RuneRefused(_) => {
+                Some(actor_spell::SpellCastOutcome::rejected())
+            }
             actor_spell::NativeCastDispatch::NotApplicable => {
                 let outcome = self
                     .cast_spell(actor, game_session_id, command_id, intent)
@@ -5089,6 +5111,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return (FirstEntryOutcome::RefusedUnavailable, None, None);
             }
         }
+        // EQUIP-0 §4 / SPELL-LOCK-2: acquire the lane before final authority revalidation.
+        let Some(permit) = self.spell_lane_permit().await else {
+            return (FirstEntryOutcome::RefusedUnavailable, None, None);
+        };
         // Character facts, monk and stance loads are data reads, never current session authority.
         // Reject a changed root and resolve session, guard and assignment again after them.
         let Ok(latest_character) = self
@@ -5143,6 +5169,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             Err(_) => return (FirstEntryOutcome::RefusedStaleAuthority, None, None),
         }
+        // Hold the lane through installation; the equipment reader runs before runtime locks.
+        let Ok(equipment_effects) = self.read_admission_effects(game_session_id).await else {
+            return (FirstEntryOutcome::RefusedUnavailable, None, None);
+        };
         // One Channel-owner lock covers the binding comparison and the write.
         let mut runtime = self.runtime.lock().await;
         let expected = FirstEntryExpectation {
@@ -5205,6 +5235,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return (FirstEntryOutcome::RefusedByChannel, None, None);
         }
         if facts.is_some()
+            && self
+                .install_admission_suppressions(&runtime, actor, game_session_id, equipment_effects)
+                .await
+                .is_none()
+        {
+            return (FirstEntryOutcome::RefusedByChannel, None, None);
+        }
+        if facts.is_some()
             && !self.spell_states.lock().await.load_owned_stance(
                 &runtime,
                 actor,
@@ -5240,6 +5278,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         drop(runtime);
+        drop(permit);
         #[cfg(test)]
         stage("runtime_facts_initialized");
         if self

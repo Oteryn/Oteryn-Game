@@ -154,29 +154,6 @@ impl OwnedCastFacts {
             .filter(|p| p.current(&self.binding, now))
             .map(|p| p.value)
     }
-    pub fn equipment_speed_bonus(
-        &self,
-        content: &NativeGameplayState,
-    ) -> Result<i32, OwnedFactsError> {
-        if content.source_digest() != self.binding.content_digest {
-            return Err(OwnedFactsError::StaleBinding);
-        }
-        self.equipment.items.iter().try_fold(0_i32, |sum, item| {
-            let policy = content
-                .item_policy(
-                    &item.definition.production_key,
-                    &item.definition.revision_ref,
-                )
-                .ok_or(OwnedFactsError::UnknownItemPolicy)?;
-            let value = policy
-                .record()
-                .attributes
-                .speed_bonus
-                .ok_or(OwnedFactsError::UnavailableEquipment)?;
-            sum.checked_add(value)
-                .ok_or(OwnedFactsError::UnavailableEquipment)
-        })
-    }
     pub fn has_current_wheel(&self, now: u64) -> bool {
         self.access
             .wheel

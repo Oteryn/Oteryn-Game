@@ -67,6 +67,7 @@ pub use runtime_actor_conditions::{
     RationalSpeedRange, SpeedRange, StatusKind, TickFacts, TickKind,
 };
 use runtime_actor_conditions::{CreatureCommitState, PlayerRuntimeState};
+mod creature_relocation;
 #[path = "carrier/encounter_access.rs"]
 pub mod encounter_access;
 #[path = "carrier/npc_actor.rs"]

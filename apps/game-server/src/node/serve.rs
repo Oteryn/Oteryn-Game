@@ -8,6 +8,7 @@
 //! signal or the end of any loop. Events are single stderr lines without
 //! secrets (D6).
 
+use super::cancellation::first;
 use super::config::NodeConfig;
 use super::descriptor_facts::{MAX_PEM_BYTES, certificates, descriptor_facts};
 use super::operator_files::{
@@ -1201,19 +1202,6 @@ async fn character_commands_loop(
         event,
     );
     first(consumer.run(), stop.cancelled()).await;
-}
-
-/// Output of `primary`, or `None` once `stop` completes first.
-async fn first<T>(primary: impl Future<Output = T>, stop: impl Future<Output = ()>) -> Option<T> {
-    let mut primary = pin!(primary);
-    let mut stop = pin!(stop);
-    poll_fn(|context| {
-        if let Poll::Ready(value) = primary.as_mut().poll(context) {
-            return Poll::Ready(Some(value));
-        }
-        stop.as_mut().poll(context).map(|()| None)
-    })
-    .await
 }
 
 async fn backoff(attempt: &mut u32) {
@@ -2753,7 +2741,10 @@ async fn boot_and_serve(
     // projections run beside it, disabled unless configured and enabled.
     let mut projection = pin!(both(
         both(
-            highscores_loop(root, material.world, &achievements, &loops_stop),
+            both(
+                highscores_loop(root, material.world, &achievements, &loops_stop),
+                super::guild_scheduler::run(root, &authority, &proof, material.world, &loops_stop)
+            ),
             account_characters_loop(
                 root,
                 &authority,

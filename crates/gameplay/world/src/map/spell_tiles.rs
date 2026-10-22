@@ -277,6 +277,8 @@ pub mod tests {
     use crate::map::boot::{BootPins, BundleWorld, boot};
     use std::num::NonZeroU32;
 
+    pub mod movement_arena;
+
     /// The rope spot ground items (`tools/content-schema/world-authoring/README.md`, *Floor
     /// changes*). Their ground id is carried as `ground_source_id`; they are not `floor_change`.
     const ROPE_SPOTS: [u32; 2] = [386, 21965];
@@ -301,7 +303,7 @@ pub mod tests {
     ];
 
     /// One row at legacy `z` 7 (native -7); see [`KEYS`] for the palette.
-    fn bundle() -> (Vec<u8>, BundlePins) {
+    fn bundle(custom: Option<Vec<oteryn_world_bundle::writer::Sector>>) -> (Vec<u8>, BundlePins) {
         use oteryn_world_bundle::sector::{Attrs, Item, Tile};
         use oteryn_world_bundle::writer::{
             self as bundle, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector,
@@ -340,8 +342,8 @@ pub mod tests {
             world: Extent {
                 min_x: 0,
                 min_y: 0,
-                max_x: 32,
-                max_y: 32,
+                max_x: if custom.is_some() { 128 } else { 32 },
+                max_y: if custom.is_some() { 128 } else { 32 },
                 floors: vec![-7],
             },
             palette: KEYS
@@ -396,8 +398,12 @@ pub mod tests {
                 tile(13, 0, 0, &[0]),
             ],
         };
-        let bytes =
-            bundle::write(&manifest, &[sector], &Default::default()).expect("written bundle");
+        let bytes = bundle::write(
+            &manifest,
+            &custom.unwrap_or_else(|| vec![sector]),
+            &Default::default(),
+        )
+        .expect("written bundle");
         let digest = bundle::read(&bytes).expect("read bundle").digest;
         let pins = BundlePins {
             digest,
@@ -440,7 +446,10 @@ pub mod tests {
 
     /// The synthetic bundle World of these tests, started at x 1; x 2 is a protection zone.
     pub fn world() -> BundleWorld {
-        let (bytes, bundle) = bundle();
+        world_from_bundle(bundle(None))
+    }
+
+    fn world_from_bundle((bytes, bundle): (Vec<u8>, BundlePins)) -> BundleWorld {
         let mut revision = String::from("sha256:");
         for byte in bundle.digest {
             revision.push_str(&format!("{byte:02x}"));

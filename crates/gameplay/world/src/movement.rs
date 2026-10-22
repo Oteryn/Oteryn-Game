@@ -27,7 +27,9 @@ use {
 };
 pub mod interest;
 pub mod pacing;
+pub mod path_budget;
 pub mod path_search;
+pub mod relocate;
 pub mod source_floor_change;
 pub mod speed;
 
@@ -405,6 +407,7 @@ impl MovementOwnerTurn<'_> {
 #[cfg(test)]
 mod tests {
     #![allow(clippy::items_after_test_module)]
+    mod relocate_tests;
     use super::*;
     use crate::content::static_cell_engine::{
         EngineeringCollisionClaim, EngineeringStaticCellClaim,

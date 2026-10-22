@@ -66,7 +66,7 @@ pub mod item_transfer;
 pub mod item_transfer_audit;
 pub mod item_use;
 pub mod item_use_audit;
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 pub mod item_weight_lookup;
 pub mod mail;
 pub mod map_item_mint;
@@ -3455,3 +3455,6 @@ mod terminal_replacement_foundation_red_tests {
 }
 
 pub mod house_spell_acl;
+
+pub mod guild;
+pub mod guild_audit;
