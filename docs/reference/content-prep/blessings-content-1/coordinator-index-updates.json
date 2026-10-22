@@ -1,0 +1,54 @@
+{
+  "schema": "OTERYN_PENDING_INDEX_METADATA/v1",
+  "task": "BLESSINGS-CONTENT-1",
+  "runtime_switch_authorized": false,
+  "updates": [
+    {
+      "target_path": "rulesets/character/blessings/index.json",
+      "held_by_prs": [
+        2194
+      ],
+      "replacement": {
+        "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
+        "path": "rulesets/character/blessings/",
+        "kind": "ruleset",
+        "owner": "Character/Death",
+        "repository": "Oteryn/Oteryn-Game",
+        "population_state": "POPULATED",
+        "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
+        "notes": "Blessing definitions/effects; current ownership durable.",
+        "runtime_admission": "BLOCKED",
+        "runtime_switch_authorized": false,
+        "evidence_completeness": "COMPLETE_OTERYN_WORKING_PARAMETERS_GLOBAL_SOURCE_ARCHIVED",
+        "source_snapshot_target": "current-at-fetch-2026-10-18",
+        "payloads": [
+          {
+            "path": "rulesets/character/blessings/reference-evidence.json",
+            "sha256": "614a9e7bb219f3d2bb77b14322e39cbf7cc82b97d55f87202a99d8cbe2264b91"
+          }
+        ]
+      },
+      "reason": "Do not edit overlapping open PR files; coordinator applies metadata only with native qualification."
+    },
+    {
+      "target_path": "content/services/blessings/index.json",
+      "held_by_prs": [
+        2194
+      ],
+      "replacement": {
+        "schema": "OTERYN_FAMILY_INDEX/v1",
+        "family": "Service.BlessingEvidence",
+        "record_count": 10,
+        "shard_size": 500,
+        "shards": [
+          "content/services/blessings/evidence-00000-00009.json"
+        ],
+        "population_state": "POPULATED",
+        "runtime_admission": "BLOCKED",
+        "runtime_switch_authorized": false,
+        "evidence_completeness": "COMPLETE_OTERYN_WORKING_PARAMETERS_GLOBAL_SOURCE_ARCHIVED"
+      },
+      "reason": "Do not edit overlapping open PR files; coordinator applies metadata only with native qualification."
+    }
+  ]
+}
