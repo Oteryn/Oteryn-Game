@@ -1,16 +1,17 @@
-# CRAFT-CONTENT-1 — run 1e validation after rebase
+# CRAFT-CONTENT-1 — author craft recipes and lower them into the World Project
 
 ```yaml
 task_id: CRAFT-CONTENT-1
 mode: IMPLEMENT
-status: waiting
+title: "CRAFT-CONTENT-1: author craft recipes and lower them into the World Project"
+status: ready
 repository: Oteryn/Oteryn-Game
-base_sha: a9b388fae
-continuation_sha: 0073ee2dd
-branch: detached HEAD in allocated lane-craft worktree
+base_branch: main
+branch: claude/happy-davinci-ijz3wy
+pr: null
+base_sha: 9f814e72a3a32ad2a6ed67787c2d67a2d39d4af3
+parent_task: CRAFT-1
 updated_at: 2026-10-22
-frozen_sha: null
-implementation_pr: null
 needs_migration: false
 needs_registry: false
 needs_content_regeneration: false
@@ -88,9 +89,16 @@ No new externally public function or trait method. Compiler entry points have
 production callers and real compiler/parser integration coverage; workspace
 consumers use existing variants or explicit fallbacks. No missing caller updates.
 
-CI: `content-tree-migration.yml` / `validate` runs the registered craft check;
-`merge-group-gate.yml` / `rust_linux` / `integration-rest` discovers the craft
-target via plan_rust_test_shards.py. No workflow/test registry changes.
+CI: `content-tree-migration.yml` / `validate` reaches the craft `content --check`
+through `validate_world_project_v2_to_tree.py`, but its path filter omits
+`tools/content-schema/craft-authoring/**` and it runs no craft unit tests. The
+dedicated `craft-authoring.yml` (same shape as `reward-claim-authoring.yml`) runs
+`content --check` and the craft `unittest` suite on any craft source, helper or
+registration change. `merge-group-gate.yml` / `rust_linux` / `integration-rest`
+discovers the craft Rust target via plan_rust_test_shards.py.
+
+The Python tests use `unittest`, like every other authoring tool in CI; the six
+weighted-ceiling sizes are `subTest` cases of one test, so no case was dropped.
 
 ## Exact validation results
 
@@ -100,10 +108,10 @@ target via plan_rust_test_shards.py. No workflow/test registry changes.
 | cargo +1.95.0 test --locked -p oteryn-game-server --test content_world_project_v2 --quiet | PASS: 19 passed, none ignored/filtered. |
 | cargo +1.95.0 test --locked -p oteryn-game-server --test content_world_project_v2_craft --quiet | PASS: 7 passed, none ignored/filtered. |
 | cargo +1.95.0 test --locked -p oteryn-game-server --test content_world_project_repository --quiet | PASS: 5 passed, none ignored/filtered. |
-| python3 -m pytest -q tools/content-schema/craft-authoring | PASS: 15 passed. |
+| python3 -m unittest discover -s tools/content-schema/craft-authoring -p 'test_*.py' -v | PASS: 10 tests (6 ceiling subTests). |
 | python3 tools/content-schema/craft-authoring/craft_authoring.py content --check | PASS: 125 rows, deterministic bytes/registration. |
-| python3 tools/content-migration/regenerate_content.py | Regeneration completed byte-identically after rebase; Item preflight fails because its helper creates temporary directories in read-only root.parent (exit 1). |
-| python3 tools/content-migration/regenerate_content.py --check | FAIL at Item preflight: read-only root.parent (exit 1); preceding registered checks pass. |
+| python3 tools/content-migration/regenerate_content.py | PASS: byte-identical regeneration, no file changed. |
+| python3 tools/content-migration/regenerate_content.py --check | PASS: all registered checks. |
 | python3 tools/content-schema/item-authoring/item_weapon_proficiency.py --check | PASS: sample up to date. |
 | python3 tools/content-census/g4_item_crystal_binding_generator.py --check | PASS: 33971 bindings, 9456726 bytes. |
 | cargo +1.95.0 fmt --all --check | PASS. |
@@ -120,7 +128,6 @@ unittest groups **8+5+28+13+11+6 = 71**, plus 27 RewardClaim function cases,
 4 StarterKit cases and the script assertions. Managed files: **231**; materialized
 tree: **97/97**, 10 world markers, 1255 successor files. Item-key census: 230 files,
 5 history files, 286919 references. All six registered authoring checks passed.
-Item preflight body did not execute: its historical-context setup failed first.
 The unchanged vendored Tokio warning does not fail clippy. PG is not applicable.
 Run 1e whole-diff review against the owner's CODEX-CHECKLIST found no craft code
 defect. All 19 original v2 tests retain their names/order; the five shared helper
@@ -130,20 +137,16 @@ ItemConversion registration), 47 public fields and the parent enum consumers.
 
 ## File sizes and handback
 
-Every Python command uses `export PYTHONPATH=/home/mole/oteryn-cache/pylib`;
-the provisioned rfc3339-validator 0.1.4 is verified available. No dependency was
-installed/downloaded, requirements changed, or preflight/test bypassed.
+Python commands ran with the pinned `item-authoring/requirements.txt` set
+(jsonschema 4.26.0, rfc3339-validator 0.1.4). No dependency or requirements
+change and no preflight or test bypass.
 
-The remaining environment failure is at
-`tools/content-schema/item-authoring/check_tibiawiki165_historical_context.py:77`:
-`historical_context()` explicitly sets `TemporaryDirectory(..., dir=root.parent)`.
-The parent is read-only, and TMPDIR cannot override an explicit dir argument.
-Pending integrator question: extend the lease to this exact file for the single
-change `dir=root.parent` → `dir=root`, or retain scope and report this blocker.
-The helper is currently outside the packet's owned paths and remains unchanged.
+The earlier `regenerate_content.py` Item preflight failure was sandbox-only:
+`check_tibiawiki165_historical_context.py` creates its temporary directory in
+`root.parent`, which the lane sandbox mounts read-only. Both regenerate commands
+pass outside the sandbox, so that helper stays unchanged and out of scope.
 
-Full-task line counts: **rebased baseline a9b388fae → final**. This continuation
-only edits this card (206→190); regeneration left all other bytes unchanged.
+Full-task line counts: **base 9f814e72a → final**.
 
 | File | Before → after |
 | --- | ---: |
@@ -163,7 +166,8 @@ only edits this card (206→190); regeneration left all other bytes unchanged.
 | `crates/gameplay/content/src/content/project/v2/item_conversion.rs` | 0 → 636 |
 | `crates/gameplay/content/src/content/project/v2/item_conversion/digging.rs` | 0 → 40 |
 | `crates/gameplay/content/src/content/project/v2/item_conversion_tests.rs` | 0 → 34 |
-| `docs/agents/tasks/CRAFT-CONTENT-1.md` | 0 → 190 |
+| `.github/workflows/craft-authoring.yml` | 0 → 56 |
+| `docs/agents/tasks/CRAFT-CONTENT-1.md` | 0 → 191 |
 | `tools/content-migration/regenerate_content.py` | 373 → 382 |
 | `tools/content-migration/test_world_project_v2_to_tree.py` | 275 → 275 |
 | `tools/content-migration/validate_world_project_v2_to_tree.py` | 847 → 851 |
@@ -171,8 +175,8 @@ only edits this card (206→190); regeneration left all other bytes unchanged.
 | `tools/content-schema/craft-authoring/craft_authoring.py` | 0 → 229 |
 | `tools/content-schema/craft-authoring/digging.py` | 0 → 41 |
 | `tools/content-schema/craft-authoring/schema.json` | 0 → 451 |
-| `tools/content-schema/craft-authoring/test_craft_authoring.py` | 0 → 97 |
-| `tools/content-schema/craft-authoring/test_digging.py` | 0 → 40 |
+| `tools/content-schema/craft-authoring/test_craft_authoring.py` | 0 → 100 |
+| `tools/content-schema/craft-authoring/test_digging.py` | 0 → 47 |
 
 Full-family files with more than 200 added lines (relative to a9b388fae):
 
@@ -185,6 +189,3 @@ Full-family files with more than 200 added lines (relative to a9b388fae):
 - schema.json: new 451 lines; closed authored-data schema in its authoring layer.
 - content/craft/sources.json: new 573 lines; extracted source/provenance facts,
   not logic. Generated recipe/index/map-fact files use canonical single-line JSON.
-
-Next: resolve the one-file lease question, then rerun both registered pipeline
-commands. Independent checks are complete; all changes remain uncommitted.
