@@ -89,6 +89,10 @@
     "StarterKit": {
       "index": "content/starter/index.json",
       "records": 1
+    },
+    "item_conversion": {
+      "index": "content/craft/index.json",
+      "records": 125
     }
   },
   "managed_files": [
@@ -274,6 +278,18 @@
     },
     {
       "path": "content/cosmetics/mounts/mounts-00000-00251.json"
+    },
+    {
+      "path": "content/craft/index.json"
+    },
+    {
+      "path": "content/craft/map-facts.json"
+    },
+    {
+      "path": "content/craft/recipes.json"
+    },
+    {
+      "path": "content/craft/sources.json"
     },
     {
       "path": "content/creatures/definitions/creature-races.json"

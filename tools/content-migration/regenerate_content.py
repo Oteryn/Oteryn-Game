@@ -55,6 +55,7 @@ HAND_MAINTAINED_PREFIXES = ("imports/",)
 HAND_MAINTAINED = ("content/interactions/index.json",)
 
 AUTHORING_TOOLS = (
+    "tools/content-schema/craft-authoring/craft_authoring.py",
     "tools/content-schema/imbuement-authoring/imbuement_content.py",
     "tools/content-schema/charm-authoring/charm_authoring.py",
     "tools/content-schema/proficiency-authoring/proficiency_authoring.py",
@@ -343,7 +344,15 @@ def main() -> int:
         help="after a stopped git merge: resolve derived conflicts, regenerate and stage",
     )
     parser.add_argument("--skip-checks", action="store_true", help="regenerate only")
+    parser.add_argument("--check", action="store_true", help="run the registered content checks without writing")
     args = parser.parse_args()
+    if args.check:
+        if args.resolve or args.skip_checks:
+            parser.error("--check cannot be combined with mutation options")
+        for command in CHECKS:
+            if command[0] != "python3" or (ROOT / command[1]).is_file():
+                run(command)
+        return 0
     conflicted = resolve_conflicts() if args.resolve else []
     materialize_world()
     repin_rust_inventory()

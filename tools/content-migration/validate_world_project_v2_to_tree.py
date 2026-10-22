@@ -676,6 +676,7 @@ def main() -> int:
                                        "Encounter": ENCOUNTER_COUNT, "Dialogue": DIALOGUE_COUNT, "Document": DOCUMENT_COUNT, **SERVICE_FAMILY_COUNTS,
                                        "Charm": CHARM_COUNT, "Proficiency": PROFICIENCY_COUNT,
                                        "RewardClaim": REWARD_CLAIM_COUNT, "StarterKit": STARTER_KIT_COUNT,
+                                       "item_conversion": load(ROOT / "content/craft/index.json")["record_count"],
                                        **{family: value["records"] for family, value in quest_families.items()}},
             "LOCK_COUNTS")
     require(lock["source_binding_counts"]["NPC"] == NPC_BINDING_COUNT, "LOCK_NPC_BINDING_COUNT")
@@ -840,6 +841,9 @@ def main() -> int:
     )
     subprocess.run([sys.executable,
                     str(ROOT / "tools/content-schema/imbuement-authoring/imbuement_content.py"),
+                    "content", "--check"], cwd=ROOT, check=True)
+    subprocess.run([sys.executable,
+                    str(ROOT / "tools/content-schema/craft-authoring/craft_authoring.py"),
                     "content", "--check"], cwd=ROOT, check=True)
     return 0
 
