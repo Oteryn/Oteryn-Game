@@ -2183,6 +2183,7 @@ dependencies = [
  "oteryn-gameplay-native-admission-source",
  "oteryn-gameplay-progression",
  "oteryn-gameplay-quests",
+ "oteryn-gameplay-social-rules",
  "oteryn-protocol-oteryn",
  "oteryn-simulation-determinism",
  "oteryn-world-bundle",
@@ -2390,6 +2391,7 @@ dependencies = [
 name = "oteryn-gameplay-social-rules"
 version = "0.1.0"
 dependencies = [
+ "oteryn-gameplay-domain",
  "oteryn-simulation-determinism",
  "serde",
  "serde_json",
