@@ -69,7 +69,10 @@ const INVENTORY: &[Entry] = &[
         accessor: "gate_native_combat_cast",
         key: "",
         state: COMBAT_ENABLE,
-        calls: &[("gameplay_transport/native_combat_cast.rs", 2)],
+        calls: &[
+            ("gameplay_transport/native_combat_cast.rs", 2),
+            ("gameplay_transport/rune_use_bridge/revision.rs", 1),
+        ],
     },
     Entry {
         gate: "ordinary combat timer continuation",
@@ -639,6 +642,7 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     ("gameplay_transport/mod.rs", 3),
     ("gameplay_transport/monk_save_postgres_tests.rs", 1),
     ("gameplay_transport/parameter_cast.rs", 3),
+    ("gameplay_transport/rune_use_bridge_postgres_tests.rs", 2),
     ("qualification.rs", 1),
     ("node/serve.rs", 1),
 ];

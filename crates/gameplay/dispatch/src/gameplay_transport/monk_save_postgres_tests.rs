@@ -15,6 +15,9 @@ mod logout_e2e;
 #[path = "map_bundle_domain_postgres_tests.rs"]
 mod map_bundle_domain;
 
+#[path = "rune_use_bridge_postgres_tests.rs"]
+mod rune_use_bridge;
+
 #[path = "item_look_postgres_tests.rs"]
 mod item_look;
 
@@ -125,6 +128,19 @@ struct Dependencies {
 }
 impl Dependencies {
     fn new() -> TestResult<Self> {
+        let world = fence(1)?.runtime_scope.world_id();
+        Self::with_content(
+            ChannelContentPin::test(world),
+            crate::content::qualify_native_entry_room(world).map_err(debug)?,
+            crate::spell::cast::v1_spell_book().map_err(debug)?,
+        )
+    }
+
+    fn with_content(
+        pin: ChannelContentPin,
+        room: crate::content::QualifiedNativeEntryRoom,
+        spells: crate::spell::SpellBook,
+    ) -> TestResult<Self> {
         use rustls::pki_types::{CertificateDer, PrivateKeyDer};
         let expected = fence(1)?;
         let world = expected.runtime_scope.world_id();
@@ -139,12 +155,11 @@ impl Dependencies {
             1,
             "runtime-scope-assignment:1",
             2,
-            ChannelContentPin::test(world),
+            pin,
         )
         .map_err(debug)?;
         let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
         let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
-        let room = crate::content::qualify_native_entry_room(world).map_err(debug)?;
         let content = crate::world_runtime::ReferenceContentGeneration::from_content(room.door())
             .map_err(debug)?;
         let door_fence = crate::world_runtime::ScopeContentGenerationFence::for_test(
@@ -181,7 +196,7 @@ impl Dependencies {
             room,
             door: Mutex::new(door),
             evidence: FreshEvidenceSource::new(descriptor),
-            spells: crate::spell::cast::v1_spell_book().map_err(debug)?,
+            spells,
             achievements: crate::achievement_catalogue::AchievementCatalogue::embedded()
                 .map_err(debug)?,
             charms: crate::content::charm_source::CanonicalCharmCatalogue::embedded()
@@ -816,13 +831,34 @@ mod death_ml_loss_composed {
         ContentActivationController,
         crate::content::NativeEntryContentPin,
     )> {
+        production_generation_with_source(world, content, None)
+    }
+
+    pub(super) fn production_generation_with_source(
+        world: WorldId,
+        content: &str,
+        source: Option<&[u8]>,
+    ) -> TestResult<(
+        ContentActivationController,
+        crate::content::NativeEntryContentPin,
+    )> {
+        use sha2::Digest;
         let manifest = std::path::Path::new(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/../../../apps/game-server"
         ))
         .join("../../content/spells.manifest.json");
         let mut supplied = NativeGameplayInput::from_manifest(&manifest).map_err(debug)?;
-        supplied.source_world = None;
+        supplied.source_world =
+            source.map(
+                |bytes| crate::content::native_gameplay::PinnedGameplayBytes {
+                    bytes: bytes.to_vec(),
+                    sha256: sha2::Sha256::digest(bytes)
+                        .iter()
+                        .map(|b| format!("{b:02x}"))
+                        .collect(),
+                },
+            );
         supplied
             .build_training
             .as_mut()
@@ -849,7 +885,7 @@ mod death_ml_loss_composed {
         Ok((controller, pin))
     }
 
-    async fn current_fence(
+    pub(super) async fn current_fence(
         owner: &ComposedFreshAdmission<'_, '_, '_>,
         session: GameSessionId,
     ) -> TestResult<CurrentCharacterGameplayFence> {

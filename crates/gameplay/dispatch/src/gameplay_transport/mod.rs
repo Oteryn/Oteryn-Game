@@ -50,6 +50,7 @@ mod npc_travel;
 mod npc_voice;
 pub use npc_talk::NpcTalkBook;
 mod resume;
+mod rune_use_bridge;
 mod seam_rooms;
 pub use seam_rooms::SeamRooms;
 mod source_item_cycle;
@@ -3691,6 +3692,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.use_item_definition(actor, command, definition).await
     }
 
+    async fn use_rune(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        key: Option<item_view::ItemKey>,
+        visible: bool,
+    ) -> Option<UseOutcome> {
+        self.use_legacy_rune(actor, command, intent, key, visible)
+            .await
+    }
+
     /// One `USE_INTENT` for the admitted actor against the one entry-room door (#162
     /// 5868482467, USE-WIRE-V1). The client names only the target placement and its expected
     /// revision; the server selects the unique bound transition
@@ -4728,6 +4741,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             actor_spell::NativeCastDispatch::Outcome(outcome) => return Some(outcome),
             actor_spell::NativeCastDispatch::Pending => return None,
+            actor_spell::NativeCastDispatch::RuneRefused(_) => {
+                return Some(actor_spell::SpellCastOutcome::rejected());
+            }
             actor_spell::NativeCastDispatch::NotApplicable => (),
         }
         match self
@@ -4736,6 +4752,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             actor_spell::NativeCastDispatch::Outcome(outcome) => return Some(outcome),
             actor_spell::NativeCastDispatch::Pending => return None,
+            actor_spell::NativeCastDispatch::RuneRefused(_) => {
+                return Some(actor_spell::SpellCastOutcome::rejected());
+            }
             actor_spell::NativeCastDispatch::NotApplicable => (),
         }
         match self
@@ -4747,6 +4766,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Some(outcome)
             }
             actor_spell::NativeCastDispatch::Pending => None,
+            actor_spell::NativeCastDispatch::RuneRefused(_) => {
+                Some(actor_spell::SpellCastOutcome::rejected())
+            }
             actor_spell::NativeCastDispatch::NotApplicable => {
                 let outcome = self
                     .cast_spell(actor, game_session_id, command_id, intent)

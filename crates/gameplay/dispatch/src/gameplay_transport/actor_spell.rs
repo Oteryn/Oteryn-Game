@@ -50,9 +50,11 @@ mod parameter_cast;
 mod spell_timer_callbacks;
 #[path = "world_item_cast.rs"]
 mod world_item_cast;
-pub(in crate::gameplay_transport) use native_combat_cast::NativeCastDispatch;
 pub(in crate::gameplay_transport) use native_combat_cast::ordinary_combat::due_chain_presentations as prepare_ordinary_due_presentations;
 pub(in crate::gameplay_transport) use native_combat_cast::ordinary_combat::prepare_due as prepare_ordinary_due_from_owners;
+pub(in crate::gameplay_transport) use native_combat_cast::{
+    NativeCastDispatch, replay_with_rune, rune_item_cast::current_revision as current_rune_revision,
+};
 #[path = "spell_periodic.rs"]
 mod spell_periodic;
 #[path = "training_save.rs"]
@@ -1225,7 +1227,7 @@ pub mod tests {
 
     /// Test only: `gate` (a §3.5 key) for 10 s from time 0 in the player store.
     #[cfg(test)]
-    fn gate_player(
+    pub(in crate::gameplay_transport) fn gate_player(
         states: &mut ChannelSpellStates,
         actor: ExactActorRef,
         session: GameSessionId,

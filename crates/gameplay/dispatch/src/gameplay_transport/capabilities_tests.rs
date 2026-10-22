@@ -606,7 +606,11 @@ fn resume(supported: &[u32]) -> Vec<u8> {
     envelope(3, 0, &payload)
 }
 
-fn command(id: u64, command_type: u32, payload: &[u8]) -> Vec<u8> {
+pub(in crate::gameplay_transport) fn command(
+    id: u64,
+    command_type: u32,
+    payload: &[u8],
+) -> Vec<u8> {
     let mut body = Vec::new();
     scalar(&mut body, 1, id);
     scalar(&mut body, 2, u64::from(command_type));
@@ -1353,10 +1357,14 @@ fn item_use_wire_fields_4_and_5_are_rejected_without_capability_15() -> Result<(
 }
 
 // RUNE-WIRE-1 (RUNE-USE-0 §4): capability 22 RUNE_USE_V1 is registered, not offered before
-// RUNE-CAST-1, and requires 15; the USE position arm is REJECTED with or without it.
+// RUNE-CAST-1, and requires 15; an unqualified USE position source is REJECTED.
 
-/// An injected offered set: 4, 15 requiring 4 and 22 requiring 15.
-const RUNE_USE_OFFERED: &[OfferedCapability] = &[
+/// An injected offered set: 4, 6, 15 requiring 4 and 22 requiring 15.
+pub(in crate::gameplay_transport) const RUNE_USE_OFFERED: &[OfferedCapability] = &[
+    OfferedCapability {
+        id: CAPABILITY_WORLD_SPATIAL_ENTITIES,
+        requires: &[],
+    },
     OfferedCapability {
         id: CAPABILITY_ITEM_VIEW_MOVE_V1,
         requires: &[],
@@ -1372,7 +1380,7 @@ const RUNE_USE_OFFERED: &[OfferedCapability] = &[
 ];
 
 #[test]
-fn rune_wire_capability_21_is_registered_not_offered_and_requires_15() -> Result<(), Box<dyn Error>>
+fn rune_wire_capability_22_is_registered_not_offered_and_requires_15() -> Result<(), Box<dyn Error>>
 {
     use oteryn_protocol_oteryn::world_object::CAPABILITY_RUNE_USE_V1;
     let entry = registry_capabilities()?
@@ -1405,7 +1413,7 @@ fn rune_wire_capability_21_is_registered_not_offered_and_requires_15() -> Result
 }
 
 #[test]
-fn rune_wire_the_position_arm_is_rejected_with_or_without_capability_21()
+fn rune_wire_the_position_arm_is_rejected_for_missing_source_with_or_without_capability_22()
 -> Result<(), Box<dyn Error>> {
     use crate::foundation::CommandStatus;
     use oteryn_protocol_oteryn::actor_spell::SpellTargetPosition;
@@ -1431,7 +1439,7 @@ fn rune_wire_the_position_arm_is_rejected_with_or_without_capability_21()
         .map_err(|error| format!("{error:?}"))?;
         let frames = [command(1, COMMAND_TYPE_USE_INTENT, &at_position)];
         let rejected = encode_use_result(UseDisposition::Rejected).unwrap_or_default();
-        // Without 22 the arm is undecodable; under 22 it fails closed until RUNE-CAST-1.
+        // Without 22 the arm is undecodable; under 22 the authority refuses a missing source.
         for selected in [
             &[][..],
             &[CAPABILITY_ITEM_VIEW_MOVE_V1],
