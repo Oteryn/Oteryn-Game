@@ -4,7 +4,7 @@
 task_id: GUILD-1
 title: "GUILD-1: guild core tables and transactions"
 mode: IMPLEMENT
-status: NOT_FULLY_QUALIFIED
+status: in_progress
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 4
@@ -82,11 +82,11 @@ To compile on the branch the builder may add only the module registration lines 
 
 ## Acceptance criteria
 
-- [ ] Every transaction of GUILD0 §4 has a durable test incl. concurrent invite/join and leader resign.
-- [ ] Disband leaves no orphan rank/member rows; formation job is restart-safe.
-- [ ] Premium gate via `premium_current(account)`.
-- [ ] Every concurrent transition serialized (named lock or deterministic order) and losing writer typed.
-- [ ] Durable state sufficient to resume after restart / session-generation change.
+- [x] Every transaction of GUILD0 §4 has a durable test incl. concurrent invite/join and leader resign.
+- [x] Disband leaves no orphan rank/member rows; formation job is restart-safe.
+- [x] Premium gate via `premium_current(account)`.
+- [x] Every concurrent transition serialized (named lock or deterministic order) and losing writer typed.
+- [x] Durable state sufficient to resume after restart / session-generation change.
 
 ## Validation commands
 
@@ -1170,3 +1170,206 @@ Structure rules (binding acceptance criteria):
 ### Blockers and dependencies (re-verified on origin/main `59785d76`)
 - BLOCKING — re-implementation pending (drafts closing): HOUSE-1b #2141 (guild fence ABI), BED-1 #2147 (revision hook), HOUSE-1a #2137, GUILD-BANK-1 #2139, GUILDHALL-1 #2153 (proposed owner of the activation slot), GUILD-WIRE-1 #2159. Cards: `docs/agents/tasks/<ID>.md`.
 - GUILD-CHAT-1 #2142: open draft, not merged.
+
+## Re-land prerequisite audit, 2026-10-22
+
+Local admission baseline is `9f814e72a3a32ad2a6ed67787c2d67a2d39d4af3`;
+the worktree was clean. Bound META 3.1.0 was read at
+`1bfb5ff98c8aa156e73669a14e083a1d464c29fb`. This packet authorizes local
+AUTHORING only, migration **0137**, and prerequisite implementation in this
+lane. No publication, credentials, external writes or optional skills are used.
+
+### Module layout planned before implementation
+
+- `domain/src/domain/guild.rs`: shared `GuildId`, rank and lifecycle values needed
+  by the waiting Bank, Chat, Wire, Hall and ACL owners.
+- `social-rules/src/guild.rs` and `guild/*_tests.rs`: recovered pure eligibility,
+  limits and strict deadline predicates; reuse `CharacterName` and its key.
+- `durability/src/durability/guild.rs`: facade/registrations for mechanic children
+  `guild/{found,membership,text,rank,resign,edit_ranks,disband,deadlines}.rs`.
+  Recover the existing transaction implementations and guards from
+  `d25623a36^`, preserving current recovery/session/Node checks and receipt replay.
+  Keep audit encoding in `guild_audit.rs`, with mechanic children as needed.
+- `social/src/guild.rs` and `guild/{deadlines,disband}.rs`: runtime orchestration;
+  replace the old node job path and update all callers, rather than duplicate it.
+- `dispatch/src/gameplay_transport/guild.rs` and `guild/*_tests.rs`: session
+  composition and real-dispatch tests. Shared files receive wiring only.
+- Migration `0137_guild_core.sql`: installed tables/guards and bounded role grants.
+  Mount recovered cases exactly once through the canonical PostgreSQL target;
+  split mechanic tests out of the old large owner without copying its fixtures.
+
+### Proven prerequisite gaps and owner decision
+
+`git show d25623a36^` recovers the 4,100-line durable owner, 360-line audit
+encoder and 307-line domain source. The current durable module list registers
+none of them. The recovered terminal controller imports absent `guild_bank`,
+`guildhall` and `house_ownership` ports; restoring only Guild cannot compile or
+prove terminal closure. These gaps fall under the integrator's option B, not
+an automatic stop for missing prerequisites.
+
+The retained owner and terminal test files contain 97 tests; the recovered
+domain contains the other seven of the historical 104. The 306-line
+`guild_postgres.rs` is disabled by `cfg(any())` and mounts the old crate graph.
+Its compilation cannot qualify those cases. Reuse candidates are the existing
+`item_transfer_postgres_cases` Harness, `bank_postgres_cases`, Premium coordinator
+and `house_test_fixture`; none has been copied, wrapped or changed in this audit.
+
+The unresolved step is protocol allocation/offer authority, not prerequisite
+coding: accepted GUILD0 §9 reserves the capability, two commands and domain on
+the coordination issue; GUILD-WIRE-1's accepted-decisions section assigns global
+numbers to CP, and its slot-only section says **"capability not offered until CP
+decides"**. This checkout has no Guild reservation. Registry maxima are capability
+30, command 30 and domain 22; 31 / (31,32) / 23 are only possible next-free
+candidates, not reservations against other lanes. The current packet requests
+real dispatch but supplies only a migration reservation. A batched question asks
+whether this lane may allocate next-free IDs and offer GUILD_V1, or CP will supply
+the reserved IDs and offer decision. No new capability is exposed pending that
+answer. The integrator prerequisite implementation remains pending; no new module
+or successful prerequisite implementation is claimed.
+
+### Validation and file-size record
+
+Only this task record changes. No enum, struct field, trait method, public
+function, fixture, migration or Rust registration is added. Cargo filters have
+not been run; the disabled Guild target is not counted as a pass. Implementation,
+all 104 recovered cases, new real-dispatch/PG suites, touched-crate Clippy and
+rustfmt remain unfinished. The card grows by fewer than 150 lines; no file grows
+by more than 200 lines. Whole-diff review uses the owner's
+`~/oteryn-cache/CODEX-CHECKLIST.md`: no code/test changes or applicable code hits.
+`python3 tools/agents/validate_governance.py` passed (22 documents, 9 lanes),
+`python3 -m unittest discover -s tools/agents/tests -q` passed all 124 tests,
+and `git diff --check` passed. These document checks do not qualify Guild.
+
+## Integrator decision 2026-10-22
+
+The allocating integrator holds CP authority and confirms this lane implements
+the **guild CORE**: migration 0137, all core command transactions, formation and
+vice World jobs, and the existing `guild_postgres` target. Protocol identifiers
+and offering GUILD_V1 remain exclusively GUILD-WIRE-1; none are allocated here.
+The scheduler is the production composition boundary for this core. Historical
+wire-dispatch and House/Bank participant requirements are follow-up scope, not
+authority to recreate their missing owners. The shared domain/durability surface
+remains available to Bank, Chat, Wire, Hall and ACL children.
+
+### Integrator decision 2026-10-22: prerequisite implemented in this lane
+
+The core implementation is locally qualified. Preserve the prerequisite audit above. The planned
+layout is shared values in `domain/guild.rs`, pure rules in `social-rules/guild.rs`,
+mechanic children under `durability/guild/` and `durability/guild_audit/`, and a
+World-job owner in `social/guild.rs`, wired from the node scheduler. Recover the
+existing transaction, audit and test bodies rather than copying helpers. The
+canonical PostgreSQL target will use the production crate graph and the existing
+item-transfer harness once. Any test-only visibility bridge stays in its own file.
+
+### Core implementation and reuse, 2026-10-22
+
+The prerequisite is implemented in the modules listed below. The node serve loop now calls the social Guild World scheduler; each pass uses the existing native Root/recovery/admission boundaries, bounded candidate pages and durable cleanup steps. The shared `GuildDisbandTransaction` and named SQL closure predicate are the participant seam. Core cleanup fails closed when an uncomposed Bank/Hall/House owner is installed; no financial/property participant is fabricated. GUILD_V1 remains unoffered, with no protocol IDs allocated. The explicit CP core-only decision governs the production boundary: command and membership APIs remain for the named children; their connection-dispatch E2E belongs to GUILD-WIRE-1.
+
+Reuse: recover the existing Guild transactions/audit bodies from `d25623a36^`; reuse `CharacterName`, native session/recovery/admission/World proofs, `premium_current` through the existing Premium coordinator/latch, `ChatText`, native Account guards and Bank junior predicate. Reuse the existing item-transfer PostgreSQL Harness by **moving** its fixture body to `item_transfer_postgres_harness.rs` and re-exporting it from its original owner; all 21 original test bodies/registrations remain unchanged, and Guild does not register them again. Move the existing node cancellation race helper rather than copying it; extract the original same-transaction event-failure injector into `event_failure.rs` and reuse it for command/cleanup rollback tests. Reuse the existing Premium producer through `guild_premium_test_source.rs`, mounted once. Test-only request/writer field visibility lives in `guild/{request,rank,resign,edit_ranks}_data.rs`; the shipping fields remain private. Existing fixture-only `committed`/`character_revision` methods gain crate visibility for their original case owner.
+
+Whole-diff checklist review re-read the owner checklist, audited 45 type/trait match/constructor/implementation references across `apps/`, `crates/`, `tools/`, and mechanically verified every retained core assertion after path/format changes. All 91 core tests and six terminal tests are registered once; the latter exercise core's uncomposed-owner boundary. Fixes cover shared replay reuse, the deferred terminal-state closure check, table-specific OLD-record checks in the disband trigger, and the native lock-observer fixture's full key/two-second production-deadline budget. No production deadline, guard, test assertion or capability gate is relaxed. Historical Guild snapshots rebuild the exact migration sections in their isolated databases before installing guards, as before; the added installed-migration command/scheduler path never uses that setup.
+
+### Complete changed-file inventory (directory / filenames)
+
+- `./`: `Cargo.lock`, `workspace-boundaries.toml`.
+- `apps/game-server/migrations/`: `0137_guild_core.sql`.
+- `apps/game-server/src/lifted_tests/`: `durability_guild_disband_terminal_tests.rs`, `durability_guild_tests.rs`.
+- `apps/game-server/src/lifted_tests/durability_guild_disband_terminal_tests/`: `disband_terminal_tests.rs`, `terminal_support.rs`.
+- `apps/game-server/src/lifted_tests/durability_guild_tests/`: `chat_tests.rs`, `deadline_tests.rs`, `decline_tests.rs`, `disband_tests.rs`, `edit_ranks_tests.rs`, `event_failure.rs`, `found_tests.rs`, `membership_tests.rs`, `rank_tests.rs`, `resign_tests.rs`, `support.rs`, `terminal_core_tests.rs`, `text_tests.rs`, `world_job_tests.rs`.
+- `apps/game-server/src/node/`: `cancellation.rs`, `guild_jobs.rs`, `guild_scheduler.rs`, `mod.rs`, `serve.rs`.
+- `apps/game-server/tests/`: `guild_postgres.rs`.
+- `apps/game-server/tests/support/`: `guild_premium_test_source.rs`, `item_transfer_postgres_cases.rs`, `item_transfer_postgres_harness.rs`.
+- `crates/gameplay/domain/src/domain/`: `guild.rs`, `mod.rs`.
+- `crates/gameplay/durability/`: `Cargo.toml`.
+- `crates/gameplay/durability/src/durability/`: `core_modules.rs`, `guild.rs`, `guild_audit.rs`.
+- `crates/gameplay/durability/src/durability/guild/`: `chat_membership.rs`, `deadlines.rs`, `disband.rs`, `disband_mutation.rs`, `disband_transaction.rs`, `edit_ranks.rs`, `edit_ranks_data.rs`, `edit_ranks_mutation.rs`, `found.rs`, `journal.rs`, `membership.rs`, `membership_mutation.rs`, `operation.rs`, `rank.rs`, `rank_data.rs`, `rank_mutation.rs`, `receipt.rs`, `request.rs`, `request_data.rs`, `resign.rs`, `resign_data.rs`, `resign_mutation.rs`, `text.rs`, `text_mutation.rs`.
+- `crates/gameplay/durability/src/durability/guild_audit/`: `deadlines.rs`, `decline.rs`, `disband.rs`, `edit_ranks.rs`, `membership.rs`, `rank.rs`, `resign.rs`, `text.rs`.
+- `crates/gameplay/social-rules/`: `Cargo.toml`.
+- `crates/gameplay/social-rules/src/`: `guild.rs`, `lib.rs`.
+- `crates/gameplay/social-rules/src/guild/`: `rules_tests.rs`.
+- `crates/gameplay/social/src/`: `guild.rs`, `lib.rs`.
+- `crates/gameplay/social/src/guild/`: `deadlines.rs`, `disband.rs`.
+- `docs/agents/tasks/`: `GUILD-1.md`.
+
+### Files growing by more than 200 lines
+
+- `apps/game-server/migrations/`: `0137_guild_core.sql (+680)`.
+- `apps/game-server/src/lifted_tests/durability_guild_disband_terminal_tests/`: `disband_terminal_tests.rs (+260)`.
+- `apps/game-server/src/lifted_tests/durability_guild_tests/`: `chat_tests.rs (+253)`, `deadline_tests.rs (+331)`, `decline_tests.rs (+471)`, `disband_tests.rs (+273)`, `edit_ranks_tests.rs (+769)`, `found_tests.rs (+425)`, `membership_tests.rs (+615)`, `rank_tests.rs (+963)`, `resign_tests.rs (+955)`, `support.rs (+771)`, `text_tests.rs (+632)`, `world_job_tests.rs (+202)`.
+- `apps/game-server/tests/support/`: `item_transfer_postgres_harness.rs (+758)`.
+- `crates/gameplay/durability/src/durability/guild/`: `found.rs (+287)`, `membership_mutation.rs (+309)`, `operation.rs (+208)`, `rank_mutation.rs (+215)`, `request.rs (+225)`.
+
+All listed growth is in new files. Migration 0137 owns the inseparable durable schema/guards/grants; the five large durable mechanic files own transactional rules and immutable request binding at ADR-0022 L4. Large server test children retain the existing real-Root/Premium/PG cases at their composition owner. The large support files are moved fixtures, not copied harnesses; World-job tests exercise the actual installed migration and scheduler. Existing production shared slots receive registrations/composition only, with the cancellation body extracted rather than extended.
+
+### Final local validation
+
+Final `guild_postgres` batch: **102/102 passed**, zero ignored/filtered, PostgreSQL **17.6** (542.14s). All-target strict Clippy passed for `oteryn-gameplay-{domain,social-rules,durability,social}` and `oteryn-game-server`; `cargo +1.95.0 fmt --all -- --check` passed. Domain/social-rules unit suites passed **117 + 47**, plus **one** documentation test. Architecture boundary validation passed; governance passed (22 documents, 9 lanes); all **124** agent tests passed. The original item-transfer harness regression passed **1/1**; focused terminal/World/event-fixture repairs passed **3/3 + 2/2 + 1/1** before the complete clean batch.
+
+Exact coverage commands (queued wrapper supplies the database route):
+- `cargo +1.95.0 test --locked -p oteryn-game-server --test guild_postgres durability_guild_tests --quiet -- --test-threads=4`
+- `cargo +1.95.0 test --locked -p oteryn-gameplay-domain -p oteryn-gameplay-social-rules --quiet`
+- `cargo +1.95.0 test --locked -p oteryn-game-server --test item_transfer_postgres slot_then_entries_newest_first_replay_and_no_revision_advance --quiet -- --test-threads=1`
+
+Core implementation/qualification is complete locally; status stays `in_progress` for CP integration. No candidate is frozen/published, no review is triggered, and no commit/push is performed. Wire IDs/offer/connection dispatch, Premium daily observation and financial/property participant integration remain with their accepted follow-up allocations; this lane exposes no substitute capability or owner.
+
+
+### Continuation: final guards and bounded cleanup, 2026-10-22
+
+Continues WIP `7706e5e80c43c5b841ebf00af1d26c2571f260b9` on local branch
+`w4/guild-1r`, AUTHORING only. The earlier prerequisite audit and CP core-only
+integration decision remain applicable; status stays `in_progress` for CP integration.
+
+Layout selected before this continuation's edits: move durable cleanup from
+`guild/disband.rs` into the mechanic child `guild/disband_cleanup.rs`; retain
+shared values in domain and pure rules in social-rules. Keep SQL guards/indexes
+in provisional migration 0137. Mount `disband_cleanup_tests.rs` and
+`event_guard_tests.rs` once from the existing PostgreSQL owner. No new public
+function, enum variant, struct field or trait method is introduced.
+
+Cleanup now locks at most the next 100 members or invitations, removes matching
+vice leadership in the same member batch, and leaves only the leader and at most
+20 rank definitions for the final step. Guild serialization and the existing
+physical-transaction/recovery/World proof remain authoritative. SQL guards bind
+the exact batch accounts and require their deletion; the former exception for
+orphan leadership during DISBANDING is removed. Matching cleanup indexes support
+ordered guild scans. New deadline starts also reuse the existing World-assignment
+proof before mutation; checkpoint replay remains read-only.
+
+The event guard reconstructs the complete envelope before row mutation, including
+source ranks, invitation-removal counts and every action-specific field. It
+replaces the former partial/duplicated payload checks. Membership success now
+requires the actual source membership/invitation and current Guild revision, so
+an already-empty final snapshot cannot fabricate a Leave/Revoke success.
+
+Reuse: move the original cleanup implementation rather than retain a second path;
+reuse `assert_guild_job_world`, the physical transaction proof and World scheduler;
+reuse the native Harness, historical Character/member/invitation fixtures,
+`GuildAuditProposal` serializer, and existing event-failure injector. Move the
+original Resign payload/hash injector into its existing `event_failure.rs` owner
+and call it from both the original Resign test and the new guard tests; its body
+is not copied. No new harness, test-only authority constructor or duplicate test
+registration is added. The installed-migration scheduler test still runs alongside
+these isolated historical-fixture cases.
+
+Validation uses `/home/mole/oteryn-cache/codex-bin/cargo +1.95.0` throughout:
+- `test --locked -p oteryn-game-server --test guild_postgres durability_guild_tests --quiet -- --test-threads=4`: **106/106 passed**, zero ignored/filtered, 846.59s. The database route is required; PostgreSQL **17.6** is asserted as `server_version_num=170006` by the real fixture. This includes the installed-migration scheduler and all four new cleanup/envelope tests.
+- Domain unit target: **117/117 passed** in the initial four-package unit invocation. That invocation then reported two `Database(Pool)` errors in existing terminal-replacement tests (SQLx pool timeout/closed classification), with 382 other durability tests passing. No assertions, tests or timeouts were changed.
+- `test --locked -p oteryn-gameplay-durability --lib --quiet -- --test-threads=4`: the complete unchanged unit target passed **384/384**, 62.32s, including both earlier pool-error cases.
+- `test --locked -p oteryn-gameplay-social-rules -p oteryn-gameplay-social --lib --quiet -- --test-threads=4`: **47/47 + 103/103 passed**. Total affected unit-target evidence: **651 passing tests**.
+- `clippy --locked -p oteryn-gameplay-domain -p oteryn-gameplay-social-rules -p oteryn-gameplay-durability -p oteryn-gameplay-social -p oteryn-game-server --all-targets --quiet -- -D warnings`: passed.
+- `fmt --all -- --check`: passed. Whole continuation diff and new files were reviewed against the owner's `~/oteryn-cache/CODEX-CHECKLIST.md`; `git diff --check` passed. Workspace symbol/caller searches cover `apps/`, `crates/`, `tools/`; each new test source has exactly one mount.
+
+Changed files in this continuation:
+- `apps/game-server/migrations/0137_guild_core.sql`.
+- `crates/gameplay/durability/src/durability/guild.rs` and `guild/{deadlines,disband,disband_transaction,disband_cleanup}.rs`.
+- `apps/game-server/src/lifted_tests/durability_guild_tests.rs` and `durability_guild_tests/{event_failure,resign_tests,disband_cleanup_tests,event_guard_tests}.rs`.
+- This task record, updated last.
+
+File-size record relative to WIP HEAD: **no file grows by more than 200 lines**;
+new production cleanup is 112 lines and its test children are 169 and 128 lines.
+Migration 0137 is 704 lines (+24 net); existing production modules grow by at most
+four net lines, with only registration in the shared facade. Historical WIP growth
+and its layer justification remain in the inventory above. No implementation or
+local validation remains unfinished in this core allocation. CP review/publication/
+integration and the separately allocated Wire/Bank/Hall/Premium children remain
+outside this local-only continuation; no protocol IDs or GUILD_V1 offer are added.
