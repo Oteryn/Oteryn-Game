@@ -10,9 +10,12 @@
 //!   [`LoopGroundCache`], which every committed drop or pickup invalidates; the map view
 //!   (domain 17) shows them over the bundle map, each with its definition's facts. An item whose
 //!   `map_revision` is not the bundle's, or whose definition the pinned index does not name, is
-//!   not shown. When the read fails the view shows the bundle map alone.
+//!   not shown. A failed durable read fails the map view closed.
 //! - **Containers (capability 14).** [`observe_container`] reads a container of the carried tree
 //!   with its direct entries; a container is carried, so it is always in reach.
+
+#[path = "loop_map_pickup.rs"]
+mod map_pickup;
 
 use super::ComposedFreshAdmission;
 use super::connection::UseCommand;
@@ -149,6 +152,7 @@ impl<F: MapFacts> MapFacts for LoopGroundFacts<'_, F> {
 struct CacheState {
     epoch: u64,
     current: Option<Arc<LoopGroundOverlay>>,
+    pending_origins: std::collections::BTreeMap<u64, CommandRef>,
 }
 
 /// The Channel's loop Ground overlay, read once after each change. A leaf lock, never held
@@ -200,13 +204,36 @@ pub async fn loop_ground(
         .read_item_loop_ground(admission.world_id, admission.channel_id)
         .await
         .ok()?;
-    let built = Arc::new(LoopGroundOverlay::build(
+    let taken = admission
+        .root
+        .read_map_item_mint_placements(
+            admission.world_id,
+            admission.channel_id,
+            base.digest(),
+            0,
+            base.entry_count(),
+        )
+        .await
+        .ok()?;
+    let mut built = LoopGroundOverlay::build(
         base.clone(),
         admission.world_id,
         admission.channel_id,
         index,
         items,
-    ));
+    );
+    crate::map::overlay::pickup::rehide_taken_origins(&mut built.overlay, &taken).ok()?;
+    let pending: Vec<_> = admission
+        .loop_ground
+        .state
+        .lock()
+        .ok()?
+        .pending_origins
+        .keys()
+        .copied()
+        .collect();
+    crate::map::overlay::pickup::rehide_taken_origins(&mut built.overlay, &pending).ok()?;
+    let built = Arc::new(built);
     admission.loop_ground.store(epoch, &built);
     Some(built)
 }
@@ -259,7 +286,7 @@ fn sha256_revision(digest: [u8; 32]) -> String {
 
 /// One move of command 9 through the loop owner. A dead actor, a pending spell commit, another
 /// Channel generation, a fixture World for a Ground move, a session without an item fence or a
-/// source that is not a durable instance is refused before any durable write; a Ground cell out
+/// unsupported source is refused before any durable write; a Ground cell out
 /// of reach is `TooFar`; a durable failure is `Unknown`.
 pub(super) async fn move_loop_item(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
@@ -273,6 +300,9 @@ pub(super) async fn move_loop_item(
     let Some(permit) = admission.spell_lane_permit().await else {
         return LoopMoveResult::Unknown;
     };
+    if matches!(request.item, ItemKey::MapBase { .. }) {
+        return map_pickup::move_map_item(admission, actor, command, request, &permit).await;
+    }
     let ItemKey::Instance(item) = request.item else {
         return refused(LoopMoveRefusal::NotSupported);
     };

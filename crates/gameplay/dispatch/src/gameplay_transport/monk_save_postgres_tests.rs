@@ -21,6 +21,9 @@ mod item_look;
 #[path = "weather_wire_postgres_tests.rs"]
 mod weather_wire;
 
+#[path = "loop_map_pickup_tests.rs"]
+mod map_pickup;
+
 use super::{ComposedFreshAdmission, MonkSave};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::fresh_admission::FreshAdmissionStore;
@@ -788,6 +791,16 @@ mod death_ml_loss_composed {
         world: WorldId,
         content: &str,
     ) -> TestResult<ContentActivationController> {
+        production_generation_with_pin(world, content).map(|(controller, _)| controller)
+    }
+
+    pub(super) fn production_generation_with_pin(
+        world: WorldId,
+        content: &str,
+    ) -> TestResult<(
+        ContentActivationController,
+        crate::content::NativeEntryContentPin,
+    )> {
         let manifest = std::path::Path::new(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/../../../apps/game-server"
@@ -810,7 +823,7 @@ mod death_ml_loss_composed {
             frame_binding_digest: room.frame_binding().digest(),
         };
         let mut controller = ContentActivationController::new();
-        activate_native_entry_room_with_gameplay(
+        let pin = activate_native_entry_room_with_gameplay(
             &mut controller,
             &NodeBootQuiescence::before_channel_runtime(),
             world,
@@ -818,7 +831,7 @@ mod death_ml_loss_composed {
             &supplied,
         )
         .map_err(debug)?;
-        Ok(controller)
+        Ok((controller, pin))
     }
 
     async fn current_fence(

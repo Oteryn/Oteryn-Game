@@ -678,6 +678,38 @@ impl DurabilityRoot {
             .await?
     }
 
+    /// MAP-PICKUP-1: read-only recovery probe before admitting a hidden origin. Only this
+    /// Character's exact semantic intent may resume its MINT; a new command sees no receipt.
+    pub async fn read_map_item_mint_receipt(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        fence: &CurrentCharacterItemFence,
+        request: &MapItemMintRequest,
+    ) -> Result<Option<CommittedMapItemMint>> {
+        validate_request(request)?;
+        let (world, channel) = scope_of(fence).map_err(|_| MapItemMintError::AuthorityRejected)?;
+        let binding = intent_binding(request, fence.character_id, world, channel)?;
+        let recovery = authority.record_for(self).map_err(|_| MapItemMintError::AuthorityRejected)?;
+        let command = request.command;
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| {
+            Box::pin(async move {
+                let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                assert_recovery_fence(&mut tx, &recovery).await?;
+                lock_cause(&mut tx, command).await?;
+                let Some(row) = load_receipt(&mut tx, command).await? else {
+                    return Ok(Ok(None));
+                };
+                let stored: Vec<u8> = row.try_get("intent_binding")?;
+                if stored != binding {
+                    return Ok(Err(MapItemMintError::ConflictingCause));
+                }
+                let receipt = decode_receipt(&row)?;
+                commit_semantic_transaction(tx, deadline).await?;
+                Ok(Ok(Some(receipt)))
+            })
+        }).await?
+    }
+
     /// The `placement_key` of every entry taken in this World, Channel, base
     /// bundle and reset epoch, ascending: the origins the overlay rebuild
     /// re-hides. Read-only. More than `max_entries` (the bundle's entry

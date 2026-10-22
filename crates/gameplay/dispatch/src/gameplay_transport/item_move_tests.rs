@@ -1914,3 +1914,52 @@ fn without_capability_12_the_backpack_is_read_once_and_no_slot_is_read() -> Test
         Ok(())
     })
 }
+
+#[test]
+fn map_base_pickup_routes_only_to_the_carried_tree() -> TestResult {
+    run(async {
+        let source = ItemKey::MapBase {
+            bundle_digest: [7; 32],
+            placement_key: 1,
+            reset_epoch: 0,
+        };
+        for (key, target, supported) in [
+            (source, LoopTarget::MainBackpack, true),
+            (source, LoopTarget::Container(instance(2)), true),
+            (source, LoopTarget::Ground(TILE), false),
+            (ItemKey::MapAdded(1), LoopTarget::MainBackpack, false),
+        ] {
+            let shown = inventory(&[2]);
+            let mut view = wearing(shown.clone()).with_map_view();
+            view.map_view(&[key], |_| Ok(())).map_err(fault)?;
+            let handle = view.table().handle(&key).ok_or("handle")?;
+            let authority = MoveAuthority::new(Replay::Nothing, Vec::new()).looping(
+                shown,
+                LoopMoveResult::Refused(LoopMoveRefusal::NoRoom),
+                None,
+            );
+            let payload = match target {
+                LoopTarget::MainBackpack => into_backpack(handle),
+                LoopTarget::Container(_) => into_container(handle, entry(&view, 2)),
+                LoopTarget::Ground(_) => onto_ground(handle, TREE),
+            };
+            assert_eq!(
+                step(&authority, &mut view, &payload, TREE).await,
+                result(if supported {
+                    ItemMoveOutcome::NoRoom
+                } else {
+                    ItemMoveOutcome::NotSupported
+                })
+            );
+            assert_eq!(authority.loop_moves.borrow().len(), usize::from(supported));
+            assert_eq!(view.resolve(handle), Some(key));
+            if supported {
+                assert_eq!(
+                    authority.loop_moves.borrow()[0].1,
+                    LoopMove { item: key, target }
+                );
+            }
+        }
+        Ok(())
+    })
+}

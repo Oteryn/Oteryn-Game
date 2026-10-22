@@ -12,6 +12,8 @@
 //!   description attribute, or a dropped teleport, is bound; `count` is its stack count in
 //!   `1..=100`, else 1, and `sub_type` its charges, else 0. A placement whose compact id names both
 //!   an Item and a Terrain record keeps its palette index, because the base keeps the id alone.
+//! - **Pickup.** The original attributes and exact pickup-wrapper decision are retained
+//!   separately; the normalized view facts above do not change.
 //! - **Overlay.** The Channel overlay stays empty until MAP-CUTOVER-1c, so no added entry has
 //!   facts.
 //! - **Doors (MAP-DOOR-1).** The only state is the [`DoorBook`]: a plain door placement shows the
@@ -20,7 +22,7 @@
 
 use super::door::{self, DoorBook, DoorStates, PaletteDoor};
 use super::floor::palette_mask;
-use super::overlay::{AddedItem, TilePos};
+use super::overlay::{AddedItem, TilePos, pickup};
 use super::view::{self, EntryFacts, MapFacts, placement_key};
 use super::{LoadError, palette_appearance};
 use oteryn_protocol_oteryn::world_map::{MAX_BASE_ORDINAL, MapDefinition};
@@ -68,12 +70,15 @@ struct PaletteFacts {
 }
 
 /// The per-placement facts that differ from the palette entry's.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 struct Placement {
     palette: u32,
     bound: bool,
     count: u8,
     sub_type: u16,
+    // MAP-PICKUP-1: preserve the original attributes separately from the wire normalization.
+    attrs: Attrs,
+    pickup: Result<u32, pickup::Ineligible>,
 }
 
 /// The production map facts of one bundle World.
@@ -194,12 +199,29 @@ impl BundleFacts {
                         .filter(|count| (1..=100).contains(count))
                         .unwrap_or(1),
                     sub_type: item.attrs.charges.unwrap_or(0),
+                    attrs: item.attrs.clone(),
+                    pickup: pickup::eligibility(
+                        tile,
+                        sector.floor,
+                        ordinal as u8,
+                        self.palette
+                            .get(item.palette as usize)
+                            .is_some_and(|p| p.facts.pickupable),
+                        &manifest.dropped_teleports,
+                    )
+                    .map(|entry| entry.quantity),
                 };
                 let plain = Placement {
                     palette: item.palette,
                     bound: false,
                     count: 1,
                     sub_type: 0,
+                    attrs: Attrs::default(),
+                    pickup: self
+                        .palette
+                        .get(item.palette as usize)
+                        .filter(|p| p.facts.pickupable)
+                        .map_or(Err(pickup::Ineligible::NotPickupable), |_| Ok(1)),
                 };
                 let ambiguous = self
                     .palette
@@ -248,14 +270,20 @@ impl BundleFacts {
         doors: Option<&DoorStates>,
     ) -> Option<EntryFacts> {
         let key = placement_key(pos, ordinal)?;
+        let plain;
         let placement = match self.placements.binary_search_by_key(&key, |(key, _)| *key) {
-            Ok(found) => self.placements[found].1,
-            Err(_) => Placement {
-                palette: self.unique_index(id)?,
-                bound: false,
-                count: 1,
-                sub_type: 0,
-            },
+            Ok(found) => &self.placements[found].1,
+            Err(_) => {
+                plain = Placement {
+                    palette: self.unique_index(id)?,
+                    bound: false,
+                    count: 1,
+                    sub_type: 0,
+                    attrs: Attrs::default(),
+                    pickup: Ok(1),
+                };
+                &plain
+            }
         };
         let entry = self.palette.get(placement.palette as usize)?;
         if entry.id != id {
@@ -268,6 +296,50 @@ impl BundleFacts {
             ..entry.facts
         };
         Some(self.doors.facts(key, facts, doors))
+    }
+
+    /// MAP-PICKUP-1: the exact boot-time wrapper decision, before view normalization.
+    /// The caller first verifies that the base tile holds this ordinal and compact id.
+    pub fn pickup_entry(
+        &self,
+        pos: TilePos,
+        ordinal: u8,
+        id: u32,
+    ) -> Result<pickup::EligibleEntry, pickup::Ineligible> {
+        let missing = pickup::Ineligible::NotTopLevel;
+        let key = placement_key(pos, ordinal).ok_or(missing)?;
+        let (palette, quantity) = match self.placements.binary_search_by_key(&key, |(key, _)| *key)
+        {
+            Ok(found) => {
+                let placement = &self.placements[found].1;
+                (placement.palette, placement.pickup?)
+            }
+            Err(_) => {
+                let palette = self.unique_index(id).ok_or(missing)?;
+                if !self
+                    .palette
+                    .get(palette as usize)
+                    .is_some_and(|p| p.facts.pickupable)
+                {
+                    return Err(pickup::Ineligible::NotPickupable);
+                }
+                (palette, 1)
+            }
+        };
+        if self
+            .palette
+            .get(palette as usize)
+            .is_none_or(|entry| entry.id != id)
+        {
+            return Err(missing);
+        }
+        Ok(pickup::EligibleEntry {
+            placement_key: key,
+            origin: pos,
+            ordinal,
+            palette,
+            quantity,
+        })
     }
 
     fn unique_index(&self, id: u32) -> Option<u32> {
@@ -481,6 +553,9 @@ impl MapFacts for PinnedFacts<'_> {
             .revision_in(placement_key, Some(&self.doors))
     }
 }
+
+#[cfg(test)]
+mod pickup_tests;
 
 #[cfg(test)]
 mod tests {

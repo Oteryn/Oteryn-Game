@@ -1635,7 +1635,7 @@ mod map_overlay_pickup {
 
     /// The fixture base: (1, 1) holds 64 top-level entries, (2, 1) a grass ground under one coin,
     /// and every other tile of the sector a grass ground.
-    fn base() -> Result<Arc<WorldBase>, Box<dyn StdError>> {
+    pub(super) fn base() -> Result<Arc<WorldBase>, Box<dyn StdError>> {
         let mut tiles = Vec::new();
         for y in 0..32 {
             for x in 0..32 {
@@ -1671,7 +1671,7 @@ mod map_overlay_pickup {
     }
 
     /// The (2, 1) coin: top-level entry 1 of its tile on floor -7.
-    fn coin_key() -> Result<u64, Box<dyn StdError>> {
+    pub(super) fn coin_key() -> Result<u64, Box<dyn StdError>> {
         Ok(placement_key(-7, 2, 1, 1).ok_or("key")?)
     }
 
@@ -1806,3 +1806,7 @@ async fn stale_fence_lane(stale: CurrentCharacterItemFence) -> TestResult<SpellL
         .await
         .map_err(debug)?)
 }
+
+// MAP-PICKUP-1: MINT followed by the carried-tree loop move, in its own file.
+#[path = "map_item_mint_loop_postgres_cases.rs"]
+mod map_item_mint_loop;
