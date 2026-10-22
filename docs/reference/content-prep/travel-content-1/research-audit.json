@@ -1,0 +1,92 @@
+{
+  "task": "TRAVEL-CONTENT-1",
+  "review_date": "2026-10-19",
+  "scope": "SOURCE_RECONCILED_REFERENCE_WITH_EXPLICIT_DONOR_AND_NATIVE_MAPPING_LIMITS",
+  "research_status": "EXISTING195ROUTES_SOURCE_RECONCILED_RUNTIME_UNQUALIFIED",
+  "runtime_admission": "BLOCKED",
+  "coverage": "All56existing services and195routes are covered by exact NPC-script/keyword anchors. Five placement-specific fares, Premium rules, quest text and source qualifications are corrected. Seven donor inventory/custom guards are retained separately. The universal level8 default is removed. Every reference arrival tile still requires native world/channel mapping. Current Global continuity is not established by donor observations.",
+  "source_registry": "sources.json",
+  "record_counts": {
+    "docs/reference/content-prep/travel-content-1/admission-evidence/evidence-00000-00194.json": 195,
+    "docs/reference/content-prep/travel-content-1/admission-evidence/service-evidence-00000-00055.json": 56
+  },
+  "evidence_field_counts": {
+    "PROVEN": 589,
+    "DERIVED": 1309
+  },
+  "unresolved_fields": [],
+  "limitations_policy": "Unknown values and conflicting source statements remain visible. Positive source observations, inferred projections and server-controlled facts remain distinct; no count is relabeled merely to claim completion.",
+  "complete_source_sweep": {
+    "review_date": "2026-10-18",
+    "scope": "FANDOM_WIKI_BR_AND_PRIMARY_OFFICIAL_CROSS_CHECK",
+    "changes": [
+      "oteryn:service.travel.captain_max_calassa/liberty_bay/origin",
+      "oteryn:service.travel.captain_seahorse/krailos/fare_gold",
+      "oteryn:service.travel.captain_waverider_island/liberty_bay/origin",
+      "oteryn:service.travel.gewen/marapur/fare_gold",
+      "oteryn:service.travel.gewen/marapur/quest_requirements",
+      "oteryn:service.travel.iyad/marapur/fare_gold",
+      "oteryn:service.travel.iyad/marapur/quest_requirements",
+      "oteryn:service.travel.melian/marapur/fare_gold",
+      "oteryn:service.travel.melian/marapur/quest_requirements",
+      "oteryn:service.travel.pino/marapur/fare_gold",
+      "oteryn:service.travel.pino/marapur/quest_requirements",
+      "oteryn:service.travel.tanyt/marapur/fare_gold",
+      "oteryn:service.travel.tanyt/marapur/quest_requirements",
+      "oteryn:service.travel.urks_the_mute/cormaya/fare_gold",
+      "oteryn:service.travel.ziyad/darama/fare_gold",
+      "oteryn:service.travel.ziyad/darashia/fare_gold",
+      "oteryn:service.travel.ziyad/edron/fare_gold",
+      "oteryn:service.travel.ziyad/femor_hills/fare_gold",
+      "oteryn:service.travel.ziyad/hills/fare_gold",
+      "oteryn:service.travel.ziyad/issavi/fare_gold",
+      "oteryn:service.travel.ziyad/kazor/fare_gold",
+      "oteryn:service.travel.ziyad/kazordoon/fare_gold",
+      "oteryn:service.travel.ziyad/svargrond/fare_gold"
+    ],
+    "qualification": "Reference only. No unsupported absence→false conversion, invented random distribution, arrival coordinate or architecture decision. Exact source fetches and failed direct primary fetches remain auditable."
+  },
+  "filled_parameter_fields": 639,
+  "remaining_unfilled_parameter_fields": 0,
+  "normalized_companion_fields": 0,
+  "global_source_archive": "docs/reference/content-prep/travel-content-1/tibia-source-archive.json",
+  "global_source_archive_counts": {
+    "UNKNOWN": 635,
+    "CONFLICT": 4
+  },
+  "counting_scope": "Active fields only; archived original Global evidence is excluded from active-field counts.",
+  "pending_index_metadata": [],
+  "route_source_correction": {
+    "source_check": "docs/reference/content-prep/travel-content-1/source-correction-check.json",
+    "record_count": 195,
+    "npc_scripts": 56,
+    "correction_counts": {
+      "minimum_level": 195,
+      "destination_coordinates": 195,
+      "premium_required": 195,
+      "quest_requirements": 195,
+      "origin": 24,
+      "travel_guard_conditions": 7,
+      "fare_gold": 5
+    },
+    "route_evidence_counts": {
+      "PROVEN": 589,
+      "DERIVED": 1253
+    },
+    "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+    "universal_level8_removed": true,
+    "active_route_and_service_counts": {
+      "PROVEN": 589,
+      "DERIVED": 1309
+    }
+  },
+  "prior_materialization_audit_summary": {
+    "scope": "POPULATED_OTERYN_REFERENCE_DATA_WITH_ARCHIVED_GLOBAL_SOURCE_LIMITATIONS",
+    "research_status": "ALL_TARGET_PARAMETER_FIELDS_POPULATED",
+    "coverage": "All 56 native travel services and 195 routes remain covered. Supplemental current sources establish Premium-city access prerequisites, Gray Island fares, the 24-hour honeymoon window, local-ferry transport, placement-specific Junkar fares/world-change conditions and Hawkhurst/Tonar/Gnomprona access unlocks. Source-described NPC standing tiles are never used as arrival tiles. Four Junkar table/NPC fare disagreements remain explicit CONFLICT. Quest-start level 250 for Ingol is retained separately from an unproven post-unlock ferry level check. Historical Kendra anniversary travel is marked historical. The final gap sweep also checks secondary NPC professions and resolves 18 ferry transport fields and 10 source-named origin areas. Exact floors/arrival tiles remain independently held.",
+    "evidence_field_counts": {
+      "PROVEN": 670,
+      "DERIVED": 1221
+    }
+  }
+}
