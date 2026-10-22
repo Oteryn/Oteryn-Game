@@ -1,0 +1,35 @@
+{
+  "source_url": "https://tibiawatch.com/calculators/forge",
+  "bundle_url": "https://tibiawatch.com/_next/static/chunks/3819-d89d3fa210dcb359.js",
+  "bundle_sha256": "05a960a6120ac8744130dc05789bc96c837e0b08edbb92147bd8c623650fc6e8",
+  "method": "Executed exported constant module60073 and actual regular/convergence route selectors with downstream total-route calculation replaced by capture. Proves selected transfer fees/resources only; no browser UI or game execution claimed.",
+  "regular_transfer": {
+    "mode": "transfer",
+    "dust": 100,
+    "fee": 15000000000,
+    "cores": 60,
+    "step": {
+      "kind": "transfer",
+      "sourceTier": 10,
+      "resultTier": 9,
+      "feeGold": 15000000000,
+      "cores": 60
+    },
+    "recommendationKey": "recommendations.fusionTransfer"
+  },
+  "convergence_transfer": {
+    "mode": "convergence_transfer",
+    "dust": 160,
+    "fee": 100000000000,
+    "cores": 60,
+    "step": {
+      "kind": "convergenceTransfer",
+      "tier": 9,
+      "feeGold": 100000000000,
+      "cores": 60
+    },
+    "recommendationKey": "recommendations.convergenceTransfer"
+  },
+  "qualification": "Secondary calculator corroborates60 cores for both transfer steps; Tibiopedia65 remains an explicitly retained source discrepancy. Fusion resources needed to create the donor are separate.",
+  "checked_at": "2026-10-19T08:49:19.554087+00:00"
+}
