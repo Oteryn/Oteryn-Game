@@ -5,15 +5,16 @@
 ```yaml
 task_id: TRAVEL-CONTENT-1
 mode: MIGRATE
-status: ready
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/travel-content-1
-pr: PENDING
+pr: 2291
 supersedes_pr: 2235
 base_sha: ad227b2723c4df7b853e8976545ba210cb2e5eb0
 owner: Codex / current owner-authorized content preparation session
 created_at: 2026-10-18
+updated_at: 2026-10-22
 execution_policy: continuous_progress
 owned_paths:
   - docs/reference/content-prep/travel-content-1/**
@@ -27,7 +28,7 @@ Current Reference evidence is prepared for NPC-WORLD-1 #2232. This draft is not 
 
 ## Architecture and source of truth
 
-Evidence follows the existing full-game tree placement. Source records are pinned to page revision IDs or immutable repository SHA-256 inputs in [the source registry](../../reference/content-prep/travel-content-1/sources.json). Native wiring belongs to CP. The evidence envelope is not a newly accepted runtime schema.
+Evidence follows the existing full-game tree placement. Source records are pinned to page revision IDs or immutable repository SHA-256 inputs in [the source registry](../../../reference/content-prep/travel-content-1/sources.json). Native wiring belongs to CP. The evidence envelope is not a newly accepted runtime schema.
 
 ## High-risk authority/recovery qualification
 
@@ -41,11 +42,17 @@ NOT_APPLICABLE: data and documentation only; no production, session, identity, p
 
 ## Implementation / findings
 
-See [the task evidence](../../reference/content-prep/travel-content-1/README.md). Remaining source gaps are carried in UNKNOWN/CONFLICT facts and grouped in the draft PR. Canonical live branch, frozen SHA, PR and CI state are recorded on GitHub after the atomic candidate is created; this source record does not self-reference its future SHA.
+See [the task evidence](../../../reference/content-prep/travel-content-1/README.md). Remaining source gaps are carried in UNKNOWN/CONFLICT facts and grouped in the draft PR. Canonical live branch, frozen SHA, PR and CI state are recorded on GitHub after the atomic candidate is created; this source record does not self-reference its future SHA.
 
 ## Validation
 
-Publication requires the commands and results retained in the canonical draft PR. Local pre-publication checks are run on each complete candidate. Exact-head CI remains a separate check after publication.
+Results on the candidate tree (2026-10-22):
+
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: OK
+- `python tools/repository/validate_repository_policy.py`: pass
+- every JSON file under `docs/reference/content-prep/travel-content-1/` parses and the apply-plan SHA-256 values match: pass
+- `git diff --check`: pass
 
 ## Self-review
 
@@ -83,4 +90,8 @@ Only explicit sourced values are selected. Wiki omissions and unsupported exact 
 
 ## Working-data completion — 2026-10-19
 
-Populated 639 previously held fields directly in target records; 0 active unfilled fields. See [parameter register](../../reference/content-prep/travel-content-1/oteryn-parameters.json). Runtime admission and protected integration remain blocked.
+Populated 639 previously held fields directly in target records; 0 active unfilled fields. See [parameter register](../../../reference/content-prep/travel-content-1/oteryn-parameters.json). Runtime admission and protected integration remain blocked.
+
+## Closeout
+
+Superseded draft #2235 by #2291, rebuilt on current `main` with the nested `target-files/` mirror flattened. Data/docs only; no runtime admission. Merge commit/result: squash merge of #2291. Review state: recorded on #2291.
