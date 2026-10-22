@@ -41,6 +41,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return LogoutReply::Result(LogoutResult::Busy);
         };
         let session = admitted.game_session_id;
+        if self.newhaven_travel.held(session) {
+            return LogoutReply::Result(LogoutResult::Busy);
+        }
         if !self
             .reconcile_spells_before_control_loss(actor, session)
             .await

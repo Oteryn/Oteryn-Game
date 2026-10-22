@@ -260,6 +260,8 @@ async fn scenario(admin: String, case: Option<item_use_view_refresh_tests::Case>
         fence_holders: Default::default(),
         spell_lane: crate::durability::spell_owner_commit::SpellLane::new(world, channel),
         loop_ground: Default::default(),
+        tutorial_sessions: Default::default(),
+        newhaven_travel: Default::default(),
     };
     {
         let runtime = owner.runtime.lock().await;

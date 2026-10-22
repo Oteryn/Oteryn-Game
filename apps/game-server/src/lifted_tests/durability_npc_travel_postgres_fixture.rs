@@ -1,9 +1,6 @@
 // Test-only native PG exercise. Registered by the canonical PG root, never by lib tests.
-const TEST_SCHEMA: &str = "CREATE TABLE game_character_pending_arrivals (
-    character_id UUID PRIMARY KEY REFERENCES game_character_roots(character_id),
-    occurrence_id UUID NOT NULL, world_id UUID NOT NULL,
-    tile_x INTEGER NOT NULL, tile_y INTEGER NOT NULL, tile_floor SMALLINT NOT NULL
-)";
+#![cfg(test)]
+include!("../../tests/support/tutorial_travel_postgres_cases.rs");
 
 use crate::bestiary_postgres_harness::{self as fixture, TestResult, debug, fence, id};
 use crate::domain::CharacterId;
@@ -56,7 +53,7 @@ pub(crate) fn npc_travel_native_postgres_replay_fences_rollback_and_reload() -> 
 }
 
 async fn exercise(h: &fixture::Harness) -> TestResult {
-    sqlx::query(TEST_SCHEMA).execute(&h.pool).await?;
+    sqlx::query("SELECT character_id,occurrence_id,world_id,tile_x,tile_y,tile_floor FROM game_character_pending_arrivals LIMIT 1").fetch_optional(&h.pool).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let current = fence(1)?;
     let authority = h
@@ -159,6 +156,10 @@ async fn exercise(h: &fixture::Harness) -> TestResult {
     // Its native deferred receipt FK is never committed by this invalid-state fixture.
     sqlx::query("INSERT INTO game_character_pending_respawns VALUES (encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3)")
     .bind(id(fixture::CHARACTER).as_slice()).bind(id(90).as_slice()).bind(vec![1_u8]).execute(&mut *tx).await?;
+    // Migration 0136's death trigger cancels the pending arrival when the respawn row lands, so the
+    // malformed state restores the original arrival after it.
+    sqlx::query("INSERT INTO game_character_pending_arrivals VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, 10,20,7)")
+    .bind(id(fixture::CHARACTER).as_slice()).bind(id(70).as_slice()).bind(id(fixture::WORLD).as_slice()).execute(&mut *tx).await?;
     assert!(matches!(
         consume_in_transaction(
             &mut tx,

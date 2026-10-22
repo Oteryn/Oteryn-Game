@@ -34,6 +34,7 @@ mod logout_tests;
 mod loop_move;
 use crate::map::boot::BundleCollisionIndexExt;
 pub use last_position::LastPositionFlush;
+mod control_loss_reconciliation;
 mod map_door;
 mod monk_save;
 mod monster_ai_cycle;
@@ -42,12 +43,18 @@ mod monster_ai_cycle;
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
 mod monster_quest_death;
+mod newhaven_arrival;
+mod newhaven_travel;
 mod npc_actor;
 mod npc_command;
 mod npc_talk;
 mod npc_trade_command;
 mod npc_travel;
 mod npc_voice;
+mod paced_movement;
+mod tutorial_corruptor;
+mod tutorial_movement;
+mod tutorial_session;
 pub use npc_talk::NpcTalkBook;
 mod resume;
 mod rune_use_bridge;
@@ -596,6 +603,8 @@ pub async fn serve_gameplay(
             owners.channel_id,
         ),
         loop_ground: loop_move::LoopGroundCache::default(),
+        tutorial_sessions: tutorial_session::TutorialSessions::default(),
+        newhaven_travel: newhaven_travel::NewhavenTravel::default(),
     };
     if let Some(book) = owners.npc_talk {
         authority.chat.install_npc_talk(book);
@@ -834,6 +843,8 @@ pub struct ComposedFreshAdmission<'a, 'f, 's> {
     /// ITEM-LOOP-1: the Channel's loop Ground items as a map overlay, rebuilt after each drop or
     /// pickup. A leaf lock, never held across an await.
     pub loop_ground: loop_move::LoopGroundCache,
+    tutorial_sessions: tutorial_session::TutorialSessions,
+    newhaven_travel: newhaven_travel::NewhavenTravel,
 }
 
 /// The progression binding one admitted session holds (ARCH-PROGRESSION-SOURCE-0 §1.4): the
@@ -1383,55 +1394,6 @@ enum UnendedSettle {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    /// Complete only retained original occurrences while their current active
-    /// session still owns the actor. A loss must not detach an uncertain payment.
-    async fn reconcile_spells_before_control_loss(
-        &self,
-        actor: ExactActorRef,
-        session: GameSessionId,
-    ) -> bool {
-        let access = self.refresh_spell_access(actor, session).await;
-        if matches!(
-            self.reconcile_pending_native_for_control_loss(actor, session, &access)
-                .await,
-            Some(actor_spell::NativeCastDispatch::Pending)
-        ) {
-            return false;
-        }
-        if matches!(
-            self.reconcile_pending_familiar_for_control_loss(actor, session, &access)
-                .await,
-            Some(actor_spell::NativeCastDispatch::Pending)
-        ) {
-            return false;
-        }
-        if matches!(
-            self.reconcile_pending_world_items(actor, session, &access)
-                .await,
-            actor_spell::NativeCastDispatch::Pending
-        ) {
-            return false;
-        }
-        if self
-            .reconcile_pending_parameters_for_control_loss(actor, session, &access)
-            .await
-            .is_some_and(|result| matches!(result.cast, actor_spell::NativeCastDispatch::Pending))
-        {
-            return false;
-        }
-        let _ = self
-            .reconcile_pending_stance_for_control_loss(actor, session)
-            .await;
-        let cleanup_access = self.refresh_spell_access(actor, session).await;
-        let _ = self
-            .drain_familiar_deaths(actor, session, &cleanup_access)
-            .await;
-        let _ = self.save_spell_training(actor, session, true).await;
-        let runtime = self.runtime.lock().await;
-        let states = self.spell_states.lock().await;
-        !states.has_pending_spell_commit(actor, session) && !runtime.actor_spell_reserved(actor)
-    }
-
     async fn save_familiar_at_actor_end(
         &self,
         actor: ExactActorRef,
@@ -1538,6 +1500,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         SessionDeath,
         Option<crate::durability::character_build::DurableBuildState>,
     ) {
+        self.newhaven_travel.death(session);
         let mut lowered = None;
         let lowered_slot = &mut lowered;
         let settled = settle_session_death(&self.progression_sessions, session, |progression| {
@@ -2498,6 +2461,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.forget_quest_session(session);
                 self.forget_progression_session(session);
                 self.last_positions.forget(session);
+                self.tutorial_sessions.forget(session);
+                self.newhaven_travel.forget(session);
                 GraceExpiryResult::Released
             }
             Err(_) => GraceExpiryResult::Unknown,
@@ -3287,7 +3252,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         intent: oteryn_protocol_oteryn::npc_service::NpcTalkIntent,
     ) -> npc_command::NpcTalkOutcome {
-        npc_command::npc_bank_talk(self, actor, command, intent).await
+        self.vocation_talk(actor, command, intent).await
+    }
+
+    fn take_tutorial_notice(
+        &self,
+        session: GameSessionId,
+    ) -> Option<oteryn_protocol_oteryn::tutorial_notices::TutorialNotice> {
+        self.tutorial_sessions.take(session)
     }
 
     async fn npc_trade(
@@ -3532,106 +3504,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         direction: StepDirection,
     ) -> (StepOutcome, Option<Duration>) {
-        if !self.ensure_source_map_initialized().await {
-            return (StepOutcome::rejected(), None);
-        }
-        // DEATH-2 §4.2: a dead player takes no input until its respawn.
-        if self.spell_states.lock().await.is_dead(actor) {
-            return (StepOutcome::rejected(), None);
-        }
-        use crate::movement::{CardinalStep, MovementError};
-        let cardinal = match direction {
-            StepDirection::North => CardinalStep::North,
-            StepDirection::East => CardinalStep::East,
-            StepDirection::South => CardinalStep::South,
-            StepDirection::West => CardinalStep::West,
-        };
-        let equipment = self.read_movement_equipment(actor, session).await;
-        let now = self.owner_now().get();
-        // Lock order (§1.2): the lane before any Channel guard.
-        let Some(permit) = self.spell_lane_permit().await else {
-            return (StepOutcome::rejected(), None);
-        };
-        let mut runtime = self.runtime.lock().await;
-        let mut states = self.spell_states.lock().await;
-        if states.has_pending_spell_commit(actor, session) {
-            return (StepOutcome::rejected(), None);
-        }
-        // The closed bundle doors are read live per candidate cell, not collected per step: a
-        // teleport landing never relocates a player onto one (WORLD-INTERACTION-0 §6.6).
-        let (none, bundle_doors, legacy);
-        let blocking: &dyn crate::map::floor::CellBlocker = if self
-            .rooms
-            .gate_source_world()
-            .is_some_and(|room| room.source_world().is_some())
-        {
-            none = std::collections::BTreeSet::<crate::content::LogicalCell>::new();
-            &none
-        } else if let Some(map) = self.bundle_map() {
-            bundle_doors = crate::map::floor::BundleDoors(map.facts.doors());
-            &bundle_doors
-        } else {
-            legacy = self.door.lock().await.blocking_cells().clone();
-            &legacy
-        };
-        let equipped_speed_delta = equipment
-            .as_ref()
-            .and_then(|read| read.current_delta(&runtime, &states, actor, session));
-        // MAP-CUTOVER-1b (§1.2): a bundle World has no field items; a step reads only the bundle
-        // collision index.
-        let outcome = if self.bundle_map().is_some() {
-            states.step_with_creature_field_contact(
-                &mut runtime,
-                self.movement_cells,
-                actor,
-                session,
-                now,
-                cardinal,
-                blocking,
-                equipped_speed_delta,
-                None,
-                None,
-            )
-        } else {
-            self.step_with_field_ingress(
-                &permit,
-                &mut runtime,
-                &mut states,
-                actor,
-                session,
-                now,
-                cardinal,
-                blocking,
-                equipped_speed_delta,
-            )
-            .await
-        };
-        match outcome {
-            Ok((snapshot, duration)) => {
-                // NPC-TALK-2: a customer who stepped out of talk range ends its conversation now.
-                self.chat.close_out_of_range(&runtime, session);
-                (
-                    StepOutcome {
-                        disposition: StepDisposition::Moved,
-                        moved_to: Some(Self::observation(&runtime, snapshot.position())),
-                    },
-                    Some(duration),
-                )
-            }
-            Err(
-                MovementError::Blocked
-                | MovementError::Cell(
-                    crate::content::static_cell_engine::StaticCellEngineError::Absent,
-                ),
-            ) => (
-                StepOutcome {
-                    disposition: StepDisposition::Blocked,
-                    moved_to: None,
-                },
-                None,
-            ),
-            Err(_) => (StepOutcome::rejected(), None),
-        }
+        self.tutorial_paced_step(actor, session, direction).await
     }
 
     /// CHASE-1 (RANGED-0 §8): the owner's chase step (`attack::chase_step_now`).
@@ -3640,7 +3513,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> Option<(StepOutcome, Option<Duration>)> {
-        self.chase_step_now(actor, session).await
+        self.newhaven_chase_step(actor, session).await
     }
 
     async fn yield_chase_to_client(&self, actor: ExactActorRef, session: GameSessionId) {
@@ -4503,7 +4376,11 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
         ) {
             let settled = self
-                .consume_admitted_respawn(admitted.game_session_id, actor, decided.as_ref())
+                .consume_admitted_newhaven_arrival(
+                    admitted.game_session_id,
+                    actor,
+                    decided.as_ref(),
+                )
                 .await;
             admitted.first_entry = respawned_first_entry(admitted.first_entry, settled);
         }
@@ -5087,29 +4964,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             spell_character_facts::CastFactsLoad::Ready {
                 facts,
                 character_revision,
-            } => (Some(facts), character_revision),
-            spell_character_facts::CastFactsLoad::NoVocation { character_revision } => {
-                (None, character_revision)
             }
+            | spell_character_facts::CastFactsLoad::NoVocation {
+                facts,
+                character_revision,
+            } => (facts, character_revision),
             spell_character_facts::CastFactsLoad::Unavailable => {
                 return (FirstEntryOutcome::RefusedUnavailable, None, None);
             }
         };
         #[cfg(test)]
         stage("character_facts_loaded");
-        let monk = match facts {
-            Some(_) => {
-                let Ok(character_id) =
-                    domain::CharacterId::from_bytes(*current.commit().character_id().as_bytes())
-                else {
-                    return (FirstEntryOutcome::RefusedUnavailable, None, None);
-                };
-                match self.load_monk_state(character_id).await {
-                    Some(values) => values,
-                    None => return (FirstEntryOutcome::RefusedUnavailable, None, None),
-                }
-            }
-            None => (0, 0),
+        let Some(monk) = self.load_monk_state(character_id).await else {
+            return (FirstEntryOutcome::RefusedUnavailable, None, None);
         };
         let build = match self
             .root
@@ -5235,7 +5102,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 scope_ownership_generation: current.current_scope_generation(),
                 expected_character_revision: character_revision,
             };
-        let Ok(decided) = self.read_admission_position(position_fence).await else {
+        let Ok(decided) = self.read_tutorial_admission_position(position_fence).await else {
             return (FirstEntryOutcome::RefusedUnavailable, None, None);
         };
         #[cfg(test)]
@@ -5294,58 +5161,51 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let saved_vitals = (outcome == FirstEntryOutcome::Positioned)
             .then(|| last_position::admitted_vitals(&decided, self.world_id))
             .flatten();
-        if let Some(facts) = facts
-            && self
-                .spell_states
-                .lock()
-                .await
-                .initialize_admitted(
-                    &runtime,
-                    actor,
-                    game_session_id,
-                    facts,
-                    monk,
-                    self.owner_now(),
-                    saved_vitals,
-                )
-                .is_none()
-        {
-            return (FirstEntryOutcome::RefusedByChannel, None, None);
-        }
-        if facts.is_some()
-            && self
-                .install_admission_suppressions(&runtime, actor, game_session_id, equipment_effects)
-                .await
-                .is_none()
-        {
-            return (FirstEntryOutcome::RefusedByChannel, None, None);
-        }
-        if facts.is_some()
-            && !self.spell_states.lock().await.load_owned_stance(
+        if self
+            .spell_states
+            .lock()
+            .await
+            .initialize_admitted(
                 &runtime,
                 actor,
                 game_session_id,
-                &stance,
-                self.spells,
+                facts,
+                monk,
+                self.owner_now(),
+                saved_vitals,
             )
+            .is_none()
         {
             return (FirstEntryOutcome::RefusedByChannel, None, None);
         }
-        if facts.is_some()
-            && !self.spell_states.lock().await.load_owned_build(
-                &runtime,
-                actor,
-                game_session_id,
-                &build,
-            )
+        if self
+            .install_admission_suppressions(&runtime, actor, game_session_id, equipment_effects)
+            .await
+            .is_none()
         {
             return (FirstEntryOutcome::RefusedByChannel, None, None);
         }
-        if facts.is_some()
-            && let Some(formula) = self
-                .active_generation
-                .and_then(|active| active.native_gameplay())
-                .and_then(|native| native.training_formula())
+        if !self.spell_states.lock().await.load_owned_stance(
+            &runtime,
+            actor,
+            game_session_id,
+            &stance,
+            self.spells,
+        ) {
+            return (FirstEntryOutcome::RefusedByChannel, None, None);
+        }
+        if !self.spell_states.lock().await.load_owned_build(
+            &runtime,
+            actor,
+            game_session_id,
+            &build,
+        ) {
+            return (FirstEntryOutcome::RefusedByChannel, None, None);
+        }
+        if let Some(formula) = self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+            .and_then(|native| native.training_formula())
         {
             let mut states = self.spell_states.lock().await;
             if states
@@ -8206,6 +8066,7 @@ mod death_ml_loss_postgres {
     }
 }
 
+mod first_vocation_vitals;
 mod vocation_choice;
 
 mod monster_combat_states;

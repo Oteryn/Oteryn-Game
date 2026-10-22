@@ -78,6 +78,11 @@ pub fn with_weather_offer(
 /// LOGOUT-WIRE-1: capability 21 `LOGOUT_V1` (command type 23), which requires nothing. Only
 /// capabilities 26 and 28 are higher: every offered set ends with 21 then 26, and the bundle set
 /// then offers 28 (LOOK-2).
+const TUTORIAL_NOTICES: OfferedCapability = OfferedCapability {
+    id: oteryn_protocol_oteryn::tutorial_notices::CAPABILITY_TUTORIAL_NOTICES_V1,
+    requires: &[],
+};
+
 const LOGOUT: OfferedCapability = OfferedCapability {
     id: CAPABILITY_LOGOUT_V1,
     requires: &[],
@@ -117,6 +122,7 @@ pub const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     WORLD_LIGHT,
     LOGOUT,
     WORLD_WEATHER,
+    TUTORIAL_NOTICES,
 ];
 
 /// The offered set of a World booted from a bundle (MAP-CUTOVER-1b, NPC-CMD-1a, ITEM-LOOP-1),
@@ -178,6 +184,7 @@ pub const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
         id: CAPABILITY_ITEM_LOOK_V1,
         requires: &[],
     },
+    TUTORIAL_NOTICES,
 ];
 
 /// MAP-ITEM-REF-1: the production offered set with capability 4 `ITEM_VIEW_MOVE_V1`, which
@@ -209,6 +216,7 @@ pub const ITEM_VIEW_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     WORLD_LIGHT,
     LOGOUT,
     WORLD_WEATHER,
+    TUTORIAL_NOTICES,
 ];
 
 /// Bound of one session's selection. A test keeps the production offered set within it.

@@ -386,11 +386,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 {
                     return reject("Your current action must finish first.");
                 }
-                // Native admission currently creates no PlayerSpellState for NoVocation.
-                // Never overwrite an existing state or drop newly accrued training here.
-                if states.get(&runtime, actor, session).is_some() {
+                if states.is_dead(actor)
+                    || states.get(&runtime, actor, session).is_none_or(|state| {
+                        state.character_facts().vocation != crate::spell::Vocation::None
+                            || state.has_training_to_flush()
+                    })
+                {
                     return reject("The existing live build must be settled by its owner first.");
                 }
+            }
+            if !self
+                .save_first_vocation_vitals(actor, session, current, &before)
+                .await
+            {
+                return reject("Your vitals are still being saved. Please try again.");
             }
             let Ok(request) =
                 vocation_choice_request(choice.occurrence, before, choice.selected, formula, None)
@@ -463,17 +472,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !current_npc_owner(self, &runtime, actor, session, &choice, &current) {
             return reject("The choice committed; current actor authority changed.");
         }
-        if let Some(state) = states.get(&runtime, actor, session) {
-            // An exact already-installed replay is harmless; a different state is never reset.
-            if state.character_facts() != facts || state.has_training_to_flush() {
-                return reject("Your live build must be settled by its owner first.");
-            }
-        } else if states
-            .initialize(&runtime, actor, session, facts, (0, 0), self.owner_now())
-            .is_none()
-        {
-            return reject("The choice committed; your actor is waiting for initialization.");
+        if states.has_pending_spell_commit(actor, session) {
+            return reject("Your current action must finish first.");
         }
+        let Some(state) = states.get(&runtime, actor, session) else {
+            return reject("Your live vitals must be restored by admission first.");
+        };
+        let Some(next) = state.after_first_vocation(
+            &retained.request.before,
+            &build,
+            facts,
+            formula,
+            self.owner_now(),
+        ) else {
+            return reject("Your live build must be settled by its owner first.");
+        };
+        let Some(state) = states.get_mut(&runtime, actor, session) else {
+            return reject("Your live vitals are temporarily unavailable.");
+        };
+        *state = next;
         if !states.load_owned_build(&runtime, actor, session, &build)
             || !states.load_owned_stance(&runtime, actor, session, &stance, self.spells)
             || states

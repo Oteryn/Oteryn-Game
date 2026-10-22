@@ -483,6 +483,10 @@ pub(super) enum AdmissionPosition {
     /// Step 1: a pending respawn. The first-entry step places the actor at its cell; the
     /// respawn is consumed after the progression step.
     Respawn(ConsumedRespawn),
+    Arrival(
+        crate::durability::npc_travel::PendingArrival,
+        Option<LastVitals>,
+    ),
     /// Step 3: the stored last position, placed only if it is valid (else step 4).
     Stored(StoredLastPosition),
     /// No row: a first login, step 4.
@@ -513,6 +517,9 @@ pub(super) fn admitted_vitals(
             .record
             .vitals
             .map(|vitals| (vitals.health(), vitals.mana())),
+        AdmissionPosition::Arrival(_, vitals) => {
+            vitals.map(|vitals| (vitals.health(), vitals.mana()))
+        }
         AdmissionPosition::Stored(_)
         | AdmissionPosition::Respawn(_)
         | AdmissionPosition::FirstLogin => None,
@@ -531,6 +538,9 @@ fn first_entry_input(
     match decided {
         AdmissionPosition::Respawn(pending) => {
             FirstEntryInput::Recorded(respawn_cell(&pending.respawn_position))
+        }
+        AdmissionPosition::Arrival(pending, _) => {
+            FirstEntryInput::Recorded(Some(position_of(pending.destination)))
         }
         AdmissionPosition::Stored(stored)
             if stored_position_applies(stored, world_id, frame_digest)
@@ -762,7 +772,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let written = match decided {
             AdmissionPosition::Stored(stored) => Some(Saved::of(&stored.record)),
             AdmissionPosition::FirstLogin => None,
-            AdmissionPosition::Respawn(_) => {
+            AdmissionPosition::Respawn(_) | AdmissionPosition::Arrival(_, _) => {
                 operator_event("admitted_respawn_no_longer_pending");
                 return false;
             }

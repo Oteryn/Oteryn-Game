@@ -44,19 +44,12 @@ const OPEN_RAT: MovementLocalPosition = MovementLocalPosition {
 /// by it, so each `drain_auto_attacks` finds the next swing due.
 const PASS: Duration = Duration::from_secs(3);
 
-/// The debug-build settle chain is deeper than the default 2 MiB test stack, so the scenario is
-/// polled on a dedicated thread with an explicit stack (the `qualification` seam does the same).
-const SCENARIO_STACK_BYTES: usize = 64 << 20;
+#[path = "kill_reward_postgres_fixture/scenario_thread.rs"]
+pub(super) mod scenario_thread;
 
 #[test]
 fn auto_attack_kill_settles_xp_and_a_linked_corpse_with_loot_on_postgres() -> TestResult {
-    std::thread::Builder::new()
-        .name("kill-reward-e2e".into())
-        .stack_size(SCENARIO_STACK_BYTES)
-        .spawn(|| scenario().map_err(|error| error.to_string()))?
-        .join()
-        .map_err(|_| "kill reward e2e thread panicked")?
-        .map_err(Into::into)
+    scenario_thread::run("kill-reward-e2e", scenario)
 }
 
 fn scenario() -> TestResult {
@@ -277,6 +270,8 @@ fn scenario() -> TestResult {
             fence_holders: Default::default(),
             spell_lane: crate::durability::spell_owner_commit::SpellLane::new(world, channel),
             loop_ground: Default::default(),
+            tutorial_sessions: Default::default(),
+            newhaven_travel: Default::default(),
         };
         {
             let runtime = owner.runtime.lock().await;

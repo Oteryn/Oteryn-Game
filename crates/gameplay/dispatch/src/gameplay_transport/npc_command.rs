@@ -1285,3 +1285,6 @@ use oteryn_protocol_oteryn::npc_service::MAX_TALK_INTENTS_PER_SECOND;
 #[cfg(test)]
 #[path = "../../../../../apps/game-server/tests/private/dawnport_native_npc_choice.rs"]
 mod dawnport_native_npc_choice;
+
+#[cfg(test)]
+mod first_vocation_vitals_fixture;

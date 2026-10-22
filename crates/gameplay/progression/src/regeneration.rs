@@ -33,6 +33,7 @@ pub const fn effective(vocation: Vocation, premium_current: bool) -> Vocation {
 /// `regeneration`, D5b); a test keeps this table equal to that file.
 pub const fn rate(vocation: Vocation) -> RegenerationRate {
     let (health_period_ms, mana_period_ms) = match vocation {
+        Vocation::None => (12_000, 6_000),
         Vocation::Druid | Vocation::Sorcerer => (12_000, 3_000),
         Vocation::ElderDruid | Vocation::MasterSorcerer => (12_000, 2_000),
         Vocation::Knight | Vocation::Monk => (6_000, 6_000),
@@ -93,6 +94,7 @@ mod tests {
         ))
         .expect("json");
         for (key, vocation) in [
+            ("none", Vocation::None),
             ("druid", Vocation::Druid),
             ("elder_druid", Vocation::ElderDruid),
             ("sorcerer", Vocation::Sorcerer),

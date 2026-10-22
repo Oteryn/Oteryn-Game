@@ -469,6 +469,7 @@ fn requirements_met(
 
 const fn base_vocation(vocation: Vocation) -> ReferenceBaseVocation {
     match vocation {
+        Vocation::None => ReferenceBaseVocation::None,
         Vocation::Druid | Vocation::ElderDruid => ReferenceBaseVocation::Druid,
         Vocation::Sorcerer | Vocation::MasterSorcerer => ReferenceBaseVocation::Sorcerer,
         Vocation::Knight | Vocation::EliteKnight => ReferenceBaseVocation::Knight,

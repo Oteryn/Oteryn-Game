@@ -1238,3 +1238,6 @@ fn durable_death_clears_harmony_and_serene_and_receipt_readback_cannot_restore_t
         harness.cleanup().await
     })
 }
+
+#[path = "character_revision_sequencer_postgres_cases/tutorial_vitals_fixture.rs"]
+pub(super) mod tutorial_vitals_fixture;
