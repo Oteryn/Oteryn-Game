@@ -20,21 +20,23 @@ use std::time::{Duration, Instant};
 #[test]
 fn first_vocation_vitals_dispatch_preserves_pools_once_and_restores_after_restart_postgres()
 -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("tutorial-first-vocation", || scenario(70, 30))
+    super::kill_reward_e2e::scenario_thread::run("tutorial-first-vocation", || {
+        scenario("tutorial_first_vocation", 70, 30)
+    })
 }
 
 #[test]
 fn first_vocation_vitals_full_pools_do_not_refill_after_restart_postgres() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("tutorial-first-vocation-maxima", || {
-        scenario(245, 150)
+        scenario("tutorial_first_vocation_maxima", 245, 150)
     })
 }
 
-fn scenario(health: u32, mana: u32) -> TestResult {
+// Each scenario owns its tag: the harness derives its retained recovery directory from the
+// tag, so two tests sharing one tag remove each other's directory when they run in parallel.
+fn scenario(tag: &str, health: u32, mana: u32) -> TestResult {
     run(async |admin| {
-        let mut h =
-            Harness::create_with_admission_seed(admin, "tutorial_first_vocation", false, false)
-                .await?;
+        let mut h = Harness::create_with_admission_seed(admin, tag, false, false).await?;
         let request = prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
