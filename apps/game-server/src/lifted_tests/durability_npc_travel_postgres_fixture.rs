@@ -155,6 +155,10 @@ async fn exercise(h: &fixture::Harness) -> TestResult {
     // Its native deferred receipt FK is never committed by this invalid-state fixture.
     sqlx::query("INSERT INTO game_character_pending_respawns VALUES (encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3)")
     .bind(id(fixture::CHARACTER).as_slice()).bind(id(90).as_slice()).bind(vec![1_u8]).execute(&mut *tx).await?;
+    // Migration 0136's death trigger cancels the pending arrival when the respawn row lands, so the
+    // malformed state restores the original arrival after it.
+    sqlx::query("INSERT INTO game_character_pending_arrivals VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, 10,20,7)")
+    .bind(id(fixture::CHARACTER).as_slice()).bind(id(70).as_slice()).bind(id(fixture::WORLD).as_slice()).execute(&mut *tx).await?;
     assert!(matches!(
         consume_in_transaction(
             &mut tx,
