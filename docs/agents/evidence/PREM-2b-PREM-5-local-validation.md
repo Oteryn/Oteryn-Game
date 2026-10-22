@@ -69,7 +69,7 @@ Changed files (106, including this report and the task card):
 
 ```text
 apps/game-server/examples/materialize_content_world_project_v2.rs
-apps/game-server/migrations/0138_character_promotion_purchases.sql
+apps/game-server/migrations/0133_character_promotion_purchases.sql
 apps/game-server/tests/character_authority_postgres.rs
 apps/game-server/tests/content_npc_catalogue.rs
 apps/game-server/tests/content_npc_service_model.rs

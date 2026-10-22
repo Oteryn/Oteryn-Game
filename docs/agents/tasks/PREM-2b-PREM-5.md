@@ -135,7 +135,7 @@ changed-path and reuse inventory is in the local validation report):
 - `apps/game-server/tests/support/character_promotion_postgres_cases.rs` (new).
 - `rulesets/character/blessings/` + `docs/reference/content-prep/blessings-content-1/`
   (from #2237, with the owner pricing ruling).
-- `apps/game-server/migrations/0138_character_promotion_purchases.sql` (new) — provisional
+- `apps/game-server/migrations/0133_character_promotion_purchases.sql` (new) — provisional
   number assigned by the integrator; renumber only through CP integration.
 
 ## Accepted design (as built and reviewed in the draft)
