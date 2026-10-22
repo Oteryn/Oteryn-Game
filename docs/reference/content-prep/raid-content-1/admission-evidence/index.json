@@ -1,0 +1,13 @@
+{
+  "schema": "OTERYN_FAMILY_INDEX/v1",
+  "family": "Encounter.RaidEvidence",
+  "record_count": 122,
+  "shard_size": 500,
+  "shards": [
+    "content/encounters/raids/evidence-00000-00121.json"
+  ],
+  "population_state": "POPULATED",
+  "runtime_admission": "BLOCKED",
+  "runtime_switch_authorized": false,
+  "evidence_completeness": "SOURCE_RECONCILED_EXPLICIT_RAID_IDENTITY_WAVE_AND_SCHEDULE_GAPS"
+}

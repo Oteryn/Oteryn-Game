@@ -1,0 +1,493 @@
+{
+  "schema": "OTERYN_GLOBAL_SOURCE_ARCHIVE/v1",
+  "task": "SKILL-FORMULAS-CONTENT-1",
+  "scope": "ARCHIVED_GLOBAL_EVIDENCE_NOT_ACTIVE_OTERYN_PARAMETER_FIELDS",
+  "reference_only": true,
+  "runtime_switch_authorized": false,
+  "predecessor": "e13c372e84071497b82fbf6aece33c8786df1688",
+  "explanation": "Original Tibia evidence is retained verbatim here. Active target fields now contain explicitly scoped Oteryn working values; no Global fact has been proven by a design choice.",
+  "records": [
+    {
+      "original_field_path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/1/facts/life_formula",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Life Leech"
+          }
+        ],
+        "note": "Exact rounding, multi-target reduction, secondary damage and overkill semantics need official/controlled evidence."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/1/facts/mana_formula",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Mana Leech"
+          }
+        ],
+        "note": "Exact rounding, multi-target reduction, secondary damage and overkill semantics need official/controlled evidence."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/1/facts/damage_prey",
+      "original_global_fact": {
+        "value": false,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:78085:1101811",
+            "selector": "Damage Preys do not affect leech"
+          }
+        ],
+        "note": "Current community observation; not independently controlled."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/2/facts/skill_advance",
+      "original_global_fact": {
+        "value": {
+          "candidate_model_reference": "skills.community_model",
+          "vocation": "Knight",
+          "next_level_points": "A*b^(skill-c)",
+          "constants": {
+            "melee": 50,
+            "distance": 30,
+            "shielding": 100,
+            "fishing": 20
+          },
+          "vocation_factors": {
+            "melee": 1.1,
+            "fist": 1.1,
+            "distance": 1.4,
+            "shielding": 1.1,
+            "fishing": 1.1
+          },
+          "offset": 10
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Skills / vocation multipliers"
+          }
+        ],
+        "note": "No official formula for accumulated skill tries by vocation, exponent, base level or rounding. Wiki formula may be retained only as a research candidate. Structured own-vocation candidate is populated from the retained community model; this does not qualify its rounding, exact level convention or current server implementation."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/2/facts/magic_advance",
+      "original_global_fact": {
+        "value": {
+          "candidate_model_reference": "skills.community_model",
+          "vocation": "Knight",
+          "next_level_mana": "1600*b^magic_level",
+          "vocation_factor": 3.0,
+          "offset": 0
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Magic Level"
+          }
+        ],
+        "note": "No official closed formula for cumulative spent mana and vocation multiplier. Structured own-vocation candidate is populated from the retained community model; this does not qualify its rounding, exact level convention or current server implementation."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/3/facts/skill_advance",
+      "original_global_fact": {
+        "value": {
+          "candidate_model_reference": "skills.community_model",
+          "vocation": "Paladin",
+          "next_level_points": "A*b^(skill-c)",
+          "constants": {
+            "melee": 50,
+            "distance": 30,
+            "shielding": 100,
+            "fishing": 20
+          },
+          "vocation_factors": {
+            "melee": 1.2,
+            "fist": 1.2,
+            "distance": 1.1,
+            "shielding": 1.1,
+            "fishing": 1.1
+          },
+          "offset": 10
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Skills / vocation multipliers"
+          }
+        ],
+        "note": "No official formula for accumulated skill tries by vocation, exponent, base level or rounding. Wiki formula may be retained only as a research candidate. Structured own-vocation candidate is populated from the retained community model; this does not qualify its rounding, exact level convention or current server implementation."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/3/facts/magic_advance",
+      "original_global_fact": {
+        "value": {
+          "candidate_model_reference": "skills.community_model",
+          "vocation": "Paladin",
+          "next_level_mana": "1600*b^magic_level",
+          "vocation_factor": 1.4,
+          "offset": 0
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Magic Level"
+          }
+        ],
+        "note": "No official closed formula for cumulative spent mana and vocation multiplier. Structured own-vocation candidate is populated from the retained community model; this does not qualify its rounding, exact level convention or current server implementation."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/4/facts/skill_advance",
+      "original_global_fact": {
+        "value": {
+          "candidate_model_reference": "skills.community_model",
+          "vocation": "Druid",
+          "next_level_points": "A*b^(skill-c)",
+          "constants": {
+            "melee": 50,
+            "distance": 30,
+            "shielding": 100,
+            "fishing": 20
+          },
+          "vocation_factors": {
+            "melee": 1.8,
+            "fist": 1.5,
+            "distance": 1.8,
+            "shielding": 1.5,
+            "fishing": 1.1
+          },
+          "offset": 10
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Skills / vocation multipliers"
+          }
+        ],
+        "note": "No official formula for accumulated skill tries by vocation, exponent, base level or rounding. Wiki formula may be retained only as a research candidate. Structured own-vocation candidate is populated from the retained community model; this does not qualify its rounding, exact level convention or current server implementation."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/4/facts/magic_advance",
+      "original_global_fact": {
+        "value": {
+          "candidate_model_reference": "skills.community_model",
+          "vocation": "Druid",
+          "next_level_mana": "1600*b^magic_level",
+          "vocation_factor": 1.1,
+          "offset": 0
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Magic Level"
+          }
+        ],
+        "note": "No official closed formula for cumulative spent mana and vocation multiplier. Structured own-vocation candidate is populated from the retained community model; this does not qualify its rounding, exact level convention or current server implementation."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/5/facts/skill_advance",
+      "original_global_fact": {
+        "value": {
+          "candidate_model_reference": "skills.community_model",
+          "vocation": "Sorcerer",
+          "next_level_points": "A*b^(skill-c)",
+          "constants": {
+            "melee": 50,
+            "distance": 30,
+            "shielding": 100,
+            "fishing": 20
+          },
+          "vocation_factors": {
+            "melee": 2.0,
+            "fist": 1.5,
+            "distance": 2.0,
+            "shielding": 1.5,
+            "fishing": 1.1
+          },
+          "offset": 10
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Skills / vocation multipliers"
+          }
+        ],
+        "note": "No official formula for accumulated skill tries by vocation, exponent, base level or rounding. Wiki formula may be retained only as a research candidate. Structured own-vocation candidate is populated from the retained community model; this does not qualify its rounding, exact level convention or current server implementation."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/5/facts/magic_advance",
+      "original_global_fact": {
+        "value": {
+          "candidate_model_reference": "skills.community_model",
+          "vocation": "Sorcerer",
+          "next_level_mana": "1600*b^magic_level",
+          "vocation_factor": 1.1,
+          "offset": 0
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Magic Level"
+          }
+        ],
+        "note": "No official closed formula for cumulative spent mana and vocation multiplier. Structured own-vocation candidate is populated from the retained community model; this does not qualify its rounding, exact level convention or current server implementation."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/6/facts/skill_advance",
+      "original_global_fact": {
+        "value": {
+          "candidate_model_reference": "skills.community_model",
+          "vocation": "Monk",
+          "next_level_points": "A*b^(skill-c)",
+          "constants": {
+            "melee": 50,
+            "distance": 30,
+            "shielding": 100,
+            "fishing": 20
+          },
+          "vocation_factors": {
+            "melee": 1.4,
+            "fist": 1.1,
+            "distance": 1.5,
+            "shielding": 1.15,
+            "fishing": 1.1
+          },
+          "offset": 10
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Skills / vocation multipliers"
+          }
+        ],
+        "note": "No official formula for accumulated skill tries by vocation, exponent, base level or rounding. Wiki formula may be retained only as a research candidate. Structured own-vocation candidate is populated from the retained community model; this does not qualify its rounding, exact level convention or current server implementation."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/6/facts/magic_advance",
+      "original_global_fact": {
+        "value": {
+          "candidate_model_reference": "skills.community_model",
+          "vocation": "Monk",
+          "next_level_mana": "1600*b^magic_level",
+          "vocation_factor": 1.25,
+          "offset": 0
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Magic Level"
+          }
+        ],
+        "note": "No official closed formula for cumulative spent mana and vocation multiplier. Structured own-vocation candidate is populated from the retained community model; this does not qualify its rounding, exact level convention or current server implementation."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/7/facts/next_level_points",
+      "original_global_fact": {
+        "value": "A * b^(skill-c)",
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Skills"
+          }
+        ],
+        "note": "Community candidate, no controlled or official formula proof."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/7/facts/cumulative_points",
+      "original_global_fact": {
+        "value": "A * (b^(skill-c)-1)/(b-1)",
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Skills"
+          }
+        ],
+        "note": "Community candidate, integer conventions and boundary conditions unproved."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/7/facts/skill_constants",
+      "original_global_fact": {
+        "value": {
+          "magic": 1600,
+          "melee": 50,
+          "distance": 30,
+          "shielding": 100,
+          "fishing": 20
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Skills / Skill Constants"
+          }
+        ],
+        "note": "Community constants only."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/7/facts/vocation_constants",
+      "original_global_fact": {
+        "value": {
+          "None": [
+            3.0,
+            2.0,
+            1.5,
+            2.0,
+            1.5,
+            1.1
+          ],
+          "Knight": [
+            3.0,
+            1.1,
+            1.1,
+            1.4,
+            1.1,
+            1.1
+          ],
+          "Paladin": [
+            1.4,
+            1.2,
+            1.2,
+            1.1,
+            1.1,
+            1.1
+          ],
+          "Sorcerer": [
+            1.1,
+            2.0,
+            1.5,
+            2.0,
+            1.5,
+            1.1
+          ],
+          "Druid": [
+            1.1,
+            1.8,
+            1.5,
+            1.8,
+            1.5,
+            1.1
+          ],
+          "Monk": [
+            1.25,
+            1.4,
+            1.1,
+            1.5,
+            1.15,
+            1.1
+          ]
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Skills / Vocation Constants"
+          }
+        ],
+        "note": "Column order: magic, axe/club/sword, fist, distance, shielding, fishing. Community values only; includes Monk."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/7/facts/offset",
+      "original_global_fact": {
+        "value": {
+          "magic": 0,
+          "other_skills": 10
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Skills"
+          }
+        ],
+        "note": "Community convention; not an official advancement rule."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/8/facts/mana_per_target",
+      "original_global_fact": {
+        "value": "ceil(Dmg * Leech * (0.1*N+0.9) / N)",
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Imbuing / Mana Leech"
+          }
+        ],
+        "note": "Community candidate; source says independently round each target up and includes overkill; no official or controlled proof."
+      }
+    }
+  ]
+}

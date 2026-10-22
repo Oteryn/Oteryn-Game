@@ -1,0 +1,86 @@
+{
+  "task": "FORGE-CONTENT-1",
+  "review_date": "2026-10-19",
+  "scope": "SOURCE_REFERENCE_AND_CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATIONS",
+  "research_status": "LIVE_UI_CORROBORATED_WITH_EXPLICIT_UNMEASURED_DISTRIBUTION",
+  "runtime_admission": "BLOCKED",
+  "coverage": "53source reference rows plus one live-client configuration record. Official client tooltips and labels corroborate class caps, regular fusion configuration, convergence modes, resource conversions and the first dust-limit step. No transaction performed; high-tier core costs, maximum dust limit and lucky bonus distribution are not newly proven by this probe.",
+  "source_registry": "sources.json",
+  "record_counts": {
+    "docs/reference/content-prep/forge-content-1/admission-evidence/reference-evidence.json": 53,
+    "docs/reference/content-prep/forge-content-1/live-client-forge-evidence.json": 1
+  },
+  "evidence_field_counts": {
+    "PROVEN": 337,
+    "DERIVED": 7,
+    "UNKNOWN": 1
+  },
+  "unresolved_fields": [
+    {
+      "path": "docs/reference/content-prep/forge-content-1/admission-evidence/reference-evidence.json/records/52/facts/bonus_distribution",
+      "classification": "UNKNOWN",
+      "source_candidate": "Pinned donor model retained; not selected as current Global."
+    }
+  ],
+  "limitations_policy": "UNKNOWN/CONFLICT is the owner-required outcome for unproven values; candidates, selectors and reasons remain inspectable. No unsupported number was supplied to make the packet appear complete.",
+  "complete_source_sweep": {
+    "review_date": "2026-10-18",
+    "scope": "FANDOM_WIKI_BR_AND_PRIMARY_OFFICIAL_CROSS_CHECK",
+    "changes": [
+      "forge.transfer.class4.tier7/cores",
+      "forge.transfer.class4.tier8/cores",
+      "forge.transfer.class4.tier9/cores",
+      "forge.transfer.class4.tier10/cores",
+      "Corrected obsolete dust increment and held three stale cap/cost formulas"
+    ],
+    "qualification": "Reference only. No unsupported absence→false conversion, invented random distribution, arrival coordinate or architecture decision. Exact source fetches and failed direct primary fetches remain auditable."
+  },
+  "filled_parameter_fields": 3,
+  "remaining_unfilled_parameter_fields": 0,
+  "normalized_companion_fields": 0,
+  "global_source_archive": "docs/reference/content-prep/forge-content-1/tibia-source-archive.json",
+  "global_source_archive_counts": {
+    "UNKNOWN": 4
+  },
+  "counting_scope": "Active fields only; archived original Global evidence is excluded from active-field counts.",
+  "pending_index_metadata": [],
+  "source_correction": {
+    "source": "community:tibiopedia:exaltation-forge:20261019",
+    "supported_fields": [
+      "maximum_dust_limit",
+      "dust_limit_increment_cost",
+      "total_upgrade_cost"
+    ],
+    "unchanged_values": true,
+    "remaining_unconfirmed_field": "bonus_distribution",
+    "qualification": "Secondary source corroborates these dust values. It does not provide exact fusion-bonus probabilities and is not an official or controlled-client measurement."
+  },
+  "transfer_source_correction": {
+    "fields": [
+      "docs/reference/content-prep/forge-content-1/admission-evidence/reference-evidence.json/records/31/facts/cores",
+      "docs/reference/content-prep/forge-content-1/admission-evidence/reference-evidence.json/records/49/facts/cores"
+    ],
+    "unchanged_numeric_values": true,
+    "reference_value": 60,
+    "source": "community:tibiawatch:forge-transfer:20261019",
+    "conflicting_secondary_value": 65,
+    "conflicting_url": "https://tibiopedia.pl/articles/22,Exaltation-Forge-Kuznia-Wzniesienia",
+    "qualification": "Secondary calculator corroborates60 cores for both transfer steps; Tibiopedia65 remains an explicitly retained source discrepancy. Fusion resources needed to create the donor are separate."
+  },
+  "remaining_unresolved_source_fields": 1,
+  "live_client_probe": {
+    "client_version": "15.33.9d148f",
+    "source": "official-client:forge-ui:15.33.9d148f:20261019",
+    "probe_document": "docs/reference/content-prep/forge-content-1/live-client-forge-probe.json",
+    "ui_evidence": "docs/reference/content-prep/forge-content-1/live-client-forge-evidence.json",
+    "configuration_observations": 7,
+    "executed_transactions": 0,
+    "remaining_global_distribution_field": "docs/reference/content-prep/forge-content-1/admission-evidence/reference-evidence.json/records/52/facts/bonus_distribution",
+    "not_observed": [
+      "ordinaryT10→T9corecount",
+      "convergenceT9corecount",
+      "general dust upgrade cost/cap",
+      "stochastic lucky bonus distribution"
+    ]
+  }
+}

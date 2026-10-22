@@ -1,0 +1,5092 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_EVIDENCE/v1",
+  "task": "FORGE-CONTENT-1",
+  "target_cut": "2026-10-18",
+  "runtime_admission": "BLOCKED_PENDING_CP_QUALIFICATION",
+  "runtime_switch_authorized": false,
+  "reference_only": true,
+  "records": [
+    {
+      "key": "forge.class.1",
+      "facts": {
+        "class_id": {
+          "value": 1,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Classification / Tier Limit"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "tier_cap": {
+          "value": 1,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Classification / Tier Limit"
+            },
+            {
+              "source": "official-client:forge-ui:15.33.9d148f:20261019",
+              "selector": "forge-class-info.png; explicit class1cap"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.fusion.class1.tier0",
+      "facts": {
+        "from_tier": {
+          "value": 0,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "to_tier": {
+          "value": 1,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 25000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "success_percent": {
+          "value": 50,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "boosted_success_percent": {
+          "value": 65,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion / Bonus Effects: 100 Dust"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "requirements": {
+          "value": [
+            "same_item",
+            "same_tier",
+            "neither_imbued"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion; opening restriction"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.class.2",
+      "facts": {
+        "class_id": {
+          "value": 2,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Classification / Tier Limit"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "tier_cap": {
+          "value": 2,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Classification / Tier Limit"
+            },
+            {
+              "source": "official-client:forge-ui:15.33.9d148f:20261019",
+              "selector": "forge-class-info.png; explicit class2cap"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.fusion.class2.tier0",
+      "facts": {
+        "from_tier": {
+          "value": 0,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "to_tier": {
+          "value": 1,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 750000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "success_percent": {
+          "value": 50,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "boosted_success_percent": {
+          "value": 65,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion / Bonus Effects: 100 Dust"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "requirements": {
+          "value": [
+            "same_item",
+            "same_tier",
+            "neither_imbued"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion; opening restriction"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.fusion.class2.tier1",
+      "facts": {
+        "from_tier": {
+          "value": 1,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "to_tier": {
+          "value": 2,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 5000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "success_percent": {
+          "value": 50,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "boosted_success_percent": {
+          "value": 65,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion / Bonus Effects: 100 Dust"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "requirements": {
+          "value": [
+            "same_item",
+            "same_tier",
+            "neither_imbued"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion; opening restriction"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.transfer.class2.tier2",
+      "facts": {
+        "source_tier": {
+          "value": 2,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "target_initial_tier": {
+          "value": 0,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "target_final_tier": {
+          "value": 1,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 5000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "cores": {
+          "value": 1,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "success_percent": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "rules": {
+          "value": [
+            "same_classification",
+            "source_destroyed",
+            "neither_imbued"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer; opening restriction"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.class.3",
+      "facts": {
+        "class_id": {
+          "value": 3,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Classification / Tier Limit"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "tier_cap": {
+          "value": 3,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Classification / Tier Limit"
+            },
+            {
+              "source": "official-client:forge-ui:15.33.9d148f:20261019",
+              "selector": "forge-class-info.png; explicit class3cap"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.fusion.class3.tier0",
+      "facts": {
+        "from_tier": {
+          "value": 0,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "to_tier": {
+          "value": 1,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 4000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "success_percent": {
+          "value": 50,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "boosted_success_percent": {
+          "value": 65,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion / Bonus Effects: 100 Dust"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "requirements": {
+          "value": [
+            "same_item",
+            "same_tier",
+            "neither_imbued"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion; opening restriction"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.fusion.class3.tier1",
+      "facts": {
+        "from_tier": {
+          "value": 1,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "to_tier": {
+          "value": 2,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 10000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "success_percent": {
+          "value": 50,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "boosted_success_percent": {
+          "value": 65,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion / Bonus Effects: 100 Dust"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "requirements": {
+          "value": [
+            "same_item",
+            "same_tier",
+            "neither_imbued"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion; opening restriction"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.fusion.class3.tier2",
+      "facts": {
+        "from_tier": {
+          "value": 2,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "to_tier": {
+          "value": 3,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 20000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "success_percent": {
+          "value": 50,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "boosted_success_percent": {
+          "value": 65,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion / Bonus Effects: 100 Dust"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "requirements": {
+          "value": [
+            "same_item",
+            "same_tier",
+            "neither_imbued"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion; opening restriction"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.transfer.class3.tier2",
+      "facts": {
+        "source_tier": {
+          "value": 2,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "target_initial_tier": {
+          "value": 0,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "target_final_tier": {
+          "value": 1,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 10000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "cores": {
+          "value": 1,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "success_percent": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "rules": {
+          "value": [
+            "same_classification",
+            "source_destroyed",
+            "neither_imbued"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer; opening restriction"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.transfer.class3.tier3",
+      "facts": {
+        "source_tier": {
+          "value": 3,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "target_initial_tier": {
+          "value": 0,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "target_final_tier": {
+          "value": 2,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 20000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "cores": {
+          "value": 2,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "success_percent": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "rules": {
+          "value": [
+            "same_classification",
+            "source_destroyed",
+            "neither_imbued"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer; opening restriction"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.class.4",
+      "facts": {
+        "class_id": {
+          "value": 4,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Classification / Tier Limit"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "tier_cap": {
+          "value": 10,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Classification / Tier Limit"
+            },
+            {
+              "source": "official-client:forge-ui:15.33.9d148f:20261019",
+              "selector": "forge-class-info.png; explicit class4cap"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.fusion.class4.tier0",
+      "facts": {
+        "from_tier": {
+          "value": 0,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "to_tier": {
+          "value": 1,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 8000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "success_percent": {
+          "value": 50,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "boosted_success_percent": {
+          "value": 65,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion / Bonus Effects: 100 Dust"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "requirements": {
+          "value": [
+            "same_item",
+            "same_tier",
+            "neither_imbued"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion; opening restriction"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.fusion.class4.tier1",
+      "facts": {
+        "from_tier": {
+          "value": 1,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "to_tier": {
+          "value": 2,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 20000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "success_percent": {
+          "value": 50,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "boosted_success_percent": {
+          "value": 65,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion / Bonus Effects: 100 Dust"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "requirements": {
+          "value": [
+            "same_item",
+            "same_tier",
+            "neither_imbued"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion; opening restriction"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.fusion.class4.tier2",
+      "facts": {
+        "from_tier": {
+          "value": 2,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "to_tier": {
+          "value": 3,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 40000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "success_percent": {
+          "value": 50,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "boosted_success_percent": {
+          "value": 65,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion / Bonus Effects: 100 Dust"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "requirements": {
+          "value": [
+            "same_item",
+            "same_tier",
+            "neither_imbued"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion; opening restriction"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.fusion.class4.tier3",
+      "facts": {
+        "from_tier": {
+          "value": 3,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "to_tier": {
+          "value": 4,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 65000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "success_percent": {
+          "value": 50,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "boosted_success_percent": {
+          "value": 65,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion / Bonus Effects: 100 Dust"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "requirements": {
+          "value": [
+            "same_item",
+            "same_tier",
+            "neither_imbued"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion; opening restriction"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.fusion.class4.tier4",
+      "facts": {
+        "from_tier": {
+          "value": 4,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "to_tier": {
+          "value": 5,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 100000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "success_percent": {
+          "value": 50,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "boosted_success_percent": {
+          "value": 65,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion / Bonus Effects: 100 Dust"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "requirements": {
+          "value": [
+            "same_item",
+            "same_tier",
+            "neither_imbued"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion; opening restriction"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.fusion.class4.tier5",
+      "facts": {
+        "from_tier": {
+          "value": 5,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "to_tier": {
+          "value": 6,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 250000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "success_percent": {
+          "value": 50,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "boosted_success_percent": {
+          "value": 65,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion / Bonus Effects: 100 Dust"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "requirements": {
+          "value": [
+            "same_item",
+            "same_tier",
+            "neither_imbued"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion; opening restriction"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.fusion.class4.tier6",
+      "facts": {
+        "from_tier": {
+          "value": 6,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "to_tier": {
+          "value": 7,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 750000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "success_percent": {
+          "value": 50,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "boosted_success_percent": {
+          "value": 65,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion / Bonus Effects: 100 Dust"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "requirements": {
+          "value": [
+            "same_item",
+            "same_tier",
+            "neither_imbued"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion; opening restriction"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.fusion.class4.tier7",
+      "facts": {
+        "from_tier": {
+          "value": 7,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "to_tier": {
+          "value": 8,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 2500000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "success_percent": {
+          "value": 50,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "boosted_success_percent": {
+          "value": 65,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion / Bonus Effects: 100 Dust"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "requirements": {
+          "value": [
+            "same_item",
+            "same_tier",
+            "neither_imbued"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion; opening restriction"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.fusion.class4.tier8",
+      "facts": {
+        "from_tier": {
+          "value": 8,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "to_tier": {
+          "value": 9,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 8000000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "success_percent": {
+          "value": 50,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "boosted_success_percent": {
+          "value": 65,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion / Bonus Effects: 100 Dust"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "requirements": {
+          "value": [
+            "same_item",
+            "same_tier",
+            "neither_imbued"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion; opening restriction"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.fusion.class4.tier9",
+      "facts": {
+        "from_tier": {
+          "value": 9,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "to_tier": {
+          "value": 10,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 15000000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion cost table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "success_percent": {
+          "value": 50,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "boosted_success_percent": {
+          "value": 65,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion / Bonus Effects: 100 Dust"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "requirements": {
+          "value": [
+            "same_item",
+            "same_tier",
+            "neither_imbued"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion; opening restriction"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.transfer.class4.tier2",
+      "facts": {
+        "source_tier": {
+          "value": 2,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "target_initial_tier": {
+          "value": 0,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "target_final_tier": {
+          "value": 1,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 20000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "cores": {
+          "value": 1,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "success_percent": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "rules": {
+          "value": [
+            "same_classification",
+            "source_destroyed",
+            "neither_imbued"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer; opening restriction"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.transfer.class4.tier3",
+      "facts": {
+        "source_tier": {
+          "value": 3,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "target_initial_tier": {
+          "value": 0,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "target_final_tier": {
+          "value": 2,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 40000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "cores": {
+          "value": 2,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "success_percent": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "rules": {
+          "value": [
+            "same_classification",
+            "source_destroyed",
+            "neither_imbued"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer; opening restriction"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.transfer.class4.tier4",
+      "facts": {
+        "source_tier": {
+          "value": 4,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "target_initial_tier": {
+          "value": 0,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "target_final_tier": {
+          "value": 3,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 65000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "cores": {
+          "value": 5,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "success_percent": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "rules": {
+          "value": [
+            "same_classification",
+            "source_destroyed",
+            "neither_imbued"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer; opening restriction"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.transfer.class4.tier5",
+      "facts": {
+        "source_tier": {
+          "value": 5,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "target_initial_tier": {
+          "value": 0,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "target_final_tier": {
+          "value": 4,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 100000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "cores": {
+          "value": 10,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "success_percent": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "rules": {
+          "value": [
+            "same_classification",
+            "source_destroyed",
+            "neither_imbued"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer; opening restriction"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.transfer.class4.tier6",
+      "facts": {
+        "source_tier": {
+          "value": 6,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "target_initial_tier": {
+          "value": 0,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "target_final_tier": {
+          "value": 5,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 250000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "cores": {
+          "value": 15,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "success_percent": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "rules": {
+          "value": [
+            "same_classification",
+            "source_destroyed",
+            "neither_imbued"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer; opening restriction"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.transfer.class4.tier7",
+      "facts": {
+        "source_tier": {
+          "value": 7,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "target_initial_tier": {
+          "value": 0,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "target_final_tier": {
+          "value": 6,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 750000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "cores": {
+          "value": 25,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
+          "sources": [
+            {
+              "source": "community:tibia-wiki.com:forge:15.20:20261018",
+              "selector": "Zwykły transfer / explicit source-tier→target-tier row"
+            }
+          ],
+          "note": "Literal regular-transfer cost from the secondary community table. Other two wikis lack this cell. Reference-only; source version15.20, current official-client continuity remains unmeasured."
+        },
+        "dust": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "success_percent": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "rules": {
+          "value": [
+            "same_classification",
+            "source_destroyed",
+            "neither_imbued"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer; opening restriction"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.transfer.class4.tier8",
+      "facts": {
+        "source_tier": {
+          "value": 8,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "target_initial_tier": {
+          "value": 0,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "target_final_tier": {
+          "value": 7,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 2500000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "cores": {
+          "value": 35,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
+          "sources": [
+            {
+              "source": "community:tibia-wiki.com:forge:15.20:20261018",
+              "selector": "Zwykły transfer / explicit source-tier→target-tier row"
+            }
+          ],
+          "note": "Literal regular-transfer cost from the secondary community table. Other two wikis lack this cell. Reference-only; source version15.20, current official-client continuity remains unmeasured."
+        },
+        "dust": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "success_percent": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "rules": {
+          "value": [
+            "same_classification",
+            "source_destroyed",
+            "neither_imbued"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer; opening restriction"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.transfer.class4.tier9",
+      "facts": {
+        "source_tier": {
+          "value": 9,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "target_initial_tier": {
+          "value": 0,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "target_final_tier": {
+          "value": 8,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 8000000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "cores": {
+          "value": 50,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
+          "sources": [
+            {
+              "source": "community:tibia-wiki.com:forge:15.20:20261018",
+              "selector": "Zwykły transfer / explicit source-tier→target-tier row"
+            }
+          ],
+          "note": "Literal regular-transfer cost from the secondary community table. Other two wikis lack this cell. Reference-only; source version15.20, current official-client continuity remains unmeasured."
+        },
+        "dust": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "success_percent": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "rules": {
+          "value": [
+            "same_classification",
+            "source_destroyed",
+            "neither_imbued"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer; opening restriction"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.transfer.class4.tier10",
+      "facts": {
+        "source_tier": {
+          "value": 10,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "target_initial_tier": {
+          "value": 0,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "target_final_tier": {
+          "value": 9,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 15000000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "cores": {
+          "value": 60,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "MULTIPLE_SECONDARY_REFERENCES_CORROBORATED",
+          "sources": [
+            {
+              "source": "community:tibia-wiki.com:forge:15.20:20261018",
+              "selector": "Zwykły transfer / explicit source-tier→target-tier row"
+            },
+            {
+              "source": "community:tibiawatch:forge-transfer:20261019",
+              "selector": "Actual transfer route selector; docs/reference/content-prep/forge-content-1/source-correction-check.json"
+            }
+          ],
+          "note": "60cores corroborated by the TibiaWatch transfer selector and pinned donor implementation. Tibiopedia lists65; the conflicting secondary table is retained explicitly. No controlled Global transfer was performed.",
+          "evidence_scope": "COMMUNITY_GLOBAL_REFERENCE",
+          "assumptions": [
+            "Adopt60 as a derived reference supported by executable calculator logic; retain65 as a secondary-source discrepancy."
+          ]
+        },
+        "dust": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "success_percent": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "rules": {
+          "value": [
+            "same_classification",
+            "source_destroyed",
+            "neither_imbued"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Transfer; opening restriction"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.convergence_fusion.tier1",
+      "facts": {
+        "target_tier": {
+          "value": 1,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "class_id": {
+          "value": 4,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 55000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 130,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "success_percent": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "rules": {
+          "value": [
+            "same_slot",
+            "same_tier",
+            "different_item_allowed",
+            "no_bonus_effects"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.convergence_transfer.tier1",
+      "facts": {
+        "tier": {
+          "value": 1,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 65000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "cores": {
+          "value": 1,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 160,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "rules": {
+          "value": [
+            "classification_4",
+            "no_tier_loss",
+            "different_slot_allowed"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.convergence_fusion.tier2",
+      "facts": {
+        "target_tier": {
+          "value": 2,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "class_id": {
+          "value": 4,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 110000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 130,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "success_percent": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "rules": {
+          "value": [
+            "same_slot",
+            "same_tier",
+            "different_item_allowed",
+            "no_bonus_effects"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.convergence_transfer.tier2",
+      "facts": {
+        "tier": {
+          "value": 2,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 165000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "cores": {
+          "value": 2,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 160,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "rules": {
+          "value": [
+            "classification_4",
+            "no_tier_loss",
+            "different_slot_allowed"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.convergence_fusion.tier3",
+      "facts": {
+        "target_tier": {
+          "value": 3,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "class_id": {
+          "value": 4,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 170000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 130,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "success_percent": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "rules": {
+          "value": [
+            "same_slot",
+            "same_tier",
+            "different_item_allowed",
+            "no_bonus_effects"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.convergence_transfer.tier3",
+      "facts": {
+        "tier": {
+          "value": 3,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 375000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "cores": {
+          "value": 5,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 160,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "rules": {
+          "value": [
+            "classification_4",
+            "no_tier_loss",
+            "different_slot_allowed"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.convergence_fusion.tier4",
+      "facts": {
+        "target_tier": {
+          "value": 4,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "class_id": {
+          "value": 4,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 300000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 130,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "success_percent": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "rules": {
+          "value": [
+            "same_slot",
+            "same_tier",
+            "different_item_allowed",
+            "no_bonus_effects"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.convergence_transfer.tier4",
+      "facts": {
+        "tier": {
+          "value": 4,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 800000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "cores": {
+          "value": 10,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 160,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "rules": {
+          "value": [
+            "classification_4",
+            "no_tier_loss",
+            "different_slot_allowed"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.convergence_fusion.tier5",
+      "facts": {
+        "target_tier": {
+          "value": 5,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "class_id": {
+          "value": 4,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 875000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 130,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "success_percent": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "rules": {
+          "value": [
+            "same_slot",
+            "same_tier",
+            "different_item_allowed",
+            "no_bonus_effects"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.convergence_transfer.tier5",
+      "facts": {
+        "tier": {
+          "value": 5,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 2000000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "cores": {
+          "value": 15,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 160,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "rules": {
+          "value": [
+            "classification_4",
+            "no_tier_loss",
+            "different_slot_allowed"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.convergence_fusion.tier6",
+      "facts": {
+        "target_tier": {
+          "value": 6,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "class_id": {
+          "value": 4,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 2350000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 130,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "success_percent": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "rules": {
+          "value": [
+            "same_slot",
+            "same_tier",
+            "different_item_allowed",
+            "no_bonus_effects"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.convergence_transfer.tier6",
+      "facts": {
+        "tier": {
+          "value": 6,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 5250000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "cores": {
+          "value": 25,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 160,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "rules": {
+          "value": [
+            "classification_4",
+            "no_tier_loss",
+            "different_slot_allowed"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.convergence_fusion.tier7",
+      "facts": {
+        "target_tier": {
+          "value": 7,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "class_id": {
+          "value": 4,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 6950000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 130,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "success_percent": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "rules": {
+          "value": [
+            "same_slot",
+            "same_tier",
+            "different_item_allowed",
+            "no_bonus_effects"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.convergence_transfer.tier7",
+      "facts": {
+        "tier": {
+          "value": 7,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 14500000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "cores": {
+          "value": 35,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 160,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "rules": {
+          "value": [
+            "classification_4",
+            "no_tier_loss",
+            "different_slot_allowed"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.convergence_fusion.tier8",
+      "facts": {
+        "target_tier": {
+          "value": 8,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "class_id": {
+          "value": 4,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 21250000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 130,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "success_percent": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "rules": {
+          "value": [
+            "same_slot",
+            "same_tier",
+            "different_item_allowed",
+            "no_bonus_effects"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.convergence_transfer.tier8",
+      "facts": {
+        "tier": {
+          "value": 8,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 42500000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "cores": {
+          "value": 50,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 160,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "rules": {
+          "value": [
+            "classification_4",
+            "no_tier_loss",
+            "different_slot_allowed"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.convergence_fusion.tier9",
+      "facts": {
+        "target_tier": {
+          "value": 9,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "class_id": {
+          "value": 4,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 50000000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 130,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "success_percent": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "rules": {
+          "value": [
+            "same_slot",
+            "same_tier",
+            "different_item_allowed",
+            "no_bonus_effects"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.convergence_transfer.tier9",
+      "facts": {
+        "tier": {
+          "value": 9,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 100000000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "cores": {
+          "value": 60,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "MULTIPLE_SECONDARY_REFERENCES_CORROBORATED",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer table"
+            },
+            {
+              "source": "community:tibiawatch:forge-transfer:20261019",
+              "selector": "Actual transfer route selector; docs/reference/content-prep/forge-content-1/source-correction-check.json"
+            }
+          ],
+          "note": "60cores corroborated by the TibiaWatch transfer selector and pinned donor implementation. Tibiopedia lists65; the conflicting secondary table is retained explicitly. No controlled Global transfer was performed.",
+          "evidence_scope": "COMMUNITY_GLOBAL_REFERENCE",
+          "assumptions": [
+            "Adopt60 as a derived reference supported by executable calculator logic; retain65 as a secondary-source discrepancy."
+          ]
+        },
+        "dust": {
+          "value": 160,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "rules": {
+          "value": [
+            "classification_4",
+            "no_tier_loss",
+            "different_slot_allowed"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.convergence_fusion.tier10",
+      "facts": {
+        "target_tier": {
+          "value": 10,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "class_id": {
+          "value": 4,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 125000000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 130,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "success_percent": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "rules": {
+          "value": [
+            "same_slot",
+            "same_tier",
+            "different_item_allowed",
+            "no_bonus_effects"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Fusion"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.convergence_transfer.tier10",
+      "facts": {
+        "tier": {
+          "value": 10,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold": {
+          "value": 300000000000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "cores": {
+          "value": 85,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "dust": {
+          "value": 160,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "rules": {
+          "value": [
+            "classification_4",
+            "no_tier_loss",
+            "different_slot_allowed"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Convergence Transfer"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "forge.resources",
+      "facts": {
+        "initial_dust_limit": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Dust, Slivers, and Exalted Cores"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "maximum_dust_limit": {
+          "value": 4600,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "SECONDARY_SOURCE_CORROBORATED",
+          "evidence_scope": "COMMUNITY_GLOBAL_REFERENCE",
+          "sources": [
+            {
+              "source": "community:tibiopedia:exaltation-forge:20261019",
+              "selector": "Dust resources and Konwersja; docs/reference/content-prep/forge-content-1/forge-dust-source-check.json"
+            },
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/forge-content-1/oteryn-parameters.json / field rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/maximum_dust_limit"
+            },
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Dust, Slivers, and Exalted Cores"
+            },
+            {
+              "source": "official:news:8850:20261018",
+              "selector": "maximum amount raised considerably"
+            }
+          ],
+          "note": "Tibiopedia explicitly supports the dust parameters. Earlier characterization as a newly invented Oteryn cap is superseded. Secondary corroboration does not constitute official/current-client proof.",
+          "assumptions": [
+            "The article describes the2026 summer-update dust rules. The total-cost formula sums its225 upgrade costs from25 through249; no discount is assumed."
+          ],
+          "global_evidence_archive": "docs/reference/content-prep/forge-content-1/tibia-source-archive.json#rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/maximum_dust_limit",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+        },
+        "dust_limit_increment": {
+          "value": 20,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:news:8850:20261018",
+              "selector": "Dust-limit upgrade announcement"
+            }
+          ],
+          "note": "Official announcement explicitly changes each increase from1 to20 and applies it retroactively. Earlier Wiki increments are historical."
+        },
+        "dust_limit_increment_cost": {
+          "value": {
+            "expression": "L<=100 ? 25 : 25+floor((L-100)/20)",
+            "increment": 20,
+            "domain": "L=100+20k; k integer>=0; L+20<=4600"
+          },
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "SECONDARY_SOURCE_CORROBORATED",
+          "evidence_scope": "COMMUNITY_GLOBAL_REFERENCE",
+          "sources": [
+            {
+              "source": "community:tibiopedia:exaltation-forge:20261019",
+              "selector": "Dust resources and Konwersja; docs/reference/content-prep/forge-content-1/forge-dust-source-check.json"
+            },
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/forge-content-1/oteryn-parameters.json / field rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/dust_limit_increment_cost"
+            },
+            {
+              "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:forge.dust_upgrade",
+              "selector": "forge.dust_upgrade"
+            },
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Dust, Slivers, and Exalted Cores"
+            },
+            {
+              "source": "official:news:8850:20261018",
+              "selector": "unlocking cost remains unchanged; increments now20"
+            }
+          ],
+          "note": "Tibiopedia explicitly supports the dust parameters. Earlier characterization as a newly invented Oteryn cap is superseded. Secondary corroboration does not constitute official/current-client proof.",
+          "assumptions": [
+            "The article describes the2026 summer-update dust rules. The total-cost formula sums its225 upgrade costs from25 through249; no discount is assumed."
+          ],
+          "global_evidence_archive": "docs/reference/content-prep/forge-content-1/tibia-source-archive.json#rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/dust_limit_increment_cost",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+        },
+        "total_upgrade_cost": {
+          "value": {
+            "expression": "k*(k+49)/2",
+            "k": "(target_limit-100)/20",
+            "domain": "target_limit=100+20k; 0<=k<=225",
+            "unit": "dust"
+          },
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "SECONDARY_SOURCE_CORROBORATED",
+          "evidence_scope": "COMMUNITY_GLOBAL_REFERENCE",
+          "sources": [
+            {
+              "source": "community:tibiopedia:exaltation-forge:20261019",
+              "selector": "Dust resources and Konwersja; docs/reference/content-prep/forge-content-1/forge-dust-source-check.json"
+            },
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/forge-content-1/oteryn-parameters.json / field rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/total_upgrade_cost"
+            },
+            {
+              "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:forge.dust_upgrade",
+              "selector": "forge.dust_upgrade"
+            },
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Dust, Slivers, and Exalted Cores"
+            },
+            {
+              "source": "official:news:8850:20261018",
+              "selector": "unlocking cost remains unchanged; increments now20"
+            }
+          ],
+          "note": "Tibiopedia explicitly supports the dust parameters. Earlier characterization as a newly invented Oteryn cap is superseded. Secondary corroboration does not constitute official/current-client proof.",
+          "assumptions": [
+            "The article describes the2026 summer-update dust rules. The total-cost formula sums its225 upgrade costs from25 through249; no discount is assumed."
+          ],
+          "global_evidence_archive": "docs/reference/content-prep/forge-content-1/tibia-source-archive.json#rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/total_upgrade_cost",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+        },
+        "dust_per_conversion": {
+          "value": 60,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Dust, Slivers, and Exalted Cores"
+            },
+            {
+              "source": "official-client:forge-ui:15.33.9d148f:20261019",
+              "selector": "forge-conversion.png; displayed configuration/help, no executed trial"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "slivers_per_conversion": {
+          "value": 3,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Dust, Slivers, and Exalted Cores"
+            },
+            {
+              "source": "official-client:forge-ui:15.33.9d148f:20261019",
+              "selector": "forge-conversion.png; displayed configuration/help, no executed trial"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "slivers_per_core": {
+          "value": 50,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Dust, Slivers, and Exalted Cores"
+            },
+            {
+              "source": "official-client:forge-ui:15.33.9d148f:20261019",
+              "selector": "forge-conversion.png; displayed configuration/help, no executed trial"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "failure_downgrade_percent": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion"
+            },
+            {
+              "source": "official-client:forge-ui:15.33.9d148f:20261019",
+              "selector": "forge-window-01.png; displayed configuration/help, no executed trial"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "core_reduced_failure_downgrade_percent": {
+          "value": 50,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion"
+            },
+            {
+              "source": "official-client:forge-ui:15.33.9d148f:20261019",
+              "selector": "forge-window-01.png; displayed configuration/help, no executed trial"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "core_bonus_rules": {
+          "value": "One core for success improvement and a separate core for loss protection.",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:95592:1205481",
+              "selector": "Fusion"
+            },
+            {
+              "source": "official-client:forge-ui:15.33.9d148f:20261019",
+              "selector": "forge-core-info.png; displayed configuration/help, no executed trial"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "bonus_distribution": {
+          "value": {
+            "status": "CURRENT_GLOBAL_LUCKY_BONUS_PROBABILITIES_UNMEASURED",
+            "pinned_donor_candidate": {
+              "draw_inclusive": [
+                0,
+                10000
+              ],
+              "outcomes": [
+                {
+                  "bonus_id": 0,
+                  "inclusive_range": [
+                    0,
+                    7399
+                  ],
+                  "probability_numerator": 7400,
+                  "probability_denominator": 10001
+                },
+                {
+                  "bonus_id": 1,
+                  "inclusive_range": [
+                    7400,
+                    8999
+                  ],
+                  "probability_numerator": 1600,
+                  "probability_denominator": 10001
+                },
+                {
+                  "bonus_id": 2,
+                  "inclusive_range": [
+                    9000,
+                    9499
+                  ],
+                  "probability_numerator": 500,
+                  "probability_denominator": 10001
+                },
+                {
+                  "bonus_id": 3,
+                  "inclusive_range": [
+                    9500,
+                    9524
+                  ],
+                  "probability_numerator": 25,
+                  "probability_denominator": 10001
+                },
+                {
+                  "bonus_id": 4,
+                  "inclusive_range": [
+                    9525,
+                    9549
+                  ],
+                  "probability_numerator": 25,
+                  "probability_denominator": 10001
+                },
+                {
+                  "bonus_id": 5,
+                  "inclusive_range": [
+                    9550,
+                    9949
+                  ],
+                  "probability_numerator": 400,
+                  "probability_denominator": 10001
+                },
+                {
+                  "bonus_id": 6,
+                  "inclusive_range": [
+                    9950,
+                    9974
+                  ],
+                  "probability_numerator": 25,
+                  "probability_denominator": 10001
+                },
+                {
+                  "bonus_id": 7,
+                  "inclusive_range": [
+                    9975,
+                    10000
+                  ],
+                  "probability_numerator": 26,
+                  "probability_denominator": 10001
+                }
+              ],
+              "application": "regular fusion; convergence forces bonus 0; success/failure path further constrains effects"
+            },
+            "convergence_has_no_lucky_bonus_in_official_help": true,
+            "selected_for_native_runtime": false
+          },
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-19",
+          "continuity": "DONOR_MODEL_RETAINED_GLOBAL_DISTRIBUTION_UNMEASURED",
+          "evidence_scope": "SOURCE_BACKED_OTS_CANDIDATE_NOT_CURRENT_GLOBAL_PROOF",
+          "sources": [
+            {
+              "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:forge.bonus_distribution",
+              "selector": "forge.bonus_distribution"
+            },
+            {
+              "source": "official-client:forge-ui:15.33.9d148f:20261019",
+              "selector": "forge-convergence.png; no lucky effects for convergence; inspected UI contains no ordinary-fusion probability table"
+            }
+          ],
+          "note": "Pinned donor probability model retained as an unselected candidate. Inspected official screens/help do not provide its exact ordinary-fusion outcome probabilities; empty history and zero executed trials cannot establish them. No probability table is promoted to Global proof.",
+          "assumptions": [],
+          "global_evidence_archive": "docs/reference/content-prep/forge-content-1/tibia-source-archive.json#rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/bonus_distribution",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+        }
+      }
+    }
+  ],
+  "evidence_scope": "SOURCE_OBSERVATIONS_WITH_EXPLICIT_OTERYN_WORKING_DEFAULTS"
+}

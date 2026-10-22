@@ -1,0 +1,28 @@
+{
+  "task": "ARENA-RULES-CONTENT-1",
+  "review_date": "2026-10-19",
+  "scope": "POPULATED_OTERYN_REFERENCE_DATA_WITH_ARCHIVED_GLOBAL_SOURCE_LIMITATIONS",
+  "research_status": "ALL_TARGET_PARAMETER_FIELDS_POPULATED",
+  "runtime_admission": "BLOCKED",
+  "coverage": "Current Tibiadrome admission, scoring, rotations, rewards and combat behavior are captured without duplicating the occupied arena catalog. Removed Duelling Arena behavior is labeled historical; whether Oteryn reintroduces it is an architecture decision outside this task.",
+  "source_registry": "sources.json",
+  "record_counts": {
+    "docs/reference/content-prep/arena-rules-content-1/admission-evidence/tibiadrome-reference-evidence.json": 21,
+    "docs/reference/content-prep/arena-rules-content-1/admission-evidence/arena-reference-evidence.json": 1
+  },
+  "evidence_field_counts": {
+    "PROVEN": 58,
+    "DERIVED": 1
+  },
+  "unresolved_fields": [],
+  "limitations_policy": "UNKNOWN/CONFLICT is the owner-required outcome for unproven values; candidates, selectors and reasons remain inspectable. No unsupported number was supplied to make the packet appear complete.",
+  "filled_parameter_fields": 1,
+  "remaining_unfilled_parameter_fields": 0,
+  "normalized_companion_fields": 0,
+  "global_source_archive": "docs/reference/content-prep/arena-rules-content-1/tibia-source-archive.json",
+  "global_source_archive_counts": {
+    "UNKNOWN": 1
+  },
+  "counting_scope": "Active fields only; archived original Global evidence is excluded from active-field counts.",
+  "pending_index_metadata": []
+}
