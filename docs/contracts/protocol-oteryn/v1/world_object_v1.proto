@@ -91,6 +91,11 @@ enum UseDispositionV1 {
   // 18 and 19 are sent only to a session that selected capability 22 RUNE_USE_V1 (RUNE-USE-0 §4).
   USE_DISPOSITION_TARGET_ILLEGAL = 18;
   USE_DISPOSITION_PROTECTION_ZONE = 19;
+  // BED0 §4 and §9: capability 11 WORLD_INTERACTION_V1.
+  USE_DISPOSITION_BED_CHOOSE_SKILL = 20;
+  USE_DISPOSITION_BED_OCCUPIED = 21;
+  USE_DISPOSITION_BED_WOKEN = 22;
+  USE_DISPOSITION_OFFLINE_TRAINING = 23;
 }
 
 // CommandResult.payload of command type 2: outcome only, never state. At most 4 bytes.

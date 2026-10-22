@@ -82,6 +82,9 @@ use oteryn_protocol_oteryn::attack::{
     STATE_DOMAIN_ACTOR_COMBAT_STATE, decode_attack_target_intent, decode_fight_modes_intent,
     encode_attack_intent_result,
 };
+use oteryn_protocol_oteryn::bed::{
+    BedSleepIntent, COMMAND_TYPE_BED_SLEEP_INTENT, decode_bed_sleep_intent,
+};
 use oteryn_protocol_oteryn::chat::{
     COMMAND_TYPE_CHAT_INTENT, ChatIntent, ChatIntentResult, ChatLine, ChatRoomSet,
     DELTA_TYPE_CHAT_LINE_V1, DELTA_TYPE_CHAT_ROOMS_V1, SNAPSHOT_TYPE_CHAT_V1, STATE_DOMAIN_CHAT,
@@ -584,6 +587,18 @@ pub trait FreshAdmissionAuthority {
                 ..UseOutcome::rejected()
             }
         }
+    }
+
+    /// BED0 §9: choice from a live map-item handle. An authority without the
+    /// house reservation/logout owner refuses; decoding never grants bed access.
+    fn sleep_in_bed(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _intent: BedSleepIntent,
+        _target: ItemKey,
+    ) -> impl Future<Output = UseOutcome> {
+        async { UseOutcome::rejected() }
     }
 
     /// Capability 22's exact direct-entry Rune adapter. Unknown commits keep the command open.
@@ -2804,6 +2819,21 @@ where
                     Dispatch::Step(outcome, wait)
                 }
             }
+        } else if command.command_type == COMMAND_TYPE_BED_SLEEP_INTENT {
+            Dispatch::Use(
+                super::bed_sleep::dispatch(
+                    authority,
+                    actor,
+                    UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: command.command_id,
+                        item_fence: admitted.item_fence,
+                    },
+                    decode_bed_sleep_intent(command.payload),
+                    item_view.as_ref(),
+                )
+                .await,
+            )
         } else if command.command_type == COMMAND_TYPE_USE_INTENT {
             match decode_use_intent_target(
                 admitted.continuity.selected_capabilities.as_slice(),
@@ -4345,6 +4375,10 @@ async fn send_error<S: AsyncWrite + Unpin>(
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 mod tests {
+    mod bed_sleep_dispatch_tests {
+        include!("bed_sleep_dispatch_tests.rs");
+    }
+
     use super::*;
     use crate::gameplay_transport::world_spatial::encode_step_result;
     use oteryn_protocol_oteryn::world_object::decode_use_result_with_gate;

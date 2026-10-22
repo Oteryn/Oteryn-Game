@@ -132,10 +132,10 @@
       "owner_decision": "WORLD-INTERACTION-0 \u00a710.1 (docs/architecture/reviews/OTERYN_GAME_WORLD_INTERACTION0_DOORS_LEVERS_FIELDS_AND_WORLD_CLOCK_DECISION_2026-10-01.md); number and command type 15 leased to LOOP-WORLD-1 (WORLDINT-WIRE-1) by the #1622 control plane",
       "owner": "current ChannelRuntime (the World object use and push rules)",
       "requires": [15, 18],
-      "command_types": [15],
+      "command_types": [15, 31],
       "state_domains": [],
       "offered": false,
-      "offer_gate": "WORLDINT-USE-1: the server does not offer this capability before the first door, lever or push rule commits. Without it selected, the map_item and map_object arms of USE field 4 use_with, the GROUND destination and BLOCKED result of command type 9 for map-item and Ground sources, the dispositions 11 to 17 and the gate message id are never accepted or sent, and command type 15 is refused. It extends command types 2 and 9 only; EQUIPMENT and results 10 and 11 of command type 9 stay with capability 12."
+      "offer_gate": "WORLDINT-USE-1: the server does not offer this capability before the first door, lever or push rule commits. Without it selected, the map_item and map_object arms of USE field 4 use_with, the GROUND destination and BLOCKED result of command type 9 for map-item and Ground sources, the dispositions 11 to 17 and 20 to 23 and the gate message id are never accepted or sent, and command types 15 and 31 are refused. BED_SLEEP_INTENT also requires the native House reservation, logout marker and admission settlement owners before activation. It extends command types 2 and 9 only; EQUIPMENT and results 10 and 11 of command type 9 stay with capability 12."
     },
     {
       "id": 12,
@@ -476,6 +476,16 @@
       "result_schema": "crates/protocol-oteryn/src/item_look.rs#ItemLookResult (CP D1240 layout; no .proto is published yet): exactly one of field 1 nonempty UTF-8 text of at most 512 bytes, or one empty refusal marker: 2 NOT_AVAILABLE, and only with capability 28 selected 3 NOT_VISIBLE, 4 NOT_REACHABLE, 5 RATE_LIMITED; a refusal carries no target facts",
       "max_payload_bytes": 31,
       "max_result_payload_bytes": 515
+    },
+    {
+      "id": 31,
+      "name": "BED_SLEEP_INTENT",
+      "owner_decision": "BED0 §9; integrator/CP allocation to BED-1, 2026-10-22: command 31 under existing WORLD_INTERACTION_V1",
+      "capability": 11,
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/world_interaction_v1.proto#BedSleepIntentV1",
+      "result_schema": "docs/contracts/protocol-oteryn/v1/world_object_v1.proto#UseResultV1 (BED0 dispositions 20 BED_CHOOSE_SKILL, 21 BED_OCCUPIED, 22 BED_WOKEN, 23 OFFLINE_TRAINING under capability 11)",
+      "max_payload_bytes": 24,
+      "max_result_payload_bytes": 4
     }
   ],
   "state_domains": [
