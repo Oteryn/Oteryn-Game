@@ -1,5 +1,5 @@
 use super::*;
-const MIGRATION: &str = include_str!("../../../migrations/0137_guild_core.sql");
+const MIGRATION: &str = include_str!("../../../migrations/0132_guild_core.sql");
 // Retained source-qualified fixtures use the exact installed SQL, never a copied schema.
 use std::sync::LazyLock;
 pub(super) static GUILD_TABLES_PROPOSAL: LazyLock<&str> = LazyLock::new(|| {

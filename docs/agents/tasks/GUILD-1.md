@@ -1194,7 +1194,7 @@ lane. No publication, credentials, external writes or optional skills are used.
   replace the old node job path and update all callers, rather than duplicate it.
 - `dispatch/src/gameplay_transport/guild.rs` and `guild/*_tests.rs`: session
   composition and real-dispatch tests. Shared files receive wiring only.
-- Migration `0137_guild_core.sql`: installed tables/guards and bounded role grants.
+- Migration `0132_guild_core.sql`: installed tables/guards and bounded role grants.
   Mount recovered cases exactly once through the canonical PostgreSQL target;
   split mechanic tests out of the old large owner without copying its fixtures.
 
@@ -1272,7 +1272,7 @@ Whole-diff checklist review re-read the owner checklist, audited 45 type/trait m
 ### Complete changed-file inventory (directory / filenames)
 
 - `./`: `Cargo.lock`, `workspace-boundaries.toml`.
-- `apps/game-server/migrations/`: `0137_guild_core.sql`.
+- `apps/game-server/migrations/`: `0132_guild_core.sql`.
 - `apps/game-server/src/lifted_tests/`: `durability_guild_disband_terminal_tests.rs`, `durability_guild_tests.rs`.
 - `apps/game-server/src/lifted_tests/durability_guild_disband_terminal_tests/`: `disband_terminal_tests.rs`, `terminal_support.rs`.
 - `apps/game-server/src/lifted_tests/durability_guild_tests/`: `chat_tests.rs`, `deadline_tests.rs`, `decline_tests.rs`, `disband_tests.rs`, `edit_ranks_tests.rs`, `event_failure.rs`, `found_tests.rs`, `membership_tests.rs`, `rank_tests.rs`, `resign_tests.rs`, `support.rs`, `terminal_core_tests.rs`, `text_tests.rs`, `world_job_tests.rs`.
@@ -1293,7 +1293,7 @@ Whole-diff checklist review re-read the owner checklist, audited 45 type/trait m
 
 ### Files growing by more than 200 lines
 
-- `apps/game-server/migrations/`: `0137_guild_core.sql (+680)`.
+- `apps/game-server/migrations/`: `0132_guild_core.sql (+680)`.
 - `apps/game-server/src/lifted_tests/durability_guild_disband_terminal_tests/`: `disband_terminal_tests.rs (+260)`.
 - `apps/game-server/src/lifted_tests/durability_guild_tests/`: `chat_tests.rs (+253)`, `deadline_tests.rs (+331)`, `decline_tests.rs (+471)`, `disband_tests.rs (+273)`, `edit_ranks_tests.rs (+769)`, `found_tests.rs (+425)`, `membership_tests.rs (+615)`, `rank_tests.rs (+963)`, `resign_tests.rs (+955)`, `support.rs (+771)`, `text_tests.rs (+632)`, `world_job_tests.rs (+202)`.
 - `apps/game-server/tests/support/`: `item_transfer_postgres_harness.rs (+758)`.
@@ -1360,7 +1360,7 @@ Validation uses `/home/mole/oteryn-cache/codex-bin/cargo +1.95.0` throughout:
 - `fmt --all -- --check`: passed. Whole continuation diff and new files were reviewed against the owner's `~/oteryn-cache/CODEX-CHECKLIST.md`; `git diff --check` passed. Workspace symbol/caller searches cover `apps/`, `crates/`, `tools/`; each new test source has exactly one mount.
 
 Changed files in this continuation:
-- `apps/game-server/migrations/0137_guild_core.sql`.
+- `apps/game-server/migrations/0132_guild_core.sql`.
 - `crates/gameplay/durability/src/durability/guild.rs` and `guild/{deadlines,disband,disband_transaction,disband_cleanup}.rs`.
 - `apps/game-server/src/lifted_tests/durability_guild_tests.rs` and `durability_guild_tests/{event_failure,resign_tests,disband_cleanup_tests,event_guard_tests}.rs`.
 - This task record, updated last.
