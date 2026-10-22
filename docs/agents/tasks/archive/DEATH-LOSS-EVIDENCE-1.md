@@ -5,15 +5,16 @@
 ```yaml
 task_id: DEATH-LOSS-EVIDENCE-1
 mode: MIGRATE
-status: ready
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/death-loss-evidence-1
-pr: PENDING
+pr: 2289
 supersedes_pr: 2238
 base_sha: 59785d76c0e3d49a5ef0e5679446ffaae04bfb29
 owner: Codex / current owner-authorized content preparation session
 created_at: 2026-10-18
+updated_at: 2026-10-22
 execution_policy: continuous_progress
 owned_paths:
   - docs/reference/content-prep/death-loss-evidence-1/**
@@ -28,7 +29,7 @@ Current Reference evidence is prepared for DEATH-ML-LOSS-1 #2193. This draft is 
 
 ## Architecture and source of truth
 
-Evidence follows the existing full-game tree placement. Source records are pinned to page revision IDs or immutable repository SHA-256 inputs in [the source registry](../../reference/content-prep/death-loss-evidence-1/sources.json). Native wiring belongs to CP. The evidence envelope is not a newly accepted runtime schema.
+Evidence follows the existing full-game tree placement. Source records are pinned to page revision IDs or immutable repository SHA-256 inputs in [the source registry](../../../reference/content-prep/death-loss-evidence-1/sources.json). Native wiring belongs to CP. The evidence envelope is not a newly accepted runtime schema.
 
 ## High-risk authority/recovery qualification
 
@@ -42,11 +43,16 @@ NOT_APPLICABLE: data and documentation only; no production, session, identity, p
 
 ## Implementation / findings
 
-See [the task evidence](../../reference/content-prep/death-loss-evidence-1/README.md). Remaining source gaps are carried in UNKNOWN/CONFLICT facts and grouped in the draft PR. Canonical live branch, frozen SHA, PR and CI state are recorded on GitHub after the atomic candidate is created; this source record does not self-reference its future SHA.
+See [the task evidence](../../../reference/content-prep/death-loss-evidence-1/README.md). Remaining source gaps are carried in UNKNOWN/CONFLICT facts and grouped in the draft PR. Canonical live branch, frozen SHA, PR and CI state are recorded on GitHub after the atomic candidate is created; this source record does not self-reference its future SHA.
 
 ## Validation
 
-Publication requires the commands and results retained in the canonical draft PR. Local pre-publication checks are run on each complete candidate. Exact-head CI remains a separate check after publication.
+Results on the candidate tree (2026-10-22):
+
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: OK
+- every JSON file under `docs/reference/content-prep/death-loss-evidence-1/` parses: pass
+- `git diff --check`: pass
 
 ## Self-review
 
@@ -64,4 +70,8 @@ Task status `ready` refers only to the data/docs handoff. The PR remains draft; 
 
 ## Working-data completion — 2026-10-19
 
-Populated 5 previously held fields directly in target records; 0 active unfilled fields. See [parameter register](../../reference/content-prep/death-loss-evidence-1/oteryn-parameters.json). Runtime admission and protected integration remain blocked.
+Populated 5 previously held fields directly in target records; 0 active unfilled fields. See [parameter register](../../../reference/content-prep/death-loss-evidence-1/oteryn-parameters.json). Runtime admission and protected integration remain blocked.
+
+## Closeout
+
+Superseded draft #2238 by #2289, rebuilt on current `main`. Data/docs only; no runtime admission. Merge commit/result: squash merge of #2289. Review state: recorded on #2289.
