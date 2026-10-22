@@ -66,11 +66,18 @@ pub struct OneItemCharmUnassignV1 {
 pub enum FeeBurnCauseV1 {
     #[prost(message, tag = "1")]
     CharmUnassign(OneItemCharmUnassignV1),
+    #[prost(message, tag = "2")]
+    PromotionPurchase(OneItemNpcPurchaseV1),
+    #[prost(message, tag = "3")]
+    BlessingPurchase(OneItemNpcPurchaseV1),
 }
+
+mod purchase_cause;
+pub use purchase_cause::OneItemNpcPurchaseV1;
 
 #[derive(Clone, PartialEq, Eq, Message)]
 pub struct OneItemFeeBurnCauseV1 {
-    #[prost(oneof = "FeeBurnCauseV1", tags = "1")]
+    #[prost(oneof = "FeeBurnCauseV1", tags = "1, 2, 3")]
     pub cause: Option<FeeBurnCauseV1>,
 }
 
@@ -215,13 +222,7 @@ fn line_coin(state: &OneItemStateV1) -> Result<Coin, AuditError> {
 
 /// Complete closed fee shape, conservation and every registered bound.
 pub fn check_fee_burn(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
-    let Some(FeeBurnCauseV1::CharmUnassign(cause)) =
-        value.cause.as_ref().and_then(|cause| cause.cause.as_ref())
-    else {
-        return Err(AuditError::InvalidInput);
-    };
-    CharmKey::new(cause.charm_key.clone()).map_err(|_| AuditError::InvalidInput)?;
-    check_uuid_v7(&cause.occurrence)?;
+    purchase_cause::check(value)?;
     check_uuid_v7(&value.character_id)?;
     check_uuid_v7(&value.world_id)?;
     check_uuid_v7(&value.channel_id)?;
@@ -525,6 +526,7 @@ pub fn encode_fee_burn_event_with(
 #[cfg(test)]
 mod tests {
     #![allow(clippy::expect_used, clippy::unwrap_used)]
+    mod purchase_cause_tests;
     use super::super::item_mint_audit::{OneItemTypedDefinitionRevisionV1, decode_payload};
     use super::*;
     use serde_json::Value;

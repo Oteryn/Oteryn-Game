@@ -111,8 +111,8 @@ pub struct BestiaryCharmEntry {
 /// Production [`CharmFacts`] over the CHARM-2 kill counters (`game_character_bestiary_progress`),
 /// read in the Charm command's transaction. Every counter writer advances the CharacterRevision
 /// under the same root lock, so the counters read here are current. A counter of a race missing
-/// from `entries` earns nothing and admits no assignment. No durable promotion or slot
-/// entitlement exists yet: `promoted` is `false` and the entitlement `Free` until one does.
+/// from `entries` earns nothing and admits no assignment. Promotion is read from the durable
+/// purchase under the caller's fence. Slot entitlement remains `Free`.
 #[derive(Debug, Clone)]
 pub struct BestiaryCharmFacts {
     entries: Arc<BTreeMap<String, BestiaryCharmEntry>>,
@@ -195,10 +195,10 @@ impl CharmFacts for BestiaryCharmFacts {
 
     async fn promoted(
         &self,
-        _connection: &mut PgConnection,
-        _character: CharacterId,
+        connection: &mut PgConnection,
+        character: CharacterId,
     ) -> std::result::Result<bool, DurabilityError> {
-        Ok(false)
+        super::character_promotion::read_durable_promotion(connection, character).await
     }
 
     async fn slot_entitlement(

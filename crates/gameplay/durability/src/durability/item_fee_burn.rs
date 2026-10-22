@@ -57,6 +57,9 @@ use sqlx::postgres::PgConnection;
 
 const REQUEST_BINDING_VERSION: u8 = 1;
 const CAUSE_CHARM_UNASSIGN: i16 = 1;
+mod purchase_cause;
+#[cfg(any(test, feature = "test-support"))]
+pub mod test_support;
 
 /// The closed `FeeBurnCause` (decision §4.4): one variant per admitted fee source.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -64,6 +67,14 @@ pub enum FeeBurnCause {
     CharmUnassign {
         charm: CharmKey,
         occurrence: CharmCommandOccurrence,
+    },
+    PromotionPurchase {
+        service: String,
+        occurrence: [u8; 16],
+    },
+    BlessingPurchase {
+        service: String,
+        occurrence: [u8; 16],
     },
 }
 
@@ -250,7 +261,7 @@ async fn burn_fee(
     else {
         return Err(FeeBurnError::InvalidInput);
     };
-    let FeeBurnCause::CharmUnassign { charm, occurrence } = &request.cause;
+    request.cause.validate()?;
     let committed = fence
         .expected_character_revision
         .get()
@@ -277,8 +288,8 @@ async fn burn_fee(
            FROM game_item_fee_burns \
           WHERE cause_kind = $1 AND cause_occurrence_id = encode($2,'hex')::uuid",
     )
-    .bind(CAUSE_CHARM_UNASSIGN)
-    .bind(occurrence.as_bytes().as_slice())
+    .bind(request.cause.kind())
+    .bind(request.cause.occurrence().as_slice())
     .fetch_optional(&mut *connection)
     .await?;
     if let Some(row) = stored {
@@ -374,7 +385,11 @@ async fn burn_fee(
     let bank_debit_gold_units = bank_part(
         request.fee_gold_units,
         eligible,
-        tuple,
+        if matches!(request.cause, FeeBurnCause::PromotionPurchase { .. }) {
+            Type2EventTuple::V1
+        } else {
+            tuple
+        },
         fee_payer_is_junior(fence.character_id),
     )?;
     // With a bank part every eligible input is burned whole: the plan of their whole worth.
@@ -514,10 +529,7 @@ async fn burn_fee(
         },
         OneItemFeeBurnV1 {
             cause: Some(OneItemFeeBurnCauseV1 {
-                cause: Some(FeeBurnCauseV1::CharmUnassign(OneItemCharmUnassignV1 {
-                    charm_key: charm.as_str().into(),
-                    occurrence: occurrence.as_bytes().to_vec(),
-                })),
+                cause: Some(request.cause.audit()),
             }),
             fee_gold_units: request.fee_gold_units,
             burned_gold_units,
@@ -555,19 +567,19 @@ async fn burn_fee(
            backpack_item_instance_id, fee_gold_units, burned_gold_units, change_gold_units, \
            line_count, occurred_at, envelope_sha256, committed_at, \
            change_platinum_item_instance_id, change_gold_item_instance_id, \
-           change_placement_ordinal, bank_debit_gold_units) \
+           change_placement_ordinal, bank_debit_gold_units, purchase_service_key) \
          VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3, encode($4,'hex')::uuid, \
            $5, $6, encode($7,'hex')::uuid, encode($8,'hex')::uuid, encode($9,'hex')::uuid, \
            $10::text::numeric(20,0), $11::text::numeric(20,0), encode($12,'hex')::uuid, \
            $13, $17, $18, $14, $15, sha256($16), \
            floor(extract(epoch FROM statement_timestamp())*1000)::bigint, \
-           encode($19,'hex')::uuid, encode($20,'hex')::uuid, $21::text::numeric(20,0), $22)",
+           encode($19,'hex')::uuid, encode($20,'hex')::uuid, $21::text::numeric(20,0), $22, $23)",
     )
     .bind(request.transaction_id.as_slice())
     .bind(request.event_id.as_slice())
-    .bind(CAUSE_CHARM_UNASSIGN)
-    .bind(occurrence.as_bytes().as_slice())
-    .bind(charm.as_str())
+    .bind(request.cause.kind())
+    .bind(request.cause.occurrence().as_slice())
+    .bind(request.cause.charm_key())
     .bind(binding.as_slice())
     .bind(fence.character_id.as_bytes().as_slice())
     .bind(world_id.as_bytes().as_slice())
@@ -589,6 +601,7 @@ async fn burn_fee(
             .map(|output| output.placement_ordinal.to_string()),
     )
     .bind(gold_units(bank_debit_gold_units)?)
+    .bind(request.cause.purchase_key())
     .execute(&mut *connection)
     .await?;
 
@@ -852,17 +865,16 @@ fn valid_change_facts(request: &FeeBurnRequest) -> bool {
 /// SHA-256 over the semantic request: the cause, the Character, its World and the fee. The
 /// TransactionId, EventId, time and build are retry-local and excluded.
 fn request_binding(fence: &CurrentCharacterGameplayFence, request: &FeeBurnRequest) -> Vec<u8> {
-    let FeeBurnCause::CharmUnassign { charm, occurrence } = &request.cause;
     let mut digest = Sha256::new();
     digest.update([REQUEST_BINDING_VERSION]);
-    digest.update(CAUSE_CHARM_UNASSIGN.to_be_bytes());
-    digest.update(occurrence.as_bytes());
+    digest.update(request.cause.kind().to_be_bytes());
+    digest.update(request.cause.occurrence());
     digest.update(
-        u32::try_from(charm.as_str().len())
+        u32::try_from(request.cause.key().len())
             .unwrap_or(u32::MAX)
             .to_be_bytes(),
     );
-    digest.update(charm.as_str().as_bytes());
+    digest.update(request.cause.key().as_bytes());
     digest.update(fence.character_id.as_bytes());
     digest.update(fence.runtime_scope.world_id().as_bytes());
     digest.update(request.fee_gold_units.to_be_bytes());

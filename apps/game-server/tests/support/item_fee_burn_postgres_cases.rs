@@ -6,21 +6,17 @@
 // runtime-role transaction as `burn_fee_in_transaction`. The fixture (character, main backpack,
 // coin stacks) is seeded by the migration owner with the guards off, as other item cases do.
 
-use crate::domain::charm::CharmKey;
 use crate::domain::currency::Coin;
 use crate::domain::{CharacterId, CharacterRevision};
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
-use crate::durability::charm_state::CharmCommandOccurrence;
 use crate::durability::item_fee_burn::{
-    BurnedCoinStack, FeeBurnCause, FeeBurnError, FeeBurnOutcome, FeeBurnRequest, FeeChangeFacts,
-    MintedCoinStack, burn_fee_in_transaction,
+    BurnedCoinStack, FeeBurnCause, FeeBurnError, FeeBurnOutcome, FeeBurnRequest, MintedCoinStack,
+    burn_fee_in_transaction,
 };
 use crate::durability::item_fee_burn_audit::{
     FEE_RL07_ENVELOPE_BYTES_MAX, decode_fee_burn_envelope,
 };
-use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_mint_audit::Type2Transaction;
-use crate::durability::item_transfer::{ItemDefinitionFacts, ItemStackClass};
 use crate::foundation::{
     ChannelId, ConnectionGeneration, GameSessionId, RuntimeScopeRefV1, ScopeOwnershipGeneration,
     WorldId,
@@ -28,35 +24,15 @@ use crate::foundation::{
 use sqlx::{Connection, Executor, PgPool};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+use crate::durability::item_fee_burn::test_support::{
+    BACKPACK_KEY, CRYSTAL, GOLD, OCCURRED_AT, PLATINUM, WORLD, debug, hex, id, item, request, uuid,
+};
 
 const CHARACTER: u8 = 41;
 const ACCOUNT: u8 = 44;
-const WORLD: u8 = 42;
+
 const CHANNEL: u8 = 43;
 const BACKPACK: u8 = 50;
-const GOLD: &str = "oteryn:item.tibia.i3031";
-const PLATINUM: &str = "oteryn:item.tibia.i3035";
-const CRYSTAL: &str = "oteryn:item.tibia.i3043";
-const BACKPACK_KEY: &str = "oteryn:item.tibia.i2854";
-const OCCURRED_AT: i64 = 1_790_000_000_000;
-
-fn id(seed: u8) -> [u8; 16] {
-    [
-        seed, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, seed,
-    ]
-}
-
-fn debug(error: impl std::fmt::Debug) -> Box<dyn std::error::Error> {
-    format!("{error:?}").into()
-}
-
-fn hex(bytes: &[u8]) -> String {
-    bytes.iter().map(|byte| format!("{byte:02x}")).collect()
-}
-
-fn uuid(seed: u8) -> String {
-    format!("'{}'::uuid", hex(&id(seed)))
-}
 
 fn configured_admin() -> Option<String> {
     match std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") {
@@ -220,18 +196,6 @@ impl Harness {
     }
 }
 
-fn item(seed: u8, key: &str, revision: &str, quantity: u32) -> String {
-    format!(
-        "INSERT INTO game_item_instances(item_instance_id, world_id, definition_family, \
-           definition_production_key, definition_revision_ref, quantity, lifecycle, \
-           minted_transaction_id) \
-         VALUES ({}, {}, 'Item', '{key}', '{revision}', {quantity}, 1, {});",
-        uuid(seed),
-        uuid(WORLD),
-        uuid(seed + 1),
-    )
-}
-
 fn fence(revision: u64) -> TestResult<CurrentCharacterGameplayFence> {
     Ok(CurrentCharacterGameplayFence {
         character_id: CharacterId::from_bytes(id(CHARACTER)).map_err(debug)?,
@@ -244,43 +208,6 @@ fn fence(revision: u64) -> TestResult<CurrentCharacterGameplayFence> {
         ),
         scope_ownership_generation: ScopeOwnershipGeneration::new(1).map_err(debug)?,
         expected_character_revision: CharacterRevision::new(revision).map_err(debug)?,
-    })
-}
-
-fn definition(key: &str) -> TypedDefinitionRef {
-    TypedDefinitionRef {
-        family: "Item".into(),
-        production_key: key.into(),
-        revision_ref: "rev-1".into(),
-    }
-}
-
-/// A `CharmUnassign` fee of occurrence `occurrence` with TransactionId `occurrence + 100` and
-/// change slots `occurrence + 150` (platinum) and `occurrence + 170` (gold).
-fn request(occurrence: u8, fee: u64) -> TestResult<FeeBurnRequest> {
-    Ok(FeeBurnRequest {
-        cause: FeeBurnCause::CharmUnassign {
-            charm: CharmKey::new(format!("oteryn:charm.c{occurrence}")).map_err(debug)?,
-            occurrence: CharmCommandOccurrence::from_bytes(id(occurrence)).map_err(debug)?,
-        },
-        fee_gold_units: fee,
-        transaction_id: id(occurrence + 100),
-        event_id: id(occurrence + 130),
-        occurred_at_unix_ms: OCCURRED_AT,
-        server_build_id: "fee-test-build".into(),
-        change: FeeChangeFacts {
-            item_instance_ids: [id(occurrence + 150), id(occurrence + 170)],
-            platinum: definition(PLATINUM),
-            gold: definition(GOLD),
-            crystal: definition(CRYSTAL),
-            backpack: ItemDefinitionFacts {
-                weight: None,
-                definition: definition(BACKPACK_KEY),
-                stack: ItemStackClass::NonStackable,
-                container_capacity: Some(20),
-                container_slot_equip_pattern: true,
-            },
-        },
     })
 }
 
@@ -331,7 +258,9 @@ async fn compose(
     request: &FeeBurnRequest,
     with_change: bool,
 ) -> TestResult<Composed> {
-    let FeeBurnCause::CharmUnassign { occurrence, .. } = &request.cause;
+    let FeeBurnCause::CharmUnassign { occurrence, .. } = &request.cause else {
+        return Err("expected Charm fee".into());
+    };
     let mut tx = Type2Transaction::open(harness.runtime.begin().await?).await?;
     if with_change {
         sqlx::raw_sql(sqlx::AssertSqlSafe(character_change(

@@ -4,24 +4,12 @@
 // configured PostgreSQL 17.6 runs count as qualification evidence.
 extern crate oteryn_game_server as production_server;
 extern crate self as oteryn_game_server;
+pub use oteryn_gameplay_dispatch::gameplay_transport;
 pub use production_server::admission_evidence;
-#[allow(dead_code, unused_imports)]
-#[path = "../../../crates/gameplay/durability/src/character_bootstrap_intent.rs"]
-pub mod character_bootstrap_intent;
-#[allow(dead_code, unused_imports)]
-pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
-#[path = "support/domain_shim.rs"]
-pub mod domain;
-#[allow(dead_code, unused_imports)]
-#[path = "../src/durability"]
-mod durability {
-    // Recompile the shared core; native world adapters use the full library Content context.
-    include!("../../../crates/gameplay/durability/src/durability/core_modules.rs");
-}
-#[allow(dead_code, unused_imports)]
-pub use oteryn_gameplay_entities as foundation;
-#[allow(dead_code, unused_imports)]
-pub use oteryn_gameplay_native_admission_source as native_admission_source;
+pub use production_server::{
+    character_bootstrap_intent, character_recovery_fence, domain, durability, foundation,
+    native_admission_source,
+};
 #[allow(dead_code, unused_imports)]
 #[path = "../../../crates/gameplay/social/src/premium/mod.rs"]
 mod premium;
@@ -2320,6 +2308,10 @@ mod type2_audit_activation_postgres_cases;
 mod bestiary_postgres_harness;
 #[path = "support/bestiary_progress_postgres_cases.rs"]
 mod bestiary_progress_postgres_cases;
+#[path = "support/character_promotion_fixture.rs"]
+mod character_promotion_fixture;
+#[path = "support/character_promotion_postgres_cases.rs"]
+mod character_promotion_postgres_cases;
 
 // LOOP-GROUND-1 Ground64 same-transaction admission (pure and native PostgreSQL
 // cases) on the CHARM-2 harness included above; its only test mount.

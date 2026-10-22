@@ -32,6 +32,7 @@ pub mod character_last_position;
 pub mod character_proficiency;
 pub mod character_proficiency_modification;
 pub mod character_progression;
+pub mod character_promotion;
 pub mod character_revision_sequencer;
 pub mod character_stance;
 
@@ -54,6 +55,7 @@ pub mod house_scope_handoff;
 
 pub mod item_decay_retire;
 pub mod item_decay_retire_audit;
+pub mod blessing_purchase;
 pub mod item_fee_burn;
 pub mod item_fee_burn_audit;
 pub mod item_loop_move;
@@ -66,7 +68,7 @@ pub mod item_transfer;
 pub mod item_transfer_audit;
 pub mod item_use;
 pub mod item_use_audit;
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 pub mod item_weight_lookup;
 pub mod mail;
 pub mod map_item_mint;
@@ -76,11 +78,13 @@ pub mod monk_state;
 pub mod native_admission_source;
 pub mod native_map_items;
 pub mod native_map_items_abi;
+pub mod npc_purchase;
 pub mod npc_trade;
 pub mod npc_trade_audit;
 pub mod npc_travel;
 pub mod premium_activation_latch;
 pub mod premium_fence;
+pub mod promotion_purchase;
 pub mod public_projections;
 pub mod pvp_state;
 pub mod quest_state;

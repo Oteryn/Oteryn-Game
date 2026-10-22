@@ -275,3 +275,7 @@ mod bestiary_postgres_harness;
 #[cfg(test)]
 #[path = "lifted_tests/source_time_profile_bundle_tests.rs"]
 mod source_time_profile_bundle_tests;
+
+#[cfg(test)]
+#[path = "../../../../apps/game-server/tests/support/character_promotion_fixture.rs"]
+mod character_promotion_fixture;

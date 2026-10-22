@@ -21,6 +21,11 @@ mod item_look;
 #[path = "weather_wire_postgres_tests.rs"]
 mod weather_wire;
 
+#[path = "monk_save_content_fixture.rs"]
+mod content_fixture;
+#[path = "promotion_npc_postgres_tests.rs"]
+mod promotion_npc;
+
 #[path = "loop_map_pickup_tests.rs"]
 mod map_pickup;
 
@@ -124,7 +129,7 @@ struct Dependencies {
     actor: ExactActorRef,
 }
 impl Dependencies {
-    fn new() -> TestResult<Self> {
+    fn new_with_pin(pin: Option<ChannelContentPin>) -> TestResult<Self> {
         use rustls::pki_types::{CertificateDer, PrivateKeyDer};
         let expected = fence(1)?;
         let world = expected.runtime_scope.world_id();
@@ -139,7 +144,7 @@ impl Dependencies {
             1,
             "runtime-scope-assignment:1",
             2,
-            ChannelContentPin::test(world),
+            pin.unwrap_or_else(|| ChannelContentPin::test(world)),
         )
         .map_err(debug)?;
         let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
