@@ -6,6 +6,8 @@
 //! CREATURE-AI-1 §2.1: the think engine (targeting, steps, schedule) and its limits
 //! (`CREATUREAI0-RL-05`, `-06`, `-07`, `-18`).
 
+pub(super) mod movement_fixtures;
+
 use super::behaviour_profile::{CREATUREAI0_PROPOSALS_PER_THINK, ProfileRefusal};
 use super::profile_schedule::ScheduleList;
 use super::*;
@@ -168,7 +170,7 @@ fn think(
     sequence: u64,
     facts: &CreatureThinkFacts<'_>,
 ) -> ThinkReport {
-    state.think(sequence, facts, |_| true).expect("think")
+    state.think(sequence, facts).expect("think")
 }
 
 fn hex(bytes: &[u8]) -> String {
@@ -230,12 +232,11 @@ fn rat_targets_the_nearer_player_and_chases_until_adjacent() {
     let report = think(&mut state, 1, &facts.at(at(100, 100), 20, &players, 0));
     assert_eq!(report.target, Some(actor_n(11)));
     assert_eq!(
-        report.step,
-        Some(CreatureStep {
-            kind: StepKind::Chase,
-            step: CardinalStep::East,
-            destination: at(101, 100),
-        })
+        report.goal,
+        MovementGoal::Chase {
+            actor: actor_n(11),
+            at: at(103, 100)
+        }
     );
     assert!(report.proposals.is_empty() && !report.fleeing && !report.idle);
     assert_eq!(report.units, 1 + 2 + 2 + 1);
@@ -245,13 +246,22 @@ fn rat_targets_the_nearer_player_and_chases_until_adjacent() {
         &facts.at(at(102, 100), 20, &players, 1_000_000),
     );
     assert_eq!(adjacent.target, Some(actor_n(11)));
-    assert_eq!(adjacent.step, None);
-    // A refused destination is no step.
+    assert!(matches!(adjacent.goal, MovementGoal::Chase { .. }));
+    // Thinking selects the same goal independently of destination admission.
     let mut blocked = CreatureAiState::new(rat(), rat_profile(), at(100, 100));
     let report = blocked
-        .think(1, &facts.at(at(100, 100), 20, &players, 0), |_| false)
+        .think(1, &facts.at(at(100, 100), 20, &players, 0))
         .expect("think");
-    assert_eq!((report.target, report.step), (Some(actor_n(11)), None));
+    assert_eq!(
+        (report.target, report.goal),
+        (
+            Some(actor_n(11)),
+            MovementGoal::Chase {
+                actor: actor_n(11),
+                at: at(103, 100)
+            }
+        )
+    );
 }
 
 #[test]
@@ -278,7 +288,7 @@ fn ineligible_and_other_floor_players_are_never_targeted_and_targets_are_dropped
                 sequence * 1_000_000,
             ),
         );
-        assert_eq!((report.target, report.step), (None, None));
+        assert_eq!((report.target, report.goal), (None, MovementGoal::Stand));
     }
     let mut eligible = player(12, at(102, 100));
     let report = think(
@@ -293,7 +303,7 @@ fn ineligible_and_other_floor_players_are_never_targeted_and_targets_are_dropped
         5,
         &facts.at(at(100, 100), 20, &[eligible], 5_000_000),
     );
-    assert_eq!((report.target, report.step), (None, None));
+    assert_eq!((report.target, report.goal), (None, MovementGoal::Stand));
     assert_eq!(state.target(), None);
     // An unseen player is not perceived: the think is idle.
     let report = think(
@@ -314,12 +324,11 @@ fn hurt_rat_flees_away_and_keeps_its_target() {
     assert!(report.fleeing);
     assert_eq!(report.target, Some(actor_n(10)));
     assert_eq!(
-        report.step,
-        Some(CreatureStep {
-            kind: StepKind::Flee,
-            step: CardinalStep::West,
-            destination: at(99, 100),
-        })
+        report.goal,
+        MovementGoal::Flee {
+            actor: actor_n(10),
+            at: at(102, 100)
+        }
     );
     // Adjacent while fleeing: still the target (the swing bites), and still stepping away.
     let report = think(
@@ -328,7 +337,7 @@ fn hurt_rat_flees_away_and_keeps_its_target() {
         &facts.at(at(101, 100), 5, &players, 1_000_000),
     );
     assert_eq!(report.target, Some(actor_n(10)));
-    assert_eq!(report.step.map(|step| step.kind), Some(StepKind::Flee));
+    assert!(matches!(report.goal, MovementGoal::Flee { .. }));
     let report = think(
         &mut state,
         3,
@@ -546,13 +555,13 @@ fn evaluation_units_at_max_think_and_above_max_mutate_nothing() {
     let refused = think(&mut state, 1, &facts.at(at(100, 100), 20, &over, 0));
     assert!(refused.over_budget);
     assert_eq!(refused.units, CREATUREAI0_EVALUATION_UNITS_PER_THINK + 1);
-    assert_eq!((refused.target, refused.step), (None, None));
+    assert_eq!((refused.target, refused.goal), (None, MovementGoal::Stand));
     assert_eq!(state.target(), None);
     // Nothing was recorded: the same sequence thinks afresh at the maximum.
     let report = think(&mut state, 1, &facts.at(at(100, 100), 20, &players, 0));
     assert!(!report.over_budget);
     assert_eq!(report.units, CREATUREAI0_EVALUATION_UNITS_PER_THINK);
-    assert!(report.target.is_some() && report.step.is_some());
+    assert!(report.target.is_some() && matches!(report.goal, MovementGoal::Chase { .. }));
 }
 
 #[test]
@@ -583,7 +592,7 @@ fn thinks_per_window_at_max_start_now_and_the_rest_next_window() {
     let facts = Facts::new();
     for creature in &first {
         table
-            .think(*creature, &facts.at(at(100, 100), 20, &[], 0), |_| true)
+            .think(*creature, &facts.at(at(100, 100), 20, &[], 0))
             .expect("present")
             .expect("think");
     }
@@ -632,19 +641,15 @@ fn overrides_hold_replace_and_expire() {
     // Hurt and with a nearer player: the forced target holds, no search and no flee.
     for now in [0, 4_000_000] {
         let report = table
-            .think(rat(), &facts.at(at(100, 100), 5, &players, now), |_| true)
+            .think(rat(), &facts.at(at(100, 100), 5, &players, now))
             .expect("present")
             .expect("think");
         assert_eq!(report.target, Some(actor_n(11)));
         assert!(!report.fleeing);
-        assert_eq!(report.step.map(|step| step.kind), Some(StepKind::Chase));
+        assert!(matches!(report.goal, MovementGoal::Chase { .. }));
     }
     let report = table
-        .think(
-            rat(),
-            &facts.at(at(100, 100), 5, &players, 5_000_000),
-            |_| true,
-        )
+        .think(rat(), &facts.at(at(100, 100), 5, &players, 5_000_000))
         .expect("present")
         .expect("think");
     assert_eq!(report.target, Some(actor_n(10)));
@@ -663,7 +668,7 @@ fn retried_think_is_identical_and_an_older_sequence_is_superseded() {
         think(&mut state, 2, &facts.at(at(100, 100), 20, &players, 0))
     );
     assert_eq!(
-        state.think(1, &facts.at(at(100, 100), 20, &players, 0), |_| true),
+        state.think(1, &facts.at(at(100, 100), 20, &players, 0)),
         Err(ThinkError::OccurrenceSuperseded)
     );
 }
@@ -681,14 +686,14 @@ fn idle_creatures_wake_only_in_view_and_at_most_the_wake_cap() {
     let stationary = [player(10, at(103, 102))];
     assert_eq!(table.take_due(0), [rat()]);
     let report = table
-        .think(rat(), &facts.at(at(100, 100), 20, &stationary, 0), |_| true)
+        .think(rat(), &facts.at(at(100, 100), 20, &stationary, 0))
         .expect("present")
         .expect("think");
     assert_eq!(report.target, Some(actor_n(10)));
     assert_eq!(table.due(rat()), Some(1_000_000));
     // Out of view: idle, no next think.
     let report = table
-        .think(rat(), &facts.at(at(100, 100), 20, &[], 1_000_000), |_| true)
+        .think(rat(), &facts.at(at(100, 100), 20, &[], 1_000_000))
         .expect("present")
         .expect("think");
     assert!(report.idle);
@@ -712,7 +717,7 @@ fn idle_creatures_wake_only_in_view_and_at_most_the_wake_cap() {
             0,
         );
         table
-            .think(*creature, &facts.at(at(100, 100), 20, &[], 0), |_| true)
+            .think(*creature, &facts.at(at(100, 100), 20, &[], 0))
             .expect("present")
             .expect("think");
     }
@@ -738,19 +743,41 @@ fn wander_steps_near_the_anchor_only_while_a_player_is_perceived() {
     protected.eligible = false;
     let mut state = CreatureAiState::new(rat(), profile.clone(), at(100, 100));
     let first = think(&mut state, 1, &facts.at(at(100, 100), 20, &[protected], 0));
-    assert_eq!(first.step, None);
+    assert!(matches!(
+        first.goal,
+        MovementGoal::Wander {
+            interval_ms: 2000,
+            ..
+        }
+    ));
     let second = think(
         &mut state,
         2,
         &facts.at(at(100, 100), 20, &[protected], 1_000_000),
     );
-    let step = second.step.expect("wander step");
-    assert_eq!(step.kind, StepKind::Wander);
-    assert_eq!(chebyshev_distance(step.destination, at(100, 100)), Some(1));
+    assert_eq!(
+        second.goal,
+        MovementGoal::Wander {
+            anchor: at(100, 100),
+            radius: 1,
+            interval_ms: 2000,
+        }
+    );
+    let step = second
+        .goal
+        .local_step(at(100, 100), 0, 0, |_| true)
+        .expect("wander step");
+    assert_eq!(
+        chebyshev_distance(
+            movement_goal::destination(at(100, 100), step).expect("destination"),
+            at(100, 100)
+        ),
+        Some(1)
+    );
     // Nothing perceived: idle, no wander.
     let mut state = CreatureAiState::new(rat(), profile, at(100, 100));
     for sequence in 1..=4 {
         let report = think(&mut state, sequence, &facts.at(at(100, 100), 20, &[], 0));
-        assert!(report.idle && report.step.is_none());
+        assert!(report.idle && report.goal == MovementGoal::Stand);
     }
 }

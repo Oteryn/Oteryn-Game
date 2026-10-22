@@ -2596,6 +2596,7 @@ pub mod actor_spell_item_v2;
 pub mod actor_spell_v2;
 pub mod analyser;
 pub mod attack;
+pub mod bed;
 pub mod bestiary;
 pub mod capability_tables;
 pub mod charm;

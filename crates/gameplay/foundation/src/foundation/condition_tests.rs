@@ -4,6 +4,9 @@ use super::*;
 
 const MS: u64 = 1_000;
 
+#[path = "condition_suppression_tests.rs"]
+mod condition_suppression_tests;
+
 fn root() -> GameplayDecisionRoot {
     GameplayDecisionRoot::from_bytes([7; 32])
 }

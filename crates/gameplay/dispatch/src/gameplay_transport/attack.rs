@@ -16,6 +16,8 @@
 //! route and chase re-paths at its next 1,000 ms check. `STAND` never moves the player. `secure`
 //! has no creature-target effect; its PvP refusal waits for player targets (PVP-RT-1).
 
+mod attack_chase_search;
+
 use crate::foundation::encode_state_delta;
 use oteryn_protocol_oteryn::attack::{
     ActorCombatState, AttackIntentDisposition, ChaseMode, DELTA_TYPE_ACTOR_COMBAT_STATE_V1,
@@ -37,9 +39,9 @@ use crate::ability::{
     AbilityIntent, AbilityOccurrence, CommitGroup, Effect, EffectPlan, ProposalSource, RevisionSet,
 };
 use crate::combat_attack::{
-    AttackConstants, AttackState, BlockBudget, CHASE_SEARCHES_PER_WINDOW, CREATURE_COST,
-    ChaseDecision, ChaseSearchBudget, ChaseState, FightMode, SwingPoll, TargetFacts, TargetRefusal,
-    chase_search_order, player_fist_formula, player_melee_formula,
+    AttackConstants, AttackState, BlockBudget, CREATURE_COST, ChaseDecision, ChaseSearchBudget,
+    ChaseState, FightMode, SwingPoll, TargetFacts, TargetRefusal, chase_search_order,
+    player_fist_formula, player_melee_formula,
 };
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::content::{LogicalCell, QualifiedNativeEntryRoom};
@@ -233,6 +235,7 @@ pub struct ChannelAttackStates {
     /// CHASE-1: the Channel's player chase searches in the current owner window
     /// (`RANGED0-RL-03`).
     chase_searches: ChaseSearchBudget,
+    pub(super) path_budget: crate::movement::path_budget::ChannelPathBudget,
     /// CHASE-1 (RANGED-0 §8): each player actor's pacing clock, owned by the actor rather than
     /// its connection, so a client step and a chase step share one clock and a replaced or
     /// resumed connection keeps it. Only held clocks are kept.
@@ -781,97 +784,6 @@ impl ChannelAttackStates {
         match self.entries[index].chase.next_step(from) {
             ChaseDecision::Step(step) => Some(step),
             ChaseDecision::Hold => None,
-        }
-    }
-
-    /// `RANGED0-RL-03`: the Channel's one chase search drain of the owner window of `now`. The
-    /// first chase check to reach the window runs every waiting search, at most
-    /// [`CHASE_SEARCHES_PER_WINDOW`], in the order [`chase_search_order`] gives, each against
-    /// the occupancy the earlier ones leave once they take their next step; every chase then
-    /// takes its own stored route. Nothing here depends on which check drains: the inputs are
-    /// the Channel's runtime, its path tiles and the waiting chases alone.
-    fn drain_chase_searches(
-        &mut self,
-        runtime: &ChannelRuntimeV1,
-        room: &QualifiedNativeEntryRoom,
-        now: SemanticTimeMicros,
-        path_tile: &impl Fn(MovementLocalPosition) -> bool,
-    ) {
-        let Self {
-            entries,
-            chase_searches,
-            ..
-        } = self;
-        if !chase_searches.open(now.get()) {
-            return;
-        }
-        let order = chase_search_order(
-            now.get(),
-            entries.iter().enumerate().filter_map(|(index, entry)| {
-                let since = entry.chase.search_waiting_since()?;
-                Some((since, (actor_order(entry.actor), index)))
-            }),
-        );
-        if order.is_empty() {
-            return;
-        }
-        // CREATURE-AI-0 §5.3: +40 over a tile another actor stands on (a creature, an NPC or
-        // another player; never the chasing player), and the target's own tile is no path tile.
-        let visible = runtime.visible_entities();
-        let standing: Vec<_> = visible
-            .creatures
-            .iter()
-            .chain(&visible.npcs)
-            .chain(&visible.players)
-            .map(|other| (other.actor, other.position))
-            .collect();
-        let mut stepping: Vec<(ExactActorRef, MovementLocalPosition)> = Vec::new();
-        let mut searched = 0;
-        for (_, index) in order {
-            if searched == CHASE_SEARCHES_PER_WINDOW {
-                break;
-            }
-            let entry = &mut entries[index];
-            let Some(target) = entry
-                .state
-                .target()
-                .filter(|_| entry.modes.chase == ChaseMode::Chase)
-            else {
-                continue;
-            };
-            let Some((from, to)) =
-                chase_ends(runtime, room, entry.actor, entry.session, target, now)
-            else {
-                continue;
-            };
-            let occupied: std::collections::BTreeSet<(i32, i32)> = standing
-                .iter()
-                .filter(|(other, _)| *other != entry.actor)
-                .map(|(other, position)| {
-                    stepping
-                        .iter()
-                        .find(|(stepper, _)| stepper == other)
-                        .map_or(*position, |(_, next)| *next)
-                })
-                .filter(|position| position.floor == from.floor)
-                .map(|position| (position.x, position.y))
-                .collect();
-            let ran = entry.chase.search(now.get(), from, to, |cell| {
-                if cell == to || !path_tile(cell) {
-                    return None;
-                }
-                Some(if occupied.contains(&(cell.x, cell.y)) {
-                    CREATURE_COST
-                } else {
-                    0
-                })
-            });
-            if ran {
-                searched += 1;
-            }
-            if let Some(next) = entry.chase.next_cell() {
-                stepping.push((entry.actor, next));
-            }
         }
     }
 

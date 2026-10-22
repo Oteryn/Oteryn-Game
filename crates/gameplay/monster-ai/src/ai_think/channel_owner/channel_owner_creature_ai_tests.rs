@@ -12,9 +12,7 @@ use crate::ability::creature_bite::{
     CreatureBiteVitals, CreatureHit, ReentryProtection, creature_damage,
 };
 use crate::ai_monster_melee::{Dispatch, MeleeDefinition, MonsterMeleeOwner};
-use crate::ai_think::{
-    AttackReadiness, CreatureThinkInput, PerceivedPlayer, PerceivedPlayerId, StepKind,
-};
+use crate::ai_think::{AttackReadiness, CreatureThinkInput, PerceivedPlayer, PerceivedPlayerId};
 use crate::foundation::owner_timer::SemanticTimeMicros;
 use oteryn_simulation_determinism::DecisionOccurrenceId;
 use serde_json::{Value, json};
@@ -22,6 +20,13 @@ use {
     crate::foundation::{ChannelId, GameSessionId, NodeId, WorldId},
     oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
 };
+
+mod creature_cadence_tests;
+mod creature_movement_measure;
+mod creature_movement_tests;
+mod creature_path_tests;
+mod creature_return_tests;
+mod movement_timer_fixture;
 
 const SECOND: u64 = 1_000_000;
 
@@ -88,6 +93,9 @@ fn rat(melee_entries: usize) -> ProjectV2BehaviorAuthoring {
 
 struct Channel {
     runtime: ChannelRuntimeV1,
+    cells: crate::content::NativeEntryMovementCells,
+    path_budget: crate::movement::path_budget::ChannelPathBudget,
+    movement_time: u64,
     table: CreatureAiTable,
     player: ExactActorRef,
     session: GameSessionId,
@@ -102,6 +110,7 @@ impl Channel {
 
     fn with_capacity(capacity: usize) -> Self {
         let world = WorldId::decode(&uuid(1)).expect("world");
+        let cells = crate::map::spell_tiles::tests::movement_arena::cells(world);
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             world,
             ChannelId::decode(&uuid(2)).expect("channel"),
@@ -111,7 +120,15 @@ impl Channel {
             1,
             "runtime-scope-assignment:1",
             capacity,
-            ChannelContentPin::test(world),
+            ChannelContentPin::from_activation(
+                world,
+                1,
+                cells.scope().generation_digest,
+                [2; 32],
+                [3; 32],
+                [4; 32],
+                (0, 0, 0),
+            ),
         )
         .expect("runtime");
         let session = GameSessionId::decode(&uuid(4)).expect("session");
@@ -122,6 +139,9 @@ impl Channel {
             .expect("player position");
         Self {
             runtime,
+            cells,
+            path_budget: Default::default(),
+            movement_time: 0,
             table: CreatureAiTable::default(),
             player,
             session,
@@ -175,6 +195,7 @@ impl Channel {
         now_us: u64,
         walkable: bool,
     ) -> Vec<(ExactActorRef, crate::ai_think::ThinkReport)> {
+        self.advance_movement(now_us, walkable);
         let players = [TargetCandidate {
             actor: self.player,
             position: self.position(self.player),
@@ -183,14 +204,15 @@ impl Channel {
             health: 100,
             damage: 0,
         }];
-        self.table.run_due_thinks(
+        let reports = self.table.run_due_thinks(
             &mut self.runtime,
             now_us,
             &self.root,
             &self.revisions,
             &players,
-            |_| walkable,
-        )
+        );
+        self.advance_movement(now_us, walkable);
+        reports
     }
 
     /// The profile's melee swing for `creature`, owned by the melee owner.
@@ -339,9 +361,10 @@ fn d116_rats_wake_chase_bite_flee_and_idle_on_the_channel_owner() {
         for (_, report) in &reports {
             assert_eq!(report.target, Some(channel.player));
             assert!(!report.idle && !report.fleeing);
-            if let Some(step) = report.step {
-                assert_eq!(step.kind, StepKind::Chase);
-            }
+            assert!(matches!(
+                report.goal,
+                super::super::movement_goal::MovementGoal::Chase { .. }
+            ));
         }
         let a_report = &reports.iter().find(|(actor, _)| *actor == a).expect("a").1;
         if swung(channel.swing(&mut melee, &mut vitals, a, a_report.sequence, now)) {
@@ -364,7 +387,10 @@ fn d116_rats_wake_chase_bite_flee_and_idle_on_the_channel_owner() {
     let a_report = &reports.iter().find(|(actor, _)| *actor == a).expect("a").1;
     assert!(a_report.fleeing);
     assert_eq!(a_report.target, Some(channel.player));
-    assert_eq!(a_report.step, None);
+    assert!(matches!(
+        a_report.goal,
+        super::super::movement_goal::MovementGoal::Flee { .. }
+    ));
     let last_bite = *bites.last().expect("bite");
     let sequence = a_report.sequence;
     let dispatch = channel.swing(&mut melee, &mut vitals, a, sequence, now);
@@ -373,7 +399,10 @@ fn d116_rats_wake_chase_bite_flee_and_idle_on_the_channel_owner() {
     let reports = channel.thinks(now, true);
     let a_report = &reports.iter().find(|(actor, _)| *actor == a).expect("a").1;
     assert!(a_report.fleeing);
-    assert_eq!(a_report.step.map(|step| step.kind), Some(StepKind::Flee));
+    assert!(matches!(
+        a_report.goal,
+        super::super::movement_goal::MovementGoal::Flee { .. }
+    ));
     now += SECOND;
 
     // The player walks east out of view; the rats go idle and stop thinking.
@@ -480,7 +509,6 @@ fn the_swing_goes_at_the_think_target_and_not_a_nearer_player() {
         &channel.root,
         &channel.revisions,
         &players,
-        |_| false,
     );
     assert_eq!(reports.len(), 1);
     let target = channel.table.state(rat).and_then(|s| s.target());
@@ -681,7 +709,6 @@ fn the_bounded_think_selection_equals_the_full_sort_and_reports_the_next_think()
             &channel.root,
             &channel.revisions,
             &players,
-            |_| false,
         );
         assert_eq!(next, channel.table.earliest_due(), "next think after {now}");
     }
@@ -792,7 +819,6 @@ fn one_wake_pass_for_many_players_equals_their_wakes_in_turn_and_is_bounded() {
                     &channel.root,
                     &channel.revisions,
                     &[],
-                    |_| false,
                 )
                 .len(),
             rats.len()
