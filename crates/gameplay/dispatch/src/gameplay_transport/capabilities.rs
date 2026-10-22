@@ -306,3 +306,6 @@ impl SelectedCapabilities {
 #[cfg(test)]
 #[path = "capabilities_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+pub(super) use tests::{RUNE_USE_OFFERED, command as test_command};

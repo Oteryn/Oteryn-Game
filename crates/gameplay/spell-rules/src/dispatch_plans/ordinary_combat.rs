@@ -171,13 +171,16 @@ pub fn selected_effects<'a>(
 }
 
 #[cfg(test)]
+pub(super) use tests::source as test_source;
+
+#[cfg(test)]
 mod tests {
     #![allow(clippy::unwrap_used)]
     use super::super::geometry::{attack_target_origin, geometry};
     use super::*;
     use serde_json::Value;
 
-    fn source(key: &str) -> SpellDefinition {
+    pub(in crate::dispatch_plans) fn source(key: &str) -> SpellDefinition {
         let catalog: Value = serde_json::from_slice(include_bytes!(
             "../../../../../tools/content-schema/spell-authoring/samples/executable-spell-catalog.json"
         ))
