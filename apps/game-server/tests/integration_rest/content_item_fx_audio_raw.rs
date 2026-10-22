@@ -73,7 +73,7 @@ fn raw_evidence_is_typed_inert_lossless_and_canonical_roundtrip() {
 #[test]
 fn existing_all_twenty_six_batches_preserved_idempotently_and_conflict_atomic() {
     let value: Value = serde_json::from_slice(include_bytes!(
-        "../../../content/world/provenance/imports.json"
+        "../../../../content/world/provenance/imports.json"
     ))
     .expect("repository imports");
     let mut batches: Vec<ImportBatch> =

@@ -11,7 +11,7 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 const B4_EVIDENCE: &str = include_str!(
-    "../../../docs/agents/evidence/OTV2-20260919-content-world-cw2-b4-ability-effect-formula-evidence.json"
+    "../../../../docs/agents/evidence/OTV2-20260919-content-world-cw2-b4-ability-effect-formula-evidence.json"
 );
 const EXACT_SCAN_ENTRIES: usize = 6;
 const EXACT_TOTAL_SCANNED: usize = 40;
