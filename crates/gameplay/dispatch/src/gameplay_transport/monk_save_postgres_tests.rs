@@ -399,19 +399,21 @@ fn boundary_release_retries_not_expired_and_saves_new_remaining_serene() -> Test
     })
 }
 
-/// Polls `release` until `reached` holds. A release that ends first is returned as the error.
+/// Polls `release` until `reached`, then cancels it and waits for the root holder.
+/// A release that ends first is returned as the error.
 async fn drive_until<F: std::future::Future>(
+    root: &crate::durability::DurabilityRoot,
     release: F,
     reached: impl Fn() -> bool,
 ) -> Result<(), F::Output> {
     use std::task::Poll;
-    let mut release = std::pin::pin!(release);
+    let mut release = Box::pin(release);
     let mut probe = std::pin::pin!(async {
         while !reached() {
             tokio::time::sleep(Duration::from_millis(10)).await;
         }
     });
-    std::future::poll_fn(move |context| {
+    let result = std::future::poll_fn(|context| {
         if let Poll::Ready(output) = release.as_mut().poll(context) {
             return Poll::Ready(Err(output));
         }
@@ -420,7 +422,18 @@ async fn drive_until<F: std::future::Future>(
         }
         Poll::Pending
     })
-    .await
+    .await;
+    drop(release);
+    // Cancellation can return the holder on SQLx's spawned task or retire it
+    // during observed return. Use fixture maintenance to await an idle holder.
+    root.request_ready();
+    let ready = tokio::time::timeout(Duration::from_secs(10), root.maintain_ready_once()).await;
+    assert!(
+        matches!(ready, Ok(Ok(true))) && root.is_ready(),
+        "cancelled monk release did not ready root {} within ten seconds: {ready:?}",
+        root.root_identity(),
+    );
+    result
 }
 
 #[test]
@@ -448,9 +461,11 @@ fn boundary_unknown_monk_save_keeps_lease_until_store_recovers() -> TestResult {
         // wall-clock window. The deadline only bounds a hang.
         let kept = tokio::time::timeout(
             Duration::from_secs(60),
-            drive_until(owner.release_after_grace(dependencies.admitted), || {
-                SAVES.get() >= 2
-            }),
+            drive_until(
+                &harness.root,
+                owner.release_after_grace(dependencies.admitted),
+                || SAVES.get() >= 2,
+            ),
         )
         .await?;
         assert!(
