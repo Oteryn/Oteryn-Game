@@ -3327,8 +3327,8 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             )
         };
         // ITEM-LOOP-1: the dropped items, read after the runtime lock is released.
-        let ground = loop_move::loop_ground(self, at.map.overlay.base(), index).await;
-        Some(at.update(view, items, ground.as_deref()))
+        let ground = loop_move::loop_ground(self, at.map.overlay.base(), index).await?;
+        Some(at.update(view, items, Some(&ground)))
     }
 
     async fn observe(&self, actor: ExactActorRef) -> Option<WorldSpatialObservation> {

@@ -316,9 +316,9 @@ fn admitted(outcome: ItemMoveOutcome, selection: ItemMoveSelection) -> ItemMoveO
     }
 }
 
-/// ITEM-LOOP-1: one move of `source` through the loop owner. A map base entry and every source
-/// that is not a durable item answer `NOT_SUPPORTED`, as does an equipped item to a container or
-/// to the Ground and the main backpack itself.
+/// ITEM-LOOP-1 / MAP-PICKUP-1: a durable item or eligible base-map entry into the carried
+/// tree through the loop owner. Base-to-Ground, MapAdded, equipped sources and the main
+/// backpack itself remain unsupported.
 async fn loop_move<A: FreshAdmissionAuthority>(
     authority: &A,
     actor: ExactActorRef,
@@ -328,10 +328,15 @@ async fn loop_move<A: FreshAdmissionAuthority>(
     target: LoopTarget,
     view: &mut SessionItemView,
 ) -> ItemMoveStep {
-    if !matches!(source, ItemKey::Instance(_))
-        || view.is_main_backpack(&source)
-        || view.equipped_slot(&source).is_some()
-    {
+    let supported = matches!(source, ItemKey::Instance(_))
+        || matches!(
+            (source, target),
+            (
+                ItemKey::MapBase { .. },
+                LoopTarget::MainBackpack | LoopTarget::Container(ItemKey::Instance(_))
+            )
+        );
+    if !supported || view.is_main_backpack(&source) || view.equipped_slot(&source).is_some() {
         return ItemMoveStep::Result(ItemMoveOutcome::NotSupported, Vec::new());
     }
     let request = LoopMove {
