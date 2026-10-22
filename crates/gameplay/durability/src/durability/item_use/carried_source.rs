@@ -76,11 +76,14 @@ pub(super) async fn lock_use_path(
     if !owner {
         return Err(ItemUseError::StaleState);
     }
-    // Container-slot lock follows all item locks, then custody is checked again (§4.2).
+    // Container-slot custody is checked again after all item locks (§4.2). The runtime
+    // role holds no UPDATE on game_item_container_slots, so the row lock is taken on
+    // the backpack's item row, as every runtime backpack writer does.
     let slot = sqlx::query(
-        "SELECT 1 FROM game_item_container_slots \
-          WHERE character_id = encode($1,'hex')::uuid \
-            AND item_instance_id = encode($2,'hex')::uuid FOR UPDATE",
+        "SELECT 1 FROM game_item_container_slots s \
+           JOIN game_item_instances i ON i.item_instance_id = s.item_instance_id \
+          WHERE s.character_id = encode($1,'hex')::uuid \
+            AND s.item_instance_id = encode($2,'hex')::uuid FOR UPDATE OF i",
     )
     .bind(holder.as_slice())
     .bind(backpack.as_slice())
