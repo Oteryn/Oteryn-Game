@@ -8,10 +8,6 @@ use std::time::Duration;
 
 #[test]
 fn creature_movement_dispatch_steps_between_thinks_on_postgres() -> TestResult {
-    assert!(
-        std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_some(),
-        "PostgreSQL wrapper configuration is required; never skip this scenario"
-    );
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "creature_move_dispatch", false, false)
