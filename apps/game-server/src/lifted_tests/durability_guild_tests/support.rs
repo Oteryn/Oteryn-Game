@@ -273,7 +273,7 @@ pub(super) async fn current_coordinator(
     who: [u8; 16],
     clock: bool,
 ) -> TestResult<(SpellPremiumCoordinator, Arc<PremiumConsumer>)> {
-    use crate::premium::test_producer::{ProducerRequest, snapshot};
+    use crate::premium_test_producer::{ProducerRequest, snapshot};
     let consumer = Arc::new(PremiumConsumer::default());
     let nonce = "0123456789abcdef0123456789abcdef";
     let body = snapshot(
@@ -472,7 +472,7 @@ pub(super) async fn resign_resource_seed_current(
     consumer: &Arc<PremiumConsumer>,
     who: [u8; 16],
 ) -> TestResult {
-    use crate::premium::test_producer::{ProducerRequest, snapshot};
+    use crate::premium_test_producer::{ProducerRequest, snapshot};
     let nonce = "0123456789abcdef0123456789abcdef";
     let response = snapshot(
         &ProducerRequest {
