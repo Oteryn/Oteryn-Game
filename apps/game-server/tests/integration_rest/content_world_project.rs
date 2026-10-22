@@ -5,7 +5,7 @@ use serde_json::{Value, json};
 use std::collections::BTreeMap;
 
 const B4_EVIDENCE: &str = include_str!(
-    "../../../docs/agents/evidence/OTV2-20260919-content-world-cw2-b4-ability-effect-formula-evidence.json"
+    "../../../../docs/agents/evidence/OTV2-20260919-content-world-cw2-b4-ability-effect-formula-evidence.json"
 );
 
 fn limits() -> ProjectEvidenceLimits {

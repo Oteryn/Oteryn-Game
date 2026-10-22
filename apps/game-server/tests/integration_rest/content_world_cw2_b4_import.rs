@@ -4,7 +4,7 @@ use oteryn_game_server::content::*;
 use serde_json::{Value, json};
 
 const B4_EVIDENCE: &[u8] = include_bytes!(
-    "../../../docs/agents/evidence/OTV2-20260919-content-world-cw2-b4-ability-effect-formula-evidence.json"
+    "../../../../docs/agents/evidence/OTV2-20260919-content-world-cw2-b4-ability-effect-formula-evidence.json"
 );
 
 fn limits() -> ProjectEvidenceLimits {
