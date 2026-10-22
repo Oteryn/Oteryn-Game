@@ -14,6 +14,9 @@ use crate::world_runtime::WorldBaseHandle;
 use oteryn_simulation_determinism::SemanticTimeMicros;
 use std::time::Duration;
 
+#[cfg(any(test, feature = "test-support"))]
+pub mod creature_speed_fixture;
+
 pub use oteryn_gameplay_characters::speed::*;
 
 /// The effective speed of the player `actor` of `session` at the owner time `now`: the level
@@ -432,5 +435,35 @@ impl CreatureMovementCadence {
             }
             crate::movement::MovementTurnOutcome::Deferred => Ok(None),
         }
+    }
+}
+
+/// The active native artifact is already a qualified definition owner. Reuse its exact
+/// membership check instead of manufacturing a speed from detached authoring.
+impl CurrentCreatureSpeedReader for crate::content::native_gameplay::NativeGameplayState {
+    fn current_native_base_speed(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+    ) -> Option<u16> {
+        if !runtime.contains_live_creature(actor) {
+            return None;
+        }
+        let snapshot = runtime.companion_snapshot(actor).ok()?;
+        let record = self.creature_profiles().records.iter().find(|record| {
+            record.profile.target.key == snapshot.state.policy.definition_key
+                && record.profile.target.revision == snapshot.state.policy.definition_revision
+        })?;
+        if !self.qualifies_current_creature_profile(
+            runtime.content_pin().server_artifact_digest(),
+            &record.profile,
+        ) {
+            return None;
+        }
+        let crate::content::ProjectV2AuthoringProfileData::Creature(profile) = &record.profile.data
+        else {
+            return None;
+        };
+        u16::try_from(profile.speed?).ok()
     }
 }
