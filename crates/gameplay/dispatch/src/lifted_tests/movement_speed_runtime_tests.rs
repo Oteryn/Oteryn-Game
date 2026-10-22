@@ -104,28 +104,15 @@ mod creature_native_speed_tests {
 
     use crate::content::LogicalCell;
     use crate::foundation::{
-        ActorConditionTransition, ApplicationFacts, ChannelRuntimeV1, ConditionDefinition,
-        ConditionSource, ConditionSourceKind, ConditionValues, ExactActorRef,
-        MovementLocalPosition, SpeedRange,
+        ActorConditionTransition, ApplicationFacts, ConditionDefinition, ConditionSource,
+        ConditionSourceKind, ConditionValues, MovementLocalPosition, SpeedRange,
     };
+    use crate::movement::speed::creature_speed_fixture::Native;
     use crate::movement::speed::*;
     use oteryn_simulation_determinism::{
         DecisionOccurrenceId, GameplayDecisionRoot, SemanticTimeMicros,
     };
     use std::time::Duration;
-    struct Native {
-        actor: ExactActorRef,
-        base: u16,
-        pin: [u8; 32],
-    }
-    impl CurrentCreatureSpeedReader for Native {
-        fn current_native_base_speed(&self, r: &ChannelRuntimeV1, a: ExactActorRef) -> Option<u16> {
-            (a == self.actor
-                && r.contains_live_creature(a)
-                && r.content_pin().server_artifact_digest() == self.pin)
-                .then_some(self.base)
-        }
-    }
     #[test]
     fn creature_cadence_reads_real_slot_haste_expiry_ground_and_stale_generation() {
         let (mut r, _, _) =

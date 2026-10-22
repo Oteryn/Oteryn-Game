@@ -11,10 +11,16 @@
 //! bound still admits. Which tiles are path tiles and what they cost is the caller's; the search
 //! never changes floors. How often a search may run is the caller's budget.
 //!
-//! Pure and runtime-only: nothing here is durable.
+//! The search is pure; its occupancy helper reads the owner census. Nothing here is durable.
 
+mod path_labels;
+mod path_occupancy;
+mod path_tiles;
+pub use path_occupancy::standing_positions;
+
+use path_labels::SearchLabels;
 use std::cmp::Reverse;
-use std::collections::{BTreeMap, BinaryHeap};
+use std::collections::BinaryHeap;
 
 use crate::foundation::MovementLocalPosition;
 use crate::movement::CardinalStep;
@@ -41,11 +47,6 @@ const NEIGHBOURS: [CardinalStep; 4] = [
     CardinalStep::West,
 ];
 
-/// A search state: a tile and the steps taken to reach it.
-type State = (i32, i32, usize);
-/// Per discovered state: its best cost and the step and state it was reached by.
-type Discovered = BTreeMap<State, (u32, Option<(CardinalStep, State)>)>;
-
 /// The bounds of one search.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct SearchBounds {
@@ -71,10 +72,12 @@ pub fn chebyshev(from: MovementLocalPosition, to: MovementLocalPosition) -> i64 
 
 /// The fewest cardinal steps from `at` to a tile at Chebyshev distance 1 from `target`, times
 /// the step cost: admissible and consistent for the goal set.
-fn estimate(at: MovementLocalPosition, target: MovementLocalPosition) -> u32 {
+fn estimate(at: MovementLocalPosition, target: MovementLocalPosition, exact: bool) -> u32 {
     let dx = (i64::from(target.x) - i64::from(at.x)).unsigned_abs();
     let dy = (i64::from(target.y) - i64::from(at.y)).unsigned_abs();
-    let steps = if dx == 0 && dy == 0 {
+    let steps = if exact {
+        dx.saturating_add(dy)
+    } else if dx == 0 && dy == 0 {
         1
     } else {
         dx.saturating_sub(1).saturating_add(dy.saturating_sub(1))
@@ -84,8 +87,13 @@ fn estimate(at: MovementLocalPosition, target: MovementLocalPosition) -> u32 {
         .saturating_mul(STEP_COST)
 }
 
-fn is_goal(at: MovementLocalPosition, target: MovementLocalPosition) -> bool {
-    at.floor == target.floor && chebyshev(at, target) == 1
+fn is_goal(at: MovementLocalPosition, target: MovementLocalPosition, exact: bool) -> bool {
+    at.floor == target.floor
+        && if exact {
+            at == target
+        } else {
+            chebyshev(at, target) == 1
+        }
 }
 
 /// The route from `start` to the nearest tile at Chebyshev distance 1 from `target` on the same
@@ -93,6 +101,8 @@ fn is_goal(at: MovementLocalPosition, target: MovementLocalPosition) -> bool {
 /// when it is no path tile, else its extra cost ([`CREATURE_COST`] over an occupied tile).
 /// `Some(empty)` when `start` already is such a tile; `None` when no route is found within the
 /// bounds (a failed search).
+/// Tile facts must remain stable during this synchronous search; repeated visits reuse the
+/// first answer. A subsequent search reads fresh facts.
 pub fn route_next_to(
     start: MovementLocalPosition,
     target: MovementLocalPosition,
@@ -115,70 +125,77 @@ fn search(
     start: MovementLocalPosition,
     target: MovementLocalPosition,
     bounds: SearchBounds,
+    tile_cost: impl FnMut(MovementLocalPosition) -> Option<u32>,
+) -> Option<Vec<CardinalStep>> {
+    measured_search(start, target, bounds, false, &mut 0, tile_cost)
+}
+
+/// A measured search uses the same bounded cardinal A* for chase and the exact spawn cell.
+/// The field owner can add its cost to `tile_cost`; production currently supplies zero.
+pub fn measured_route(
+    start: MovementLocalPosition,
+    target: MovementLocalPosition,
+    exact: bool,
+    tile_cost: impl FnMut(MovementLocalPosition) -> Option<u32>,
+) -> (Option<Vec<CardinalStep>>, usize) {
+    let mut work = 0;
+    let route = measured_search(
+        start,
+        target,
+        SearchBounds {
+            work: PATH_SEARCH_WORK,
+            route_steps: ROUTE_STEPS,
+            distance: if exact { 50 } else { CHASE_SEARCH_DISTANCE },
+        },
+        exact,
+        &mut work,
+        tile_cost,
+    );
+    (route, work)
+}
+
+fn measured_search(
+    start: MovementLocalPosition,
+    target: MovementLocalPosition,
+    bounds: SearchBounds,
+    exact: bool,
+    expansions: &mut usize,
     mut tile_cost: impl FnMut(MovementLocalPosition) -> Option<u32>,
 ) -> Option<Vec<CardinalStep>> {
     if start.floor != target.floor {
         return None;
     }
-    if is_goal(start, target) {
+    if is_goal(start, target, exact) {
         return Some(Vec::new());
     }
     // Open entries are ordered by (total, estimate, neighbour order, discovery order).
     let mut open = BinaryHeap::new();
-    let mut best = Discovered::new();
-    // Per tile: the (cost, steps) labels found; a label no better in both is dominated.
-    let mut labels: BTreeMap<(i32, i32), Vec<(u32, usize)>> = BTreeMap::new();
-    let dominated = |labels: &BTreeMap<(i32, i32), Vec<(u32, usize)>>,
-                     tile: (i32, i32),
-                     cost: u32,
-                     steps: usize| {
-        labels.get(&tile).is_some_and(|found| {
-            found.iter().any(|&(known, known_steps)| {
-                known <= cost && known_steps <= steps && (known, known_steps) != (cost, steps)
-            })
-        })
-    };
-    let mut discovered: u64 = 0;
-    best.insert((start.x, start.y, 0), (0, None));
-    labels.insert((start.x, start.y), vec![(0, 0)]);
+    let mut labels = SearchLabels::new(start, bounds.distance);
     open.push(Reverse((
-        estimate(start, target),
-        estimate(start, target),
+        estimate(start, target, exact),
+        estimate(start, target, exact),
         0_u8,
-        0_u64,
-        start.x,
-        start.y,
         0_usize,
-        0_u32,
     )));
-    let mut expansions = 0_usize;
-    while let Some(Reverse((_, _, _, _, x, y, steps, cost))) = open.pop() {
-        if best
-            .get(&(x, y, steps))
-            .is_some_and(|(known, _)| *known < cost)
-            || dominated(&labels, (x, y), cost, steps)
-        {
+    while let Some(Reverse((_, _, _, index))) = open.pop() {
+        if labels.dominated(index) {
             continue;
         }
-        let at = MovementLocalPosition {
-            x,
-            y,
-            floor: start.floor,
-        };
-        if is_goal(at, target) {
-            return route_to(&best, (start.x, start.y, 0), (x, y, steps));
+        let label = labels.get(index);
+        let at = label.at;
+        if is_goal(at, target, exact) {
+            return Some(labels.route_to(index));
         }
-        expansions += 1;
-        if expansions > bounds.work {
+        if *expansions >= bounds.work {
             return None;
         }
-        if steps >= bounds.route_steps {
+        *expansions += 1;
+        if label.steps >= bounds.route_steps {
             continue;
         }
-        let next_steps = steps + 1;
         for (order, step) in (0_u8..).zip(NEIGHBOURS) {
             let (dx, dy) = delta(step);
-            let (Some(nx), Some(ny)) = (x.checked_add(dx), y.checked_add(dy)) else {
+            let (Some(nx), Some(ny)) = (at.x.checked_add(dx), at.y.checked_add(dy)) else {
                 continue;
             };
             let next = MovementLocalPosition {
@@ -189,59 +206,22 @@ fn search(
             if chebyshev(start, next) > i64::from(bounds.distance) {
                 continue;
             }
-            let Some(extra) = tile_cost(next) else {
+            let Some(next_index) = labels.visit(next, index, step, &mut tile_cost) else {
                 continue;
             };
-            let next_cost = cost.saturating_add(STEP_COST).saturating_add(extra);
-            if labels.get(&(nx, ny)).is_some_and(|found| {
-                found
-                    .iter()
-                    .any(|&(known, known_steps)| known <= next_cost && known_steps <= next_steps)
-            }) {
-                continue;
-            }
-            labels
-                .entry((nx, ny))
-                .or_default()
-                .push((next_cost, next_steps));
-            best.insert(
-                (nx, ny, next_steps),
-                (next_cost, Some((step, (x, y, steps)))),
-            );
-            discovered += 1;
-            let h = estimate(next, target);
-            open.push(Reverse((
-                next_cost.saturating_add(h),
-                h,
-                order,
-                discovered,
-                nx,
-                ny,
-                next_steps,
-                next_cost,
-            )));
+            let next_cost = labels.get(next_index).cost;
+            let h = estimate(next, target, exact);
+            open.push(Reverse((next_cost.saturating_add(h), h, order, next_index)));
         }
     }
     None
 }
 
-fn route_to(best: &Discovered, start: State, goal: State) -> Option<Vec<CardinalStep>> {
-    let mut steps = Vec::with_capacity(goal.2);
-    let mut at = goal;
-    while at != start {
-        let (_, Some((step, from))) = best.get(&at)? else {
-            return None;
-        };
-        steps.push(*step);
-        at = *from;
-    }
-    steps.reverse();
-    Some(steps)
-}
-
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod tests {
+    mod creature_path_tests;
+    mod path_labels_tests;
     use super::*;
 
     fn at(x: i32, y: i32) -> MovementLocalPosition {
