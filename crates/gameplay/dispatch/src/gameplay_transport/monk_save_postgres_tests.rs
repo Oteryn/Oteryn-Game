@@ -9,6 +9,9 @@ mod fresh_fixture;
 #[path = "kill_reward_postgres_e2e_tests.rs"]
 mod kill_reward_e2e;
 
+#[path = "planned_world_reset_postgres_tests.rs"]
+mod planned_world_reset;
+
 #[path = "logout_postgres_tests.rs"]
 mod logout_e2e;
 

@@ -8,6 +8,8 @@
 //! signal or the end of any loop. Events are single stderr lines without
 //! secrets (D6).
 
+mod world_reset;
+
 use super::config::NodeConfig;
 use super::descriptor_facts::{MAX_PEM_BYTES, certificates, descriptor_facts};
 use super::operator_files::{
@@ -54,7 +56,7 @@ use crate::native_admission_source::public_projections::{
 };
 use crate::native_admission_source::runtime_status::{RuntimeStatusDescriptor, SystemClock};
 use crate::native_admission_source::{CHARACTER_BOOTSTRAP_INTENT_ISSUER, TransientCapacity};
-use crate::{GameplayListenerConfig, GameplaySeamOwners, serve_gameplay};
+use crate::{GameplayListenerConfig, GameplaySeamOwners};
 use oteryn_foundation::CancellationToken;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use rustls::pki_types::pem::PemObject;
@@ -2488,6 +2490,7 @@ async fn boot_and_serve(
     let fact = proof.fact();
     // The controller holds the active generation for the whole serve lifetime; the Channel
     // runtime pins exactly that generation.
+    world_reset::require_no_retiring(root, material).await?;
     let (active_content, content) =
         activate_content(root, material.world, material.channel).await?;
     let qualified_room = content.qualified_room().clone();
@@ -2759,11 +2762,13 @@ async fn boot_and_serve(
         last_position_flush: Some(&last_position_flush),
     };
     let loops_stop = CancellationToken::new();
-    let mut gameplay = pin!(serve_gameplay(
+    let reset_watch = world_reset::ResetWatch::default();
+    let mut gameplay = pin!(world_reset::serve_watching_reset(
         &listener,
         listener_config,
         owners,
-        &shutdown
+        &shutdown,
+        &reset_watch,
     ));
     let mut control_task = pin!(control_loop(
         &control,
@@ -2948,10 +2953,7 @@ async fn boot_and_serve(
     }
     let _ = std::fs::remove_file(&config.control.socket_path);
     event("event=shutdown state=complete");
-    if serve_error.is_some() {
-        return Err(BootError::Serve);
-    }
-    Ok(())
+    world_reset::classify_exit(&reset_watch, serve_error)
 }
 
 #[cfg(test)]

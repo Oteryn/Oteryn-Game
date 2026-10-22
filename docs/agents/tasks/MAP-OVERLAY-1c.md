@@ -4,7 +4,7 @@
 task_id: MAP-OVERLAY-1c
 title: "MAP-OVERLAY-1c: World reset (RETIRING -> drain -> Ground retirement -> atomic epoch N+1 ACTIVATED) and overlay retire"
 mode: IMPLEMENT
-status: NOT_STARTED   # re-implementation pending under ADR-0022
+status: in_progress   # prerequisite and original scope allocated to this lane
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 3
@@ -13,7 +13,7 @@ plan_row: "§4 row MAP-OVERLAY-1c; §7 map overlay chain"
 brief: "docs/architecture/reviews/OTERYN_GAME_SOCIAL_MAP_PACKETS_2026-10-04.md (§1.5–1.8, §1.11, §2.7); ADR-0021 §4.7; HOUSE-CUSTODY0 §3.6"
 class: "hard, persistence, authority and security review"
 base_branch: main
-branch: null
+branch: w2/map-overlay-1c
 pr: null
 needs_migration: true   # next free number at allocation time (only one migration PR in the queue); two schema units in the draft
 needs_registry: true    # RESOURCE_LIMITS_REGISTRY MAP01-RESET-RETIRE-MS row; GAME_EVENT_FOUNDATION_REGISTRY audit grammar if widened
@@ -251,3 +251,175 @@ OTERYN_TEST_POSTGRES_ADMIN_URL=... cargo test -p oteryn-game-server --test world
 OTERYN_TEST_POSTGRES_ADMIN_URL=... cargo test -p oteryn-game-server --test character_authority_postgres world_reset
 python3 tools/agents/validate_governance.py
 ```
+
+## Worktree prerequisite check (2026-10-22)
+
+Base: `9f814e72a3a32ad2a6ed67787c2d67a2d39d4af3`; exclusive local
+authoring branch: `w2/map-overlay-1c`. No candidate SHA or PR was created.
+
+**BLOCKER — prerequisite contract mismatch.** The dependency table and
+D1134/D1135 require reuse of the sealed close/logout/drain composition attributed
+to ADMIT-CAP-1 / #2187. Live PR metadata confirms #2187 merged as
+`94288ef41a3dece278b30eedf82b6c2d0ea7bc09`, but its implementation gates fresh
+admission and V2 recovery by required capabilities. It supplies no reset drain.
+This is a missing prerequisite capability, not an assertion that #2187 is unmerged.
+
+The current implementation was checked across `apps/`, `crates/` and `tools/`:
+
+- `gameplay_transport/mod.rs::serve_accepted` explicitly treats shutdown as no
+  evidence of lost playable control, so shutdown does not start session release.
+- `control_loss_lifecycle` cancels its grace-release work on shutdown.
+- `gameplay_transport/input_gate.rs::InputGate::quiesce` drains admission and
+  command permits; it does not perform control loss or terminal session release.
+- No existing `GameplayDrain` or sealed reset-drain composition was found.
+
+The new `GameplayDrain` module is explicitly allocated to this lane. The unresolved
+point is which existing, accepted drain composition it must wrap, as required by
+D1134/D1135. Do not substitute ordinary shutdown for that composition. The
+coordinator must identify its actual merged prerequisite or correct the card to
+state that this lane implements the missing composition using the existing
+control-loss/grace-release owners. Resume implementation after that dependency
+contract is reconciled; no runtime, schema, capability or registry changes were made.
+
+Planned module layout remains the target layout above: durable reset owner,
+census/activation children, run and command modules; a WorldReset retirement-cause
+child; a retired-holder session-release sibling; a dispatch `gameplay_drain.rs`;
+dedicated child tests and the new `world_reset_postgres` suite. Shared slots receive
+wiring only. Migration `0132` is provisionally allocated by the current lane packet,
+superseding the historical collision note above; no migration was created.
+
+Reuse investigation: existing `InputGate`, `control_loss_lifecycle` and the
+`FreshAdmissionAuthority` control-loss/release methods were inspected. No helper,
+fixture, harness or test registration was added or copied. No enum variants,
+struct fields, trait methods or public functions were added.
+
+Validation: documentation-only prerequisite checkpoint; no Rust crate was touched.
+The cargo filters in Validation remain required and unrun, and all implementation
+acceptance criteria remain open. Governance validation passed (22 policy documents,
+9 lanes); all 124 `tools/agents/tests` unit tests passed. Whole-diff review against
+`/home/mole/oteryn-cache/CODEX-CHECKLIST.md` and `git diff --check` passed; no added
+Rust symbols require a constructor/match/impl sweep. This task record is the only
+changed file (302 lines); no file grew by more than 200 lines.
+
+## Integrator decision 2026-10-22: prerequisite allocated to this lane
+
+The continuation packet resolves the earlier ownership blocker: this lane must
+implement the sealed reset drain using `InputGate::quiesce`,
+`control_loss_lifecycle` and `FreshAdmissionAuthority` control-loss/release owners,
+then implement the remaining card. Migration `0132` remains provisionally allocated.
+The prerequisite audit above is retained as historical evidence, not a request to
+identify a different merged composition. The prerequisite has **not** been
+implemented; the requested implemented-modules record cannot yet be asserted.
+
+Planned modules before coding: dispatch `gameplay_drain.rs` owns the sealed reset
+signal and transport drain; a dispatch serving child composes that drain with the
+existing input gate and lifecycle; a game-server `serve/world_reset.rs` child owns
+the RETIRING watch and boot orchestration. The durable reset, retirement-cause,
+retired-holder release, run, command and child-test modules remain as planned in
+Target layout above. Shared parents receive wiring only.
+
+### Pending owner question: planned reset versus unexpected-loss authority
+
+**BLOCKER at the prerequisite authority boundary.** The continuation authorizes
+implementing the composition, but the current owning contract and adapters admit
+only an unexpected loss, while the packet requires a planned reset to immediately
+lose control for every live session, including a healthy controller:
+
+- `docs/architecture/FND-04B_RECONNECT_RECOVERY_CONTINUITY_CONTRACT.md`
+  sections 3 and 5 restrict RECONNECTABLE and a new ControlLossEpoch to
+  authoritative **unexpected** playable-control loss. Section 5 excludes socket
+  close alone and process restart alone; section 6 starts grace at that epoch.
+- `crates/gameplay/foundation/src/foundation/admission_recovery_inner.rs`
+  `ControlLossObservationV1::validate` requires
+  `ControlLossCauseV1::AuthoritativeUnexpectedLoss`. There is no reset cause.
+- `crates/gameplay/durability/src/durability/fresh_admission.rs`
+  `write_fresh_loss` rejects every other cause; its reader admits only cause tag 1
+  and reconstructs `AuthoritativeUnexpectedLoss`.
+- Dispatch `commit_control_loss` always constructs that unexpected-loss cause.
+  Calling it with zero wait after intentionally closing a healthy transport would
+  classify planned shutdown of control as unexpected loss without the contract's
+  liveness proof. Ordinary shutdown explicitly avoids this classification today.
+
+Owner decision required: **Does a sealed drain bound to a durable RETIRING World
+reset explicitly supersede FND-04B sections 3/5 and authorize a new loss epoch and
+the existing grace lifecycle for a currently healthy session?** If yes, authorize
+that narrow exception and its explicit reset cause through Foundation and the
+durable loss codec. No ordinary shutdown, transport close, client input or caller
+boolean should acquire that authority. If no, the packet needs the accepted
+planned-reset terminal-release policy instead of the requested loss/grace route.
+The card and ADR-0021 define the reset order, but do not specify this exception to
+unexpected-loss authority. This is a session/recovery authority choice rather
+than a module-layout or helper implementation choice.
+
+Per the continuation's explicit stop rule for an unanswered security/authority
+policy choice, no runtime, schema, capability, registry or contract mutation was
+made. No new helpers, fixtures, harnesses, symbols or test registrations were
+introduced. Reuse findings remain `InputGate::quiesce`,
+`control_loss_lifecycle`, `FreshAdmissionAuthority::lose_control`,
+`expire_control_loss`, `release_abandoned` and `reconcile_terminal`; these owners
+were traced, not copied or reimplemented.
+
+
+## Owner decision 2026-10-22
+
+YES. A sealed, RETIRING-bound planned World reset is a second authorized cause that may open a loss epoch and grace release for a healthy session. Amend FND-04B section 5 (docs/architecture/FND-04B_RECONNECT_RECOVERY_CONTINUITY_CONTRACT.md) with a dated owner decision: the cause is a distinct, explicitly typed variant (planned World reset, bound to the sealed RETIRING record), never inferred from an unexpected loss, and the foundation authorization plus durable encoding admit it only with that sealed binding. Unexpected-loss behaviour stays unchanged; ordinary shutdown semantics are still not reused.
+
+This supersedes the pending owner question above. The original prerequisite audit
+is retained as historical evidence. Implementation follows the planned module
+layout recorded above, with a Foundation planned-reset binding child and a durable
+loss-cause codec child, rather than extending the large owning files with logic.
+
+## Integrator decision 2026-10-22: prerequisite implemented in this lane
+
+The planned-loss prerequisite source now uses the existing owners:
+- Foundation `planned_world_reset.rs` admits a distinct World/epoch/target/binding cause.
+- Durability `fresh_admission/control_loss_codec.rs` is the extracted single loss codec;
+  `world_reset.rs` seals a current database row and rechecks it under the loss transaction.
+- Dispatch `control_loss.rs`, `listener.rs`, `serving.rs` extract the existing owners;
+  `gameplay_drain.rs` carries the sealed signal through input quiescence and grace release.
+- Node `serve/world_reset.rs` watches every five seconds and retains retryable exit 17.
+  Boot refuses RETIRING before content activation; the actual reset recovery runner is pending.
+- Migration `0132_world_reset.sql` installs the initial record schema and admission fences.
+  It is unfinished: no initializer/publisher/activator capability or Ground writer is exposed.
+- Tests are single child registrations in Foundation, node and the existing dispatch PG fixture.
+  The latter covers a healthy session, stale phase/target, codec reload and real grace release.
+  The PR PostgreSQL `durability_postgres` / `rest` leg invokes the exact dispatch filter once.
+
+### Current validation, reuse and remaining work
+
+Status remains `in_progress`; no frozen SHA, PR, publication or Git mutation exists.
+Foundation (333), durability (384) and dispatch (903 passed, 14 pre-existing ignored)
+unit suites passed; server library (307 passed, 3 pre-existing ignored) passed.
+All four touched packages passed clippy `--locked --all-targets -- -D warnings`.
+Rustfmt, governance (22 policies, 9 lanes), 124 agent tests and repository policy passed.
+The PG case compiled but its existing harness skipped it: this session has no
+`OTERYN_TEST_POSTGRES_ADMIN_URL`, and `cargo` resolves directly to rustup rather than
+D1466's queued wrapper. The pending environment question asks only for the wrapper
+invocation, never credentials. No PostgreSQL success is claimed.
+
+Exact focused cargo filters: Foundation `planned_world_reset` and `owning_loss`;
+dispatch `planned_world_reset`, `shutdown_completes_admission_in_flight_and_cancels_entry_work`,
+`resource_loss_lifecycle_holds_no_connection_slot`, `an_unknown_grace_expiry_is_retried_until_final`;
+server `reset_drain_exit_is_retryable_and_retains_the_observed_reset`.
+
+Reuse: existing Foundation owning-loss test `owner`; existing loss/protection/budget codec
+(moved, old definitions deleted); `InputGate::quiesce`; the single existing listener and
+`control_loss_lifecycle`; all `FreshAdmissionAuthority` loss/release/reconciliation paths;
+`Harness::create_with_admission_seed`, `prepare_current_session`, `Dependencies`, `track`,
+`run`, `reset`, `debug` from the monk/character-revision fixture; native node boot retries.
+No fixture/harness bodies were copied and no test-only wrapper or duplicate mount was added.
+Files growing >200 lines: dispatch `control_loss.rs` (246) and `listener.rs` (279),
+existing transport owners extracted from the shared slot; durability
+`fresh_admission/control_loss_codec.rs` (316), the one durable historical codec extracted
+from its large owner. Every other code file grows by fewer than 200 lines.
+
+The complete tracked/untracked diff was re-read against the owner's checklist; new cause,
+seal/watch fields and the changed `lose_control` trait signature were searched throughout
+`apps/`, `crates/`, `tools/`. Every new public function has a production caller. PG dispatch
+qualification remains pending, so the prerequisite is implemented but not qualified.
+The original card remains unfinished: publisher/activator split and operator command,
+all-Channel census/fresh generations, crash-left release, Ground retirement/audit,
+House preflight/recheck, atomic epoch/content activation, epoch-keyed source receipts/map
+consumers, resume runner, duration registry/measurement and full negative PG/MQ matrix.
+Next: restore the advertised D1466 wrapper, run the prerequisite PG case without skipping,
+then implement and qualify the remaining original scope. No new owner policy question exists.
