@@ -1140,12 +1140,14 @@ fn party_block_limit_refuses_the_101st_and_allows_an_existing_block_at_100() -> 
         let target = *leader.current_character_lease().character_id().as_bytes();
         // Historical block targets are made by the real creator, retaining the
         // creation receipts/history that native recovery independently validates.
-        let now: i64 =
-            sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
-                .fetch_one(&h.pool)
-                .await?;
         let mut historical = Vec::new();
         for number in 100..200 {
+            // Each account-security observation is fresh for only a few seconds, so
+            // every bootstrap reads Game time again instead of reusing the first one.
+            let now: i64 =
+                sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+                    .fetch_one(&h.pool)
+                    .await?;
             let character = bootstrap_party_character(h, number, number, now).await?;
             sqlx::query("INSERT INTO game_character_social_blocks(character_id,blocked_character_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid)")
                 .bind(owner.as_slice()).bind(character.as_bytes().as_slice()).execute(&h.pool).await?;
