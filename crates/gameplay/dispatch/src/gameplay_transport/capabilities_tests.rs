@@ -2722,3 +2722,6 @@ mod weather_wire {
         })
     }
 }
+
+#[path = "daily_reward_tests.rs"]
+mod daily_reward;
