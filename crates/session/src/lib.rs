@@ -3973,6 +3973,9 @@ mod tests {
 
     enum Step {
         Send(Vec<u8>),
+        /// Frames written in one `write_all`, so the client can never read the first frame
+        /// and drop the stream before the rest is in the pipe.
+        SendTogether(Vec<Vec<u8>>),
         ReadCommand,
     }
 
@@ -3985,18 +3988,49 @@ mod tests {
         let peer = tokio::spawn(async move {
             join_peer(&mut server, &[13], &[], &[]).await?;
             for step in script {
-                match step {
-                    Step::Send(frame) => write_frame(&mut server, &frame).await?,
-                    Step::ReadCommand => {
-                        read_frame(&mut server).await?;
-                    }
-                }
+                play_step(&mut server, step).await?;
             }
             let mut rest = Vec::new();
             let _ = server.read_to_end(&mut rest).await;
             Ok::<(), BoxError>(())
         });
         (client, peer)
+    }
+
+    /// Plays one scripted step on the peer side.
+    async fn play_step(server: &mut DuplexStream, step: Step) -> Result<(), BoxError> {
+        match step {
+            Step::Send(frame) => write_frame(server, &frame).await?,
+            Step::SendTogether(frames) => {
+                let mut bytes = Vec::new();
+                for frame in frames {
+                    bytes.extend_from_slice(
+                        &FrameLength::new(u32::try_from(frame.len())?)?.to_prefix(),
+                    );
+                    bytes.extend_from_slice(&frame);
+                }
+                server.write_all(&bytes).await?;
+                server.flush().await?;
+            }
+            Step::ReadCommand => {
+                read_frame(server).await?;
+            }
+        }
+        Ok(())
+    }
+
+    /// Joins the bodies of `Send` steps into one `SendTogether` step.
+    fn together(steps: Vec<Step>) -> Result<Step, BoxError> {
+        steps
+            .into_iter()
+            .map(|step| match step {
+                Step::Send(frame) => Ok(frame),
+                Step::SendTogether(_) | Step::ReadCommand => {
+                    Err("only Send steps can be joined".into())
+                }
+            })
+            .collect::<Result<Vec<_>, BoxError>>()
+            .map(Step::SendTogether)
     }
 
     fn result_frame(
@@ -4380,10 +4414,14 @@ mod tests {
     #[test]
     fn a_pushed_delta_mismatch_during_an_exchange_poisons_the_session() -> Result<(), BoxError> {
         block_on(async {
+            // The result frame shares the push's write: the session stops reading at the
+            // mismatched push, and a separate later write could race the drop below.
             let (client, peer) = script_peer(vec![
                 Step::ReadCommand,
-                spatial_push(41, 4, 6, 1)?,
-                result_frame(42, 7, StepDisposition::Blocked)?,
+                together(vec![
+                    spatial_push(41, 4, 6, 1)?,
+                    result_frame(42, 7, StepDisposition::Blocked)?,
+                ])?,
             ]);
             let mut session = Session::admit(client, admission()?).await?;
             assert!(matches!(
@@ -4561,12 +4599,7 @@ mod tests {
             )
             .await?;
             for step in script {
-                match step {
-                    Step::Send(frame) => write_frame(&mut server, &frame).await?,
-                    Step::ReadCommand => {
-                        read_frame(&mut server).await?;
-                    }
-                }
+                play_step(&mut server, step).await?;
             }
             let mut rest = Vec::new();
             let _ = server.read_to_end(&mut rest).await;
@@ -4951,12 +4984,7 @@ mod tests {
             )
             .await?;
             for step in script {
-                match step {
-                    Step::Send(frame) => write_frame(&mut server, &frame).await?,
-                    Step::ReadCommand => {
-                        read_frame(&mut server).await?;
-                    }
-                }
+                play_step(&mut server, step).await?;
             }
             let mut rest = Vec::new();
             let _ = server.read_to_end(&mut rest).await;
@@ -5637,10 +5665,7 @@ mod tests {
             .await?;
             for step in script {
                 match step {
-                    ItemStep::Send(Step::Send(frame)) => write_frame(&mut server, &frame).await?,
-                    ItemStep::Send(Step::ReadCommand) => {
-                        read_frame(&mut server).await?;
-                    }
+                    ItemStep::Send(step) => play_step(&mut server, step).await?,
                     ItemStep::Expect(command_type, payload) => {
                         let frame = read_frame(&mut server).await?;
                         let envelope = decode_wire_envelope(&frame)?;
