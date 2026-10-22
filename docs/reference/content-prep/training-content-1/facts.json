@@ -1,0 +1,538 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_EVIDENCE/v1",
+  "task": "TRAINING-CONTENT-1",
+  "target_cut": "2026-10-18",
+  "runtime_admission": "BLOCKED_PENDING_CP_QUALIFICATION",
+  "runtime_switch_authorized": false,
+  "reference_only": true,
+  "records": [
+    {
+      "key": "training.offline",
+      "facts": {
+        "statues": {
+          "value": [
+            "Magic Level + Shielding",
+            "Distance + Shielding",
+            "Sword + Shielding",
+            "Axe + Shielding",
+            "Club + Shielding",
+            "Fist + Shielding for Monks"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:59605:1101626",
+              "selector": "Offline Training"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "activation": {
+          "value": "Use a statue to log off or select a training skill while sleeping in an owned bed.",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.5"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        },
+        "maximum_hours": {
+          "value": 12,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:59605:1101626",
+              "selector": "Offline Training"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "delay_minutes": {
+          "value": 10,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:59605:1101626",
+              "selector": "Offline Training"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "pool_regeneration": {
+          "value": "One second of pool per second online or offline without training; logging in and choosing a statue again is required after the pool expires.",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:59605:1101626",
+              "selector": "Offline Training"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "free_account_caps": {
+          "value": {
+            "weapon_skills": 50,
+            "magic_level": 30
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:59605:1101626",
+              "selector": "Opening paragraph"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "exact_skill_rates": {
+          "value": {
+            "status": "SOURCE_CANDIDATE_GLOBAL_RATE_UNQUALIFIED",
+            "candidate": {
+              "melee_tries": "training_seconds / (promoted_base_attack_ms/1000) / 2",
+              "distance_tries": "training_seconds / (promoted_base_attack_ms/1000) / 4",
+              "magic_mana": "training_seconds * current_vocation_mana_amount / max(promoted_mana_ticks_ms/1000,1)",
+              "rate": "multiply by RATE_OFFLINE_TRAINING_SPEED before addOfflineTrainingTries"
+            },
+            "selected_for_native_runtime": false
+          },
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-19",
+          "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+          "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+          "sources": [
+            {
+              "source": "ots:gameplay-recheck:canary:52550d5:data/scripts/actions/items/exercise_training_weapons.lua",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/player.cpp",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/scripts/actions/items/exercise_training_weapons.lua",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/player.cpp",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "wiki:84906:1126820",
+              "selector": "Per-charge values, current and older prose"
+            }
+          ],
+          "note": "Source value exists but original request requires qualified skill-rate evidence. Preserve donor/community candidate; owner-deferred Global test remains pending.",
+          "assumptions": [],
+          "global_evidence_archive": "docs/reference/content-prep/training-content-1/tibia-source-archive.json#docs/reference/content-prep/training-content-1/facts.json/records/0/facts/exact_skill_rates",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+        }
+      }
+    },
+    {
+      "key": "exercise.charges.training",
+      "facts": {
+        "charges": {
+          "value": 50,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84906:1126820",
+              "selector": "Types of Weapons"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "charge_interval_seconds": {
+          "value": 2,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84906:1126820",
+              "selector": "Opening paragraphs"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "duration_seconds": {
+          "value": 100,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84906:1126820",
+              "selector": "Opening paragraphs; Types of Weapons"
+            }
+          ],
+          "note": "charges * 2 seconds"
+        }
+      }
+    },
+    {
+      "key": "exercise.charges.exercise",
+      "facts": {
+        "charges": {
+          "value": 500,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84906:1126820",
+              "selector": "Types of Weapons"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "charge_interval_seconds": {
+          "value": 2,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84906:1126820",
+              "selector": "Opening paragraphs"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "duration_seconds": {
+          "value": 1000,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84906:1126820",
+              "selector": "Opening paragraphs; Types of Weapons"
+            }
+          ],
+          "note": "charges * 2 seconds"
+        }
+      }
+    },
+    {
+      "key": "exercise.charges.durable",
+      "facts": {
+        "charges": {
+          "value": 1800,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84906:1126820",
+              "selector": "Types of Weapons"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "charge_interval_seconds": {
+          "value": 2,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84906:1126820",
+              "selector": "Opening paragraphs"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "duration_seconds": {
+          "value": 3600,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84906:1126820",
+              "selector": "Opening paragraphs; Types of Weapons"
+            }
+          ],
+          "note": "charges * 2 seconds"
+        }
+      }
+    },
+    {
+      "key": "exercise.charges.lasting",
+      "facts": {
+        "charges": {
+          "value": 14400,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84906:1126820",
+              "selector": "Types of Weapons"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "charge_interval_seconds": {
+          "value": 2,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84906:1126820",
+              "selector": "Opening paragraphs"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "duration_seconds": {
+          "value": 28800,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84906:1126820",
+              "selector": "Opening paragraphs; Types of Weapons"
+            }
+          ],
+          "note": "charges * 2 seconds"
+        }
+      }
+    },
+    {
+      "key": "exercise.efficiency",
+      "facts": {
+        "melee_hits_per_charge": {
+          "value": {
+            "status": "DONOR_VS_COMMUNITY_RATE_CONFLICT",
+            "donor_base_skill_tries_per_charge": 7,
+            "community_regular_training_hits_equivalent": 7.2,
+            "dummy_multiplier": "dummyPercentage/100",
+            "charge_timing": "vocationBaseAttackSpeed/RATE_EXERCISE_TRAINING_SPEED;fast-exerciseeventmultiplier0.5",
+            "selected_for_native_runtime": false
+          },
+          "classification": "CONFLICT",
+          "target_cut": "2026-10-19",
+          "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+          "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+          "sources": [
+            {
+              "source": "ots:gameplay-recheck:canary:52550d5:data/scripts/actions/items/exercise_training_weapons.lua",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/player.cpp",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/scripts/actions/items/exercise_training_weapons.lua",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/player.cpp",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "wiki:84906:1126820",
+              "selector": "Per-charge values, current and older prose"
+            }
+          ],
+          "note": "Source value exists but original request requires qualified skill-rate evidence. Preserve donor/community candidate; owner-deferred Global test remains pending.",
+          "assumptions": [],
+          "global_evidence_archive": "docs/reference/content-prep/training-content-1/tibia-source-archive.json#docs/reference/content-prep/training-content-1/facts.json/records/5/facts/melee_hits_per_charge",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+        },
+        "mana_per_charge": {
+          "value": {
+            "status": "SOURCE_CANDIDATE_GLOBAL_RATE_UNQUALIFIED",
+            "candidate": 600,
+            "selected_for_native_runtime": false
+          },
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-19",
+          "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+          "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+          "sources": [
+            {
+              "source": "ots:gameplay-recheck:canary:52550d5:data/scripts/actions/items/exercise_training_weapons.lua",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/player.cpp",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/scripts/actions/items/exercise_training_weapons.lua",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/player.cpp",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "wiki:84906:1126820",
+              "selector": "Per-charge values, current and older prose"
+            }
+          ],
+          "note": "Source value exists but original request requires qualified skill-rate evidence. Preserve donor/community candidate; owner-deferred Global test remains pending.",
+          "assumptions": [],
+          "global_evidence_archive": "docs/reference/content-prep/training-content-1/tibia-source-archive.json#docs/reference/content-prep/training-content-1/facts.json/records/5/facts/mana_per_charge",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+        },
+        "bow_rate": {
+          "value": {
+            "status": "UNIT_AND_RATE_CONFLICT",
+            "donor_distance_tries_per_charge": 7,
+            "community_current_blood_hits_per_charge": 2.16,
+            "community_current_miss_hits_per_charge": 4.32,
+            "community_retained_older_prose_hits_per_charge": 3.6,
+            "warning": "Normal training hits and engine skill tries are distinct units; no equality assumed.",
+            "selected_for_native_runtime": false
+          },
+          "classification": "CONFLICT",
+          "target_cut": "2026-10-19",
+          "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+          "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+          "sources": [
+            {
+              "source": "ots:gameplay-recheck:canary:52550d5:data/scripts/actions/items/exercise_training_weapons.lua",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/player.cpp",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/scripts/actions/items/exercise_training_weapons.lua",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/player.cpp",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "wiki:84906:1126820",
+              "selector": "Per-charge values, current and older prose"
+            }
+          ],
+          "note": "Source value exists but original request requires qualified skill-rate evidence. Preserve donor/community candidate; owner-deferred Global test remains pending.",
+          "assumptions": [],
+          "global_evidence_archive": "docs/reference/content-prep/training-content-1/tibia-source-archive.json#docs/reference/content-prep/training-content-1/facts.json/records/5/facts/bow_rate",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+        },
+        "stamina_use": {
+          "value": {
+            "status": "SOURCE_CANDIDATE_GLOBAL_RATE_UNQUALIFIED",
+            "candidate": {
+              "stamina_consumed": false,
+              "stamina_regenerated_by_training": false
+            },
+            "selected_for_native_runtime": false
+          },
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-19",
+          "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+          "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+          "sources": [
+            {
+              "source": "ots:gameplay-recheck:canary:52550d5:data/scripts/actions/items/exercise_training_weapons.lua",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/player.cpp",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/scripts/actions/items/exercise_training_weapons.lua",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/player.cpp",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "wiki:84906:1126820",
+              "selector": "Per-charge values, current and older prose"
+            }
+          ],
+          "note": "Source value exists but original request requires qualified skill-rate evidence. Preserve donor/community candidate; owner-deferred Global test remains pending.",
+          "assumptions": [],
+          "global_evidence_archive": "docs/reference/content-prep/training-content-1/tibia-source-archive.json#docs/reference/content-prep/training-content-1/facts.json/records/5/facts/stamina_use",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+        },
+        "expert_dummy_bonus_percent": {
+          "value": 10,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:news:4577:20261018",
+              "selector": "Expert exercise dummy / comparison with public dummy"
+            }
+          ],
+          "note": "Primary official declaration of the10% relative skill-gain bonus. This does not establish per-charge vocation formulas or stacking/rounding behavior."
+        }
+      }
+    }
+  ],
+  "evidence_scope": "SOURCE_OBSERVATIONS_WITH_EXPLICIT_OTERYN_WORKING_DEFAULTS"
+}

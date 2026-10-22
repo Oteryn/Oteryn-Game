@@ -1,0 +1,22 @@
+{
+  "schema": "OTERYN_WORKING_REFERENCE_PARAMETERS/v1",
+  "task": "TRAINING-CONTENT-1",
+  "reference_only": true,
+  "runtime_switch_authorized": false,
+  "status": "SOURCE_RECONCILED_WITH_EXPLICIT_QUALIFICATION_GAPS",
+  "owner_instruction_source": "owner:oteryn-data-completion:2026-10-19",
+  "filled_fields": 0,
+  "normalized_companion_fields": 0,
+  "remaining_unfilled_fields": 0,
+  "originating_proposals": "docs/reference/content-prep/training-content-1/oteryn-proposals.json",
+  "source_archive": "docs/reference/content-prep/training-content-1/tibia-source-archive.json",
+  "shared_policies": {},
+  "selection_policy": "Source-backed observations/candidates only. Unsupported project defaults withdrawn; no new Global/runtime formula selected.",
+  "remaining_unresolved_source_fields": 5,
+  "source_repair": {
+    "source_check": "docs/reference/content-prep/training-content-1/gameplay-source-reconciliation.json",
+    "remaining_unresolved_source_fields": 5,
+    "selected_for_native_runtime": false,
+    "summary": "Exercise rates retain exact donor and community candidates, including the7versus7.2melee disagreement and Bow unit differences.600base mana is corroborated but final gains and offline formulas remain unqualified. Owner-deferred measurements are pending;32item/charge facts are preserved."
+  }
+}
