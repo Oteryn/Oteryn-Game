@@ -58,6 +58,10 @@ Exact expectation changes (no assertion removed, loosened, ignored or skipped):
 - `content_world_project_repository.rs`: directory scan budget 231 → **232**,
   exactly the one additional `content/craft/` sibling. Existing digests, byte pins
   and document inventory remain unchanged after regeneration.
+- `npc_catalogue_preproduction_limits` (`npc_catalogue.rs`), which tracks the same
+  measured repository scan: 231 → **232** for the same sibling. The merge queue
+  failed `content_npc_catalogue`, `content_npc_service_model` and
+  `npc_placement_parity` on the stale 231; all five pass at 232.
 - Relocated craft round-trip assertions and Python deterministic count: **113 → 125**,
   accounting only for the 12 completed digging rows. All original assertions survive.
 - Generated index/manifest/lock family counts: **113 → 125**, via the authoring tool.
@@ -162,6 +166,7 @@ Full-task line counts: **base 9f814e72a → final**.
 | `content/craft/sources.json` | 0 → 573 |
 | `content/manifest.json` | 1013 → 1029 |
 | `content/project.json` | 39 → 40 |
+| `crates/gameplay/content/src/content/npc_catalogue.rs` | 261 → 262 |
 | `crates/gameplay/content/src/content/project/v2.rs` | 3666 → 3683 |
 | `crates/gameplay/content/src/content/project/v2/item_conversion.rs` | 0 → 636 |
 | `crates/gameplay/content/src/content/project/v2/item_conversion/digging.rs` | 0 → 40 |

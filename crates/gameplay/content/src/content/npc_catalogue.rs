@@ -63,7 +63,8 @@ pub fn npc_catalogue_preproduction_limits() -> ProjectFilesystemLimits {
         // Combined with #1940 NPC placement content the scan exceeded 218: one more package-root sibling seen by each of the 11 locator lookups, +11 (measured).
         // LOOP-MAP-1 (#2152) adds the `content/cyclopedia/` sibling of `world` under `content/`: +1 (measured, 230).
         // WEATHER-1 adds the `content/weather/` sibling of `world` under `content/`: +1 (measured, 231).
-        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11 + 11 + 1 + 1,
+        // CRAFT-CONTENT-1 adds content/craft/: +1 (measured, 232).
+        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11 + 11 + 1 + 1 + 1,
     }
 }
 
