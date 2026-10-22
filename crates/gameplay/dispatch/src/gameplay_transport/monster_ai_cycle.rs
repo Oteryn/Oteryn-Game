@@ -1,4 +1,4 @@
-//! First playable wild-monster dispatch: explicitly activated physical melee only.
+//! Native monster profiles, synchronous summons and the existing physical melee owner.
 //! Uses the actual positioned census, bound Creature policies and existing AI-4
 //! owner. Ordinary creatures use their independent Movement-owner step deadlines.
 #[cfg(test)]
@@ -25,6 +25,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// One coalesced creature think pass. The same Channel's scheduler is shared by
     /// all connections; player count never multiplies monster attack frequency.
     pub(in crate::gameplay_transport) async fn drain_monster_melee(&self) {
+        let Some(permit) = self.spell_lane_permit().await else {
+            return;
+        };
         let now = self.owner_now();
         let mut runtime = self.runtime.lock().await;
         // SPAWN-1a (CREATURE-AI-0 §6.3): the respawn occurrences due on this owner turn run
@@ -88,9 +91,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if swing_pass && monsters.is_empty() {
             return;
         }
-        states.next_monster_ai_pass_us = due;
-        states.monster_ai_sequence = sequence;
-        let mut melee_owner = std::mem::take(&mut states.monster_melee);
         let digest = content
             .source_digest()
             .iter()
@@ -103,11 +103,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             "formula:source-melee-baseline",
             "simulation:v1",
         ) else {
-            states.monster_melee = melee_owner;
             return;
         };
         if swing_pass {
-            melee_owner.think_players = census
+            states.monster_melee.think_players = census
                 .iter()
                 .filter_map(|(actor, _, session)| session.map(|session| (*actor, session)))
                 .collect();
@@ -115,30 +114,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // decides its target; the swing below only swings at that target. A monster already
             // admitted is not qualified again.
             for (actor, ..) in &monsters {
-                if melee_owner.creature_ai.state(*actor).is_some() {
+                if states.monster_melee.creature_ai.state(*actor).is_some() {
                     continue;
                 }
-                let Some(monster) = qualified_melee(&runtime, content, *actor) else {
+                let Ok(snapshot) = runtime.companion_snapshot(*actor) else {
                     continue;
                 };
-                // The think projects targeting only: the swing stays this AI-4 owner's, and
-                // native content carries no Ability authoring for the think's proposals yet.
-                let mut targeting_only = monster.behavior.clone();
-                targeting_only.attacks.clear();
-                targeting_only.defenses.clear();
-                let _ = melee_owner.creature_ai.admit_creature(
+                let creature = crate::content::ProjectV2DefinitionRef {
+                    family: crate::content::ProjectV2Family::Creature,
+                    key: snapshot.state.policy.definition_key.clone(),
+                    revision: snapshot.state.policy.definition_revision.clone(),
+                };
+                let _ = states.monster_melee.creature_ai.admit_native_creature(
                     &runtime,
+                    content,
                     *actor,
-                    Some(&targeting_only),
-                    &std::collections::BTreeMap::new(),
+                    &creature,
                     now.get(),
                 );
             }
             // An idle creature that died or despawned has no due think to remove it.
-            melee_owner.creature_ai.forget_dead(&runtime);
+            states.monster_melee.creature_ai.forget_dead(&runtime);
         }
-        if melee_owner.creature_ai.is_empty() {
-            states.monster_melee = melee_owner;
+        if states.monster_melee.creature_ai.is_empty() {
             return;
         }
         if swing_pass {
@@ -149,9 +147,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .iter()
                 .map(|(player, ..)| *player)
                 .collect::<Vec<_>>();
-            let _ = melee_owner
-                .creature_ai
-                .wake_for_players(&runtime, &players, now.get());
+            let _ =
+                states
+                    .monster_melee
+                    .creature_ai
+                    .wake_for_players(&runtime, &players, now.get());
         }
         // §2.1 item 3: protected players are ineligible, and invisible ones to a creature that
         // does not sense invisibility. The native artifact carries no player vitals or damage
@@ -169,73 +169,38 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 },
             )
             .collect::<Vec<_>>();
-        // CREATURE-MOVE-1: thinks select goals; Movement owns destination admission and commits.
-        // Independent step deadlines run even between swing passes.
-        // Lock order: runtime, spell states, attack, then the door runtime (read only).
-        // Every door cell, open or closed: a creature never stands in a doorway (CREATURE-DOOR-1).
-        // The entry door is bound in the entry frame: it is no obstacle on a bundle World, whose
-        // doors are Unknown tiles that refuse a step.
-        let cells = room.movement_cells();
-        let doors = if bundle_cells(cells) {
-            std::collections::BTreeSet::new()
-        } else {
-            self.door.lock().await.collision_cells().clone()
-        };
-        let (_, next_think) = melee_owner.creature_ai.run_due_thinks_until_next(
-            &mut runtime,
-            now.get(),
-            &GameplayDecisionRoot::from_bytes(content.source_digest()),
-            &revisions,
-            &candidates,
-        );
-        let qualified_ground = crate::movement::speed::QualifiedCellGroundSpeed { cells };
-        let ground: &dyn crate::movement::speed::GroundSpeedSource =
-            if crate::movement::source_floor_change::is_source_profile(cells) {
-                &qualified_ground
-            } else {
-                &crate::movement::speed::EngineeringGroundSpeed
-            };
-        let player_waiting = attack.players_waiting(now.get());
-        let mut next_step = melee_owner.creature_ai.drive_movement(
-            &mut runtime,
-            cells,
-            &doors,
-            room.map_revision_digest(),
-            content,
-            ground,
-            &GameplayDecisionRoot::from_bytes(content.source_digest()),
-            now.get(),
-            &mut attack.path_budget,
-            player_waiting,
-        );
-        // Creature requests precede players, whose unused reserve returns in this same turn.
-        attack.drain_chase_searches(&runtime, room, semantic_now, &|at| {
-            super::attack::chase_path_tile(cells, &doors, at)
-        });
-        if player_waiting && !attack.players_waiting(now.get()) {
-            next_step = melee_owner.creature_ai.drive_movement(
+        let next_think = match self
+            .drive_monster_profiles(
                 &mut runtime,
-                cells,
-                &doors,
-                room.map_revision_digest(),
+                &mut states,
+                &mut attack,
+                room,
                 content,
-                ground,
-                &GameplayDecisionRoot::from_bytes(content.source_digest()),
+                &permit,
+                &revisions,
+                &candidates,
                 now.get(),
-                &mut attack.path_budget,
-                false,
-            );
-        }
-        let next_think = next_think.into_iter().chain(next_step).min();
+            )
+            .await
+        {
+            Ok(next) => next,
+            Err(()) => return,
+        };
+        states.next_monster_ai_pass_us = due;
+        states.monster_ai_sequence = sequence;
         // CREATUREAI0-RL-05 (Codex 4243189401): thinks left due past this window's budget, or
         // due before the next interval pass, run in a pass of their own as soon as the budget
         // allows, not one think interval later. Such a pass only thinks: swings keep their one
         // pass per think interval.
         if swing_pass {
-            melee_owner.next_swing_pass_us = due;
+            states.monster_melee.next_swing_pass_us = due;
         }
-        let next_pass =
-            next_monster_ai_pass_us(now.get(), melee_owner.next_swing_pass_us, next_think);
+        let next_pass = next_monster_ai_pass_us(
+            now.get(),
+            states.monster_melee.next_swing_pass_us,
+            next_think,
+        );
+        let mut melee_owner = std::mem::take(&mut states.monster_melee);
         // §2.1: only a monster whose think holds a target swings, in census order from the
         // cursor and at most `CREATUREAI0-RL-05` per pass. A creature that stepped swings from,
         // and is perceived at, its new cell.
@@ -473,6 +438,7 @@ fn swing_window(len: usize, cursor: usize) -> (usize, usize) {
 }
 
 /// BUNDLE-MONSTER-AI-1: whether `cells` are a World Bundle's.
+#[cfg(test)]
 fn bundle_cells(cells: &crate::content::NativeEntryMovementCells) -> bool {
     matches!(
         cells.index(),
@@ -501,16 +467,7 @@ fn current_player_target<'a>(
 /// SPAWN-1a (CREATURE-AI-0 §6.3): runs the respawn occurrences due at `now` with the MOVE-RL-11
 /// reference view. It needs no melee content. A refusal leaves the occurrences pending.
 pub fn drive_owner_spawns(runtime: &mut ChannelRuntimeV1, now: u64) {
-    let _ = runtime.drive_spawn_respawns(now, |observer, cell| {
-        use crate::movement::interest::{VisibilityPosition, VisibilitySettings};
-        match (
-            VisibilityPosition::new(observer.x, observer.y, observer.floor),
-            VisibilityPosition::new(cell.x, cell.y, cell.floor),
-        ) {
-            (Ok(observer), Ok(cell)) => VisibilitySettings::REFERENCE.can_see(observer, cell),
-            _ => false,
-        }
-    });
+    let _ = crate::monster_owner_cycle::respawn_job::drive_owner_spawns(runtime, now);
 }
 
 /// One monster the first playable melee dispatch serves: a wild hostile Creature whose bound

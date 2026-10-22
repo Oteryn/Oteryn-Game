@@ -24,6 +24,9 @@ mod weather_wire;
 #[path = "creature_move_postgres_tests.rs"]
 mod creature_move;
 
+#[path = "loop_monster_postgres_tests.rs"]
+mod loop_monster;
+
 #[path = "loop_map_pickup_tests.rs"]
 mod map_pickup;
 

@@ -36,6 +36,7 @@ pub use last_position::LastPositionFlush;
 mod map_door;
 mod monk_save;
 mod monster_ai_cycle;
+mod monster_profile_cycle;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
@@ -47,6 +48,7 @@ mod npc_talk;
 mod npc_trade_command;
 mod npc_travel;
 mod npc_voice;
+mod world_respawns;
 pub use npc_talk::NpcTalkBook;
 mod resume;
 mod seam_rooms;
@@ -635,6 +637,8 @@ pub async fn serve_gameplay(
     );
     let mut serving = pin!(serving);
     let mut cycles = pin!(authority.run_source_owner_cycles(shutdown));
+    let mut respawns = pin!(authority.run_world_respawns(shutdown));
+    let mut respawns_done = false;
     // CHAR-POSITION-0 §3.2 (`CHARPOS0-RL-01`): the periodic last-position writes run on their own
     // deadlines, so no other cadence work delays them.
     let mut positions = pin!(authority.run_last_position_writes(shutdown));
@@ -656,6 +660,9 @@ pub async fn serve_gameplay(
     let mut cycles_done = false;
     let mut flush_done = false;
     poll_fn(|context| {
+        if !respawns_done && respawns.as_mut().poll(context).is_ready() {
+            respawns_done = true;
+        }
         if !flush_done && flush.as_mut().poll(context).is_ready() {
             flush_done = true;
         }
