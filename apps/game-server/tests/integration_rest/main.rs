@@ -3,7 +3,9 @@
 //! Each module below was a separate `tests/<name>.rs` target. Merging them links the whole
 //! `oteryn-game-server` crate once instead of once per file. Targets that need their own
 //! process, path-include crate-private `src` modules, or are named by a workflow, validator or
-//! tool stay as separate `tests/*.rs` files.
+//! tool stay as separate `tests/*.rs` files. `content_world_project_publication` is one: its
+//! `flock` cases fail when a test in the same process spawns a child that briefly holds a copy of
+//! the lock descriptor.
 
 mod admission_evidence_wire;
 mod authority_invariants;
@@ -14,7 +16,6 @@ mod content_reference_playable;
 mod content_world_cw2_b4_import;
 mod content_world_project;
 mod content_world_project_fs;
-mod content_world_project_publication;
 mod content_world_project_v2_encounter_admission;
 mod content_world_project_v2_npc_admission;
 mod diagnostic_line;
