@@ -47,13 +47,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await;
         let _ = self.save_spell_training(actor, session, true).await;
         let runtime = self.runtime.lock().await;
-        let states = self.spell_states.lock().await;
+        let states = self.states.spell_states.lock().await;
         let settled = !states.has_pending_spell_commit(actor, session)
             && !runtime.actor_spell_reserved(actor);
         drop(states);
         drop(runtime);
         settled
-            && (!self.newhaven_travel.held(session)
+            && (!self.states.newhaven_travel.held(session)
                 || self
                     .reconcile_newhaven_travel(actor, session)
                     .await

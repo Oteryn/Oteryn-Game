@@ -12,7 +12,6 @@ use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 use super::fixture::{Harness, debug, id, run};
 use super::{TestResult, prepare_current_session};
-use crate::gameplay_transport::ComposedFreshAdmission;
 use crate::gameplay_transport::connection::{
     AdmittedSession, ControllerBinding, FirstEntryOutcome, SessionContinuity,
 };
@@ -214,8 +213,7 @@ fn scenario() -> TestResult {
             continuity: SessionContinuity::FRESH,
             item_fence: None,
         };
-        let mut owner = ComposedFreshAdmission {
-            emit: |_, _| {},
+        let mut owner = crate::gameplay_transport::composed_test_owner::ComposedTestOwner {
             root: &harness.root,
             character: &authority,
             holder: &harness.node,
@@ -233,50 +231,23 @@ fn scenario() -> TestResult {
             )
             .expect("an empty declared set binds"),
             runtime: &runtime,
-            movement_cells: room.movement_cells(),
             door: &door,
-            chest: room.door(),
             spells: &spells,
-            active_generation: Some(active),
-            premium_coordinator: None,
-            rooms: crate::gameplay_transport::SeamRooms::new(None, Some(&room)),
             achievements: &achievements,
             imported_charms: &charms,
-            spell_states: Mutex::default(),
-            world_gate: std::sync::Mutex::default(),
-            attack: Mutex::default(),
-            // In the past, so the owner clock already stands well after the swing clock's origin.
-            clock_origin: std::time::Instant::now()
-                .checked_sub(Duration::from_secs(60))
-                .expect("a monotonic clock older than a minute"),
-            lost: std::sync::Mutex::default(),
-            revision_sequencer:
-                crate::durability::character_revision_sequencer::CharacterRevisionSequencer::new(),
-            quest_catalogue: None,
-            quest_sessions: std::sync::Mutex::default(),
-            chat: crate::gameplay_transport::chat_intent::ChatRuntime::default(),
-            npc_conversations: Default::default(),
-            wheel_ruleset: None,
-            wheel_sessions: std::sync::Mutex::default(),
-            progression_sessions: std::sync::Mutex::default(),
-            last_positions: crate::gameplay_transport::last_position::LastPositions::default(),
-            input_gate: Default::default(),
-            premium: crate::premium::refresh::PremiumRefresher::new(
-                Default::default(),
-                harness.root.clone(),
-                None,
-            ),
-            premium_sessions: std::sync::Mutex::default(),
-            fence_holders: Default::default(),
-            spell_lane: crate::durability::spell_owner_commit::SpellLane::new(world, channel),
-            loop_ground: Default::default(),
-            tutorial_sessions: Default::default(),
-            newhaven_travel: Default::default(),
-        };
+            room: &room,
+        }.build();
+        owner.active_generation = Some(active);
+        owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&room));
+        // In the past, so the owner clock already stands well after the swing clock's origin.
+        owner.clock_origin = std::time::Instant::now()
+            .checked_sub(Duration::from_secs(60))
+            .expect("a monotonic clock older than a minute");
         {
             let runtime = owner.runtime.lock().await;
             assert!(
                 owner
+                    .states
                     .spell_states
                     .lock()
                     .await
@@ -310,7 +281,7 @@ fn scenario() -> TestResult {
             let runtime = owner.runtime.lock().await;
             let now = owner.owner_now();
             assert_eq!(
-                owner.attack.lock().await.set_target(
+                owner.states.attack.lock().await.set_target(
                     &runtime,
                     Some(&room),
                     actor,
@@ -327,7 +298,14 @@ fn scenario() -> TestResult {
             // ATTACK-2: the swing weapon (here fists) is read from the equipment owner first.
             owner.refresh_attack_weapon(actor, session).await;
             owner.drain_auto_attacks().await;
-            if owner.attack.lock().await.kills().has_session(session) {
+            if owner
+                .states
+                .attack
+                .lock()
+                .await
+                .kills()
+                .has_session(session)
+            {
                 break;
             }
             swings += 1;
@@ -347,7 +325,13 @@ fn scenario() -> TestResult {
             assert!(drains < 8, "the queued kill settles");
         }
         assert!(
-            !owner.attack.lock().await.kills().has_session(session),
+            !owner
+                .states
+                .attack
+                .lock()
+                .await
+                .kills()
+                .has_session(session),
             "the settled kill leaves the queue"
         );
 

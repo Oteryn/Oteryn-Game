@@ -1,46 +1,34 @@
 #![allow(clippy::expect_used)]
 
-#[path = "../../../../../apps/game-server/tests/support/character_revision_sequencer_postgres_cases.rs"]
-mod fixture;
-
-#[path = "monk_save_fresh_fixture.rs"]
-mod fresh_fixture;
-
-#[path = "kill_reward_postgres_e2e_tests.rs"]
-mod kill_reward_e2e;
-
-#[path = "logout_postgres_tests.rs"]
-mod logout_e2e;
-
-#[path = "map_bundle_domain_postgres_tests.rs"]
-mod map_bundle_domain;
-
-#[path = "rune_use_bridge_postgres_tests.rs"]
-mod rune_use_bridge;
-
-#[path = "item_look_postgres_tests.rs"]
-mod item_look;
-
-#[path = "weather_wire_postgres_tests.rs"]
-mod weather_wire;
-
+// Keep sorted by module name; insert in order, never append.
 #[path = "creature_move_postgres_tests.rs"]
 mod creature_move;
-
-#[path = "loop_map_pickup_tests.rs"]
-mod map_pickup;
-
-#[path = "vocationless_vitals_postgres_tests.rs"]
-mod vocationless_vitals;
-
-#[path = "first_vocation_vitals_postgres_tests.rs"]
-mod first_vocation_vitals;
-
-#[path = "tutorial_vitals_postgres_fixture.rs"]
-mod tutorial_vitals_fixture;
-
 #[path = "equipment_effects_owner_tests/monk_scenario.rs"]
 pub(in crate::gameplay_transport) mod equipment_scenarios;
+#[path = "first_vocation_vitals_postgres_tests.rs"]
+mod first_vocation_vitals;
+#[path = "../../../../../apps/game-server/tests/support/character_revision_sequencer_postgres_cases.rs"]
+mod fixture;
+#[path = "monk_save_fresh_fixture.rs"]
+mod fresh_fixture;
+#[path = "item_look_postgres_tests.rs"]
+mod item_look;
+#[path = "kill_reward_postgres_e2e_tests.rs"]
+mod kill_reward_e2e;
+#[path = "logout_postgres_tests.rs"]
+mod logout_e2e;
+#[path = "map_bundle_domain_postgres_tests.rs"]
+mod map_bundle_domain;
+#[path = "loop_map_pickup_tests.rs"]
+mod map_pickup;
+#[path = "rune_use_bridge_postgres_tests.rs"]
+mod rune_use_bridge;
+#[path = "tutorial_vitals_postgres_fixture.rs"]
+mod tutorial_vitals_fixture;
+#[path = "vocationless_vitals_postgres_tests.rs"]
+mod vocationless_vitals;
+#[path = "weather_wire_postgres_tests.rs"]
+mod weather_wire;
 
 use super::{ComposedFreshAdmission, MonkSave};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
@@ -193,8 +181,7 @@ impl Dependencies {
         harness: &'a Harness,
         authority: &'a ReconciledCharacterAuthority<'f, 's>,
     ) -> ComposedFreshAdmission<'a, 'f, 's> {
-        ComposedFreshAdmission {
-            emit: |_, _| {},
+        crate::gameplay_transport::composed_test_owner::ComposedTestOwner {
             root: &harness.root,
             character: authority,
             holder: &harness.node,
@@ -212,50 +199,16 @@ impl Dependencies {
             )
             .expect("an empty declared set binds"),
             runtime: &self.runtime,
-            movement_cells: self.room.movement_cells(),
             door: &self.door,
-            chest: self.room.door(),
             spells: &self.spells,
-            active_generation: None,
-            premium_coordinator: None,
-            rooms: crate::gameplay_transport::SeamRooms::new(None, self.combat_room.as_ref()),
             achievements: &self.achievements,
             imported_charms: &self.charms,
-            spell_states: Mutex::default(),
-            world_gate: std::sync::Mutex::default(),
-            attack: Mutex::default(),
-            clock_origin: std::time::Instant::now(),
-            lost: std::sync::Mutex::default(),
-            revision_sequencer:
-                crate::durability::character_revision_sequencer::CharacterRevisionSequencer::new(),
-            quest_catalogue: None,
-            quest_sessions: std::sync::Mutex::default(),
-            chat: crate::gameplay_transport::chat_intent::ChatRuntime::default(),
-            npc_conversations: Default::default(),
-            wheel_ruleset: None,
-            wheel_sessions: std::sync::Mutex::default(),
-            progression_sessions: std::sync::Mutex::default(),
-            last_positions: crate::gameplay_transport::last_position::LastPositions::default(),
-            input_gate: Default::default(),
-            premium: crate::premium::refresh::PremiumRefresher::new(
-                Default::default(),
-                harness.root.clone(),
-                None,
-            ),
-            premium_sessions: std::sync::Mutex::default(),
-            fence_holders: Default::default(),
-            spell_lane: crate::durability::spell_owner_commit::SpellLane::new(
-                self.admitted.world_id,
-                self.admitted.channel_id,
-            ),
-            loop_ground: Default::default(),
-            tutorial_sessions: Default::default(),
-            newhaven_travel: Default::default(),
-        }
+            room: &self.room,
+        }.build()
     }
     async fn initialize(&self, owner: &ComposedFreshAdmission<'_, '_, '_>) {
         let runtime = self.runtime.lock().await;
-        let mut states = owner.spell_states.lock().await;
+        let mut states = owner.states.spell_states.lock().await;
         assert!(
             states
                 .initialize(
@@ -1098,7 +1051,7 @@ mod death_ml_loss_composed {
                             .map_err(debug)?,
                     )
                     .map_err(debug)?;
-                let mut states = owner.spell_states.lock().await;
+                let mut states = owner.states.spell_states.lock().await;
                 assert!(
                     states
                         .initialize(
@@ -1132,7 +1085,7 @@ mod death_ml_loss_composed {
             // A real lethal creature hit records the death.
             let death = {
                 let mut runtime = dependencies.runtime.lock().await;
-                let mut states = owner.spell_states.lock().await;
+                let mut states = owner.states.spell_states.lock().await;
                 let now = crate::foundation::owner_timer::SemanticTimeMicros::from_micros(
                     owner.owner_now().get(),
                 );
@@ -1144,12 +1097,12 @@ mod death_ml_loss_composed {
                     .player_death(&runtime, actor, session)
                     .ok_or("the lethal hit records the death")?
             };
-            assert!(owner.spell_states.lock().await.is_dead(actor));
+            assert!(owner.states.spell_states.lock().await.is_dead(actor));
             if case != Case::Clean {
                 // The death flush's own checkpoint for the try, retained under the stale fence
                 // (a retained checkpoint refuses creature hits, so it follows the death).
                 let runtime = dependencies.runtime.lock().await;
-                let mut states = owner.spell_states.lock().await;
+                let mut states = owner.states.spell_states.lock().await;
                 let state = states
                     .get_mut(&runtime, actor, session)
                     .ok_or("dead actor")?;
@@ -1196,7 +1149,7 @@ mod death_ml_loss_composed {
                     );
                 }
                 let runtime = dependencies.runtime.lock().await;
-                let mut states = owner.spell_states.lock().await;
+                let mut states = owner.states.spell_states.lock().await;
                 assert!(
                     states
                         .get_mut(&runtime, actor, session)
@@ -1240,11 +1193,11 @@ mod death_ml_loss_composed {
                 }
                 assert_eq!(death_receipts(&harness).await?, 0);
                 assert_eq!(build_row(&harness, &durable).await?, trained);
-                assert!(owner.spell_states.lock().await.is_dead(actor));
+                assert!(owner.states.spell_states.lock().await.is_dead(actor));
                 let current = current_fence(&owner, session).await?;
                 {
                     let runtime = dependencies.runtime.lock().await;
-                    let mut states = owner.spell_states.lock().await;
+                    let mut states = owner.states.spell_states.lock().await;
                     let state = states
                         .get_mut(&runtime, actor, session)
                         .ok_or("dead actor")?;
@@ -1292,7 +1245,7 @@ mod death_ml_loss_composed {
                 .await
                 .ok_or("the death settles and the actor respawns")?;
             assert_eq!(vitals.health, vitals.max_health);
-            assert!(!owner.spell_states.lock().await.is_dead(actor));
+            assert!(!owner.states.spell_states.lock().await.is_dead(actor));
 
             // The death receipt: binding version 2, its before build holds the flushed try, and
             // its after build is the SKILLS-0 §3.6 loss of the receipt's experience share.
@@ -1338,7 +1291,7 @@ mod death_ml_loss_composed {
             // The live actor continues from the lowered build: one more try saves on it.
             {
                 let runtime = dependencies.runtime.lock().await;
-                let mut states = owner.spell_states.lock().await;
+                let mut states = owner.states.spell_states.lock().await;
                 let state = states
                     .get_mut(&runtime, actor, session)
                     .ok_or("respawned actor")?;

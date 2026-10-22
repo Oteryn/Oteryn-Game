@@ -279,7 +279,7 @@ async fn client_cast(
             // Reuse the existing condition owner fixture; both gates precede an invalid target.
             for (offset, gate) in ["pacified", "powerless"].into_iter().enumerate() {
                 crate::gameplay_transport::actor_spell::tests::gate_player(
-                    &mut *owner.spell_states.lock().await,
+                    &mut *owner.states.spell_states.lock().await,
                     actor,
                     session,
                     gate,
@@ -299,7 +299,7 @@ async fn client_cast(
                 )
                 .await?;
                 let runtime = owner.runtime.lock().await;
-                let mut states = owner.spell_states.lock().await;
+                let mut states = owner.states.spell_states.lock().await;
                 let state = states
                     .get_mut(&runtime, actor, session)
                     .ok_or("current player")?;
@@ -576,7 +576,7 @@ async fn run_case(admin: String, case: Case) -> TestResult {
     ));
     {
         let runtime = dependencies.runtime.lock().await;
-        let mut states = owner.spell_states.lock().await;
+        let mut states = owner.states.spell_states.lock().await;
         assert!(
             states
                 .initialize(

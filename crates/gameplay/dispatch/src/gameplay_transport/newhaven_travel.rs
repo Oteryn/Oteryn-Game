@@ -65,7 +65,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> npc_command::NpcTalkOutcome {
         use npc_command::NpcConversations;
         let session = command.game_session_id;
-        if self.newhaven_travel.held(session) {
+        if self.states.newhaven_travel.held(session) {
             let known = self.reconcile_newhaven_travel(actor, session).await;
             return npc_command::NpcTalkOutcome {
                 unknown: known.is_none(),
@@ -78,10 +78,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let (route, conversation, catalogue, capture, work, npc_key) = {
             let mut runtime = self.runtime.lock().await;
-            if self.spell_states.lock().await.is_dead(actor) {
+            if self.states.spell_states.lock().await.is_dead(actor) {
                 return ordinary;
             }
-            let Some(npc) = self.chat.engaged(session) else {
+            let Some(npc) = self.states.chat.engaged(session) else {
                 return ordinary;
             };
             if npc.placement_identity() != intent.npc_actor.identity {
@@ -93,10 +93,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(route) = NewhavenRoute::for_npc(&key) else {
                 return ordinary;
             };
-            let Some(conversation) = self.chat.npc_conversation_generation(session) else {
+            let Some(conversation) = self.states.chat.npc_conversation_generation(session) else {
                 return ordinary;
             };
-            let Some(book) = self.chat.npc_talk() else {
+            let Some(book) = self.states.chat.npc_talk() else {
                 return ordinary;
             };
             let Ok(position) = runtime.read_actor_position(actor) else {
@@ -128,7 +128,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let now = self.owner_now().get() / 1000;
         let text = intent.text.trim().to_ascii_lowercase();
         let prompt = {
-            let Ok(mut prompts) = self.newhaven_travel.prompts.lock() else {
+            let Ok(mut prompts) = self.states.newhaven_travel.prompts.lock() else {
                 return ordinary;
             };
             if text == "no" || text == "bye" {
@@ -226,7 +226,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return ordinary;
             }
-            let Ok(mut holds) = self.newhaven_travel.holds.lock() else {
+            let Ok(mut holds) = self.states.newhaven_travel.holds.lock() else {
                 return ordinary;
             };
             holds.insert(

@@ -219,7 +219,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .ok_or(UseDisposition::Rejected)?;
         {
             let runtime = self.runtime.lock().await;
-            let mut states = self.spell_states.lock().await;
+            let mut states = self.states.spell_states.lock().await;
             // A pending spell commit or a durable spell reserving this actor refuses the use
             // before anything is burned.
             if states.is_dead(actor)
@@ -250,7 +250,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let index =
                     super::item_ref_admission::pinned_index(&runtime, self.active_generation)
                         .ok_or(UseDisposition::Rejected)?;
-                let mut states = self.spell_states.lock().await;
+                let mut states = self.states.spell_states.lock().await;
                 let gate = states
                     .item_uses
                     .gate(&runtime, actor, session)
@@ -332,7 +332,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // PREPARE (§5): requirements before any reservation, then FULL, then the cooldown.
         {
             let runtime = self.runtime.lock().await;
-            let mut states = self.spell_states.lock().await;
+            let mut states = self.states.spell_states.lock().await;
             let state = (!states.is_dead(actor))
                 .then(|| states.get(&runtime, actor, session))
                 .flatten()
@@ -371,7 +371,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(Err(_)) => (UseDisposition::Rejected, false, false),
         };
         let runtime = self.runtime.lock().await;
-        let mut states = self.spell_states.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         if known_commit {
             apply_effect(
                 &runtime,

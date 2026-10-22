@@ -636,16 +636,17 @@ impl<'ast> Visit<'ast> for Constructions<'ast> {
 }
 
 /// Every mention of `SeamRooms` outside `seam_rooms.rs`: the seam's declarations of its two
-/// owners in `mod.rs`, its one production construction in `serve.rs`, and test fixtures.
+/// owners in `mod.rs`, its one production construction in `serve.rs`, the shared test
+/// constructor and explicit fixture room overrides.
 const CONSTRUCTIONS: &[(&str, usize)] = &[
+    ("gameplay_transport/composed_test_owner.rs", 2),
     ("gameplay_transport/item_use/item_use_postgres_tests.rs", 1),
     ("gameplay_transport/kill_reward_postgres_e2e_tests.rs", 1),
     ("gameplay_transport/mod.rs", 3),
-    ("gameplay_transport/monk_save_postgres_tests.rs", 1),
     ("gameplay_transport/parameter_cast.rs", 3),
     ("gameplay_transport/rune_use_bridge_postgres_tests.rs", 2),
-    ("qualification.rs", 1),
     ("node/serve.rs", 1),
+    ("qualification.rs", 1),
 ];
 
 #[test]

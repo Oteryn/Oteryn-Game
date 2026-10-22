@@ -108,7 +108,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         effects: Option<EquipmentEffects>,
     ) -> Option<()> {
         if let Some(effects) = effects {
-            let mut states = self.spell_states.lock().await;
+            let mut states = self.states.spell_states.lock().await;
             let state = states.get_mut(runtime, actor, session)?;
             install_suppressions(state, effects);
         }

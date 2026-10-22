@@ -247,7 +247,7 @@ pub(super) async fn move_equipment(
     };
     let native = {
         let runtime = admission.runtime.lock().await;
-        let states = admission.spell_states.lock().await;
+        let states = admission.states.spell_states.lock().await;
         let dead = states.is_dead(actor);
         let pending = states.has_pending_spell_commit(actor, command.game_session_id);
         native_for_move(&runtime, admission.active_generation, dead, pending)
@@ -278,6 +278,7 @@ pub(super) async fn move_equipment(
     // ATTACK-2: the swing weapon read before this move is no longer the equipment's, whatever
     // the outcome; the next swing waits for a fresh read.
     admission
+        .states
         .attack
         .lock()
         .await
@@ -295,7 +296,7 @@ pub(super) async fn move_equipment(
                 return EquipmentMoveResult::Unknown;
             };
             let runtime = admission.runtime.lock().await;
-            let mut states = admission.spell_states.lock().await;
+            let mut states = admission.states.spell_states.lock().await;
             if let Some(state) = states.get_mut(&runtime, actor, command.game_session_id) {
                 equipment_effects_owner::install_suppressions(state, effects);
             }
@@ -305,7 +306,6 @@ pub(super) async fn move_equipment(
         Err(_) => EquipmentMoveResult::Unknown,
     }
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;

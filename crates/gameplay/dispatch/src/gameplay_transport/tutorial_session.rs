@@ -138,7 +138,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             match result {
                 TutorialProgressOutcome::Written(_) => {
                     if let Some(hint) = next.hint {
-                        self.tutorial_sessions
+                        self.states
+                            .tutorial_sessions
                             .notice(fence.game_session_id, TutorialNotice::Hint(hint));
                     }
                     return Ok(Some(next));
