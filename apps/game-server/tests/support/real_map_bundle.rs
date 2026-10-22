@@ -5,7 +5,7 @@
 //! palette key is its palette index + 1, so a facts table is a dense array, as the server's
 //! palette table would be.
 //!
-//! Mounted with `#[path]` by `gameplay_transport/world_map_real_tests.rs`; `map_load_base.rs`
+//! Mounted with `#[path]` by `crates/gameplay/dispatch/src/gameplay_transport/world_map_real_tests.rs`; `map_load_base.rs`
 //! keeps its own copy until a later slice moves it (it is not an owned path of this task).
 
 use oteryn_world_bundle_compiler::Error;
@@ -19,7 +19,7 @@ use std::path::{Path, PathBuf};
 pub type Fallible<T> = Result<T, Box<dyn StdError>>;
 
 pub fn repo_root() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..")
 }
 
 /// The real map compiled: bundle bytes, digest, and the palette (compact id = index + 1).
