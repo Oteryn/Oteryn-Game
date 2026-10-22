@@ -975,7 +975,10 @@ fn prepare_paid_self(
             caster,
             owned.binding().actor,
             command.game_session_id(),
-            owned.equipment_speed_bonus(content).ok(),
+            super::super::equipment_move::equipment_effects_owner::speed_term(
+                owned.equipment(),
+                content,
+            ),
             &facts,
             draw,
         )?;

@@ -20,18 +20,35 @@ pub const CHASE_WINDOW_MICROS: u64 = 50_000;
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct ChaseSearchBudget {
     drained: Option<u64>,
+    suspended: bool,
+    searched: u32,
 }
 
 impl ChaseSearchBudget {
-    /// Whether the owner window of `now_us` is still to be drained; if so it counts as drained.
-    /// A caller's earlier window never reopens a drained one.
+    /// Whether this window can drain. A budget suspension reopens the same window with its
+    /// search count retained; earlier windows never reopen it.
     pub fn open(&mut self, now_us: u64) -> bool {
         let window = now_us / CHASE_WINDOW_MICROS;
+        if self.drained == Some(window) && self.suspended {
+            self.suspended = false;
+            return self.searched < CHASE_SEARCHES_PER_WINDOW;
+        }
         if self.drained.is_some_and(|drained| window <= drained) {
             return false;
         }
+        self.searched = 0;
+        self.suspended = false;
         self.drained = Some(window);
         true
+    }
+    pub fn remaining(&self) -> u32 {
+        CHASE_SEARCHES_PER_WINDOW.saturating_sub(self.searched)
+    }
+    pub fn record(&mut self) {
+        self.searched += 1;
+    }
+    pub fn suspend(&mut self) {
+        self.suspended = true;
     }
 }
 

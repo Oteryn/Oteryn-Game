@@ -545,6 +545,8 @@ pub struct ConditionStore<S> {
     instances: Vec<ConditionInstance<S>>,
     /// At most one immunity per closed conflict key; actor movement retains this same store.
     cleanse_immunities: Vec<CleanseImmunity>,
+    /// EQUIP-0 §4: ephemeral equipped suppressions, retained when death clears instances.
+    suppressed: std::collections::BTreeSet<ConditionType>,
     next_sequence: u32,
     /// The simulation tick (its semantic time) of the current pass and the ticks it has dealt.
     pass_at: u64,
@@ -559,6 +561,7 @@ impl<S> Default for ConditionStore<S> {
         Self {
             instances: Vec::new(),
             cleanse_immunities: Vec::new(),
+            suppressed: std::collections::BTreeSet::new(),
             next_sequence: 0,
             pass_at: 0,
             pass_ticks: 0,
@@ -739,7 +742,8 @@ impl<S: Clone> ConditionStore<S> {
         let condition_type = definition.condition_type();
         let key = condition_type.conflict_key();
         // §3.5: neither creature nor Cleanse immunity refuses `agony`.
-        if condition_type != ConditionType::Agony && immunities.contains(&condition_type)
+        if condition_type != ConditionType::Agony
+            && (immunities.contains(&condition_type) || self.suppressed.contains(&condition_type))
             || matches!(condition_type, ConditionType::SpellSkills(_))
                 && immunities.contains(&ConditionType::Attributes)
             || matches!(condition_type, ConditionType::SpellRegeneration(_))
@@ -1535,3 +1539,6 @@ mod reconciled_schedule_tests;
 #[cfg(test)]
 #[path = "condition_gate_tests.rs"]
 mod condition_gate_tests;
+
+#[path = "condition_suppression.rs"]
+mod condition_suppression;

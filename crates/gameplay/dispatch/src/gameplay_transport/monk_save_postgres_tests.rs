@@ -24,6 +24,9 @@ mod item_look;
 #[path = "weather_wire_postgres_tests.rs"]
 mod weather_wire;
 
+#[path = "creature_move_postgres_tests.rs"]
+mod creature_move;
+
 #[path = "loop_map_pickup_tests.rs"]
 mod map_pickup;
 
@@ -35,6 +38,9 @@ mod first_vocation_vitals;
 
 #[path = "tutorial_vitals_postgres_fixture.rs"]
 mod tutorial_vitals_fixture;
+
+#[path = "equipment_effects_owner_tests/monk_scenario.rs"]
+pub(in crate::gameplay_transport) mod equipment_scenarios;
 
 use super::{ComposedFreshAdmission, MonkSave};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
@@ -80,6 +86,7 @@ use fresh_session::prepare_current_session;
 struct Dependencies {
     runtime: Mutex<ChannelRuntimeV1>,
     room: crate::content::QualifiedNativeEntryRoom,
+    combat_room: Option<crate::content::QualifiedNativeEntryRoom>,
     door: Mutex<crate::world_runtime::LocalObjectRuntime>,
     evidence: FreshEvidenceSource,
     spells: crate::spell::SpellBook,
@@ -156,6 +163,7 @@ impl Dependencies {
         Ok(Self {
             runtime: Mutex::new(runtime),
             room,
+            combat_room: None,
             door: Mutex::new(door),
             evidence: FreshEvidenceSource::new(descriptor),
             spells,
@@ -210,7 +218,7 @@ impl Dependencies {
             spells: &self.spells,
             active_generation: None,
             premium_coordinator: None,
-            rooms: crate::gameplay_transport::SeamRooms::new(None, None),
+            rooms: crate::gameplay_transport::SeamRooms::new(None, self.combat_room.as_ref()),
             achievements: &self.achievements,
             imported_charms: &self.charms,
             spell_states: Mutex::default(),

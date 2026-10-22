@@ -1,3 +1,5 @@
+mod path_request_tests;
+
 use super::{
     ActorId, AiError, AiProvenance, AiProvenanceInput, AiSnapshot, Candidate, CandidateId,
     DecisionUnit, PathRequest, ResourceLimit, RouteStep, build_path_proposal,

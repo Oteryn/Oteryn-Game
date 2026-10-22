@@ -10358,6 +10358,97 @@
       "notes": "CREATURE-AI-1 \u00a71.3 and \u00a72.1. Test: apps/game-server/src/ai_think/think_tests.rs thinks_per_window_at_max_start_now_and_the_rest_next_window. Registered by OTV2-20261004-creature-ai-1. SPAWN-CEILINGS-1 (Codex 4243189401): the Channel owner's monster AI pass runs again at the start of the next window while thinks remain due (not one 1 s think interval later), and only one pass per interval swings; tests: monster_ai_cycle.rs a_think_backlog_resumes_in_the_next_owner_window_and_swings_keep_their_interval, foundation/channel_owner_creature_ai_tests.rs thinks_past_the_window_budget_stay_due_and_run_in_the_next_window. SPAWN-CEILINGS-1 (Codex 4243397472): the owner selects a window's thinks with a heap bounded by the remaining budget (no collect and sort of every due think) and takes the next pass time from that selection; a backlog pass between swing passes skips the creature census, admission, forget and wake and reuses the last swing pass's player set with fresh positions; tests: foundation/channel_owner_creature_ai_tests.rs the_bounded_think_selection_equals_the_full_sort_and_reports_the_next_think, gameplay_transport/monster_ai_cycle.rs a_think_backlog_resumes_in_the_next_owner_window_and_swings_keep_their_interval."
     },
     {
+      "id": "CREATUREAI0-RL-09",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CREATURE_MOVE1_STEPS_PATHS_AND_GOALS_PACKET_2026-10-04.md",
+      "resource": "Shared creature and player chase path expansions in one Channel per 50 ms window",
+      "unit": "expansions per window",
+      "hard_maximum": 65536,
+      "configurable_range": {
+        "minimum": 65536,
+        "maximum": 65536
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "One unit per actual expansion. Pending creature requests run by deadline then ExactActorRef, then player chase. Reserve 16,384 units while player chase waits; unused reserve returns in the same window. A request without 1,024 units available waits without failing.",
+      "client_visible": false,
+      "boundary_tests": [
+        "hard maximum accepted",
+        "hard maximum + 1 waits or is refused without partial mutation"
+      ],
+      "consumers": [
+        "crates/gameplay/world/src/movement/path_budget.rs",
+        "crates/gameplay/monster-ai/src/ai_think/creature_steps.rs"
+      ],
+      "notes": "One unit per actual expansion. Pending creature requests run by deadline then ExactActorRef, then player chase. Reserve 16,384 units while player chase waits; unused reserve returns in the same window. A request without 1,024 units available waits without failing."
+    },
+    {
+      "id": "CREATUREAI0-RL-10",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CREATURE_MOVE1_STEPS_PATHS_AND_GOALS_PACKET_2026-10-04.md",
+      "resource": "Path requests per creature per think, with one pending request per exact actor",
+      "unit": "requests per think",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The existing creature entry retains a single pending request; repeated movement drains of the same think never create a second request.",
+      "client_visible": false,
+      "boundary_tests": [
+        "hard maximum accepted",
+        "hard maximum + 1 waits or is refused without partial mutation"
+      ],
+      "consumers": [
+        "crates/gameplay/world/src/movement/path_budget.rs",
+        "crates/gameplay/monster-ai/src/ai_think/creature_steps.rs"
+      ],
+      "notes": "The existing creature entry retains a single pending request; repeated movement drains of the same think never create a second request."
+    },
+    {
+      "id": "CREATUREAI0-RL-11",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CREATURE_MOVE1_STEPS_PATHS_AND_GOALS_PACKET_2026-10-04.md",
+      "resource": "Pending AI timers per creature: one think and one DEADLINE_STATE step",
+      "unit": "pending timers per actor",
+      "hard_maximum": 2,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 2
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Each family retains its independent hard maximum of one. Idle/refusal cancels the step; no actor can retain a third AI timer.",
+      "client_visible": false,
+      "boundary_tests": [
+        "hard maximum accepted",
+        "hard maximum + 1 waits or is refused without partial mutation"
+      ],
+      "consumers": [
+        "crates/gameplay/world/src/movement/path_budget.rs",
+        "crates/gameplay/monster-ai/src/ai_think/creature_steps.rs"
+      ],
+      "notes": "Each family retains its independent hard maximum of one. Idle/refusal cancels the step; no actor can retain a third AI timer."
+    },
+    {
+      "id": "CREATUREAI0-RL-17",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CREATURE_MOVE1_STEPS_PATHS_AND_GOALS_PACKET_2026-10-04.md",
+      "resource": "Integrated creature think and path work p99 window time, measured over 200 windows",
+      "unit": "milliseconds",
+      "hard_maximum": 15,
+      "configurable_range": {
+        "minimum": 15,
+        "maximum": 15
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Evidence rather than a CI timing gate: no reference host is defined. Measure 1,024 due thinks and 64 full 1,024-expansion searches on a 128 by 128 floor; retain CPU model and p99 in the task record. An exceedance requires a control-plane decision, never raising these limits.",
+      "client_visible": false,
+      "boundary_tests": [
+        "200 integrated windows report p99 without a CI timing assertion"
+      ],
+      "consumers": [
+        "crates/gameplay/world/src/movement/path_budget.rs",
+        "crates/gameplay/monster-ai/src/ai_think/creature_steps.rs"
+      ],
+      "notes": "Evidence rather than a CI timing gate: no reference host is defined. Measure 1,024 due thinks and 64 full 1,024-expansion searches on a 128 by 128 floor; retain CPU model and p99 in the task record. An exceedance requires a control-plane decision, never raising these limits."
+    },
+    {
       "id": "CREATUREAI0-RL-06",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_CREATURE_AI1_TARGETING_AND_THINK_PACKET_2026-10-04.md",
       "resource": "Evaluation units of one creature think (1 + perceived players + eligible players + profile entries)",

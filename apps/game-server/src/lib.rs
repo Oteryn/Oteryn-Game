@@ -152,6 +152,29 @@ mod spell_stance_runtime_postgres_cases;
 #[path = "../tests/support/spell_familiar_runtime_postgres_cases.rs"]
 mod spell_familiar_runtime_postgres_cases;
 
+// GUILD-1 PostgreSQL cases run on the library test target, which CI runs against PostgreSQL;
+// they reuse the item-transfer harness and the Premium test producer, each mounted once here.
+#[cfg(test)]
+#[allow(
+    dead_code,
+    clippy::expect_used,
+    reason = "shared PostgreSQL support; Guild uses a subset"
+)]
+#[path = "../tests/support/item_transfer_postgres_harness.rs"]
+mod item_transfer_postgres_cases;
+
+#[cfg(test)]
+#[allow(
+    dead_code,
+    reason = "Premium test producer shared with the Social crate; Guild uses a subset"
+)]
+#[path = "../../../crates/gameplay/social/src/premium/test_producer.rs"]
+mod premium_test_producer;
+
+#[cfg(test)]
+#[path = "lifted_tests/durability_guild_tests.rs"]
+mod durability_guild_tests;
+
 // LIMIT_RAISE value/audit regressions have one source mount; the canonical PG root
 // path-loads durability and must not collect these pure cases a second time.
 #[cfg(test)]
