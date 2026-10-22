@@ -78,7 +78,7 @@ repository = "https://github.com/Oteryn/Oteryn-Game"
 publish = false
 
 [workspace.dependencies]
-aws-lc-rs = { version = "=1.18.0", default-features = false, features = ["aws-lc-sys"] }
+aws-lc-rs = { version = "=1.18.2", default-features = false, features = ["aws-lc-sys"] }
 base64 = "=0.22.1"
 cap-fs-ext = "=4.0.3"
 cap-std = "=4.0.3"
@@ -86,11 +86,11 @@ ed25519-dalek = { version = "=2.2.0", default-features = false }
 pollster = { version = "=1.0.1", default-features = false }
 lzma-rs = "=0.3.0"
 prost = "=0.14.4"
-reqwest = { version = "=0.13.4", default-features = false, features = ["form", "json", "rustls", "stream"] }
+reqwest = { version = "=0.13.5", default-features = false, features = ["form", "json", "rustls", "stream"] }
 rustix = { version = "=1.1.5", default-features = false, features = ["fs"] }
 rustls = { version = "=0.23.46", default-features = false, features = ["aws_lc_rs", "std"] }
 serde = "=1.0.229"
-serde_json = "=1.0.151"
+serde_json = "=1.0.154"
 sqlx = {
     version = "=0.9.0",
     default-features = false,
@@ -103,15 +103,15 @@ sqlx = {
         "uuid",
     ],
 }
-sha2 = { version = "=0.11.0", default-features = false }
+sha2 = { version = "=0.11.1", default-features = false }
 syn = { version = "=2.0.119", default-features = false, features = ["full", "parsing", "visit"] }
 tokio = { version = "=1.53.1", default-features = false, features = ["io-util", "net", "rt-multi-thread", "sync", "time"] }
 toml = { version = "=1.1.6", default-features = false, features = ["parse", "serde", "std"] }
 tokio-rustls = { version = "=0.26.6", default-features = false, features = ["aws_lc_rs"] }
 rcgen = { version = "=0.14.10", default-features = false, features = ["crypto", "aws_lc_rs"] }
-wgpu = { version = "=30.0.0", default-features = false, features = ["std", "dx12", "wgsl"] }
+wgpu = { version = "=30.0.1", default-features = false, features = ["std", "dx12", "wgsl"] }
 winit = { version = "=0.30.13", default-features = false, features = ["rwh_06"] }
-zstd = { version = "=0.14.0", default-features = false }
+zstd = { version = "=0.14.3", default-features = false }
 
 [patch.crates-io]
 sqlx-core = { path = "vendor/sqlx-core-0.9.0" }
