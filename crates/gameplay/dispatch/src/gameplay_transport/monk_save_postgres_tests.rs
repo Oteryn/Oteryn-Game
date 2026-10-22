@@ -24,6 +24,17 @@ mod weather_wire;
 #[path = "loop_map_pickup_tests.rs"]
 mod map_pickup;
 
+#[path = "quest_admission_postgres_tests.rs"]
+mod quest_admission;
+#[path = "quest_chest_postgres_tests.rs"]
+mod quest_chest_postgres_tests;
+#[path = "quest_log_postgres_tests.rs"]
+mod quest_log_postgres_tests;
+#[path = "quest_recovery_postgres_tests.rs"]
+mod quest_recovery;
+#[path = "quest_runtime_fixture.rs"]
+mod quest_runtime_fixture;
+
 use super::{ComposedFreshAdmission, MonkSave};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::fresh_admission::FreshAdmissionStore;
@@ -244,6 +255,7 @@ impl Dependencies {
             revision_sequencer:
                 crate::durability::character_revision_sequencer::CharacterRevisionSequencer::new(),
             quest_catalogue: None,
+            quest_log_content: None,
             quest_sessions: std::sync::Mutex::default(),
             chat: crate::gameplay_transport::chat_intent::ChatRuntime::default(),
             npc_conversations: Default::default(),

@@ -202,7 +202,8 @@ impl Harness {
         let root = DurabilityRoot::connect_test_runtime(&database.url)?;
         assert!(root.maintain_ready_once().await?);
         let pool = sqlx::PgPool::connect(&database.url).await?;
-        let retained = fence_parent(tag)?;
+        // Scenarios may share a tag, but each database owns its recovery fence.
+        let retained = fence_parent(&database.name)?;
         let recovery = CharacterRecoveryStore::open(&retained, "character-primary", "game-ops")
             .map_err(debug)?;
         {
