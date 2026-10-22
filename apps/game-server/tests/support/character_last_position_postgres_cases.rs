@@ -21,6 +21,11 @@ use crate::foundation::{
 };
 use oteryn_simulation_determinism::{ExactI64, RoundingMode};
 
+#[path = "tutorial_death_postgres_cases.rs"]
+mod tutorial_death;
+#[path = "tutorial_islet_placement_postgres_cases.rs"]
+mod tutorial_islet_placement;
+
 fn run<F>(tag: &'static str, body: F) -> TestResult
 where
     F: AsyncFnOnce(&Harness) -> TestResult,

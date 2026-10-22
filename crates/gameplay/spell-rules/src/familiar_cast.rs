@@ -5,6 +5,7 @@ use oteryn_gameplay_content::content::spell_data::Vocation;
 pub fn base_familiar_vocation(vocation: Vocation) -> &'static str {
     use Vocation::*;
     match vocation {
+        Vocation::None => "none",
         Druid | ElderDruid => "druid",
         Sorcerer | MasterSorcerer => "sorcerer",
         Knight | EliteKnight => "knight",

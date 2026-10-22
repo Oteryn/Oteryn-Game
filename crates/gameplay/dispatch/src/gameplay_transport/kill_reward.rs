@@ -412,7 +412,12 @@ impl KillSettlementQueue {
             &entry.row.loot_table_ref,
             &entry.row.loot_table,
         )
-        .map_or(0, |plan| plan.entries.len());
+        .map_or(0, |plan| plan.entries.len())
+            + if entry.creature == "oteryn:creature.the_corruptor" {
+                3
+            } else {
+                0
+            };
         let inflight_before = state.reserved_loot_mints;
         if check_inflight_loot_mint_capacity(inflight_before, loot_mints).is_err() {
             return TakeOutcome::CapacityWait;
@@ -1156,10 +1161,16 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             expected_character_revision,
             ..self.fence
         };
+        let Ok(loot_table) = admission.tutorial_corruptor_table(fence, entry).await else {
+            return SettleReport {
+                verdict: SettleVerdict::Retry,
+                no_progression: false,
+            };
+        };
         let input = CreatureDeathRewardInput::<CHARACTER_EXPERIENCE_TABLE_LEVELS> {
             corpse_item: entry.row.corpse_item.clone(),
             loot_table_ref: entry.row.loot_table_ref.clone(),
-            loot_table: entry.row.loot_table.clone(),
+            loot_table,
             ground: entry.ground.clone(),
             inflight_loot_mints_before_this_death: inflight_before,
             reward_principals: vec![RewardPrincipal {

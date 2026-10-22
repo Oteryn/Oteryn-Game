@@ -27,6 +27,15 @@ mod weather_wire;
 #[path = "loop_map_pickup_tests.rs"]
 mod map_pickup;
 
+#[path = "vocationless_vitals_postgres_tests.rs"]
+mod vocationless_vitals;
+
+#[path = "first_vocation_vitals_postgres_tests.rs"]
+mod first_vocation_vitals;
+
+#[path = "tutorial_vitals_postgres_fixture.rs"]
+mod tutorial_vitals_fixture;
+
 use super::{ComposedFreshAdmission, MonkSave};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::fresh_admission::FreshAdmissionStore;
@@ -64,56 +73,9 @@ fn reset() {
     NOT_EXPIRED.set(0);
 }
 
-async fn prepare_current_session(harness: &Harness) -> TestResult {
-    use crate::durability::admission_authority_guards::AdmissionGuardStore;
-    use crate::foundation::admission_authority_publication::AdmissionAuthorityPublicationV1;
-    use crate::foundation::fresh_admission_durability::FreshAdmissionDurableOutcomeV1;
-    // The new harness starts with no admission claims/session/history.
-    // Complete owning evidence is published and committed through existing APIs.
-    let now: i64 =
-        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
-            .fetch_one(&harness.pool)
-            .await?;
-    let source = fresh_fixture::fresh::Source::new(now)?;
-    let mut runtime_source = fresh_fixture::fresh::Source::new(now)?;
-    runtime_source.rows.retain(|row| matches!(row.key,
-        crate::foundation::admission_authority_publication::AdmissionAuthorityGuardKeyV1::Runtime(_)));
-    let runtime_publication =
-        AdmissionAuthorityPublicationV1::prepare(&runtime_source, now).map_err(debug)?;
-    harness
-        .root
-        .publish_runtime_readiness(&harness.node, &runtime_publication)
-        .await
-        .map_err(debug)?;
-    let mut admission_source = fresh_fixture::fresh::Source::new(now)?;
-    admission_source.rows.retain(|row| !matches!(row.key,
-        crate::foundation::admission_authority_publication::AdmissionAuthorityGuardKeyV1::Runtime(_)));
-    let publication =
-        AdmissionAuthorityPublicationV1::prepare(&admission_source, now).map_err(debug)?;
-    let guards = AdmissionGuardStore::from_root(harness.root.clone());
-    guards
-        .publish(&publication)
-        .await
-        .map_err(|e| format!("fresh fixture publication: {e:?}"))?;
-    let store = FreshAdmissionStore::from_root(harness.root.clone());
-    let request = source.request()?;
-    assert!(matches!(
-        store
-            .commit(&request)
-            .await
-            .map_err(|e| format!("fresh fixture commit: {e:?}"))?,
-        FreshAdmissionDurableOutcomeV1::Committed(_)
-    ));
-    let (current, _) = store
-        .current_session_at(GameSessionId::decode(&id(50)).map_err(debug)?)
-        .await?;
-    assert_eq!(
-        current.session_state(),
-        crate::foundation::GameSessionState::Active
-    );
-    assert_eq!(current.current_character_lease().generation(), 2);
-    Ok(())
-}
+#[path = "monk_save_postgres_fixture/fresh_session.rs"]
+mod fresh_session;
+use fresh_session::prepare_current_session;
 
 struct Dependencies {
     runtime: Mutex<ChannelRuntimeV1>,
@@ -279,6 +241,8 @@ impl Dependencies {
                 self.admitted.channel_id,
             ),
             loop_ground: Default::default(),
+            tutorial_sessions: Default::default(),
+            newhaven_travel: Default::default(),
         }
     }
     async fn initialize(&self, owner: &ComposedFreshAdmission<'_, '_, '_>) {

@@ -298,6 +298,18 @@
       "state_domains": [],
       "offered": false,
       "offer_gate": "FIELD-WIRE-1: the server does not offer this capability before the field payloads and their domain are registered and composed. It requires 6 WORLD_SPATIAL_ENTITIES (RUNE-USE-0 \u00a711.4). While unoffered it is not in the ADMIT0 mandatory floor (registered AND offered), and a World declaring it fails boot closed."
+    },
+    {
+      "id": 31,
+      "name": "TUTORIAL_NOTICES_V1",
+      "owner_decision": "TUTORIAL-1 owner Q3(a), owner D1463 and 2026-10-22 continuation",
+      "owner": "current ChannelRuntime",
+      "command_types": [],
+      "state_domains": [
+        23
+      ],
+      "offered": true,
+      "offer_gate": "Tutorial hints and status text only after capability selection. Newhaven-start tutorial rules alone produce notices."
     }
   ],
   "command_types": [
@@ -958,6 +970,30 @@
       "revision": "per GameSessionId, monotonic and never reused: 0 at the initial snapshot, plus 1 for each delta sent; never reset at a reconnect or channel transfer; a resync, reconnect or channel transfer sends only a snapshot and never replays a delta",
       "delta_types": [{"id": 1, "name": "WORLD_WEATHER_DELTA_V1", "payload_schema": "docs/contracts/protocol-oteryn/v1/world_weather_v1.proto#WorldWeatherV1", "max_payload_bytes": 64}],
       "snapshot_types": [{"id": 1, "name": "WORLD_WEATHER_SNAPSHOT_V1", "payload_schema": "docs/contracts/protocol-oteryn/v1/world_weather_v1.proto#WorldWeatherV1", "max_payload_bytes": 64}]
+    },
+    {
+      "id": 23,
+      "name": "TUTORIAL_NOTICES",
+      "owner_decision": "TUTORIAL-1 owner Q3(a), owner D1463 and 2026-10-22 continuation",
+      "owner": "current ChannelRuntime",
+      "capability": 31,
+      "revision": "per GameSessionId, monotonic; retained across reconnect; snapshots never replay notices",
+      "delta_types": [
+        {
+          "id": 1,
+          "name": "TUTORIAL_NOTICE_DELTA_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/tutorial_notices_v1.proto#TutorialNoticeV1",
+          "max_payload_bytes": 260
+        }
+      ],
+      "snapshot_types": [
+        {
+          "id": 1,
+          "name": "TUTORIAL_NOTICES_SNAPSHOT_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/tutorial_notices_v1.proto#TutorialNoticesSnapshotV1",
+          "max_payload_bytes": 2
+        }
+      ]
     }
   ],
   "error_codes": [

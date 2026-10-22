@@ -83,6 +83,8 @@ pub mod native_gameplay;
 pub mod native_items;
 pub mod native_source_world_carrier;
 pub mod native_spell_appearances;
+pub mod newhaven_travel;
+pub mod newhaven_tutorial_land;
 pub mod npc_catalogue;
 mod production;
 mod project;

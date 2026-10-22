@@ -3,6 +3,10 @@
 //! decides admission itself and fails closed for every message it does not own.
 
 use crate::combat_pickup::GroundPickupError;
+#[path = "newhaven_travel_transport.rs"]
+mod newhaven_travel_transport;
+#[path = "tutorial_notices_transport.rs"]
+mod tutorial_notices_transport;
 use crate::durability::item_transfer::{
     CommittedItemTransfer, CurrentCharacterItemFence, ItemTransferError, ItemTransferOutcome,
 };
@@ -253,6 +257,7 @@ pub struct SessionContinuity {
     /// cumulative per GameSession, so a resume or channel transfer carries it and the next
     /// snapshot follows it.
     pub world_weather_revision: u64,
+    pub tutorial_revision: u64,
 }
 
 impl SessionContinuity {
@@ -287,6 +292,7 @@ impl SessionContinuity {
         },
         world_clock_revision: 0,
         world_weather_revision: 0,
+        tutorial_revision: 0,
     };
 }
 
@@ -543,6 +549,13 @@ pub trait FreshAdmissionAuthority {
     /// the retained World binding for its World exposes a source (D1027 gate in the production
     /// authority).
     fn world_weather(&self) -> Option<&WorldWeatherSource> {
+        None
+    }
+
+    fn take_tutorial_notice(
+        &self,
+        _session: GameSessionId,
+    ) -> Option<oteryn_protocol_oteryn::tutorial_notices::TutorialNotice> {
         None
     }
 
@@ -2042,6 +2055,7 @@ where
             payload: &weather_snapshot,
         });
     }
+    domains.extend(tutorial_notices_transport::snapshot(&admitted));
     let snapshot =
         encode_single_chunk_snapshot(generation, 1, admitted.continuity.server_sequence, &domains);
     let Ok(snapshot) = snapshot else {
@@ -2744,6 +2758,7 @@ where
         } else {
             None
         };
+        let mut npc_relocation = None;
         let mut dispatch = if let Some(outcome) = retained_bank {
             Dispatch::Npc(
                 outcome.disposition,
@@ -3169,6 +3184,7 @@ where
                 },
                 text: String::new(),
             });
+            let before_npc = authority.observe(actor).await;
             let outcome = authority
                 .npc_talk(
                     actor,
@@ -3183,6 +3199,13 @@ where
             if outcome.unknown {
                 return ConnectionEnd::AdmittedThenDisconnected(admitted);
             }
+            npc_relocation = newhaven_travel_transport::retire_buffer(
+                authority,
+                actor,
+                before_npc,
+                &mut buffered,
+            )
+            .await;
             Dispatch::Npc(
                 outcome.disposition,
                 NpcUpdate {
@@ -3598,6 +3621,12 @@ where
                 {
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 }
+                if tutorial_notices_transport::emit(stream, authority, &mut admitted, &mut sequence)
+                    .await
+                    .is_none()
+                {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                }
             }
             Dispatch::Use(outcome) => {
                 // ITEM-VIEW-1b: a committed `USE` (the chest MINT) may have changed the
@@ -3912,6 +3941,24 @@ where
             | Dispatch::Highscores(_)
             | Dispatch::Logout(_)
             | Dispatch::Unregistered => {}
+        }
+        if newhaven_travel_transport::emit_relocation(
+            stream,
+            authority,
+            actor,
+            &mut admitted,
+            visibility.as_mut(),
+            item_view.as_mut(),
+            world_map.as_mut(),
+            generation,
+            &mut sequence,
+            &mut revision,
+            npc_relocation,
+        )
+        .await
+        .is_none()
+        {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
         }
     }
 }
@@ -4909,39 +4956,9 @@ mod tests {
         })
     }
 
-    /// A positioned actor on a one-row room: east of the start is walkable, every other
-    /// direction is blocked.
-    struct StepAuthority {
-        steps: RefCell<Vec<StepDirection>>,
-    }
-
-    impl FreshAdmissionAuthority for StepAuthority {
-        async fn admit(
-            &self,
-            _attempt: FreshAdmissionAttempt<'_>,
-        ) -> Result<AdmittedSession, AdmissionRefusal> {
-            Err(AdmissionRefusal::Rejected)
-        }
-
-        async fn observe(&self, _actor: ExactActorRef) -> Option<WorldSpatialObservation> {
-            Some(at(0))
-        }
-
-        async fn step(&self, _actor: ExactActorRef, direction: StepDirection) -> StepOutcome {
-            self.steps.borrow_mut().push(direction);
-            if direction == StepDirection::East {
-                StepOutcome {
-                    disposition: StepDisposition::Moved,
-                    moved_to: Some(at(1)),
-                }
-            } else {
-                StepOutcome {
-                    disposition: StepDisposition::Blocked,
-                    moved_to: None,
-                }
-            }
-        }
-    }
+    include!("step_dispatch_fixture.rs");
+    include!("tutorial_session_tests.rs");
+    include!("newhaven_travel_transport_tests.rs");
 
     fn at(x: i32) -> WorldSpatialObservation {
         WorldSpatialObservation {
@@ -5189,6 +5206,7 @@ mod tests {
         run(async {
             let authority = StepAuthority {
                 steps: RefCell::new(Vec::new()),
+                tutorial_notices: Default::default(),
             };
             let (mut server, mut client) = tokio::io::duplex(1 << 16);
             // The client keeps its transport open but never answers.
@@ -5219,6 +5237,7 @@ mod tests {
         run(async {
             let authority = StepAuthority {
                 steps: RefCell::new(Vec::new()),
+                tutorial_notices: Default::default(),
             };
             let (mut server, mut client) = tokio::io::duplex(1 << 16);
             // The client keeps its transport open but never writes.
@@ -5239,6 +5258,7 @@ mod tests {
         run(async {
             let authority = StepAuthority {
                 steps: RefCell::new(Vec::new()),
+                tutorial_notices: Default::default(),
             };
             let (mut server, mut client) = tokio::io::duplex(1 << 16);
             client.write_all(&framed(&ack(1, 1))).await?;
@@ -5253,6 +5273,7 @@ mod tests {
         run(async {
             let authority = StepAuthority {
                 steps: RefCell::new(Vec::new()),
+                tutorial_notices: Default::default(),
             };
             let admitted = AdmittedSession {
                 runtime_actor: None,
@@ -5274,6 +5295,7 @@ mod tests {
         run(async {
             let authority = StepAuthority {
                 steps: RefCell::new(Vec::new()),
+                tutorial_notices: Default::default(),
             };
             let (mut server, client) = tokio::io::duplex(1 << 16);
             let (mut client_read, mut client_write) = tokio::io::split(client);
@@ -5339,6 +5361,7 @@ mod tests {
         run(async {
             let authority = StepAuthority {
                 steps: RefCell::new(Vec::new()),
+                tutorial_notices: Default::default(),
             };
             let listener = std::net::TcpListener::bind("127.0.0.1:0")?;
             let address = listener.local_addr()?;
@@ -5387,6 +5410,7 @@ mod tests {
         run(async {
             let authority = StepAuthority {
                 steps: RefCell::new(Vec::new()),
+                tutorial_notices: Default::default(),
             };
             let (end, frames) = drive_admitted(&authority, &[ack(1, 9)]).await?;
             let mut expected = baseline();
@@ -5439,6 +5463,7 @@ mod tests {
         run(async {
             let authority = StepAuthority {
                 steps: RefCell::new(Vec::new()),
+                tutorial_notices: Default::default(),
             };
             let step = u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT);
             let (end, frames) = drive_admitted(
@@ -5504,6 +5529,7 @@ mod tests {
                     npc: NpcContinuity::default(),
                     world_clock_revision: 0,
                     world_weather_revision: 0,
+                    tutorial_revision: 0,
                 }
             );
             // The unregistered type and the replayed ID never reached Movement.
@@ -5857,6 +5883,7 @@ mod tests {
             ] {
                 let authority = StepAuthority {
                     steps: RefCell::new(Vec::new()),
+                    tutorial_notices: Default::default(),
                 };
                 let (end, frames) = drive_admitted(&authority, &[frame]).await?;
                 let mut all = baseline();

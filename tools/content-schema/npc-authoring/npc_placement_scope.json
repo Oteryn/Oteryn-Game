@@ -1,9 +1,11 @@
 {
   "schema": "OTERYN_NPC_PLACEMENT_SCOPE/v1",
-  "scope": "NPC-PLACE-1a first set: the Rookgaard starter-area NPCs that have a promotion candidate placement and an admitted definition",
+  "scope": "NPC-PLACE-1a first set: the Rookgaard starter-area NPCs that have a promotion candidate placement and an admitted definition; TUTORIAL-1: owner-authorized Anna and seagull Newhaven departures",
   "npcs": [
+    "oteryn:npc.a_seagull",
     "oteryn:npc.al_dee",
     "oteryn:npc.amber",
+    "oteryn:npc.anna",
     "oteryn:npc.asralius",
     "oteryn:npc.billy",
     "oteryn:npc.blind_orc",

@@ -186,6 +186,7 @@ pub(super) fn look_text(looked: Looked<'_>) -> ItemLookResult {
 
 pub(super) fn vocation_name(vocation: Vocation) -> &'static str {
     match vocation {
+        Vocation::None => "no vocation",
         Vocation::Druid => "druid",
         Vocation::ElderDruid => "elder druid",
         Vocation::Sorcerer => "sorcerer",
