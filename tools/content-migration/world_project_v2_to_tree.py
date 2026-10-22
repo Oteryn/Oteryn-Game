@@ -657,6 +657,9 @@ def main() -> int:
     subprocess.run([sys.executable,
                     str(ROOT / "tools/content-schema/imbuement-authoring/imbuement_content.py"),
                     "content"], cwd=ROOT, check=True)
+    subprocess.run([sys.executable,
+                    str(ROOT / "tools/content-schema/craft-authoring/craft_authoring.py"),
+                    "content"], cwd=ROOT, check=True)
     return 0
 
 if __name__ == "__main__":
