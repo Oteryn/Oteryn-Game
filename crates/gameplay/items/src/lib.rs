@@ -1,5 +1,6 @@
 //! L3 rules: item stacking, capacity, transfer and placement, loot rolls, pickup/reach, corpses, examine text.
 
+pub mod hotkey_search;
 pub mod item_capacity;
 pub mod item_timed_repair;
 pub mod item_transfer;

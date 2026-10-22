@@ -9592,6 +9592,29 @@
       "notes": "ITEM-MOVE-WIRE-0 \u00a74.1 and \u00a74.4. The codec test binds the derivation; the table enforcing it is ITEM-VIEW-1b's. Registered by OTV2-20261003-item-view-1a."
     },
     {
+      "id": "BAGS0-RL-07",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_BAGS0_CONTAINERS_WITH_CONTENTS_DECISION_2026-09-30.md",
+      "resource": "Items inspected by one carried-tree hotkey search",
+      "unit": "items per search",
+      "hard_maximum": 509,
+      "configurable_range": {
+        "minimum": 509,
+        "maximum": 509
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Complete breadth-first search, equipment then main backpack entries then nested containers, closed bags included. An overflow refuses the whole search; no truncation.",
+      "client_visible": true,
+      "boundary_tests": [
+        "509 items searched deterministically",
+        "510 items refused even after an early match"
+      ],
+      "consumers": [
+        "crates/gameplay/items/src/hotkey_search.rs HOTKEY_ITEMS_MAX",
+        "crates/gameplay/dispatch/src/gameplay_transport/item_use.rs"
+      ],
+      "notes": "BAGS-0 \u00a78. BAGS-USE-1 uses one bounded fenced durability read until a complete runtime projection exists. Quivers excluded."
+    },
+    {
       "id": "BAGS0-RL-03",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_BAGS0_CONTAINERS_WITH_CONTENTS_DECISION_2026-09-30.md",
       "resource": "Open container views of one GameSession (domain 14 CONTAINER_VIEWS)",

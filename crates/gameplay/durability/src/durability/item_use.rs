@@ -1,4 +1,4 @@
-//! Durable consumption of one unit of a stack in the main backpack (ITEM-USE-1b, migration
+//! Durable consumption of one unit of a stack in the carried backpack tree (BAGS-USE-1, migration
 //! 0083; decision `ITEM-USE-0` §4-§5, DUR-03 item-use amendment).
 //!
 //! [`DurabilityRoot::commit_item_use`] is one item-only one-item transaction under the holder's
@@ -26,7 +26,7 @@ use super::item_mint_audit::{
     self as mint_audit, ITEM_LIFECYCLE_LIVE, OneItemStateV1, SelectedType2Tuple,
     check_technical_text, check_uuid_v7,
 };
-use super::item_transfer::{CurrentCharacterItemFence, definition_message};
+use super::item_transfer::{BackpackEntry, CurrentCharacterItemFence, definition_message};
 use super::item_transfer_audit::{
     GAMEITEM01_STACK_QUANTITY_MAX, ITEM_LIFECYCLE_RETIRED, OneItemCommandRefV1,
     OneItemContainerEntryV1,
@@ -38,9 +38,16 @@ use super::item_use_audit::{
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use crate::foundation::RuntimeScopeRefV1;
+use oteryn_gameplay_items::item_transfer::GAMEITEM01_CONTAINER_ENTRIES_MAX;
 use sha2::{Digest, Sha256};
 use sqlx::Row;
 use sqlx::postgres::PgConnection;
+
+mod carried_inventory;
+mod carried_source;
+
+pub use carried_inventory::ItemUseInventory;
+use carried_source::lock_use_path;
 
 /// The closed `ItemUseCause` kinds.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -414,7 +421,6 @@ struct LockedStack {
 async fn lock_stack(
     connection: &mut PgConnection,
     holder: &[u8; 16],
-    backpack: &[u8; 16],
     world_id: &[u8; 16],
     item_instance_id: &[u8; 16],
     definition: &TypedDefinitionRef,
@@ -425,10 +431,16 @@ async fn lock_stack(
                 i.lifecycle, i.quantity, i.world_id::text AS world_id, \
                 e.parent_item_instance_id::text AS parent, e.placement_ordinal::text AS ordinal \
            FROM game_item_instances i \
-           JOIN game_item_container_entries e \
+           JOIN (SELECT item_instance_id, parent_item_instance_id, placement_ordinal \
+                   FROM game_item_container_entries WHERE character_id = encode($2,'hex')::uuid \
+                 UNION ALL \
+                 SELECT item_instance_id, parent_item_instance_id, placement_ordinal \
+                   FROM game_item_nested_entries) e \
              ON e.item_instance_id = i.item_instance_id \
-            AND e.character_id = encode($2,'hex')::uuid \
-          WHERE i.item_instance_id = encode($1,'hex')::uuid FOR UPDATE OF i",
+           CROSS JOIN LATERAL game_item_loop_owner(e.parent_item_instance_id) owner \
+          WHERE i.item_instance_id = encode($1,'hex')::uuid \
+            AND owner.owner_character = encode($2,'hex')::uuid \
+            AND owner.depth BETWEEN 0 AND 7 FOR UPDATE OF i",
     )
     .bind(item_instance_id.as_slice())
     .bind(holder.as_slice())
@@ -442,7 +454,6 @@ async fn lock_stack(
     let parent = uuid_text(&row.try_get::<String, _>("parent")?)?;
     if row.try_get::<i16, _>("lifecycle")? != 1
         || quantity != quantity_before
-        || parent != *backpack
         || uuid_text(&row.try_get::<String, _>("world_id")?)? != *world_id
         || row.try_get::<String, _>("definition_family")? != definition.family
         || row.try_get::<String, _>("definition_production_key")? != definition.production_key
@@ -488,10 +499,11 @@ async fn write(
     .transpose()?
     .ok_or(ItemUseError::StaleState)?;
 
+    // Root fence first, then source, ancestors and existing flask in UUID order (§4.2).
+    lock_use_path(connection, &holder, &backpack, &world, request).await?;
     let source = lock_stack(
         connection,
         &holder,
-        &backpack,
         &world,
         &request.source_item_instance_id,
         &request.source_definition,
@@ -509,13 +521,15 @@ async fn write(
             let stack = lock_stack(
                 connection,
                 &holder,
-                &backpack,
                 &world,
                 item_instance_id,
                 definition,
                 *quantity_before,
             )
             .await?;
+            if stack.parent != backpack {
+                return Err(ItemUseError::StaleState);
+            }
             Some(stack.ordinal)
         }
         ItemUseFlaskPlan::New {
@@ -539,7 +553,7 @@ async fn write(
             let entries: i64 = state.try_get("entries")?;
             if state.try_get::<bool, _>("taken")?
                 || *placement_ordinal <= numeric_u64(&state, "highest")?
-                || entries + 1 - i64::from(source_retires) > 20
+                || entries + 1 - i64::from(source_retires && source.parent == backpack) > 20
             {
                 return Err(ItemUseError::StaleState);
             }
@@ -612,7 +626,10 @@ async fn write(
                 ITEM_LIFECYCLE_LIVE
             },
         )),
-        source_entry: Some(entry(source.ordinal)),
+        source_entry: Some(OneItemContainerEntryV1 {
+            parent_item_instance_id: source.parent.to_vec(),
+            placement_ordinal: source.ordinal,
+        }),
         cause: Some(OneItemUseCauseV1 {
             kind: request.kind.code(),
             content_revision: request.content_revision.clone(),
@@ -738,13 +755,24 @@ async fn write(
         return Err(DurabilityError::InvalidStoredState.into());
     }
     if source_retires {
-        let removed = sqlx::query(
+        let removed = sqlx::query(if source.parent == backpack {
             "DELETE FROM game_item_container_entries \
-              WHERE item_instance_id = encode($1,'hex')::uuid \
-                AND character_id = encode($2,'hex')::uuid",
-        )
+                  WHERE item_instance_id = encode($1,'hex')::uuid \
+                    AND character_id = encode($2,'hex')::uuid"
+        } else {
+            "DELETE FROM game_item_nested_entries \
+                  WHERE item_instance_id = encode($1,'hex')::uuid \
+                    AND parent_item_instance_id = encode($2,'hex')::uuid"
+        })
         .bind(request.source_item_instance_id.as_slice())
-        .bind(holder.as_slice())
+        .bind(
+            if source.parent == backpack {
+                &holder
+            } else {
+                &source.parent
+            }
+            .as_slice(),
+        )
         .execute(&mut *connection)
         .await?
         .rows_affected()
