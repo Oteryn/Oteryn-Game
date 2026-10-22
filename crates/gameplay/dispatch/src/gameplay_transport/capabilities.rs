@@ -26,6 +26,11 @@ use oteryn_protocol_oteryn::world_weather::{
     CAPABILITY_WORLD_WEATHER_V1, CAPABILITY_WORLD_WEATHER_V1_REQUIRES,
 };
 
+/// LOOK-2: capability 28 and its command type 30, offered on a bundle World and dispatched by
+/// the connection.
+pub use oteryn_protocol_oteryn::capability_tables::{
+    CAPABILITY_ITEM_LOOK_V1, COMMAND_TYPE_ITEM_LOOK_INTENT,
+};
 use oteryn_protocol_oteryn::capability_tables::{GATED, SUPERSEDED};
 
 /// One capability the server offers, with the capabilities that must also be selected for it
@@ -37,7 +42,7 @@ pub struct OfferedCapability {
 }
 
 /// CLOCK-1: capability 19 `WORLD_LIGHT_V1` (domain 18 and the VIS-2 `light` of domain 1), which
-/// requires 6. Every offered set ends with it, then with 21.
+/// requires 6. All offered sets include it before capability 21.
 const WORLD_LIGHT: OfferedCapability = OfferedCapability {
     id: CAPABILITY_WORLD_LIGHT_V1,
     requires: &[CAPABILITY_WORLD_SPATIAL_ENTITIES],
@@ -71,7 +76,8 @@ pub fn with_weather_offer(
 }
 
 /// LOGOUT-WIRE-1: capability 21 `LOGOUT_V1` (command type 23), which requires nothing. Only
-/// capability 26 is higher, so every offered set ends with 21 then 26.
+/// capabilities 26 and 28 are higher: every offered set ends with 21 then 26, and the bundle set
+/// then offers 28 (LOOK-2).
 const LOGOUT: OfferedCapability = OfferedCapability {
     id: CAPABILITY_LOGOUT_V1,
     requires: &[],
@@ -116,14 +122,14 @@ pub const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
 /// The offered set of a World booted from a bundle (MAP-CUTOVER-1b, NPC-CMD-1a, ITEM-LOOP-1),
 /// ascending by ID: capability 3 `NPC_SERVICE_V1` (a bundle World places the NPCs), 4
 /// `ITEM_VIEW_MOVE_V1`, 6, 7, 9 `HIGHSCORES_V1`, 12 `ITEM_EQUIP_DROP_V1` (requires 4), 13, 14
-/// `CONTAINER_TREE_V1` (requires 4 and 12), 17, 18 `WORLD_MAP_VIEW_V1` (requires 4 and 6), 19
-/// and 21. A bundle World boots only against a generation whose Item key set names every
+/// `CONTAINER_TREE_V1` (requires 4 and 12), 17, 18 `WORLD_MAP_VIEW_V1` (requires 4 and 6), 19,
+/// 21, 26 and 28. A bundle World boots only against a generation whose Item key set names every
 /// bundle Item. ITEM-LOOP-1 (CP D1438) offers 12 and 14 here because only a bundle World
 /// composes their command type 9 equipment, ground and container destinations (equip, drop,
 /// pickup and the container tree) and the command type 21 container views. Only a bundle World
-/// returns it; the registry entries of 3, 12, 14 and 18 stay `offered: false` and their
-/// `offer_gate` names this offer. A test keeps it equal to the Item view set plus 3, 12, 14
-/// and 18.
+/// returns it; the registry entries of 3, 12, 14, 18 and 28 stay `offered: false` and their
+/// `offer_gate` names this offer. A test keeps it equal to the Item view set plus 3, 12, 14, 18
+/// and 28.
 pub const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     OfferedCapability {
         id: CAPABILITY_NPC_SERVICE_V1,
@@ -168,6 +174,10 @@ pub const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     WORLD_LIGHT,
     LOGOUT,
     WORLD_WEATHER,
+    OfferedCapability {
+        id: CAPABILITY_ITEM_LOOK_V1,
+        requires: &[],
+    },
 ];
 
 /// MAP-ITEM-REF-1: the production offered set with capability 4 `ITEM_VIEW_MOVE_V1`, which

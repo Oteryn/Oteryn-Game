@@ -234,6 +234,17 @@ pub struct SessionVisibility {
 }
 
 impl SessionVisibility {
+    /// Only an actor incarnation actually sent in this session's view can be examined.
+    pub(crate) fn shows(&self, entity: EntityRef) -> bool {
+        self.entities.get(&entity.identity).is_some_and(|shown| {
+            shown.entity == entity
+                && matches!(
+                    shown.kind,
+                    EntityKind::Player | EntityKind::Creature | EntityKind::Npc
+                )
+        })
+    }
+
     /// A view that shows objects (corpses) when `objects`, the session's capability 4.
     pub fn with_objects(objects: bool) -> Self {
         Self {
@@ -574,6 +585,46 @@ mod tests {
             own_identity: own.entity.identity,
             entities: vec![own, entity(1, EntityKind::Creature)],
         }
+    }
+
+    #[test]
+    fn look_shows_only_the_exact_shown_actor_generation() {
+        let channel = channel([
+            at(1, VisibleKind::Creature, 101, 100, 7),
+            at(2, VisibleKind::Npc, 102, 100, 7),
+            at(
+                3,
+                VisibleKind::Corpse {
+                    item_definition_ref: std::num::NonZeroU32::MIN,
+                },
+                103,
+                100,
+                7,
+            ),
+        ]);
+        let mut view = SessionVisibility::with_objects(true);
+        let snapshot = view.snapshot(&channel, &mut no_handles).expect("snapshot");
+        for shown in &snapshot.entities {
+            let actor = matches!(
+                shown.kind,
+                EntityKind::Player | EntityKind::Creature | EntityKind::Npc
+            );
+            assert_eq!(view.shows(shown.entity), actor);
+            assert!(!view.shows(EntityRef {
+                generation: shown.entity.generation + 1,
+                ..shown.entity
+            }));
+        }
+        assert!(
+            snapshot
+                .entities
+                .iter()
+                .any(|entity| entity.kind == EntityKind::Corpse)
+        );
+        assert!(!view.shows(EntityRef {
+            identity: id(99),
+            generation: 1
+        }));
     }
 
     #[test]

@@ -43,9 +43,9 @@ use crate::world_spatial::CAPABILITY_PACED_MOVEMENT_V1;
 use crate::world_weather::{CAPABILITY_WORLD_WEATHER_V1, STATE_DOMAIN_WORLD_WEATHER};
 
 /// `ITEM_LOOK_V1`, registry capability 28.
-const CAPABILITY_ITEM_LOOK_V1: u32 = 28;
+pub const CAPABILITY_ITEM_LOOK_V1: u32 = 28;
 /// `ITEM_LOOK_INTENT`, registry command type 30, gated by capability 28.
-const COMMAND_TYPE_ITEM_LOOK_INTENT: u32 = 30;
+pub const COMMAND_TYPE_ITEM_LOOK_INTENT: u32 = 30;
 /// `MAP_STATE_V1`, registry capability 29 (CP D1442): never offered, superseded by 18.
 const CAPABILITY_MAP_STATE_V1: u32 = 29;
 /// `WORLD_SPATIAL_FIELDS`, registry capability 30 (CP D1442): not offered before FIELD-WIRE-1.

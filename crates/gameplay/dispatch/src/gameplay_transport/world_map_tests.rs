@@ -1704,3 +1704,106 @@ fn map_cutover_a_bundle_world_plans_domain_17_at_the_runtime_position() {
 
 #[path = "world_map_domain_tests.rs"]
 mod domain_selection;
+
+#[test]
+fn item_look_resolves_map_definition_and_count_only_in_the_reference_view() {
+    use crate::content::item_ref::ItemDefinitionIndex;
+    use crate::gameplay_transport::item_look::map_look_target;
+    use oteryn_protocol_oteryn::item_look::ItemLookRefusal;
+    let near = tp(21, 20, -7);
+    let far = tp(30, 20, -7);
+    let mut fixture = Fixture::new(vec![
+        (near, vec![item(GRASS), item(COIN)]),
+        (far, vec![item(GRASS), item(COIN)]),
+    ]);
+    // Fixture facts number COIN as 4; the definition index uses the identical reference.
+    let index = ItemDefinitionIndex::decode(
+        &serde_json::to_vec(&serde_json::json!({
+            "schema": "OTERYN_NATIVE_ITEM_KEYS/v1",
+            "records": [["item:a", "r1"], ["item:b", "r1"], ["item:c", "r1"], ["item:coin", "r1"]]
+        }))
+        .unwrap(),
+    )
+    .unwrap();
+    let key_at = |pos| ItemKey::MapBase {
+        bundle_digest: fixture.digest(),
+        placement_key: key(pos, 1),
+        reset_epoch: 1,
+    };
+    assert_eq!(
+        map_look_target(&fixture.source(), at(ACTOR), key_at(near), &index),
+        Ok((
+            TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: "item:coin".into(),
+                revision_ref: "r1".into()
+            },
+            nz(1)
+        ))
+    );
+    assert_eq!(
+        map_look_target(&fixture.source(), at(ACTOR), ItemKey::MapAdded(77), &index),
+        Err(ItemLookRefusal::NotAvailable)
+    );
+    assert_eq!(
+        map_look_target(&fixture.source(), at(ACTOR), key_at(far), &index),
+        Err(ItemLookRefusal::NotVisible)
+    );
+    let hidden = key_at(near);
+    let added = fixture.add(near, COIN);
+    let expected = (
+        TypedDefinitionRef {
+            family: "Item".into(),
+            production_key: "item:coin".into(),
+            revision_ref: "r1".into(),
+        },
+        nz(1),
+    );
+    assert_eq!(
+        map_look_target(
+            &fixture.source(),
+            at(ACTOR),
+            ItemKey::MapAdded(added),
+            &index
+        ),
+        Ok(expected.clone())
+    );
+    let ground = uuid(9);
+    let mut spatial = Vec::new();
+    spatial.extend_from_slice(&i32::from(near.x).to_be_bytes());
+    spatial.extend_from_slice(&i32::from(near.y).to_be_bytes());
+    spatial.extend_from_slice(&i16::from(near.floor).to_be_bytes());
+    fixture
+        .overlay
+        .add_ground(GroundItemInstance {
+            item_instance_id: ground,
+            world_id: world(),
+            channel_id: channel(),
+            definition: expected.0.clone(),
+            quantity: 1,
+            runtime_scope_ownership_generation: 1,
+            ground: GroundPlacement {
+                spatial_position: spatial,
+                corpse_ref: Vec::new(),
+                map_revision: map_revision(fixture.overlay.base()),
+                content_revision: "rev-1".into(),
+                native_room_placement_context: Vec::new(),
+            },
+            minted_transaction_id: uuid(10),
+        })
+        .unwrap();
+    assert_eq!(
+        map_look_target(
+            &fixture.source(),
+            at(ACTOR),
+            ItemKey::Instance(ground),
+            &index
+        ),
+        Ok(expected)
+    );
+    fixture.hide(near, 1);
+    assert_eq!(
+        map_look_target(&fixture.source(), at(ACTOR), hidden, &index),
+        Err(ItemLookRefusal::NotAvailable)
+    );
+}

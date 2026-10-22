@@ -65,6 +65,15 @@ impl ItemDefinitionIndex {
         Some(&self.records[index].1)
     }
 
+    /// The key and revision named by a wire reference in this generation (the inverse of
+    /// `definition_ref`). Zero cannot be represented; out-of-range references fail closed.
+    pub fn definition_at(&self, reference: NonZeroU32) -> Option<(&str, &str)> {
+        let index = usize::try_from(reference.get() - 1).ok()?;
+        self.records
+            .get(index)
+            .map(|(key, revision)| (&**key, &**revision))
+    }
+
     /// The wire reference of a typed Item definition: 1 + the key's index, only when `family`
     /// is Item and the key is an Item of this generation at exactly `revision`. Anything else is
     /// `None`, and the caller fails closed.

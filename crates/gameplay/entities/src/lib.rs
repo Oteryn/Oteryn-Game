@@ -55,7 +55,7 @@ pub use runtime_actor_carrier::{
     NATIVE_SUMMON_RETIREMENT_LINKS_PER_CALL_MAX, NativeEncounterSpawnSpec,
     NativeSummonAdmissionSpec, NativeSummonDeath, NativeSummonMovementOutcome, NativeSummonOrigin,
     OwnerDamageCommand, OwnerDamageResult, PlayerActorReservation, RationalSpeedRange,
-    RuntimeCorpseProjection, SpeedRange, StatusKind, TickFacts, TickKind,
+    RuntimeCorpseProjection, SpeedRange, StatusKind, TickFacts, TickKind, VisibleRuntimeCorpse,
 };
 #[cfg(any(test, feature = "test-support"))]
 #[allow(unused_imports)] // Each path-included Foundation test crate uses only some fixtures.

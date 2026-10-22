@@ -276,3 +276,25 @@ fn the_pinned_index_equals_the_bundle_palette_ids_of_a_fixture_bundle() {
         );
     }
 }
+
+#[test]
+fn every_item_ref_round_trips_to_its_key_and_revision() {
+    for index in [
+        ItemDefinitionIndex::decode(PRODUCTION_KEYS).unwrap(),
+        ItemDefinitionIndex::decode(&document(&[])).unwrap(),
+    ] {
+        for (offset, (expected_key, expected_revision)) in index.records.iter().enumerate() {
+            let reference = NonZeroU32::new(u32::try_from(offset).unwrap() + 1).unwrap();
+            let (key, revision) = index.definition_at(reference).unwrap();
+            assert_eq!((key, revision), (&**expected_key, &**expected_revision));
+            assert_eq!(
+                index.definition_ref(ITEM_FAMILY, key, revision),
+                Some(reference)
+            );
+        }
+        let past_end = NonZeroU32::new(u32::try_from(index.records.len()).unwrap() + 1).unwrap();
+        assert_eq!(index.definition_at(past_end), None);
+        assert_eq!(index.definition_at(NonZeroU32::MAX), None);
+    }
+    assert_eq!(NonZeroU32::new(0), None);
+}

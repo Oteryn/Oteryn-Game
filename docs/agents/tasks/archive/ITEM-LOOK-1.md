@@ -2,14 +2,14 @@
 
 ```yaml
 task_id: ITEM-LOOK-1
-title: "ITEM-LOOK-1: look/examine message (skeleton)"
+title: "ITEM-LOOK-1: look/examine message and handler (LOOK-2 runtime wiring)"
 mode: IMPLEMENT
-status: in_progress
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: skeleton/item-look-1
-issue: 1622
-pr: 2182
+branch: look-2
+issue: 2052
+pr: 2260
 base_sha: 5742f30f3
 plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4 Epic 2 ITEM-LOOK-1 (row 75); wave 1"
 class: "impl"
@@ -18,7 +18,7 @@ registry: yes
 owner: unassigned (builder)
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
-updated_at: 2026-10-17
+updated_at: 2026-10-19
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/gameplay_transport/item_look.rs (new)
@@ -27,6 +27,24 @@ owned_paths:
   - crates/protocol-oteryn/src/item_look.rs (new codec)
   - crates/protocol-oteryn/src/item_look_tests.rs (new)
   - docs/agents/tasks/ITEM-LOOK-1.md (this task record)
+  - docs/agents/tasks/archive/ITEM-LOOK-1.md (archive move at closeout)
+  - apps/game-server/src/content/item_ref.rs (LOOK-2)
+  - apps/game-server/src/content/item_ref_tests.rs (LOOK-2)
+  - apps/game-server/src/foundation/mod.rs (LOOK-2)
+  - apps/game-server/src/foundation/channel_owner_auto_attack_tests.rs (LOOK-2)
+  - apps/game-server/src/gameplay_transport/capabilities.rs (LOOK-2)
+  - apps/game-server/src/gameplay_transport/capabilities_tests.rs (LOOK-2)
+  - apps/game-server/src/gameplay_transport/chat_intent.rs (LOOK-2)
+  - apps/game-server/src/gameplay_transport/connection.rs (LOOK-2)
+  - apps/game-server/src/gameplay_transport/item_look_dispatch_tests.rs (LOOK-2, new)
+  - apps/game-server/src/gameplay_transport/item_look_postgres_tests.rs (LOOK-2, new)
+  - apps/game-server/src/gameplay_transport/mod.rs (LOOK-2)
+  - apps/game-server/src/gameplay_transport/monk_save_postgres_tests.rs (LOOK-2)
+  - apps/game-server/src/gameplay_transport/npc_command_tests.rs (LOOK-2)
+  - apps/game-server/src/gameplay_transport/world_map_tests.rs (LOOK-2)
+  - apps/game-server/src/gameplay_transport/world_spatial.rs (LOOK-2)
+  - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json (LOOK-2, capability 28 entry)
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json (LOOK-2, ITEMLOOK1-RL-01)
 slot_only_paths:
   - connection.rs dispatch
   - mod.rs
@@ -68,6 +86,8 @@ All dependencies merged; the task may start.
 - crates/protocol-oteryn/src/item_look.rs (new codec)
 - crates/protocol-oteryn/src/item_look_tests.rs (new)
 - docs/agents/tasks/ITEM-LOOK-1.md (this task record)
+- LOOK-2 extends this list with the runtime wiring files, the two registries and the archive
+  path; the YAML `owned_paths` above is the authoritative list.
 
 ## Slot-only paths (final commit only, at the merge-queue turn, after merging main)
 
@@ -98,11 +118,11 @@ wire+registry+capability+handler+tests. Registry order (plan §5): ITEM-LOOK-1, 
 
 ## Acceptance criteria
 
-- [ ] LOOK command on a visible item/creature returns text built only from admitted content facts.
-- [ ] Unknown/unadmitted target -> typed refusal, no leak of hidden facts.
-- [ ] Rate limit row registered and enforced (max vs max+1).
+- [x] LOOK command on a visible item/creature returns text built only from admitted content facts.
+- [x] Unknown/unadmitted target -> typed refusal, no leak of hidden facts.
+- [x] Rate limit row registered and enforced (max vs max+1).
 - [x] No brief exists: builder records a short packet in this file before code; architect review at queue turn.
-- [ ] Builder confirms the residue against main before code (plan §4, 'each worker confirms the residue').
+- [x] Builder confirms the residue against main before code (plan §4, 'each worker confirms the residue').
 
 ## Validation
 
@@ -111,6 +131,23 @@ wire+registry+capability+handler+tests. Registry order (plan §5): ITEM-LOOK-1, 
 - `cargo test --locked -p oteryn-game-server --quiet`; PostgreSQL 17.6 targets for durable state (`OTERYN_TEST_POSTGRES_ADMIN_URL=... cargo test --locked -p oteryn-game-server --test <target>`)
 - content: the loading package's tests and the path validator; `python tools/content-migration/regenerate_content.py` at the slot only
 - `python tools/agents/validate_governance.py`; `python -m unittest discover -s tools/agents/tests`
+
+LOOK-2 results on the candidate tree (2026-10-19, toolchain 1.95.0):
+
+- `cargo fmt --all --check`: pass
+- `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: pass
+- `cargo test --locked -p oteryn-game-server --lib item_look`: pass (16 passed, 0 failed; includes the command 30 dispatch e2e)
+- `cargo test --locked -p oteryn-game-server --lib world_spatial`: pass (19 passed, 0 failed)
+- `cargo test --locked -p oteryn-game-server --lib capabilities`: pass (62 passed, 0 failed)
+- `cargo test --locked -p oteryn-game-server --lib item_ref`: pass (15 passed, 0 failed)
+- `cargo test --locked -p oteryn-game-server --lib world_map`: pass (27 passed, 0 failed, 3 pre-existing ignored)
+- `cargo test --locked -p oteryn-game-server --lib quest_log`: pass (12 passed, 0 failed)
+- `cargo test --locked -p oteryn-game-server --lib bundle_gates`: pass (5 passed, 0 failed)
+- `cargo test --locked -p oteryn-game-server --lib npc_command`: pass (29 passed, 0 failed)
+- `OTERYN_TEST_POSTGRES_ADMIN_URL=... cargo test --locked -p oteryn-game-server --lib item_look_postgres` (PostgreSQL 17.6): pass (1 passed, 0 failed)
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: OK (124 tests)
+- The full package test suite runs in CI (`Merge gate / Rust changed-crate Clippy and unit tests`).
 
 ## Reference evidence
 
@@ -126,11 +163,11 @@ Reference look text format (Tibia 'You see ...'), item description promotion mod
 ## Context checkpoint
 
 ```yaml
-last_progress: CI repair (2026-10-17) mounts look.rs from item_look.rs, so interaction/mod.rs is unchanged and the interaction_workflow test target compiles
-status: authoring
-branch: skeleton/item-look-1
-blocker: command 30 handler, look rate row and runtime Creature/name binding are not implemented; CI result on the repair head pending
-next_action: CP reads exact-head CI and Codex review of the repair head
+last_progress: LOOK-2 (2026-10-19) installs the command 30 handler, the ITEMLOOK1-RL-01 rate window, the capability 28 bundle-world offer and runtime Creature/name binding
+status: completed
+branch: look-2
+blocker: none
+next_action: lead reads exact-head CI and the Codex review of #2260, then queues it
 ```
 
 ## Local preparation packet (proposed, 2026-10-15)
@@ -489,3 +526,52 @@ CI on 0de7da07 failed Clippy: `tests/interaction_workflow.rs` (and the
 `clippy::duplicate_mod` does not apply and `text` inherits the `item_look` `dead_code` allow.
 No local cargo build ran (disk-limited worker); rustfmt passed, and exact-head CI is the
 qualification.
+
+### LOOK-2 runtime wiring (2026-10-19)
+
+Branch `look-2` from main c8fa84de7, issue #2052, one PR. The protocol codec is unchanged
+(no wire change, no migration). This increment closes the open runtime obligations above:
+
+- **Production caller.** `connection.rs` `serve_admitted` dispatches command 30 as
+  `Dispatch::Look`; the `dead_code` allow on `mod item_look` is removed. Arm order: the rate
+  slot is spent first (over-rate → Accepted `Refused(RateLimited)`), then the payload is
+  decoded with the session's selection (malformed → Rejected, empty payload). A Creature
+  target needs a known generation, an exact shown identity and generation in the session's
+  `SessionVisibility::shows` view, then `FreshAdmissionAuthority::look_creature`. An Item
+  target needs the session's item view and a live handle, then `look_item` with the session's
+  carried-item fence. Results are encoded by `encode_item_look_result_for` with the
+  negotiated selection, so a legacy session sees only `NotAvailable`.
+- **Offer.** Capability 28 is offered only by a bundle-booted World
+  (`BUNDLE_WORLD_OFFERED_CAPABILITIES`, `requires` empty); fixture Worlds never select it,
+  so command 30 stays Unregistered there and spends no rate slot. The registry entry stays
+  `offered: false` with an updated `offer_gate`.
+- **Rate.** `LookWindow`: at most 10 commands in any sliding second per GameSession, held in
+  `SessionContinuity` and carried across resume and transfer; registered as
+  `ITEMLOOK1-RL-01` in `RESOURCE_LIMITS_REGISTRY.json`, pinned by a test that reads the row.
+- **Creature binding.** `runtime_look_creature` reads the current runtime incarnation
+  (exact generation, REFERENCE view range on the same floor convention): a player gets
+  "You see yourself"/the player's name, level and vocation from the owner's own facts; a
+  creature its runtime name; an NPC its talk-book name. Stale generation or out of view →
+  `NotVisible`.
+- **Item binding.** Carried items (main backpack and its tree) come from the fenced owner
+  read; corpse contents from the bound corpse; map Base/Added/Ground items from the
+  composed tile at the actor's position, only within view, re-checking the content pin and
+  item index after the read. A Ground item handle without a carried-item fence goes straight
+  to the map read. Unknown or stale handles → `NotAvailable`.
+- **Tests.** `item_look_dispatch_tests.rs`
+  (`item_look_e2e_command_30_answers_visible_targets_and_refuses_hidden_stale_and_over_rate`
+  and the capability/legacy cases) drive real `serve_admitted` frames; the PostgreSQL test
+  `item_look_postgres_composed_owner_serves_self_backpack_and_hidden_creature` drives the real
+  `ComposedFreshAdmission` over a bundle map. Unit tests cover `LookWindow` max vs max+1,
+  `SessionVisibility::shows`, `map_look_target`, `ItemDefinitionIndex::definition_at`, and the
+  runtime creature/NPC look.
+
+## Closeout
+
+- PR: #2260 (draft, branch `look-2`), the last PR of this task; the skeleton history above
+  ran on #2182.
+- Validation: the `## Validation` results above, on the LOOK-2 candidate tree; the local
+  prepush gate passed (static checks, Clippy, focused tests, local Codex review CLEAN).
+- Review state: exact-head CI and the PR's Codex review are pending at archive time.
+- Frozen head: the FREEZE_SHA entry on #2260.
+- merge commit/result: squash merge of #2260

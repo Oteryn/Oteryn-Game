@@ -22,7 +22,8 @@ use super::actor_spell::{
 };
 use super::attack::{COMBAT_REFRESH, CombatContinuity};
 use super::capabilities::{
-    OfferedCapability, PRODUCTION_OFFERED_CAPABILITIES, SelectedCapabilities, with_weather_offer,
+    CAPABILITY_ITEM_LOOK_V1, COMMAND_TYPE_ITEM_LOOK_INTENT, OfferedCapability,
+    PRODUCTION_OFFERED_CAPABILITIES, SelectedCapabilities, with_weather_offer,
 };
 use super::chat_intent::CHAT_REFRESH;
 use super::container_view::{
@@ -30,6 +31,7 @@ use super::container_view::{
 };
 use super::highscores::HighscoresReply;
 use super::input_gate::InputPermit;
+use super::item_look::LookWindow;
 use super::item_move::{
     self, EquipmentMove, EquipmentMoveRefusal, EquipmentMoveReplay, EquipmentMoveResult,
     ItemMoveStep, LoopMove, LoopMoveRefusal, LoopMoveReplay, LoopMoveResult,
@@ -91,6 +93,10 @@ use oteryn_protocol_oteryn::container_tree::{
 use oteryn_protocol_oteryn::encode_command_error_result;
 use oteryn_protocol_oteryn::highscores::{
     COMMAND_TYPE_HIGHSCORES_QUERY_V1, HighscoresQuery, decode_highscores_query,
+};
+use oteryn_protocol_oteryn::item_look::{
+    ItemLookRefusal, ItemLookResult, ItemLookSelection, ItemLookTarget,
+    decode_item_look_intent_for, encode_item_look_result_for, known_creature_generation,
 };
 use oteryn_protocol_oteryn::item_view::{
     CAPABILITY_ITEM_EQUIP_DROP_V1, COMMAND_TYPE_ITEM_MOVE_INTENT, EquipmentSlot, ItemMoveOutcome,
@@ -222,6 +228,8 @@ pub struct SessionContinuity {
     /// QUEST-LOG-WIRE-1: the domain 16 revision, the tracked quests and the query window. Used
     /// only with capability 16; a resume or channel transfer carries it.
     pub quest_log: QuestLogContinuity,
+    /// ITEMLOOK1-RL-01: carried across resume and transfer with the GameSession.
+    pub look: LookWindow,
     /// ATTACK-1b: the domain 10 revision, the last state sent and the command 11 and 12 windows.
     /// Used only with capability 17; a resume or channel transfer carries it.
     pub combat: CombatContinuity,
@@ -267,6 +275,7 @@ impl SessionContinuity {
             view_commands: ViewCommandWindow::EMPTY,
         },
         quest_log: QuestLogContinuity::FRESH,
+        look: LookWindow::EMPTY,
         combat: CombatContinuity::FRESH,
         world_map_revision: 0,
         chat_revision: 0,
@@ -638,6 +647,26 @@ pub trait FreshAdmissionAuthority {
         _target: ItemKey,
     ) -> impl Future<Output = Option<ItemTargetObservation>> {
         async { None }
+    }
+
+    fn look_item(
+        &self,
+        _actor: ExactActorRef,
+        _game_session_id: GameSessionId,
+        _fence: Option<CurrentCharacterItemFence>,
+        _views: &SessionItemView,
+        _target: oteryn_protocol_oteryn::item_view::ItemHandle,
+    ) -> impl Future<Output = ItemLookResult> {
+        async { ItemLookResult::Refused(ItemLookRefusal::NotAvailable) }
+    }
+
+    fn look_creature(
+        &self,
+        _actor: ExactActorRef,
+        _game_session_id: GameSessionId,
+        _target: WireEntityRef,
+    ) -> impl Future<Output = ItemLookResult> {
+        async { ItemLookResult::Refused(ItemLookRefusal::NotVisible) }
     }
 
     /// ITEM-MOVE-1 replay first (WIRE-0 §5): the committed TRANSFER of this command 9, looked
@@ -2639,6 +2668,7 @@ where
             ItemMove(ItemMoveOutcome, Vec<ItemViewDelta>),
             /// QUEST-LOG-WIRE-1: an accepted command 22; the domain 16 delta follows the result.
             QuestLog(QuestLogDomain),
+            Look(ItemLookResult, ItemLookSelection),
             /// ATTACK-1b: commands 11 and 12; the domain 10 delta follows the result.
             Attack(AttackIntentDisposition),
             /// CHAT-WIRE-1: command 13; lines reach the hearers' domain 12 on their own ticks.
@@ -2991,6 +3021,59 @@ where
                 }
                 None => Dispatch::Unregistered,
             }
+        } else if command.command_type == COMMAND_TYPE_ITEM_LOOK_INTENT {
+            let selection = ItemLookSelection {
+                extended: selected_capabilities.contains(CAPABILITY_ITEM_LOOK_V1),
+            };
+            if !admitted.continuity.look.admit(tokio::time::Instant::now()) {
+                Dispatch::Look(
+                    ItemLookResult::Refused(ItemLookRefusal::RateLimited),
+                    selection,
+                )
+            } else {
+                match decode_item_look_intent_for(command.payload, selection) {
+                    Err(_) => Dispatch::Unregistered,
+                    Ok(intent) => Dispatch::Look(
+                        match intent.target {
+                            ItemLookTarget::Creature(entity) => {
+                                match known_creature_generation(entity) {
+                                    Err(refusal) => ItemLookResult::Refused(refusal),
+                                    Ok(_)
+                                        if !visibility
+                                            .as_ref()
+                                            .is_some_and(|view| view.shows(entity)) =>
+                                    {
+                                        ItemLookResult::Refused(ItemLookRefusal::NotVisible)
+                                    }
+                                    Ok(_) => {
+                                        authority
+                                            .look_creature(actor, admitted.game_session_id, entity)
+                                            .await
+                                    }
+                                }
+                            }
+                            ItemLookTarget::Item(handle) => match item_view.as_ref() {
+                                None => ItemLookResult::Refused(ItemLookRefusal::NotAvailable),
+                                Some(views) if views.resolve(handle).is_none() => {
+                                    ItemLookResult::Refused(ItemLookRefusal::NotAvailable)
+                                }
+                                Some(views) => {
+                                    authority
+                                        .look_item(
+                                            actor,
+                                            admitted.game_session_id,
+                                            admitted.item_fence,
+                                            views,
+                                            handle,
+                                        )
+                                        .await
+                                }
+                            },
+                        },
+                        selection,
+                    ),
+                }
+            }
         } else if command.command_type == COMMAND_TYPE_QUEST_LOG_QUERY {
             // QUEST-LOG-WIRE-1: a read of the session's own quest copy. Over QUESTGATE0-RL-09 (2
             // per second per GameSession, sliding window) it is REJECTED with an empty payload
@@ -3323,6 +3406,12 @@ where
                         ..ItemMoveSelection::default()
                     },
                 ) else {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                };
+                (CommandStatus::Accepted, payload)
+            }
+            Dispatch::Look(result, selection) => {
+                let Ok(payload) = encode_item_look_result_for(result, *selection) else {
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 };
                 (CommandStatus::Accepted, payload)
@@ -3786,6 +3875,7 @@ where
             }
             Dispatch::UseItem(_, None)
             | Dispatch::ContainerView(_, None)
+            | Dispatch::Look(..)
             | Dispatch::Achievements(_)
             | Dispatch::Highscores(_)
             | Dispatch::Logout(_)
@@ -5375,6 +5465,7 @@ mod tests {
                     selected_capabilities: SelectedCapabilities::NONE,
                     item_view: ItemViewContinuity::default(),
                     quest_log: QuestLogContinuity::FRESH,
+                    look: LookWindow::EMPTY,
                     combat: CombatContinuity::FRESH,
                     world_map_revision: 0,
                     chat_revision: 0,
@@ -8164,3 +8255,7 @@ mod visibility_tests {
         })
     }
 }
+
+#[cfg(test)]
+#[path = "item_look_dispatch_tests.rs"]
+mod item_look_dispatch_tests;
