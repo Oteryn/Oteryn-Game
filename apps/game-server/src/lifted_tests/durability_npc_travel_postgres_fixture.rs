@@ -1,4 +1,5 @@
 // Test-only native PG exercise. Registered by the canonical PG root, never by lib tests.
+#![cfg(test)]
 include!("../../tests/support/tutorial_travel_postgres_cases.rs");
 
 use crate::bestiary_postgres_harness::{self as fixture, TestResult, debug, fence, id};
