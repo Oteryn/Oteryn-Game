@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/happy-davinci-ijz3wy
 pr: null
-base_sha: 97060ec39071db647641843f561be32452b52ffb
+base_sha: 8c0c7358976d7e339c8dbb8ad903b9548358888b
 owner: Claude integrator
 created_at: 2026-10-22
 updated_at: 2026-10-22
