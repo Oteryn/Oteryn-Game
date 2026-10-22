@@ -257,6 +257,23 @@
       "offer_gate": "PRESENT-WIRE-1 registers the codecs only: the server does not offer this capability before SPELL-PRESENT-1 or COMBAT-PRESENT-1 composes an emitter, and the B3 batch measurement of SPELL-PRESENT-0 §9 is recorded on #162 before activation. It requires 6 WORLD_SPATIAL_ENTITIES, whose D85 identities the events name. With it selected, domain 19 carries at most one batch of presentation events per sync unit (SPELLPRES0-RL-01..03; overflow keeps the observer's own events, then the nearest by D87, ties by decision and emission ordinal; a batch is dropped whole while SPELLPRES0-RL-07 batches are undelivered or a snapshot is in flight), domain 20 carries the own actor's cooldowns (a snapshot at admission, reconnect and channel transfer; a delta at each PRIMARY COMMIT that starts or changes one, and one corrective delta at the first liveness ack), and the command type 3 result may carry field 2 detail. Without it selected, domains 19 and 20 and field 2 are never sent and the session keeps today's behaviour; it is not refused."
     },
     {
+      "id": 25,
+      "name": "APPEARANCE_V1",
+      "owner_decision": "CHARACTER_APPEARANCE §4.3–4.6; APP-3 D1094 candidate allocation",
+      "owner": "APP-3; Character appearance owner",
+      "requires": [
+        6
+      ],
+      "command_types": [
+        25
+      ],
+      "state_domains": [
+        21
+      ],
+      "offered": false,
+      "offer_gate": "Only the composed APP-3 owner with admitted native cosmetics offers 25. Requires 6. Item Look additionally requires 4 and the exact Item dictionary. Every reconnect starts a new appearance dictionary."
+    },
+    {
       "id": 26,
       "name": "WORLD_WEATHER_V1",
       "owner_decision": "CP D1023-D1028 (#2202 comment6216591471); D1137 allocates capability 26 and state domain 22 as leaf constants; D1446 fails closed without sourced data; D1448 ships Oteryn-designed weather values; D1027 protocol-owner sign-off given (kind 1..9, intensity 1..3, offered once the data loads); a connection still drops 26 from its offer when the authority exposes no weather source (fail closed)",
@@ -466,6 +483,16 @@
       "result_schema": "docs/contracts/protocol-oteryn/v1/logout_v1.proto#LogoutResultV1",
       "max_payload_bytes": 0,
       "max_result_payload_bytes": 6
+    },
+    {
+      "id": 25,
+      "name": "APPEARANCE_CHANGE",
+      "owner_decision": "APP-3 D1094",
+      "capability": 25,
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/appearance_v1.proto#Change",
+      "result_schema": "docs/contracts/protocol-oteryn/v1/appearance_v1.proto#ChangeResult",
+      "max_payload_bytes": 4096,
+      "max_result_payload_bytes": 16
     },
     {
       "id": 30,
@@ -946,6 +973,36 @@
           "name": "ACTOR_COOLDOWNS_SNAPSHOT_V1",
           "payload_schema": "docs/contracts/protocol-oteryn/v1/presentation_v1.proto#ActorCooldownsV1",
           "max_payload_bytes": 65552
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "name": "APPEARANCE",
+      "owner_decision": "APP-3 D1094",
+      "owner": "Character appearance owner; connection-local dictionary",
+      "capability": 25,
+      "revision": "Connection-local, snapshot 1 then consecutive mapping/catalogue deltas. Mapping changes precede referencing VIS-2 updates; VIS-2 leave precedes retirement.",
+      "delta_types": [
+        {
+          "id": 1,
+          "name": "APPEARANCE_MAPPINGS",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/appearance_v1.proto#Mappings",
+          "max_payload_bytes": 131072
+        },
+        {
+          "id": 2,
+          "name": "APPEARANCE_CATALOGUE",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/appearance_v1.proto#Catalogue",
+          "max_payload_bytes": 196608
+        }
+      ],
+      "snapshot_types": [
+        {
+          "id": 1,
+          "name": "APPEARANCE_SNAPSHOT",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/appearance_v1.proto#Snapshot",
+          "max_payload_bytes": 262144
         }
       ]
     },

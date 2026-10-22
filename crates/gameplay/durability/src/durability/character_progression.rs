@@ -60,7 +60,7 @@ pub struct CurrentCharacterGameplayFence {
 
 impl CurrentCharacterGameplayFence {
     /// The same session, lease and scope authority without the CharacterRevision.
-    pub(super) const fn item_fence(&self) -> CurrentCharacterItemFence {
+    pub const fn item_fence(&self) -> CurrentCharacterItemFence {
         CurrentCharacterItemFence {
             character_id: self.character_id,
             game_session_id: self.game_session_id,

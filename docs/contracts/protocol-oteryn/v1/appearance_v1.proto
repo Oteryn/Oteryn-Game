@@ -1,0 +1,76 @@
+syntax = "proto3";
+package oteryn.appearance.v1;
+
+// APP-3 strict profile: every singular field is present exactly once, including
+// explicit scalar zeroes, except fields marked optional. Unknown fields refuse.
+// Lists are ascending and unique. Byte/count ceilings are specified in APP-3.
+message Selection {
+  string outfit_key = 1;
+  bytes colours = 2; // exactly four big-endian u16 indices
+  uint32 addons = 3; // 0..255
+  optional string mount_key = 4;
+}
+message Selected {
+  Selection selection = 1;
+  uint64 revision = 2; // nonzero, <= root revision
+  string provenance = 3;
+}
+message Change {
+  bytes content_generation = 1; // 32 bytes
+  bytes cosmetics_digest = 2; // 32 bytes
+  uint64 expected_root_revision = 3;
+  optional Selected prior = 4;
+  Selection selection = 5;
+  string content_revision = 6;
+}
+message ChangeResult {
+  enum Disposition { INVALID = 0; COMMITTED = 1; REJECTED = 2; }
+  Disposition disposition = 1;
+  optional uint64 committed_revision = 2; // present iff COMMITTED, nonzero
+}
+message OutfitOption {
+  string key = 1;
+  uint32 look_type = 2;
+  uint32 permitted_addons = 3;
+}
+message Catalogue {
+  bytes content_generation = 1;
+  bytes cosmetics_digest = 2;
+  uint64 root_revision = 3;
+  optional Selected selected = 4;
+  bytes palette = 5; // RGB triples, at most 256
+  repeated OutfitOption outfits = 6; // at most 256
+  repeated string mounts = 7; // at most 256
+}
+message EntityRef { bytes identity = 1; uint64 generation = 2; }
+message Look {
+  enum Kind { INVALID = 0; OUTFIT = 1; ITEM = 2; }
+  Kind kind = 1;
+  optional uint32 look_type = 2;
+  optional bytes colours = 3;
+  optional uint32 addons = 4;
+  optional uint32 item_definition_ref = 5;
+  // OUTFIT requires 2..4 and forbids 5; ITEM requires 5 and forbids 2..4.
+}
+message Binding {
+  bytes content_generation = 1;
+  bytes cosmetics_digest = 2;
+  uint32 appearance_ref = 3;
+  EntityRef entity = 4;
+  uint64 root_revision = 5;
+  uint64 condition_revision = 6;
+  uint64 owner_time_us = 7;
+  Look look = 8;
+  optional uint64 selection_revision = 9;
+}
+message Mappings {
+  bytes content_generation = 1;
+  bytes cosmetics_digest = 2;
+  repeated Binding upserts = 3;
+  repeated EntityRef forgets = 4;
+}
+message Snapshot {
+  Catalogue catalogue = 1;
+  repeated Binding bindings = 2;
+  uint32 high_water = 3;
+}

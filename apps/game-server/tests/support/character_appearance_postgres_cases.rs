@@ -1,8 +1,8 @@
 #![allow(clippy::expect_used)]
 // D1112 installed-storage cases. Every selected case creates its own PostgreSQL17.6
 // database through the actual embedded migration ledger; no fixture DDL is executed.
-// Shared cases: included by the CI-run character_authority_postgres target and the thin standalone
-// wrapper, both of which provide the path-loaded crate root and the Bestiary harness.
+// Mounted once by the CI-run character_authority_postgres target, which provides
+// the path-loaded crate root and the existing Bestiary harness.
 
 use crate::bestiary_postgres_harness::{
     CHARACTER, Harness, TestResult, configured_admin, debug, id, runtime,
@@ -355,7 +355,12 @@ fn installed_appearance_unlocks_preserve_first_provenance_and_account_isolation(
         let account = AccountId::from_bytes(id(40))?;
         let other = AccountId::from_bytes(id(39))?;
         seed_unlocks(&mut connection).await?;
-        let facts = read_account_appearance_unlocks(&mut connection, account).await?;
+        let facts = read_account_appearance_unlocks(
+            &mut connection,
+            account,
+            &["earned".into(), "fixture-addon-one".into(), "horse".into()],
+        )
+        .await?;
         assert_eq!(facts.len(), 3);
         assert_eq!(
             facts[0].granting_character_id,
@@ -364,9 +369,13 @@ fn installed_appearance_unlocks_preserve_first_provenance_and_account_isolation(
         assert_eq!(facts[0].source_kind, "quest");
         assert!(!facts[0].source_event_id.is_empty());
         assert!(
-            read_account_appearance_unlocks(&mut connection, other)
-                .await?
-                .is_empty()
+            read_account_appearance_unlocks(
+                &mut connection,
+                other,
+                &["earned".into(), "fixture-addon-one".into(), "horse".into()]
+            )
+            .await?
+            .is_empty()
         );
         sqlx::query("INSERT INTO game_account_appearance_unlock_receipts VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'earned','replacement',encode($3,'hex')::uuid,'npc',$1)")
             .bind(id(63).as_slice()).bind(account.as_bytes().as_slice()).bind(id(42).as_slice()).execute(&mut connection).await?;
@@ -374,7 +383,12 @@ fn installed_appearance_unlocks_preserve_first_provenance_and_account_isolation(
             .bind(account.as_bytes().as_slice()).bind(id(63).as_slice()).execute(&mut connection).await?;
         assert_eq!(duplicate.rows_affected(), 0);
         assert_eq!(
-            read_account_appearance_unlocks(&mut connection, account).await?,
+            read_account_appearance_unlocks(
+                &mut connection,
+                account,
+                &["earned".into(), "fixture-addon-one".into(), "horse".into()]
+            )
+            .await?,
             facts
         );
         let collision=sqlx::query("INSERT INTO game_account_appearance_unlock_receipts VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'earned','substitution',encode($3,'hex')::uuid,'quest',$4)")
@@ -410,7 +424,12 @@ fn installed_appearance_unlocks_preserve_first_provenance_and_account_isolation(
         connection.close().await?;
         let mut reloaded = sqlx::PgConnection::connect(&h.database.url).await?;
         assert_eq!(
-            read_account_appearance_unlocks(&mut reloaded, account).await?,
+            read_account_appearance_unlocks(
+                &mut reloaded,
+                account,
+                &["earned".into(), "fixture-addon-one".into(), "horse".into()]
+            )
+            .await?,
             facts
         );
         Ok(())
@@ -424,9 +443,12 @@ fn installed_appearance_validator_and_recovery_reject_corruption() -> TestResult
         let character = CharacterId::from_bytes(id(CHARACTER))?;
         insert_initial(&mut connection, "earned", Some("horse")).await?;
         seed_unlocks(&mut connection).await?;
-        let facts =
-            read_account_appearance_unlocks(&mut connection, AccountId::from_bytes(id(40))?)
-                .await?;
+        let facts = read_account_appearance_unlocks(
+            &mut connection,
+            AccountId::from_bytes(id(40))?,
+            &["earned".into(), "fixture-addon-one".into(), "horse".into()],
+        )
+        .await?;
         let original = read_selected_appearance(&mut connection, character)
             .await?
             .ok_or("missing selection")?;
@@ -501,3 +523,6 @@ fn installed_appearance_validator_and_recovery_reject_corruption() -> TestResult
         Ok(())
     })
 }
+
+#[path = "character_appearance_postgres_cases/earned_unlocks_tests.rs"]
+mod earned_unlocks_tests;

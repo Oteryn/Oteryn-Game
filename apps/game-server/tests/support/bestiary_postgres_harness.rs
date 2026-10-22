@@ -274,7 +274,7 @@ impl Harness {
 }
 
 fn bootstrap_binding() -> Vec<u8> {
-    let mut binding = vec![2];
+    let mut binding = vec![3];
     binding.extend_from_slice(&id(31));
     binding.extend_from_slice(&1_i64.to_be_bytes());
     binding.extend_from_slice(&id(30));
@@ -287,9 +287,10 @@ fn bootstrap_binding() -> Vec<u8> {
         binding.extend_from_slice(&length.to_be_bytes());
         binding.extend_from_slice(value.as_bytes());
     }
-    // Contract version 2 binds the requested name last (CHAR-NAME-1).
+    // Contract version 3 retains the name binding and appends creation sex (APP-3).
     binding.extend_from_slice(&12_u16.to_be_bytes());
     binding.extend_from_slice(b"Fixture Hero");
+    binding.push(2); // Authenticated creation sex: Male.
     binding
 }
 
@@ -372,9 +373,9 @@ async fn seed_character(pool: &sqlx::PgPool, initialized: bool) -> TestResult {
         .execute(pool)
         .await?;
     sqlx::query(
-        "INSERT INTO game_character_roots VALUES \
+        "INSERT INTO game_character_roots(character_id, account_id, world_id, lifecycle, character_revision, profile_revision, ruleset_revision, content_revision, starter_template_revision, name, sex) VALUES \
          (encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,\
-          1,1,'profile-1','ruleset-1','content-1','starter-1','Fixture Hero')",
+          1,1,'profile-1','ruleset-1','content-1','starter-1','Fixture Hero',2)",
     )
     .bind(id(CHARACTER).as_slice())
     .bind(id(40).as_slice())

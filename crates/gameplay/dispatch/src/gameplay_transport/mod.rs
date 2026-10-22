@@ -2,11 +2,13 @@
 //! semantics and the composed owners decide admission.
 
 pub mod actor_spell;
+pub mod appearance_change;
 mod attack;
 mod bank_npc;
 #[cfg(test)]
 mod bundle_gates_tests;
 mod capabilities;
+mod character_gameplay_fence;
 mod character_progression_binding;
 #[cfg(test)]
 mod character_progression_binding_tests;
@@ -542,6 +544,7 @@ pub async fn serve_gameplay(
     let tls = tcp_tls::tls_config(config.certificates, config.private_key)
         .map_err(GameplayServeError::InvalidTls)?;
     let authority = ComposedFreshAdmission {
+        appearance_commands: Default::default(),
         emit: owners.emit,
         root: owners.root,
         character: owners.character,
@@ -770,6 +773,7 @@ pub struct ComposedFreshAdmission<'a, 'f, 's> {
     /// The Channel owner's player vitals and cooldowns (spell cast §4). Always locked after
     /// `runtime`, never before, like `door`.
     pub spell_states: Mutex<actor_spell::ChannelSpellStates>,
+    pub appearance_commands: appearance_change::AppearanceCommands,
     /// The world-interaction admission gate (`WORLD_INTERACTION0` §3.4): a leaf lock, never held
     /// across another.
     pub world_gate: std::sync::Mutex<map_door::WorldActionGate>,
@@ -2495,6 +2499,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(()) => {
                 self.fence_holders.forget(session);
                 self.forget_quest_session(session);
+                self.appearance_commands.forget(session);
                 self.forget_progression_session(session);
                 self.last_positions.forget(session);
                 GraceExpiryResult::Released
@@ -3210,6 +3215,7 @@ fn bundle_map_position<'a>(
 }
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
+    appearance_change::composed_methods!();
     fn world_weather(&self) -> Option<&crate::world_weather::WorldWeatherSource> {
         // WEATHER-1 (D1027 signed off, D1448): the shipped Oteryn-designed data, `None` (never
         // offered) when it is missing or invalid. The data is public and stateless: its binding

@@ -15,6 +15,8 @@ use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 
+mod grant_mappings;
+
 const JSON_BYTES_MAX: usize = 8 * 1024 * 1024;
 const SOURCE_BYTES_MAX: usize = 32 * 1024 * 1024;
 
@@ -126,6 +128,8 @@ struct Document {
     outfits: Vec<Outfit>,
     mounts: Vec<Mount>,
     fallbacks: Fallbacks,
+    #[serde(default)]
+    grant_mappings: Vec<grant_mappings::GrantMapping>,
 }
 
 // Exact existing stage_appearance_tables.py formats. Large rendering observations are ignored,
@@ -187,6 +191,7 @@ pub struct CosmeticsCandidate {
     document: Document,
     outfits: BTreeMap<String, usize>,
     mounts: BTreeMap<String, usize>,
+    grants: BTreeMap<String, usize>,
     palette_size: u16,
     document_sha256: [u8; 32],
 }
@@ -227,6 +232,27 @@ impl CosmeticsCandidate {
 }
 
 impl AppearanceContent<String> for CosmeticsCandidate {
+    fn earned_grant_keys(&self) -> Vec<String> {
+        self.document
+            .grant_mappings
+            .iter()
+            .map(|m| m.grant_key.clone())
+            .collect()
+    }
+    fn earned_unlock(
+        &self,
+        grant_key: &str,
+        provenance: &str,
+        target: crate::domain::appearance::EarnedCosmetic<'_>,
+    ) -> UnlockFact {
+        grant_mappings::resolve(
+            self.grants
+                .get(grant_key)
+                .map(|index| &self.document.grant_mappings[*index]),
+            provenance,
+            target,
+        )
+    }
     fn palette_size(&self) -> u16 {
         self.palette_size
     }
@@ -348,10 +374,22 @@ pub fn compile_candidate(
             });
         }
     }
+    grant_mappings::validate(
+        &document.grant_mappings,
+        &document.outfits,
+        &document.mounts,
+    )?;
+    let grants = document
+        .grant_mappings
+        .iter()
+        .enumerate()
+        .map(|(index, mapping)| (mapping.grant_key.clone(), index))
+        .collect();
     let candidate = CosmeticsCandidate {
         document,
         outfits,
         mounts,
+        grants,
         palette_size,
         document_sha256: expected.document_sha256,
     };

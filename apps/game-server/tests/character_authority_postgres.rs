@@ -371,7 +371,7 @@ impl Wire {
 
     fn json(&self) -> String {
         format!(
-            r#"{{"contract_version":2,"variant":"{}","issuer_authority":"OTERYN_PLATFORM_CHARACTER_AUTHORITY","issuer_decision_id":"3f0c5b7e-1d2a-4c3b-9a8f-{:012x}","source_revision":"{}","operation_id":"{}","operation":"INITIAL_CHARACTER_BOOTSTRAP","account_id":"{}","target_world_id":"{}","requested_name":"{}","interpretation_context":{{"profile_revision":"profile-1","ruleset_revision":"ruleset-1","content_revision":"{}","starter_template_revision":"starter-1"}},"issued_at_source":"{}","expires_at_source":"{}","audience":"OTERYN_GAME_CHARACTER_AUTHORITY"}}"#,
+            r#"{{"contract_version":3,"variant":"{}","issuer_authority":"OTERYN_PLATFORM_CHARACTER_AUTHORITY","issuer_decision_id":"3f0c5b7e-1d2a-4c3b-9a8f-{:012x}","source_revision":"{}","operation_id":"{}","operation":"INITIAL_CHARACTER_BOOTSTRAP","account_id":"{}","target_world_id":"{}","requested_sex":"Male","requested_name":"{}","interpretation_context":{{"profile_revision":"profile-1","ruleset_revision":"ruleset-1","content_revision":"{}","starter_template_revision":"starter-1"}},"issued_at_source":"{}","expires_at_source":"{}","audience":"OTERYN_GAME_CHARACTER_AUTHORITY"}}"#,
             self.variant,
             self.decision,
             self.revision,
@@ -3439,8 +3439,8 @@ mod house_test_fixture;
 #[path = "support/pvp_readmission_postgres_cases.rs"]
 mod pvp_readmission_postgres_cases;
 
-// D1112 APP-1 installed storage and native authority cases share their cases with the focused
-// standalone targets through the same protected lane, on the Bestiary harness included above.
+// D1112 APP-1 installed storage and native authority cases run once in this
+// registered PostgreSQL target, on the Bestiary harness included above.
 #[path = "support/character_appearance_native_postgres_cases.rs"]
 mod character_appearance_native_postgres_cases;
 #[path = "support/character_appearance_postgres_cases.rs"]

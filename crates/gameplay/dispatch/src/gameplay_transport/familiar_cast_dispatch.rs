@@ -526,7 +526,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let owned = self
             .read_familiar_lifecycle_inputs(actor, session, content, access)
             .await?;
-        let fence = self.familiar_fence(session).await.ok_or(())?;
+        let fence =
+            crate::gameplay_transport::character_gameplay_fence::current(self, session, false)
+                .await
+                .ok_or(())?;
         let group = {
             let runtime = self.runtime.lock().await;
             if !current_owner(&runtime, &fence, actor, session) {
@@ -608,7 +611,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if config.source_digest() != content.source_digest() {
             return None;
         }
-        let fence = self.familiar_fence(session).await?;
+        let fence =
+            crate::gameplay_transport::character_gameplay_fence::current(self, session, false)
+                .await?;
         let command = CommandRef::new(session, CommandId::new(command_id).ok()?);
         // Complete already-installed replay using the real physical owner ledger. No new
         // cost, familiar allocation or eligibility evaluation follows an exact replay.
@@ -772,7 +777,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(index) = self.active_familiar_index(base_familiar_vocation(vocation)) else {
             return Ok(None);
         };
-        let fence = self.familiar_fence(session).await.ok_or(())?;
+        let fence =
+            crate::gameplay_transport::character_gameplay_fence::current(self, session, false)
+                .await
+                .ok_or(())?;
         let group = {
             let runtime = self.runtime.lock().await;
             if !current_owner(&runtime, &fence, actor, session) {
@@ -863,7 +871,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // A row no longer waiting for this lifecycle (returned, replaced or ended) ends the
         // retry; any other failure keeps it for the backoff.
         let waiting = !returned
-            && match self.familiar_fence(session).await {
+            && match crate::gameplay_transport::character_gameplay_fence::current(
+                self, session, false,
+            )
+            .await
+            {
                 Some(fence) => {
                     let writer =
                         crate::durability::character_familiar::FamiliarLifecycleWriter::from_fence(

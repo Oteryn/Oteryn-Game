@@ -1,7 +1,7 @@
-//! `CHARACTER_AUTHENTICATED_BOOTSTRAP_INTENT_V1` consumer data, contract version 2.
+//! `CHARACTER_AUTHENTICATED_BOOTSTRAP_INTENT_V1` consumer data, contract version 3.
 //!
-//! Version 2 (CHAR-NAME-1) adds the required `requested_name`, a display name under naming
-//! policy revision 1 ([`CharacterName`]). Version 1 bodies are refused.
+//! Version 3 (APP-3) adds required creation sex, bound in tag 3. Version 2 added the required `requested_name`, a display name under naming
+//! policy revision 1 ([`CharacterName`]). Version 1 and 2 bodies are refused.
 //!
 //! The Platform Account authority owns and authenticates the intent; Game only
 //! decodes the exact bounded producer wire and binds it to the Character
@@ -11,6 +11,7 @@
 //! purpose-separated TLS 1.3 mTLS reconciliation read and the configured issuer
 //! trust; there is no public constructor from caller-supplied bytes or fields.
 
+use crate::domain::appearance::Sex;
 use crate::domain::character_name::CharacterName;
 use crate::domain::{AccountId, WorldId};
 use crate::native_admission_source::{
@@ -18,7 +19,7 @@ use crate::native_admission_source::{
 };
 use serde::Deserialize;
 
-pub const CONTRACT_VERSION: u8 = 2;
+pub const CONTRACT_VERSION: u8 = 3;
 pub const VARIANT: &str = "OPERATOR_CONTROL_PLANE_BOOTSTRAP";
 pub const ISSUER_AUTHORITY: &str = "OTERYN_PLATFORM_CHARACTER_AUTHORITY";
 pub const OPERATION: &str = "INITIAL_CHARACTER_BOOTSTRAP";
@@ -27,10 +28,10 @@ pub const MAX_RESPONSE_BYTES: usize = 4096;
 /// Technical transport/reconciliation bound of the producer contract.
 pub const MAX_TTL_SECONDS: i64 = 300;
 const MAX_REVISION_BYTES: usize = 128;
-/// Binding format tag: contract version 2 operator variant of the Platform
+/// Binding format tag: contract version 3 operator variant of the Platform
 /// Character authority for the Game Character audience. The constant fields are
-/// implied by the tag. Tag 1 was the version 1 binding without a name.
-const BINDING_TAG_V2_OPERATOR: u8 = 2;
+/// implied by the tag. Tag 2 was the historical binding without creation sex.
+const BINDING_TAG_V3_OPERATOR: u8 = 3;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct InvalidIntent;
@@ -44,6 +45,7 @@ pub struct CharacterBootstrapIntentV1 {
     account_id: AccountId,
     target_world_id: WorldId,
     requested_name: CharacterName,
+    requested_sex: Sex,
     profile_revision: String,
     ruleset_revision: String,
     content_revision: String,
@@ -74,6 +76,7 @@ struct Wire {
     account_id: String,
     target_world_id: String,
     requested_name: String,
+    requested_sex: String,
     interpretation_context: WireContext,
     issued_at_source: String,
     expires_at_source: String,
@@ -115,6 +118,10 @@ impl CharacterBootstrapIntentV1 {
         &self.requested_name
     }
     #[must_use]
+    pub const fn requested_sex(&self) -> Sex {
+        self.requested_sex
+    }
+    #[must_use]
     pub fn interpretation(&self) -> [&str; 4] {
         [
             &self.profile_revision,
@@ -137,7 +144,7 @@ impl CharacterBootstrapIntentV1 {
     #[must_use]
     pub fn binding(&self) -> Vec<u8> {
         let mut value = Vec::with_capacity(1 + 16 * 4 + 8 * 3 + 5 * (2 + MAX_REVISION_BYTES));
-        value.push(BINDING_TAG_V2_OPERATOR);
+        value.push(BINDING_TAG_V3_OPERATOR);
         value.extend_from_slice(&self.issuer_decision_id);
         value.extend_from_slice(&self.source_revision.to_be_bytes());
         value.extend_from_slice(&self.operation_id);
@@ -154,6 +161,10 @@ impl CharacterBootstrapIntentV1 {
         let name = self.requested_name.as_str();
         value.extend_from_slice(&(name.len() as u16).to_be_bytes());
         value.extend_from_slice(name.as_bytes());
+        value.push(match self.requested_sex {
+            Sex::Female => 1,
+            Sex::Male => 2,
+        });
         value
     }
 }
@@ -261,6 +272,11 @@ pub fn decode_producer_response(
         target_world_id: WorldId::from_bytes(uuid(&wire.target_world_id)?)
             .map_err(|_| InvalidIntent)?,
         requested_name: CharacterName::parse(&wire.requested_name).map_err(|_| InvalidIntent)?,
+        requested_sex: match wire.requested_sex.as_str() {
+            "Female" => Sex::Female,
+            "Male" => Sex::Male,
+            _ => return Err(InvalidIntent),
+        },
         profile_revision: revision(wire.interpretation_context.profile_revision)?,
         ruleset_revision: revision(wire.interpretation_context.ruleset_revision)?,
         content_revision: revision(wire.interpretation_context.content_revision)?,
@@ -275,7 +291,7 @@ pub fn decode_producer_response(
 pub enum IntentReadError {
     /// Transport, peer authentication or producer outcome (bounded unavailable).
     Source(SourceError),
-    /// The authenticated producer body is not an exact version 2 decision.
+    /// The authenticated producer body is not an exact version 3 decision.
     Invalid(InvalidIntent),
 }
 
@@ -344,7 +360,7 @@ impl CharacterInterpretationV1 {
 pub fn encode_read_request(operation_id: [u8; 16]) -> String {
     let hex: String = operation_id.iter().map(|b| format!("{b:02x}")).collect();
     format!(
-        "{{\"contract_version\":2,\"operation_id\":\"{}-{}-{}-{}-{}\"}}",
+        "{{\"contract_version\":3,\"operation_id\":\"{}-{}-{}-{}-{}\"}}",
         &hex[0..8],
         &hex[8..12],
         &hex[12..16],
@@ -354,127 +370,5 @@ pub fn encode_read_request(operation_id: [u8; 16]) -> String {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    const OPERATION_ID: [u8; 16] = [
-        0x01, 0x89, 0x0f, 0x4e, 0x7c, 0x00, 0x70, 0x00, 0x80, 0x00, 0, 0, 0, 0, 0, 1,
-    ];
-
-    fn wire(edit: impl FnOnce(&mut serde_json::Value)) -> Vec<u8> {
-        let mut value = serde_json::json!({
-            "contract_version": 2,
-            "variant": VARIANT,
-            "issuer_authority": ISSUER_AUTHORITY,
-            "issuer_decision_id": "3f0c5b7e-1d2a-4c3b-9a8f-0123456789ab",
-            "source_revision": "7",
-            "operation_id": "01890f4e-7c00-7000-8000-000000000001",
-            "operation": OPERATION,
-            "account_id": "01934f10-7c00-7000-8000-000000000001",
-            "target_world_id": "01934f10-7c00-7000-8000-0000000000aa",
-            "requested_name": "Sir Aldric",
-            "interpretation_context": {
-                "profile_revision": "profile-1",
-                "ruleset_revision": "ruleset-1",
-                "content_revision": "content-1",
-                "starter_template_revision": "starter-1"
-            },
-            "issued_at_source": "1000",
-            "expires_at_source": "1120",
-            "audience": AUDIENCE
-        });
-        edit(&mut value);
-        serde_json::to_vec(&value).unwrap_or_default()
-    }
-
-    #[test]
-    fn exact_producer_wire_decodes_and_binds_every_field() -> Result<(), InvalidIntent> {
-        let intent = decode_producer_response(&wire(|_| {}), OPERATION_ID)?;
-        assert_eq!(intent.source_revision(), 7);
-        assert_eq!(intent.operation_id(), OPERATION_ID);
-        assert_eq!(intent.expires_at_source() - intent.issued_at_source(), 120);
-        assert_eq!(intent.requested_name().as_str(), "Sir Aldric");
-        assert_eq!(intent.binding().len(), 1 + 16 * 4 + 8 * 3 + 4 * 11 + 2 + 10);
-        let renamed = decode_producer_response(
-            &wire(|v| v["requested_name"] = "Aldric".into()),
-            OPERATION_ID,
-        )?;
-        assert_ne!(renamed.binding(), intent.binding());
-        let changed = decode_producer_response(
-            &wire(|v| v["interpretation_context"]["content_revision"] = "content-2".into()),
-            OPERATION_ID,
-        )?;
-        assert_ne!(changed.binding(), intent.binding());
-        assert!(!format!("{intent:?}").contains("01934f10"));
-        assert!(!format!("{intent:?}").contains("Aldric"));
-        Ok(())
-    }
-
-    #[test]
-    fn every_non_contract_wire_is_rejected() {
-        let rejected: Vec<Vec<u8>> = vec![
-            wire(|v| v["variant"] = "PLATFORM_USER_CREATE".into()),
-            wire(|v| v["contract_version"] = 1.into()),
-            wire(|v| v["contract_version"] = 3.into()),
-            wire(|v| v["requested_name"] = "A".into()),
-            wire(|v| v["requested_name"] = "Aldric2".into()),
-            wire(|v| v["requested_name"] = " Aldric".into()),
-            wire(|v| v["requested_name"] = "Al\"dric".into()),
-            wire(|v| v["requested_name"] = "a".repeat(30).into()),
-            wire(|v| v["requested_name"] = serde_json::Value::Null),
-            wire(|v| {
-                if let Some(map) = v.as_object_mut() {
-                    map.remove("requested_name");
-                }
-            }),
-            wire(|v| v["issuer_authority"] = "OTHER".into()),
-            wire(|v| v["operation"] = "RENAME".into()),
-            wire(|v| v["audience"] = "OTHER".into()),
-            wire(|v| v["source_revision"] = "0".into()),
-            wire(|v| v["source_revision"] = "07".into()),
-            wire(|v| v["source_revision"] = "9223372036854775808".into()),
-            wire(|v| v["source_revision"] = 7.into()),
-            wire(|v| v["operation_id"] = "01890f4e-7c00-7000-8000-000000000002".into()),
-            wire(|v| v["account_id"] = "01934F10-7c00-7000-8000-000000000001".into()),
-            wire(|v| v["account_id"] = "01934f10-7c00-4000-8000-000000000001".into()),
-            wire(|v| v["target_world_id"] = "not-a-uuid".into()),
-            wire(|v| v["interpretation_context"]["profile_revision"] = "-leading".into()),
-            wire(|v| v["interpretation_context"]["profile_revision"] = "x".repeat(129).into()),
-            wire(|v| v["expires_at_source"] = "1000".into()),
-            wire(|v| v["expires_at_source"] = "1301".into()),
-            wire(|v| v["extra"] = "x".into()),
-            wire(|v| v["interpretation_context"]["extra"] = "x".into()),
-            wire(|v| {
-                if let Some(map) = v.as_object_mut() {
-                    map.remove("audience");
-                }
-            }),
-            br#"{"contract_version":1,"contract_version":1}"#.to_vec(),
-            vec![b' '; MAX_RESPONSE_BYTES + 1],
-            Vec::new(),
-        ];
-        for raw in rejected {
-            assert_eq!(
-                decode_producer_response(&raw, OPERATION_ID),
-                Err(InvalidIntent)
-            );
-        }
-        let mut duplicated = wire(|_| {});
-        duplicated.pop();
-        duplicated.extend_from_slice(br#","audience":"OTERYN_GAME_CHARACTER_AUTHORITY"}"#);
-        assert_eq!(
-            decode_producer_response(&duplicated, OPERATION_ID),
-            Err(InvalidIntent)
-        );
-    }
-
-    #[test]
-    fn read_request_is_the_exact_bounded_producer_request() {
-        let request = encode_read_request(OPERATION_ID);
-        assert_eq!(
-            request,
-            r#"{"contract_version":2,"operation_id":"01890f4e-7c00-7000-8000-000000000001"}"#
-        );
-        assert!(request.len() <= 256);
-    }
-}
+#[path = "character_bootstrap_intent/tests.rs"]
+mod tests;

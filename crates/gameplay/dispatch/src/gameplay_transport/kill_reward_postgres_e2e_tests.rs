@@ -222,6 +222,7 @@ fn scenario() -> TestResult {
             item_fence: None,
         };
         let mut owner = ComposedFreshAdmission {
+            appearance_commands: Default::default(),
             emit: |_, _| {},
             root: &harness.root,
             character: &authority,

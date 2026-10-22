@@ -27,6 +27,9 @@ mod weather_wire;
 #[path = "creature_move_postgres_tests.rs"]
 mod creature_move;
 
+#[path = "appearance_change_postgres_tests.rs"]
+mod appearance_change_postgres;
+
 #[path = "loop_map_pickup_tests.rs"]
 mod map_pickup;
 
@@ -232,6 +235,7 @@ impl Dependencies {
         authority: &'a ReconciledCharacterAuthority<'f, 's>,
     ) -> ComposedFreshAdmission<'a, 'f, 's> {
         ComposedFreshAdmission {
+        appearance_commands: Default::default(),
             emit: |_, _| {},
             root: &harness.root,
             character: authority,
@@ -290,14 +294,23 @@ impl Dependencies {
         }
     }
     async fn initialize(&self, owner: &ComposedFreshAdmission<'_, '_, '_>) {
+        self.initialize_player(owner, self.actor, self.admitted.game_session_id)
+            .await;
+    }
+    async fn initialize_player(
+        &self,
+        owner: &ComposedFreshAdmission<'_, '_, '_>,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) {
         let runtime = self.runtime.lock().await;
         let mut states = owner.spell_states.lock().await;
         assert!(
             states
                 .initialize(
                     &runtime,
-                    self.actor,
-                    self.admitted.game_session_id,
+                    actor,
+                    session,
                     crate::spell::cast::CharacterCastFacts {
                         vocation: crate::spell::Vocation::Monk,
                         ..crate::gameplay_transport::actor_spell::tests::FACTS

@@ -20,6 +20,8 @@
 //! they wait for a slot or across the durable write, and every write is still refused by the
 //! existing session-generation gameplay fence in its own transaction.
 
+mod appearance_revision;
+
 use std::collections::HashMap;
 use std::future::Future;
 use std::sync::Arc;

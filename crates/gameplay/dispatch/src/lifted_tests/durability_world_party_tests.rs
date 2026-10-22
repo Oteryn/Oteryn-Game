@@ -890,14 +890,14 @@ async fn bootstrap_party_character(
         .await
         .map_err(debug)?;
     let wire = serde_json::json!({
-        "contract_version": 2, "variant": "OPERATOR_CONTROL_PLANE_BOOTSTRAP",
+        "contract_version": 3, "variant": "OPERATOR_CONTROL_PLANE_BOOTSTRAP",
         "issuer_authority": "OTERYN_PLATFORM_CHARACTER_AUTHORITY",
         "issuer_decision_id": fresh_source::uuid_text(&id(character + 20)),
         "source_revision": revision.to_string(),
         "operation_id": fresh_source::uuid_text(&id(character)),
         "operation": "INITIAL_CHARACTER_BOOTSTRAP", "account_id": account_text,
         "target_world_id": fresh_source::uuid_text(&id(WORLD)),
-        "requested_name": format!("Party Player {}{}", char::from(b'A' + character / 26), char::from(b'a' + character % 26)),
+        "requested_sex":"Male","requested_name": format!("Party Player {}{}", char::from(b'A' + character / 26), char::from(b'a' + character % 26)),
         "interpretation_context": {"profile_revision":"profile-1", "ruleset_revision":"ruleset-1",
             "content_revision":"content-1", "starter_template_revision":"starter-1"},
         "issued_at_source": (now - 1).to_string(), "expires_at_source": (now + 120).to_string(),

@@ -63,12 +63,7 @@ pub mod fresh {
             if key_id != "fresh-1" {
                 return Err(Fnd04EvidenceError::ExplicitlyDenied);
             }
-            Ok(FreshSigningTrustObservationV1 {
-                key_id: key_id.into(),
-                public_key: self.key.verifying_key().to_bytes(),
-                trusted: true,
-                provenance: provenance(FreshEvidencePurposeV1::SigningTrust, self.now),
-            })
+            self.published_signing_trust()
         }
         fn account_security(
             &self,
@@ -183,11 +178,9 @@ pub mod fresh {
     }
     impl Source {
         pub fn new(now: i64) -> TestResult<Self> {
-            let mut source = Self {
+            Self::with_current(
                 now,
-                key: SigningKey::from_bytes(&[31; 32]),
-                rows: vec![],
-                current: FreshCurrentEvidence {
+                FreshCurrentEvidence {
                     account_id: "28020304-0506-7008-800a-0b0c0d0e0f28".into(),
                     character_id: checked(CharacterId::decode(&super::uuid(2)))?,
                     world_id: checked(WorldId::decode(&super::uuid(3)))?,
@@ -202,6 +195,14 @@ pub mod fresh {
                     world_policy_revision: "policy-1".into(),
                     offer_revision: "offer-1".into(),
                 },
+            )
+        }
+        fn with_current(now: i64, current: FreshCurrentEvidence) -> TestResult<Self> {
+            let mut source = Self {
+                now,
+                key: SigningKey::from_bytes(&[31; 32]),
+                rows: vec![],
+                current,
             };
             let f = &source.current;
             let security = checked(source.account_security(&f.account_id, now))?;
@@ -297,29 +298,42 @@ pub mod fresh {
             Ok(source)
         }
         pub fn request(&self) -> TestResult<FreshAdmissionCommitRequestV1> {
+            self.request_for(super::session(9)?, super::transport(9)?, None, self.now)
+        }
+        fn request_for(
+            &self,
+            session: GameSessionId,
+            transport: AuthenticatedTransportRefV1,
+            identity: Option<(&str, &str)>,
+            now: i64,
+        ) -> TestResult<FreshAdmissionCommitRequestV1> {
             let header = r#"{"alg":"Ed25519","kid":"fresh-1","typ":"oteryn-admission+jwt"}"#;
             let mut payload: serde_json::Value = serde_json::from_str(&fresh_payload())?;
-            payload["iat"] = self.now.into();
-            payload["nbf"] = self.now.into();
-            payload["exp"] = (self.now + 10).into();
+            if let Some((account, character)) = identity {
+                payload["account_id"] = account.into();
+                payload["character_id"] = character.into();
+                payload["jti"] = base64::engine::general_purpose::URL_SAFE_NO_PAD
+                    .encode([8; 32])
+                    .into();
+                payload["attempt_ref"] = "00000000-0000-7000-8000-000000000002".into();
+            }
+            payload["iat"] = now.into();
+            payload["nbf"] = now.into();
+            payload["exp"] = (now + 10).into();
             let token = signed_token(&self.key, header, payload.to_string());
             let facts = checked(verify_fresh_grant_durability_v1(
                 &token,
-                self.now,
+                now,
                 &FreshDurabilityTrustContext::from_owning_source(self),
                 &FreshDurabilityCurrentAuthorityV1::from_owning_source(self),
             ))?;
             let authorization = checked(FreshAdmissionCommitAuthorizationV1::new(
-                &facts,
-                super::session(9)?,
-                super::transport(9)?,
-                self,
-                self.now,
+                &facts, session, transport, self, now,
             ))?;
             let transition = checked(FreshAdmissionClaimTransitionV1::prepare(
                 self,
                 &authorization,
-                self.now,
+                now,
             ))?;
             let mut flow = checked(FreshAdmissionDurabilityFlowV1::begin(
                 authorization,
@@ -332,6 +346,7 @@ pub mod fresh {
                 .ok_or_else(|| "fresh fixture did not submit".into())
         }
     }
+    include!("appearance_change_postgres_tests/observer_admission.rs");
     struct Capture(Option<FreshAdmissionCommitRequestV1>);
     impl FreshAdmissionDurabilityPortV1 for Capture {
         fn submit(
