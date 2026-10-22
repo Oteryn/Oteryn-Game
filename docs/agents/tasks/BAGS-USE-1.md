@@ -4,13 +4,13 @@
 task_id: BAGS-USE-1
 title: "BAGS-USE-1: Use from nested bags and the field-5 hotkey search"
 mode: IMPLEMENT
-status: in_progress
+status: ready
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: skeleton/bags-use-1
+branch: claude/happy-davinci-ijz3wy
 issue: 1622
 pr: null
-base_sha: a9b388fae
+base_sha: 9e5770362a96b2e0e269abf1480f7de3a17163fe
 plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md § ITEM-LOOP-1: BAGS-USE-1 (BAGS0 §8)"
 class: "impl; combat review, persistence review (migration)"
 migration: yes
@@ -251,5 +251,6 @@ apps/crates/tools scans cover all four new test-only enum variants and every new
 caller; no production enum, field or trait method was added. Both production refresh
 functions have real dispatch callers and the PG E2E coverage above. No existing file grew
 by more than 150 lines; no repair file grew by more than 200 lines (largest new file: 197).
-The previously recorded integrator-owned CI PostgreSQL routing finding remains unchanged;
+The integrator-owned CI PostgreSQL routing finding is closed by CI-PG-LIB-1 (#2300), which runs
+the dispatch library PostgreSQL tests in the harness;
 no implementation or local validation is unfinished for this P1 repair.
