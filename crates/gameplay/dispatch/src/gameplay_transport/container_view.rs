@@ -15,7 +15,7 @@
 //! - **`USE`.** With the capability, `USE` on a container handle opens it in a new view; a corpse
 //!   stays a domain 11 view at depth 1.
 //!
-//! - **Refresh (ITEM-LOOP-1).** After a committed command 9 every open view shows its
+//! - **Refresh (ITEM-LOOP-1, BAGS-USE-1).** After a committed move or USE every open view shows its
 //!   container's current observation; a view whose container left the carried tree closes.
 //!
 //! Nothing here writes: moving an item in the tree is the item loop (`durability::item_loop_move`,
@@ -34,6 +34,8 @@ use oteryn_protocol_oteryn::item_view::ItemEntry;
 use std::collections::BTreeMap;
 use std::iter;
 use tokio::time::{Duration, Instant};
+
+pub(super) mod refresh;
 
 /// `BAGS0-RL-04`: view commands per [`VIEW_COMMAND_WINDOW`].
 pub const MAX_VIEW_COMMANDS_PER_WINDOW: usize = 10;
@@ -145,7 +147,7 @@ impl ContainerViewState {
         self.views.values().map(|view| view.container).collect()
     }
 
-    /// After a committed move: each open view shows the current observation of its container in
+    /// After a committed move or USE: each open view shows the current observation of its container in
     /// `observed`; a view whose container is gone, out of reach, no longer a container or not
     /// observed closes. `None` when nothing changed, or when the refreshed views would not encode
     /// (they then stay as they were).

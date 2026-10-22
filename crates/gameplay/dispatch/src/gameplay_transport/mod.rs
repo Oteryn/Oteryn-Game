@@ -3681,6 +3681,15 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.use_backpack_item(actor, command, item).await
     }
 
+    async fn use_item_by_definition(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        definition: std::num::NonZeroU32,
+    ) -> UseOutcome {
+        self.use_item_definition(actor, command, definition).await
+    }
+
     /// One `USE_INTENT` for the admitted actor against the one entry-room door (#162
     /// 5868482467, USE-WIRE-V1). The client names only the target placement and its expected
     /// revision; the server selects the unique bound transition

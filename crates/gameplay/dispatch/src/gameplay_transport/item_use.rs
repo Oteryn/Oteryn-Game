@@ -1,9 +1,12 @@
 //! ITEM-USE-1c (ITEM-USE-0 §5, §6): the Channel owner's use of food and potions from the main
-//! backpack. PREPARE checks the requirements, the gate (one use in flight, `ITEMUSE0-RL-01`, the
+//! backpack tree. PREPARE checks the requirements, the gate (one use in flight, `ITEMUSE0-RL-01`, the
 //! cooldowns) and `FULL` in the owner lane and starts the cooldown; then the one-item DUR-03
 //! transaction commits, and only a known commit applies the effect.
 
+use std::num::NonZeroU32;
 use std::time::Duration;
+
+use oteryn_gameplay_items::hotkey_search::HotkeyRefusal;
 
 use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
@@ -22,11 +25,9 @@ use crate::content::{
 };
 use crate::durability::character_authority::SERVER_BUILD_ID;
 use crate::durability::item_mint::TypedDefinitionRef;
-use crate::durability::item_transfer::{
-    BackpackEntry, CharacterBackpack, GAMEITEM01_STACK_QUANTITY_MAX,
-};
+use crate::durability::item_transfer::BackpackEntry;
 use crate::durability::item_use::{
-    ItemUseError, ItemUseFlaskPlan, ItemUseKind, ItemUseOutcome, ItemUseRequest,
+    ItemUseError, ItemUseFlaskPlan, ItemUseInventory, ItemUseKind, ItemUseOutcome, ItemUseRequest,
 };
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId};
 use crate::interaction_chest_use::entry_chest;
@@ -43,8 +44,6 @@ pub(super) const ITEMUSE0_RL_04_AMBIGUOUS_MS: u64 = 2_000;
 const POTION_COOLDOWN_MS: u64 = 1_000;
 /// The `food` cooldown. `PARITY_PENDING`: no official value.
 const FOOD_COOLDOWN_MS: u64 = 200;
-/// The main backpack's entry ceiling that `commit_item_use` holds a fresh flask entry to.
-const MAIN_BACKPACK_ENTRIES: usize = 20;
 
 /// The item-use state of one present actor; runtime state only (ITEM-USE-0 §9 item 3).
 #[derive(Debug, Default)]
@@ -154,19 +153,45 @@ enum Effect {
     Potion(Vec<ReferencePotionRestore>),
 }
 
+enum UseSource {
+    Handle(ItemKey),
+    Definition(NonZeroU32),
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     fn owner_ms(&self) -> u64 {
         u64::try_from(self.clock_origin.elapsed().as_millis()).unwrap_or(u64::MAX)
     }
 
-    /// One `USE` of the main backpack direct entry `item` under capability 15.
+    /// One `USE` of the carried-tree entry `item` under capability 15.
     pub(super) async fn use_backpack_item(
         &self,
         actor: ExactActorRef,
         command: UseCommand,
         item: ItemKey,
     ) -> UseOutcome {
-        let disposition = match self.item_use(actor, command, item).await {
+        self.use_carried_item(actor, command, UseSource::Handle(item))
+            .await
+    }
+
+    /// BAGS-0 §8: field 5 searches closed bags as well as equipment and open containers.
+    pub(super) async fn use_item_definition(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        definition: NonZeroU32,
+    ) -> UseOutcome {
+        self.use_carried_item(actor, command, UseSource::Definition(definition))
+            .await
+    }
+
+    async fn use_carried_item(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        source: UseSource,
+    ) -> UseOutcome {
+        let disposition = match self.item_use(actor, command, source).await {
             Ok(disposition) | Err(disposition) => disposition,
         };
         UseOutcome {
@@ -181,11 +206,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         actor: ExactActorRef,
         command: UseCommand,
-        item: ItemKey,
+        source: UseSource,
     ) -> Result<UseDisposition, UseDisposition> {
-        let ItemKey::Instance(source) = item else {
-            return Err(UseDisposition::NothingToUse);
-        };
         let fence = command.item_fence.ok_or(UseDisposition::Rejected)?;
         let session = command.game_session_id;
         // Lock order (SPELL-LOCK-2 §1.2): the lane before any Channel guard, held through the
@@ -215,15 +237,50 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .active_generation
             .and_then(ActiveGeneration::native_gameplay)
             .ok_or(UseDisposition::Rejected)?;
-        let backpack = self
+        let inventory = self
             .root
-            .read_character_backpack(self.character, fence.character_id)
+            .read_item_use_inventory(self.character, self.holder, fence)
             .await
-            .map_err(|_| UseDisposition::Rejected)?
+            .map_err(|_| UseDisposition::Rejected)?;
+        let source = match source {
+            UseSource::Handle(ItemKey::Instance(id)) => id,
+            UseSource::Handle(_) => return Err(UseDisposition::NothingToUse),
+            UseSource::Definition(wanted) => {
+                let runtime = self.runtime.lock().await;
+                let index =
+                    super::item_ref_admission::pinned_index(&runtime, self.active_generation)
+                        .ok_or(UseDisposition::Rejected)?;
+                let mut states = self.spell_states.lock().await;
+                let gate = states
+                    .item_uses
+                    .gate(&runtime, actor, session)
+                    .ok_or(UseDisposition::Rejected)?;
+                let (key, revision) = index
+                    .definition_at(wanted)
+                    .ok_or(UseDisposition::NothingToUse)?;
+                let definition = TypedDefinitionRef {
+                    family: "Item".to_owned(),
+                    production_key: key.to_owned(),
+                    revision_ref: revision.to_owned(),
+                };
+                inventory
+                    .first_unreserved(&definition, &gate.unspendable)
+                    .map_err(|refusal| match refusal {
+                        HotkeyRefusal::NothingFound | HotkeyRefusal::EquipmentSource => {
+                            UseDisposition::NothingToUse
+                        }
+                        HotkeyRefusal::BoundExceeded => UseDisposition::Rejected,
+                    })?
+            }
+        };
+        let backpack = inventory
+            .backpack
+            .as_ref()
             .ok_or(UseDisposition::StaleState)?;
         let entry = backpack
             .entries
             .iter()
+            .chain(inventory.nested.iter().map(|(_, entry)| entry))
             .find(|entry| entry.item.item_instance_id == source)
             .ok_or(UseDisposition::StaleState)?;
         let record = record(native, &entry.item.definition).ok_or(UseDisposition::NothingToUse)?;
@@ -235,7 +292,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 (ItemUseKind::Food, effect, ItemUseFlaskPlan::None)
             }
             ReferenceItemField::Known(ReferenceItemConsumption::Potion(potion)) => {
-                let flask = flask_plan(native, &backpack, entry, &potion.empty_flask)?;
+                let flask = flask_plan(native, &inventory, entry, &potion.empty_flask)?;
                 let effect = Effect::Potion(potion.restores.clone());
                 (ItemUseKind::Potion, effect, flask)
             }
@@ -260,8 +317,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let request = ItemUseRequest {
             kind,
             command_id: command.command_id,
-            content_revision: entry_chest::CONTENT_REVISION.to_owned(),
-            ruleset_revision: entry_chest::RULESET_REVISION.to_owned(),
+            content_revision: inventory.content_revision.clone(),
+            ruleset_revision: inventory.ruleset_revision.clone(),
             sim_revision: entry_chest::SIM_REVISION.to_owned(),
             transaction_id,
             event_id,
@@ -368,7 +425,7 @@ fn production_ref(record: &ItemProfileRecord) -> TypedDefinitionRef {
 /// (`PARITY_PENDING` until ITEM-MOVE-2b). `None` when content names no flask.
 fn flask_plan(
     native: &NativeGameplayState,
-    backpack: &CharacterBackpack,
+    inventory: &ItemUseInventory,
     source: &BackpackEntry,
     flask: &ReferenceItemField<ReferenceItemTarget>,
 ) -> Result<ItemUseFlaskPlan, UseDisposition> {
@@ -381,32 +438,9 @@ fn flask_plan(
         .item_policy(&target.key, &target.revision)
         .map(|policy| production_ref(policy.record()))
         .ok_or(UseDisposition::NothingToUse)?;
-    let entries = &backpack.entries;
-    if let Some(stack) = entries.iter().find(|entry| {
-        entry.item.definition == definition && entry.item.quantity < GAMEITEM01_STACK_QUANTITY_MAX
-    }) {
-        return Ok(ItemUseFlaskPlan::Stack {
-            item_instance_id: stack.item.item_instance_id,
-            definition,
-            quantity_before: stack.item.quantity,
-        });
-    }
-    let retiring = usize::from(source.item.quantity == 1);
-    if entries.len() + 1 - retiring > MAIN_BACKPACK_ENTRIES {
-        return Ok(ItemUseFlaskPlan::Missing);
-    }
-    let highest = entries.iter().map(|entry| entry.placement_ordinal).max();
-    let placement_ordinal = highest.unwrap_or(0).checked_add(1);
-    let item_instance_id = crate::operator_files::uuid_v7().ok();
-    let (Some(placement_ordinal), Some(item_instance_id)) = (placement_ordinal, item_instance_id)
-    else {
-        return Err(UseDisposition::Rejected);
-    };
-    Ok(ItemUseFlaskPlan::New {
-        item_instance_id,
-        definition,
-        placement_ordinal,
-    })
+    inventory
+        .plan_flask(source, definition, || crate::operator_files::uuid_v7().ok())
+        .map_err(|_| UseDisposition::Rejected)
 }
 
 /// Level, magic level and vocation from content (§6.2). A value content does not know is not
@@ -523,6 +557,10 @@ mod tests {
             ITEMUSE0_RL_01_USES_PER_SECOND as u64
         );
         assert_eq!(limit("ITEMUSE0-RL-04"), ITEMUSE0_RL_04_AMBIGUOUS_MS);
+        assert_eq!(
+            limit("BAGS0-RL-07"),
+            oteryn_gameplay_items::hotkey_search::HOTKEY_ITEMS_MAX as u64
+        );
     }
 
     #[test]
@@ -617,3 +655,7 @@ mod tests {
         ));
     }
 }
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+mod item_use_postgres_tests;

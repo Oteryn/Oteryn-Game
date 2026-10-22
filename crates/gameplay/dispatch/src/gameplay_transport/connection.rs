@@ -11,6 +11,8 @@ use crate::foundation::{
     GameSessionId, MessageType, ServerResumeAcceptedValue, WorldId, decode_wire_envelope,
     encode_protocol_error, encode_server_accepted, encode_server_resume_accepted,
 };
+mod item_use_view_refresh;
+
 use std::future::Future;
 use tokio::io::{AsyncRead, AsyncWrite};
 
@@ -567,6 +569,21 @@ pub trait FreshAdmissionAuthority {
         _item: ItemKey,
     ) -> impl Future<Output = UseOutcome> {
         async { UseOutcome::rejected() }
+    }
+
+    /// BAGS-USE-1: field 5, resolved by the owner against the complete carried tree.
+    fn use_item_by_definition(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _definition: std::num::NonZeroU32,
+    ) -> impl Future<Output = UseOutcome> {
+        async {
+            UseOutcome {
+                disposition: UseDisposition::NothingToUse,
+                ..UseOutcome::rejected()
+            }
+        }
     }
 
     /// ITEM-VIEW-1b: the admitted Character's main backpack and its direct entries
@@ -2780,9 +2797,8 @@ where
                 admitted.continuity.selected_capabilities.as_slice(),
                 command.payload,
             ) {
-                // ITEM-USE-WIRE-1: fields 4 and 5 decode only under capability 15. Until ITEM-USE-1
-                // no item is usable on a creature or by its definition, so a use_with fails closed
-                // and a use by definition finds nothing to use.
+                // ITEM-USE-WIRE-1: fields 4 and 5 decode only under capability 15.
+                // Creature, map-item and position targets still fail closed here.
                 Ok(UseIntent {
                     use_with: Some(_), ..
                 })
@@ -2800,11 +2816,15 @@ where
                     ..
                 }) => Dispatch::Use(UseOutcome::rejected()),
                 Ok(UseIntent {
-                    target: UseTarget::ItemByDefinition(_),
+                    target: UseTarget::ItemByDefinition(definition),
                     use_with: None,
                     use_with_map_item: None,
                     use_with_position: None,
-                }) => Dispatch::UseItem(OpenDecision::NothingToUse, None),
+                }) => Dispatch::Use(authority.use_item_by_definition(actor, UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: command.command_id,
+                    item_fence: admitted.item_fence,
+                }, definition).await),
                 // ITEM-VIEW-1b §4.3: a handle that is not live is STALE before any authority
                 // call; opening writes nothing.
                 Ok(UseIntent {
@@ -2820,14 +2840,15 @@ where
                         (Some(key), Some(_)) => authority.observe_container(actor, admitted.item_fence, key).await,
                         _ => None,
                     };
+                    let carried_entry = matches!(container, Some(ContainerObservation::NotAContainer));
                     let container = container.filter(|observation| {
                         matches!(
                             observation,
                             ContainerObservation::Container { .. } | ContainerObservation::TooFar
                         )
                     });
-                    // ITEM-USE-1c: under capability 15 a main backpack entry that opens nothing
-                    // is used (food, a potion); every other handle keeps the corpse path.
+                    // BAGS-USE-1: a carried entry of an open view can be used under capability
+                    // 15. The owner revalidates custody before PREPARE; equipped sources fail closed.
                     let consumable = container.is_none()
                         && matches!(key, Some(ItemKey::Instance(_)))
                         && admitted
@@ -2837,7 +2858,9 @@ where
                         && item_view
                             .as_ref()
                             .zip(key)
-                            .is_some_and(|(view, key)| view.is_backpack_entry(&key));
+                            .is_some_and(|(view, key)| view.is_backpack_entry(&key)
+                                || (carried_entry && !view.is_main_backpack(&key)
+                                    && view.equipped_slot(&key).is_none()));
                     let observation = match key.filter(|_| container.is_none() && !consumable) {
                         Some(key) => authority.observe_item_target(actor, key).await,
                         None => None,
@@ -2998,14 +3021,14 @@ where
                             if let (ItemMoveOutcome::Moved, Some(views)) =
                                 (outcome, container_views.as_mut())
                             {
-                                let mut observed = Vec::new();
-                                for key in views.containers() {
-                                    let observation = authority
-                                        .observe_container(actor, admitted.item_fence, key)
-                                        .await;
-                                    observed.push((key, observation));
-                                }
-                                let refreshed = views.refresh(view, &observed);
+                                let refreshed = super::container_view::refresh::refresh(
+                                    authority,
+                                    actor,
+                                    admitted.item_fence,
+                                    views,
+                                    view,
+                                )
+                                .await;
                                 admitted.continuity.item_view = view.continuity();
                                 let Ok(delta) = refreshed else {
                                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
@@ -3554,38 +3577,23 @@ where
             }
             Dispatch::Use(outcome) => {
                 // ITEM-VIEW-1b: a committed `USE` (the chest MINT) may have changed the
-                // backpack; its domain 9 delta follows the durable commit, only when the view
-                // changed. An unreadable backpack fails closed; the resumed snapshot restores it.
+                // backpack or open bags; their deltas follow the durable commit when changed.
+                // An unreadable backpack fails closed; the resumed snapshot restores it.
                 if outcome.disposition == UseDisposition::Committed
                     && let Some(view) = item_view.as_mut()
-                {
-                    let Some(inventory) = item_move::observe_inventory(
+                    && item_use_view_refresh::refresh(
+                        stream,
                         authority,
                         actor,
-                        admitted.game_session_id,
+                        &mut admitted,
                         view,
+                        container_views.as_mut(),
+                        &mut sequence,
                     )
                     .await
-                    else {
-                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                    };
-                    let changed = view.inventory_committed(inventory);
-                    admitted.continuity.item_view = view.continuity();
-                    let Ok(changed) = changed else {
-                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                    };
-                    if let Some(delta) = changed {
-                        let Some((delta_sequence, frame)) =
-                            item_view_delta(generation, sequence, &delta)
-                        else {
-                            return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                        };
-                        sequence = delta_sequence;
-                        admitted.continuity.server_sequence = sequence;
-                        if write_frame(stream, &frame).await.is_err() {
-                            return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                        }
-                    }
+                    .is_none()
+                {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 }
                 // ITEM-USE-1c: a committed food or potion changed the owner's vitals revision
                 // (fed time or health/mana); its ACTOR_VITALS delta follows at once, as a spell's.
