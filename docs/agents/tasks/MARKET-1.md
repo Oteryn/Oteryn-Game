@@ -366,3 +366,36 @@ atomic place/accept/cancel/expiry writer, production migration and privileges,
 Bank ledger/fee (`FeeBurnCause::MarketFee`), Inbox delivery/return, custody,
 audit/outbox, the ending-metadata producer, Content facts, admission, jobs and wire.
 The acceptance criteria above remain unchecked.
+
+## Completion + wiring (post-checkpoint)
+
+Imported from closed draft #2229 and rebased onto the ADR-0022 layout (`docs/architecture/ADR-0022-gameplay-crate-layering.md`); every existing path below was verified on origin/main `59785d76`. The checkpoint merged unfinished; nothing in the running game calls it. The completion PR must not merge until the mechanic is playable end to end through the real dispatch path, CI is green and Codex review is clean. Dispatch chain: `crates/gameplay/dispatch/src/gameplay_transport/connection.rs` (command `else if` chain) and the `GATED` table in `crates/gameplay/dispatch/src/gameplay_transport/capabilities.rs` (highest capability id on main: 30). Wire modules live in `crates/protocol-oteryn/src/`. Migration numbers: next free number at allocation time (only one migration PR in the queue); 0130 MAP-PICKUP-1, 0131 BAGS-USE-1 and 0132 (provisional TIMED-RT-1c) are reserved.
+
+Structure rules (binding acceptance criteria):
+- [ ] One mechanic per module file in its ADR-0022 layer (pure rules L3, PostgreSQL in `durability`, runtime L4, dispatch L5).
+- [ ] New tests in their own child files, not appended to existing files.
+- [ ] Edits to `mod.rs`/`lib.rs`/`connection.rs`/`capabilities.rs` are wiring-only.
+- [ ] No file over ~1000 lines grows by more than ~150 lines (`connection.rs` is ~8,260 lines).
+
+### Present on main (#2134)
+- Pure offer rules: `crates/gameplay/economy/src/market.rs` (+ `market_tests.rs`) and `crates/gameplay/domain/src/domain/market.rs`; private storage/query/selection: `crates/gameplay/durability/src/durability/market.rs`. Its only consumer is `apps/game-server/tests/support/market_postgres_cases.rs` (15 PG cases).
+- No migration, no protocol module, no capability, no handler, no job, no event, no content facts.
+
+### Checklist
+- [ ] **Persistence/migration**: Market migration (next free number at allocation time; only one migration PR in the queue): operations, offers, escrow, book-lock rows, ledger links, ending metadata, game-role privileges. Install the same schema in the PG test harness instead of the private per-test DDL in `market_postgres_cases.rs`.
+- [ ] **Atomic writers** in `crates/gameplay/durability/src/durability/market.rs` with a new sibling `market_audit.rs` (new): place, accept, cancel, expiry/return. Escrow = Bank debit (`crates/gameplay/durability/src/durability/bank.rs`) + offer row + ledger in one transaction; fee burn via `FeeBurnCause::MarketFee` with balance ceiling; item custody via `crates/gameplay/durability/src/durability/character_inbox.rs` (delivery and return); losing concurrent writer typed; restart-safe expiry that returns escrow exactly once.
+- [ ] **Event/audit/outbox**: market event in `docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json`, limits in `docs/contracts/RESOURCE_LIMITS_REGISTRY.json`, ending-metadata producer.
+- [ ] **Content**: MARKET-CONTENT-1 `trade.marketable` / `trade.market_category` facts; regenerate content and pins via `tools/content-migration/regenerate_content.py`; reconcile with `crates/gameplay/content/src/content/item_market_true_promotion.rs`.
+- [ ] **Protocol**: new `crates/protocol-oteryn/src/market.rs` (+ `market_tests.rs`): `CAPABILITY_MARKET_V1` (next free id), browse / my offers / place / accept / cancel commands, state domain/delta types; register in `crates/protocol-oteryn/src/lib.rs` and `docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json`; error codes in `docs/contracts/OTERYN_GAME_ERROR_CODE_REGISTRY.json`.
+- [ ] **Runtime hookup**: new handler `crates/gameplay/dispatch/src/gameplay_transport/market.rs` (new); wiring-only dispatch branch in `connection.rs` (alongside `COMMAND_TYPE_NPC_TRADE_INTENT`) and a `GATED` row for `MARKET_V1` in `capabilities.rs`; admission/session-generation checks as in `crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs`; depot/NPC range rule from MARKET0.
+- [ ] **Jobs**: restart-safe World job for offer expiry registered at node startup (`apps/game-server/src/node/serve.rs`).
+- [ ] **Client/UI** (`apps/client`): market panel out of scope unless the MARKET-WIRE-1 owner says otherwise; the server path must at least be drivable by a protocol-level test client.
+- [ ] **Tests**: unit (domain, wire codec); PG durability for every MARKET0 §8 delta; double-accept race; expiry-after-restart; **end-to-end through `connection.rs` dispatch**: login, place offer, second character accepts, gold and item moved, Inbox delivery, capability off => command refused.
+- [ ] Acceptance boxes in the Acceptance criteria section ticked only with evidence.
+
+### Blockers and dependencies (re-verified on origin/main `59785d76`)
+- ITEM-LOOP-1: MERGED (#2190). NPC-ECON-1: MERGED (#2197).
+- MARKET-CONTENT-1: BLOCKING (content draft #2234 open, not merged).
+- DEPOT-1 / DEPOT-WIRE-1: BLOCKING — ITEM-STORAGE-1 depot reads re-implementation pending (draft #2156 closing; card `docs/agents/tasks/ITEM-STORAGE-1.md`). INBOX-1b: BLOCKING (not merged).
+- No MARKET-WIRE-1 PR exists; the completion PR owns the wire unless CP splits it.
+- MARKET-TIER-1 (ITEM-FORGE-1) depends on this.
