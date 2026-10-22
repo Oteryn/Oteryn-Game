@@ -1,0 +1,541 @@
+{
+  "name": "Elder Forest Fury",
+  "source_identity": {
+    "namespace": "cipsoft/staticdata/creature_id",
+    "id": 1157,
+    "client_version": "15.30"
+  },
+  "classification": "DERIVED",
+  "target_cut": "2026-10-19",
+  "continuity": "SOURCE_RECONCILIATION_NATIVE_ADMISSION_PENDING",
+  "native_identity_assigned": false,
+  "native_admission_authorized": false,
+  "sources": [
+    {
+      "id": "wikibr-current",
+      "url": "https://www.tibiawiki.com.br/index.php?title=Elder_Forest_Fury&oldid=441194",
+      "revision_id": 441194,
+      "representation": "rendered HTML",
+      "response_sha256": "8515149d3d74593f5b13ebc1d604f70566f3db91342ccfb8ca7f94312746e2d0",
+      "checked_at": "2026-10-19T09:55:30.829137+00:00",
+      "scope": "COMMUNITY_WIKI_OBSERVATION"
+    },
+    {
+      "id": "fandom-indexed",
+      "url": "https://tibia.fandom.com/wiki/Elder_Forest_Fury",
+      "representation": "Indexed page text; direct access blocked",
+      "revision_id": null,
+      "checked_at": "2026-10-19T09:55:30.829137+00:00",
+      "scope": "COMMUNITY_WIKI_OBSERVATION_UNPINNED_REVISION"
+    },
+    {
+      "id": "tfs16",
+      "repository": "otland/forgottenserver",
+      "revision": "098641981400f8ff89959f427f0e8718d9dd22e2",
+      "path": "data/monster/monsters/elder_forest_fury.xml",
+      "git_blob": "5fda28210c31d4a3efbf2cc4b09a00099da185ba",
+      "sha256": "2302f793d77a1febe6e3c9e6a57394cf19a2e922bb67d67f2407fed5fd28e801",
+      "url": "https://raw.githubusercontent.com/otland/forgottenserver/098641981400f8ff89959f427f0e8718d9dd22e2/data/monster/monsters/elder_forest_fury.xml",
+      "scope": "OTS_HYPOTHESIS_ONLY"
+    }
+  ],
+  "wikibr_observations": {
+    "classification": "PROVEN",
+    "evidence_scope": "OBSERVED_COMMUNITY_PAGE_NOT_OFFICIAL_GLOBAL",
+    "source": "wikibr-current",
+    "fields": {
+      "hp": 670,
+      "xp": 480,
+      "speed": 120,
+      "armor": 25,
+      "mitigation_percent": 1.44,
+      "bestiary_kills": 1000,
+      "charm_points": 25,
+      "pushable": false,
+      "push_objects": true,
+      "damage_taken_percent": {
+        "physical": 100,
+        "earth": 100,
+        "fire": 105,
+        "death": 60,
+        "energy": 100,
+        "holy": 90,
+        "ice": 100
+      },
+      "abilities": [
+        {
+          "name": "melee",
+          "damage": [
+            0,
+            100
+          ],
+          "element": "physical"
+        },
+        {
+          "name": "spear",
+          "damage": [
+            0,
+            136
+          ],
+          "element": "physical"
+        },
+        {
+          "name": "red ball",
+          "debuff": "distance fighting"
+        },
+        {
+          "name": "green ball",
+          "debuff": "magic level"
+        },
+        {
+          "name": "blue ball",
+          "debuff": "shielding"
+        }
+      ],
+      "behaviour": "ranged; fights to death",
+      "location": "Dryad Gardens"
+    }
+  },
+  "discrepancies": {
+    "classification": "CONFLICT",
+    "sources": [
+      "wikibr-current",
+      "fandom-indexed"
+    ],
+    "rows": [
+      {
+        "field": "melee_upper_bound",
+        "wikibr": 100,
+        "fandom": "53+"
+      },
+      {
+        "field": "debuffs",
+        "wikibr": [
+          "distance fighting",
+          "magic level",
+          "shielding"
+        ],
+        "fandom": [
+          "shielding -50%",
+          "distance -50%"
+        ]
+      },
+      {
+        "field": "xp",
+        "wikibr": 480,
+        "fandom": 480,
+        "tfs": 330
+      },
+      {
+        "field": "charm_points",
+        "wikibr": 25,
+        "fandom": 25,
+        "tfs": 50
+      },
+      {
+        "field": "speed_encoding",
+        "wiki": 120,
+        "tfs_raw": 240,
+        "qualification": "Different engine/display scales; no direct native normalization is applied."
+      }
+    ]
+  },
+  "unresolved_native_authoring": [
+    "Authoritative attack schedules, probabilities, exact condition magnitudes/durations, loot chance/count bounds and world/encounter registration must be sourced or explicitly qualified before native admission. Wiki summaries alone do not specify those fields.",
+    "Native Creature/Behavior/Presentation/Ability/Effect/Item bindings and assets remain implementation-owned; no placeholder or borrowed creature identity is assigned."
+  ],
+  "tfs16_source_definition": {
+    "classification": "PROVEN",
+    "evidence_scope": "PINNED_OTS_SOURCE_OBSERVATION_ONLY",
+    "source": "tfs16",
+    "representation": "Lossless XML element/attribute tree; values remain source strings, not native semantics",
+    "root": {
+      "tag": "monster",
+      "attributes": {
+        "name": "Elder Forest Fury",
+        "nameDescription": "an elder forest fury",
+        "race": "blood",
+        "experience": "330",
+        "speed": "240",
+        "raceId": "1157"
+      },
+      "children": [
+        {
+          "tag": "health",
+          "attributes": {
+            "now": "670",
+            "max": "670"
+          },
+          "children": []
+        },
+        {
+          "tag": "look",
+          "attributes": {
+            "type": "569",
+            "corpse": "21359"
+          },
+          "children": []
+        },
+        {
+          "tag": "targetchange",
+          "attributes": {
+            "interval": "4000",
+            "chance": "10"
+          },
+          "children": []
+        },
+        {
+          "tag": "flags",
+          "attributes": {},
+          "children": [
+            {
+              "tag": "flag",
+              "attributes": {
+                "summonable": "0"
+              },
+              "children": []
+            },
+            {
+              "tag": "flag",
+              "attributes": {
+                "attackable": "1"
+              },
+              "children": []
+            },
+            {
+              "tag": "flag",
+              "attributes": {
+                "hostile": "1"
+              },
+              "children": []
+            },
+            {
+              "tag": "flag",
+              "attributes": {
+                "illusionable": "1"
+              },
+              "children": []
+            },
+            {
+              "tag": "flag",
+              "attributes": {
+                "convinceable": "0"
+              },
+              "children": []
+            },
+            {
+              "tag": "flag",
+              "attributes": {
+                "pushable": "0"
+              },
+              "children": []
+            },
+            {
+              "tag": "flag",
+              "attributes": {
+                "canpushitems": "1"
+              },
+              "children": []
+            },
+            {
+              "tag": "flag",
+              "attributes": {
+                "canpushcreatures": "1"
+              },
+              "children": []
+            },
+            {
+              "tag": "flag",
+              "attributes": {
+                "targetdistance": "3"
+              },
+              "children": []
+            },
+            {
+              "tag": "flag",
+              "attributes": {
+                "staticattack": "80"
+              },
+              "children": []
+            },
+            {
+              "tag": "flag",
+              "attributes": {
+                "runonhealth": "0"
+              },
+              "children": []
+            },
+            {
+              "tag": "flag",
+              "attributes": {
+                "canwalkonenergy": "0"
+              },
+              "children": []
+            },
+            {
+              "tag": "flag",
+              "attributes": {
+                "canwalkonfire": "0"
+              },
+              "children": []
+            },
+            {
+              "tag": "flag",
+              "attributes": {
+                "canwalkonpoison": "0"
+              },
+              "children": []
+            }
+          ]
+        },
+        {
+          "tag": "bestiary",
+          "attributes": {
+            "class": "Magical",
+            "prowess": "50",
+            "expertise": "500",
+            "mastery": "1000",
+            "charmPoints": "50",
+            "difficulty": "medium",
+            "occurrence": "uncommon",
+            "locations": "Elder Forest Fury Locations..."
+          },
+          "children": []
+        },
+        {
+          "tag": "attacks",
+          "attributes": {},
+          "children": [
+            {
+              "tag": "attack",
+              "attributes": {
+                "name": "melee",
+                "interval": "2000",
+                "min": "0",
+                "max": "-53",
+                "poison": "5"
+              },
+              "children": []
+            },
+            {
+              "tag": "attack",
+              "attributes": {
+                "name": "physical",
+                "interval": "1500",
+                "chance": "40",
+                "radius": "4",
+                "target": "1",
+                "range": "5",
+                "min": "0",
+                "max": "-100"
+              },
+              "children": [
+                {
+                  "tag": "attribute",
+                  "attributes": {
+                    "key": "shootEffect",
+                    "value": "huntingspear"
+                  },
+                  "children": []
+                },
+                {
+                  "tag": "attribute",
+                  "attributes": {
+                    "key": "areaEffect",
+                    "value": "greenshimmer"
+                  },
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tag": "defenses",
+          "attributes": {
+            "armor": "25",
+            "defense": "25"
+          },
+          "children": []
+        },
+        {
+          "tag": "elements",
+          "attributes": {},
+          "children": [
+            {
+              "tag": "element",
+              "attributes": {
+                "deathPercent": "40"
+              },
+              "children": []
+            },
+            {
+              "tag": "element",
+              "attributes": {
+                "holyPercent": "10"
+              },
+              "children": []
+            },
+            {
+              "tag": "element",
+              "attributes": {
+                "firePercent": "-5"
+              },
+              "children": []
+            }
+          ]
+        },
+        {
+          "tag": "voices",
+          "attributes": {
+            "interval": "5000",
+            "chance": "10"
+          },
+          "children": [
+            {
+              "tag": "voice",
+              "attributes": {
+                "sentence": "To arms, sisters!"
+              },
+              "children": []
+            },
+            {
+              "tag": "voice",
+              "attributes": {
+                "sentence": "Feel the wrath of mother forest!"
+              },
+              "children": []
+            },
+            {
+              "tag": "voice",
+              "attributes": {
+                "sentence": "By the power of Greenskull!"
+              },
+              "children": []
+            }
+          ]
+        },
+        {
+          "tag": "loot",
+          "attributes": {},
+          "children": [
+            {
+              "tag": "item",
+              "attributes": {
+                "id": "2148",
+                "name": "gold coin",
+                "chance": "90713",
+                "countmax": "68"
+              },
+              "children": []
+            },
+            {
+              "tag": "item",
+              "attributes": {
+                "id": "2543",
+                "name": "bolt",
+                "chance": "43844",
+                "countmax": "15"
+              },
+              "children": []
+            },
+            {
+              "tag": "item",
+              "attributes": {
+                "id": "2666",
+                "name": "meat",
+                "chance": "20086"
+              },
+              "children": []
+            },
+            {
+              "tag": "item",
+              "attributes": {
+                "id": "21312",
+                "name": "venison",
+                "chance": "18575"
+              },
+              "children": []
+            },
+            {
+              "tag": "item",
+              "attributes": {
+                "id": "7363",
+                "name": "piercing bolt",
+                "chance": "17063",
+                "countmax": "5"
+              },
+              "children": []
+            },
+            {
+              "tag": "item",
+              "attributes": {
+                "id": "21311",
+                "name": "elven hoof",
+                "chance": "11879"
+              },
+              "children": []
+            },
+            {
+              "tag": "item",
+              "attributes": {
+                "id": "3965",
+                "name": "hunting spear",
+                "chance": "9071",
+                "countmax": "2"
+              },
+              "children": []
+            },
+            {
+              "tag": "item",
+              "attributes": {
+                "id": "2455",
+                "name": "crossbow",
+                "chance": "3456"
+              },
+              "children": []
+            },
+            {
+              "tag": "item",
+              "attributes": {
+                "id": "2149",
+                "name": "small emerald",
+                "chance": "3240"
+              },
+              "children": []
+            },
+            {
+              "tag": "item",
+              "attributes": {
+                "id": "8840",
+                "name": "raspberry",
+                "chance": "864",
+                "countmax": "3"
+              },
+              "children": []
+            },
+            {
+              "tag": "item",
+              "attributes": {
+                "id": "7443",
+                "name": "bullseye potion",
+                "chance": "432"
+              },
+              "children": []
+            },
+            {
+              "tag": "item",
+              "attributes": {
+                "id": "2181",
+                "name": "terra rod",
+                "chance": "432"
+              },
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    "runtime_activation_authorized": false
+  }
+}

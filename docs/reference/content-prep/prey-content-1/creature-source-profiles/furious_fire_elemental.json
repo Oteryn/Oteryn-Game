@@ -1,0 +1,108 @@
+{
+  "name": "Furious Fire Elemental",
+  "source_identity": {
+    "namespace": "cipsoft/staticdata/creature_id",
+    "id": 1000,
+    "client_version": "15.30"
+  },
+  "classification": "DERIVED",
+  "target_cut": "2026-10-19",
+  "continuity": "SOURCE_RECONCILIATION_NATIVE_ADMISSION_PENDING",
+  "native_identity_assigned": false,
+  "native_admission_authorized": false,
+  "sources": [
+    {
+      "id": "wikibr-current",
+      "url": "https://www.tibiawiki.com.br/index.php?title=Furious_Fire_Elemental&oldid=441304",
+      "revision_id": 441304,
+      "representation": "rendered HTML",
+      "response_sha256": "5683dc9377963fee6ece009c3f32e8719fff2411b456e2d1125d274b1cff8af8",
+      "checked_at": "2026-10-19T09:55:30.829137+00:00",
+      "scope": "COMMUNITY_WIKI_OBSERVATION"
+    },
+    {
+      "id": "fandom-indexed",
+      "url": "https://tibia.fandom.com/wiki/Furious_Fire_Elemental",
+      "representation": "Indexed page text; direct access blocked",
+      "revision_id": null,
+      "checked_at": "2026-10-19T09:55:30.829137+00:00",
+      "scope": "COMMUNITY_WIKI_OBSERVATION_UNPINNED_REVISION"
+    }
+  ],
+  "wikibr_observations": {
+    "classification": "PROVEN",
+    "evidence_scope": "OBSERVED_COMMUNITY_PAGE_NOT_OFFICIAL_GLOBAL",
+    "source": "wikibr-current",
+    "fields": {
+      "hp": 280,
+      "xp": 220,
+      "speed": 95,
+      "armor": 18,
+      "mitigation_percent": 0.8,
+      "bestiary_kills": 1000,
+      "charm_points": 25,
+      "pushable": false,
+      "push_objects": true,
+      "damage_taken_percent": {
+        "physical": 100,
+        "earth": 100,
+        "fire": 0,
+        "death": 0,
+        "energy": 100,
+        "holy": 100,
+        "ice": 125
+      },
+      "abilities": [
+        {
+          "name": "melee",
+          "damage": [
+            0,
+            80
+          ]
+        },
+        {
+          "name": "fire field",
+          "target": "opponent"
+        },
+        {
+          "name": "fire explosion",
+          "damage": [
+            0,
+            160
+          ]
+        }
+      ],
+      "loot": [],
+      "behaviour": "melee and ranged; fights to death",
+      "location": "Hellgate"
+    }
+  },
+  "discrepancies": {
+    "classification": "CONFLICT",
+    "sources": [
+      "wikibr-current",
+      "fandom-indexed"
+    ],
+    "rows": [
+      {
+        "field": "mitigation_percent",
+        "wikibr": 0.8,
+        "fandom": 0.51
+      },
+      {
+        "field": "melee_upper_bound",
+        "wikibr": 80,
+        "fandom": 100
+      },
+      {
+        "field": "fire_explosion_upper_bound",
+        "wikibr": 160,
+        "fandom": 120
+      }
+    ]
+  },
+  "unresolved_native_authoring": [
+    "Authoritative attack schedules, probabilities, exact condition magnitudes/durations, loot chance/count bounds and world/encounter registration must be sourced or explicitly qualified before native admission. Wiki summaries alone do not specify those fields.",
+    "Native Creature/Behavior/Presentation/Ability/Effect/Item bindings and assets remain implementation-owned; no placeholder or borrowed creature identity is assigned."
+  ]
+}
