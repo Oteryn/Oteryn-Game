@@ -488,7 +488,10 @@ fn registry_binds_the_world_interaction_ids_and_limits() {
     );
     assert_eq!(
         capability["command_types"],
-        serde_json::json!([COMMAND_TYPE_PUSH_INTENT])
+        serde_json::json!([
+            COMMAND_TYPE_PUSH_INTENT,
+            crate::bed::COMMAND_TYPE_BED_SLEEP_INTENT
+        ])
     );
     assert_eq!(capability["state_domains"], serde_json::json!([]));
     let command = only("command_types", COMMAND_TYPE_PUSH_INTENT);
