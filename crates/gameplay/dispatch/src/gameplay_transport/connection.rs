@@ -586,6 +586,18 @@ pub trait FreshAdmissionAuthority {
         }
     }
 
+    /// Capability 22's exact direct-entry Rune adapter. Unknown commits keep the command open.
+    fn use_rune(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _intent: UseIntent,
+        _key: Option<ItemKey>,
+        _visible: bool,
+    ) -> impl Future<Output = Option<UseOutcome>> {
+        async { Some(UseOutcome::rejected()) }
+    }
+
     /// ITEM-VIEW-1b: the admitted Character's main backpack and its direct entries
     /// (`read_character_backpack`) for domain 9, read for the snapshot and after each committed
     /// `USE`. `None` when it cannot be read: a session that selected capability 4 then fails
@@ -2797,6 +2809,20 @@ where
                 admitted.continuity.selected_capabilities.as_slice(),
                 command.payload,
             ) {
+                Ok(intent) if super::rune_use_bridge::routes(
+                    &intent, &admitted.continuity.selected_capabilities,
+                ) => match super::rune_use_bridge::dispatch(
+                    authority, actor,
+                    UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: command.command_id,
+                        item_fence: admitted.item_fence,
+                    },
+                    intent, item_view.as_ref(), visibility.as_ref(),
+                ).await {
+                    Some(outcome) => Dispatch::Use(outcome),
+                    None => return ConnectionEnd::AdmittedThenDisconnected(admitted),
+                },
                 // ITEM-USE-WIRE-1: fields 4 and 5 decode only under capability 15.
                 // Creature, map-item and position targets still fail closed here.
                 Ok(UseIntent {
@@ -2808,9 +2834,7 @@ where
                     use_with_map_item: Some(_),
                     ..
                 })
-                // RUNE-WIRE-1: the position arm of field 4 decodes only under capability 22, which
-                // is not offered before RUNE-CAST-1 composes the rune cast; until then no rune is
-                // usable on a tile.
+                // RUNE-WIRE-1: position uses without a qualified bridge route fail closed.
                 | Ok(UseIntent {
                     use_with_position: Some(_),
                     ..
