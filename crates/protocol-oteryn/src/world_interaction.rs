@@ -37,7 +37,7 @@ use crate::world_spatial_entities::{ENTITY_IDENTITY_BYTES, EntityRef};
 
 pub use crate::charm_wire::CyclopediaWireError as WorldInteractionWireError;
 
-/// Registered capability `WORLD_INTERACTION_V1`: command type 15, no state domain.
+/// Registered capability `WORLD_INTERACTION_V1`: command types 15 and 31, no state domain.
 pub const CAPABILITY_WORLD_INTERACTION_V1: u32 = 11;
 /// The capability `WORLD_INTERACTION_V1` requires: 15 `ITEM_USE_V1` and 18 `WORLD_MAP_VIEW_V1`.
 pub const CAPABILITY_WORLD_INTERACTION_V1_REQUIRES: [u32; 2] = [
@@ -123,12 +123,12 @@ pub fn decode_push_intent(payload: &[u8]) -> WireResult<PushIntent> {
 }
 
 /// `PushResultV1`: the disposition and, with `SEALED` only, the gate message id (1 to 127). The
-/// RUNE-USE-0 §4 dispositions 18 and 19 belong to `USE_INTENT` only and fail closed here.
+/// Rune and bed dispositions belong to their own commands and fail closed here.
 pub fn encode_push_result(
     disposition: UseDisposition,
     gate_message_id: Option<u8>,
 ) -> Result<Vec<u8>, WorldObjectError> {
-    if disposition.needs_rune_use() {
+    if (disposition as u32) > UseDisposition::NotPossible as u32 {
         return Err(WorldObjectError::Malformed);
     }
     encode_use_result_with_gate(disposition, gate_message_id)
@@ -138,7 +138,7 @@ pub fn decode_push_result(
     payload: &[u8],
 ) -> Result<(UseDisposition, Option<u8>), WorldObjectError> {
     let (disposition, gate_message_id) = decode_use_result_with_gate(payload)?;
-    if disposition.needs_rune_use() {
+    if (disposition as u32) > UseDisposition::NotPossible as u32 {
         return Err(WorldObjectError::Malformed);
     }
     Ok((disposition, gate_message_id))

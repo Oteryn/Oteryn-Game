@@ -391,7 +391,11 @@ impl RenderModel {
             | UseDisposition::NotPossible
             // RUNE-WIRE-1: capability 22 dispositions; the harness selects no capability 22.
             | UseDisposition::TargetIllegal
-            | UseDisposition::ProtectionZone => Notice::DoorRejected,
+            | UseDisposition::ProtectionZone
+            | UseDisposition::BedChooseSkill
+            | UseDisposition::BedOccupied
+            | UseDisposition::BedWoken
+            | UseDisposition::OfflineTraining => Notice::DoorRejected,
         };
         next
     }
