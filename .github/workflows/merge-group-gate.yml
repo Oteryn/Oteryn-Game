@@ -705,6 +705,12 @@ jobs:
           run_registered_target runtime_scope_assignment_postgres apps/game-server/tests/runtime_scope_assignment_postgres.rs
           run_registered_target native_admission_source_postgres apps/game-server/tests/native_admission_source_postgres.rs
 
+      # Library tests that need PostgreSQL skip in the Rust Linux lib shards,
+      # which have no database; this runs them once against the service.
+      - name: Run PostgreSQL-backed library tests
+        if: matrix.shard == 'rest'
+        run: cargo +1.95.0 test --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib
+
   rust_windows:
     name: Merge Queue / Rust Windows client
     needs: candidate
