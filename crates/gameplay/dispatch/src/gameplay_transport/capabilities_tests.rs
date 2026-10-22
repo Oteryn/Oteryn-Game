@@ -236,37 +236,8 @@ fn selection_keeps_a_capability_only_with_all_its_requires() {
     assert_eq!(chain(&[1, 7, 8]), [7, 8]);
 }
 
-#[test]
-fn the_production_set_selects_only_capabilities_6_7_9_13_17_19_and_21_whatever_the_client_supports()
--> Result<(), Box<dyn Error>> {
-    let mut everything: Vec<u32> = Vec::new();
-    for capability in registry_capabilities()? {
-        everything.push(u32::try_from(capability["id"].as_u64().ok_or("id")?)?);
-    }
-    everything.extend([2, 3, 4, 5, 9, 11, 12, 13, 14]);
-    everything.sort_unstable();
-    everything.dedup();
-    assert_eq!(
-        SelectedCapabilities::select(PRODUCTION_OFFERED_CAPABILITIES, &everything)
-            .as_ref()
-            .map(SelectedCapabilities::as_slice),
-        Some(&[6, 7, 9, 13, 17, 19, 21, 26, 31][..])
-    );
-    // MAP-ITEM-REF-1: the not-yet-offered Item view set adds 4, which requires 6.
-    assert_eq!(
-        SelectedCapabilities::select(ITEM_VIEW_OFFERED_CAPABILITIES, &everything)
-            .as_ref()
-            .map(SelectedCapabilities::as_slice),
-        Some(&[4, 6, 7, 9, 13, 17, 19, 21, 26, 31][..])
-    );
-    assert_eq!(
-        SelectedCapabilities::select(ITEM_VIEW_OFFERED_CAPABILITIES, &[4, 13])
-            .as_ref()
-            .map(SelectedCapabilities::as_slice),
-        Some(&[13][..])
-    );
-    Ok(())
-}
+#[path = "capability_quest_log_tests.rs"]
+mod quest_log_offer;
 
 #[test]
 fn resume_keeps_exactly_the_original_selection() {

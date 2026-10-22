@@ -14,7 +14,7 @@ use crate::gameplay_transport::capabilities::{
     PRODUCTION_OFFERED_CAPABILITIES, SelectedCapabilities, with_weather_offer,
 };
 use crate::gameplay_transport::connection::{
-    AdmittedSession, FirstEntryOutcome, FreshAdmissionAuthority, IDLE_LIVENESS, serve_admitted,
+    AdmittedSession, FirstEntryOutcome, FreshAdmissionAuthority,
 };
 use crate::world_weather::shipped;
 use oteryn_protocol_oteryn::decode_snapshot_chunk;
@@ -22,7 +22,6 @@ use oteryn_protocol_oteryn::world_weather::{
     CAPABILITY_WORLD_WEATHER_V1, SNAPSHOT_TYPE_WORLD_WEATHER_V1, STATE_DOMAIN_WORLD_WEATHER,
     WorldWeather, decode_world_weather,
 };
-use tokio::io::{AsyncReadExt, DuplexStream};
 
 /// Every domain 22 snapshot value in the frames the server wrote.
 fn weather_snapshots(output: &[u8]) -> TestResult<Vec<WorldWeather>> {
@@ -52,13 +51,7 @@ async fn serve(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
 ) -> TestResult<(String, Vec<u8>)> {
-    let (mut server, mut client): (DuplexStream, DuplexStream) = tokio::io::duplex(1 << 20);
-    tokio::io::AsyncWriteExt::shutdown(&mut client).await?;
-    let end = serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await;
-    drop(server);
-    let mut output = Vec::new();
-    client.read_to_end(&mut output).await?;
-    Ok((format!("{end:?}"), output))
+    fixture_access::serve_input(owner, admitted, &[]).await
 }
 
 fn now_ms() -> TestResult<u64> {
@@ -163,3 +156,6 @@ fn composed_server_serves_weather() -> TestResult {
         harness.cleanup().await
     })
 }
+
+#[path = "weather_wire_fixture.rs"]
+pub(super) mod fixture_access;

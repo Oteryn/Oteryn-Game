@@ -56,6 +56,9 @@ mod tutorial_corruptor;
 mod tutorial_movement;
 mod tutorial_session;
 pub use npc_talk::NpcTalkBook;
+mod quest_admission;
+mod quest_log_source;
+pub use connection::quest_log;
 mod resume;
 mod rune_use_bridge;
 mod seam_rooms;
@@ -460,6 +463,7 @@ pub struct GameplaySeamOwners<'a, 'f, 's> {
     pub imported_charms: &'a crate::content::charm_source::CanonicalCharmCatalogue,
     /// The quest catalogue loaded at boot for the served content revision (QUEST-CAT-BOOT-1).
     pub quest_catalogue: &'a std::sync::Arc<oteryn_gameplay_quests::quest::QuestStateCatalogue>,
+    pub quest_log_content: &'a quest_log::QuestLogLines,
     /// CHAR-POSITION-1: the node's shutdown write of the tracked last positions; `None` when the
     /// caller never withdraws readiness through it.
     pub last_position_flush: Option<&'a LastPositionFlush>,
@@ -576,6 +580,7 @@ pub async fn serve_gameplay(
         revision_sequencer:
             crate::durability::character_revision_sequencer::CharacterRevisionSequencer::new(),
         quest_catalogue: Some(std::sync::Arc::clone(owners.quest_catalogue)),
+        quest_log_content: Some(owners.quest_log_content.clone()),
         quest_sessions: std::sync::Mutex::default(),
         chat: chat_intent::ChatRuntime::default(),
         npc_conversations: npc_command::NpcConversations::default(),
@@ -799,6 +804,7 @@ pub struct ComposedFreshAdmission<'a, 'f, 's> {
     /// The quest catalogue of the served content revision (QUEST-STATE-0 §4); `None` while no
     /// quest content is loaded.
     pub quest_catalogue: Option<std::sync::Arc<oteryn_gameplay_quests::quest::QuestStateCatalogue>>,
+    pub quest_log_content: Option<quest_log::QuestLogLines>,
     /// The quest copy of each admitted session (QUEST-STATE-0 §7), loaded at fresh admission
     /// and resume. Never held across an await.
     pub quest_sessions: std::sync::Mutex<std::collections::HashMap<GameSessionId, QuestSession>>,
@@ -1072,18 +1078,7 @@ fn settled_respawn_disposition(
     }
 }
 
-/// One admitted session's quest state (QUEST-STATE-0 §5.4, §7).
-#[derive(Debug)]
-pub struct QuestSession {
-    /// `None`: the load failed or exceeded a bound; quest actions fail closed.
-    #[allow(
-        dead_code,
-        reason = "the session copy is read by QUEST-PRED-1's predicates"
-    )]
-    pub copy: Option<crate::durability::quest_state::QuestStateCopy>,
-    /// When the pending obligations may be requested again after a failed attempt.
-    pub retry_at: Option<std::time::Instant>,
-}
+pub use quest_admission::QuestSession;
 
 /// SPEED-1: the level a player's effective speed uses until a Character progression owner
 /// supplies it (as `character_cast_facts` waits for one).
@@ -2008,53 +2003,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .unwrap_or_default()
     }
 
-    /// Reload the quest copy of `session` from the store and request its pending obligations
-    /// again. A failed load or an attempt without an outcome is tried again after
-    /// [`QUEST_OBLIGATION_RETRY`] on the owner cadence. `insert` is false for a refresh of a
-    /// session that may have ended meanwhile: it then updates only a session still present.
-    async fn refresh_quest_session(&self, session: GameSessionId, insert: bool) {
-        let fence = self.current_quest_fence(session).await;
-        let (copy, retry) = match fence {
-            Ok(Some(fence)) => {
-                let admission = crate::durability::quest_state::admit_character_quest_state(
-                    &self.revision_sequencer,
-                    self.root,
-                    self.character,
-                    self.holder,
-                    fence,
-                    self.quest_catalogue.as_ref(),
-                )
-                .await;
-                let retry = admission.retry || admission.copy.is_none();
-                (Some(admission.copy), retry)
-            }
-            // A proven terminal session: no quest action and nothing to retry.
-            Ok(None) => (Some(None), false),
-            // A failed read proves nothing: keep the current copy and try again.
-            Err(()) => (None, true),
-        };
-        let retry_at = retry.then(|| std::time::Instant::now() + QUEST_OBLIGATION_RETRY);
-        if let Ok(mut sessions) = self.quest_sessions.lock() {
-            match (copy, sessions.get_mut(&session)) {
-                (Some(copy), Some(entry)) => *entry = QuestSession { copy, retry_at },
-                (Some(copy), None) if insert => {
-                    sessions.insert(session, QuestSession { copy, retry_at });
-                }
-                (None, Some(entry)) => entry.retry_at = retry_at,
-                (None, None) if insert => {
-                    sessions.insert(
-                        session,
-                        QuestSession {
-                            copy: None,
-                            retry_at,
-                        },
-                    );
-                }
-                _ => {}
-            }
-        }
-    }
-
     /// The owner cadence: refresh every session whose backoff has passed. The map lock is
     /// never held across an await.
     async fn refresh_due_quest_sessions(&self) {
@@ -2154,40 +2102,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
         }
-    }
-
-    /// The gameplay fence of `session` from current durable reads; its expected revision is
-    /// replaced by the revision slot's cursor at commit. `Ok(None)` when the session is proven
-    /// terminal; `Err` when a read failed, which proves nothing.
-    async fn current_quest_fence(
-        &self,
-        session: GameSessionId,
-    ) -> Result<Option<crate::durability::character_progression::CurrentCharacterGameplayFence>, ()>
-    {
-        let store = FreshAdmissionStore::from_root(self.root.clone());
-        let (current, _) = store.current_session_at(session).await.map_err(|_| ())?;
-        if current.session_state() == crate::foundation::GameSessionState::Terminal {
-            return Ok(None);
-        }
-        let character_id =
-            domain::CharacterId::from_bytes(*current.commit().character_id().as_bytes())
-                .map_err(|_| ())?;
-        let record = self
-            .root
-            .read_current_character(self.character, character_id)
-            .await
-            .map_err(|_| ())?;
-        Ok(Some(
-            crate::durability::character_progression::CurrentCharacterGameplayFence {
-                character_id,
-                game_session_id: session,
-                connection_generation: current.current_connection_generation(),
-                character_lease_generation: current.current_character_lease().generation(),
-                runtime_scope: current.current_runtime_scope(),
-                scope_ownership_generation: current.current_scope_generation(),
-                expected_character_revision: record.revision,
-            },
-        ))
     }
 
     /// Drop the lost entry of `session` only if it is still the one that ended at
@@ -3176,6 +3090,15 @@ fn bundle_map_position<'a>(
 }
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
+    async fn observe_quest_log(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        since: Option<u64>,
+    ) -> quest_log::QuestLogObservation {
+        self.quest_log_observation(actor, session, since).await
+    }
+
     fn world_weather(&self) -> Option<&crate::world_weather::WorldWeatherSource> {
         // WEATHER-1 (D1027 signed off, D1448): the shipped Oteryn-designed data, `None` (never
         // offered) when it is missing or invalid. The data is public and stateless: its binding
