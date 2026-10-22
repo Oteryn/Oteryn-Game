@@ -1141,3 +1141,32 @@ These cases stay unqualified until that stack composes. Nothing here is skipped 
 four compiles. Activation (registration, migration from the first free number at or above 0124,
 harness enablement) belongs in one slot commit, after #2141 and #2147. The proposed owner of that slot is #2153 GUILDHALL-1.
 The composition order is in the #2136 status comment.
+
+## Completion + wiring (post-checkpoint)
+
+Imported from closed draft #2230 and rebased onto the ADR-0022 layout (`docs/architecture/ADR-0022-gameplay-crate-layering.md`); every existing path below was verified on origin/main `59785d76`. The checkpoint merged unfinished; nothing in the running game calls it. The completion PR must not merge until the mechanic is playable end to end through the real dispatch path, CI is green and Codex review is clean. Dispatch chain: `crates/gameplay/dispatch/src/gameplay_transport/connection.rs` (command `else if` chain) and the `GATED` table in `crates/gameplay/dispatch/src/gameplay_transport/capabilities.rs` (highest capability id on main: 30). Wire modules live in `crates/protocol-oteryn/src/`. Migration numbers: next free number at allocation time (only one migration PR in the queue); 0130 MAP-PICKUP-1, 0131 BAGS-USE-1 and 0132 (provisional TIMED-RT-1c) are reserved.
+
+Structure rules (binding acceptance criteria):
+- [ ] One mechanic per module file in its ADR-0022 layer (pure rules L3, PostgreSQL in `durability`, runtime L4, dispatch L5).
+- [ ] New tests in their own child files, not appended to existing files.
+- [ ] Edits to `mod.rs`/`lib.rs`/`connection.rs`/`capabilities.rs` are wiring-only.
+- [ ] No file over ~1000 lines grows by more than ~150 lines (`connection.rs` is ~8,260 lines).
+
+### Present on main (#2136, then #2270/#2280)
+- The unregistered Guild sources from #2136 (`domain/guild.rs`, `durability/guild.rs`, `durability/guild_audit.rs`) were **removed** as dead code by the ADR-0022 restructure #2280 (`d25623a36`); recover them from `d25623a36^` (`crates/gameplay/domain/src/domain/guild.rs`, `crates/gameplay/durability/src/durability/guild.rs`, `.../guild_audit.rs`) as reference only.
+- Still present and unregistered: `apps/game-server/src/node/guild_jobs.rs` (`run_guild_deadline_pass`, `run_guild_disband_pass`; no `mod guild_jobs` in `apps/game-server/src/node/mod.rs`), lifted tests `apps/game-server/src/lifted_tests/durability_guild_tests.rs` and `durability_guild_disband_terminal_tests.rs`, and `apps/game-server/tests/guild_postgres.rs` (`#![cfg(any())]`, so CI compiles none of it). No guild migration, wire or job registration.
+- Last checkpoint (2026-10-17): Guild, Bank, Hall and House modules imported each other and compiled only together; with #2137, #2139 and #2153 overlaid, 101 of 104 PG cases passed; 3 `disband_terminal_tests` failed because House release SQL (`game_house_guild_reserve`) was missing.
+
+### Checklist
+- [ ] **Re-implement in layers**: pure guild rules in `crates/gameplay/social-rules/src/` (new `guild.rs`, L3), PostgreSQL in `crates/gameplay/durability/src/durability/guild.rs` + `guild_audit.rs` (new), runtime orchestration in `crates/gameplay/social/src/` (new); move or replace `node/guild_jobs.rs`; mount PG cases from `apps/game-server/tests/character_authority_postgres.rs` (PG-COVERAGE-1 pattern) or remove `#![cfg(any())]` from `guild_postgres.rs`.
+- [ ] **Migration**: guild, rank, member, invitation, account-leadership, deadline/disband checkpoint tables, plus the House guild-fence ABI the HOUSE-1b card requires — next free number at allocation time (only one migration PR in the queue). Game-role privileges.
+- [ ] **Runtime job hookup**: register the deadline and disband passes as a World job in `apps/game-server/src/node/serve.rs`, with `NodeIncarnationProof` and reconciled authority; restart-safe checkpoints.
+- [ ] **Command transactions reachable from a session**: found, invite, join, leave, exclude, set rank, resign, edit ranks, disband, title/message invoked from a new `crates/gameplay/dispatch/src/gameplay_transport/guild.rs` handler; premium gate via `premium_current` (`crates/gameplay/social/src/premium/mod.rs`).
+- [ ] **Protocol**: new `crates/protocol-oteryn/src/guild.rs` with `CAPABILITY_GUILD_V1` (next free id above 30), commands, state domain; registries (`PROTOCOL_OTERYN_V1_REGISTRY.json`, `GAME_EVENT_FOUNDATION_REGISTRY.json` guild event with retention `GUILD_ACTIVITY_RETENTION_V1`, error codes). GUILD-WIRE-1 card: `docs/agents/tasks/GUILD-WIRE-1.md`.
+- [ ] **Dispatch**: wiring-only branch in `connection.rs`, `GATED` row in `capabilities.rs`.
+- [ ] **Consumers**: guild chat membership (GUILD-CHAT-1, draft #2142), guild-mate checks in `crates/gameplay/combat-rules/src/pvp/legality.rs`, guild fields in `crates/gameplay/native-admission-source/src/public_projections.rs`, GUILDHALL bid funding, sealed payout ports.
+- [ ] **Tests**: all 104 PG cases pass (no skips, including the 3 House-port cases); concurrent invite/join and leader resign; disband leaves no orphan rows; **end-to-end through `connection.rs` dispatch**: found, invite, join, rank change, resign/disband, capability-off refusal; deadline pass driven by the real job registration after restart.
+
+### Blockers and dependencies (re-verified on origin/main `59785d76`)
+- BLOCKING — re-implementation pending (drafts closing): HOUSE-1b #2141 (guild fence ABI), BED-1 #2147 (revision hook), HOUSE-1a #2137, GUILD-BANK-1 #2139, GUILDHALL-1 #2153 (proposed owner of the activation slot), GUILD-WIRE-1 #2159. Cards: `docs/agents/tasks/<ID>.md`.
+- GUILD-CHAT-1 #2142: open draft, not merged.
