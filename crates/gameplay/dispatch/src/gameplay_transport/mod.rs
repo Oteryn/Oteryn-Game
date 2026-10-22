@@ -4,6 +4,7 @@
 pub mod actor_spell;
 mod attack;
 mod bank_npc;
+mod bed_sleep;
 #[cfg(test)]
 mod bundle_gates_tests;
 mod capabilities;
