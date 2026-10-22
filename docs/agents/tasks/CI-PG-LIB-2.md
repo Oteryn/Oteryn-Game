@@ -43,6 +43,9 @@ dropped from the merge queue on that timeout, and #2306 needed about
   early-signal mirror `pr-postgres-harness.yml`.
 - In the `lib` leg, skip `Run registered PostgreSQL E2E targets` and run
   `Run PostgreSQL-backed library tests`. Move that step out of the `rest` leg.
+- Raise the harness job timeout from 30 to 45 minutes. In the #2304 queue run
+  the library step alone ran over 18 minutes before the job was cancelled,
+  after about 6 minutes of checkout and cache restore.
 - Rotate `EXPECTED_MERGE_GROUP_GATE_BLOB` to the new gate blob in
   `merge-authority-audit.yml`, `validate_repository_policy_core.py` and
   `test_validate_merge_group_pg_sim.py`.

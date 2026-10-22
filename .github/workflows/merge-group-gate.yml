@@ -532,7 +532,7 @@ jobs:
     needs: candidate
     if: needs.candidate.outputs.rust == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45
     permissions:
       contents: read
     # The E2E legs run every registered target exactly once; any target not named below runs in the rest

@@ -52,7 +52,7 @@ jobs:
     # Merge Queue, which runs the same targets on the exact candidate.
     if: github.event.pull_request.draft == false && github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45
     permissions:
       contents: read
     # The E2E legs run every registered target exactly once; any target not named below runs in the rest
