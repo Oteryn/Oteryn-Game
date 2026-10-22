@@ -591,7 +591,7 @@ pub(super) async fn look_creature(
     actor: ExactActorRef,
     target: EntityRef,
 ) -> ItemLookResult {
-    let (session, yourself, vocation) = {
+    let (target_actor, session, yourself, vocation) = {
         let mut runtime = admission.runtime.lock().await;
         match runtime_look_creature(&mut runtime, admission.chat.npc_talk(), actor, target) {
             Err(refusal) => return ItemLookResult::Refused(refusal),
@@ -608,7 +608,7 @@ pub(super) async fn look_creature(
                         .get(&runtime, actor, session)
                         .map(|state| vocation_name(state.character_facts().vocation))
                 });
-                (session, yourself, vocation)
+                (actor, session, yourself, vocation)
             }
         }
     };
@@ -617,6 +617,19 @@ pub(super) async fn look_creature(
     let Some((name, _, level)) = admission.chat_speaker_name(session).await else {
         return ItemLookResult::Refused(ItemLookRefusal::NotAvailable);
     };
+    {
+        let mut runtime = admission.runtime.lock().await;
+        if let Err(refusal) = revalidate_look_player(
+            &mut runtime,
+            admission.chat.npc_talk(),
+            actor,
+            target,
+            target_actor,
+            session,
+        ) {
+            return ItemLookResult::Refused(refusal);
+        }
+    }
     look_text(if yourself {
         Looked::Yourself { level, vocation }
     } else {
@@ -626,4 +639,23 @@ pub(super) async fn look_creature(
             vocation,
         }
     })
+}
+
+/// The visible actor and its session must survive the durable player-details read.
+fn revalidate_look_player(
+    runtime: &mut ChannelRuntimeV1,
+    npcs: Option<&super::npc_talk::NpcTalkBook>,
+    actor: ExactActorRef,
+    target: EntityRef,
+    expected_actor: ExactActorRef,
+    expected_session: GameSessionId,
+) -> Result<(), ItemLookRefusal> {
+    match runtime_look_creature(runtime, npcs, actor, target) {
+        Ok(RuntimeLook::Player { actor, session, .. })
+            if actor == expected_actor && session == expected_session =>
+        {
+            Ok(())
+        }
+        _ => Err(ItemLookRefusal::NotAvailable),
+    }
 }
