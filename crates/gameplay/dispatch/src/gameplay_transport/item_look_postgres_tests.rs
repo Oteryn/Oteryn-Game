@@ -122,8 +122,10 @@ async fn client_looks(client: &mut DuplexStream, own: EntityRef) -> TestResult {
             assert_eq!(result.status, CommandStatus::Accepted);
             let looked = decode_item_look_result_for(result.payload, EXTENDED).map_err(debug)?;
             match offset {
-                0 => assert!(matches!(looked, ItemLookResult::Text(text)
-                    if text.starts_with("You see yourself (Level "))),
+                0 => assert_eq!(
+                    looked,
+                    ItemLookResult::Text("You see yourself (Level 50, monk).".into())
+                ),
                 1 => assert!(
                     matches!(looked, ItemLookResult::Text(text) if text.starts_with("You see "))
                 ),

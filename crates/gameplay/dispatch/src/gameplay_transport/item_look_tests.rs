@@ -60,6 +60,100 @@ fn runtime_with_binding(
 }
 
 #[test]
+fn player_revalidation_requires_the_same_visible_actor_and_session() {
+    use crate::foundation::MovementLocalPosition;
+
+    let controller = activated_with_item_keys(None);
+    let mut runtime = runtime(controller.active().unwrap(), true);
+    let observer_session = GameSessionId::decode(&id(3)).unwrap();
+    let target_session = GameSessionId::decode(&id(4)).unwrap();
+    let reservation = runtime.reserve_fresh_session(observer_session).unwrap();
+    let observer = runtime.commit_fresh_session(reservation).unwrap();
+    runtime.initialize_first_entry_position(observer).unwrap();
+    let reservation = runtime.reserve_fresh_session(target_session).unwrap();
+    let target_actor = runtime.commit_fresh_session(reservation).unwrap();
+    runtime
+        .initialize_first_entry_position(target_actor)
+        .unwrap();
+    let target = runtime
+        .visible_entities()
+        .players
+        .into_iter()
+        .find(|entry| entry.actor == target_actor)
+        .unwrap();
+    let target = EntityRef {
+        identity: target.actor.placement_identity(),
+        generation: target.generation,
+    };
+    let Ok(RuntimeLook::Player { actor, session, .. }) =
+        runtime_look_creature(&mut runtime, None, observer, target)
+    else {
+        panic!("the visible target resolves before the durable read");
+    };
+    assert_eq!((actor, session), (target_actor, target_session));
+    assert_eq!(
+        revalidate_look_player(&mut runtime, None, observer, target, actor, session),
+        Ok(())
+    );
+    let unavailable = Err(ItemLookRefusal::NotAvailable);
+    assert_eq!(
+        revalidate_look_player(&mut runtime, None, observer, target, observer, session),
+        unavailable
+    );
+    assert_eq!(
+        revalidate_look_player(
+            &mut runtime,
+            None,
+            observer,
+            target,
+            actor,
+            observer_session
+        ),
+        unavailable
+    );
+
+    // Movement after resolution invalidates the observation; coming back restores it.
+    let original = runtime.read_actor_position(actor).unwrap().position();
+    runtime
+        .place_respawned_player(
+            actor,
+            session,
+            MovementLocalPosition {
+                x: original.x + 20,
+                ..original
+            },
+        )
+        .unwrap();
+    assert_eq!(
+        revalidate_look_player(&mut runtime, None, observer, target, actor, session),
+        unavailable
+    );
+    runtime
+        .place_respawned_player(actor, session, original)
+        .unwrap();
+    assert_eq!(
+        revalidate_look_player(&mut runtime, None, observer, target, actor, session),
+        Ok(())
+    );
+    runtime.remove_test_actor(actor).unwrap();
+    assert_eq!(
+        revalidate_look_player(&mut runtime, None, observer, target, actor, session),
+        unavailable
+    );
+    // Reusing the departed session's slot must not revive the old observation.
+    let reservation = runtime.reserve_fresh_session(session).unwrap();
+    let replacement = runtime.commit_fresh_session(reservation).unwrap();
+    runtime
+        .initialize_first_entry_position(replacement)
+        .unwrap();
+    assert_ne!(replacement, actor);
+    assert_eq!(
+        revalidate_look_player(&mut runtime, None, observer, target, actor, session),
+        unavailable
+    );
+}
+
+#[test]
 fn observed_target_requires_live_handle_exact_binding_and_current_pin() {
     let world = activated_with_item_keys(None)
         .active()
