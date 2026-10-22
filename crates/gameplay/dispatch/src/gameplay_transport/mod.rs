@@ -5188,6 +5188,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return (FirstEntryOutcome::RefusedUnavailable, None, None);
             }
         }
+        // EQUIP-0 §4 / SPELL-LOCK-2: acquire the lane before final authority revalidation.
+        let Some(permit) = self.spell_lane_permit().await else {
+            return (FirstEntryOutcome::RefusedUnavailable, None, None);
+        };
         // Character facts, monk and stance loads are data reads, never current session authority.
         // Reject a changed root and resolve session, guard and assignment again after them.
         let Ok(latest_character) = self
@@ -5242,6 +5246,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             Err(_) => return (FirstEntryOutcome::RefusedStaleAuthority, None, None),
         }
+        // Hold the lane through installation; the equipment reader runs before runtime locks.
+        let Ok(equipment_effects) = self.read_admission_effects(game_session_id).await else {
+            return (FirstEntryOutcome::RefusedUnavailable, None, None);
+        };
         // One Channel-owner lock covers the binding comparison and the write.
         let mut runtime = self.runtime.lock().await;
         let expected = FirstEntryExpectation {
@@ -5304,6 +5312,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return (FirstEntryOutcome::RefusedByChannel, None, None);
         }
         if facts.is_some()
+            && self
+                .install_admission_suppressions(&runtime, actor, game_session_id, equipment_effects)
+                .await
+                .is_none()
+        {
+            return (FirstEntryOutcome::RefusedByChannel, None, None);
+        }
+        if facts.is_some()
             && !self.spell_states.lock().await.load_owned_stance(
                 &runtime,
                 actor,
@@ -5339,6 +5355,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         drop(runtime);
+        drop(permit);
         #[cfg(test)]
         stage("runtime_facts_initialized");
         if self
