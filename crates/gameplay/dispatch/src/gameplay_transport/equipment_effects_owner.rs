@@ -30,6 +30,14 @@ pub(in crate::gameplay_transport) fn equipment_effects(
     equipment: &EquipmentSnapshot,
     content: &NativeGameplayState,
 ) -> Option<EquipmentEffects> {
+    equipment_effects_inner(equipment, content, false)
+}
+
+fn equipment_effects_inner(
+    equipment: &EquipmentSnapshot,
+    content: &NativeGameplayState,
+    require_known_speed: bool,
+) -> Option<EquipmentEffects> {
     if equipment.content_digest != content.source_digest() {
         return None;
     }
@@ -46,7 +54,7 @@ pub(in crate::gameplay_transport) fn equipment_effects(
         let in_own_slot = matches!(&semantics.equipment, ReferenceItemField::Known(group)
             if matches!(&group.patterns, ReferenceItemField::Known(patterns)
                 if patterns.iter().any(|pattern| pattern.primary_slot == ReferenceItemField::Known(semantic_slot))));
-        Some(EquipmentEffectInput {
+        let input = EquipmentEffectInput {
             slot,
             definition_key: (
                 &policy.record().production_definition.production_key,
@@ -54,28 +62,23 @@ pub(in crate::gameplay_transport) fn equipment_effects(
             ),
             in_own_slot,
             profile: item_ability_profile(semantics).ok()?,
-        })
+        };
+        if require_known_speed && input.contributes_speed() {
+            policy.record().attributes.speed_bonus?;
+        }
+        Some(input)
     }).collect::<Option<Vec<_>>>()?;
     derive_equipment_effects(inputs)
 }
 
-/// All 413 pinned production profiles agree on ability speed and raw speed (known zero).
-/// Preserve unavailable speed semantics as unavailable; the raw value never supplies a sum.
+/// The 413 equippable production profiles have known zero raw speed. The two potion profiles
+/// (i266, i285) have unknown native attributes and are never equippable, so never contribute.
+/// Preserve unavailable speed on contributors; the raw value never supplies a sum.
 pub(in crate::gameplay_transport) fn speed_term(
     equipment: &EquipmentSnapshot,
     content: &NativeGameplayState,
 ) -> Option<i32> {
-    for item in &equipment.items {
-        content
-            .item_policy(
-                &item.definition.production_key,
-                &item.definition.revision_ref,
-            )?
-            .record()
-            .attributes
-            .speed_bonus?;
-    }
-    i32::try_from(equipment_effects(equipment, content)?.speed).ok()
+    i32::try_from(equipment_effects_inner(equipment, content, true)?.speed).ok()
 }
 
 /// EQUIP-0 §4: read under the caller's spell lane, before its runtime lock.

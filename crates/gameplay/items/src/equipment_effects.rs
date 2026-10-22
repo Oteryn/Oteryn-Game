@@ -16,6 +16,13 @@ pub struct EquipmentEffectInput<'a> {
     pub profile: ItemAbilityProfile,
 }
 
+impl EquipmentEffectInput<'_> {
+    /// Only untimed abilities in the designated slot contribute speed; ammo supplies light only.
+    pub fn contributes_speed(&self) -> bool {
+        !self.profile.timed && self.in_own_slot && self.slot != EquipmentSlot::Ammo
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct EquipmentEffects {
     pub skills: BTreeMap<AbilitySkill, i64>,
@@ -49,12 +56,13 @@ pub fn derive_equipment_effects(
     }
     let mut effects = EquipmentEffects::default();
     for mut item in equipment {
-        if item.profile.timed || (!item.in_own_slot && item.slot != EquipmentSlot::Ammo) {
+        let contributes_speed = item.contributes_speed();
+        if !contributes_speed && (item.profile.timed || item.slot != EquipmentSlot::Ammo) {
             continue;
         }
         item.profile.abilities.sort();
         for ability in item.profile.abilities {
-            if item.slot == EquipmentSlot::Ammo && !matches!(ability, ItemAbility::Light { .. }) {
+            if !contributes_speed && !matches!(ability, ItemAbility::Light { .. }) {
                 continue;
             }
             match ability {

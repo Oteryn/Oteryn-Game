@@ -20,6 +20,25 @@ fn percent(numerator: i64, denominator: u64) -> ReferenceRationalPercent {
 }
 
 #[test]
+fn equipment_effects_speed_contribution_requires_untimed_own_slot_outside_ammo() {
+    for slot in [EquipmentSlot::Head, EquipmentSlot::Ammo] {
+        for in_own_slot in [false, true] {
+            for timed in [false, true] {
+                let mut item = input(slot, vec![ItemAbility::Speed(30)]);
+                item.in_own_slot = in_own_slot;
+                item.profile.timed = timed;
+                let contributes = slot == EquipmentSlot::Head && in_own_slot && !timed;
+                assert_eq!(item.contributes_speed(), contributes);
+                assert_eq!(
+                    derive_equipment_effects(vec![item]).map(|effects| effects.speed),
+                    Some(if contributes { 30 } else { 0 })
+                );
+            }
+        }
+    }
+}
+
+#[test]
 fn equipment_effects_single_truncation_and_checked_arithmetic() {
     assert_eq!(apply_stat(101, -4, percent(1, 2)), Some(97));
     assert_eq!(apply_stat(101, 4, percent(-3, 2)), Some(104));
