@@ -10,6 +10,11 @@ pub static GAME_MIGRATOR: sqlx::migrate::Migrator =
 pub mod character_bootstrap_intent;
 pub mod durability;
 
+#[cfg(test)]
+#[allow(dead_code, reason = "shared native PG harness; DAILY uses a subset")]
+#[path = "../../../../apps/game-server/tests/support/bestiary_postgres_harness.rs"]
+mod bestiary_postgres_harness;
+
 #[allow(unused_imports)]
 use oteryn_gameplay_admission_evidence as admission_evidence;
 #[allow(unused_imports)]

@@ -298,6 +298,21 @@
       "state_domains": [],
       "offered": false,
       "offer_gate": "FIELD-WIRE-1: the server does not offer this capability before the field payloads and their domain are registered and composed. It requires 6 WORLD_SPATIAL_ENTITIES (RUNE-USE-0 \u00a711.4). While unoffered it is not in the ADMIT0 mandatory floor (registered AND offered), and a World declaring it fails boot closed."
+    },
+    {
+      "id": 32,
+      "name": "DAILY_REWARD_V1",
+      "owner_decision": "DAILY_REWARD0 \u00a7\u00a73\u20137; CP wire allocation 2026-10-22 for DAILY-1",
+      "owner": "Character + World daily rewards; Account + World jokers",
+      "command_types": [
+        32,
+        33
+      ],
+      "state_domains": [
+        24
+      ],
+      "offered": false,
+      "offer_gate": "DAILY-1: offer only after the native claim, bound-item lifecycle, authored content and committed World-reset history are composed. No client receives domain 24 or dispatches commands 32/33 without selection. Free lane until PREM-3."
     }
   ],
   "command_types": [
@@ -476,6 +491,26 @@
       "result_schema": "crates/protocol-oteryn/src/item_look.rs#ItemLookResult (CP D1240 layout; no .proto is published yet): exactly one of field 1 nonempty UTF-8 text of at most 512 bytes, or one empty refusal marker: 2 NOT_AVAILABLE, and only with capability 28 selected 3 NOT_VISIBLE, 4 NOT_REACHABLE, 5 RATE_LIMITED; a refusal carries no target facts",
       "max_payload_bytes": 31,
       "max_result_payload_bytes": 515
+    },
+    {
+      "id": 32,
+      "name": "DAILY_REWARD_CLAIM",
+      "owner_decision": "DAILY_REWARD0 \u00a7\u00a73\u20137; CP wire allocation 2026-10-22 for DAILY-1",
+      "capability": 32,
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/daily_reward_v1.proto#DailyRewardClaimV1",
+      "result_schema": "docs/contracts/protocol-oteryn/v1/daily_reward_v1.proto#DailyRewardResultV1",
+      "max_payload_bytes": 10500,
+      "max_result_payload_bytes": 20
+    },
+    {
+      "id": 33,
+      "name": "DAILY_REWARD_QUERY",
+      "owner_decision": "DAILY_REWARD0 \u00a7\u00a73\u20137; CP wire allocation 2026-10-22 for DAILY-1",
+      "capability": 32,
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/daily_reward_v1.proto#DailyRewardQueryV1",
+      "result_schema": "docs/contracts/protocol-oteryn/v1/daily_reward_v1.proto#DailyRewardWallV1",
+      "max_payload_bytes": 0,
+      "max_result_payload_bytes": 128
     }
   ],
   "state_domains": [
@@ -958,6 +993,30 @@
       "revision": "per GameSessionId, monotonic and never reused: 0 at the initial snapshot, plus 1 for each delta sent; never reset at a reconnect or channel transfer; a resync, reconnect or channel transfer sends only a snapshot and never replays a delta",
       "delta_types": [{"id": 1, "name": "WORLD_WEATHER_DELTA_V1", "payload_schema": "docs/contracts/protocol-oteryn/v1/world_weather_v1.proto#WorldWeatherV1", "max_payload_bytes": 64}],
       "snapshot_types": [{"id": 1, "name": "WORLD_WEATHER_SNAPSHOT_V1", "payload_schema": "docs/contracts/protocol-oteryn/v1/world_weather_v1.proto#WorldWeatherV1", "max_payload_bytes": 64}]
+    },
+    {
+      "id": 24,
+      "name": "DAILY_REWARD",
+      "owner_decision": "DAILY_REWARD0 \u00a7\u00a73\u20137; CP wire allocation 2026-10-22 for DAILY-1",
+      "owner": "Character daily reward owner",
+      "capability": 32,
+      "revision": "per GameSessionId, monotonic and never reused across reconnect; full replacement of the own reward wall",
+      "delta_types": [
+        {
+          "id": 1,
+          "name": "DAILY_REWARD_DELTA_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/daily_reward_v1.proto#DailyRewardWallV1",
+          "max_payload_bytes": 128
+        }
+      ],
+      "snapshot_types": [
+        {
+          "id": 1,
+          "name": "DAILY_REWARD_SNAPSHOT_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/daily_reward_v1.proto#DailyRewardWallV1",
+          "max_payload_bytes": 128
+        }
+      ]
     }
   ],
   "error_codes": [
