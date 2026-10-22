@@ -62,11 +62,6 @@ const CAPABILITY_WORLD_SPATIAL_FIELDS: u32 = 30;
 /// and 5 on the selection, and the use result, whose dispositions 7 to 10 only it receives.
 pub const GATED: &[(u32, &[u32], &[u32])] = &[
     (
-        crate::appearance::CAPABILITY_APPEARANCE_V1,
-        &[crate::appearance::COMMAND_TYPE_APPEARANCE_CHANGE],
-        &[crate::appearance::STATE_DOMAIN_APPEARANCE],
-    ),
-    (
         CAPABILITY_BESTIARY_CHARMS_V1,
         &[
             COMMAND_TYPE_CHARM_UNLOCK_STAGE_INTENT,
@@ -150,6 +145,11 @@ pub const GATED: &[(u32, &[u32], &[u32])] = &[
             STATE_DOMAIN_WORLD_PRESENTATION,
             STATE_DOMAIN_ACTOR_COOLDOWNS,
         ],
+    ),
+    (
+        crate::appearance::CAPABILITY_APPEARANCE_V1,
+        &[crate::appearance::COMMAND_TYPE_APPEARANCE_CHANGE],
+        &[crate::appearance::STATE_DOMAIN_APPEARANCE],
     ),
     // WEATHER-1: capability 26 owns domain 22 and no command type; it is offered per connection
     // only with a weather source (`with_weather_offer`).
