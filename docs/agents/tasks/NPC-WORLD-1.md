@@ -805,3 +805,31 @@ bundle_npcs 4, all passing); the native PostgreSQL travel case passed through
 `in-pg-netns.sh` against shared PostgreSQL 17.6. The D1357/D1385 13-file native NPC
 source packet is not yet integrated, and D1358 remains deferred. The PR stays
 draft and NOT_FULLY_QUALIFIED.
+
+## Completion + wiring (post-checkpoint)
+
+Imported from closed draft #2232 and rebased onto the ADR-0022 layout (`docs/architecture/ADR-0022-gameplay-crate-layering.md`); every existing path below was verified on origin/main `59785d76`. The checkpoint merged unfinished; nothing in the running game calls it. The completion PR must not merge until the mechanic is playable end to end through the real dispatch path, CI is green and Codex review is clean. Dispatch chain: `crates/gameplay/dispatch/src/gameplay_transport/connection.rs` (command `else if` chain) and the `GATED` table in `crates/gameplay/dispatch/src/gameplay_transport/capabilities.rs` (highest capability id on main: 30). Wire modules live in `crates/protocol-oteryn/src/`. Migration numbers: next free number at allocation time (only one migration PR in the queue); 0130 MAP-PICKUP-1, 0131 BAGS-USE-1 and 0132 (provisional TIMED-RT-1c) are reserved.
+
+Structure rules (binding acceptance criteria):
+- [ ] One mechanic per module file in its ADR-0022 layer (pure rules L3, PostgreSQL in `durability`, runtime L4, dispatch L5).
+- [ ] New tests in their own child files, not appended to existing files.
+- [ ] Edits to `mod.rs`/`lib.rs`/`connection.rs`/`capabilities.rs` are wiring-only.
+- [ ] No file over ~1000 lines grows by more than ~150 lines (`connection.rs` is ~8,260 lines).
+
+### Present on main (#2157)
+- Travel: `crates/gameplay/npc/src/npc_travel.rs` (`TravelHoldSlot`, fee/placement/consume state machine; dispatch side `crates/gameplay/dispatch/src/gameplay_transport/npc_travel.rs`) and `crates/gameplay/durability/src/durability/npc_travel.rs` (`read_npc_pending_arrival`, `consume_npc_pending_arrival_placed`). Walking: `crates/gameplay/npc/src/npc_actor.rs` (`NpcWalkBook`, `NpcWalkState`, proposals), placements in `crates/gameplay/entities/src/carrier/npc_actor.rs`. Voices: `crates/gameplay/dispatch/src/gameplay_transport/npc_voice.rs` (`NpcVoiceBook`, `NpcVoiceState`, `chat_line`) and `crates/gameplay/npc/src/npc_voice.rs`. `apps/game-server/src/node/serve/bundle_npcs.rs` only retains and logs the verified catalogue digest.
+- `NpcWalkBook`, `NpcVoiceBook`, `NpcVoiceState`, `NpcWalkState` and `TravelHoldSlot` have no callers outside their own files and tests. No migration for the pending-arrival table; the PG fixture `apps/game-server/src/lifted_tests/durability_npc_travel_postgres_fixture.rs` (cases `apps/game-server/tests/support/npc_travel_postgres_cases.rs`) installs it privately.
+
+### Checklist
+- [ ] **Migration**: NPC pending-arrival / travel occurrence tables with privileges — next free number at allocation time (only one migration PR in the queue).
+- [ ] **Travel (NPC-TRAVEL-2)**: dispatch from the NPC trade/talk path (`crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs`, `npc_trade_command.rs`, `npc_talk.rs`) to `TravelHoldSlot::start`; fee debit through the Bank/gold path; destination placement via the Character position writer (`crates/gameplay/housing/src/last_position.rs`, dispatch `last_position.rs`); hold cancellation on death/logout/disconnect (`gameplay_transport/logout.rs`, `resume.rs`); arrival consume after restart; premium gate; destination list/confirm messages (extend `crates/protocol-oteryn/src/npc_service.rs` or add a capability, then `GATED` in `capabilities.rs`).
+- [ ] **Walking actors (NPC-ACTOR-1)**: build `NpcWalkBook::from_catalogue` at content activation (`activate_content` in `apps/game-server/src/node/serve.rs` and `bundle_npcs.rs`), own `NpcWalkState` per placed NPC in the actor carrier (`crates/gameplay/entities/src/carrier.rs`), tick it from a scheduler like `crates/gameplay/dispatch/src/gameplay_transport/monster_ai_cycle.rs`, apply steps through `gameplay_transport/actor_movement.rs` and publish positions via `crates/protocol-oteryn/src/world_spatial_entities.rs`. D1357 native NPC source packet and D1358 height/trigger admission are not integrated.
+- [ ] **Voices (NPC-VOICE-1)**: tick `NpcVoiceState::think` and emit `ChatLine` through the chat relay (`gameplay_transport/chat_intent.rs`, `chat_relay.rs`) to listeners in range.
+- [ ] **Talk book install**: confirm the production path calls `install_npc_talk` (`gameplay_transport/chat_intent.rs`); on main the visible call sites are tests.
+- [ ] **Content**: TRAVEL-CONTENT-1 destinations/fees, NPC-CONTENT-2 voice and movement facts (merged #2129); regenerate content and pins.
+- [ ] **Tests**: unit tests exist (travel 5, voice 10, actor 12); add PG test for pending arrival after restart in the real harness; **end-to-end through `connection.rs` dispatch**: talk to travel NPC, confirm destination, fee debited, character arrives, restart mid-hold resumes once; a walking NPC changes position in a spatial snapshot; a voice line reaches a nearby client.
+
+### Blockers and dependencies (re-verified on origin/main `59785d76`)
+- CREATURE-MOVE-1 (chase/step composition): re-implementation pending (draft #2184 closing; card `docs/agents/tasks/CREATURE-MOVE-1.md`).
+- TRAVEL-CONTENT-1: BLOCKING (content draft #2235 open). D1357/D1358 native NPC source work: open.
+- MERGED: ADMIT-CAP-1 (#2187), NPC-CONTENT-2 (#2129), NPC-ECON-1 (#2197); NPC-TRAVEL-1, CHAT-1 and PREMIUM-1 merged earlier.
