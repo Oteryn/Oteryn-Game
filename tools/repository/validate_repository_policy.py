@@ -95,7 +95,7 @@ def validate_protected_base_audit() -> list[str]:
         errors.append("protected-base merge-authority audit must not permit continue-on-error")
 
     for fragment in (
-        "merge_group_head_expression = '$' + '{{ github.event.merge_group.head_sha }}'",
+        "merge_group_head_expression = '$' + '{{ github.event.merge_group.head_sha || github.sha }}'",
         "durability_result_expression = '$' + '{{ needs.durability_postgres.result }}'",
         "f'          EXPECTED_SHA: {merge_group_head_expression}\\n'",
         "f'          DURABILITY_POSTGRES: {durability_result_expression}\\n'",
@@ -107,7 +107,7 @@ def validate_protected_base_audit() -> list[str]:
             )
 
     for unsafe in (
-        "          EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}\\n",
+        "          EXPECTED_SHA: ${{ github.event.merge_group.head_sha || github.sha }}\\n",
         "          DURABILITY_POSTGRES: ${{ needs.durability_postgres.result }}\\n",
     ):
         if unsafe in text:

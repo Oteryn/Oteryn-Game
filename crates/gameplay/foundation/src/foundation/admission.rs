@@ -163,7 +163,7 @@ impl FreshAdmissionFacts {
         FreshAdmissionReplayKey(self.grant_nonce)
     }
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     fn for_test(nonce: u64, lease: u64, scope: u64) -> Result<Self, AdmissionError> {
         fn id(v: u64) -> [u8; 16] {
             let mut x = [0u8; 16];
@@ -2869,3 +2869,7 @@ impl FreshAdmissionProjectionV1 {
         Ok(())
     }
 }
+
+#[cfg(any(test, feature = "test-support"))]
+#[path = "admission_test_support.rs"]
+mod admission_test_support;

@@ -53,3 +53,4 @@ pub mod interaction_chest_use;
 use oteryn_gameplay_combat::combat_pickup;
 
 pub mod guild;
+pub mod spectate;

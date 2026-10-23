@@ -35,6 +35,7 @@ mod logout;
 #[cfg(test)]
 mod logout_tests;
 mod loop_move;
+pub mod spectate_session;
 use crate::map::boot::BundleCollisionIndexExt;
 pub use last_position::LastPositionFlush;
 mod control_loss_reconciliation;
