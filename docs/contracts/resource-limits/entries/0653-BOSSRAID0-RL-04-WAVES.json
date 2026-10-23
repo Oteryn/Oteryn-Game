@@ -1,0 +1,23 @@
+{
+  "id": "BOSSRAID0-RL-04-WAVES",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_BOSS_RAID0_BOSSES_RAIDS_AND_BOSSTIARY_DECISION_2026-09-30.md",
+  "failure_category": "CAPACITY_EXCEEDED",
+  "client_visible": false,
+  "consumers": [
+    "crates/gameplay/encounter-rules/src/raid/mod.rs",
+    "crates/gameplay/encounter-rules/src/raid/definition.rs",
+    "crates/gameplay/encounter-rules/src/raid/schedule.rs",
+    "crates/gameplay/durability/src/durability/raid_schedule.rs"
+  ],
+  "resource": "Waves in one raid definition",
+  "unit": "waves",
+  "hard_maximum": 32,
+  "configurable_range": {
+    "minimum": 32,
+    "maximum": 32
+  },
+  "allocation_impact": "Bounded pure schedule metadata only. No runtime activation, content admission or channel target enumeration is authorized.",
+  "boundary_tests": [
+    "raid_definition_capacity_and_deadline_boundaries"
+  ]
+}
