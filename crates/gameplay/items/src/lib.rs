@@ -2,6 +2,7 @@
 
 pub mod depot;
 pub mod equipment_effects;
+pub mod forge;
 pub mod hotkey_search;
 pub mod imbuement;
 pub mod item_capacity;
@@ -10,6 +11,7 @@ pub mod item_transfer;
 pub mod item_weight_lookup;
 pub mod look;
 pub mod loot_plan;
+pub mod mail;
 pub mod pickup;
 pub mod stacking;
 pub mod starter_grant;

@@ -60,6 +60,7 @@ pub(crate) fn runtime() -> TestResult<tokio::runtime::Runtime> {
         .build()?)
 }
 
+#[derive(Clone)]
 pub(crate) struct Database {
     admin_url: String,
     name: String,
@@ -88,24 +89,34 @@ impl Database {
             .strip_suffix("/postgres")
             .ok_or("invalid admin URL")?;
         let url = format!("{prefix}/{name}");
-        let mut connection = sqlx::PgConnection::connect(&url).await?;
-        let version: String = sqlx::query_scalar("SHOW server_version_num")
-            .fetch_one(&mut connection)
-            .await?;
-        assert_eq!(
-            version,
-            oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
-            "canonical target is PostgreSQL 18.6"
-        );
-        oteryn_gameplay_durability::GAME_MIGRATOR
-            .run(&mut connection)
-            .await?;
-        connection.close().await?;
-        Ok(Self {
+        let migration_url = url.clone();
+        let migrated: TestResult = async move {
+            let mut connection = sqlx::PgConnection::connect(&migration_url).await?;
+            let version: String = sqlx::query_scalar("SHOW server_version_num")
+                .fetch_one(&mut connection)
+                .await?;
+            if version != oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM {
+                return Err("canonical target is PostgreSQL 18.6".into());
+            }
+            oteryn_gameplay_durability::GAME_MIGRATOR
+                .run(&mut connection)
+                .await?;
+            connection.close().await?;
+            Ok(())
+        }
+        .await;
+        let database = Self {
             admin_url,
             name,
             url,
-        })
+        };
+        match migrated {
+            Ok(()) => Ok(database),
+            failure => {
+                database.cleanup().await?;
+                Err(format!("PostgreSQL migration setup failed: {failure:?}").into())
+            }
+        }
     }
 
     async fn cleanup(self) -> TestResult {
@@ -196,6 +207,36 @@ impl Harness {
     /// 50, 1000 experience) instead of leaving the Character bootstrap-only.
     pub(crate) async fn create(admin: String, tag: &str, initialized: bool) -> TestResult<Self> {
         let database = Database::create(admin, tag).await?;
+        let cleanup = database.clone();
+        let tag = tag.to_owned();
+        let setup = tokio::task::LocalSet::new()
+            .run_until(async move {
+                tokio::task::spawn_local(async move {
+                    Self::create_on_database(database, &tag, initialized)
+                        .await
+                        .map_err(|error| error.to_string())
+                })
+                .await
+            })
+            .await;
+        match setup {
+            Ok(Ok(harness)) => Ok(harness),
+            Ok(Err(failure)) => {
+                cleanup.cleanup().await?;
+                Err(format!("PostgreSQL native setup failed: {failure}").into())
+            }
+            Err(failure) => {
+                cleanup.cleanup().await?;
+                Err(failure.into())
+            }
+        }
+    }
+
+    async fn create_on_database(
+        database: Database,
+        tag: &str,
+        initialized: bool,
+    ) -> TestResult<Self> {
         let root = DurabilityRoot::connect_test_runtime(&database.url)?;
         assert!(root.maintain_ready_once().await?);
         let pool = sqlx::PgPool::connect(&database.url).await?;

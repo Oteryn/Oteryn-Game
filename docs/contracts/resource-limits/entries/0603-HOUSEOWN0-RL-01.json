@@ -1,0 +1,22 @@
+{
+  "id": "HOUSEOWN0-RL-01",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_HOUSE_OWN0_HOUSE_OWNERSHIP_DECISION_2026-09-30.md",
+  "resource": "PhysicalHouseEligibility v1 minimum level",
+  "unit": "configured minimum level",
+  "hard_maximum": 20,
+  "configurable_range": {
+    "minimum": 20,
+    "maximum": 20
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Check in the owning House rule or durable pass before mutation.",
+  "client_visible": false,
+  "boundary_tests": [
+    "level 19 refused",
+    "level 20 admitted when every other guard holds"
+  ],
+  "consumers": [
+    "crates/gameplay/housing/src/house_auction.rs",
+    "crates/gameplay/durability/src/durability/house_ownership.rs"
+  ]
+}

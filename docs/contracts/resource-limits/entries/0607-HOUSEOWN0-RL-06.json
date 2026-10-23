@@ -1,0 +1,22 @@
+{
+  "id": "HOUSEOWN0-RL-06",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_HOUSE_OWN0_HOUSE_OWNERSHIP_DECISION_2026-09-30.md",
+  "resource": "Refund bids per settlement step",
+  "unit": "bids",
+  "hard_maximum": 100,
+  "configurable_range": {
+    "minimum": 100,
+    "maximum": 100
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Check in the owning House rule or durable pass before mutation.",
+  "client_visible": false,
+  "boundary_tests": [
+    "step releases no more than 100 bids",
+    "remaining held bids resume in the next step"
+  ],
+  "consumers": [
+    "crates/gameplay/housing/src/house_auction.rs",
+    "crates/gameplay/durability/src/durability/house_ownership.rs"
+  ]
+}
