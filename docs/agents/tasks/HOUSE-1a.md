@@ -370,8 +370,8 @@ The backend checkpoint was re-applied onto `de3fd2190` (DISPATCH-WIRING-1 with
 REGISTRY-SPLIT-1, Rust 1.99.1 and PostgreSQL 18.6). Adaptations only, no behaviour change:
 
 - REGISTRY-SPLIT-1: the eleven new resource limits are one file each,
-  `docs/contracts/resource-limits/entries/0592-DUR03-RL-03-HOUSE.json` through
-  `0602-HOUSEOWN0-RL-07.json`, in the original order; the aggregate file is not recreated.
+  `docs/contracts/resource-limits/entries/0598-DUR03-RL-03-HOUSE.json` through
+  `0608-HOUSEOWN0-RL-07.json` (renumbered from 0592-0602 after SPECTATE-1b took 0592-0597), in the original order; the aggregate file is not recreated.
 - PostgreSQL 18.6: the harness setup and the runtime-role check read
   `CANONICAL_POSTGRES_SERVER_VERSION_NUM` instead of the literal 17.6 version.
 - Migration `0143` keeps its number (no collision with main's 0130, 0131, 0132, 0136,
@@ -379,7 +379,11 @@ REGISTRY-SPLIT-1, Rust 1.99.1 and PostgreSQL 18.6). Adaptations only, no behavio
 - No dispatch file was touched. Protocol dispatch and scheduling stay with HOUSE-WIRE-1
   (SOCIAL-MAP §1.12 "No runtime wiring"; HOUSE-WIRE-1 owns `HOUSE_V1`/`HOUSE_INTENT`,
   whose numbers CP leases). The production-caller and real-dispatch E2E requirement for
-  `house_bid`/`house_settlement` therefore remains open as an owner decision.
+  `house_bid`/`house_settlement` is not met here.
+- Owner decision 2026-10-23 (option a): HOUSE-1a lands dormant, like DAILY-1a. The
+  production caller and the real-dispatch E2E for `house_bid`/`house_settlement` are a
+  HOUSE-WIRE-1 gate. Migration `0143` stays: main already has out-of-order migrations
+  and no deployed database exists.
 
 Validation on the port (`cargo +1.99.1 ... --locked`): rustfmt, `git diff --check`,
 Clippy `-D warnings --all-targets` for housing, durability and game-server, the
