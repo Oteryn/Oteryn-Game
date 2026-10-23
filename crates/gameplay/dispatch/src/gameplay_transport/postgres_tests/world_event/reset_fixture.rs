@@ -59,6 +59,7 @@ pub(super) async fn reset_epochs(
                     .is_err()
             );
             assert_eq!(h.root.active_world_reset_epoch(world).await?, Some(0));
+            assert_eq!(h.root.active_world_event_epoch(world).await?, Some(0));
             assert_eq!(
                 sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_world_event_epochs")
                     .fetch_one(&h.pool)

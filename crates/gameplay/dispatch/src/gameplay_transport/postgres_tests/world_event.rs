@@ -38,6 +38,7 @@ fn scenario(epochs: u64) -> TestResult {
             Harness::create_with_admission_seed(admin, "world_event_dispatch", true, false).await?;
         let world = WorldId::decode(&id(42)).map_err(debug)?;
         let channel = ChannelId::decode(&id(43)).map_err(debug)?;
+        assert_eq!(h.root.active_world_event_epoch(world).await?, None);
         let (controller, pin) =
             crate::content::native_gameplay::test_support::activated_with_loot_tables(
                 world,
@@ -81,10 +82,10 @@ fn scenario(epochs: u64) -> TestResult {
         let mut admitted = deps.admitted;
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = controller.active();
-        owner.rooms = crate::gameplay_transport::SeamRooms::new(Some(room), Some(room));
+        // Announcement queries use the shared owner's closed room gates.
         owner.reset_epoch = h
             .root
-            .active_world_reset_epoch(world)
+            .active_world_event_epoch(world)
             .await?
             .ok_or("active epoch")?;
         deps.initialize(&owner).await;
@@ -134,10 +135,9 @@ fn scenario(epochs: u64) -> TestResult {
         drop(owner);
         let mut restarted = deps.owner(&h, &authority);
         restarted.active_generation = controller.active();
-        restarted.rooms = crate::gameplay_transport::SeamRooms::new(Some(room), Some(room));
         restarted.reset_epoch = h
             .root
-            .active_world_reset_epoch(world)
+            .active_world_event_epoch(world)
             .await?
             .ok_or("restart epoch")?;
         let replay = exchange(&restarted, admitted, &[(2, &[]), (3, &[])]).await?;
@@ -240,7 +240,8 @@ fn scenario(epochs: u64) -> TestResult {
         sqlx::query("UPDATE game_world_reset_active SET reset_epoch=99")
             .execute(&h.pool)
             .await?;
-        assert!(h.root.active_world_reset_epoch(world).await.is_err());
+        assert_eq!(h.root.active_world_reset_epoch(world).await?, Some(99));
+        assert!(h.root.active_world_event_epoch(world).await.is_err());
         restarted.reset_epoch = 99;
         assert!(
             exchange(&restarted, admitted, &[(5, &[])])

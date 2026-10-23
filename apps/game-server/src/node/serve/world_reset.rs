@@ -110,7 +110,7 @@ pub(super) async fn recover_retiring(
         }
     }
     Ok(root
-        .active_world_reset_epoch(material.world)
+        .active_world_event_epoch(material.world)
         .await
         .map_err(|_| BootError::Readiness("World reset active epoch"))?
         .unwrap_or(0))
