@@ -7,3 +7,5 @@ pub mod house_scope;
 pub mod house_scope_handoff;
 pub mod house_spell_acl;
 pub mod last_position;
+
+pub mod house_management;
