@@ -1614,3 +1614,7 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+#[path = "world_spatial_entities_fuzz_tests.rs"]
+mod fuzz_tests;

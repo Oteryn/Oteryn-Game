@@ -867,3 +867,7 @@ mod tests {
         assert_eq!(limit("MOVE-RL-11"), Some(256));
     }
 }
+
+#[cfg(test)]
+#[path = "world_spatial_fuzz_tests.rs"]
+mod fuzz_tests;

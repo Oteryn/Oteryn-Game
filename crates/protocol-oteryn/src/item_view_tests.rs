@@ -867,3 +867,7 @@ fn every_wire_slot_maps_to_its_durable_code_and_back() {
     assert_eq!(wire_slot(0), None);
     assert_eq!(wire_slot(11), None);
 }
+
+#[cfg(test)]
+#[path = "item_view_fuzz_tests.rs"]
+mod fuzz_tests;
