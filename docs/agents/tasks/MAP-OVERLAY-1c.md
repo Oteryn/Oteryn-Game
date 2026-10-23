@@ -22,6 +22,57 @@ merge_authority: CP_ONLY (builder never marks ready)
 
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2167, branch skeleton/map-overlay-1c
 
+## CI regression fix (2026-10-23)
+
+Local repair on `port/map-overlay-1c` is in AUTHORING; no commit or publication.
+The two reported `AuthorityRejected` failures come from fixture epochs, not a
+missing-state rejection. Migration 0148's `game_world_reset_map_epoch_current`
+already admits epoch 0 when `game_world_reset_active` is absent and refuses every
+fresh map MINT during RETIRING. The Ground-limit fixtures requested epoch 1 without
+an active pointer; the cross-epoch MINT case advanced its request to epoch 1 while
+leaving the World at epoch 0. These formerly arbitrary fixture epochs deliberately
+became invalid under D1451 and ADR-0021 §4.7.
+
+Use epoch 0 in both Ground-limit map-MINT fixtures. In the cross-epoch case, seed
+the immutable epoch-one history and active pointer atomically before requesting
+epoch 1, and use that current epoch for the second Channel. This is map-consumer
+qualification, not a substitute for the existing activation-writer tests. Keep
+the production admission predicate and receipt triggers intact. No assertion is
+removed or relaxed.
+
+The small child module `tests/support/map_item_mint_world_reset_cases.rs`, included
+by the existing shared MINT cases, exercises a real MINT into Ground with no reset
+rows, rejects a caller-selected future epoch without writes, and rejects both a
+fresh MINT and a pre-reset reservation's commit while RETIRING. It changes only
+reset state for the negative fence cases, retaining the session and assignment.
+
+Validation uses `/home/mole/oteryn-cache/codex-bin/cargo +1.99.1`: bare `cargo`
+resolves to rustup and has no PG URL, so its initial no-database run is not PG
+evidence. The queued wrapper reproduced both reported failures on PostgreSQL
+18.6 (`180006`), then the exact two-filter reproducer passed **2/2** (10.97 s).
+The new reset fence case plus the sibling Ground readiness case passed **2/2**
+(18.48 s). Durability's `--lib world_reset` passed **4/4**; real-dispatch
+`--lib world_reset_map_pickup` passed **2/2** (28.86 s). Rustfmt check and
+clippy for durability and game-server, all targets with `-D warnings`, passed.
+Governance validation and its **124** Python unit tests passed.
+
+Exact focused commands (with the queued wrapper in place of `cargo`):
+
+```sh
+cargo +1.99.1 test --locked -p oteryn-game-server --test character_authority_postgres -- map_mint_writer_counts_actual_roots map_item_mint_takes_an_entry_into_ground --nocapture
+cargo +1.99.1 test --locked -p oteryn-game-server --test character_authority_postgres --quiet -- world_reset_map_mint_admits genuine_not_ready_publication_refuses_fresh_mint_corpse_and_map --nocapture --test-threads=1
+cargo +1.99.1 test --locked -p oteryn-gameplay-durability --lib world_reset --quiet
+cargo +1.99.1 test --locked -p oteryn-gameplay-dispatch --lib world_reset_map_pickup --quiet -- --nocapture --test-threads=1
+cargo +1.99.1 fmt --all -- --check
+cargo +1.99.1 clippy --locked -p oteryn-gameplay-durability -p oteryn-game-server --all-targets --quiet -- -D warnings
+```
+
+Unfinished: the full unfiltered `character_authority_postgres` target is CI-only
+under the owner's 2026-10-22 shared-PC PG-scope rule, which overrides the task's
+validation list. No implementation work remains for this CI repair. Whole-diff
+self-review against the owner's `CODEX-CHECKLIST.md` found no remaining hit; no
+public API, enum variant, struct field or trait method was added.
+
 ## Current scope — integrator decision 2026-10-22 (run 1c-f)
 
 Deliver 1c as a publishable, fail-closed slice: explicit calendar initialization,
