@@ -490,3 +490,87 @@ fn registries_bind_the_chat_wire_ids_and_limits() {
     assert_eq!(limit("CHAT1-RL-01"), Some(MAX_CHAT_NAME_BYTES as u64));
     assert_eq!(limit("CHAT0-RL-07"), Some(MAX_CHAT_OPEN_ROOMS as u64));
 }
+
+#[test]
+fn fuzz_decode_chat_intent() {
+    crate::decoder_fuzz_support::codec(
+        "decode_chat_intent",
+        |rng| {
+            let text = "é".repeat((rng.below(100) + 1) as usize);
+            match rng.below(5) {
+                0 => ChatIntent::Say {
+                    mode: *rng.pick(&[
+                        ChatSpeechMode::Say,
+                        ChatSpeechMode::Whisper,
+                        ChatSpeechMode::Yell,
+                    ]),
+                    text,
+                },
+                1 => ChatIntent::Private {
+                    recipient_name: "Al".into(),
+                    text,
+                },
+                2 => ChatIntent::Room {
+                    room: *rng.pick(&ChatRoom::ALL),
+                    text,
+                },
+                3 => ChatIntent::OpenRoom(*rng.pick(&ChatRoom::ALL)),
+                _ => ChatIntent::CloseRoom(*rng.pick(&ChatRoom::ALL)),
+            }
+        },
+        decode_chat_intent,
+        |v| encode_chat_intent(v).expect("intent"),
+    );
+}
+
+#[test]
+fn fuzz_decode_chat_intent_result() {
+    crate::decoder_fuzz_support::codec(
+        "decode_chat_intent_result",
+        |rng| {
+            let disposition = *rng.pick(&ChatDisposition::ALL);
+            ChatIntentResult {
+                disposition,
+                wait_seconds: if disposition.waits() {
+                    (rng.below(1280) + 1) as u32
+                } else {
+                    0
+                },
+            }
+        },
+        decode_chat_intent_result,
+        |v| encode_chat_intent_result(v).expect("result"),
+    );
+}
+
+#[test]
+fn fuzz_decode_chat_rooms() {
+    crate::decoder_fuzz_support::codec(
+        "decode_chat_rooms",
+        |rng| ChatRoomSet(rng.below(16) as u8),
+        decode_chat_rooms,
+        |v| encode_chat_rooms(*v),
+    );
+}
+
+#[test]
+fn fuzz_decode_chat_line() {
+    crate::decoder_fuzz_support::codec(
+        "decode_chat_line",
+        |rng| match rng.below(4) {
+            0 => local_line((rng.below(120) + 1) as usize, (rng.below(100) + 1) as usize),
+            1 => ChatLine::Private {
+                speaker_name: "Al".into(),
+                text: "é".repeat((rng.below(100) + 1) as usize),
+            },
+            2 => ChatLine::Room {
+                room: *rng.pick(&ChatRoom::ALL),
+                speaker_name: "Al".into(),
+                text: "hi".into(),
+            },
+            _ => ChatLine::Dropped,
+        },
+        decode_chat_line,
+        |v| encode_chat_line(v).expect("line"),
+    );
+}

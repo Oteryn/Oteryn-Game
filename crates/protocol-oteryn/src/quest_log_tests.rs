@@ -463,3 +463,44 @@ fn registries_bind_capability_16_and_its_limits() {
         assert_eq!(limit(row), Some(value as u64), "{row}");
     }
 }
+
+// TEST-FUZZ-1: bounded randomized decoder and generated-value round trips.
+
+#[test]
+fn fuzz_decode_quest_log() {
+    crate::decoder_fuzz_support::codec(
+        "decode_quest_log",
+        |rng| QuestLog {
+            view: Some(QuestLogView::Line(line(
+                1,
+                vec![mission(
+                    1,
+                    "Mission",
+                    &"é".repeat(rng.below(100) as usize),
+                    rng.bool(),
+                )],
+            ))),
+            tracked: vec![],
+        },
+        decode_quest_log,
+        |v| encode_quest_log(v).expect("log"),
+    );
+}
+
+#[test]
+fn fuzz_decode_quest_log_query() {
+    crate::decoder_fuzz_support::codec(
+        "decode_quest_log_query",
+        |rng| match rng.below(3) {
+            0 => QuestLogQuery::List,
+            1 => QuestLogQuery::Quest {
+                quest_index: (rng.u64() as u32).max(1),
+            },
+            _ => QuestLogQuery::Track {
+                quest_indexes: (1..=rng.below(11) as u32).collect(),
+            },
+        },
+        decode_quest_log_query,
+        |v| encode_quest_log_query(v).expect("query"),
+    );
+}

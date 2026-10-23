@@ -955,3 +955,7 @@ mod tests {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "account_achievements_fuzz_tests.rs"]
+mod fuzz_tests;

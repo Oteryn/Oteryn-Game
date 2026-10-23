@@ -583,3 +583,7 @@ fn registries_bind_capability_14_and_its_limits() {
     // Sessions without capability 14 keep ITEMV0-RL-03.
     assert_eq!(limit("ITEMV0-RL-03"), Some(MAX_LIVE_ITEM_HANDLES as u64));
 }
+
+#[cfg(test)]
+#[path = "container_tree_fuzz_tests.rs"]
+mod fuzz_tests;
