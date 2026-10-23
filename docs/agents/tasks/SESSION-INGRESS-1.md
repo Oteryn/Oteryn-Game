@@ -123,3 +123,89 @@ through the real-dispatch PostgreSQL E2E. No existing test was weakened or remov
   untouched `0609-PARTYPVP0-RL-04.json` to `0598-PARTYPVP0-RL-04.json`. The registry tree
   validity test passes; this pre-existing round-trip/ordinal issue is outside this task.
 - D1377 physical exclusion and downstream Trade/House/Mail activation remain separate cards.
+
+## CI repair on PR #2342 — 2026-10-23
+
+The owner returned this worktree to local AUTHORING for a repair of `cf10cb8865d53cc56888119a0305868d9e5689c8`.
+No commit, push or Git ref mutation is authorized. This repair changes PostgreSQL test
+fixtures to follow the accepted FND-02 §§13.1–13.3 session ingress contract; it does not
+change production transactions, fencing, locking, deadlines or result retention.
+
+PROVEN isolated reproductions, using `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --lib <filter> -- --nocapture`:
+
+| Filter | PR head before repair | `origin/main` at `3c57781c321e643a67457374d1d42b6dbabd9133` |
+| --- | --- | --- |
+| `rune_use_bridge_postgres_real_dispatch_casts_once_and_reloads_one_debit` | FAIL, 57.52s: `Replay: unexpected connection end: AdmittedThenControlLost`, after command 4 with next ID 5 | PASS, 1 test, 421.60s |
+| `guild_chat_postgres_real_dispatch_login_relay_custody_exclusion_and_fences` | FAIL, 29.76s: `deadline has elapsed` | PASS, 1 test, 19.26s |
+
+The hard current-directory write boundary prevents the requested sibling detached
+worktree. The main comparison instead used an exact `git archive origin/main` source
+snapshot inside this worktree, with the same queued Cargo wrapper and PostgreSQL route.
+The snapshot has been removed. Archive timestamps initially reused stale Cargo artifacts;
+refreshing source mtimes forced rebuilding the baseline dependencies before the passing
+comparisons above. Neither isolated failing test output contained a PostgreSQL lock or
+transaction timeout error; the reported CI database messages were not reproduced locally.
+
+Root causes and preserved qualification:
+
+- Rune's driver expected `COMMAND_OUTCOME_EXPIRED` for the latest retained command. The
+  accepted contract requires `DUPLICATE_REPLAY`. Its early driver error left the server
+  polling until liveness control loss, which masked the earlier expectation mismatch.
+  The fixture now checks replay status and committed disposition without another damage
+  application. Unknown pending work consumes its reserved ID and refuses reopening; a
+  queued duplicate is proved unable to debit or damage anything. The existing real family
+  owner still separately reconciles its retained batch, including before/after-commit
+  faults, stale revision refusal, repeat reconciliation, final receipt count and quantity.
+- Guild's fixture restarted each synthetic connection with the original session continuity
+  and command 1. After the first command, common ingress correctly refused that stale
+  continuity. The fixture retained the server socket after the refusal, so the driver saw
+  neither EOF nor a command result before its 20-second bound. Helpers now carry returned
+  command/sequence continuity, assert each consumed ID, and close their owned socket on
+  return. Relay contents, unnegotiated capability refusal, native exclusion races, custody,
+  membership transitions and all seven forged fence checks remain asserted.
+
+Repair qualification, using the absolute queued Cargo wrapper throughout:
+
+| Check | Result |
+| --- | --- |
+| Isolated rune filter above, `-- --nocapture` | PASS, 1 test, 342.27s; all ten cases, including refused pending-session reopening and separate owner reconciliation |
+| Isolated guild filter above, `-- --nocapture` | PASS, 1 test, 22.98s |
+| `--lib session_ingress -- --nocapture` | PASS, 4 tests, 28.47s; three unit cases and actual PostgreSQL dispatch/recovery |
+| `--lib monk_save::postgres_tests -- --test-threads=2` | PASS, 76 tests, zero failed/ignored, 1406.36s; includes both repaired cases and session ingress again |
+| Clippy, dispatch and protocol, `--all-targets --quiet -- -D warnings` | PASS with `CARGO_INCREMENTAL=0`; existing dependency warnings only |
+| `cargo fmt --all --check`, explicitly including all five changed Rust case/helper files | PASS |
+| Governance validation and `tools/agents/tests` | PASS, 129 tests |
+| `git diff --check` | PASS |
+
+The initial clippy invocation encountered missing incremental dependency-graph/query-cache
+files in the lane's durability artifacts. The same check passed with incremental compilation
+disabled; no source changes, lint suppression or test changes were needed for that retry.
+
+Exact Rust commands (run from this worktree; the first two also ran against the main
+source snapshot and the unrepaired head):
+
+```sh
+ingress_cargo=/home/mole/oteryn-cache/codex-bin/cargo
+"$ingress_cargo" test --locked -p oteryn-gameplay-dispatch --lib rune_use_bridge_postgres_real_dispatch_casts_once_and_reloads_one_debit -- --nocapture
+"$ingress_cargo" test --locked -p oteryn-gameplay-dispatch --lib guild_chat_postgres_real_dispatch_login_relay_custody_exclusion_and_fences -- --nocapture
+"$ingress_cargo" test --locked -p oteryn-gameplay-dispatch --lib session_ingress -- --nocapture
+"$ingress_cargo" test --locked -p oteryn-gameplay-dispatch --lib monk_save::postgres_tests -- --test-threads=2
+CARGO_INCREMENTAL=0 "$ingress_cargo" clippy --locked -p oteryn-gameplay-dispatch -p oteryn-protocol-oteryn --all-targets --quiet -- -D warnings
+"$ingress_cargo" fmt --all --check -- \
+  crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs \
+  crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/guild_chat.rs \
+  crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/guild_chat/wire_tests.rs \
+  crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/guild_chat/custody_tests.rs \
+  crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/guild_chat/exclusion_race_tests.rs
+```
+
+D1462 self-review: reread the full repair diff and the branch's ingress implementation
+against `/home/mole/oteryn-cache/CODEX-CHECKLIST.md`. Rechecked workspace enum, constructor,
+trait-implementation and replay-encoder caller sites under `apps/`, `crates/`, `tools/`,
+plus every changed helper caller. The repair adds no enum variant, struct field, trait
+method or public production function. All existing debit, damage, capability and fence
+assertions remain qualified; superseded expiry/reopening expectations now enforce the
+accepted session contract. No unrelated failure needs CI-only deferral.
+
+The local repair remains uncommitted at the owner's request. Publication and fresh
+repository CI belong to the control plane's later candidate.

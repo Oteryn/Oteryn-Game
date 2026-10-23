@@ -93,19 +93,7 @@ async fn send_use(
             Err(error) => return Err(error),
         };
         let envelope = decode_wire_envelope(&frame).map_err(debug)?;
-        if expected == Expected::Replay && envelope.message_type() == MessageType::ProtocolError {
-            assert_eq!(
-                frame,
-                crate::foundation::encode_command_protocol_error(
-                    crate::foundation::FoundationProtocolError::CommandOutcomeExpired,
-                    1,
-                    id,
-                    0,
-                )
-                .map_err(debug)?
-            );
-            return Ok(());
-        }
+        assert_ne!(envelope.message_type(), MessageType::ProtocolError);
         if envelope.message_type() != MessageType::CommandResult {
             continue;
         }
@@ -126,8 +114,10 @@ async fn send_use(
                 assert_eq!(decode_use_result(result.payload).map_err(debug)?, expected);
             }
             Expected::Replay => {
-                return Err(
-                    "an expired command returned a result instead of its protocol error".into(),
+                assert_eq!(result.status, CommandStatus::DuplicateReplay);
+                assert_eq!(
+                    decode_use_result(result.payload).map_err(debug)?,
+                    UseDisposition::Committed
                 );
             }
             Expected::Disconnect => return Err("an unresolved cast sent a terminal result".into()),
@@ -175,6 +165,21 @@ async fn client_cast(
             use_with_position: None,
         },
     };
+    if retry {
+        // FND-02 §13.3: unknown pending work cannot reopen the logical session. The
+        // duplicate is already queued by serve_cast; it must never reach the family.
+        let error = read_frame(client)
+            .await
+            .err()
+            .ok_or("an unresolved session reopened instead of disconnecting")?;
+        assert_eq!(
+            error
+                .downcast_ref::<std::io::Error>()
+                .map(std::io::Error::kind),
+            Some(std::io::ErrorKind::UnexpectedEof)
+        );
+        return Ok(intent);
+    }
     let actor = owner.runtime.lock().await.visible_entities().players[0].actor;
     let session = crate::foundation::GameSessionId::decode(&id(50)).map_err(debug)?;
     let victim_actor = owner
@@ -360,27 +365,12 @@ async fn client_cast(
             send_use(client, first_id, &intent, Expected::Disconnect).await?;
         }
         Case::BeforeCommit | Case::AfterCommit | Case::StaleRevision => {
-            if !retry {
-                test_faults::arm(if case == Case::AfterCommit {
-                    Point::AfterCommit
-                } else {
-                    Point::BeforeCommit
-                });
-                send_use(client, first_id, &intent, Expected::Disconnect).await?;
+            test_faults::arm(if case == Case::AfterCommit {
+                Point::AfterCommit
             } else {
-                send_use(
-                    client,
-                    first_id,
-                    &intent,
-                    Expected::Result(if case == Case::StaleRevision {
-                        UseDisposition::Rejected
-                    } else {
-                        UseDisposition::Committed
-                    }),
-                )
-                .await?;
-                send_use(client, first_id, &intent, Expected::Replay).await?;
-            }
+                Point::BeforeCommit
+            });
+            send_use(client, first_id, &intent, Expected::Disconnect).await?;
         }
     }
     client.shutdown().await?;
@@ -396,8 +386,13 @@ async fn serve_cast(
     original: Option<UseIntent>,
 ) -> TestResult<(AdmittedSession, UseIntent)> {
     let first_id = admitted.continuity.next_command_id;
-    let expects_expired_close = case == Case::Replay || original.is_some();
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    if let Some(intent) = &original {
+        let payload = encode_item_use_intent(intent).map_err(debug)?;
+        let frame = test_command(first_id - 1, COMMAND_TYPE_USE_INTENT, &payload);
+        client.write_u32(u32::try_from(frame.len())?).await?;
+        client.write_all(&frame).await?;
+    }
     let serving = async {
         let end = serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await;
         drop(server);
@@ -405,10 +400,6 @@ async fn serve_cast(
             ConnectionEnd::AdmittedThenDisconnected(session) => {
                 Ok::<_, Box<dyn std::error::Error>>(session)
             }
-            ConnectionEnd::AdmittedThenClosed(
-                session,
-                crate::foundation::FoundationProtocolError::CommandOutcomeExpired,
-            ) if expects_expired_close => Ok(session),
             other => Err(format!("unexpected connection end: {other:?}").into()),
         }
     };
@@ -637,7 +628,7 @@ async fn run_case(admin: String, case: Case) -> TestResult {
     if case == Case::LostContent {
         assert_eq!(
             resumed.continuity.next_command_id,
-            admitted.continuity.next_command_id
+            admitted.continuity.next_command_id + 1
         );
     }
     if matches!(
@@ -646,8 +637,9 @@ async fn run_case(admin: String, case: Case) -> TestResult {
     ) {
         assert_eq!(
             resumed.continuity.next_command_id,
-            admitted.continuity.next_command_id
+            admitted.continuity.next_command_id + 1
         );
+        assert!(!owner.states.command_ingress.resumable(&resumed));
         let quantity: i64 = sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(71).as_slice()).fetch_one(&harness.pool).await?;
         assert_eq!(quantity, if case == Case::AfterCommit { 2 } else { 3 });
         assert_eq!(
@@ -670,11 +662,71 @@ async fn run_case(admin: String, case: Case) -> TestResult {
                 .bind(id(71).as_slice()).execute(&mut *tx).await?;
             tx.commit().await?;
         }
-        tokio::time::timeout(
+        let (refused, _) = tokio::time::timeout(
             std::time::Duration::from_secs(30),
-            serve_cast(&owner, &harness, resumed, victim, case, Some(original)),
+            serve_cast(
+                &owner,
+                &harness,
+                resumed,
+                victim,
+                case,
+                Some(original.clone()),
+            ),
         )
         .await??;
+        assert_eq!(
+            refused.continuity.next_command_id,
+            resumed.continuity.next_command_id
+        );
+        let after_refusal: i64 = sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(71).as_slice()).fetch_one(&harness.pool).await?;
+        assert_eq!(after_refusal, quantity);
+        assert_eq!(
+            owner
+                .runtime
+                .lock()
+                .await
+                .live_creature_health(victim_actor),
+            Some(initial_health)
+        );
+        // Retain the family's original cancellation/reconciliation qualification. This
+        // is owner reconciliation of its retained batch, not another client execution
+        // or permission to resume the unresolved common ingress.
+        let command = crate::gameplay_transport::connection::UseCommand {
+            game_session_id: session,
+            command_id: admitted.continuity.next_command_id,
+            item_fence: admitted.item_fence,
+        };
+        let expected = if case == Case::StaleRevision {
+            UseDisposition::Rejected
+        } else {
+            UseDisposition::Committed
+        };
+        let result = owner
+            .use_rune(actor, command, original.clone(), None, true)
+            .await
+            .ok_or("owner reconciles its retained original")?;
+        assert_eq!(result.disposition, expected);
+        if case != Case::StaleRevision {
+            let health = owner
+                .runtime
+                .lock()
+                .await
+                .live_creature_health(victim_actor);
+            let replay = owner
+                .use_rune(actor, command, original, None, true)
+                .await
+                .ok_or("owner retains its reconciled original")?;
+            assert_eq!(replay.disposition, UseDisposition::Committed);
+            assert_eq!(
+                owner
+                    .runtime
+                    .lock()
+                    .await
+                    .live_creature_health(victim_actor),
+                health
+            );
+        }
+        assert!(!owner.states.command_ingress.resumable(&resumed));
     }
     let (quantity, revision): (i64, String) = sqlx::query_as("SELECT quantity,state_revision::text FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(71).as_slice()).fetch_one(&harness.pool).await?;
     let committed = matches!(case, Case::Replay | Case::BeforeCommit | Case::AfterCommit);

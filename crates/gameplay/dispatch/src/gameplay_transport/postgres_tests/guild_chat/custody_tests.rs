@@ -5,9 +5,9 @@ pub(super) async fn accept_before_exclude(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
     leader: CurrentCharacterItemFence,
-) -> TestResult {
-    let (mut server, mut client) = tokio::io::duplex(64);
-    let serving = async { serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await };
+) -> TestResult<AdmittedSession> {
+    let (server, mut client) = tokio::io::duplex(64);
+    let serving = serve(server, admitted, owner);
     let driving = async {
         wire_tests::member_login(&mut client).await?;
         owner
@@ -44,28 +44,34 @@ pub(super) async fn accept_before_exclude(
         // A subsequent line still has the old payload guild, and is refused at final dequeue.
         owner.states.chat.deliver(&payload(gid(90)?, "excluded")?);
         assert!(owner.chat_next_bound(admitted, &mut 64).await.is_none());
-        send_not_allowed(&mut client).await?;
+        send_not_allowed(&mut client, admitted.continuity.next_command_id).await?;
         client.shutdown().await?;
         Ok(())
     };
-    let (_, result): (_, TestResult) =
+    let (ended, result): (_, TestResult) =
         tokio::time::timeout(Duration::from_secs(20), fixture::join_two(serving, driving)).await?;
     result?;
     assert_eq!(
         owner.chat_guild_admit(admitted).await,
         GuildRoomState::Absent
     );
-    Ok(())
+    let ended = ended?;
+    assert_eq!(
+        ended.continuity.next_command_id,
+        admitted.continuity.next_command_id + 1
+    );
+    Ok(ended)
 }
 
-pub(super) async fn send_not_allowed(client: &mut tokio::io::DuplexStream) -> TestResult {
-    wire_tests::send(client, 1, "no longer a member").await?;
+pub(super) async fn send_not_allowed(client: &mut tokio::io::DuplexStream, id: u64) -> TestResult {
+    wire_tests::send(client, id, "no longer a member").await?;
     loop {
         let frame = read_frame(client).await?;
         let env = decode_wire_envelope(&frame).map_err(debug)?;
         assert_ne!(env.message_type(), MessageType::StateDelta);
         if env.message_type() == MessageType::CommandResult {
             let result = decode_command_result(env.payload()).map_err(debug)?;
+            assert_eq!(result.command_id, id);
             assert_eq!(result.status, CommandStatus::Accepted);
             assert_eq!(
                 chat::decode_chat_intent_result(result.payload)

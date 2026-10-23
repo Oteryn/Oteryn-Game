@@ -42,8 +42,8 @@ pub(super) async fn exclusion_wins(
     assert!(owner.chat_next_bound(admitted, &mut 64).await.is_some());
     owner.chat_delivered(admitted.game_session_id).await;
 
-    let (mut server, mut client) = tokio::io::duplex(64);
-    let serving = async { serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await };
+    let (server, mut client) = tokio::io::duplex(64);
+    let serving = serve(server, admitted, owner);
     let driving = async {
         wire_tests::member_login(&mut client).await?;
         let mut exclusion = h.pool.begin().await?;
@@ -75,13 +75,17 @@ pub(super) async fn exclusion_wins(
             }
         }).await??;
         exclusion.commit().await?;
-        custody_tests::send_not_allowed(&mut client).await?;
+        custody_tests::send_not_allowed(&mut client, admitted.continuity.next_command_id).await?;
         client.shutdown().await?;
         Ok(())
     };
-    let (_, result): (_, TestResult) =
+    let (ended, result): (_, TestResult) =
         tokio::time::timeout(Duration::from_secs(20), fixture::join_two(serving, driving)).await?;
     result?;
+    assert_eq!(
+        ended?.continuity.next_command_id,
+        admitted.continuity.next_command_id + 1
+    );
     assert!(owner.chat_next_bound(admitted, &mut 64).await.is_none());
     Ok(())
 }
