@@ -155,6 +155,15 @@ impl RevisionSlot {
         Ok(revision)
     }
 
+    /// An atomic multi-Character XP transaction has ended. Unknown outcomes invalidate the
+    /// cursor, and replayed older receipts cannot move it backwards.
+    pub fn observe_party_experience(
+        &mut self,
+        outcome: &Result<ExperienceCommitOutcome, CharacterProgressionError>,
+    ) {
+        self.settle(outcome);
+    }
+
     /// One XP award at the cursor, or the exact replay of a retained receipt at its `original`
     /// revision. A mismatch fails closed.
     pub async fn commit_experience<const N: usize>(

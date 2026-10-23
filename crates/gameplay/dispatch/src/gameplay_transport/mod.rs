@@ -2978,9 +2978,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         &self,
         actor: ExactActorRef,
         session: GameSessionId,
+        command_id: u64,
         intent: oteryn_protocol_oteryn::chat::ChatIntent,
     ) -> oteryn_protocol_oteryn::chat::ChatIntentResult {
-        self.chat_speak(actor, session, &intent).await
+        self.chat_speak(actor, session, command_id, &intent).await
     }
 
     async fn chat_next(
@@ -4433,6 +4434,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             actor_spell::NativeCastDispatch::Outcome(outcome) => {
                 let _ = self.drain_kill_rewards(game_session_id).await;
+                self.party_spell_feedback(game_session_id, &intent, &outcome);
                 Some(outcome)
             }
             actor_spell::NativeCastDispatch::Pending => None,
@@ -7288,7 +7290,11 @@ mod tests {
     }
 }
 
+mod party_kill_settlement;
+mod party_spell_feedback;
 mod party_spell_owner;
+mod party_xp;
+mod party_xp_command;
 mod spell_parameter_cast;
 #[cfg(test)]
 pub use actor_spell::ChannelSpellStates;

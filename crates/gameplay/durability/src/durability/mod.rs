@@ -12,3 +12,6 @@ pub mod mail_text_policy;
 pub mod native_world_items;
 #[allow(dead_code)]
 pub mod native_world_read;
+
+pub mod hunting_xp;
+pub mod party_kill_xp;
