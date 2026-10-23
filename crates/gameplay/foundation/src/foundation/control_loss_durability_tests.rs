@@ -635,3 +635,6 @@ fn owning_loss_after_post_grace_generation_one_preserves_rearm_evidence() -> Tes
     assert_eq!(effect.operation().observation.history, source.0.history);
     Ok(())
 }
+
+#[path = "planned_world_reset_tests.rs"]
+mod planned_world_reset_tests;

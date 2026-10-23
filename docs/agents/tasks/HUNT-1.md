@@ -4,7 +4,7 @@
 task_id: HUNT-1
 title: "HUNT-1: prey and hunting tasks"
 mode: IMPLEMENT
-status: NOT_STARTED
+status: IN_PROGRESS
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 4
@@ -13,7 +13,7 @@ plan_row: "§4 Epic 6 row HUNT-1 (rows 45, 46); §7 'HUNT-1, RANK-1' PREY0 rows"
 briefs:
   - docs/architecture/reviews/OTERYN_GAME_PREY0_PREY_AND_HUNTING_TASKS_DECISION_2026-09-30.md
 base_branch: main
-branch: null
+branch: claude/happy-davinci-ijz3wy-hunt-1
 pr: null
 needs_migration: true
 needs_registry: true
@@ -40,22 +40,63 @@ Children (allocate from the brief's child graph; the plan row is only the family
 PREY-CONTENT-1, PREY-1 (hard), PREY-FEE-1, PREY-EFFECT-1 (combat), TASKBOARD-1 (hard),
 TASKBOARD-DELIVERY-1, TASKSHOP-1, PREY-WIRE-1 (Reg).
 
-## Dependencies (re-verified on origin/main 59785d76, 2026-10-22)
+## Dependencies (re-verified on origin/main 65e40c57f, 2026-10-23)
 
-| Dependency | State |
+Every row was checked with `git log --oneline origin/main --grep <ID>` and a
+workspace code/schema search before authoring. Task-card status alone was not used.
+
+| Dependency | Real state and evidence |
 |---|---|
-| PREY0 acceptance | ACCEPTED (#2209) |
-| PREMIUM-1 | MERGED (#2110) |
-| ITEM-USE-1c (TASKBOARD-DELIVERY-1) | MERGED (#2082) |
-| SPELL-TARGET-1 / ATTACK-0 | MERGED (#1787) / ACCEPTED |
-| CHAR-REV-SEQ-1, GOLD-FEE-1b | MERGED (verify exact surface at allocation) |
-| LOOP-MONSTER-1 (family entry gate; kill caller) | BLOCKING — re-implementation pending (draft #2200 closing) |
-| DAILY-1 claim/line schema (wildcard sink source) | BLOCKING — re-implementation pending (draft #2151 closing) |
-| MAP-OVERLAY-1c reset history (weekly reset) | BLOCKING (draft #2167 closing) |
-| PREY-CONTENT-1 admitted tables (direct PREY-1 dependency) | BLOCKING: `rulesets/progression/prey/index.json` is `READY_UNPOPULATED`; no pool, level bands, grade/draw tables |
+| PREY0 acceptance | ACCEPTED (#2209); accepted PREY0 decision on main, Account+World amendment #1426 |
+| PREMIUM-1 | MERGED (#2110, `d8b3191b2`); native `domain/premium.rs` gate and durable activation latch |
+| ITEM-USE-1c (TASKBOARD-DELIVERY-1) | MERGED (#2082, `385c01b26`); native dispatch/item-use owner exists |
+| SPELL-TARGET-1 / ATTACK-0 | MERGED spell target #1787 (`af219641e`), #1808 (`5a9b595e9`), ATTACK-0 #1347 (`2198d18e1`); existing kill/XP dispatch exercised by PARTY-XP-1 |
+| CHAR-REV-SEQ-1, GOLD-FEE-1b | MERGED; `character_revision_sequencer.rs` and `item_fee_burn.rs`; multi-denomination fee #1410 (`17a917ed0`) |
+| LOOP-MONSTER-1 | MERGED (#2323, `778a4b1bc`); World respawn/monster-think runtime on main |
+| DAILY-1 claim/line schema | PARTIAL (#2309, `37bcdf527`): migration 0140 and fenced claim core exist; retained PREY_WILDCARD reward lines/sink remain absent and BLOCKING for wildcard delivery |
+| MAP-OVERLAY-1c reset history | PARTIAL: migration 0140 now owns `game_world_reset_history`; reset publisher/barrier and weekly settlement remain BLOCKING (no completed MAP-OVERLAY-1c implementation) |
+| PREY-CONTENT-1 admitted tables | BLOCKING: #2293 staged reference evidence only; `rulesets/progression/prey/index.json` remains `READY_UNPOPULATED`, with no admitted native pool/grade/draw tables |
 
-Rows marked BLOCKING must merge (or be accepted) before the slot commit; owned-path code may be
-drafted earlier but must not assume unmerged schemas.
+This owner-authorized pass implements pure rules and extends existing storage only.
+It does not assume the blocked content or reward-line APIs and does not activate a
+slot writer. Task Board depends on PREY-1 and remains unqualified for this pass.
+
+## Existing implementation found before authoring
+
+- Migration `0141_party_xp_hunting.sql` already owns
+  `game_character_prey_slots` and `game_account_prey_unlocks`; reuse, no parallel tables.
+- `durability/hunting_xp.rs` reads active XP prey, checks the Account+World permanent
+  entitlement and its claiming Character, and feeds `party_kill_xp.rs`.
+- `dispatch/.../postgres_tests/party_xp.rs` already proves prey then stamina through
+  real combat/kill dispatch. `characters/hunting_experience.rs` owns XP arithmetic.
+- Content Creature flags (`prey`, `exclusive_prey`) and the gated `PREY_V1` capability
+  already exist. No slot command, writer, initialization or draw owner is installed.
+- Archived PREY0 and PREY-CONTENT-1 records are acceptance/reference evidence,
+  not runtime admission. `MECHANICS_STATUS.md` and a test-support `property` module
+  do not exist on this main; neither is created for this pass.
+
+## Delivered in this bounded pass
+
+- L3 `progression/prey.rs`: native Premium/permanent slot access, invalid-slot-first
+  refusal, four bonus types and all ten exact grade values, 20-hour free reroll
+  planning, level × 200 gold paid quote preserving the free timer, closed wildcard
+  costs (1/5), option checks without debit, balance cap 52 and checked subtraction.
+  Quotes reject timestamps outside the durable nonnegative BIGINT range and overflow.
+- L4 `durability/prey.rs` + `prey/decode.rs`: validate retained prey state on the
+  existing real XP consumer; no new public writer or alternate authority.
+- Migration **0152** exactly: extend existing Character slots with bounded distinct
+  Creature lists, option and Unix-second free deadline; exact grade/bonus CHECK.
+  Existing roles retain reads; all slot/unlock writes remain closed pending the
+  content + fenced writer + receipt/revision bundle. No partial write grants.
+- Auto-mounted `prey_postgres_cases.rs`: schema round trip through a new connection,
+  legacy defaults, rollback, role grants, invalid lists/options/times/slots and every
+  type/grade combination. The existing real kill-dispatch prey test qualifies the
+  production decoder. No duplicate test mount or new PG target.
+- Resource entries **0640–0645**, using the accepted PREY0 limit IDs.
+- The production decoder is reached through the existing kill/XP dispatch. Pure
+  access/cost plans await the content-gated command writer. All new types, enum
+  variants, fields and conversion implementations were swept across `apps/`,
+  `crates/`, `tools/`; no external construction/match sites needed updates.
 
 ## Code locations (ADR-0022; verified on origin/main 59785d76)
 
@@ -100,7 +141,7 @@ Proposed new files (one mechanic per file, layer per ADR-0022):
 - `tools/content-schema/native-gameplay/prey_loot_budget.py` (new),
   `test_prey_loot_budget.py` (new), `prey-loot-provider.schema.json` (new).
 - `rulesets/progression/task-board/` (new) authoring inputs.
-- `apps/game-server/tests/prey_postgres.rs` (new) — focused e2e target.
+- `apps/game-server/src/lifted_tests/auto/prey_postgres_cases.rs` — sole mount for new PG cases (owner routing supersedes the historical target proposal).
 - `apps/game-server/migrations/<next>_prey.sql` (new) — migration number: next free number at
   allocation time (only one migration PR in the queue). Event type number likewise next free
   at allocation (draft's D1341 "6" is void).
@@ -172,7 +213,7 @@ Integration obligations (mandatory):
 
 ## Remaining work
 
-Migration + Prey writers + authority UNION; sequencer adapter + retry/replay-cursor case;
+Prey writers + receipts + authority UNION + matching progression guard; sequencer adapter + retry/replay-cursor case;
 PREY-CONTENT-1 production tables; draws/selection/active bonuses/hunting checkpoints/expiry;
 PREY-FEE-1; PREY-EFFECT-1; Task Board, delivery, shop; `PREY_V1` wire and registries;
 runtime activation; expired-deletion, expired-active-hold and operator access/export
@@ -200,18 +241,87 @@ qualification.
 - wildcard event payload + registry row + retention profile
 - wire + registry + capability + handler + tests
 
+## Reference parity
+
+Reference-only Canary pin: [52550d5e](https://github.com/opentibiabr/canary/tree/52550d5e3c0ffe565f4bd1014f4e5575abf1059b).
+Values were read from the pinned sources over read-only HTTP; no source code/assets
+are copied. Every table row has a table-driven L3 assertion; all forty bonus values
+are asserted explicitly, rather than restating the formula as the test oracle.
+
+| Rule | Value | Source | L3 test |
+|---|---|---|---|
+| Slot access | 3 slots; 1 free, 2 current Premium or permanent, 3 permanent; vocation required; invalid slot first | PREY0 §5.1, [Prey System](https://tibia.fandom.com/wiki/Prey_System); native Premium supersedes Canary bypasses | `prey_reference_slot_unlocks` |
+| Damage grade values | grades 1–10: 7,9,11,13,15,17,19,21,23,25% | Canary `src/io/ioprey.cpp`, `reloadBonusValue` | `prey_reference_bonus_grades` Damage row |
+| Reduction grade values | 12,14,16,18,20,22,24,26,28,30% | same | `prey_reference_bonus_grades` Reduction row |
+| Experience grade values | 13,16,19,22,25,28,31,34,37,40% | same | `prey_reference_bonus_grades` Experience row |
+| Improved loot grade values | 13,16,19,22,25,28,31,34,37,40% | same | `prey_reference_bonus_grades` Loot row |
+| Free list reroll | now ≥ deadline; next = now + 72,000 seconds | Canary `config.lua.dist:138–150`; `parsePreyAction` | `prey_reference_reroll_timing_and_gold` free boundary rows |
+| Paid list reroll | level × 200 gold, free deadline unchanged | same; PREY0 Y1 | `prey_reference_reroll_timing_and_gold` paid rows |
+| Bonus reroll | 1 wildcard | Canary `config.lua.dist:148` | `prey_reference_wildcard_costs_and_option_checks` BonusReroll row |
+| Select any | 5 wildcards | Canary `config.lua.dist:147` | `prey_reference_wildcard_costs_and_option_checks` SelectAny row |
+| Auto reroll option/expiry | ≥1 to select option, 1 spent at expiry; option selection spends nothing | Canary `parsePreyAction`/`checkPlayerPreys` | `prey_reference_wildcard_costs_and_option_checks` AutoReroll rows |
+| Lock option/expiry | ≥5 to select option, 5 spent at expiry; clearing needs 0 | same | `prey_reference_wildcard_costs_and_option_checks` Lock/None rows |
+| Storage bounds | 3 slots, ≤9 keys × 256 bytes, ≤7,200 hunting seconds, ≤52 wildcards | PREY0 §§4,12; Canary config; [Prey System](https://tibia.fandom.com/wiki/Prey_System) | `prey_reference_storage_bounds_and_closed_codes` |
+
+Grade 1 is valid retained state; fresh grade/RNG draws remain blocked on admitted
+content. Quotes/debit plans are pure; no payment, reservation or unlock is performed.
+`crates/test-support` has no property module on main, so that optional property
+framework is skipped; wildcard conservation/underflow is exhaustively tested over
+all 53 admitted balances, and maximal level/timestamp boundaries are tested.
+
 ## Validation
+
+Final worktree validation PASS (2026-10-23; queued cargo wrapper via a
+non-login shell, preserving the supplied PostgreSQL route):
+
+- `cargo fmt --all -- --check`: PASS; auto-mounted test also formatted directly.
+- Clippy `--all-targets -- -D warnings` on progression, durability and game-server:
+  PASS. Existing vendored Tokio/sqlx warnings do not fail these crate checks.
+- Progression `--lib`: **66 passed**, including all **5** new Prey parity cases.
+- Durability `--lib prey`: compiled successfully, **0 matching tests**; the new
+  adapter is exercised by the actual dispatch PG case below, not a fake unit DB.
+- Game-server `--lib prey_storage_`: **2 passed**, canonical PostgreSQL **18.6**;
+  final rerun covers the bounded SQL CASE and fresh physical-connection reload.
+- Dispatch `--lib party_xp_real_dispatch_prey_then_stamina`: **1 passed**, real
+  combat/kill dispatch. Its pre-existing diagnostic string says 170006; the shared
+  Harness enforces `CANONICAL_POSTGRES_SERVER_VERSION_NUM = 180006`.
+- Repository policy validator: PASS (23 policy files, 68 workflows).
+- Governance validator: PASS; governance unit tests: **124 passed**.
+- Whole-diff checklist review and workspace type/constructor/impl sweep: PASS;
+  `git diff --check`: PASS. No Git index/publication operation was performed.
+
+Exact commands:
 
 ```bash
 cargo fmt --all -- --check
-cargo clippy --locked --workspace --all-targets -- -D warnings
-cargo test --locked -p oteryn-gameplay-progression -p oteryn-gameplay-durability prey
-cargo test --locked -p oteryn-game-server --test durability_postgres prey -- --test-threads=1  # PG 17.6
-cargo test --locked -p protocol-oteryn prey
-(cd tools/content-schema/native-gameplay && python -m unittest test_prey_loot_budget)
-python3 tools/content-migration/regenerate_content.py --check   # content slot only
+cargo clippy --locked -p oteryn-gameplay-progression -p oteryn-gameplay-durability -p oteryn-game-server --all-targets --quiet -- -D warnings
+cargo test --locked -p oteryn-gameplay-progression --lib --quiet
+cargo test --locked -p oteryn-gameplay-durability --lib prey --quiet
+cargo test --locked -p oteryn-game-server --lib prey_storage_ --quiet -- --test-threads=1 --nocapture
+cargo test --locked -p oteryn-gameplay-dispatch --lib party_xp_real_dispatch_prey_then_stamina --quiet -- --test-threads=1 --nocapture
+python3 tools/repository/validate_repository_policy.py
 python3 tools/agents/validate_governance.py
+python3 -m unittest discover -s tools/agents/tests
 ```
+
+Only mechanic-filtered PostgreSQL cases run locally; full durability/dispatch PG
+suites belong to CI. No cargo manifests/lockfile/content were changed.
+
+## Unfinished for the next bounded pass
+
+- Admitted PREY-CONTENT-1 pool, level bands, grade and draw tables remain the direct
+  blocker to slot initialization, selection/reroll/option writers and activation.
+- Slot writers require the matching Character receipt, authority UNION,
+  progression consistency guard, session-generation fence and sequencer adapter
+  as one inseparable bundle. This migration admits no gameplay mutation API.
+- Gold burn, Account+World wildcard ledger/events and DAILY reward-line delivery
+  are not implemented. Reroll prices and wildcard spends here are pure plans.
+- Hunting checkpoints, expiry and remaining bonus effects, Task Board, delivery,
+  shop and PREY_V1 command/state wiring remain outside this pass. Task Board is
+  not yet qualified; weekly reset publication/barrier also remains blocked.
+- No `crates/test-support::property` module exists on main: optional property
+  framework tests were skipped, with exhaustive bounded arithmetic tests instead.
+- No unrelated load-contention test failures or CI-only deferrals occurred.
 
 ## Reference evidence
 

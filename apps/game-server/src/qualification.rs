@@ -1692,6 +1692,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
             last_position_flush: None,
         },
         &shutdown,
+        None,
     );
 
     let recovery_signing = recovery_key()?;

@@ -781,11 +781,34 @@ fn build_grants_and_admission_verifier() -> TestResult {
                 "oteryn_game_control/game_character_build_state:SELECT",
                 "oteryn_game_runtime/game_character_build_receipts:INSERT",
                 "oteryn_game_runtime/game_character_build_receipts:SELECT",
-                "oteryn_game_runtime/game_character_build_state:INSERT",
                 "oteryn_game_runtime/game_character_build_state:SELECT",
-                "oteryn_game_runtime/game_character_build_state:UPDATE",
             ]
         );
+        // Migration 0141 preserves writes to every pre-existing column except stamina,
+        // which has no runtime writer until STAMINA-1 admits its fenced one.
+        let column_writes: Vec<(String, String, bool)> = sqlx::query_as(
+            "SELECT c.attname::text, p.privilege, \
+                    has_column_privilege('oteryn_game_runtime', c.attrelid, c.attnum, p.privilege) \
+               FROM pg_attribute c, \
+                    (VALUES ('INSERT'), ('UPDATE')) p(privilege) \
+              WHERE c.attrelid = 'game_character_build_state'::regclass \
+                AND c.attnum > 0 AND NOT c.attisdropped \
+              ORDER BY c.attnum, p.privilege COLLATE \"C\"",
+        )
+        .fetch_all(pool)
+        .await?;
+        assert!(
+            column_writes
+                .iter()
+                .any(|(column, _, _)| column == "stamina_minutes")
+        );
+        for (column, privilege, granted) in column_writes {
+            assert_eq!(
+                granted,
+                column != "stamina_minutes",
+                "runtime {privilege} privilege on {column}"
+            );
+        }
         let public: bool = sqlx::query_scalar(
             "SELECT has_function_privilege('public', \
                'game_character_build_state_row_guard()', 'EXECUTE')",

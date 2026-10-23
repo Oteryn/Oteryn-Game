@@ -24,7 +24,9 @@ pub mod character_chat_name;
 pub mod character_chat_recipient;
 pub mod character_command;
 pub mod character_death;
+pub mod character_depot;
 pub mod character_equipment;
+mod character_experience_transaction;
 pub mod character_familiar;
 pub mod character_forge_dust;
 pub mod character_forge_dust_audit;
@@ -53,6 +55,7 @@ pub mod house_interior;
 pub mod house_interior_audit;
 pub mod house_ownership;
 mod house_ownership_audit;
+pub mod imbuement;
 pub mod house_scope_handoff;
 
 pub mod character_tutorial;
@@ -74,6 +77,7 @@ pub mod item_use_audit;
 #[cfg(any(test, feature = "test-support"))]
 pub mod item_weight_lookup;
 pub mod mail;
+pub mod player_trade;
 pub mod map_item_mint;
 pub mod map_item_mint_audit;
 pub mod market;
@@ -91,6 +95,7 @@ pub mod premium_fence;
 pub mod promotion_purchase;
 pub mod public_projections;
 pub mod pvp_state;
+pub mod party_pz_fact;
 pub mod pvp_death_consequences;
 mod pvp_death_request;
 mod pvp_skull_storage;
@@ -118,6 +123,7 @@ pub mod tutorial_islet_placement;
 pub mod sqlstate_codes;
 pub mod starter_grant;
 
+pub mod world_reset;
 pub mod world_house_instance;
 pub mod world_party;
 

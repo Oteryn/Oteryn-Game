@@ -1,9 +1,9 @@
 //! Default-constructed Channel session state owned by the gameplay transport.
 
 use super::{
-    FenceHolders, PremiumSessions, ProgressionSessions, QuestSession, actor_spell, attack,
-    chat_intent, connection::AdmittedSession, input_gate, last_position, loop_move, map_door,
-    newhaven_travel, npc_command, tutorial_session,
+    FenceHolders, PremiumSessions, ProgressionSessions, QuestSession, actor_spell,
+    appearance_change, attack, chat_intent, connection::AdmittedSession, input_gate, last_position,
+    loop_move, map_door, newhaven_travel, npc_command, tutorial_session,
 };
 use crate::foundation::GameSessionId;
 use tokio::sync::Mutex;
@@ -11,6 +11,8 @@ use tokio::sync::Mutex;
 /// Channel-local session state; keep fields sorted by name.
 #[derive(Default)]
 pub struct ChannelSessionStates {
+    /// APP-3: the appearance-change command state of each session, forgotten with the session.
+    pub appearance_commands: appearance_change::AppearanceCommands,
     /// The Channel owner's attack targets, fight modes and in-fight deadlines (ATTACK-1b).
     /// Always locked after `runtime` and `spell_states`, never before.
     pub attack: Mutex<attack::ChannelAttackStates>,
@@ -66,6 +68,7 @@ impl ChannelSessionStates {
     /// Forget exactly the state retired after the runtime removes a terminal session.
     pub(super) fn forget_session(&self, session: GameSessionId) {
         self.fence_holders.forget(session);
+        self.appearance_commands.forget(session);
         self.chat.forget(session);
         self.npc_conversations.forget(session);
         if let Ok(mut sessions) = self.quest_sessions.lock() {

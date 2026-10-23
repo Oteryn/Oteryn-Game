@@ -105,7 +105,7 @@ message OneItemTransactionV1 {
     OneItemMintV1 mint = 2;
     OneItemTransferV1 transfer = 3; // B3 destinations only (see above)
     OneItemRewardClaimMintV1 reward_claim_mint = 4; // CHEST-1 or MAIL-owned Inbox (see below)
-    OneItemDecayRetireV1 decay_retire = 5; // D3-6 corpse decay only (see above)
+    OneItemDecayRetireV1 decay_retire = 5; // D3-6 corpse decay / MAP-OVERLAY-1c reset
     OneItemFeeBurnV1 fee_burn = 6; // coin fee BURN only (see above)
     OneItemTimedExpiryV1 timed_expiry = 7; // timed expiry only (see above)
     OneItemMapItemMintV1 map_item_mint = 8; // MAP-OVERLAY-1b only (see above)
@@ -114,6 +114,7 @@ message OneItemTransactionV1 {
     OneItemHouseTransferV1 house_transfer = 11; // HOUSE-RUNTIME-1a additive candidate slot tag
     // Private proposal only; root coordinates Imbue tag 12 and rechecks before publication.
     OneItemForgeDustLimitV1 forge_dust_limit = 13; // material-free D1230 closed shape
+    OneItemPlayerTradeV1 player_trade = 14; // TRADE-PLAYER-1 writer-only; two reciprocal leaves
   }
 }
 
@@ -332,8 +333,8 @@ message OneItemRewardClaimMintV1 {
   RewardClaimInboxMintV1 inbox = 5;
 }
 
-// D3-6 `CorpseDecay { corpse_item, deadline }` (DUR-03 §39.4): the only admitted
-// retire cause; no caller-chosen reason, burn cause or free-form label exists.
+// D3-6 `CorpseDecay { corpse_item, deadline }` (DUR-03 §39.4). Reset is
+// a distinct additive cause below; no free-form reason or burn cause exists.
 message OneItemCorpseDecayV1 {
   // The corpse this retirement belongs to: the retired item itself for the
   // corpse's own step, its parent corpse for an entry's step.
@@ -341,6 +342,21 @@ message OneItemCorpseDecayV1 {
   // The exact corpse `materialized_at + 60_000` (unix ms) that authorized the
   // retirement; the event's occurred_at is never before it.
   uint64 deadline_unix_ms = 2;
+}
+
+// MAP-OVERLAY-1c: a distinct cause bound to the sealed RETIRING record.
+message OneItemWorldResetV1 {
+  bytes world_id = 1;
+  uint64 reset_epoch = 2;
+  bytes item_instance_id = 3;
+  bytes target_digest = 4;
+  bytes retirement_binding = 5;
+}
+
+message OneItemGroundContainerEntryV1 {
+  bytes parent_item_instance_id = 1;
+  uint64 placement_ordinal = 2;
+  OneItemGroundV1 parent_ground = 3;
 }
 
 // D3-6 DECAY_RETIRE step: one live item (identity, type and quantity before)
@@ -360,6 +376,10 @@ message OneItemDecayRetireV1 {
   // Safe fence reference: the retiring owner's runtime-scope ownership
   // generation (non-zero); it may be later than the corpse's own generation.
   uint64 runtime_scope_ownership_generation = 6;
+  // Exactly one cause, and exactly one compatible before-location. Legacy
+  // CorpseDecay bytes retain their original representation.
+  OneItemWorldResetV1 world_reset = 7;
+  OneItemGroundContainerEntryV1 ground_container_entry = 8;
 }
 
 // Closed FeeBurnCause (decision §4.4): one variant per admitted fee source.
@@ -616,4 +636,16 @@ message OneItemForgeDustLimitV1 {
   uint64 character_lease_generation = 16;
   uint64 scope_ownership_generation = 17;
   uint64 character_revision = 18; // observed unchanged
+}
+
+// PLAYER-TRADE0 §§5-6. request_binding is canonical UTF-8 JSON version 1:
+// READY pair counter-offer CommandRef, occurrence/transaction/event ids, trusted
+// time, two ordered parties (first
+// terminal accept then triggering accept), full session/lease/scope fences,
+// leaf item/entry/timed/text before observations, Node registration and Content
+// pins plus interpretation revisions. The swap changes only last_transaction_id
+// and reciprocal direct custody; definitions, quantities, keys and state remain.
+message OneItemPlayerTradeV1 {
+  bytes request_binding = 1;
+  repeated OneItemContainerEntryV1 destinations = 2; // exactly two, source-line order
 }

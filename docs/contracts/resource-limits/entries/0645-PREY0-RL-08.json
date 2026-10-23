@@ -1,0 +1,22 @@
+{
+  "id": "PREY0-RL-08",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_PREY0_PREY_AND_HUNTING_TASKS_DECISION_2026-09-30.md",
+  "resource": "Prey bonus grade",
+  "unit": "grade",
+  "hard_maximum": 10,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 10
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "Closed four bonus types; every grade is checked against its exact Canary percentage.",
+  "client_visible": true,
+  "boundary_tests": [
+    "prey_reference_bonus_grades"
+  ],
+  "consumers": [
+    "crates/gameplay/progression/src/prey.rs",
+    "apps/game-server/migrations/0152_prey_slot_state.sql"
+  ],
+  "notes": "HUNT-1 bounded rules/storage checkpoint; PREY0 section 12. Closed four bonus types; every grade is checked against its exact Canary percentage."
+}

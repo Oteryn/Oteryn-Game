@@ -2,6 +2,8 @@
 //! hands the validated bootstrap to the owning admission authority; it never
 //! decides admission itself and fails closed for every message it does not own.
 
+pub(super) mod appearance_change;
+mod moved_step;
 use crate::combat_pickup::GroundPickupError;
 #[path = "newhaven_travel_transport.rs"]
 mod newhaven_travel_transport;
@@ -17,6 +19,8 @@ use crate::foundation::{
 };
 mod item_use_view_refresh;
 
+use appearance_change::SessionAppearance;
+use moved_step::moved_step_frames;
 use std::future::Future;
 use tokio::io::{AsyncRead, AsyncWrite};
 
@@ -91,8 +95,8 @@ use oteryn_protocol_oteryn::bed::{
 };
 use oteryn_protocol_oteryn::chat::{
     COMMAND_TYPE_CHAT_INTENT, ChatIntent, ChatIntentResult, ChatLine, ChatRoomSet,
-    DELTA_TYPE_CHAT_LINE_V1, DELTA_TYPE_CHAT_ROOMS_V1, SNAPSHOT_TYPE_CHAT_V1, STATE_DOMAIN_CHAT,
-    decode_chat_intent, encode_chat_intent_result, encode_chat_line, encode_chat_rooms,
+    DELTA_TYPE_CHAT_LINE_V1, DELTA_TYPE_CHAT_ROOMS_V1, STATE_DOMAIN_CHAT,
+    encode_chat_intent_result, encode_chat_line, encode_chat_rooms,
 };
 use oteryn_protocol_oteryn::container_tree::CAPABILITY_CONTAINER_TREE_V1;
 use oteryn_protocol_oteryn::container_tree::{
@@ -377,6 +381,7 @@ const ADMISSION_REFUSAL_WRITE_BOUND: std::time::Duration = std::time::Duration::
 /// The owning fresh-admission authority. Production composes the real owners;
 /// nothing on the transport side can mark a connection admitted.
 pub trait FreshAdmissionAuthority {
+    super::appearance_change::authority_methods!();
     fn admit(
         &self,
         attempt: FreshAdmissionAttempt<'_>,
@@ -606,12 +611,25 @@ pub trait FreshAdmissionAuthority {
     /// house reservation/logout owner refuses; decoding never grants bed access.
     fn sleep_in_bed(
         &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: BedSleepIntent,
+        target: ItemKey,
+    ) -> impl Future<Output = Result<UseOutcome, crate::durability::DurabilityError>> {
+        super::bed_sleep::sleep_with_owner(self, actor, command, intent, target)
+    }
+
+    /// The owning House runtime resolves the reciprocal bed, reservation,
+    /// Premium/reach/block checks and native sex before supplying this context.
+    /// Channel authorities have no House owner and retain the closed default.
+    fn prepare_bed_sleep(
+        &self,
         _actor: ExactActorRef,
         _command: UseCommand,
         _intent: BedSleepIntent,
         _target: ItemKey,
-    ) -> impl Future<Output = UseOutcome> {
-        async { UseOutcome::rejected() }
+    ) -> impl Future<Output = Option<crate::durability::bed_sleep::BedSleepOwner<'_, '_, '_>>> {
+        async { None }
     }
 
     /// Capability 22's exact direct-entry Rune adapter. Unknown commits keep the command open.
@@ -794,6 +812,7 @@ pub trait FreshAdmissionAuthority {
         &self,
         _actor: ExactActorRef,
         _session: GameSessionId,
+        _command_id: u64,
         _intent: ChatIntent,
     ) -> impl Future<Output = ChatIntentResult> {
         async {
@@ -811,6 +830,32 @@ pub trait FreshAdmissionAuthority {
         _session: GameSessionId,
     ) -> impl Future<Output = Option<ChatRoomSet>> {
         async { None }
+    }
+
+    fn chat_guild_admit(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = oteryn_protocol_oteryn::chat::guild_room::GuildRoomState> {
+        std::future::ready(oteryn_protocol_oteryn::chat::guild_room::GuildRoomState::Unavailable)
+    }
+
+    fn chat_guild_intent(
+        &self,
+        _admitted: AdmittedSession,
+        _text: String,
+    ) -> impl Future<Output = ChatIntentResult> {
+        std::future::ready(ChatIntentResult {
+            disposition: oteryn_protocol_oteryn::chat::ChatDisposition::Rejected,
+            wait_seconds: 0,
+        })
+    }
+
+    fn chat_next_bound(
+        &self,
+        admitted: AdmittedSession,
+        _remaining: &mut usize,
+    ) -> impl Future<Output = Option<ChatLine>> {
+        self.chat_next(admitted.game_session_id)
     }
 
     /// CHAT-WIRE-1: the oldest line queued for the session, if any.
@@ -1022,6 +1067,7 @@ pub trait FreshAdmissionAuthority {
         &self,
         _admitted: AdmittedSession,
         _wait: std::time::Duration,
+        _reset: Option<&crate::durability::world_reset::RetiringWorldReset>,
     ) -> impl Future<Output = ControlLossResult> {
         async { ControlLossResult::NotApplicable }
     }
@@ -1391,6 +1437,8 @@ where
         authority.offered_capabilities(),
         authority.world_weather().is_some(),
     );
+    let offered =
+        super::appearance_change::offer::offered(&offered, authority.appearance_available());
     let Some(selected) = SelectedCapabilities::select(&offered, bootstrap.supported_capabilities)
     else {
         return Err(ConnectionEnd::AdmissionRefused(
@@ -1816,6 +1864,7 @@ where
     // VIS-3 (MOVE-RL-11 §4): with capability 6, domain 1 is the VIS-1 interest set of the
     // session's Channel; without it, the v1 own-actor type. A resume resends it the same way.
     let selected_capabilities = admitted.continuity.selected_capabilities;
+    let mut appearances = SessionAppearance::new(selected_capabilities);
     let mut visibility = None;
     if selected_capabilities.contains(CAPABILITY_WORLD_SPATIAL_ENTITIES) {
         let Some(channel) = authority.observe_visible_entities(actor).await else {
@@ -1823,21 +1872,22 @@ where
         };
         let mut view = SessionVisibility::with_objects(item_view.is_some())
             .lit(selected_capabilities.contains(CAPABILITY_WORLD_LIGHT_V1));
-        let snapshot = view.snapshot(&channel, &mut |entities| {
-            attach_spatial_handles(item_view.as_mut(), entities)
-        });
+        let Some(encoded) = appearances
+            .initial(
+                authority,
+                actor,
+                &admitted,
+                &mut view,
+                &channel,
+                item_view.as_mut(),
+            )
+            .await
+        else {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        };
         if let Some(item_view) = &item_view {
             admitted.continuity.item_view = item_view.continuity();
         }
-        let Ok(encoded) = snapshot.and_then(|snapshot| {
-            encode_visibility_snapshot_lit(
-                selected_capabilities.as_slice(),
-                &snapshot,
-                view.lights(),
-            )
-        }) else {
-            return ConnectionEnd::AdmittedThenDisconnected(admitted);
-        };
         spatial = encoded;
         visibility = Some(view);
     } else {
@@ -1927,11 +1977,16 @@ where
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
         };
         admitted.continuity.chat_revision = revision;
-        chat_snapshot = encode_chat_rooms(rooms);
+        let Some((snapshot_type, payload)) =
+            super::guild_chat::wire::snapshot(authority, admitted, rooms).await
+        else {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        };
+        chat_snapshot = payload;
         domains.push(DomainSnapshot {
             domain_id: STATE_DOMAIN_CHAT,
             revision,
-            snapshot_type: SNAPSHOT_TYPE_CHAT_V1,
+            snapshot_type,
             payload: &chat_snapshot,
         });
     }
@@ -2074,6 +2129,7 @@ where
             payload: &weather_snapshot,
         });
     }
+    appearances.domain(&mut domains);
     domains.extend(tutorial_notices_transport::snapshot(&admitted));
     let snapshot =
         encode_single_chunk_snapshot(generation, 1, admitted.continuity.server_sequence, &domains);
@@ -2378,8 +2434,10 @@ where
                 // delta; an empty queue sends nothing.
                 // At most one full queue per refresh: lines that keep arriving cannot hold the
                 // connection here, and the rest waits for the next tick.
+                let mut owner_reads = EGRESS_MAX_LINES;
                 for _ in 0..EGRESS_MAX_LINES {
-                    let Some(line) = authority.chat_next(admitted.game_session_id).await else {
+                    let Some(line) = authority.chat_next_bound(admitted, &mut owner_reads).await
+                    else {
                         break;
                     };
                     let Some((delta_sequence, frame, revision)) = chat_line_delta(
@@ -2498,6 +2556,7 @@ where
                     generation,
                     &mut sequence,
                     &mut revision,
+                    &mut appearances,
                     observation,
                 )
                 .await
@@ -2517,31 +2576,23 @@ where
                 let Some(channel) = authority.observe_visible_entities(actor).await else {
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 };
-                let update = view.refresh(&channel, &mut |entities| {
-                    attach_spatial_handles(item_view.as_mut(), entities)
-                });
-                if let Some(item_view) = &item_view {
-                    admitted.continuity.item_view = item_view.continuity();
-                }
-                let Some((frames_out, to_sequence, to_revision)) = update.ok().and_then(|update| {
-                    visibility_frames(
-                        generation,
+                let Some((to_sequence, to_revision)) = appearances
+                    .refresh(
+                        stream,
+                        authority,
+                        actor,
+                        &mut admitted,
+                        view,
+                        &channel,
+                        item_view.as_mut(),
                         sequence,
                         revision,
-                        selected_capabilities.as_slice(),
-                        view.lights(),
-                        &update,
                     )
-                }) else {
+                    .await
+                else {
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 };
                 sequence = to_sequence;
-                admitted.continuity.server_sequence = sequence;
-                for frame in &frames_out {
-                    if write_frame(stream, frame).await.is_err() {
-                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                    }
-                }
                 revision = to_revision;
                 admitted.continuity.spatial_revision = revision;
                 // MAP-WIRE-2: tiles in view changed by others (an item dropped, a door opened).
@@ -2722,6 +2773,7 @@ where
             Achievements(AccountAchievementsReply),
             /// RANK-1 (HS-WIRE-1): command 14, a read of the session's World snapshots.
             Highscores(HighscoresReply),
+            Appearance(Option<oteryn_protocol_oteryn::appearance::ChangeResult>),
             /// ITEM-VIEW-1b: `USE` with an item target; the domain 11 delta follows the result.
             UseItem(OpenDecision, Option<ItemViewDelta>),
             /// BAGS-WIRE-1: command 21; the domain 14 delta follows the result.
@@ -2839,20 +2891,24 @@ where
                 }
             }
         } else if command.command_type == COMMAND_TYPE_BED_SLEEP_INTENT {
-            Dispatch::Use(
-                super::bed_sleep::dispatch(
-                    authority,
-                    actor,
-                    UseCommand {
-                        game_session_id: admitted.game_session_id,
-                        command_id: command.command_id,
-                        item_fence: admitted.item_fence,
-                    },
-                    decode_bed_sleep_intent(command.payload),
-                    item_view.as_ref(),
-                )
-                .await,
+            match super::bed_sleep::dispatch(
+                authority,
+                actor,
+                UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: command.command_id,
+                    item_fence: admitted.item_fence,
+                },
+                decode_bed_sleep_intent(command.payload),
+                item_view.as_ref(),
             )
+            .await
+            {
+                Ok(outcome) => Dispatch::Use(outcome),
+                // An unacknowledged commit may already have ended the session.
+                // Send no refusal; the terminal/loss lifecycle reconciles it.
+                Err(_) => return ConnectionEnd::AdmittedThenControlLost(admitted),
+            }
         } else if command.command_type == COMMAND_TYPE_USE_INTENT {
             match decode_use_intent_target(
                 admitted.continuity.selected_capabilities.as_slice(),
@@ -3200,13 +3256,17 @@ where
         } else if command.command_type == COMMAND_TYPE_CHAT_INTENT {
             // CHAT-WIRE-1: spam control is the speaker's limiter inside the authority; a
             // malformed intent is REJECTED with an empty payload like any unregistered command.
-            match decode_chat_intent(command.payload) {
-                Ok(intent) => Dispatch::Chat(
-                    authority
-                        .chat_intent(actor, admitted.game_session_id, intent)
-                        .await,
-                ),
-                Err(_) => Dispatch::Unregistered,
+            match super::guild_chat::wire::dispatch(
+                authority,
+                admitted,
+                actor,
+                command.command_id,
+                command.payload,
+            )
+            .await
+            {
+                Some(result) => Dispatch::Chat(result),
+                None => Dispatch::Unregistered,
             }
         } else if command.command_type == COMMAND_TYPE_NPC_TALK_INTENT {
             // NPC-CMD-1a: a malformed intent is REJECTED, but it still spends the session's
@@ -3391,6 +3451,22 @@ where
                 ),
                 _ => Dispatch::Achievements(AccountAchievementsReply::Rejected),
             }
+        } else if command.command_type
+            == oteryn_protocol_oteryn::appearance::COMMAND_TYPE_APPEARANCE_CHANGE
+        {
+            Dispatch::Appearance(
+                appearance_change::dispatch(
+                    authority,
+                    actor,
+                    UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: command.command_id,
+                        item_fence: admitted.item_fence,
+                    },
+                    command.payload,
+                )
+                .await,
+            )
         } else if command.command_type == COMMAND_TYPE_HIGHSCORES_QUERY_V1 {
             // HIGHSCORES0 §6: the World and the asking Character are the admitted session's.
             match decode_highscores_query(command.payload) {
@@ -3431,6 +3507,9 @@ where
             other => other,
         };
         drop(input_permit);
+        if let Dispatch::Appearance(None) = dispatch {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        }
         let (Some(result_sequence), Some(following)) =
             (sequence.checked_add(1), next_command.checked_add(1))
         else {
@@ -3441,6 +3520,11 @@ where
         admitted.continuity.server_sequence = sequence;
         admitted.continuity.next_command_id = next_command;
         let (status, result_payload) = match &mut dispatch {
+            Dispatch::Appearance(Some(result)) => match appearance_change::result(*result) {
+                Some(result) => result,
+                None => return ConnectionEnd::AdmittedThenDisconnected(admitted),
+            },
+            Dispatch::Appearance(None) => return ConnectionEnd::AdmittedThenDisconnected(admitted),
             Dispatch::Step(outcome, step_wait_ms) => (
                 if matches!(
                     outcome.disposition,
@@ -3571,6 +3655,19 @@ where
             Dispatch::Highscores(HighscoresReply::Result(payload)) => {
                 (CommandStatus::Accepted, std::mem::take(payload))
             }
+            Dispatch::Unregistered
+                if command.command_type
+                    == oteryn_protocol_oteryn::appearance::COMMAND_TYPE_APPEARANCE_CHANGE
+                    && selected_capabilities
+                        .contains(oteryn_protocol_oteryn::appearance::CAPABILITY_APPEARANCE_V1) =>
+            {
+                match appearance_change::result(
+                    oteryn_protocol_oteryn::appearance::ChangeResult::Rejected,
+                ) {
+                    Some(result) => result,
+                    None => return ConnectionEnd::AdmittedThenDisconnected(admitted),
+                }
+            }
             Dispatch::Achievements(
                 AccountAchievementsReply::Terminal(_) | AccountAchievementsReply::Rejected,
             )
@@ -3648,6 +3745,7 @@ where
                         generation,
                         &mut sequence,
                         &mut revision,
+                        &mut appearances,
                         observation,
                     )
                     .await
@@ -3663,6 +3761,11 @@ where
                 }
             }
             Dispatch::Use(outcome) => {
+                if command.command_type == COMMAND_TYPE_BED_SLEEP_INTENT
+                    && outcome.disposition == UseDisposition::OfflineTraining
+                {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                }
                 // ITEM-VIEW-1b: a committed `USE` (the chest MINT) may have changed the
                 // backpack or open bags; their deltas follow the durable commit when changed.
                 // An unreadable backpack fails closed; the resumed snapshot restores it.
@@ -3973,6 +4076,7 @@ where
             | Dispatch::Look(..)
             | Dispatch::Achievements(_)
             | Dispatch::Highscores(_)
+            | Dispatch::Appearance(_)
             | Dispatch::Logout(_)
             | Dispatch::Unregistered => {}
         }
@@ -3987,6 +4091,7 @@ where
             generation,
             &mut sequence,
             &mut revision,
+            &mut appearances,
             npc_relocation,
         )
         .await
@@ -4127,109 +4232,6 @@ async fn record_actor_step<A: FreshAdmissionAuthority>(
     authority
         .record_actor_step_deadline(actor, holder, due)
         .await;
-}
-
-/// The frames that follow one moved step of `actor`: with capability 6 the interest set's change
-/// (VIS-3, a resync ends the connection), without it the v1 own-actor delta; the open corpse a
-/// step out of reach or to another floor closes (ITEM-VIEW-1b §4.3); and the tiles the step
-/// brought into, kept in or took out of view (MAP-WIRE-2). A client step sends them after its
-/// result, a chase step (CHASE-1) on its own. `None` ends the connection.
-#[allow(clippy::too_many_arguments)]
-async fn moved_step_frames<S, A>(
-    stream: &mut S,
-    authority: &A,
-    actor: ExactActorRef,
-    admitted: &mut AdmittedSession,
-    visibility: Option<&mut SessionVisibility>,
-    mut item_view: Option<&mut SessionItemView>,
-    world_map: Option<&mut SessionMapView>,
-    generation: u64,
-    sequence: &mut u64,
-    revision: &mut u64,
-    observation: WorldSpatialObservation,
-) -> Option<()>
-where
-    S: AsyncWrite + Unpin,
-    A: FreshAdmissionAuthority,
-{
-    let selected_capabilities = admitted.continuity.selected_capabilities;
-    let (frames_out, delta_sequence, new_revision) = if let Some(view) = visibility {
-        let mut channel = authority.observe_visible_entities(actor).await?;
-        // The step's committed position is the observer's own.
-        let observer = channel.observer;
-        for own in channel
-            .entities
-            .iter_mut()
-            .filter(|entity| entity.identity == observer)
-        {
-            own.position = observation.actor_position;
-        }
-        let update = view.refresh(&channel, &mut |entities| {
-            attach_spatial_handles(item_view.as_deref_mut(), entities)
-        });
-        if let Some(item_view) = &item_view {
-            admitted.continuity.item_view = item_view.continuity();
-        }
-        update.ok().and_then(|update| {
-            visibility_frames(
-                generation,
-                *sequence,
-                *revision,
-                selected_capabilities.as_slice(),
-                view.lights(),
-                &update,
-            )
-        })?
-    } else {
-        let (Some(delta_sequence), Some(new_revision)) =
-            (sequence.checked_add(1), revision.checked_add(1))
-        else {
-            return None;
-        };
-        let delta = encode_state_delta(
-            generation,
-            delta_sequence,
-            STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-            *revision,
-            new_revision,
-            DELTA_TYPE_WORLD_SPATIAL_V1,
-            &encode_world_spatial(&observation),
-        )
-        .ok()?;
-        (vec![delta], delta_sequence, new_revision)
-    };
-    *sequence = delta_sequence;
-    admitted.continuity.server_sequence = *sequence;
-    for frame in &frames_out {
-        write_frame(stream, frame).await.ok()?;
-    }
-    // r4122508665: only record the new spatial revision once the delta that carries it has
-    // actually been transmitted.
-    *revision = new_revision;
-    admitted.continuity.spatial_revision = *revision;
-    if let Some(view) = item_view.as_deref_mut() {
-        let closed = view.close(&CloseTrigger::Moved {
-            to: observation.actor_position,
-        });
-        admitted.continuity.item_view = view.continuity();
-        if let Some(delta) = closed.ok()? {
-            let (delta_sequence, frame) = item_view_delta(generation, *sequence, &delta)?;
-            *sequence = delta_sequence;
-            admitted.continuity.server_sequence = *sequence;
-            write_frame(stream, &frame).await.ok()?;
-        }
-    }
-    if let (Some(view), Some(items)) = (world_map, item_view) {
-        let update = world_map_delta(authority, actor, generation, *sequence, view, items).await;
-        admitted.continuity.item_view = items.continuity();
-        if let Some((delta_sequence, frame)) = update? {
-            *sequence = delta_sequence;
-            admitted.continuity.server_sequence = *sequence;
-            admitted.continuity.world_map_revision = view.revision();
-            write_frame(stream, &frame).await.ok()?;
-        }
-    }
-    Some(())
 }
 
 /// MAP-WIRE-2: the domain 17 delta frame at the sequence after `sequence`, `Some(None)` when no
@@ -7773,6 +7775,7 @@ mod tests {
 #[cfg(test)]
 #[allow(clippy::expect_used, clippy::panic)]
 mod visibility_tests {
+    mod appearance_change_tests;
     use super::*;
     use crate::gameplay_transport::world_spatial::{
         ActorPosition, ChannelEntity, EntityDetail, EntityKind, EntityRef,

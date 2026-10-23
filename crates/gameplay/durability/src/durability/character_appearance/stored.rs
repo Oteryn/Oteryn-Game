@@ -68,12 +68,17 @@ pub async fn read_selected_appearance(
 
 /// Account identity belongs to the caller's authorized read context. A caller handling a grant
 /// or selection mutation must derive it from the independently fenced Character event, never
-/// from a request. Facts survive deletion of the granting Character; the private schema must
+/// from a request. Only the at-most-4096 declared `grant_keys` are read; the account/key
+/// primary key bounds the result to that input count. Facts survive deletion of the granting Character; the private schema must
 /// not cascade from that Character. The left join fails closed on a missing provenance receipt.
 pub async fn read_account_appearance_unlocks(
     connection: &mut PgConnection,
     account: AccountId,
+    grant_keys: &[String],
 ) -> Result<Vec<AccountAppearanceUnlock>, AppearanceReadError> {
+    if grant_keys.len() > 4096 {
+        return Err(AppearanceReadError::InvalidStoredState);
+    }
     let rows = sqlx::query(
         "SELECT f.unlock_key, r.content_revision, r.granting_character_id::text, \
                 r.source_kind, r.source_event_id \
@@ -81,9 +86,10 @@ pub async fn read_account_appearance_unlocks(
            LEFT JOIN game_account_appearance_unlock_receipts r \
              ON r.grant_occurrence_id=f.grant_occurrence_id \
             AND r.account_id=f.account_id AND r.unlock_key=f.unlock_key \
-          WHERE f.account_id=encode($1,'hex')::uuid ORDER BY f.unlock_key COLLATE \"C\"",
+          WHERE f.account_id=encode($1,'hex')::uuid AND f.unlock_key=ANY($2::text[]) ORDER BY f.unlock_key COLLATE \"C\"",
     )
     .bind(account.as_bytes().as_slice())
+    .bind(grant_keys)
     .fetch_all(connection)
     .await?;
     rows.iter().map(decode_unlock).collect()

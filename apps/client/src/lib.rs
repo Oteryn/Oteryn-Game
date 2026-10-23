@@ -645,6 +645,7 @@ mod native_entry {
         Session::admit(
             stream,
             Admission {
+                appearance_items: None,
                 schema_revision: SCHEMA_REVISION,
                 character_id,
                 admission_material: grant.grant_bytes(),

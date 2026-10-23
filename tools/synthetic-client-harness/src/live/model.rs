@@ -199,6 +199,7 @@ fn render_entry(entry: &ItemEntry) -> String {
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct ChatPane {
     pub rooms: ChatRoomSet,
+    pub guild: oteryn_dev_client::GuildRoomState,
     pub lines: Vec<ChatLine>,
 }
 
@@ -208,6 +209,7 @@ impl ChatPane {
     pub fn from_log(log: &ChatLog) -> Self {
         Self {
             rooms: log.rooms(),
+            guild: log.guild_room().clone(),
             lines: log.lines().cloned().collect(),
         }
     }
@@ -257,6 +259,7 @@ pub fn render_chat_line(line: &ChatLine) -> String {
             speaker_name,
             text,
         } => format!("[{}] {speaker_name}: {text}", room_name(*room)),
+        ChatLine::Guild(line) => super::guild_chat::render_line(line),
         ChatLine::Dropped => "-- DROPPED: chat lines were lost --".to_owned(),
     }
 }
@@ -635,6 +638,7 @@ impl RenderModel {
                         chat.rooms = delta.value;
                     }
                 }
+                SessionEvent::Appearance(_) => {}
                 SessionEvent::Inventory(delta) => {
                     if let Some(items) = next.items.as_mut() {
                         items.backpack = delta.value.clone();
@@ -841,6 +845,7 @@ pub fn render_text(view: Viewport, model: &RenderModel) -> String {
             .map(room_name)
             .collect();
         out.push_str(&format!("chat [{}]\n", rooms.join(", ")));
+        super::guild_chat::render_room(&mut out, &chat.guild);
         for line in &chat.lines {
             out.push_str(&render_chat_line(line));
             out.push('\n');

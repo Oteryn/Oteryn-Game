@@ -359,3 +359,17 @@ Later implementation must prove at least:
 `PLATFORM ROLE: ACCOUNT AUTHORITY + UX/COMMERCIAL ORCHESTRATION + AUTHORIZED READ PROJECTIONS`
 
 `NATIVE PLATFORM DIRECT CHARACTER-DB WRITES: FORBIDDEN AS STEADY-STATE DESIGN`
+
+### APP-3 creation sex input — 2026-10-22
+
+The owner-authorised APP-3 prerequisite adds required `requested_sex` to the
+authenticated operator bootstrap response, contract version 3 and binding tag 3.
+Values are exactly `Female` and `Male`; the binding appends byte 1 or 2 after
+the requested name. New bootstrap reads request version 3 and refuse versions
+1 and 2. Platform producer rollout must use this version before new bootstrap
+requests succeed; this change does not mutate the Platform repository.
+Migration 0134 persists immutable creation sex on the Character root. Existing
+roots keep unknown sex (NULL); no backfill is guessed, and appearance fails
+closed for them. Recovery still verifies historical tag-2 receipts for these
+roots. Character Commands V1 remains unchanged and provides no appearance
+authority until a sex-bearing creation contract is admitted.

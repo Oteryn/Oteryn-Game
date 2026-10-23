@@ -16,6 +16,11 @@
 //! holds no codec of its own, only the glue that ties one admission to its join-snapshot decode
 //! and its command/sequence discipline. Every admission or codec error fails closed.
 
+mod appearance_state;
+mod domain_dispatch;
+mod gated_command;
+mod guild_chat;
+pub use appearance_state::{AppearanceItemDictionary, AppearanceUpdate};
 use oteryn_protocol_oteryn::actor_spell::{self, SpellCastIntent};
 /// Spell types a client names when it casts and draws vitals: re-exported so the client needs no
 /// direct `protocol-oteryn` edge (ADR-0020 section 1).
@@ -26,6 +31,7 @@ use oteryn_protocol_oteryn::attack::{self, CAPABILITY_ATTACK_V1};
 pub use oteryn_protocol_oteryn::attack::{
     ActorCombatState, AttackIntentDisposition, ChaseMode, FightMode, FightModes,
 };
+pub use oteryn_protocol_oteryn::chat::guild_room::{GuildChatLine, GuildRoomState};
 use oteryn_protocol_oteryn::chat::{
     self, CAPABILITY_CHAT_V1, COMMAND_TYPE_CHAT_INTENT, STATE_DOMAIN_CHAT,
 };
@@ -136,7 +142,9 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     CAPABILITY_PACED_MOVEMENT_V1,
     CAPABILITY_ATTACK_V1,
     logout::CAPABILITY_LOGOUT_V1,
+    oteryn_protocol_oteryn::appearance::CAPABILITY_APPEARANCE_V1,
     oteryn_protocol_oteryn::tutorial_notices::CAPABILITY_TUTORIAL_NOTICES_V1,
+    chat::guild_room::CAPABILITY_CHAT_GUILD_ROOM_V1,
 ];
 
 /// Capability-owned command types and state domains (`PROTOCOL_OTERYN_V1_REGISTRY.json`;
@@ -146,6 +154,11 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
 /// item stores; `Session::chat`, the chat log), not through this table.
 const GATED_ROUTES: &[(u32, &[u32], &[u32])] = &[
     (31, &[], &[23]),
+    (
+        oteryn_protocol_oteryn::appearance::CAPABILITY_APPEARANCE_V1,
+        &[oteryn_protocol_oteryn::appearance::COMMAND_TYPE_APPEARANCE_CHANGE],
+        &[oteryn_protocol_oteryn::appearance::STATE_DOMAIN_APPEARANCE],
+    ),
     (
         CAPABILITY_BESTIARY_CHARMS_V1,
         &[
@@ -223,6 +236,8 @@ pub struct GatedDelta {
 /// Everything [`Session::admit`] needs to admit with one grant and read its join snapshot.
 #[derive(Debug, Clone, Copy)]
 pub struct Admission<'a> {
+    /// Verified client artifact Item references for appearance transforms, when loaded.
+    pub appearance_items: Option<AppearanceItemDictionary<'a>>,
     /// FND-02 `ClientBootstrap.schema_revision`. Any nonzero value the server accepts.
     pub schema_revision: u32,
     pub character_id: CharacterId,
@@ -671,6 +686,7 @@ pub const MAX_QUEUED_EVENTS: usize = 256;
 /// session's domain store (FND-02 §14, §15), in the order it was applied.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SessionEvent {
+    Appearance(AppliedDelta<AppearanceUpdate>),
     TutorialNotice(AppliedDelta<oteryn_protocol_oteryn::tutorial_notices::TutorialNotice>),
     /// Domain 1 `WORLD_SPATIAL_VISIBILITY`.
     WorldSpatial(AppliedDelta<WorldSpatialObservation>),
@@ -700,6 +716,7 @@ impl SessionEvent {
     #[must_use]
     pub const fn domain_id(&self) -> u32 {
         match self {
+            Self::Appearance(_) => oteryn_protocol_oteryn::appearance::STATE_DOMAIN_APPEARANCE,
             Self::TutorialNotice(_) => 23,
             Self::WorldSpatial(_) | Self::WorldSpatialEntities(_) => {
                 world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY
@@ -723,6 +740,7 @@ pub const MAX_CHAT_LOG_LINES: usize = 64;
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct ChatLog {
     rooms: ChatRoomSet,
+    guild: GuildRoomState,
     lines: VecDeque<ChatLine>,
 }
 
@@ -934,6 +952,7 @@ pub struct Session<S> {
     events: Vec<SessionEvent>,
     /// `Some` exactly when capability 6 is selected.
     entities: Option<WorldEntities>,
+    appearance: Option<appearance_state::AppearanceState>,
     chat_revision: u64,
     inventory_revision: u64,
     container_revision: u64,
@@ -1144,6 +1163,7 @@ impl<S: SessionStream> Session<S> {
         let mut combat_revision = 0;
         let attack_selected = selected_capabilities.contains(&CAPABILITY_ATTACK_V1);
         let (mut spatial_revision, mut overlay_revision, mut vitals_revision) = (0, 0, 0);
+        guild_chat::check_selection(&selected_capabilities)?;
         let chat_selected = selected_capabilities.contains(&CAPABILITY_CHAT_V1);
         let mut chat = chat_selected.then(ChatLog::default);
         let mut chat_revision = 0;
@@ -1254,18 +1274,13 @@ impl<S: SessionStream> Session<S> {
                 ) => {
                     return Err(SessionError::UnselectedDomain { domain_id });
                 }
-                (STATE_DOMAIN_CHAT, chat::SNAPSHOT_TYPE_CHAT_V1) if chat_selected => {
-                    chat = Some(ChatLog {
-                        rooms: chat::decode_chat_rooms(domain.payload)?,
-                        lines: VecDeque::new(),
-                    });
-                    chat_revision = domain.revision;
-                }
                 (STATE_DOMAIN_CHAT, snapshot_type) if chat_selected => {
-                    return Err(SessionError::UnregisteredSnapshotType {
-                        domain_id: STATE_DOMAIN_CHAT,
+                    chat = Some(guild_chat::load_snapshot(
                         snapshot_type,
-                    });
+                        domain.payload,
+                        &selected_capabilities,
+                    )?);
+                    chat_revision = domain.revision;
                 }
                 (STATE_DOMAIN_CHAT, _) => {
                     return Err(SessionError::UnselectedDomain {
@@ -1304,6 +1319,16 @@ impl<S: SessionStream> Session<S> {
             }
         }
 
+        let appearance = appearance_state::from_snapshots(
+            &selected_capabilities,
+            &gated_snapshots,
+            world_spatial_observation
+                .as_ref()
+                .ok_or(SessionError::MissingDomain(1))?
+                .content_generation,
+            admission.appearance_items,
+        )?;
+        appearance_state::validate_entities(appearance.as_ref(), entities.as_ref())?;
         if attack_selected && combat_state.is_none() {
             return Err(SessionError::MissingDomain(
                 attack::STATE_DOMAIN_ACTOR_COMBAT_STATE,
@@ -1345,6 +1370,7 @@ impl<S: SessionStream> Session<S> {
             gated_revisions,
             events: Vec::new(),
             entities,
+            appearance,
             chat_revision,
             inventory_revision,
             container_revision,
@@ -1368,31 +1394,6 @@ impl<S: SessionStream> Session<S> {
         self.gated_snapshots
             .iter()
             .find(|snapshot| snapshot.domain_id == domain_id)
-    }
-
-    /// Sends a command type owned by `capability` and returns its raw `CommandResult`. Refused
-    /// before anything is sent when the capability is not selected or does not own the type.
-    pub async fn gated_command(
-        &mut self,
-        capability: u32,
-        command_type: u32,
-        payload: &[u8],
-    ) -> Result<GatedCommandResult, SessionError> {
-        self.ensure_usable()?;
-        let owned = GATED_ROUTES
-            .iter()
-            .any(|(id, commands, _)| *id == capability && commands.contains(&command_type));
-        if !owned || !self.is_selected(capability) {
-            return Err(SessionError::CapabilityNotSelected { capability });
-        }
-        let outcome = self.send_and_read_result(command_type, payload).await;
-        let result = self.poison_on_error(outcome)?;
-        Ok(GatedCommandResult {
-            command_id: result.command_id,
-            status: result.status,
-            server_sequence: result.server_sequence,
-            payload: result.payload,
-        })
     }
 
     /// Reads the next `StateDelta` of the selected capability's `domain_id`/`delta_type`, checks
@@ -1852,6 +1853,7 @@ impl<S: SessionStream> Session<S> {
                 capability: CAPABILITY_CHAT_V1,
             });
         }
+        guild_chat::check_intent(intent, &self.selected_capabilities)?;
         let payload = chat::encode_chat_intent(intent)?;
         let outcome = self.exchange_chat(&payload).await;
         self.poison_on_error(outcome)
@@ -1862,6 +1864,7 @@ impl<S: SessionStream> Session<S> {
             .send_and_read_result(COMMAND_TYPE_CHAT_INTENT, payload)
             .await?;
         let decoded = chat::decode_chat_intent_result(&result.payload)?;
+        guild_chat::check_result(decoded.disposition, &self.selected_capabilities)?;
         check_status_pairing(
             result.command_id,
             result.status,
@@ -2129,232 +2132,6 @@ impl<S: SessionStream> Session<S> {
         }
         self.events.push(event);
         Ok(())
-    }
-
-    /// The domain store: applies one validated `StateDelta` by its own domain. It must be based
-    /// on exactly the stored revision, carry the domain's registered `delta_type` and, where the
-    /// domain has one, the loaded `content_generation`. Nothing is stored unless every check and
-    /// the typed decode pass.
-    fn apply_state_delta(
-        &mut self,
-        server_sequence: u64,
-        payload: &[u8],
-    ) -> Result<SessionEvent, SessionError> {
-        let delta = decode_state_delta(payload)?;
-        let (domain_id, base_revision, new_revision) =
-            (delta.domain_id, delta.base_revision, delta.new_revision);
-        fn applied<T>(sequence: u64, base: u64, new: u64, value: T) -> AppliedDelta<T> {
-            AppliedDelta {
-                server_sequence: sequence,
-                base_revision: base,
-                new_revision: new,
-                value,
-            }
-        }
-        match domain_id {
-            23 => tutorial_notices::apply(self, server_sequence, payload),
-            world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY if self.entities.is_some() => {
-                check_delta(
-                    &delta,
-                    world_spatial_entities::DELTA_TYPE_WORLD_SPATIAL_ENTITIES_V2,
-                    self.spatial_revision,
-                )?;
-                let entities_delta = if self.is_selected(CAPABILITY_ITEM_VIEW_MOVE_V1) {
-                    world_spatial_entities::decode_world_spatial_entities_delta_with_item_handles(
-                        delta.payload,
-                    )?
-                } else {
-                    world_spatial_entities::decode_world_spatial_entities_delta(delta.payload)?
-                };
-                if entities_delta.content_generation != self.world_spatial.content_generation {
-                    return Err(SessionError::ContentGenerationMismatch { domain_id });
-                }
-                let next = match &self.entities {
-                    Some(stored) => stored.after(&entities_delta)?,
-                    None => {
-                        return Err(SessionError::UnselectedDomain { domain_id });
-                    }
-                };
-                self.entities = Some(next);
-                self.world_spatial.actor_position = entities_delta.actor_position;
-                self.spatial_revision = new_revision;
-                Ok(SessionEvent::WorldSpatialEntities(applied(
-                    server_sequence,
-                    base_revision,
-                    new_revision,
-                    entities_delta,
-                )))
-            }
-            world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY => {
-                check_delta(
-                    &delta,
-                    world_spatial::DELTA_TYPE_WORLD_SPATIAL_V1,
-                    self.spatial_revision,
-                )?;
-                let observation = world_spatial::decode_world_spatial(delta.payload)?;
-                if observation.content_generation != self.world_spatial.content_generation {
-                    return Err(SessionError::ContentGenerationMismatch { domain_id });
-                }
-                self.world_spatial = observation;
-                self.spatial_revision = new_revision;
-                Ok(SessionEvent::WorldSpatial(applied(
-                    server_sequence,
-                    base_revision,
-                    new_revision,
-                    observation,
-                )))
-            }
-            world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY => {
-                check_delta(
-                    &delta,
-                    world_object::DELTA_TYPE_WORLD_OBJECT_OVERLAY_V1,
-                    self.overlay_revision,
-                )?;
-                let entry = world_object::decode_world_object_overlay_delta(delta.payload)?;
-                if entry.revision != new_revision {
-                    return Err(SessionError::OverlayEntryRevisionMismatch {
-                        new_revision,
-                        entry_revision: entry.revision,
-                    });
-                }
-                if entry.content_generation != self.world_spatial.content_generation {
-                    return Err(SessionError::ContentGenerationMismatch { domain_id });
-                }
-                match self
-                    .world_object_overlay
-                    .iter_mut()
-                    .find(|existing| existing.placement == entry.placement)
-                {
-                    Some(existing) => *existing = entry.clone(),
-                    None => self.world_object_overlay.push(entry.clone()),
-                }
-                self.overlay_revision = new_revision;
-                Ok(SessionEvent::WorldObjectOverlay(applied(
-                    server_sequence,
-                    base_revision,
-                    new_revision,
-                    entry,
-                )))
-            }
-            actor_spell::STATE_DOMAIN_ACTOR_VITALS => {
-                check_delta(
-                    &delta,
-                    actor_spell::DELTA_TYPE_ACTOR_VITALS_V1,
-                    self.vitals_revision,
-                )?;
-                let vitals = actor_spell::decode_actor_vitals(delta.payload)?;
-                self.actor_vitals = Some(vitals);
-                self.vitals_revision = new_revision;
-                Ok(SessionEvent::ActorVitals(applied(
-                    server_sequence,
-                    base_revision,
-                    new_revision,
-                    vitals,
-                )))
-            }
-            attack::STATE_DOMAIN_ACTOR_COMBAT_STATE if self.is_selected(CAPABILITY_ATTACK_V1) => {
-                check_delta(
-                    &delta,
-                    attack::DELTA_TYPE_ACTOR_COMBAT_STATE_V1,
-                    self.combat_revision,
-                )?;
-                let state = attack::decode_actor_combat_state(delta.payload)
-                    .map_err(SessionError::Attack)?;
-                self.combat_state = Some(state);
-                self.combat_revision = new_revision;
-                Ok(SessionEvent::ActorCombatState(applied(
-                    server_sequence,
-                    base_revision,
-                    new_revision,
-                    state,
-                )))
-            }
-            attack::STATE_DOMAIN_ACTOR_COMBAT_STATE => {
-                Err(SessionError::UnselectedDomain { domain_id })
-            }
-            STATE_DOMAIN_CHAT if self.chat.is_some() => {
-                // Both delta types are registered for domain 12; each is checked against the
-                // one stored revision and decoded before anything is stored.
-                let delta_type = delta.delta_type;
-                check_delta(&delta, delta_type, self.chat_revision)?;
-                let event = match delta_type {
-                    chat::DELTA_TYPE_CHAT_LINE_V1 => {
-                        let line = chat::decode_chat_line(delta.payload)?;
-                        SessionEvent::ChatLine(applied(
-                            server_sequence,
-                            base_revision,
-                            new_revision,
-                            line,
-                        ))
-                    }
-                    chat::DELTA_TYPE_CHAT_ROOMS_V1 => {
-                        let rooms = chat::decode_chat_rooms(delta.payload)?;
-                        SessionEvent::ChatRooms(applied(
-                            server_sequence,
-                            base_revision,
-                            new_revision,
-                            rooms,
-                        ))
-                    }
-                    _ => {
-                        return Err(SessionError::UnregisteredDeltaType {
-                            domain_id,
-                            delta_type,
-                        });
-                    }
-                };
-                if let Some(log) = self.chat.as_mut() {
-                    match &event {
-                        SessionEvent::ChatLine(line) => log.push(line.value.clone()),
-                        SessionEvent::ChatRooms(rooms) => log.rooms = rooms.value,
-                        _ => {}
-                    }
-                }
-                self.chat_revision = new_revision;
-                Ok(event)
-            }
-            STATE_DOMAIN_CHAT => Err(SessionError::UnselectedDomain { domain_id }),
-            STATE_DOMAIN_CHARACTER_INVENTORY if self.inventory.is_some() => {
-                check_delta(
-                    &delta,
-                    item_view::DELTA_TYPE_CHARACTER_INVENTORY_V1,
-                    self.inventory_revision,
-                )?;
-                let value = item_view::decode_character_inventory(delta.payload)
-                    .map_err(SessionError::ItemView)?;
-                self.inventory = Some(value.clone());
-                self.inventory_revision = new_revision;
-                Ok(SessionEvent::Inventory(applied(
-                    server_sequence,
-                    base_revision,
-                    new_revision,
-                    value,
-                )))
-            }
-            STATE_DOMAIN_OPEN_CONTAINER if self.open_container.is_some() => {
-                check_delta(
-                    &delta,
-                    item_view::DELTA_TYPE_OPEN_CONTAINER_V1,
-                    self.container_revision,
-                )?;
-                let value = item_view::decode_open_container(delta.payload)
-                    .map_err(SessionError::ItemView)?;
-                self.open_container = Some(value.clone());
-                self.container_revision = new_revision;
-                Ok(SessionEvent::OpenContainer(applied(
-                    server_sequence,
-                    base_revision,
-                    new_revision,
-                    value,
-                )))
-            }
-            _ => Err(match capability_of_domain(domain_id) {
-                Some(capability) if !self.is_selected(capability) => {
-                    SessionError::UnselectedDomain { domain_id }
-                }
-                _ => SessionError::UnsupportedPushedDomain { domain_id },
-            }),
-        }
     }
 
     /// Reads one server-sequenced `StateDelta` and checks it names `domain_id`, its registered
@@ -2631,6 +2408,7 @@ fn check_status_pairing(
 
 #[cfg(test)]
 mod tests {
+    mod appearance_session_tests;
     include!("tutorial_notices_tests.rs");
     use super::*;
     use oteryn_protocol_oteryn::world_object::{
@@ -2653,7 +2431,7 @@ mod tests {
     };
     use tokio::io::DuplexStream;
 
-    type BoxError = Box<dyn StdError + Send + Sync>;
+    pub(super) type BoxError = Box<dyn StdError + Send + Sync>;
 
     const CONTENT_GENERATION: [u8; 32] = [0x11; 32];
     const DEADLINE: Duration = Duration::from_secs(5);
@@ -2665,7 +2443,7 @@ mod tests {
         ]
     }
 
-    fn spatial(x: i32) -> Vec<u8> {
+    pub(super) fn spatial(x: i32) -> Vec<u8> {
         encode_world_spatial(&WireSpatialObservation {
             content_generation: CONTENT_GENERATION,
             actor_position: ActorPosition { x, y: 0, floor: 0 },
@@ -2759,6 +2537,7 @@ mod tests {
 
     fn admission() -> Result<Admission<'static>, BoxError> {
         Ok(Admission {
+            appearance_items: None,
             schema_revision: 1,
             character_id: CharacterId::decode(&uuid_v7(4))?,
             admission_material: b"grant",
@@ -2768,7 +2547,7 @@ mod tests {
         })
     }
 
-    fn block_on<F: Future>(future: F) -> Result<F::Output, BoxError> {
+    pub(super) fn block_on<F: Future>(future: F) -> Result<F::Output, BoxError> {
         Ok(tokio::runtime::Builder::new_multi_thread()
             .enable_all()
             .build()?
@@ -3685,7 +3464,7 @@ mod tests {
     }
 
     /// `join_peer` with the domain-1 snapshot `(type, payload)` the test chooses.
-    async fn join_peer_with(
+    pub(super) async fn join_peer_with(
         stream: &mut DuplexStream,
         advertised: &[u32],
         selected: &[u32],
@@ -3753,8 +3532,11 @@ mod tests {
         Ok(())
     }
 
-    fn admission_with(supported: &'static [u32]) -> Result<Admission<'static>, BoxError> {
+    pub(super) fn admission_with(
+        supported: &'static [u32],
+    ) -> Result<Admission<'static>, BoxError> {
         Ok(Admission {
+            appearance_items: None,
             supported_capabilities: supported,
             ..admission()?
         })
@@ -4584,6 +4366,7 @@ mod tests {
 
     fn entity_admission() -> Result<Admission<'static>, BoxError> {
         Ok(Admission {
+            appearance_items: None,
             supported_capabilities: CLIENT_SUPPORTED_CAPABILITIES,
             ..admission()?
         })
@@ -4599,7 +4382,7 @@ mod tests {
         let peer = tokio::spawn(async move {
             join_peer_with(
                 &mut server,
-                &[4, 6, 7, 13, 17, 21, 31],
+                CLIENT_SUPPORTED_CAPABILITIES,
                 selected,
                 &[],
                 snapshot,
@@ -4619,7 +4402,7 @@ mod tests {
     #[test]
     fn the_advertised_set_is_closed_under_the_registry_requires() {
         // PROTOCOL_OTERYN_V1_REGISTRY.json `requires`: 4 needs 6, 12 needs 4, 14 needs 4 and 12.
-        let requires: &[(u32, &[u32])] = &[(4, &[6]), (12, &[4]), (14, &[4, 12])];
+        let requires: &[(u32, &[u32])] = &[(4, &[6]), (12, &[4]), (14, &[4, 12]), (36, &[7])];
         for (capability, needed) in requires {
             if CLIENT_SUPPORTED_CAPABILITIES.contains(capability) {
                 for need in *needed {
@@ -5067,7 +4850,10 @@ mod tests {
     fn the_advertised_set_carries_chat_and_stays_closed() {
         assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&CAPABILITY_CHAT_V1));
         // PROTOCOL_OTERYN_V1_REGISTRY.json: capability 7 requires nothing.
-        assert_eq!(CLIENT_SUPPORTED_CAPABILITIES, &[4, 6, 7, 13, 17, 21, 31]);
+        assert_eq!(
+            CLIENT_SUPPORTED_CAPABILITIES,
+            &[4, 6, 7, 13, 17, 21, 25, 31, 36]
+        );
     }
 
     #[test]
@@ -5664,7 +5450,7 @@ mod tests {
         let peer = tokio::spawn(async move {
             join_peer_with(
                 &mut server,
-                &[4, 6, 7, 13, 17, 21, 31],
+                CLIENT_SUPPORTED_CAPABILITIES,
                 ITEM_SELECTED,
                 &[],
                 snapshot,
@@ -6170,3 +5956,7 @@ mod tests {
         })?
     }
 }
+
+#[cfg(test)]
+#[path = "guild_chat_tests.rs"]
+mod guild_chat_tests;

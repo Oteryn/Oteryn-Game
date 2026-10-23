@@ -10,141 +10,16 @@ use crate::bestiary_postgres_harness::{
 };
 use crate::durability::DurabilityRoot;
 use crate::durability::house_scope_handoff::{
-    HouseAbortOutcome, HouseCommitOutcome, HouseEntryCommit, HouseEntryRefusal, HouseEntryRequest,
-    HouseHandoffDirection, HouseHandoffError, HouseHandoffState, HouseId, HousePrepareOutcome,
-    HouseReleaseOutcome, HouseScopeAssignmentCommand, HouseScopeAssignmentOutcome,
-    HouseScopeAssignmentRequest, HouseScopePredecessor, commit_house_entry_in_transaction,
+    HouseAbortOutcome, HouseCommitOutcome, HouseEntryRefusal, HouseHandoffDirection,
+    HouseHandoffError, HouseHandoffState, HouseId, HousePrepareOutcome, HouseReleaseOutcome,
+    HouseScopeAssignmentCommand, HouseScopeAssignmentOutcome, HouseScopePredecessor,
+    commit_house_entry_in_transaction,
 };
 use crate::durability::runtime_scope_assignment::{
     AssignmentRejection, ControlActor, OperationKey,
 };
 use crate::foundation::{CharacterId, GameSessionId, WorldId};
 use sqlx::Row;
-
-const HOUSE_KEY: &str = "oteryn:content.house.thais_1";
-const HANDOFF: u8 = 60;
-const DESTINATION: u8 = 61;
-
-fn house() -> TestResult<HouseId> {
-    let world = WorldId::decode(&id(WORLD)).map_err(debug)?;
-    Ok(HouseId::new(world, HOUSE_KEY).ok_or("house key")?)
-}
-
-fn request(handoff: u8) -> TestResult<HouseEntryRequest> {
-    Ok(HouseEntryRequest {
-        direction: HouseHandoffDirection::Entry,
-        handoff_id: id(handoff),
-        character_id: CharacterId::decode(&id(CHARACTER)).map_err(debug)?,
-        source_game_session_id: GameSessionId::decode(&id(SESSION)).map_err(debug)?,
-        source_connection_generation: 1,
-        source_character_lease_generation: 1,
-        source_scope: scope()?,
-        source_scope_ownership_generation: 1,
-        house: house()?,
-        house_scope_ownership_generation: 1,
-        acl_revision: 1,
-        guild_revisions: None,
-        reserved_tile: vec![1, 2, 3],
-        prepared_at: 100,
-    })
-}
-
-fn commit(handoff: u8) -> TestResult<HouseEntryCommit> {
-    Ok(HouseEntryCommit {
-        handoff_id: id(handoff),
-        destination_game_session_id: GameSessionId::decode(&id(DESTINATION)).map_err(debug)?,
-        committed_at: 200,
-    })
-}
-
-fn house_request(
-    key: u8,
-    command: HouseScopeAssignmentCommand,
-) -> TestResult<HouseScopeAssignmentRequest> {
-    Ok(HouseScopeAssignmentRequest {
-        operation_key: OperationKey::from_bytes([key; 32]),
-        actor: ControlActor::new("oteryn_test_admin").map_err(debug)?,
-        actor_role: "oteryn_test_admin".into(),
-        command,
-    })
-}
-
-/// Session-use history for Character 41, house grants, the house assigned to node 1 at
-/// generation 1, and the fixture property admitting Character 41 at ACL revision 1. The
-/// access function stays the migration stub.
-async fn seed(harness: &Harness) -> TestResult {
-    sqlx::query(
-        "INSERT INTO game_durability_session_use_ledgers VALUES (encode($1,'hex')::uuid,1,true,1,1)",
-    )
-    .bind(id(CHARACTER).as_slice())
-    .execute(&harness.pool)
-    .await?;
-    sqlx::query(
-        "INSERT INTO game_durability_session_use_memberships VALUES \
-         (encode($1,'hex')::uuid, encode($2,'hex')::uuid, 1, NULL)",
-    )
-    .bind(id(SESSION).as_slice())
-    .bind(id(CHARACTER).as_slice())
-    .execute(&harness.pool)
-    .await?;
-    sqlx::query(
-        "INSERT INTO game_control_house_scope_grants (control_role, world_id, house_key, operation) \
-         SELECT session_user, encode($1,'hex')::uuid, $2, operation \
-           FROM unnest(ARRAY[1, 2, 3]::SMALLINT[]) AS operation",
-    )
-    .bind(id(WORLD).as_slice())
-    .bind(HOUSE_KEY)
-    .execute(&harness.pool)
-    .await?;
-    let outcome = harness
-        .root
-        .assign_house_scope(house_request(
-            8,
-            HouseScopeAssignmentCommand::Assign {
-                house: house()?,
-                target: harness.node.fact(),
-            },
-        )?)
-        .await
-        .map_err(debug)?;
-    let HouseScopeAssignmentOutcome::Committed(assignment) = outcome else {
-        return Err(format!("unexpected house assignment: {outcome:?}").into());
-    };
-    assert_eq!(assignment.ownership_generation, 1);
-    sqlx::query(
-        "CREATE TABLE test_house_properties (world_id UUID, house_key TEXT, \
-           acl_revision NUMERIC(20,0), open BOOLEAN, guest UUID, PRIMARY KEY (world_id, house_key))",
-    )
-    .execute(&harness.pool)
-    .await?;
-    sqlx::query("INSERT INTO test_house_properties VALUES (encode($1,'hex')::uuid, $2, 1, true, encode($3,'hex')::uuid)")
-        .bind(id(WORLD).as_slice())
-        .bind(HOUSE_KEY)
-        .bind(id(CHARACTER).as_slice())
-        .execute(&harness.pool)
-        .await?;
-    Ok(())
-}
-
-/// The test house: `game_house_access` reads the fixture row `FOR SHARE`, the guest is a GUEST,
-/// a closed property is content-fenced. Test code only, never a migration.
-async fn install_test_house(harness: &Harness) -> TestResult {
-    sqlx::query(
-        "CREATE OR REPLACE FUNCTION game_house_access( \
-             p_world_id UUID, p_house_key TEXT, p_character_id UUID) \
-         RETURNS TABLE (role TEXT, content_fenced BOOLEAN, acl_revision NUMERIC(20,0), \
-                        guild_revisions JSONB) \
-         LANGUAGE sql AS $$ \
-             SELECT CASE WHEN p.guest = p_character_id THEN 'GUEST' END, NOT p.open, \
-                    p.acl_revision, NULL::JSONB \
-               FROM test_house_properties p \
-              WHERE p.world_id = p_world_id AND p.house_key = p_house_key FOR SHARE \
-         $$",
-    )
-    .execute(&harness.pool)
-    .await?;
-    Ok(())
-}
 
 /// (session state, nonterminal session ids of Character 41, handoff rows).
 async fn state(harness: &Harness) -> TestResult<(i16, Vec<Vec<u8>>, i64)> {
@@ -181,20 +56,6 @@ fn run(tag: &'static str, case: impl AsyncFnOnce(&Harness) -> TestResult) -> Tes
         case(&harness).await?;
         harness.cleanup().await
     })
-}
-
-async fn prepare(harness: &Harness, root: &DurabilityRoot, handoff: u8) -> TestResult {
-    let seal = harness.recovery.seal_current().map_err(debug)?;
-    let authority = root.open_character_authority(&seal).await.map_err(debug)?;
-    let outcome = root
-        .prepare_house_entry(&authority, &harness.node, request(handoff)?)
-        .await
-        .map_err(debug)?;
-    let HousePrepareOutcome::Prepared(record) = outcome else {
-        return Err(format!("unexpected prepare: {outcome:?}").into());
-    };
-    assert_eq!(record.state, HouseHandoffState::Prepared);
-    Ok(())
 }
 
 /// A replacement candidate copying its predecessor's runtime scope, without house columns.
@@ -241,24 +102,6 @@ async fn replace_session(
         .bind(id(candidate).as_slice())
         .execute(&mut *tx)
         .await?;
-    Ok(())
-}
-
-/// Prepares and commits the entry: Character 41 is inside on house session 61.
-async fn admit(harness: &Harness) -> TestResult {
-    prepare(harness, &harness.root, HANDOFF).await?;
-    let seal = harness.recovery.seal_current().map_err(debug)?;
-    let authority = harness
-        .root
-        .open_character_authority(&seal)
-        .await
-        .map_err(debug)?;
-    let outcome = harness
-        .root
-        .commit_house_entry(&authority, &harness.node, commit(HANDOFF)?)
-        .await
-        .map_err(debug)?;
-    assert!(matches!(outcome, HouseCommitOutcome::Committed(_)));
     Ok(())
 }
 
@@ -1455,3 +1298,7 @@ fn a_house_is_not_assigned_over_a_bare_instance_session() -> TestResult {
 async fn harness_count(pool: &sqlx::PgPool, sql: &'static str) -> TestResult<i64> {
     Ok(sqlx::query_scalar(sql).fetch_one(pool).await?)
 }
+
+#[path = "house_scope_handoff_fixture.rs"]
+mod fixture;
+use fixture::*;

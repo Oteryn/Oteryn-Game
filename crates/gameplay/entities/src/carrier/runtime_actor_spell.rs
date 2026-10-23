@@ -604,6 +604,35 @@ impl ChannelRuntimeV1 {
         };
         String::from_utf8(target_identity.to_vec()).map_err(|_| Error::InvalidBatch)
     }
+    /// Original semantic clock of this exact retained committed effect group, including
+    /// deferred phases. A replay never obtains a new clock and ambiguous records refuse.
+    pub fn committed_spell_batch_time(
+        &self,
+        receipt: &CombatBatchReceipt,
+    ) -> Result<Option<oteryn_simulation_determinism::SemanticTimeMicros>, Error> {
+        self.player_control_facts(receipt.caster, receipt.command.game_session_id())?;
+        let index = self
+            .carrier
+            .validate_ref(&self.continuity, receipt.caster.0)?;
+        let mut observed = None;
+        for record in &state(&self.carrier.slots[index])?.records {
+            if record.command != receipt.command
+                || record.receipt.caster != receipt.caster
+                || record.receipt.effects != receipt.effects
+            {
+                continue;
+            }
+            let Some(at) = record.original_batch.now_us else {
+                return Ok(None);
+            };
+            if observed.is_some_and(|old| old != at) {
+                return Err(Error::CommandConflict);
+            }
+            observed = Some(at);
+        }
+        Ok(observed)
+    }
+
     /// Resolve retained normalized input before a caller reads a new clock or draws RNG.
     /// The existing bounded caster ledger is the sole retention owner, not a second cache.
     pub fn retained_spell_batch(

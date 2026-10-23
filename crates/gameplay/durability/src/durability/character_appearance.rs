@@ -1,10 +1,11 @@
-//! APP-1 native durable selection writer. Production composition requires the CP integration
-//! slot and the real content/Character-sex owners. Earned/Store/mount authorization stays closed
-//! until its accepted resolver/consumer exists. Historical receipts never grant actor authority.
+//! APP-1 native durable selection writer. Creation sex is read under the Character fence;
+//! earned grants resolve through admitted content in the same semantic transaction.
+//! Store stays closed. Historical receipts never grant actor authority.
 //!
 //! The stored companion owns historical reads/recovery; this registered native writer
 //! compiles unconditionally. Production runtime composition remains a separate owner boundary.
 
+mod command_replay;
 pub mod stored;
 
 pub use stored::{
@@ -31,9 +32,7 @@ use super::db::{
 };
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
-use crate::domain::appearance::{
-    AccountUnlocks, AppearanceContent, AppearanceRejection, Sex, UnlockFact, validate_selection,
-};
+use crate::domain::appearance::{AppearanceContent, AppearanceRejection, Sex, validate_selection};
 use crate::foundation::RuntimeScopeRefV1;
 use sha2::{Digest, Sha256};
 
@@ -87,6 +86,8 @@ pub struct AppearanceChangeRequest {
     pub before: Option<DurableAppearanceSelection>,
     pub after: AppearanceSelection<String>,
     pub content_revision: String,
+    /// Optional native transport intent digest, never supplied as client authority.
+    pub transport_binding: Option<[u8; 32]>,
 }
 impl AppearanceChangeRequest {
     fn validate(&self) -> Result<(), AppearanceWriteError> {
@@ -126,14 +127,12 @@ impl CommittedCharacterAppearance {
         request: &AppearanceChangeRequest,
         sex: Sex,
     ) -> bool {
-        request.validate().is_ok()
-            && self.occurrence == request.occurrence
-            && self.character_id == fence.character_id
-            && self.original_character_revision == fence.expected_character_revision
-            && self.before == request.before
-            && self.after == request.after
-            && self.content_revision == request.content_revision
-            && self.binding == appearance_binding(fence, request, sex)
+        self.matches_semantics(
+            fence.character_id,
+            fence.expected_character_revision,
+            request,
+            sex,
+        )
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -151,30 +150,16 @@ pub struct AppearanceValidationContext<C> {
     pub content_revision: String,
 }
 
-// The accepted content mapping for earned provenance/addon keys does not exist yet. Keep that
-// entire authorization path unavailable instead of taking an authorizing callback or guessing
-// a content-key convention. Native starter semantics still pass through the accepted validator.
-struct UnavailableEarnedUnlocks;
-impl AccountUnlocks<String> for UnavailableEarnedUnlocks {
-    fn outfit(&self, _: &String) -> UnlockFact {
-        UnlockFact::Absent
-    }
-    fn addon(&self, _: &String, _: u8) -> UnlockFact {
-        UnlockFact::Absent
-    }
-    fn mount(&self, _: &String) -> UnlockFact {
-        UnlockFact::Absent
-    }
-}
+mod character_sex;
+mod current_appearance;
+mod earned_unlocks;
+pub use current_appearance::CurrentCharacterAppearance;
 
 impl DurabilityRoot {
     /// Commit the selection under the native Character fence. The owner supplies its current
     /// immutable content view and independently resolved Character sex, never request authority.
-    /// Earned outfits/addons/mounts and Store remain unavailable: no accepted content resolver
-    /// or granting consumer is fabricated. No grant authority is accepted here.
-    ///
-    /// Production composition waits for APP-2's real mapping/compatibility resolver, Character
-    /// sex input, and the CP migration/integrity/module-registration slot.
+    /// Earned facts are read for the fenced Character account and interpreted by authored
+    /// grant mappings. Store remains unavailable.
     pub async fn commit_character_appearance<C>(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -184,7 +169,7 @@ impl DurabilityRoot {
         validation: AppearanceValidationContext<C>,
     ) -> Result<AppearanceChangeOutcome, AppearanceWriteError>
     where
-        C: AppearanceContent<String> + Send + 'static,
+        C: AppearanceContent<String> + Send + Sync + 'static,
     {
         let AppearanceValidationContext {
             sex,
@@ -220,6 +205,11 @@ impl DurabilityRoot {
             let root = match assert_gameplay_fence(&mut tx, &fence, &node).await? {
                 Ok(root) => root, Err(error) => return Ok(Err(error.into())),
             };
+            match character_sex::read(&mut tx, fence.character_id).await {
+                Ok(current) if current == sex => {}
+                Ok(_) | Err(AppearanceWriteError::InvalidInput) => return Ok(Err(AppearanceWriteError::InvalidInput)),
+                Err(error) => return Ok(Err(error)),
+            }
             let state = sqlx::query("SELECT character_revision::text, profile_revision, ruleset_revision, content_revision FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
                 .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
             let Some(state) = state else { return Ok(Err(CharacterProgressionError::MissingProgressionState.into())); };
@@ -233,7 +223,9 @@ impl DurabilityRoot {
             let pending: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_pending_respawns WHERE character_id=encode($1,'hex')::uuid)")
                 .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
             if pending { return Ok(Err(CharacterProgressionError::RespawnPending.into())); }
-            if let Err(rejection) = validate_selection(&request.after, sex, &content, &UnavailableEarnedUnlocks) {
+            let facts = earned_unlocks::read(&mut tx, fence.character_id, &content.earned_grant_keys()).await.map_err(read_storage_error)?;
+            let unlocks = crate::domain::appearance::EarnedCosmetics { content: &content, facts: &facts };
+            if let Err(rejection) = validate_selection(&request.after, sex, &content, &unlocks) {
                 return Ok(Err(AppearanceWriteError::Rejected(rejection)));
             }
             let next = root.revision.checked_add(1).ok_or(DurabilityError::InvalidStoredState)?;
@@ -268,64 +260,6 @@ impl DurabilityRoot {
             commit_semantic_transaction(tx, deadline).await?;
             Ok(Ok(AppearanceChangeOutcome::Committed(receipt)))
         })).await?
-    }
-
-    /// Read stored selection DATA under the current native DB gameplay fence.
-    /// This proves neither active content/sex compatibility nor current runtime actor/condition
-    /// ownership. Callers must independently recheck those owners before publication; selection
-    /// provenance may deliberately differ from the currently admitted content revision.
-    pub async fn read_current_character_appearance(
-        &self,
-        authority: &ReconciledCharacterAuthority<'_, '_>,
-        node: &NodeIncarnationProof,
-        fence: CurrentCharacterGameplayFence,
-    ) -> Result<Option<DurableAppearanceSelection>, AppearanceWriteError> {
-        if fence.character_lease_generation == 0
-            || !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
-        {
-            return Err(AppearanceWriteError::InvalidInput);
-        }
-        let recovery = authority.record_for(self).map_err(|_| {
-            AppearanceWriteError::Fence(CharacterProgressionError::AuthorityRejected)
-        })?;
-        let node = node.clone();
-        self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
-                Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    assert_recovery_fence(&mut tx, &recovery).await?;
-                    lock_admission_relations(&mut tx).await?;
-                    let root = match assert_gameplay_fence(&mut tx, &fence, &node).await? {
-                        Ok(root) => root,
-                        Err(error) => return Ok(Err(error.into())),
-                    };
-                    let state = sqlx::query("SELECT character_revision::text, profile_revision, ruleset_revision, content_revision FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
-                        .bind(fence.character_id.as_bytes().as_slice())
-                        .fetch_optional(&mut *tx).await?;
-                    let Some(state) = state else {
-                        return Ok(Err(CharacterProgressionError::MissingProgressionState.into()));
-                    };
-                    if numeric_u64(&state, "character_revision")? != root.revision {
-                        return Err(DurabilityError::InvalidStoredState);
-                    }
-                    if !state_matches_root(&state, &root) {
-                        return Ok(Err(CharacterProgressionError::ProgressionContextMismatch.into()));
-                    }
-                    let selected = read_selected_appearance(&mut tx, fence.character_id)
-                        .await.map_err(read_storage_error)?;
-                    if selected.as_ref().is_some_and(|selected| selected.committed_character_revision.get() > root.revision) {
-                        return Err(DurabilityError::InvalidStoredState);
-                    }
-                    let pending: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_pending_respawns WHERE character_id=encode($1,'hex')::uuid)")
-                        .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
-                    if pending {
-                        return Ok(Err(CharacterProgressionError::RespawnPending.into()));
-                    }
-                    commit_semantic_transaction(tx, deadline).await?;
-                    Ok(Ok(selected))
-                })
-            })
-            .await?
     }
 
     pub async fn read_character_appearance(
@@ -389,40 +323,12 @@ fn appearance_binding(
     request: &AppearanceChangeRequest,
     sex: Sex,
 ) -> Vec<u8> {
-    fn text(out: &mut Vec<u8>, value: &str) {
-        out.extend_from_slice(&(value.len() as u64).to_be_bytes());
-        out.extend_from_slice(value.as_bytes());
-    }
-    fn selection(out: &mut Vec<u8>, value: &AppearanceSelection<String>) {
-        text(out, &value.outfit_key);
-        for colour in value.colours {
-            out.extend_from_slice(&colour.to_be_bytes());
-        }
-        out.push(value.addons);
-        out.push(u8::from(value.mount_key.is_some()));
-        if let Some(mount) = &value.mount_key {
-            text(out, mount);
-        }
-    }
-    let mut semantic = vec![BINDING_VERSION];
-    semantic.extend_from_slice(&request.occurrence.0);
-    semantic.extend_from_slice(fence.character_id.as_bytes());
-    semantic.extend_from_slice(&fence.expected_character_revision.get().to_be_bytes());
-    semantic.push(match sex {
-        Sex::Female => 0,
-        Sex::Male => 1,
-    });
-    semantic.push(u8::from(request.before.is_some()));
-    if let Some(before) = &request.before {
-        selection(&mut semantic, &before.selection);
-        text(&mut semantic, &before.content_revision);
-        semantic.extend_from_slice(&before.committed_character_revision.get().to_be_bytes());
-    }
-    selection(&mut semantic, &request.after);
-    text(&mut semantic, &request.content_revision);
-    let mut binding = vec![BINDING_VERSION];
-    binding.extend_from_slice(&Sha256::digest(&semantic));
-    binding
+    command_replay::semantic_binding(
+        fence.character_id,
+        fence.expected_character_revision,
+        request,
+        sex,
+    )
 }
 
 async fn load_appearance_receipt(

@@ -1,0 +1,13 @@
+{
+  "id": 36,
+  "name": "CHAT_GUILD_ROOM_V1",
+  "owner_decision": "GUILD-CHAT-1 Integrator decision 2026-10-22 (owner-delegated): extend chat_v1, connection-owner acceptance under fresh custody",
+  "owner": "World communication (Guild membership remains Guild-owned)",
+  "requires": [
+    7
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": true,
+  "offer_gate": "Extends CHAT_V1 command 13 with intent tag 6 and disposition 10 NOT_ALLOWED (common status ACCEPTED), domain 12 snapshot type 2 and line kind 5 with fields 9/10. Without selection all old CHAT_V1 bytes and behavior remain unchanged. No GUILD_V1 capability is activated."
+}

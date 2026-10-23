@@ -15,8 +15,8 @@ type Result<T> = std::result::Result<T, SpellItemError>;
 fn hex(v: &[u8]) -> String {
     v.iter().map(|b| format!("{b:02x}")).collect()
 }
-fn intent(binding: &NativeMapOwnerBinding, p: &NativeMapItemPlacement) -> Result<Vec<u8>> {
-    serde_json::to_vec(&json!({"schema":"OTERYN_NATIVE_MAP_ITEM_INIT/v1",
+fn intent(binding: &NativeMapOwnerBinding, p: &NativeMapItemPlacement, epoch: u64) -> Result<Vec<u8>> {
+    let mut document = json!({"schema":"OTERYN_NATIVE_MAP_ITEM_INIT/v1",
         "world":hex(binding.world.as_bytes()),"channel":hex(binding.channel.as_bytes()),
         "scope_generation":binding.scope_generation.to_string(),
         "content_digest":hex(&binding.content_digest),"map_digest":hex(&binding.map_digest),"frame_digest":hex(&binding.frame_digest),
@@ -24,7 +24,9 @@ fn intent(binding: &NativeMapOwnerBinding, p: &NativeMapItemPlacement) -> Result
         "definition_revision":p.definition.revision_ref,"quantity":p.quantity,
         "spatial_position":hex(&p.ground.spatial_position),"source_binding":hex(&p.source_binding),"source_attributes":p.source_attributes,
         "blocks_movement":p.blocks_movement,"blocks_projectile":p.blocks_projectile,"immovable_block_solid":p.immovable_block_solid,"owner_kind":p.owner_kind
-    })).map_err(|_| SpellItemError::Rejected("map intent serialization"))
+    });
+    if epoch != 0 { document["reset_epoch"] = json!(epoch.to_string()); }
+    serde_json::to_vec(&document).map_err(|_| SpellItemError::Rejected("map intent serialization"))
 }
 
 pub async fn initialize_in_transaction(
@@ -45,6 +47,9 @@ pub async fn initialize_in_transaction(
         .map_err(|_| SpellItemError::Rejected("map recovery authority"))?;
     assert_recovery_fence(tx, &record).await?;
     super::db::lock_admission_relations(tx).await?;
+    let epoch: String = sqlx::query_scalar("SELECT coalesce((SELECT reset_epoch FROM game_world_reset_active WHERE world_id=encode($1,'hex')::uuid),0)::text")
+        .bind(binding.world.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+    let epoch = epoch.parse::<u64>().map_err(|_| SpellItemError::Rejected("map reset epoch"))?;
     let scope = crate::foundation::RuntimeScopeRefV1::channel(binding.world, binding.channel);
     let guard=super::admission_authority_guards::AdmissionGuardStore::from_root(root.clone())
         .load_locked(tx,&crate::foundation::admission_authority_publication::AdmissionAuthorityGuardKeyV1::Runtime(scope)).await?
@@ -82,11 +87,11 @@ pub async fn initialize_in_transaction(
         {
             return Err(SpellItemError::Rejected("map placement binding"));
         }
-        let bytes = intent(&binding, p)?;
+        let bytes = intent(&binding, p, epoch)?;
         // This scope's initializer holds the advisory transaction lock above.
         // Receipts are immutable; SELECT needs no receipt UPDATE privilege.
-        let previous=sqlx::query("SELECT uuid_send(transaction_id),uuid_send(item_instance_id),source_intent,scope_generation::text FROM game_native_map_item_receipts WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND content_digest=$3 AND placement_key=$4")
-            .bind(binding.world.as_bytes().as_slice()).bind(binding.channel.as_bytes().as_slice()).bind(binding.content_digest.as_slice()).bind(&p.placement_key).fetch_optional(&mut **tx).await?;
+        let previous=sqlx::query("SELECT uuid_send(transaction_id),uuid_send(item_instance_id),source_intent,scope_generation::text FROM game_native_map_item_receipts WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND content_digest=$3 AND placement_key=$4 AND reset_epoch=$5::text::numeric")
+            .bind(binding.world.as_bytes().as_slice()).bind(binding.channel.as_bytes().as_slice()).bind(binding.content_digest.as_slice()).bind(&p.placement_key).bind(epoch.to_string()).fetch_optional(&mut **tx).await?;
         if let Some(row) = previous {
             let original: serde_json::Value =
                 serde_json::from_slice(&row.try_get::<Vec<u8>, _>(2)?)
@@ -162,10 +167,10 @@ pub async fn initialize_in_transaction(
         )
         .await
         .map_err(super::ground_cell_limit::GroundCellAdmissionError::into_spell_error)?;
-        sqlx::query("INSERT INTO game_native_map_item_receipts(transaction_id,event_id,item_instance_id,world_id,channel_id,scope_generation,holder_node_id,holder_registration_revision,content_digest,map_digest,frame_digest,placement_key,definition_family,definition_key,definition_revision,quantity,spatial_position,map_revision,content_revision,placement_context,source_binding,source_attributes,blocks_movement,blocks_projectile,immovable_block_solid,owner_kind,binding,source_intent) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6::text::numeric(20,0),encode($7,'hex')::uuid,$8::text::numeric(20,0),$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,sha256($27),$27)")
+        sqlx::query("INSERT INTO game_native_map_item_receipts(transaction_id,event_id,item_instance_id,world_id,channel_id,scope_generation,holder_node_id,holder_registration_revision,content_digest,map_digest,frame_digest,placement_key,definition_family,definition_key,definition_revision,quantity,spatial_position,map_revision,content_revision,placement_context,source_binding,source_attributes,blocks_movement,blocks_projectile,immovable_block_solid,owner_kind,binding,source_intent,reset_epoch) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6::text::numeric(20,0),encode($7,'hex')::uuid,$8::text::numeric(20,0),$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,sha256($27),$27,$28::text::numeric)")
             .bind(&transaction).bind(&event).bind(&item).bind(binding.world.as_bytes().as_slice()).bind(binding.channel.as_bytes().as_slice()).bind(binding.scope_generation.to_string()).bind(fact.node_id().as_bytes().as_slice()).bind(fact.registration_revision().to_string())
             .bind(binding.content_digest.as_slice()).bind(binding.map_digest.as_slice()).bind(binding.frame_digest.as_slice()).bind(&p.placement_key).bind(&p.definition.family).bind(&p.definition.production_key).bind(&p.definition.revision_ref).bind(i64::from(p.quantity))
-            .bind(&p.ground.spatial_position).bind(&p.ground.map_revision).bind(&p.ground.content_revision).bind(&p.ground.native_room_placement_context).bind(&p.source_binding).bind(&p.source_attributes).bind(p.blocks_movement).bind(p.blocks_projectile).bind(p.immovable_block_solid).bind(&p.owner_kind).bind(&bytes).execute(&mut **tx).await?;
+            .bind(&p.ground.spatial_position).bind(&p.ground.map_revision).bind(&p.ground.content_revision).bind(&p.ground.native_room_placement_context).bind(&p.source_binding).bind(&p.source_attributes).bind(p.blocks_movement).bind(p.blocks_projectile).bind(p.immovable_block_solid).bind(&p.owner_kind).bind(&bytes).bind(epoch.to_string()).execute(&mut **tx).await?;
         sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id,last_transaction_id,state_revision) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4,$5,$6,1,encode($7,'hex')::uuid,NULL,1)")
             .bind(&item).bind(binding.world.as_bytes().as_slice()).bind(&p.definition.family).bind(&p.definition.production_key).bind(&p.definition.revision_ref).bind(i64::from(p.quantity)).bind(&transaction).execute(&mut **tx).await?;
         sqlx::query("INSERT INTO game_item_ground_locations(item_instance_id,world_id,channel_id,runtime_scope_ownership_generation,spatial_position,corpse_ref,map_revision,content_revision,native_room_placement_context) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric(20,0),$5,$6,$7,$8,$9)")

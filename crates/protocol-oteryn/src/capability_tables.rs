@@ -151,6 +151,11 @@ pub const GATED: &[(u32, &[u32], &[u32])] = &[
             STATE_DOMAIN_ACTOR_COOLDOWNS,
         ],
     ),
+    (
+        crate::appearance::CAPABILITY_APPEARANCE_V1,
+        &[crate::appearance::COMMAND_TYPE_APPEARANCE_CHANGE],
+        &[crate::appearance::STATE_DOMAIN_APPEARANCE],
+    ),
     // WEATHER-1: capability 26 owns domain 22 and no command type; it is offered per connection
     // only with a weather source (`with_weather_offer`).
     (
@@ -190,6 +195,11 @@ pub const GATED: &[(u32, &[u32], &[u32])] = &[
             crate::spectate::COMMAND_TYPE_OBSERVE_GRANT_REVOKE,
         ],
         &[crate::spectate::STATE_DOMAIN_OBSERVE_TARGET],
+    ),
+    (
+        crate::chat::guild_room::CAPABILITY_CHAT_GUILD_ROOM_V1,
+        &[],
+        &[],
     ),
 ];
 
