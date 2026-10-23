@@ -85,6 +85,7 @@ pub struct QualifiedSpellTile {
     top_source_ids: Vec<u32>,
     flags: NativeSpellTileFlags,
     source_step: Option<QualifiedSourceStepTile>,
+    bundle_zones: Option<(bool, bool)>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -128,6 +129,7 @@ impl QualifiedSpellTile {
             ground_speed,
             top_source_ids,
             flags,
+            bundle_zones: None,
             source_step: Some(QualifiedSourceStepTile {
                 height_count,
                 floor_changes,
@@ -137,12 +139,13 @@ impl QualifiedSpellTile {
         }
     }
     /// A world bundle tile (BUNDLE-TILES-1, the Map spell-tile projection): `ground` is the
-    /// ground item's source id and stored speed. A bundle has no source step facts, so
-    /// [`Self::source_step`], [`Self::no_pvp_zone`] and [`Self::pvp_zone`] stay unknown.
+    /// ground item's source id and stored speed. PvP zones come from the bundle's OTBM flags;
+    /// source height and floor-change facts remain unknown.
     pub fn from_bundle(
         ground: Option<(u32, u16)>,
         top_source_ids: Vec<u32>,
         flags: NativeSpellTileFlags,
+        zones: Option<(bool, bool)>,
     ) -> Self {
         Self {
             ground_present: ground.is_some(),
@@ -151,6 +154,7 @@ impl QualifiedSpellTile {
             top_source_ids,
             flags,
             source_step: None,
+            bundle_zones: zones,
         }
     }
     pub const fn ground_present(&self) -> bool {
@@ -169,10 +173,16 @@ impl QualifiedSpellTile {
         self.flags
     }
     pub fn no_pvp_zone(&self) -> Option<bool> {
-        self.source_step.as_ref().map(|facts| facts.no_pvp_zone)
+        self.source_step
+            .as_ref()
+            .map(|facts| facts.no_pvp_zone)
+            .or(self.bundle_zones.map(|zones| zones.0))
     }
     pub fn pvp_zone(&self) -> Option<bool> {
-        self.source_step.as_ref().map(|facts| facts.pvp_zone)
+        self.source_step
+            .as_ref()
+            .map(|facts| facts.pvp_zone)
+            .or(self.bundle_zones.map(|zones| zones.1))
     }
     pub fn source_step(&self) -> Option<&QualifiedSourceStepTile> {
         self.source_step.as_ref()
@@ -337,6 +347,7 @@ impl QualifiedSpellTiles {
                     .collect::<Result<_, _>>()?,
                 flags: record.flags,
                 source_step: None,
+                bundle_zones: None,
             };
             let cell = LogicalCell {
                 x: source.x,

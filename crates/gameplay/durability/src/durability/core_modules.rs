@@ -92,6 +92,7 @@ pub mod premium_fence;
 pub mod promotion_purchase;
 pub mod public_projections;
 pub mod pvp_state;
+pub mod pvp_live;
 pub mod party_pz_fact;
 pub mod pvp_death_consequences;
 mod pvp_death_request;

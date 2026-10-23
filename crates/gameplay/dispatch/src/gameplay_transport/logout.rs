@@ -55,9 +55,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// The `retry_after_ms` of a running in-fight deadline (ATTACK-0 §4), or `None`. A dead
     /// actor is not held, as at a closed client's release (`held_step`).
     async fn logout_in_fight(&self, actor: ExactActorRef, session: GameSessionId) -> Option<u32> {
+        if !self.refresh_pvp_locks(actor, session).await {
+            return Some(1000);
+        }
         let fact = self.combat_lock_fact(actor, session).await;
         match fact.pvp {
             super::combat_lock_fact::PvpLockSource::NotWiredInRuntime => {}
+            super::combat_lock_fact::PvpLockSource::LiveBlocked => return Some(1000),
         }
         let until = fact.pve_in_fight_until?;
         Some(in_fight_retry_after_ms(

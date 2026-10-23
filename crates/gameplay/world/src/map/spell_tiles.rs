@@ -28,7 +28,8 @@
 //!   source: the bundle and the served definitions state neither `movable` nor `block_pathfind`.
 //!   They fail closed as `true`, so rope, levitate and house-kick relocation refuse every bundle
 //!   tile as a destination. Follow-up BUNDLE-TILES-IMMOVABLE-1 sources them.
-//! - **Source step facts** (height, floor-change kinds, PvP zones) stay unknown
+//! - **PvP zones.** OTBM flags 4 and 16, with PZ/no-PvP precedence, as in the source loader.
+//! - **Source step facts** (height and floor-change kinds) stay unknown
 //!   ([`QualifiedSpellTile::source_step`] is `None`).
 //!
 //! A tile is **unknown** (`SpellTileLookupError::Unknown`, so a cast or attack on it is refused)
@@ -85,6 +86,8 @@ struct Shape {
     block_projectile: bool,
     floor_change: bool,
     protection_zone: bool,
+    no_pvp_zone: bool,
+    pvp_zone: bool,
 }
 
 impl Shape {
@@ -102,6 +105,7 @@ impl Shape {
                 floor_change: self.floor_change,
                 protection_zone: self.protection_zone,
             },
+            Some((self.no_pvp_zone, self.pvp_zone)),
         )
     }
 }
@@ -218,6 +222,10 @@ impl SpellTilesBuilder {
                 block_projectile,
                 floor_change,
                 protection_zone: tile.flags & PROTECTION_ZONE != 0,
+                no_pvp_zone: tile.flags & PROTECTION_ZONE == 0 && tile.flags & 4 != 0,
+                pvp_zone: tile.flags & PROTECTION_ZONE == 0
+                    && tile.flags & 4 == 0
+                    && tile.flags & 16 != 0,
             };
             let id = match self.interned.get(&shape) {
                 Some(id) => *id,
@@ -396,6 +404,9 @@ pub mod tests {
                 tile(11, 0, 0, &[0, 8]),
                 tile(12, 0, 1, &[0, 8]),
                 tile(13, 0, 0, &[0]),
+                tile(14, 4, 0, &[0]),
+                tile(15, 16, 0, &[0]),
+                tile(16, 5, 0, &[0]),
             ],
         };
         let bytes = bundle::write(
@@ -510,7 +521,7 @@ pub mod tests {
         let tiles = cells.spell_tiles();
         let lookup = |x| tiles.lookup(cells.scope(), at(x));
         let tile = |ground, tops: &[u32], flags| {
-            QualifiedSpellTile::from_bundle(ground, tops.to_vec(), flags)
+            QualifiedSpellTile::from_bundle(ground, tops.to_vec(), flags, Some((false, false)))
         };
         // Grass: a walkable ground with its id and stored speed, nothing on top.
         let grass = lookup(1).expect("grass");
@@ -521,12 +532,15 @@ pub mod tests {
         assert!(grass.ground_present());
         assert_eq!(grass.ground_source_id(), Some(100));
         assert_eq!(grass.ground_speed(), Some(150));
-        // A bundle has no source step facts, so PvP zones stay unknown.
+        // Zone flags are known even though source step height remains unknown.
         assert_eq!(grass.source_step(), None);
-        assert_eq!(grass.no_pvp_zone(), None);
-        assert_eq!(grass.pvp_zone(), None);
+        assert_eq!(grass.no_pvp_zone(), Some(false));
+        assert_eq!(grass.pvp_zone(), Some(false));
         // Tile flag bit 0 is the protection zone.
         assert!(lookup(2).expect("zone").flags().protection_zone);
+        assert_eq!(lookup(14).expect("no PvP").no_pvp_zone(), Some(true));
+        assert_eq!(lookup(15).expect("PvP").pvp_zone(), Some(true));
+        assert_eq!(lookup(16).expect("PZ wins").no_pvp_zone(), Some(false));
         // A non-walkable ground blocks.
         assert_eq!(
             lookup(3).expect("water"),
@@ -649,7 +663,7 @@ pub mod tests {
         assert!(!Arc::ptr_eq(&tiles, &other));
         assert_eq!(tiles, other);
         assert_eq!(tiles.tiles.len(), first.base().tile_count());
-        // 13 tiles: 3 unknown, and the grass at x 13 shares the shape of x 1. The coin and the box
+        // 16 tiles: 3 unknown, and the grass at x 13 shares the shape of x 1. The coin and the box
         // intern no shape; the usable door's shape (not blocked, unlike the sealed door) stays
         // interned and its tile is unknown.
         assert_eq!(
@@ -660,7 +674,7 @@ pub mod tests {
                 .count(),
             3
         );
-        assert_eq!(tiles.shapes.len(), 10);
+        assert_eq!(tiles.shapes.len(), 12);
         let (_, cells) = cells(&first);
         let lookup = |x| cells.spell_tiles().lookup(cells.scope(), at(x));
         assert!(std::ptr::eq(

@@ -65,6 +65,7 @@ mod npc_travel;
 mod npc_voice;
 mod paced_movement;
 mod pvp_death;
+mod pvp_live;
 mod tutorial_corruptor;
 mod tutorial_movement;
 mod tutorial_session;
@@ -343,6 +344,9 @@ fn held_step(
 ) -> Option<Duration> {
     if states.is_dead(actor) {
         return None;
+    }
+    if pvp_live::logout_blocked(states, actor, session, now) {
+        return Some(Duration::from_millis(250).min(limit));
     }
     let until = attack.in_fight_until(actor, session, now)?;
     Some(hold_step(until.get().saturating_sub(now.get())).min(limit))
@@ -1947,11 +1951,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         limit: Duration,
     ) -> bool {
         let now = self.owner_now();
-        let step = {
+        let mut step = {
             let states = self.states.spell_states.lock().await;
             let attack = self.states.attack.lock().await;
             held_step(&states, &attack, actor, session, now, limit)
         };
+        if step.is_none() && !self.states.spell_states.lock().await.is_dead(actor) {
+            // A victim's settled death can extend this contributor's durable kill lock.
+            // Recheck before release even when its cached ordinary hit lock has elapsed.
+            if !self.refresh_pvp_locks(actor, session).await {
+                tokio::time::sleep(Duration::from_millis(250).min(limit)).await;
+                return true;
+            }
+            let states = self.states.spell_states.lock().await;
+            let attack = self.states.attack.lock().await;
+            step = held_step(&states, &attack, actor, session, self.owner_now(), limit);
+        }
         let Some(step) = step else {
             return false;
         };
@@ -3049,6 +3064,17 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         game_session_id: GameSessionId,
     ) -> Option<(u64, actor_spell::ActorVitals)> {
+        let restored = self
+            .states
+            .spell_states
+            .lock()
+            .await
+            .pvp_locks
+            .iter()
+            .any(|(a, s, _)| *a == actor && *s == game_session_id);
+        if !restored && !self.refresh_pvp_locks(actor, game_session_id).await {
+            return None;
+        }
         let runtime = self.runtime.lock().await;
         let states = self.states.spell_states.lock().await;
         actor_spell::observe_vitals(&runtime, &states, actor, game_session_id)
@@ -3239,6 +3265,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command_id: u64,
         target: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
     ) -> oteryn_protocol_oteryn::attack::AttackIntentDisposition {
+        let permit = if target.is_some() {
+            let Some(permit) = self.spell_lane_permit().await else {
+                return oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected;
+            };
+            Some(permit)
+        } else {
+            None
+        };
         let now = self.owner_now();
         let runtime = self.runtime.lock().await;
         let states = self.states.spell_states.lock().await;
@@ -3269,6 +3303,21 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             if states.is_dead(actor) {
                 return oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected;
             }
+        }
+        if let Some(permit) = permit.as_ref()
+            && !self
+                .pvp_selection_allowed(
+                    permit,
+                    &runtime,
+                    &states,
+                    actor,
+                    game_session_id,
+                    command_id,
+                    target,
+                )
+                .await
+        {
+            return oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected;
         }
         self.states.attack.lock().await.set_target(
             &runtime,
@@ -3314,7 +3363,9 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         let states = self.states.spell_states.lock().await;
         let mut attack = self.states.attack.lock().await;
         attack.settle_pacified_target(&runtime, &states, actor, game_session_id);
-        Some(attack.combat_state(actor, game_session_id, now))
+        let mut state = attack.combat_state(actor, game_session_id, now);
+        state.in_fight |= pvp_live::logout_blocked(&states, actor, game_session_id, now);
+        Some(state)
     }
 
     /// ATTACK-1b: every 250 ms while a session has domain 10, so a 2000 ms swing is late by at

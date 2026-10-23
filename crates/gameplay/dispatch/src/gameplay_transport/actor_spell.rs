@@ -43,7 +43,7 @@ mod familiar_defense;
 #[path = "field_step_ingress.rs"]
 mod field_step_ingress;
 #[path = "native_combat_cast.rs"]
-mod native_combat_cast;
+pub(in crate::gameplay_transport) mod native_combat_cast;
 #[path = "parameter_cast.rs"]
 mod parameter_cast;
 #[path = "spell_timer_callbacks.rs"]
@@ -95,7 +95,7 @@ use crate::spell::cast::{CastContext, CharacterCastFacts, PlayerSpellState, cast
 #[derive(Debug)]
 pub struct ChannelSpellStates {
     pub(in crate::gameplay_transport) owner_wake: std::sync::Arc<tokio::sync::Notify>,
-    actors: Vec<(ExactActorRef, GameSessionId, PlayerSpellState)>,
+    pub(in crate::gameplay_transport) actors: Vec<(ExactActorRef, GameSessionId, PlayerSpellState)>,
     /// One real Channel-owner lane; no timer is restored from client intent.
     pub spell_timers: Option<crate::spell::delayed_execution::SpellTimerOwner>,
     pub pending_familiars: Vec<
@@ -138,7 +138,12 @@ pub struct ChannelSpellStates {
     pub(in crate::gameplay_transport) next_monster_ai_pass_us: u64,
     pub(in crate::gameplay_transport) monster_ai_sequence: u64,
     pub(in crate::gameplay_transport) monster_ai_cursor: usize,
-    deaths: Vec<(ExactActorRef, GameSessionId, PlayerDeath)>,
+    pub(in crate::gameplay_transport) pvp_locks: Vec<(
+        ExactActorRef,
+        GameSessionId,
+        oteryn_gameplay_combat_rules::pvp::CombatLock,
+    )>,
+    pub(in crate::gameplay_transport) deaths: Vec<(ExactActorRef, GameSessionId, PlayerDeath)>,
     mint_death: fn() -> Option<PlayerDeathOccurrence>,
     source_secondary_memos: Vec<actor_conditions::NativeSecondaryMemo>,
     source_damage: Vec<NativeSourceMemo<crate::player_lethal::PlayerDamageReceipt>>,
@@ -272,6 +277,7 @@ impl Default for ChannelSpellStates {
             next_monster_ai_pass_us: Default::default(),
             monster_ai_sequence: Default::default(),
             monster_ai_cursor: Default::default(),
+            pvp_locks: Vec::new(),
             deaths: Vec::new(),
             mint_death: mint_player_death_occurrence,
             source_secondary_memos: Vec::new(),

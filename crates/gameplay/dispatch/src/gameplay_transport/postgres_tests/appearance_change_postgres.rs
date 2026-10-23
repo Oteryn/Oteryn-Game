@@ -5,7 +5,7 @@ mod command_replay_tests;
 #[path = "appearance_change_postgres/native_admission_tests.rs"]
 mod native_admission_tests;
 #[path = "appearance_change_postgres/observer_visibility_tests.rs"]
-mod observer_visibility_tests;
+pub(super) mod observer_visibility_tests;
 #[path = "appearance_change_postgres/receipt_substitution_tests.rs"]
 mod receipt_substitution_tests;
 #[path = "appearance_change_postgres/temporary_appearance_tests.rs"]

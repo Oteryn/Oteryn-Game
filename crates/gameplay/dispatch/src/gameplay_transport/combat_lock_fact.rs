@@ -9,6 +9,7 @@ use oteryn_simulation_determinism::SemanticTimeMicros;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PvpLockSource {
     NotWiredInRuntime,
+    LiveBlocked,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -36,7 +37,11 @@ impl CombatLockFact {
             pve_in_fight_until: (!states.is_dead(actor))
                 .then(|| attack.in_fight_until(actor, session, now))
                 .flatten(),
-            pvp: PvpLockSource::NotWiredInRuntime,
+            pvp: if super::pvp_live::logout_blocked(states, actor, session, now) {
+                PvpLockSource::LiveBlocked
+            } else {
+                PvpLockSource::NotWiredInRuntime
+            },
         }
     }
 

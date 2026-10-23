@@ -196,13 +196,16 @@ impl StagedSpellBatch {
         if !preflight.matches_batch(&self.batch) {
             return Err(Error::CommandConflict);
         }
-        // Fill only actual player heal transitions. The sealed owner staged each
+        // Fill actual player heal and qualified PvP damage transitions. The sealed owner staged each
         // transition against the independently validated live player state.
         for effect in &self.player_effects {
             let Some(health) = preflight.health_receipt(effect.target, effect.sub_ordinal) else {
                 continue;
             };
-            if !matches!(effect.change, OwnerCombatChange::Heal { .. }) {
+            if !matches!(
+                effect.change,
+                OwnerCombatChange::Heal { .. } | OwnerCombatChange::Damage { .. }
+            ) {
                 return Err(Error::InvalidBatch);
             }
             let receipt = self
