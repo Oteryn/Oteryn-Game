@@ -131,7 +131,8 @@ pub(super) async fn scenario(admin: String) -> TestResult {
     }
     .build();
     owner.active_generation = Some(active);
-    owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&room));
+    // Carried-item refining uses active content and inventory, so the shared owner's
+    // default empty rooms suffice without opening any source-World or combat gate.
     // In the past, so the owner clock already stands well after the swing clock's origin.
     owner.clock_origin = std::time::Instant::now()
         .checked_sub(Duration::from_secs(60))
