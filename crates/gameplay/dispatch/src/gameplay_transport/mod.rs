@@ -43,6 +43,11 @@ mod logout;
 mod logout_tests;
 mod loop_move;
 pub mod spectate_session;
+mod timed_item;
+mod timed_item_clock;
+mod timed_item_content;
+mod timed_item_use;
+mod timed_item_wire;
 use crate::map::boot::BundleCollisionIndexExt;
 pub use last_position::LastPositionFlush;
 mod control_loss_reconciliation;
@@ -1105,6 +1110,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         death: actor_spell::PlayerDeath,
         releasing: bool,
     ) -> bool {
+        if !self.stop_timed_actor(actor, session).await {
+            return false;
+        }
         match self
             .root
             .reconcile_character_death(self.character, death.occurrence)
@@ -2079,6 +2087,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return ReleaseAttempt::Retry;
         }
+        if !self.stop_timed_actor(actor, session).await {
+            return ReleaseAttempt::Retry;
+        }
         match self.fence_transition(actor, hold).await {
             FenceStep::Fenced => {}
             FenceStep::Wait => return ReleaseAttempt::Retry,
@@ -2509,6 +2520,17 @@ fn operator_event(line: &str) {
 }
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
+    async fn timed_item(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        payload: &[u8],
+        target: Option<item_view::ItemKey>,
+    ) -> Option<Vec<u8>> {
+        self.timed_item_command(actor, command, payload, target)
+            .await
+    }
+
     appearance_change::composed_methods!();
     async fn observe_quest_log(
         &self,
@@ -2905,6 +2927,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         item: item_view::ItemKey,
     ) -> UseOutcome {
         self.use_backpack_item(actor, command, item).await
+    }
+
+    async fn use_item_completion(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        item: item_view::ItemKey,
+    ) -> Option<UseOutcome> {
+        if let Some(outcome) = self.use_timed_item(actor, command, item).await {
+            return outcome;
+        }
+        Some(self.use_item(actor, command, item).await)
     }
 
     async fn use_item_by_definition(

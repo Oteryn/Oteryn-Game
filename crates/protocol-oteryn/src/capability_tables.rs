@@ -201,6 +201,11 @@ pub const GATED: &[(u32, &[u32], &[u32])] = &[
         &[],
         &[],
     ),
+    (
+        crate::timed_item::CAPABILITY_TIMED_ITEM_V1,
+        &[crate::timed_item::COMMAND_TYPE_TIMED_ITEM_INTENT],
+        &[],
+    ),
 ];
 
 /// Core domains a selected capability replaces, as (capability, domains). MAP-WIRE-1 contract §3

@@ -1,0 +1,10 @@
+{
+  "id": 36,
+  "name": "TIMED_ITEM_INTENT",
+  "owner_decision": "ITEM-TIMED-1 owner server-first direction 2026-10-23",
+  "capability": 37,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/timed_item_v1.proto#TimedItemIntentV1",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/timed_item_v1.proto#TimedItemResultV1",
+  "max_payload_bytes": 64,
+  "max_result_payload_bytes": 48
+}

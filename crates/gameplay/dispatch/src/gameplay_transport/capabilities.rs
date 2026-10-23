@@ -197,7 +197,15 @@ pub const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     },
     TUTORIAL_NOTICES,
     super::guild_chat::OFFERED,
+    super::timed_item::OFFERED,
 ];
+/// The same bundle offer before the native timed definitions are available. Capability
+/// 37 is last, so preserving every older capability needs no duplicate table.
+pub(super) const BUNDLE_WORLD_UNTIMED_OFFERED_CAPABILITIES: &[OfferedCapability] =
+    match BUNDLE_WORLD_OFFERED_CAPABILITIES.split_last() {
+        Some((_, base)) => base,
+        None => &[],
+    };
 
 /// MAP-ITEM-REF-1: the production offered set with capability 4 `ITEM_VIEW_MOVE_V1`, which
 /// requires 6, for a generation that pins a non-empty Item key set: the registry's whole
