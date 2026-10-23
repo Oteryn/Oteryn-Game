@@ -654,6 +654,7 @@ impl ChannelSpellStates {
         monk: (u8, u64),
         now: SemanticTimeMicros,
         saved: Option<(u32, u32)>,
+        rest: Option<[u32; 4]>,
     ) -> Option<&PlayerSpellState> {
         let created = self.index(actor, game_session_id).is_none();
         self.initialize(runtime, actor, game_session_id, facts, monk, now)?;
@@ -663,6 +664,18 @@ impl ChannelSpellStates {
                 .get_mut(index)?
                 .2
                 .restore_saved_vitals(health, mana);
+        }
+        if created
+            && let Some(rest) = rest
+            && self
+                .actors
+                .get_mut(index)?
+                .2
+                .restore_bed_rest(rest, now.get())
+                .is_none()
+        {
+            self.actors.remove(index);
+            return None;
         }
         self.actors.get(index).map(|(_, _, state)| state)
     }
@@ -1586,6 +1599,7 @@ pub mod tests {
                 (0, 0),
                 now(0),
                 Some((40, 500)),
+                None,
             )
             .expect("created")
             .clone();
@@ -1612,6 +1626,7 @@ pub mod tests {
                 (0, 0),
                 now(0),
                 Some((7, 7)),
+                None,
             )
             .expect("kept")
             .clone();
@@ -1621,7 +1636,7 @@ pub mod tests {
             let (runtime, actor, session) = runtime_with_player(seed);
             let mut states = ChannelSpellStates::default();
             let fresh = states
-                .initialize_admitted(&runtime, actor, session, FACTS, (0, 0), now(0), saved)
+                .initialize_admitted(&runtime, actor, session, FACTS, (0, 0), now(0), saved, None)
                 .expect("created")
                 .clone();
             assert_eq!(

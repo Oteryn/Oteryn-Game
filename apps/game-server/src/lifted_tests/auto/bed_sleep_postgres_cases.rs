@@ -60,6 +60,7 @@ pub(crate) async fn fixture(tag: &str, admin: &str) -> TestResult<Harness> {
 pub(crate) fn request() -> TestResult<BedSleepRequest> {
     let current = crate::bestiary_postgres_harness::fence(1)?;
     Ok(BedSleepRequest {
+        final_position: None,
         fence: CurrentCharacterItemFence {
             character_id: current.character_id,
             game_session_id: GameSessionId::decode(&id(61)).map_err(debug)?,

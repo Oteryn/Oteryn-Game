@@ -5,6 +5,7 @@ pub mod actor_spell;
 pub mod appearance_change;
 mod attack;
 mod bank_npc;
+mod bed_regen;
 mod bed_sleep;
 mod bundle_map_position;
 use bundle_map_position::bundle_map_position;
@@ -4334,6 +4335,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 monk,
                 self.owner_now(),
                 saved_vitals,
+                (outcome == FirstEntryOutcome::Positioned)
+                    .then(|| bed_regen::admitted_rest(&decided, self.world_id))
+                    .flatten(),
             )
             .is_none()
         {
