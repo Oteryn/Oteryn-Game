@@ -414,11 +414,13 @@ pub const MAX_SNAPSHOT_ASSEMBLED_BYTES: u64 = 16_777_216;
 // map as 18) and 30 WORLD_SPATIAL_FIELDS (FIELD-WIRE-1, not offered before the field payloads are
 // composed); both require 6. TUTORIAL-1 adds capability 31. DAILY-1 registers CP-allocated
 // capability 32. Capability 33 is dormant SPECTATE_V1 (SPECTATE-1b). GUILD-CHAT-1 registers
-// capability 36 CHAT_GUILD_ROOM_V1, which requires 7. Capability 37 DEPOT_V1 owns command 36. Next unallocated capability is 38.
+// capability 36 CHAT_GUILD_ROOM_V1, which requires 7. Capability 37 DEPOT_V1 owns command 36.
+// Capability 40 is GUILD_V1 and 43 is VIP_V1. LOOP-TRAIN-1 registers capability 54 TRAINING_V1,
+// which gates commands 66/67 and is offered only when OTERYN_ENABLE_PROVISIONAL_TRAINING allows it.
 // Keep this sorted when a later owning gate allocates an additive capability ID.
 const REGISTERED_CAPABILITY_IDS_V1: &[u32] = &[
     1, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 25, 26, 28, 29, 30,
-    31, 32, 33, 36, 37, 40, 43,
+    31, 32, 33, 36, 37, 40, 43, 54,
 ];
 
 fn decode_uuid_v7(input: &[u8]) -> Result<[u8; 16], FoundationProtocolError> {
