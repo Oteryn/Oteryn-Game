@@ -1,5 +1,5 @@
 // EQUIP-WIRE-1 (ITEM-MOVE-WIRE-1 §4, ITEM-MOVE-2a slice): command 9's equip and unequip through
-// the equipment owner on PostgreSQL 17.6. One fenced transaction moves one item between a direct
+// the equipment owner on PostgreSQL 18.6. One fenced transaction moves one item between a direct
 // main-backpack entry and a free slot, writes one equipment receipt and never advances
 // CharacterRevision; every refusal rolls back and writes nothing. The replay-first read finds
 // the receipt by its CommandRef. The policies are a test-only qualified profile with the same

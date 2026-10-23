@@ -1,7 +1,7 @@
 #![allow(clippy::expect_used)]
 // Dedicated PostgreSQL target for WP5 #414 Character authority. Ordinary
 // workspace runs skip when the routed PostgreSQL service is absent; only
-// configured PostgreSQL 17.6 runs count as qualification evidence.
+// configured PostgreSQL 18.6 runs count as qualification evidence.
 extern crate oteryn_game_server as production_server;
 extern crate self as oteryn_game_server;
 pub use production_server::admission_evidence;
@@ -149,7 +149,7 @@ fn postgres_schema_enforces_atomic_immutable_first_slice() {
         .expect("runtime")
         .block_on(async {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
-        eprintln!("character_authority_postgres requires configured PostgreSQL 17.6");
+        eprintln!("character_authority_postgres requires configured PostgreSQL 18.6");
         return;
     };
     let mut connection = sqlx::PgConnection::connect(&admin)
@@ -257,8 +257,9 @@ impl Database {
             .fetch_one(&mut connection)
             .await?;
         assert_eq!(
-            version, "170006",
-            "canonical target requires PostgreSQL 17.6"
+            version,
+            oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
+            "canonical target requires PostgreSQL 18.6"
         );
         let migrator = sqlx::migrate!("./migrations");
         match through {
@@ -2229,7 +2230,7 @@ async fn fresh_rerun(database: &Database) -> TestResult {
 }
 
 // R7 P03 shares its cases with the focused standalone target so the established
-// protected PostgreSQL 17.6 lane executes the exact same qualification.
+// protected PostgreSQL 18.6 lane executes the exact same qualification.
 #[path = "support/character_progression_postgres_cases.rs"]
 mod character_progression_postgres_cases;
 

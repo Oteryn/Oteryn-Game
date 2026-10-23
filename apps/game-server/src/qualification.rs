@@ -1,6 +1,6 @@
 //! Server Seam physical qualification. Runs only inside the disposable WP5
 //! topology (`tools/qualification/wp5_s3b`, seam target): the exact protected
-//! Platform producer behind TLS 1.3 mTLS plus PostgreSQL 17.6. The owners are
+//! Platform producer behind TLS 1.3 mTLS plus PostgreSQL 18.6. The owners are
 //! composed exactly as in S3-B, then every client case traverses the shipped
 //! `serve_gameplay` entry over real loopback TCP + TLS 1.3 + FND-02 framing.
 //! The fresh grant is signed with an ephemeral key whose public half the
@@ -412,9 +412,9 @@ async fn database() -> TestResult<(String, String)> {
     let version: String = sqlx::query_scalar("SHOW server_version_num")
         .fetch_one(&mut connection)
         .await?;
-    if version != "170006" {
+    if version != oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM {
         return Err(
-            format!("the seam qualification requires PostgreSQL 17.6, found {version}").into(),
+            format!("the seam qualification requires PostgreSQL 18.6, found {version}").into(),
         );
     }
     sqlx::migrate!("./migrations").run(&mut connection).await?;
@@ -1242,7 +1242,7 @@ fn node_boot_seam_against_running_node() -> TestResult {
 }
 
 #[test]
-#[ignore = "requires the disposable WP5 Platform + PostgreSQL 17.6 topology"]
+#[ignore = "requires the disposable WP5 Platform + PostgreSQL 18.6 topology"]
 fn server_seam_real_owners_over_tcp_tls() -> TestResult {
     let key_id = required("WP5_S3B_FRESH_KEY_ID")?;
     let signing = SigningKey::from_bytes(&hex32(&required("WP5_S3B_FRESH_KEY_SEED")?)?);

@@ -23,7 +23,7 @@ git clone https://github.com/Oteryn/Oteryn-Platform _platform && git -C _platfor
 bash tools/qualification/login_local/run.sh
 ```
 
-Needs Docker, `openssl`, `sudo`, Rust 1.94.0 (or the container mode below) and a display for the OAuth browser step. Ports:
+Needs Docker, `openssl`, `sudo`, Rust 1.99.1 (or the container mode below) and a display for the OAuth browser step. Ports:
 `LOGIN_LOCAL_PLATFORM_MTLS_PORT` (18563), `_PLATFORM_HTTP_PORT` (18564), `_GATEWAY_PORT` (18565),
 `_GAME_PORT` (17281), `_PG_PORT` (15533). `LOGIN_LOCAL_RUN_CLIENT=0` stops at READY; `LOGIN_LOCAL_HOLD=1`
 keeps the services up for a Windows client; `LOGIN_LOCAL_KEEP=1` skips teardown (the work directory
@@ -129,7 +129,7 @@ listens on the Unix socket only, so a socket probe can pass before the final ser
 
 **No host Rust (Synology DSM).** `LOGIN_LOCAL_RUST` is `auto` (default), `host` or `container`. `auto` picks `container`
 when `cargo`, `cc` or `useradd` is missing. Container mode builds the server binaries in the pinned
-`rust:1.94.0-bookworm` image (as the invoking uid; cargo home and target under the ignored
+`rust:1.99.1-bookworm` image (as the invoking uid; cargo home and target under the ignored
 `target/login-local-container/`) and runs migrate, ops and the node in one container of that image on the host network.
 The node runs as numeric uid `LOGIN_LOCAL_SERVICE_UID` (default `64990`, never 0) instead of a host system user. There is
 no client build, so container mode needs `LOGIN_LOCAL_RUN_CLIENT=0` (`BLOCKED reason=client_run_needs_host_rust`
@@ -142,7 +142,7 @@ A file is written only from a successful capture and is never replaced.
 
 ## What it does
 
-1. Blocks (`BLOCKED reason=...`) without Docker, the pinned Platform checkout, or PostgreSQL 17.6.
+1. Blocks (`BLOCKED reason=...`) without Docker, the pinned Platform checkout, or PostgreSQL 18.6.
 2. Generates per-run PKI: four distinct mTLS identities with distinct keys (native evidence/Character
    intent, node-host runtime status `CN=oteryn-game-node-runtime-status`, ownership authority
    `CN=oteryn-game-ops`, Character projection `CN=oteryn-game-character-projection`), the gameplay dev

@@ -75,7 +75,10 @@ where
         let server: String = sqlx::query_scalar("SHOW server_version_num")
             .fetch_one(&h.pool)
             .await?;
-        assert_eq!(server, "170006");
+        assert_eq!(
+            server,
+            oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM
+        );
         eprintln!("HIGHSCORES-NATIVE-PG server_version_num={server} fixture={tag}");
         // One genuinely session/Node/recovery-fenced native build writer creates the source
         // template; later bulk datasets are explicitly admin fixtures, never active actors.

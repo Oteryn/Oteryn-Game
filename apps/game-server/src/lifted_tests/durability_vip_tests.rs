@@ -1251,7 +1251,7 @@ where
             let version: String = sqlx::query_scalar("SHOW server_version_num")
                 .fetch_one(&h.pool)
                 .await?;
-            assert_eq!(version, "170006");
+            assert_eq!(version, oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM);
             eprintln!("VIP-ADD-PG server_version_num={version}");
             h.pool.execute(PRIVATE_SCHEMA).await?;
             body(&h).await
@@ -1969,7 +1969,7 @@ fn vip_add_native_pre_delivery_write_and_actual_latch_writer_serialize() -> Test
 }
 
 // Remove fixtures append after the complete, unchanged original 25-test tail.
-// run_add enforces the real configured PG17.6 route even for these non-Premium commands.
+// run_add enforces the real configured PG18.6 route even for these non-Premium commands.
 fn remove_request(number: u64, entry_no: u64) -> VipRemoveRequest {
     VipRemoveRequest {
         list: list(40),
@@ -2005,7 +2005,7 @@ async fn own_entry_count(h: &Harness) -> TestResult<i64> {
 fn vip_remove_native_account_cascade_retains_groups_other_entries_and_foreign_consent() -> TestResult
 {
     run_add("viprmcascade", async |h| {
-        eprintln!("VIP-REMOVE-PG server_version_num=170006");
+        eprintln!("VIP-REMOVE-PG server_version_num={}", oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM);
         add_target_fixture(h, 60, 70).await?;
         add_target_fixture(h, 61, 70).await?;
         fixture_character(h, 62, 40).await?;
@@ -2084,7 +2084,7 @@ fn vip_remove_native_account_cascade_retains_groups_other_entries_and_foreign_co
 #[test]
 fn vip_remove_native_zero_consent_expired_blocked_and_overcap_need_no_premium() -> TestResult {
     run_add("viprmcaps", async |h| {
-        eprintln!("VIP-REMOVE-PG server_version_num=170006");
+        eprintln!("VIP-REMOVE-PG server_version_num={}", oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM);
         fixture_character(h, 60, 70).await?;
         fixture_list(h, 40).await?;
         sqlx::query("INSERT INTO game_vip_entries(account_id,world_id,character_id,entry_no) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1)")
@@ -2125,7 +2125,7 @@ fn vip_remove_native_zero_consent_expired_blocked_and_overcap_need_no_premium() 
 #[test]
 fn vip_remove_native_unknown_rate_replay_and_never_reused_entry_identity() -> TestResult {
     run_add("viprmreplay", async |h| {
-        eprintln!("VIP-REMOVE-PG server_version_num=170006");
+        eprintln!("VIP-REMOVE-PG server_version_num={}", oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM);
         add_target_fixture(h, 60, 70).await?;
         let gate = add_gate(
             h,
@@ -2219,7 +2219,7 @@ fn vip_remove_native_unknown_rate_replay_and_never_reused_entry_identity() -> Te
 fn vip_remove_native_missing_view_overflow_and_after_delete_fault_roll_back_all_rows() -> TestResult
 {
     run_add("viprmrollback", async |h| {
-        eprintln!("VIP-REMOVE-PG server_version_num=170006");
+        eprintln!("VIP-REMOVE-PG server_version_num={}", oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM);
         fixture_character(h, 60, 70).await?;
         fixture_consent(h, 40, CHARACTER, 60, 2).await?;
         sqlx::query("INSERT INTO game_vip_group_members VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1)")
@@ -2305,7 +2305,7 @@ fn vip_remove_native_missing_view_overflow_and_after_delete_fault_roll_back_all_
 #[test]
 fn vip_remove_native_current_fences_assignment_revoke_and_recovery_before_replay() -> TestResult {
     run_add("viprmfences", async |h| {
-        eprintln!("VIP-REMOVE-PG server_version_num=170006");
+        eprintln!("VIP-REMOVE-PG server_version_num={}", oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM);
         fixture_character(h, 60, 70).await?;
         fixture_consent(h, 40, CHARACTER, 60, 1).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
@@ -2450,7 +2450,7 @@ fn vip_remove_native_current_fences_assignment_revoke_and_recovery_before_replay
 #[test]
 fn vip_remove_native_two_root_duplicate_distinct_and_add_remove_serialization() -> TestResult {
     run_add("viprmraces", async |h| {
-        eprintln!("VIP-REMOVE-PG server_version_num=170006");
+        eprintln!("VIP-REMOVE-PG server_version_num={}", oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM);
         add_target_fixture(h, 60, 70).await?;
         let gate = add_gate(
             h,

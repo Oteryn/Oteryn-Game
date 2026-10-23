@@ -3,7 +3,7 @@
 #
 # Reuses the protected S3-A Platform topology (exact Platform producer behind
 # TLS 1.3 mTLS nginx/FastCGI, MariaDB, retained witness) with the S3-B overlay
-# for the Platform Character bootstrap-intent producer, and a PostgreSQL 17.6
+# for the Platform Character bootstrap-intent producer, and a PostgreSQL 18.6
 # service for the Game owners (S2, #414, #415 and the durable admission store).
 # Both Characters are bootstrapped from intents issued by the real Platform
 # operator command immediately before the qualification run.

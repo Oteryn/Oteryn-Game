@@ -3366,7 +3366,7 @@
     {
       "id": "DFR-PG-ROW-DESCRIPTION-FIELD-NAME-BYTES",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_WP3_V2_SUPERSEDING_ARCHITECTURE_DECISION_2026-09-12.md",
-      "resource": "One RowDescription field name on the selected stock PostgreSQL 17.6 compatibility profile",
+      "resource": "One RowDescription field name on the selected stock PostgreSQL 18.6 compatibility profile",
       "unit": "UTF-8 bytes excluding NUL",
       "hard_maximum": 63,
       "configurable_range": {
@@ -3381,7 +3381,7 @@
         "64 UTF-8 bytes rejected as UNAVAILABLE before owned field-name allocation",
         "A PostgreSQL server reporting max_identifier_length above 63 is outside this first-slice compatibility profile and does not widen the limit"
       ],
-      "notes": "Owner-selected stock PostgreSQL 17.6 compatibility ceiling. It is not a protocol-wide invariant; support for a build with larger NAMEDATALEN/max_identifier_length requires an explicit successor decision."
+      "notes": "Owner-selected stock PostgreSQL 18.6 compatibility ceiling. It is not a protocol-wide invariant; support for a build with larger NAMEDATALEN/max_identifier_length requires an explicit successor decision."
     },
     {
       "id": "DFR-PG-ROW-DESCRIPTION-NAME-BYTES",
@@ -3417,7 +3417,7 @@
       "allocation_impact": "Do not allocate or retain a raw ParameterStatus map entry. Parse needed data from the already bounded message; only normalized server_version_num: Option<u32> may survive. Unknown/unneeded statuses are discarded.",
       "client_visible": false,
       "boundary_tests": [
-        "0 raw retained entries after configured PostgreSQL 17.6 startup/status processing",
+        "0 raw retained entries after configured PostgreSQL 18.6 startup/status processing",
         "An attempted first raw retained entry is prevented before heap-backed key/value allocation; the unneeded status is discarded",
         "Repeated unknown/unneeded ParameterStatus messages do not increase retained entry count"
       ],
@@ -11880,7 +11880,7 @@
       "consumers": [
         "apps/game-server/migrations/0095_house_interior_shapes.sql (game_house_item_apply)",
         "apps/game-server/src/durability/house_interior.rs (typed StorageFull refusal)",
-        "apps/game-server/tests/support/house_interior_postgres_cases.rs (real PostgreSQL 17.6 boundary)"
+        "apps/game-server/tests/support/house_interior_postgres_cases.rs (real PostgreSQL 18.6 boundary)"
       ],
       "notes": "Accepted HOUSE-OWN-0 §§7/12 (HOUSEOWN0-RL-14); HOUSE_RUNTIME0 §6.1 and HOUSE_RT_INBOX_PACKETS §1.3/§2.1. This storage count is separate from the 200-Character scope admission limit HOUSERT0-RL-03. Test occupancy is synthetic inactive DATA, never current actor/session/access authority or a 100-Character capacity claim."
     },

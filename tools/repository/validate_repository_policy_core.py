@@ -47,7 +47,7 @@ EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "4102f456f4fed6e8cbcb5b9b53356279f7fae420
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "24b5197d8c22835f08a27423ae909f2bdf6b240e7c64026ce76174753c820e4c"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
 EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256 = "0aa50bfeaab0042f2a8fec7e7e302a7f056e77170db28bea7e0a6ed32dea1dd9"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "ff5430f3d203f49cd35d129e69aaf9677764dd03"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "b6bdd8defc3cbd5864b4e10545cb51adcca2047f"
 EXPECTED_POST_MERGE_RUST_SHA256 = "39d0b76e70a55d733b697eefe46264f753e3ac8ffdf955bf03beaeb30e60732c"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
@@ -537,7 +537,7 @@ def main() -> int:
             ),
             "durability_postgres": (
                 "    name: Merge Queue / Durability PostgreSQL harness\n",
-                "image: postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3",
+                "image: postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc",
                 "BASE_SHA: ${{ github.event.merge_group.base_sha }}",
                 "HEAD_SHA: ${{ github.event.merge_group.head_sha }}",
                 'git cat-file -e "$BASE_SHA:$path"',
