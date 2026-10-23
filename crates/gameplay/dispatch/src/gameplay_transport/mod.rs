@@ -2,6 +2,7 @@
 //! semantics and the composed owners decide admission.
 
 pub mod actor_spell;
+pub mod appearance_change;
 mod attack;
 mod bank_npc;
 mod bed_sleep;
@@ -9,6 +10,7 @@ mod bed_sleep;
 mod bundle_gates_tests;
 mod capabilities;
 mod channel_states;
+mod character_gameplay_fence;
 mod character_progression_binding;
 #[cfg(test)]
 mod character_progression_binding_tests;
@@ -2947,6 +2949,7 @@ fn bundle_map_position<'a>(
 }
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
+    appearance_change::composed_methods!();
     async fn observe_quest_log(
         &self,
         actor: ExactActorRef,
