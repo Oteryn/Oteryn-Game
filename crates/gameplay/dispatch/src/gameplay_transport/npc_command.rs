@@ -567,7 +567,6 @@ impl NpcConversations {
         }
     }
 }
-
 /// Command 7 Bank integration: native retained command first, then the current NPC owner's
 /// conversation, and finally the native Bank writer. No talk text is persisted.
 pub(super) async fn npc_bank_talk(
@@ -591,8 +590,8 @@ pub(super) async fn npc_bank_talk(
         .ok()
         .map(|id| CommandRef::new(session, id));
     let mut runtime = admission.runtime.lock().await;
-    let ordinary = admission.npc_conversations.talk_in(
-        &admission.chat,
+    let ordinary = admission.states.npc_conversations.talk_in(
+        &admission.states.chat,
         &runtime,
         actor,
         session,
@@ -601,14 +600,15 @@ pub(super) async fn npc_bank_talk(
         super::item_ref_admission::pinned_index(&runtime, admission.active_generation),
     );
     if ordinary.disposition != NpcIntentDisposition::Ok {
-        admission.npc_conversations.cancel_bank(session);
+        admission.states.npc_conversations.cancel_bank(session);
         return ordinary;
     }
     let Some((catalogue_revision, conversation_generation, npc_key)) = admission
+        .states
         .npc_conversations
-        .current_bank(&admission.chat, &runtime, actor, session, &intent)
+        .current_bank(&admission.states.chat, &runtime, actor, session, &intent)
     else {
-        admission.npc_conversations.cancel_bank(session);
+        admission.states.npc_conversations.cancel_bank(session);
         return ordinary;
     };
     let (Some(fence), Some(reference)) = (command.item_fence, reference) else {
@@ -627,7 +627,7 @@ pub(super) async fn npc_bank_talk(
         npc: intent.npc_actor,
         conversation_revision: conversation_generation,
     };
-    let pending = admission.npc_conversations.take_bank(session);
+    let pending = admission.states.npc_conversations.take_bank(session);
     if yes {
         let Some(pending) = pending else {
             return ordinary;
@@ -767,10 +767,13 @@ pub(super) async fn npc_bank_talk(
         Err(_) => return rejected(),
     };
     runtime = admission.runtime.lock().await;
-    if admission
-        .npc_conversations
-        .current_bank(&admission.chat, &runtime, actor, session, &intent)
-        != Some((catalogue_revision, conversation_generation, npc_key.clone()))
+    if admission.states.npc_conversations.current_bank(
+        &admission.states.chat,
+        &runtime,
+        actor,
+        session,
+        &intent,
+    ) != Some((catalogue_revision, conversation_generation, npc_key.clone()))
     {
         return rejected();
     }
@@ -818,7 +821,7 @@ pub(super) async fn npc_bank_talk(
     else {
         return rejected();
     };
-    if !admission.npc_conversations.prompt_bank(
+    if !admission.states.npc_conversations.prompt_bank(
         session,
         PendingBank {
             confirmation,
@@ -833,7 +836,6 @@ pub(super) async fn npc_bank_talk(
     }
     reply(line)
 }
-
 pub(super) async fn resume_bank_talk(
     admission: &super::ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
@@ -995,7 +997,6 @@ fn bank_request(
     };
     matches.then_some(request)
 }
-
 async fn completed_bank_talk(
     admission: &super::ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
@@ -1015,8 +1016,9 @@ async fn completed_bank_talk(
     reply.inventory_changed = !record.coin_lines.is_empty();
     // A historical receipt does not reopen a conversation or restore a missing NPC actor.
     if admission
+        .states
         .npc_conversations
-        .current_bank(&admission.chat, &runtime, actor, session, intent)
+        .current_bank(&admission.states.chat, &runtime, actor, session, intent)
         .is_none()
         && let Some(conversation) = reply.conversation.as_mut()
     {
@@ -1024,7 +1026,6 @@ async fn completed_bank_talk(
     }
     reply
 }
-
 fn bank_completion_reply(
     request: &crate::durability::bank::BankRequest,
     outcome: &crate::durability::bank::BankOperationOutcome,
@@ -1048,7 +1049,6 @@ fn bank_completion_reply(
     };
     BankNpcOperationDurability::reply(&operation, record.result)
 }
-
 /// The trade window of `npc` for its conversation: its offers at the book's catalogue revision.
 /// `None` when the NPC has no projectable offer or there is no pinned Item index.
 fn open_window(
@@ -1285,3 +1285,6 @@ use oteryn_protocol_oteryn::npc_service::MAX_TALK_INTENTS_PER_SECOND;
 #[cfg(test)]
 #[path = "../../../../../apps/game-server/tests/private/dawnport_native_npc_choice.rs"]
 mod dawnport_native_npc_choice;
+
+#[cfg(test)]
+mod first_vocation_vitals_fixture;

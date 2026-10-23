@@ -1,0 +1,30 @@
+{
+  "id": 21,
+  "name": "APPEARANCE",
+  "owner_decision": "APP-3 D1094",
+  "owner": "Character appearance owner; connection-local dictionary",
+  "capability": 25,
+  "revision": "Connection-local, snapshot 1 then consecutive mapping/catalogue deltas. Mapping changes precede referencing VIS-2 updates; VIS-2 leave precedes retirement.",
+  "delta_types": [
+    {
+      "id": 1,
+      "name": "APPEARANCE_MAPPINGS",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/appearance_v1.proto#Mappings",
+      "max_payload_bytes": 131072
+    },
+    {
+      "id": 2,
+      "name": "APPEARANCE_CATALOGUE",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/appearance_v1.proto#Catalogue",
+      "max_payload_bytes": 196608
+    }
+  ],
+  "snapshot_types": [
+    {
+      "id": 1,
+      "name": "APPEARANCE_SNAPSHOT",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/appearance_v1.proto#Snapshot",
+      "max_payload_bytes": 262144
+    }
+  ]
+}

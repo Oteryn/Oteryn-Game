@@ -79,7 +79,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             request,
         ).await {
             Ok(Some(receipt)) => {
-                self.appearance_commands.settle(command.game_session_id, command.command_id);
+                self.states.appearance_commands.settle(command.game_session_id, command.command_id);
                 return Some(wire::ChangeResult::Committed(receipt.committed_character_revision.get()));
             },
             Ok(None) => {},
@@ -87,6 +87,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Err(_) => return Some(wire::ChangeResult::Rejected),
         }
         let existing = self
+            .states
             .appearance_commands
             .0
             .lock()
@@ -152,7 +153,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if request.before != state.selected {
                 return Some(wire::ChangeResult::Rejected);
             }
-            let mut commands = self.appearance_commands.0.lock().ok()?;
+            let mut commands = self.states.appearance_commands.0.lock().ok()?;
             if commands.contains_key(&command.game_session_id) {
                 return None;
             }
@@ -180,7 +181,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     wire::ChangeResult::Committed(receipt.committed_character_revision.get()),
                 );
                 if outcome.is_some() {
-                    self.appearance_commands
+                    self.states
+                        .appearance_commands
                         .settle(command.game_session_id, command.command_id);
                 }
                 return outcome;
@@ -191,7 +193,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             let runtime = self.runtime.lock().await;
             if !current_runtime(&runtime, actor, command.game_session_id, &fence, &content) {
-                self.appearance_commands
+                self.states
+                    .appearance_commands
                     .settle(command.game_session_id, command.command_id);
                 return Some(wire::ChangeResult::Rejected);
             }
@@ -225,7 +228,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Err(_) => Some(wire::ChangeResult::Rejected),
         };
         if result.is_some() {
-            self.appearance_commands
+            self.states
+                .appearance_commands
                 .settle(command.game_session_id, command.command_id);
         }
         result

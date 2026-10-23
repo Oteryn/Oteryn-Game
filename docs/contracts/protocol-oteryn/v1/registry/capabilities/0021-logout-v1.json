@@ -1,0 +1,11 @@
+{
+  "id": 21,
+  "name": "LOGOUT_V1",
+  "owner_decision": "ARCH-KILL-REWARD-LOGOUT-1 §1.6 (docs/architecture/reviews/OTERYN_GAME_ARCH_KILL_REWARD_LOGOUT_PACKETS_2026-10-04.md); the proposed capability 19 was already WORLD_LIGHT_V1 and 20 is leased to CONNECTION_TRACE_V1 (D770), so LOGOUT-WIRE-1 registers the next free capability, 21, with the proposed command type 23; numbers leased to LOGOUT-WIRE-1 by the #1622 control plane",
+  "owner": "current ChannelRuntime (the in-fight deadline) and the GameSession terminal release (session_state = 3)",
+  "requires": [],
+  "command_types": [23],
+  "state_domains": [],
+  "offered": true,
+  "offer_gate": "Offered by LOGOUT-WIRE-1 in every offered set (production, Item view and bundle World). With it selected, command type 23 is answered with one LogoutResultV1: IN_FIGHT with retry_after_ms while the actor's in-fight deadline runs (ATTACK0-RL-03), BUSY while a durable spell commit or an own kill settlement is pending or when the terminal release failed retryably before it committed, and ACCEPTED only after the terminal release (session_state = 3 with the final position write) has committed, after which the transport closes cleanly. At most one logout is outstanding per GameSession (LOGOUT-RL-01); a second one before the first result is a protocol error. Without it selected, command type 23 is refused as an unregistered command."
+}

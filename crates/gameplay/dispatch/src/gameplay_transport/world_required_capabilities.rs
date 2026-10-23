@@ -65,10 +65,9 @@ fn build_registry() -> Result<&'static BuildRegistry, BootCapabilityError> {
     static REGISTRY: OnceLock<Result<BuildRegistry, BootCapabilityError>> = OnceLock::new();
     REGISTRY
         .get_or_init(|| {
-            let document: RegistryDocument = serde_json::from_str(include_str!(
-                "../../../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json"
-            ))
-            .map_err(|_| BootCapabilityError::InvalidBuildRegistry)?;
+            let document: RegistryDocument =
+                serde_json::from_str(oteryn_protocol_oteryn::PROTOCOL_OTERYN_V1_REGISTRY_JSON)
+                    .map_err(|_| BootCapabilityError::InvalidBuildRegistry)?;
             let ids: Vec<_> = document.capabilities.iter().map(|row| row.id).collect();
             let names: BTreeSet<_> = document.capabilities.iter().map(|row| &row.name).collect();
             if !canonical(&ids)

@@ -24,6 +24,7 @@ fn served_revision() -> &'static str {
 /// The catalogue and event line exactly as `boot_and_serve` loads them.
 fn boot_catalogue() -> Result<(Arc<QuestStateCatalogue>, String), Box<dyn Error>> {
     load_quest_catalogue(load_embedded_quest_state, served_revision())
+        .map(|(catalogue, _, event)| (catalogue, event))
         .map_err(|error| format!("{error:?}").into())
 }
 

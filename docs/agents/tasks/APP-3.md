@@ -534,3 +534,19 @@ Item artifact loading/rendering follow-up. No readiness or merge claim is made.
 The complete changed-file list, exact filters and final mount of every PG test
 file are in [APP-3/ROUTING_3E_2026-10-22.md](APP-3/ROUTING_3E_2026-10-22.md).
 This task card was the final file edited in run 3e.
+
+## FLOW port — 2026-10-23
+
+Ported onto `claude/happy-davinci-ijz3wy-6` (`49cdeaf5f`, main + FLOW-1/2). Earlier dated sections
+keep their original paths as history. Current layout:
+
+- Dispatch PG suite: `gameplay_transport/postgres_tests/appearance_change_postgres.rs` with children
+  in `postgres_tests/appearance_change_postgres/` (auto-mounted; no line in `monk_save_postgres_tests.rs`).
+- Appearance command state lives in `ChannelSessionStates::appearance_commands` and is forgotten by
+  `forget_session`; other per-session reads go through `ComposedFreshAdmission::states`.
+- Character-authority cases run once in `character_authority_postgres`; the two standalone
+  `character_appearance*_postgres` targets and their `[[test]]` entries are removed, as the lane intended.
+- Registry entries are per-entry files: `capabilities/0025-appearance-v1.json`,
+  `command_types/0025-appearance-change.json`, `state_domains/0021-appearance.json`; the aggregate
+  `PROTOCOL_OTERYN_V1_REGISTRY.json` is not restored. Migration stays `0134_character_sex.sql`.
+  No ID renumbering.

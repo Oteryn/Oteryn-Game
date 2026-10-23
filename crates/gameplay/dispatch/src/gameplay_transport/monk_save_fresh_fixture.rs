@@ -346,7 +346,7 @@ pub mod fresh {
                 .ok_or_else(|| "fresh fixture did not submit".into())
         }
     }
-    include!("appearance_change_postgres_tests/observer_admission.rs");
+    include!("postgres_tests/appearance_change_postgres/observer_admission.rs");
     struct Capture(Option<FreshAdmissionCommitRequestV1>);
     impl FreshAdmissionDurabilityPortV1 for Capture {
         fn submit(

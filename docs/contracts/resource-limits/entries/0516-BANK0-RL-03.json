@@ -1,0 +1,24 @@
+{
+  "id": "BANK0-RL-03",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_BANK0_ACCOUNT_BANK_BALANCE_DECISION_2026-09-30.md",
+  "resource": "Ledger entries of one bank operation (BANK-0 \u00a78)",
+  "unit": "ledger entries per operation",
+  "hard_maximum": 2,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 2
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "A deposit or withdrawal writes 1 entry, a transfer 2; migration 0071's operation guard refuses any other count at commit.",
+  "client_visible": false,
+  "boundary_tests": [
+    "a transfer commits exactly 2 entries",
+    "an operation with another count is refused at commit"
+  ],
+  "consumers": [
+    "apps/game-server/src/durability/bank_audit.rs",
+    "apps/game-server/src/durability/bank.rs (bank writer: checked before any ledger entry, coin line, balance change or event; a typed refusal or error writes no value)",
+    "apps/game-server/migrations/0071_account_bank.sql"
+  ],
+  "notes": "BANK-0 \u00a78 (owner answers 1b and Q1 b; ARCH-BATCH-ROOT-PACKETS-V1 \u00a71.8 and \u00a72.4); registered by BANK-1 before the code that relies on it. BANK0-RL-04 (the confirmation timeout, as NPC0-RL-06) is BANK-NPC-1's: this packet has no dialogue."
+}

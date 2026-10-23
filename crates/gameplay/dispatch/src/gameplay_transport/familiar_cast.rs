@@ -420,7 +420,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) {
             let now = self.owner_now().get();
             let runtime = self.runtime.lock().await;
-            let mut states = self.spell_states.lock().await;
+            let mut states = self.states.spell_states.lock().await;
             prune_familiar_returns(&runtime, &mut states);
             if let Some(timers) = states.spell_timers.as_mut() {
                 // An unstored entry loses nothing: the row stays waiting for the next Login.
@@ -453,7 +453,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .map_err(|_| ())?;
         let runtime = self.runtime.lock().await;
-        let states = self.spell_states.lock().await;
+        let states = self.states.spell_states.lock().await;
         let state = states.get(&runtime, actor, session).ok_or(())?;
         if !current_owner(&runtime, &fence, actor, session)
             || runtime.content_pin().server_artifact_digest() != content.source_digest()
@@ -550,7 +550,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let runtime = self.runtime.lock().await;
         let _measurement = FamiliarOwnerTurnMeasurement(std::time::Instant::now());
-        let mut states = self.spell_states.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         if !logout_owner(&runtime, &fence, actor, session, end)
             || runtime.content_pin().server_artifact_digest() != content.source_digest()
         {
@@ -826,7 +826,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let now = self.owner_now();
         let runtime = self.runtime.lock().await;
         let _measurement = FamiliarOwnerTurnMeasurement(std::time::Instant::now());
-        let mut states = self.spell_states.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         if !current_owner(&runtime, &fence, actor, session)
             || runtime.content_pin().server_artifact_digest() != content.source_digest()
             || owned.binding().actor != actor
@@ -1072,7 +1072,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await;
         *writer.parts().1 = leftover;
-        let mut states = self.spell_states.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         let (leftover, parked) = writer.finish();
         super::PendingSpellMarker::settle(
             &mut states.pending_familiars,
@@ -1374,7 +1374,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut expected_fence = fence;
         expected_fence.expected_character_revision = expected_revision;
         let mut runtime = self.runtime.lock().await;
-        let mut states = self.spell_states.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         let (runtime, states) = (&mut *runtime, &mut *states);
         // Phase 1: every fallible check, against the attempt the window still owns.
         let attempt = window.attempt();
@@ -1748,7 +1748,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let now = self.owner_now();
         let mut runtime = self.runtime.lock().await;
         let _measurement = FamiliarOwnerTurnMeasurement(std::time::Instant::now());
-        let mut states = self.spell_states.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         if !current_owner(&runtime, &fence, actor, session)
             || runtime.content_pin().server_artifact_digest() != content.source_digest()
             || owned.binding().actor != actor

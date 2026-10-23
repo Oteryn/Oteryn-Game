@@ -1,0 +1,19 @@
+{
+  "id": "DUR04-FIRST-PROD-DECODED-FIELDS",
+  "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md+AMENDMENT_02+AMENDMENT_04",
+  "resource": "Decoded manifest/body field instances processed for one staged server+client pair",
+  "unit": "fields",
+  "hard_maximum": 8448,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 8448
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Track cumulative decoded fields with checked arithmetic; nested record/profile checks occur before each retained field.",
+  "client_visible": false,
+  "boundary_tests": [
+    "8,448 fields accepted only when all nested limits pass",
+    "8,449th field cannot be materialized",
+    "cumulative counter overflow rejected"
+  ]
+}

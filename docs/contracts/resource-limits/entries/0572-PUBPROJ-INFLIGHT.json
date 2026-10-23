@@ -1,0 +1,21 @@
+{
+  "id": "PUBPROJ-INFLIGHT",
+  "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md",
+  "resource": "Publications in flight per family per publisher (world_online: per World, up to PUBPROJ-ONLINE-WORLDS)",
+  "unit": "publications",
+  "hard_maximum": 1,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 1
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "The outbox loop sends one snapshot at a time per family; a held subject (definite refusal) waits 300 s before its next attempt.",
+  "client_visible": false,
+  "boundary_tests": [
+    "apps/game-server/src/native_admission_source/public_projections_tests.rs: a definite refusal holds the subject and raises the alarm; a transient failure backs off from 1 s to 60 s"
+  ],
+  "consumers": [
+    "apps/game-server/src/native_admission_source/public_projections.rs"
+  ],
+  "notes": "Contract sections 3, 5 and 8. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered': the outbox row stays queued (or the World is retried by the next scan), the watermark stalls and Platform hides the family once it is stale; gameplay, admission and the change that caused it are unaffected. Registered by OTV2-20261015-public-projections-producer."
+}

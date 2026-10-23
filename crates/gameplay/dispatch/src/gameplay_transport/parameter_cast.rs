@@ -195,7 +195,6 @@ pub(super) async fn resolve_named_player_in_transaction(
         content: authority.compatible_content_digest(),
     }))
 }
-
 pub(in crate::gameplay_transport) struct ParameterCastDispatch {
     pub cast: NativeCastDispatch,
     pub result: Option<ParameterSpellCastResult>,
@@ -232,7 +231,6 @@ struct ParameterInstallation {
 }
 /// The verdict refusal of a new grant; the guarded writer returns it only without a receipt.
 const PARAMETER_NEW_GRANT_REFUSED: &str = "current new grant access";
-
 fn nonce(
     tag: &[u8],
     actor: ExactActorRef,
@@ -734,6 +732,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
     ) -> Option<ParameterCastDispatch> {
         let Some(mut permit) = self.spell_lane_permit().await else {
             return self
+                .states
                 .spell_states
                 .lock()
                 .await
@@ -741,7 +740,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 .then(|| ParameterCastDispatch::bare(NativeCastDispatch::Pending));
         };
         let original = {
-            let states = self.spell_states.lock().await;
+            let states = self.states.spell_states.lock().await;
             states
                 .pending_parameters
                 .iter()
@@ -753,6 +752,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             .cast_parameters_inner(actor, session, command, &intent, access, Some(&mut permit))
             .await;
         if self
+            .states
             .spell_states
             .lock()
             .await
@@ -774,7 +774,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
     ) -> &'static str {
         let original = super::PendingSpellMarker::take_original(
-            &mut self.spell_states.lock().await.pending_parameters,
+            &mut self.states.spell_states.lock().await.pending_parameters,
             actor,
             session,
         );
@@ -786,7 +786,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             .cast_parameters_inner(actor, session, command, &intent, &access, Some(permit))
             .await;
         let leftover = {
-            let mut states = self.spell_states.lock().await;
+            let mut states = self.states.spell_states.lock().await;
             super::PendingSpellMarker::take_attempt(&mut states.pending_parameters, actor, session)
         };
         if let Some(attempt) = leftover {
@@ -903,7 +903,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             }
         };
         let mut runtime = self.runtime.lock().await;
-        let mut states = self.spell_states.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         if runtime.player_control_facts(actor, session).is_err()
             || runtime.owner_fence().is_err()
             || runtime.content_pin().server_artifact_digest() != content.source_digest()
@@ -1109,7 +1109,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     // Only a successful rollback proves this attempt cannot later COMMIT.
                     tx.rollback().await.map_err(|_|DurabilityError::Unavailable)?;
                     let mut runtime=owner.runtime.lock().await;
-                    let states=owner.spell_states.lock().await;
+                    let states=owner.states.spell_states.lock().await;
                     if installation.physical.will_apply(){
                         runtime.release_definitely_uncommitted_spell_batch(&installation.physical)
                             .map_err(|_|DurabilityError::Unavailable)?;
@@ -1170,7 +1170,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             let training=training.map(|p|p.after_commit(&proof)).transpose().map_err(|_|DurabilityError::InvalidStoredState)?;
             let receipt=training.as_ref().map(|r|match r{BuildCommitOutcome::Committed(r)|BuildCommitOutcome::AlreadyCommitted(r)=>r});
             let mut runtime=owner.runtime.lock().await;
-            let mut states=owner.spell_states.lock().await;
+            let mut states=owner.states.spell_states.lock().await;
             // Phase 1: every fallible check borrows the attempt; nothing moves.
             let checked={
                 let attempt=window.attempt();
@@ -1190,13 +1190,13 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 installation.player.install_rebind_training(installation.paid);
                 let _=install_owner_batch(&mut runtime,&mut states,installation.physical,Some(installation.player),checked);
                 // NPC-TALK-2: a caster the spell relocated out of talk range ends its conversation.
-                owner.chat.close_out_of_range(&runtime,session);
+                owner.states.chat.close_out_of_range(&runtime,session);
             }
             Ok(ParameterCastDispatch{cast:NativeCastDispatch::Outcome(SpellCastOutcome{disposition:private_result.disposition, vitals:super::observe_vitals(&runtime,&states,actor,session)}),result:Some(private_result)})
         })).await;
         let (_, _, writer, guards) = context;
         drop(guards);
-        let mut states = self.spell_states.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         let (leftover, parked) = writer.finish();
         super::PendingSpellMarker::settle(
             &mut states.pending_parameters,

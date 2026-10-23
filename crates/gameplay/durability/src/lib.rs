@@ -7,8 +7,18 @@ extern crate self as oteryn_gameplay_durability;
 pub static GAME_MIGRATOR: sqlx::migrate::Migrator =
     sqlx::migrate!("../../../apps/game-server/migrations");
 
+/// `SHOW server_version_num` of the one PostgreSQL release every native
+/// qualification runs against (18.6). CI service images, the qualification
+/// scripts and this constant move together.
+pub const CANONICAL_POSTGRES_SERVER_VERSION_NUM: &str = "180006";
+
 pub mod character_bootstrap_intent;
 pub mod durability;
+
+#[cfg(test)]
+#[allow(dead_code, reason = "shared native PG harness; DAILY uses a subset")]
+#[path = "../../../../apps/game-server/tests/support/bestiary_postgres_harness.rs"]
+mod bestiary_postgres_harness;
 
 #[allow(unused_imports)]
 use oteryn_gameplay_admission_evidence as admission_evidence;

@@ -1,0 +1,22 @@
+{
+  "id": "NPC0-RL-02",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md",
+  "resource": "Reply lines of one NPC_CONVERSATION payload (domain 7)",
+  "unit": "lines",
+  "hard_maximum": 32,
+  "configurable_range": {
+    "minimum": 32,
+    "maximum": 32
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "At most 32 lines of at most 2,048 bytes in one payload, 65,665 bytes in all, within the FND-02 chunk bound. A longer reply is split over several deltas by the server.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=32: a payload of 32 lines encodes and decodes",
+    "max+1=33: a 33rd line is refused by the encoder and the decoder"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/npc_service.rs MAX_REPLY_LINES"
+  ],
+  "notes": "NPC-0 \u00a74. Worker-set; measured over content/world/definitions/declarations.json (836 dialogues, at most about 133 text strings in one dialogue). Registered by OTV2-20261005-npc-wire-1 (NPC-WIRE-1)."
+}

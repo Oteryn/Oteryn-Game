@@ -12,6 +12,12 @@
 //! `oteryn-world-bundle-compiler pin-check <repository root> <out directory>`: checks every
 //! World pin under `content/world/pins/` against the tree, builds each bundle twice, and writes
 //! it to `<out directory>` with `artifact-name.txt`.
+//!
+//! `oteryn-world-bundle-compiler pin-refresh <repository root>`: rewrites every World pin, its
+//! identity file and the preproduction manifest to the tree's staged inputs (`pin_refresh`).
+
+mod entry_start;
+mod pin_refresh;
 
 use std::collections::BTreeSet;
 use std::fs;
@@ -28,7 +34,7 @@ use oteryn_world_bundle_compiler::compile::{
 };
 use oteryn_world_bundle_compiler::project::{self, Families};
 use oteryn_world_bundle_compiler::resolve::Registry;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
@@ -367,7 +373,7 @@ fn is_pin_file(name: &str) -> bool {
 }
 
 /// The reviewed pin of one World (`content/world/pins/<world slug>.json`).
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 struct Pin {
     schema: String,
@@ -380,7 +386,7 @@ struct Pin {
     inputs_digest: String,
 }
 
-#[derive(Deserialize, Clone, Copy)]
+#[derive(Deserialize, Serialize, Clone, Copy)]
 #[serde(deny_unknown_fields)]
 struct EntryStart {
     x: u16,
@@ -531,58 +537,13 @@ fn build_twice(root: &Path, identity: &Identity) -> Result<Vec<u8>, Error> {
     Ok(first.bytes)
 }
 
-/// `entry_start` must be a walkable, non-blocking base cell inside the World bounds: the first
-/// ground of its top-level entries is a walkable Terrain ground, none of them is a wall and none
-/// is a plain Item (an Item entry without a Terrain record). The node decides a plain Item's
-/// solidity from the served Item definitions, where one without a stated `blocks_movement`
-/// blocks (`map::facts`), so the compiler cannot prove a plain Item there walkable and refuses
-/// it; an Item key routed to a `ground` or `border` Terrain record does not block.
-fn check_entry_start(bytes: &[u8], at: EntryStart) -> Result<(), Error> {
-    let bad = |what: &str| Error::Format(format!("entry_start: {what}"));
-    let mut found = None;
-    let visited = bundle::visit(bytes, |manifest: &Manifest, sector| {
-        if sector.floor == at.floor
-            && sector.sx == at.x / oteryn_world_bundle_compiler::sector::SECTOR_SIZE
-            && sector.sy == at.y / oteryn_world_bundle_compiler::sector::SECTOR_SIZE
-            && let Some(tile) = sector.tiles.iter().find(|t| (t.x, t.y) == (at.x, at.y))
-        {
-            let (mut ground, mut wall, mut item_entry) = (None, false, false);
-            for item in tile.items.iter().filter(|item| item.depth == 0) {
-                let entry = &manifest.palette[item.palette as usize];
-                let terrain = entry.terrain;
-                if ground.is_none()
-                    && let Some(t) = terrain.filter(|t| t.kind == TerrainKind::Ground)
-                {
-                    ground = t.walkable;
-                }
-                wall |= terrain.is_some_and(|t| t.kind == TerrainKind::Wall);
-                item_entry |= entry.family == Family::Item && terrain.is_none();
-            }
-            found = Some((ground == Some(true), wall, item_entry));
-        }
-        Ok(())
-    })?;
-    if !visited.manifest.world.contains(at.x, at.y, at.floor) {
-        return Err(bad("outside the World bounds"));
-    }
-    match found {
-        None => Err(bad("the bundle has no tile there")),
-        Some((false, ..)) => Err(bad("the cell has no walkable ground")),
-        Some((true, true, _)) => Err(bad("the cell holds a blocking wall")),
-        Some((true, false, true)) => Err(bad("the cell holds a plain Item")),
-        Some((true, false, false)) => Ok(()),
-    }
-}
-
 fn run_derive_identity(root: &Path, slug: &str) -> Result<String, Error> {
     identity_text(&derive_identity(root, slug)?)
 }
 
-/// Checks every pin and writes each bundle to `out`. Returns the JSON summary.
-fn run_pin_check(root: &Path, out: &Path) -> Result<Value, Error> {
-    let io = |e: std::io::Error| Error::Format(format!("{}: {e}", out.display()));
-    let pins = root.join(PINS);
-    let mut slugs: Vec<String> = fs::read_dir(&pins)
+/// The World slugs pinned under `pins`, in name order; at least one.
+fn pin_slugs(pins: &Path) -> Result<Vec<String>, Error> {
+    let mut slugs: Vec<String> = fs::read_dir(pins)
         .map_err(|e| Error::Format(format!("{}: {e}", pins.display())))?
         .filter_map(|entry| entry.ok()?.file_name().into_string().ok())
         .filter(|name| is_pin_file(name))
@@ -594,6 +555,14 @@ fn run_pin_check(root: &Path, out: &Path) -> Result<Value, Error> {
             "no World pin under content/world/pins".into(),
         ));
     }
+    Ok(slugs)
+}
+
+/// Checks every pin and writes each bundle to `out`. Returns the JSON summary.
+fn run_pin_check(root: &Path, out: &Path) -> Result<Value, Error> {
+    let io = |e: std::io::Error| Error::Format(format!("{}: {e}", out.display()));
+    let pins = root.join(PINS);
+    let slugs = pin_slugs(&pins)?;
     let tree = inputs_digest(root)?;
     fs::create_dir_all(out).map_err(io)?;
     let (mut reports, mut names) = (Vec::new(), Vec::new());
@@ -648,7 +617,7 @@ fn run_pin_check(root: &Path, out: &Path) -> Result<Value, Error> {
                 pin.digest
             )));
         }
-        check_entry_start(&bytes, pin.entry_start)?;
+        entry_start::check(&bytes, pin.entry_start, &registry(root, &project(root)?)?.0)?;
         fs::write(out.join(format!("{slug}-{digest}.otwb")), &bytes).map_err(io)?;
         names.push(digest.clone());
         reports.push(json!({"world": slug, "digest": digest, "bytes": bytes.len()}));
@@ -683,13 +652,15 @@ fn main() -> ExitCode {
         [_, command, root, out] if command == "pin-check" => {
             run_pin_check(Path::new(root), Path::new(out))
         }
+        [_, command, root] if command == "pin-refresh" => pin_refresh::run(Path::new(root)),
         _ => {
             eprintln!(
                 "usage: oteryn-world-bundle-compiler parity <repository root>\n       \
                  oteryn-world-bundle-compiler compile <repository root> <identity.json> <out> \
                  <production|non-production>\n       \
                  oteryn-world-bundle-compiler derive-identity <repository root> <world slug>\n       \
-                 oteryn-world-bundle-compiler pin-check <repository root> <out directory>"
+                 oteryn-world-bundle-compiler pin-check <repository root> <out directory>\n       \
+                 oteryn-world-bundle-compiler pin-refresh <repository root>"
             );
             return ExitCode::from(2);
         }

@@ -26,9 +26,9 @@ jobs:
       contents: read
       pull-requests: read
     env:
-      EXPECTED_MERGE_GROUP_GATE_BLOB: "b5d1bf99f7f6034af56b03d849fd3eedf495e3f5"
+      EXPECTED_MERGE_GROUP_GATE_BLOB: "2e9a555b2094b8394e4ecddc4019d5275b819542"
       EXPECTED_AGENT_GOVERNANCE_BLOB: "3eaca9487acac87939bd349d4a9f86c2288568b3"
-      EXPECTED_MERGE_GATE_BLOB: "cd0325b9b11a2be1579e6768f58c7bb515cb1634"
+      EXPECTED_MERGE_GATE_BLOB: "3355238424e5d73ee59ba6217166ddfb5eeb508a"
     steps:
       - name: Validate control-plane candidate as inert data
         shell: bash
@@ -206,8 +206,10 @@ jobs:
               '    name: Merge Queue / candidate and governance\n',
               '          python tools/agents/tests/test_governance_lifecycle_discovery.py\n',
               '          python tools/repository/test_validate_merge_group_pg_sim.py\n',
+              '    name: Merge Queue / Durability PostgreSQL harness build\n',
               '    name: Merge Queue / Durability PostgreSQL harness\n',
-              '        image: postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3\n',
+              '    needs: [candidate, durability_postgres_build]\n',
+              '        image: postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc\n',
               f'          EXPECTED_SHA: {merge_group_head_expression}\n',
               '          verify_registered_target_binding() {\n',
               "              owners = [package for package in packages if package.get('name') == 'oteryn-game-server']\n",
@@ -225,13 +227,17 @@ jobs:
               '              test -f "$path" && test ! -L "$path"\n',
               '              test "$(git hash-object -- "$path")" = "$(git rev-parse "$HEAD_SHA:$path")"\n',
               '              verify_registered_target_binding "$name" "$path"\n',
-              '              cargo +1.95.0 test --locked --workspace --test "$name"\n',
+              '              archived_targets+=(--test "$name")\n',
+              '          cargo +1.99.1 nextest archive --locked --workspace "${archived_targets[@]}" --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst"\n',
+              '          cargo +1.99.1 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"\n',
+              '          cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst" --workspace-remap "$GITHUB_WORKSPACE" --partition "$PARTITION_SPEC" --no-fail-fast\n',
+              '          cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst" --workspace-remap "$GITHUB_WORKSPACE" --partition "$PARTITION_SPEC" --no-fail-fast\n',
               '          run_registered_target durability_postgres apps/game-server/tests/durability_postgres.rs\n',
               '          run_registered_target character_authority_postgres apps/game-server/tests/character_authority_postgres.rs\n',
               '          run_registered_target runtime_scope_assignment_postgres apps/game-server/tests/runtime_scope_assignment_postgres.rs\n',
               '          run_registered_target native_admission_source_postgres apps/game-server/tests/native_admission_source_postgres.rs\n',
               '    name: Merge Queue / World bundle\n',
-              '        run: cargo +1.95.0 run --locked --release -p oteryn-world-bundle-compiler -- pin-check . "$RUNNER_TEMP/world-bundle"\n',
+              '        run: cargo +1.99.1 run --locked --release -p oteryn-world-bundle-compiler -- pin-check . "$RUNNER_TEMP/world-bundle"\n',
               f'          WORLD_BUNDLE_REQUIRED: {world_bundle_required_expression}\n',
               f'          WORLD_BUNDLE: {world_bundle_result_expression}\n',
               '          if [[ "${WORLD_BUNDLE_REQUIRED:-}" == "false" ]]; then\n',
@@ -242,8 +248,8 @@ jobs:
               '          $client = ".\\target\\x86_64-pc-windows-msvc\\release\\oteryn-client.exe"\n',
               '          if (-not (Test-Path -LiteralPath $client -PathType Leaf)) {\n',
               '          & $client --smoke\n',
-              '          cargo +1.95.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc\n',
-              '        run: cargo +1.95.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc\n',
+              '          cargo +1.99.1 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc\n',
+              '        run: cargo +1.99.1 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc\n',
               f'          DURABILITY_POSTGRES: {durability_result_expression}\n',
               '            test "$result" = success\n',
           )

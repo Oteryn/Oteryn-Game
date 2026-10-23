@@ -14,6 +14,7 @@ syntax = "proto3";
 package oteryn.protocol.v1.world_interaction;
 
 import "world_object_v1.proto";
+import "item_view_v1.proto";
 
 // ClientCommand.payload of command type 15. A creature or player the session sees in
 // WORLD_SPATIAL_ENTITIES (EntityRefV1 fields 1 and 2, flat) and the tile it is pushed to on its
@@ -34,3 +35,13 @@ message PushResultV1 {
   oteryn.protocol.v1.world_object.UseDispositionV1 disposition = 1;
   uint32 gate_message_id = 2;
 }
+
+// BED0 §9; command 31 allocated to BED-1 by the integrator/CP, 2026-10-22.
+// Non-durable; at most 24 bytes. The target is an unchanged ItemTargetV1
+// submessage (field 1: nonzero uint64 handle). Unknown/repeated fields fail.
+message BedSleepIntentV1 {
+  oteryn.protocol.v1.item_view.ItemTargetV1 target = 1;
+  // Required: 1 fist, 2 club, 3 sword, 4 axe, 5 distance, 6 magic level.
+  uint32 skill = 2;
+}
+// Result uses UseResultV1, including the Premium gate message on SEALED.

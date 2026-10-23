@@ -651,7 +651,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             return NativeCastDispatch::Pending;
         };
         let original = {
-            let states = self.spell_states.lock().await;
+            let states = self.states.spell_states.lock().await;
             states
                 .pending_world_items
                 .iter()
@@ -699,7 +699,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
     ) -> &'static str {
         let original = super::PendingSpellMarker::take_original(
-            &mut self.spell_states.lock().await.pending_world_items,
+            &mut self.states.spell_states.lock().await.pending_world_items,
             actor,
             session,
         );
@@ -719,7 +719,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             )
             .await;
         let leftover = {
-            let mut states = self.spell_states.lock().await;
+            let mut states = self.states.spell_states.lock().await;
             super::PendingSpellMarker::take_attempt(&mut states.pending_world_items, actor, session)
         };
         if let Some(attempt) = leftover {
@@ -830,7 +830,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             }
         };
         let mut runtime = self.runtime.lock().await;
-        let mut states = self.spell_states.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         if runtime.player_control_facts(actor, session).is_err()
             || runtime.owner_fence().is_err()
             || runtime.content_pin().server_artifact_digest() != content.source_digest()
@@ -995,7 +995,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     // Only a successful rollback proves this attempt cannot later COMMIT.
                     tx.rollback().await.map_err(|_|DurabilityError::Unavailable)?;
                     let mut runtime=owner.runtime.lock().await;
-                    let mut states=owner.spell_states.lock().await;
+                    let mut states=owner.states.spell_states.lock().await;
                     if attempt.physical.will_apply(){
                         runtime.release_definitely_uncommitted_spell_batch(&attempt.physical)
                             .map_err(|_|DurabilityError::Unavailable)?;
@@ -1055,7 +1055,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             let training=training.map(|p|p.after_commit(&proof)).transpose().map_err(|_|DurabilityError::InvalidStoredState)?;
             let receipt=training.as_ref().map(|r|match r{BuildCommitOutcome::Committed(r)|BuildCommitOutcome::AlreadyCommitted(r)=>r});
             let mut runtime=owner.runtime.lock().await;
-            let mut states=owner.spell_states.lock().await;
+            let mut states=owner.states.spell_states.lock().await;
             // Phase 1: every fallible check borrows the attempt; nothing moves.
             let checked={
                 let attempt=window.attempt();
@@ -1082,7 +1082,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         })).await;
         let (_, _, writer, guards) = context;
         drop(guards);
-        let mut states = self.spell_states.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         let (leftover, parked) = writer.finish();
         super::PendingSpellMarker::settle(
             &mut states.pending_world_items,

@@ -1,0 +1,19 @@
+{
+  "id": "ANL01-BEST-EFFORT-QUEUE-BYTES",
+  "owner_contract": "ANL-01_GAME_EVENT_AND_AUDIT_FOUNDATION_CONTRACT.md",
+  "resource": "Total retained encoded bytes in one in-process best-effort telemetry collector queue",
+  "unit": "bytes",
+  "hard_maximum": 67108864,
+  "configurable_range": {
+    "minimum": 1048576,
+    "maximum": 67108864
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Checked cumulative byte accounting must reject/drop before queue growth exceeds the configured or absolute limit.",
+  "client_visible": false,
+  "boundary_tests": [
+    "64 MiB absolute ceiling never exceeded",
+    "checked arithmetic overflow rejected",
+    "byte ceiling may bind before entry ceiling"
+  ]
+}

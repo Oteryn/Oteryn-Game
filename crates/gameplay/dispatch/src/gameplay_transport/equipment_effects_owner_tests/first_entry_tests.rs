@@ -100,6 +100,7 @@ pub(super) async fn assert_first_entry(
         let runtime = owner.runtime.lock().await;
         assert!(
             owner
+                .states
                 .spell_states
                 .lock()
                 .await
@@ -125,7 +126,7 @@ pub(super) async fn assert_first_entry(
     assert!(fence.is_some());
     assert!(position.is_some());
     let runtime = owner.runtime.lock().await;
-    let mut states = owner.spell_states.lock().await;
+    let mut states = owner.states.spell_states.lock().await;
     let conditions = &mut states
         .get_mut(&runtime, actor, session)
         .ok_or("admitted state")?

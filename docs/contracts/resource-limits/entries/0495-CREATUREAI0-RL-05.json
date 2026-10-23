@@ -1,0 +1,24 @@
+{
+  "id": "CREATUREAI0-RL-05",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_CREATURE_AI1_TARGETING_AND_THINK_PACKET_2026-10-04.md",
+  "resource": "Creature thinks started in one 50 ms window of one Channel",
+  "unit": "thinks per window",
+  "hard_maximum": 1024,
+  "configurable_range": {
+    "minimum": 1024,
+    "maximum": 1024
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "A per-Channel counter reset each 50 ms window; due thinks beyond it stay due in the creature table (one pending think per creature) and start in the next window in deadline order then ExactActorRef. It reserves nothing; a wake of idle creatures by one player move is capped at the same 1,024.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=1024: 1,024 due thinks start in one window",
+    "max+1=1025: the 1,025th stays due and starts first in the next window"
+  ],
+  "consumers": [
+    "apps/game-server/src/ai_think.rs CREATUREAI0_THINKS_PER_WINDOW: CreatureAiTable::take_due",
+    "apps/game-server/src/ai_think/channel_owner.rs CREATUREAI0_THINKS_PER_WINDOW: CreatureAiTable::take_due_bounded (the Channel owner's selection)",
+    "apps/game-server/src/gameplay_transport/monster_ai_cycle.rs next_monster_ai_pass_us: a pass leaving due thinks schedules the next pass in the next window"
+  ],
+  "notes": "CREATURE-AI-1 \u00a71.3 and \u00a72.1. Test: apps/game-server/src/ai_think/think_tests.rs thinks_per_window_at_max_start_now_and_the_rest_next_window. Registered by OTV2-20261004-creature-ai-1. SPAWN-CEILINGS-1 (Codex 4243189401): the Channel owner's monster AI pass runs again at the start of the next window while thinks remain due (not one 1 s think interval later), and only one pass per interval swings; tests: monster_ai_cycle.rs a_think_backlog_resumes_in_the_next_owner_window_and_swings_keep_their_interval, foundation/channel_owner_creature_ai_tests.rs thinks_past_the_window_budget_stay_due_and_run_in_the_next_window. SPAWN-CEILINGS-1 (Codex 4243397472): the owner selects a window's thinks with a heap bounded by the remaining budget (no collect and sort of every due think) and takes the next pass time from that selection; a backlog pass between swing passes skips the creature census, admission, forget and wake and reuses the last swing pass's player set with fresh positions; tests: foundation/channel_owner_creature_ai_tests.rs the_bounded_think_selection_equals_the_full_sort_and_reports_the_next_think, gameplay_transport/monster_ai_cycle.rs a_think_backlog_resumes_in_the_next_owner_window_and_swings_keep_their_interval."
+}

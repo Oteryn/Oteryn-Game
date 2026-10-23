@@ -1,0 +1,18 @@
+{
+  "id": "GAMECAT-V1-TOMBSTONE-COUNT",
+  "owner_contract": "OTERYN_GAME_PLATFORM_CATALOG_EXPORT_V1.md",
+  "resource": "Authoritative tombstone records in one native catalog snapshot",
+  "unit": "entries",
+  "hard_maximum": 200000,
+  "configurable_range": {
+    "minimum": 200000,
+    "maximum": 200000
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Bound tombstones before contradiction/completeness checks and canonical sorting.",
+  "client_visible": false,
+  "boundary_tests": [
+    "200,000 tombstones accepted only for complete supported capabilities",
+    "200,001 rejected before tombstone processing"
+  ]
+}

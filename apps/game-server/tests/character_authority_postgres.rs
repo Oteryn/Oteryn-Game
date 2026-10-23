@@ -1,17 +1,12 @@
 #![allow(clippy::expect_used)]
 // Dedicated PostgreSQL target for WP5 #414 Character authority. Ordinary
 // workspace runs skip when the routed PostgreSQL service is absent; only
-// configured PostgreSQL 17.6 runs count as qualification evidence.
+// configured PostgreSQL 18.6 runs count as qualification evidence.
 extern crate oteryn_game_server as production_server;
 extern crate self as oteryn_game_server;
-pub use production_server::admission_evidence;
-#[allow(dead_code, unused_imports)]
-#[path = "../../../crates/gameplay/durability/src/character_bootstrap_intent.rs"]
-pub mod character_bootstrap_intent;
 #[allow(dead_code, unused_imports)]
 pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
-#[path = "support/domain_shim.rs"]
-pub mod domain;
+pub use production_server::admission_evidence;
 #[allow(dead_code, unused_imports)]
 #[path = "../src/durability"]
 mod durability {
@@ -22,9 +17,6 @@ mod durability {
 pub use oteryn_gameplay_entities as foundation;
 #[allow(dead_code, unused_imports)]
 pub use oteryn_gameplay_native_admission_source as native_admission_source;
-#[allow(dead_code, unused_imports)]
-#[path = "../../../crates/gameplay/social/src/premium/mod.rs"]
-mod premium;
 
 use durability::DurabilityRoot;
 use durability::character_authority::CharacterAuthorityError;
@@ -149,7 +141,7 @@ fn postgres_schema_enforces_atomic_immutable_first_slice() {
         .expect("runtime")
         .block_on(async {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
-        eprintln!("character_authority_postgres requires configured PostgreSQL 17.6");
+        eprintln!("character_authority_postgres requires configured PostgreSQL 18.6");
         return;
     };
     let mut connection = sqlx::PgConnection::connect(&admin)
@@ -257,8 +249,9 @@ impl Database {
             .fetch_one(&mut connection)
             .await?;
         assert_eq!(
-            version, "170006",
-            "canonical target requires PostgreSQL 17.6"
+            version,
+            oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
+            "canonical target requires PostgreSQL 18.6"
         );
         let migrator = sqlx::migrate!("./migrations");
         match through {
@@ -2228,91 +2221,29 @@ async fn fresh_rerun(database: &Database) -> TestResult {
     Ok(())
 }
 
-// R7 P03 shares its cases with the focused standalone target so the established
-// protected PostgreSQL 17.6 lane executes the exact same qualification.
-#[path = "support/character_progression_postgres_cases.rs"]
-mod character_progression_postgres_cases;
-
-// DUR-03 stage C one-item Ground MINT shares its cases with the focused
-// standalone target through the same protected PostgreSQL lane.
-#[path = "support/item_mint_postgres_cases.rs"]
-mod item_mint_postgres_cases;
-
-// ITEM-USE-1b item use (migration 0083) shares its cases with the focused
-// standalone target through the same protected lane.
-#[path = "support/item_use_postgres_cases.rs"]
-mod item_use_postgres_cases;
-
-// B3-1 TRANSFER (Ground -> container slot / main backpack entries) shares its
+// Keep sorted by module name; insert in order, never append.
+// ACHIEVEMENT step 3 account facts (migration 0021) share their cases with the
+// focused standalone target through the same protected lane, on the CHARM-2
+// harness included above.
+#[path = "support/account_achievement_postgres_cases.rs"]
+mod account_achievement_postgres_cases;
+// LCFA-1 `ListCharactersForAccount` outbox, revision and epoch (migration 0024)
+// share their cases with the protected PostgreSQL lane.
+#[path = "support/account_characters_projection_postgres_cases.rs"]
+mod account_characters_projection_postgres_cases;
+// D39 chest `USE` wiring to the CHEST-1 reward-claim MINT shares its cases with
+// the focused standalone target through the same protected lane.
+#[allow(dead_code, unused_imports)]
+#[path = "../../../crates/gameplay/social/src/achievement_catalogue.rs"]
+pub mod achievement_catalogue;
+// Combat D2b creature death -> loot MINT + R7 P03 XP composition shares its
 // cases with the focused standalone target through the same protected lane.
-#[path = "support/item_transfer_postgres_cases.rs"]
-mod item_transfer_postgres_cases;
-
-// D3-4 corpse-container TRANSFER (D133 window, corpse never a source) shares
-// its cases with the focused standalone target through the same protected lane.
-#[path = "support/corpse_transfer_postgres_cases.rs"]
-mod corpse_transfer_postgres_cases;
-
-// ITEM-LOOP-1 (CP D1438) live item loop: move, nest, split/merge, drop/pickup and the
-// derived-capacity pickup refusal, plus the STARTER-1 grant, through the same protected lane.
-#[path = "support/item_loop_postgres_cases.rs"]
-mod item_loop_postgres_cases;
-
-// D3-6 corpse DECAY_RETIRE (N+1 one-item steps at materialized_at + 60 s,
-// resumable from durable state) shares its cases with the focused standalone
-// target through the same protected lane.
-#[path = "support/corpse_decay_postgres_cases.rs"]
-mod corpse_decay_postgres_cases;
-
-// DEATH-0 death receipts, blessings and pending respawns (migration 0016)
-// share their cases with the focused standalone target through the same
-// protected lane.
-#[path = "support/character_death_receipts_postgres_cases.rs"]
-mod character_death_receipts_postgres_cases;
-
-// PRIV-GUARD-1 (the runtime role executes every function a CHECK calls) shares
-// its cases with the focused standalone target through the same protected lane.
-#[path = "support/check_function_privileges_postgres_cases.rs"]
-mod check_function_privileges_postgres_cases;
-
-// HOUSE-CUSTODY-1 HouseInterior, reclaim provenance and the item location
-// exclusivity guard (migration 0025) share their cases with the focused
-// standalone target through the same protected lane.
-#[path = "support/house_custody_postgres_cases.rs"]
-mod house_custody_postgres_cases;
-// INBOX-1a CharacterInbox and delivery (migration 0076) share their cases
-// with the focused standalone target through the same protected lane.
-#[path = "support/character_inbox_postgres_cases.rs"]
-mod character_inbox_postgres_cases;
-
-// STANCE-0 stance slot and stance receipts (migration 0017) share their cases
-// with the focused standalone target through the same protected lane.
-#[path = "support/character_stance_postgres_cases.rs"]
-mod character_stance_postgres_cases;
-
-// CHARM-3 charm unlocks, assignments and receipts (migration 0020) share their
-// cases with the focused standalone target through the same protected lane.
-#[path = "support/charm_state_postgres_cases.rs"]
-mod charm_state_postgres_cases;
-#[path = "../../../crates/gameplay/dispatch/src/gameplay_transport/charm.rs"]
-mod charm_transport;
-
-// CHEST-1 reward-claim MINT (a `once` RewardClaim into a new main backpack
-// entry) shares its cases with the focused standalone target through the same
-// protected lane.
-#[path = "support/reward_claim_mint_postgres_cases.rs"]
-mod reward_claim_mint_postgres_cases;
-
-// MAP-OVERLAY-1b map-item MINT (a map-authored entry into Ground at its tile,
-// once per Channel and reset epoch) shares its cases with the focused
-// standalone target through the same protected lane.
-#[path = "support/map_item_mint_postgres_cases.rs"]
-mod map_item_mint_postgres_cases;
-
-// GOLD-FEE-ACT-1 type-2 audit activation (migration 0079).
-#[path = "support/type2_audit_activation_postgres_cases.rs"]
-mod type2_audit_activation_postgres_cases;
-
+#[path = "support/attack_kill_reward_postgres_cases.rs"]
+mod attack_kill_reward_postgres_cases;
+// BANK-1 Account bank balance (migration 0071) shares its cases with the focused
+// standalone target through the same protected lane, on the Bestiary harness.
+#[path = "support/bank_postgres_cases.rs"]
+mod bank_postgres_cases;
 // CHARM-2 Bestiary kill progress (migration 0019) shares its cases and their
 // harness with the focused standalone target through the same protected lane.
 #[allow(dead_code)]
@@ -2320,72 +2251,198 @@ mod type2_audit_activation_postgres_cases;
 mod bestiary_postgres_harness;
 #[path = "support/bestiary_progress_postgres_cases.rs"]
 mod bestiary_progress_postgres_cases;
-
-// LOOP-GROUND-1 Ground64 same-transaction admission (pure and native PostgreSQL
-// cases) on the CHARM-2 harness included above; its only test mount.
-#[path = "../../../crates/gameplay/durability/src/durability/ground_cell_limit_tests.rs"]
-mod ground_cell_limit_tests;
-
-// RANK-1 HS-1 World highscore snapshots (migration 0129): the job, its 11 categories and the
-// reader, on the CHARM-2 harness included above; HS-WIRE-1's query handler runs against them.
-#[path = "support/highscores_postgres_cases.rs"]
-mod highscores_postgres_cases;
-
-// ACHIEVEMENT step 3 account facts (migration 0021) share their cases with the
-// focused standalone target through the same protected lane, on the CHARM-2
-// harness included above.
-#[path = "support/account_achievement_postgres_cases.rs"]
-mod account_achievement_postgres_cases;
-
-// LCFA-1 `ListCharactersForAccount` outbox, revision and epoch (migration 0024)
-// share their cases with the protected PostgreSQL lane.
-#[path = "support/account_characters_projection_postgres_cases.rs"]
-mod account_characters_projection_postgres_cases;
-
-// GAME-PUBLIC-PROJ-PRODUCER-1 public projections (migration 0091): outboxes, epoch, guards,
-// resync and least privilege, plus the store reads `bootstrap_audit_flow` runs.
-#[path = "support/public_projections_postgres_cases.rs"]
-mod public_projections_postgres_cases;
-
-// PREM-1a Premium consumer fence (migration 0029) runs in the same protected lane, on the
-// CHARM-2 harness included above.
-#[path = "support/premium_fence_postgres_cases.rs"]
-mod premium_fence_postgres_cases;
-// PREM-WIRE-1 Premium activation latch (migration 0085) on the same harness.
-#[path = "support/premium_activation_latch_postgres_cases.rs"]
-mod premium_activation_latch_postgres_cases;
-
-// SCOPE-HANDOFF-1 house scope entry handoff (migration 0074) on the CHARM-2 harness.
-#[path = "support/house_scope_handoff_postgres_cases.rs"]
-mod house_scope_handoff_postgres_cases;
-
+// D1112 APP-1 installed storage and native authority cases run once in this
+// registered PostgreSQL target, on the Bestiary harness included above.
+#[path = "support/character_appearance_native_postgres_cases.rs"]
+mod character_appearance_native_postgres_cases;
+#[path = "support/character_appearance_postgres_cases.rs"]
+mod character_appearance_postgres_cases;
+#[allow(dead_code, unused_imports)]
+#[path = "../../../crates/gameplay/durability/src/character_bootstrap_intent.rs"]
+pub mod character_bootstrap_intent;
 // CHAR-BUILD-1a build state, build receipts and death build fields (migration
 // 0030) and their admission verifier checks, on the CHARM-2 harness included above.
 #[path = "support/character_build_postgres_cases.rs"]
 mod character_build_postgres_cases;
-
-#[path = "support/character_stance_writer_postgres_cases.rs"]
-mod character_stance_writer_postgres_cases;
-
-#[path = "support/character_last_position_postgres_cases.rs"]
-mod character_last_position_postgres_cases;
-
-// PVP-1 PvP state tables, deadline write-ahead and World job (migration 0081).
-#[path = "support/pvp_state_postgres_cases.rs"]
-mod pvp_state_postgres_cases;
-
+// DEATH-0 death receipts, blessings and pending respawns (migration 0016)
+// share their cases with the focused standalone target through the same
+// protected lane.
+#[path = "support/character_death_receipts_postgres_cases.rs"]
+mod character_death_receipts_postgres_cases;
 #[path = "support/character_familiar_writer_postgres_cases.rs"]
 mod character_familiar_writer_postgres_cases;
-
-// QUEST-STATE-1 quest tracks, states and receipts (migration 0056) and their writer, on the
-// CHARM-2 harness included above.
-#[path = "support/quest_state_postgres_cases.rs"]
-mod quest_state_postgres_cases;
-
+// INBOX-1a CharacterInbox and delivery (migration 0076) share their cases
+// with the focused standalone target through the same protected lane.
+#[path = "support/character_inbox_postgres_cases.rs"]
+mod character_inbox_postgres_cases;
+#[path = "support/character_last_position_postgres_cases.rs"]
+mod character_last_position_postgres_cases;
+#[path = "support/character_proficiency_postgres_cases.rs"]
+mod character_proficiency_postgres_cases;
+// R7 P03 shares its cases with the focused standalone target so the established
+// protected PostgreSQL 18.6 lane executes the exact same qualification.
+#[path = "support/character_progression_postgres_cases.rs"]
+mod character_progression_postgres_cases;
+// STANCE-0 stance slot and stance receipts (migration 0017) share their cases
+// with the focused standalone target through the same protected lane.
+#[path = "support/character_stance_postgres_cases.rs"]
+mod character_stance_postgres_cases;
+#[path = "support/character_stance_writer_postgres_cases.rs"]
+mod character_stance_writer_postgres_cases;
 // WHEEL-W1 Wheel allocation, receipts, writer and admission reset (migration 0070), on the
 // CHARM-2 harness included above.
 #[path = "support/character_wheel_postgres_cases.rs"]
 mod character_wheel_postgres_cases;
+// CHARM-3 charm unlocks, assignments and receipts (migration 0020) share their
+// cases with the focused standalone target through the same protected lane.
+#[path = "support/charm_state_postgres_cases.rs"]
+mod charm_state_postgres_cases;
+#[path = "../../../crates/gameplay/dispatch/src/gameplay_transport/charm.rs"]
+mod charm_transport;
+// PRIV-GUARD-1 (the runtime role executes every function a CHECK calls) shares
+// its cases with the focused standalone target through the same protected lane.
+#[path = "support/check_function_privileges_postgres_cases.rs"]
+mod check_function_privileges_postgres_cases;
+#[path = "support/chest_use_postgres_cases.rs"]
+mod chest_use_postgres_cases;
+#[allow(dead_code, unused_imports)]
+#[path = "../../../crates/gameplay/combat/src/combat/mod.rs"]
+pub mod combat;
+// CHARM-2 Bestiary descendant of a committed creature death shares its cases
+// with the focused standalone target, on the CHARM-2 harness included above.
+#[path = "support/combat_bestiary_postgres_cases.rs"]
+mod combat_bestiary_postgres_cases;
+#[path = "support/combat_death_reward_postgres_cases.rs"]
+mod combat_death_reward_postgres_cases;
+// B3-2 Combat ground pickup (definition facts bound to the current Content
+// generation) shares its cases with the focused standalone target, on the B3-1
+// and D3-4 cases included above. `combat_pickup` is a top-level module and
+// `content` is the test shim for the same reasons as in that target.
+#[allow(dead_code, unused_imports)]
+#[path = "../../../crates/gameplay/combat/src/combat/pickup.rs"]
+pub mod combat_pickup;
+#[path = "support/combat_pickup_postgres_cases.rs"]
+mod combat_pickup_postgres_cases;
+#[allow(dead_code, unused_imports)]
+#[path = "support/content_shim.rs"]
+pub mod content;
+// D3-6 corpse DECAY_RETIRE (N+1 one-item steps at materialized_at + 60 s,
+// resumable from durable state) shares its cases with the focused standalone
+// target through the same protected lane.
+#[path = "support/corpse_decay_postgres_cases.rs"]
+mod corpse_decay_postgres_cases;
+// D3-4 corpse-container TRANSFER (D133 window, corpse never a source) shares
+// its cases with the focused standalone target through the same protected lane.
+#[path = "support/corpse_transfer_postgres_cases.rs"]
+mod corpse_transfer_postgres_cases;
+#[path = "support/domain_shim.rs"]
+pub mod domain;
+#[cfg(test)]
+#[path = "../src/lifted_tests/durability_npc_travel_postgres_fixture.rs"]
+mod durability_npc_travel_postgres_fixture;
+#[path = "support/familiar_versioned_lifecycle_postgres_cases.rs"]
+mod familiar_versioned_lifecycle_postgres_cases;
+// Private ITEM-FORGE-1 tier schema/read cases (formerly the standalone forge_postgres target).
+#[path = "support/forge_cases.rs"]
+mod forge_cases;
+// Private native LIMIT_RAISE continuation on the actual item-transfer harness.
+#[path = "support/forge_dust_limit_postgres_cases.rs"]
+mod forge_dust_limit_postgres_cases;
+#[path = "support/gold_fee_bank_postgres_cases.rs"]
+mod gold_fee_bank_postgres_cases;
+// LOOP-GROUND-1 Ground64 same-transaction admission (pure and native PostgreSQL
+// cases) on the CHARM-2 harness included above; its only test mount.
+#[path = "../../../crates/gameplay/durability/src/durability/ground_cell_limit_tests.rs"]
+mod ground_cell_limit_tests;
+// RANK-1 HS-1 World highscore snapshots (migration 0129): the job, its 11 categories and the
+// reader, on the CHARM-2 harness included above; HS-WIRE-1's query handler runs against them.
+#[path = "support/highscores_postgres_cases.rs"]
+mod highscores_postgres_cases;
+// HOUSE-CUSTODY-1 HouseInterior, reclaim provenance and the item location
+// exclusivity guard (migration 0025) share their cases with the focused
+// standalone target through the same protected lane.
+#[path = "support/house_custody_postgres_cases.rs"]
+mod house_custody_postgres_cases;
+#[path = "support/house_interior_postgres_cases.rs"]
+mod house_interior_postgres_cases;
+// SCOPE-HANDOFF-1 house scope entry handoff (migration 0074) on the CHARM-2 harness.
+#[path = "support/house_scope_handoff_postgres_cases.rs"]
+mod house_scope_handoff_postgres_cases;
+#[path = "support/house_test_fixture.rs"]
+mod house_test_fixture;
+#[allow(dead_code, unused_imports)]
+#[path = "../../../crates/gameplay/social/src/interaction/chest_use.rs"]
+pub mod interaction_chest_use;
+// GOLD-FEE-1a in-transaction gold fee BURN (migration 0023) shares its cases
+// with the focused standalone target through the same protected lane.
+#[path = "support/item_fee_burn_postgres_cases.rs"]
+mod item_fee_burn_postgres_cases;
+// ITEM-LOOP-1 (CP D1438) live item loop: move, nest, split/merge, drop/pickup and the
+// derived-capacity pickup refusal, plus the STARTER-1 grant, through the same protected lane.
+#[path = "support/item_loop_postgres_cases.rs"]
+mod item_loop_postgres_cases;
+// DUR-03 stage C one-item Ground MINT shares its cases with the focused
+// standalone target through the same protected PostgreSQL lane.
+#[path = "support/item_mint_postgres_cases.rs"]
+mod item_mint_postgres_cases;
+#[path = "support/item_ref_production_postgres_cases.rs"]
+mod item_ref_production_postgres_cases;
+// B3-1 TRANSFER (Ground -> container slot / main backpack entries) shares its
+// cases with the focused standalone target through the same protected lane.
+#[path = "support/item_transfer_postgres_cases.rs"]
+mod item_transfer_postgres_cases;
+// ITEM-USE-1b item use (migration 0083) shares its cases with the focused
+// standalone target through the same protected lane.
+#[path = "support/item_use_postgres_cases.rs"]
+mod item_use_postgres_cases;
+#[path = "support/mail_postgres_cases.rs"]
+mod mail_postgres_cases;
+// MAP-OVERLAY-1b map-item MINT (a map-authored entry into Ground at its tile,
+// once per Channel and reset epoch) shares its cases with the focused
+// standalone target through the same protected lane.
+#[path = "support/map_item_mint_postgres_cases.rs"]
+mod map_item_mint_postgres_cases;
+#[path = "support/npc_econ_bank_postgres_cases.rs"]
+mod npc_econ_bank_postgres_cases;
+#[path = "support/npc_travel_postgres_cases.rs"]
+mod npc_travel_postgres_cases;
+// PG-COVERAGE-1: fails when a standalone `*_postgres.rs` target has cases that
+// no CI-run PostgreSQL target includes. Runs without a database.
+#[path = "support/postgres_target_aggregation.rs"]
+mod postgres_target_aggregation;
+#[allow(dead_code, unused_imports)]
+#[path = "../../../crates/gameplay/social/src/premium/mod.rs"]
+mod premium;
+// PREM-WIRE-1 Premium activation latch (migration 0085) on the same harness.
+#[path = "support/premium_activation_latch_postgres_cases.rs"]
+mod premium_activation_latch_postgres_cases;
+// PREM-1a Premium consumer fence (migration 0029) runs in the same protected lane, on the
+// CHARM-2 harness included above.
+#[path = "support/premium_fence_postgres_cases.rs"]
+mod premium_fence_postgres_cases;
+// GAME-PUBLIC-PROJ-PRODUCER-1 public projections (migration 0091): outboxes, epoch, guards,
+// resync and least privilege, plus the store reads `bootstrap_audit_flow` runs.
+#[path = "support/public_projections_postgres_cases.rs"]
+mod public_projections_postgres_cases;
+#[path = "support/pvp_readmission_postgres_cases.rs"]
+mod pvp_readmission_postgres_cases;
+// PVP-1 PvP state tables, deadline write-ahead and World job (migration 0081).
+#[path = "support/pvp_state_postgres_cases.rs"]
+mod pvp_state_postgres_cases;
+// QUEST-STATE-1 quest tracks, states and receipts (migration 0056) and their writer, on the
+// CHARM-2 harness included above.
+#[path = "support/quest_state_postgres_cases.rs"]
+mod quest_state_postgres_cases;
+// CHEST-1 reward-claim MINT (a `once` RewardClaim into a new main backpack
+// entry) shares its cases with the focused standalone target through the same
+// protected lane.
+#[path = "support/reward_claim_mint_postgres_cases.rs"]
+mod reward_claim_mint_postgres_cases;
+#[path = "support/route_less_case_guard.rs"]
+mod route_less_case_guard;
+// GOLD-FEE-ACT-1 type-2 audit activation (migration 0079).
+#[path = "support/type2_audit_activation_postgres_cases.rs"]
+mod type2_audit_activation_postgres_cases;
 
 // SPELL-D8 H-1 durable monk Harmony and remaining forced Serene time (migration
 // 0026, `durability::monk_state`) run in the same protected lane, on the
@@ -3035,76 +3092,6 @@ mod monk_state_postgres_cases {
         Ok(())
     }
 }
-// Combat D2b creature death -> loot MINT + R7 P03 XP composition shares its
-// cases with the focused standalone target through the same protected lane.
-#[path = "support/attack_kill_reward_postgres_cases.rs"]
-mod attack_kill_reward_postgres_cases;
-#[allow(dead_code, unused_imports)]
-#[path = "../../../crates/gameplay/combat/src/combat/mod.rs"]
-pub mod combat;
-#[path = "support/combat_death_reward_postgres_cases.rs"]
-mod combat_death_reward_postgres_cases;
-
-// CHARM-2 Bestiary descendant of a committed creature death shares its cases
-// with the focused standalone target, on the CHARM-2 harness included above.
-#[path = "support/combat_bestiary_postgres_cases.rs"]
-mod combat_bestiary_postgres_cases;
-
-// B3-2 Combat ground pickup (definition facts bound to the current Content
-// generation) shares its cases with the focused standalone target, on the B3-1
-// and D3-4 cases included above. `combat_pickup` is a top-level module and
-// `content` is the test shim for the same reasons as in that target.
-#[allow(dead_code, unused_imports)]
-#[path = "../../../crates/gameplay/combat/src/combat/pickup.rs"]
-pub mod combat_pickup;
-#[path = "support/combat_pickup_postgres_cases.rs"]
-mod combat_pickup_postgres_cases;
-#[allow(dead_code, unused_imports)]
-#[path = "support/content_shim.rs"]
-pub mod content;
-
-// D39 chest `USE` wiring to the CHEST-1 reward-claim MINT shares its cases with
-// the focused standalone target through the same protected lane.
-#[allow(dead_code, unused_imports)]
-#[path = "../../../crates/gameplay/social/src/achievement_catalogue.rs"]
-pub mod achievement_catalogue;
-#[path = "support/chest_use_postgres_cases.rs"]
-mod chest_use_postgres_cases;
-
-#[allow(dead_code, unused_imports)]
-#[path = "../../../crates/gameplay/social/src/interaction/chest_use.rs"]
-pub mod interaction_chest_use;
-
-// GOLD-FEE-1a in-transaction gold fee BURN (migration 0023) shares its cases
-// with the focused standalone target through the same protected lane.
-#[path = "support/item_fee_burn_postgres_cases.rs"]
-mod item_fee_burn_postgres_cases;
-
-// BANK-1 Account bank balance (migration 0071) shares its cases with the focused
-// standalone target through the same protected lane, on the Bestiary harness.
-#[path = "support/bank_postgres_cases.rs"]
-mod bank_postgres_cases;
-#[path = "support/gold_fee_bank_postgres_cases.rs"]
-mod gold_fee_bank_postgres_cases;
-#[path = "support/npc_econ_bank_postgres_cases.rs"]
-mod npc_econ_bank_postgres_cases;
-
-#[path = "support/mail_postgres_cases.rs"]
-mod mail_postgres_cases;
-
-#[path = "support/market_postgres_cases.rs"]
-mod market_postgres_cases;
-
-// NPC-TRADE-1 NPC BUY/SELL commit (migration 0082) on the B3 item-transfer harness.
-#[path = "support/npc_trade_postgres_cases.rs"]
-mod npc_trade_postgres_cases;
-#[path = "support/npc_travel_postgres_cases.rs"]
-mod npc_travel_postgres_cases;
-
-// PG-COVERAGE-1: fails when a standalone `*_postgres.rs` target has cases that
-// no CI-run PostgreSQL target includes. Runs without a database.
-#[path = "support/postgres_target_aggregation.rs"]
-mod postgres_target_aggregation;
 
 // Both new inert public consumers resolve current recovery evidence independently of history.
 #[test]
@@ -3419,33 +3406,6 @@ async fn character_commands_flow(database: &Database) -> TestResult {
     Ok(())
 }
 
-#[path = "support/character_proficiency_postgres_cases.rs"]
-mod character_proficiency_postgres_cases;
-// Private native LIMIT_RAISE continuation on the actual item-transfer harness.
-#[path = "support/forge_dust_limit_postgres_cases.rs"]
-mod forge_dust_limit_postgres_cases;
-// Private ITEM-FORGE-1 tier schema/read cases (formerly the standalone forge_postgres target).
-#[path = "support/forge_cases.rs"]
-mod forge_cases;
-#[path = "support/item_ref_production_postgres_cases.rs"]
-mod item_ref_production_postgres_cases;
-
-#[path = "support/familiar_versioned_lifecycle_postgres_cases.rs"]
-mod familiar_versioned_lifecycle_postgres_cases;
-#[path = "support/house_interior_postgres_cases.rs"]
-mod house_interior_postgres_cases;
-#[path = "support/house_test_fixture.rs"]
-mod house_test_fixture;
-#[path = "support/pvp_readmission_postgres_cases.rs"]
-mod pvp_readmission_postgres_cases;
-
-// D1112 APP-1 installed storage and native authority cases run once in this
-// registered PostgreSQL target, on the Bestiary harness included above.
-#[path = "support/character_appearance_native_postgres_cases.rs"]
-mod character_appearance_native_postgres_cases;
-#[path = "support/character_appearance_postgres_cases.rs"]
-mod character_appearance_postgres_cases;
-
-#[cfg(test)]
-#[path = "../src/lifted_tests/durability_npc_travel_postgres_fixture.rs"]
-mod durability_npc_travel_postgres_fixture;
+// Every case file in `support/authority_cases/` is mounted here by `build.rs`, so a new mechanic
+// adds its file there instead of editing this shared target.
+include!(concat!(env!("OUT_DIR"), "/authority_cases_mounts.rs"));

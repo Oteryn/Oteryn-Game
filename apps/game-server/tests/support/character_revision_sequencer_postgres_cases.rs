@@ -127,7 +127,11 @@ impl Database {
         let version: String = sqlx::query_scalar("SHOW server_version_num")
             .fetch_one(&mut connection)
             .await?;
-        assert_eq!(version, "170006", "canonical target is PostgreSQL 17.6");
+        assert_eq!(
+            version,
+            oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
+            "canonical target is PostgreSQL 18.6"
+        );
         oteryn_gameplay_durability::GAME_MIGRATOR
             .run(&mut connection)
             .await?;
@@ -215,7 +219,8 @@ impl Harness {
         let root = DurabilityRoot::connect_test_runtime(&database.url)?;
         assert!(root.maintain_ready_once().await?);
         let pool = sqlx::PgPool::connect(&database.url).await?;
-        let retained = fence_parent(tag)?;
+        // Scenarios may share a tag, but each database owns its recovery fence.
+        let retained = fence_parent(&database.name)?;
         let recovery = CharacterRecoveryStore::open(&retained, "character-primary", "game-ops")
             .map_err(debug)?;
         {
@@ -1308,3 +1313,6 @@ fn durable_death_clears_harmony_and_serene_and_receipt_readback_cannot_restore_t
         harness.cleanup().await
     })
 }
+
+#[path = "character_revision_sequencer_postgres_cases/tutorial_vitals_fixture.rs"]
+pub(super) mod tutorial_vitals_fixture;

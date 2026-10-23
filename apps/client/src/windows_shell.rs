@@ -246,10 +246,16 @@ impl ApplicationHandler for Application {
         }
         let size = window.inner_size();
         // The map is loaded on the first resume and kept across suspends.
-        let world = if let Some(world) = &self.world {
+        let center = self
+            .play
+            .as_ref()
+            .map_or((START.0, START.1, 7), |play| play.view.map_center());
+        let world = if let Some(world) = &self.world
+            && world.center() == center
+        {
             Arc::clone(world)
         } else {
-            let (world, reason) = World::from_env();
+            let (world, reason) = World::from_env(center);
             if let Some(reason) = reason {
                 println!("Oteryn: drawing without map sprites: {reason}");
             }

@@ -46,6 +46,7 @@ pub use oteryn_protocol_oteryn::item_view::{
     ItemMoveOutcome, MAX_CHARACTER_INVENTORY_ITEMS, MAX_OPEN_CONTAINER_ENTRIES, OpenContainer,
 };
 use oteryn_protocol_oteryn::logout;
+mod tutorial_notices;
 /// The capability-21 logout result a client reads, re-exported so it needs no protocol import.
 pub use oteryn_protocol_oteryn::logout::LogoutResult;
 use oteryn_protocol_oteryn::world_interaction;
@@ -140,6 +141,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     CAPABILITY_ATTACK_V1,
     logout::CAPABILITY_LOGOUT_V1,
     oteryn_protocol_oteryn::appearance::CAPABILITY_APPEARANCE_V1,
+    oteryn_protocol_oteryn::tutorial_notices::CAPABILITY_TUTORIAL_NOTICES_V1,
 ];
 
 /// Capability-owned command types and state domains (`PROTOCOL_OTERYN_V1_REGISTRY.json`;
@@ -148,6 +150,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
 /// Capabilities 4 and 7 are routed by typed code (`Session::use_item`, `Session::move_item`, the
 /// item stores; `Session::chat`, the chat log), not through this table.
 const GATED_ROUTES: &[(u32, &[u32], &[u32])] = &[
+    (31, &[], &[23]),
     (
         oteryn_protocol_oteryn::appearance::CAPABILITY_APPEARANCE_V1,
         &[oteryn_protocol_oteryn::appearance::COMMAND_TYPE_APPEARANCE_CHANGE],
@@ -681,6 +684,7 @@ pub const MAX_QUEUED_EVENTS: usize = 256;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SessionEvent {
     Appearance(AppliedDelta<AppearanceUpdate>),
+    TutorialNotice(AppliedDelta<oteryn_protocol_oteryn::tutorial_notices::TutorialNotice>),
     /// Domain 1 `WORLD_SPATIAL_VISIBILITY`.
     WorldSpatial(AppliedDelta<WorldSpatialObservation>),
     /// Domain 1 with capability 6 selected: the entities that entered, updated and left, and the
@@ -710,6 +714,7 @@ impl SessionEvent {
     pub const fn domain_id(&self) -> u32 {
         match self {
             Self::Appearance(_) => oteryn_protocol_oteryn::appearance::STATE_DOMAIN_APPEARANCE,
+            Self::TutorialNotice(_) => 23,
             Self::WorldSpatial(_) | Self::WorldSpatialEntities(_) => {
                 world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY
             }
@@ -1329,6 +1334,7 @@ impl<S: SessionStream> Session<S> {
                 attack::STATE_DOMAIN_ACTOR_COMBAT_STATE,
             ));
         }
+        tutorial_notices::validate_join(&selected_capabilities, &gated_snapshots)?;
         let snapshot = JoinSnapshot {
             game_session_id: accepted_fields.game_session_id,
             world_spatial: world_spatial_observation.ok_or(SessionError::MissingDomain(
@@ -2401,6 +2407,7 @@ fn check_status_pairing(
 #[cfg(test)]
 mod tests {
     mod appearance_session_tests;
+    include!("tutorial_notices_tests.rs");
     use super::*;
     use oteryn_protocol_oteryn::world_object::{
         SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1, STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
@@ -4371,7 +4378,7 @@ mod tests {
         let peer = tokio::spawn(async move {
             join_peer_with(
                 &mut server,
-                &[4, 6, 7, 13, 17, 21, 25],
+                &[4, 6, 7, 13, 17, 21, 25, 31],
                 selected,
                 &[],
                 snapshot,
@@ -4839,7 +4846,10 @@ mod tests {
     fn the_advertised_set_carries_chat_and_stays_closed() {
         assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&CAPABILITY_CHAT_V1));
         // PROTOCOL_OTERYN_V1_REGISTRY.json: capability 7 requires nothing.
-        assert_eq!(CLIENT_SUPPORTED_CAPABILITIES, &[4, 6, 7, 13, 17, 21, 25]);
+        assert_eq!(
+            CLIENT_SUPPORTED_CAPABILITIES,
+            &[4, 6, 7, 13, 17, 21, 25, 31]
+        );
     }
 
     #[test]
@@ -5436,7 +5446,7 @@ mod tests {
         let peer = tokio::spawn(async move {
             join_peer_with(
                 &mut server,
-                &[4, 6, 7, 13, 17, 21, 25],
+                &[4, 6, 7, 13, 17, 21, 25, 31],
                 ITEM_SELECTED,
                 &[],
                 snapshot,

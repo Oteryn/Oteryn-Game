@@ -530,10 +530,8 @@ fn a_definition_ref_names_its_typed_definition_back() {
 
 #[test]
 fn item_look_window_matches_its_registered_resource_limit() {
-    let registry: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json"
-    ))
-    .unwrap();
+    let registry: serde_json::Value =
+        serde_json::from_str(oteryn_protocol_oteryn::RESOURCE_LIMITS_REGISTRY_JSON).unwrap();
     let row = registry["entries"]
         .as_array()
         .unwrap()

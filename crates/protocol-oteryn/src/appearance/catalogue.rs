@@ -69,10 +69,7 @@ impl Catalogue {
             context: f.context()?,
             root_revision: nonzero(f.u(3)?)?,
             selected: f.has(4).then(|| Selected::decode(f.b(4)?)).transpose()?,
-            palette: raw_palette
-                .chunks_exact(3)
-                .map(|c| [c[0], c[1], c[2]])
-                .collect(),
+            palette: raw_palette.as_chunks::<3>().0.to_vec(),
             outfits: f
                 .all(6)?
                 .into_iter()

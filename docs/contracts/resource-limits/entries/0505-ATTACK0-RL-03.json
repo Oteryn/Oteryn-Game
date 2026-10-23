@@ -1,0 +1,23 @@
+{
+  "id": "ATTACK0-RL-03",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_ATTACK0_ATTACK_TARGET_AND_AUTO_ATTACK_DECISION_2026-09-30.md",
+  "resource": "In-fight deadline of one runtime actor after the last hit dealt or taken",
+  "unit": "milliseconds",
+  "hard_maximum": 60000,
+  "configurable_range": {
+    "minimum": 60000,
+    "maximum": 60000
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "One optional deadline per runtime actor, kept in the channel owner's attack state. Every hit dealt or taken moves it to 60 s after that hit and never earlier. While it runs a logout is refused and a closed client keeps the actor in the world, so an abandoned actor holds its runtime slot for at most 60 s after its last hit.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=60000: 59.999 s after the last hit the actor is still in fight, a logout is refused and a closed client keeps the actor in the world",
+    "max+1: at 60 s after the last hit the deadline has passed, the logout blocker lifts and an abandoned actor is released"
+  ],
+  "consumers": [
+    "content/combat/attack_constants_v1.json in_fight_ms",
+    "apps/game-server/src/gameplay_transport/mod.rs hold_while_in_fight: release after grace and terminal release wait for the deadline"
+  ],
+  "notes": "ATTACK-0 \u00a75 (manual \u00a75.3.12.c) and ARCH-CORE-LOOP-PACKETS-2 \u00a72.3. Canary's in-fight condition (CONDITION_INFIGHT, pzLocked ticks of config.lua.dist pzLocked = 60000) lasts 60 s after the last attack. The game-server test combat_attack::tests::the_resource_limits_bind_the_in_fight_deadline binds this row to the table. Registered by OTV2-20261004-attack-1b."
+}

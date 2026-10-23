@@ -117,7 +117,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         use crate::spell::companion_lifecycle::FamiliarLifecycleOrigin;
         let ends = {
             let runtime = self.runtime.lock().await;
-            let states = self.spell_states.lock().await;
+            let states = self.states.spell_states.lock().await;
             let retained = states
                 .pending_familiar_lifecycle
                 .iter()
@@ -171,7 +171,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let now = self.owner_now();
         let expiries = {
             let runtime = self.runtime.lock().await;
-            let states = self.spell_states.lock().await;
+            let states = self.states.spell_states.lock().await;
             if states
                 .pending_familiars
                 .iter()
@@ -249,7 +249,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> Result<usize, ()> {
         let deaths = {
             let runtime = self.runtime.lock().await;
-            let states = self.spell_states.lock().await;
+            let states = self.states.spell_states.lock().await;
             if states.has_pending_familiar(actor, session) {
                 return Err(());
             }
@@ -360,7 +360,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 active_spell,
             )
             .await;
-        let states = self.spell_states.lock().await;
+        let states = self.states.spell_states.lock().await;
         if states
             .pending_familiars
             .iter()
@@ -382,7 +382,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
     ) -> &'static str {
         let original = super::super::PendingSpellMarker::take_original(
-            &mut self.spell_states.lock().await.pending_familiars,
+            &mut self.states.spell_states.lock().await.pending_familiars,
             actor,
             session,
         );
@@ -406,7 +406,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await;
         let leftover = {
-            let mut states = self.spell_states.lock().await;
+            let mut states = self.states.spell_states.lock().await;
             super::super::PendingSpellMarker::take_attempt(
                 &mut states.pending_familiars,
                 actor,
@@ -433,7 +433,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         access: &A,
     ) -> Option<NativeCastDispatch> {
         let original = {
-            let states = self.spell_states.lock().await;
+            let states = self.states.spell_states.lock().await;
             states
                 .pending_familiars
                 .iter()
@@ -447,7 +447,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             );
         }
         let original = {
-            let states = self.spell_states.lock().await;
+            let states = self.states.spell_states.lock().await;
             states
                 .pending_familiar_lifecycle
                 .iter()
@@ -460,14 +460,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             Ok(_) => {
                 let runtime = self.runtime.lock().await;
-                let states = self.spell_states.lock().await;
+                let states = self.states.spell_states.lock().await;
                 Some(NativeCastDispatch::Outcome(SpellCastOutcome {
                     disposition: SpellCastDisposition::Cast,
                     vitals: super::super::observe_vitals(&runtime, &states, actor, session),
                 }))
             }
             Err(()) => {
-                let states = self.spell_states.lock().await;
+                let states = self.states.spell_states.lock().await;
                 if states.has_pending_familiar(actor, session) {
                     Some(NativeCastDispatch::Pending)
                 } else {
@@ -505,7 +505,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 digest: content.source_digest(),
             };
             let mut runtime = self.runtime.lock().await;
-            let mut states = self.spell_states.lock().await;
+            let mut states = self.states.spell_states.lock().await;
             return self
                 .finish_familiar_lifecycle(
                     &mut runtime,
@@ -547,7 +547,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             administrative: &administrative,
         };
         let mut runtime = self.runtime.lock().await;
-        let mut states = self.spell_states.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         let retained = states
             .pending_familiar_lifecycle
             .iter()
@@ -588,7 +588,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Some(SpellCastOutcome::rejected());
         }
         {
-            let states = self.spell_states.lock().await;
+            let states = self.states.spell_states.lock().await;
             if states.pending_familiars.iter().any(|p| {
                 p.is_for(actor, session)
                     && (p.command.command_id().get() != command_id || p.intent != *intent)
@@ -619,7 +619,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // cost, familiar allocation or eligibility evaluation follows an exact replay.
         {
             let mut runtime = self.runtime.lock().await;
-            let mut states = self.spell_states.lock().await;
+            let mut states = self.states.spell_states.lock().await;
             if !current_owner(&runtime, &fence, actor, session)
                 || runtime.content_pin().server_artifact_digest() != content.source_digest()
             {
@@ -674,7 +674,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .ok()?;
         let owned = {
             let runtime = self.runtime.lock().await;
-            let states = self.spell_states.lock().await;
+            let states = self.states.spell_states.lock().await;
             if !current_owner(&runtime, &fence, actor, session) {
                 return None;
             }
@@ -824,7 +824,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let now = self.owner_now().get();
         {
             let runtime = self.runtime.lock().await;
-            let mut states = self.spell_states.lock().await;
+            let mut states = self.states.spell_states.lock().await;
             prune_familiar_returns(&runtime, &mut states);
             let Some(index) = states
                 .spell_timers
@@ -900,7 +900,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
         {
             let _runtime = self.runtime.lock().await;
-            let mut states = self.spell_states.lock().await;
+            let mut states = self.states.spell_states.lock().await;
             let retained = states
                 .pending_familiar_lifecycle
                 .iter()

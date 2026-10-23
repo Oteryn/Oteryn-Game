@@ -124,7 +124,7 @@ remain available. A spell's observed rejection is recorded as a rejection, not a
 successful execution or complete catalog qualification.
 
 Prerequisites are the exact Platform checkout pinned by `wp5_s3b/run.sh`, Docker
-with Compose/BuildKit, OpenSSL, Rust 1.94.0 and an isolated PostgreSQL 17.6 service
+with Compose/BuildKit, OpenSSL, Rust 1.99.1 and an isolated PostgreSQL 18.6 service
 selected through `OTERYN_TEST_POSTGRES_ADMIN_URL`. Keep connection secrets in the
 existing private environment/profile, not a committed scenario. The runner
 requires disposable database administration and does not require host `sudo`.

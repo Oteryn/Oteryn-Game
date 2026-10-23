@@ -20,6 +20,7 @@ pub mod target;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Vocation {
+    None,
     Druid,
     ElderDruid,
     Sorcerer,
@@ -35,6 +36,7 @@ pub enum Vocation {
 impl Vocation {
     pub fn from_key(key: &str) -> Option<Self> {
         Some(match key {
+            "none" => Self::None,
             "druid" => Self::Druid,
             "elder_druid" => Self::ElderDruid,
             "sorcerer" => Self::Sorcerer,

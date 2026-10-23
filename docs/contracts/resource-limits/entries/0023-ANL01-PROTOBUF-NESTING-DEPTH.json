@@ -1,0 +1,18 @@
+{
+  "id": "ANL01-PROTOBUF-NESTING-DEPTH",
+  "owner_contract": "ANL-01_GAME_EVENT_AND_AUDIT_FOUNDATION_CONTRACT.md",
+  "resource": "Decoded event envelope and registered payload protobuf nesting",
+  "unit": "levels",
+  "hard_maximum": 32,
+  "configurable_range": {
+    "minimum": 8,
+    "maximum": 32
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Decoder enforces recursion depth before stack/heap amplification.",
+  "client_visible": false,
+  "boundary_tests": [
+    "configured maximum accepted",
+    "one level above configured/hard maximum rejected deterministically"
+  ]
+}

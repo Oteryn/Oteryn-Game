@@ -1,0 +1,23 @@
+{
+  "id": "RANGED0-RL-03",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md",
+  "resource": "player chase searches per owner window per Channel",
+  "unit": "searches per 50 ms window",
+  "hard_maximum": 64,
+  "configurable_range": {
+    "minimum": 64,
+    "maximum": 64
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Runtime-only counter: a due search over the window's budget waits for a later window, keeping its place (oldest-waiting request first, then actor id); a search never fails because of the budget.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=64: apps/game-server/src/foundation/channel_owner_auto_attack_tests.rs the_drain_serves_sixty_four_searches_a_window_and_the_sixty_fifth_in_the_next (65 chases wait from one window; the next window's drain serves the 64 lowest actor ids)",
+    "max+1=65: the same test keeps the 65th waiting in that window and serves it in the next; apps/game-server/src/combat/attack/chase.rs the_channel_drains_each_owner_window_once and the_drain_serves_the_oldest_waiting_window_first_then_actor_id cover the drain and its order"
+  ],
+  "consumers": [
+    "apps/game-server/src/combat/attack/chase.rs CHASE_SEARCHES_PER_WINDOW, CHASE_WINDOW_MICROS and ChaseSearchBudget",
+    "CHASE-1 player chase (gameplay_transport::attack chase_decision)"
+  ],
+  "notes": "RANGED-0 \u00a78 CHASE-1: inside CREATURE-AI-0's RL-09 50 ms owner window. Registered by LOOP-COMBAT-MODES-1."
+}

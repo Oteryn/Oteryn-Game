@@ -17,6 +17,7 @@ oteryn-simulation-determinism = { version = "=0.1.0", path = "../../simulation-d
 serde = { workspace = true, features = ["derive"] }
 
 [dev-dependencies]
+oteryn-protocol-oteryn = { version = "=0.1.0", path = "../../protocol-oteryn" }
 serde_json.workspace = true
 
 [lints]

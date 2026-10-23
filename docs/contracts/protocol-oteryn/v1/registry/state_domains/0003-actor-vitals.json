@@ -1,0 +1,22 @@
+{
+  "id": 3,
+  "name": "ACTOR_VITALS",
+  "owner_decision": "OTERYN_PLAYER_SPELL_CAST_WIRE_AND_VITALS_CONTRACT_CANDIDATE_V1 SPELL-D2, SPELL-D8 H-3 (#162 owner acceptance 5867161696; SPELL-D8 5884682203)",
+  "owner": "current ChannelRuntime",
+  "delta_types": [
+    {
+      "id": 1,
+      "name": "ACTOR_VITALS_DELTA_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/actor_spell_v1.proto#ActorVitalsV1",
+      "max_payload_bytes": 32
+    }
+  ],
+  "snapshot_types": [
+    {
+      "id": 1,
+      "name": "ACTOR_VITALS_SNAPSHOT_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/actor_spell_v1.proto#ActorVitalsV1",
+      "max_payload_bytes": 32
+    }
+  ]
+}

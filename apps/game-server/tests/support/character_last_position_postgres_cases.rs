@@ -1,4 +1,4 @@
-//! CHAR-POSITION-1 last-position writer on PostgreSQL 17.6 (decision CHAR-POSITION-0 §3.1-§3.3),
+//! CHAR-POSITION-1 last-position writer on PostgreSQL 18.6 (decision CHAR-POSITION-0 §3.1-§3.3),
 //! with the saved vitals of CHAR-VITALS-1 (migration 0084).
 //! The parent harness provides the migrations and an independently seeded current session.
 use crate::bestiary_postgres_harness::{
@@ -20,6 +20,11 @@ use crate::foundation::{
     ConnectionGeneration, GameSessionId, RuntimeScopeRefV1, ScopeOwnershipGeneration, WorldId,
 };
 use oteryn_simulation_determinism::{ExactI64, RoundingMode};
+
+#[path = "tutorial_death_postgres_cases.rs"]
+mod tutorial_death;
+#[path = "tutorial_islet_placement_postgres_cases.rs"]
+mod tutorial_islet_placement;
 
 fn run<F>(tag: &'static str, body: F) -> TestResult
 where

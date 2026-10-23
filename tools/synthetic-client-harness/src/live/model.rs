@@ -391,7 +391,11 @@ impl RenderModel {
             | UseDisposition::NotPossible
             // RUNE-WIRE-1: capability 22 dispositions; the harness selects no capability 22.
             | UseDisposition::TargetIllegal
-            | UseDisposition::ProtectionZone => Notice::DoorRejected,
+            | UseDisposition::ProtectionZone
+            | UseDisposition::BedChooseSkill
+            | UseDisposition::BedOccupied
+            | UseDisposition::BedWoken
+            | UseDisposition::OfflineTraining => Notice::DoorRejected,
         };
         next
     }
@@ -620,7 +624,7 @@ impl RenderModel {
                 }
                 SessionEvent::ActorVitals(delta) => next.vitals = Some(delta.value),
                 // The harness model does not track combat state.
-                SessionEvent::ActorCombatState(_) => {}
+                SessionEvent::ActorCombatState(_) | SessionEvent::TutorialNotice(_) => {}
                 SessionEvent::ChatLine(delta) => {
                     if let Some(chat) = next.chat.as_mut() {
                         chat.push(delta.value.clone());

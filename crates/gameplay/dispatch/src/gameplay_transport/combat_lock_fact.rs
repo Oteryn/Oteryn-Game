@@ -60,8 +60,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> CombatLockFact {
-        let states = self.spell_states.lock().await;
-        let attack = self.attack.lock().await;
+        let states = self.states.spell_states.lock().await;
+        let attack = self.states.attack.lock().await;
         CombatLockFact::read(&states, &attack, actor, session, self.owner_now())
     }
 }

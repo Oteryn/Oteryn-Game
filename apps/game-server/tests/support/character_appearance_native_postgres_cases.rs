@@ -1,6 +1,6 @@
 #![allow(clippy::expect_used)]
 // D1112 APP-1 native authority target. Every case requires an explicitly routed
-// PostgreSQL 17.6 service and the installed migration 0093; absence is a failure.
+// PostgreSQL 18.6 service and the installed migration 0093; absence is a failure.
 // Mounted once by the CI-run character_authority_postgres target, which provides
 // the path-loaded crate root and the existing Bestiary harness.
 

@@ -1016,7 +1016,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let step = {
             // Lock order: runtime, spell states, door, then attack.
             let runtime = self.runtime.lock().await;
-            let states = self.spell_states.lock().await;
+            let states = self.states.spell_states.lock().await;
             // DEATH-2 §4.2: a dead player takes no input, the chase included.
             if states.is_dead(actor) {
                 return None;
@@ -1038,7 +1038,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 &legacy
             };
             let cells = self.movement_cells;
-            let mut attack = self.attack.lock().await;
+            let mut attack = self.states.attack.lock().await;
             // Owner time is read once the locks that serialize chase decisions are held, so the
             // Channel search budget sees its windows in order (`RANGED0-RL-03`).
             let now = self.owner_now();
@@ -1059,36 +1059,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if outcome.moved_to.is_none() {
             let blocked = outcome.disposition == super::StepDisposition::Blocked;
             // The refused cell's 2 s starts when the refusal returned (`RANGED0-RL-08`).
-            let mut attack = self.attack.lock().await;
+            let mut attack = self.states.attack.lock().await;
             let now = self.owner_now();
             attack.chase_step_refused(actor, session, now, blocked);
         }
         Some((outcome, duration))
     }
-
     /// CHASE-1: the actor-owned pacing deadline of `actor` still ahead of now.
     pub(in crate::gameplay_transport) async fn actor_step_deadline_now(
         &self,
         actor: ExactActorRef,
     ) -> Option<Instant> {
-        self.attack
+        self.states
+            .attack
             .lock()
             .await
             .step_deadline(actor, Instant::now())
     }
-
     /// CHASE-1: claim `actor`'s pacing clock for one step; `Some` when it is still held.
     pub(in crate::gameplay_transport) async fn begin_actor_step_now(
         &self,
         actor: ExactActorRef,
         holder: &Arc<()>,
     ) -> Option<Instant> {
-        self.attack
+        self.states
+            .attack
             .lock()
             .await
             .begin_step(actor, holder, Instant::now())
     }
-
     /// CHASE-1: the claimed step ended; `actor`'s pacing clock is now due at `due`, or free.
     pub(in crate::gameplay_transport) async fn record_actor_step_deadline_now(
         &self,
@@ -1096,24 +1095,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         holder: &Arc<()>,
         due: Option<Instant>,
     ) {
-        self.attack
+        self.states
+            .attack
             .lock()
             .await
             .record_step_deadline(actor, holder, Instant::now(), due);
     }
-
     /// CHASE-1: whether `actor`'s chase search waits for a later owner window.
     pub(in crate::gameplay_transport) async fn chase_search_waiting_now(
         &self,
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> bool {
-        self.attack
+        self.states
+            .attack
             .lock()
             .await
             .chase_search_waiting(actor, session)
     }
-
     /// CHASE-1: a client step of `actor` wins over its chase.
     pub(in crate::gameplay_transport) async fn chase_yield_to_client(
         &self,
@@ -1121,12 +1120,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
     ) {
         let now = self.owner_now();
-        self.attack
+        self.states
+            .attack
             .lock()
             .await
             .chase_yield_to_client(actor, session, now);
     }
-
     /// Read the swing weapon of this connection's `actor` from the equipment owner when its
     /// held target's swings need one ([`ChannelAttackStates::weapon_read_due`]). A failed read
     /// stores nothing, so the swings wait (fail closed).
@@ -1149,6 +1148,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .content_pin()
             .server_artifact_digest();
         let Some(epoch) = self
+            .states
             .attack
             .lock()
             .await
@@ -1166,7 +1166,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(weapon) = swing_weapon(content, &equipment.items) else {
             return;
         };
-        self.attack.lock().await.store_weapon(
+        self.states.attack.lock().await.store_weapon(
             actor,
             session,
             epoch,
@@ -1202,8 +1202,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return;
         }
-        let states = self.spell_states.lock().await;
-        let mut attack = self.attack.lock().await;
+        let states = self.states.spell_states.lock().await;
+        let mut attack = self.states.attack.lock().await;
         attack.prune(&runtime);
         let ChannelAttackStates {
             entries,

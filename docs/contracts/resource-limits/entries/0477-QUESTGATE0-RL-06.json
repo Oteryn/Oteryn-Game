@@ -1,0 +1,23 @@
+{
+  "id": "QUESTGATE0-RL-06",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md",
+  "resource": "Tracked quests of one GameSession (domain 16 QUEST_LOG tracker)",
+  "unit": "quests per GameSession",
+  "hard_maximum": 10,
+  "configurable_range": {
+    "minimum": 10,
+    "maximum": 10
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "QUEST-GATE-0 \u00a79 value (PARITY_PENDING). A track query names at most 10 distinct listed quests and replaces the set; the tracker shows each one's visible missions as one quest line of at most QUESTGATE0-RL-08-BYTES. An eleventh index fails closed in the codec and the query is REJECTED.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=10: ten tracked quests encode, decode and are tracked",
+    "max+1=11: an eleventh index fails closed both ways and the track query is REJECTED without effect"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/quest_log.rs MAX_TRACKED_QUESTS",
+    "apps/game-server/src/gameplay_transport/quest_log.rs"
+  ],
+  "notes": "QUEST-GATE-0 \u00a77 and \u00a79 (PARITY_PENDING: Tibia's tracker limit is not yet evidenced); tests: quest_log::tests::queries_round_trip_within_62_bytes_and_fail_closed, quest_log::tests::the_domain_holds_a_view_and_10_tracked_lines_within_its_bound, gameplay_transport::connection::quest_log::tests::track_replaces_the_set_and_refuses_unlisted_or_eleven_quests. Registered by OTV2-20261004-quest-log-wire-1."
+}

@@ -44,7 +44,7 @@ pub(in crate::gameplay_transport) async fn observe(
     if !current_runtime(&runtime, observer, session, &own_fence, &content) {
         return None;
     }
-    let states = admission.spell_states.lock().await;
+    let states = admission.states.spell_states.lock().await;
     let census = runtime.positioned_melee_census().ok()?;
     let mut bindings = Vec::new();
     let now = admission.owner_now().get();

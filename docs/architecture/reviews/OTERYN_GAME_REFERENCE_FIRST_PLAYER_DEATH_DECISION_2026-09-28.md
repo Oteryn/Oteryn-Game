@@ -110,6 +110,11 @@ DUR-03 (§4.4). It commits all of:
    A lost container is lost with its contents. The set is recorded in the transaction; it is not
    yet moved.
 5. **Respawn position:** the home temple of the character's home town.
+   **Owner decision 2026-10-22 (TUTORIAL-1):** a vocationless Character without
+   account access whose tutorial step is islet or island respawns at the Newhaven
+   tutorial islet temple (32534,32513,7), and its tutorial step becomes islet.
+   This exception reads the current durable tutorial step, rather than a citizen
+   value cached at login. Departed Characters retain the home-temple rule.
 
 A retry with the same occurrence returns the first result.
 

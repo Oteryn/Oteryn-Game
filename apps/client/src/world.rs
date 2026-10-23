@@ -1,6 +1,6 @@
 //! The real-sprite world around the start position (CLIENT-VIS-1, milestone 1).
 //!
-//! A bounded square of the floor-7 base map around the Thais temple is decoded once from the
+//! A bounded square of the actual join floor around its position is decoded once from the
 //! B3 region files, every item is resolved through the pinned 15.30 appearances, and the cells
 //! they need are copied into one static atlas. Walking only rebuilds quads over it. Full map
 //! streaming is milestone 2.
@@ -36,8 +36,8 @@ const MANIFEST_PATH: &str = "imports/official/client-assets/15.30/manifest.json"
 const PLACEMENT_INDEX_SHA256: &str =
     "b32bc5e1088ba594b1b72238686a34e31373e5ecddc10f8428d4418db98ae081";
 const PLACEMENT_INDEX_PATH: &str = "content/world/placements/index.json";
-/// The Thais temple, where the offline view starts and the play view is anchored.
-pub const START: (i32, i32) = (32369, 32241);
+/// The tutorial islet temple, where the offline view starts.
+pub const START: (i32, i32) = (32534, 32513);
 pub const START_FLOOR: u8 = 7;
 /// Tiles decoded on each side of [`START`].
 pub const RADIUS: i32 = 64;
@@ -94,6 +94,7 @@ pub struct MapTile {
 
 #[derive(Debug, Clone)]
 pub struct World {
+    center: (i32, i32, i16),
     atlas: AtlasImage,
     tiles: HashMap<(i32, i32), MapTile>,
     /// The own player's cells per facing, in [`FACINGS`] order.
@@ -131,6 +132,7 @@ impl World {
     pub fn builtin() -> Result<Self, BatchError> {
         let atlas = AtlasImage::new(CELL_PX, BUILTIN_CELLS as u32, 1, builtin_rgba())?;
         Ok(Self {
+            center: (START.0, START.1, i16::from(START_FLOOR)),
             atlas,
             tiles: HashMap::new(),
             player: FACINGS.map(|_| {
@@ -143,10 +145,10 @@ impl World {
     }
 
     /// Loads from `OTERYN_ASSET_DIR`; any failure falls back to [`World::builtin`] with the reason.
-    pub fn from_env() -> (Result<Self, BatchError>, Option<String>) {
+    pub fn from_env(center: (i32, i32, i16)) -> (Result<Self, BatchError>, Option<String>) {
         let loaded = std::env::var_os(ASSET_DIR_ENV)
             .ok_or_else(|| format!("{ASSET_DIR_ENV} is not set"))
-            .and_then(|root| Self::load(Path::new(&root)));
+            .and_then(|root| Self::load_around(Path::new(&root), center));
         match loaded {
             Ok(world) => (Ok(world), None),
             Err(reason) => (Self::builtin(), Some(reason)),
@@ -155,6 +157,22 @@ impl World {
 
     /// Decodes the start area from an asset root laid out like the repository.
     pub fn load(root: &Path) -> Result<Self, String> {
+        Self::load_around(root, (START.0, START.1, i16::from(START_FLOOR)))
+    }
+
+    pub const fn center(&self) -> (i32, i32, i16) {
+        self.center
+    }
+
+    /// Decode the real join position's bounded map window, including its floor.
+    pub fn load_around(root: &Path, center: (i32, i32, i16)) -> Result<Self, String> {
+        let floor = u8::try_from(center.2)
+            .ok()
+            .filter(|floor| *floor <= 15)
+            .ok_or("map center floor outside the World")?;
+        if !(0..=65535).contains(&center.0) || !(0..=65535).contains(&center.1) {
+            return Err("map center outside the World".into());
+        }
         let store = AssetStore::open_pinned(
             &root.join("content/assets/files"),
             &root.join(MANIFEST_PATH),
@@ -169,10 +187,10 @@ impl World {
         let map = read_placement_index(root)?;
 
         let (lo_x, hi_x, lo_y, hi_y) = (
-            START.0 - RADIUS,
-            START.0 + RADIUS,
-            START.1 - RADIUS,
-            START.1 + RADIUS,
+            (center.0 - RADIUS).max(0),
+            (center.0 + RADIUS).min(65535),
+            (center.1 - RADIUS).max(0),
+            (center.1 + RADIUS).min(65535),
         );
         // Every tile's resolved items, then the cells they use.
         let mut entries: Vec<((i32, i32), Vec<Item>)> = Vec::new();
@@ -185,7 +203,7 @@ impl World {
         };
         for ry in lo_y / REGION_TILES..=hi_y / REGION_TILES {
             for rx in lo_x / REGION_TILES..=hi_x / REGION_TILES {
-                let name = format!("region-z{START_FLOOR:02}-x{rx:03}-y{ry:03}.b3");
+                let name = format!("region-z{floor:02}-x{rx:03}-y{ry:03}.b3");
                 let Some(entry) = map
                     .regions
                     .iter()
@@ -204,7 +222,7 @@ impl World {
                 }
                 for tile in decode_region(
                     &data,
-                    (START_FLOOR, rx, ry),
+                    (floor, rx, ry),
                     (lo_x, hi_x, lo_y, hi_y),
                     &mut budget,
                 )
@@ -235,7 +253,7 @@ impl World {
                     for (palette, item) in stack {
                         let placement = Placement {
                             hook,
-                            ..placement(x, y, item.attrs.count)
+                            ..placement(x, y, item.attrs.count, floor)
                         };
                         // An item the pinned appearances cannot draw is skipped, not fatal.
                         let Ok(resolved) =
@@ -328,6 +346,7 @@ impl World {
         }
         let atlas = atlas_from_cells(rgba, next).map_err(|error| format!("atlas: {error}"))?;
         Ok(Self {
+            center,
             atlas,
             tiles,
             player,
@@ -432,8 +451,8 @@ fn palette_entry<'a>(
 }
 
 /// A start-floor placement; the encoded value is a stack count or, for fluids, the subtype.
-fn placement(x: i32, y: i32, encoded: Option<u8>) -> Placement {
-    let mut placement = Placement::at(x, y, -i32::from(START_FLOOR));
+fn placement(x: i32, y: i32, encoded: Option<u8>, floor: u8) -> Placement {
+    let mut placement = Placement::at(x, y, -i32::from(floor));
     placement.count = u32::from(encoded.unwrap_or(1));
     placement.sub_type = u32::from(encoded.unwrap_or(0));
     placement
@@ -569,6 +588,7 @@ fn decode_region(
 #[cfg(test)]
 mod tests {
     use super::*;
+    include!("world/tutorial_window_tests.rs");
 
     fn repo() -> std::path::PathBuf {
         std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
@@ -694,14 +714,14 @@ mod tests {
         let index = AppearanceIndex::load(&store, &catalog).map_err(|e| e.to_string())?;
         let sheets = SpriteSheets::new(store, catalog);
         let (x, y) = START;
-        assert_eq!(placement(x, y, Some(8)).sub_type, 8);
-        assert_eq!(placement(x, y, None).count, 1);
+        assert_eq!(placement(x, y, Some(8), START_FLOOR).sub_type, 8);
+        assert_eq!(placement(x, y, None, START_FLOOR).count, 1);
         // Fluid appearance 2524 is on the start area with encoded values 1 and 8. Sub-types 8
         // and 12 share colour 5; sub-type 1 is colour 1.
         let mut resolved = Vec::new();
         for encoded in [1, 8, 12] {
             let entry = index
-                .resolve(&sheets, 2524, placement(x, y, Some(encoded)))
+                .resolve(&sheets, 2524, placement(x, y, Some(encoded), START_FLOOR))
                 .map_err(|e| e.to_string())?;
             resolved.push(entry.cells.iter().map(|c| c.sprite_id).collect::<Vec<_>>());
         }

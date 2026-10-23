@@ -1,0 +1,23 @@
+{
+  "id": "BAGS0-RL-03-BYTES",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_BAGS0_CONTAINERS_WITH_CONTENTS_DECISION_2026-09-30.md",
+  "resource": "Encoded ContainerViewsV1 (domain 14 snapshot and delta payload)",
+  "unit": "bytes",
+  "hard_maximum": 10384,
+  "configurable_range": {
+    "minimum": 10384,
+    "maximum": 10384
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Measured: one ContainerViewV1 is at most 646 bytes (view id 2, container 11, parent 11, capacity 2, 20 entry elements of 31), 649 as an element; 16 elements are 10,384 bytes, within the FND-02 65,536-byte payload limit, so BAGS0-RL-03 stands.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=10384: sixteen views of twenty worst-case entries encode to exactly 10,384 bytes and decode",
+    "max+1=10385: a payload one byte over fails closed before parsing"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/container_tree.rs MAX_CONTAINER_VIEWS_BYTES",
+    "docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json state domain 14"
+  ],
+  "notes": "BAGS-0 \u00a710 CONTAINER_VIEWS snapshot bytes; test: container_tree::tests::views_hold_16_views_of_20_entries_and_refuse_more. Registered by OTV2-20261003-bags-wire-1."
+}

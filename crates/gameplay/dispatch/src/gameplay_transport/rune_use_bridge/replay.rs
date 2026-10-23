@@ -35,7 +35,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let command_ref = CommandRef::new(command.game_session_id, id);
         let mut runtime = self.runtime.lock().await;
-        let mut states = self.spell_states.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         let rejected =
             || NativeCastDispatch::Outcome(super::super::actor_spell::SpellCastOutcome::rejected());
         if runtime

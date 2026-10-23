@@ -140,8 +140,8 @@ pub(super) async fn npc_trade(
     let (offer, coins) = {
         let runtime = admission.runtime.lock().await;
         let index = pinned_index(&runtime, admission.active_generation);
-        let offer = match admission.npc_conversations.trade_in(
-            &admission.chat,
+        let offer = match admission.states.npc_conversations.trade_in(
+            &admission.states.chat,
             &runtime,
             actor,
             session,

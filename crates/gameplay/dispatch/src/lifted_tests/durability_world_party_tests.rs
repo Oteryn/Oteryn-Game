@@ -1011,7 +1011,7 @@ async fn initialize_official_party_build(
         .map_err(debug)?;
     assert!(
         matches!(load_character_cast_facts(&h.root, &authority, character).await,
-        CastFactsLoad::NoVocation { character_revision } if character_revision.get() == 1)
+        CastFactsLoad::NoVocation { character_revision, .. } if character_revision.get() == 1)
     );
     let fence = CurrentCharacterGameplayFence {
         character_id: character,

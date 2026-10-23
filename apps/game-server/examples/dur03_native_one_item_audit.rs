@@ -1685,8 +1685,7 @@ mod tests {
     )]
     use super::*;
 
-    const RESOURCE_REGISTRY: &str =
-        include_str!("../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json");
+    const RESOURCE_REGISTRY: &str = oteryn_protocol_oteryn::RESOURCE_LIMITS_REGISTRY_JSON;
     const EVENT_REGISTRY: &str =
         include_str!("../../../docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json");
     const PROTO: &str =

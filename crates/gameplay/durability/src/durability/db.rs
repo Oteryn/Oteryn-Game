@@ -75,7 +75,7 @@ impl RootResidentLedger {
     fn release(&self, bytes: usize) {
         let released = self
             .used
-            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |current| {
+            .try_update(Ordering::AcqRel, Ordering::Acquire, |current| {
                 current.checked_sub(bytes)
             });
         debug_assert!(released.is_ok(), "root resident charge underflow");

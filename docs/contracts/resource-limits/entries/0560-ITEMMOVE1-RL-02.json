@@ -1,0 +1,23 @@
+{
+  "id": "ITEMMOVE1-RL-02",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_ITEM_MOVE_WIRE1_EQUIP_AND_DROP_DECISION_2026-09-30.md",
+  "resource": "Live loop-dropped Ground items of one channel (ITEM-MOVE-2b drops)",
+  "unit": "dropped items per channel",
+  "hard_maximum": 20000,
+  "configurable_range": {
+    "minimum": 20000,
+    "maximum": 20000
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "A drop locks its channel's row in game_item_loop_drop_channels, then counts the channel's live loop-drop Ground rows through a partial index, so the count always equals the live dropped rows (a pickup or a retirement lowers it in its own transaction). A drop that would make 20,001 is BLOCKED and writes nothing; the loop Ground read refuses a store holding more as invalid.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=20000: item_loop_drop_is_blocked_at_the_channel_cap_until_a_pickup_frees_room drops the 20,000th item and reads 20,000 loop Ground items",
+    "max+1=20001: the same case refuses the next drop as BLOCKED with an unchanged footprint, and commits it after a pickup frees one place"
+  ],
+  "consumers": [
+    "apps/game-server/src/durability/item_loop_move.rs ITEM_LOOP_CHANNEL_DROPS_MAX (apply_loop_move, read_item_loop_ground)",
+    "apps/game-server/migrations/0128_item_loop_move.sql game_item_loop_drop_channels and game_item_ground_loop_drops"
+  ],
+  "notes": "ITEM-MOVE-WIRE-1 section 6 Limits; ITEM-LOOP-1 (CP D1438) #2190. The 80% alarm at 16,000 is not emitted yet: the durability writer has no metrics sink (follow-up). ITEMMOVE1-RL-01 (64 per tile) is enforced by the shared Ground cell limit."
+}

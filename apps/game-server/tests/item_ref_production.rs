@@ -1,5 +1,5 @@
 #![allow(clippy::expect_used)]
-// Dedicated PostgreSQL 17 qualification for MAP-ITEM-REF-1 Part B (the capability-4 corpse
+// Dedicated PostgreSQL 18 qualification for MAP-ITEM-REF-1 Part B (the capability-4 corpse
 // read and take over a bound corpse MINT) and for EQUIP-WIRE-1 (command 9's equip and unequip
 // through the equipment owner). Ordinary workspace runs report
 // PRE-ROUTING/NONCANONICAL when the routed database is absent; the protected lane runs the same
