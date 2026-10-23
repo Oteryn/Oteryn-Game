@@ -37,5 +37,18 @@ pub async fn prepare(pool: &sqlx::PgPool) -> TestResult {
 }
 pub async fn guard(pool: &sqlx::PgPool) -> TestResult {
     pool.execute(*GUILD_GUARDS_PROPOSAL).await?;
+    // Rebuilding the historical Guild snapshot must retain the later ordinary-House
+    // participant correction, using the exact installed SQL rather than a copied guard.
+    pool.execute(*HOUSE_PARTICIPANT_GUARD).await?;
     Ok(())
 }
+
+static HOUSE_PARTICIPANT_GUARD: LazyLock<&str> = LazyLock::new(|| {
+    include_str!("../../../../../../apps/game-server/migrations/0143_house_ownership.sql")
+        .split("-- GUILD PARTICIPANT GUARD BEGIN")
+        .nth(1)
+        .unwrap()
+        .split("-- GUILD PARTICIPANT GUARD END")
+        .next()
+        .unwrap()
+});

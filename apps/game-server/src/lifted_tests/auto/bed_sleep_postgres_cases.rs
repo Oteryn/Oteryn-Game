@@ -50,7 +50,7 @@ pub(crate) async fn fixture(tag: &str, admin: &str) -> TestResult<Harness> {
     seed(&h).await?;
     install_test_house(&h).await?;
     admit(&h).await?;
-    sqlx::query("INSERT INTO game_house_ownership(world_id,house_key,owner_character_id,ownership_revision,acquisition_receipt_ref) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,1,game_character_uuid_v7())")
+    sqlx::query(include_str!("../../../tests/support/owned_house_fixture.sql"))
         .bind(id(WORLD).as_slice()).bind(HOUSE_KEY).bind(id(CHARACTER).as_slice()).execute(&h.pool).await?;
     sqlx::query("UPDATE game_durability_reconnect_sessions SET current_transport_ref=$1,session_state=1 WHERE game_session_id=encode($2,'hex')::uuid")
         .bind(id(64).as_slice()).bind(id(61).as_slice()).execute(&h.pool).await?;
@@ -227,8 +227,9 @@ fn bed_sleep_native_acl_denies_uninvited_and_accepts_guest_and_subowner() -> Tes
             let recovery = h.root.open_character_authority(&seal).await.map_err(debug)?;
             sqlx::query("INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name) SELECT encode($1,'hex')::uuid,account_id,world_id,lifecycle,1,profile_revision,ruleset_revision,content_revision,starter_template_revision,'Bed Owner' FROM game_character_roots WHERE character_id=encode($2,'hex')::uuid")
                 .bind(id(67).as_slice()).bind(id(CHARACTER).as_slice()).execute(&h.pool).await?;
-            sqlx::query("UPDATE game_house_ownership SET owner_character_id=encode($1,'hex')::uuid,ownership_revision=2,acquisition_receipt_ref=game_character_uuid_v7()")
-                .bind(id(67).as_slice()).execute(&h.pool).await?;
+            sqlx::query("WITH property AS (UPDATE game_house_properties SET owner_character_id=encode($1,'hex')::uuid,ownership_generation=ownership_generation+1,revision=revision+1,acquisition_receipt_ref=game_character_uuid_v7() WHERE world_id=encode($2,'hex')::uuid AND house_key=$3 RETURNING *) \
+                UPDATE game_house_ownership a SET owner_character_id=p.owner_character_id,ownership_revision=p.ownership_generation,acquisition_receipt_ref=p.acquisition_receipt_ref FROM property p WHERE a.world_id=p.world_id AND a.house_key=p.house_key")
+                .bind(id(67).as_slice()).bind(id(WORLD).as_slice()).bind(HOUSE_KEY).execute(&h.pool).await?;
             assert_eq!(commit_authorized(&h, &recovery, request()?).await?, BedSleepOutcome::Denied);
             assert_eq!(footprint(&h).await?, (1, 0, 0, "1".into()));
             let mut acl_tx = h.pool.begin().await?;

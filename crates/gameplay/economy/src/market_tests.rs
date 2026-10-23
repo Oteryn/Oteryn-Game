@@ -8,7 +8,7 @@ fn id(seed: u8) -> [u8; 16] {
     id[15] = seed;
     id
 }
-fn offer(seed: u8, side: Side, account: u8, created: i64) -> Offer<'static> {
+pub(super) fn offer(seed: u8, side: Side, account: u8, created: i64) -> Offer<'static> {
     // The wrapper's production identity checks stay in durability; these tests own economic rules.
     static DEFINITION: std::sync::OnceLock<TypedDefinitionRef> = std::sync::OnceLock::new();
     Offer {
@@ -34,7 +34,7 @@ fn offer(seed: u8, side: Side, account: u8, created: i64) -> Offer<'static> {
         matching_pending: false,
     }
 }
-fn price(o: &mut Offer<'_>, p: u64) {
+pub(super) fn price(o: &mut Offer<'_>, p: u64) {
     o.piece_price = p;
     o.escrow_gold = if o.side == Side::Buy && o.state == OfferState::Open {
         u64::from(o.remaining) * p

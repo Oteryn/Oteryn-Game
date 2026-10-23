@@ -47,7 +47,9 @@ pub(super) async fn fixture(tag: &str, admin: &str) -> TestResult<Harness> {
     seed(&h).await?;
     install_test_house(&h).await?;
     admit(&h).await?;
-    sqlx::query("INSERT INTO game_house_ownership(world_id,house_key,owner_character_id,ownership_revision,acquisition_receipt_ref) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,1,game_character_uuid_v7())")
+    sqlx::query(include_str!(
+        "../../../../../../apps/game-server/tests/support/owned_house_fixture.sql"
+    ))
         .bind(id(WORLD).as_slice()).bind(HOUSE_KEY).bind(id(CHARACTER).as_slice()).execute(&h.pool).await?;
     sqlx::query("UPDATE game_durability_reconnect_sessions SET current_transport_ref=$1,session_state=1 WHERE game_session_id=encode($2,'hex')::uuid")
         .bind(id(64).as_slice()).bind(id(61).as_slice()).execute(&h.pool).await?;
