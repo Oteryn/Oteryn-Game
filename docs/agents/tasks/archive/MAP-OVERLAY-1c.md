@@ -4,7 +4,7 @@
 task_id: MAP-OVERLAY-1c
 title: "MAP-OVERLAY-1c: World reset (RETIRING -> drain -> Ground retirement -> atomic epoch N+1 ACTIVATED) and overlay retire"
 mode: IMPLEMENT
-status: waiting   # MAP-OVERLAY-1c slice merged (#2327); remaining slices per card
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 3
@@ -14,7 +14,7 @@ brief: "docs/architecture/reviews/OTERYN_GAME_SOCIAL_MAP_PACKETS_2026-10-04.md (
 class: "hard, persistence, authority and security review"
 base_branch: main
 branch: w2/map-overlay-1c
-pr: null
+pr: 2327
 needs_migration: true   # 0148_world_reset.sql; owner allocation in run 1c-e supersedes earlier provisional slots
 needs_registry: true    # RESOURCE_LIMITS_REGISTRY MAP01-RESET-RETIRE-MS row; GAME_EVENT_FOUNDATION_REGISTRY audit grammar if widened
 merge_authority: CP_ONLY (builder never marks ready)
@@ -24,7 +24,7 @@ Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@43914f183`): **COMPLETE*
 
 Merged evidence: #2327: scoped planned drain, resumable Ground retirement, atomic epoch/calendar/Channel activation and active-epoch boot/map consumers; House/Unknown targets refuse closed. Evidence: `apps/game-server/migrations/0148_world_reset.sql`, `crates/gameplay/durability/src/durability/world_reset/activation.rs`, `apps/game-server/src/node/serve/world_reset.rs`, `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/planned_world_reset.rs`, `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/world_reset_activation.rs`.
 
-Remaining: none in scope; ready to archive. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
+Remaining: none in scope. Archived after completion via #2327; merged evidence is linked above.
 
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2167, branch skeleton/map-overlay-1c
 
@@ -307,6 +307,12 @@ included). Ground on an unowned house tile is still Ground and is retired.
 - [x] Required local clippy, no-route library suites and filtered PostgreSQL checks passed; exact commands and counts are below.
 
 ## Validation
+
+Archive-only validation (2026-10-23; historical implementation evidence follows):
+
+- `python tools/agents/validate_governance.py` — PASS.
+- `python -m unittest discover -s tools/agents/tests` — PASS (129 tests).
+- `git diff --check` — PASS.
 
 The authoritative local results and commands are in **Run 1c-f** below. Historical
 planned command lists are superseded by the owner's filtered-PG rule. Repository
@@ -632,7 +638,7 @@ existing native House-tile and HouseInterior owners, followed by atomic activati
 - `crates/gameplay/durability/src/durability/world_reset/ground_step.rs`
 - `crates/gameplay/durability/src/durability/world_reset/migration_tests.rs`
 - `crates/gameplay/durability/src/durability/world_reset/retiring_fixture.rs`
-- `docs/agents/tasks/MAP-OVERLAY-1c.md`
+- `docs/agents/tasks/archive/MAP-OVERLAY-1c.md`
 - `docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json`
 - `docs/contracts/game-events/v1/native_one_item_transaction.proto`
 
@@ -841,7 +847,7 @@ listed so a reviewer can inspect the complete task.
 - `crates/gameplay/foundation/src/foundation/control_loss_durability_tests.rs`
 - `crates/gameplay/foundation/src/foundation/planned_world_reset.rs`
 - `crates/gameplay/foundation/src/foundation/planned_world_reset_tests.rs`
-- `docs/agents/tasks/MAP-OVERLAY-1c.md`
+- `docs/agents/tasks/archive/MAP-OVERLAY-1c.md`
 - `docs/architecture/FND-04B_RECONNECT_RECOVERY_CONTINUITY_CONTRACT.md`
 - `docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json`
 - `docs/contracts/RESOURCE_LIMITS_REGISTRY.json`
@@ -1072,7 +1078,7 @@ the task's final migration is 0148. No index state was changed in this run.
 - `crates/gameplay/foundation/src/foundation/control_loss_durability_tests.rs`
 - `crates/gameplay/foundation/src/foundation/planned_world_reset.rs`
 - `crates/gameplay/foundation/src/foundation/planned_world_reset_tests.rs`
-- `docs/agents/tasks/MAP-OVERLAY-1c.md`
+- `docs/agents/tasks/archive/MAP-OVERLAY-1c.md`
 - `docs/architecture/FND-04B_RECONNECT_RECOVERY_CONTINUITY_CONTRACT.md`
 - `docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json`
 - `docs/contracts/RESOURCE_LIMITS_REGISTRY.json`

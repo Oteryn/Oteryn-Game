@@ -102,7 +102,7 @@ The full repository unittest discovery still requires Node.js in CI or an existi
 - [docs/agents/tasks/EVENTS-WORLD-1.md](../tasks/EVENTS-WORLD-1.md) — PARTIAL.
 - [docs/agents/tasks/GM-1.md](../tasks/GM-1.md) — OPEN.
 - [docs/agents/tasks/GUILD-BANK-1.md](../tasks/GUILD-BANK-1.md) — OPEN.
-- [docs/agents/tasks/GUILD-CHAT-1.md](../tasks/GUILD-CHAT-1.md) — OPEN.
+- [docs/agents/tasks/archive/GUILD-CHAT-1.md](../tasks/archive/GUILD-CHAT-1.md) — COMPLETE (#2326, archived).
 - [docs/agents/tasks/GUILD-WIRE-1.md](../tasks/GUILD-WIRE-1.md) — OPEN.
 - [docs/agents/tasks/GUILDHALL-1.md](../tasks/GUILDHALL-1.md) — OPEN.
 - [docs/agents/tasks/HIRE-1.md](../tasks/HIRE-1.md) — OPEN.
@@ -127,7 +127,7 @@ The full repository unittest discovery still requires Node.js in CI or an existi
 - [docs/agents/tasks/MAGIC-SUMMON-1.md](../tasks/MAGIC-SUMMON-1.md) — PARTIAL.
 - [docs/agents/tasks/MAIL-1.md](../tasks/MAIL-1.md) — PARTIAL.
 - [docs/agents/tasks/MAP-CUTOVER-1c.md](../tasks/MAP-CUTOVER-1c.md) — OPEN.
-- [docs/agents/tasks/MAP-OVERLAY-1c.md](../tasks/MAP-OVERLAY-1c.md) — OPEN.
+- [docs/agents/tasks/archive/MAP-OVERLAY-1c.md](../tasks/archive/MAP-OVERLAY-1c.md) — COMPLETE (#2327, archived).
 - [docs/agents/tasks/MARKET-1.md](../tasks/MARKET-1.md) — PARTIAL.
 - [docs/agents/tasks/MONSTER-META-1.md](../tasks/MONSTER-META-1.md) — PARTIAL.
 - [docs/agents/tasks/NPC-WORLD-1.md](../tasks/NPC-WORLD-1.md) — PARTIAL.

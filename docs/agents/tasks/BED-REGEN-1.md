@@ -51,7 +51,7 @@ accepted). Inseparable bundle: regen settlement + its tests with the BED-1 settl
 | OFFLINE-1 (logout/offline marker writer, `apply_marker`, chain guards, FND clock/predecessor) | NOT MERGED: **BLOCKING**. D1409 gave the producer to draft #2174, which is closed; it is re-implemented as a child of `docs/agents/tasks/LOOP-TRAIN-1.md`. Migration number unresolved (D1370 reserved 0118, D1381 described 0120, D1409 resolved ownership to #2174, "0120 is not #2174's"); this card chooses none |
 | LOOP-VITALS-1 (#2196) durable food/residuals/Soul participant | MERGED (#2196) only as a bounded skeleton checkpoint (stamina arithmetic, Soul policy); the durable residual writer and the same-TX participant are **missing: BLOCKING** (`docs/agents/tasks/LOOP-VITALS-1.md`) |
 | CHAR-VITALS-1 (durable HP/mana in the last-position projection, migration 0084) | MERGED (#2045); proves durable HP/mana only, not Soul or food |
-| MAP-OVERLAY-1c / active-bundle House placement (head/foot currentness) | **BLOCKING** (NOT_STARTED card; `docs/agents/tasks/MAP-OVERLAY-1c.md`) |
+| MAP-OVERLAY-1c / active-bundle House placement (head/foot currentness) | **BLOCKING** (MAP-OVERLAY-1c merged via #2327 but House targets refuse closed; House placement currentness still open; `docs/agents/tasks/archive/MAP-OVERLAY-1c.md`) |
 | HOUSE-RUNTIME-1b/1c, HOUSE-1a/1b, STATUE-1, HOUSE-VIEW-1 | BLOCKING as listed in `docs/agents/tasks/BED-1.md`; House window follows the MAIL/HUNT order (D1399b) |
 | LOOP-TRAIN-1 (training marker/lease/pool plans) | `docs/agents/tasks/LOOP-TRAIN-1.md`; blocked on OFFLINE-1/STATUE-1/EXERCISE-1 |
 

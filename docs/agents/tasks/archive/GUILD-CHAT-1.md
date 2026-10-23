@@ -4,7 +4,7 @@
 task_id: GUILD-CHAT-1
 title: "GUILD-CHAT-1: guild room on the World chat relay"
 mode: IMPLEMENT
-status: waiting   # GUILD-CHAT-1a/1b merged (#2326); remaining slices per card
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 4
@@ -15,7 +15,7 @@ briefs:
   - docs/architecture/reviews/OTERYN_GAME_GUILD0_GUILDS_AND_GUILDHALLS_DECISION_2026-09-30.md   # §3.1-3.2, §3.5, §4.1-4.2, §8
 base_branch: main
 branch: null
-pr: null
+pr: 2326
 needs_migration: false
 needs_registry: true   # capability 36 and snapshot type 2 registered under the integrator ruling
 needs_content_regeneration: false
@@ -26,7 +26,7 @@ Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@43914f183`): **COMPLETE*
 
 Merged evidence: #2326 (GUILD-CHAT-1a/1b): guild relay destination, membership/session custody at final dequeue, login motd and negotiated capability 36. Evidence: `crates/gameplay/social/src/chat/guild_room.rs`, `crates/gameplay/durability/src/durability/guild_chat.rs`, `crates/gameplay/dispatch/src/gameplay_transport/guild_chat.rs`, `crates/protocol-oteryn/src/chat/guild_room.rs`, `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/guild_chat.rs` and its custody/exclusion/fence/transition/wire child tests.
 
-Remaining: none in scope; ready to archive. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
+Remaining: none in scope. Archived after completion via #2326; merged evidence is linked above.
 
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2142, branch skeleton/guild-chat-1
 (the draft carries a task record only; it has no code)
@@ -146,7 +146,7 @@ moved into the gameplay crates. Mapping used:
 - `crates/gameplay/social-rules/src/guild_chat_tests.rs` (new)
 - `crates/gameplay/dispatch/src/gameplay_transport/guild_chat.rs` (new, L5 send/login/dequeue adapter)
 - `crates/gameplay/dispatch/src/gameplay_transport/guild_chat_tests.rs` (new)
-- `docs/agents/tasks/GUILD-CHAT-1.md`
+- `docs/agents/tasks/archive/GUILD-CHAT-1.md`
 
 Slot-only (final commit at the queue turn, after merging main): the relay codec extension in
 `crates/gameplay/social/src/chat/relay/mod.rs` (+ `relay/tests.rs`) and `chat/egress.rs`/`line.rs`
@@ -187,6 +187,12 @@ stability, deterministic-barrier delivery race on the real connection path, DISB
 owner handoff, slow-client/queue shedding and privacy.
 
 ## Validation
+
+Archive-only validation (2026-10-23; historical implementation evidence follows):
+
+- `python tools/agents/validate_governance.py` — PASS.
+- `python -m unittest discover -s tools/agents/tests` — PASS (129 tests).
+- `git diff --check` — PASS.
 
 ```sh
 cargo fmt --all -- --check

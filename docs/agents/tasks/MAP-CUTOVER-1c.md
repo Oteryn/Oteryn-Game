@@ -51,7 +51,7 @@ the overlay rebuild and the position fallback. Acceptance tests carried from SOC
 | MAP-CUTOVER-1a (boot a Channel from a pinned bundle) | MERGED; `crates/gameplay/world/src/map/boot.rs` |
 | MAP-CUTOVER-1b (domain 17 bundle World) | MERGED (#1916) |
 | CHAR-POSITION-1 (position fallback) | MERGED (#2006); archive `OTV2-20261012-char-position-1.md` |
-| MAP-OVERLAY-1c (World reset RETIRING -> drain -> Ground retirement -> atomic epoch N+1 ACTIVATED) | **BLOCKING**: NOT_STARTED re-implementation card on main (draft #2167 closing); `docs/agents/tasks/MAP-OVERLAY-1c.md`. MAP-OVERLAY-1c "releases MAP-CUTOVER-1c": this task starts only after it merges and consumes its reset port, active-revision reader and epoch history |
+| MAP-OVERLAY-1c (World reset RETIRING -> drain -> Ground retirement -> atomic epoch N+1 ACTIVATED) | MERGED (#2327; card archived); `docs/agents/tasks/archive/MAP-OVERLAY-1c.md`. MAP-OVERLAY-1c "releases MAP-CUTOVER-1c": this task starts only after it merges and consumes its reset port, active-revision reader and epoch history |
 
 Rows marked BLOCKING must merge (or be accepted/decided) before the slot commit; owned code may be
 drafted earlier but must not assume unmerged schemas. MAP-CUTOVER-1c follows MAP-OVERLAY-1c on its own
@@ -133,5 +133,5 @@ python3 tools/agents/validate_governance.py
 
 - `docs/architecture/reviews/OTERYN_GAME_ARCH_MAP_TRACK_PACKETS_2026-10-05.md` §2.5
 - `docs/architecture/reviews/OTERYN_GAME_SOCIAL_MAP_PACKETS_2026-10-04.md` §2.8
-- PR #1916 (MAP-CUTOVER-1b); `docs/agents/tasks/MAP-OVERLAY-1c.md`
+- PR #1916 (MAP-CUTOVER-1b); `docs/agents/tasks/archive/MAP-OVERLAY-1c.md`
 - `docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md` §4, §5 (Wave 3), §7
