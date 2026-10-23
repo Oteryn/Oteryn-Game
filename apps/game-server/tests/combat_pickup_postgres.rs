@@ -1,5 +1,5 @@
 #![allow(clippy::expect_used)]
-// Dedicated PostgreSQL 17 qualification for B3-2 (Combat ground pickup; definition facts bound
+// Dedicated PostgreSQL 18 qualification for B3-2 (Combat ground pickup; definition facts bound
 // to the current Content generation instead of caller-supplied `ItemDefinitionFacts`). Ordinary
 // workspace runs report PRE-ROUTING/NONCANONICAL when the routed database is absent.
 //

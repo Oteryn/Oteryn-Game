@@ -2,7 +2,7 @@
 //
 // Runs only inside the disposable S3-B topology (`tools/qualification/wp5_s3b`):
 // the exact protected Platform native-evidence producer behind TLS 1.3 mTLS
-// (S3-A topology) plus PostgreSQL 17.6 for the Game owners. Every admission
+// (S3-A topology) plus PostgreSQL 18.6 for the Game owners. Every admission
 // fact comes from a real owner:
 // - Platform account security and fresh signing trust: exact S1 transport
 //   responses, stored byte-for-byte in S2 under the #415 custody fence;
@@ -671,8 +671,8 @@ async fn database() -> TestResult<(String, String)> {
     let version: String = sqlx::query_scalar("SHOW server_version_num")
         .fetch_one(&mut connection)
         .await?;
-    if version != "170006" {
-        return Err(format!("S3-B requires PostgreSQL 17.6, found {version}").into());
+    if version != oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM {
+        return Err(format!("S3-B requires PostgreSQL 18.6, found {version}").into());
     }
     sqlx::migrate!("./migrations").run(&mut connection).await?;
     connection.close().await?;
@@ -705,7 +705,7 @@ fn assignment(tag: u8, command: AssignmentCommand) -> TestResult<AssignmentReque
 }
 
 #[test]
-#[ignore = "requires the disposable S3-B Platform + PostgreSQL 17.6 topology"]
+#[ignore = "requires the disposable S3-B Platform + PostgreSQL 18.6 topology"]
 fn real_owners_compose_fresh_admission_and_fence_replacement() -> TestResult {
     let descriptor = descriptor()?;
     let accounts = [

@@ -15,7 +15,7 @@ async fn version(connection: &mut PgConnection) -> TestResult {
     let version: String = sqlx::query_scalar("SHOW server_version_num")
         .fetch_one(connection)
         .await?;
-    assert_eq!(version, "170006", "native PostgreSQL 17.6 is required");
+    assert_eq!(version, oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM, "native PostgreSQL 18.6 is required");
     Ok(())
 }
 

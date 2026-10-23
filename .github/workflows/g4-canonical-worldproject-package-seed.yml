@@ -37,7 +37,7 @@ jobs:
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
       - name: Install Rust toolchain
-        run: rustup toolchain install 1.95.0 --profile minimal --component clippy,rustfmt
+        run: rustup toolchain install 1.99.1 --profile minimal --component clippy,rustfmt
 
       # Restore only, as in the merge gate: the protected-main producer in rust.yml is the
       # only cache writer, and every step below still builds and checks this exact head.
@@ -49,10 +49,10 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: rust-linux-v2-1.95.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
+          key: rust-linux-v2-1.99.1-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
           restore-keys: |
-            rust-linux-v2-1.95.0-${{ hashFiles('Cargo.lock') }}-
-            rust-linux-v2-1.95.0-
+            rust-linux-v2-1.99.1-${{ hashFiles('Cargo.lock') }}-
+            rust-linux-v2-1.99.1-
 
       - name: Normalize source mtimes for the restored Cargo cache
         run: python3 tools/repository/normalize_cargo_mtimes.py
@@ -79,8 +79,8 @@ jobs:
       - name: Materialize twice
         run: |
           set -euo pipefail
-          cargo +1.95.0 run --locked -p oteryn-game-server --example materialize_content_world_project_v2 -- --output-root "$RUNNER_TEMP/world-a" --predecessor-root "$RUNNER_TEMP/predecessor/world"
-          cargo +1.95.0 run --locked -p oteryn-game-server --example materialize_content_world_project_v2 -- --output-root "$RUNNER_TEMP/world-b" --predecessor-root "$RUNNER_TEMP/predecessor/world"
+          cargo +1.99.1 run --locked -p oteryn-game-server --example materialize_content_world_project_v2 -- --output-root "$RUNNER_TEMP/world-a" --predecessor-root "$RUNNER_TEMP/predecessor/world"
+          cargo +1.99.1 run --locked -p oteryn-game-server --example materialize_content_world_project_v2 -- --output-root "$RUNNER_TEMP/world-b" --predecessor-root "$RUNNER_TEMP/predecessor/world"
           diff --no-dereference --recursive "$RUNNER_TEMP/world-a" "$RUNNER_TEMP/world-b"
           test "$(find "$RUNNER_TEMP/world-a" -type f | wc -l)" -eq 11
           test -z "$(find "$RUNNER_TEMP/world-a" -type l -print -quit)"
@@ -125,11 +125,11 @@ jobs:
         if: ${{ hashFiles('content/world/project.json') != '' }}
         run: |
           python3 tools/content-schema/validate_materialized_game_tree.py
-          cargo +1.95.0 test --locked -p oteryn-game-server --test content_world_project_repository
-          cargo +1.95.0 test --locked -p oteryn-game-server --test content_world_project_v2
-          cargo +1.95.0 test --locked -p oteryn-game-server --test content_world_cw2_b1_import
-          cargo +1.95.0 clippy --locked -p oteryn-game-server --all-targets -- -D warnings
-          cargo +1.95.0 fmt --all -- --check
+          cargo +1.99.1 test --locked -p oteryn-game-server --test content_world_project_repository
+          cargo +1.99.1 test --locked -p oteryn-game-server --test content_world_project_v2
+          cargo +1.99.1 test --locked -p oteryn-game-server --test content_world_cw2_b1_import
+          cargo +1.99.1 clippy --locked -p oteryn-game-server --all-targets -- -D warnings
+          cargo +1.99.1 fmt --all -- --check
 
       - name: Upload canonical package candidate
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

@@ -1,5 +1,5 @@
 #![allow(clippy::expect_used)]
-// Dedicated PostgreSQL 17.6 qualification for the CHARM-2 Bestiary descendant
+// Dedicated PostgreSQL 18.6 qualification for the CHARM-2 Bestiary descendant
 // of a committed creature death (`combat/death_reward.rs`). Ordinary
 // workspace runs report PRE-ROUTING/NONCANONICAL when the routed database is
 // absent.

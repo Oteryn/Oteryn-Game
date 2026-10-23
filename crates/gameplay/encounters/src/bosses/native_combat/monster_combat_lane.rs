@@ -35,6 +35,7 @@ use native_invisibility::{
 };
 use native_ticks::NativeOwnedPlayerTickReceipt;
 use oteryn_gameplay_domain::domain::carrier_values::CarrierError;
+use oteryn_gameplay_encounters::bosses::crystal_deaths::crystal_death_composition::CrystalDeathCompositionError;
 #[cfg(test)]
 use oteryn_gameplay_encounters::bosses::crystal_deaths::native_fixtures::CrystalRouterFixtureExt;
 use oteryn_gameplay_encounters::bosses::threshold_heals::source_threshold_heal::{
@@ -1773,13 +1774,11 @@ impl MonsterCombatLane {
         project: &crate::content::WorldProject,
         runtime: &ChannelRuntimeV1,
         native: &crate::content::native_gameplay::NativeGameplayState,
-    ) -> Result<(), oteryn_gameplay_encounters::bosses::crystal_deaths::crystal_death_composition::CrystalDeathCompositionError>{
+    ) -> Result<(), CrystalDeathCompositionError> {
         if self.crystal_deaths.is_some() {
-            return Err(
-                oteryn_gameplay_encounters::bosses::crystal_deaths::crystal_death_composition::CrystalDeathCompositionError::Source(
-                    "Crystal death owner already bound",
-                ),
-            );
+            return Err(CrystalDeathCompositionError::Source(
+                "Crystal death owner already bound",
+            ));
         }
         self.crystal_deaths = Some(oteryn_gameplay_encounters::bosses::crystal_deaths::crystal_death_composition::CrystalDeathOwner::bind(
             project, runtime, native,
@@ -1796,13 +1795,14 @@ impl MonsterCombatLane {
         server_rum_draw: Option<i64>,
     ) -> Result<
         oteryn_gameplay_encounters::bosses::crystal_deaths::crystal_death_composition::CrystalProjectedDeath,
-        oteryn_gameplay_encounters::bosses::crystal_deaths::crystal_death_composition::CrystalDeathCompositionError,
+        CrystalDeathCompositionError,
     >{
-        let owner = self.crystal_deaths.as_mut().ok_or(
-            oteryn_gameplay_encounters::bosses::crystal_deaths::crystal_death_composition::CrystalDeathCompositionError::Source(
+        let owner = self
+            .crystal_deaths
+            .as_mut()
+            .ok_or(CrystalDeathCompositionError::Source(
                 "actual project Crystal death owner not bound",
-            ),
-        )?;
+            ))?;
         owner.project_and_dispatch(runtime, current, stamp, actor, listeners, server_rum_draw)
     }
     pub fn drain_source_callback_speech(
@@ -2644,11 +2644,10 @@ impl MonsterCombatLane {
         actor: ExactActorRef,
         listeners: &[(ExactActorRef, GameSessionId)],
         server_rum_draw: Option<i64>,
-    ) -> Result<MonsterDeathWithBone, oteryn_gameplay_encounters::bosses::crystal_deaths::crystal_death_composition::CrystalDeathCompositionError>
-    {
+    ) -> Result<MonsterDeathWithBone, CrystalDeathCompositionError> {
         let mut bone = Vec::new();
         bone.try_reserve(self.bone_encounters.len()).map_err(|_| {
-            oteryn_gameplay_encounters::bosses::crystal_deaths::crystal_death_composition::CrystalDeathCompositionError::Owner(
+            CrystalDeathCompositionError::Owner(
                 oteryn_gameplay_domain::domain::carrier_values::CarrierError::AllocationFailed,
             )
         })?;

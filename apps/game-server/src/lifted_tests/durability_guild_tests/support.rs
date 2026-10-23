@@ -178,7 +178,10 @@ pub(super) async fn prepare(h: &Harness) -> TestResult {
     let version: String = sqlx::query_scalar("SHOW server_version_num")
         .fetch_one(&h.pool)
         .await?;
-    assert_eq!(version, "170006");
+    assert_eq!(
+        version,
+        oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM
+    );
     eprintln!("GUILD-NATIVE-PG server_version_num={version}");
     // Only this isolated historical snapshot fixture is rebuilt; new real-path tests below
     // use the installed migration without this setup. No production guards are relaxed.
