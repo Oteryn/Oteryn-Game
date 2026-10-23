@@ -75,6 +75,9 @@ impl GuildDisbandRequest {
 /// Fixed once before the first attempt; a retry changes neither IDs nor command bytes.
 #[derive(Debug, Clone)]
 pub struct GuildOperationIdentity {
+    /// Original wire bytes bound before interpretation. Wire retries may obtain a new clock
+    /// reading; the first committed event keeps its original time. Native callers keep None.
+    pub wire_digest: Option<[u8; 32]>,
     pub occurrence: [u8; 16],
     pub transaction_id: [u8; 16],
     pub event_id: [u8; 16],
