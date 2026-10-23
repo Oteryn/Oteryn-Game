@@ -133,6 +133,7 @@ pub const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     TUTORIAL_NOTICES,
     super::guild_chat::OFFERED,
     super::guild_intent::OFFERED,
+    super::house_intent::OFFERED,
     super::world_event::OFFERED,
 ];
 
@@ -205,6 +206,7 @@ pub const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     },
     super::guild_intent::OFFERED,
     super::vip::OFFERED,
+    super::house_intent::OFFERED,
     super::world_event::OFFERED,
 ];
 
@@ -241,6 +243,7 @@ pub const ITEM_VIEW_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     TUTORIAL_NOTICES,
     super::guild_chat::OFFERED,
     super::guild_intent::OFFERED,
+    super::house_intent::OFFERED,
     super::world_event::OFFERED,
 ];
 

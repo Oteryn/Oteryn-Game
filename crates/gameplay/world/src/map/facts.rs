@@ -91,6 +91,7 @@ pub struct BundleFacts {
     placements: Vec<(u64, Placement)>,
     /// Ascending.
     houses: Vec<TilePos>,
+    house_doors: Vec<(TilePos, u32, u8)>,
     doors: DoorBook,
 }
 
@@ -125,6 +126,7 @@ impl BundleFacts {
             ids: unique,
             placements: Vec::new(),
             houses: Vec::new(),
+            house_doors: Vec::new(),
             doors: DoorBook::default(),
         })
     }
@@ -158,6 +160,14 @@ impl BundleFacts {
                     .palette
                     .get(item.palette as usize)
                     .map_or(PaletteDoor::No, |entry| entry.door);
+                // Preserve the source House and door numbers before ordinary Channel door
+                // classification deliberately seals House doors.
+                if tile.house != 0
+                    && door != PaletteDoor::No
+                    && let Some(number) = item.attrs.door.filter(|number| *number != 0)
+                {
+                    self.house_doors.push((pos, tile.house, number));
+                }
                 let key = u8::try_from(ordinal)
                     .ok()
                     .filter(|ordinal| *ordinal <= MAX_BASE_ORDINAL)
@@ -244,7 +254,25 @@ impl BundleFacts {
         self.houses.sort_unstable();
         self.houses.dedup();
         self.houses.shrink_to_fit();
+        self.house_doors.sort_unstable();
+        self.house_doors.shrink_to_fit();
         self.doors.finish();
+    }
+
+    /// The one source door at this tile of this exact House. Ambiguous tiles grant nothing.
+    pub fn house_door(&self, pos: TilePos, house: u32) -> Option<u32> {
+        let at = self.house_doors.partition_point(|(tile, _, _)| *tile < pos);
+        let (tile, found, number) = *self.house_doors.get(at)?;
+        if tile != pos
+            || found != house
+            || self
+                .house_doors
+                .get(at + 1)
+                .is_some_and(|(tile, _, _)| *tile == pos)
+        {
+            return None;
+        }
+        Some(u32::from(number))
     }
 
     /// The doors of the bundle and their current state.
