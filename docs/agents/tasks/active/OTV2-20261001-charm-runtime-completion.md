@@ -4,11 +4,11 @@
 task_id: OTV2-20261001-charm-runtime-completion
 title: Complete the owner-directed Charm implementation table through existing systems
 mode: IMPLEMENT
-status: implementing
+status: waiting
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/charm-cleanse-owner-store-20261001
-pr: null   # #1479 closed unmerged; the next part opens a new PR
+pr: null
 issue: 1622
 base_sha: 326742be1566e596dfd3cca9d8caf631f1aff4a0
 head_sha: null
@@ -28,6 +28,12 @@ blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#1626](https://github.com/Oteryn/Oteryn-Game/pull/1626), [#1476](https://github.com/Oteryn/Oteryn-Game/pull/1476). Cleanse prepare/commit/immunity transitions and the separate D186 repair are retained on main. Evidence: `crates/gameplay/foundation/src/foundation/condition.rs`.
+
+Remaining: Full original Charm table consumers, authoritative damage/loot/movement/death effects, formula/parity and client integration remain; #1479 closed unmerged. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 ## Outcome and authority
 
@@ -91,9 +97,9 @@ preventing a stale retained plan from aliasing a later instance after sequence w
 
 ```yaml
 last_progress: authored retained Cleanse state transitions and eight boundary tests
-status: implementing
+status: waiting
 branch: codex/charm-cleanse-owner-store-20261001
-pr: null   # #1479 closed unmerged; the next part opens a new PR
+pr: null
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null

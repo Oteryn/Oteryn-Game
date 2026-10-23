@@ -4,7 +4,7 @@
 task_id: SPECTATE-1
 title: "SPECTATE-1: spectating (player observation of a consenting target session)"
 mode: IMPLEMENT
-status: in_progress   # option A implemented locally; CP review/integration pending
+status: waiting
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 5
@@ -20,6 +20,12 @@ needs_registry: true
 needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#2317](https://github.com/Oteryn/Oteryn-Game/pull/2317). Dormant observer hooks, consent/session handling, projection filtering and command isolation are merged. Evidence: `crates/gameplay/dispatch/src/gameplay_transport/spectate_session.rs`.
+
+Remaining: Durable audit, accepted Platform O2 admission boundary and activation remain; capability 33 is not offered by production. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2183, branch skeleton/spectate-1
 

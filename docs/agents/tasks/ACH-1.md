@@ -4,7 +4,7 @@
 task_id: ACH-1
 title: "ACH-1: achievements, badges, titles"
 mode: IMPLEMENT
-status: NOT_STARTED
+status: waiting
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 4
@@ -20,6 +20,12 @@ needs_registry: false
 needs_content_regeneration: true
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#1653](https://github.com/Oteryn/Oteryn-Game/pull/1653), [#1656](https://github.com/Oteryn/Oteryn-Game/pull/1656). Account grant owner and achievement notice transport are merged. Evidence: `crates/gameplay/durability/src/durability/account_achievement.rs`.
+
+Remaining: Quest/encounter granters, outcome receipts, counter earning hooks, batch/coverage work and post-commit integration remain. Notice transport exists but capability 8 is absent from production offers; activate it through the owning gate rather than reimplementing it. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2154, branch skeleton/ach-1
 
@@ -140,9 +146,8 @@ Integration obligations (mandatory):
 
 ## Remaining work
 
-Encounter outcome receipt migration + writer (ACH-ENC-1); quest-transition granter
-(ACH-QUEST-1); counter earning receipts and XP/build hooks (ACH-COUNTER-1); post-commit
-notice wiring; further reviewed threshold rows; content regeneration.
+Quest/encounter granters, outcome receipts, counter earning hooks, batch/coverage work and post-commit integration remain.
+Notice transport exists, but production capability-8 activation remains separate.
 
 ## Acceptance criteria
 

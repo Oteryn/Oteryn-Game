@@ -4,7 +4,8 @@
 task_id: LOOP-MAP-1
 title: "LOOP-MAP-1: map loop: Cyclopedia discovery, donations and respawn"
 mode: IMPLEMENT
-status: NOT_FULLY_QUALIFIED
+status: waiting
+pr: null
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 3
@@ -22,6 +23,12 @@ needs_registry: false
 needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#2152](https://github.com/Oteryn/Oteryn-Game/pull/2152), [#2287](https://github.com/Oteryn/Oteryn-Game/pull/2287). Cyclopedia donation bounds/source preparation and map codec sizing optimization are merged. Evidence: `crates/gameplay/domain/src/domain/cyclopedia.rs`.
+
+Remaining: Discovery/donation persistence/runtime, source-region/POI qualifications, pending parity groups and viewport admission limits remain; runtime explicitly returns NotWiredInRuntime. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 ## D1285 review repair — source only
 

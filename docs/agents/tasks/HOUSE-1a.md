@@ -25,6 +25,12 @@ needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
 
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **OPEN**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: none. House custody/interior foundations exist, but no HOUSE-1a auction/rent ownership writer is retained. Evidence: `crates/gameplay/durability/src/durability/house_interior.rs`.
+
+Remaining: Auction escrow/refunds, eligibility, winner settlement, rent and ownership lifecycle remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
+
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2137, branch skeleton/house-1a
 
 ## Goal

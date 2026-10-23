@@ -4,7 +4,7 @@
 task_id: TRADE-PLAYER-1
 title: "TRADE-PLAYER-1: player-to-player trade"
 mode: IMPLEMENT
-status: IN_PROGRESS
+status: waiting   # TRADE-PLAYER-1 slice merged (#2332); remaining slices per card
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 4
@@ -20,6 +20,12 @@ needs_registry: true
 needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@43914f183`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: #2332: pure offer/accept/invalidation rules and fenced atomic two-Character leaf exchange, receipts, audit and replay/reconciliation backend. Evidence: `crates/gameplay/economy/src/player_trade.rs`, `crates/gameplay/durability/src/durability/player_trade.rs`, `apps/game-server/migrations/0147_player_trade.sql`, `crates/gameplay/economy/src/player_trade/player_trade_tests.rs`, `apps/game-server/src/lifted_tests/auto/player_trade_postgres_cases.rs`.
+
+Remaining: Live Channel trade book and session-ingress/FND routing, current visibility/LOS/busy/reservation checks, lifecycle invalidation routing, wire/capability/egress and real two-admitted-session/restart dispatch qualification remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2132, branch skeleton/trade-player-1
 

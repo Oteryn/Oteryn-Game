@@ -4,7 +4,7 @@
 task_id: HOUSE-RUNTIME-1b
 title: "HOUSE-RUNTIME-1b: house scope runtime and entry"
 mode: IMPLEMENT
-status: NOT_STARTED   # re-implementation pending under ADR-0022
+status: waiting
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 3
@@ -23,6 +23,12 @@ needs_registry: true   # RL-04 resource limit once measured
 needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **OPEN**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: none. Scope-handoff and interior prerequisites exist, but HOUSE-RUNTIME-1b loading/entry composition is absent. Evidence: `crates/gameplay/durability/src/durability/house_scope_handoff.rs`.
+
+Remaining: House scope loading, entry/exit gate, restart fallback and HOUSERT0 measurements remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2165, branch skeleton/house-runtime-1b
 

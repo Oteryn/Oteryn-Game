@@ -4,7 +4,8 @@
 task_id: MAIL-1
 title: "MAIL-1: mail and parcels"
 mode: IMPLEMENT
-status: NOT_FULLY_QUALIFIED
+status: waiting
+pr: null
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 4
@@ -20,6 +21,12 @@ needs_registry: true
 needs_content_regeneration: true
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#2133](https://github.com/Oteryn/Oteryn-Game/pull/2133). Native Inbox reward bridge, recipient resolver and direct-backpack text storage/cleanup are merged (migration 0101). Evidence: `crates/gameplay/durability/src/durability/mail.rs`.
+
+Remaining: Atomic mail posting/value transfer, recipient/posting limits, qualified content and real text/mail command composition remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 ## Goal
 

@@ -4,12 +4,12 @@
 task_id: PVP-RT-1
 title: "PVP-RT-1: PvP combat runtime (skeleton)"
 mode: IMPLEMENTATION
-status: NOT_FULLY_QUALIFIED
+status: waiting
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/pvp-rt-1
 issue: 1622
-pr: 2204
+pr: null
 base_sha: c3ad75d493945469c3f12b01363b4268c6215681
 plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md App. 7 PARTY/PVP PVP-RT-1; wave 2"
 class: "hard (combat), combat and security review"
@@ -36,6 +36,12 @@ blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#2029](https://github.com/Oteryn/Oteryn-Game/pull/2029), [#2204](https://github.com/Oteryn/Oteryn-Game/pull/2204), [#2318](https://github.com/Oteryn/Oteryn-Game/pull/2318). Pure legality/combat-lock rules, fenced readmission deadline restoration and death consequences are merged. Evidence: `crates/gameplay/combat-rules/src/pvp/lock.rs`.
+
+Remaining: Player-target attack/spell legality, independent current party/guild observers, write-ahead harm and PvP wire/client activation remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 Current allocation (Root exclusive lease, 2026-10-16): implement only the existing native
 PVP-1 read → runtime logout/PZ/kill readmission restoration in the three paths above, on
@@ -106,7 +112,7 @@ PARTY_PVP0. Plan: `docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PL
 
 ```yaml
 last_progress: native caller/residue packet prepared; runtime acceptance remains OPEN
-status: prepared
+status: waiting
 branch: skeleton/pvp-rt-1
 blocker: PVP-1b
 next_action: CP reviews report and allocates exact gated runtime integrations

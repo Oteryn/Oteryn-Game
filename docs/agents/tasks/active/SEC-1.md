@@ -4,14 +4,14 @@
 task_id: SEC-1
 title: "SEC-1: server-side integrity checks — bounded checkpoint of SEC-TRUST-1/SEC-REL-1 policy leaves"
 mode: IMPLEMENT
-status: validating
+status: waiting
 checkpoint: BOUNDED_CHECKPOINT
 merge_authority: CP_ONLY
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/sec-1
 issue: 2054
-pr: 2188
+pr: null
 base_sha: f094e0320289975a220852ff60ca7baf6d234ff4
 head_sha: pending
 owner: "CP takeover worker for #2188 (D1379); earlier record writers: SEC-1 worker session_015PVevC8C3J6ZTkLXAYy6b9, /root/gm_compile_fix"
@@ -37,6 +37,12 @@ blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#2188](https://github.com/Oteryn/Oteryn-Game/pull/2188). Five pure security policy leaves and their test-only registration are merged. Evidence: `crates/gameplay/social-rules/src/trust_policy.rs`.
+
+Remaining: All runtime trust/release consumers, challenge/telemetry/bot-control integration and production qualification remain; the leaves grant no runtime protection. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 ## Outcome
 
@@ -123,9 +129,9 @@ the committed declaration. The `lib.rs` sha256 is `5c1789f7…` and matches the 
 
 ```yaml
 last_progress: D1427 declaration and D1431 packet consolidation pushed
-status: validating
+status: waiting
 branch: skeleton/sec-1
-pr: 2188
+pr: null
 blocker: null
 next_action: CP reviews CI and Codex on the new head, then decides on merge (CP_ONLY)
 ```

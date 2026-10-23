@@ -10,7 +10,8 @@ integration and DEATH-DUR-1 are blocking, not deferred slot-only work.
 task_id: LOOP-GROUND-1
 title: "LOOP-GROUND-1: ground loop: dropped item decay and cell limit"
 mode: IMPLEMENT
-status: NOT_FULLY_QUALIFIED
+status: waiting
+pr: null
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 3
@@ -26,6 +27,12 @@ needs_registry: true
 needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#2158](https://github.com/Oteryn/Oteryn-Game/pull/2158). Same-transaction Ground-root census and 64-root admission policy are merged. Evidence: `crates/gameplay/durability/src/durability/ground_cell_limit.rs`.
+
+Remaining: Ensure every death/drop/mint/transfer producer composes this owner; the helper alone does not prove complete gameplay refusal coverage. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 ## Goal
 

@@ -4,7 +4,7 @@
 task_id: EQUIP-RT-1
 title: "EQUIP-RT-1: Equipment active set, SPEED and SUPPRESS (bounded checkpoint)"
 mode: IMPLEMENT
-status: in_progress
+status: waiting
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/equip-rt-1
@@ -54,6 +54,12 @@ blocks:
 cross_repository_coordination_id: null
 external_repositories: []
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#2307](https://github.com/Oteryn/Oteryn-Game/pull/2307). Equipment active set, SPEED and SUPPRESS are installed on admission and committed moves. Evidence: `crates/gameplay/dispatch/src/gameplay_transport/equipment_effects_owner.rs`.
+
+Remaining: Full EQUIP-RT-1 plan-row effects/parity, including separately owned live skill/stat/protection consumers, remain; this merged checkpoint explicitly does not close the family. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 Bounded checkpoint; this does not close the EQUIP-RT-1 plan row. Run 1h continues
 WIP `7a26092e4` in AUTHORING under the integrator's explicit local-worktree grant.

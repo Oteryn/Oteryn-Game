@@ -4,7 +4,8 @@
 task_id: HOUSE-RUNTIME-1a
 title: "HOUSE-RUNTIME-1a: house interior shapes and item placement"
 mode: IMPLEMENT
-status: NOT_FULLY_QUALIFIED
+status: waiting
+pr: null
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 3
@@ -21,6 +22,12 @@ needs_registry: true
 needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#2163](https://github.com/Oteryn/Oteryn-Game/pull/2163). Native house interior reservation, atomic item shape/audit writer and recovery are merged. Evidence: `crates/gameplay/durability/src/durability/house_interior.rs`.
+
+Remaining: Production property/tile/access grant admission and live placement composition remain fail-closed; do not replace the existing storage owner. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 ## D1168 loader authoring — NOT_FULLY_QUALIFIED
 

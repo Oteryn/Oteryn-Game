@@ -4,7 +4,8 @@
 task_id: MONSTER-META-1
 title: "MONSTER-META-1: monster meta: bestiary D15, bosses, raids"
 mode: IMPLEMENT
-status: skeleton
+status: waiting
+pr: null
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 3
@@ -21,6 +22,12 @@ needs_registry: true
 needs_content_regeneration: true
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#2162](https://github.com/Oteryn/Oteryn-Game/pull/2162), [#1623](https://github.com/Oteryn/Oteryn-Game/pull/1623). Bestiary D15 content and bounded boss clock/cooldown/eligibility storage are merged. Evidence: `crates/gameplay/durability/src/durability/boss_encounter.rs`.
+
+Remaining: Current reset/admission and physical boss realization, room/reward/Bosstiary consumers and raid scheduling remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 ## Goal
 
