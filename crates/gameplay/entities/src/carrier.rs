@@ -681,6 +681,16 @@ pub struct DamageContributor {
     last_damage_at_ms: Option<u64>,
 }
 
+/// Original contributor data captured with a death; a CharacterId alone cannot rebind
+/// a previous session's direct damage award to a successor session.
+#[derive(Debug, Clone, Copy)]
+pub struct RewardDamageShare {
+    pub character: CharacterId,
+    pub total: u64,
+    pub lease_generation: Option<u64>,
+    pub session: Option<GameSessionId>,
+}
+
 /// D132/D3-3: bounded, ephemeral, per-creature-generation damage-contributor accumulation.
 /// Lives only inside its owning `Slot::CreatureOccupied` -- a fresh, empty map on every creature
 /// admission (`admit_inner`), dropped with the slot on `remove` (administrative removal or
@@ -1455,9 +1465,8 @@ pub struct ChannelActorCarrier {
     /// `remove` prunes an actor's entry so it never outlives its slot.
     pub corpse_projections: Vec<RuntimeCorpseProjection>,
     /// D2b: the memoized XP reward occurrence of each committed death, minted
-    /// at most once per actor (DUR-03 decision §4.2). AI-2 widens this from
-    /// its original one-creature-per-generation singleton to one entry per
-    /// dead creature actor, same bound and pruning as `corpse_projections`. A
+    /// once per (dead actor, Character), up to 50 principals per death (D109).
+    /// Entries share the bound and pruning of `corpse_projections`. A
     /// fresh carrier is bootstrapped per ownership generation, so this is
     /// never initialized from a prior generation: a scope move drops whatever
     /// was pending here rather than reusing or duplicating it (D52).
@@ -5288,8 +5297,43 @@ impl ChannelActorCarrier {
                 Err(CarrierError::RewardPrincipalConflict)
             };
         }
+        self.party_reward_occurrence_inner(continuity, actor_ref, character)
+    }
+
+    fn party_reward_occurrence_inner(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        actor_ref: ActorRef,
+        character: [u8; 16],
+    ) -> Result<([u8; 16], bool), CarrierError> {
+        self.validate_ref(continuity, actor_ref)?;
+        if self.is_native_summon(ExactActorRef(actor_ref)) {
+            return Err(CarrierError::SummonHasNoRewards);
+        }
+        if !self
+            .corpse_projections
+            .iter()
+            .any(|p| p.occurrence.actor == ExactActorRef(actor_ref))
+        {
+            return Err(CarrierError::CommittedLethalUnavailable);
+        }
+        if let Some(existing) = self
+            .death_reward_occurrences
+            .iter()
+            .find(|e| e.actor == actor_ref && e.character == character)
+        {
+            return Ok((existing.occurrence, false));
+        }
+        if self
+            .death_reward_occurrences
+            .iter()
+            .filter(|e| e.actor == actor_ref)
+            .count()
+            >= 50
+        {
+            return Err(CarrierError::CapacityExceeded);
+        }
         let occurrence = mint_reward_occurrence_bytes(actor_ref, character);
-        // Bounded by `corpse_projections`: at most one entry per retained projection.
         self.death_reward_occurrences.push(DeathRewardOccurrence {
             actor: actor_ref,
             character,
@@ -11612,6 +11656,38 @@ impl CurrentOwnerCombatDeath<'_> {
             _ => Err(CarrierError::NotCreature),
         }
     }
+    /// D109: memoize one occurrence per (death, Character), bounded to the 50 party principals.
+    pub fn party_reward_occurrence(
+        &mut self,
+        actor: ExactActorRef,
+        character: CharacterId,
+    ) -> Result<([u8; 16], bool), CarrierError> {
+        self.carrier
+            .party_reward_occurrence_inner(self.continuity, actor.0, *character.as_bytes())
+    }
+    /// Damage shares from this exact creature generation, captured with its lethal projection.
+    pub fn reward_damage_shares(
+        &self,
+        actor: ExactActorRef,
+    ) -> Result<Vec<RewardDamageShare>, CarrierError> {
+        let index = self.carrier.validate_ref(self.continuity, actor.0)?;
+        match &self.carrier.slots[index] {
+            Slot::CreatureOccupied {
+                damage_contributors,
+                ..
+            } => Ok(damage_contributors
+                .entries
+                .iter()
+                .map(|entry| RewardDamageShare {
+                    character: entry.character,
+                    total: entry.total,
+                    lease_generation: entry.high_water.map(|(lease, _, _, _)| lease),
+                    session: entry.high_water.map(|(_, session, _, _)| session),
+                })
+                .collect()),
+            _ => Err(CarrierError::NotCreature),
+        }
+    }
     pub fn damage_contributing_characters(
         &self,
         actor: ExactActorRef,
@@ -12097,3 +12173,7 @@ impl crate::carrier::CombatDeathFixture {
         Ok((projection.occurrence().death_key(), projection.position()))
     }
 }
+
+#[cfg(test)]
+#[path = "carrier/party_reward_occurrence_tests.rs"]
+mod party_reward_occurrence_tests;

@@ -794,6 +794,7 @@ pub trait FreshAdmissionAuthority {
         &self,
         _actor: ExactActorRef,
         _session: GameSessionId,
+        _command_id: u64,
         _intent: ChatIntent,
     ) -> impl Future<Output = ChatIntentResult> {
         async {
@@ -3202,7 +3203,7 @@ where
             match decode_chat_intent(command.payload) {
                 Ok(intent) => Dispatch::Chat(
                     authority
-                        .chat_intent(actor, admitted.game_session_id, intent)
+                        .chat_intent(actor, admitted.game_session_id, command.command_id, intent)
                         .await,
                 ),
                 Err(_) => Dispatch::Unregistered,

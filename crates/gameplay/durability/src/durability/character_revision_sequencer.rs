@@ -48,7 +48,6 @@ use super::character_wheel::{
 };
 use super::charm_state::{CharmCommandOutcome, CharmCommandRequest, CharmFacts, CharmStateError};
 use super::monk_state::{MonkStateSaveOutcome, MonkStateSaveRequest};
-use oteryn_gameplay_quests::quest::QuestStateCatalogue;
 use super::quest_state::{
     QuestTransitionAward, QuestTransitionOutcome, QuestTransitionRequest, QuestXpObligation,
     report_refused_experience,
@@ -56,6 +55,7 @@ use super::quest_state::{
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use crate::domain::progression::FiniteProgressionPolicy;
 use crate::domain::{CharacterId, CharacterRevision};
+use oteryn_gameplay_quests::quest::QuestStateCatalogue;
 
 /// The per-Character slots of one Channel runtime. Idle slots are dropped, so the map holds at
 /// most the Characters with a write queued or in flight, plus the one being acquired.
@@ -147,6 +147,15 @@ impl RevisionSlot {
         let revision = load(self.character_id).await?;
         *self.cursor = Some(revision);
         Ok(revision)
+    }
+
+    /// An atomic multi-Character XP transaction has ended. Unknown outcomes invalidate the
+    /// cursor, and replayed older receipts cannot move it backwards.
+    pub fn observe_party_experience(
+        &mut self,
+        outcome: &Result<ExperienceCommitOutcome, CharacterProgressionError>,
+    ) {
+        self.settle(outcome);
     }
 
     /// One XP award at the cursor, or the exact replay of a retained receipt at its `original`
