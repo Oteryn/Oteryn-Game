@@ -103,10 +103,10 @@ pub(super) async fn historical_character_account(
     let operation = sid(n, 30);
     let decision = sid(n, 31);
     let raw = serde_json::to_vec(
-        &serde_json::json!({"contract_version":2,"variant":"OPERATOR_CONTROL_PLANE_BOOTSTRAP",
+        &serde_json::json!({"contract_version":3,"variant":"OPERATOR_CONTROL_PLANE_BOOTSTRAP",
         "issuer_authority":"OTERYN_PLATFORM_CHARACTER_AUTHORITY","issuer_decision_id":uuid(decision),
         "source_revision":(u64::from(n)+100).to_string(),"operation_id":uuid(operation),"operation":"INITIAL_CHARACTER_BOOTSTRAP",
-        "account_id":uuid(owner),"target_world_id":uuid(world),"requested_name":name(n),
+        "account_id":uuid(owner),"target_world_id":uuid(world),"requested_sex":"Male","requested_name":name(n),
         "interpretation_context":{"profile_revision":"profile-1","ruleset_revision":"ruleset-1","content_revision":"content-1","starter_template_revision":"starter-1"},
         "issued_at_source":"1","expires_at_source":"120","audience":"OTERYN_GAME_CHARACTER_AUTHORITY"}),
     )?;
