@@ -1,0 +1,21 @@
+{
+  "id": "PARTYPVP0-RL-05",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_PARTY_PVP0_PARTIES_AND_PVP_DECISION_2026-09-30.md",
+  "resource": "Shared-XP highest-to-lowest participant level spread",
+  "unit": "twice highest level / lowest level (exact rational)",
+  "hard_maximum": 3,
+  "configurable_range": {
+    "minimum": 3,
+    "maximum": 3
+  },
+  "failure_category": "SHARED_EXPERIENCE_DISABLED",
+  "allocation_impact": "Compare lowest * 3 >= highest * 2 in wide integer arithmetic; no rounded ratio or floating point. A failed participant disables sharing for the kill.",
+  "client_visible": false,
+  "boundary_tests": [
+    "highest 100: lowest 67 accepted, 66 disables: shared_experience_exact_boundaries_and_every_failed_participant_disable"
+  ],
+  "consumers": [
+    "crates/gameplay/social-rules/src/shared_experience_split.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/party_xp.rs"
+  ]
+}

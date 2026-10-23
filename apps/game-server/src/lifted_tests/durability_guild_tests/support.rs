@@ -98,15 +98,16 @@ pub(super) async fn historical_character_account(
         .bind(owner.as_slice())
         .execute(&h.pool)
         .await?;
-    sqlx::query("INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,1,'profile-1','ruleset-1','content-1','starter-1',$4)")
+    // Match the v3 Male intent below: NULL sex belongs only to historical tag-2 receipts.
+    sqlx::query("INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name,sex) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,1,'profile-1','ruleset-1','content-1','starter-1',$4,2)")
         .bind(character(n).as_bytes().as_slice()).bind(owner.as_slice()).bind(world.as_slice()).bind(name(n)).execute(&h.pool).await?;
     let operation = sid(n, 30);
     let decision = sid(n, 31);
     let raw = serde_json::to_vec(
-        &serde_json::json!({"contract_version":2,"variant":"OPERATOR_CONTROL_PLANE_BOOTSTRAP",
+        &serde_json::json!({"contract_version":3,"variant":"OPERATOR_CONTROL_PLANE_BOOTSTRAP",
         "issuer_authority":"OTERYN_PLATFORM_CHARACTER_AUTHORITY","issuer_decision_id":uuid(decision),
         "source_revision":(u64::from(n)+100).to_string(),"operation_id":uuid(operation),"operation":"INITIAL_CHARACTER_BOOTSTRAP",
-        "account_id":uuid(owner),"target_world_id":uuid(world),"requested_name":name(n),
+        "account_id":uuid(owner),"target_world_id":uuid(world),"requested_sex":"Male","requested_name":name(n),
         "interpretation_context":{"profile_revision":"profile-1","ruleset_revision":"ruleset-1","content_revision":"content-1","starter_template_revision":"starter-1"},
         "issued_at_source":"1","expires_at_source":"120","audience":"OTERYN_GAME_CHARACTER_AUTHORITY"}),
     )?;

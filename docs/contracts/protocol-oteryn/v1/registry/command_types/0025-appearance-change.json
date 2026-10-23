@@ -1,0 +1,10 @@
+{
+  "id": 25,
+  "name": "APPEARANCE_CHANGE",
+  "owner_decision": "APP-3 D1094",
+  "capability": 25,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/appearance_v1.proto#Change",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/appearance_v1.proto#ChangeResult",
+  "max_payload_bytes": 4096,
+  "max_result_payload_bytes": 16
+}

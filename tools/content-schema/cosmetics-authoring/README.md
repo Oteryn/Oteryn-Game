@@ -53,3 +53,16 @@ effect or client capability is minted. A changed valid catalogue cannot reuse an
 `synthetic-authoring.json` is RAW SYNTHETIC TEST DATA with explicit test-only promotion labels.
 It is not a populated production catalogue or evidence that any real sex/starter/fallback mapping
 was accepted. Product population and shared indexes/manifests/locks remain pending CP facts/slot.
+## Authored earned grants (owner decision 2026-10-22)
+
+An optional document `grant_mappings` array maps each opaque `grant_key` to one
+explicit target: `Outfit` with `outfit_key`, `Addon` with `outfit_key` and
+one-based `addon`, or storage-only `Mount` with `mount_key`. Each mapping carries
+a nonempty, unique `compatible_provenance` list of recorded grant revisions.
+Keys are unique, targets must exist, and addon identities must fit that outfit.
+The whole array requires its own value-bound `/grant_mappings` promotion.
+
+An absent mapping authorizes nothing. Matching the active content revision is
+not a compatibility rule, and grant keys are never derived from cosmetic keys.
+The runtime reads only declared keys for the fenced Character's account. Store
+remains unavailable; premium metadata retains the V1 D61 behavior.
