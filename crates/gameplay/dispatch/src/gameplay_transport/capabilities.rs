@@ -167,6 +167,7 @@ pub const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
         requires: &[],
     },
     HIGHSCORES,
+    super::item_craft::WORLD_INTERACTION_OFFER,
     OfferedCapability {
         id: CAPABILITY_ITEM_EQUIP_DROP_V1,
         requires: &[CAPABILITY_ITEM_VIEW_MOVE_V1],
@@ -179,6 +180,7 @@ pub const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
         id: CAPABILITY_CONTAINER_TREE_V1,
         requires: &[CAPABILITY_ITEM_VIEW_MOVE_V1, CAPABILITY_ITEM_EQUIP_DROP_V1],
     },
+    super::item_craft::ITEM_USE_OFFER,
     QUEST_LOG,
     OfferedCapability {
         id: CAPABILITY_ATTACK_V1,

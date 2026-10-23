@@ -525,7 +525,7 @@ write_node_config() {
   local required_gameplay_capabilities='[]'
   if [[ "${LOGIN_LOCAL_WORLD_BUNDLE:-0}" == 1 ]]; then
     MAP_REVISION="$WB_DIGEST"
-    required_gameplay_capabilities='[18]'
+    required_gameplay_capabilities='[11, 18]'
   fi
   cat > "$WORK/node.toml" <<TOML
 [listener]

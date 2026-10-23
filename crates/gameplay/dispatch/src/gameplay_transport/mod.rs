@@ -8,6 +8,7 @@ mod bank_npc;
 mod bed_regen;
 mod bed_sleep;
 mod bundle_map_position;
+mod daily_reward;
 mod depot;
 mod house_intent;
 mod house_query;
@@ -36,6 +37,7 @@ mod guild_chat;
 mod guild_intent;
 mod highscores;
 mod input_gate;
+mod item_craft;
 mod item_look;
 mod item_move;
 mod item_ref_admission;
@@ -2520,6 +2522,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     appearance_change::composed_methods!();
     guild_intent::composed_methods!();
     house_intent::composed_methods!();
+    daily_reward::composed_methods!();
     async fn observe_quest_log(
         &self,
         actor: ExactActorRef,
@@ -2936,6 +2939,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.use_item_definition(actor, command, definition).await
     }
 
+    async fn use_craft(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<item_view::ItemKey>,
+        target: Option<item_view::ItemKey>,
+    ) -> Option<UseOutcome> {
+        self.use_cooking_conversion(actor, command, intent, source, target)
+            .await
+    }
+
     async fn use_rune(
         &self,
         actor: ExactActorRef,
@@ -2965,6 +2980,9 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         target: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
     ) -> UseOutcome {
+        if let Some(outcome) = self.open_daily_shrine(actor, command, &target).await {
+            return outcome;
+        }
         if self
             .rooms
             .gate_source_world()
