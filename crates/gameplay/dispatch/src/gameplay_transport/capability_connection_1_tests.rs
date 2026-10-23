@@ -673,4 +673,3 @@ fn rune_wire_capability_22_is_registered_not_offered_and_requires_15() -> Result
     assert!(!selected.domain_selected(STATE_DOMAIN_CHARACTER_INVENTORY));
     Ok(())
 }
-
