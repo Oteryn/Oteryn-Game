@@ -7,8 +7,8 @@ mod attack;
 mod bank_npc;
 mod bed_sleep;
 mod bundle_map_position;
-mod depot;
 mod daily_reward;
+mod depot;
 use bundle_map_position::bundle_map_position;
 #[cfg(test)]
 use bundle_map_position::bundle_world_map;
