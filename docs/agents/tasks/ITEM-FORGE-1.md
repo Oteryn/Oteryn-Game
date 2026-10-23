@@ -5,6 +5,7 @@ task_id: ITEM-FORGE-1
 title: "Exaltation forge rules and durable storage"
 mode: IMPLEMENT
 status: IN_PROGRESS
+pr: 2340
 repository: Oteryn/Oteryn-Game
 issue: 1622
 base_branch: main
@@ -16,6 +17,12 @@ needs_content_regeneration: false
 merge_authority: CP_ONLY
 MERGE_AUTHORITY: CP_ONLY
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#1691](https://github.com/Oteryn/Oteryn-Game/pull/1691), [#2146](https://github.com/Oteryn/Oteryn-Game/pull/2146). Forge dust ledger and checked pure tier/dust policies are merged; private tier reads are preparation only. Evidence: `crates/gameplay/durability/src/durability/character_forge_dust.rs`.
+
+Remaining: Atomic fusion/transfer/conversion writers and audit, content, wire, creature/tier effects and Market tier wares remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 ## Current scope — 2026-10-23
 

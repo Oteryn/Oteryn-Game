@@ -29,6 +29,12 @@ cross_repository_coordination_id: Oracle migration 20261015
 external_repositories: [Oteryn/Oteryn-Platform]
 ```
 
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#2218](https://github.com/Oteryn/Oteryn-Game/pull/2218), [#2220](https://github.com/Oteryn/Oteryn-Game/pull/2220), [#2222](https://github.com/Oteryn/Oteryn-Game/pull/2222). Game Oracle workflow/runner source delivery and executable identity-binding repair are merged. Evidence: `deploy/oracle/README.md`.
+
+Remaining: Physical main-only host acceptance and real incarnation/readiness remain under Issue #2217; source delivery is not operational acceptance. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
+
 ## Outcome
 
 Governing Issue: https://github.com/Oteryn/Oteryn-Game/issues/2217.

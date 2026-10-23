@@ -4,7 +4,7 @@
 task_id: GUILD-WIRE-1
 title: "GUILD-WIRE-1: GUILD_V1 capability, commands, emblem"
 mode: IMPLEMENT
-status: NOT_STARTED   # re-implementation pending under ADR-0022
+status: waiting
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 5
@@ -23,6 +23,12 @@ needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
 
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **OPEN**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: none. Guild core exists; no GUILD_V1 codec/commands from this card are present. Evidence: `crates/protocol-oteryn/src/capability_tables.rs`.
+
+Remaining: Implement the guild wire, registry/capability, native writer adapters and tests together. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
+
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2159, branch skeleton/guild-wire-1
 
 ## Goal
@@ -35,7 +41,7 @@ authority stays with the durable Guild/Guild bank/Hall writers.
 
 | Dependency | State |
 |---|---|
-| GUILD-1 (writers, occurrence/replay receipts, activity/query owner) | MERGED (#2136) as unregistered checkpoint; sources removed by #2280 (d25623a36) as dead code — BLOCKING until the Guild core is re-landed (`docs/agents/tasks/GUILD-1.md`) |
+| GUILD-1 (writers, occurrence/replay receipts, activity/query owner) | MERGED (#2136) as unregistered checkpoint; sources removed by #2280 (d25623a36) as dead code — BLOCKING until the Guild core is re-landed (`docs/agents/tasks/archive/GUILD-1.md`) |
 | GUILD-BANK-1 (deposit/withdraw/claims) | BLOCKING — re-implementation pending (draft #2139 closing) |
 | GUILDHALL-1 (guildhall bid/move_out, guild ACL/door variants) | BLOCKING for the Hall variants — re-implementation pending (draft #2153 closing) |
 | HOUSE-WIRE-1 (`HOUSE_INTENT` / `HOUSE_QUERY` owner) | BLOCKING for the Hall variants — re-implementation pending (draft #2145 closing) |

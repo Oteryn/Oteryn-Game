@@ -4,12 +4,12 @@
 task_id: LOOP-DAMAGE-1
 title: "LOOP-DAMAGE-1: native damage caller and capability residue packet"
 mode: IMPLEMENT
-status: NOT_FULLY_QUALIFIED
+status: waiting
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/loop-damage-1
 issue: 1622
-pr: 2195
+pr: null
 base_sha: dfdaf256dacbc47fb2e3d953df81595cc5332e86
 plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4 Epic 1 LOOP-DAMAGE-1 (rows 23-26); App. 7 LOOP-DAMAGE-1; wave 2"
 class: "hard (combat, authority, protocol integration design)"
@@ -30,6 +30,12 @@ blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#2195](https://github.com/Oteryn/Oteryn-Game/pull/2195), [#2307](https://github.com/Oteryn/Oteryn-Game/pull/2307). Current build/condition skill facts and equipment SPEED/SUPPRESS consumers are merged; existing area/chain/mana-shield stores must be reused. Evidence: `crates/gameplay/dispatch/src/gameplay_transport/spell_magnitude_facts.rs`.
+
+Remaining: Remaining equipment resistance/stat consumers, crit/leech formula owners and Charm incoming effect integration/parity remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 ## Result and source boundary
 

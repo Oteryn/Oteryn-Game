@@ -4,7 +4,7 @@
 task_id: VIP-2
 title: "VIP-2: VIP presence on the World relay"
 mode: IMPLEMENT
-status: NOT_STARTED
+status: waiting
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 5
@@ -22,6 +22,12 @@ needs_registry: true
 needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **OPEN**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: none. No VIP presence/relay implementation from this card is retained on main. Evidence: `crates/protocol-oteryn/src/capability_tables.rs`.
+
+Remaining: Current VIP owner, presence relay/login/logout feed, wire/session state and watcher/reconnect qualification remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2164, branch skeleton/vip-2
 

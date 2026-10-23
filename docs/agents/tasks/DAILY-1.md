@@ -4,7 +4,7 @@
 task_id: DAILY-1
 title: "DAILY-1: daily reward"
 mode: IMPLEMENT
-status: in_progress
+status: waiting
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 4
@@ -20,6 +20,12 @@ needs_registry: true
 needs_content_regeneration: true
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#2309](https://github.com/Oteryn/Oteryn-Game/pull/2309). Migration 0135, streak/reset arithmetic, receipts and fenced Free-lane claim core are merged; capability/codec stays unoffered. Evidence: `crates/gameplay/durability/src/durability/daily_reward_claim.rs`.
+
+Remaining: Compose reward content/shrine, joker ledger, ordered item and wildcard sinks, binding guards and real query/claim runtime; the core deliberately cannot award items. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 ## Current lane checkpoint — 2026-10-22, run 1c
 
@@ -393,9 +399,7 @@ Integration obligations (mandatory):
 
 ## Remaining work
 
-Schema migration; claim writer on the MAIL-1 Inbox bridge; lazy joker grants; item binding
-table and §6 refusals (DAILY-BIND-1); PREY wildcard sink; content (DAILY-CONTENT-1);
-wire/protocol (DAILY-WIRE-1); `tests/daily_reward_postgres.rs`.
+Compose reward content/shrine, joker ledger, ordered item and wildcard sinks, binding guards and real query/claim runtime; the core deliberately cannot award items.
 
 ## Acceptance criteria
 

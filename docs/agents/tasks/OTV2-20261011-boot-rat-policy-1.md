@@ -4,12 +4,12 @@
 task_id: BOOT-RAT-POLICY-1
 title: "BOOT-RAT-POLICY-1: boot-spawned rat binds an AI policy and qualifies for melee (skeleton)"
 mode: IMPLEMENT
-status: NOT_FULLY_QUALIFIED
+status: waiting
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/boot-rat-policy-1
 issue: 1622
-pr: 2185
+pr: null
 base_sha: 5742f30f3
 plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4 PREREQ-1; App. 7 Archive follow-ups BOOT-RAT-POLICY-1; wave 2 (PREREQ-1 residue child)"
 class: "hard (combat), combat review"
@@ -36,6 +36,12 @@ blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#2185](https://github.com/Oteryn/Oteryn-Game/pull/2185). Qualified native spawn carries its complete authored Creature profile. Evidence: `crates/gameplay/content/src/content/project/native_entry.rs`.
+
+Remaining: No-manifest boot policy installation/melee-attackability acceptance remains unproven by this source-carrier slice; qualify the real boot caller before closing. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 Skeleton task record (parallel work model, owner-approved 2026-10-15). The builder fills `owned_paths`;
 `slot_only_paths` are touched only in the final commit at this PR's merge-queue turn, after merging main.

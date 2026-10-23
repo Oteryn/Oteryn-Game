@@ -4,7 +4,8 @@
 task_id: HIRE-1
 title: "HIRE-1: hirelings (skeleton)"
 mode: IMPLEMENT
-status: skeleton
+status: waiting
+pr: null
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/hire-1
@@ -28,6 +29,12 @@ slot_only_paths:
   - "regenerate_content.py outputs, content/project.json, content/manifest.json, content.lock.json"
   - "Common slot-only set (any that the task touches): tools/content-migration/regenerate_content.py outputs, content/project.json, content/manifest.json, content.lock.json, content/interactions/index.json, content/world/pins/*, Rust pins, docs/contracts/*REGISTRY*.json, migration numbers, wiring in crates/gameplay/dispatch/src/gameplay_transport/{connection.rs,mod.rs,capabilities.rs} and crates/protocol-oteryn/src/lib.rs"
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **OPEN**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: none. The merged #2171 packet is design/tracking only; no hireling delivery/placement implementation is retained. Evidence: `crates/protocol-oteryn/src/capability_tables.rs`.
+
+Remaining: Platform Store delivery contract, hireling storage, house placement and services remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 ## Goal
 

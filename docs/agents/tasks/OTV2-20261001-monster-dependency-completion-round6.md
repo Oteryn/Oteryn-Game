@@ -4,7 +4,7 @@
 task_id: OTV2-20261001-monster-dependency-completion-round6
 title: Complete creature dependencies and source-qualified loot
 mode: IMPLEMENT
-status: implementing
+status: waiting
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/monster-dependency-completion-round6-20261001
@@ -31,6 +31,12 @@ blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#1675](https://github.com/Oteryn/Oteryn-Game/pull/1675). Round-6 dependency/profile/loot fixes and closed-registry outfit handling are retained by the content carrier. Evidence: `tools/content-schema/monster-authoring/test_outfit_missing_registration.py`.
+
+Remaining: Unresolved Encounter contracts, source identity/mitigation gaps and runtime activation remain; do not redo the retained parser/profile fixes. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 ## Authorization and predecessor
 

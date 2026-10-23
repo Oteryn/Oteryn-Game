@@ -4,7 +4,8 @@
 task_id: CRAFT-1
 title: "CRAFT-1: item conversion crafting"
 mode: IMPLEMENT
-status: skeleton
+status: waiting
+pr: null
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 3
@@ -20,6 +21,12 @@ needs_registry: false
 needs_content_regeneration: true
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#2298](https://github.com/Oteryn/Oteryn-Game/pull/2298). CRAFT-CONTENT-1 supplies 125 validated authored conversion recipes and lowering. Evidence: `crates/gameplay/content/src/content/project/v2/item_conversion.rs`.
+
+Remaining: Atomic consume/mint/audit execution, NPC/tool runtime and unresolved digging activation remain; the content compiler is not a crafting writer. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 ## Goal
 
