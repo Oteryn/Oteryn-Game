@@ -347,7 +347,7 @@ pub fn report_boot_failure(error: &BootError) {
 
 /// One structured stderr event line (D6). Only non-secret values are passed: the
 /// `event=<name>` token becomes the `event` field and the rest is `detail`.
-fn event(line: &str) {
+pub(super) fn event(line: &str) {
     event_traced(line, BOOT_TRACE.get().map(String::as_str));
 }
 
@@ -1519,34 +1519,7 @@ pub(crate) fn check_chest_quest_transitions(
 /// Boot passes the node's declared served revision, `readiness.content_revision` (D634; §1.2's
 /// `REVISIONS[0]` is no valid quest or Character revision). Transitions with a `Computed` effect
 /// load and refuse `NOT_SUPPORTED` (§1.3).
-pub(crate) fn load_quest_catalogue(
-    load: impl FnOnce(
-        &str,
-    ) -> Result<
-        oteryn_gameplay_quests::quest::loader::LoweredQuestState,
-        oteryn_gameplay_quests::quest::loader::QuestLoadError,
-    >,
-    content_revision: &str,
-) -> Result<
-    (
-        std::sync::Arc<oteryn_gameplay_quests::quest::QuestStateCatalogue>,
-        String,
-    ),
-    BootError,
-> {
-    let lowered = load(content_revision)
-        .map_err(|_| BootError::ContentActivation("quest state catalogue"))?;
-    let counts = lowered.counts();
-    let line = format!(
-        "event=quest_catalogue state=loaded content_revision={content_revision} quests={} transitions={} not_supported={} not_supported_explicit={} not_supported_inexact={}",
-        counts.quests,
-        counts.transitions,
-        counts.not_supported,
-        counts.explicit_computed,
-        counts.inexact,
-    );
-    Ok((std::sync::Arc::new(lowered.catalogue().clone()), line))
-}
+pub(crate) use super::quest_log_content::load_quest_catalogue;
 
 /// #935 activation issuer: before the Channel runtime, listener or control socket exists, activate
 /// the scope's current control-plane issuance of the committed native entry room. A missing,
@@ -2561,7 +2534,7 @@ async fn boot_and_serve(
             "reward claim achievement not in the catalogue",
         ));
     }
-    let (quest_catalogue, quest_event) = load_quest_catalogue(
+    let (quest_catalogue, quest_log_content, quest_event) = load_quest_catalogue(
         oteryn_gameplay_quests::quest::loader::load_embedded_quest_state,
         &config.readiness.content_revision,
     )?;
@@ -2744,6 +2717,7 @@ async fn boot_and_serve(
         imported_charms: &imported_charms,
         npc_talk: bundle_npcs::talk_book(npc_boot.as_ref()),
         quest_catalogue: &quest_catalogue,
+        quest_log_content: &quest_log_content,
         last_position_flush: Some(&last_position_flush),
     };
     let loops_stop = CancellationToken::new();

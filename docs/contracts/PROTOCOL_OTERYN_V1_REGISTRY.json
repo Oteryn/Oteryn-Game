@@ -187,7 +187,7 @@
       "owner": "current ChannelRuntime (the projection of the session's quest copy)",
       "command_types": [22],
       "state_domains": [16],
-      "offered": false,
+      "offered": true,
       "offer_gate": "QUEST-LOG-WIRE-1: the server does not offer this capability before the quest log content (missions, journal text and hide_when_completed, QUEST-CONTENT-2) and the production session copy source are composed. Without it selected, domain 16 is never sent and command type 22 is refused as unsupported. The domain is computed from the session's quest copy and never stored; a copy that is not loaded shows nothing and refuses every query."
     },
     {
@@ -310,6 +310,21 @@
       ],
       "offered": true,
       "offer_gate": "Tutorial hints and status text only after capability selection. Newhaven-start tutorial rules alone produce notices."
+    },
+    {
+      "id": 32,
+      "name": "DAILY_REWARD_V1",
+      "owner_decision": "DAILY_REWARD0 \u00a7\u00a73\u20137; CP wire allocation 2026-10-22 for DAILY-1",
+      "owner": "Character + World daily rewards; Account + World jokers",
+      "command_types": [
+        32,
+        33
+      ],
+      "state_domains": [
+        24
+      ],
+      "offered": false,
+      "offer_gate": "DAILY-1: offer only after the native claim, bound-item lifecycle, authored content and committed World-reset history are composed. No client receives domain 24 or dispatches commands 32/33 without selection. Free lane until PREM-3."
     }
   ],
   "command_types": [
@@ -498,6 +513,26 @@
       "result_schema": "docs/contracts/protocol-oteryn/v1/world_object_v1.proto#UseResultV1 (BED0 dispositions 20 BED_CHOOSE_SKILL, 21 BED_OCCUPIED, 22 BED_WOKEN, 23 OFFLINE_TRAINING under capability 11)",
       "max_payload_bytes": 24,
       "max_result_payload_bytes": 4
+    },
+    {
+      "id": 32,
+      "name": "DAILY_REWARD_CLAIM",
+      "owner_decision": "DAILY_REWARD0 \u00a7\u00a73\u20137; CP wire allocation 2026-10-22 for DAILY-1",
+      "capability": 32,
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/daily_reward_v1.proto#DailyRewardClaimV1",
+      "result_schema": "docs/contracts/protocol-oteryn/v1/daily_reward_v1.proto#DailyRewardResultV1",
+      "max_payload_bytes": 10500,
+      "max_result_payload_bytes": 20
+    },
+    {
+      "id": 33,
+      "name": "DAILY_REWARD_QUERY",
+      "owner_decision": "DAILY_REWARD0 \u00a7\u00a73\u20137; CP wire allocation 2026-10-22 for DAILY-1",
+      "capability": 32,
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/daily_reward_v1.proto#DailyRewardQueryV1",
+      "result_schema": "docs/contracts/protocol-oteryn/v1/daily_reward_v1.proto#DailyRewardWallV1",
+      "max_payload_bytes": 0,
+      "max_result_payload_bytes": 128
     }
   ],
   "state_domains": [
@@ -1002,6 +1037,30 @@
           "name": "TUTORIAL_NOTICES_SNAPSHOT_V1",
           "payload_schema": "docs/contracts/protocol-oteryn/v1/tutorial_notices_v1.proto#TutorialNoticesSnapshotV1",
           "max_payload_bytes": 2
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "name": "DAILY_REWARD",
+      "owner_decision": "DAILY_REWARD0 \u00a7\u00a73\u20137; CP wire allocation 2026-10-22 for DAILY-1",
+      "owner": "Character daily reward owner",
+      "capability": 32,
+      "revision": "per GameSessionId, monotonic and never reused across reconnect; full replacement of the own reward wall",
+      "delta_types": [
+        {
+          "id": 1,
+          "name": "DAILY_REWARD_DELTA_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/daily_reward_v1.proto#DailyRewardWallV1",
+          "max_payload_bytes": 128
+        }
+      ],
+      "snapshot_types": [
+        {
+          "id": 1,
+          "name": "DAILY_REWARD_SNAPSHOT_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/daily_reward_v1.proto#DailyRewardWallV1",
+          "max_payload_bytes": 128
         }
       ]
     }

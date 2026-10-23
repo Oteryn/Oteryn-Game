@@ -560,19 +560,21 @@ fn delivery_refusals_are_typed() -> TestResult {
         ));
 
         // A kind row a delivery record references cannot be deleted or renamed.
+        // The foreign key is ON DELETE/UPDATE RESTRICT, which PostgreSQL 18
+        // reports as restrict_violation (23001), not foreign_key_violation.
         let delete =
             sqlx::query("DELETE FROM game_character_inbox_cause_kinds WHERE cause_kind = $1")
                 .bind(KIND)
                 .execute(&mut *connection)
                 .await;
-        assert_eq!(sqlstate(delete)?, "23503");
+        assert_eq!(sqlstate(delete)?, "23001");
         let rename = sqlx::query(
             "UPDATE game_character_inbox_cause_kinds SET cause_kind = 'RENAMED' WHERE cause_kind = $1",
         )
         .bind(KIND)
         .execute(&mut *connection)
         .await;
-        assert_eq!(sqlstate(rename)?, "23503");
+        assert_eq!(sqlstate(rename)?, "23001");
 
         // Only the delivery writes the Inbox: a bare row, even by the table
         // owner, fails its placement proof at commit.

@@ -2321,6 +2321,8 @@ mod type2_audit_activation_postgres_cases;
 mod bestiary_postgres_harness;
 #[path = "support/bestiary_progress_postgres_cases.rs"]
 mod bestiary_progress_postgres_cases;
+#[path = "support/route_less_case_guard.rs"]
+mod route_less_case_guard;
 
 // LOOP-GROUND-1 Ground64 same-transaction admission (pure and native PostgreSQL
 // cases) on the CHARM-2 harness included above; its only test mount.

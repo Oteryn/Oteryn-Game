@@ -389,18 +389,20 @@ fn generation_zero_stays_wire_representable_but_is_never_current_admission() {
 }
 
 #[test]
-fn negotiated_capability28_is_registered_without_inferred_requirements_and_29_is_unallocated() {
+fn negotiated_capability28_has_no_inferred_requirements_and_unknown_ids_are_refused() {
     assert_eq!(ITEM_LOOK_CAPABILITY_ID, Some(28));
     assert_eq!(ITEM_LOOK_COMMAND_ID, Some(30));
     // Actual acceptance validator used by native ServerAccepted/ServerResumeAccepted codecs.
+    // DAILY-1 allocated 32; this negative case continues to use an unregistered ID.
+    let unregistered = u32::MAX;
     assert_eq!(crate::validate_acceptance_value(1, 1, 1, &[28]), Ok(()));
     assert_eq!(crate::validate_acceptance_value(1, 1, 1, &[]), Ok(()));
     assert_eq!(
-        crate::validate_acceptance_value(1, 1, 1, &[32]),
+        crate::validate_acceptance_value(1, 1, 1, &[unregistered]),
         Err(crate::FoundationProtocolError::CapabilityMismatch)
     );
     assert_eq!(
-        crate::validate_acceptance_value(1, 1, 1, &[28, 32]),
+        crate::validate_acceptance_value(1, 1, 1, &[28, unregistered]),
         Err(crate::FoundationProtocolError::CapabilityMismatch)
     );
     assert_eq!(

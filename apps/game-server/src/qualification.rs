@@ -1629,12 +1629,11 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
     let listener = TcpListener::bind("127.0.0.1:0").await?;
     let address = listener.local_addr()?;
     let shutdown = CancellationToken::new();
-    let quest_catalogue = std::sync::Arc::new(
-        oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-s3b-1")
-            .map_err(|error| format!("quest catalogue: {error:?}"))?
-            .catalogue()
-            .clone(),
-    );
+    let (quest_catalogue, quest_log_content, _) = crate::node::serve::load_quest_catalogue(
+        oteryn_gameplay_quests::quest::loader::load_embedded_quest_state,
+        "content-s3b-1",
+    )
+    .map_err(|error| format!("quest catalogue: {error:?}"))?;
     let serve = serve_gameplay(
         &listener,
         GameplayListenerConfig {
@@ -1689,6 +1688,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
             npc_talk: None,
             imported_charms: &imported_charms,
             quest_catalogue: &quest_catalogue,
+            quest_log_content: &quest_log_content,
             last_position_flush: None,
         },
         &shutdown,
