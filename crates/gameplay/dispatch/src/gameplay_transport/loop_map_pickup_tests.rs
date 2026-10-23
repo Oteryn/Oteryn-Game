@@ -29,20 +29,20 @@ const SELECTION: ItemMoveSelection = ItemMoveSelection {
 
 #[test]
 fn map_pickup_dispatch_mints_moves_rehides_resends_and_replays_after_a_crash() -> TestResult {
-    scenario(true, false)
+    scenario(true, false, 0)
 }
 
 #[test]
 fn map_pickup_dispatch_refusals_write_nothing_and_preserve_the_handle() -> TestResult {
-    scenario(false, true)
+    scenario(false, true, 0)
 }
 
 #[test]
 fn map_pickup_dispatch_to_main_backpack_resends_its_tile() -> TestResult {
-    scenario(false, false)
+    scenario(false, false, 0)
 }
 
-fn scenario(crash: bool, full: bool) -> TestResult {
+fn scenario(crash: bool, full: bool, epoch: u64) -> TestResult {
     // These three full database bootstraps share the test cluster. Serialize this fixture's
     // setup/teardown so concurrent migrations cannot exhaust the owner's fixed DB deadlines.
     static DATABASE_BOOT: std::sync::Mutex<()> = std::sync::Mutex::new(());
@@ -52,7 +52,15 @@ fn scenario(crash: bool, full: bool) -> TestResult {
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "map_pickup_dispatch", true, false).await?;
+        if epoch != 0 {
+            let database: String = sqlx::query_scalar("SELECT current_database()")
+                .fetch_one(&harness.pool)
+                .await?;
+            eprintln!("WORLD-RESET-MAP-PG: {database}, epoch={epoch}, full={full}");
+        }
         super::reset();
+        let world_id = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
+        assert_eq!(harness.root.active_world_reset_epoch(world_id).await?, None);
         prepare_current_session(&harness).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
         let authority = harness
@@ -134,6 +142,20 @@ fn scenario(crash: bool, full: bool) -> TestResult {
         let cells = world
             .movement_cells(deps.room.movement_cells())
             .map_err(debug)?;
+        if epoch != 0 {
+            // An already activated pointer models boot after step 4. This is
+            // map-consumer qualification, not evidence for the activation writer.
+            sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3,$7,$4,$5,$6,'TIBIA_SERVER_SAVE_BERLIN_10',1,clock_timestamp(),'2026-10')")
+                .bind(world_id.as_bytes().as_slice()).bind(epoch.to_string()).bind(world.base().digest().as_slice()).bind(generation.identity().server_artifact_digest().as_slice()).bind(generation.identity().client_artifact_digest().as_slice()).bind(activated_pin.frame_binding().digest().as_slice()).bind(crate::map::overlay::map_revision(world.base())).execute(&harness.pool).await?;
+            sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,$2::text::numeric)")
+                .bind(world_id.as_bytes().as_slice()).bind(epoch.to_string()).execute(&harness.pool).await?;
+        }
+        let boot_epoch = harness
+            .root
+            .active_world_reset_epoch(world_id)
+            .await?
+            .unwrap_or(0);
+        assert_eq!(boot_epoch, epoch);
         let pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             1,
@@ -171,6 +193,9 @@ fn scenario(crash: bool, full: bool) -> TestResult {
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&harness, &authority);
+        let drain =
+            crate::gameplay_transport::gameplay_drain::GameplayDrain::at_reset_epoch(boot_epoch);
+        owner.reset_epoch = drain.epoch();
         owner.active_generation = Some(generation);
         owner.movement_cells = &cells;
         let session = deps.admitted.game_session_id;
@@ -310,6 +335,7 @@ fn scenario(crash: bool, full: bool) -> TestResult {
         let snapshot =
             oteryn_protocol_oteryn::world_map::decode_world_map_snapshot(&snapshot.payload)
                 .map_err(debug)?;
+        assert_eq!(snapshot.header.reset_epoch, epoch);
         let key = ItemKey::MapBase {
             bundle_digest: world.base().digest(),
             placement_key: crate::map::view::placement_key(
@@ -321,9 +347,23 @@ fn scenario(crash: bool, full: bool) -> TestResult {
                 1,
             )
             .ok_or("key")?,
-            reset_epoch: 0,
+            reset_epoch: epoch,
         };
         let handle = items.table().handle(&key).ok_or("map handle")?;
+        if epoch != 0 {
+            assert!(matches!(
+                crate::gameplay_transport::item_look::look_item(
+                    &owner,
+                    deps.actor,
+                    session,
+                    Some(fence),
+                    &items,
+                    handle,
+                )
+                .await,
+                oteryn_protocol_oteryn::item_look::ItemLookResult::Text(_)
+            ));
+        }
         let payload = encode_item_move_intent_for(
             &ItemMoveIntent {
                 source: handle,
@@ -393,7 +433,7 @@ fn scenario(crash: bool, full: bool) -> TestResult {
                         ItemKey::MapBase { placement_key, .. } => placement_key,
                         _ => return Err("key".into()),
                     },
-                    reset_epoch: 0,
+                    reset_epoch: epoch,
                 },
                 ItemKey::MapBase {
                     bundle_digest: world.base().digest(),
@@ -401,7 +441,7 @@ fn scenario(crash: bool, full: bool) -> TestResult {
                         ItemKey::MapBase { placement_key, .. } => placement_key,
                         _ => return Err("key".into()),
                     },
-                    reset_epoch: 1,
+                    reset_epoch: epoch + 1,
                 },
             ] {
                 items.map_view(&[stale], |_| Ok(())).map_err(debug)?;
@@ -419,6 +459,22 @@ fn scenario(crash: bool, full: bool) -> TestResult {
                     ItemMoveStep::Result(ItemMoveOutcome::Stale, vec![])
                 );
                 assert_eq!(footprint(&harness.pool).await?, before);
+                if epoch != 0 {
+                    assert_eq!(
+                        crate::gameplay_transport::item_look::look_item(
+                            &owner,
+                            deps.actor,
+                            session,
+                            Some(fence),
+                            &items,
+                            handle,
+                        )
+                        .await,
+                        oteryn_protocol_oteryn::item_look::ItemLookResult::Refused(
+                            oteryn_protocol_oteryn::item_look::ItemLookRefusal::NotAvailable
+                        )
+                    );
+                }
                 assert_eq!(items.resolve(handle), Some(stale));
             }
         } else {
@@ -544,3 +600,6 @@ async fn footprint(pool: &sqlx::PgPool) -> TestResult<Vec<i64>> {
     let row: (i64, i64, i64, i64, i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_item_instances), (SELECT count(*) FROM game_map_item_mint_reservations), (SELECT COALESCE(sum(work_units_used),0)::bigint FROM game_map_item_mint_reservations), (SELECT count(*) FROM game_map_item_mint_receipts), (SELECT count(*) FROM game_item_loop_move_receipts)").fetch_one(pool).await?;
     Ok(vec![row.0, row.1, row.2, row.3, row.4])
 }
+
+#[path = "world_reset_map_pickup_postgres_tests.rs"]
+mod world_reset;

@@ -39,9 +39,8 @@ const NONCE_BYTES: usize = 12;
 const TAG_BYTES: usize = 16;
 const ID_BYTES: usize = 16;
 /// kind, message id, sent at, destination (a recipient id, the widest), two length prefixes.
-const PLAINTEXT_MAX_BYTES: usize =
-    1 + ID_BYTES + 8 + ID_BYTES + 2 + SENDER_NAME_MAX_BYTES + 2 + TEXT_MAX_BYTES;
-/// `key_id` + nonce + ciphertext + tag: at most 1,216 bytes (CHAT-0 §5).
+const PLAINTEXT_MAX_BYTES: usize = 1_188;
+/// `key_id` + nonce + ciphertext + tag: at most 1,217 bytes (CHAT-0 §5).
 pub const SEALED_MAX_BYTES: usize = 1 + NONCE_BYTES + PLAINTEXT_MAX_BYTES + TAG_BYTES;
 const KIND_PRIVATE: u8 = 1;
 const KIND_ROOM: u8 = 2;
@@ -55,6 +54,10 @@ pub enum RelayDestination {
     Private { recipient: CharacterId },
     /// A World room: each node delivers to its sessions that opened it.
     Room { room: ChatRoom },
+    Guild {
+        guild_id: crate::domain::guild::GuildId,
+        rank: crate::domain::guild::GuildRank,
+    },
 }
 
 // The recipient CharacterId is player-linked; it never reaches a log through `Debug` (FND-02 §20).
@@ -62,6 +65,7 @@ impl fmt::Debug for RelayDestination {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             Self::Private { .. } => f.debug_struct("Private").finish_non_exhaustive(),
+            Self::Guild { .. } => f.debug_struct("Guild").finish_non_exhaustive(),
             Self::Room { room } => f.debug_struct("Room").field("room", room).finish(),
         }
     }
@@ -90,69 +94,7 @@ impl fmt::Debug for RelayLine {
     }
 }
 
-impl RelayLine {
-    fn encode(&self) -> Result<Vec<u8>, RelayError> {
-        if self.text.as_str().len() > TEXT_MAX_BYTES {
-            return Err(RelayError::Oversized);
-        }
-        let mut out = Vec::with_capacity(PLAINTEXT_MAX_BYTES);
-        match self.destination {
-            RelayDestination::Private { .. } => out.push(KIND_PRIVATE),
-            RelayDestination::Room { .. } => out.push(KIND_ROOM),
-        }
-        out.extend_from_slice(&self.message_id);
-        out.extend_from_slice(&self.sent_at_micros.to_be_bytes());
-        match self.destination {
-            RelayDestination::Private { recipient } => out.extend_from_slice(recipient.as_bytes()),
-            RelayDestination::Room { room } => out.push(room as u8),
-        }
-        push_prefixed(&mut out, self.sender_name.as_str().as_bytes())?;
-        push_prefixed(&mut out, self.text.as_str().as_bytes())?;
-        Ok(out)
-    }
-
-    fn decode(bytes: &[u8]) -> Result<Self, RelayError> {
-        let mut cursor = Cursor(bytes);
-        let kind = cursor.take(1)?[0];
-        let message_id = cursor.array()?;
-        let sent_at_micros = u64::from_be_bytes(cursor.array()?);
-        let destination = match kind {
-            // A zero or non-UUIDv7 recipient is refused like any other malformed identifier.
-            KIND_PRIVATE => RelayDestination::Private {
-                recipient: CharacterId::decode(&cursor.array::<ID_BYTES>()?)
-                    .map_err(|_| RelayError::BadPayload)?,
-            },
-            KIND_ROOM => {
-                let code = cursor.take(1)?[0];
-                let room = ChatRoom::ALL
-                    .into_iter()
-                    .find(|room| *room as u8 == code)
-                    .ok_or(RelayError::BadPayload)?;
-                RelayDestination::Room { room }
-            }
-            _ => return Err(RelayError::BadPayload),
-        };
-        // Only a name the naming policy admits is accepted, as on the sending side.
-        let sender_name = CharacterName::parse(&cursor.prefixed(SENDER_NAME_MAX_BYTES)?)
-            .map_err(|_| RelayError::BadPayload)?;
-        let raw = cursor.prefixed(TEXT_MAX_BYTES)?;
-        // Only the canonical (already trimmed) form a sender can seal is accepted.
-        let text = ChatText::parse(&raw)
-            .ok()
-            .filter(|text| text.as_str() == raw)
-            .ok_or(RelayError::BadPayload)?;
-        if !cursor.0.is_empty() {
-            return Err(RelayError::BadPayload);
-        }
-        Ok(Self {
-            message_id,
-            sent_at_micros,
-            destination,
-            sender_name,
-            text,
-        })
-    }
-}
+mod payload;
 
 fn push_prefixed(out: &mut Vec<u8>, bytes: &[u8]) -> Result<(), RelayError> {
     let len = u16::try_from(bytes.len()).map_err(|_| RelayError::Oversized)?;
@@ -161,10 +103,10 @@ fn push_prefixed(out: &mut Vec<u8>, bytes: &[u8]) -> Result<(), RelayError> {
     Ok(())
 }
 
-struct Cursor<'a>(&'a [u8]);
+pub(super) struct Cursor<'a>(&'a [u8]);
 
 impl<'a> Cursor<'a> {
-    fn take(&mut self, n: usize) -> Result<&'a [u8], RelayError> {
+    pub(super) fn take(&mut self, n: usize) -> Result<&'a [u8], RelayError> {
         if self.0.len() < n {
             return Err(RelayError::BadPayload);
         }
@@ -173,7 +115,7 @@ impl<'a> Cursor<'a> {
         Ok(head)
     }
 
-    fn array<const N: usize>(&mut self) -> Result<[u8; N], RelayError> {
+    pub(super) fn array<const N: usize>(&mut self) -> Result<[u8; N], RelayError> {
         self.take(N)?.try_into().map_err(|_| RelayError::BadPayload)
     }
 

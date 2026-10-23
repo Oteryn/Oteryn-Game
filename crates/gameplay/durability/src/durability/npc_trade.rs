@@ -682,7 +682,9 @@ async fn lock_entries(
                 EXISTS (SELECT 1 FROM game_item_container_entries c \
                          WHERE c.parent_item_instance_id = i.item_instance_id) \
                 OR EXISTS (SELECT 1 FROM game_item_timed_states t \
-                            WHERE t.item_instance_id = i.item_instance_id) AS not_default \
+                            WHERE t.item_instance_id = i.item_instance_id) \
+                OR EXISTS (SELECT 1 FROM game_item_imbuements b \
+                            WHERE b.item_instance_id = i.item_instance_id) AS not_default \
            FROM game_item_container_entries e \
            JOIN game_item_instances i ON i.item_instance_id = e.item_instance_id \
           WHERE e.parent_item_instance_id = encode($1,'hex')::uuid \

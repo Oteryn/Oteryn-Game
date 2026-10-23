@@ -55,6 +55,7 @@ message ChatIntentV1 {
     ChatRoomLineV1 room = 3;
     ChatRoomRefV1 open_room = 4;
     ChatRoomRefV1 close_room = 5;
+    ChatGuildSendV1 guild = 6; // requires capability 36
   }
 }
 
@@ -69,6 +70,7 @@ enum ChatDisposition {
   CHAT_DISPOSITION_ROOM_NOT_OPEN = 7;
   CHAT_DISPOSITION_CHAT_UNAVAILABLE = 8; // the World relay is not ready
   CHAT_DISPOSITION_REJECTED = 9;         // malformed intent or text, ineligible actor
+  CHAT_DISPOSITION_NOT_ALLOWED = 10; // capability 36; committed non-member
 }
 
 // CommandResult.payload of command type 13: outcome only. At most 8 bytes.
@@ -89,6 +91,7 @@ enum ChatLineKind {
   CHAT_LINE_KIND_PRIVATE = 2; // fields 4, 7
   CHAT_LINE_KIND_ROOM = 3;    // fields 4, 6, 7
   CHAT_LINE_KIND_DROPPED = 4; // no other field: lines were dropped by the egress bound (CHAT0-RL-11)
+  CHAT_LINE_KIND_GUILD = 5; // capability 36: fields 4, 7, 9, 10 only
 }
 
 // Same encoding as world_spatial ActorPositionV1; floor 0..=15.
@@ -109,4 +112,24 @@ message ChatLineV1 {
   ChatRoom room = 6;
   string text = 7;
   ChatPositionV1 position = 8;   // where the line was spoken; always present on a local line
+  bytes guild_id = 9; // capability 36, kind 5 only; 16-byte UUIDv7
+  uint32 guild_rank = 10; // capability 36, kind 5 only; send-time rank 1..20
+}
+
+// GUILD-CHAT-1, Integrator decision 2026-10-22: capability 36 CHAT_GUILD_ROOM_V1
+// requires 7. Only selected peers use intent tag 6, disposition 10, line kind 5
+// and snapshot type 2. Public ChatRoom and ChatRoomsV1 bytes are unchanged.
+// NOT_ALLOWED is common CommandStatus ACCEPTED, wait_seconds=0; no new ErrorCode.
+// Line acceptance under fresh Guild/session custody is the delivery boundary:
+// an accepted line may finish socket I/O after exclusion commits. No receipts/history.
+message ChatGuildSendV1 { string text = 1; } // no client destination, rank or name
+
+// Domain 12 snapshot type 2 replaces type 1 only for capability 36. At most 1049
+// bytes. No author/synthetic sender, Channel, position, Account or CharacterId.
+message GuildChatSnapshotV1 {
+  ChatRoomsV1 rooms = 1;
+  uint32 state = 2; // 1 absent, 2 unavailable, 3 member; zero/unknown rejected
+  bytes guild_id = 3; // UUIDv7, exactly 16 bytes; member only
+  uint32 rank = 4; // 1..20; member only
+  string motd = 5; // present even empty; member only, <=1020 bytes / 255 scalars
 }

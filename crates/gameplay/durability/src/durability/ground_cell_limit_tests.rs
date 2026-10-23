@@ -850,7 +850,7 @@ mod postgres {
                         base_bundle_digest: digest,
                         placement_key: oteryn_world_bundle::bundle::placement_key(-7, 120, 5, 1)
                             .ok_or("native placement key")?,
-                        reset_epoch: 1,
+                        reset_epoch: 0,
                         item: ItemDefinitionFacts {
                             weight: None,
                             definition,
@@ -1199,7 +1199,7 @@ mod postgres {
                     base_bundle_digest: digest,
                     placement_key: oteryn_world_bundle::bundle::placement_key(-7, 120, 5, ordinal)
                         .ok_or("native placement key")?,
-                    reset_epoch: 1,
+                    reset_epoch: 0,
                     item: ItemDefinitionFacts {
                         weight: None,
                         definition: definition(),

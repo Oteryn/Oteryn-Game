@@ -148,7 +148,7 @@ pub trait ItemLoopContent: ItemWeightLookup {
 }
 
 #[derive(Debug)]
-enum LoopError {
+pub(super) enum LoopError {
     Refused(LoopMoveRefusal),
     Durability(DurabilityError),
     Database(sqlx::Error),
@@ -441,7 +441,7 @@ struct Line {
 
 /// The carried weight in centi-oz: every equipped item and the main backpack tree, nested
 /// entries included, each instance locked.
-async fn carried_weight(
+pub(super) async fn carried_weight(
     tx: &mut Transaction<'_, Postgres>,
     character: CharacterId,
     world: [u8; 16],

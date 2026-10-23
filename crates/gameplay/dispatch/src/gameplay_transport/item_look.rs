@@ -486,7 +486,7 @@ async fn observe_map_look(
                 overlay: ground.overlay(),
                 facts: &facts,
                 content_generation: at.content_generation,
-                reset_epoch: 0,
+                reset_epoch: admission.reset_epoch,
             };
             map_look_target(&source, current.at, key, index)?
         }
@@ -495,7 +495,7 @@ async fn observe_map_look(
                 overlay: &at.map.overlay,
                 facts: &facts,
                 content_generation: at.content_generation,
-                reset_epoch: 0,
+                reset_epoch: admission.reset_epoch,
             };
             map_look_target(&source, current.at, key, index)?
         }

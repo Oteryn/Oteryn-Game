@@ -4,6 +4,10 @@
 // crate root of `durability_postgres.rs` can include this file. The harness follows the CHARM-3
 // cases (one live session, lease, scope assignment and readiness for Character 41).
 
+#[path = "character_revision_node_registration.rs"]
+mod node_registration;
+pub(super) use node_registration::registered_node;
+
 use crate::character_recovery_fence::CharacterRecoveryStore;
 use crate::domain::charm::{
     BestiaryRaceKey, BestiaryStage, CharmCatalogue, CharmCategory, CharmDefinition, CharmKey,
@@ -229,7 +233,7 @@ impl Harness {
                 .await
                 .map_err(debug)?;
         }
-        let node = register(&root, 1).await?;
+        let node = registered_node(&root, 1).await?;
         seed_character(
             &pool,
             &root,
