@@ -145,6 +145,10 @@ use oteryn_gameplay_world::world_runtime;
 mod bestiary_postgres_harness;
 
 #[cfg(test)]
+#[path = "../../../crates/gameplay/durability/src/durability/house_ownership_tests.rs"]
+mod house_ownership_tests;
+
+#[cfg(test)]
 #[path = "../tests/support/spell_stance_runtime_postgres_cases.rs"]
 mod spell_stance_runtime_postgres_cases;
 

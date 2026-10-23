@@ -183,6 +183,18 @@
       "privacy_class_floor": "RESTRICTED_PLAYER_LINKED",
       "retention_profile_id": "ECONOMY_LEDGER_RETENTION_V1",
       "atomic_mutation_evidence": true
+    },
+    {
+      "id": 8,
+      "name": "HOUSE_OPERATION",
+      "owner_gate": "HOUSE_OWN0_PHYSICAL_HOUSE_OWNERSHIP_V1",
+      "payload_schema": "docs/contracts/game-events/v2/house_operation.proto",
+      "payload_message": "oteryn.events.v2.HouseOperationV1",
+      "current_schema_revision": 1,
+      "durability_class": "DURABLE_AUDIT",
+      "privacy_class_floor": "RESTRICTED_PLAYER_LINKED",
+      "retention_profile_id": "ECONOMY_LEDGER_RETENTION_V1",
+      "atomic_mutation_evidence": true
     }
   ],
   "notes": [

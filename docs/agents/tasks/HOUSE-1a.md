@@ -4,7 +4,7 @@
 task_id: HOUSE-1a
 title: "HOUSE-1a: house ownership, auction (bid escrow) and first rent"
 mode: IMPLEMENT
-status: NOT_STARTED   # re-implementation pending under ADR-0022
+status: in_progress   # backend checkpoint validated; fresh opening and dispatch qualification unfinished
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 5
@@ -55,20 +55,23 @@ Integration order decided by CP (D1162/D1349): HOUSE-1b → HOUSE-1a → MAP-OVE
 
 ## Owned paths (ADR-0022 layout)
 
-- `crates/gameplay/housing/src/house_auction.rs` (new, L3 pure rules: proxy price, deadlines, value plans)
-- `crates/gameplay/housing/src/house_auction_tests.rs` (new)
-- `crates/gameplay/durability/src/durability/house_ownership.rs` (new, PostgreSQL property/tiles/slot storage)
-- `crates/gameplay/durability/src/durability/house_ownership_tests.rs` (new)
-- `crates/gameplay/durability/src/durability/house_guildhall_release.rs` (new, Guildhall terminal-release participant; only after the Guild core is back on main)
-- `crates/gameplay/durability/src/durability/house_guildhall_release_tests.rs` (new)
-- `apps/game-server/tests/house_ownership_postgres.rs` (new)
-- `docs/agents/tasks/HOUSE-1a.md`
+- `crates/gameplay/housing/src/house_auction.rs`, `house_auction_tests.rs`;
+  `house_auction/{eligibility,eligibility_tests,value}.rs` (L3 pure rules).
+- `crates/gameplay/durability/src/durability/house_ownership.rs`;
+  `house_ownership/{bid,eligibility,premium,settlement,value}.rs` (L4 durable owner).
+- `crates/gameplay/durability/src/durability/house_ownership_audit{,_tests}.rs`;
+  `house_ownership{,_integrity}_tests.rs` (the PG files mount once in game-server `--lib`).
+- `crates/gameplay/durability/src/durability/bank_credit_headroom.rs` (prerequisite).
+- `apps/game-server/migrations/0143_house_ownership.sql` (new migration only).
+- `apps/game-server/tests/support/bestiary_postgres_harness.rs` (reuse and cleanup);
+  `house_spell_privacy_cases.sql` (existing fixture's canonical storage data).
+- `docs/contracts/game-events/v2/house_operation.proto`; this task record.
 
-Slot-only (final commit at the queue turn): the migration (number: next free number at
-allocation time (only one migration PR in the queue)); module registration in
-`crates/gameplay/housing/src/lib.rs`, `crates/gameplay/durability/src/durability/core_modules.rs`
-/ `lib.rs`; `docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json`,
-`docs/contracts/RESOURCE_LIMITS_REGISTRY.json`.
+Registration/wiring only: housing `lib.rs`, durability `core_modules.rs`,
+game-server `src/lib.rs`, the event/resource registries. Bank's existing large
+file only routes its two credit sites to the new owner and exposes its existing
+balance/UUID helpers to sibling durability modules. No standalone PG target,
+Guildhall participant, hot Monk test constructor or in-flight lane module changed.
 
 ## Wiring points (verified on origin/main)
 
@@ -161,7 +164,7 @@ Guildhall terminal-release participant (caller-transaction, consumes the real
   HOUSE-1b so the House NOWAIT anchor refuses 55P03 before the generic DUR-03 BEFORE trigger
   refuses 23514); producer and consumer catalogue names must change together.
 
-## Findings and open questions
+## Historical draft findings (superseded by the local checkpoint below)
 
 - `cross_domain_finding: HOUSE-1a-BANK-HEADROOM` — SOCIAL-MAP §1.12 requires one shared
   credit-headroom check (`Bank balance + Market held + private House held + Guildhall Account
@@ -191,20 +194,25 @@ Guildhall terminal-release participant (caller-transaction, consumes the real
 - [ ] Every concurrent transition serialized (named lock or deterministic order) and losing writer typed.
 - [ ] Durable state sufficient to resume after restart / session-generation change.
 - [ ] Every BLOCKING dependency above merged (or acceptance landed) before the PR leaves draft.
-- [ ] Structure: one mechanic per module file in its ADR-0022 layer (pure auction rules in `housing`, storage in `durability`).
-- [ ] Structure: new tests in their own child files (`<module>_tests.rs` or `apps/game-server/tests/` child), not appended to existing files.
-- [ ] Structure: edits to `mod.rs`/`lib.rs`/`connection.rs`/`capabilities.rs` are wiring-only.
-- [ ] Structure: no file over ~1000 lines grows by more than ~150 lines.
+- [x] Structure: one mechanic per module file in its ADR-0022 layer (pure auction rules in `housing`, storage in `durability`).
+- [x] Structure: new tests in their own child files (`<module>_tests.rs` or `apps/game-server/tests/` child), not appended to existing files.
+- [x] Structure: edits to `mod.rs`/`lib.rs`/`connection.rs`/`capabilities.rs` are wiring-only.
+- [x] Structure: no file over ~1000 lines grows by more than ~150 lines.
 
 ## Validation
 
+All Cargo commands below used `/home/mole/oteryn-cache/codex-bin/cargo +1.95.0`.
+No Cargo manifest/lock changed; package checks replace the historical workspace
+Clippy command. The prohibited standalone PG target was not created.
+
 ```sh
-cargo fmt --all -- --check
-cargo clippy --locked --workspace --all-targets -- -D warnings
-cargo test -p oteryn-gameplay-housing
-cargo test -p oteryn-gameplay-durability house_ownership
-cargo test -p oteryn-game-server --test house_ownership_postgres   # PostgreSQL 17.6 harness
-cargo +1.95.0 run -p oteryn-architecture-check -- workspace .
+cargo +1.95.0 fmt --all -- --check
+cargo +1.95.0 check --locked -p oteryn-gameplay-durability --quiet
+cargo +1.95.0 clippy --locked -p oteryn-gameplay-housing -p oteryn-gameplay-durability -p oteryn-game-server --all-targets --quiet -- -D warnings
+cargo +1.95.0 test --locked -p oteryn-gameplay-housing --quiet house_auction
+cargo +1.95.0 test --locked -p oteryn-gameplay-durability --lib --quiet house_ownership_audit
+cargo +1.95.0 test --locked -p oteryn-game-server --lib --quiet house_ownership -- --nocapture --test-threads=1
+cargo +1.95.0 run --locked -p oteryn-architecture-check --quiet -- workspace .
 ```
 
 ## Reference evidence
@@ -213,3 +221,167 @@ cargo +1.95.0 run -p oteryn-architecture-check -- workspace .
 - `docs/agents/tasks/archive/OTV2-20261010-house-1-contract.md`
 - `docs/agents/tasks/archive/OTV2-20261004-bank-1.md`
 - CP coordination: #2131 (D1098, D1122, D1162, D1330, D1345, D1349, D1366, D1375, D1383, D1403, D1409)
+
+## Local prerequisite audit — 2026-10-22
+
+Baseline: `98b897f848ccfd75c21e48fb53091d5b5f7cd967` (the allocated lane HEAD).
+The worktree was clean before this audit. No Git publication or external mutation
+was performed. The bound META organization policy 3.1.0 was read at its immutable
+binding revision `1bfb5ff98c8aa156e73669a14e083a1d464c29fb`.
+
+### Planned module layout
+
+Before implementation: pure auction rules and their child tests in
+`housing/src/house_auction{,_tests}.rs`; durable property/auction operations and
+their child tests in `durability/src/durability/house_ownership{,_tests}.rs`;
+Guildhall release in its separate allocated durability module only after the real
+Guild owner exists. Any prerequisite gets its own mechanic module at its ADR-0022
+layer. Shared parents get registration/wiring only. Migration allocation is
+`0143`; it has not been created. New PostgreSQL cases must mount once through an
+existing CI-registered target or library, superseding the new standalone target
+named earlier in this historical card.
+
+### Findings on the allocated baseline
+
+- `PROVEN`: searches in `apps/`, `crates/` and `tools/` found no production
+  `GuildDisbandTransaction`, canonical House disposition producer, House auction
+  owner, or shared credit-headroom helper. Historical lifted Guild tests and
+  `node/guild_jobs.rs` references do not supply the absent Guild owner.
+- `PROVEN`: `content/project/native_house_tiles.rs` provides qualified placement
+  metadata, not the full qualified acquisition catalogue required by D1383.
+  `world/src/house_scope/mod.rs::exit_into_channel` still returns
+  `ExitNotAdmitted`. HOUSE-RUNTIME-1b/1c are not implemented on this baseline.
+- `PROVEN`: HOUSE-1b's required disposition steps lock recipient Character roots
+  before property/items and require the native-trigger NOWAIT property pin.
+  HOUSE-1a additionally requires sorted native deletion pins before the Guild
+  spine for its terminal-release participant.
+- `CONFLICT`: accepted GUILD-0 section 4.1 explicitly says only settlement's
+  first step takes Character roots; disposition/release/disband jobs take none
+  and start at class 3. `docs/contracts/OTERYN_GAME_GUILDS_V1.md` section 3
+  requires rollback on an out-of-order class. HOUSE-1b's LO-01 finding and this
+  card's recipient-pin/late-NOWAIT finding explicitly leave the amendment open.
+  No accepted amendment was found in the relevant contracts/architecture files.
+
+### Integrator decision 2026-10-22: prerequisite implemented in this lane
+
+The owner's continuation supersedes the previous stop: GUILD0-LO-01 remains
+accepted, without amendment. Disposition, Guildhall terminal release and their
+recipient deletion pins are explicitly **out of scope**, deferred to HOUSE-1b
+because their lock-order amendment is not accepted. No such producer or private
+fixture fragment was installed here.
+
+Implemented prerequisites on existing owners:
+
+- `bank_credit_headroom.rs`: one native credit-headroom function, called by both
+  existing Bank deposit and receiver-transfer paths. Balance plus HELD House
+  custody stays within the real Bank ceiling; reserve/return conserves the sum.
+  Market/Guildhall value writers are absent on this baseline and must extend the
+  same SQL sum when their registered storage lands.
+- Migration 0143's canonical property/tile/slot owner supplies the existing
+  `game_house_access` / `game_house_access_tile` ports, with separate grant/fence
+  seams and a nonzero initial global ACL revision. Runtime only receives bounded
+  locking/EXECUTE ports and reads, without protected House table DML.
+
+Backend implementation:
+
+- L3 owns proxy pricing, durable-order ties, 256-bid limit, checked clocks,
+  escrow value plans and PhysicalHouseEligibility/v1 with stable audit reasons.
+- L4 owns native session/recovery/admission fencing, real Premium single/batch
+  gates, transaction-preserving pre-delivery savepoints, request binding/replay,
+  named occurrence/Account locks, election, first-rent burn and durable refunds.
+- One Account is refunded per transaction, within the accepted at-most-100
+  ceiling. Election handles only its winner (or the first excluded refund).
+  This preserves one House event per physical transaction; the four-line
+  acquisition subshape stays within DUR-03's unchanged 200-line House ceiling.
+- Event 8 records the qualified bid calculation's captured eligibility census,
+  reasons, maxima/order, price, owner/slot/generation transitions and first paid
+  period. Its outbox reuses Bank's publication/expiry and event-keyed legal-hold
+  guard, under the existing P30D economy profile. Ledger aggregate and chain
+  proofs forbid extra same-transaction entries or fabricated custody returns.
+- Legacy installation refuses unreconciled anchors without inferring dates.
+  Canonical/legacy/slot consistency is deferred and bidirectional; anchors and
+  retired properties cannot be removed/reopened. ACL receipts remain immutable;
+  ACL changes/deletion advance only their separate global revision.
+
+### Validation and file-size record — 2026-10-22
+
+- PASS: package check; Clippy `-D warnings` for all targets of all three touched
+  packages; workspace rustfmt; architecture `workspace-boundaries`.
+- PASS: six `house_auction` rule tests; one `house_ownership_audit` test including
+  four value lines, 256/257 census bounds, envelope integrity and transition fields.
+- PASS: seven filtered library PG cases, **actually run on PostgreSQL 17.6**.
+  Native runtime-role connections and real Premium/recovery owners were exercised;
+  cases return `Ok(())` before setup only when the configured admin is absent.
+  Positive auction data is explicitly historical recovery DATA, not D1383
+  catalogue qualification. The existing ACL SQL fixture is reused, with explicit
+  historical receipt transaction boundaries; no assertions were relaxed.
+- One earlier House settlement run returned `CommitOutcomeUnknown` during high
+  shared-PC load; its isolated rerun and final complete seven-case run passed.
+  This own-case failure was not classified as an unrelated CI-only failure.
+- PASS: governance validator (22 documents / nine lanes), 124 governance tests,
+  full-diff checklist review and `git diff --check`. Workspace-wide constructor,
+  enum/match/impl searches and all three protobuf field-tag comparisons completed.
+  No trait method was added. Completeness checklist items 13/14 remain open below.
+- Reuse: Bank balance locks and UUID allocator (visibility only, no copied body);
+  native `assert_item_only_fence`, recovery/admission locks, incarnation proof and
+  its existing separate SQL possession-secret binding; real Premium gate owner;
+  existing Bank junior rule, foundation envelope and bounded encoder; existing
+  Bank immutable/publication/expiry/legal-hold guards; shared Bestiary native PG
+  harness and existing ACL fixture; repository governance/architecture validators.
+  Harness setup was extracted **in its original file**, retaining the same body,
+  with database cleanup on setup failure/panic. Case bodies also clean up on panic.
+- Files growing by more than 200 lines (all new): migration 0143, **544 lines**
+  (durable schema, privileges, conservation and transition proofs); ownership audit,
+  **254 lines** (DUR-owned atomic receipt/evidence encoding); PG owner tests,
+  **312 lines** (native owner/session/recovery cases mounted exactly once).
+  All remaining new Rust modules are below 200 lines. Existing large source files
+  only receive registration, routing or visibility lines; the resource registry grows
+  by 123 registration lines and the event registry by 12. No existing migration or CI policy/workflow was edited.
+
+### Unfinished / next step
+
+This is a validated backend checkpoint, **not completion of HOUSE-1a**:
+
+- Fresh first-bid auction opening is not implemented: D1383's qualified catalogue
+  producer and the accepted HOUSE-RUNTIME-1b/1c entry/exit prerequisites remain
+  absent. A VACANT anchor is explicitly refused; historical auction fixtures do
+  not substitute for these producers or their acceptance.
+- `DurabilityRoot::house_bid` and `house_settlement` are backend entry points,
+  currently called by the native PG qualification, without serve/node scheduling
+  or real command-dispatch E2E. SOCIAL-MAP §1.12 assigns runtime wiring to
+  HOUSE-WIRE-1; D1462's final production-caller/dispatch qualification is therefore
+  still open, and no new capability was offered to bypass that boundary.
+- Durable deterministic refusal receipts, multi-bidder/concurrent PG qualification
+  and the full activated acquisition path still need completion. Successful value
+  operations and job-step replays are durable; rejected fresh requests currently
+  return typed errors rather than storing terminal refusal receipts.
+- Disposition, ongoing rent, Guildhall release and recipient pins remain the
+  explicitly deferred HOUSE-1b scope. All blocking dependency/activation decisions,
+  independent exact-candidate review, repository CI and publication remain pending.
+
+Next: complete the qualified opening/runtime prerequisites and refusal journal,
+then qualify the full acquisition/dispatch path before claiming the task complete.
+Local HEAD remains `98b897f848ccfd75c21e48fb53091d5b5f7cd967`; detached worktree,
+no freeze SHA or PR, no publication/merge/review trigger. The record stays active.
+
+### Port onto the DISPATCH-WIRING-1 head — 2026-10-23
+
+The backend checkpoint was re-applied onto `de3fd2190` (DISPATCH-WIRING-1 with
+REGISTRY-SPLIT-1, Rust 1.99.1 and PostgreSQL 18.6). Adaptations only, no behaviour change:
+
+- REGISTRY-SPLIT-1: the eleven new resource limits are one file each,
+  `docs/contracts/resource-limits/entries/0592-DUR03-RL-03-HOUSE.json` through
+  `0602-HOUSEOWN0-RL-07.json`, in the original order; the aggregate file is not recreated.
+- PostgreSQL 18.6: the harness setup and the runtime-role check read
+  `CANONICAL_POSTGRES_SERVER_VERSION_NUM` instead of the literal 17.6 version.
+- Migration `0143` keeps its number (no collision with main's 0130, 0131, 0132, 0136,
+  0140, 0144). House event type 8 is still unique in the event registry.
+- No dispatch file was touched. Protocol dispatch and scheduling stay with HOUSE-WIRE-1
+  (SOCIAL-MAP §1.12 "No runtime wiring"; HOUSE-WIRE-1 owns `HOUSE_V1`/`HOUSE_INTENT`,
+  whose numbers CP leases). The production-caller and real-dispatch E2E requirement for
+  `house_bid`/`house_settlement` therefore remains open as an owner decision.
+
+Validation on the port (`cargo +1.99.1 ... --locked`): rustfmt, `git diff --check`,
+Clippy `-D warnings --all-targets` for housing, durability and game-server, the
+`house_auction` and `house_ownership_audit` unit tests, the seven `house_ownership`
+library PG cases on PostgreSQL 18.6, repository policy, governance and architecture checks.

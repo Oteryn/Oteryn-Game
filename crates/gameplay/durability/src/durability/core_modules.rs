@@ -10,6 +10,7 @@ pub mod admission_authority_guards;
 pub mod admission_journal;
 pub mod bank;
 pub mod bank_audit;
+mod bank_credit_headroom;
 pub mod bestiary_progress;
 #[allow(
     dead_code,
@@ -49,6 +50,8 @@ pub mod ground_cell_limit;
 pub mod highscore_snapshot;
 pub mod house_interior;
 pub mod house_interior_audit;
+pub mod house_ownership;
+mod house_ownership_audit;
 pub mod house_scope_handoff;
 
 pub mod character_tutorial;
