@@ -51,6 +51,7 @@ pub mod ground_cell_limit;
 pub mod highscore_snapshot;
 pub mod house_interior;
 pub mod house_interior_audit;
+pub mod imbuement;
 pub mod house_scope_handoff;
 
 pub mod character_tutorial;
