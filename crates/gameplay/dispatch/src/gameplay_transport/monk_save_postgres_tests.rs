@@ -191,7 +191,7 @@ impl Dependencies {
         harness: &'a Harness,
         authority: &'a ReconciledCharacterAuthority<'f, 's>,
     ) -> ComposedFreshAdmission<'a, 'f, 's> {
-        crate::gameplay_transport::composed_test_owner::ComposedTestOwner {
+        let mut owner = crate::gameplay_transport::composed_test_owner::ComposedTestOwner {
             root: &harness.root,
             character: authority,
             holder: &harness.node,
@@ -214,7 +214,11 @@ impl Dependencies {
             achievements: &self.achievements,
             imported_charms: &self.charms,
             room: &self.room,
-        }.build()
+        }
+        .build();
+        // Combat suites (creature move, kill reward) install their bundle combat view here.
+        owner.rooms = crate::gameplay_transport::SeamRooms::new(None, self.combat_room.as_ref());
+        owner
     }
     async fn initialize(&self, owner: &ComposedFreshAdmission<'_, '_, '_>) {
         let runtime = self.runtime.lock().await;
