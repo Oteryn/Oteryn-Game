@@ -4,7 +4,7 @@
 task_id: APP-3
 title: "APP-3: appearance change command, actor appearance state and wire codec"
 mode: IMPLEMENT
-status: NOT_STARTED   # re-implementation pending under ADR-0022
+status: in_progress   # prerequisite implementation and APP-3 authorised in this lane
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 4
@@ -13,9 +13,9 @@ plan_row: "§4 Epic 6 row APP-3 (rows 126, 127); §7 supporting briefs row APP-3
 brief: "docs/architecture/reviews/OTERYN_GAME_CHARACTER_APPEARANCE_OWNER_DECISION_2026-09-28.md (§4.2, §4.5, §5, §8)"
 class: "hard, protocol, registry"
 base_branch: main
-branch: null
+branch: w2/app-3
 pr: null
-needs_migration: false
+needs_migration: true   # 0134 reserved for Character creation sex authority
 needs_registry: true   # capability, command, state domain allocated by the protocol registry lease
 merge_authority: CP_ONLY (builder never marks ready)
 ```
@@ -160,16 +160,16 @@ refs 1..u32::MAX monotonic per connection, no wrap/reuse, exhaustion → reconne
 
 ## Acceptance criteria
 
-- [ ] Other players see a committed look.
-- [ ] Rejected change publishes nothing; Unresolved publishes nothing and keeps the occurrence.
-- [ ] Older clients gated by capability (25-equivalent requires 6; Item look requires 4).
-- [ ] Every concurrent transition serialized and the losing writer typed.
-- [ ] Durable state sufficient to resume after restart / session-generation change.
+- [x] Other players see a committed look.
+- [x] Rejected change publishes nothing; Unresolved publishes nothing and keeps the occurrence.
+- [x] Older clients gated by capability (25-equivalent requires 6; Item look requires 4).
+- [x] Every concurrent transition serialized and the losing writer typed.
+- [x] Durable state sufficient to resume after restart / session-generation change.
 - [ ] Negative qualification matrix above covered by native evidence (not mechanism tests only).
-- [ ] Structure: one mechanic per module file in its ADR-0022 layer.
-- [ ] Structure: new tests live in their own child files, not appended to existing files.
-- [ ] Structure: edits to `mod.rs`/`lib.rs`/`connection.rs`/`capabilities.rs` are wiring-only.
-- [ ] Structure: no file over ~1000 lines grows by more than ~150 lines (`connection.rs` ~8.3k lines takes dispatch only).
+- [x] Structure: one mechanic per module file in its ADR-0022 layer.
+- [x] Structure: new tests live in their own child files, not appended to existing files.
+- [x] Structure: edits to `mod.rs`/`lib.rs`/`connection.rs`/`capabilities.rs` are wiring-only.
+- [x] Structure: no file over ~1000 lines grows by more than ~150 lines (`connection.rs` ~8.3k lines takes dispatch only).
 
 ## Validation
 
@@ -181,3 +181,372 @@ cargo test -p oteryn-gameplay-dispatch appearance_change
 cargo test -p oteryn-game-server capabilities
 python3 tools/agents/validate_governance.py
 ```
+
+## Local prerequisite audit — 2026-10-22
+
+Baseline: `9f814e72a3a32ad2a6ed67787c2d67a2d39d4af3` (the allocated
+worktree HEAD). Implementation stopped under the packet's blocking-dependency rule;
+no codec, command, reducer, capability offer or migration was added.
+
+Planned module layout remains the Target layout above: protocol `appearance.rs`
+with `appearance_tests.rs`; dispatch `appearance_change.rs` with
+`appearance_change_tests.rs` and a separate connection-local reducer module as
+needed. Shared owner files would receive wiring only.
+
+Blocking prerequisites:
+
+1. **Character creation sex authority is absent.**
+   `crates/gameplay/durability/src/character_bootstrap_intent.rs` defines
+   `CharacterBootstrapIntentV1` and its strict wire input without sex.
+   The Character root schema in migration `0005_character_authority.sql` has no sex
+   field. Workspace searches across `apps/`, `crates/` and `tools/` found only the
+   pure appearance `Sex` input and content/test consumers, with no production
+   Character-sex reader. `AppearanceValidationContext` explicitly requires sex
+   from Character creation. A client value, constant or content fallback cannot
+   substitute for that authority. The owning creation/read contract must land
+   before this lane can derive a valid command or public look; any required
+   persistence migration needs a separate allocation (this lane has none).
+2. **Earned-cosmetics authorization is unavailable in the consumed APP-1 writer.**
+   `commit_character_appearance` validates with its private
+   `UnavailableEarnedUnlocks`, whose outfit/addon/mount methods always return
+   `UnlockFact::Absent`. The stored account-unlock reader exists, but the writer
+   accepts no resolved unlock input and documents the missing accepted
+   key/provenance compatibility resolver. APP-2's `NativeCosmeticsView` exists;
+   its presence does not integrate earned unlocks into the writer. The owning
+   resolver and transaction-bound durable consumer must land to satisfy the
+   required unlocked premium-flagged success case (D61). Store must remain closed.
+
+Registry inspection found capability 25, command 25 and domain 21 unregistered
+at this baseline. Availability is not a protocol lease or acceptance; retain the
+card's CP allocation/review requirement when resuming.
+
+Reuse inventory (identified, no implementation added): APP-1's current reader,
+writer/reconciler and account-unlock reader; APP-2's `NativeCosmeticsView` and
+existing domain selection validator; the registered native PostgreSQL harness in
+`apps/game-server/tests/support/bestiary_postgres_harness.rs`. No fixture, helper,
+test registration or module body was copied.
+
+Validation: governance validator PASS; governance unit tests PASS (124);
+`git diff --check` and full diff/checklist review PASS. No Rust source changed;
+cargo/PG checks and new APP-3 suites were not run. Required future filters remain
+`cargo test --locked -p oteryn-protocol-oteryn appearance`,
+`cargo test --locked -p oteryn-gameplay-dispatch appearance_change`, and
+`cargo test --locked -p oteryn-game-server capabilities`, plus real-dispatch and
+PostgreSQL qualification of the full negative matrix after prerequisites land.
+
+File sizes: this task record grows from 183 to 240 lines (+57); production and test
+files are unchanged. No file grows by more than 200 lines. All acceptance boxes
+remain open. Resume only after the owning sex authority and earned-unlock
+resolver/writer integration are available in the allocated baseline.
+
+## Integrator decision 2026-10-22: prerequisite implemented in this lane
+
+The continuation packet selects option B: this lane owns implementation of both
+prerequisites before APP-3. This supersedes the earlier requirement to wait for
+another lane and allocates migration 0134 (renumbered from provisional 0133 in run 3e). The heading records the
+integrator's assignment, **not completed implementation**. Status was returned to
+`in_progress`; the historical prerequisite audit above is preserved verbatim.
+
+Planned layout, before coding:
+
+- Character creation sex persistence/read: durability
+  `durability/character_sex.rs`, with `character_sex_tests.rs`; migration
+  `apps/game-server/migrations/0134_character_sex.sql`. Reuse the existing domain
+  `Sex`, authenticated bootstrap decoder, root creation transaction and current
+  Character fence. Bootstrap binding must include sex; no client appearance
+  payload supplies it. PostgreSQL tests reuse the registered Bestiary harness.
+- Transaction-bound earned authorization: durability
+  `durability/character_appearance/earned_unlocks.rs`, with
+  `earned_unlocks_tests.rs`; reuse `read_account_appearance_unlocks`, the fenced
+  account identity, `NativeCosmeticsView` and `validate_selection`. Pure content
+  mapping belongs in a content child module once its authority rule is decided.
+- Protocol, dispatch, reducer and child tests retain the Target layout above;
+  shared slots receive wiring only. No modules have been added yet.
+
+### Owner authority-policy question encountered before implementation
+
+**PROVEN:** the stored fact contains an opaque `unlock_key` and recorded
+`content_revision` (`character_appearance/stored.rs::AccountAppearanceUnlock`).
+The reader explicitly says a matching key or recorded revision alone is not
+compatibility authority. `cosmetics_loader.rs::Outfit` has an identity, revision,
+addon count and source citations; it has neither per-addon grant keys nor
+compatibility declarations. `NativeCosmeticsView` adds sorted identities and
+artifact binding, not these missing rules. The canonical authoring schema
+(`tools/content-schema/cosmetics-authoring/cosmetics.schema.json`) supplies no
+such fields. Workspace/accepted-contract searches found no owning mapping.
+
+The stored-appearance PostgreSQL fixture explicitly labels its addon key and
+revision-equality policy as test-only, not a product rule
+(`character_appearance_postgres_cases.rs::FixtureEarned`). Reusing that fixture's
+policy in production would invent earned authorization. The accepted appearance
+decision §4.3 and account-progress decision §4.3 require compatibility but do not
+define how to establish it.
+
+**QUESTION:** which authority rule maps a persisted unlock key to an outfit,
+individual addon or mount, and proves its provenance compatible with active
+content? Options: (A, recommended) explicitly authored grant-key mappings and
+compatible provenance declarations, admitted by the existing content owner;
+(B) an owner-specified canonical key encoding and exact-active-revision-only
+compatibility policy. Option B needs the actual key encoding, including addon
+identity; neither implementation may guess it. Both keep Store closed and D61.
+
+Implementation stops at the packet's explicit owner-policy decision boundary.
+This is a concrete unresolved authorization rule, rather than a request to route
+the prerequisite back to another lane. No Rust, schema, protocol registry,
+capability offer, test registration or fixture has been changed.
+
+### Continuation validation and file-size record
+
+Only this task record changed. No enum variants, struct fields, trait methods or
+public functions were added, so constructor/implementation/caller updates are
+not applicable. No helper or harness was copied or newly implemented; the reuse
+inventory above remains the implementation plan, not delivered code reuse.
+No file grows by more than 200 lines. Rust compilation, Clippy and PostgreSQL
+qualification remain unfinished because no Rust candidate was authored. The
+existing cargo filters above are planned checks, not evidence of APP-3 coverage.
+
+Continuation checks: governance validator PASS; governance unit tests PASS (124);
+whole worktree diff reviewed against the owner-specified
+`~/oteryn-cache/CODEX-CHECKLIST.md` and repository checklist, with no applicable
+hits; `git diff --check` PASS. This record is 312 lines versus 183 at HEAD
+(+129 lines); no other files changed. No cargo command was run in this continuation.
+
+## Owner decision 2026-10-22
+
+OWNER DECISION (project owner, 2026-10-22), answering the question your previous run in this worktree stopped on: option A: earned-unlock authorization uses explicitly authored grant-key mappings (grant key -> outfit / addon identity) plus compatible provenance declarations in content; no derived canonical key encoding and no exact-active-revision equality rule. The test-only fixture mapping must be replaced by the authored content path on the production resolver.
+
+Implementation layout refinement, before coding: extract the existing embedded
+`native_cosmetics` admission module into `content/native_gameplay/native_cosmetics.rs`;
+add `cosmetics_loader/grant_mappings.rs` for authored mappings and a child test file
+reusing the existing source fixture. Durable earned reads remain a child of
+`character_appearance`; Character sex remains its own durability module.
+
+## Continuation checkpoint — 2026-10-22
+
+AUTHORING only: local uncommitted work; no freeze, PR, commit, push or remote
+mutation. No production capability has been deployed. The owner decision above
+supersedes the earlier earned-authorisation question.
+
+### Integrator decision 2026-10-22: prerequisite implemented in this lane
+
+Implemented modules: content `native_gameplay/cosmetics_loader/grant_mappings.rs`
+and `cosmetics_view.rs`; extracted the existing `native_cosmetics.rs` admission
+owner. Domain `appearance/earned_cosmetics.rs` combines pure earned facts with
+that content. Durability `character_appearance/earned_unlocks.rs` reads only the
+at-most-4096 declared keys for the fenced account, `character_sex.rs` reads
+immutable creation sex, and `current_appearance.rs` composes the current reader.
+Migration 0134 adds nullable historical / immutable authored creation sex.
+Bootstrap version 3 binds the required sex; historical tag-2 recovery remains
+valid only for roots with unknown sex, which cannot authorise appearance.
+
+The existing bootstrap and creation-integrity code moved into child modules
+under `character_authority/`; no second implementation was retained.
+
+APP-3 candidate modules now include strict appearance wire codecs and a shared
+independent golden fixture; `appearance_change/` command/catalogue/observation/
+offer composition; `connection/appearance_change/` dictionary staging;
+`connection/moved_step.rs` (existing function extracted); the sequencer
+`appearance_revision.rs` arm; and the session `appearance_state/` reducer and
+extracted `domain_dispatch.rs`. Shared slots contain registration/dispatch
+wiring. Capability 25 remains registry `offered: false` with an explicit
+conditional composed-content offer gate. APP-4 renderer/window work is outside
+this card.
+
+### New cross-domain finding — owner/lane authority required
+
+PROVEN: `docs/agents/tasks/GUILD-1.md` explicitly owns
+`apps/game-server/src/lifted_tests/durability_guild_tests.rs`. Its
+`historical_character_account` fixture still supplies bootstrap version 2,
+without sex (lines 111–114). APP-3's required version-3 decoder refuses it.
+All-caller alignment therefore needs the Guild owner to change exactly the
+fixture version to 3 and add `"requested_sex":"Male"`, or an explicit owner
+exception allowing APP-3 to make those two changes.
+
+An initial local fixture edit was restored after verifying this ownership.
+There is now no APP-3 diff in the Guild file. No Guild mechanic was changed.
+This is an ownership conflict, not a request to change the earned-grant policy.
+Recommended resolution: the GUILD-1 writer applies the fixture alignment.
+
+### Validation environment discrepancy
+
+PROVEN: `cargo` resolves to `/home/mole/.cargo/bin/cargo`, and
+`OTERYN_TEST_POSTGRES_ADMIN_URL` is absent in this session. No PostgreSQL
+executables were found in the available environment. The advertised D1466
+queued wrapper could not be discovered among callable tools or repo scripts.
+The wrapper command/environment was requested from the owner; no credentials
+were read or requested. No Docker operation was attempted.
+
+An initial old-harness run reported success while its existing PRE-ROUTING
+guard skipped PostgreSQL; that result is NOT PG qualification. The new APP-3
+PG cases explicitly fail when the required environment is absent, so this
+cannot be mistaken for a native PG pass.
+
+Pending owner questions: (1) the D1466 wrapper command/environment; (2) the
+GUILD-1 fixture alignment by its writer or a narrow two-line scope exception.
+Remaining qualification and final file-size/checklist records follow below
+once local compilation and Clippy repairs finish. All acceptance checkboxes
+remain open until real PostgreSQL and the complete matrix are qualified.
+
+Self-review repairs in this authoring generation: preparation now compares the
+original transport's admitted item/session fence with the independently read
+current gameplay fence; an old connection cannot adopt a successor connection's
+generation. Failed reconciliation remains Unresolved instead of becoming a
+terminal rejection. Temporary Outfit projection reuses the native spell
+appearance owner's `for_selection`; bare/unqualified active transforms fail
+closed. Earned grant identities use the content owner's precompiled key index.
+
+### Final authoring validation and file-size record — 2026-10-22
+
+Detailed layout, complete changed-file manifest, reuse/wrapper inventory, exact
+filters, file-growth justification and remaining qualification are in
+[APP-3/VALIDATION_2026-10-22.md](APP-3/VALIDATION_2026-10-22.md).
+The owner decision is recorded verbatim above and dated architecture/creation
+boundary notes are included in this same authoring change.
+
+PASS: Rustfmt; nine-package all-target Clippy with `-D warnings`; protocol
+appearance (5), domain appearance (6), content cosmetics (22), bootstrap (4),
+revision sequencer (11), real connection appearance dispatch (2), capabilities
+(60), complete session suite (67); Python cosmetics authoring (23 tests / 37
+subtests); governance validator and its 124 unit tests; `git diff --check`.
+The earned-authored native PostgreSQL case FAILS explicitly because the routed
+PostgreSQL environment is absent; no PostgreSQL test is claimed as qualified.
+The native dispatch PostgreSQL case is authored but likewise cannot qualify.
+
+Whole-diff checklist/caller audit covered apps, crates and tools. Final repairs
+also stage visibility, item handles and mappings before committing allocation
+or sequence cursors. Unresolved commands disconnect before command/sequence
+advancement, preserving their original retained occurrence in the current owner.
+Open acceptance gaps include restart replay association, the session-side Item
+dictionary resolver, complete native matrix evidence and PG CI target routing;
+see the detailed record. All acceptance boxes remain open; no freeze or PR.
+
+Files exceeding +200 lines are the extracted content decoder, native command,
+new transport test child, extracted session domain router, this historical task
+record and its detailed validation child. No existing source file grows by
+more than 150 lines. The source extractions remove the old implementations.
+Pending owner/lane inputs remain the PG wrapper/environment and Guild fixture
+alignment. Next: resolve those inputs and unfinished native acceptance, run all
+real PG filters, then obtain the required independent review on a frozen head.
+
+
+## Previous continuation checkpoint — 2026-10-22 (historical)
+
+Status remains **in_progress / AUTHORING**, branch `w2/app-3`, starting HEAD
+`64fdc0693`. This continuation changes local files only; no commit, push, freeze,
+PR, remote write, credential access, dependency download or paid review.
+The prerequisite audit and verbatim Owner decision above are preserved.
+
+The remaining implementation items are now implemented and locally qualified:
+
+- Stable native CommandRef association resolves the APP-1 receipt after root
+  restart, validates the complete original intent and settles only its matching
+  pending command. The full decoded receipt matcher is shared with the writer;
+  substitutions of selection, provenance, revisions or prior data refuse even
+  behind an intact digest. This defect was reproduced RED, then qualified GREEN.
+- Session Item looks require capability 4 and membership in the generation-bound
+  client Item dictionary, for snapshots and atomic deltas. Missing/wrong
+  dictionaries follow the existing refusal policy. Artifact loading/rendering
+  remains at the APP-4 seam; native/dev clients explicitly supply None today.
+- Native PostgreSQL qualification now includes two real admitted players,
+  current global publication fencing, peer visibility, rejection without writes,
+  committed base changes under Outfit/Item transforms, owner clear/expiry,
+  retirement, receipt substitution and historical replay after rebuilding Root.
+- CI follows CI-PG-LIB-1 and routes library PG cases to the PostgreSQL service
+  rest leg, with a measured two-fixture-thread budget. Transaction-concurrency
+  cases retain their internal races. No test or protection was weakened.
+
+The D1466 wrapper/environment question is resolved. APP-3-owned fixture wrappers
+reuse the existing seeder, grant verifier, publisher and native owner composition;
+there is no GUILD-1 fixture edit. Its dormant integration target selected zero
+cases in the probe and is not counted as qualification or an APP-3 CI blocker.
+No owner question from the previous checkpoint remains.
+
+Restart recheck PASS: all-target Clippy `-D warnings` for ten named packages;
+workspace Rustfmt plus explicit Rustfmt for all 30 changed Rust files (the
+durability children behind `include!` needed two formatting repairs); focused
+appearance dispatch 3/3; standalone appearance targets filtered by `appearance`
+12/12 and 8/8; appearance domain/protocol/session 6/5/4; replay identity 1.
+All 15 selected PostgreSQL cases really ran against 17.6 with real migrations
+and row/fence assertions: 9 native writer, 4 installed storage, 1 authored earned
+unlock and 1 native dispatch. None early-returned; no broad PG suite was rerun.
+Python routing, repository policy/regressions, governance and 124 governance unit
+tests pass. Whole-diff checklist and apps/crates/tools caller audit pass. Earlier
+qualification of bootstrap, cosmetics, capabilities, full session and the native
+shared fixtures is preserved in the detailed record, rather than repeated.
+
+Earlier higher-concurrency fixture runs had storage/deadline failures, and a
+four-thread run timed out in the existing monk-release case
+`boundary_release_retries_not_expired_and_saves_new_remaining_serene`.
+It passed alone and in the final two-thread run; any shared-load recurrence is
+CI-only. The existing deadlines/assertions remain
+intact. Frozen-head CI, independent protocol/authority review and MQ remain
+unperformed; the complete negative-matrix acceptance box stays open until those
+candidate gates. This is not a ready/merge or full acceptance claim.
+
+The complete changed-file manifest, exact wrapper test filters, reuse/wrapper
+inventory, RED/GREEN evidence, remaining gates and cumulative >200-line layer
+justifications are in [APP-3/CONTINUATION_2026-10-22.md](APP-3/CONTINUATION_2026-10-22.md).
+No continuation file grows by more than 200 lines; existing source growth stays
+below 150 lines. This card was updated last.
+
+## Run 3e final checkpoint — 2026-10-22
+
+Status remains **in_progress / AUTHORING**, branch `w2/app-3`, HEAD `64fdc0693`;
+no frozen SHA or PR. This checkpoint supersedes the previous routing evidence.
+All changed protected workflow/repository-tool files were restored byte-for-byte
+to the supplied `origin/main`; the appearance routing script was deleted.
+The restored `craft-authoring.yml` is untracked locally and must be included by
+the integrator. No protected-path candidate change from `origin/main` is intended.
+No Git mutation, publication, credential access or external write was performed.
+
+Both appearance standalone targets and their manifest entries were removed.
+Every assertion remains intact: the 9 native and 4 installed-storage cases are
+mounted once in `character_authority_postgres`, with the earned-unlock child
+mounted once from its installed-storage parent (1 more PG case). The dispatch
+PG driver remains mounted once from `gameplay_transport/monk_save_postgres_tests.rs`;
+its six scenario children and observer helper retain one registration each.
+Migration **0134** preserves the prior SQL bytes; 0132/0133 belong to other lanes.
+All migration filename references were updated.
+
+Validation used `/home/mole/oteryn-cache/codex-bin/cargo +1.95.0`:
+
+```sh
+test --locked -p oteryn-game-server --test character_authority_postgres --quiet -- appearance --test-threads=1 --nocapture
+test --locked -p oteryn-gameplay-dispatch --lib --quiet -- appearance --test-threads=1 --nocapture
+test --locked -p oteryn-gameplay-durability --lib --quiet -- appearance --test-threads=1 --nocapture
+test --locked -p oteryn-protocol-oteryn -p oteryn-gameplay-domain -p oteryn-session --lib --quiet -- appearance --test-threads=1
+```
+
+PASS: authority 17 (14 PG), dispatch 4 (1 PG), durability 4,
+domain/protocol/session 6/5/4. **All 15 appearance PostgreSQL cases actually ran
+against PostgreSQL 17.6 and the real migrator; none early-returned.** Dispatch's
+six pre-existing ignored full-spell tests require a separate manifest and are
+outside this mechanic. No test assertion, ignore or service gate was weakened.
+Ten-package all-target Clippy `-D warnings`, Rustfmt, workspace boundaries,
+governance validator, 124 governance unit tests and `git diff --check` passed.
+Whole-diff checklist and apps/crates/tools field/variant/caller audit completed;
+run 3e introduces no public function, enum variant, struct field or trait method.
+
+Unfinished: frozen-head CI, independent protocol/authority review and MQ remain
+integrator gates. No local appearance failure or new load-contention failure
+remains. Earlier monk timing evidence stays CI-only; APP-4 owns its documented
+Item artifact loading/rendering follow-up. No readiness or merge claim is made.
+The complete changed-file list, exact filters and final mount of every PG test
+file are in [APP-3/ROUTING_3E_2026-10-22.md](APP-3/ROUTING_3E_2026-10-22.md).
+This task card was the final file edited in run 3e.
+
+## FLOW port — 2026-10-23
+
+Ported onto `claude/happy-davinci-ijz3wy-6` (`49cdeaf5f`, main + FLOW-1/2). Earlier dated sections
+keep their original paths as history. Current layout:
+
+- Dispatch PG suite: `gameplay_transport/postgres_tests/appearance_change_postgres.rs` with children
+  in `postgres_tests/appearance_change_postgres/` (auto-mounted; no line in `monk_save_postgres_tests.rs`).
+- Appearance command state lives in `ChannelSessionStates::appearance_commands` and is forgotten by
+  `forget_session`; other per-session reads go through `ComposedFreshAdmission::states`.
+- Character-authority cases run once in `character_authority_postgres`; the two standalone
+  `character_appearance*_postgres` targets and their `[[test]]` entries are removed, as the lane intended.
+- Registry entries are per-entry files: `capabilities/0025-appearance-v1.json`,
+  `command_types/0025-appearance-change.json`, `state_domains/0021-appearance.json`; the aggregate
+  `PROTOCOL_OTERYN_V1_REGISTRY.json` is not restored. Migration stays `0134_character_sex.sql`.
+  No ID renumbering.

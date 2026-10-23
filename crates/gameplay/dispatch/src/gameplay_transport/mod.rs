@@ -2,6 +2,7 @@
 //! semantics and the composed owners decide admission.
 
 pub mod actor_spell;
+pub mod appearance_change;
 mod attack;
 mod bank_npc;
 mod bed_sleep;
@@ -13,6 +14,7 @@ use bundle_map_position::bundle_world_map;
 mod bundle_gates_tests;
 mod capabilities;
 mod channel_states;
+mod character_gameplay_fence;
 mod character_progression_binding;
 #[cfg(test)]
 mod character_progression_binding_tests;
@@ -2506,6 +2508,7 @@ fn operator_event(line: &str) {
 }
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
+    appearance_change::composed_methods!();
     async fn observe_quest_log(
         &self,
         actor: ExactActorRef,
@@ -2534,9 +2537,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         &self,
         actor: ExactActorRef,
         session: GameSessionId,
+        command_id: u64,
         intent: oteryn_protocol_oteryn::chat::ChatIntent,
     ) -> oteryn_protocol_oteryn::chat::ChatIntentResult {
-        self.chat_speak(actor, session, &intent).await
+        self.chat_speak(actor, session, command_id, &intent).await
     }
 
     async fn chat_next(
@@ -3957,6 +3961,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             actor_spell::NativeCastDispatch::Outcome(outcome) => {
                 let _ = self.drain_kill_rewards(game_session_id).await;
+                self.party_spell_feedback(game_session_id, &intent, &outcome);
                 Some(outcome)
             }
             actor_spell::NativeCastDispatch::Pending => None,
@@ -6641,7 +6646,11 @@ mod tests {
     }
 }
 
+mod party_kill_settlement;
+mod party_spell_feedback;
 mod party_spell_owner;
+mod party_xp;
+mod party_xp_command;
 mod spell_parameter_cast;
 #[cfg(test)]
 pub use actor_spell::ChannelSpellStates;

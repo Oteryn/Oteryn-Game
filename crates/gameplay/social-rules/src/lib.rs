@@ -6,6 +6,7 @@ pub mod premium_snapshot;
 pub mod relay;
 pub mod release_policy;
 pub mod shared_experience;
+pub mod shared_experience_split;
 pub mod spam;
 pub mod trust_policy;
 
