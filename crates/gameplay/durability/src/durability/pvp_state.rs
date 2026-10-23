@@ -61,13 +61,7 @@ pub struct PvpWriteAhead {
     pub kinds: PvpDeadlineKinds,
 }
 
-/// The effective skull (§6.2): the stored one while `skull_until` is in the future.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum PvpSkull {
-    None,
-    Red,
-    Black,
-}
+pub use oteryn_gameplay_combat_rules::pvp::skull::PvpSkull;
 
 /// Microseconds since the Unix epoch on PostgreSQL's clock, not an owner timer axis.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -149,6 +143,7 @@ pub struct PvpCleanup {
     pub points: u64,
     pub marks: u64,
     pub ledger_rows: u64,
+    pub skulls: u64,
 }
 
 impl DurabilityRoot {
@@ -355,68 +350,11 @@ pub(super) async fn load_pvp_state(
     }))
 }
 
-/// §6.2 World job, inside a transaction that already holds the scope authority: at most
-/// [`PVP_CLEANUP_BATCH`] point rows older than 45 days (`PARTYPVP0-RL-23`), expired revenge marks
-/// and ledger rows whose `last_at` is older than 5 minutes (`PARTYPVP0-RL-18`) of the authority's
-/// World. The authority must belong to this transaction, as for the World party cleanup.
-#[allow(dead_code)] // The node's World job calls it in the PVP-RT-1b wiring slice.
-pub async fn cleanup_pvp_rows_in_transaction(
-    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    authority: &super::spell_item_transaction::SpellItemScopeAuthority,
-) -> std::result::Result<PvpCleanup, super::spell_item_transaction::SpellItemError> {
-    super::spell_item_transaction::check_scope_transaction(tx, authority).await?;
-    let world = &authority.world_bytes();
-    let points = sqlx::query(
-        "DELETE FROM game_character_unjustified_points WHERE (character_id, death_occurrence_id) IN \
-           (SELECT p.character_id, p.death_occurrence_id FROM game_character_unjustified_points p \
-              JOIN game_character_roots r ON r.character_id = p.character_id \
-             WHERE r.world_id = encode($1,'hex')::uuid \
-               AND p.committed_at < clock_timestamp() - interval '45 days' \
-             ORDER BY p.committed_at, p.character_id LIMIT $2 FOR UPDATE OF p)",
-    )
-    .bind(world.as_slice())
-    .bind(PVP_CLEANUP_BATCH)
-    .execute(&mut **tx)
-    .await?
-    .rows_affected();
-    let marks = sqlx::query(
-        "DELETE FROM game_character_revenge_marks WHERE (victim_character_id, killer_character_id, \
-            death_occurrence_id) IN \
-           (SELECT m.victim_character_id, m.killer_character_id, m.death_occurrence_id \
-              FROM game_character_revenge_marks m \
-              JOIN game_character_roots r ON r.character_id = m.victim_character_id \
-             WHERE r.world_id = encode($1,'hex')::uuid AND m.expires_at <= clock_timestamp() \
-             ORDER BY m.expires_at, m.victim_character_id LIMIT $2 FOR UPDATE OF m)",
-    )
-    .bind(world.as_slice())
-    .bind(PVP_CLEANUP_BATCH)
-    .execute(&mut **tx)
-    .await?
-    .rows_affected();
-    let ledger_rows = sqlx::query(
-        "DELETE FROM game_character_pvp_ledger WHERE (victim_character_id, contributor_character_id) IN \
-           (SELECT l.victim_character_id, l.contributor_character_id FROM game_character_pvp_ledger l \
-              JOIN game_character_pvp_state s ON s.character_id = l.victim_character_id \
-             WHERE s.world_id = encode($1,'hex')::uuid \
-               AND l.last_at < clock_timestamp() - interval '5 minutes' \
-             ORDER BY l.last_at, l.victim_character_id LIMIT $2 FOR UPDATE OF l)",
-    )
-    .bind(world.as_slice())
-    .bind(PVP_CLEANUP_BATCH)
-    .execute(&mut **tx)
-    .await?
-    .rows_affected();
-    Ok(PvpCleanup {
-        points,
-        marks,
-        ledger_rows,
-    })
-}
+pub use super::pvp_expiry::cleanup_pvp_rows_in_transaction;
 
 impl DurabilityRoot {
     /// One bounded World cleanup pass (§6.2) under the current scoped owner, the same source
     /// pass as the party invitation expiry: no command occurrence and no user payment exists.
-    #[allow(dead_code)] // The node's World job calls it in the PVP-RT-1b wiring slice.
     pub async fn drain_pvp_expiry(
         &self,
         permit: &super::spell_owner_commit::SpellLanePermit,

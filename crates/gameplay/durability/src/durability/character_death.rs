@@ -96,6 +96,8 @@ pub struct CharacterDeathRequest<const N: usize> {
     pub reward_revision: String,
     pub policy: FiniteProgressionPolicy<String, N>,
     pub held_blessings: Vec<String>,
+    /// Qualified Open-PvP consequences; empty until the runtime classifier is enabled.
+    pub pvp_contributors: Vec<super::pvp_death_consequences::PvpDeathContributor>,
     pub death_cell: DeathCell,
     pub respawn_position: Vec<u8>,
 }
@@ -451,6 +453,12 @@ impl DurabilityRoot {
                     bind_death_build(receipt, build_loss.as_ref())
                         .execute(&mut *tx)
                         .await?;
+                    if let Err(error) = super::pvp_death_consequences::apply_pvp_death_in_transaction(
+                        &mut tx, fence.character_id, request.death_cell.world_id,
+                        request.occurrence.as_bytes(), &request.pvp_contributors,
+                    ).await {
+                        return Ok(Err(error));
+                    }
                     let consumed = sqlx::query(
                         "DELETE FROM game_character_blessings \
                           WHERE character_id = encode($1,'hex')::uuid",
@@ -881,7 +889,7 @@ impl DurabilityRoot {
                 .await
             }
             _ => {
-                self.settle_player_death(sequencer, authority, node, fence, request)
+                self.settle_player_pvp_death(sequencer, authority, node, fence, request)
                     .await
             }
         }
@@ -1284,6 +1292,11 @@ fn command_binding<const N: usize>(
     push_bytes(&mut semantic, &request.death_cell.spatial_position)?;
     push_bytes(&mut semantic, request.death_cell.map_revision.as_bytes())?;
     push_bytes(&mut semantic, &request.respawn_position)?;
+    super::pvp_death_request::bind_contributors(
+        &mut semantic,
+        fence.character_id,
+        &request.pvp_contributors,
+    )?;
     let digest: [u8; 32] = Sha256::digest(&semantic).into();
     let mut binding = Vec::with_capacity(33);
     binding.push(DEATH_BINDING_VERSION);
@@ -1607,6 +1620,7 @@ mod tests {
     fn request() -> CharacterDeathRequest<2> {
         let context = context();
         CharacterDeathRequest {
+            pvp_contributors: Vec::new(),
             occurrence: PlayerDeathOccurrence::from_bytes(id(1)).expect("occurrence"),
             context: context.clone(),
             policy_revision: "policy-1".into(),
@@ -2224,6 +2238,7 @@ mod death_build_postgres {
             death_loss_rounding: RoundingMode::Floor,
         };
         Ok(CharacterDeathRequest {
+            pvp_contributors: Vec::new(),
             occurrence: PlayerDeathOccurrence::from_bytes(id(tag)).map_err(debug)?,
             context,
             policy_revision: "policy-1".into(),

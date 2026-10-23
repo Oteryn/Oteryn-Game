@@ -57,6 +57,7 @@ mod npc_trade_command;
 mod npc_travel;
 mod npc_voice;
 mod paced_movement;
+mod pvp_death;
 mod tutorial_corruptor;
 mod tutorial_movement;
 mod tutorial_session;
@@ -70,6 +71,7 @@ mod rune_use_bridge;
 mod seam_rooms;
 pub use seam_rooms::SeamRooms;
 mod source_item_cycle;
+mod source_pvp_expiry;
 mod spell_access_facts;
 mod spell_character_facts;
 mod spell_magnitude_facts;
@@ -1710,15 +1712,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .and_then(|native| native.training_formula())
             .map(|formula| formula as &dyn crate::durability::character_build::BuildFormula);
         match self
-            .root
-            .settle_runtime_player_death(
-                &self.revision_sequencer,
-                self.character,
-                self.holder,
-                fence,
-                request,
-                formula,
-            )
+            .settle_source_player_death(fence, request, formula)
             .await
         {
             Ok(committed) => (
@@ -5302,6 +5296,7 @@ fn player_death_request<const N: usize>(
         .map(|byte| format!("{byte:02x}"))
         .collect();
     crate::durability::character_death::CharacterDeathRequest {
+        pvp_contributors: Vec::new(),
         occurrence: death.occurrence,
         context: progression.context.clone(),
         policy_revision: progression.policy_revision.clone(),
@@ -7406,13 +7401,14 @@ mod death_ml_loss_postgres {
     use oteryn_gameplay_progression::hit_training::SkillFamily;
     use oteryn_simulation_determinism::{ExactI64, RoundingMode};
 
-    fn death(tag: u8) -> TestResult<CharacterDeathRequest<50>> {
+    pub(super) fn death(tag: u8) -> TestResult<CharacterDeathRequest<50>> {
         let thresholds = std::array::from_fn(|index| LevelThreshold {
             level: u32::try_from(index + 1).unwrap_or(u32::MAX),
             minimum_experience: ExactI64::new(i64::try_from(index).unwrap_or(i64::MAX) * 20),
         });
         let context = harness::context();
         Ok(CharacterDeathRequest {
+            pvp_contributors: Vec::new(),
             occurrence: PlayerDeathOccurrence::from_bytes(id(tag)).map_err(debug)?,
             policy: FiniteProgressionPolicy {
                 context: context.clone(),
