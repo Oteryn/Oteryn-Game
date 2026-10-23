@@ -1003,3 +1003,7 @@ mod quest_catalogue_boot_tests;
 
 #[cfg(test)]
 mod bundle_spawn_owner_tests;
+
+#[cfg(test)]
+#[path = "../tests/support/bed_sleep_postgres_cases.rs"]
+mod bed_sleep_postgres_cases;

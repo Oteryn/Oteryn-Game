@@ -22,3 +22,12 @@ use oteryn_gameplay_domain::domain;
 use oteryn_gameplay_entities as foundation;
 #[allow(unused_imports)]
 use oteryn_gameplay_native_admission_source as native_admission_source;
+
+#[cfg(test)]
+#[allow(dead_code)]
+#[path = "../../../../apps/game-server/tests/support/bestiary_postgres_harness.rs"]
+mod bestiary_postgres_harness;
+
+#[cfg(test)]
+#[path = "../../../../apps/game-server/tests/support/bed_sleep_postgres_cases.rs"]
+mod bed_sleep_postgres_cases;

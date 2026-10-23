@@ -2,6 +2,8 @@
 
 include!("core_modules.rs");
 
+pub mod bed_sleep;
+
 pub mod creature_source_items;
 pub mod mail_text_policy;
 
