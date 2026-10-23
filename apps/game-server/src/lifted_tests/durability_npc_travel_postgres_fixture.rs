@@ -19,6 +19,7 @@ fn placed(sequence: u64, x: i32) -> TestResult<FinalLastPosition> {
     Ok(FinalLastPosition {
         write_sequence: sequence,
         record: crate::durability::character_last_position::LastPositionRecord {
+            rest: None,
             world_id: WorldId::decode(&id(fixture::WORLD)).map_err(debug)?,
             cell: LastPositionCell { x, y: 20, floor: 7 },
             coordinate_frame_digest: [1; 32],
