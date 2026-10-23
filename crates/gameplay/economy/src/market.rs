@@ -22,6 +22,15 @@ pub fn valid_key_bytes(value: &str) -> bool {
         })
 }
 
+// Reference snapshot: Canary 04b83b512114bfd888000d6e1433ed8ecaec7c5b,
+// src/game/game.cpp playerCreateMarketOffer and config.lua.dist market settings.
+// MARKET0 §3.2 additionally caps the checked total, not only the piece price.
+pub const MAX_OPEN_OFFERS: usize = 100;
+pub const MAX_AMOUNT: u32 = 64_000;
+// MARKET0 §6 limits a transaction to this many native ItemInstances.
+pub const MAX_TOUCHED_ITEMS: usize = 100;
+pub const MIN_FEE: u64 = 20;
+pub const MAX_FEE: u64 = 1_000_000;
 pub const MAX_TOTAL: u64 = 999_999_999_999;
 pub const HARD_CREDIT_CEILING: u64 = 9_000_000_000_000_000;
 pub const LIFETIME_US: i64 = 30 * 24 * 60 * 60 * 1_000_000;
@@ -76,13 +85,13 @@ pub fn offer_total(amount: u32, price: u64) -> Result<u64, PlanError> {
     let total = u128::from(amount)
         .checked_mul(u128::from(price))
         .ok_or(PlanError::InvalidAmount)?;
-    if !(1..=64_000).contains(&amount) || price == 0 || total > u128::from(MAX_TOTAL) {
+    if !(1..=MAX_AMOUNT).contains(&amount) || price == 0 || total > u128::from(MAX_TOTAL) {
         return Err(PlanError::InvalidAmount);
     }
     u64::try_from(total).map_err(|_| PlanError::InvalidAmount)
 }
 pub fn placement_fee(amount: u32, price: u64) -> Result<u64, PlanError> {
-    Ok((offer_total(amount, price)? / 50).clamp(20, 1_000_000))
+    Ok((offer_total(amount, price)? / 50).clamp(MIN_FEE, MAX_FEE))
 }
 impl Offer<'_> {
     fn book(&self) -> (WorldId, &str) {
@@ -252,3 +261,11 @@ pub fn held_credit_release(
 #[cfg(test)]
 #[path = "market_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "market_reference_tests.rs"]
+mod reference_tests;
+
+#[cfg(test)]
+#[path = "market_property_tests.rs"]
+mod property_tests;

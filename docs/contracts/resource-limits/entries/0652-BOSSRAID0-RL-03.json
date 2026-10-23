@@ -1,0 +1,23 @@
+{
+  "id": "BOSSRAID0-RL-03",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_BOSS_RAID0_BOSSES_RAIDS_AND_BOSSTIARY_DECISION_2026-09-30.md",
+  "failure_category": "CAPACITY_EXCEEDED",
+  "client_visible": false,
+  "consumers": [
+    "crates/gameplay/encounter-rules/src/raid/mod.rs",
+    "crates/gameplay/encounter-rules/src/raid/definition.rs",
+    "crates/gameplay/encounter-rules/src/raid/schedule.rs",
+    "crates/gameplay/durability/src/durability/raid_schedule.rs"
+  ],
+  "resource": "Creatures in one raid definition",
+  "unit": "creatures",
+  "hard_maximum": 200,
+  "configurable_range": {
+    "minimum": 200,
+    "maximum": 200
+  },
+  "allocation_impact": "Bounded pure schedule metadata only. No runtime activation, content admission or channel target enumeration is authorized.",
+  "boundary_tests": [
+    "raid_reference_parity_rows"
+  ]
+}
