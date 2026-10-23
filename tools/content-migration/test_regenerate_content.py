@@ -79,10 +79,14 @@ def stopped_merge(root: Path, conflicting: list[str], *, moved_entry: bool = Fal
             else:
                 write(root, path, {"items": ["base", side]})
         git(root, "commit", "-q", "-am", side)
+    # The merge needs an identity too, or it stops before merging and leaves no conflict.
     merged = subprocess.run(
-        ["git", "merge", "-q", "theirs"], cwd=root, capture_output=True
+        ["git", "-c", "user.name=t", "-c", "user.email=t@t", "merge", "-q", "theirs"],
+        cwd=root,
+        capture_output=True,
     )
     assert merged.returncode != 0, "fixture merge must stop on conflicts"
+    assert sorted(unmerged(root)) == sorted(conflicting), unmerged(root)
 
 
 def resolve_in(root: Path) -> tuple[int, list[str]]:

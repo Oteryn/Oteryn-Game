@@ -144,7 +144,7 @@ fn creature_movement_dispatch_steps_between_thinks_on_postgres() -> TestResult {
             "the think schedules a deadline without moving"
         );
         let (next, sequence) = {
-            let states = owner.spell_states.lock().await;
+            let states = owner.states.spell_states.lock().await;
             assert!(
                 states
                     .monster_melee
@@ -176,7 +176,7 @@ fn creature_movement_dispatch_steps_between_thinks_on_postgres() -> TestResult {
             "real dispatch committed the creature's step"
         );
         assert_eq!(after.position().floor, start.floor);
-        let states = owner.spell_states.lock().await;
+        let states = owner.states.spell_states.lock().await;
         assert_eq!(states.monster_ai_sequence, sequence + 1);
         assert!(
             states
@@ -214,6 +214,7 @@ fn creature_movement_dispatch_steps_between_thinks_on_postgres() -> TestResult {
         assert_eq!(returned.revision(), displaced.revision() + 1);
         assert_eq!(
             owner
+                .states
                 .spell_states
                 .lock()
                 .await

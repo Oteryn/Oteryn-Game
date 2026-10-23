@@ -242,7 +242,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         // A retained original is resolved before current handles, custody or target reads.
         let retained = {
-            let states = self.spell_states.lock().await;
+            let states = self.states.spell_states.lock().await;
             states
                 .pending_native
                 .iter()
@@ -305,7 +305,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .and_then(|i| u32::try_from(i).ok()?.checked_add(1))
                 .and_then(NonZeroU32::new)?;
             let runtime = self.runtime.lock().await;
-            let states = self.spell_states.lock().await;
+            let states = self.states.spell_states.lock().await;
             let Some(state) = states.get(&runtime, actor, command.game_session_id) else {
                 return Some(UseOutcome::rejected());
             };

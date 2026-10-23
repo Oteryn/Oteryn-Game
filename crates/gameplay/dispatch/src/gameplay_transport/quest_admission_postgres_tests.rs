@@ -195,13 +195,14 @@ fn execute(case: Case) -> TestResult {
 
         if matches!(case, Case::Unbound | Case::Terminal | Case::UnknownFence) {
             owner
+                .states
                 .progression_sessions
                 .lock()
                 .map_err(debug)?
                 .remove(&session);
             owner.admit_quest_session(&admitted).await;
             owner.admit_quest_session(&admitted).await;
-            let entries = owner.quest_sessions.lock().map_err(debug)?;
+            let entries = owner.states.quest_sessions.lock().map_err(debug)?;
             let entry = entries.get(&session).ok_or("quest session")?;
             assert!(entry.experience_deferred);
             assert!(entry.retry_at.is_none());
@@ -226,6 +227,7 @@ fn execute(case: Case) -> TestResult {
                 assert_eq!(counts_without_receipts(&harness).await?, (0, 1));
                 assert!(
                     owner
+                        .states
                         .quest_sessions
                         .lock()
                         .map_err(debug)?
@@ -240,6 +242,7 @@ fn execute(case: Case) -> TestResult {
                 .execute(&harness.pool)
                 .await?;
                 owner
+                    .states
                     .quest_sessions
                     .lock()
                     .map_err(debug)?
@@ -266,7 +269,7 @@ fn execute(case: Case) -> TestResult {
                 for _ in 0..2 {
                     owner.refresh_quest_session(session, false).await;
                 }
-                let entries = owner.quest_sessions.lock().map_err(debug)?;
+                let entries = owner.states.quest_sessions.lock().map_err(debug)?;
                 let entry = entries.get(&session).ok_or("entry")?;
                 assert!(entry.copy.is_none() && entry.retry_at.is_none());
             }
@@ -274,7 +277,7 @@ fn execute(case: Case) -> TestResult {
                 sqlx::query("ALTER TABLE game_durability_reconnect_sessions RENAME TO quest_unavailable_sessions").execute(&harness.pool).await?;
                 owner.refresh_quest_session(session, false).await;
                 {
-                    let entries = owner.quest_sessions.lock().map_err(debug)?;
+                    let entries = owner.states.quest_sessions.lock().map_err(debug)?;
                     let entry = entries.get(&session).ok_or("entry")?;
                     assert!(entry.copy.is_some() && entry.retry_at.is_some());
                 }
@@ -282,12 +285,14 @@ fn execute(case: Case) -> TestResult {
             }
             Case::ReplacedGeneration | Case::Removed => {
                 owner
+                    .states
                     .progression_sessions
                     .lock()
                     .map_err(debug)?
                     .remove(&session);
                 owner.admit_quest_session(&admitted).await;
                 owner
+                    .states
                     .progression_sessions
                     .lock()
                     .map_err(debug)?
@@ -297,8 +302,9 @@ fn execute(case: Case) -> TestResult {
                 let mutation = async {
                     pause.reached.notified().await;
                     if matches!(case, Case::Removed) {
-                        owner.forget_quest_session(session);
+                        owner.states.forget_session(session);
                         owner
+                            .states
                             .progression_sessions
                             .lock()
                             .map_err(debug)?
@@ -318,6 +324,7 @@ fn execute(case: Case) -> TestResult {
                 if matches!(case, Case::Removed) {
                     assert!(
                         !owner
+                            .states
                             .quest_sessions
                             .lock()
                             .map_err(debug)?
@@ -327,6 +334,7 @@ fn execute(case: Case) -> TestResult {
                 } else {
                     assert!(
                         owner
+                            .states
                             .quest_sessions
                             .lock()
                             .map_err(debug)?
@@ -356,6 +364,7 @@ fn execute(case: Case) -> TestResult {
             assert_eq!(counts(&harness).await?, (50, 1, 0));
             assert!(
                 owner
+                    .states
                     .quest_sessions
                     .lock()
                     .map_err(debug)?

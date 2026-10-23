@@ -108,7 +108,7 @@ fn scenario(tag: &str, health: u32, mana: u32) -> TestResult {
                 )
                 .map_err(debug)?;
             let placed = runtime.visible_entities().npcs[0];
-            let mut states = owner.spell_states.lock().await;
+            let mut states = owner.states.spell_states.lock().await;
             let state = states.get_mut(&runtime, actor, session).ok_or("vitals")?;
             assert_eq!(state.character_facts().vocation, Vocation::None);
             assert_eq!(
@@ -140,13 +140,14 @@ fn scenario(tag: &str, health: u32, mana: u32) -> TestResult {
                 generation: placed.generation,
             }
         };
-        owner.chat.admit(
+        owner.states.chat.admit(
             session,
             "Tutorial candidate",
             SemanticTimeMicros::from_micros(0),
         );
-        owner.chat.set_npc_service(session);
+        owner.states.chat.set_npc_service(session);
         owner
+            .states
             .chat
             .install_npc_talk(Arc::new(NpcTalkBook::default()));
         for (command_id, text) in [(1, "hi"), (2, "knight")] {
@@ -175,8 +176,8 @@ fn scenario(tag: &str, health: u32, mana: u32) -> TestResult {
             .ok_or("clock")?;
         {
             let runtime = dependencies.runtime.lock().await;
-            let ordinary = owner.npc_conversations.talk_in(
-                &owner.chat,
+            let ordinary = owner.states.npc_conversations.talk_in(
+                &owner.states.chat,
                 &runtime,
                 actor,
                 session,
@@ -194,12 +195,14 @@ fn scenario(tag: &str, health: u32, mana: u32) -> TestResult {
             crate::gameplay_transport::actor_spell::TrainingSave::Saved
         );
         let topic = owner
+            .states
             .npc_conversations
             .vocation_topic_for_test(session)
             .ok_or("confirmed topic")?;
         let live_before = {
             let runtime = dependencies.runtime.lock().await;
             owner
+                .states
                 .spell_states
                 .lock()
                 .await
@@ -226,7 +229,7 @@ fn scenario(tag: &str, health: u32, mana: u32) -> TestResult {
         assert_eq!(chosen.disposition, NpcIntentDisposition::Ok);
         let (installed_revision, occurrence) = {
             let runtime = dependencies.runtime.lock().await;
-            let states = owner.spell_states.lock().await;
+            let states = owner.states.spell_states.lock().await;
             let state = states
                 .get(&runtime, actor, session)
                 .ok_or("converted vitals")?;
@@ -283,6 +286,7 @@ fn scenario(tag: &str, health: u32, mana: u32) -> TestResult {
             if restore_before {
                 let runtime = dependencies.runtime.lock().await;
                 *owner
+                    .states
                     .spell_states
                     .lock()
                     .await
@@ -293,6 +297,7 @@ fn scenario(tag: &str, health: u32, mana: u32) -> TestResult {
             assert!(replay.retain(occurrence, retained.clone()));
             assert!(
                 owner
+                    .states
                     .npc_conversations
                     .restore_vocation_topic_for_test(session, replay)
             );
@@ -314,7 +319,7 @@ fn scenario(tag: &str, health: u32, mana: u32) -> TestResult {
             .await;
             assert_eq!(result.disposition, NpcIntentDisposition::Ok);
             let runtime = dependencies.runtime.lock().await;
-            let states = owner.spell_states.lock().await;
+            let states = owner.states.spell_states.lock().await;
             let state = states
                 .get(&runtime, actor, session)
                 .ok_or("converted vitals")?;
@@ -350,7 +355,7 @@ fn scenario(tag: &str, health: u32, mana: u32) -> TestResult {
         admit(&owner, &restarted, &request).await?;
         {
             let runtime = restarted.runtime.lock().await;
-            let states = owner.spell_states.lock().await;
+            let states = owner.states.spell_states.lock().await;
             let state = states
                 .get(&runtime, restarted.actor, session)
                 .ok_or("restored classed vitals")?;

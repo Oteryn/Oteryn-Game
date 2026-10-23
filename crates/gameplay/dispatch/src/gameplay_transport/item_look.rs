@@ -220,7 +220,6 @@ fn content_generation(runtime: &ChannelRuntimeV1) -> (u64, [u8; 32]) {
         runtime.content_pin().server_artifact_digest(),
     )
 }
-
 /// Read current position under the runtime lock, never from a cached session viewport.
 fn actor_position(runtime: &mut ChannelRuntimeV1, actor: ExactActorRef) -> Option<ActorPosition> {
     let position = runtime
@@ -234,7 +233,6 @@ fn actor_position(runtime: &mut ChannelRuntimeV1, actor: ExactActorRef) -> Optio
         floor: position.floor,
     })
 }
-
 /// The corpse binding and spatial predicate must survive the durable contents read.
 fn corpse_for_look(
     runtime: &mut ChannelRuntimeV1,
@@ -264,7 +262,6 @@ fn corpse_for_look(
         Err(refusal)
     }
 }
-
 pub(super) async fn look_item(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
@@ -278,7 +275,6 @@ pub(super) async fn look_item(
         Err(refusal) => ItemLookResult::Refused(refusal),
     }
 }
-
 async fn observe_look_item(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
@@ -402,7 +398,6 @@ async fn observe_look_item(
         ItemLookOutcome::Unavailable => Err(unavailable),
     }
 }
-
 /// Resolve a current map entry using native floors for both observer and target.
 pub(super) fn map_look_target<F: MapFacts>(
     source: &super::world_map::MapViewSource<'_, F>,
@@ -458,7 +453,6 @@ pub(super) fn map_look_target<F: MapFacts>(
         NonZeroU32::new(entry.facts.count).ok_or(unavailable)?,
     ))
 }
-
 async fn observe_map_look(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
@@ -508,7 +502,6 @@ async fn observe_map_look(
     };
     Ok((definition, count.get()))
 }
-
 /// Owned runtime facts; no borrowed runtime state survives the following durable read.
 pub(super) enum RuntimeLook {
     Text(ItemLookResult),
@@ -518,7 +511,6 @@ pub(super) enum RuntimeLook {
         yourself: bool,
     },
 }
-
 /// Current exact actor and REFERENCE view admission, entirely under the runtime lock.
 pub(super) fn runtime_look_creature(
     runtime: &mut ChannelRuntimeV1,
@@ -586,7 +578,6 @@ pub(super) fn runtime_look_creature(
         yourself: found.actor == actor,
     })
 }
-
 pub(super) async fn look_creature(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
@@ -594,7 +585,12 @@ pub(super) async fn look_creature(
 ) -> ItemLookResult {
     let (target_actor, session, yourself, vocation) = {
         let mut runtime = admission.runtime.lock().await;
-        match runtime_look_creature(&mut runtime, admission.chat.npc_talk(), actor, target) {
+        match runtime_look_creature(
+            &mut runtime,
+            admission.states.chat.npc_talk(),
+            actor,
+            target,
+        ) {
             Err(refusal) => return ItemLookResult::Refused(refusal),
             Ok(RuntimeLook::Text(text)) => return text,
             Ok(RuntimeLook::Player {
@@ -604,11 +600,16 @@ pub(super) async fn look_creature(
             }) => {
                 // Lock order runtime -> spell_states. Vocation is optional, so never await a
                 // contended spell-state lock while holding the runtime.
-                let vocation = admission.spell_states.try_lock().ok().and_then(|states| {
-                    states
-                        .get(&runtime, actor, session)
-                        .map(|state| vocation_name(state.character_facts().vocation))
-                });
+                let vocation = admission
+                    .states
+                    .spell_states
+                    .try_lock()
+                    .ok()
+                    .and_then(|states| {
+                        states
+                            .get(&runtime, actor, session)
+                            .map(|state| vocation_name(state.character_facts().vocation))
+                    });
                 (actor, session, yourself, vocation)
             }
         }
@@ -622,7 +623,7 @@ pub(super) async fn look_creature(
         let mut runtime = admission.runtime.lock().await;
         if let Err(refusal) = revalidate_look_player(
             &mut runtime,
-            admission.chat.npc_talk(),
+            admission.states.chat.npc_talk(),
             actor,
             target,
             target_actor,
@@ -641,7 +642,6 @@ pub(super) async fn look_creature(
         }
     })
 }
-
 /// The visible actor and its session must survive the durable player-details read.
 fn revalidate_look_player(
     runtime: &mut ChannelRuntimeV1,
