@@ -392,6 +392,7 @@ message OneItemFeeBurnCauseV1 {
     OneItemCharmUnassignV1 charm_unassign = 1;
     OneItemNpcPurchaseV1 promotion_purchase = 2;
     OneItemNpcPurchaseV1 blessing_purchase = 3;
+    OneItemAreaDonationV1 area_donation = 4;
   }
 }
 message OneItemNpcPurchaseV1 {
@@ -648,4 +649,10 @@ message OneItemForgeDustLimitV1 {
 message OneItemPlayerTradeV1 {
   bytes request_binding = 1;
   repeated OneItemContainerEntryV1 destinations = 2; // exactly two, source-line order
+}
+
+message OneItemAreaDonationV1 {
+  bytes world = 1;
+  uint32 area = 2;
+  bytes occurrence = 3;
 }

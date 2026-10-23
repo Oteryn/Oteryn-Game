@@ -22,7 +22,7 @@ pub struct NotWiredInRuntime {
     pub parity_pending: [CyclopediaParityPending; 6],
 }
 
-/// Closed runtime port until separately qualified parity and integration exist.
+/// Reference-qualified runtime port, separate from owner-authorized basic Oteryn rules.
 /// Source-region admission and a valid amount cannot open this boundary.
 pub const fn require_cyclopedia_runtime() -> Result<(), NotWiredInRuntime> {
     Err(NotWiredInRuntime {
@@ -88,3 +88,6 @@ mod tests {
         );
     }
 }
+
+mod basic;
+pub use basic::{BasicArea, Exploration, MapAction, MapProgress, MapRefusal, Point};

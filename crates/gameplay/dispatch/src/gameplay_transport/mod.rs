@@ -27,6 +27,7 @@ mod combat_lock_fact;
 mod composed_test_owner;
 mod connection;
 mod container_view;
+mod cyclopedia;
 mod equipment_move;
 pub mod fresh_evidence;
 mod guild_chat;
@@ -2513,6 +2514,7 @@ fn operator_event(line: &str) {
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     appearance_change::composed_methods!();
     guild_intent::composed_methods!();
+    cyclopedia::composed_methods!();
     async fn observe_quest_log(
         &self,
         actor: ExactActorRef,
@@ -3564,6 +3566,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                     }
                     _ => Unavailable,
                 })?;
+            // LOOP-MAP-1: initialize selection and home-spawn factors before a player is admitted.
+            self.initialize_cyclopedia_respawn()
+                .await
+                .map_err(|_| Unavailable)?;
             let mut flow = FreshAdmissionDurabilityFlowV1::begin(authorization, transition)
                 .map_err(|_| Rejected)?;
             let mut prepared = PreparedRequest(None);

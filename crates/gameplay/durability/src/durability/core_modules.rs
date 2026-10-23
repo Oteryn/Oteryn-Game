@@ -3480,3 +3480,5 @@ pub mod house_spell_acl;
 
 pub mod guild;
 pub mod guild_audit;
+
+pub mod character_cyclopedia;
