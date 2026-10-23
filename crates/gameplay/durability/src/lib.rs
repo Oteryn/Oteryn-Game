@@ -32,7 +32,3 @@ use oteryn_gameplay_domain::domain;
 use oteryn_gameplay_entities as foundation;
 #[allow(unused_imports)]
 use oteryn_gameplay_native_admission_source as native_admission_source;
-
-#[cfg(test)]
-#[path = "../../../../apps/game-server/src/lifted_tests/auto/bed_sleep_postgres_cases.rs"]
-mod bed_sleep_postgres_cases;

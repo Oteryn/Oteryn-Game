@@ -1,7 +1,7 @@
 // BED-1d: real dispatch adapter -> native durable owner -> PostgreSQL.
 // The server fixture supplies the House owner's resolved intent. This proves
 // the durable dispatch connection, not active-bundle/reservation qualification.
-use crate::bed_sleep_postgres_cases::{FixturePresence, fixture, presence, request};
+use super::bed_sleep_fixture::{FixturePresence, fixture, presence, request};
 use crate::bestiary_postgres_harness::{Harness, TestResult, debug, runtime};
 use crate::durability::bed_sleep::{BedSleepOwner, BedSleepRequest};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
