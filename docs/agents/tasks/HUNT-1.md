@@ -21,11 +21,11 @@ needs_content_regeneration: true
 merge_authority: CP_ONLY (builder never marks ready)
 ```
 
-Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **OPEN**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@43914f183`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
 
-Merged evidence: #2335 (Prey slot state, migration `0152_prey_slot_state.sql`). Content tables and the PREY_V1 runtime are not on main yet. Evidence: `crates/protocol-oteryn/src/capability_tables.rs`.
+Merged evidence: #2335: pure Prey slot/access/grade/cost rules, bounded durable slot-state extension and decoder on the existing kill/XP path. Evidence: `crates/gameplay/progression/src/prey.rs`, `crates/gameplay/durability/src/durability/prey/decode.rs`, `apps/game-server/migrations/0152_prey_slot_state.sql`, `crates/gameplay/progression/src/prey_tests.rs`, `apps/game-server/src/lifted_tests/auto/prey_postgres_cases.rs`, `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs`.
 
-Remaining: Prey storage/draws/checkpoints/fees/effects, Task Board/delivery/shop and wire remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
+Remaining: Admitted Prey content/draws, fenced slot writers/receipts, hunting checkpoints/expiry, fee burn/effects, wildcard ledger/events/DAILY delivery, Task Board weekly settlement/overflow/delivery/shop, PREY_V1 wire and runtime activation remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2149, branch skeleton/hunt-1
 

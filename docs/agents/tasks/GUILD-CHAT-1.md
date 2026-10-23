@@ -22,11 +22,11 @@ needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
 
-Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **OPEN**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@43914f183`): **COMPLETE**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
 
-Merged evidence: none. Local/private/room chat exists; no guild-room relay/delivery implementation from this card is retained. Evidence: `crates/gameplay/dispatch/src/gameplay_transport/chat_intent.rs`.
+Merged evidence: #2326 (GUILD-CHAT-1a/1b): guild relay destination, membership/session custody at final dequeue, login motd and negotiated capability 36. Evidence: `crates/gameplay/social/src/chat/guild_room.rs`, `crates/gameplay/durability/src/durability/guild_chat.rs`, `crates/gameplay/dispatch/src/gameplay_transport/guild_chat.rs`, `crates/protocol-oteryn/src/chat/guild_room.rs`, `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/guild_chat.rs` and its custody/exclusion/fence/transition/wire child tests.
 
-Remaining: Guild membership-bound chat destination, delivery rechecks and login message remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
+Remaining: none in scope; ready to archive. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2142, branch skeleton/guild-chat-1
 (the draft carries a task record only; it has no code)

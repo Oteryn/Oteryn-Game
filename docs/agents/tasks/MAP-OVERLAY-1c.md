@@ -20,11 +20,11 @@ needs_registry: true    # RESOURCE_LIMITS_REGISTRY MAP01-RESET-RETIRE-MS row; GA
 merge_authority: CP_ONLY (builder never marks ready)
 ```
 
-Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **OPEN**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@43914f183`): **COMPLETE**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
 
-Merged evidence: none. Map pickup still uses epoch 0 pending the reset owner; no MAP-OVERLAY-1c activation/drain owner is retained. Evidence: `crates/gameplay/dispatch/src/gameplay_transport/loop_map_pickup.rs`.
+Merged evidence: #2327: scoped planned drain, resumable Ground retirement, atomic epoch/calendar/Channel activation and active-epoch boot/map consumers; House/Unknown targets refuse closed. Evidence: `apps/game-server/migrations/0148_world_reset.sql`, `crates/gameplay/durability/src/durability/world_reset/activation.rs`, `apps/game-server/src/node/serve/world_reset.rs`, `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/planned_world_reset.rs`, `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/world_reset_activation.rs`.
 
-Remaining: World RETIRING/drain/Ground retirement and atomic epoch activation, source fencing and measured reset qualification remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
+Remaining: none in scope; ready to archive. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2167, branch skeleton/map-overlay-1c
 

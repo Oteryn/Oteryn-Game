@@ -21,11 +21,11 @@ needs_content_regeneration: true
 merge_authority: CP_ONLY (builder never marks ready)
 ```
 
-Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **OPEN**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@43914f183`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
 
-Merged evidence: none. The private imbuement draft was not retained as an installed owner on main; timed-item repair is a separate mechanic. Evidence: `crates/protocol-oteryn/src/capability_tables.rs`.
+Merged evidence: #2333: pure imbuement rules and dormant per-item storage; runtime mutation remains closed. Evidence: `crates/gameplay/items/src/imbuement.rs`, `crates/gameplay/durability/src/durability/imbuement.rs`, `apps/game-server/migrations/0150_game_item_imbuements.sql`, `crates/gameplay/items/src/imbuement_tests.rs`, `apps/game-server/src/lifted_tests/auto/imbuement_postgres_cases.rs`.
 
-Remaining: Imbuement schema/owner, eligible elapsed producer, Apply/Clear/Expire, content/effects/scrolls and wire remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
+Remaining: Eligible elapsed producer/checkpoints/ticking, audited Apply/Clear/Expire writers and mutation grants, content/access readers, combat effects, scrolls/etcher and IMBUE_V1 wire/runtime activation remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2144, branch skeleton/item-imbue-1
 
