@@ -4,7 +4,7 @@
 task_id: ITEM-STORAGE-1
 title: "ITEM-STORAGE-1: item storage: depot, supply stash, writable items"
 mode: IMPLEMENT
-status: NOT_STARTED
+status: waiting
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 3
@@ -22,6 +22,12 @@ needs_registry: true
 needs_content_regeneration: true
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **OPEN**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: none. Carried-item/Inbox transfer exists; the Depot/Stash/write owners scoped by this card are not retained. Evidence: `crates/gameplay/durability/src/durability/item_transfer.rs`.
+
+Remaining: Installed Depot proof/schema, locker/view/session/Premium composition, Stash and writing children remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2156, branch skeleton/item-storage-1
 

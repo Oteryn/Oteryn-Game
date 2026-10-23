@@ -4,10 +4,10 @@
 task_id: APP-1
 title: "Durable selected appearance and AccountUnlock set"
 mode: IMPLEMENT
-status: partial
+status: waiting
 repository: Oteryn/Oteryn-Game
 issue: 1622
-pr: 2170
+pr: null
 wave: 4
 branch: skeleton/app-1
 base_branch: main
@@ -23,6 +23,12 @@ needs_registry: false
 needs_content_regeneration: false
 merge_authority: CP_ONLY
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#2170](https://github.com/Oteryn/Oteryn-Game/pull/2170). Migration 0093, fenced appearance selection, stored reads and recovery are merged. Evidence: `crates/gameplay/durability/src/durability/character_appearance.rs`.
+
+Remaining: Admitted cosmetics/sex/unlock resolvers, earned grant consumer, APP-3 runtime publication and real client relog remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 ## Authority and base
 

@@ -4,7 +4,7 @@
 task_id: HOUSE-ACL-1
 title: "HOUSE-ACL-1: house ACL tables and revisioned edits"
 mode: IMPLEMENT
-status: NOT_STARTED   # re-implementation pending under ADR-0022
+status: waiting
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 5
@@ -25,6 +25,12 @@ needs_registry: true   # ACL caps in RESOURCE_LIMITS_REGISTRY; House event; prot
 needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **OPEN**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: none. Existing spell-access seam is not the revisioned HOUSE-ACL-1 owner; that implementation is absent. Evidence: `crates/gameplay/durability/src/durability/house_spell_acl.rs`.
+
+Remaining: Implement the single revisioned guest/subowner/exclusion/door-list ACL and native consumers. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2140, branch skeleton/house-acl-1
 

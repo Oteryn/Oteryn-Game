@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/party-1
 issue: 1622
-pr: 2201
+pr: null
 base_sha: 5742f30f3
 plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4 Epic 5 PARTY-1 (row 112); App. 7 PARTY/PVP; wave 2"
 class: "hard (shared state)"
@@ -43,6 +43,12 @@ blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#2201](https://github.com/Oteryn/Oteryn-Game/pull/2201). World party membership/consent/shared-XP flag ports and local view cleanup are merged. Evidence: `crates/gameplay/durability/src/durability/world_party.rs`.
+
+Remaining: Full wire/ingress, current cross-node observers/admission and family end-to-end membership/succession qualification remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 Skeleton task record (parallel work model, owner-approved 2026-10-15). The builder fills `owned_paths`;
 `slot_only_paths` are touched only in the final commit at this PR's merge-queue turn, after merging main.

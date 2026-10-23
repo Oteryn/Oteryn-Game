@@ -4,7 +4,7 @@
 task_id: APP-3
 title: "APP-3: appearance change command, actor appearance state and wire codec"
 mode: IMPLEMENT
-status: in_progress   # prerequisite implementation and APP-3 authorised in this lane
+status: waiting
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 4
@@ -19,6 +19,12 @@ needs_migration: true   # 0134 reserved for Character creation sex authority
 needs_registry: true   # capability, command, state domain allocated by the protocol registry lease
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@65e40c57f`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#2325](https://github.com/Oteryn/Oteryn-Game/pull/2325). Capability-25 appearance changes, fenced durable selection/replay, Character sex and earned-unlock reads, observer mapping publication and session reducers are merged. Evidence: `crates/gameplay/dispatch/src/gameplay_transport/appearance_change.rs`, `crates/gameplay/dispatch/src/gameplay_transport/connection/appearance_change.rs` and `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/appearance_change_postgres.rs`.
+
+Remaining: Complete the retained negative qualification matrix with native evidence for every boundary. The card leaves that acceptance criterion unchecked; its checkpoint records local qualification but no complete candidate qualification evidence in this tree. APP-4's window/rendering and Item artifact loading remain sibling scope, not added APP-3 acceptance criteria. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2175, branch skeleton/app-3
 

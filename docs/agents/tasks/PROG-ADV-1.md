@@ -4,7 +4,8 @@
 task_id: PROG-ADV-1
 title: "PROG-ADV-1: advanced progression: proficiency, wheel, gems"
 mode: IMPLEMENT
-status: skeleton
+status: waiting
+pr: null
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 3
@@ -24,6 +25,12 @@ needs_registry: true
 needs_content_regeneration: true
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#1740](https://github.com/Oteryn/Oteryn-Game/pull/1740), [#1685](https://github.com/Oteryn/Oteryn-Game/pull/1685), [#1704](https://github.com/Oteryn/Oteryn-Game/pull/1704). Wheel allocation writer/admission reset and proficiency shaping/dust state are merged. Evidence: `crates/gameplay/durability/src/durability/character_wheel.rs`.
+
+Remaining: Orb consumption, remaining shape/content/wire/parity, Wheel spell/effect gates and gem reveal/vessel/crush/effect pipeline remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 ## Goal
 
