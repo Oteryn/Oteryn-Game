@@ -1009,6 +1009,8 @@ fn explicit_loads_resolve_by_exact_path() {
         "#[path = \"./ability/../ability/commit.rs\"]\nmod commit;",
         "include!(\"ability/commit.rs\");",
         "#[cfg(test)]\n#[path = \"../generated/commit.rs\"]\nmod generated;",
+        // A generated mount list stays unresolvable, so only a test-only module may include it.
+        "#[cfg(test)]\nmod auto {\n    include!(concat!(env!(\"OUT_DIR\"), \"/mounts.rs\"));\n}",
     ] {
         assert_eq!(run("src/lib.rs", decl, &[]), none, "{decl}");
     }
