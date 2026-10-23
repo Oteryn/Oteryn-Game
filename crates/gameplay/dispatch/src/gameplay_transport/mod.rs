@@ -8,6 +8,7 @@ mod bank_npc;
 mod bed_regen;
 mod bed_sleep;
 mod bundle_map_position;
+mod daily_reward;
 mod depot;
 mod house_intent;
 mod house_query;
@@ -2521,6 +2522,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     appearance_change::composed_methods!();
     guild_intent::composed_methods!();
     house_intent::composed_methods!();
+    daily_reward::composed_methods!();
     house_move_out::composed_methods!();
     async fn observe_quest_log(
         &self,
@@ -2979,6 +2981,9 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         target: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
     ) -> UseOutcome {
+        if let Some(outcome) = self.open_daily_shrine(actor, command, &target).await {
+            return outcome;
+        }
         if self
             .rooms
             .gate_source_world()

@@ -750,6 +750,10 @@ fn inbox_rows_are_immutable_and_no_other_writer_touches_them() -> TestResult {
                 "game_character_inbox_deliver",
                 "game_character_inbox_placement_proven",
                 "game_character_inbox_reward_claim_mint_proven",
+                // DAILY-1: SELECT/RAISE custody and atomic-MINT checks only;
+                // neither function inserts, updates or deletes Inbox rows.
+                "game_daily_reward_bound_custody",
+                "game_daily_reward_line_guard",
                 "game_house_disposition_delivery_proven",
                 "game_house_disposition_native_removal_proven",
                 "game_item_location_exclusive",
