@@ -381,6 +381,7 @@ const ADMISSION_REFUSAL_WRITE_BOUND: std::time::Duration = std::time::Duration::
 /// The owning fresh-admission authority. Production composes the real owners;
 /// nothing on the transport side can mark a connection admitted.
 pub trait FreshAdmissionAuthority {
+    super::house_intent::authority_methods!();
     super::appearance_change::authority_methods!();
     fn admit(
         &self,
@@ -2794,6 +2795,7 @@ where
             NpcTrade(NpcIntentDisposition, NpcUpdate, Vec<ItemViewDelta>),
             /// LOGOUT-WIRE-1: command 23; `ACCEPTED` ends the connection after the result.
             Logout(LogoutResult),
+            House(Option<Vec<u8>>),
             Unregistered,
         }
         // LOGOUT-RL-01: a second logout read before the first one's result.
@@ -3467,6 +3469,25 @@ where
                 )
                 .await,
             )
+        } else if matches!(
+            command.command_type,
+            oteryn_protocol_oteryn::house::COMMAND_TYPE_HOUSE_INTENT
+                | oteryn_protocol_oteryn::house::COMMAND_TYPE_HOUSE_QUERY
+        ) {
+            Dispatch::House(
+                super::house_intent::dispatch(
+                    authority,
+                    actor,
+                    UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: command.command_id,
+                        item_fence: admitted.item_fence,
+                    },
+                    command.payload,
+                    command.command_type == oteryn_protocol_oteryn::house::COMMAND_TYPE_HOUSE_QUERY,
+                )
+                .await,
+            )
         } else if command.command_type == COMMAND_TYPE_HIGHSCORES_QUERY_V1 {
             // HIGHSCORES0 §6: the World and the asking Character are the admitted session's.
             match decode_highscores_query(command.payload) {
@@ -3507,7 +3528,7 @@ where
             other => other,
         };
         drop(input_permit);
-        if let Dispatch::Appearance(None) = dispatch {
+        if matches!(dispatch, Dispatch::Appearance(None) | Dispatch::House(None)) {
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
         }
         let (Some(result_sequence), Some(following)) =
@@ -3520,6 +3541,8 @@ where
         admitted.continuity.server_sequence = sequence;
         admitted.continuity.next_command_id = next_command;
         let (status, result_payload) = match &mut dispatch {
+            Dispatch::House(Some(payload)) => (CommandStatus::Accepted, payload.clone()),
+            Dispatch::House(None) => return ConnectionEnd::AdmittedThenDisconnected(admitted),
             Dispatch::Appearance(Some(result)) => match appearance_change::result(*result) {
                 Some(result) => result,
                 None => return ConnectionEnd::AdmittedThenDisconnected(admitted),
@@ -4078,6 +4101,7 @@ where
             | Dispatch::Highscores(_)
             | Dispatch::Appearance(_)
             | Dispatch::Logout(_)
+            | Dispatch::House(_)
             | Dispatch::Unregistered => {}
         }
         if newhaven_travel_transport::emit_relocation(

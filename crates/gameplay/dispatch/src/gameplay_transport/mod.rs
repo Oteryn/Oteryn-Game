@@ -7,6 +7,8 @@ mod attack;
 mod bank_npc;
 mod bed_sleep;
 mod bundle_map_position;
+mod house_intent;
+mod house_query;
 use bundle_map_position::bundle_map_position;
 #[cfg(test)]
 use bundle_map_position::bundle_world_map;
@@ -2510,6 +2512,7 @@ fn operator_event(line: &str) {
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     appearance_change::composed_methods!();
+    house_intent::composed_methods!();
     async fn observe_quest_log(
         &self,
         actor: ExactActorRef,
