@@ -26,6 +26,66 @@ Merged evidence: none. Existing logout is reusable; no staff-action owner, sanct
 
 Remaining: Implement staff audit/sanctions and real mute/kick/report consumers within the accepted owner contracts. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
+## Server wiring gap list
+
+Local inspection, 2026-10-23, `3c57781c321e643a67457374d1d42b6dbabd9133`.
+The E2E audit table (`docs/agents/tasks/MECHANICS_STATUS.md`, “GM tools”, `NONE`)
+is confirmed on this HEAD; this is an absent mechanic, not a retained backend
+needing only transport registration.
+
+| Layer | On this HEAD | Missing server work |
+|---|---|---|
+| L3 rules / authority | No staff action rules, request verifier or roster | Closed typed actions/reasons, signature/role/scope validation |
+| L4 durability | No staff action, chain, sanction or report owner | Atomic action/audit/outbox writer, exact replay, current session fences |
+| Migrations | No GM tables; existing spell privacy projection grants no GM authority | Mechanic schema and runtime privileges; only allocation 0170 is available to this task |
+| Dispatch | Existing real fenced logout is reusable | Staff command handler under `gameplay_transport` |
+| Protocol | No GM request/result or registry entries | Bounded strict codec; allocated command ids 60–61, capability 51 |
+| Capability | No staff offer | Offer only after the selected authority model is bound; content alone cannot grant authority |
+| Runtime | No staff trust/configuration, desk or moderation consumers | Composition and durable mute/kick consumers |
+| PostgreSQL E2E | No GM dispatch case | Admitted session → command bytes → committed audit/effect → result bytes; restart/replay and negative fences |
+
+### Reference parity table
+
+| Visible behavior | Reference evidence | Oteryn now |
+|---|---|---|
+| Staff authority cannot be supplied by a player | Accepted live-readiness §1 rulings 2, 4 and 9; this card D1040–D1044 | No staff execution path; fails closed by absence |
+| Every read/mutation commits its audit before returning data/effects | Accepted live-readiness §1 ruling 11; draft behavior documented below | Missing |
+| Mute survives reconnect/restart and holds chat/casts | This card Reference behavior, Mute/Unmute | Missing |
+| Kick uses fenced logout, preserving IN_FIGHT | This card CP 2026-10-19 / D1437 | Logout prerequisite only |
+| Identical retries return stored results without repeating effects | This card D1042 and Reference executor | Missing |
+
+### Current implementation boundary
+
+The owner requests a logged-in wire path on 2026-10-23. The retained card's
+operator-only/no-protocol restriction is superseded for transport by that request.
+The authority choice still matters: the accepted operator path requires off-host
+OpenSSH signatures and restart-pinned trust; the accepted in-game staff path
+(live-readiness §1 rulings 4, 9–10) requires admission-bound, transaction-rechecked
+roles and permanent staff value isolation. Neither exists on this HEAD. A content
+flag, spell-privacy `staff_access`, player-provided role or unsigned request cannot
+substitute for either authority model. The authority question is pending with the
+owner; no protocol, persistence or authority semantics have been changed.
+
+Pending owner question (one batch): carry signed operator requests over the
+logged-in session, preserving this card's signature/chain requirements, or activate
+the accepted in-game role path including its permanent value isolation? Recommended:
+preserve signed operator authority and change only its transport for this basic form.
+
+### Validation evidence (gap inspection only, 2026-10-23)
+
+- `python3 tools/agents/validate_governance.py`: PASS.
+- `python3 tools/repository/validate_repository_policy.py`: PASS.
+- `python3 -m unittest discover -s tools/agents/tests`: PASS, 129 tests.
+- `git diff --check`: PASS.
+- Whole diff reviewed against `/home/mole/oteryn-cache/CODEX-CHECKLIST.md`:
+  documentation only; no added enums, fields, trait methods or public functions.
+- Cargo test filters: none; no Rust implementation was changed or qualified.
+
+Unfinished: all missing server layers in the gap list, capability negotiation,
+runtime consumers and the focused real-dispatch PostgreSQL E2E. No new player
+action is delivered by this inspection. Status remains `waiting`, `pr: null`;
+there is no implementation-completion or merge claim.
+
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2181, branch skeleton/gm-1
 
 ## Goal
