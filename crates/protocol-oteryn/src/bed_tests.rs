@@ -67,10 +67,8 @@ fn bed_sleep_dispositions_are_world_interaction_results_and_never_push_or_rune_r
 
 #[test]
 fn bed_sleep_registry_and_schema_agree() {
-    let registry: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json"
-    ))
-    .expect("registry");
+    let registry: serde_json::Value =
+        serde_json::from_str(crate::PROTOCOL_OTERYN_V1_REGISTRY_JSON).expect("registry");
     let command = registry["command_types"]
         .as_array()
         .expect("commands")

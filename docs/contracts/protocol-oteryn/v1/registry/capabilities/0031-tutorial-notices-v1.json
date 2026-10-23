@@ -1,0 +1,12 @@
+{
+  "id": 31,
+  "name": "TUTORIAL_NOTICES_V1",
+  "owner_decision": "TUTORIAL-1 owner Q3(a), owner D1463 and 2026-10-22 continuation",
+  "owner": "current ChannelRuntime",
+  "command_types": [],
+  "state_domains": [
+    23
+  ],
+  "offered": true,
+  "offer_gate": "Tutorial hints and status text only after capability selection. Newhaven-start tutorial rules alone produce notices."
+}

@@ -12,6 +12,8 @@
 
 use std::collections::BTreeSet;
 pub mod actor_condition_snapshot_candidate;
+mod contract_registries;
+pub use contract_registries::{PROTOCOL_OTERYN_V1_REGISTRY_JSON, RESOURCE_LIMITS_REGISTRY_JSON};
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
 
@@ -4083,10 +4085,9 @@ mod tests {
     #[allow(clippy::expect_used)]
     fn error_codes_match_the_registry() {
         use FoundationProtocolError as E;
-        let registry: serde_json::Value = serde_json::from_str(include_str!(
-            "../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json"
-        ))
-        .expect("protocol registry");
+        let registry: serde_json::Value =
+            serde_json::from_str(crate::PROTOCOL_OTERYN_V1_REGISTRY_JSON)
+                .expect("protocol registry");
         let registered: Vec<(u64, &str, &str)> = registry["error_codes"]
             .as_array()
             .expect("error_codes")
@@ -4203,10 +4204,9 @@ mod tests {
     #[test]
     #[allow(clippy::expect_used)]
     fn admission_refusal_classes_match_the_registry() {
-        let registry: serde_json::Value = serde_json::from_str(include_str!(
-            "../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json"
-        ))
-        .expect("protocol registry");
+        let registry: serde_json::Value =
+            serde_json::from_str(crate::PROTOCOL_OTERYN_V1_REGISTRY_JSON)
+                .expect("protocol registry");
         let mut admission = Vec::new();
         for entry in registry["error_codes"].as_array().expect("error_codes") {
             let code = u32::try_from(entry["code"].as_u64().expect("code")).expect("u32 code");

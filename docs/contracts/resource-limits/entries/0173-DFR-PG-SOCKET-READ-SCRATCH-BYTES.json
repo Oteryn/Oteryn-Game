@@ -1,0 +1,20 @@
+{
+  "id": "DFR-PG-SOCKET-READ-SCRATCH-BYTES",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_WP3_V2_SUPERSEDING_ARCHITECTURE_DECISION_2026-09-12.md",
+  "resource": "Reusable PostgreSQL socket read scratch retained by one first-slice production root connection",
+  "unit": "retained bytes",
+  "hard_maximum": 8192,
+  "configurable_range": {
+    "minimum": 8192,
+    "maximum": 8192
+  },
+  "failure_category": "UNAVAILABLE",
+  "allocation_impact": "Fund the fixed 8192-byte reusable read scratch in the existing same-root connection generation. Do not grow its retained capacity on the root profile; admitted larger messages use separately owned/charged backing after the backend-message header gate and release without inflating reusable scratch.",
+  "client_visible": false,
+  "boundary_tests": [
+    "8192 reusable read scratch bytes retained for the root-profile connection",
+    "8193 bytes of attempted reusable retained scratch growth is denied before growth; a larger admitted message instead uses separately funded bounded backing",
+    "After receiving and releasing a maximum admitted message, reusable read scratch remains 8192 bytes and temporary backing charge is final"
+  ],
+  "notes": "This preserves the pinned SQLx initial read scratch as the production retained boundary. The separate 8192-byte write scratch remains part of the existing source-visible >=16 KiB settled-connection lower bound and is not changed by this entry."
+}

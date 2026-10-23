@@ -41,8 +41,7 @@ use std::error::Error;
 use std::future::Future;
 use tokio::io::{AsyncReadExt, AsyncWriteExt, DuplexStream};
 
-const REGISTRY: &str =
-    include_str!("../../../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json");
+const REGISTRY: &str = oteryn_protocol_oteryn::PROTOCOL_OTERYN_V1_REGISTRY_JSON;
 
 const CHARACTER: [u8; 16] = uuid_v7(0x11);
 const SESSION: [u8; 16] = uuid_v7(0x22);

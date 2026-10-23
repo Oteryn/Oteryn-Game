@@ -2,9 +2,8 @@ use super::*;
 
 #[test]
 fn daily_reward_registry_uses_only_cp_allocated_ids() -> Result<(), Box<dyn std::error::Error>> {
-    let registry: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json"
-    ))?;
+    let registry: serde_json::Value =
+        serde_json::from_str(crate::PROTOCOL_OTERYN_V1_REGISTRY_JSON)?;
     let only = |section: &str, id: u32| -> Result<&serde_json::Value, Box<dyn std::error::Error>> {
         let entries = registry[section].as_array().ok_or("registry array")?;
         let mut matches = entries.iter().filter(|entry| entry["id"] == id);

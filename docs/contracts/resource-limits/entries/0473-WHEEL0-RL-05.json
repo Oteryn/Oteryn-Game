@@ -1,0 +1,22 @@
+{
+  "id": "WHEEL0-RL-05",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_WHEEL0_WHEEL_OF_DESTINY_DELIVERY_DECISION_2026-09-30.md",
+  "resource": "Distance from a town temple position at which Wheel points may be removed",
+  "unit": "tiles",
+  "hard_maximum": 10,
+  "configurable_range": {
+    "minimum": 10,
+    "maximum": 10
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "No allocation; a change that lowers any slot is refused (REMOVAL_NOT_AT_TEMPLE) unless the caller's at_temple fact holds: a protection zone within 10 tiles of a temple position of the active bundle.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=10: a removal at the temple is admitted",
+    "max+1=11: a removal away from the temple is REMOVAL_NOT_AT_TEMPLE"
+  ],
+  "consumers": [
+    "apps/game-server/src/durability/character_wheel.rs TEMPLE_REMOVAL_RADIUS, WheelChangeFacts::at_temple, WheelRuleset::validate"
+  ],
+  "notes": "WHEEL-0 \u00a77.3 and \u00a78; the position check is the W-2 caller's; tests: character_wheel::tests::validation_applies_each_rule, character_wheel_postgres_cases::wheel_changes_commit_replay_and_refuse_writing_nothing. Registered by WHEEL-W1."
+}

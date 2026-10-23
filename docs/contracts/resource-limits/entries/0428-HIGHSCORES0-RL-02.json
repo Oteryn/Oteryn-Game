@@ -1,0 +1,24 @@
+{
+  "id": "HIGHSCORES0-RL-02",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_HIGHSCORES0_WORLD_HIGHSCORES_DECISION_2026-10-03.md",
+  "resource": "Rows of one (World, category, vocation filter) highscore list",
+  "unit": "rows per list",
+  "hard_maximum": 1000,
+  "configurable_range": {
+    "minimum": 1000,
+    "maximum": 1000
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Each of the six filter lists is capped after filtering the complete eligible cut, so a snapshot holds at most 6,000 rows (SQL CHECK row_count <= 6000 and position <= 1000); global ranks may exceed the cap.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=1000: a filtered list keeps its 1,000th member",
+    "max+1=1001: the 1,001st member is not stored and has no own row"
+  ],
+  "consumers": [
+    "apps/game-server/src/highscores/ranking.rs RANKING_ROWS_MAX",
+    "apps/game-server/migrations/0129_world_highscores.sql",
+    "crates/protocol-oteryn/src/highscores.rs MAX_HIGHSCORES_LIST_ROWS"
+  ],
+  "notes": "HIGHSCORES-0 \u00a75 and \u00a77. Registered by RANK-1 (HS-1)."
+}

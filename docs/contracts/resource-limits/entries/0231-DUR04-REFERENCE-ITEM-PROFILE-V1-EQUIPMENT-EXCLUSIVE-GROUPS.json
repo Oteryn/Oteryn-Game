@@ -1,0 +1,20 @@
+{
+  "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-EQUIPMENT-EXCLUSIVE-GROUPS",
+  "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+  "resource": "Mutually exclusive Equipment group memberships per pattern",
+  "unit": "memberships",
+  "hard_maximum": 2,
+  "configurable_range": {
+    "minimum": 0,
+    "maximum": 2
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Check count before key allocation; validate each inherited ProductionKey length/grammar then strict order and uniqueness.",
+  "client_visible": true,
+  "boundary_tests": [
+    "2 distinct ordered valid group keys accepted",
+    "3rd membership rejected before allocation",
+    "empty, malformed, duplicate or unsorted group key rejected"
+  ],
+  "notes": "G=max(complete explicit-membership census maximum 0, minimum non-singleton grammar witness 2); no gameplay group assertion."
+}

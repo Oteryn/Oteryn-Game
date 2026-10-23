@@ -1,0 +1,23 @@
+{
+  "id": "WHEEL0-RL-06",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_WHEEL0_WHEEL_OF_DESTINY_DELIVERY_DECISION_2026-09-30.md",
+  "resource": "Slot values in one Wheel receipt",
+  "unit": "small integers per receipt",
+  "hard_maximum": 72,
+  "configurable_range": {
+    "minimum": 72,
+    "maximum": 72
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "Two SMALLINT[] vectors of cardinality 36 (before and after) plus fixed fields; the vectors CHECK cardinality 36, one dimension and 0..200 per value.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=72: a receipt stores both 36-slot vectors",
+    "max+1: a 37-value vector fails the receipt vector CHECK"
+  ],
+  "consumers": [
+    "apps/game-server/migrations/0070_character_wheel_allocation.sql game_character_wheel_receipt_vectors",
+    "apps/game-server/src/durability/character_wheel.rs WheelSlots::stored"
+  ],
+  "notes": "WHEEL-0 \u00a78; test: character_wheel::tests::slots_and_occurrences_are_bounded. Registered by WHEEL-W1."
+}

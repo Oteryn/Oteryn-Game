@@ -1,0 +1,19 @@
+{
+  "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-EQUIPMENT-VOCATIONS",
+  "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+  "resource": "Base-vocation allow-set entries per Equipment pattern",
+  "unit": "vocations",
+  "hard_maximum": 5,
+  "configurable_range": {
+    "minimum": 0,
+    "maximum": 5
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Check count before allocation; require sorted unique members from the closed five-vocation domain.",
+  "client_visible": true,
+  "boundary_tests": [
+    "5 unique base vocations accepted",
+    "6th entry rejected before allocation",
+    "duplicate or unknown vocation rejected"
+  ]
+}

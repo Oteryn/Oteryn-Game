@@ -1,0 +1,23 @@
+{
+  "id": "CREATUREAI0-RL-12",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_CREATURE_AI0_CREATURE_AI_SPAWNS_AND_SUMMONS_DECISION_2026-10-01.md",
+  "resource": "Pending respawn occurrences of one Channel",
+  "unit": "occurrences",
+  "hard_maximum": 131072,
+  "configurable_range": {
+    "minimum": 131072,
+    "maximum": 131072
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "One pending occurrence per spawn point in an ordered map owned by the Channel runtime; an occurrence beyond it is refused before insertion and nothing is reserved.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=131072: the 131,072nd pending occurrence is scheduled",
+    "max+1=131073: the next occurrence is refused with the schedule unchanged"
+  ],
+  "consumers": [
+    "apps/game-server/src/ai/spawn.rs RESPAWN_PENDING_PER_CHANNEL_MAX: RespawnSchedule::creature_gone",
+    "apps/game-server/src/foundation/runtime_actor_carrier.rs ChannelRuntimeV1::drive_spawn_respawns"
+  ],
+  "notes": "CREATURE-AI-0 \u00a76.3; SPAWN-1a. Test: apps/game-server/src/ai/spawn.rs pending_occurrences_are_bounded_by_rl_12. Registered by OTV2-20261004-spawn-1a. SPAWN-CEILINGS-1 (Codex 4242270322): ChannelRuntimeV1::drive_spawn_respawns runs at most SPAWN_RESPAWN_STEPS_PER_WINDOW_MAX = 32 respawn steps per 50 ms owner window (registered as SPAWNCEIL-RL-01); occurrences past it stay pending and run first in the next window. Test: apps/game-server/src/foundation/runtime_actor_carrier.rs simultaneous_respawns_run_a_bounded_number_of_steps_per_owner_window. SPAWN-CEILINGS-1 (Codex 4243397472): the Channel runtime keeps a deadline index of the pending occurrences, ordered by (due time, spawn point), beside the schedule, so a window reads only the occurrences it runs (at most 32, O(32 log n)) instead of scanning and sorting every due occurrence; test: apps/game-server/src/foundation/runtime_actor_carrier.rs a_131_072_death_backlog_reads_bounded_spawn_records_per_owner_window."
+}

@@ -1,0 +1,23 @@
+{
+  "id": "CHARPOS0-RL-01",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_CHAR_POSITION0_LOGOUT_POSITION_DECISION_2026-09-30.md",
+  "resource": "Interval between periodic last-position writes of one live Character while its position has changed",
+  "unit": "seconds",
+  "hard_maximum": 300,
+  "configurable_range": {
+    "minimum": 60,
+    "maximum": 300
+  },
+  "failure_category": "UNAVAILABLE",
+  "allocation_impact": "Bounds crash loss of movement to one interval and write load to one small fenced upsert per Character per interval; no allocation from untrusted input.",
+  "client_visible": false,
+  "boundary_tests": [
+    "a changed position is written within 300 s",
+    "an unchanged position writes nothing at the interval",
+    "a configured value above 300 s is rejected"
+  ],
+  "consumers": [
+    "game server channel runtime"
+  ],
+  "notes": "CHAR-POSITION-0 \u00a73.2, pending on acceptance of CHAR-POSITION-0; the final write at logout does not depend on this interval."
+}

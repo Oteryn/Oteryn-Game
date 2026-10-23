@@ -1,0 +1,22 @@
+{
+  "id": "CREATUREAI0-RL-17",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_CREATURE_MOVE1_STEPS_PATHS_AND_GOALS_PACKET_2026-10-04.md",
+  "resource": "Integrated creature think and path work p99 window time, measured over 200 windows",
+  "unit": "milliseconds",
+  "hard_maximum": 15,
+  "configurable_range": {
+    "minimum": 15,
+    "maximum": 15
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Evidence rather than a CI timing gate: no reference host is defined. Measure 1,024 due thinks and 64 full 1,024-expansion searches on a 128 by 128 floor; retain CPU model and p99 in the task record. An exceedance requires a control-plane decision, never raising these limits.",
+  "client_visible": false,
+  "boundary_tests": [
+    "200 integrated windows report p99 without a CI timing assertion"
+  ],
+  "consumers": [
+    "crates/gameplay/world/src/movement/path_budget.rs",
+    "crates/gameplay/monster-ai/src/ai_think/creature_steps.rs"
+  ],
+  "notes": "Evidence rather than a CI timing gate: no reference host is defined. Measure 1,024 due thinks and 64 full 1,024-expansion searches on a 128 by 128 floor; retain CPU model and p99 in the task record. An exceedance requires a control-plane decision, never raising these limits."
+}

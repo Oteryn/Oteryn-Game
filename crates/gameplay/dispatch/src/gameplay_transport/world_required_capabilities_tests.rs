@@ -599,10 +599,8 @@ fn a_floor_name_missing_from_the_build_registry_fails_boot_closed() {
 
 #[test]
 fn the_declared_limit_is_registered_and_applies_before_closure() {
-    let registry: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json"
-    ))
-    .unwrap();
+    let registry: serde_json::Value =
+        serde_json::from_str(oteryn_protocol_oteryn::RESOURCE_LIMITS_REGISTRY_JSON).unwrap();
     let rows: Vec<_> = registry["entries"]
         .as_array()
         .unwrap()

@@ -1,0 +1,22 @@
+{
+  "id": "ANALYSERS0-RL-03",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_ANALYSERS0_HUNTING_ANALYSERS_DECISION_2026-10-03.md",
+  "resource": "Bytes of one analyser batch (domain 15 delta type 1)",
+  "unit": "bytes",
+  "hard_maximum": 4096,
+  "configurable_range": {
+    "minimum": 4096,
+    "maximum": 4096
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Measured: the largest fact (a 32-item kill_loot) is 401 bytes (MAX_ANALYSER_FACT_BYTES), so 64 of them would exceed 4,096. The batch builder therefore also stops before 4,096 bytes and leaves the rest for the next sync unit (never dropped for size); the decoder refuses a larger payload before reading it.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=4096: the batch builder fills worst-case facts to at most 4,096 bytes and a 4,096-byte batch decodes",
+    "max+1=4097: a 4,097-byte payload is refused in both directions"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/analyser.rs MAX_ANALYSER_BATCH_BYTES, MAX_ANALYSER_FACT_BYTES, AnalyserPendingQueue::take_batch"
+  ],
+  "notes": "ANALYSERS-0 \u00a76 (at most 4 KiB, measured by ANALYSER-WIRE-1). Registered by OTV2-20261003-analyser-wire1."
+}

@@ -1,0 +1,22 @@
+{
+  "id": "CHAT0-RL-07",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md",
+  "resource": "Chat rooms one session can have open",
+  "unit": "rooms per session",
+  "hard_maximum": 4,
+  "configurable_range": {
+    "minimum": 4,
+    "maximum": 4
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "The open-room set is a 4-bit mask in one varint (domain 12 snapshot type 1 and delta type 2, at most 4 bytes); any other bit is refused.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=4: the set of all four rooms round-trips",
+    "max+1: bit 4 (a fifth room) is refused"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/chat.rs MAX_CHAT_OPEN_ROOMS, ChatRoomSet"
+  ],
+  "notes": "World, English, Help and Advertising (CHAT-0 \u00a75 and \u00a78). Registered by OTV2-20261001-chat-1b-1."
+}
