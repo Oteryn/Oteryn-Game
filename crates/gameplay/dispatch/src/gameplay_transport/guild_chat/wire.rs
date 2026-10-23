@@ -28,6 +28,7 @@ pub(in super::super) async fn dispatch<A: FreshAdmissionAuthority>(
     authority: &A,
     admitted: AdmittedSession,
     actor: crate::foundation::ExactActorRef,
+    command_id: u64,
     payload: &[u8],
 ) -> Option<ChatIntentResult> {
     let intent = chat::decode_chat_intent(payload).ok()?;
@@ -44,7 +45,7 @@ pub(in super::super) async fn dispatch<A: FreshAdmissionAuthority>(
         }
         intent => Some(
             authority
-                .chat_intent(actor, admitted.game_session_id, intent)
+                .chat_intent(actor, admitted.game_session_id, command_id, intent)
                 .await,
         ),
     }

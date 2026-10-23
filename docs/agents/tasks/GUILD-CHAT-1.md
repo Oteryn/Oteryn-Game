@@ -382,3 +382,61 @@ No test was weakened, skipped, ignored or deleted. No contention failure was def
 Unfinished: integrator review, repository CI and publication remain with the control plane;
 no local validation failure or owner question remains. Next step: integrator reviews the
 uncommitted port delta and publishes through its authorized lifecycle.
+
+### Merge conflict resolution 2026-10-23 (GUILD-CHAT-1b)
+
+AUTHORING on `port/guildchat`, HEAD `126705380c5d81299a70f411eba0c9d6d95c956f`,
+merging `origin/main` at `65e40c57f41180e48ee9b9640a8c62849b53b903`.
+The initial fetch could not write the sandbox's read-only external Git metadata;
+the merge was subsequently started outside this worker. No worker commit or push.
+
+Owned repair paths: Session `lib.rs` and `domain_dispatch.rs`; protocol `lib.rs`;
+Guild test `support.rs`; durability `mod.rs` and `guild_chat_fixture.rs`;
+dispatch `connection.rs` and `guild_chat/wire.rs`; this record.
+
+- Kept APP-3's appearance/domain/gated-command modules and the independent guild
+  module. Guild line capability checks now run in `domain_dispatch.rs`; the
+  reducer is not duplicated in `lib.rs`.
+- Took the sorted capability union, including 25 and 36, in the registry and
+  client expectation. Both negotiated features and their existing tests remain.
+- Kept the shared historical-character helper, incorporating main's v3 Male
+  intent, `requested_sex`, `sex=2` and historical-NULL explanation there.
+  Searched all Rust root inserts and guild fixture consumers for sibling copies.
+- Combined Guild, hunting-XP and party-kill module registrations. The connection
+  still delegates to the guild adapter, forwarding main's command ID to ordinary
+  chat so the party shared-XP command retains its receipt identity.
+
+All Cargo commands use queued offline `+1.99.1 --locked` execution; the wrapper
+selects `target-codex/lanes/port-guildchat`. PostgreSQL runs remain filtered to
+the Guild-chat mechanic. The broader task-card `guild` filter is superseded by
+the owner's mechanic-only PostgreSQL scope rule.
+
+Passed test arguments (no failed or ignored tests):
+
+```sh
+test -p oteryn-session --lib # 70
+test -p oteryn-protocol-oteryn --lib # 304
+test -p oteryn-game-server --lib guild_chat -- --test-threads=1 # 6, PostgreSQL
+test -p oteryn-gameplay-dispatch --lib guild_chat -- --test-threads=1 # 2, including real PostgreSQL dispatch
+test -p oteryn-game-server --lib appearance -- --test-threads=1 # 3
+```
+
+Formatting, governance, repository policy and `git diff --check` passed. No source
+conflict markers remain. The repair adds no enum variant, struct field, trait
+method or public function. Re-read the merge resolutions and effective Guild-chat
+diff against the owner checklist; searched constructors, matches, trait methods
+and the changed adapter signature across `apps/`, `crates/` and `tools/`.
+
+Unfinished: ordinary-chat regression checks and all-target clippy remain queued
+without a result. The lane's exclusive build lock is held; no new build artifact
+appeared for 16 minutes at the checkpoint. The worker asked the owner whether
+another validation holds `port-guildchat`; the lock holder is not visible in this
+sandbox's process namespace. Do not remove the lock or bypass the queued wrapper.
+Pending command sessions: `35391` (requested clippy, including durability) and
+`88183` (ordinary-chat regression, then social/synthetic-client all-target clippy).
+Index resolution/staging remains with the owner: this worker's hard rules forbid
+`git add` and its external Git metadata is read-only. Five index conflict entries
+therefore remain until the resolved files are staged. CI/publication remain with
+the integrator. No local test failure or load-contention deferral remains.
+Next step: identify the lane holder, collect the queued validation results, then
+stage the resolved files through the authorized integrator.
