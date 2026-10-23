@@ -1,8 +1,6 @@
 #![allow(clippy::expect_used)]
 
 // Keep sorted by module name; insert in order, never append.
-#[path = "creature_move_postgres_tests.rs"]
-mod creature_move;
 #[path = "equipment_effects_owner_tests/monk_scenario.rs"]
 pub(in crate::gameplay_transport) mod equipment_scenarios;
 #[path = "first_vocation_vitals_postgres_tests.rs"]
@@ -37,8 +35,10 @@ mod rune_use_bridge;
 mod tutorial_vitals_fixture;
 #[path = "vocationless_vitals_postgres_tests.rs"]
 mod vocationless_vitals;
-#[path = "weather_wire_postgres_tests.rs"]
-mod weather_wire;
+
+// Every test file in `postgres_tests/` is mounted here by `build.rs`, so a new mechanic adds its
+// file there instead of another `#[path] mod` line in this shared list.
+include!(concat!(env!("OUT_DIR"), "/postgres_tests_mounts.rs"));
 
 use super::{ComposedFreshAdmission, MonkSave};
 use crate::durability::character_authority::ReconciledCharacterAuthority;

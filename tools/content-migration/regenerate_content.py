@@ -16,6 +16,11 @@ inventory pins in content_world_project_repository.rs, the content tree (world_p
 the Charm, Proficiency, RewardClaim and StarterKit registrations, then the validators. The script never
 commits; review `git status` and commit the merge yourself.
 
+With `--resolve` it finally runs `world-bundle-compiler pin-refresh` on the staged merge, so the
+World pins (`content/world/pins/<slug>.json` and `.identity.json`) and the preproduction
+manifest's `[world_bundle]` table follow the merged inputs; a pin conflict is derived too, unless
+the two sides moved the reviewed `entry_start` differently.
+
 Scope: the command regenerates only the content tree, `content/world` and the Rust package pins.
 It does not regenerate other Item-derived artifacts (the weapon proficiency sample, the TibiaWiki
 snapshot re-key and promotion packet, the pins in `item_stats_promotion.rs`, the Crystal binding
@@ -53,6 +58,10 @@ EXTRA_DERIVED = ("content/interactions/index.json",)
 # the hand-written fields of the interactions index. A conflict here needs a person.
 HAND_MAINTAINED_PREFIXES = ("imports/",)
 HAND_MAINTAINED = ("content/interactions/index.json",)
+# World pins and their identity files (`<slug>.ruleset.json` is hand-written), rewritten by
+# `world-bundle-compiler pin-refresh` from the staged inputs; the manifest follows the pin.
+WORLD_PINS = "content/world/pins/"
+PREPROD_MANIFEST = "deploy/synology-game/preprod-topology.toml"
 
 AUTHORING_TOOLS = (
     "tools/content-schema/craft-authoring/craft_authoring.py",
@@ -142,9 +151,34 @@ def derived_paths() -> set[str]:
     return managed | world | set(REGISTRY) | set(EXTRA_DERIVED)
 
 
+def is_world_pin(path: str) -> bool:
+    name = path.removeprefix(WORLD_PINS)
+    return (
+        path.startswith(WORLD_PINS)
+        and "/" not in name
+        and name.endswith(".json")
+        and not name.endswith(".ruleset.json")
+    )
+
+
+def entry_start_agrees(path: str) -> bool:
+    """Both sides of a conflicted pin keep one reviewed `entry_start` (identity files have none)."""
+    if path.endswith(".identity.json"):
+        return True
+    sides = [show(stage, path) for stage in (":2:", ":3:")]
+    if None in sides:
+        return False
+    try:
+        return len({json.dumps(json.loads(side)["entry_start"], sort_keys=True) for side in sides}) == 1
+    except (ValueError, KeyError):
+        return False
+
+
 def needs_person(path: str, derived: set[str]) -> bool:
     if path.startswith(HAND_MAINTAINED_PREFIXES) or path in HAND_MAINTAINED:
         return True
+    if is_world_pin(path):
+        return not entry_start_agrees(path)
     return path not in derived and path != PIN_PATH
 
 
@@ -374,6 +408,9 @@ def main() -> int:
             if path in derived
         ]
         run(["git", "add", "-A", "--", *sorted(set(conflicted) | set(changed))])
+        # The pin hashes the staged inputs, so it is refreshed last, on the staged merge.
+        run(["cargo", "+1.99.1", "run", "--locked", "--release", "-p", "oteryn-world-bundle-compiler", "--", "pin-refresh", "."])
+        run(["git", "add", "--", WORLD_PINS, PREPROD_MANIFEST])
     print("Derived content regenerated. Review `git status` and commit.")
     return 0
 
