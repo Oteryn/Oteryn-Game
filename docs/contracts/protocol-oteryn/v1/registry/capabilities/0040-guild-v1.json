@@ -1,0 +1,14 @@
+{
+  "id": 40,
+  "name": "GUILD_V1",
+  "owner_decision": "GUILD-WIRE-1 owner direction 2026-10-23: basic server guild commands and query; reserved command ids 40-44, capabilities 40-41",
+  "owner": "World Guild owner",
+  "requires": [],
+  "command_types": [
+    40,
+    41
+  ],
+  "state_domains": [],
+  "offered": true,
+  "offer_gate": "Basic native fenced Guild writers and queries are composed on every World. No content dependency. Bank, Hall and emblem are outside this capability."
+}

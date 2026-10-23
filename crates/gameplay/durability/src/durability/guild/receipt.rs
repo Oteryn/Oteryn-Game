@@ -124,6 +124,11 @@ pub fn binding(fence: &CurrentCharacterItemFence, request: &GuildRequest) -> Res
     for id in ids {
         h.update(id);
     }
-    h.update(request.identity.occurred_at_unix_ms.to_be_bytes());
+    if let Some(digest) = request.identity.wire_digest {
+        h.update(b"oteryn:guild-wire:v1");
+        h.update(digest);
+    } else {
+        h.update(request.identity.occurred_at_unix_ms.to_be_bytes());
+    }
     Ok(h.finalize().to_vec())
 }

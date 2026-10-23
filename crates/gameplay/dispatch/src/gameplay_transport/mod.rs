@@ -5,6 +5,7 @@ pub mod actor_spell;
 pub mod appearance_change;
 mod attack;
 mod bank_npc;
+mod bed_regen;
 mod bed_sleep;
 mod bundle_map_position;
 mod depot;
@@ -30,6 +31,7 @@ mod container_view;
 mod equipment_move;
 pub mod fresh_evidence;
 mod guild_chat;
+mod guild_intent;
 mod highscores;
 mod input_gate;
 mod item_look;
@@ -2533,6 +2535,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     }
 
     appearance_change::composed_methods!();
+    guild_intent::composed_methods!();
     async fn observe_quest_log(
         &self,
         actor: ExactActorRef,
@@ -4379,6 +4382,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 monk,
                 self.owner_now(),
                 saved_vitals,
+                (outcome == FirstEntryOutcome::Positioned)
+                    .then(|| bed_regen::admitted_rest(&decided, self.world_id))
+                    .flatten(),
             )
             .is_none()
         {
