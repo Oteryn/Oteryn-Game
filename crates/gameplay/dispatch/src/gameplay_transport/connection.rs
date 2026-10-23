@@ -1309,6 +1309,7 @@ where
     A: FreshAdmissionAuthority,
     I: ConnectionIdentifiers,
 {
+    super::spectate_session::refuse_observer_bootstrap(stream, frame).await?;
     let envelope = match decode_wire_envelope(frame) {
         Ok(envelope) => envelope,
         Err(error) => return Err(reject(stream, error, 0).await),
@@ -4937,6 +4938,7 @@ mod tests {
     include!("step_dispatch_fixture.rs");
     include!("tutorial_session_tests.rs");
     include!("newhaven_travel_transport_tests.rs");
+    include!("spectate_session_ingress_tests.rs");
 
     fn at(x: i32) -> WorldSpatialObservation {
         WorldSpatialObservation {
