@@ -18,3 +18,9 @@ pub mod target;
 
 use oteryn_gameplay_content::content::spell_data::Vocation;
 use oteryn_gameplay_content::content::spell_data::formula;
+
+#[cfg(test)]
+mod cast_property_tests;
+
+#[cfg(test)]
+mod native_attack_property_tests;
