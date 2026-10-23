@@ -641,6 +641,14 @@ impl<'ast> Visit<'ast> for Constructions<'ast> {
 const CONSTRUCTIONS: &[(&str, usize)] = &[
     ("gameplay_transport/composed_test_owner.rs", 2),
     ("gameplay_transport/item_use/item_use_postgres_tests.rs", 1),
+    (
+        "gameplay_transport/postgres_tests/world_reset_activation.rs",
+        2,
+    ),
+    (
+        "gameplay_transport/postgres_tests/planned_world_reset_source_map.rs",
+        1,
+    ),
     ("gameplay_transport/kill_reward_postgres_e2e_tests.rs", 1),
     ("gameplay_transport/mod.rs", 3),
     ("gameplay_transport/monk_save_postgres_tests.rs", 1),

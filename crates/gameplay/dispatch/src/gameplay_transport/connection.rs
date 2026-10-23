@@ -95,8 +95,8 @@ use oteryn_protocol_oteryn::bed::{
 };
 use oteryn_protocol_oteryn::chat::{
     COMMAND_TYPE_CHAT_INTENT, ChatIntent, ChatIntentResult, ChatLine, ChatRoomSet,
-    DELTA_TYPE_CHAT_LINE_V1, DELTA_TYPE_CHAT_ROOMS_V1, SNAPSHOT_TYPE_CHAT_V1, STATE_DOMAIN_CHAT,
-    decode_chat_intent, encode_chat_intent_result, encode_chat_line, encode_chat_rooms,
+    DELTA_TYPE_CHAT_LINE_V1, DELTA_TYPE_CHAT_ROOMS_V1, STATE_DOMAIN_CHAT,
+    encode_chat_intent_result, encode_chat_line, encode_chat_rooms,
 };
 use oteryn_protocol_oteryn::container_tree::CAPABILITY_CONTAINER_TREE_V1;
 use oteryn_protocol_oteryn::container_tree::{
@@ -832,6 +832,32 @@ pub trait FreshAdmissionAuthority {
         async { None }
     }
 
+    fn chat_guild_admit(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = oteryn_protocol_oteryn::chat::guild_room::GuildRoomState> {
+        std::future::ready(oteryn_protocol_oteryn::chat::guild_room::GuildRoomState::Unavailable)
+    }
+
+    fn chat_guild_intent(
+        &self,
+        _admitted: AdmittedSession,
+        _text: String,
+    ) -> impl Future<Output = ChatIntentResult> {
+        std::future::ready(ChatIntentResult {
+            disposition: oteryn_protocol_oteryn::chat::ChatDisposition::Rejected,
+            wait_seconds: 0,
+        })
+    }
+
+    fn chat_next_bound(
+        &self,
+        admitted: AdmittedSession,
+        _remaining: &mut usize,
+    ) -> impl Future<Output = Option<ChatLine>> {
+        self.chat_next(admitted.game_session_id)
+    }
+
     /// CHAT-WIRE-1: the oldest line queued for the session, if any.
     fn chat_next(&self, _session: GameSessionId) -> impl Future<Output = Option<ChatLine>> {
         async { None }
@@ -1041,6 +1067,7 @@ pub trait FreshAdmissionAuthority {
         &self,
         _admitted: AdmittedSession,
         _wait: std::time::Duration,
+        _reset: Option<&crate::durability::world_reset::RetiringWorldReset>,
     ) -> impl Future<Output = ControlLossResult> {
         async { ControlLossResult::NotApplicable }
     }
@@ -1950,11 +1977,16 @@ where
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
         };
         admitted.continuity.chat_revision = revision;
-        chat_snapshot = encode_chat_rooms(rooms);
+        let Some((snapshot_type, payload)) =
+            super::guild_chat::wire::snapshot(authority, admitted, rooms).await
+        else {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        };
+        chat_snapshot = payload;
         domains.push(DomainSnapshot {
             domain_id: STATE_DOMAIN_CHAT,
             revision,
-            snapshot_type: SNAPSHOT_TYPE_CHAT_V1,
+            snapshot_type,
             payload: &chat_snapshot,
         });
     }
@@ -2402,8 +2434,10 @@ where
                 // delta; an empty queue sends nothing.
                 // At most one full queue per refresh: lines that keep arriving cannot hold the
                 // connection here, and the rest waits for the next tick.
+                let mut owner_reads = EGRESS_MAX_LINES;
                 for _ in 0..EGRESS_MAX_LINES {
-                    let Some(line) = authority.chat_next(admitted.game_session_id).await else {
+                    let Some(line) = authority.chat_next_bound(admitted, &mut owner_reads).await
+                    else {
                         break;
                     };
                     let Some((delta_sequence, frame, revision)) = chat_line_delta(
@@ -3222,13 +3256,17 @@ where
         } else if command.command_type == COMMAND_TYPE_CHAT_INTENT {
             // CHAT-WIRE-1: spam control is the speaker's limiter inside the authority; a
             // malformed intent is REJECTED with an empty payload like any unregistered command.
-            match decode_chat_intent(command.payload) {
-                Ok(intent) => Dispatch::Chat(
-                    authority
-                        .chat_intent(actor, admitted.game_session_id, command.command_id, intent)
-                        .await,
-                ),
-                Err(_) => Dispatch::Unregistered,
+            match super::guild_chat::wire::dispatch(
+                authority,
+                admitted,
+                actor,
+                command.command_id,
+                command.payload,
+            )
+            .await
+            {
+                Some(result) => Dispatch::Chat(result),
+                None => Dispatch::Unregistered,
             }
         } else if command.command_type == COMMAND_TYPE_NPC_TALK_INTENT {
             // NPC-CMD-1a: a malformed intent is REJECTED, but it still spends the session's

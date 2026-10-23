@@ -2725,3 +2725,5 @@ mod weather_wire {
 
 #[path = "daily_reward_tests.rs"]
 mod daily_reward;
+#[path = "guild_chat/negotiation_tests.rs"]
+mod guild_chat;

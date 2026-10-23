@@ -154,7 +154,8 @@ impl<S: SessionStream> Session<S> {
                 check_delta(&delta, delta_type, self.chat_revision)?;
                 let event = match delta_type {
                     chat::DELTA_TYPE_CHAT_LINE_V1 => {
-                        let line = chat::decode_chat_line(delta.payload)?;
+                        let line =
+                            guild_chat::decode_line(delta.payload, &self.selected_capabilities)?;
                         SessionEvent::ChatLine(applied(
                             server_sequence,
                             base_revision,

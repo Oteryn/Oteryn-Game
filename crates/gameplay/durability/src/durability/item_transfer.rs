@@ -891,6 +891,52 @@ pub async fn character_item_fence_is_current(
     reserved_world_id: [u8; 16],
     reserved_channel_id: [u8; 16],
 ) -> std::result::Result<bool, DurabilityError> {
+    if !character_item_fence_without_root(
+        tx,
+        node,
+        fence,
+        command,
+        reserved_character_id,
+        reserved_world_id,
+        reserved_channel_id,
+    )
+    .await?
+    {
+        return Ok(false);
+    }
+    let (world_id, _) = scope_of(fence).map_err(|_| DurabilityError::InvalidStoredState)?;
+    let account_text: String = sqlx::query_scalar(
+        "SELECT account_id::text FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid",
+    ).bind(fence.game_session_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+    // Per-Character serialization: a row lock, never an UPDATE, so the 0009
+    // revision guard does not fire and CharacterRevision stays unchanged.
+    let root = sqlx::query(
+        "SELECT account_id::text, world_id::text FROM game_character_roots \
+          WHERE character_id = encode($1,'hex')::uuid AND lifecycle = 1 FOR UPDATE",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .fetch_optional(&mut **tx)
+    .await?;
+    let Some(root) = root else {
+        return Ok(false);
+    };
+    if root.try_get::<String, _>("account_id")? != account_text
+        || uuid_text(root.try_get("world_id")?)? != *world_id.as_bytes()
+    {
+        return Ok(false);
+    }
+    Ok(true)
+}
+
+pub(super) async fn character_item_fence_without_root(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    node: &NodeIncarnationProof,
+    fence: &CurrentCharacterItemFence,
+    command: CommandRef,
+    reserved_character_id: CharacterId,
+    reserved_world_id: [u8; 16],
+    reserved_channel_id: [u8; 16],
+) -> std::result::Result<bool, DurabilityError> {
     let Ok((world_id, channel_id)) = scope_of(fence) else {
         return Ok(false);
     };
@@ -985,23 +1031,6 @@ pub async fn character_item_fence_is_current(
         return Ok(false);
     }
 
-    // Per-Character serialization: a row lock, never an UPDATE, so the 0009
-    // revision guard does not fire and CharacterRevision stays unchanged.
-    let root = sqlx::query(
-        "SELECT account_id::text, world_id::text FROM game_character_roots \
-          WHERE character_id = encode($1,'hex')::uuid AND lifecycle = 1 FOR UPDATE",
-    )
-    .bind(fence.character_id.as_bytes().as_slice())
-    .fetch_optional(&mut **tx)
-    .await?;
-    let Some(root) = root else {
-        return Ok(false);
-    };
-    if root.try_get::<String, _>("account_id")? != account_text
-        || uuid_text(root.try_get("world_id")?)? != *world_id.as_bytes()
-    {
-        return Ok(false);
-    }
     Ok(true)
 }
 
@@ -1236,7 +1265,9 @@ async fn check_transfer_capacity(
             .checked_add(u64::from(unit) * u64::from(quantity))
             .ok_or(DurabilityError::InvalidStoredState)?;
     }
-    use oteryn_gameplay_items::item_capacity::{CapacityMove, CapacityRefusal, IncomingWeight, plan_capacity};
+    use oteryn_gameplay_items::item_capacity::{
+        CapacityMove, CapacityRefusal, IncomingWeight, plan_capacity,
+    };
     let incoming = [IncomingWeight {
         item: source,
         weight_definition: &request.item.definition,
@@ -2196,6 +2227,4 @@ mod tests {
             Err(ItemTransferError::InvalidInput)
         ));
     }
-
-
 }

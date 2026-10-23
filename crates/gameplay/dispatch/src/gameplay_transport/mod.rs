@@ -6,6 +6,10 @@ pub mod appearance_change;
 mod attack;
 mod bank_npc;
 mod bed_sleep;
+mod bundle_map_position;
+use bundle_map_position::bundle_map_position;
+#[cfg(test)]
+use bundle_map_position::bundle_world_map;
 #[cfg(test)]
 mod bundle_gates_tests;
 mod capabilities;
@@ -24,6 +28,7 @@ mod connection;
 mod container_view;
 mod equipment_move;
 pub mod fresh_evidence;
+mod guild_chat;
 mod highscores;
 mod input_gate;
 mod item_look;
@@ -205,218 +210,12 @@ impl ConnectionObserver for () {
     fn ended(&self, _: connection::ConnectionEnd) {}
 }
 
-/// Serve gameplay connections until `shutdown`. Accepting stops at the
-/// connection budget (backpressure through the listen backlog). On shutdown the
-/// listener stops accepting and entry work is cancelled, while an admission
-/// already handed to the owning authority completes before this returns.
-pub async fn serve_listener<A, I, O>(
-    listener: &TcpListener,
-    tls: &Arc<rustls::ServerConfig>,
-    limits: ListenerLimits,
-    authority: &A,
-    identifiers: &I,
-    observer: &O,
-    shutdown: &CancellationToken,
-) where
-    A: FreshAdmissionAuthority,
-    I: ConnectionIdentifiers,
-    O: ConnectionObserver,
-{
-    let units = Semaphore::new(limits.handshake_units);
-    let mut connections: Vec<Pin<Box<dyn Future<Output = Option<LostControl>> + '_>>> = Vec::new();
-    // Loss/grace lifecycles of ended admitted connections. They hold no socket
-    // and at most one exists per admitted session, so they stay outside the
-    // connection budget; shutdown cancels them.
-    let mut lifecycles: Vec<Pin<Box<dyn Future<Output = ()> + '_>>> = Vec::new();
-    let mut stopping = pin!(shutdown.cancelled());
-    let mut stopped = false;
-    // After an accept error (e.g. EMFILE) accepting pauses instead of spinning.
-    let mut accept_pause: Option<Pin<Box<tokio::time::Sleep>>> = None;
-    poll_fn(|context| {
-        if !stopped && stopping.as_mut().poll(context).is_ready() {
-            stopped = true;
-        }
-        if let Some(pause) = accept_pause.as_mut()
-            && pause.as_mut().poll(context).is_ready()
-        {
-            accept_pause = None;
-        }
-        while !stopped && accept_pause.is_none() && connections.len() < limits.connections {
-            match listener.poll_accept(context) {
-                Poll::Ready(Ok((stream, _))) => connections.push(Box::pin(serve_accepted(
-                    stream,
-                    tls,
-                    &units,
-                    limits.entry_deadline,
-                    authority,
-                    identifiers,
-                    observer,
-                    shutdown,
-                ))),
-                Poll::Ready(Err(_)) => {
-                    let mut pause = Box::pin(tokio::time::sleep(ACCEPT_ERROR_PAUSE));
-                    // Registers the wake-up that resumes accepting.
-                    let _ = pause.as_mut().poll(context);
-                    accept_pause = Some(pause);
-                }
-                Poll::Pending => break,
-            }
-        }
-        connections.retain_mut(|connection| match connection.as_mut().poll(context) {
-            Poll::Pending => true,
-            Poll::Ready(lost) => {
-                if let Some(lost) = lost {
-                    let mut lifecycle = Box::pin(control_loss_lifecycle(authority, lost, shutdown));
-                    // Registers the lifecycle's first wake-up.
-                    if lifecycle.as_mut().poll(context).is_pending() {
-                        lifecycles.push(lifecycle);
-                    }
-                }
-                false
-            }
-        });
-        lifecycles.retain_mut(|lifecycle| lifecycle.as_mut().poll(context).is_pending());
-        if stopped && connections.is_empty() && lifecycles.is_empty() {
-            Poll::Ready(())
-        } else {
-            Poll::Pending
-        }
-    })
-    .await;
-}
-
-#[allow(clippy::too_many_arguments)]
-async fn serve_accepted<A, I, O>(
-    stream: TcpStream,
-    tls: &Arc<rustls::ServerConfig>,
-    units: &Semaphore,
-    entry_deadline: Duration,
-    authority: &A,
-    identifiers: &I,
-    observer: &O,
-    shutdown: &CancellationToken,
-) -> Option<LostControl>
-where
-    A: FreshAdmissionAuthority,
-    I: ConnectionIdentifiers,
-    O: ConnectionObserver,
-{
-    use connection::ConnectionEnd;
-    // Entry work (unit wait, TLS, entry frame) is bounded by the deadline and
-    // cancelled by shutdown; nothing authoritative has started yet.
-    let entry = async {
-        let unit = units.acquire().await.ok()?;
-        let mut stream = tcp_tls::accept_tls(stream, tls.clone()).await.ok()?;
-        let frame = tcp_tls::read_frame(&mut stream).await.ok()?;
-        Some((unit, stream, frame))
-    };
-    let entry = first(
-        tokio::time::timeout(entry_deadline, entry),
-        shutdown.cancelled(),
-    )
-    .await;
-    let Some(Ok(Some((unit, mut stream, frame)))) = entry else {
-        observer.ended(ConnectionEnd::TransportFailed);
-        return None;
-    };
-    // The owning authority's decision is never cancelled midway.
-    let admitted = admit_frame(&mut stream, &frame, authority, identifiers).await;
-    drop(unit);
-    let (end, served) = match admitted {
-        // A durably admitted or resumed session whose acceptance could not be delivered
-        // still has a controller that is gone: it enters the loss lifecycle, never limbo.
-        Err(end @ ConnectionEnd::AdmittedThenDisconnected(_)) => (end, true),
-        Err(end) => (end, false),
-        Ok(admitted) => match first(
-            serve_admitted(&mut stream, admitted, authority, IDLE_LIVENESS),
-            shutdown.cancelled(),
-        )
-        .await
-        {
-            Some(end) => (end, true),
-            // A shutdown drain is not evidence of lost playable control.
-            None => (ConnectionEnd::AdmittedThenDisconnected(admitted), false),
-        },
-    };
-    // Liveness proved the loss: record it now. A closed or failed transport alone is not
-    // proof (FND-04B §4): control is lost once the detection window passes unanswered.
-    let lost = match (&end, served) {
-        (ConnectionEnd::AdmittedThenControlLost(session), true) => Some((*session, Duration::ZERO)),
-        (
-            ConnectionEnd::AdmittedThenDisconnected(session)
-            | ConnectionEnd::AdmittedThenClosed(session, _),
-            true,
-        ) => Some((
-            *session,
-            IDLE_LIVENESS
-                .interval
-                .saturating_mul(IDLE_LIVENESS.missed_limit),
-        )),
-        _ => None,
-    };
-    drop(stream);
-    observer.ended(end);
-    lost.map(|(session, wait)| LostControl { session, wait })
-}
-
-/// An ended admitted connection whose control is lost after `wait` without restored control.
-struct LostControl {
-    session: AdmittedSession,
-    wait: Duration,
-}
-
-/// Durable loss, then grace-expiry release, of one ended admitted connection.
-/// Shutdown cancels it; a durable decision already in flight stays atomic.
-async fn control_loss_lifecycle<A: FreshAdmissionAuthority>(
-    authority: &A,
-    lost: LostControl,
-    shutdown: &CancellationToken,
-) {
-    let lifecycle = async {
-        let mut wait = lost.wait;
-        let mut backoff = RECONCILE_BACKOFF;
-        loop {
-            match authority.lose_control(lost.session, wait).await {
-                ControlLossResult::Recorded => {
-                    // KILL-REWARD-COMP-1 §1.3: an unknown expiry keeps its fence, kill mark and
-                    // parked kills, and runs again behind the backoff, unbounded in count.
-                    while authority.expire_control_loss(lost.session).await
-                        == GraceExpiryResult::Unknown
-                    {
-                        tokio::time::sleep(backoff).await;
-                        backoff = backoff.saturating_mul(2).min(EXPIRY_MAX_BACKOFF);
-                    }
-                    break;
-                }
-                ControlLossResult::ResumedHistory => {
-                    let _ = authority.release_abandoned(lost.session).await;
-                    break;
-                }
-                // LOGOUT-WIRE-1 (§1.6): a release committed without its acknowledgement retires
-                // the actor; an unreadable row keeps the fence and runs again behind the backoff.
-                ControlLossResult::Terminal => {
-                    while authority.reconcile_terminal(lost.session).await
-                        == GraceExpiryResult::Unknown
-                    {
-                        tokio::time::sleep(backoff).await;
-                        backoff = backoff.saturating_mul(2).min(EXPIRY_MAX_BACKOFF);
-                    }
-                    break;
-                }
-                ControlLossResult::Unknown => {
-                    // Retained uncertain owner work remains the same operation.
-                    // The independently current session ends a superseded loop.
-                    tokio::time::sleep(backoff).await;
-                    backoff = backoff.saturating_mul(2).min(EXPIRY_MAX_BACKOFF);
-                    wait = Duration::ZERO;
-                }
-                ControlLossResult::NotApplicable | ControlLossResult::Refused => break,
-            }
-        }
-    };
-    let _ = first(lifecycle, shutdown.cancelled()).await;
-}
-
+mod control_loss;
+mod listener;
+pub use listener::serve_listener;
+#[cfg(test)]
+use listener::{LostControl, control_loss_lifecycle};
+pub mod gameplay_drain;
 /// Output of `primary`, or `None` when `stop` completes first.
 async fn first<T>(primary: impl Future<Output = T>, stop: impl Future<Output = ()>) -> Option<T> {
     let mut primary = pin!(primary);
@@ -549,158 +348,8 @@ fn held_step(
     Some(hold_step(until.get().saturating_sub(now.get())).min(limit))
 }
 
-/// The production gameplay seam: TCP + TLS 1.3 (ALPN `oteryn-game/1`),
-/// bounded FND-02 framing and fresh admission through the composed owners,
-/// served on `listener` until `shutdown`.
-pub async fn serve_gameplay(
-    listener: &TcpListener,
-    config: GameplayListenerConfig,
-    owners: GameplaySeamOwners<'_, '_, '_>,
-    shutdown: &CancellationToken,
-) -> Result<(), GameplayServeError> {
-    let limits = ListenerLimits::new(
-        config.max_connections,
-        config.max_handshake_units,
-        config.entry_deadline,
-    )
-    .ok_or(GameplayServeError::InvalidLimits)?;
-    let tls = tcp_tls::tls_config(config.certificates, config.private_key)
-        .map_err(GameplayServeError::InvalidTls)?;
-    let authority = ComposedFreshAdmission {
-        emit: owners.emit,
-        root: owners.root,
-        character: owners.character,
-        holder: owners.holder,
-        evidence: owners.evidence,
-        world_id: owners.world_id,
-        channel_id: owners.channel_id,
-        required_capabilities: owners.required_capabilities,
-        runtime: owners.runtime,
-        movement_cells: owners.movement_cells,
-        door: owners.door,
-        chest: owners.chest,
-        spells: owners.spells,
-        active_generation: owners.active_generation,
-        premium_coordinator: owners.premium_coordinator,
-        rooms: owners.rooms,
-        achievements: owners.achievements,
-        imported_charms: owners.imported_charms,
-        clock_origin: std::time::Instant::now(),
-        states: channel_states::ChannelSessionStates::default(),
-        revision_sequencer:
-            crate::durability::character_revision_sequencer::CharacterRevisionSequencer::new(),
-        quest_catalogue: Some(std::sync::Arc::clone(owners.quest_catalogue)),
-        quest_log_content: Some(owners.quest_log_content.clone()),
-        // WHEEL-W1: the embedded Wheel ruleset; without it every Wheel load fails closed.
-        wheel_ruleset: crate::wheel_gem_data::WheelGemData::embedded()
-            .ok()
-            .and_then(|data| data.wheel_ruleset().ok())
-            .map(std::sync::Arc::new),
-        // PREM-WIRE-1: one Premium fence. The refresher pulls into the consumer the spell casts
-        // and every other Premium gate read; a node without the Premium reads keeps its own.
-        premium: premium_refresher(
-            owners.root,
-            owners
-                .premium_coordinator
-                .map_or_else(Default::default, |reads| reads.consumer()),
-        ),
-        spell_lane: crate::durability::spell_owner_commit::SpellLane::new(
-            owners.world_id,
-            owners.channel_id,
-        ),
-    };
-    if let Some(book) = owners.npc_talk {
-        authority.states.chat.install_npc_talk(book);
-    }
-    // CHAT-2B: the World chat relay, when its key file is configured.
-    if let Some(relay) = chat_relay::configured(
-        *owners.world_id.as_bytes(),
-        owners.root.chat_relay_connect_options(),
-    ) {
-        authority
-            .states
-            .chat
-            .install_relay(std::sync::Arc::new(relay));
-    }
-    // QUEST-STATE-0 §5.4: the owner cadence requests failed quest obligations again, whether or
-    // not the session's connection runs any other cadence. It never ends on its own.
-    let quest_retries = async {
-        loop {
-            if first(
-                tokio::time::sleep(QUEST_RETRY_CADENCE),
-                shutdown.cancelled(),
-            )
-            .await
-            .is_none()
-            {
-                std::future::pending::<()>().await;
-            }
-            authority.refresh_due_quest_sessions().await;
-        }
-    };
-    let serving = first(
-        serve_listener(
-            listener,
-            &tls,
-            limits,
-            &authority,
-            &SecureIdentifiers,
-            &(),
-            shutdown,
-        ),
-        quest_retries,
-    );
-    let mut serving = pin!(serving);
-    let mut cycles = pin!(authority.run_source_owner_cycles(shutdown));
-    let mut respawns = pin!(authority.run_world_respawns(shutdown));
-    let mut respawns_done = false;
-    // CHAR-POSITION-0 §3.2 (`CHARPOS0-RL-01`): the periodic last-position writes run on their own
-    // deadlines, so no other cadence work delays them.
-    let mut positions = pin!(authority.run_last_position_writes(shutdown));
-    // CHAR-POSITION-0 §3.2: the shutdown write is polled with the seam and never holds its end.
-    let mut flush = pin!(async {
-        match owners.last_position_flush {
-            Some(flush) => flush.serve(&authority).await,
-            None => std::future::pending().await,
-        }
-    });
-    // CHAT-2B: the relay listener; it parks once shutdown is requested.
-    let mut relay = pin!(async {
-        match authority.states.chat.relay() {
-            Some(relay) => relay.run(&authority.states.chat, shutdown).await,
-            None => std::future::pending().await,
-        }
-    });
-    let mut serving_done = false;
-    let mut cycles_done = false;
-    let mut flush_done = false;
-    poll_fn(|context| {
-        if !respawns_done && respawns.as_mut().poll(context).is_ready() {
-            respawns_done = true;
-        }
-        if !flush_done && flush.as_mut().poll(context).is_ready() {
-            flush_done = true;
-        }
-        // Never ends on its own; it parks once shutdown is requested.
-        let _ = positions.as_mut().poll(context);
-        // Never ends: it parks once shutdown is requested.
-        let _ = relay.as_mut().poll(context);
-        if !serving_done && serving.as_mut().poll(context).is_ready() {
-            serving_done = true;
-        }
-        if !cycles_done && cycles.as_mut().poll(context).is_ready() {
-            cycles_done = true;
-        }
-        if serving_done && cycles_done {
-            Poll::Ready(())
-        } else {
-            Poll::Pending
-        }
-    })
-    .await;
-    Ok(())
-}
-
+mod serving;
+pub use serving::serve_gameplay;
 /// PREM-1b: the node's Premium pulls. Without configuration, or with an invalid one, there is no
 /// client and every account reads Free; admission is never affected.
 fn premium_refresher(
@@ -767,6 +416,7 @@ pub struct ComposedFreshAdmission<'a, 'f, 's> {
     pub character: &'a ReconciledCharacterAuthority<'f, 's>,
     pub holder: &'a NodeIncarnationProof,
     pub evidence: &'a FreshEvidenceSource,
+    pub reset_epoch: u64,
     pub world_id: WorldId,
     pub channel_id: ChannelId,
     /// See [`GameplaySeamOwners::required_capabilities`].
@@ -2858,96 +2508,6 @@ fn operator_event(line: &str) {
     eprintln!("oteryn-game-server {line}");
 }
 
-/// MAP-CUTOVER-1b: domain 17 of the bundle World `movement_cells` carry, at `actor`'s current
-/// position in `runtime`; `None` on a fixture World or when the actor has no current position.
-/// The overlay stays empty (§1.2) and the reset epoch is 0 until MAP-CUTOVER-1c. The node
-/// itself reads the position under the runtime lock and updates after release.
-#[cfg(test)]
-fn bundle_world_map(
-    runtime: &mut ChannelRuntimeV1,
-    movement_cells: &NativeEntryMovementCells,
-    actor: ExactActorRef,
-    view: &mut world_map::SessionMapView,
-    items: &mut item_view::SessionItemView,
-) -> Option<Result<Option<world_map::MapUpdate>, world_map::MapViewError>> {
-    let at = bundle_map_position(runtime, movement_cells, actor)?;
-    Some(at.update(view, items, None))
-}
-
-/// What domain 17 needs from the Channel runtime: the bundle map, the actor's native position
-/// and the content generation. It is read under the runtime lock; the view update that composes
-/// and encodes the window runs after the lock is released (§1.4).
-struct BundleMapPosition<'a> {
-    map: &'a crate::map::boot::BundleMap,
-    at: ActorPosition,
-    content_generation: [u8; 32],
-}
-
-impl BundleMapPosition<'_> {
-    /// The view update over the bundle map and, when given, the Channel's loop Ground items
-    /// (ITEM-LOOP-1).
-    fn update(
-        &self,
-        view: &mut world_map::SessionMapView,
-        items: &mut item_view::SessionItemView,
-        ground: Option<&loop_move::LoopGroundOverlay>,
-    ) -> Result<Option<world_map::MapUpdate>, world_map::MapViewError> {
-        // MAP-DOOR-1 (Codex 4239177726): one read of every door's state, so each door's
-        // appearance and object revision in this update agree.
-        let facts = self.map.facts.pinned();
-        match ground {
-            Some(ground) => {
-                let facts = ground.facts(&facts);
-                let source = world_map::MapViewSource {
-                    overlay: ground.overlay(),
-                    facts: &facts,
-                    content_generation: self.content_generation,
-                    reset_epoch: 0,
-                };
-                view.update(items, &source, self.at)
-            }
-            None => {
-                let source = world_map::MapViewSource {
-                    overlay: &self.map.overlay,
-                    facts: &facts,
-                    content_generation: self.content_generation,
-                    reset_epoch: 0,
-                };
-                view.update(items, &source, self.at)
-            }
-        }
-    }
-}
-
-/// The bundle map and `actor`'s current native position in `runtime`; `None` on a fixture World
-/// or when the actor has no current position.
-fn bundle_map_position<'a>(
-    runtime: &mut ChannelRuntimeV1,
-    movement_cells: &'a NativeEntryMovementCells,
-    actor: ExactActorRef,
-) -> Option<BundleMapPosition<'a>> {
-    let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
-        movement_cells.index()
-    else {
-        return None;
-    };
-    let snapshot = runtime.borrow_movement_position().read(actor).ok()?;
-    if snapshot.context() != runtime.pinned_movement_context() {
-        return None;
-    }
-    let position = snapshot.position();
-    // The runtime floor is legacy `z`; the native floor is `-z`.
-    Some(BundleMapPosition {
-        map: index.map(),
-        at: ActorPosition {
-            x: position.x,
-            y: position.y,
-            floor: position.floor.checked_neg()?,
-        },
-        content_generation: runtime.content_pin().client_artifact_digest(),
-    })
-}
-
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     appearance_change::composed_methods!();
     async fn observe_quest_log(
@@ -2984,11 +2544,27 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.chat_speak(actor, session, command_id, &intent).await
     }
 
-    async fn chat_next(
+    async fn chat_guild_admit(
         &self,
-        session: GameSessionId,
+        admitted: AdmittedSession,
+    ) -> oteryn_protocol_oteryn::chat::guild_room::GuildRoomState {
+        self.guild_chat_admit(admitted).await
+    }
+
+    async fn chat_guild_intent(
+        &self,
+        admitted: AdmittedSession,
+        text: String,
+    ) -> oteryn_protocol_oteryn::chat::ChatIntentResult {
+        self.guild_chat_send(admitted, text).await
+    }
+
+    async fn chat_next_bound(
+        &self,
+        admitted: AdmittedSession,
+        remaining: &mut usize,
     ) -> Option<oteryn_protocol_oteryn::chat::ChatLine> {
-        self.states.chat.next(session)
+        self.guild_chat_next(admitted, remaining).await
     }
 
     async fn chat_delivered(&self, session: GameSessionId) {
@@ -3077,17 +2653,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         view: &mut world_map::SessionMapView,
         items: &mut item_view::SessionItemView,
     ) -> Option<Result<Option<world_map::MapUpdate>, world_map::MapViewError>> {
-        let (at, index) = {
-            let mut runtime = self.runtime.lock().await;
-            let index = item_ref_admission::pinned_index(&runtime, self.active_generation);
-            (
-                bundle_map_position(&mut runtime, self.movement_cells, actor)?,
-                index,
-            )
-        };
-        // ITEM-LOOP-1: the dropped items, read after the runtime lock is released.
-        let ground = loop_move::loop_ground(self, at.map.overlay.base(), index).await?;
-        Some(at.update(view, items, Some(&ground)))
+        bundle_map_position::observe(self, actor, view, items).await
     }
 
     async fn observe(&self, actor: ExactActorRef) -> Option<WorldSpatialObservation> {
@@ -3767,35 +3333,13 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.observe_combat_state(actor, game_session_id).await
     }
 
-    async fn lose_control(&self, admitted: AdmittedSession, wait: Duration) -> ControlLossResult {
-        let (Some(actor), Some(controller)) = (admitted.runtime_actor, admitted.controller) else {
-            return ControlLossResult::NotApplicable;
-        };
-        tokio::time::sleep(wait).await;
-        let result = self
-            .commit_control_loss(admitted.game_session_id, actor, controller)
-            .await;
-        if result == ControlLossResult::Recorded {
-            // §8.2: no command of the actor is accepted until a recovery initializes it again.
-            let runtime = self.runtime.lock().await;
-            self.states
-                .spell_states
-                .lock()
-                .await
-                .detach(&runtime, actor, admitted.game_session_id);
-            // ATTACK-0 §3: the lost client's target stops swinging; its in-fight deadline runs on.
-            self.states
-                .attack
-                .lock()
-                .await
-                .clear_target(actor, admitted.game_session_id);
-        }
-        if result == ControlLossResult::Recorded
-            && let Ok(mut lost) = self.states.lost.lock()
-        {
-            lost.insert(admitted.game_session_id, admitted);
-        }
-        result
+    async fn lose_control(
+        &self,
+        admitted: AdmittedSession,
+        wait: Duration,
+        reset: Option<&crate::durability::world_reset::RetiringWorldReset>,
+    ) -> ControlLossResult {
+        self.lose_control_for_cause(admitted, wait, reset).await
     }
 
     async fn enter_input(&self) -> Option<input_gate::InputPermit<'_>> {
@@ -4477,188 +4021,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// source is composed at decision time from the Channel owner (actor present, placement,
     /// assignment revision), the current durable GameSession and the admitted account; the
     /// durable commit revalidates session, claims and runtime guard under its relation locks.
-    async fn commit_control_loss(
-        &self,
-        game_session_id: GameSessionId,
-        actor: ExactActorRef,
-        controller: ControllerBinding,
-    ) -> ControlLossResult {
-        let store = FreshAdmissionStore::from_root(self.root.clone());
-        // LOGOUT-WIRE-1 (§1.6): a session already TERMINAL ended in a release whose
-        // acknowledgement was lost; the lifecycle reconciles it (`reconcile_terminal`).
-        match store.current_session(game_session_id).await {
-            Ok(current) if current.session_state() == GameSessionState::Terminal => {
-                return ControlLossResult::Terminal;
-            }
-            Ok(_) => {}
-            Err(_) => return ControlLossResult::Unknown,
-        }
-        if !self
-            .reconcile_spells_before_control_loss(actor, game_session_id)
-            .await
-        {
-            return ControlLossResult::Unknown;
-        }
-        // Loss is timed on the durable owner's clock, the same clock that
-        // samples the final decision time.
-        let Ok((session, now)) = store.current_session_at(game_session_id).await else {
-            return ControlLossResult::Unknown;
-        };
-        // A logout whose commit became visible during the spell reconciliation is the same
-        // lost-acknowledgement release.
-        if session.session_state() == GameSessionState::Terminal {
-            return ControlLossResult::Terminal;
-        }
-        // Only this controller's still-ACTIVE, never-lost session: a replaced, released or
-        // already reconnectable session is not this connection's to lose.
-        if session.session_state() != GameSessionState::Active
-            || session.current_transport() != Some(controller.transport)
-            || session.current_runtime_scope()
-                != RuntimeScopeRefV1::channel(self.world_id, self.channel_id)
-        {
-            return ControlLossResult::NotApplicable;
-        }
-        // LOGOUT-WIRE-1 (§1.6): the client never received `ACCEPTED`, so an unknown logout of
-        // this still-ACTIVE session is an ordinary loss of its transport. The fence the logout
-        // kept is lifted and its kill marks are released before the loss is recorded.
-        self.lift_kept_logout(game_session_id, actor).await;
-        // This controller may have resumed a lost session: its loss opens the next epoch
-        // and retains the resumed one's history, read from the durable receipts. A resumed
-        // session whose history cannot be proven is released instead (`ResumedHistory`).
-        let (history, protection) = match session.current_control_loss_epoch() {
-            None => (
-                ControlLossHistoryV1::FreshOrigin,
-                RecoveryProtectionContinuityV1 {
-                    usage: RecoveryProtectionUseV1::Unused {
-                        entitlement_generation: 1,
-                    },
-                    rearm: RecoveryProtectionRearmV1::NotRearmed {
-                        generation: 1,
-                        stable_control_started_at: None,
-                        accepted_deadline: None,
-                    },
-                },
-            ),
-            Some(_) => match store.resumed_history(game_session_id).await {
-                Ok(Some(
-                    history @ ControlLossHistoryV1::Resumed {
-                        protection: retained,
-                        ..
-                    },
-                )) => (history, retained),
-                _ => return ControlLossResult::ResumedHistory,
-            },
-        };
-        // A refused loss must not strand a resumed session ACTIVE on its dead transport.
-        let refused = if matches!(history, ControlLossHistoryV1::Resumed { .. }) {
-            ControlLossResult::ResumedHistory
-        } else {
-            ControlLossResult::Refused
-        };
-        let next_epoch = match &history {
-            ControlLossHistoryV1::FreshOrigin => Some(1),
-            ControlLossHistoryV1::Resumed { budget, .. } => budget.epoch().get().checked_add(1),
-        };
-        let (Some(grace_deadline), Some(next_epoch)) =
-            (now.checked_add(SAME_SESSION_GRACE_SECONDS), next_epoch)
-        else {
-            return ControlLossResult::Unknown;
-        };
-        let (Ok(epoch), Ok(account_presence)) = (
-            ControlLossEpochRefV1::new(next_epoch),
-            AccountPresenceClaimV1::new(
-                &canonical_uuid(&controller.account_id),
-                session.commit().character_id(),
-            ),
-        ) else {
-            return refused;
-        };
-        let observation = {
-            let runtime = self.runtime.lock().await;
-            let Ok(facts) = runtime.player_control_facts(actor, game_session_id) else {
-                return refused;
-            };
-            if facts.control_loss.is_some() {
-                return ControlLossResult::NotApplicable;
-            }
-            let source_revision = runtime.binding().source_revision();
-            ControlLossObservationV1 {
-                source_authority: session.current_runtime_scope(),
-                source_revision,
-                accepted_source_revision: source_revision,
-                decision_identity: epoch,
-                accepted_decision_identity: epoch,
-                observed_at: now,
-                session,
-                account_presence,
-                placement_identity: facts.placement_identity,
-                placement_revision: facts.placement_revision,
-                actor_present: true,
-                runtime_ready: true,
-                cause: ControlLossCauseV1::AuthoritativeUnexpectedLoss,
-                loss_epoch: epoch,
-                loss_origin: now,
-                original_grace_deadline: grace_deadline,
-                history,
-                protection,
-            }
-        };
-        let source = std::sync::Arc::new(ChannelOwnedLossSource(observation));
-        let Ok(authorization) =
-            ControlLossAuthorizationV1::authorize(source.as_ref(), game_session_id, now)
-        else {
-            return refused;
-        };
-        let mut flow = ControlLossFlowV1::begin(authorization);
-        let Ok(request) = flow.take_request() else {
-            return refused;
-        };
-        let request = std::sync::Arc::new(request);
-        match store
-            .commit_fresh_loss(request.clone(), source.clone())
-            .await
-        {
-            Ok(ControlLossOutcomeV1::Committed { .. }) => {}
-            Ok(ControlLossOutcomeV1::Rejected) => return refused,
-            // The commit may have landed with its acknowledgement lost: reconcile the exact
-            // immutable operation; never re-decide with a new observation.
-            Ok(ControlLossOutcomeV1::Ambiguous) | Err(_) => {
-                let mut proven = None;
-                for _ in 0..RECONCILE_ATTEMPTS {
-                    match store.reconcile_fresh_loss(request.operation()).await {
-                        Ok(FreshLossReconciliation::Committed { .. }) => {
-                            proven = Some(true);
-                            break;
-                        }
-                        Ok(FreshLossReconciliation::Absent | FreshLossReconciliation::Conflict) => {
-                            proven = Some(false);
-                            break;
-                        }
-                        Err(_) => tokio::time::sleep(RECONCILE_BACKOFF).await,
-                    }
-                }
-                match proven {
-                    Some(true) => {}
-                    Some(false) => return refused,
-                    None => return ControlLossResult::Unknown,
-                }
-            }
-        }
-        let mark = ControlLossMark {
-            epoch: epoch.get(),
-            grace_deadline,
-        };
-        match self
-            .runtime
-            .lock()
-            .await
-            .record_control_loss(actor, game_session_id, mark)
-        {
-            Ok(()) => ControlLossResult::Recorded,
-            Err(_) => ControlLossResult::Unknown,
-        }
-    }
-
     async fn reserve_runtime_player(
         &self,
         game_session_id: GameSessionId,
@@ -6078,7 +5440,12 @@ mod tests {
         ) -> Result<AdmittedSession, AdmissionRefusal> {
             self.inner.admit(attempt).await
         }
-        async fn lose_control(&self, _: AdmittedSession, _: Duration) -> ControlLossResult {
+        async fn lose_control(
+            &self,
+            _: AdmittedSession,
+            _: Duration,
+            _: Option<&crate::durability::world_reset::RetiringWorldReset>,
+        ) -> ControlLossResult {
             self.losses.fetch_add(1, Ordering::SeqCst);
             ControlLossResult::Recorded
         }
@@ -6113,7 +5480,12 @@ mod tests {
         ) -> Result<AdmittedSession, AdmissionRefusal> {
             self.inner.admit(attempt).await
         }
-        async fn lose_control(&self, _: AdmittedSession, _: Duration) -> ControlLossResult {
+        async fn lose_control(
+            &self,
+            _: AdmittedSession,
+            _: Duration,
+            _: Option<&crate::durability::world_reset::RetiringWorldReset>,
+        ) -> ControlLossResult {
             ControlLossResult::Recorded
         }
         async fn expire_control_loss(&self, _: AdmittedSession) -> GraceExpiryResult {
@@ -6145,6 +5517,7 @@ mod tests {
                 item_fence: None,
             };
             let lost = LostControl {
+                reset: None,
                 session,
                 wait: Duration::ZERO,
             };
