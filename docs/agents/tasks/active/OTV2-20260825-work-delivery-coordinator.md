@@ -4,7 +4,7 @@
 task_id: OTV2-20260825-work-delivery-coordinator
 title: Coordinate the post-blocker gameplay vertical slice
 mode: COORDINATE
-status: implementing
+status: waiting
 programme_state: ACTIVE
 active_control_plane_profile: OTV2_WORK_DELIVERY_COORDINATOR
 repository: Oteryn/Oteryn-Game
@@ -26,6 +26,12 @@ blocks: []
 cross_repository_coordination_id: OTV2-NATIVE-FOUNDATION
 external_repositories: []
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#315](https://github.com/Oteryn/Oteryn-Game/pull/315), [#1044](https://github.com/Oteryn/Oteryn-Game/pull/1044), [#1676](https://github.com/Oteryn/Oteryn-Game/pull/1676). Coordinator routing/checkpoint updates are merged across multiple PRs. Evidence: `docs/agents/tasks/active/OTV2-20260825-work-delivery-coordinator.md`.
+
+Remaining: Programme delivery and control-plane coordination continue; this is not a missing mechanic or terminal task. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 ## Current authority
 
@@ -71,7 +77,7 @@ A downstream release or terminal closeout requires its actual accepted gate, not
 
 ```yaml
 last_progress: refreshed stale G0/Server Seam routing; recorded the click-Use-backpack-door lane register and architecture package A1-A3 on #162
-status: implementing
+status: waiting
 programme_state: ACTIVE
 active_control_plane_profile: OTV2_WORK_DELIVERY_COORDINATOR
 protected_main_sha: 961c74ab573d87807ed24cbd414a46d8072f72d3

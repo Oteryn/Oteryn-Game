@@ -896,7 +896,7 @@ Every name in a `Depends on` column is one of: a batch in section 4, a child in 
 | ITEM-SEM-2b-2, N4-P, CLIENT-NEG-1 | packet tasks outside this plan | the ITEM_EQUIP, LOGIN_FIRST and CORE_CLIENT packets; ITEM-SEM-2b-2 is a narrowed #1672 packet |
 | ATTACK-1, SPAWN-1, HOUSE-1, HOUSE-RUNTIME-1, MAP-CUTOVER-1, ITEM-VIEW-1, FORGE-1, TIMED-RT-1, CHAT-1b-2 | superseded parent names | split by their packets into the 1a/1b/1c (or 2a/2b) children named in this plan; the parent name is an alias of the whole set |
 | SPELL-LOCK-2a, GOLD-FEE-ACT-1, ITEM-SEM-BED-1, ITEM-SEM-USE-1, ITEM-SEM-USE-2, MAP-BUNDLE-2, GAME-LCFA-ENABLE-1, OPS-REVOKE-REPORT-1, CHAT-1a, CHAT-1b-1 | packet or decision tasks with a record in `docs/agents/tasks/archive/` | done |
-| GAME-PREPROD-TOPOLOGY-1 | in-flight task, ops | `docs/agents/tasks/OTV2-20261007-game-preprod-topology-1.md`; the topology decision is PROPOSED and outside the mechanics rows |
+| GAME-PREPROD-TOPOLOGY-1 | in-flight task, ops | `docs/agents/tasks/archive/OTV2-20261007-game-preprod-topology-1.md`; the topology decision is PROPOSED and outside the mechanics rows |
 | PVP-1 | superseded parent name | split into PVP-1a (merged, #2032) and PVP-1b (residue); the parent name is an alias of both |
 | LOGOUT-1 | alias | the earlier plan name of LOGOUT-WIRE-1; the batch is LOGOUT-WIRE-1 |
 | DEATH-DUR-1 | death module batch B | section 4, "Death module and in-flight work" |

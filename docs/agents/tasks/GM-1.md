@@ -4,7 +4,7 @@
 task_id: GM-1
 title: "GM-1: signed staff requests with atomic STAFF_ACTION audit; mute, kick, inspect, item-text reports, restore replay"
 mode: IMPLEMENT
-status: NOT_STARTED   # re-implementation pending under ADR-0022
+status: waiting
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 5
@@ -19,6 +19,12 @@ needs_migration: true   # next free number at allocation time (only one migratio
 needs_registry: true    # GAME_EVENT_FOUNDATION_REGISTRY STAFF_ACTION (+ retention profile), RESOURCE_LIMITS_REGISTRY staff wire bounds
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **OPEN**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: none. Existing logout is reusable; no staff-action owner, sanction/mute store or staff desk from GM-1 is retained on main. Evidence: `crates/gameplay/dispatch/src/gameplay_transport/logout.rs`.
+
+Remaining: Implement staff audit/sanctions and real mute/kick/report consumers within the accepted owner contracts. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2181, branch skeleton/gm-1
 

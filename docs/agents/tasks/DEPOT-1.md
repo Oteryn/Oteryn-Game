@@ -4,7 +4,7 @@
 task_id: DEPOT-1
 title: "DEPOT-1: per-town Character depot storage and shared Inbox foundation"
 mode: IMPLEMENT
-status: IN_PROGRESS
+status: waiting   # DEPOT-1 slice merged (#2334); remaining slices per card
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/happy-davinci-ijz3wy-depot-1
@@ -41,6 +41,12 @@ blocks:
 cross_repository_coordination_id: null
 external_repositories: []
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@43914f183`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: #2334: pure depot bounds and dormant per-Character/per-town custody, box ordinals and hard capacity guards; existing Inbox delivery is reused. Evidence: `crates/gameplay/items/src/depot.rs`, `crates/gameplay/durability/src/durability/character_depot.rs`, `apps/game-server/migrations/0151_character_depot.sql`, `crates/gameplay/items/src/depot_tests.rs`, `apps/game-server/src/lifted_tests/auto/depot_postgres_cases.rs`.
+
+Remaining: Admitted locker content/binding, session-bound paginated depot/Inbox views, fenced deposit/withdraw receipts/audit/replay, Free/Premium runtime admission, Inbox out-shapes and real-dispatch qualification remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 ## Scope and authority
 

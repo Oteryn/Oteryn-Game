@@ -4,7 +4,7 @@
 task_id: ADMIT-CAP-2
 title: "ADMIT-CAP-2: player field effects behind world-required capabilities"
 mode: IMPLEMENT
-status: NOT_STARTED   # re-implementation pending under ADR-0022
+status: waiting
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 3
@@ -19,6 +19,12 @@ needs_migration: false
 needs_registry: true   # field refusal outcome / error-code row, owned by the protocol/error CP owner
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **OPEN**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: none. No field-creation guard from this card is retained on main; ADMIT-CAP-1 is a prerequisite, not this implementation. Evidence: `crates/gameplay/dispatch/src/gameplay_transport/world_required_capabilities.rs`.
+
+Remaining: Implement the player field/wall guard at the current guarded write boundaries. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2150, branch skeleton/admit-cap-2
 

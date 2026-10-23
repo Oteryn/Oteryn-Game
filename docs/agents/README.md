@@ -30,6 +30,10 @@ Reusable prompts are task deltas, not project state. Apply current authority, ta
 
 ## Task lifecycle
 
+Before writing a mechanic card or starting a mechanic, check [mechanics status on main](tasks/MECHANICS_STATUS.md) and the [archive](tasks/archive/) for existing implementations and completed cards so nothing is reimplemented. Scope the card to the remaining work.
+
+Every mechanic card must declare `type: mechanic` and contain a `## Reference parity` section with the table `Behaviour | Reference value/source (Tibia wiki, TibiaData, Canary/Crystal path) | Oteryn | Test`. Each behaviour row must cite its reference and be backed by a table-driven test; use the [task template](tasks/TASK_TEMPLATE.md). On closeout, update the mechanic's MECHANICS_STATUS.md row in the same PR, including resolving links and any remaining gaps. Also update the row whenever a PR changes its implementation state. The governance validator requires the parity heading on `type: mechanic` cards with `status: DONE` or lifecycle `status: completed`, and checks the index's local file links.
+
 Substantial work uses:
 
 - `tasks/active/OTV2-YYYYMMDD-short-slug.md` while active;
