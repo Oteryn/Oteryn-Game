@@ -57,9 +57,11 @@ async fn roundtrip(
     admitted: &mut AdmittedSession,
     steps: &[Step],
 ) -> TestResult<Vec<PartyResult>> {
+    let session = *admitted;
     let (mut server, mut client) = tokio::io::duplex(16_384);
-    let serving = serve_admitted(&mut server, *admitted, owner, IDLE_LIVENESS);
-    let driving = async {
+    // Each peer owns its stream so an early return closes it and wakes the other peer.
+    let serving = async move { serve_admitted(&mut server, session, owner, IDLE_LIVENESS).await };
+    let driving = async move {
         loop {
             let frame = read_frame(&mut client).await?;
             if decode_wire_envelope(&frame).map_err(debug)?.message_type()
@@ -70,7 +72,7 @@ async fn roundtrip(
         }
         let mut results: Vec<PartyResult> = Vec::new();
         for (offset, step) in steps.iter().enumerate() {
-            let command_id = admitted.continuity.next_command_id + offset as u64;
+            let command_id = session.continuity.next_command_id + offset as u64;
             let intent = match step {
                 Step::Invite(target) => Some(PartyIntent::Invite(*target)),
                 Step::Accept => Some(PartyIntent::Accept(
@@ -116,7 +118,7 @@ async fn roundtrip(
                 COMMAND_TYPE_PARTY_INTENT
             };
             let frame = encode_client_command(
-                admitted.continuity.connection_generation,
+                session.continuity.connection_generation,
                 &ClientCommandValue {
                     command_id,
                     command_type,
@@ -134,7 +136,7 @@ async fn roundtrip(
                 let result = decode_command_result(envelope.payload()).map_err(debug)?;
                 assert_eq!(result.command_id, command_id);
                 if matches!(step, Step::Malformed)
-                    || !admitted
+                    || !session
                         .continuity
                         .selected_capabilities
                         .contains(CAPABILITY_PARTY_V1)
@@ -286,7 +288,9 @@ async fn scenario(h: &Harness) -> TestResult {
     invisible.generation += 1;
     let refused = roundtrip(&owner, &mut admitted[0], &[Step::Invite(invisible)]).await?;
     assert_eq!(refused[0].disposition, PartyDisposition::NotVisible);
-    let mut stale = admitted[0];
+    // Use a genuinely fresh connection: carried continuity first reconciles the original
+    // bank command, which must disconnect on a stale fence before party dispatch can run.
+    let mut stale = admitted[2];
     stale
         .item_fence
         .as_mut()
