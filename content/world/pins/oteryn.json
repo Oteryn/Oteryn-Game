@@ -6,9 +6,9 @@
   "content_revision": "npc-bank-1-20261015-r1",
   "production": false,
   "entry_start": {
-    "x": 32369,
-    "y": 32238,
+    "x": 32534,
+    "y": 32513,
     "floor": -7
   },
-  "inputs_digest": "3c6196c65ea90b70e248590fd209fbd3d96982e30c8cd861c94420fc6a2c5b7d"
+  "inputs_digest": "55a86f82ec37493bbecd2e0139a79e6994e4fd1b7044c01d5130675c65bcd83f"
 }
