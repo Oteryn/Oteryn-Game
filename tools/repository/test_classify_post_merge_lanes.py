@@ -162,7 +162,7 @@ def shared_cache_completion_regressions() -> None:
     # The protected-main producer only compiles tests. Full test execution is
     # retained in MQ; cache hits never stand in for candidate qualification.
     test_commands = re.findall(r"(?m)^        run: (cargo .+ test .+)$", source)
-    assert test_commands == ["cargo +1.95.0 test --locked --workspace --no-run"]
+    assert test_commands == ["cargo +1.99.1 test --locked --workspace --no-run"]
     assert "services:" not in source and "runs-on: windows" not in source
     assert not re.search(r"(?m)^  (durability-postgres|windows):$", source)
     assert "github.ref == 'refs/heads/main' && github.ref_protected" in linux

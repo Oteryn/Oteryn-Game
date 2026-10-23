@@ -1,5 +1,5 @@
 #![allow(clippy::expect_used)]
-// Dedicated PostgreSQL 17 qualification for CHEST-1 (DUR-03 reward-claim
+// Dedicated PostgreSQL 18 qualification for CHEST-1 (DUR-03 reward-claim
 // MINT into a new direct entry of the equipped main backpack). Ordinary
 // workspace runs report PRE-ROUTING/NONCANONICAL when the routed database is
 // absent.

@@ -35,7 +35,7 @@ use sqlx::Row;
 // `pub(crate)` on the generic harness pieces below (TestResult, WORLD/CHANNEL/CHARACTER/
 // SESSION, id, debug, configured_admin, runtime, Database, fence_parent, register, scope,
 // seed_character, Harness) lets `combat_pickup_postgres_cases.rs` reuse the exact same
-// PostgreSQL 17 DB/admission/session bootstrap (B3-2, `combat_pickup_postgres.rs`) instead of
+// PostgreSQL 18 DB/admission/session bootstrap (B3-2, `combat_pickup_postgres.rs`) instead of
 // duplicating it; behavior is unchanged.
 #[path = "item_transfer_postgres_harness.rs"]
 mod item_transfer_postgres_harness;

@@ -1,5 +1,5 @@
 #![allow(clippy::expect_used)]
-// Dedicated PostgreSQL 17.6 qualification for FORGE-1a (migration 0059). Ordinary workspace runs
+// Dedicated PostgreSQL 18.6 qualification for FORGE-1a (migration 0059). Ordinary workspace runs
 // report PRE-ROUTING/NONCANONICAL when the routed database is absent.
 extern crate oteryn_game_server as production_server;
 extern crate self as oteryn_game_server;

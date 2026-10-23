@@ -3856,11 +3856,12 @@ mod typed_item_codec_tests {
             }
         }
 
-        let chunks = value.as_bytes().chunks_exact(2);
-        if !chunks.remainder().is_empty() {
+        let (pairs, remainder) = value.as_bytes().as_chunks::<2>();
+        if !remainder.is_empty() {
             return Err(ContentError::InvalidArtifact("odd fixture hex length"));
         }
-        chunks
+        pairs
+            .iter()
             .map(|pair| Ok((nibble(pair[0])? << 4) | nibble(pair[1])?))
             .collect()
     }

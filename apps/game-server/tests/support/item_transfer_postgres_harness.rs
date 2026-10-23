@@ -45,7 +45,7 @@ use std::task::Poll;
 // `pub(crate)` on the generic harness pieces below (TestResult, WORLD/CHANNEL/CHARACTER/
 // SESSION, id, debug, configured_admin, runtime, Database, fence_parent, register, scope,
 // seed_character, Harness) lets `combat_pickup_postgres_cases.rs` reuse the exact same
-// PostgreSQL 17 DB/admission/session bootstrap (B3-2, `combat_pickup_postgres.rs`) instead of
+// PostgreSQL 18 DB/admission/session bootstrap (B3-2, `combat_pickup_postgres.rs`) instead of
 // duplicating it; behavior is unchanged.
 pub(crate) type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
@@ -162,11 +162,11 @@ impl Database {
         let version: String = sqlx::query_scalar("SHOW server_version_num")
             .fetch_one(&mut connection)
             .await?;
-        // The protected lane pins PostgreSQL 17.6; any 17.x server runs the
+        // The protected lane pins PostgreSQL 18.6; any 18.x server runs the
         // same schema, and the exact server is recorded as evidence.
         assert!(
-            version.starts_with("17"),
-            "PostgreSQL 17 required: {version}"
+            version.starts_with("18"),
+            "PostgreSQL 18 required: {version}"
         );
         eprintln!("ITEM-TRANSFER-PG: database {name} on server_version_num={version}");
         sqlx::migrate!("./migrations").run(&mut connection).await?;

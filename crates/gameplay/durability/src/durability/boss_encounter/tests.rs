@@ -537,7 +537,7 @@ fn boss_clock_native_owner_cas_and_restart_storage_postgres() -> TestResult {
     };
     native_fixture::runtime()?.block_on(async move {
         let fixture = native_fixture::Harness::create(admin, "boss_clocks", false).await?;
-        eprintln!("Canonical PostgreSQL17.6; genuine native Root/node/assignment/recovery fixture");
+        eprintln!("Canonical PostgreSQL 18.6; genuine native Root/node/assignment/recovery fixture");
         let result = qualify_clock_storage(&fixture).await;
         fixture.cleanup().await?;
         result
@@ -545,7 +545,7 @@ fn boss_clock_native_owner_cas_and_restart_storage_postgres() -> TestResult {
 }
 
 // Proposed private physical encoding of the accepted §6.3/§9 logical rows. These
-// tables are installed only after real native migrations in a disposable PG17.6 DB.
+// tables are installed only after real native migrations in a disposable PG18.6 DB.
 // Production migration number/grants/guards and actual death/admission composition
 // remain CP work. No fixture row certifies a current reset, boost or admission.
 const REWARD_STATE_SCHEMA: &str = r#"
