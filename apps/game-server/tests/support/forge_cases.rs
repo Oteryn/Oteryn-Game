@@ -1,7 +1,7 @@
-//! Private tier schema/read qualification only; no forge operation or authority is simulated.
+//! Installed tier schema/read qualification only; no forge operation or authority is simulated.
 //! Mounted by character_authority_postgres (PG-COVERAGE-1), on the actual native migration chain.
 use crate::domain::forge::ItemTier;
-use crate::durability::forge::{PRIVATE_TIER_SCHEMA_SQL, TierReadError, read_item_tier};
+use crate::durability::forge::{FORGE_TIER_MIGRATION_VERSION, TierReadError, read_item_tier};
 use sqlx::{Connection, PgConnection};
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
@@ -52,12 +52,14 @@ fn run_case(tag: &str, body: impl AsyncFnOnce(&mut PgConnection) -> TestResult) 
             let result = async {
                 let prefix = admin_url.strip_suffix("/postgres").ok_or("invalid route")?;
                 let mut connection = PgConnection::connect(&format!("{prefix}/{name}")).await?;
-                // The actual native migration chain supplies game_item_instances;
-                // the only additional schema is the exact owned private tier DDL.
+                // The actual native migration chain supplies both items and tiers.
                 sqlx::migrate!("./migrations").run(&mut connection).await?;
-                sqlx::raw_sql(PRIVATE_TIER_SCHEMA_SQL)
-                    .execute(&mut connection)
-                    .await?;
+                let installed: bool =
+                    sqlx::query_scalar("SELECT success FROM _sqlx_migrations WHERE version=$1")
+                        .bind(FORGE_TIER_MIGRATION_VERSION)
+                        .fetch_one(&mut connection)
+                        .await?;
+                assert!(installed);
                 // Migration-owner fixture data, not a qualified item MINT or writer.
                 let mut tx = connection.begin().await?;
                 sqlx::query("SET LOCAL session_replication_role = replica")

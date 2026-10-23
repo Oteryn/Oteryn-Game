@@ -3,3 +3,5 @@
 pub mod self_heal;
 pub mod thresholds;
 pub mod timers;
+
+pub mod raid;
