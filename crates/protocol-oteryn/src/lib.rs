@@ -415,10 +415,11 @@ pub const MAX_SNAPSHOT_ASSEMBLED_BYTES: u64 = 16_777_216;
 // composed); both require 6. TUTORIAL-1 adds capability 31. DAILY-1 registers CP-allocated
 // capability 32. Capability 33 is dormant SPECTATE_V1 (SPECTATE-1b). GUILD-CHAT-1 registers
 // capability 36 CHAT_GUILD_ROOM_V1, which requires 7. Capability 37 DEPOT_V1 owns command 36. HOUSE-1b adds reserved capability 59 and commands 76–77.
+// HOUSE-WIRE-1 adds owner-allocated 49.
 // Keep this sorted when a later owning gate allocates an additive capability ID.
 const REGISTERED_CAPABILITY_IDS_V1: &[u32] = &[
     1, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 25, 26, 28, 29, 30,
-    31, 32, 33, 36, 37, 40, 43, 59,
+    31, 32, 33, 36, 37, 40, 43, 49, 59,
 ];
 
 fn decode_uuid_v7(input: &[u8]) -> Result<[u8; 16], FoundationProtocolError> {
@@ -4808,3 +4809,5 @@ pub mod spectate;
 
 #[cfg(test)]
 mod decoder_fuzz_support;
+
+pub mod house;
