@@ -1,13 +1,16 @@
 //! Strict historical fresh-operation storage. No decoded value is a live capability.
 //! Runtime ceilings follow the accepted DFR registry; codec bounds remain explicit.
+mod retired_holder_release;
+mod terminal_release;
 use super::DurabilityError;
 use super::admission_authority_guards::*;
-use base64::Engine;
-use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use crate::foundation::admission_authority_publication::*;
 use crate::foundation::fnd04_verifier::*;
 use crate::foundation::fresh_admission_durability::*;
 use crate::foundation::*;
+use base64::Engine;
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+pub(super) use retired_holder_release::release_retired_holder_sessions;
 use serde::{Deserialize, Serialize};
 
 type Result<T> = std::result::Result<T, DurabilityError>;
@@ -315,6 +318,7 @@ impl ControlLossCompletionSourceV1 for DurableLossCompletionSource {
 /// a separate adapter requirement; runtime arguments must match fixed registry caps.
 #[derive(Clone)]
 pub struct FreshAdmissionStore {
+    retired_holder: Option<retired_holder_release::RetiredHolderProof>,
     guards: AdmissionGuardStore,
     maximum_operation_bytes: usize,
     /// CHAR-POSITION-0 §3.2 "At logout": the last position the terminal release writes in its
@@ -390,6 +394,7 @@ impl FreshAdmissionStore {
             guards: AdmissionGuardStore::from_root(root),
             maximum_operation_bytes: super::MAX_FRESH_OPERATION_BYTES,
             final_position: None,
+            retired_holder: None,
         }
     }
 
@@ -595,6 +600,9 @@ impl FreshAdmissionStore {
             if decided_at < operation.authorized_at { return Err(DurabilityError::InvalidStoredState); }
             super::admission_journal::commit_pass_transaction(tx, deadline).await?;
             return Ok(ControlLossOutcomeV1::Committed { decided_at });
+        }
+        if !super::world_reset::loss_binding_current(&mut tx, observation.cause).await? {
+            return Ok(ControlLossOutcomeV1::Rejected);
         }
         let row = sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(r)::text) <= 131072 THEN operation_json END AS operation_json FROM game_durability_fresh_admission_receipts r WHERE game_session_id = encode($1,'hex')::uuid FOR SHARE")
             .bind(session_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
@@ -1013,289 +1021,9 @@ impl FreshAdmissionStore {
         )))
     }
 }
-// Canonical complete encoding of the supported owning-loss shapes: a fresh-origin loss
-// and a loss after a same-session resume, which retains the resumed epoch's history.
-// Every omitted alternative is rejected, never silently projected or defaulted.
-fn write_fresh_loss(w: &mut Writer, operation: &ControlLossOperationV1) -> Result<()> {
-    let o = &operation.observation;
-    if operation.version != 1 || o.cause != ControlLossCauseV1::AuthoritativeUnexpectedLoss {
-        return Err(DurabilityError::Unavailable);
-    }
-    w.tag(1)?;
-    w.i64(operation.authorized_at)?;
-    write_scope(w, o.source_authority)?;
-    w.u64(o.source_revision)?;
-    w.u64(o.accepted_source_revision)?;
-    w.u64(o.decision_identity.get())?;
-    w.u64(o.accepted_decision_identity.get())?;
-    w.i64(o.observed_at)?;
-    let s = o.session;
-    let c = s.commit();
-    w.bytes(c.game_session_id().as_bytes())?;
-    w.bytes(c.character_id().as_bytes())?;
-    w.bytes(c.world_id().as_bytes())?;
-    w.bytes(c.channel_id().as_bytes())?;
-    w.u64(c.character_lease_generation())?;
-    w.u64(c.scope_ownership_generation())?;
-    w.u64(c.connection_generation().get())?;
-    w.bytes(&c.initial_transport().to_bytes())?;
-    w.tag(match s.session_state() {
-        GameSessionState::Active => 1,
-        GameSessionState::Reconnectable => 2,
-        GameSessionState::Terminal => 3,
-    })?;
-    w.u64(s.current_connection_generation().get())?;
-    w.boolean(s.current_transport().is_some())?;
-    if let Some(t) = s.current_transport() {
-        w.bytes(&t.to_bytes())?;
-    }
-    w.bytes(s.current_character_lease().character_id().as_bytes())?;
-    w.u64(s.current_character_lease().generation())?;
-    w.boolean(s.current_character_world_eligibility().is_some())?;
-    if let Some(e) = s.current_character_world_eligibility() {
-        w.bytes(e.character_id().as_bytes())?;
-        w.bytes(e.world_id().as_bytes())?;
-    }
-    write_scope(w, s.current_runtime_scope())?;
-    w.u64(s.current_scope_generation().get())?;
-    w.boolean(s.current_control_loss_epoch().is_some())?;
-    if let Some(e) = s.current_control_loss_epoch() {
-        w.u64(e.get())?;
-    }
-    w.boolean(s.current_original_grace_deadline().is_some())?;
-    if let Some(t) = s.current_original_grace_deadline() {
-        w.i64(t)?;
-    }
-    w.text(o.account_presence.account_id())?;
-    w.bytes(o.account_presence.character_id().as_bytes())?;
-    w.bytes(&o.placement_identity)?;
-    w.u64(o.placement_revision)?;
-    w.boolean(o.actor_present)?;
-    w.boolean(o.runtime_ready)?;
-    w.tag(1)?;
-    w.u64(o.loss_epoch.get())?;
-    w.i64(o.loss_origin)?;
-    w.i64(o.original_grace_deadline)?;
-    match &o.history {
-        ControlLossHistoryV1::FreshOrigin => w.tag(1)?,
-        ControlLossHistoryV1::Resumed {
-            budget,
-            original_grace_deadline,
-            protection,
-        } => {
-            w.tag(2)?;
-            write_budget(w, budget)?;
-            w.i64(*original_grace_deadline)?;
-            write_protection(w, *protection)?;
-        }
-    }
-    write_protection(w, o.protection)
-}
-pub fn encode_fresh_loss(operation: &ControlLossOperationV1) -> Result<String> {
-    let maximum = super::MAX_FRESH_OPERATION_BYTES;
-    let mut counter = Writer::counter(maximum);
-    write_fresh_loss(&mut counter, operation)?;
-    envelope_size(counter.measured(), maximum)?;
-    checked(ControlLossFlowV1::restore(operation.clone()))?;
-    let mut writer = Writer::new(maximum);
-    write_fresh_loss(&mut writer, operation)?;
-    encode_envelope(&writer.bytes, maximum)
-}
-
-fn read_protection(r: &mut Reader<'_>) -> Result<RecoveryProtectionContinuityV1> {
-    let usage = match r.tag()? {
-        0 => RecoveryProtectionUseV1::NotEntitled,
-        1 => RecoveryProtectionUseV1::Unused {
-            entitlement_generation: r.u64()?,
-        },
-        2 => RecoveryProtectionUseV1::Activated {
-            entitlement_generation: r.u64()?,
-            activated_at: r.i64()?,
-            deadline: r.i64()?,
-        },
-        _ => return Err(DurabilityError::InvalidStoredState),
-    };
-    let rearm = match r.tag()? {
-        0 => RecoveryProtectionRearmV1::NotRearmed {
-            generation: r.u64()?,
-            stable_control_started_at: if r.boolean()? { Some(r.i64()?) } else { None },
-            accepted_deadline: if r.boolean()? { Some(r.i64()?) } else { None },
-        },
-        1 => RecoveryProtectionRearmV1::Satisfied {
-            generation: r.u64()?,
-            established_at: r.i64()?,
-        },
-        _ => return Err(DurabilityError::InvalidStoredState),
-    };
-    Ok(RecoveryProtectionContinuityV1 { usage, rearm })
-}
-
-fn read_budget(r: &mut Reader<'_>) -> Result<RetainedRecoveryBudgetV1> {
-    let epoch = checked(ControlLossEpochRefV1::new(r.u64()?))?;
-    let state = match r.tag()? {
-        1 => RecoveryEpochStateV1::Open,
-        2 => RecoveryEpochStateV1::Restored,
-        3 => RecoveryEpochStateV1::Retired,
-        _ => return Err(DurabilityError::InvalidStoredState),
-    };
-    let count = r.tag()?;
-    let mut entries = Vec::new();
-    for _ in 0..count {
-        let attempt = checked(ReconnectAttemptRef::new(u64::from_be_bytes(
-            r.bytes::<8>()?,
-        )))?;
-        let transport = checked(AuthenticatedTransportRefV1::decode(&r.bytes::<16>()?))?;
-        let disposition = match r.tag()? {
-            1 => RetainedRecoveryAttemptDispositionV1::Committed,
-            2 => RetainedRecoveryAttemptDispositionV1::Prepared,
-            3 => RetainedRecoveryAttemptDispositionV1::TransportCollision,
-            4 => RetainedRecoveryAttemptDispositionV1::Terminal,
-            _ => return Err(DurabilityError::InvalidStoredState),
-        };
-        entries.push(RetainedRecoveryAttemptV1 {
-            attempt,
-            transport,
-            disposition,
-        });
-    }
-    checked(RetainedRecoveryBudgetV1::restore(
-        epoch, state, true, entries,
-    ))
-}
-
-/// Restore bounded historical loss bytes against the actual durable fresh
-/// receipt's initial commit. No replay key or live authority is synthesized.
-pub fn decode_fresh_loss(
-    encoded: &str,
-    initial: FreshAdmissionCommit<AuthenticatedTransportRefV1>,
-) -> Result<ControlLossOperationV1> {
-    let bytes = decode_envelope(encoded, super::MAX_FRESH_OPERATION_BYTES)?;
-    let mut r = Reader::new(&bytes);
-    if r.tag()? != 1 {
-        return Err(DurabilityError::InvalidStoredState);
-    }
-    let authorized_at = r.i64()?;
-    let source_authority = read_scope(&mut r)?;
-    let source_revision = r.u64()?;
-    let accepted_source_revision = r.u64()?;
-    let decision_identity = checked(ControlLossEpochRefV1::new(r.u64()?))?;
-    let accepted_decision_identity = checked(ControlLossEpochRefV1::new(r.u64()?))?;
-    let observed_at = r.i64()?;
-    if r.bytes::<16>()? != *initial.game_session_id().as_bytes()
-        || r.bytes::<16>()? != *initial.character_id().as_bytes()
-        || r.bytes::<16>()? != *initial.world_id().as_bytes()
-        || r.bytes::<16>()? != *initial.channel_id().as_bytes()
-        || r.u64()? != initial.character_lease_generation()
-        || r.u64()? != initial.scope_ownership_generation()
-        || r.u64()? != initial.connection_generation().get()
-        || r.bytes::<16>()? != initial.initial_transport().to_bytes()
-    {
-        return Err(DurabilityError::InvalidStoredState);
-    }
-    let state = match r.tag()? {
-        1 => GameSessionState::Active,
-        2 => GameSessionState::Reconnectable,
-        3 => GameSessionState::Terminal,
-        _ => return Err(DurabilityError::InvalidStoredState),
-    };
-    let generation = checked(ConnectionGeneration::new(r.u64()?))?;
-    let transport = if r.boolean()? {
-        Some(checked(AuthenticatedTransportRefV1::decode(
-            &r.bytes::<16>()?,
-        ))?)
-    } else {
-        None
-    };
-    let lease = checked(CharacterLease::new(
-        checked(CharacterId::decode(&r.bytes::<16>()?))?,
-        r.u64()?,
-    ))?;
-    let eligibility = if r.boolean()? {
-        Some(CharacterWorldEligibilityClaimV1::new(
-            checked(CharacterId::decode(&r.bytes::<16>()?))?,
-            checked(WorldId::decode(&r.bytes::<16>()?))?,
-        ))
-    } else {
-        None
-    };
-    let scope = read_scope(&mut r)?;
-    let scope_generation = checked(ScopeOwnershipGeneration::new(r.u64()?))?;
-    let epoch = if r.boolean()? {
-        Some(checked(ControlLossEpochRefV1::new(r.u64()?))?)
-    } else {
-        None
-    };
-    let grace = if r.boolean()? { Some(r.i64()?) } else { None };
-    let mut session = checked(GameSessionAuthoritySnapshot::from_current_facts(
-        initial,
-        state,
-        generation,
-        transport,
-        lease,
-        eligibility,
-        scope,
-        scope_generation,
-    ))?;
-    match (epoch, grace) {
-        (Some(epoch), Some(grace)) => {
-            session = checked(session.with_control_loss_continuity(epoch, grace))?
-        }
-        (None, None) => {}
-        _ => return Err(DurabilityError::InvalidStoredState),
-    }
-    let account_presence = checked(AccountPresenceClaimV1::new(
-        &r.text()?,
-        checked(CharacterId::decode(&r.bytes::<16>()?))?,
-    ))?;
-    let placement_identity = r.bytes::<16>()?;
-    let placement_revision = r.u64()?;
-    let actor_present = r.boolean()?;
-    let runtime_ready = r.boolean()?;
-    if r.tag()? != 1 {
-        return Err(DurabilityError::InvalidStoredState);
-    }
-    let loss_epoch = checked(ControlLossEpochRefV1::new(r.u64()?))?;
-    let loss_origin = r.i64()?;
-    let original_grace_deadline = r.i64()?;
-    let history = match r.tag()? {
-        1 => ControlLossHistoryV1::FreshOrigin,
-        2 => ControlLossHistoryV1::Resumed {
-            budget: read_budget(&mut r)?,
-            original_grace_deadline: r.i64()?,
-            protection: read_protection(&mut r)?,
-        },
-        _ => return Err(DurabilityError::InvalidStoredState),
-    };
-    let protection = read_protection(&mut r)?;
-    r.finish()?;
-    let operation = ControlLossOperationV1 {
-        version: 1,
-        authorized_at,
-        observation: ControlLossObservationV1 {
-            source_authority,
-            source_revision,
-            accepted_source_revision,
-            decision_identity,
-            accepted_decision_identity,
-            observed_at,
-            session,
-            account_presence,
-            placement_identity,
-            placement_revision,
-            actor_present,
-            runtime_ready,
-            cause: ControlLossCauseV1::AuthoritativeUnexpectedLoss,
-            loss_epoch,
-            loss_origin,
-            original_grace_deadline,
-            history,
-            protection,
-        },
-    };
-    // Historical Foundation validation cannot yield another live request.
-    checked(ControlLossFlowV1::restore(operation.clone()))?;
-    Ok(operation)
-}
+mod control_loss_codec;
+use control_loss_codec::write_fresh_loss;
+pub use control_loss_codec::{decode_fresh_loss, encode_fresh_loss};
 
 pub(super) async fn has_owning_loss_receipt(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
@@ -1876,46 +1604,6 @@ impl FreshAdmissionStore {
             })
             .await
     }
-
-    /// A sealed owner transition is still revalidated against independently read
-    /// SQL current state at the one decision time of the serialized transaction.
-    pub async fn release(&self, transition: &TerminalReleaseClaimTransitionV1) -> Result<i64> {
-        let encoded = encode_lifecycle(transition.evidence())?;
-        let transition = transition.clone();
-        let store = self.clone();
-        let backend = self.guards.backend.clone();
-        let issued = backend.try_issue_root()?;
-        backend.run_pass(issued, move |holder, deadline| Box::pin(async move {
-            let evidence = transition.evidence();
-            let mut tx = super::admission_journal::begin_pass_transaction(holder, deadline).await?;
-            super::db::lock_admission_relations(&mut tx).await?;
-            if let Some(prior) = lifecycle_replay(&mut tx, evidence, &encoded).await? {
-                super::admission_journal::commit_pass_transaction(tx, deadline).await?;
-                return Ok(prior);
-            }
-            let session_id = evidence.operation.current_session().current_game_session_id();
-            let current = store.current_session_locked(&mut tx, session_id).await?;
-            let mut rows = Vec::with_capacity(2);
-            for prior in &evidence.transition.predecessors { rows.push(store.guards.load_locked(&mut tx, &prior.key).await?); }
-            if !store.guards.successor_history_available(&mut tx, &evidence.transition.successors, &rows).await? { return Err(DurabilityError::Unavailable); }
-            let encoded_successors = evidence.transition.successors.iter().map(|row| encode_guard(row, store.guards.maximum_guard_bytes)).collect::<Result<Vec<_>>>()?;
-            let decided_at: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint").fetch_one(&mut *tx).await?;
-            let successors = transition.validate_locked(&rows, current, decided_at).map_err(|_| DurabilityError::Unavailable)?;
-            if let Some(final_position) = store.final_position {
-                write_final_position(&mut tx, &current, &final_position).await?;
-            }
-            let updated = sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state = 3, current_transport_ref = NULL, prepared_attempt_ref = NULL WHERE game_session_id = encode($1,'hex')::uuid AND current_generation = $2::text::numeric(20,0) AND character_lease_generation = $3::text::numeric(20,0) AND scope_ownership_generation = $4::text::numeric(20,0)")
-                .bind(session_id.as_bytes().as_slice()).bind(current.current_connection_generation().get().to_string()).bind(current.current_character_lease().generation().to_string()).bind(current.current_scope_generation().get().to_string()).execute(&mut *tx).await?;
-            if updated.rows_affected() != 1 { return Err(DurabilityError::Unavailable); }
-            sqlx::query("UPDATE game_durability_reconnect_attempts SET state = 4 WHERE game_session_id = encode($1,'hex')::uuid AND state IN (1,5)")
-                .bind(session_id.as_bytes().as_slice()).execute(&mut *tx).await?;
-            store.guards.persist_locked(&mut tx, successors, &rows, &encoded_successors).await?;
-            sqlx::query("INSERT INTO game_durability_admission_lifecycle_receipts (operation_key, operation_json, decided_at) VALUES ($1,$2,$3)")
-                .bind(lifecycle_key(evidence)).bind(&encoded).bind(decided_at).execute(&mut *tx).await?;
-            super::admission_journal::commit_pass_transaction(tx, deadline).await?;
-            Ok(decided_at)
-        })).await
-    }
 }
 
 /// CHAR-POSITION-0 §3.2 "At logout": the final last-position upsert of the session being
@@ -2108,91 +1796,6 @@ impl FreshAdmissionStore {
         }
         self.release_current_claims(current, now, account_id).await
     }
-
-    /// Prepare the FND-04B terminal release of `current` from the current claim rows at the
-    /// durable time `now` and commit it through the exact fenced [`Self::release`].
-    async fn release_current_claims(
-        &self,
-        current: GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
-        now: i64,
-        account_id: &str,
-    ) -> Result<ExpiredLossReleaseV1> {
-        let keys = [
-            AdmissionAuthorityGuardKeyV1::Account {
-                account_id: account_id.into(),
-            },
-            AdmissionAuthorityGuardKeyV1::Character(current.commit().character_id()),
-        ];
-        let predecessors = self
-            .guards
-            .load(&keys)
-            .await?
-            .into_iter()
-            .collect::<Option<Vec<_>>>()
-            .ok_or(DurabilityError::Unavailable)?;
-        // Successor source times never precede a predecessor's (a row last
-        // published on a faster host clock): until the durable clock catches
-        // up, the fenced release refuses and a later attempt retries.
-        let prepared_at = predecessors
-            .iter()
-            .map(|row| row.source.source_observed_at)
-            .fold(now, i64::max);
-        let mut successors = predecessors.clone();
-        for row in &mut successors {
-            row.precondition = AdmissionPublicationPreconditionV1::CompareAndSet {
-                expected_publication_revision: row.publication_revision,
-            };
-            row.publication_revision = row
-                .publication_revision
-                .checked_add(1)
-                .ok_or(DurabilityError::InvalidStoredState)?;
-            row.source.source_revision = row
-                .source
-                .source_revision
-                .checked_add(1)
-                .ok_or(DurabilityError::InvalidStoredState)?;
-            row.source.decision_identity =
-                format!("grace-expiry-release:{}", row.source.source_revision);
-            row.source.source_observed_at = prepared_at;
-            row.source.clock_uncertainty_seconds = 0;
-            match &mut row.state {
-                AdmissionAuthorityGuardStateV1::Account { security, presence } => {
-                    security.provenance.publication_revision = row.publication_revision;
-                    *presence = None;
-                }
-                AdmissionAuthorityGuardStateV1::Character { holder, .. } => *holder = None,
-                _ => return Err(DurabilityError::InvalidStoredState),
-            }
-        }
-        let owner = ExpiredLossReleaseOwner {
-            current,
-            transition: AdmissionClaimTransitionEvidenceV1 {
-                predecessors,
-                successors,
-                prepared_at,
-            },
-        };
-        let transition = match TerminalReleaseClaimTransitionV1::prepare(
-            &owner,
-            account_id,
-            current,
-            prepared_at,
-        ) {
-            Ok(transition) => transition,
-            // Ownership no longer names this session: not this release's to make.
-            Err(AdmissionAuthorityPublicationErrorV1::Stale) => {
-                return Ok(ExpiredLossReleaseV1::NotApplicable);
-            }
-            Err(_) => return Err(DurabilityError::Unavailable),
-        };
-        match self.release(&transition).await {
-            Ok(decided_at) => Ok(ExpiredLossReleaseV1::Released { decided_at }),
-            Err(error) => match self.reconcile_lifecycle(transition.evidence()).await? {
-                Some(decided_at) => Ok(ExpiredLossReleaseV1::Released { decided_at }),
-                None => Err(error),
-            },
-        }
-    }
 }
 
 pub(super) struct PreparedReplacementClaims {
@@ -2210,6 +1813,7 @@ impl FreshAdmissionStore {
             },
             maximum_operation_bytes: super::MAX_FRESH_OPERATION_BYTES,
             final_position: None,
+            retired_holder: None,
         }
     }
     pub(super) async fn replacement_claim_replay(

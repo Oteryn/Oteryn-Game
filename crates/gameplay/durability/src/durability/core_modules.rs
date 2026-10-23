@@ -118,6 +118,7 @@ pub mod tutorial_islet_placement;
 pub mod sqlstate_codes;
 pub mod starter_grant;
 
+pub mod world_reset;
 pub mod world_house_instance;
 pub mod world_party;
 

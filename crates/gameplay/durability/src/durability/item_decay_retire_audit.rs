@@ -22,7 +22,10 @@ use super::item_mint_audit::{
 };
 use super::item_transfer_audit::{ITEM_LIFECYCLE_RETIRED, OneItemCorpseSourceV1};
 use prost::Message;
+
+mod world_reset;
 use sha2::{Digest, Sha256};
+pub use world_reset::{OneItemGroundContainerEntryV1, OneItemWorldResetV1};
 
 /// D135: a corpse decays `materialized_at + 60 s` after materialization; the
 /// audited deadline is therefore never below this.
@@ -53,6 +56,10 @@ pub struct OneItemDecayRetireV1 {
     pub cause: Option<OneItemCorpseDecayV1>,
     #[prost(uint64, tag = "6")]
     pub runtime_scope_ownership_generation: u64,
+    #[prost(message, optional, tag = "7")]
+    pub world_reset: Option<OneItemWorldResetV1>,
+    #[prost(message, optional, tag = "8")]
+    pub ground_container_entry: Option<OneItemGroundContainerEntryV1>,
 }
 
 /// Which of the N+1 steps one event records.
@@ -62,6 +69,8 @@ pub enum DecayRetireShape {
     Entry,
     /// The now-empty corpse itself retires from its Ground (the final step).
     Corpse,
+    Ground,
+    GroundContainerEntry,
 }
 
 /// DUR03-RL-01/-RL-06 defaults: one ItemInstance, its one location line (the
@@ -100,9 +109,14 @@ fn check_ground(value: &OneItemGroundV1) -> Result<(), AuditError> {
 
 /// The corpse's live Ground: the scope authority of either step.
 fn scope_ground(value: &OneItemDecayRetireV1) -> Result<&OneItemGroundV1, AuditError> {
-    match (value.ground.as_ref(), value.corpse_entry.as_ref()) {
-        (Some(ground), None) => Ok(ground),
-        (None, Some(entry)) => entry.corpse_ground.as_ref().ok_or(AuditError::InvalidInput),
+    match (
+        value.ground.as_ref(),
+        value.corpse_entry.as_ref(),
+        value.ground_container_entry.as_ref(),
+    ) {
+        (Some(ground), None, None) => Ok(ground),
+        (None, Some(entry), None) => entry.corpse_ground.as_ref().ok_or(AuditError::InvalidInput),
+        (None, None, Some(entry)) => entry.parent_ground.as_ref().ok_or(AuditError::InvalidInput),
         _ => Err(AuditError::InvalidInput),
     }
 }
@@ -110,6 +124,12 @@ fn scope_ground(value: &OneItemDecayRetireV1) -> Result<&OneItemGroundV1, AuditE
 /// Complete closed `DECAY_RETIRE` shape, conservation (the whole before
 /// quantity retires to exactly 0) and every registered bound.
 pub fn check_decay_retire(value: &OneItemDecayRetireV1) -> Result<DecayRetireShape, AuditError> {
+    if value.world_reset.is_some() {
+        return world_reset::check(value);
+    }
+    if value.ground_container_entry.is_some() {
+        return Err(AuditError::InvalidInput);
+    }
     let before = value.before.as_ref().ok_or(AuditError::InvalidInput)?;
     let after = value.after.as_ref().ok_or(AuditError::InvalidInput)?;
     let cause = value.cause.as_ref().ok_or(AuditError::InvalidInput)?;
@@ -189,6 +209,7 @@ pub fn decode_decay_retire_envelope(
         .cause
         .as_ref()
         .map(|cause| cause.deadline_unix_ms)
+        .or_else(|| retire.world_reset.as_ref().map(|_| 0))
         .ok_or(AuditError::InvalidInput)?;
     if value.world_id.as_deref() != Some(ground.world_id.as_slice())
         || value.channel_id.as_deref() != Some(ground.channel_id.as_slice())
@@ -280,6 +301,7 @@ mod tests {
         decode_transfer_payload,
     };
     use super::*;
+    include!("item_decay_retire_audit/world_reset_fixture.rs");
 
     fn uuid(tag: u8) -> Vec<u8> {
         let mut bytes = vec![0; 16];
@@ -328,6 +350,8 @@ mod tests {
 
     fn entry_step() -> OneItemDecayRetireV1 {
         OneItemDecayRetireV1 {
+            world_reset: None,
+            ground_container_entry: None,
             before: Some(state(ENTRY, 3, ITEM_LIFECYCLE_LIVE)),
             after: Some(state(ENTRY, 0, ITEM_LIFECYCLE_RETIRED)),
             ground: None,
@@ -346,6 +370,8 @@ mod tests {
 
     fn corpse_step() -> OneItemDecayRetireV1 {
         OneItemDecayRetireV1 {
+            world_reset: None,
+            ground_container_entry: None,
             before: Some(state(CORPSE, 1, ITEM_LIFECYCLE_LIVE)),
             after: Some(state(CORPSE, 0, ITEM_LIFECYCLE_RETIRED)),
             ground: Some(ground()),

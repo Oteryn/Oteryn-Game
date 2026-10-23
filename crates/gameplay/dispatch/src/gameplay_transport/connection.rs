@@ -1041,6 +1041,7 @@ pub trait FreshAdmissionAuthority {
         &self,
         _admitted: AdmittedSession,
         _wait: std::time::Duration,
+        _reset: Option<&crate::durability::world_reset::RetiringWorldReset>,
     ) -> impl Future<Output = ControlLossResult> {
         async { ControlLossResult::NotApplicable }
     }
