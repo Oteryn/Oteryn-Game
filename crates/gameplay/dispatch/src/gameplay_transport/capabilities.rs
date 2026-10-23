@@ -200,7 +200,7 @@ pub const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     super::timed_item::OFFERED,
 ];
 /// The same bundle offer before the native timed definitions are available. Capability
-/// 37 is last, so preserving every older capability needs no duplicate table.
+/// 39 is last, so preserving every older capability needs no duplicate table.
 pub(super) const BUNDLE_WORLD_UNTIMED_OFFERED_CAPABILITIES: &[OfferedCapability] =
     match BUNDLE_WORLD_OFFERED_CAPABILITIES.split_last() {
         Some((_, base)) => base,

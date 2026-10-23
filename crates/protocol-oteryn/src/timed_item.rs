@@ -7,8 +7,8 @@ use crate::charm_wire::{
 use crate::item_view::ItemHandle;
 use crate::world_spatial_entities::EntityRef;
 
-pub const CAPABILITY_TIMED_ITEM_V1: u32 = 37;
-pub const COMMAND_TYPE_TIMED_ITEM_INTENT: u32 = 36;
+pub const CAPABILITY_TIMED_ITEM_V1: u32 = 39;
+pub const COMMAND_TYPE_TIMED_ITEM_INTENT: u32 = 38;
 pub const MAX_TIMED_ITEM_INTENT_BYTES: usize = 64;
 pub const MAX_TIMED_ITEM_RESULT_BYTES: usize = 48;
 

@@ -245,7 +245,7 @@ fn scenario() -> TestResult {
 
         let selected = crate::gameplay_transport::capabilities::SelectedCapabilities::select(
             crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
-            &[4, 6, 37],
+            &[4, 6, CAPABILITY_TIMED_ITEM_V1],
         )
         .ok_or("selection")?;
         let admitted = AdmittedSession {

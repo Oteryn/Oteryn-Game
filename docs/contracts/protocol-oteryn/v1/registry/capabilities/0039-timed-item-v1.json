@@ -1,15 +1,15 @@
 {
-  "id": 37,
+  "id": 39,
   "name": "TIMED_ITEM_V1",
   "owner_decision": "ITEM-TIMED-1 owner server-first direction 2026-10-23",
   "owner": "Channel timed item owner",
   "command_types": [
-    36
+    38
   ],
   "state_domains": [],
   "offered": false,
   "requires": [
     4
   ],
-  "offer_gate": "Bundle with admitted native timed Item profiles; repair additionally requires live Aldo in talk range"
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES: bundle with admitted native timed Item profiles; repair additionally requires live Aldo in talk range"
 }

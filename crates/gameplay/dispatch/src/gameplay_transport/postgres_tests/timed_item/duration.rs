@@ -52,7 +52,7 @@ pub(super) async fn exercise(
     admitted.continuity.selected_capabilities =
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(
             crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
-            &[4, 6, 12, 37],
+            &[4, 6, 12, CAPABILITY_TIMED_ITEM_V1],
         )
         .ok_or("equip selection")?;
     move_item(
