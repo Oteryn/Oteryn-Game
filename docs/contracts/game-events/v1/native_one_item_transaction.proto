@@ -114,6 +114,7 @@ message OneItemTransactionV1 {
     OneItemHouseTransferV1 house_transfer = 11; // HOUSE-RUNTIME-1a additive candidate slot tag
     // Private proposal only; root coordinates Imbue tag 12 and rechecks before publication.
     OneItemForgeDustLimitV1 forge_dust_limit = 13; // material-free D1230 closed shape
+    OneItemPlayerTradeV1 player_trade = 14; // TRADE-PLAYER-1 writer-only; two reciprocal leaves
   }
 }
 
@@ -616,4 +617,16 @@ message OneItemForgeDustLimitV1 {
   uint64 character_lease_generation = 16;
   uint64 scope_ownership_generation = 17;
   uint64 character_revision = 18; // observed unchanged
+}
+
+// PLAYER-TRADE0 §§5-6. request_binding is canonical UTF-8 JSON version 1:
+// READY pair counter-offer CommandRef, occurrence/transaction/event ids, trusted
+// time, two ordered parties (first
+// terminal accept then triggering accept), full session/lease/scope fences,
+// leaf item/entry/timed/text before observations, Node registration and Content
+// pins plus interpretation revisions. The swap changes only last_transaction_id
+// and reciprocal direct custody; definitions, quantities, keys and state remain.
+message OneItemPlayerTradeV1 {
+  bytes request_binding = 1;
+  repeated OneItemContainerEntryV1 destinations = 2; // exactly two, source-line order
 }

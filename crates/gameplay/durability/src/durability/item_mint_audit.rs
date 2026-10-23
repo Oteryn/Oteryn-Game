@@ -340,6 +340,8 @@ pub enum OneItemOperationV1 {
     ItemUse(super::item_use_audit::OneItemUseV1),
     #[prost(message, tag = "11")]
     HouseTransfer(super::house_interior_audit::OneItemHouseTransferV1),
+    #[prost(message, tag = "14")]
+    PlayerTrade(super::player_trade::audit::OneItemPlayerTradeV1),
     // Private continuation proposal: root coordinates final allocation and Imbue tag 12.
     #[prost(message, tag = "13")]
     ForgeDustLimit(super::character_forge_dust_audit::OneItemForgeDustLimitV1),
@@ -351,7 +353,7 @@ pub struct OneItemTransactionV1 {
     pub interpretation_revision: u32,
     #[prost(
         oneof = "OneItemOperationV1",
-        tags = "2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13"
+        tags = "2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14"
     )]
     pub operation: Option<OneItemOperationV1>,
 }
@@ -1133,8 +1135,7 @@ pub(super) mod tests {
     use super::*;
     use serde_json::Value;
 
-    const RESOURCE_REGISTRY: &str =
-        oteryn_protocol_oteryn::RESOURCE_LIMITS_REGISTRY_JSON;
+    const RESOURCE_REGISTRY: &str = oteryn_protocol_oteryn::RESOURCE_LIMITS_REGISTRY_JSON;
     const EVENT_REGISTRY: &str =
         include_str!("../../../../../docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json");
 
@@ -1970,6 +1971,7 @@ pub(super) mod tests {
                 "crates/gameplay/durability/src/durability/item_use.rs",
                 "crates/gameplay/durability/src/durability/map_item_mint.rs",
                 "crates/gameplay/durability/src/durability/npc_trade.rs",
+                "crates/gameplay/durability/src/durability/player_trade/storage.rs",
                 "crates/gameplay/durability/src/durability/reward_claim_mint.rs",
             ]
         );
