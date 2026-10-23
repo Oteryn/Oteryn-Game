@@ -1024,5 +1024,9 @@ mod quest_catalogue_boot_tests;
 mod bundle_spawn_owner_tests;
 
 // Every test file in `lifted_tests/auto/` is mounted here by `build.rs`, so a new mechanic adds its
-// file there instead of another `#[cfg(test)] #[path] mod` block in this shared root.
-include!(concat!(env!("OUT_DIR"), "/lifted_tests_auto_mounts.rs"));
+// file there instead of another `#[cfg(test)] #[path] mod` block in this shared root. The
+// combat fence gate cannot read a generated file, so the include sits in a test-only module.
+#[cfg(test)]
+mod lifted_tests_auto {
+    include!(concat!(env!("OUT_DIR"), "/lifted_tests_auto_mounts.rs"));
+}

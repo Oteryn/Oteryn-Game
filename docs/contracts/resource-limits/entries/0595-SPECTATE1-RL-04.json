@@ -1,0 +1,19 @@
+{
+  "id": "SPECTATE1-RL-04",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_SPECTATE1_DECISION_2026-10-15.md",
+  "resource": "code attempts per account in a rolling 60-second window",
+  "unit": "attempts",
+  "hard_maximum": 5,
+  "configurable_range": {
+    "minimum": 5,
+    "maximum": 5
+  },
+  "failure_category": "NOT_AVAILABLE",
+  "allocation_impact": "Retain at most five timestamps per account; configured bounded account table refuses overflow uniformly.",
+  "client_visible": true,
+  "boundary_tests": [
+    "spectate_rate_window_does_not_reset_at_calendar_boundary",
+    "spectate_node_capacity_and_rolling_attempts_fail_uniformly"
+  ],
+  "notes": "Dormant; NET03-OUTBOUND-QUEUE-ENTRIES=64 and -BYTES=1048576 apply unchanged. RL-03 node capacity, rate-account capacity and audit-fact capacity require measured composition inputs, no activation defaults."
+}
