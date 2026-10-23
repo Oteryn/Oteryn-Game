@@ -529,3 +529,32 @@ fn registry_binds_the_world_interaction_ids_and_limits() {
     assert_eq!(limit("WORLDINT0-RL-21"), MAX_PUSH_INTENT_BYTES);
     assert_eq!(limit("WORLDINT0-RL-22"), MAX_USE_INTENT_BYTES);
 }
+
+#[test]
+fn fuzz_decode_push_intent() {
+    crate::decoder_fuzz_support::codec(
+        "decode_push_intent",
+        |rng| push(rng.u64().max(1), rng.u64() as i32, rng.u64() as i32),
+        decode_push_intent,
+        |v| encode_push_intent(v).expect("push"),
+    );
+}
+
+#[test]
+fn fuzz_decode_push_result() {
+    crate::decoder_fuzz_support::codec(
+        "decode_push_result",
+        |rng| {
+            (
+                if rng.bool() {
+                    UseDisposition::Committed
+                } else {
+                    UseDisposition::Rejected
+                },
+                None,
+            )
+        },
+        decode_push_result,
+        |v| encode_push_result(v.0, v.1).expect("result"),
+    );
+}

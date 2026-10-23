@@ -590,3 +590,7 @@ fn the_registries_bind_the_highscores_constants() {
     assert!(HIGHSCORES_PROTO.contains("HIGHSCORES0-RL-02"));
     assert!(HIGHSCORES_PROTO.contains("HIGHSCORES0-RL-03"));
 }
+
+#[cfg(test)]
+#[path = "highscores_fuzz_tests.rs"]
+mod fuzz_tests;
