@@ -32,11 +32,7 @@ async fn fixture(tag: &str, admin: &str) -> TestResult<Harness> {
         .execute(&harness.pool)
         .await?;
     }
-    sqlx::query(
-        "INSERT INTO game_house_ownership(world_id,house_key,owner_character_id,\
-         ownership_revision,acquisition_receipt_ref) \
-         VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,1,game_character_uuid_v7())",
-    )
+    sqlx::query(include_str!("../owned_house_fixture.sql"))
     .bind(id(WORLD).as_slice())
     .bind(HOUSE)
     .bind(id(CHARACTER).as_slice())
@@ -95,9 +91,17 @@ async fn transfer(
     receipt: u8,
 ) -> Result<(), sqlx::Error> {
     sqlx::query(
-        "UPDATE game_house_ownership SET owner_character_id=encode($1,'hex')::uuid,\
-         ownership_revision=ownership_revision+1,acquisition_receipt_ref=encode($4,'hex')::uuid \
-         WHERE world_id=encode($2,'hex')::uuid AND house_key=$3",
+        "WITH property AS (UPDATE game_house_properties p \
+         SET owner_character_id=r.character_id,owner_account_id=r.account_id,\
+         ownership_generation=p.ownership_generation+1,revision=p.revision+1,\
+         acquisition_receipt_ref=encode($4,'hex')::uuid \
+         FROM game_character_roots r WHERE r.character_id=encode($1,'hex')::uuid \
+         AND p.world_id=encode($2,'hex')::uuid AND p.house_key=$3 RETURNING p.*),\
+         slot AS (UPDATE game_account_housing_slots s SET account_id=p.owner_account_id \
+         FROM property p WHERE s.world_id=p.world_id AND s.house_key=p.house_key) \
+         UPDATE game_house_ownership a SET owner_character_id=p.owner_character_id,\
+         ownership_revision=p.ownership_generation,acquisition_receipt_ref=p.acquisition_receipt_ref \
+         FROM property p WHERE a.world_id=p.world_id AND a.house_key=p.house_key",
     )
     .bind(id(owner).as_slice())
     .bind(id(WORLD).as_slice())
@@ -266,8 +270,15 @@ fn bed_sleeper_storage_native_owner_change_preserves_first_cause() -> TestResult
         .await?;
         assert_eq!(open, 2);
         assert_eq!(revision(&h.pool).await?, "3");
-        // Same-owner revision changes are not wake causes.
-        transfer(&mut connection, CHARACTER, 71).await?;
+        // HOUSE-1a ownership generations advance only when the owner changes.
+        // A rejected same-owner acquisition and an ordinary property revision
+        // must both leave the sleepers open.
+        sqlstate(transfer(&mut connection, CHARACTER, 71).await, "23514");
+        sqlx::query("UPDATE game_house_properties SET revision=revision+1 WHERE world_id=encode($1,'hex')::uuid AND house_key=$2")
+            .bind(id(WORLD).as_slice())
+            .bind(HOUSE)
+            .execute(&mut connection)
+            .await?;
         assert_eq!(revision(&h.pool).await?, "3");
         sqlx::query(
             "UPDATE game_house_bed_sleepers SET freed_at=2000,freed_cause='disposition' \
