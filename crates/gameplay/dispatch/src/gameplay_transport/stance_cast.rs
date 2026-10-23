@@ -53,7 +53,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> Option<SpellCastOutcome> {
         let original = {
             let runtime = self.runtime.lock().await;
-            let states = self.spell_states.lock().await;
+            let states = self.states.spell_states.lock().await;
             pending(&states, &runtime, actor, session)
         }?;
         // Preparation admitted only this exact targetless stance form; the
@@ -104,7 +104,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> Option<SpellCastOutcome> {
         let retained = {
             let runtime = self.runtime.lock().await;
-            let states = self.spell_states.lock().await;
+            let states = self.states.spell_states.lock().await;
             pending(&states, &runtime, actor, session)
         };
         let prepared = if let Some(retained) = retained {
@@ -158,7 +158,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let now = self.owner_now();
             let mut runtime = self.runtime.lock().await;
-            let mut states = self.spell_states.lock().await;
+            let mut states = self.states.spell_states.lock().await;
             if !current_owner(&runtime, &fence, actor, session) {
                 return Some(SpellCastOutcome::rejected());
             }
@@ -267,7 +267,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 Err(_) => {
                     let runtime = self.runtime.lock().await;
-                    let mut states = self.spell_states.lock().await;
+                    let mut states = self.states.spell_states.lock().await;
                     if let Some(state) = states.get_mut(&runtime, actor, session) {
                         state.cancel_stance(&prepared);
                     }
@@ -318,7 +318,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return SpellCastOutcome::rejected();
         }
         let runtime = self.runtime.lock().await;
-        let mut states = self.spell_states.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         if !current_owner(&runtime, &current, actor, session) {
             return SpellCastOutcome::rejected();
         }

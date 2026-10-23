@@ -319,7 +319,6 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             (!permit.has_unresolved()).then_some(permit)
         })
     }
-
     /// Resumes the parked writer's own retained retry path under the lane (§1.6): it installs a
     /// committed attempt, commits an uncommitted one in a new commit window, releases only on a
     /// definite rejection that path proves, and parks again on any other exit. The resolvers
@@ -327,7 +326,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
     async fn resolve_unresolved_spell_commit(&self, unresolved: UnresolvedLane) -> SpellLanePermit {
         // Locked while the attempt is still parked in the lane, so a cancellation here keeps it
         // there; the move into the caster's marker below has no await.
-        let mut states = self.spell_states.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         let (mut permit, attempt) = unresolved.into_resolution();
         let attempt = match attempt.downcast::<UnresolvedSpellCommit>() {
             Ok(attempt) => *attempt,
@@ -2618,6 +2617,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
     ) -> Option<NativeCastDispatch> {
         let Some(mut permit) = self.spell_lane_permit().await else {
             return self
+                .states
                 .spell_states
                 .lock()
                 .await
@@ -2625,7 +2625,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 .then_some(NativeCastDispatch::Pending);
         };
         let original = {
-            let states = self.spell_states.lock().await;
+            let states = self.states.spell_states.lock().await;
             states
                 .pending_native
                 .iter()
@@ -2649,6 +2649,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             )
             .await;
         if self
+            .states
             .spell_states
             .lock()
             .await
@@ -2671,7 +2672,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
     ) -> &'static str {
         let original = super::PendingSpellMarker::take_original(
-            &mut self.spell_states.lock().await.pending_native,
+            &mut self.states.spell_states.lock().await.pending_native,
             actor,
             session,
         );
@@ -2695,7 +2696,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             )
             .await;
         let leftover = {
-            let mut states = self.spell_states.lock().await;
+            let mut states = self.states.spell_states.lock().await;
             super::PendingSpellMarker::take_attempt(&mut states.pending_native, actor, session)
         };
         if let Some(attempt) = leftover {
@@ -2705,7 +2706,6 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         }
         dispatch_outcome_token(&dispatch)
     }
-
     /// A missing registered source owner is passed explicitly by the caller and
     /// remains unknown. No default Premium, learned spell or Wheel grant is added.
     pub(in crate::gameplay_transport) async fn cast_native_combat<
@@ -2931,7 +2931,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             }
         };
         let mut runtime = self.runtime.lock().await;
-        let mut states = self.spell_states.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         if runtime.player_control_facts(actor, session).is_err()
             || runtime.owner_fence().is_err()
             || runtime.content_pin().server_artifact_digest() != native.source_digest()
@@ -3039,7 +3039,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         let intent = *intent;
         // SPELL-TARGET-1: the held attack target (ATTACK-0 §4), read last in the lock order.
         let attack_target = {
-            let mut attack = self.attack.lock().await;
+            let mut attack = self.states.attack.lock().await;
             // Best-effort allocation before SQL/installation; failure grants no activity.
             attack.prepare_shared_experience_record(&runtime, actor, session);
             // ATTACK-0 §4 (as amended by #2106): a `pacified` caster holds no target.
@@ -3248,7 +3248,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     // Only a successful rollback proves this attempt cannot later COMMIT.
                     tx.rollback().await.map_err(|_|DurabilityError::Unavailable)?;
                     let mut runtime=owner.runtime.lock().await;
-                    let mut states=owner.spell_states.lock().await;
+                    let mut states=owner.states.spell_states.lock().await;
                     if let Some(companion)=attempt.prepared.direct_companion.as_ref(){
                         companion.reservation.rollback_physical(&mut runtime).map_err(|_|DurabilityError::Unavailable)?;
                     }
@@ -3387,7 +3387,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 owner.character,owner.holder,&item_fence,command,active).await.map_err(|_|DurabilityError::Unavailable)?;
             drop(fresh);
             let mut runtime=owner.runtime.lock().await;
-            let mut states=owner.spell_states.lock().await;
+            let mut states=owner.states.spell_states.lock().await;
             // Phase 1: every fallible check borrows the attempt; nothing moves.
             let checked={
                 let state=states.get(&runtime,actor,session).ok_or(DurabilityError::Unavailable)?;
@@ -3398,7 +3398,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             };
             // Kill recording's only await comes before the window gives up the attempt, so a
             // cancellation here still parks it and the resolver installs and records again.
-            let mut attack=owner.attack.lock().await;
+            let mut attack=owner.states.attack.lock().await;
             // Phase 2: no awaited work, allocation, new random draw or fallible branch.
             let mut attempt=window.install();
             let batch=attempt.prepared.install_commit(&mut runtime,&mut states,checked,committed.companion(),committed.direct_companion());
@@ -3416,7 +3416,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         })).await;
         let (_, _, writer, guards, _) = context;
         drop(guards);
-        let mut states = self.spell_states.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         let (leftover, parked) = writer.finish();
         super::PendingSpellMarker::settle(
             &mut states.pending_native,

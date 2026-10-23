@@ -22,7 +22,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(content) = self.quest_log_content.as_ref() else {
             return QuestLogObservation::Unavailable;
         };
-        let Ok(sessions) = self.quest_sessions.lock() else {
+        let Ok(sessions) = self.states.quest_sessions.lock() else {
             return QuestLogObservation::Unavailable;
         };
         let Some(entry) = sessions.get(&session) else {

@@ -77,7 +77,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// which the caller retries; sessions in `settled` are skipped.
     pub(super) async fn flush_monk_states(&self, settled: &mut HashSet<GameSessionId>) -> usize {
         let mut failed = 0;
-        for (session, actor) in self.last_positions.tracked_actors() {
+        for (session, actor) in self.states.last_positions.tracked_actors() {
             if settled.contains(&session) || !self.is_monk(session, actor).await {
                 continue;
             }
@@ -91,11 +91,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         failed
     }
-
     /// Whether `actor` of `session` holds monk state now (a cheap in-memory read).
     async fn is_monk(&self, session: GameSessionId, actor: ExactActorRef) -> bool {
         let runtime = self.runtime.lock().await;
-        self.spell_states
+        self.states
+            .spell_states
             .lock()
             .await
             .monk_save_values(&runtime, actor, session, self.owner_now())
@@ -118,7 +118,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
             let values = {
                 let runtime = self.runtime.lock().await;
-                self.spell_states.lock().await.monk_save_values(
+                self.states.spell_states.lock().await.monk_save_values(
                     &runtime,
                     actor,
                     session,

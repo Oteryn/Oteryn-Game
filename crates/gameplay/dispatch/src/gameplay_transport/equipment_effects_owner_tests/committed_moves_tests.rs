@@ -40,7 +40,7 @@ pub(super) async fn assert_committed_moves(
         .ok_or("native gameplay")?;
     {
         let runtime = owner.runtime.lock().await;
-        let mut states = owner.spell_states.lock().await;
+        let mut states = owner.states.spell_states.lock().await;
         states
             .initialize(
                 &runtime,
@@ -107,7 +107,7 @@ pub(super) async fn assert_committed_moves(
             .await
             .ok_or("movement equipment")?;
         let runtime = owner.runtime.lock().await;
-        let mut states = owner.spell_states.lock().await;
+        let mut states = owner.states.spell_states.lock().await;
         assert_eq!(
             movement.current_delta(&runtime, &states, actor, session),
             Some(speed)

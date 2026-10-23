@@ -866,7 +866,6 @@ pub async fn release_handshake(
         }
     }
 }
-
 /// An unknown durable outcome: the write may or may not have committed, or capacity freed later
 /// may admit it.
 fn loot_unknown(error: &CombatDeathRewardLootError) -> bool {
@@ -879,7 +878,6 @@ fn loot_unknown(error: &CombatDeathRewardLootError) -> bool {
             | CombatDeathRewardLootError::Mint(ItemMintError::Unavailable(_), _)
     )
 }
-
 /// The result of [`bind_settled_corpse`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CorpseBind {
@@ -891,7 +889,6 @@ pub enum CorpseBind {
     /// The Channel refused the binding; the durable Items are unchanged.
     Refused(CarrierError),
 }
-
 /// MAP-ITEM-REF-1 Part B (D607): after the settle commits the corpse Ground MINT, bind that Item
 /// to the killed actor's committed corpse projection, so domain 1 shows the corpse and USE and
 /// command 9 reach its contents. Runtime memory only: it writes nothing durable, and a replayed
@@ -920,7 +917,6 @@ pub fn bind_settled_corpse(
         Err(error) => CorpseBind::Refused(error),
     }
 }
-
 fn classify(
     creature: &str,
     outcome: &Result<CreatureDeathRewardWithBestiaryOutcome, CreatureDeathRewardAdmissionError>,
@@ -982,7 +978,6 @@ fn classify(
     }
     report(SettleVerdict::Final, no_progression)
 }
-
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// The active generation's reward rows; empty without an active native gameplay pin, so
     /// every kill then refuses `no_loot_binding`.
@@ -993,7 +988,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .and_then(|generation| generation.native_gameplay())
             .map_or(&EMPTY, |gameplay| gameplay.reward_table())
     }
-
     /// §1.4: record the kills of committed or replayed spell batches, under the caller's
     /// `runtime` and `spell_states` guards; `attack` is locked after them.
     pub(super) async fn record_spell_kills<'r>(
@@ -1001,10 +995,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         runtime: &mut ChannelRuntimeV1,
         receipts: impl Iterator<Item = &'r CombatBatchReceipt>,
     ) {
-        let attack = self.attack.lock().await;
+        let attack = self.states.attack.lock().await;
         self.record_spell_kills_locked(&attack, runtime, receipts);
     }
-
     /// [`Self::record_spell_kills`] under an attack-state guard the caller already holds, so a
     /// writer can take the guard before it releases its cancellation-safe attempt.
     pub(super) fn record_spell_kills_locked<'r>(
@@ -1022,28 +1015,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             record_batch_kills(runtime, sink, receipt, now_ms);
         }
     }
-
     /// Settle `session`'s queued kills (§1.3), after every channel guard is released. An entry
     /// whose principal has no live session is freed with `principal_gone`.
     pub(super) async fn drain_kill_rewards(&self, session: GameSessionId) -> DrainOutcome {
-        if !self.attack.lock().await.kills().has_session(session) {
+        if !self.states.attack.lock().await.kills().has_session(session) {
             return DrainOutcome::Drained;
         }
         let fence = match self.current_quest_fence(session).await {
             Ok(Some(fence)) => fence,
             Ok(None) => {
-                self.attack.lock().await.kills().discard_gone(session, None);
+                self.states
+                    .attack
+                    .lock()
+                    .await
+                    .kills()
+                    .discard_gone(session, None);
                 return DrainOutcome::Drained;
             }
             Err(()) => return DrainOutcome::Deferred,
         };
-        self.attack
+        self.states
+            .attack
             .lock()
             .await
             .kills()
             .discard_gone(session, Some(fence.character_lease_generation));
         drain_session_kills(
-            &self.attack,
+            &self.states.attack,
             session,
             fence.character_lease_generation,
             &DurableKillSettle {
@@ -1053,7 +1051,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         )
         .await
     }
-
     /// §1.3 release handshake of `session`, run after its monk save and before its terminal
     /// release transaction.
     pub(super) async fn seal_kill_rewards(&self, session: GameSessionId) -> KillRelease {
@@ -1061,19 +1058,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(Some(fence)) => fence,
             // Already terminal: the transaction only reconciles, and nothing settles any more.
             Ok(None) => {
-                self.attack.lock().await.kills().discard_gone(session, None);
+                self.states
+                    .attack
+                    .lock()
+                    .await
+                    .kills()
+                    .discard_gone(session, None);
                 return KillRelease::Send(None);
             }
             Err(()) => return KillRelease::Deferred,
         };
         let lease_generation = fence.character_lease_generation;
-        self.attack
+        self.states
+            .attack
             .lock()
             .await
             .kills()
             .discard_gone(session, Some(lease_generation));
         release_handshake(
-            &self.attack,
+            &self.states.attack,
             session,
             lease_generation,
             &DurableKillSettle {
@@ -1083,14 +1086,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         )
         .await
     }
-
     /// §1.3 step 5 for a release that sent its transaction.
     pub(super) async fn settle_kill_release(&self, mark: Option<KillReleaseMark>, end: ReleaseEnd) {
         if let Some(mark) = mark {
-            mark.settle(self.attack.lock().await.kills(), end);
+            mark.settle(self.states.attack.lock().await.kills(), end);
         }
     }
-
     /// Step 5 of a durable reconcile after an unknown outcome gave up the hold.
     pub(super) async fn reconcile_kill_release(
         &self,
@@ -1098,34 +1099,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         end: ReleaseEnd,
     ) {
         if let Some(mark) = mark {
-            mark.reconcile(self.attack.lock().await.kills(), end);
+            mark.reconcile(self.states.attack.lock().await.kills(), end);
         }
     }
-
     /// The lost epoch was resumed: clear `session`'s marks left by unknown outcomes.
     pub(super) async fn release_orphaned_kills(&self, session: GameSessionId) {
-        self.attack.lock().await.kills().release_orphaned(session);
+        self.states
+            .attack
+            .lock()
+            .await
+            .kills()
+            .release_orphaned(session);
     }
-
     /// The released actor slot is removed: its mark goes.
     pub(super) async fn forget_kill_release(&self, mark: Option<KillReleaseMark>) {
         if let Some(mark) = mark {
-            mark.forget(self.attack.lock().await.kills());
+            mark.forget(self.states.attack.lock().await.kills());
         }
     }
 }
-
 struct DurableKillSettle<'s, 'a, 'f, 'g> {
     admission: &'s ComposedFreshAdmission<'a, 'f, 'g>,
     fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
 }
-
 impl KillSettle for DurableKillSettle<'_, '_, '_, '_> {
     async fn settle(&self, entry: &PendingKillSettlement, inflight_before: usize) -> SettleReport {
         Box::pin(self.settle_durably(entry, inflight_before)).await
     }
 }
-
 impl DurableKillSettle<'_, '_, '_, '_> {
     /// The durable settle of one entry. Its future holds the principal's progression binding,
     /// whose policy carries the whole `CHARACTER_EXPERIENCE_TABLE_LEVELS` threshold table by
@@ -1218,7 +1219,6 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         report
     }
 }
-
 #[cfg(test)]
 #[path = "kill_reward_tests.rs"]
 mod tests;

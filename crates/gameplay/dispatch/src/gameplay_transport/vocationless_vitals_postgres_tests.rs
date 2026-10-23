@@ -27,7 +27,7 @@ fn scenario() -> TestResult {
         admit(&owner, &dependencies, &request).await?;
         {
             let runtime = dependencies.runtime.lock().await;
-            let mut states = owner.spell_states.lock().await;
+            let mut states = owner.states.spell_states.lock().await;
             let state = states
                 .get_mut(&runtime, actor, session)
                 .ok_or("missing vocationless vitals")?;
@@ -48,6 +48,7 @@ fn scenario() -> TestResult {
             let runtime = dependencies.runtime.lock().await;
             assert_eq!(
                 owner
+                    .states
                     .spell_states
                     .lock()
                     .await
@@ -66,7 +67,7 @@ fn scenario() -> TestResult {
         Box::pin(owner.admit_progression_session(&mut admitted)).await;
         let death = {
             let mut runtime = dependencies.runtime.lock().await;
-            let mut states = owner.spell_states.lock().await;
+            let mut states = owner.states.spell_states.lock().await;
             let foreign = crate::foundation::GameSessionId::decode(&id(99)).map_err(debug)?;
             let now = crate::foundation::owner_timer::SemanticTimeMicros::from_micros(
                 owner.owner_now().get(),
@@ -101,7 +102,7 @@ fn scenario() -> TestResult {
                 .await?,
             1
         );
-        assert!(!owner.spell_states.lock().await.is_dead(actor));
+        assert!(!owner.states.spell_states.lock().await.is_dead(actor));
         drop(owner);
         drop(authority);
         drop(seal);

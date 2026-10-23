@@ -8,7 +8,6 @@ use crate::durability::map_item_mint::{
 };
 use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::map::overlay::pickup::{self, MintResolution};
-
 pub(super) async fn move_map_item(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
@@ -16,6 +15,7 @@ pub(super) async fn move_map_item(
     request: LoopMove,
     permit: &SpellLanePermit,
 ) -> LoopMoveResult {
+    let ground_cache = &admission.states.loop_ground;
     let refused = LoopMoveResult::Refused;
     let stale = refused(LoopMoveRefusal::Stale);
     let destination = match request.target {
@@ -33,7 +33,7 @@ pub(super) async fn move_map_item(
     // across durable IO (SPELL-LOCK-2 §1.2), exactly as the instance move.
     let (native, index, at) = {
         let mut runtime = admission.runtime.lock().await;
-        let states = admission.spell_states.lock().await;
+        let states = admission.states.spell_states.lock().await;
         let native = native_for_move(
             &runtime,
             admission.active_generation,
@@ -129,7 +129,7 @@ pub(super) async fn move_map_item(
             Ok(None) => {
                 // A prior unknown attempt may have reserved but not committed its MINT.
                 // Only that pending command may reconcile it; other commands remain stale.
-                let Ok(state) = admission.loop_ground.state.lock() else {
+                let Ok(state) = ground_cache.state.lock() else {
                     return LoopMoveResult::Unknown;
                 };
                 if state.pending_origins.get(&placement_key) != Some(&mint.command) {
@@ -183,7 +183,7 @@ pub(super) async fn move_map_item(
     if !hidden && pickup::hide_origin_at_freeze(&mut overlay, placement_key).is_err() {
         return refused(LoopMoveRefusal::NoRoom);
     }
-    pending_origin(&admission.loop_ground, placement_key, Some(mint.command));
+    pending_origin(ground_cache, placement_key, Some(mint.command));
     let mut candidate = match admission
         .root
         .freeze_map_item_mint(admission.character, admission.holder, fence, mint)
@@ -192,7 +192,7 @@ pub(super) async fn move_map_item(
         Ok(candidate) => candidate,
         Err(error @ MapItemMintError::Unavailable(_)) => return mint_error(error),
         Err(error) => {
-            pending_origin(&admission.loop_ground, placement_key, None);
+            pending_origin(ground_cache, placement_key, None);
             return mint_error(error);
         }
     };
@@ -238,7 +238,7 @@ pub(super) async fn move_map_item(
                     placement_key,
                     MintResolution::ProvenNotCommitted,
                 );
-                pending_origin(&admission.loop_ground, placement_key, None);
+                pending_origin(ground_cache, placement_key, None);
                 return mint_error(error);
             }
             Err(error @ MapItemMintError::CapacityExceeded) => Err(error),
@@ -251,7 +251,7 @@ pub(super) async fn move_map_item(
                 placement_key,
                 MintResolution::Committed(&minted),
             );
-            pending_origin(&admission.loop_ground, placement_key, None);
+            pending_origin(ground_cache, placement_key, None);
             minted
         }
         Ok(None) => {
@@ -260,7 +260,7 @@ pub(super) async fn move_map_item(
                 placement_key,
                 MintResolution::ProvenNotCommitted,
             );
-            pending_origin(&admission.loop_ground, placement_key, None);
+            pending_origin(ground_cache, placement_key, None);
             return LoopMoveResult::Unknown;
         }
         Err(error) => {
@@ -300,8 +300,9 @@ pub(super) async fn move_map_item(
             },
         )
         .await;
-    admission.loop_ground.invalidate();
+    ground_cache.invalidate();
     admission
+        .states
         .attack
         .lock()
         .await
@@ -312,7 +313,6 @@ pub(super) async fn move_map_item(
         Err(_) => LoopMoveResult::Unknown,
     }
 }
-
 fn pending_origin(cache: &LoopGroundCache, key: u64, pending: Option<CommandRef>) {
     if let Ok(mut state) = cache.state.lock() {
         if let Some(command) = pending {
