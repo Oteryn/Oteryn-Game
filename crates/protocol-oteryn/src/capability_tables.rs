@@ -224,6 +224,14 @@ pub const GATED: &[(u32, &[u32], &[u32])] = &[
         &[],
     ),
     (
+        crate::house::CAPABILITY_HOUSE_V1,
+        &[
+            crate::house::COMMAND_TYPE_HOUSE_INTENT,
+            crate::house::COMMAND_TYPE_HOUSE_QUERY,
+        ],
+        &[],
+    ),
+    (
         crate::loop_training::CAPABILITY_TRAINING_V1,
         &[
             crate::loop_training::COMMAND_TYPE_OFFLINE_TRAINING,
