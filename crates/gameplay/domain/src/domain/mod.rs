@@ -1232,3 +1232,9 @@ mod tests {
 }
 
 pub mod guild;
+
+#[cfg(test)]
+mod character_build_property_tests;
+
+#[cfg(test)]
+mod timed_item_property_tests;

@@ -14,5 +14,8 @@ release-role = "production"
 [dependencies]
 oteryn-gameplay-domain = { version = "=0.1.0", path = "../domain" }
 
+[dev-dependencies]
+oteryn-test-support = { version = "=0.1.0", path = "../../test-support" }
+
 [lints]
 workspace = true
