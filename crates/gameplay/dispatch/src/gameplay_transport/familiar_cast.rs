@@ -379,7 +379,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(index) = self.active_familiar_index(base_familiar_vocation(vocation)) else {
             return Ok(None);
         };
-        let fence = self.familiar_fence(session).await.ok_or(())?;
+        let fence =
+            crate::gameplay_transport::character_gameplay_fence::current(self, session, false)
+                .await
+                .ok_or(())?;
         let group = {
             let runtime = self.runtime.lock().await;
             if !current_owner(&runtime, &fence, actor, session)
@@ -435,7 +438,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         content: &NativeGameplayState,
         access: &impl super::super::spell_access_facts::CurrentSpellAccessOwner,
     ) -> Result<OwnedCastFacts, ()> {
-        let fence = self.familiar_fence(session).await.ok_or(())?;
+        let fence =
+            crate::gameplay_transport::character_gameplay_fence::current(self, session, false)
+                .await
+                .ok_or(())?;
         let raw = self
             .root
             .read_lifecycle_durable_facts(
@@ -768,34 +774,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             expected_character_revision: root.revision,
         })
     }
-    async fn familiar_fence(
-        &self,
-        session_id: GameSessionId,
-    ) -> Option<CurrentCharacterGameplayFence> {
-        let (session, _) = FreshAdmissionStore::from_root(self.root.clone())
-            .current_session_at(session_id)
-            .await
-            .ok()?;
-        if session.session_state() != GameSessionState::Active {
-            return None;
-        }
-        let character =
-            CharacterId::from_bytes(*session.commit().character_id().as_bytes()).ok()?;
-        let record = self
-            .root
-            .read_current_character(self.character, character)
-            .await
-            .ok()?;
-        Some(CurrentCharacterGameplayFence {
-            character_id: character,
-            game_session_id: session_id,
-            connection_generation: session.current_connection_generation(),
-            character_lease_generation: session.current_character_lease().generation(),
-            runtime_scope: session.current_runtime_scope(),
-            scope_ownership_generation: session.current_scope_generation(),
-            expected_character_revision: record.revision,
-        })
-    }
     /// Real Cast path. Its facts/config ports must be registered current owner reads. External
     /// Premium/VIP/God input cannot be invented by this adapter. Locks stay runtime→states across
     /// only bounded SQL passes, never an external API call; existing DB fences are rechecked in TX.
@@ -822,7 +800,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Some(SpellCastOutcome::rejected());
         }
-        let Some(fence) = self.familiar_fence(session).await else {
+        let Some(fence) =
+            crate::gameplay_transport::character_gameplay_fence::current(self, session, false)
+                .await
+        else {
             return Some(SpellCastOutcome::rejected());
         };
         let Ok(Some(progression)) = self
@@ -1384,7 +1365,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map(|value| value.committed_character_revision)
             .unwrap_or_else(|| receipt.committed_character_revision());
         // History never renews authority. Re-read the independently current admission/root fence.
-        let Some(fresh_fence) = self.familiar_fence(session).await else {
+        let Some(fresh_fence) =
+            crate::gameplay_transport::character_gameplay_fence::current(self, session, false)
+                .await
+        else {
             return (SpellCastOutcome::rejected(), None);
         };
         let mut expected_fence = fence;
@@ -1741,7 +1725,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if profile.spell()["execution"]["native_behavior"]["key"] != "familiar_summon" {
             return Err(());
         }
-        let fence = self.familiar_fence(session).await.ok_or(())?;
+        let fence =
+            crate::gameplay_transport::character_gameplay_fence::current(self, session, false)
+                .await
+                .ok_or(())?;
         let progression = self
             .root
             .read_character_progression(self.character, fence.character_id)
@@ -2149,7 +2136,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
-        let fresh = self.familiar_fence(session).await.ok_or(())?;
+        let fresh =
+            crate::gameplay_transport::character_gameplay_fence::current(self, session, false)
+                .await
+                .ok_or(())?;
         let mut expected = prepared.fence;
         if let Some(receipt) = &committed {
             expected.expected_character_revision = receipt.committed_character_revision();

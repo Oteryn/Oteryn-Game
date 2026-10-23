@@ -1,23 +1,24 @@
 {
   "id": "COMBAT01-REWARD-PRINCIPALS",
-  "owner_contract": "../architecture/reviews/OTERYN_GAME_VSL_COMBAT_RESOURCE_ROWS_DECISION_2026-09-28.md",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_PARTY_PVP0_PARTIES_AND_PVP_DECISION_2026-09-30.md",
   "resource": "Reward principals (characters eligible for a creature death's XP) settled per death",
   "unit": "reward principals per death",
-  "hard_maximum": 1,
+  "hard_maximum": 50,
   "configurable_range": {
     "minimum": 1,
-    "maximum": 1
+    "maximum": 50
   },
   "failure_category": "CAPACITY_EXCEEDED",
-  "allocation_impact": "Checked first, before loot planning or any durability call: settle_creature_death_rewards rejects the whole composition up front unless exactly one reward principal was supplied.",
+  "allocation_impact": "PARTY-XP-1: at most 50 distinct Character principals in CharacterId order. One native sequencer and one XP receipt per awarded Character; all member awards and the kill audit commit in one transaction. Zero stamina removes an award without redistributing it. The compatibility solo composition still admits exactly one principal.",
   "client_visible": false,
   "boundary_tests": [
-    "max=1: check_reward_principal_count(1) accepts",
-    "max+1=2: check_reward_principal_count(2) rejects",
-    "0: check_reward_principal_count(0) rejects (no silent no-op reward)"
+    "max=50 and max+1=51: shared_experience_bound_and_wide_integer_oracle",
+    "same-death concurrent retry and recovered sequencers: party_xp_concurrent_replay_and_recovered_sequencers_do_not_award_twice (canonical PostgreSQL 17.6)"
   ],
   "consumers": [
-    "apps/game-server/src/combat/death_reward.rs (check_reward_principal_count, called from settle_creature_death_rewards before planning or minting anything)"
+    "crates/gameplay/social-rules/src/shared_experience_split.rs",
+    "crates/gameplay/durability/src/durability/party_kill_xp.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/party_kill_settlement.rs"
   ],
-  "notes": "D77/D78 decision \u00a74.1 row 10: \"1 per death (single-principal slice)\". `COMBAT01-DEATH-WORKFLOWS-PER-SCOPE` (row 3) is deliberately not registered here: its own failure mode is recorded as structurally unreachable, bounded by the still-unregistered D57 creature-count envelope, and this composition keeps no scope-wide active-workflow counter to check; registering an unenforced ceiling would be a fake guard. Registered by OTV2-20260928-combat-d2b-death-reward-wiring."
+  "notes": "D109/D118 and PARTY_PVP0 \u00a75.1 supersede the single-principal ceiling for the shared-XP owner. One receipt per (death, Character), never another award on retry."
 }

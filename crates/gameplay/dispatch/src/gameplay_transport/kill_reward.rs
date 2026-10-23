@@ -25,6 +25,7 @@ use crate::combat::{
     ProjectedCreatureDeathFacts, RewardPrincipal, capture_projected_death_facts,
     check_inflight_loot_mint_capacity, loot_plan_seed, plan_creature_loot,
     settle_creature_death_rewards_with_bestiary,
+    settle_creature_death_rewards_with_party_experience,
 };
 use crate::content::character_progression_content::CHARACTER_EXPERIENCE_TABLE_LEVELS;
 use crate::content::creature_reward::{CreatureRewardRow, CreatureRewardTable};
@@ -55,6 +56,10 @@ pub struct PendingKillSettlement {
     /// The killed actor whose committed corpse projection the minted corpse
     /// Item binds to (MAP-ITEM-REF-1 Part B, D607).
     pub target: ExactActorRef,
+    pub activity_observed_at: Option<oteryn_simulation_determinism::SemanticTimeMicros>,
+    pub activity_at_death:
+        Option<Vec<oteryn_gameplay_social_rules::shared_experience::SharedExperienceActivity>>,
+    pub damage_shares: Vec<crate::foundation::RewardDamageShare>,
     /// §1.5: `no_progression_binding` is logged once per death.
     no_progression_logged: bool,
 }
@@ -528,6 +533,7 @@ impl Drop for TakenKillSettlement {
 /// Where a lethal arm appends: the Channel's queue and the active generation's reward rows.
 #[derive(Clone, Copy)]
 pub struct KillSink<'a> {
+    pub activity: &'a [oteryn_gameplay_social_rules::shared_experience::SharedExperienceActivity],
     pub queue: &'a KillSettlementQueue,
     pub rewards: &'a CreatureRewardTable,
 }
@@ -566,6 +572,7 @@ pub fn record_creature_kill(
     target: ExactActorRef,
     lethal: CapturedRewardPrincipal,
     now_ms: u64,
+    observed_at: Option<oteryn_simulation_determinism::SemanticTimeMicros>,
 ) {
     let creature = runtime
         .companion_snapshot_including_dead(target)
@@ -623,7 +630,26 @@ pub fn record_creature_kill(
         // The lethal hit is the untracked principal's own clocked damage.
         facts.principal_last_damage_at_ms = Some(facts.death_at_ms);
     }
+    let Ok(damage_shares) = owner.reward_damage_shares(target) else {
+        refuse("damage_shares_unavailable", &creature);
+        return;
+    };
+    let activity_at_death = match super::party_xp::capture_activity_at_death(
+        runtime,
+        principal.character,
+        &damage_shares,
+        sink.activity,
+    ) {
+        Ok(cells) => cells,
+        Err(_) => {
+            refuse("activity_census_unavailable", &creature);
+            return;
+        }
+    };
     let entry = PendingKillSettlement {
+        activity_observed_at: observed_at.filter(|at| at.get() / 1000 == facts.death_at_ms),
+        activity_at_death,
+        damage_shares,
         facts,
         creature,
         row,
@@ -688,6 +714,8 @@ pub fn record_batch_kills(
     receipt: &CombatBatchReceipt,
     now_ms: u64,
 ) {
+    let observed_at = runtime.committed_spell_batch_time(receipt).ok().flatten();
+    let now_ms = observed_at.map_or(now_ms, |at| at.get() / 1_000);
     let session = receipt.command.game_session_id();
     for effect in &receipt.effects {
         if effect.health.is_none_or(|health| health.health_after > 0) {
@@ -702,7 +730,7 @@ pub fn record_batch_kills(
             session,
             actor: receipt.caster,
         };
-        record_creature_kill(runtime, sink, effect.target, lethal, now_ms);
+        record_creature_kill(runtime, sink, effect.target, lethal, now_ms, observed_at);
     }
 }
 
@@ -964,6 +992,7 @@ fn classify(
     }
     if let Err(error) = &rewards.xp
         && !no_progression
+        && !matches!(error, CombatDeathRewardXpError::NoExperienceAward)
     {
         operator_event(&format!(
             "kill_reward_xp_failed creature={creature} reason={error:?}"
@@ -1006,7 +1035,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         runtime: &mut ChannelRuntimeV1,
         receipts: impl Iterator<Item = &'r CombatBatchReceipt>,
     ) {
+        let activity = attack.shared_experience_cells();
         let sink = KillSink {
+            activity: &activity,
             queue: attack.kills(),
             rewards: self.reward_table(),
         };
@@ -1146,10 +1177,36 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 no_progression: false,
             };
         };
-        let mut slot = admission
-            .revision_sequencer
-            .acquire(self.fence.character_id)
-            .await;
+        let party = if admission
+            .progression_binding(self.fence.game_session_id)
+            .is_some()
+        {
+            match admission.settle_party_experience(&permit, entry).await {
+                Ok(party) => Some(party),
+                Err(error) => {
+                    operator_event(&format!("party_xp_settle_deferred reason={error:?}"));
+                    Some(super::party_kill_settlement::SettledPartyXp {
+                        xp: Err(CombatDeathRewardXpError::Progression(error)),
+                        slots: Vec::new(),
+                    })
+                }
+            }
+        } else {
+            None
+        };
+        let (party_xp, mut other_slots) =
+            party.map_or((None, Vec::new()), |p| (Some(p.xp), p.slots));
+        let mut slot = if let Some(index) = other_slots
+            .iter()
+            .position(|s| s.character_id() == self.fence.character_id)
+        {
+            other_slots.remove(index)
+        } else {
+            admission
+                .revision_sequencer
+                .acquire(self.fence.character_id)
+                .await
+        };
         let Ok(expected_character_revision) =
             slot.cursor(admission.root, admission.character).await
         else {
@@ -1189,20 +1246,35 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             authority: admission.character,
             node: admission.holder,
         };
-        let outcome = settle_creature_death_rewards_with_bestiary(
-            &permit,
-            entry.facts,
-            &session,
-            &mut slot,
-            input,
-            CreatureDeathBestiaryInput {
-                race: entry.row.race.clone(),
-            },
-        )
-        .await;
+        let bestiary = CreatureDeathBestiaryInput {
+            race: entry.row.race.clone(),
+        };
+        let outcome = if let Some(xp) = party_xp {
+            settle_creature_death_rewards_with_party_experience(
+                &permit,
+                entry.facts,
+                &session,
+                &mut slot,
+                input,
+                bestiary,
+                xp,
+            )
+            .await
+        } else {
+            settle_creature_death_rewards_with_bestiary(
+                &permit,
+                entry.facts,
+                &session,
+                &mut slot,
+                input,
+                bestiary,
+            )
+            .await
+        };
         // The runtime lock is first in the lock order, so the lane permit and the revision slot
         // are released before it is taken.
         drop(slot);
+        drop(other_slots);
         drop(permit);
         let mut runtime = admission.runtime.lock().await;
         if let Ok(outcome) = &outcome

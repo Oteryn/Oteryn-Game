@@ -357,6 +357,8 @@ pub enum CombatDeathRewardXpError {
     /// caller logs `kill_reward_refused reason=no_progression_binding` once
     /// for the death.
     NoProgressionBinding,
+    /// D118: a zero share or exhausted stamina writes only the kill audit.
+    NoExperienceAward,
     InvalidOccurrence,
     Progression(CharacterProgressionError),
 }
@@ -781,6 +783,38 @@ pub async fn settle_creature_death_rewards_with_bestiary<const N: usize>(
         });
     let principal = admit_principal(&facts, &input)?;
     let rewards = settle_creature_death_rewards(permit, facts, session, slot, input).await?;
+    let bestiary = match binding {
+        Some(binding) => {
+            settle_bestiary(session, slot, &facts, &principal, &binding, bestiary).await
+        }
+        None => Err(CombatDeathRewardBestiaryError::NoProgressionBinding),
+    };
+    Ok(CreatureDeathRewardWithBestiaryOutcome { rewards, bestiary })
+}
+
+/// PARTY-XP-1: the consuming kill owner already committed all Character XP receipts in
+/// one transaction. Preserve the existing independent loot and Bestiary descendants.
+#[allow(clippy::too_many_arguments)]
+pub async fn settle_creature_death_rewards_with_party_experience<const N: usize>(
+    permit: &SpellLanePermit,
+    facts: ProjectedCreatureDeathFacts,
+    session: &DurabilitySession<'_, '_, '_>,
+    slot: &mut RevisionSlot,
+    mut input: CreatureDeathRewardInput<N>,
+    bestiary: CreatureDeathBestiaryInput,
+    xp: Result<ExperienceCommitOutcome, CombatDeathRewardXpError>,
+) -> Result<CreatureDeathRewardWithBestiaryOutcome, CreatureDeathRewardAdmissionError> {
+    let principal = admit_principal(&facts, &input)?;
+    let binding = input
+        .progression
+        .take()
+        .map(|p| BestiaryProgressionBinding {
+            context: p.context,
+            policy_revision: p.policy_revision,
+            reward_revision: p.reward_revision,
+        });
+    let mut rewards = settle_creature_death_rewards(permit, facts, session, slot, input).await?;
+    rewards.xp = xp;
     let bestiary = match binding {
         Some(binding) => {
             settle_bestiary(session, slot, &facts, &principal, &binding, bestiary).await

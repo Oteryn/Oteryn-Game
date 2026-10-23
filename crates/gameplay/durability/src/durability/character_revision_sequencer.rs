@@ -20,6 +20,8 @@
 //! they wait for a slot or across the durable write, and every write is still refused by the
 //! existing session-generation gameplay fence in its own transaction.
 
+mod appearance_revision;
+
 use std::collections::HashMap;
 use std::future::Future;
 use std::sync::Arc;
@@ -151,6 +153,15 @@ impl RevisionSlot {
         let revision = load(self.character_id).await?;
         *self.cursor = Some(revision);
         Ok(revision)
+    }
+
+    /// An atomic multi-Character XP transaction has ended. Unknown outcomes invalidate the
+    /// cursor, and replayed older receipts cannot move it backwards.
+    pub fn observe_party_experience(
+        &mut self,
+        outcome: &Result<ExperienceCommitOutcome, CharacterProgressionError>,
+    ) {
+        self.settle(outcome);
     }
 
     /// One XP award at the cursor, or the exact replay of a retained receipt at its `original`

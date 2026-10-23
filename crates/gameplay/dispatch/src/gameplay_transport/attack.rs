@@ -1211,10 +1211,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             kills,
             ..
         } = &mut *attack;
-        let sink = super::kill_reward::KillSink {
-            queue: kills,
-            rewards: self.reward_table(),
-        };
+        let mut activity_cells: Vec<_> = entries
+            .iter()
+            .filter_map(|e| e.shared_experience_activity)
+            .collect();
         let root = GameplayDecisionRoot::from_bytes(digest);
         for entry in entries.iter_mut() {
             let Some(target) = entry.state.target() else {
@@ -1422,6 +1422,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 && aggressive_monster(&runtime, content, target)
             {
                 entry.record_shared_experience_activity(&runtime, now);
+                if let Some(cell) = entry.shared_experience_activity {
+                    if let Some(old) = activity_cells
+                        .iter_mut()
+                        .find(|old| old.character == cell.character)
+                    {
+                        *old = cell;
+                    } else {
+                        activity_cells.push(cell);
+                    }
+                }
             }
             run_charm_hook(
                 self.imported_charms,
@@ -1449,10 +1459,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 super::kill_reward::record_creature_kill(
                     &mut runtime,
-                    sink,
+                    super::kill_reward::KillSink {
+                        queue: kills,
+                        rewards: self.reward_table(),
+                        activity: &activity_cells,
+                    },
                     target,
                     lethal,
                     now.get() / 1_000,
+                    Some(now),
                 );
                 entry.clear_target();
             }
@@ -1592,7 +1607,7 @@ fn aggressive_monster(
     if content.source_digest() != runtime.content_pin().server_artifact_digest() {
         return false;
     }
-    let Ok(snapshot) = runtime.companion_snapshot(actor) else {
+    let Ok(snapshot) = runtime.companion_snapshot_including_dead(actor) else {
         return false;
     };
     if snapshot.state.master.is_some() || snapshot.state.policy.is_familiar {
@@ -1647,6 +1662,14 @@ impl ActorAttack {
     reason = "D #2172 integrates these native activity APIs in its separate draft"
 )]
 impl ChannelAttackStates {
+    /// Retained event data for death capture; reading never refreshes an activity clock.
+    pub(super) fn shared_experience_cells(&self) -> Vec<SharedExperienceActivity> {
+        self.entries
+            .iter()
+            .filter_map(|e| e.shared_experience_activity)
+            .collect()
+    }
+
     /// Preallocate the existing per-player entry BEFORE physical spell installation. No
     /// activity is granted here; phase 2's receipt recorder never allocates or creates it.
     pub fn prepare_shared_experience_record(

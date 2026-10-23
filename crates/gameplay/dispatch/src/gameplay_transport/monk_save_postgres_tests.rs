@@ -221,14 +221,23 @@ impl Dependencies {
         owner
     }
     async fn initialize(&self, owner: &ComposedFreshAdmission<'_, '_, '_>) {
+        self.initialize_player(owner, self.actor, self.admitted.game_session_id)
+            .await;
+    }
+    async fn initialize_player(
+        &self,
+        owner: &ComposedFreshAdmission<'_, '_, '_>,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) {
         let runtime = self.runtime.lock().await;
         let mut states = owner.states.spell_states.lock().await;
         assert!(
             states
                 .initialize(
                     &runtime,
-                    self.actor,
-                    self.admitted.game_session_id,
+                    actor,
+                    session,
                     crate::spell::cast::CharacterCastFacts {
                         vocation: crate::spell::Vocation::Monk,
                         ..crate::gameplay_transport::actor_spell::tests::FACTS
