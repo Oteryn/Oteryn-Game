@@ -5,8 +5,12 @@ pub mod actor_spell;
 pub mod appearance_change;
 mod attack;
 mod bank_npc;
+mod bed_regen;
 mod bed_sleep;
 mod bundle_map_position;
+mod depot;
+mod house_intent;
+mod house_query;
 use bundle_map_position::bundle_map_position;
 #[cfg(test)]
 use bundle_map_position::bundle_world_map;
@@ -29,6 +33,7 @@ mod container_view;
 mod equipment_move;
 pub mod fresh_evidence;
 mod guild_chat;
+mod guild_intent;
 mod highscores;
 mod input_gate;
 mod item_look;
@@ -43,6 +48,7 @@ mod logout;
 mod logout_tests;
 mod loop_move;
 pub mod spectate_session;
+mod vip;
 mod staff;
 use crate::map::boot::BundleCollisionIndexExt;
 pub use last_position::LastPositionFlush;
@@ -2511,7 +2517,10 @@ fn operator_event(line: &str) {
 }
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
+    vip::composed_methods!();
     appearance_change::composed_methods!();
+    guild_intent::composed_methods!();
+    house_intent::composed_methods!();
     staff::composed_methods!();
     async fn observe_quest_log(
         &self,
@@ -2706,6 +2715,16 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         request: item_move::EquipmentMove,
     ) -> item_move::EquipmentMoveResult {
         equipment_move::move_equipment(self, actor, command, request).await
+    }
+
+    async fn depot(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::depot::DepotIntent,
+        item: Option<item_view::ItemKey>,
+    ) -> Option<oteryn_protocol_oteryn::depot::DepotReply> {
+        depot::execute(self, actor, command, intent, item).await
     }
 
     async fn committed_loop_move(
@@ -4343,6 +4362,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 monk,
                 self.owner_now(),
                 saved_vitals,
+                (outcome == FirstEntryOutcome::Positioned)
+                    .then(|| bed_regen::admitted_rest(&decided, self.world_id))
+                    .flatten(),
             )
             .is_none()
         {

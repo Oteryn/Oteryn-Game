@@ -16,14 +16,14 @@ fn the_production_set_selects_only_offered_capabilities_whatever_the_client_supp
         SelectedCapabilities::select(PRODUCTION_OFFERED_CAPABILITIES, &everything)
             .as_ref()
             .map(SelectedCapabilities::as_slice),
-        Some(&[6, 7, 9, 13, 16, 17, 19, 21, 26, 31, 36, 51][..])
+        Some(&[6, 7, 9, 13, 16, 17, 19, 21, 26, 31, 36, 40, 49, 51][..])
     );
     // MAP-ITEM-REF-1: the not-yet-offered Item view set adds 4, which requires 6.
     assert_eq!(
         SelectedCapabilities::select(ITEM_VIEW_OFFERED_CAPABILITIES, &everything)
             .as_ref()
             .map(SelectedCapabilities::as_slice),
-        Some(&[4, 6, 7, 9, 13, 16, 17, 19, 21, 26, 31, 36, 51][..])
+        Some(&[4, 6, 7, 9, 13, 16, 17, 19, 21, 26, 31, 36, 40, 49, 51][..])
     );
     assert_eq!(
         SelectedCapabilities::select(ITEM_VIEW_OFFERED_CAPABILITIES, &[4, 13])

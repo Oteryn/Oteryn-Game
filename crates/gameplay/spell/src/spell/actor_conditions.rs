@@ -582,6 +582,26 @@ fn tick_inner(
     *state = staged;
     Ok(combat)
 }
+/// BED-REGEN restores the saved remaining duration, without replaying an item.
+pub(super) fn restore_bed_food(
+    state: &mut PlayerSpellState,
+    remaining_ms: u32,
+    now_ms: u64,
+) -> Option<()> {
+    let food = definition(
+        "food.regeneration",
+        ConditionValues::FoodRegeneration {
+            added_ms: 1,
+            interval_ms: super::food_regeneration::FOOD_TICK_MS,
+        },
+    )
+    .ok()?;
+    apply_definition(state, food, now_ms, 0).ok()?;
+    state
+        .conditions
+        .restore_bed_food_duration(remaining_ms, now_us(now_ms).ok()?)
+}
+
 /// FOOD-REGEN-1: eating food adds `regeneration_seconds` to the fed time (cap 1,200 s).
 /// A full fed time or an unrepresentable food is refused and leaves the state unchanged.
 pub fn eat_food(

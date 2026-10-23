@@ -4,7 +4,7 @@
 task_id: GUILD-WIRE-1
 title: "GUILD-WIRE-1: GUILD_V1 capability, commands, emblem"
 mode: IMPLEMENT
-status: waiting
+status: in_progress
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 5
@@ -17,11 +17,17 @@ briefs:
 base_branch: main
 branch: null
 pr: null
-needs_migration: false
-needs_registry: true   # PROTOCOL_OTERYN_V1_REGISTRY capability/command/result IDs, RESOURCE_LIMITS emblem row
+needs_migration: true
+needs_registry: true   # capability 40, commands 40/41, resource rows 0720-0726
 needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+Current local status (owner's narrowed 2026-10-23 scope): basic server wiring is
+implemented and exercised through the admitted connection. This is an uncommitted,
+unmerged authoring packet; the original broader card remains in progress. The
+current implementation and validation sections below supersede the historical
+missing-wire/dependency notes for this basic scope.
 
 Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **OPEN**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
 
@@ -149,3 +155,137 @@ cargo +1.95.0 run -p oteryn-architecture-check -- workspace .
 - `docs/contracts/OTERYN_GAME_GUILDS_V1.md`
 - `docs/reference/tibia-manual/guilds.md`
 - CP release: #1622 comment 6193914573
+
+## Server wiring gap list
+
+Owner scope (2026-10-23): basic server create/invite/join/leave/kick/set-rank and
+query, over the real admitted connection. Client UI, emblems, Bank and Hall are excluded.
+This worktree is a local authoring packet; no commit/publication is authorized.
+
+| Layer on starting HEAD | Exists | Missing server wiring |
+|---|---|---|
+| L3 `social-rules/src/guild.rs` | rank/state/deadline predicates | none for basic commands |
+| L4 `durability/guild/`, migration 0132 | fenced atomic writers, receipts, audit, membership and rank constraints | bounded session-fenced summary/roster/invitation reader; wire replay binding |
+| protocol-oteryn | guild chat membership snapshot only | basic intent/query/results and strict bounded codecs |
+| registry fragments | guild chat capability 36 | capability 40, commands 40/41 (owner allocation 40–44 / 40–41 only) |
+| dispatch | guild chat only | guild intent/query handler and connection registration |
+| capability offer | no guild command capability | offer basic guild operations; no content dependency |
+| game-server | node scheduler deadlines/disband only | production composed admission must call native writers |
+| validation | core storage and guild chat tests | real command bytes → native dispatch → durable result bytes, reconnect/reload and negative cases |
+
+The old dependency/wiring sections above are historical: core and chat are installed
+on this HEAD. Bank/Hall prerequisites do not gate the owner's narrowed basic scope.
+
+## Reference parity table
+
+| Visible behavior | Reference evidence | Oteryn now (basic server scope) |
+|---|---|---|
+| Found and become leader | `docs/reference/tibia-manual/guilds.md` §5.8.2–3; accepted GUILD0 §3 | `found` creates FORMING, default ranks, leader and native audit/receipt atomically |
+| Invite and accept | manual §5.8.3 Invite Player/Join Guild | leader/vice invite by canonical CharacterName; invited player queries own invitations and joins by Guild UUID |
+| Leave and exclude | manual §5.8.3 Leave/Exclude | nonleader leaves; leader/vice kicks a strictly lower rank, immediate durable effect |
+| Promote/demote | manual §5.8.3 Edit Members; GUILD0 rank predicates | `set_rank` requires expected Guild revision; native role, target Account/Premium and deadline gates apply |
+| Member query | manual §5.8.1–3; GUILD0 §4.2 | own summary, ranks, title/message, private roster pages (100), own live invitations (50); no Account/Channel/position |
+| Timing and administration | GUILD0 declared differences §13 | in-game commands with immediate effects; reference website/logout behavior intentionally differs |
+| Premium and formation | manual §5.8.2; PREMIUM-ACTIVATION-0 | existing native gate; no Premium rule before activation, fail closed after activation; existing deadline scheduler |
+| Retry/restart | GUILD0 §4; guild contract GI-10/11 | native receipts bound to original wire bytes; ambiguous commit disconnects before sequencing; replay/reload reads durable rows |
+
+## Implementation notes and remaining broader scope
+
+- Capability **40 GUILD_V1**, commands **40 GUILD_INTENT / 41 GUILD_QUERY**; no other
+  lane's IDs consumed. All standard offers include it; no world content is missing.
+- Existing L3 and L4 enforce every mutation; the node's existing composed admission
+  supplies the current authority, native Premium coordinator and item/session fence.
+- Target UUIDs for kick/rank come from the private roster. Revoke accepts a target
+  UUID as data. Invitations accept
+  names so an outsider need not expose an internal identifier. Replays reuse the
+  stored target before validating the original request digest.
+- Migration **0161** adds the matching `(guild_id,rank_level,character_id)` keyset index;
+  no existing migration or durable result/action enum is changed. Native callers
+  retain the old receipt binding; wire callers bind the original payload digest so
+  retry clock reads cannot invalidate a committed receipt or change its event time.
+- Broader original-card work stays deferred: rank-name editing, titles/message
+  mutations, resign/disband commands, activity/public query sections, full vocation/
+  online/deadline projections, emblems, Bank/Hall integration and client UI.
+- Tests auto-mount under dispatch `--lib`; no PostgreSQL test target or CI routing
+  file is added. GUILD-1's core is now reached by the production wire caller.
+
+## Changed files (local packet)
+
+```text
+apps/game-server/migrations/0161_guild_roster_keyset.sql
+crates/gameplay/dispatch/src/gameplay_transport/capabilities.rs
+crates/gameplay/dispatch/src/gameplay_transport/capability_quest_log_tests.rs
+crates/gameplay/dispatch/src/gameplay_transport/connection.rs
+crates/gameplay/dispatch/src/gameplay_transport/guild_intent.rs
+crates/gameplay/dispatch/src/gameplay_transport/mod.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/guild_wire.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/guild_wire/paging.rs
+crates/gameplay/durability/src/durability/guild.rs
+crates/gameplay/durability/src/durability/guild/invitee.rs
+crates/gameplay/durability/src/durability/guild/query.rs
+crates/gameplay/durability/src/durability/guild/receipt.rs
+crates/gameplay/durability/src/durability/guild/request.rs
+crates/gameplay/durability/src/durability/guild_chat_fixture.rs
+crates/protocol-oteryn/src/capability_tables.rs
+crates/protocol-oteryn/src/guild.rs
+crates/protocol-oteryn/src/guild/codec.rs
+crates/protocol-oteryn/src/guild/codec/query_result.rs
+crates/protocol-oteryn/src/guild_tests.rs
+crates/protocol-oteryn/src/lib.rs
+docs/agents/tasks/GUILD-WIRE-1.md
+docs/agents/tasks/archive/GUILD-1.md
+docs/contracts/protocol-oteryn/v1/guild_v1.proto
+docs/contracts/protocol-oteryn/v1/registry/capabilities/0040-guild-v1.json
+docs/contracts/protocol-oteryn/v1/registry/command_types/0040-guild-intent.json
+docs/contracts/protocol-oteryn/v1/registry/command_types/0041-guild-query.json
+docs/contracts/resource-limits/entries/0720-GUILDWIRE-RL-01.json
+docs/contracts/resource-limits/entries/0721-GUILDWIRE-RL-02.json
+docs/contracts/resource-limits/entries/0722-GUILDWIRE-RL-03.json
+docs/contracts/resource-limits/entries/0723-GUILDWIRE-RL-04.json
+docs/contracts/resource-limits/entries/0724-GUILDWIRE-RL-05.json
+docs/contracts/resource-limits/entries/0725-GUILDWIRE-RL-06.json
+docs/contracts/resource-limits/entries/0726-GUILDWIRE-RL-07.json
+```
+
+## Validation evidence — local basic server packet
+
+- Protocol: `cargo test --locked -p oteryn-protocol-oteryn --quiet` — 389 passed,
+  including `guild_codec_intents_queries_results_roundtrip` and
+  `guild_codec_bounds_and_malformed_fields`.
+- Capability negotiation: `cargo test --locked -p oteryn-gameplay-dispatch --quiet
+  --lib capabilities` — 63 passed. The existing offer expectation includes 40.
+- PostgreSQL 18.6 (`server_version_num=180006`):
+  `cargo test --locked -p oteryn-gameplay-dispatch --quiet --lib
+  guild_wire_postgres_real_dispatch -- --nocapture` — 1 passed; real fresh-session
+  durability and real `serve_admitted` bytes cover create, name invite, join, leave,
+  kick, revoke, set-rank, summary, roster, own invitations, native receipts/replay,
+  changed-body rejection, stale revision, stale lease, no capability, malformed
+  input, unchanged CharacterRevision, and reload through a new owner/authority.
+- `guild_wire_postgres_roster_pages_and_privacy` — PostgreSQL pass: 102 members
+  in pages of 100/2, rank/UUID keyset ordering, no duplicate rows, and an unrelated
+  Guild selector rejected with no payload. Mounted under the same dispatch `--lib`
+  PostgreSQL tree CI already runs; no new target is needed.
+- Route-less runs return early as required; PostgreSQL evidence above is from the
+  queued wrapper (`login=false`), not the initial route-less run. The test helper
+  carries the server's returned continuity between connections. Only an explicitly
+  retained pre-acknowledgement continuity is reused for native receipt replay.
+- Final grouped PostgreSQL run: `cargo test --locked -p oteryn-gameplay-dispatch
+  --quiet --lib guild_wire_postgres -- --nocapture` — **2 passed**, 0 failed,
+  server version 180006; 29.47 seconds. This is the final code after all repairs.
+- `cargo clippy --locked -p oteryn-protocol-oteryn -p oteryn-gameplay-durability
+  -p oteryn-gameplay-dispatch --all-targets --quiet -- -D warnings` and
+  `cargo fmt --all -- --check` pass.
+- Game-server composition/migration consumer: `cargo clippy --locked
+  -p oteryn-game-server --all-targets --quiet -- -D warnings` passes too.
+- Governance/repository validators and 129 governance unit tests pass.
+- Whole-diff checklist review includes new/untracked files, bounded queries and
+  matching roster index, deadline/rollback paths, no weakened tests/guards, and all
+  new public codecs/readers/methods have production callers exercised by dispatch.
+  Workspace `rg` located every constructor/match/impl of the new Guild wire types,
+  `GuildReply`, `guild_command` and `GuildOperationIdentity.wire_digest`; the shared
+  native fixture explicitly supplies `None`, retaining its historical binding.
+
+Unfinished outside the requested basic scope: broader wire features listed above,
+independent review/publication/integration by the coordinator, and client UI.
+No commit, staging, push, reset, checkout, stash, credential or CI-routing mutation
+was performed.
