@@ -67,7 +67,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let retry_at = retry.then(|| std::time::Instant::now() + QUEST_OBLIGATION_RETRY);
         let mut log_deferred = false;
-        if let Ok(mut sessions) = self.quest_sessions.lock()
+        if let Ok(mut sessions) = self.states.quest_sessions.lock()
             && (insert || sessions.contains_key(&session))
         {
             let entry = sessions.entry(session).or_insert(QuestSession {

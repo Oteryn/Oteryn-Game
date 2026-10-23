@@ -195,7 +195,7 @@ fn scenario() -> TestResult {
             1
         );
         {
-            let entry = owner.quest_sessions.lock().map_err(debug)?;
+            let entry = owner.states.quest_sessions.lock().map_err(debug)?;
             assert!(
                 entry
                     .get(&admitted.game_session_id)

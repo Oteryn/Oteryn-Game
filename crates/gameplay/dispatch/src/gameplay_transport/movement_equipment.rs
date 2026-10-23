@@ -71,7 +71,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let source = self.active_generation?.native_gameplay()?;
         let (position, before, digest, scope, generation) = {
             let runtime = self.runtime.lock().await;
-            let states = self.spell_states.lock().await;
+            let states = self.states.spell_states.lock().await;
             if states.has_pending_spell_commit(actor, session)
                 || !runtime
                     .player_control_facts(actor, session)

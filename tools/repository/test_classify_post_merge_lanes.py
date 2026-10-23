@@ -130,7 +130,7 @@ def shared_cache_completion_regressions() -> None:
     consumers = (
         ("rust.yml", ("linux",)),
         ("merge-gate.yml", ("rust_fast",)),
-        ("merge-group-gate.yml", ("rust_linux", "durability_postgres")),
+        ("merge-group-gate.yml", ("rust_linux", "durability_postgres_build")),
         ("g4-canonical-worldproject-package-seed.yml", ("qualify",)),
     )
     for filename, jobs in consumers:

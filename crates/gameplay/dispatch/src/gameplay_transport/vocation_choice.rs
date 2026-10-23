@@ -167,10 +167,9 @@ fn current_npc_owner(
         actor,
         session,
         choice,
-        &owner.chat,
+        &owner.states.chat,
     )
 }
-
 #[allow(
     dead_code,
     reason = "D1220: A2 native NPC commit must compare current session lease and scope; D1173 integration is pending."
@@ -288,7 +287,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         fallback: NpcTalkOutcome,
     ) -> NpcTalkOutcome {
         use NpcIntentDisposition as D;
-        let Some(choice) = self.npc_conversations.dawnport_choice(session) else {
+        let Some(choice) = self.states.npc_conversations.dawnport_choice(session) else {
             return fallback;
         };
         let reject = |line: &str| answer(choice.npc, D::Rejected, line);
@@ -321,7 +320,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             {
                 if matches!(error, CharacterProgressionError::CharacterRevisionMismatch) {
-                    self.npc_conversations
+                    self.states
+                        .npc_conversations
                         .rollback_dawnport_request(session, choice.occurrence);
                 }
                 return reject("The choice is still being checked. Please try again.");
@@ -380,7 +380,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             {
                 let runtime = self.runtime.lock().await;
-                let states = self.spell_states.lock().await;
+                let states = self.states.spell_states.lock().await;
                 if !current_npc_owner(self, &runtime, actor, session, &choice, &current)
                     || states.has_pending_spell_commit(actor, session)
                 {
@@ -411,7 +411,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 request,
                 formula_digest: formula.digest(),
             };
-            if !self.npc_conversations.retain_dawnport_choice(
+            if !self.states.npc_conversations.retain_dawnport_choice(
                 session,
                 choice.occurrence,
                 retained.clone(),
@@ -429,7 +429,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await;
             if let Err(error) = receipt {
                 if matches!(error, CharacterProgressionError::CharacterRevisionMismatch) {
-                    self.npc_conversations
+                    self.states
+                        .npc_conversations
                         .rollback_dawnport_request(session, choice.occurrence);
                 }
                 return reject("The choice is still being checked. Please try again.");
@@ -468,7 +469,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return reject("The choice committed; current character state must be reloaded.");
         }
         let runtime = self.runtime.lock().await;
-        let mut states = self.spell_states.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         if !current_npc_owner(self, &runtime, actor, session, &choice, &current) {
             return reject("The choice committed; current actor authority changed.");
         }
@@ -499,7 +500,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return reject("The choice committed; your actor is waiting for its owned build.");
         }
-        self.npc_conversations
+        self.states
+            .npc_conversations
             .complete_dawnport_choice(session, choice.occurrence);
         answer(
             choice.npc,
@@ -508,12 +510,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         )
     }
 }
-
 // Exercise the existing request cases against this actual private adapter.
 #[cfg(test)]
 #[path = "../../../../../apps/game-server/tests/support/dawnport_vocation_cases.rs"]
 mod dawnport_vocation_cases;
-
 #[cfg(test)]
 mod dawnport_native_receipt_postgres {
     //! Durable qualification of the existing choice adapter, not native NPC admission.

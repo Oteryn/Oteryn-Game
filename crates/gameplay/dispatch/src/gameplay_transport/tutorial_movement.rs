@@ -10,7 +10,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         direction: StepDirection,
     ) -> (StepOutcome, Option<Duration>) {
-        if self.newhaven_travel.held(session) {
+        if self.states.newhaven_travel.held(session) {
             return (StepOutcome::rejected(), None);
         }
         if !self.tutorial_enabled().await {
@@ -46,7 +46,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if (here.x + dx, here.y + dy, here.floor) == ISLET_HOLE
             && super::tutorial_session::tutorial_cell(here)
         {
-            self.tutorial_sessions
+            self.states
+                .tutorial_sessions
                 .notice(session, TutorialNotice::StatusText(HOLE_TEXT.into()));
             return (
                 StepOutcome {

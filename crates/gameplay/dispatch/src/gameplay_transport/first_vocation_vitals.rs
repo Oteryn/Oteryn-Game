@@ -31,7 +31,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> bool {
         let placed = {
             let runtime = self.runtime.lock().await;
-            let states = self.spell_states.lock().await;
+            let states = self.states.spell_states.lock().await;
             if states.is_dead(actor) || states.has_pending_spell_commit(actor, session) {
                 return false;
             }

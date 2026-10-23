@@ -152,14 +152,13 @@ impl LastPositionFlush {
     pub async fn done(&self) {
         self.done.cancelled().await;
     }
-
     /// The seam's side: wait for the request, write every tracked session, retrying failed
     /// writes, and mark it done only once none failed. The node stops waiting at its budget.
     pub(super) async fn serve(&self, authority: &ComposedFreshAdmission<'_, '_, '_>) {
         self.requested.cancelled().await;
         // OPS-SAVE-2: admissions and player commands stop, and those in flight finish, before
         // the first snapshot, so no write below is overtaken. Server-driven work is not input.
-        authority.input_gate.quiesce().await;
+        authority.states.input_gate.quiesce().await;
         let mut monks_settled = std::collections::HashSet::new();
         let mut training_settled = std::collections::HashSet::new();
         for _ in 0..FLUSH_ATTEMPTS {
@@ -189,7 +188,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         settled: &mut std::collections::HashSet<GameSessionId>,
     ) -> usize {
         let mut failed = 0;
-        for (session, actor) in self.last_positions.tracked_actors() {
+        for (session, actor) in self.states.last_positions.tracked_actors() {
             if settled.contains(&session) {
                 continue;
             }
@@ -208,16 +207,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         failed
     }
-
     async fn has_training_to_flush(&self, session: GameSessionId, actor: ExactActorRef) -> bool {
         let runtime = self.runtime.lock().await;
-        self.spell_states
+        self.states
+            .spell_states
             .lock()
             .await
             .has_training_to_flush(&runtime, actor, session)
     }
 }
-
 /// The tracked sessions and the write-sequence generator. Never held across an await.
 #[derive(Debug, Default)]
 pub struct LastPositions {
@@ -583,7 +581,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let kept = track.written.and_then(|saved| saved.vitals);
         let runtime = self.runtime.lock().await;
         let vitals = {
-            let states = self.spell_states.lock().await;
+            let states = self.states.spell_states.lock().await;
             if states.is_dead(actor) {
                 return Captured::Dead;
             }
@@ -625,10 +623,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 server_artifact_digest: pin.server_artifact_digest(),
                 vitals: None,
             },
-            write_sequence: self.last_positions.next_sequence(),
+            write_sequence: self.states.last_positions.next_sequence(),
         }
     }
-
     /// §3.2 "At logout": the final position of a tracked session's fenced actor, which the
     /// terminal release writes in its own transaction. `None` for an untracked session.
     pub(super) async fn final_last_position(
@@ -636,7 +633,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         actor: ExactActorRef,
     ) -> Option<FinalLastPosition> {
-        let track = self.last_positions.tracked(session)?;
+        let track = self.states.last_positions.tracked(session)?;
         if track.actor != actor {
             return None;
         }
@@ -682,14 +679,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         placed: &FinalLastPosition,
         fence: CurrentCharacterGameplayFence,
     ) {
-        self.last_positions.track(
+        self.states.last_positions.track(
             session,
             actor,
             Some(Saved::of(&placed.record)),
             fence.expected_character_revision,
         );
     }
-
     /// §3.3: the durable position of a new runtime actor, read under `fence` before the
     /// first-entry owner step: a pending respawn (step 1), else the last position (steps 3 and
     /// 4). `Err` for a failed read (a storage or fence error): the actor is left unpositioned
@@ -777,11 +773,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return false;
             }
         };
-        self.last_positions
-            .track(session, actor, written, fence.expected_character_revision);
+        self.states.last_positions.track(
+            session,
+            actor,
+            written,
+            fence.expected_character_revision,
+        );
         true
     }
-
     /// §3.2 periodic writes (`CHARPOS0-RL-01`): sleep until the earliest deadline (at most
     /// [`WRITER_MAX_SLEEP`], at least [`WRITER_MIN_PAUSE`]), then write every due session. It
     /// never ends on its own and parks once `shutdown` is requested.
@@ -792,6 +791,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         loop {
             let now = Instant::now();
             let wake = self
+                .states
                 .last_positions
                 .next_due()
                 .map_or(now + WRITER_MAX_SLEEP, |due| {
@@ -810,13 +810,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.write_due_last_positions(false).await;
         }
     }
-
     /// One pass of §3.2 writes: the due sessions, most overdue first, or with `all` the
     /// shutdown write of every tracked session, in batches of [`LAST_POSITION_WRITE_BATCH`]. A
     /// cell and vitals unchanged since their last write write nothing; a dead actor is skipped.
     /// Returns the number of failed writes, which stay due.
     pub(super) async fn write_due_last_positions(&self, all: bool) -> usize {
-        let due = self.last_positions.due(Instant::now(), all);
+        let due = self.states.last_positions.due(Instant::now(), all);
         let mut failed = 0;
         for batch in due.chunks(LAST_POSITION_WRITE_BATCH) {
             failed += self.write_last_position_batch(batch).await;
@@ -836,7 +835,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Captured::Dead => continue,
                 Captured::Gone => {
                     // The actor is gone: its session ended without a retire of this track.
-                    self.last_positions.forget(session);
+                    self.states.last_positions.forget(session);
                     continue;
                 }
             };
@@ -844,7 +843,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 operator_event("last_position_interval_exceeded");
             }
             if track.written == Some(Saved::of(&capture.record)) {
-                self.last_positions
+                self.states
+                    .last_positions
                     .settled(session, track.actor, None, capture.at);
                 continue;
             }
@@ -874,7 +874,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             // The fence `current_quest_fence` builds, with the admission revision (not read).
             if current.session_state() == crate::foundation::GameSessionState::Terminal {
-                self.last_positions.forget(session);
+                self.states.last_positions.forget(session);
                 continue;
             }
             let Ok(character_id) =
@@ -920,7 +920,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     | LastPositionWrite::Superseded
                     | LastPositionWrite::PendingObligation,
                 ) => {
-                    self.last_positions.settled(
+                    self.states.last_positions.settled(
                         session,
                         track.actor,
                         Some(Saved::of(&capture.record)),
