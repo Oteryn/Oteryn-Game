@@ -955,8 +955,8 @@ mod tests {
         assert_eq!(
             capability["command_types"],
             serde_json::json!([
-                COMMAND_TYPE_CHARM_UNLOCK_STAGE_INTENT,
-                COMMAND_TYPE_CHARM_ASSIGN_INTENT
+                COMMAND_TYPE_CHARM_UNLOCK_STAGE_INTENT, // CHARM_UNLOCK_STAGE_INTENT
+                COMMAND_TYPE_CHARM_ASSIGN_INTENT,       // CHARM_ASSIGN_INTENT
             ])
         );
         assert_eq!(

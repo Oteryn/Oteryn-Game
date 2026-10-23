@@ -9,20 +9,7 @@
 //! command or domain whose capability is not selected stays refused or unsent. A core domain that
 //! a selected capability supersedes stays unsent too ([`SUPERSEDED`]).
 
-use oteryn_protocol_oteryn::attack::CAPABILITY_ATTACK_V1;
-use oteryn_protocol_oteryn::chat::CAPABILITY_CHAT_V1;
-use oteryn_protocol_oteryn::container_tree::CAPABILITY_CONTAINER_TREE_V1;
-use oteryn_protocol_oteryn::highscores::CAPABILITY_HIGHSCORES_V1;
-use oteryn_protocol_oteryn::item_view::{
-    CAPABILITY_ITEM_EQUIP_DROP_V1, CAPABILITY_ITEM_VIEW_MOVE_V1,
-};
-use oteryn_protocol_oteryn::logout::CAPABILITY_LOGOUT_V1;
-use oteryn_protocol_oteryn::npc_service::CAPABILITY_NPC_SERVICE_V1;
-use oteryn_protocol_oteryn::quest_log::CAPABILITY_QUEST_LOG_V1;
-use oteryn_protocol_oteryn::world_clock::CAPABILITY_WORLD_LIGHT_V1;
-use oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1;
-use oteryn_protocol_oteryn::world_spatial::CAPABILITY_PACED_MOVEMENT_V1;
-use oteryn_protocol_oteryn::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES;
+use oteryn_protocol_oteryn::capability_tables;
 use oteryn_protocol_oteryn::world_weather::{
     CAPABILITY_WORLD_WEATHER_V1, CAPABILITY_WORLD_WEATHER_V1_REQUIRES,
 };
@@ -41,13 +28,6 @@ pub struct OfferedCapability {
     pub id: u32,
     pub requires: &'static [u32],
 }
-
-/// CLOCK-1: capability 19 `WORLD_LIGHT_V1` (domain 18 and the VIS-2 `light` of domain 1), which
-/// requires 6. All offered sets include it before capability 21.
-const WORLD_LIGHT: OfferedCapability = OfferedCapability {
-    id: CAPABILITY_WORLD_LIGHT_V1,
-    requires: &[CAPABILITY_WORLD_SPATIAL_ENTITIES],
-};
 
 /// WEATHER-1: capability 26 `WORLD_WEATHER_V1` (domain 22), which requires 6. Offered sets
 /// stay ascending, so a higher ID follows it (D1027 signed off). A connection keeps it only when
@@ -76,178 +56,39 @@ pub fn with_weather_offer(
     offered
 }
 
-/// LOGOUT-WIRE-1: capability 21 `LOGOUT_V1` (command type 23), which requires nothing. Only
-/// capabilities 26 and 28 are higher: every offered set ends with 21 then 26, and the bundle set
-/// then offers 28 (LOOK-2).
-const TUTORIAL_NOTICES: OfferedCapability = OfferedCapability {
-    id: oteryn_protocol_oteryn::tutorial_notices::CAPABILITY_TUTORIAL_NOTICES_V1,
-    requires: &[],
-};
+// Materialize the protocol's generated facts at compile time; no allocation or runtime scan.
+const fn offers<const N: usize>(entries: &[(u32, &'static [u32])]) -> [OfferedCapability; N] {
+    assert!(entries.len() == N);
+    let mut result = [OfferedCapability {
+        id: 0,
+        requires: &[],
+    }; N];
+    let mut index = 0;
+    while index < N {
+        result[index] = OfferedCapability {
+            id: entries[index].0,
+            requires: entries[index].1,
+        };
+        index += 1;
+    }
+    result
+}
 
-const LOGOUT: OfferedCapability = OfferedCapability {
-    id: CAPABILITY_LOGOUT_V1,
-    requires: &[],
-};
-
-/// RANK-1 (HS-WIRE-1, CP D1155): capability 9 `HIGHSCORES_V1` (command type 14), which requires
-/// nothing. It reads persisted World snapshots only, so every offered set offers it.
-const HIGHSCORES: OfferedCapability = OfferedCapability {
-    id: CAPABILITY_HIGHSCORES_V1,
-    requires: &[],
-};
-
-const QUEST_LOG: OfferedCapability = OfferedCapability {
-    id: CAPABILITY_QUEST_LOG_V1,
-    requires: &[],
-};
-
-/// The production offered set for a generation without a non-empty Item key set: the registry's
-/// `offered: true` entries except capability 4, ascending by ID. VIS-3 offers capability 6
-/// `WORLD_SPATIAL_ENTITIES`, SPEED-1 capability 13 `PACED_MOVEMENT_V1` and ATTACK-1b capability
-/// 17 `ATTACK_V1`, which requires 6; CHAT-WIRE-1 offers capability 7 `CHAT_V1`; RANK-1 offers
-/// capability 9 `HIGHSCORES_V1`; QUEST-RT-1 offers 16 after journal composition; CLOCK-1
-/// offers capability 19 and LOGOUT-WIRE-1 capability 21.
-/// A test keeps it equal to the registry and within `REGISTERED_CAPABILITY_IDS_V1`.
-pub const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
-    OfferedCapability {
-        id: CAPABILITY_WORLD_SPATIAL_ENTITIES,
-        requires: &[],
-    },
-    OfferedCapability {
-        id: CAPABILITY_CHAT_V1,
-        requires: &[],
-    },
-    HIGHSCORES,
-    OfferedCapability {
-        id: CAPABILITY_PACED_MOVEMENT_V1,
-        requires: &[],
-    },
-    QUEST_LOG,
-    OfferedCapability {
-        id: CAPABILITY_ATTACK_V1,
-        requires: &[CAPABILITY_WORLD_SPATIAL_ENTITIES],
-    },
-    WORLD_LIGHT,
-    LOGOUT,
-    WORLD_WEATHER,
-    TUTORIAL_NOTICES,
-    super::guild_chat::OFFERED,
-    super::guild_intent::OFFERED,
-    super::house_intent::OFFERED,
-    super::party_command::OFFERED,
-];
-
-/// The offered set of a World booted from a bundle (MAP-CUTOVER-1b, NPC-CMD-1a, ITEM-LOOP-1),
-/// ascending by ID: capability 3 `NPC_SERVICE_V1` (a bundle World places the NPCs), 4
-/// `ITEM_VIEW_MOVE_V1`, 6, 7, 9 `HIGHSCORES_V1`, 12 `ITEM_EQUIP_DROP_V1` (requires 4), 13, 14
-/// `CONTAINER_TREE_V1` (requires 4 and 12), 16 `QUEST_LOG_V1`, 17, 18 `WORLD_MAP_VIEW_V1`
-/// (requires 4 and 6), 19,
-/// 21, 26 and 28. A bundle World boots only against a generation whose Item key set names every
-/// bundle Item. ITEM-LOOP-1 (CP D1438) offers 12 and 14 here because only a bundle World
-/// composes their command type 9 equipment, ground and container destinations (equip, drop,
-/// pickup and the container tree) and the command type 21 container views. Only a bundle World
-/// returns it; the registry entries of 3, 12, 14, 18 and 28 stay `offered: false` and their
-/// `offer_gate` names this offer. A test keeps it equal to the Item view set plus 3, 12, 14, 18
-/// and 28.
-pub const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
-    OfferedCapability {
-        id: CAPABILITY_NPC_SERVICE_V1,
-        requires: &[],
-    },
-    OfferedCapability {
-        id: CAPABILITY_ITEM_VIEW_MOVE_V1,
-        requires: &[CAPABILITY_WORLD_SPATIAL_ENTITIES],
-    },
-    OfferedCapability {
-        id: CAPABILITY_WORLD_SPATIAL_ENTITIES,
-        requires: &[],
-    },
-    OfferedCapability {
-        id: CAPABILITY_CHAT_V1,
-        requires: &[],
-    },
-    HIGHSCORES,
-    super::item_craft::WORLD_INTERACTION_OFFER,
-    OfferedCapability {
-        id: CAPABILITY_ITEM_EQUIP_DROP_V1,
-        requires: &[CAPABILITY_ITEM_VIEW_MOVE_V1],
-    },
-    OfferedCapability {
-        id: CAPABILITY_PACED_MOVEMENT_V1,
-        requires: &[],
-    },
-    OfferedCapability {
-        id: CAPABILITY_CONTAINER_TREE_V1,
-        requires: &[CAPABILITY_ITEM_VIEW_MOVE_V1, CAPABILITY_ITEM_EQUIP_DROP_V1],
-    },
-    super::item_craft::ITEM_USE_OFFER,
-    QUEST_LOG,
-    OfferedCapability {
-        id: CAPABILITY_ATTACK_V1,
-        requires: &[CAPABILITY_WORLD_SPATIAL_ENTITIES],
-    },
-    OfferedCapability {
-        id: CAPABILITY_WORLD_MAP_VIEW_V1,
-        requires: &[
-            CAPABILITY_ITEM_VIEW_MOVE_V1,
-            CAPABILITY_WORLD_SPATIAL_ENTITIES,
-        ],
-    },
-    WORLD_LIGHT,
-    LOGOUT,
-    WORLD_WEATHER,
-    OfferedCapability {
-        id: CAPABILITY_ITEM_LOOK_V1,
-        requires: &[],
-    },
-    TUTORIAL_NOTICES,
-    super::guild_chat::OFFERED,
-    OfferedCapability {
-        id: oteryn_protocol_oteryn::depot::CAPABILITY_DEPOT_V1,
-        requires: &[CAPABILITY_ITEM_VIEW_MOVE_V1],
-    },
-    super::guild_intent::OFFERED,
-    super::party_command::OFFERED,
-    super::vip::OFFERED,
-    super::house_intent::OFFERED,
-];
-
-/// MAP-ITEM-REF-1: the production offered set with capability 4 `ITEM_VIEW_MOVE_V1`, which
-/// requires 6, for a generation that pins a non-empty Item key set: the registry's whole
-/// `offered: true` set. Part B offers it together with the composed corpse observation, item
-/// target and corpse take.
-pub const ITEM_VIEW_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
-    OfferedCapability {
-        id: CAPABILITY_ITEM_VIEW_MOVE_V1,
-        requires: &[CAPABILITY_WORLD_SPATIAL_ENTITIES],
-    },
-    OfferedCapability {
-        id: CAPABILITY_WORLD_SPATIAL_ENTITIES,
-        requires: &[],
-    },
-    OfferedCapability {
-        id: CAPABILITY_CHAT_V1,
-        requires: &[],
-    },
-    HIGHSCORES,
-    OfferedCapability {
-        id: CAPABILITY_PACED_MOVEMENT_V1,
-        requires: &[],
-    },
-    QUEST_LOG,
-    OfferedCapability {
-        id: CAPABILITY_ATTACK_V1,
-        requires: &[CAPABILITY_WORLD_SPATIAL_ENTITIES],
-    },
-    WORLD_LIGHT,
-    LOGOUT,
-    WORLD_WEATHER,
-    TUTORIAL_NOTICES,
-    super::guild_chat::OFFERED,
-    super::guild_intent::OFFERED,
-    super::house_intent::OFFERED,
-    super::party_command::OFFERED,
-];
+/// Fallback offers for a generation without a non-empty Item key set, ascending by id.
+pub const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] =
+    &offers::<{ capability_tables::PRODUCTION_OFFERS_V1.len() }>(
+        capability_tables::PRODUCTION_OFFERS_V1,
+    );
+/// Bundle World offers, ascending by id. Per-connection weather gating still applies.
+pub const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] =
+    &offers::<{ capability_tables::BUNDLE_WORLD_OFFERS_V1.len() }>(
+        capability_tables::BUNDLE_WORLD_OFFERS_V1,
+    );
+/// Offers for a generation pinning a non-empty Item key set, ascending by id.
+pub const ITEM_VIEW_OFFERED_CAPABILITIES: &[OfferedCapability] =
+    &offers::<{ capability_tables::ITEM_VIEW_OFFERS_V1.len() }>(
+        capability_tables::ITEM_VIEW_OFFERS_V1,
+    );
 
 /// Bound of one session's selection. A test keeps the production offered set within it.
 pub const SELECTED_CAPACITY: usize = 32;

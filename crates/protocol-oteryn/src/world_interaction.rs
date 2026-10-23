@@ -41,8 +41,8 @@ pub use crate::charm_wire::CyclopediaWireError as WorldInteractionWireError;
 pub const CAPABILITY_WORLD_INTERACTION_V1: u32 = 11;
 /// The capability `WORLD_INTERACTION_V1` requires: 15 `ITEM_USE_V1` and 18 `WORLD_MAP_VIEW_V1`.
 pub const CAPABILITY_WORLD_INTERACTION_V1_REQUIRES: [u32; 2] = [
-    CAPABILITY_ITEM_USE_V1,
-    crate::world_map::CAPABILITY_WORLD_MAP_VIEW_V1,
+    CAPABILITY_ITEM_USE_V1,                         // ITEM_USE_V1
+    crate::world_map::CAPABILITY_WORLD_MAP_VIEW_V1, // WORLD_MAP_VIEW_V1
 ];
 /// Registered command type `PUSH_INTENT` (capability 11).
 pub const COMMAND_TYPE_PUSH_INTENT: u32 = 15;

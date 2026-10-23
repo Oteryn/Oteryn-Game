@@ -1,15 +1,11 @@
 //! Basic party commands on the existing physical owner, session fence and World writer.
-use super::{ComposedFreshAdmission, capabilities::OfferedCapability, connection::AdmittedSession};
+use super::{ComposedFreshAdmission, connection::AdmittedSession};
 use crate::durability::{DurabilityError, spell_item_transaction as item_tx, world_party};
 use crate::foundation::{CommandId, CommandRef, PartyAction};
 use oteryn_protocol_oteryn::party::*;
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 
-pub(super) const OFFERED: OfferedCapability = OfferedCapability {
-    id: CAPABILITY_PARTY_V1,
-    requires: &[6],
-};
 /// Bounded connection-local opaque handles. Never use a cached handle as membership authority.
 #[derive(Default)]
 pub struct SessionPartyView {
