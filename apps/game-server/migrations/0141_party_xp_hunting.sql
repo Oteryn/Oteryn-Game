@@ -81,16 +81,23 @@ GRANT SELECT, INSERT ON game_party_kill_xp_receipts, game_party_kill_xp_members 
 GRANT SELECT ON game_character_prey_slots, game_account_prey_unlocks,
     game_party_kill_xp_receipts, game_party_kill_xp_members TO oteryn_game_control;
 
--- Existing build operations keep their original columns. This XP consumer cannot assign
--- stamina; only its accepted seed is available until STAMINA-1 admits its fenced writer.
+-- Existing build operations keep grants on every pre-existing column except stamina_minutes.
+-- This XP consumer cannot assign stamina; only its accepted seed is available until STAMINA-1
+-- admits its fenced writer.
 REVOKE INSERT, UPDATE ON game_character_build_state FROM oteryn_game_runtime;
-GRANT INSERT (character_id,vocation,magic_level,mana_spent,fist_level,fist_tries,
-    club_level,club_tries,sword_level,sword_tries,axe_level,axe_tries,distance_level,
-    distance_tries,shielding_level,shielding_tries,fishing_level,fishing_tries),
-    UPDATE (character_id,vocation,magic_level,mana_spent,fist_level,fist_tries,
-    club_level,club_tries,sword_level,sword_tries,axe_level,axe_tries,distance_level,
-    distance_tries,shielding_level,shielding_tries,fishing_level,fishing_tries)
-ON game_character_build_state TO oteryn_game_runtime;
+DO $$
+DECLARE build_columns TEXT;
+BEGIN
+    SELECT string_agg(quote_ident(attname), ', ' ORDER BY attnum)
+      INTO build_columns
+      FROM pg_attribute
+     WHERE attrelid = 'game_character_build_state'::regclass
+       AND attnum > 0 AND NOT attisdropped AND attname <> 'stamina_minutes';
+    EXECUTE format(
+        'GRANT INSERT (%s), UPDATE (%s) ON game_character_build_state TO oteryn_game_runtime',
+        build_columns, build_columns
+    );
+END $$;
 
 CREATE FUNCTION game_party_kill_xp_complete() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE expected SMALLINT; actual INTEGER;
