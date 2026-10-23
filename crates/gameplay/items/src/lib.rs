@@ -19,3 +19,12 @@ pub mod map_pickup;
 pub mod native_map_items_abi;
 pub mod native_world_items;
 pub mod reach;
+
+#[cfg(test)]
+mod stacking_property_tests;
+
+#[cfg(test)]
+mod item_capacity_property_tests;
+
+#[cfg(test)]
+mod equipment_effects_property_tests;
