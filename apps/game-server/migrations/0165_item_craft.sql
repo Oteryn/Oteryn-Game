@@ -127,11 +127,14 @@ $arm$;
 $arm$;
   ELSIF n='game_item_placement_proven' THEN
    arm:=$arm$
-    IF TG_TABLE_NAME='game_item_container_entries' AND EXISTS(SELECT 1 FROM game_item_craft_records r,
+    -- Slot rows have no parent or ordinal. Guard before preparing the entry-only query.
+    IF TG_TABLE_NAME='game_item_container_entries' THEN
+    IF EXISTS(SELECT 1 FROM game_item_craft_records r,
        LATERAL jsonb_array_elements(r.outputs) o WHERE (o->>'item')::uuid=NEW.item_instance_id
        AND (o->>'ordinal')::numeric=NEW.placement_ordinal AND r.transaction_id=NEW.placed_transaction_id
        AND r.world_id=NEW.world_id AND r.character_id=NEW.character_id AND r.parent_item_instance_id=NEW.parent_item_instance_id
        AND r.created_xact_id=pg_current_xact_id()) THEN RETURN NULL; END IF;
+    END IF;
 $arm$;
   ELSE
    arm:=$arm$
