@@ -4,7 +4,7 @@
 task_id: EVENTS-WORLD-1
 title: "EVENTS-WORLD-1: world changes, Fury Gates, Nightmare Isles, hazard (skeleton)"
 mode: IMPLEMENT
-status: waiting
+status: in_progress
 pr: null
 repository: Oteryn/Oteryn-Game
 base_branch: main
@@ -295,3 +295,57 @@ Resource guards observed peak own-groupRSS6,775,611,392B, minimum disk
 This record bridge changes no qualified Rust/JSON. New strict all-target/whole-
 package gates remain NOT_RUN; full W1/runtime integration is NOT_APPLICABLE to
 #2178 by D1206. Draft/NOT_FULLY_QUALIFIED is retained for CP's final gates.
+
+
+## Server wiring gap list (2026-10-23, HEAD 3c57781c3)
+
+Owner's current server-first allocation supersedes the historical source-only delivery
+scope above for this worktree. No client paths or publication are authorized.
+
+| Layer | Existing on this HEAD | Residue |
+|---|---|---|
+| L3 | `world-change::content` validates selection-source and refuses W1 bindings | No executable reset/window selection or effect rules |
+| L4 | `world_reset` owns atomic epoch activation; migration 0148 | No world-change activation/override tables or writer |
+| Content | Fury Gates 343/1000, ten equal variants; Nightmare Isles 1000/1000, three equal variants | All six explicit binding gaps remain: native geometry, House membership, multiplicity, spawn/NPC/raid bindings, announcement, bundle binding |
+| Dispatch | Existing item-use, quest, NPC and guild-chat paths | No world-event handler or caller |
+| Wire/registry | No world-event messages or entries | Owner reserves command 64–65, capability 53 |
+| Capability | No world-event offer | Default bundle cannot activate selection-source alone |
+| Runtime | Planned reset and immutable base map owners exist | No world-change composition, announcement or restart load |
+| Qualification | Published selection-source tests; CARDS-AUDIT-1 records PARTIAL | No admitted-session world-event PG/wire E2E; no separate E2E audit table located in this checkout |
+
+The accepted W2/W4/W5 contract requires reset-only activation, immutable native map
+layers and expiry at the next planned reset. A player command must not acquire
+World activation authority. The current source-only entries cannot be passed off
+as runnable events or silently have their binding-gap refusal removed.
+
+
+### Reference parity table (server audit, 2026-10-23)
+
+| Visible behavior | Reference evidence | Oteryn now |
+|---|---|---|
+| Fury Gate chance 343/1000, one of ten cities, uniform | Accepted brief W10/W15; pinned Canary `fury_gates.lua` lists the ten cities (its boot chance 1000 is superseded by accepted real-Tibia chance) | Selection-source only; no working gate |
+| Fury Gate entry requires Premium, promotion and level >=60; destination (33290,31786,13) | Canary commit `04b83b512114bfd888000d6e1433ed8ecaec7c5b`, `data-otservbr-global/scripts/world_changes/fury_gates.lua`, `onStepIn` action 9710 | No event entrance or eligibility caller |
+| Nightmare Isles chooses one of three entrances and teleports to (33497,32616,8) | Same Canary revision, `data-otservbr-global/scripts/world_changes/nightmare_isles.lua`, `nightmareIsleConfig` and entrance unique IDs 64001–64003; accepted W11 uses chance 1000 | Selection-source only; no event entrance |
+| One World decision, immutable for epoch, expires at next planned reset | Accepted brief W2–W5, ADR-0021 §4.2/§4.7 | Reset owner exists; event activation/composition absent |
+| Restart restores the same selected variant and its effects | Accepted brief W3/W4/W6 | No event activation rows or composition to reload |
+
+Pinned script contents were read directly from `raw.githubusercontent.com` during
+this audit. These observations do not supply native map geometry, target House
+membership, compiled bundle bindings or permission to redistribute original maps.
+
+### Validation evidence and unfinished work (2026-10-23)
+
+- `python3 tools/agents/validate_governance.py`: PASS.
+- `python3 tools/repository/validate_repository_policy.py`: PASS.
+- `git diff --check`: PASS at the audit checkpoint.
+- Whole current documentation diff re-read against
+  `/home/mole/oteryn-cache/CODEX-CHECKLIST.md`; no code/schema/enum/trait/field additions.
+- Cargo test filters: none; only this task record changed. No Rust, PostgreSQL,
+  Clippy or runtime qualification is claimed.
+- Player-visible server behavior is unchanged. All implementation gaps in the
+  table above remain unfinished; this is an audit checkpoint, not delivery of a
+  backend-only mechanic.
+- Pending scope clarification: retain the accepted reset/native-layer delivery
+  for Fury Gates/Nightmare Isles, or authorize a smaller scheduled event with a
+  concrete server effect as the basic delivery. Until answered, no substitute
+  event, unsupported activation or fake completed W1 binding is introduced.
