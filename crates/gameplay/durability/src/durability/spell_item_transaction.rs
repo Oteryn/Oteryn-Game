@@ -20,6 +20,7 @@ use sqlx::{Postgres, Row, Transaction};
 #[derive(Debug)]
 pub enum SpellItemError {
     Rejected(&'static str),
+    FieldCapabilityRefused,
     Durability(DurabilityError),
     Database(sqlx::Error),
     Training(super::character_progression::CharacterProgressionError),
@@ -188,6 +189,7 @@ impl DurabilityRoot {
     /// caster-cost receipt and optional Character training/companion source.
     /// The outer Channel compositor must retain its physical preflight/owner
     /// lock and install only after this returns a genuine COMMIT capability.
+    #[allow(clippy::too_many_arguments, reason = "explicit provenance accompanies the existing authority and commit window")]
     pub async fn commit_world_item_spell<T: Send + 'static>(
         &self,
         window: &mut super::spell_owner_commit::SpellCommitWindow<'_, T>,
@@ -196,6 +198,7 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         request: SpellItemTransactionRequest,
         training: Option<WorldItemTraining>,
+        origin: SpellFieldOrigin,
     ) -> Result<WorldItemSpellCommit> {
         let recovery = recovery_authority
             .record_for(self)
@@ -223,7 +226,7 @@ impl DurabilityRoot {
                         Err(error) => return Ok(Err(error)),
                     };
                     let items =
-                        match apply_spell_items_in_transaction(&mut tx, &authority, &request).await
+                        match apply_spell_items_in_transaction(&mut tx, &authority, &request, &origin).await
                         {
                             Ok(value) => value,
                             Err(error) => return Ok(Err(error)),
@@ -686,6 +689,7 @@ pub async fn reconcile_committed_companion_acquisition_in_transaction(
 /// frozen reservation cannot construct this proof, and a different transaction
 /// cannot reuse it. The root compositor owns the transaction's lifetime.
 pub struct SpellItemAuthority {
+    pub(super) root: DurabilityRoot,
     due_read_only: bool,
     physical_transaction: String,
     world: [u8; 16],
@@ -1137,7 +1141,7 @@ pub async fn assert_spell_item_authority_in_transaction(
 pub(super) async fn assert_spell_item_authority_with_recovery(
     tx: &mut Transaction<'_, Postgres>,
     permit: &SpellLanePermit,
-    _root: &DurabilityRoot,
+    root: &DurabilityRoot,
     record: &crate::character_recovery_fence::CharacterRecoveryFenceV1,
     node: &NodeIncarnationProof,
     fence: &CurrentCharacterItemFence,
@@ -1180,6 +1184,7 @@ pub(super) async fn assert_spell_item_authority_with_recovery(
     .execute(&mut **tx)
     .await?;
     Ok(SpellItemAuthority {
+        root: root.clone(),
         due_read_only: false,
         physical_transaction,
         world: *world.as_bytes(),
@@ -1788,8 +1793,9 @@ pub async fn apply_spell_items_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemAuthority,
     request: &SpellItemTransactionRequest,
+    origin: &SpellFieldOrigin,
 ) -> Result<SpellItemTransactionOutcome> {
-    apply_spell_items_in_transaction_guarded(tx, authority, request, Ok(())).await
+    apply_spell_items_in_transaction_guarded(tx, authority, request, Ok(()), origin).await
 }
 
 /// Current eligibility gates new source writes. An exact prior occurrence is
@@ -1802,6 +1808,7 @@ pub async fn apply_spell_items_in_transaction_guarded(
     authority: &SpellItemAuthority,
     request: &SpellItemTransactionRequest,
     new_write_verdict: Result<()>,
+    origin: &SpellFieldOrigin,
 ) -> Result<SpellItemTransactionOutcome> {
     if authority.due_read_only {
         return Err(SpellItemError::Rejected(
@@ -1863,6 +1870,7 @@ pub async fn apply_spell_items_in_transaction_guarded(
         return Ok(SpellItemTransactionOutcome::AlreadyCommitted(receipt));
     }
     new_write_verdict?;
+    super::field_capability_port::validate_new_write(tx, authority, request, origin).await?;
     let occurred_at: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM statement_timestamp())*1000)::bigint")
             .fetch_one(&mut **tx)
