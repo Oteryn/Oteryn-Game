@@ -850,7 +850,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
     /// Opens (or keeps) the chat state of `session` and answers its open rooms (the snapshot).
     pub(super) async fn chat_open(&self, session: GameSessionId) -> ChatRoomSet {
-        let name = if self.chat.knows(session) {
+        let name = if self.states.chat.knows(session) {
             None
         } else {
             self.chat_speaker_name(session).await
@@ -858,15 +858,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Without a readable name and level the session is not admitted: it neither speaks nor
         // hears.
         if let Some((name, character, level)) = name {
-            self.chat
+            self.states
+                .chat
                 .admit_as(session, &name, Some(character), self.owner_now());
-            self.chat.admit_level(session, level);
-        } else if self.chat.knows(session) {
-            self.chat.refresh(session);
+            self.states.chat.admit_level(session, level);
+        } else if self.states.chat.knows(session) {
+            self.states.chat.refresh(session);
         }
-        self.chat.show_rooms(session)
+        self.states.chat.show_rooms(session)
     }
-
     pub(super) async fn chat_speak(
         &self,
         actor: ExactActorRef,
@@ -874,7 +874,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         intent: &ChatIntent,
     ) -> ChatIntentResult {
         let now = self.owner_now();
-        if let Some(refused) = self.chat.pre_gate(session, intent, now) {
+        if let Some(refused) = self.states.chat.pre_gate(session, intent, now) {
             return refused;
         }
         if matches!(intent, ChatIntent::Private { .. } | ChatIntent::Room { .. }) {
@@ -889,9 +889,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             _ => PremiumGate::CLOSED,
         };
         let runtime = self.runtime.lock().await;
-        let states = self.spell_states.lock().await;
+        let states = self.states.spell_states.lock().await;
         chat_in_premium_channel(
-            &self.chat,
+            &self.states.chat,
             &runtime,
             &states,
             (actor, session),
@@ -923,18 +923,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(text) = ChatText::parse(text) else {
             return result(ChatDisposition::Rejected);
         };
-        let Some(relay) = self.chat.relay() else {
+        let Some(relay) = self.states.chat.relay() else {
             return result(ChatDisposition::ChatUnavailable);
         };
         // An actor without cast facts has no vocation; its level is the one read at admission.
         let facts = {
             let runtime = self.runtime.lock().await;
-            let states = self.spell_states.lock().await;
+            let states = self.states.spell_states.lock().await;
             states
                 .get(&runtime, actor, session)
                 .map(|state| state.character_facts().level)
         };
-        let level = facts.unwrap_or_else(|| self.chat.level(session));
+        let level = facts.unwrap_or_else(|| self.states.chat.level(session));
         let free = YellGate {
             level,
             premium_current: false,
@@ -976,7 +976,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             (None, None) => return result(ChatDisposition::ChatUnavailable),
         };
-        let name = match self.chat.relay_sender(session, room, recipient, now) {
+        let name = match self.states.chat.relay_sender(session, room, recipient, now) {
             Ok(sender) => sender,
             Err(refused) => return refused,
         };

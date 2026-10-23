@@ -1,0 +1,25 @@
+{
+  "id": "CREATUREAI0-RL-14",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_CREATURE_AI0_CREATURE_AI_SPAWNS_AND_SUMMONS_DECISION_2026-10-01.md",
+  "resource": "Spawn point realizations in one 50 ms window of Channel activation",
+  "unit": "realizations per window",
+  "hard_maximum": 4096,
+  "configurable_range": {
+    "minimum": 4096,
+    "maximum": 4096
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Activation realizes points in canonical (source, point ordinal) order in windows of at most this many; the next point starts the next window. It reserves nothing.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=4096: 4,096 points realize in one window",
+    "max+1=4097: the 4,097th point realizes first in the next window"
+  ],
+  "consumers": [
+    "apps/game-server/src/ai/spawn.rs REALIZATIONS_PER_WINDOW_MAX: realization_windows",
+    "apps/game-server/src/foundation/runtime_actor_carrier.rs ChannelRuntimeV1::realize_activation_spawns (one owner turn; refuses more than one window)",
+    "apps/game-server/src/foundation/runtime_actor_carrier.rs ChannelRuntimeV1::begin_activation_spawns / realize_activation_spawn_window (persisted cursor, one window per 50 ms owner window; SPAWN-CEILINGS-1)",
+    "apps/game-server/src/foundation/runtime_actor_carrier.rs SPAWN_GONE_SCAN_POINTS_PER_WINDOW_MAX: ChannelRuntimeV1::scan_spawn_points (persisted gone-scan cursor, at most this many spawn points checked for a gone creature per 50 ms owner window; SPAWN-CEILINGS-1 Codex 4243397472)"
+  ],
+  "notes": "CREATURE-AI-0 \u00a76.2; SPAWN-1a. Test: apps/game-server/src/ai/spawn.rs realization_windows_are_canonical_and_bounded_by_rl_14. Game carrier tests (SPAWN-CEILINGS-1): apps/game-server/src/foundation/runtime_actor_carrier.rs activation_realizes_at_most_rl_14_points_per_owner_window / a_refused_activation_window_realizes_nothing / spawn_sources_per_channel_max_accepted_max_plus_one_rejected. Registered by OTV2-20261004-spawn-1a. SPAWN-CEILINGS-1 (Codex 4243397472): the respawn drive observes gone creatures at the same rate, at most 4,096 spawn points per window from a cursor that wraps in canonical order, so a full Channel of 131,072 points is observed within 32 windows (1.6 s) instead of every point every window; test: apps/game-server/src/foundation/runtime_actor_carrier.rs a_131_072_death_backlog_reads_bounded_spawn_records_per_owner_window."
+}

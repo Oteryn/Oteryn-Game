@@ -624,7 +624,7 @@ impl RenderModel {
                 }
                 SessionEvent::ActorVitals(delta) => next.vitals = Some(delta.value),
                 // The harness model does not track combat state.
-                SessionEvent::ActorCombatState(_) => {}
+                SessionEvent::ActorCombatState(_) | SessionEvent::TutorialNotice(_) => {}
                 SessionEvent::ChatLine(delta) => {
                     if let Some(chat) = next.chat.as_mut() {
                         chat.push(delta.value.clone());

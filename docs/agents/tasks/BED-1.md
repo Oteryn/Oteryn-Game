@@ -107,7 +107,7 @@ deleted, skipped or weakened, and no Cargo/dependency/protected CI path changed.
 
 Changed files (including the carried run 1c delta):
 
-- `apps/game-server/migrations/0139_bed_sleeper.sql`
+- `apps/game-server/migrations/0149_bed_sleeper.sql`
 - `apps/game-server/src/lib.rs`
 - `apps/game-server/tests/character_authority_postgres.rs`
 - `apps/game-server/tests/support/bed_sleeper_postgres_cases.rs` (carried unchanged)
@@ -151,7 +151,7 @@ no freeze, PR, publication or external write.
 The owner's one-run continuation permits a coherent tested sub-part when the
 whole slice cannot finish. The committed BED-1a transport work is preserved.
 
-Implemented provisional migration `0139_bed_sleeper.sql`:
+Implemented provisional migration `0149_bed_sleeper.sql`:
 
 - Native World/House property FK, Character FK and Character-to-World check;
   full nonzero u64 lease; native signed i32 logical coordinates; closed sex and

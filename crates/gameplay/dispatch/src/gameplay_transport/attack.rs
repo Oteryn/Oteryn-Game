@@ -16,6 +16,8 @@
 //! route and chase re-paths at its next 1,000 ms check. `STAND` never moves the player. `secure`
 //! has no creature-target effect; its PvP refusal waits for player targets (PVP-RT-1).
 
+mod attack_chase_search;
+
 use crate::foundation::encode_state_delta;
 use oteryn_protocol_oteryn::attack::{
     ActorCombatState, AttackIntentDisposition, ChaseMode, DELTA_TYPE_ACTOR_COMBAT_STATE_V1,
@@ -37,9 +39,9 @@ use crate::ability::{
     AbilityIntent, AbilityOccurrence, CommitGroup, Effect, EffectPlan, ProposalSource, RevisionSet,
 };
 use crate::combat_attack::{
-    AttackConstants, AttackState, BlockBudget, CHASE_SEARCHES_PER_WINDOW, CREATURE_COST,
-    ChaseDecision, ChaseSearchBudget, ChaseState, FightMode, SwingPoll, TargetFacts, TargetRefusal,
-    chase_search_order, player_fist_formula, player_melee_formula,
+    AttackConstants, AttackState, BlockBudget, CREATURE_COST, ChaseDecision, ChaseSearchBudget,
+    ChaseState, FightMode, SwingPoll, TargetFacts, TargetRefusal, chase_search_order,
+    player_fist_formula, player_melee_formula,
 };
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::content::{LogicalCell, QualifiedNativeEntryRoom};
@@ -233,6 +235,7 @@ pub struct ChannelAttackStates {
     /// CHASE-1: the Channel's player chase searches in the current owner window
     /// (`RANGED0-RL-03`).
     chase_searches: ChaseSearchBudget,
+    pub(super) path_budget: crate::movement::path_budget::ChannelPathBudget,
     /// CHASE-1 (RANGED-0 §8): each player actor's pacing clock, owned by the actor rather than
     /// its connection, so a client step and a chase step share one clock and a replaced or
     /// resumed connection keeps it. Only held clocks are kept.
@@ -784,97 +787,6 @@ impl ChannelAttackStates {
         }
     }
 
-    /// `RANGED0-RL-03`: the Channel's one chase search drain of the owner window of `now`. The
-    /// first chase check to reach the window runs every waiting search, at most
-    /// [`CHASE_SEARCHES_PER_WINDOW`], in the order [`chase_search_order`] gives, each against
-    /// the occupancy the earlier ones leave once they take their next step; every chase then
-    /// takes its own stored route. Nothing here depends on which check drains: the inputs are
-    /// the Channel's runtime, its path tiles and the waiting chases alone.
-    fn drain_chase_searches(
-        &mut self,
-        runtime: &ChannelRuntimeV1,
-        room: &QualifiedNativeEntryRoom,
-        now: SemanticTimeMicros,
-        path_tile: &impl Fn(MovementLocalPosition) -> bool,
-    ) {
-        let Self {
-            entries,
-            chase_searches,
-            ..
-        } = self;
-        if !chase_searches.open(now.get()) {
-            return;
-        }
-        let order = chase_search_order(
-            now.get(),
-            entries.iter().enumerate().filter_map(|(index, entry)| {
-                let since = entry.chase.search_waiting_since()?;
-                Some((since, (actor_order(entry.actor), index)))
-            }),
-        );
-        if order.is_empty() {
-            return;
-        }
-        // CREATURE-AI-0 §5.3: +40 over a tile another actor stands on (a creature, an NPC or
-        // another player; never the chasing player), and the target's own tile is no path tile.
-        let visible = runtime.visible_entities();
-        let standing: Vec<_> = visible
-            .creatures
-            .iter()
-            .chain(&visible.npcs)
-            .chain(&visible.players)
-            .map(|other| (other.actor, other.position))
-            .collect();
-        let mut stepping: Vec<(ExactActorRef, MovementLocalPosition)> = Vec::new();
-        let mut searched = 0;
-        for (_, index) in order {
-            if searched == CHASE_SEARCHES_PER_WINDOW {
-                break;
-            }
-            let entry = &mut entries[index];
-            let Some(target) = entry
-                .state
-                .target()
-                .filter(|_| entry.modes.chase == ChaseMode::Chase)
-            else {
-                continue;
-            };
-            let Some((from, to)) =
-                chase_ends(runtime, room, entry.actor, entry.session, target, now)
-            else {
-                continue;
-            };
-            let occupied: std::collections::BTreeSet<(i32, i32)> = standing
-                .iter()
-                .filter(|(other, _)| *other != entry.actor)
-                .map(|(other, position)| {
-                    stepping
-                        .iter()
-                        .find(|(stepper, _)| stepper == other)
-                        .map_or(*position, |(_, next)| *next)
-                })
-                .filter(|position| position.floor == from.floor)
-                .map(|position| (position.x, position.y))
-                .collect();
-            let ran = entry.chase.search(now.get(), from, to, |cell| {
-                if cell == to || !path_tile(cell) {
-                    return None;
-                }
-                Some(if occupied.contains(&(cell.x, cell.y)) {
-                    CREATURE_COST
-                } else {
-                    0
-                })
-            });
-            if ran {
-                searched += 1;
-            }
-            if let Some(next) = entry.chase.next_cell() {
-                stepping.push((entry.actor, next));
-            }
-        }
-    }
-
     /// CHASE-1: a client step wins over the chase; its route is dropped and it re-paths at its
     /// next 1,000 ms check.
     pub fn chase_yield_to_client(
@@ -1104,7 +1016,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let step = {
             // Lock order: runtime, spell states, door, then attack.
             let runtime = self.runtime.lock().await;
-            let states = self.spell_states.lock().await;
+            let states = self.states.spell_states.lock().await;
             // DEATH-2 §4.2: a dead player takes no input, the chase included.
             if states.is_dead(actor) {
                 return None;
@@ -1126,7 +1038,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 &legacy
             };
             let cells = self.movement_cells;
-            let mut attack = self.attack.lock().await;
+            let mut attack = self.states.attack.lock().await;
             // Owner time is read once the locks that serialize chase decisions are held, so the
             // Channel search budget sees its windows in order (`RANGED0-RL-03`).
             let now = self.owner_now();
@@ -1147,36 +1059,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if outcome.moved_to.is_none() {
             let blocked = outcome.disposition == super::StepDisposition::Blocked;
             // The refused cell's 2 s starts when the refusal returned (`RANGED0-RL-08`).
-            let mut attack = self.attack.lock().await;
+            let mut attack = self.states.attack.lock().await;
             let now = self.owner_now();
             attack.chase_step_refused(actor, session, now, blocked);
         }
         Some((outcome, duration))
     }
-
     /// CHASE-1: the actor-owned pacing deadline of `actor` still ahead of now.
     pub(in crate::gameplay_transport) async fn actor_step_deadline_now(
         &self,
         actor: ExactActorRef,
     ) -> Option<Instant> {
-        self.attack
+        self.states
+            .attack
             .lock()
             .await
             .step_deadline(actor, Instant::now())
     }
-
     /// CHASE-1: claim `actor`'s pacing clock for one step; `Some` when it is still held.
     pub(in crate::gameplay_transport) async fn begin_actor_step_now(
         &self,
         actor: ExactActorRef,
         holder: &Arc<()>,
     ) -> Option<Instant> {
-        self.attack
+        self.states
+            .attack
             .lock()
             .await
             .begin_step(actor, holder, Instant::now())
     }
-
     /// CHASE-1: the claimed step ended; `actor`'s pacing clock is now due at `due`, or free.
     pub(in crate::gameplay_transport) async fn record_actor_step_deadline_now(
         &self,
@@ -1184,24 +1095,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         holder: &Arc<()>,
         due: Option<Instant>,
     ) {
-        self.attack
+        self.states
+            .attack
             .lock()
             .await
             .record_step_deadline(actor, holder, Instant::now(), due);
     }
-
     /// CHASE-1: whether `actor`'s chase search waits for a later owner window.
     pub(in crate::gameplay_transport) async fn chase_search_waiting_now(
         &self,
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> bool {
-        self.attack
+        self.states
+            .attack
             .lock()
             .await
             .chase_search_waiting(actor, session)
     }
-
     /// CHASE-1: a client step of `actor` wins over its chase.
     pub(in crate::gameplay_transport) async fn chase_yield_to_client(
         &self,
@@ -1209,12 +1120,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
     ) {
         let now = self.owner_now();
-        self.attack
+        self.states
+            .attack
             .lock()
             .await
             .chase_yield_to_client(actor, session, now);
     }
-
     /// Read the swing weapon of this connection's `actor` from the equipment owner when its
     /// held target's swings need one ([`ChannelAttackStates::weapon_read_due`]). A failed read
     /// stores nothing, so the swings wait (fail closed).
@@ -1237,6 +1148,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .content_pin()
             .server_artifact_digest();
         let Some(epoch) = self
+            .states
             .attack
             .lock()
             .await
@@ -1254,7 +1166,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(weapon) = swing_weapon(content, &equipment.items) else {
             return;
         };
-        self.attack.lock().await.store_weapon(
+        self.states.attack.lock().await.store_weapon(
             actor,
             session,
             epoch,
@@ -1290,8 +1202,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return;
         }
-        let states = self.spell_states.lock().await;
-        let mut attack = self.attack.lock().await;
+        let states = self.states.spell_states.lock().await;
+        let mut attack = self.states.attack.lock().await;
         attack.prune(&runtime);
         let ChannelAttackStates {
             entries,

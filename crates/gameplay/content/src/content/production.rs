@@ -249,7 +249,7 @@ pub fn parse_world_id(value: &str) -> Result<WorldId, ContentError> {
         ));
     }
     let mut bytes = [0_u8; 16];
-    for (index, pair) in value.as_bytes().chunks_exact(2).enumerate() {
+    for (index, pair) in value.as_bytes().as_chunks::<2>().0.iter().enumerate() {
         let high = decode_lower_hex(pair[0]).ok_or(ContentError::InvalidArtifact(
             "first-production WorldId must be lowercase hexadecimal",
         ))?;

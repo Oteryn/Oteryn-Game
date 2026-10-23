@@ -1,0 +1,18 @@
+{
+  "id": "GAMECAT-V1-NESTING-DEPTH",
+  "owner_contract": "OTERYN_GAME_PLATFORM_CATALOG_EXPORT_V1.md",
+  "resource": "Nested JSON depth inside entity/relation data",
+  "unit": "levels",
+  "hard_maximum": 16,
+  "configurable_range": {
+    "minimum": 16,
+    "maximum": 16
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Reject before recursion exceeds the fixed v1 semantic-data depth.",
+  "client_visible": false,
+  "boundary_tests": [
+    "depth 16 accepted",
+    "depth 17 rejected deterministically"
+  ]
+}

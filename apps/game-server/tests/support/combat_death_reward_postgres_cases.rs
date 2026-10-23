@@ -43,6 +43,9 @@ use crate::foundation::{
 use oteryn_simulation_determinism::{ExactI64, RoundingMode};
 use sqlx::{Connection, Executor};
 
+#[path = "tutorial_corruptor_postgres_cases.rs"]
+mod tutorial_corruptor;
+
 /// SPELL-LOCK-2 §1.2: the settle holds the death Channel's lane; a fresh lane stands in for the
 /// Channel runtime this PostgreSQL case does not own.
 async fn settle_on_fresh_lane<const N: usize>(
@@ -126,8 +129,8 @@ impl Database {
             .fetch_one(&mut connection)
             .await?;
         assert!(
-            version.starts_with("17"),
-            "PostgreSQL 17 required: {version}"
+            version.starts_with("18"),
+            "PostgreSQL 18 required: {version}"
         );
         sqlx::migrate!("./migrations").run(&mut connection).await?;
         connection.close().await?;

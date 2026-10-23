@@ -59,8 +59,9 @@ where
                 .fetch_one(&harness.pool)
                 .await?;
             assert_eq!(
-                version, "170006",
-                "exact PostgreSQL17.6 qualification required"
+                version,
+                oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
+                "exact PostgreSQL 18.6 qualification required"
             );
             eprintln!("FORGE-LIMIT-PG: case={tag} server_version_num={version}");
             if install {

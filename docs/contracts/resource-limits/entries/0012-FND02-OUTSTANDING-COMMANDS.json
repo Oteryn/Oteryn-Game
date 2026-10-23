@@ -1,0 +1,22 @@
+{
+  "id": "FND02-OUTSTANDING-COMMANDS",
+  "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+  "resource": "Contiguous commands sent but not terminally acknowledged for one GameSession",
+  "unit": "commands",
+  "hard_maximum": 64,
+  "configurable_range": {
+    "minimum": 64,
+    "maximum": 64
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Ingress accounting rejects excess new work before adding it to session/runtime queues.",
+  "client_visible": true,
+  "boundary_tests": [
+    "64 outstanding commands accepted subject to runtime capacity",
+    "65th new command rejected with TOO_MANY_OUTSTANDING_COMMANDS",
+    "retry of an already-counted CommandId does not consume another slot"
+  ],
+  "consumers": [
+    "server session ingress"
+  ]
+}

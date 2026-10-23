@@ -18,6 +18,10 @@ use crate::chat::{CAPABILITY_CHAT_V1, COMMAND_TYPE_CHAT_INTENT, STATE_DOMAIN_CHA
 use crate::container_tree::{
     CAPABILITY_CONTAINER_TREE_V1, COMMAND_TYPE_CONTAINER_VIEW_INTENT, STATE_DOMAIN_CONTAINER_VIEWS,
 };
+use crate::daily_reward::{
+    CAPABILITY_DAILY_REWARD_V1, COMMAND_TYPE_DAILY_REWARD_CLAIM, COMMAND_TYPE_DAILY_REWARD_QUERY,
+    STATE_DOMAIN_DAILY_REWARD,
+};
 use crate::highscores::{CAPABILITY_HIGHSCORES_V1, COMMAND_TYPE_HIGHSCORES_QUERY_V1};
 use crate::item_view::{
     CAPABILITY_ITEM_EQUIP_DROP_V1, CAPABILITY_ITEM_VIEW_MOVE_V1, COMMAND_TYPE_ITEM_MOVE_INTENT,
@@ -166,6 +170,19 @@ pub const GATED: &[(u32, &[u32], &[u32])] = &[
     // and neither is offered, so no session selects them.
     (CAPABILITY_MAP_STATE_V1, &[], &[]),
     (CAPABILITY_WORLD_SPATIAL_FIELDS, &[], &[]),
+    (
+        crate::tutorial_notices::CAPABILITY_TUTORIAL_NOTICES_V1,
+        &[],
+        &[crate::tutorial_notices::STATE_DOMAIN_TUTORIAL_NOTICES],
+    ),
+    (
+        CAPABILITY_DAILY_REWARD_V1,
+        &[
+            COMMAND_TYPE_DAILY_REWARD_CLAIM,
+            COMMAND_TYPE_DAILY_REWARD_QUERY,
+        ],
+        &[STATE_DOMAIN_DAILY_REWARD],
+    ),
 ];
 
 /// Core domains a selected capability replaces, as (capability, domains). MAP-WIRE-1 contract §3

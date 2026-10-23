@@ -78,7 +78,10 @@ async fn version(h: &Harness) -> TestResult {
     let v: String = sqlx::query_scalar("SHOW server_version_num")
         .fetch_one(&h.pool)
         .await?;
-    assert_eq!(v, "170006");
+    assert_eq!(
+        v,
+        oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM
+    );
     Ok(())
 }
 async fn fund(h: &Harness, a: &ReconciledCharacterAuthority<'_, '_>) -> TestResult {

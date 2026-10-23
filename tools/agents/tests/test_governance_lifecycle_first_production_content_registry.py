@@ -2,10 +2,13 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import sys
 import unittest
 
 ROOT = Path(__file__).resolve().parents[3]
-REGISTRY = ROOT / "docs/contracts/RESOURCE_LIMITS_REGISTRY.json"
+sys.path.insert(0, str(ROOT / "tools/contracts"))
+import registry_fragments  # noqa: E402
+
 ARCH = ROOT / "docs/architecture"
 BASE = ARCH / "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md"
 AMENDMENT_01 = ARCH / "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09_AMENDMENT_01.md"
@@ -108,7 +111,7 @@ def without_amendment_04_prose(row: dict[str, object]) -> dict[str, object]:
 class FirstProductionContentRegistryContractTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.registry_text = REGISTRY.read_text(encoding="utf-8")
+        cls.registry_text = registry_fragments.load_text(registry_fragments.RESOURCE_LIMITS, ROOT)
         cls.registry = json.loads(cls.registry_text)
         cls.expected = expected_first_production_rows()
         cls.actual = [

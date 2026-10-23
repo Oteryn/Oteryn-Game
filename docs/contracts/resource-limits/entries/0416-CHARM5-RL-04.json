@@ -1,0 +1,22 @@
+{
+  "id": "CHARM5-RL-04",
+  "owner_contract": "protocol-oteryn/CHARM5_BESTIARY_CHARM_WIRE_PROPOSAL_V1.md",
+  "resource": "Largest single charm stage cost in CharmStateV1.next_stage_cost",
+  "unit": "Charm Points or Minor Charm Echoes",
+  "hard_maximum": 100000,
+  "configurable_range": {
+    "minimum": 100000,
+    "maximum": 100000
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "A cost above 100000 is refused in both directions.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=100000: a next stage cost of 100000 round-trips",
+    "max+1=100001: refused by the encoder and the decoder"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/charm.rs MAX_CHARM_STAGE_COST"
+  ],
+  "notes": "CHARM-5 proposal section 2; accepted by the Sol protocol ruling #162 5907282001. Registered by OTV2-20260930-charm-5-reg."
+}

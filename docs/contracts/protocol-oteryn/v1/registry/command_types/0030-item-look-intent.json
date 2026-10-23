@@ -1,0 +1,10 @@
+{
+  "id": 30,
+  "name": "ITEM_LOOK_INTENT",
+  "owner_decision": "CP D1268 (#2131 comment6227075059; HOUSE_QUERY correction D1268a comment6227265767) reserves command type 30 for ITEM_LOOK_V1; CP D1292 (#2182) confirms ledger slot 30 is free and assigns this registry hunk to ITEM-LOOK-1; payload layout accepted by CP D1240 comment6226466175",
+  "capability": 28,
+  "payload_schema": "crates/protocol-oteryn/src/item_look.rs#ItemLookIntent (CP D1240 layout; no .proto is published yet): exactly one of field 1 Item = the unchanged ItemTargetV1 nonzero varint ItemHandle, or, only with capability 28 selected, field 2 Creature = EntityRef (field 1 identity, exactly 16 bytes; field 2 generation u64, omitted means 0 = unknown)",
+  "result_schema": "crates/protocol-oteryn/src/item_look.rs#ItemLookResult (CP D1240 layout; no .proto is published yet): exactly one of field 1 nonempty UTF-8 text of at most 512 bytes, or one empty refusal marker: 2 NOT_AVAILABLE, and only with capability 28 selected 3 NOT_VISIBLE, 4 NOT_REACHABLE, 5 RATE_LIMITED; a refusal carries no target facts",
+  "max_payload_bytes": 31,
+  "max_result_payload_bytes": 515
+}

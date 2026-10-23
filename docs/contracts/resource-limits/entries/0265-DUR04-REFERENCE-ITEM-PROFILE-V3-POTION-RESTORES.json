@@ -1,0 +1,20 @@
+{
+  "id": "DUR04-REFERENCE-ITEM-PROFILE-V3-POTION-RESTORES",
+  "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V3.md",
+  "resource": "Restore entries in one artifact v6 consumption Potion (group 18)",
+  "unit": "entries",
+  "hard_maximum": 2,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 2
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Reject the restore count before restore-vector allocation; one entry per resource, Health before Mana; 1 <= min <= max <= 10,000.",
+  "client_visible": false,
+  "boundary_tests": [
+    "2 restores (Health, Mana) accepted",
+    "3rd entry rejected before allocation",
+    "0 entries, a duplicate resource or Mana before Health rejected"
+  ],
+  "notes": "Food regeneration seconds are 1-1,199. The empty flask is KNOWN (an Item ordinal that must resolve) or NOT_APPLICABLE. ITEM-USE-1 executes both restores."
+}

@@ -1,5 +1,5 @@
 #![allow(clippy::expect_used)]
-// Dedicated PostgreSQL 17 qualification for D3-6 (DUR-03 DECAY_RETIRE of a
+// Dedicated PostgreSQL 18 qualification for D3-6 (DUR-03 DECAY_RETIRE of a
 // decayed corpse: N+1 one-item steps at materialized_at + 60 s, resumable from
 // durable state). Ordinary workspace runs report PRE-ROUTING/NONCANONICAL when
 // the routed database is absent.

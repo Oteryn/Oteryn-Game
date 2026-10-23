@@ -1,0 +1,20 @@
+{
+  "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+  "boundary_tests": [
+    "128 ASCII bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+    "129 rejected before excess allocation, retention or effect",
+    "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+  ],
+  "client_visible": false,
+  "configurable_range": {
+    "minimum": 128,
+    "maximum": 128
+  },
+  "failure_category": "INVALID_INPUT",
+  "hard_maximum": 128,
+  "id": "NSRC-DESCRIPTOR-IDENTITY-BYTES",
+  "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout. Smaller semantic grammar/constant bounds remain binding: canonical UUID, FND04 key ID1\u201364 ASCII, fixed issuer/profile/purpose, Ed25519 public key32 decoded bytes/43 unpadded base64url characters, uint64 up to20 decimal digits and nonnegative signed64 timestamp up to19 digits. These are representation rules, not replacement body budgets.",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+  "resource": "Each client/service identity",
+  "unit": "ASCII bytes"
+}

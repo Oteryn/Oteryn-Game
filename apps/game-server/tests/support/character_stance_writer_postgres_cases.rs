@@ -1,4 +1,4 @@
-//! STANCE-1 real writer, read/reconcile and mixed Character chain on PostgreSQL 17.6.
+//! STANCE-1 real writer, read/reconcile and mixed Character chain on PostgreSQL 18.6.
 //! Parent protected harness provides migrations and independently seeded current authority.
 use crate::bestiary_postgres_harness::{
     CHARACTER, Harness, SESSION, TestResult, configured_admin, context, debug, fence, id, runtime,

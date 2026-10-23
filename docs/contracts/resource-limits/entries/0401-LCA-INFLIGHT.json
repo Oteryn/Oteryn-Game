@@ -1,0 +1,21 @@
+{
+  "id": "LCA-INFLIGHT",
+  "owner_contract": "OTERYN_GAME_LIST_CHARACTERS_FOR_ACCOUNT_PROJECTION_V1.md",
+  "resource": "Concurrent projection publications per publisher",
+  "unit": "publications",
+  "hard_maximum": 1,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 1
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "The publisher sends sequentially on its own TransientCapacity; no queue beyond the one exchange is retained.",
+  "client_visible": false,
+  "boundary_tests": [
+    "the publisher performs one exchange per step and never overlaps two"
+  ],
+  "consumers": [
+    "apps/game-server/src/native_admission_source/account_characters.rs"
+  ],
+  "notes": "Contract sections 3 and 8. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered': the outbox row stays queued, the watermark stalls and Platform refuses issuance; gameplay, admission and the Character mutation are unaffected. Registered by OTV2-20260930-lcfa-1."
+}

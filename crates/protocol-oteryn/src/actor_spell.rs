@@ -501,10 +501,8 @@ mod tests {
     use super::*;
     use serde_json::Value;
 
-    const PROTOCOL_REGISTRY: &str =
-        include_str!("../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json");
-    const RESOURCE_REGISTRY: &str =
-        include_str!("../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json");
+    const PROTOCOL_REGISTRY: &str = crate::PROTOCOL_OTERYN_V1_REGISTRY_JSON;
+    const RESOURCE_REGISTRY: &str = crate::RESOURCE_LIMITS_REGISTRY_JSON;
     const SCHEMA: &str =
         include_str!("../../../docs/contracts/protocol-oteryn/v1/actor_spell_v1.proto");
 

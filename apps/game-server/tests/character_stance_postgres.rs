@@ -1,4 +1,4 @@
-// Dedicated PostgreSQL 17.6 qualification for STANCE-0 (migration 0017).
+// Dedicated PostgreSQL 18.6 qualification for STANCE-0 (migration 0017).
 // Ordinary workspace runs report PRE-ROUTING/NONCANONICAL when the routed
 // database is absent.
 

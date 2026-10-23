@@ -609,10 +609,8 @@ fn swung_within_interval_tracks_the_last_swing() {
 
 #[test]
 fn the_resource_limits_bind_the_in_fight_deadline() {
-    let registry: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json"
-    ))
-    .unwrap();
+    let registry: serde_json::Value =
+        serde_json::from_str(oteryn_protocol_oteryn::RESOURCE_LIMITS_REGISTRY_JSON).unwrap();
     let row = registry["entries"]
         .as_array()
         .unwrap()

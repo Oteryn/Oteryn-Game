@@ -1,0 +1,24 @@
+{
+  "id": 19,
+  "name": "WORLD_PRESENTATION",
+  "owner_decision": "SPELL-PRESENT-0 §4, §7-§10 and §13 (docs/architecture/reviews/OTERYN_GAME_SPELL_PRESENT0_SPELL_AND_COMBAT_PRESENTATION_DECISION_2026-09-30.md, accepted by ACCEPT-SPELL-PRESENT0-V1); numbers leased to PRESENT-WIRE-1 by the #1622 control plane",
+  "owner": "current ChannelRuntime",
+  "capability": 23,
+  "revision": "per GameSessionId, monotonic and never reused (FND-02 \u00a715): 0 at the initial snapshot, plus 1 for each delta sent; never reset or wound back at a resync snapshot, a reconnect or a channel transfer within the same GameSession; a batch dropped whole (SPELLPRES0-RL-07, or a snapshot in flight) consumes no revision, so no resync follows; a snapshot is empty and drops every event not yet sent; a delta is never replayed",
+  "delta_types": [
+    {
+      "id": 1,
+      "name": "WORLD_PRESENTATION_BATCH_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/presentation_v1.proto#WorldPresentationBatchV1",
+      "max_payload_bytes": 131136
+    }
+  ],
+  "snapshot_types": [
+    {
+      "id": 1,
+      "name": "WORLD_PRESENTATION_SNAPSHOT_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/presentation_v1.proto#WorldPresentationSnapshotV1",
+      "max_payload_bytes": 0
+    }
+  ]
+}

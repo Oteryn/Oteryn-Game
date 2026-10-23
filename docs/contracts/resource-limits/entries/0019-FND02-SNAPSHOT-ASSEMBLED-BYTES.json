@@ -1,0 +1,22 @@
+{
+  "id": "FND02-SNAPSHOT-ASSEMBLED-BYTES",
+  "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+  "resource": "Complete encoded SnapshotBody before protobuf decode",
+  "unit": "bytes",
+  "hard_maximum": 16777216,
+  "configurable_range": {
+    "minimum": 16777216,
+    "maximum": 16777216
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Track cumulative received bytes using checked arithmetic and abort before exceeding the bound.",
+  "client_visible": true,
+  "boundary_tests": [
+    "16,777,216 accepted",
+    "16,777,217 cumulative bytes rejected",
+    "integer overflow in cumulative accounting rejected"
+  ],
+  "consumers": [
+    "client snapshot assembler"
+  ]
+}

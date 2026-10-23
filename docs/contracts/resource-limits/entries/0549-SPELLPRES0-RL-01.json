@@ -1,0 +1,24 @@
+{
+  "id": "SPELLPRES0-RL-01",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_SPELL_PRESENT0_SPELL_AND_COMBAT_PRESENTATION_DECISION_2026-09-30.md",
+  "resource": "presentation events in one session's WORLD_PRESENTATION batch (state domain 19, capability 23 PRESENTATION_V1) of one sync unit",
+  "unit": "events per session per sync unit",
+  "hard_maximum": 1024,
+  "configurable_range": {
+    "minimum": 1024,
+    "maximum": 1024
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Events beyond 1,024 are dropped, never queued: the server keeps the observer's own events, then the nearest by the D87 order, ties broken by decision ordinal and then emission ordinal (select_presentation_batch), so the kept set never depends on insertion order. The encoder refuses a 1,025th event as a server fault and the decoder refuses it LimitExceeded before decoding it. Non-durable; dropping events changes no outcome.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=1024: crates/protocol-oteryn/src/presentation_tests.rs a_full_batch_round_trips_within_its_bound (1,024 worst-case events encode and decode)",
+    "max+1=1025: crates/protocol-oteryn/src/presentation_tests.rs a_full_batch_round_trips_within_its_bound (a 1,025th event is refused LimitExceeded in both directions)",
+    "overflow order: crates/protocol-oteryn/src/presentation_tests.rs overflow_keeps_own_then_nearest_then_ordinals"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/presentation.rs MAX_PRESENTATION_EVENTS",
+    "crates/protocol-oteryn/src/presentation.rs select_presentation_batch"
+  ],
+  "notes": "SPELL-PRESENT-0 \u00a79 and \u00a713. B3 batch measurement (typical and p99 bytes for a crowded hunt, server time per sync unit) is recorded on #162 before activation. Registered by PRESENT-WIRE-1 (MAGIC-CAST-1, #1622)."
+}

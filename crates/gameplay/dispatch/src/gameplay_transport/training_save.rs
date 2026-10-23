@@ -52,7 +52,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return false;
         };
         let runtime = self.runtime.lock().await;
-        let mut states = self.spell_states.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         states
             .get_mut(&runtime, actor, session)
             .is_some_and(|state| state.training_successor_due(formula, force))
@@ -102,7 +102,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             expected_character_revision: root.revision,
         };
         let runtime = self.runtime.lock().await;
-        let mut states = self.spell_states.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         let binding = runtime.binding();
         if current_fence.runtime_scope
             != RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id())

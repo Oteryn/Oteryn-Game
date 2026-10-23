@@ -1,38 +1,16 @@
-//! CREATURE-AI-1 (`OTERYN_GAME_CREATURE_AI1_TARGETING_AND_THINK_PACKET_2026-10-04.md` §1, §2.1):
-//! the creature think. One think per creature per `CREATURE_THINK_INTERVAL_MILLIS`, over the
-//! owner's facts and the creature's `CreatureBehaviourProfile` (§1.2), in Canary's order:
-//! override expiry, target maintenance, search, the timed target change, the fleeing strategy
-//! draw, one cardinal step (§1.1), then the profile's attack and defence entries through
-//! `profile_schedule` (§2.1 item 5). The melee entry is never proposed here: ATTACK-1's swing
-//! (`ai_monster_melee`) swings it at this think's target (§1.5).
+//! Creature thinks select targets, Ability proposals and Movement goals, never position writes.
+//! CREATURE-MOVE-1 moves chase/flee/wander and walk-back onto independent DEADLINE_STATE steps.
+//! The Channel table retains at most one think and one step per exact creature; idle cancels both.
+//! Movement owns destination admission, bounded A*, the shared path ledger and position commits.
 //!
-//! The think holds no profile, health or chance literal: every behaviour value is a profile
-//! field. It mutates only its own `CreatureAiState`; the owner (the Channel carrier) commits the
-//! step through Movement and issues the proposals through Ability, and either may refuse. A
-//! refusal changes only the next think.
-//!
-//! Randomness is `oteryn_simulation_determinism::deterministic_decision_u64` bound to the think
-//! occurrence (`profile_schedule::decision_occurrence`, creature placement and think sequence)
-//! with one purpose per draw family (`AI_TARGET_SEARCH`, `AI_TARGET_CHANGE`, `AI_ATTACK`,
-//! `AI_DEFENCE`, `AI_WANDER`) and the entry or selection index. A retry of the same sequence
-//! returns the recorded report and never redraws; a lower sequence is refused.
-//!
-//! Bounds (`RESOURCE_LIMITS_REGISTRY.json`): `CREATUREAI0-RL-05` thinks per Channel window
-//! (carrier), `CREATUREAI0-RL-06` evaluation units per think (here: a think over the bound ends
-//! with zero mutation), `CREATUREAI0-RL-07` proposals per think (refused at profile admission,
-//! `behaviour_profile.rs`) and `CREATUREAI0-RL-18` overrides per creature (here: two slots, the
-//! newer replaces the older). `AI01-PENDING-TIMERS-PER-ACTOR` stays 1: one pending think.
-//!
-//! This lives as a sibling of `ai/`, not inside it: `tests/ai_bootstrap.rs` path-includes
-//! `ai/mod.rs` as its own standalone crate root without `foundation`/`content`/`movement`, so the
-//! modules that need them (`behaviour_profile`, `targeting`) are ordinary children here.
-//!
-//! Timer binding (AI-1 `owner_timer.rs`, `#162` binding items (a)/(b)): `ThinkSequenceTracker`
-//! derives every `ThinkOccurrence` sequence monotonically per actor, and `schedule_next_think`
-//! forwards only a stamp the caller's fence issued.
+//! The bootstrap `ai` tree is also compiled standalone by compatibility tests. Runtime goals
+//! are mounted here so those immutable snapshot/proposal tests retain their existing boundary.
 
 pub mod behaviour_profile;
 mod channel_owner;
+mod creature_steps;
+#[path = "ai/movement_goal.rs"]
+pub mod movement_goal;
 pub mod profile_schedule;
 pub mod targeting;
 
@@ -51,6 +29,7 @@ use crate::foundation::{
 };
 use crate::movement::{CardinalStep, MovementEngineeringSelection, MovementError, step_cardinal};
 use behaviour_profile::CreatureBehaviourProfile;
+use movement_goal::MovementGoal;
 use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
 };
@@ -75,13 +54,6 @@ pub const CREATUREAI1_WAKE_CANDIDATES: usize = 1_024;
 const PPM: u64 = 1_000_000;
 const PURPOSE_TARGET_SEARCH: &str = "AI_TARGET_SEARCH";
 const PURPOSE_TARGET_CHANGE: &str = "AI_TARGET_CHANGE";
-const PURPOSE_WANDER: &str = "AI_WANDER";
-const CARDINALS: [CardinalStep; 4] = [
-    CardinalStep::North,
-    CardinalStep::East,
-    CardinalStep::South,
-    CardinalStep::West,
-];
 
 /// §1.6: an owner-side override. Each kind has one slot; a newer override replaces the older
 /// one of its kind, so a creature holds at most `CREATUREAI0-RL-18` (2).
@@ -107,21 +79,6 @@ pub struct CreatureThinkFacts<'a> {
     pub revisions: &'a RevisionSet,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum StepKind {
-    Chase,
-    Flee,
-    Wander,
-}
-
-/// §1.1: the one cardinal step a think proposes; the owner commits it through Movement.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct CreatureStep {
-    pub kind: StepKind,
-    pub step: CardinalStep,
-    pub destination: MovementLocalPosition,
-}
-
 /// What one think decided.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ThinkReport {
@@ -129,7 +86,7 @@ pub struct ThinkReport {
     pub target: Option<ExactActorRef>,
     /// The timed target change (§2.1 item 4) fired this think.
     pub target_changed: bool,
-    pub step: Option<CreatureStep>,
+    pub goal: MovementGoal,
     /// Due and drawn non-melee entries, at most `CREATUREAI0-RL-07`.
     pub proposals: Vec<ProfileAbilityProposal>,
     pub refusal: Option<ScheduleError>,
@@ -152,11 +109,12 @@ pub struct CreatureAiState {
     actor: ExactActorRef,
     profile: CreatureBehaviourProfile,
     anchor: MovementLocalPosition,
+    spawn: Option<MovementLocalPosition>,
+    unreachable: bool,
     target: Option<ExactActorRef>,
     forced_target: Option<(ExactActorRef, u64)>,
     forced_distance: Option<u64>,
     change_ticks_ms: u64,
-    wander_ticks_ms: u64,
     schedule: ProfileScheduleState,
     last: Option<ThinkReport>,
 }
@@ -185,11 +143,12 @@ impl CreatureAiState {
             actor,
             profile,
             anchor,
+            spawn: None,
+            unreachable: false,
             target: None,
             forced_target: None,
             forced_distance: None,
             change_ticks_ms: 0,
-            wander_ticks_ms: 0,
             schedule: ProfileScheduleState::new(actor),
             last: None,
         }
@@ -228,12 +187,11 @@ impl CreatureAiState {
         }
     }
 
-    /// One think. `admits` is the owner's Movement admission of a destination cell.
+    /// One think chooses a goal; Movement admission belongs to the step timer.
     pub fn think(
         &mut self,
         sequence: u64,
         facts: &CreatureThinkFacts<'_>,
-        admits: impl Fn(MovementLocalPosition) -> bool,
     ) -> Result<ThinkReport, ThinkError> {
         if let Some(last) = &self.last {
             if sequence < last.sequence {
@@ -257,7 +215,7 @@ impl CreatureAiState {
                 sequence,
                 target: self.target,
                 target_changed: false,
-                step: None,
+                goal: MovementGoal::Stand,
                 proposals: Vec::new(),
                 refusal: None,
                 fleeing: false,
@@ -317,7 +275,7 @@ impl CreatureAiState {
         // there is no target or it cannot be attacked from here, and never while an override
         // holds.
         if !override_holds
-            && target.is_none_or(|actor| !in_range(actor))
+            && (target.is_none() || self.unreachable)
             && let Some(found) = targeting::select(
                 Strategy::Nearest,
                 position,
@@ -366,69 +324,14 @@ impl CreatureAiState {
             target = Some(found);
         }
 
-        // §1.1, §1.4: one cardinal step.
         let target_position = target.and_then(find).map(|candidate| candidate.position);
-        let mut wander_ticks_ms = self.wander_ticks_ms;
-        let step = match target_position {
-            Some(at) if fleeing => {
-                let current = targeting::plane_distance(position, at);
-                // The farthest admitted cell; ties keep the first in `CARDINALS` order.
-                CARDINALS
-                    .into_iter()
-                    .enumerate()
-                    .map(|(order, step)| (order, step, apply_step(position, step)))
-                    .filter(|(_, _, destination)| {
-                        targeting::plane_distance(*destination, at) > current
-                            && admits(*destination)
-                    })
-                    .max_by_key(|(order, _, destination)| {
-                        (
-                            targeting::plane_distance(*destination, at),
-                            std::cmp::Reverse(*order),
-                        )
-                    })
-                    .map(|(_, step, destination)| CreatureStep {
-                        kind: StepKind::Flee,
-                        step,
-                        destination,
-                    })
-            }
-            Some(at) if targeting::plane_distance(position, at) > attack_distance => {
-                step_towards(position, at)
-                    .map(|step| (step, apply_step(position, step)))
-                    .filter(|(_, destination)| admits(*destination))
-                    .map(|(step, destination)| CreatureStep {
-                        kind: StepKind::Chase,
-                        step,
-                        destination,
-                    })
-            }
-            Some(_) => None,
-            None => match self.profile.wander() {
-                Some(wander) if !perceived.is_empty() && wander.interval_ms > 0 => {
-                    wander_ticks_ms =
-                        wander_ticks_ms.saturating_add(CREATURE_THINK_INTERVAL_MILLIS);
-                    if wander_ticks_ms >= wander.interval_ms {
-                        wander_ticks_ms = 0;
-                        let index = usize::try_from(draw(PURPOSE_WANDER, 0)? % 4)
-                            .map_err(|_| ThinkError::Draw)?;
-                        let step = CARDINALS[index];
-                        let destination = apply_step(position, step);
-                        (chebyshev_distance(destination, self.anchor)
-                            .is_some_and(|distance| distance <= i64::from(wander.radius_tiles))
-                            && admits(destination))
-                        .then_some(CreatureStep {
-                            kind: StepKind::Wander,
-                            step,
-                            destination,
-                        })
-                    } else {
-                        None
-                    }
-                }
-                _ => None,
-            },
-        };
+        let goal = self.choose_goal(
+            position,
+            target.zip(target_position),
+            fleeing,
+            attack_distance,
+            !perceived.is_empty(),
+        );
 
         // §2.1 item 5: the profile's non-melee entries at this think's target.
         let attack_target = target.zip(target_position).map(|(actor, at)| AttackTarget {
@@ -453,21 +356,24 @@ impl CreatureAiState {
             sequence,
             target,
             target_changed,
-            step,
+            goal,
             proposals,
             refusal,
             fleeing,
-            idle: perceived.is_empty() && target.is_none() && !facts.has_active_condition,
+            idle: perceived.is_empty()
+                && target.is_none()
+                && !facts.has_active_condition
+                && !matches!(goal, MovementGoal::WalkBack { .. }),
             over_budget: false,
             units,
         };
         self.target = target;
+        self.unreachable = false;
         self.forced_target = forced_target.or(self
             .forced_target
             .filter(|(_, until)| facts.now_us < *until));
         self.forced_distance = forced_distance;
         self.change_ticks_ms = change_ticks_ms;
-        self.wander_ticks_ms = wander_ticks_ms;
         self.last = Some(report.clone());
         Ok(report)
     }
@@ -480,6 +386,7 @@ struct CreatureAiEntry {
     state: CreatureAiState,
     due_us: Option<u64>,
     sequence: u64,
+    motion: creature_steps::CreatureMotion,
 }
 
 /// The Channel's creature thinks (§2.1 item 1, `CREATUREAI0-RL-05`). Each creature holds at most
@@ -492,6 +399,7 @@ pub struct CreatureAiTable {
     entries: BTreeMap<[u8; 16], CreatureAiEntry>,
     window: Option<u64>,
     window_started: usize,
+    step_timers: Option<creature_steps::StepTimers>,
 }
 
 impl CreatureAiTable {
@@ -504,6 +412,7 @@ impl CreatureAiTable {
                 state,
                 due_us: Some(now_us),
                 sequence: 0,
+                motion: Default::default(),
             },
         );
     }
@@ -611,11 +520,10 @@ impl CreatureAiTable {
         &mut self,
         actor: ExactActorRef,
         facts: &CreatureThinkFacts<'_>,
-        admits: impl Fn(MovementLocalPosition) -> bool,
     ) -> Option<Result<ThinkReport, ThinkError>> {
         let entry = self.entry_mut(actor)?;
         let sequence = entry.sequence.saturating_add(1);
-        let report = entry.state.think(sequence, facts, admits);
+        let report = entry.state.think(sequence, facts);
         let next = facts
             .now_us
             .saturating_add(CREATURE_THINK_INTERVAL_MILLIS.saturating_mul(1_000));
@@ -714,24 +622,6 @@ pub fn chebyshev_distance(from: MovementLocalPosition, to: MovementLocalPosition
     let dx = i64::from(to.x) - i64::from(from.x);
     let dy = i64::from(to.y) - i64::from(from.y);
     Some(dx.abs().max(dy.abs()))
-}
-
-const fn step_delta(step: CardinalStep) -> (i32, i32) {
-    match step {
-        CardinalStep::North => (0, -1),
-        CardinalStep::East => (1, 0),
-        CardinalStep::South => (0, 1),
-        CardinalStep::West => (-1, 0),
-    }
-}
-
-fn apply_step(position: MovementLocalPosition, step: CardinalStep) -> MovementLocalPosition {
-    let (dx, dy) = step_delta(step);
-    MovementLocalPosition {
-        x: position.x.saturating_add(dx),
-        y: position.y.saturating_add(dy),
-        floor: position.floor,
-    }
 }
 
 /// One greedy cardinal step reducing distance to `to` (§4.5: production pathfinding is out of

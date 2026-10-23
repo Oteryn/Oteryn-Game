@@ -343,7 +343,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             return false;
         };
         let mut runtime = self.runtime.lock().await;
-        let states = self.spell_states.lock().await;
+        let states = self.states.spell_states.lock().await;
         if runtime.assert_actor_spell_unreserved(actor).is_err()
             || states.has_pending_spell_commit(actor, session)
         {
@@ -420,7 +420,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         let permit = self.spell_lane_permit().await?;
         let permit = &permit;
         let runtime = self.runtime.lock().await;
-        let mut states = self.spell_states.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         runtime.assert_actor_spell_unreserved(actor).ok()?;
         if states.has_pending_spell_commit(actor, session) {
             return None;

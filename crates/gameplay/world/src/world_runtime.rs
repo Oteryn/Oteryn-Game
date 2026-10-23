@@ -306,9 +306,9 @@ fn sha256_reference_generation(input: &[u8]) -> [u8; 32] {
     }
     padded.extend_from_slice(&bit_len.to_be_bytes());
 
-    for block in padded.chunks_exact(64) {
+    for block in padded.as_chunks::<64>().0 {
         let mut words = [0_u32; 64];
-        for (index, chunk) in block.chunks_exact(4).enumerate() {
+        for (index, chunk) in block.as_chunks::<4>().0.iter().enumerate() {
             words[index] = u32::from_be_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]);
         }
         for index in 16..64 {
@@ -366,7 +366,7 @@ fn sha256_reference_generation(input: &[u8]) -> [u8; 32] {
     }
 
     let mut output = [0_u8; 32];
-    for (chunk, value) in output.chunks_exact_mut(4).zip(state) {
+    for (chunk, value) in output.as_chunks_mut::<4>().0.iter_mut().zip(state) {
         chunk.copy_from_slice(&value.to_be_bytes());
     }
     output

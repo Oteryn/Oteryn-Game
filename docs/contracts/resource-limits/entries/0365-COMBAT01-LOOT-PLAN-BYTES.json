@@ -1,0 +1,23 @@
+{
+  "id": "COMBAT01-LOOT-PLAN-BYTES",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_VSL_COMBAT_RESOURCE_ROWS_DECISION_2026-09-28.md",
+  "resource": "Typed-identity footprint of one creature death's loot plan (death key, loot table ref and every accepted entry's item ref and purpose key)",
+  "unit": "bytes",
+  "hard_maximum": 30720,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 30720
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Charged incrementally as each entry is accepted (header once, then one charge per accepted entry); rejected before the running total, or a single addition, would exceed the ceiling. Never truncated.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=30,720 B: the running footprint accepts an addition that lands exactly on the ceiling",
+    "max+1=30,721 B: an addition that would land one byte over the ceiling is rejected",
+    "16 maximum-content-key-width entries (512 B keys/revisions) plus header fit exactly at 30,720 B"
+  ],
+  "consumers": [
+    "apps/game-server/src/combat/loot_plan.rs (plan_creature_loot / charge_plan_bytes: header once, then per accepted entry)"
+  ],
+  "notes": "D77, decision \u00a74.1/\u00a74.1.1: 16 * 1,792 B + 2,048 B = 30,720 B, the exact worst case of `durability/item_mint.rs`'s own TypedDefinitionRef/content-key encoding at DUR03-RL-07 field maxima. Registered by OTV2-20260928-combat-d2a-loot-plan."
+}

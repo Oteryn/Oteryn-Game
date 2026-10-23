@@ -51,3 +51,5 @@ use oteryn_gameplay_world::world_runtime;
 #[path = "interaction/chest_use.rs"]
 pub mod interaction_chest_use;
 use oteryn_gameplay_combat::combat_pickup;
+
+pub mod guild;

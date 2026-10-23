@@ -1,4 +1,4 @@
-// Dedicated PostgreSQL 17.6 qualification for HOUSE-CUSTODY-1 (migration
+// Dedicated PostgreSQL 18.6 qualification for HOUSE-CUSTODY-1 (migration
 // 0025). Ordinary workspace runs report PRE-ROUTING/NONCANONICAL when the
 // routed database is absent.
 

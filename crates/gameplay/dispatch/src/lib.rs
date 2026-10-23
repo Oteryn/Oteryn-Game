@@ -277,5 +277,5 @@ mod bestiary_postgres_harness;
 mod source_time_profile_bundle_tests;
 
 #[cfg(test)]
-#[path = "../../../../apps/game-server/tests/support/bed_sleep_postgres_cases.rs"]
+#[path = "../../../../apps/game-server/src/lifted_tests/auto/bed_sleep_postgres_cases.rs"]
 mod bed_sleep_postgres_cases;

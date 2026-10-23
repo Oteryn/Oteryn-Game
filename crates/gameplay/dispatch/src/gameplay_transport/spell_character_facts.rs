@@ -26,6 +26,7 @@ pub enum CastFactsLoad {
     },
     /// No class was chosen. Never substitute a class or initialize a durable build row here.
     NoVocation {
+        facts: CharacterCastFacts,
         character_revision: CharacterRevision,
     },
     /// Classed Character missing progression, corrupt content, failed reads, or a changing root.
@@ -82,9 +83,7 @@ fn facts_from_owned_state(
         return CastFactsLoad::Unavailable;
     }
     if build.vocation() == NO_VOCATION {
-        return CastFactsLoad::NoVocation {
-            character_revision: after.revision,
-        };
+        return vocationless_vitals::load(build, progression, after.revision);
     }
     let Some(progression) = progression else {
         return CastFactsLoad::Unavailable;
@@ -117,6 +116,7 @@ fn maxima(vocation: &str, level: u32) -> Option<(u32, u32, u32)> {
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 mod tests {
+    mod vocationless_vitals_tests;
     use super::*;
     use crate::domain::progression::ProgressionRevisionContext;
     use crate::domain::{AccountId, WorldId};
@@ -203,6 +203,8 @@ mod tests {
                 Some(&xp)
             ),
             CastFactsLoad::NoVocation {
+                facts: vocationless_vitals::facts(&DurableBuildState::default(), 20)
+                    .expect("none vitals"),
                 character_revision: root.revision
             }
         );
@@ -225,6 +227,8 @@ mod tests {
         assert_eq!(
             facts_from_owned_state(before.character_id, &before, &before, &no_vocation, None),
             CastFactsLoad::NoVocation {
+                facts: vocationless_vitals::facts(&DurableBuildState::default(), 1)
+                    .expect("none vitals"),
                 character_revision: before.revision,
             }
         );
@@ -304,3 +308,5 @@ mod tests {
         }
     }
 }
+
+mod vocationless_vitals;

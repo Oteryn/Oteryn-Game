@@ -1,0 +1,24 @@
+{
+  "id": "GAMEITEM01-STACK-QUANTITY-MAX",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_B3_INVENTORY_DESTINATION_CAPACITY_AND_STACKS_DECISION_2026-09-28.md",
+  "resource": "Quantity of one live stack (ItemInstance) admitted by a B3 TRANSFER, and the stack maximum a definition may prove",
+  "unit": "units per ItemInstance",
+  "hard_maximum": 100,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 100
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Checked before any mutation; a stackable definition without a proven maximum uses 100; a proven maximum above 100 or a stored quantity above the definition maximum is refused; an unknown stack class is refused (fail closed); a non-stackable item has quantity 1.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=100: a stack of 100 is admitted and a merge may reach exactly 100",
+    "max+1=101: a proven stack maximum of 101 and a stored quantity of 101 are refused",
+    "the payload gate rejects a receiver after-quantity of 101"
+  ],
+  "consumers": [
+    "apps/game-server/src/durability/item_transfer.rs (stack_maximum/plan_transfer)",
+    "apps/game-server/src/durability/item_transfer_audit.rs (check_transfer)"
+  ],
+  "notes": "D82; B3-INVENTORY-DESTINATION-CAPACITY-STACKS-V1 \u00a74.3/\u00a74.5; a proven larger value waits for a new decision; registered by OTV2-20260928-b3-1-transfer."
+}

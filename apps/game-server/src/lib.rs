@@ -152,6 +152,29 @@ mod spell_stance_runtime_postgres_cases;
 #[path = "../tests/support/spell_familiar_runtime_postgres_cases.rs"]
 mod spell_familiar_runtime_postgres_cases;
 
+// GUILD-1 PostgreSQL cases run on the library test target, which CI runs against PostgreSQL;
+// they reuse the item-transfer harness and the Premium test producer, each mounted once here.
+#[cfg(test)]
+#[allow(
+    dead_code,
+    clippy::expect_used,
+    reason = "shared PostgreSQL support; Guild uses a subset"
+)]
+#[path = "../tests/support/item_transfer_postgres_harness.rs"]
+mod item_transfer_postgres_cases;
+
+#[cfg(test)]
+#[allow(
+    dead_code,
+    reason = "Premium test producer shared with the Social crate; Guild uses a subset"
+)]
+#[path = "../../../crates/gameplay/social/src/premium/test_producer.rs"]
+mod premium_test_producer;
+
+#[cfg(test)]
+#[path = "lifted_tests/durability_guild_tests.rs"]
+mod durability_guild_tests;
+
 // LIMIT_RAISE value/audit regressions have one source mount; the canonical PG root
 // path-loads durability and must not collect these pure cases a second time.
 #[cfg(test)]
@@ -982,10 +1005,6 @@ mod creature_icicle_tests;
 mod creature_appearance_content_tests;
 
 #[cfg(test)]
-#[path = "lifted_tests/creature_condition_content_tests.rs"]
-mod creature_condition_content_tests;
-
-#[cfg(test)]
 #[path = "lifted_tests/creature_condition_content_gate_tests.rs"]
 mod creature_condition_content_gate_tests;
 
@@ -1004,6 +1023,6 @@ mod quest_catalogue_boot_tests;
 #[cfg(test)]
 mod bundle_spawn_owner_tests;
 
-#[cfg(test)]
-#[path = "../tests/support/bed_sleep_postgres_cases.rs"]
-mod bed_sleep_postgres_cases;
+// Every test file in `lifted_tests/auto/` is mounted here by `build.rs`, so a new mechanic adds its
+// file there instead of another `#[cfg(test)] #[path] mod` block in this shared root.
+include!(concat!(env!("OUT_DIR"), "/lifted_tests_auto_mounts.rs"));

@@ -1,4 +1,4 @@
-//! Native MAIL Inbox seam qualification, PostgreSQL 17.6 only.
+//! Native MAIL Inbox seam qualification, PostgreSQL 18.6 only.
 //!
 //! Every case requires the exact installed SQLx migration 0101. Fresh positives
 //! use the real native reward mint/receipt/audit bridge under the runtime role.

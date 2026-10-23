@@ -1,0 +1,20 @@
+{
+  "id": "DFR-PG-ROOT-CA-PEM-BYTES",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_WP3_V2_SUPERSEDING_ARCHITECTURE_DECISION_2026-09-12.md",
+  "resource": "Retained explicit PostgreSQL root-CA PEM bundle",
+  "unit": "ASCII bytes",
+  "hard_maximum": 22768,
+  "configurable_range": {
+    "minimum": 22768,
+    "maximum": 22768
+  },
+  "failure_category": "UNAVAILABLE",
+  "allocation_impact": "Reject raw input above 22768 bytes before PEM parsing or retained copy; inside the bounded input accept only 1..4 CERTIFICATE blocks, at most 4096 decoded DER bytes each and 16384 aggregate DER bytes, then reserve actual retained capacity against the same root I ledger before ownership.",
+  "client_visible": false,
+  "boundary_tests": [
+    "22768 raw ASCII bytes pass the generic pre-copy length boundary when the canonical certificate-bundle grammar and all nested/coupled limits also pass; semantic qualification uses an exact valid fixture when representable or the largest valid value at/below together with this exact length comparison",
+    "22769 raw bytes rejected as UNAVAILABLE before PEM parsing or retained allocation",
+    "A fifth certificate, 4097 decoded DER bytes for one certificate, 16385 aggregate DER bytes, malformed/noncanonical text, and checked arithmetic overflow are rejected fail-closed"
+  ],
+  "notes": "Owner decision adopts the protected Oteryn NSRC-TLS-CERTS conservative PKI envelope for this separate PostgreSQL trust input: 4 roots, 4096 DER bytes each. RFC 7468 generated base64 is 64 characters per line; 4096 DER bytes become 5464 base64 characters over 86 lines. Allowing LF or worst-case CRLF canonical text gives 5692 bytes per certificate and 22768 for four. No unrelated PEM text or ambient root-file discovery is admitted."
+}
