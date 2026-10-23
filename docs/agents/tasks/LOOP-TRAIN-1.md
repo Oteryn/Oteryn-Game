@@ -4,7 +4,7 @@
 task_id: LOOP-TRAIN-1
 title: "LOOP-TRAIN-1: offline training statue and exercise weapons"
 mode: IMPLEMENT
-status: NOT_STARTED
+status: waiting
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 5
@@ -22,6 +22,12 @@ needs_registry: false
 needs_content_regeneration: true
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **OPEN**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: none. Shared offline stamina arithmetic exists, but no offline-training marker/settlement owner from this card is retained. Evidence: `crates/gameplay/characters/src/stamina.rs`.
+
+Remaining: Offline planner/marker and clock/content ports, admission/logout settlement, statue/exercise activation/charges and PG qualification remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2174, branch skeleton/loop-train-1
 

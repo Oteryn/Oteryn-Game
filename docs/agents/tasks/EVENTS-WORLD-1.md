@@ -4,7 +4,8 @@
 task_id: EVENTS-WORLD-1
 title: "EVENTS-WORLD-1: world changes, Fury Gates, Nightmare Isles, hazard (skeleton)"
 mode: IMPLEMENT
-status: NOT_FULLY_QUALIFIED
+status: waiting
+pr: null
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/events-world-1
@@ -34,6 +35,12 @@ slot_only_paths:
   - "docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json"
   - "Common slot-only set (any that the task touches): tools/content-migration/regenerate_content.py outputs, content/project.json, content/manifest.json, content.lock.json, content/interactions/index.json, content/world/pins/*, Rust pins, docs/contracts/*REGISTRY*.json, migration numbers, wiring in crates/gameplay/dispatch/src/gameplay_transport/{connection.rs,mod.rs,capabilities.rs} and crates/protocol-oteryn/src/lib.rs"
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#2178](https://github.com/Oteryn/Oteryn-Game/pull/2178). Fury Gates/Nightmare Isles selection-source compiler is merged and rejects unavailable W1 bindings. Evidence: `crates/gameplay/world-change/src/content.rs`.
+
+Remaining: Executable W1 bindings, layer/activation owners and restart/epoch runtime composition remain; source selection alone activates nothing. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 ## D1287 review repair — source only
 

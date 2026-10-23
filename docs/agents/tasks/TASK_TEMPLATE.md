@@ -71,6 +71,16 @@ Immutable prepared/persisted evidence may define the expected binding but is not
 
 - [ ] Concrete criterion with named evidence.
 
+## Reference parity
+
+Every mechanic card must set `type: mechanic` in its task metadata and retain this section. Other task types may record `NOT_APPLICABLE` with a concrete reason. Before starting a mechanic, check [MECHANICS_STATUS.md](MECHANICS_STATUS.md) and the [archive](archive/) for existing implementations and completed cards; scope only the remaining work so nothing is reimplemented.
+
+| Behaviour | Reference value/source (Tibia wiki, TibiaData, Canary/Crystal path) | Oteryn | Test |
+|---|---|---|---|
+| <observable behaviour> | <reference value and exact URL or source revision/path> | <implemented value/behaviour and source path> | <table-driven test path, case and exact run filter> |
+
+Every behaviour row must be backed by a table-driven test that asserts the Oteryn result against the cited reference value. Resolve discrepancies before claiming DONE; document any accepted deviation and its owning decision. This evidence supplements the required real-dispatch/E2E checks.
+
 ## Excluded scope
 
 State what this task must not change or claim.
@@ -129,6 +139,8 @@ Record every local check that `docs/agents/CONTEXT_ROUTING.md` selects for the c
 - verdict: pending or `NOT_APPLICABLE`
 
 ## PR and closeout
+
+For a mechanic, update its [MECHANICS_STATUS.md](MECHANICS_STATUS.md) row in the same PR that closes the card, with resolving implementation/card links and the remaining gaps, if any. DONE is an outcome label; retain `status: completed` for the task lifecycle.
 
 - changed-file review: pending
 - unresolved review threads: pending

@@ -4,7 +4,7 @@
 task_id: EVENTS-RAID-1
 title: "EVENTS-RAID-1: raids (RAID-1 scheduled raid runtime and announcements; RAID-CONTENT-1 inputs)"
 mode: IMPLEMENT
-status: NOT_STARTED   # re-implementation pending under ADR-0022
+status: waiting
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 5
@@ -20,6 +20,12 @@ needs_registry: maybe   # GAME_EVENT_FOUNDATION_REGISTRY rows for announcements
 needs_content_regeneration: true
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **OPEN**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: none. Boss clocks exist, but no raid scheduler/firing writer from this card is retained on main. Evidence: `crates/gameplay/durability/src/durability/boss_encounter.rs`.
+
+Remaining: Implement deterministic raid schedule, durable firing/deduplication and native spawn/announcement composition. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2177, branch skeleton/events-raid-1
 

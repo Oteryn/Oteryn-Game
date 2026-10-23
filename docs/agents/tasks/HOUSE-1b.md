@@ -4,7 +4,7 @@
 task_id: HOUSE-1b
 title: "HOUSE-1b: canonical house disposition and absolute move-out commands"
 mode: IMPLEMENT
-status: NOT_STARTED   # re-implementation pending under ADR-0022
+status: waiting
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 5
@@ -25,6 +25,12 @@ needs_registry: true   # registered HouseOperation event
 needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **OPEN**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: none. Inbox delivery exists; no HOUSE-1b move-out/disposition owner is retained. Evidence: `crates/gameplay/durability/src/durability/character_inbox.rs`.
+
+Remaining: Notice/cancel, bounded freeze census, exact reclaim-subject disposition and restart-safe release remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2141, branch skeleton/house-1b
 

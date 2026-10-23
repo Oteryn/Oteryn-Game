@@ -4,7 +4,7 @@
 task_id: PVP-DEATH-1
 title: "PVP-DEATH-1: PvP death classification, lethal attribution ledger and outcomes in the death transaction"
 mode: IMPLEMENT
-status: NOT_STARTED   # re-implementation pending under ADR-0022
+status: waiting
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 2
@@ -19,6 +19,12 @@ needs_migration: false   # D1105: migration 0030 capacity suffices; re-confirm a
 needs_registry: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#2318](https://github.com/Oteryn/Oteryn-Game/pull/2318). PVP-1b installs qualified Open-PvP death consequence composition and skull cleanup. Evidence: `crates/gameplay/dispatch/src/gameplay_transport/pvp_death.rs`.
+
+Remaining: Full lethal-source attribution ledger/classification, complete outcome table and live player-target/wire/client qualification remain; do not duplicate the existing consequence transaction. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2205, branch skeleton/pvp-death-1
 

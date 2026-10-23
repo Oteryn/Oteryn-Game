@@ -4,7 +4,7 @@
 task_id: DEPOT-1
 title: "DEPOT-1: playable per-town depot open, browse, deposit and withdraw"
 mode: IMPLEMENT
-status: IN_PROGRESS
+status: waiting   # DEPOT-1 slice merged (#2334); remaining slices per card
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/happy-davinci-ijz3wy-wire-depot
@@ -16,11 +16,6 @@ updated_at: 2026-10-23
 execution_policy: continuous_progress
 merge_authority: CP_ONLY
 owned_paths:
-  - apps/client/src/combat_input.rs
-  - apps/client/src/depot.rs
-  - apps/client/src/lib.rs
-  - apps/client/src/play.rs
-  - apps/client/src/windows_shell.rs
   - apps/game-server/migrations/0157_depot_transfers.sql
   - apps/game-server/src/lifted_tests/auto/depot_postgres_cases.rs
   - crates/gameplay/dispatch/src/gameplay_transport/capabilities.rs
@@ -116,23 +111,17 @@ remain owned by their original mechanisms.
   a CommandRef with another request is rejected. A terminal replay outside reach
   returns Moved with the view closed; it grants no locker access. Existing FND-02
   lower-command-id expiry remains unchanged; no duplicate cache was invented.
-- Client: the real Session sends and decodes the command and waits for committed
-  inventory before accepting another input. The existing native play status line
-  exposes controls and selected bag/depot entries. Bundle-map capability 18 was a
-  necessary admission dependency: Session now validates its join and bounded
-  deltas against Content/bundle/reset binding and revisions, preserving the
-  existing renderer. The synthetic harness's exhaustive event match was updated.
+- Client session: `crates/session` sends and decodes the command and waits for
+  committed inventory before accepting another input. Bundle-map capability 18 was a
+  necessary admission dependency: Session now validates its join and bounded deltas
+  against Content/bundle/reset binding and revisions. The synthetic harness's
+  exhaustive event match was updated. The `apps/client` play controls are split into
+  a follow-up client PR (server first).
 
 ## Play controls
 
-Stand beside an authored depot locker. **Ctrl+D** opens/refreshes it.
-**Ctrl+B** cycles boxes 1–17; **Ctrl+P** cycles pages; **Ctrl+I** selects a direct
-main-backpack entry; **Ctrl+O** selects a displayed depot entry; **Ctrl+J** deposits
-one whole item/stack; **Ctrl+K** withdraws it to the main backpack. The play status
-line shows town, box, page, selected entry/reference, quantity and refusal text.
-Selection is local; every mutation and reply comes from the server. Reconnect
-starts with no depot panel. Item names/icons and a graphical container grid are
-outside this minimal UI.
+Deferred to the follow-up client PR (keyboard controls and status line in
+`apps/client`). This PR ships the server, protocol and session path only.
 
 ## Reference parity
 

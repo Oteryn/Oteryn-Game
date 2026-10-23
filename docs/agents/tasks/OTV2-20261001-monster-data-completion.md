@@ -4,7 +4,7 @@
 task_id: OTV2-20261001-monster-data-completion
 title: Audit and complete monster data under accepted source decisions
 mode: IMPLEMENT
-status: implementing
+status: waiting
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/monster-completion-round3-20261001
@@ -97,6 +97,12 @@ blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#1675](https://github.com/Oteryn/Oteryn-Game/pull/1675). Monster source/data completion packet and native admission/source-boundary tools were retained by the cumulative content carrier. Evidence: `tools/content-migration/verify_spyrat_corpse_source_boundaries.py`.
+
+Remaining: Recorded unresolved creature/Encounter/reference identities and broader gameplay/probability qualification remain; retained candidate data is not full runtime completion. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 ## Continuation scope and authority
 
