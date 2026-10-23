@@ -215,6 +215,23 @@ pub const GATED: &[(u32, &[u32], &[u32])] = &[
         &[],
     ),
     (
+        crate::vip::CAPABILITY_VIP_V1,
+        &[
+            crate::vip::COMMAND_TYPE_VIP_LIST,
+            crate::vip::COMMAND_TYPE_VIP_CONSENT,
+            crate::vip::COMMAND_TYPE_VIP_QUERY,
+        ],
+        &[],
+    ),
+    (
+        crate::house::CAPABILITY_HOUSE_V1,
+        &[
+            crate::house::COMMAND_TYPE_HOUSE_INTENT,
+            crate::house::COMMAND_TYPE_HOUSE_QUERY,
+        ],
+        &[],
+    ),
+    (
         crate::cyclopedia::CAPABILITY_CYCLOPEDIA_MAP_V1,
         &[
             crate::cyclopedia::COMMAND_TYPE_CYCLOPEDIA_QUERY,

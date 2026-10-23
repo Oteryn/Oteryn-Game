@@ -94,6 +94,8 @@ pub struct LastPositionRecord {
     pub map_revision_digest: [u8; 32],
     pub server_artifact_digest: [u8; 32],
     pub vitals: Option<LastVitals>,
+    /// Soul, food milliseconds, health-period milliseconds, mana-period milliseconds.
+    pub rest: Option<[u32; 4]>,
 }
 
 /// The §3.2 order key of one write: the writing session's Character lease generation and the
@@ -345,9 +347,9 @@ pub(super) async fn upsert_last_position(
         "INSERT INTO game_character_last_positions AS p \
             (character_id, world_id, tile_x, tile_y, tile_floor, coordinate_frame_digest, \
              map_revision_digest, server_artifact_digest, character_lease_generation, \
-             write_sequence, health, mana) \
+             write_sequence, health, mana, rest) \
          VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3, $4, $5, $6, $7, $8, \
-                 $9::text::numeric(20,0), $10::text::numeric(20,0), $11, $12) \
+                 $9::text::numeric(20,0), $10::text::numeric(20,0), $11, $12, $13) \
          ON CONFLICT (character_id) DO UPDATE SET \
              world_id = EXCLUDED.world_id, tile_x = EXCLUDED.tile_x, \
              tile_y = EXCLUDED.tile_y, tile_floor = EXCLUDED.tile_floor, \
@@ -356,7 +358,7 @@ pub(super) async fn upsert_last_position(
              server_artifact_digest = EXCLUDED.server_artifact_digest, \
              character_lease_generation = EXCLUDED.character_lease_generation, \
              write_sequence = EXCLUDED.write_sequence, \
-             health = EXCLUDED.health, mana = EXCLUDED.mana \
+             health = EXCLUDED.health, mana = EXCLUDED.mana, rest = EXCLUDED.rest \
          WHERE (p.character_lease_generation, p.write_sequence) \
              < (EXCLUDED.character_lease_generation, EXCLUDED.write_sequence)",
     )
@@ -372,6 +374,17 @@ pub(super) async fn upsert_last_position(
     .bind(key.write_sequence.to_string())
     .bind(health)
     .bind(mana)
+    .bind(
+        record
+            .rest
+            .map(|rest| {
+                rest.into_iter()
+                    .map(i32::try_from)
+                    .collect::<std::result::Result<Vec<_>, _>>()
+            })
+            .transpose()
+            .map_err(|_| DurabilityError::InvalidStoredState)?,
+    )
     .execute(&mut **tx)
     .await?;
     Ok(if written.rows_affected() == 1 {
@@ -381,14 +394,14 @@ pub(super) async fn upsert_last_position(
     })
 }
 
-async fn load_last_position(
+pub(super) async fn load_last_position(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     character_id: CharacterId,
 ) -> std::result::Result<Option<StoredLastPosition>, DurabilityError> {
     let row = sqlx::query(
         "SELECT world_id::text, tile_x, tile_y, tile_floor, coordinate_frame_digest, \
                 map_revision_digest, server_artifact_digest, \
-                character_lease_generation::text, write_sequence::text, health, mana \
+                character_lease_generation::text, write_sequence::text, health, mana, rest \
            FROM game_character_last_positions \
           WHERE character_id = encode($1,'hex')::uuid",
     )
@@ -410,8 +423,22 @@ fn decode_row(
     let world_id = WorldId::decode(&super::character_progression::uuid_text(&world)?)
         .map_err(|_| DurabilityError::InvalidStoredState)?;
     let vitals = decode_vitals(row.try_get("health")?, row.try_get("mana")?)?;
+    let rest = row
+        .try_get::<Option<Vec<i32>>, _>("rest")?
+        .map(|values| {
+            let values = values
+                .into_iter()
+                .map(u32::try_from)
+                .collect::<std::result::Result<Vec<_>, _>>()
+                .map_err(|_| DurabilityError::InvalidStoredState)?;
+            values
+                .try_into()
+                .map_err(|_| DurabilityError::InvalidStoredState)
+        })
+        .transpose()?;
     Ok(StoredLastPosition {
         record: LastPositionRecord {
+            rest,
             world_id,
             cell: LastPositionCell {
                 x: row.try_get("tile_x")?,

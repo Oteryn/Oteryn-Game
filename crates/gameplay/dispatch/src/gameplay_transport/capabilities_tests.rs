@@ -731,6 +731,9 @@ fn the_bundle_world_offered_set_is_3_the_item_view_set_12_14_and_18_requiring_4_
         CAPABILITY_WORLD_MAP_VIEW_V1,
         CAPABILITY_ITEM_LOOK_V1,
         oteryn_protocol_oteryn::depot::CAPABILITY_DEPOT_V1,
+        oteryn_protocol_oteryn::vip::CAPABILITY_VIP_V1,
+        oteryn_protocol_oteryn::world_object::CAPABILITY_WORLD_INTERACTION_V1,
+        oteryn_protocol_oteryn::world_object::CAPABILITY_ITEM_USE_V1,
     ];
     let shared: Vec<OfferedCapability> = BUNDLE_WORLD_OFFERED_CAPABILITIES
         .iter()
@@ -760,6 +763,12 @@ fn the_bundle_world_offered_set_is_3_the_item_view_set_12_14_and_18_requiring_4_
         Some(WORLD_WEATHER.requires)
     );
     assert_eq!(requires(CAPABILITY_ITEM_LOOK_V1), Some(&[][..]));
+    assert_eq!(requires(11), Some(&[15, 18][..]));
+    assert_eq!(requires(15), Some(&[4][..]));
+    assert_eq!(
+        requires(oteryn_protocol_oteryn::vip::CAPABILITY_VIP_V1),
+        Some(&[][..])
+    );
     assert_eq!(
         requires(oteryn_protocol_oteryn::depot::CAPABILITY_DEPOT_V1),
         Some(&[4][..])
@@ -782,7 +791,7 @@ fn the_bundle_world_offered_set_is_3_the_item_view_set_12_14_and_18_requiring_4_
     }));
     assert!(BUNDLE_WORLD_OFFERED_CAPABILITIES.len() <= SELECTED_CAPACITY);
     let registry = registry_capabilities()?;
-    for id in bundle_only {
+    for id in bundle_only.into_iter().filter(|id| ![11, 15].contains(id)) {
         let entry = registry
             .iter()
             .find(|capability| capability["id"].as_u64() == Some(u64::from(id)))
@@ -803,10 +812,10 @@ fn the_bundle_world_offered_set_is_3_the_item_view_set_12_14_and_18_requiring_4_
 fn a_bundle_world_admits_only_a_client_that_selects_18() -> Result<(), Box<dyn Error>> {
     run(async {
         let mut authority = NegotiatingAuthority::new(Some(BUNDLE_WORLD_OFFERED_CAPABILITIES));
-        // ADMIT0: a bundle World's floor is 18, so its boot declares 18 (closure 4, 6, 18).
+        // ADMIT0: a bundle World's floor is 11 and 18, including the cooking USE dependency.
         authority.required = Some(
             super::super::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
-                &[CAPABILITY_WORLD_MAP_VIEW_V1],
+                &[11, CAPABILITY_WORLD_MAP_VIEW_V1],
                 crate::foundation::RuntimeScopeRefV1::channel(
                     WorldId::decode(&WORLD)?,
                     ChannelId::decode(&CHANNEL)?,
@@ -820,8 +829,9 @@ fn a_bundle_world_admits_only_a_client_that_selects_18() -> Result<(), Box<dyn E
         let required =
             encode_protocol_error(FoundationProtocolError::AdmissionCapabilityRequired, 0)?;
         // 4, 6 and 18 select 18 with the rest of the production set the client supports.
-        let (admitted, frames) = admit(&authority, &bootstrap(&[4, 6, 13, 17, 18])?).await?;
-        assert_eq!(accepted_selection(&frames)?, [4, 6, 13, 17, 18]);
+        let (admitted, frames) =
+            admit(&authority, &bootstrap(&[4, 6, 11, 13, 15, 17, 18])?).await?;
+        assert_eq!(accepted_selection(&frames)?, [4, 6, 11, 13, 15, 17, 18]);
         let admitted = admitted.map_err(|end| format!("{end:?}"))?;
         assert!(
             admitted
@@ -854,7 +864,7 @@ fn a_bundle_world_recovery_lacking_18_is_refused_with_1118_and_one_frame()
         let mut authority = NegotiatingAuthority::new(Some(BUNDLE_WORLD_OFFERED_CAPABILITIES));
         authority.required = Some(
             super::super::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
-                &[CAPABILITY_WORLD_MAP_VIEW_V1],
+                &[11, CAPABILITY_WORLD_MAP_VIEW_V1],
                 crate::foundation::RuntimeScopeRefV1::channel(
                     WorldId::decode(&WORLD)?,
                     ChannelId::decode(&CHANNEL)?,
@@ -865,7 +875,7 @@ fn a_bundle_world_recovery_lacking_18_is_refused_with_1118_and_one_frame()
             )
             .map_err(|error| format!("{error:?}"))?,
         );
-        let (admitted, _) = admit(&authority, &bootstrap(&[4, 6, 13, 17, 18])?).await?;
+        let (admitted, _) = admit(&authority, &bootstrap(&[4, 6, 11, 13, 15, 17, 18])?).await?;
         let admitted = admitted.map_err(|end| format!("{end:?}"))?;
         authority.lost.set(Some(admitted));
         // ADMIT0 §5 / D1187: a recovery lacking a required member is answered with exactly
@@ -887,7 +897,7 @@ fn a_bundle_world_recovery_lacking_18_is_refused_with_1118_and_one_frame()
             crate::foundation::ProtocolDisposition::OperationTerminal
         );
         // The same session, supporting the closure, resumes with its selection.
-        let (resumed, frames) = admit(&authority, &resume(&[4, 6, 13, 17, 18])).await?;
+        let (resumed, frames) = admit(&authority, &resume(&[4, 6, 11, 13, 15, 17, 18])).await?;
         let resumed = resumed.map_err(|end| format!("{end:?}"))?;
         assert!(
             resumed
@@ -910,7 +920,8 @@ fn a_fixture_world_offers_exactly_the_production_set_and_never_18() -> Result<()
             PRODUCTION_OFFERED_CAPABILITIES
         );
         assert!(authority.required.is_none());
-        let (admitted, frames) = admit(&authority, &bootstrap(&[4, 6, 13, 17, 18])?).await?;
+        let (admitted, frames) =
+            admit(&authority, &bootstrap(&[4, 6, 11, 13, 15, 17, 18])?).await?;
         let selected = accepted_selection(&frames)?;
         assert!(!selected.contains(&CAPABILITY_WORLD_MAP_VIEW_V1));
         admitted.map_err(|end| format!("{end:?}"))?;

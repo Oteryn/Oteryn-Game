@@ -1542,3 +1542,6 @@ mod condition_gate_tests;
 
 #[path = "condition_suppression.rs"]
 mod condition_suppression;
+
+#[path = "condition_bed_regen.rs"]
+mod bed_regen;

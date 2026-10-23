@@ -5,9 +5,12 @@ pub mod actor_spell;
 pub mod appearance_change;
 mod attack;
 mod bank_npc;
+mod bed_regen;
 mod bed_sleep;
 mod bundle_map_position;
 mod depot;
+mod house_intent;
+mod house_query;
 use bundle_map_position::bundle_map_position;
 #[cfg(test)]
 use bundle_map_position::bundle_world_map;
@@ -34,6 +37,7 @@ mod guild_chat;
 mod guild_intent;
 mod highscores;
 mod input_gate;
+mod item_craft;
 mod item_look;
 mod item_move;
 mod item_ref_admission;
@@ -46,6 +50,7 @@ mod logout;
 mod logout_tests;
 mod loop_move;
 pub mod spectate_session;
+mod vip;
 use crate::map::boot::BundleCollisionIndexExt;
 pub use last_position::LastPositionFlush;
 mod control_loss_reconciliation;
@@ -2512,8 +2517,10 @@ fn operator_event(line: &str) {
 }
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
+    vip::composed_methods!();
     appearance_change::composed_methods!();
     guild_intent::composed_methods!();
+    house_intent::composed_methods!();
     cyclopedia::composed_methods!();
     async fn observe_quest_log(
         &self,
@@ -2929,6 +2936,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         definition: std::num::NonZeroU32,
     ) -> UseOutcome {
         self.use_item_definition(actor, command, definition).await
+    }
+
+    async fn use_craft(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<item_view::ItemKey>,
+        target: Option<item_view::ItemKey>,
+    ) -> Option<UseOutcome> {
+        self.use_cooking_conversion(actor, command, intent, source, target)
+            .await
     }
 
     async fn use_rune(
@@ -4353,6 +4372,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 monk,
                 self.owner_now(),
                 saved_vitals,
+                (outcome == FirstEntryOutcome::Positioned)
+                    .then(|| bed_regen::admitted_rest(&decided, self.world_id))
+                    .flatten(),
             )
             .is_none()
         {

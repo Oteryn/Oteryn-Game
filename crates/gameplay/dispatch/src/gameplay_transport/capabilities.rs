@@ -133,6 +133,7 @@ pub const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     TUTORIAL_NOTICES,
     super::guild_chat::OFFERED,
     super::guild_intent::OFFERED,
+    super::house_intent::OFFERED,
 ];
 
 /// The offered set of a World booted from a bundle (MAP-CUTOVER-1b, NPC-CMD-1a, ITEM-LOOP-1),
@@ -165,6 +166,7 @@ pub const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
         requires: &[],
     },
     HIGHSCORES,
+    super::item_craft::WORLD_INTERACTION_OFFER,
     OfferedCapability {
         id: CAPABILITY_ITEM_EQUIP_DROP_V1,
         requires: &[CAPABILITY_ITEM_VIEW_MOVE_V1],
@@ -177,6 +179,7 @@ pub const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
         id: CAPABILITY_CONTAINER_TREE_V1,
         requires: &[CAPABILITY_ITEM_VIEW_MOVE_V1, CAPABILITY_ITEM_EQUIP_DROP_V1],
     },
+    super::item_craft::ITEM_USE_OFFER,
     QUEST_LOG,
     OfferedCapability {
         id: CAPABILITY_ATTACK_V1,
@@ -203,6 +206,8 @@ pub const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
         requires: &[CAPABILITY_ITEM_VIEW_MOVE_V1],
     },
     super::guild_intent::OFFERED,
+    super::vip::OFFERED,
+    super::house_intent::OFFERED,
 ];
 
 /// MAP-ITEM-REF-1: the production offered set with capability 4 `ITEM_VIEW_MOVE_V1`, which
@@ -238,6 +243,7 @@ pub const ITEM_VIEW_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     TUTORIAL_NOTICES,
     super::guild_chat::OFFERED,
     super::guild_intent::OFFERED,
+    super::house_intent::OFFERED,
 ];
 
 /// Bound of one session's selection. A test keeps the production offered set within it.
