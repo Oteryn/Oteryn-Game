@@ -2,6 +2,7 @@
 
 pub mod depot;
 pub mod equipment_effects;
+pub mod forge;
 pub mod hotkey_search;
 pub mod imbuement;
 pub mod item_capacity;
