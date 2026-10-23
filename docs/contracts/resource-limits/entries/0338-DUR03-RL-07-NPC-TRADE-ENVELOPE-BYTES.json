@@ -1,0 +1,24 @@
+{
+  "id": "DUR03-RL-07-NPC-TRADE-ENVELOPE-BYTES",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md",
+  "resource": "One encoded normative ANL-01 EventEnvelope carrying event type 2 operation npc_trade, including payload",
+  "unit": "bytes",
+  "hard_maximum": 27408,
+  "configurable_range": {
+    "minimum": 27408,
+    "maximum": 27408
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Check the encoded or borrowed envelope length before retaining, decoding, batching or publishing; ANL01-EVENT-ENVELOPE-BYTES (262,144 B) still applies on top. Migration 0082 admits a stored envelope above the one-item 9,216 B only for an NPC trade event of the same transaction (up to this row) or a fee event (up to DUR03-RL-07-FEE-BURN-ENVELOPE-BYTES), and sets the stored column ceiling to this row.",
+  "client_visible": false,
+  "boundary_tests": [
+    "the measured worst-case envelope (128-byte build id) is exactly 27,408 B and accepted",
+    "27,409 bytes rejected before decode"
+  ],
+  "consumers": [
+    "apps/game-server/src/durability/npc_trade_audit.rs",
+    "apps/game-server/src/durability/npc_trade.rs (in-transaction NPC trade: plan and usage checked before any write; migration 0082 re-proves the lines at commit)",
+    "apps/game-server/migrations/0082_npc_trade.sql (stored envelope ceiling)"
+  ],
+  "notes": "NPC-0 \u00a74 command 8 NPC_TRADE_INTENT and \u00a75.5 (NPC_SINGLE_TRADE_COMMIT_V1); NPC trade shape only, the one-item DUR03-RL-01..08 and fee DUR03-RL-*-FEE-BURN rows are unchanged; registered by OTV2-20261013-npc-trade-1. BUY: up to 20 coin BURN lines of the gold fee plan (FeeBurnCause::NpcTrade), up to 2 change MINTs and the item MINT; SELL: one item BURN and up to 3 coin MINTs."
+}

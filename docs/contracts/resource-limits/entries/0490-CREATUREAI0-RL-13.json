@@ -1,0 +1,24 @@
+{
+  "allocation_impact": "A value check on a point; it reserves nothing.",
+  "boundary_tests": [
+    "1,000 ms and 86,400,000 ms validate (and 1,000 ms is accepted by the shard parse)",
+    "999 ms and 86,400,001 ms are refused as Limit by validate and by the shard parse; the reference map spans 5 s to 54,784 s"
+  ],
+  "client_visible": false,
+  "configurable_range": {
+    "maximum": 86400000,
+    "minimum": 1000
+  },
+  "consumers": [
+    "world bundle compiler",
+    "game server World runtime (MAP-LOAD-1)",
+    "game server creature spawn runtime (SPAWN-1b)"
+  ],
+  "failure_category": "INVALID_INPUT",
+  "hard_maximum": 86400000,
+  "id": "CREATUREAI0-RL-13",
+  "notes": "SPAWN-CONTENT-1; CREATURE-AI-0 \u00a76.1; format document \u00a713. Test: tools/world-bundle-compiler/tests/spawns.rs.",
+  "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+  "resource": "Respawn delay of one spawn point",
+  "unit": "milliseconds"
+}

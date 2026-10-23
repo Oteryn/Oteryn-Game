@@ -1,0 +1,19 @@
+{
+  "id": "NET03-PREADMISSION-CONNECTIONS",
+  "owner_contract": "FND-03_RUNTIME_EXECUTION_CONTRACT.md",
+  "resource": "concurrent pre-admission TCP/TLS connections",
+  "unit": "connections",
+  "hard_maximum": 256,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 256
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
+  "client_visible": true,
+  "boundary_tests": [
+    "hard maximum accepted",
+    "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+    "checked arithmetic overflow rejected before allocation or partial mutation"
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "id": "FND02-ADMISSION-MATERIAL-BYTES",
+  "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+  "resource": "ClientBootstrap.admission_material",
+  "unit": "bytes",
+  "hard_maximum": 16384,
+  "configurable_range": {
+    "minimum": 16384,
+    "maximum": 16384
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Reject peer-controlled length before copying or verification.",
+  "client_visible": true,
+  "boundary_tests": [
+    "16,384 accepted",
+    "16,385 rejected before credential verification"
+  ],
+  "consumers": [
+    "FND-04 admission consumer"
+  ],
+  "notes": "FND-04 may define a smaller semantic credential format, but FND-02 decoders remain required to safely reject/handle up to this hard wire maximum."
+}

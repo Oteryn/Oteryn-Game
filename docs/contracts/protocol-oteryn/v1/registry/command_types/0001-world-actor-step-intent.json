@@ -1,0 +1,9 @@
+{
+  "id": 1,
+  "name": "WORLD_ACTOR_STEP_INTENT",
+  "owner_decision": "#642 FIRST-CONTROL-WIRE-V1 (owner acceptance 5853424280)",
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/world_spatial_v1.proto#WorldActorStepIntentV1",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/world_spatial_v1.proto#WorldActorStepResultV1",
+  "max_payload_bytes": 4,
+  "max_result_payload_bytes": 8
+}

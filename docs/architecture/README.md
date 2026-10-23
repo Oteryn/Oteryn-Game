@@ -154,7 +154,8 @@ Historical lag/disconnect task/checkpoint files remain provenance only where the
 
 - `../contracts/PROTOCOL_OTERYN_TRANSPORT_POLICY.json`;
 - `../contracts/GAME_EVENT_FOUNDATION_REGISTRY.json`;
-- `../contracts/RESOURCE_LIMITS_REGISTRY.json`;
+- `../contracts/resource-limits/` (`registry.json` plus one file per entry in `entries/`);
+- `../contracts/protocol-oteryn/v1/registry/` (`registry.json` plus one file per capability, command type and state domain);
 - `../contracts/CROSS_REPOSITORY_CONTRACT_LOCK.json`;
 - `../contracts/REFERENCE_EVIDENCE_PARITY_MANIFEST_V1.json` and schema.
 

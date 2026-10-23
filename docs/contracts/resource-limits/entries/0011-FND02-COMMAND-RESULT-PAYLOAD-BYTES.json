@@ -1,0 +1,21 @@
+{
+  "id": "FND02-COMMAND-RESULT-PAYLOAD-BYTES",
+  "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+  "resource": "CommandResult.payload",
+  "unit": "bytes",
+  "hard_maximum": 65536,
+  "configurable_range": {
+    "minimum": 65536,
+    "maximum": 65536
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Bound before result-specific decode/allocation.",
+  "client_visible": true,
+  "boundary_tests": [
+    "65,536 accepted when the command-type limit permits",
+    "65,537 rejected"
+  ],
+  "consumers": [
+    "client command-result decoder"
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "id": "CHARCMD-LIST-RESPONSE-BYTES",
+  "owner_contract": "OTERYN_GAME_CHARACTER_AUTHORITY_COMMANDS_V1.md",
+  "resource": "ListPendingCharacterCommandsV1 response body",
+  "unit": "bytes",
+  "hard_maximum": 8192,
+  "configurable_range": {
+    "minimum": 8192,
+    "maximum": 8192
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "Read with an 8192-byte cap before decoding; a full page of 32 maximal entries is 5602 bytes.",
+  "client_visible": false,
+  "boundary_tests": [
+    "a response above 8192 bytes is refused before decoding"
+  ],
+  "consumers": [
+    "apps/game-server/src/native_admission_source/character_commands.rs"
+  ],
+  "notes": "Contract sections 3, 5 and 12. Internal Game-to-Platform boundary; no client wire. A refused or failed exchange stores nothing and publishes nothing: the intent stays PENDING and is retried until it expires. The consumer is disabled unless [platform.character_commands] is configured. Registered by CHAR-CMD-CONSUMER-1."
+}

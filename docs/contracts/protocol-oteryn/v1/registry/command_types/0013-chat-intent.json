@@ -1,0 +1,10 @@
+{
+  "id": 13,
+  "name": "CHAT_INTENT",
+  "owner_decision": "CHAT-0 CHAT0-LOCAL-PRIVATE-WORLD-ROOMS-V1 §7 (docs/architecture/reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md, #1375); numbers leased to CHAT-1 by the #162 control plane",
+  "capability": 7,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/chat_v1.proto#ChatIntentV1",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/chat_v1.proto#ChatIntentResultV1",
+  "max_payload_bytes": 1148,
+  "max_result_payload_bytes": 8
+}

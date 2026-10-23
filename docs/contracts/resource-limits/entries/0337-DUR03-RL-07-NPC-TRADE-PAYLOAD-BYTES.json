@@ -1,0 +1,24 @@
+{
+  "id": "DUR03-RL-07-NPC-TRADE-PAYLOAD-BYTES",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md",
+  "resource": "One encoded OneItemTransactionV1 payload carrying operation npc_trade",
+  "unit": "bytes",
+  "hard_maximum": 27094,
+  "configurable_range": {
+    "minimum": 27094,
+    "maximum": 27094
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Checked before retaining or decoding; ANL01 payload ceiling (196,608 B) still applies on top. Measured worst case (D50 method): a BUY of 20 whole crystal stacks, 99 platinum and 99 gold change and an item MINT, every key and revision at 512 bytes and maximal integers.",
+  "client_visible": false,
+  "boundary_tests": [
+    "the measured worst-case payload is exactly 27,094 B and accepted",
+    "27,095 bytes rejected before decode",
+    "a 21-coin-line BUY is rejected before encoding"
+  ],
+  "consumers": [
+    "apps/game-server/src/durability/npc_trade_audit.rs",
+    "apps/game-server/src/durability/npc_trade.rs (in-transaction NPC trade: plan and usage checked before any write; migration 0082 re-proves the lines at commit)"
+  ],
+  "notes": "NPC-0 \u00a74 command 8 NPC_TRADE_INTENT and \u00a75.5 (NPC_SINGLE_TRADE_COMMIT_V1); NPC trade shape only, the one-item DUR03-RL-01..08 and fee DUR03-RL-*-FEE-BURN rows are unchanged; registered by OTV2-20261013-npc-trade-1. BUY: up to 20 coin BURN lines of the gold fee plan (FeeBurnCause::NpcTrade), up to 2 change MINTs and the item MINT; SELL: one item BURN and up to 3 coin MINTs."
+}

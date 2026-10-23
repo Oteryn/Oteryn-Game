@@ -1,0 +1,22 @@
+{
+  "id": "LCA-REQUEST-BYTES",
+  "owner_contract": "OTERYN_GAME_LIST_CHARACTERS_FOR_ACCOUNT_PROJECTION_V1.md",
+  "resource": "Encoded PublishAccountCharactersV1 request body",
+  "unit": "bytes",
+  "hard_maximum": 16384,
+  "configurable_range": {
+    "minimum": 16384,
+    "maximum": 16384
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "The body is encoded from grammar-checked fields (at most 64 entries of at most 209 bytes plus the envelope) and its length is checked before the exchange opens a connection.",
+  "client_visible": false,
+  "boundary_tests": [
+    "the worst-case 64-entry snapshot encodes within 16384 bytes",
+    "a body above 16384 bytes is refused before the exchange opens a connection"
+  ],
+  "consumers": [
+    "apps/game-server/src/native_admission_source/account_characters.rs"
+  ],
+  "notes": "Contract sections 3 and 8. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered': the outbox row stays queued, the watermark stalls and Platform refuses issuance; gameplay, admission and the Character mutation are unaffected. Registered by OTV2-20260930-lcfa-1."
+}

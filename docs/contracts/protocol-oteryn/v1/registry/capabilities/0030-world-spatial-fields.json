@@ -1,0 +1,11 @@
+{
+  "id": 30,
+  "name": "WORLD_SPATIAL_FIELDS",
+  "owner_decision": "CP D1442 (#2187 ADMIT-CAP-1): next free capability number for the RUNE-USE-0 \u00a711.4 and WORLD-INTERACTION-0 field capability that ADMIT0 names in its mandatory floor",
+  "owner": "current ChannelRuntime (the field visibility rules, FIELD-WIRE-1)",
+  "requires": [6],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "FIELD-WIRE-1: the server does not offer this capability before the field payloads and their domain are registered and composed. It requires 6 WORLD_SPATIAL_ENTITIES (RUNE-USE-0 \u00a711.4). While unoffered it is not in the ADMIT0 mandatory floor (registered AND offered), and a World declaring it fails boot closed."
+}

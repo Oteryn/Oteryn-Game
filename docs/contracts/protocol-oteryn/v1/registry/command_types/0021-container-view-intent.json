@@ -1,0 +1,10 @@
+{
+  "id": 21,
+  "name": "CONTAINER_VIEW_INTENT",
+  "owner_decision": "BAGS-0 BAGS0-CONTAINERS-WITH-CONTENTS-V1 \u00a75 (docs/architecture/reviews/OTERYN_GAME_BAGS0_CONTAINERS_WITH_CONTENTS_DECISION_2026-09-30.md); numbers allocated by the #1622 control plane and registered by BAGS-WIRE-1",
+  "capability": 14,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/container_tree_v1.proto#ContainerViewIntentV1",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/container_tree_v1.proto#ContainerViewResultV1",
+  "max_payload_bytes": 15,
+  "max_result_payload_bytes": 4
+}

@@ -1,0 +1,20 @@
+{
+  "id": "AI01-SPAWN-SOURCES-PER-SCOPE",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_AI_ACTION_INTEGRATION_FIRST_CREATURE_SLICE_DECISION_2026-09-28.md",
+  "resource": "realized spawn sources per Channel ownership generation (AI-RL-11, D57)",
+  "unit": "spawn sources per scope",
+  "hard_maximum": 16,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 16
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
+  "client_visible": false,
+  "boundary_tests": [
+    "hard maximum accepted",
+    "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+    "checked arithmetic overflow rejected before allocation or partial mutation"
+  ],
+  "notes": "Superseded for spawn realization by CREATUREAI0-RL-02 (CREATURE-AI-0 \u00a710; SPAWN-CEILINGS-1): the Game carrier no longer reads this row when realizing or respawning spawns. The 16 x 4 = 64 product stays only as the fixed D57 envelope of the 64-entry ledgers sized against it (retained corpse projections, the smelly cheese ledger); the creature bite ledger is bounded by `CREATUREAI0-RL-04` instead (`CREATURE_BITE_LEDGER_MAX`, 262,144)."
+}

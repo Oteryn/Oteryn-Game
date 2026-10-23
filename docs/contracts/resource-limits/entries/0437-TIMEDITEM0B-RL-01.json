@@ -1,0 +1,22 @@
+{
+  "allocation_impact": "A live item's changed charges and time are checkpointed at most this long apart (A13 \u00a74.5); unchanged values write nothing.",
+  "boundary_tests": [
+    "max=60000: no checkpoint is issued 59,999 ms after the last one",
+    "max+1: a changed item is checkpointed once 60,000 ms have passed"
+  ],
+  "client_visible": false,
+  "configurable_range": {
+    "maximum": 60000,
+    "minimum": 60000
+  },
+  "consumers": [
+    "apps/game-server/src/domain/timed_item.rs TIMEDITEM0B_RL_01_CHECKPOINT_INTERVAL_MS"
+  ],
+  "failure_category": "CAPACITY_EXCEEDED",
+  "hard_maximum": 60000,
+  "id": "TIMEDITEM0B-RL-01",
+  "notes": "\u00a76.1; the crash bound R2 is one interval. Registered by OTV2-20261003-timed-rt-1a.",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_TIMED_ITEM0B_RUNTIME_CHARGES_AND_DURATION_DECISION_2026-10-03.md",
+  "resource": "Time between checkpoints of one changed live timed item",
+  "unit": "milliseconds"
+}

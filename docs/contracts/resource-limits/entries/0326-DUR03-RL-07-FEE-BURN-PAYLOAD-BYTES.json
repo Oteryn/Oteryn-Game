@@ -1,0 +1,23 @@
+{
+  "id": "DUR03-RL-07-FEE-BURN-PAYLOAD-BYTES",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_CHARACTER_GOLD_FEE_BOUNDARY_DECISION_2026-09-30.md",
+  "resource": "One exact OneItemTransactionV1 payload (event type 2, operation fee_burn) inside EventEnvelope.payload",
+  "unit": "bytes",
+  "hard_maximum": 25398,
+  "configurable_range": {
+    "minimum": 25398,
+    "maximum": 25398
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Check the encoded or borrowed payload length before decoding or copying; ANL01-EVENT-PAYLOAD-BYTES (196,608 B) still applies on top.",
+  "client_visible": false,
+  "boundary_tests": [
+    "the measured worst case of the registered schema (20 whole burns, two change MINTs of 99 coins, 512-byte revisions, the longest charm key, maximal integers) is exactly 25,398 B and accepted",
+    "25,399 bytes rejected before decode"
+  ],
+  "consumers": [
+    "apps/game-server/src/durability/item_fee_burn_audit.rs",
+    "apps/game-server/src/durability/item_fee_burn.rs (in-transaction fee BURN: plan and usage checked before any write; migration 0023 re-proves the lines at commit)"
+  ],
+  "notes": "CHARACTER-GOLD-FEE-BOUNDARY-V1 \u00a74.6 (D174-D178 and the \u00a72 at-most-2-change-outputs interpretation); fee shape only, the one-item DUR03-RL-01..08 rows are unchanged; registered by OTV2-20260930-gold-fee-1a. GOLD-FEE-1b (OTV2-20260930-gold-fee-1b) admits platinum/crystal and the change MINTs within these rows and re-measured this RL-07 byte row (was 24,181 / 24,495 B for gold only). GOLD-FEE-2 re-measured it with the bank value line (field 13): the largest bank-part event (20 whole crystal burns, the FEE_DEBIT line at BANK0-RL-01) is 24,267 B payload / 24,581 B envelope, below the change-MINT worst case, so the row is unchanged."
+}

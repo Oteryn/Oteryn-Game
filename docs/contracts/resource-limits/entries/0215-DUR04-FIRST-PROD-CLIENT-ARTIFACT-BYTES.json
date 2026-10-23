@@ -1,0 +1,18 @@
+{
+  "id": "DUR04-FIRST-PROD-CLIENT-ARTIFACT-BYTES",
+  "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md+AMENDMENT_03",
+  "resource": "One client-safe bootstrap artifact",
+  "unit": "bytes",
+  "hard_maximum": 34248,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 34248
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Check client slice length before header parse or input-sized allocation.",
+  "client_visible": true,
+  "boundary_tests": [
+    "34,248 bytes accepted only when nested/client-allowlist limits pass",
+    "34,249 rejected before parse/allocation"
+  ]
+}
