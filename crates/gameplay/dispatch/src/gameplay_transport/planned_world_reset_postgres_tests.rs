@@ -1,14 +1,33 @@
 //! Reuse the existing real fresh-admission/Channel fixture, mounted once.
+#[path = "planned_world_reset_fixture.rs"]
+pub(super) mod reset_fixture;
 use super::*;
 use crate::foundation::ControlLossCauseV1;
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 
 #[test]
 fn planned_world_reset_healthy_session_loses_control_and_releases_through_grace() -> TestResult {
+    // The debug composed owner needs the same stack as the neighboring kill/death
+    // scenarios; the production loss lifecycle and fixture remain the owners.
+    std::thread::Builder::new()
+        .name("planned-world-reset".into())
+        .stack_size(64 << 20)
+        .spawn(|| scenario().map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "planned World reset scenario panicked")?
+        .map_err(Into::into)
+}
+
+fn scenario() -> TestResult {
     run(async |admin| {
         reset();
         let harness =
             Harness::create_with_admission_seed(admin, "planned_reset_loss", true, false).await?;
+        let database: String = sqlx::query_scalar("SELECT current_database()")
+            .fetch_one(&harness.pool)
+            .await?;
+        assert!(database.starts_with("crs_planned_reset_loss_"));
+        eprintln!("WORLD-RESET-PG: created database {database}");
         prepare_current_session(&harness).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
         let authority = harness
@@ -30,10 +49,7 @@ fn planned_world_reset_healthy_session_loses_control_and_releases_through_grace(
         assert!(harness.root.retiring_world_reset(world).await?.is_none());
         // The retained job is installed by the database owner, not by a test-only
         // witness constructor. The production reader seals the actual durable row.
-        sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,0,$2,'map-1',$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_10',1,clock_timestamp(),to_char((clock_timestamp() AT TIME ZONE 'Europe/Berlin')-interval '10 hours','YYYY-MM'))")
-            .bind(world.as_bytes().as_slice()).bind([7_u8;32].as_slice()).execute(&harness.pool).await?;
-        sqlx::query("INSERT INTO game_world_reset_jobs(world_id,reset_epoch,target_digest,retirement_binding,target_map_revision,target_server_digest,target_client_digest,target_frame_digest,target_house_tiles,calendar_revision,phase) VALUES(encode($1,'hex')::uuid,0,$2,sha256(convert_to('oteryn:world-reset-retirement:v1','UTF8') || $2),'map-2',$2,$2,$2,'[]',1,'RETIRING')")
-            .bind(world.as_bytes().as_slice()).bind([7_u8;32].as_slice()).execute(&harness.pool).await?;
+        reset_fixture::seed_retiring(&harness.pool, world).await?;
         let retiring = harness
             .root
             .retiring_world_reset(world)
@@ -84,11 +100,11 @@ fn planned_world_reset_healthy_session_loses_control_and_releases_through_grace(
         }
         {
             let drain = crate::gameplay_transport::gameplay_drain::GameplayDrain::default();
-            drain.request(retiring.clone());
-            drain.request(retiring.clone());
+            drain.request(retiring);
+            drain.request(retiring);
             let shutdown = oteryn_foundation::CancellationToken::new();
             let mut lifecycle =
-                std::pin::pin!(crate::gameplay_transport::listener::control_loss_lifecycle(
+                Box::pin(crate::gameplay_transport::listener::control_loss_lifecycle(
                     &owner,
                     crate::gameplay_transport::listener::LostControl {
                         session: dependencies.admitted,
@@ -165,6 +181,21 @@ fn planned_world_reset_healthy_session_loses_control_and_releases_through_grace(
                     .is_err()
             );
         }
+        assert!(
+            !harness
+                .root
+                .retire_world_reset_ground(&authority, &harness.node, &retiring)
+                .await
+                .map_err(debug)?
+        );
+        reset_fixture::replace(&harness, world, owner.channel_id, &harness.node).await?;
+        assert!(
+            harness
+                .root
+                .retire_world_reset_ground(&authority, &harness.node, &retiring)
+                .await
+                .map_err(debug)?
+        );
         drop(owner);
         drop(authority);
         drop(seal);

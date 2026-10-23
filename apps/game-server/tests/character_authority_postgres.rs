@@ -2263,6 +2263,8 @@ mod item_loop_postgres_cases;
 // target through the same protected lane.
 #[path = "support/corpse_decay_postgres_cases.rs"]
 mod corpse_decay_postgres_cases;
+#[path = "../../../crates/gameplay/durability/src/durability/world_reset/ground_retirement_postgres_tests.rs"]
+mod world_reset_ground_postgres;
 
 // DEATH-0 death receipts, blessings and pending respawns (migration 0016)
 // share their cases with the focused standalone target through the same

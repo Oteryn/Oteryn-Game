@@ -21,6 +21,7 @@ pub async fn serve_gameplay(
     let tls = tcp_tls::tls_config(config.certificates, config.private_key)
         .map_err(GameplayServeError::InvalidTls)?;
     let authority = ComposedFreshAdmission {
+        reset_epoch: drain.epoch(),
         emit: owners.emit,
         root: owners.root,
         character: owners.character,

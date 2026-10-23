@@ -8,13 +8,22 @@ use sqlx::{Postgres, Row, Transaction};
 type Result<T> = std::result::Result<T, DurabilityError>;
 
 /// Sealed planned-reset signal. No caller-selected reset or loss flag can construct it.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct RetiringWorldReset {
-    world: WorldId,
-    epoch: u64,
-    binding: [u8; 32],
-    target: [u8; 32],
+    pub(super) world: WorldId,
+    pub(super) epoch: u64,
+    pub(super) binding: [u8; 32],
+    pub(super) target: [u8; 32],
 }
+
+pub(super) mod census;
+mod activation;
+mod content_preflight;
+mod ground_retirement;
+mod active_epoch;
+pub(super) mod ground_step;
+#[cfg(test)]
+mod migration_tests;
 
 impl RetiringWorldReset {
     pub fn loss_cause(&self) -> ControlLossCauseV1 {
@@ -72,3 +81,7 @@ pub(super) async fn loss_binding_current(
         _ => Ok(false),
     }
 }
+
+#[cfg(any(test, feature = "test-support"))]
+#[path = "world_reset/retiring_fixture.rs"]
+pub mod test_support;

@@ -1569,6 +1569,7 @@ async fn activate_content(
     root: &DurabilityRoot,
     world: WorldId,
     channel: ChannelId,
+    reset_epoch: u64,
 ) -> Result<(ContentActivationController, NativeEntryContentPin), BootError> {
     let record = root
         .read_current_content_activation(world, channel)
@@ -1583,7 +1584,11 @@ async fn activate_content(
         frame_binding_digest: record.frame_binding_digest,
     };
     let mut controller = ContentActivationController::new();
-    let gameplay = std::env::var_os("OTERYN_NATIVE_GAMEPLAY_MANIFEST")
+    let manifest = (reset_epoch > 0)
+        .then(|| std::env::var_os("OTERYN_WORLD_RESET_TARGET_MANIFEST"))
+        .flatten()
+        .or_else(|| std::env::var_os("OTERYN_NATIVE_GAMEPLAY_MANIFEST"));
+    let gameplay = manifest
         .map(|path| {
             crate::content::native_gameplay::NativeGameplayInput::from_manifest(
                 std::path::Path::new(&path),
@@ -2490,9 +2495,18 @@ async fn boot_and_serve(
     let fact = proof.fact();
     // The controller holds the active generation for the whole serve lifetime; the Channel
     // runtime pins exactly that generation.
-    world_reset::require_no_retiring(root, material).await?;
+    let Some(reset_recovery) = first(
+        world_reset::recover_retiring(root, material, &authority, &proof),
+        signalled.cancelled(),
+    )
+    .await
+    else {
+        stopped_before_ready();
+        return Ok(());
+    };
+    let reset_epoch = reset_recovery?;
     let (active_content, content) =
-        activate_content(root, material.world, material.channel).await?;
+        activate_content(root, material.world, material.channel, reset_epoch).await?;
     let qualified_room = content.qualified_room().clone();
     let (channel_pin, movement_cells, door_content, spawn_source) = content.into_channel_parts();
     // Spell cast §3 (SPELL-D1): the V1 spell book is loaded with the Content activation, before
@@ -2769,6 +2783,7 @@ async fn boot_and_serve(
         owners,
         &shutdown,
         &reset_watch,
+        reset_epoch,
     ));
     let mut control_task = pin!(control_loop(
         &control,

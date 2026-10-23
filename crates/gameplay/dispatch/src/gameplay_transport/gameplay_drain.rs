@@ -7,10 +7,23 @@ use std::sync::Mutex;
 #[derive(Default)]
 pub struct GameplayDrain {
     reset: Mutex<Option<RetiringWorldReset>>,
+    epoch: u64,
     requested: CancellationToken,
 }
 
 impl GameplayDrain {
+    /// Boot supplies the durable active epoch before any map view is served.
+    pub fn at_reset_epoch(epoch: u64) -> Self {
+        Self {
+            epoch,
+            ..Self::default()
+        }
+    }
+
+    pub(super) fn epoch(&self) -> u64 {
+        self.epoch
+    }
+
     pub fn request(&self, reset: RetiringWorldReset) {
         let mut current = self
             .reset
@@ -23,10 +36,10 @@ impl GameplayDrain {
     }
 
     pub(super) fn reset(&self) -> Option<RetiringWorldReset> {
-        self.reset
+        *self
+            .reset
             .lock()
             .unwrap_or_else(|poison| poison.into_inner())
-            .clone()
     }
 
     pub(super) async fn requested(&self) {

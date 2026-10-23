@@ -60,8 +60,8 @@ pub(super) async fn move_map_item(
         return refused(LoopMoveRefusal::NotSupported);
     };
     let base = at.map.overlay.base();
-    // The map view uses epoch 0 until the reset owner lands. Do not infer an epoch from a key.
-    if bundle_digest != base.digest() || reset_epoch != 0 {
+    // Only boot's durable active epoch may name this physical map generation.
+    if bundle_digest != base.digest() || reset_epoch != admission.reset_epoch {
         return stale;
     }
     let Some((pos, ordinal)) = view::placement_of(placement_key) else {

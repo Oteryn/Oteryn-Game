@@ -1,13 +1,16 @@
 //! Strict historical fresh-operation storage. No decoded value is a live capability.
 //! Runtime ceilings follow the accepted DFR registry; codec bounds remain explicit.
+mod retired_holder_release;
+mod terminal_release;
 use super::DurabilityError;
 use super::admission_authority_guards::*;
-use base64::Engine;
-use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use crate::foundation::admission_authority_publication::*;
 use crate::foundation::fnd04_verifier::*;
 use crate::foundation::fresh_admission_durability::*;
 use crate::foundation::*;
+use base64::Engine;
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+pub(super) use retired_holder_release::release_retired_holder_sessions;
 use serde::{Deserialize, Serialize};
 
 type Result<T> = std::result::Result<T, DurabilityError>;
@@ -315,6 +318,7 @@ impl ControlLossCompletionSourceV1 for DurableLossCompletionSource {
 /// a separate adapter requirement; runtime arguments must match fixed registry caps.
 #[derive(Clone)]
 pub struct FreshAdmissionStore {
+    retired_holder: Option<retired_holder_release::RetiredHolderProof>,
     guards: AdmissionGuardStore,
     maximum_operation_bytes: usize,
     /// CHAR-POSITION-0 §3.2 "At logout": the last position the terminal release writes in its
@@ -390,6 +394,7 @@ impl FreshAdmissionStore {
             guards: AdmissionGuardStore::from_root(root),
             maximum_operation_bytes: super::MAX_FRESH_OPERATION_BYTES,
             final_position: None,
+            retired_holder: None,
         }
     }
 
@@ -1017,8 +1022,8 @@ impl FreshAdmissionStore {
     }
 }
 mod control_loss_codec;
-pub use control_loss_codec::{decode_fresh_loss, encode_fresh_loss};
 use control_loss_codec::write_fresh_loss;
+pub use control_loss_codec::{decode_fresh_loss, encode_fresh_loss};
 
 pub(super) async fn has_owning_loss_receipt(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
@@ -1599,46 +1604,6 @@ impl FreshAdmissionStore {
             })
             .await
     }
-
-    /// A sealed owner transition is still revalidated against independently read
-    /// SQL current state at the one decision time of the serialized transaction.
-    pub async fn release(&self, transition: &TerminalReleaseClaimTransitionV1) -> Result<i64> {
-        let encoded = encode_lifecycle(transition.evidence())?;
-        let transition = transition.clone();
-        let store = self.clone();
-        let backend = self.guards.backend.clone();
-        let issued = backend.try_issue_root()?;
-        backend.run_pass(issued, move |holder, deadline| Box::pin(async move {
-            let evidence = transition.evidence();
-            let mut tx = super::admission_journal::begin_pass_transaction(holder, deadline).await?;
-            super::db::lock_admission_relations(&mut tx).await?;
-            if let Some(prior) = lifecycle_replay(&mut tx, evidence, &encoded).await? {
-                super::admission_journal::commit_pass_transaction(tx, deadline).await?;
-                return Ok(prior);
-            }
-            let session_id = evidence.operation.current_session().current_game_session_id();
-            let current = store.current_session_locked(&mut tx, session_id).await?;
-            let mut rows = Vec::with_capacity(2);
-            for prior in &evidence.transition.predecessors { rows.push(store.guards.load_locked(&mut tx, &prior.key).await?); }
-            if !store.guards.successor_history_available(&mut tx, &evidence.transition.successors, &rows).await? { return Err(DurabilityError::Unavailable); }
-            let encoded_successors = evidence.transition.successors.iter().map(|row| encode_guard(row, store.guards.maximum_guard_bytes)).collect::<Result<Vec<_>>>()?;
-            let decided_at: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint").fetch_one(&mut *tx).await?;
-            let successors = transition.validate_locked(&rows, current, decided_at).map_err(|_| DurabilityError::Unavailable)?;
-            if let Some(final_position) = store.final_position {
-                write_final_position(&mut tx, &current, &final_position).await?;
-            }
-            let updated = sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state = 3, current_transport_ref = NULL, prepared_attempt_ref = NULL WHERE game_session_id = encode($1,'hex')::uuid AND current_generation = $2::text::numeric(20,0) AND character_lease_generation = $3::text::numeric(20,0) AND scope_ownership_generation = $4::text::numeric(20,0)")
-                .bind(session_id.as_bytes().as_slice()).bind(current.current_connection_generation().get().to_string()).bind(current.current_character_lease().generation().to_string()).bind(current.current_scope_generation().get().to_string()).execute(&mut *tx).await?;
-            if updated.rows_affected() != 1 { return Err(DurabilityError::Unavailable); }
-            sqlx::query("UPDATE game_durability_reconnect_attempts SET state = 4 WHERE game_session_id = encode($1,'hex')::uuid AND state IN (1,5)")
-                .bind(session_id.as_bytes().as_slice()).execute(&mut *tx).await?;
-            store.guards.persist_locked(&mut tx, successors, &rows, &encoded_successors).await?;
-            sqlx::query("INSERT INTO game_durability_admission_lifecycle_receipts (operation_key, operation_json, decided_at) VALUES ($1,$2,$3)")
-                .bind(lifecycle_key(evidence)).bind(&encoded).bind(decided_at).execute(&mut *tx).await?;
-            super::admission_journal::commit_pass_transaction(tx, deadline).await?;
-            Ok(decided_at)
-        })).await
-    }
 }
 
 /// CHAR-POSITION-0 §3.2 "At logout": the final last-position upsert of the session being
@@ -1831,91 +1796,6 @@ impl FreshAdmissionStore {
         }
         self.release_current_claims(current, now, account_id).await
     }
-
-    /// Prepare the FND-04B terminal release of `current` from the current claim rows at the
-    /// durable time `now` and commit it through the exact fenced [`Self::release`].
-    async fn release_current_claims(
-        &self,
-        current: GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
-        now: i64,
-        account_id: &str,
-    ) -> Result<ExpiredLossReleaseV1> {
-        let keys = [
-            AdmissionAuthorityGuardKeyV1::Account {
-                account_id: account_id.into(),
-            },
-            AdmissionAuthorityGuardKeyV1::Character(current.commit().character_id()),
-        ];
-        let predecessors = self
-            .guards
-            .load(&keys)
-            .await?
-            .into_iter()
-            .collect::<Option<Vec<_>>>()
-            .ok_or(DurabilityError::Unavailable)?;
-        // Successor source times never precede a predecessor's (a row last
-        // published on a faster host clock): until the durable clock catches
-        // up, the fenced release refuses and a later attempt retries.
-        let prepared_at = predecessors
-            .iter()
-            .map(|row| row.source.source_observed_at)
-            .fold(now, i64::max);
-        let mut successors = predecessors.clone();
-        for row in &mut successors {
-            row.precondition = AdmissionPublicationPreconditionV1::CompareAndSet {
-                expected_publication_revision: row.publication_revision,
-            };
-            row.publication_revision = row
-                .publication_revision
-                .checked_add(1)
-                .ok_or(DurabilityError::InvalidStoredState)?;
-            row.source.source_revision = row
-                .source
-                .source_revision
-                .checked_add(1)
-                .ok_or(DurabilityError::InvalidStoredState)?;
-            row.source.decision_identity =
-                format!("grace-expiry-release:{}", row.source.source_revision);
-            row.source.source_observed_at = prepared_at;
-            row.source.clock_uncertainty_seconds = 0;
-            match &mut row.state {
-                AdmissionAuthorityGuardStateV1::Account { security, presence } => {
-                    security.provenance.publication_revision = row.publication_revision;
-                    *presence = None;
-                }
-                AdmissionAuthorityGuardStateV1::Character { holder, .. } => *holder = None,
-                _ => return Err(DurabilityError::InvalidStoredState),
-            }
-        }
-        let owner = ExpiredLossReleaseOwner {
-            current,
-            transition: AdmissionClaimTransitionEvidenceV1 {
-                predecessors,
-                successors,
-                prepared_at,
-            },
-        };
-        let transition = match TerminalReleaseClaimTransitionV1::prepare(
-            &owner,
-            account_id,
-            current,
-            prepared_at,
-        ) {
-            Ok(transition) => transition,
-            // Ownership no longer names this session: not this release's to make.
-            Err(AdmissionAuthorityPublicationErrorV1::Stale) => {
-                return Ok(ExpiredLossReleaseV1::NotApplicable);
-            }
-            Err(_) => return Err(DurabilityError::Unavailable),
-        };
-        match self.release(&transition).await {
-            Ok(decided_at) => Ok(ExpiredLossReleaseV1::Released { decided_at }),
-            Err(error) => match self.reconcile_lifecycle(transition.evidence()).await? {
-                Some(decided_at) => Ok(ExpiredLossReleaseV1::Released { decided_at }),
-                None => Err(error),
-            },
-        }
-    }
 }
 
 pub(super) struct PreparedReplacementClaims {
@@ -1933,6 +1813,7 @@ impl FreshAdmissionStore {
             },
             maximum_operation_bytes: super::MAX_FRESH_OPERATION_BYTES,
             final_position: None,
+            retired_holder: None,
         }
     }
     pub(super) async fn replacement_claim_replay(

@@ -11,6 +11,12 @@ mod kill_reward_e2e;
 
 #[path = "planned_world_reset_postgres_tests.rs"]
 mod planned_world_reset;
+#[path = "../../../durability/src/durability/fresh_admission/retired_holder_release_postgres_tests.rs"]
+mod planned_world_reset_retired_holder;
+#[path = "world_reset_source_map_postgres_tests.rs"]
+mod planned_world_reset_source_map;
+#[path = "world_reset_activation_postgres_tests.rs"]
+mod world_reset_activation;
 
 #[path = "logout_postgres_tests.rs"]
 mod logout_e2e;
@@ -212,6 +218,7 @@ impl Dependencies {
         authority: &'a ReconciledCharacterAuthority<'f, 's>,
     ) -> ComposedFreshAdmission<'a, 'f, 's> {
         ComposedFreshAdmission {
+            reset_epoch: 0,
             emit: |_, _| {},
             root: &harness.root,
             character: authority,

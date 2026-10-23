@@ -14,8 +14,9 @@ pub(super) async fn serve_watching_reset(
     owners: GameplaySeamOwners<'_, '_, '_>,
     shutdown: &CancellationToken,
     state: &ResetWatch,
+    reset_epoch: u64,
 ) -> Result<(), crate::gameplay_transport::GameplayServeError> {
-    let drain = GameplayDrain::default();
+    let drain = GameplayDrain::at_reset_epoch(reset_epoch);
     let root = owners.root;
     let world = owners.world_id;
     let watch = async {
@@ -57,10 +58,12 @@ pub(super) fn classify_exit(
     Ok(())
 }
 
-pub(super) async fn require_no_retiring(
+pub(super) async fn recover_retiring(
     root: &DurabilityRoot,
     material: &Material,
-) -> Result<(), BootError> {
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    node: &NodeIncarnationProof,
+) -> Result<u64, BootError> {
     let retiring = with_retries(
         root,
         "World reset record",
@@ -70,10 +73,60 @@ pub(super) async fn require_no_retiring(
     )
     .await
     .map_err(|_| BootError::Readiness("World reset record"))?;
-    if retiring.is_some() {
-        return Err(BootError::Readiness("World reset recovery required"));
+    if let Some(reset) = retiring {
+        // A full bundle still has Unknown House metadata (D1246). Never use
+        // the entry-room proof to authorize retirement of a bundle World.
+        if material.config.world_bundle.is_some() {
+            return Err(BootError::Readiness("World reset House qualification"));
+        }
+        let source_manifest = std::env::var_os("OTERYN_NATIVE_GAMEPLAY_MANIFEST");
+        let target_manifest = std::env::var_os("OTERYN_WORLD_RESET_TARGET_MANIFEST")
+            .or_else(|| source_manifest.clone());
+        let source = qualify_room(material.world, source_manifest.as_deref())?;
+        let target = qualify_room(material.world, target_manifest.as_deref())?;
+        let started = std::time::Instant::now();
+        let wait_until = tokio::time::Instant::now()
+            + Duration::from_millis(material.config.scope.assignment_wait_ms);
+        loop {
+            match root
+                .finish_world_reset(authority, node, &reset, &source, &target)
+                .await
+            {
+                Ok(Some(epoch)) => {
+                    let elapsed_ms = started.elapsed().as_millis();
+                    eprintln!(
+                        "event=world_reset_activated elapsed_ms={elapsed_ms} limit=MAP01-RESET-RETIRE-MS limit_ms=600000 world_reset_alarm={} reset_epoch={epoch}",
+                        elapsed_ms > 600_000
+                    );
+                    return Ok(epoch);
+                }
+                Ok(None) if tokio::time::Instant::now() < wait_until => {}
+                Ok(None) => return Err(BootError::Readiness("World reset drain wait")),
+                Err(crate::durability::item_decay_retire::DecayRetireError::Unavailable(error))
+                    if boot_step_retryable(&error) && tokio::time::Instant::now() < wait_until => {}
+                Err(_) => return Err(BootError::Readiness("World reset completion")),
+            }
+            tokio::time::sleep(ASSIGNMENT_POLL).await;
+        }
     }
-    Ok(())
+    Ok(root
+        .active_world_reset_epoch(material.world)
+        .await
+        .map_err(|_| BootError::Readiness("World reset active epoch"))?
+        .unwrap_or(0))
+}
+
+fn qualify_room(
+    world: WorldId,
+    manifest: Option<&std::ffi::OsStr>,
+) -> Result<crate::content::QualifiedNativeEntryRoom, BootError> {
+    match manifest {
+        Some(path) => {
+            crate::content::qualify_native_entry_room_from_gameplay_manifest(world, Path::new(path))
+        }
+        None => crate::content::qualify_native_entry_room(world),
+    }
+    .map_err(|_| BootError::Readiness("World reset content qualification"))
 }
 
 #[cfg(test)]

@@ -210,7 +210,7 @@ pub async fn loop_ground(
             admission.world_id,
             admission.channel_id,
             base.digest(),
-            0,
+            admission.reset_epoch,
             base.entry_count(),
         )
         .await

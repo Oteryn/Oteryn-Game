@@ -634,6 +634,14 @@ impl<'ast> Visit<'ast> for Constructions<'ast> {
 /// Every mention of `SeamRooms` outside `seam_rooms.rs`: the seam's declarations of its two
 /// owners in `mod.rs`, its one production construction in `serve.rs`, and test fixtures.
 const CONSTRUCTIONS: &[(&str, usize)] = &[
+    (
+        "gameplay_transport/world_reset_activation_postgres_tests.rs",
+        2,
+    ),
+    (
+        "gameplay_transport/world_reset_source_map_postgres_tests.rs",
+        1,
+    ),
     ("gameplay_transport/kill_reward_postgres_e2e_tests.rs", 1),
     ("gameplay_transport/mod.rs", 3),
     ("gameplay_transport/monk_save_postgres_tests.rs", 1),

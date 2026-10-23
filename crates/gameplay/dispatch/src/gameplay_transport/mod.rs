@@ -4,6 +4,10 @@
 pub mod actor_spell;
 mod attack;
 mod bank_npc;
+mod bundle_map_position;
+use bundle_map_position::bundle_map_position;
+#[cfg(test)]
+use bundle_map_position::bundle_world_map;
 #[cfg(test)]
 mod bundle_gates_tests;
 mod capabilities;
@@ -385,6 +389,7 @@ pub struct ComposedFreshAdmission<'a, 'f, 's> {
     pub character: &'a ReconciledCharacterAuthority<'f, 's>,
     pub holder: &'a NodeIncarnationProof,
     pub evidence: &'a FreshEvidenceSource,
+    pub reset_epoch: u64,
     pub world_id: WorldId,
     pub channel_id: ChannelId,
     /// See [`GameplaySeamOwners::required_capabilities`].
@@ -2758,96 +2763,6 @@ fn operator_event(line: &str) {
     eprintln!("oteryn-game-server {line}");
 }
 
-/// MAP-CUTOVER-1b: domain 17 of the bundle World `movement_cells` carry, at `actor`'s current
-/// position in `runtime`; `None` on a fixture World or when the actor has no current position.
-/// The overlay stays empty (§1.2) and the reset epoch is 0 until MAP-CUTOVER-1c. The node
-/// itself reads the position under the runtime lock and updates after release.
-#[cfg(test)]
-fn bundle_world_map(
-    runtime: &mut ChannelRuntimeV1,
-    movement_cells: &NativeEntryMovementCells,
-    actor: ExactActorRef,
-    view: &mut world_map::SessionMapView,
-    items: &mut item_view::SessionItemView,
-) -> Option<Result<Option<world_map::MapUpdate>, world_map::MapViewError>> {
-    let at = bundle_map_position(runtime, movement_cells, actor)?;
-    Some(at.update(view, items, None))
-}
-
-/// What domain 17 needs from the Channel runtime: the bundle map, the actor's native position
-/// and the content generation. It is read under the runtime lock; the view update that composes
-/// and encodes the window runs after the lock is released (§1.4).
-struct BundleMapPosition<'a> {
-    map: &'a crate::map::boot::BundleMap,
-    at: ActorPosition,
-    content_generation: [u8; 32],
-}
-
-impl BundleMapPosition<'_> {
-    /// The view update over the bundle map and, when given, the Channel's loop Ground items
-    /// (ITEM-LOOP-1).
-    fn update(
-        &self,
-        view: &mut world_map::SessionMapView,
-        items: &mut item_view::SessionItemView,
-        ground: Option<&loop_move::LoopGroundOverlay>,
-    ) -> Result<Option<world_map::MapUpdate>, world_map::MapViewError> {
-        // MAP-DOOR-1 (Codex 4239177726): one read of every door's state, so each door's
-        // appearance and object revision in this update agree.
-        let facts = self.map.facts.pinned();
-        match ground {
-            Some(ground) => {
-                let facts = ground.facts(&facts);
-                let source = world_map::MapViewSource {
-                    overlay: ground.overlay(),
-                    facts: &facts,
-                    content_generation: self.content_generation,
-                    reset_epoch: 0,
-                };
-                view.update(items, &source, self.at)
-            }
-            None => {
-                let source = world_map::MapViewSource {
-                    overlay: &self.map.overlay,
-                    facts: &facts,
-                    content_generation: self.content_generation,
-                    reset_epoch: 0,
-                };
-                view.update(items, &source, self.at)
-            }
-        }
-    }
-}
-
-/// The bundle map and `actor`'s current native position in `runtime`; `None` on a fixture World
-/// or when the actor has no current position.
-fn bundle_map_position<'a>(
-    runtime: &mut ChannelRuntimeV1,
-    movement_cells: &'a NativeEntryMovementCells,
-    actor: ExactActorRef,
-) -> Option<BundleMapPosition<'a>> {
-    let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
-        movement_cells.index()
-    else {
-        return None;
-    };
-    let snapshot = runtime.borrow_movement_position().read(actor).ok()?;
-    if snapshot.context() != runtime.pinned_movement_context() {
-        return None;
-    }
-    let position = snapshot.position();
-    // The runtime floor is legacy `z`; the native floor is `-z`.
-    Some(BundleMapPosition {
-        map: index.map(),
-        at: ActorPosition {
-            x: position.x,
-            y: position.y,
-            floor: position.floor.checked_neg()?,
-        },
-        content_generation: runtime.content_pin().client_artifact_digest(),
-    })
-}
-
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     fn world_weather(&self) -> Option<&crate::world_weather::WorldWeatherSource> {
         // WEATHER-1 (D1027 signed off, D1448): the shipped Oteryn-designed data, `None` (never
@@ -2958,17 +2873,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         view: &mut world_map::SessionMapView,
         items: &mut item_view::SessionItemView,
     ) -> Option<Result<Option<world_map::MapUpdate>, world_map::MapViewError>> {
-        let (at, index) = {
-            let mut runtime = self.runtime.lock().await;
-            let index = item_ref_admission::pinned_index(&runtime, self.active_generation);
-            (
-                bundle_map_position(&mut runtime, self.movement_cells, actor)?,
-                index,
-            )
-        };
-        // ITEM-LOOP-1: the dropped items, read after the runtime lock is released.
-        let ground = loop_move::loop_ground(self, at.map.overlay.base(), index).await?;
-        Some(at.update(view, items, Some(&ground)))
+        bundle_map_position::observe(self, actor, view, items).await
     }
 
     async fn observe(&self, actor: ExactActorRef) -> Option<WorldSpatialObservation> {

@@ -7716,6 +7716,28 @@
       "notes": "Compiled H = 5000 ms (U-RS1); 60000 ms is the contract hard maximum. Contract sections 3 and 11. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered' and never gates boot, serving, admission or shutdown. Registered by OTV2-20260929-runtime-status-producer (#162 owner-accepted package Q21, 5900403086)."
     },
     {
+      "allocation_impact": "Alarm budget for the World reset retirement run; retirement stays resumable and no unretired Ground is admitted to a new epoch.",
+      "boundary_tests": [
+        "elapsed at or below 600,000 ms does not raise world_reset_alarm",
+        "elapsed above 600,000 ms raises world_reset_alarm; no partial activation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 600000,
+        "minimum": 600000
+      },
+      "consumers": [
+        "game server World reset boot recovery"
+      ],
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 600000,
+      "id": "MAP01-RESET-RETIRE-MS",
+      "notes": "ADR-0021 \u00a74.7\u20134.8; MAP-OVERLAY-1c. Ground completion reports elapsed drain/retirement time with activation pending. Full reset and real-data qualification await the atomic activation writer and representative measurement.",
+      "owner_contract": "ADR-0021-world-map-runtime-loading.md",
+      "resource": "Elapsed time for draining and retiring the World Ground overlay during a planned reset",
+      "unit": "milliseconds"
+    },
+    {
       "allocation_impact": "Qualification budget on the reference node (the owner's 4 vCPU / 15.7 GiB benchmark node, pinned by MAP-SPIKE-0); a load over the budget fails MAP-LOAD-1 qualification. It is not a runtime timeout.",
       "boundary_tests": [
         "full bundle load at or under 5,000 ms passes",
