@@ -490,6 +490,9 @@ fn race(name: &str) -> BestiaryRaceKey {
 }
 
 /// Candidate-catalogue costs (#1293) for three majors and two minors.
+#[path = "charm_state_promotion_fixture.rs"]
+pub(crate) mod promotion_fixture;
+
 fn catalogue() -> CharmCatalogue {
     let major = |name: &str, costs| CharmDefinition {
         key: charm(name),

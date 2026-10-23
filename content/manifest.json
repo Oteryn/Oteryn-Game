@@ -78,6 +78,14 @@
       "index": "content/services/bank/index.json",
       "records": 1
     },
+    "Service.Blessing": {
+      "index": "content/services/blessings/index.json",
+      "records": 3
+    },
+    "Service.Promotion": {
+      "index": "content/services/promotion/index.json",
+      "records": 4
+    },
     "Service.Trade": {
       "index": "content/services/trade/index.json",
       "records": 324
@@ -688,6 +696,18 @@
       "path": "content/services/bank/index.json"
     },
     {
+      "path": "content/services/blessings/blessing-00000-00002.json"
+    },
+    {
+      "path": "content/services/blessings/index.json"
+    },
+    {
+      "path": "content/services/promotion/index.json"
+    },
+    {
+      "path": "content/services/promotion/promotion-00000-00003.json"
+    },
+    {
       "path": "content/services/trade/index.json"
     },
     {
@@ -873,7 +893,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "378804372e4ee77c5340ca88504210939a3dbf323de8250689f38efae276f5cd"
+          "sha256": "e75f8d85e5cf5f43232737109871f7789573b482d10d28e31bb7516368cc0a56"
         },
         {
           "creates_canonical_identities": false,

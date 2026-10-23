@@ -99,6 +99,31 @@ pub enum PremiumActivationRead<T> {
 
 pub use crate::domain::premium::EmptyLatchHeld;
 
+/// The purchase participant has already opened its Type2 transaction. Lend an empty-latch
+/// witness only while its shared latch lock is held, without a savepoint or second transaction.
+pub async fn with_purchase_latch<T>(
+    tx: &mut super::item_mint_audit::Type2Transaction<'_>,
+    operation: impl FnOnce(Option<PremiumActivationLatch>, Option<&EmptyLatchHeld>) -> T,
+) -> Result<T, DurabilityError> {
+    sqlx::query("SELECT pg_advisory_xact_lock_shared($1)")
+        .bind(PREMIUM_ACTIVATION_LOCK_KEY)
+        .execute(&mut ***tx)
+        .await?;
+    let row = sqlx::query("SELECT activation_id,switch_over_us,latched_at_us FROM game_premium_activation_latch WHERE id=1")
+        .fetch_optional(&mut ***tx).await?;
+    match row {
+        Some(row) => Ok(operation(
+            Some(PremiumActivationLatch {
+                activation_id: row.try_get("activation_id")?,
+                switch_over_us: row.try_get("switch_over_us")?,
+                latched_at_us: row.try_get("latched_at_us")?,
+            }),
+            None,
+        )),
+        None => Ok(operation(None, Some(&EmptyLatchHeld::inside_gate()))),
+    }
+}
+
 /// A pre-delivery bypass: applied in the gate's transaction, which holds the shared lock and read
 /// an empty table. Its writes commit with it, before any latch can. The transaction commits
 /// whatever `apply` returns: a bypass that can reject after a write writes in a savepoint

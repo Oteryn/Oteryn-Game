@@ -4,19 +4,12 @@
 // configured PostgreSQL 18.6 runs count as qualification evidence.
 extern crate oteryn_game_server as production_server;
 extern crate self as oteryn_game_server;
-#[allow(dead_code, unused_imports)]
-pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
+pub use oteryn_gameplay_dispatch::gameplay_transport;
 pub use production_server::admission_evidence;
-#[allow(dead_code, unused_imports)]
-#[path = "../src/durability"]
-mod durability {
-    // Recompile the shared core; native world adapters use the full library Content context.
-    include!("../../../crates/gameplay/durability/src/durability/core_modules.rs");
-}
-#[allow(dead_code, unused_imports)]
-pub use oteryn_gameplay_entities as foundation;
-#[allow(dead_code, unused_imports)]
-pub use oteryn_gameplay_native_admission_source as native_admission_source;
+pub use production_server::{
+    character_bootstrap_intent, character_recovery_fence, domain, durability, foundation,
+    native_admission_source,
+};
 
 use durability::DurabilityRoot;
 use durability::character_authority::CharacterAuthorityError;
@@ -2257,9 +2250,6 @@ mod bestiary_progress_postgres_cases;
 mod character_appearance_native_postgres_cases;
 #[path = "support/character_appearance_postgres_cases.rs"]
 mod character_appearance_postgres_cases;
-#[allow(dead_code, unused_imports)]
-#[path = "../../../crates/gameplay/durability/src/character_bootstrap_intent.rs"]
-pub mod character_bootstrap_intent;
 // CHAR-BUILD-1a build state, build receipts and death build fields (migration
 // 0030) and their admission verifier checks, on the CHARM-2 harness included above.
 #[path = "support/character_build_postgres_cases.rs"]
@@ -2335,8 +2325,6 @@ mod corpse_decay_postgres_cases;
 // its cases with the focused standalone target through the same protected lane.
 #[path = "support/corpse_transfer_postgres_cases.rs"]
 mod corpse_transfer_postgres_cases;
-#[path = "support/domain_shim.rs"]
-pub mod domain;
 #[cfg(test)]
 #[path = "../src/lifted_tests/durability_npc_travel_postgres_fixture.rs"]
 mod durability_npc_travel_postgres_fixture;

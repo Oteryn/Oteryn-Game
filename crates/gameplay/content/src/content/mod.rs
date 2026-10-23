@@ -31,6 +31,7 @@
 
 mod activation;
 mod artifact;
+pub mod blessing_catalogue;
 pub mod bundle_spell_tiles;
 pub mod channel_content_pin;
 pub mod character_progression_content;

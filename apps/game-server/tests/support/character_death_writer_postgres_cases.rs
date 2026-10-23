@@ -105,15 +105,21 @@ async fn create(admin: String, tag: &str, blessings: &[&str]) -> TestResult<Harn
     .bind(id(41).as_slice())
     .execute(&harness.pool)
     .await?;
+    // Historical held-set fixture; native purchases are tested through dispatch separately.
+    let mut tx = harness.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
     for blessing in blessings {
         sqlx::query(
             "INSERT INTO game_character_blessings VALUES (encode($1,'hex')::uuid, $2, 'test')",
         )
         .bind(id(41).as_slice())
         .bind(*blessing)
-        .execute(&harness.pool)
+        .execute(&mut *tx)
         .await?;
     }
+    tx.commit().await?;
     Ok(harness)
 }
 

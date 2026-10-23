@@ -2,19 +2,20 @@
 mod bootstrap_character;
 mod creation_integrity;
 
-use oteryn_gameplay_characters::character_authority_audit::{EVENT_SCHEMA_REVISION, EVENT_TYPE_CHARACTER_AUTHORITY_BOOTSTRAPPED, RETENTION_PROFILE, encode_bootstrap};
 use super::db::{begin_semantic_transaction, commit_semantic_transaction};
 use super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarnation};
 use super::{DurabilityError, DurabilityRoot};
+use crate::admission_evidence::{Facts, Request, Response, decode_response};
+use crate::character_bootstrap_intent::{CharacterBootstrapIntentV1, CharacterInterpretationV1};
 use crate::character_recovery_fence::{
     CharacterRecoveryFenceV1, CharacterRecoveryTransition, SealedCharacterRecoveryFence,
     recovery_record_digest,
 };
-use crate::admission_evidence::{Facts, Request, Response, decode_response};
-use crate::character_bootstrap_intent::{
-    CharacterBootstrapIntentV1, CharacterInterpretationV1,
-};
 use crate::domain::{AccountId, CharacterId, CharacterRevision, WorldId};
+use oteryn_gameplay_characters::character_authority_audit::{
+    EVENT_SCHEMA_REVISION, EVENT_TYPE_CHARACTER_AUTHORITY_BOOTSTRAPPED, RETENTION_PROFILE,
+    encode_bootstrap,
+};
 use sqlx::Row;
 
 type Result<T> = std::result::Result<T, CharacterAuthorityError>;
@@ -720,6 +721,7 @@ async fn verify_character_integrity(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     definitions: Option<&dyn super::character_proficiency::ProficiencyDefinitions>,
 ) -> std::result::Result<(), DurabilityError> {
+    super::npc_purchase::verify_purchase_integrity(tx).await?;
     creation_integrity::verify(tx).await?;
     // P03 progression is optional at revision one because initialization is a
     // separate owner.  Once a Character advances, typed state and a complete,
@@ -786,7 +788,12 @@ async fn verify_character_integrity(
                   level_before, level_after, experience_before, experience_after, \
                   profile_revision, ruleset_revision, content_revision, simulation_revision, \
                   evidence_revision, declaration_revision, policy_revision, reward_revision \
-              FROM game_character_appearance_receipts) \
+              FROM game_character_premium_revision_chain \
+           UNION ALL SELECT character_id, original_character_revision, committed_character_revision, \
+                  level_before, level_after, experience_before, experience_after, \
+                  profile_revision, ruleset_revision, content_revision, simulation_revision, \
+                  evidence_revision, declaration_revision, policy_revision, reward_revision \
+              FROM game_character_wheel_receipts) \
          SELECT 1 FROM game_character_roots r \
            LEFT JOIN game_character_progression_state s USING (character_id) \
           WHERE (r.character_revision <> 1 AND s.character_id IS NULL) \

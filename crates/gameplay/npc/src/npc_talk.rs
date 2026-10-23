@@ -33,6 +33,7 @@ pub struct NpcTalkEntry {
     topic_reply: Option<String>,
     /// The admitted offers of every Service of the NPC, in source order (NPC-CMD-1b).
     offers: Vec<ProjectV2ServiceOffer>,
+    pub premium_services: Vec<crate::content::npc_catalogue::premium_services::PremiumNpcService>,
 }
 
 impl NpcTalkEntry {
@@ -62,6 +63,7 @@ impl NpcTalkEntry {
             farewell_reply: "Farewell.".to_owned(),
             topic_reply: topic.map(str::to_owned),
             offers: Vec::new(),
+            premium_services: Vec::new(),
         }
     }
 
@@ -96,6 +98,10 @@ impl NpcTalkBook {
             ..Self::default()
         };
         for (reference, npc) in model.npcs() {
+            let premium_services = crate::content::npc_catalogue::premium_services::resolve(
+                &reference.key,
+                &npc.services,
+            );
             let bank = npc
                 .services
                 .iter()
@@ -113,6 +119,13 @@ impl NpcTalkBook {
                         replies.greeting.text.clone(),
                         replies.farewell.text.clone(),
                         (!lines.is_empty()).then(|| lines.join(" ")),
+                        Vec::new(),
+                    )
+                } else if !premium_services.is_empty() {
+                    (
+                        format!("Greetings, I am {}.", npc.name),
+                        "Farewell.".into(),
+                        Some("Ask me about promotion or a blessing.".into()),
                         Vec::new(),
                     )
                 } else if bank {
@@ -149,7 +162,8 @@ impl NpcTalkBook {
                 reference.key.clone(),
                 NpcTalkEntry {
                     name: npc.name.clone(),
-                    admitted_dialogue: npc.dialogue.is_some(),
+                    admitted_dialogue: npc.dialogue.is_some() && premium_services.is_empty(),
+                    premium_services,
                     bank: npc
                         .services
                         .iter()

@@ -63,7 +63,7 @@ pub async fn lock_mail_recipient_root(
     .is_some())
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 #[allow(
     dead_code,
     reason = "PostgreSQL exercises are registered in the canonical PG target; the library unit target has no database"
