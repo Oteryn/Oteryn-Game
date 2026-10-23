@@ -21,6 +21,10 @@ mod logout_e2e;
 mod map_bundle_domain;
 #[path = "loop_map_pickup_tests.rs"]
 mod map_pickup;
+#[path = "pvp_death_postgres_tests.rs"]
+mod pvp_death;
+#[path = "pvp_expiry_postgres_tests.rs"]
+mod pvp_expiry;
 #[path = "quest_admission_postgres_tests.rs"]
 mod quest_admission;
 #[path = "quest_chest_postgres_tests.rs"]
