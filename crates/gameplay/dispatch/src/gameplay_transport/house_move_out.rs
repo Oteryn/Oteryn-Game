@@ -1,14 +1,10 @@
 //! HOUSE-1b owner commands composed from the admitted actor and current Channel owner.
-use super::{ComposedFreshAdmission, capabilities::OfferedCapability, connection::AdmittedSession};
+use super::{ComposedFreshAdmission, connection::AdmittedSession};
 use crate::durability::{house_disposition::HouseDispositionError, house_scope_handoff::HouseId};
 use crate::foundation::{CommandId, CommandRef, RuntimeScopeRefV1};
 use oteryn_gameplay_housing::house_move_out::HouseMoveOutCommand;
 use oteryn_protocol_oteryn::house_move_out as wire;
 
-pub(super) const OFFERED: OfferedCapability = OfferedCapability {
-    id: wire::CAPABILITY_HOUSE_MOVE_OUT_V1,
-    requires: &[],
-};
 #[derive(Debug)]
 pub enum HouseMoveOutReply {
     Rejected,

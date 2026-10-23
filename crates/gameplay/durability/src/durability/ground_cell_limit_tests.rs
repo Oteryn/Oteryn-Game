@@ -300,6 +300,9 @@ fn current_scope_issuer_failure_stays_authority_and_native_source_error_stays_so
 /// PostgreSQL cases use real native source MINT/TRANSFER writers and current
 /// Root/Node/recovery/scope predicates. Prospective insertions remain DATA.
 mod postgres {
+    mod field_capabilities {
+        include!("field_capability_port_postgres_tests.rs");
+    }
     use crate::bestiary_postgres_harness as harness;
     use crate::durability::ground_cell_limit::{
         GroundCellAdmissionError, GroundCellLimitError,
@@ -618,6 +621,7 @@ mod postgres {
             ground_destination: true,
             decay: None,
             decay_chain: Vec::new(),
+            field_class: crate::durability::spell_items_abi::SpellFieldClass::NotField,
         }
     }
 
@@ -948,7 +952,15 @@ mod postgres {
             let request = spell_request(&origin, 700, 160, vec![spell_mint(180), spell_mint(181)])?;
             let mut tx = h.pool.begin().await?;
             let (_permit, authority) = player_authority(&mut tx, h, request.command).await?;
-            let result = apply_spell_items_in_transaction(&mut tx, &authority, &request).await;
+            let result = apply_spell_items_in_transaction(
+                &mut tx,
+                &authority,
+                &request,
+                &crate::durability::spell_items_abi::SpellFieldOrigin::Player(std::sync::Arc::new(
+                    |_, _, _| false,
+                )),
+            )
+            .await;
             assert!(
                 matches!(result, Err(SpellItemError::Rejected("not enough room"))),
                 "{result:?}"
@@ -1002,9 +1014,16 @@ mod postgres {
                 162,
                 vec![SpellItemOperation::RemoveGround(removed), spell_mint(180)],
             )?;
-            let outcome = apply_spell_items_in_transaction(&mut tx, &authority, &request)
-                .await
-                .map_err(debug)?;
+            let outcome = apply_spell_items_in_transaction(
+                &mut tx,
+                &authority,
+                &request,
+                &crate::durability::spell_items_abi::SpellFieldOrigin::Player(std::sync::Arc::new(
+                    |_, _, _| false,
+                )),
+            )
+            .await
+            .map_err(debug)?;
             let SpellItemTransactionOutcome::Applied(receipt) = outcome else {
                 return Err("fresh replacement did not apply".into());
             };
@@ -1017,7 +1036,7 @@ mod postgres {
             let mut replay = h.pool.begin().await?;
             let (_permit, authority) = player_authority(&mut replay, h, request.command).await?;
             assert!(
-                matches!(apply_spell_items_in_transaction(&mut replay, &authority, &request).await.map_err(debug)?, SpellItemTransactionOutcome::AlreadyCommitted(value) if value == receipt)
+                matches!(apply_spell_items_in_transaction(&mut replay, &authority, &request, &crate::durability::spell_items_abi::SpellFieldOrigin::Player(std::sync::Arc::new(|_, _, _| false))).await.map_err(debug)?, SpellItemTransactionOutcome::AlreadyCommitted(value) if value == receipt)
             );
             replay.commit().await?;
             assert_eq!(spell_footprint(h).await?, before);
@@ -1045,7 +1064,15 @@ mod postgres {
             let request = spell_request(&origin, 702, 164, vec![operation])?;
             let mut tx = h.pool.begin().await?;
             let (_permit, authority) = player_authority(&mut tx, h, request.command).await?;
-            let result = apply_spell_items_in_transaction(&mut tx, &authority, &request).await;
+            let result = apply_spell_items_in_transaction(
+                &mut tx,
+                &authority,
+                &request,
+                &crate::durability::spell_items_abi::SpellFieldOrigin::Player(std::sync::Arc::new(
+                    |_, _, _| false,
+                )),
+            )
+            .await;
             assert!(
                 matches!(result, Err(SpellItemError::Rejected("not enough room"))),
                 "{result:?}"
@@ -1131,9 +1158,16 @@ mod postgres {
             )?;
             let mut tx = h.pool.begin().await?;
             let (_permit, authority) = player_authority(&mut tx, h, request.command).await?;
-            apply_spell_items_in_transaction(&mut tx, &authority, &request)
-                .await
-                .map_err(debug)?;
+            apply_spell_items_in_transaction(
+                &mut tx,
+                &authority,
+                &request,
+                &crate::durability::spell_items_abi::SpellFieldOrigin::Player(std::sync::Arc::new(
+                    |_, _, _| false,
+                )),
+            )
+            .await
+            .map_err(debug)?;
             tx.commit().await?;
             assert_eq!(h.count("game_item_ground_locations").await?, 64);
             assert_eq!(h.count("game_item_container_entries").await?, 1);
@@ -1156,9 +1190,16 @@ mod postgres {
                 168,
                 vec![SpellItemOperation::MergeInventory(reservation)],
             )?;
-            apply_spell_items_in_transaction(&mut tx, &authority, &request)
-                .await
-                .map_err(debug)?;
+            apply_spell_items_in_transaction(
+                &mut tx,
+                &authority,
+                &request,
+                &crate::durability::spell_items_abi::SpellFieldOrigin::Player(std::sync::Arc::new(
+                    |_, _, _| false,
+                )),
+            )
+            .await
+            .map_err(debug)?;
             tx.commit().await?;
             assert_eq!(h.count("game_item_ground_locations").await?, 64);
             assert_eq!(h.count("game_item_container_entries").await?, 1);
