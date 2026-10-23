@@ -18,7 +18,7 @@ where
         let database: String = sqlx::query_scalar("SELECT current_database()")
             .fetch_one(&h.pool)
             .await?;
-        assert_eq!(version, "170006");
+        assert_eq!(version, crate::CANONICAL_POSTGRES_SERVER_VERSION_NUM);
         eprintln!("DAILY-REWARD-PG database={database} server_version_num={version} test={tag}");
         let result = body(&h).await;
         h.cleanup().await?;
