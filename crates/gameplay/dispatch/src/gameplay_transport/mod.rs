@@ -7,6 +7,7 @@ mod attack;
 mod bank_npc;
 mod bed_sleep;
 mod bundle_map_position;
+mod daily_reward;
 use bundle_map_position::bundle_map_position;
 #[cfg(test)]
 use bundle_map_position::bundle_world_map;
@@ -2510,6 +2511,7 @@ fn operator_event(line: &str) {
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     appearance_change::composed_methods!();
+    daily_reward::composed_methods!();
     async fn observe_quest_log(
         &self,
         actor: ExactActorRef,
@@ -2945,6 +2947,9 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         target: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
     ) -> UseOutcome {
+        if let Some(outcome) = self.open_daily_shrine(actor, command, &target).await {
+            return outcome;
+        }
         if self
             .rooms
             .gate_source_world()

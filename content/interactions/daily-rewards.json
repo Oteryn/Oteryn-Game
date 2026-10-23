@@ -1,0 +1,69 @@
+{
+  "schema": "OTERYN_DAILY_REWARDS/v1",
+  "revision": "oteryn:daily-rewards.r1",
+  "entry_shrine": {
+    "placement": "oteryn:placement/daily-reward-shrine",
+    "coordinate_frame": "oteryn:entry.frame",
+    "x": 0,
+    "y": 0,
+    "floor": 0
+  },
+  "shrine_source_ids": [
+    25720,
+    25721,
+    25722,
+    25723,
+    25802,
+    25803
+  ],
+  "potion_source_ids": [
+    266
+  ],
+  "items": [
+    {
+      "key": "oteryn:item.daily.gold-converter",
+      "charges": 100,
+      "kind": "converter"
+    },
+    {
+      "key": "oteryn:item.daily.training.sword",
+      "charges": 50,
+      "kind": "training"
+    },
+    {
+      "key": "oteryn:item.daily.training.axe",
+      "charges": 50,
+      "kind": "training"
+    },
+    {
+      "key": "oteryn:item.daily.training.club",
+      "charges": 50,
+      "kind": "training"
+    },
+    {
+      "key": "oteryn:item.daily.training.wraps",
+      "charges": 50,
+      "kind": "training"
+    },
+    {
+      "key": "oteryn:item.daily.training.bow",
+      "charges": 50,
+      "kind": "training"
+    },
+    {
+      "key": "oteryn:item.daily.training.wand",
+      "charges": 50,
+      "kind": "training"
+    },
+    {
+      "key": "oteryn:item.daily.training.rod",
+      "charges": 50,
+      "kind": "training"
+    },
+    {
+      "key": "oteryn:item.daily.training.shield",
+      "charges": 50,
+      "kind": "training"
+    }
+  ]
+}
