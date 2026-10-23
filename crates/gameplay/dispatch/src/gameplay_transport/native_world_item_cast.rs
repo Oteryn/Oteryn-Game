@@ -625,9 +625,11 @@ async fn prepare_barrier(
     let policy = content
         .item_policy(&preview.item.key, &preview.item.revision)
         .ok_or(SpellCastDisposition::NotAvailable)?;
-    let definition =
+    let mut definition =
         oteryn_gameplay_durability::durability::native_world_items::QualifiedItemDefinition::from_native_policy(policy)
             .map_err(|_| SpellCastDisposition::NotAvailable)?;
+    // The Barrier preview identifies this exact qualified Item; no damage recipe is required.
+    definition.field_class = crate::durability::spell_items_abi::SpellFieldClass::Wall;
     let record = policy.record();
     let blocks_movement = record
         .attributes
@@ -712,6 +714,9 @@ async fn prepare_barrier(
     else {
         return reject();
     };
+    if plan.item != preview.item {
+        return reject();
+    }
     operations.push(SpellItemOperation::MintGround {
         item_instance_id: nonce(
             b"oteryn:native-barrier-item:v1",
@@ -722,7 +727,19 @@ async fn prepare_barrier(
         ),
         definition,
         quantity: plan.count,
-        placement: address.placement(Vec::new()),
+        placement: address.placement(
+            format!(
+                "spell:{}:{}",
+                command
+                    .game_session_id()
+                    .as_bytes()
+                    .iter()
+                    .map(|byte| format!("{byte:02x}"))
+                    .collect::<String>(),
+                command.command_id().get()
+            )
+            .into_bytes(),
+        ),
         lifetime_millis: Some(plan.duration_ms),
         blocks_movement,
         blocks_projectile,

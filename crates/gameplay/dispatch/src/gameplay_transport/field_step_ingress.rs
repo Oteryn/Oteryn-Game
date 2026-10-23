@@ -28,6 +28,7 @@ struct StepIngressRead<'read, 'holder> {
     world:
         Option<&'read crate::durability::spell_field_policy::WorldFieldPolicyRead<'read, 'holder>>,
     creator: Option<CurrentFieldCreator>,
+    player_fields_current: bool,
     now_us: u64,
 }
 struct CurrentFieldCreator {
@@ -57,6 +58,7 @@ impl StepIngressRead<'_, '_> {
     ) -> Result<Option<super::CreatureFieldContact>, MovementError> {
         let fence = self.read.fence();
         if actor != self.actor
+            || !self.player_fields_current
             || session != self.session
             || direction != self.direction
             || runtime
@@ -381,6 +383,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let destination=if let Some(prepared)=&prepared {prepared.destination()} else {destination(runtime,owner.movement_cells,actor,session,origin,direction).map_err(|_|crate::durability::DurabilityError::Unavailable)?};
             let target=SpellGroundTarget::for_native_tile_read(room,runtime,destination).map_err(|_|crate::durability::DurabilityError::Unavailable)?;
             let read=crate::durability::spell_item_transaction::read_standing_player_tile_in_transaction(&mut tx,permit,owner.root,owner.character,owner.holder,&fence,source.source_digest(),&target).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;
+            let player_fields_current = if read.items().iter().any(|item| item.field_origin.is_some() && source.item_policy(&item.definition.production_key, &item.definition.revision_ref).is_none_or(|policy| {
+                !matches!(crate::durability::native_world_items::source_magic_field(policy), Ok(false))
+            })) {
+                FreshAdmissionStore::from_root(owner.root.clone()).check_current_runtime_capabilities(
+                    &mut tx, fence.runtime_scope, fence.scope_ownership_generation.get(),
+                    &crate::gameplay_transport::world_required_field_guard::current_check(&owner.required_capabilities)).await?
+            } else { true };
             let mut creator=None;
             for item in read.items(){
                 let Some(policy)=source.item_policy(&item.definition.production_key,&item.definition.revision_ref)else{break};
@@ -408,7 +417,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let world_data=if creator.is_some(){crate::durability::spell_field_policy::read_world_field_policy_in_transaction(&mut tx,owner.root,fence.runtime_scope,fence.scope_ownership_generation.get()).await?}else{None};
             let world=world_data.map(|data|data.bind(&tx));
             let validation={
-                let ingress=StepIngressRead{_transaction:&tx,actor,session,direction,origin,destination,before,read,world:world.as_ref(),creator,now_us};
+                let ingress=StepIngressRead{_transaction:&tx,actor,session,direction,origin,destination,before,read,world:world.as_ref(),creator,player_fields_current,now_us};
                 ingress.validate_current(runtime,states,room,source,actor,session,direction,prepared.as_ref())
             };
             drop(world);
