@@ -215,6 +215,15 @@ pub const GATED: &[(u32, &[u32], &[u32])] = &[
         &[],
     ),
     (
+        crate::vip::CAPABILITY_VIP_V1,
+        &[
+            crate::vip::COMMAND_TYPE_VIP_LIST,
+            crate::vip::COMMAND_TYPE_VIP_CONSENT,
+            crate::vip::COMMAND_TYPE_VIP_QUERY,
+        ],
+        &[],
+    ),
+    (
         crate::world_event::CAPABILITY_WORLD_EVENT_V1,
         &[crate::world_event::COMMAND_TYPE_WORLD_EVENT_QUERY],
         &[],
