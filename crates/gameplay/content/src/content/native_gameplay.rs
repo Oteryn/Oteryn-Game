@@ -1666,20 +1666,11 @@ pub mod test_support {
         controller
     }
 
-    /// The committed production manifest's generation, activated at node boot for `world`: every
-    /// pinned section including `loot_tables` (V8), so the reward table carries the real creature
-    /// rows (the rat's 5 XP and `oteryn:loot.creature.rat`). `source_world` replaces the
-    /// manifest's optional source-world addon (`None`: the accepted entry room). The returned pin
-    /// is the activation's own, which the Channel runtime and its combat room are built from.
-    pub fn activated_with_loot_tables(
-        world: oteryn_protocol_oteryn::WorldId,
-        source_world: Option<&[u8]>,
-    ) -> (
-        ContentActivationController,
-        crate::content::NativeEntryContentPin,
-    ) {
-        cosmetics_fixture::activated_with_optional_cosmetics(world, source_world, None)
-    }
+    mod activation_fixture;
+    pub use activation_fixture::{
+        activated_loop_monster, activated_loop_monster_missing_child, activated_with_loot_tables,
+        loop_monster_inner_digest,
+    };
 }
 
 #[cfg(test)]

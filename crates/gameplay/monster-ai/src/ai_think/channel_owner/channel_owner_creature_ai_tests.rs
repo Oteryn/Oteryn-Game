@@ -26,6 +26,7 @@ mod creature_movement_measure;
 mod creature_movement_tests;
 mod creature_path_tests;
 mod creature_return_tests;
+mod creature_snapshot_tests;
 mod movement_timer_fixture;
 
 const SECOND: u64 = 1_000_000;

@@ -4,7 +4,7 @@
 task_id: LOOP-MONSTER-1
 title: "LOOP-MONSTER-1: session-independent World respawn scheduler; monster ranged, spell and one-pass summon AI"
 mode: IMPLEMENT
-status: NOT_STARTED   # re-implementation pending under ADR-0022
+status: in_progress   # local implementation validated; integrator owns publication
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 2
@@ -16,7 +16,7 @@ base_branch: main
 branch: null
 pr: null
 needs_migration: false
-needs_registry: maybe   # RESOURCE_LIMITS_REGISTRY rows if new bounds are registered
+needs_registry: false  # existing native limits reused; no new bound
 merge_authority: CP_ONLY (builder never marks ready)
 ```
 
@@ -161,24 +161,189 @@ No RL17 runtime/p99 result was measured.
 
 ## Acceptance criteria
 
-- [ ] Respawn continues with no session; deterministic schedule; ends on shutdown/stale owner.
-- [ ] One think pass per creature reports ability and summon proposals; no second schedule or RNG.
-- [ ] Summons admitted, registered and replayed once under the current owner; rollback on registration failure; Unknown closure refuses.
-- [ ] Chase/flee/wander/walkback/leash on the current Map at native speeds.
-- [ ] Both real-PG cases pass on configured PostgreSQL 17.6 (no skip counted).
-- [ ] Every concurrent transition serialized and the losing writer typed.
-- [ ] Structure: one mechanic per module file in its ADR-0022 layer.
-- [ ] Structure: new tests live in their own child files, not appended to existing files.
-- [ ] Structure: edits to `mod.rs`/`lib.rs`/`connection.rs`/`capabilities.rs` are wiring-only.
-- [ ] Structure: no file over ~1000 lines grows by more than ~150 lines (`ai_think.rs`, `monster_summon.rs`, `monster_ai_cycle.rs`).
+- [x] Respawn continues with no session; deterministic schedule; ends on shutdown/stale owner.
+- [x] One think pass per creature reports ability and summon proposals; no second schedule or RNG.
+- [x] Summons admitted, registered and replayed once under the current owner; rollback on registration failure; Unknown closure refuses.
+- [x] Chase/flee/wander/walkback/leash on the current Map at native speeds.
+- [x] Both real-PG cases pass on configured PostgreSQL 17.6 (no skip counted).
+- [x] Every concurrent transition serialized and the losing writer typed.
+- [x] Structure: one mechanic per module file in its ADR-0022 layer.
+- [x] Structure: new tests live in their own child files, not appended to existing files.
+- [x] Structure: edits to `mod.rs`/`lib.rs`/`connection.rs`/`capabilities.rs` are wiring-only.
+- [x] Structure: no file over ~1000 lines grows by more than ~150 lines (`ai_think.rs`, `monster_summon.rs`, `monster_ai_cycle.rs`).
 
 ## Validation
 
+Owner D1466 scope overrides the original workspace/full-PG validation list. All cargo
+commands used `/home/mole/oteryn-cache/codex-bin/cargo`; no dependencies downloaded.
+
 ```sh
-cargo fmt --all -- --check
-cargo clippy --workspace --all-targets -- -D warnings
-cargo test -p oteryn-gameplay-monster-ai
-cargo test -p oteryn-gameplay-dispatch monster_ai_cycle
-OTERYN_TEST_POSTGRES_ADMIN_URL=... cargo test -p oteryn-gameplay-dispatch current_owner_ -- --test-threads=1
-python3 tools/agents/validate_governance.py
+cargo fmt --all -- --check  # pass
+cargo clippy --locked --offline -p oteryn-gameplay-content -p oteryn-gameplay-entities -p oteryn-gameplay-world -p oteryn-gameplay-monster-ai -p oteryn-gameplay-dispatch --all-targets -- -D warnings  # pass
+cargo clippy --locked --offline -p oteryn-game-server --lib --test guild_postgres --quiet -- -D warnings  # pass (compile only)
+cargo test --locked -p oteryn-gameplay-monster-ai --lib --quiet  # pass: 92; 3 existing ignored
+cargo test --locked -p oteryn-gameplay-world --lib movement::path_search --quiet  # pass: 17
+cargo test --locked -p oteryn-gameplay-entities --features test-support --lib native_summon --quiet  # pass: 3
+cargo test --locked -p oteryn-gameplay-content --lib caller_artifact_activates_full_book_under_outer_pin_without_changing_baseline --quiet  # pass: 1
+cargo test --locked -p oteryn-gameplay-dispatch --lib world_respawns --quiet  # pass: 5
+cargo test --locked -p oteryn-gameplay-dispatch --lib monster_ai_cycle --quiet  # pass: 12
+cargo test --locked -p oteryn-gameplay-dispatch --lib loop_monster:: -- --test-threads=1 --nocapture  # first run: 3 pass; summon case repaired and rerun below
+cargo test --locked --offline -p oteryn-gameplay-dispatch --lib current_owner_summon_transaction_map_and_one_pass_use_actual_item_scope -- --test-threads=1 --nocapture  # pass: 1
+cargo test --locked -p oteryn-gameplay-dispatch --lib creature_movement_dispatch_steps_between_thinks_on_postgres -- --test-threads=1 --nocapture  # pass: 1
+python3 tools/agents/validate_governance.py  # pass
+python3 -m unittest discover -s tools/agents/tests  # pass: 124
+git diff --check  # pass
 ```
+
+All four new PG cases actually ran with `server_version_num=170006`, zero skips:
+`current_owner_summon_transaction_map_and_one_pass_use_actual_item_scope`,
+`current_owner_spawn_home_walkback_and_leash_use_actual_source_cell`,
+`activated_outer_source_summon_rejects_inner_catalog_and_registers_once`, and
+`current_owner_summon_registration_failure_rolls_back_and_replays_the_refusal`.
+The group run passed the latter three; the corrected first case passed alone.
+The combined setup now returns the parent from its completed budget walkback to the
+pinned admission cell through existing Movement, preserving its schedule/occurrence.
+Replay assertions bind the same occurrence rather than assuming SQL finishes within a think interval.
+SQL cancellation/retry lives in the required home case; the summon case covers shared-budget retry.
+
+## Planned module layout (recorded before implementation)
+
+- monster-ai: `ai_think/summon_plan.rs`, projection/native-profile children, current-Map
+  movement adapter, `monster_summon/{catalog,physical_admission,owner}.rs`, respawn window job.
+- world: `movement/monster_map.rs` plus one resumable path kernel/current reader.
+- entities: `carrier/monster_summon_admission.rs`, extracted physical admission/retirement.
+- dispatch: `monster_profile_cycle.rs`, `world_respawns.rs`, dedicated child tests.
+- content: extracted native activation fixture and source-profile test variants.
+
+## Prerequisite audit — 2026-10-22
+
+Baseline is detached HEAD `794fe3938fefb9df37d501e8083b4f8991a847f2` (#2305).
+CREATURE-MOVE-1 goals/search budget/spawn home/step timers are present. Missing live
+prerequisites were the admitted CreatureProfiles summon-catalog adapter, current
+transaction Map/Item adapter, synchronous registration composition and independent wake loop.
+No owner-only policy question arose. Existing production native ability bodies produce
+proposals; absent executable bodies preserve the legacy targeting/melee projection.
+No document schema or new spell realization capability was introduced.
+
+## Integrator decision 2026-10-22: prerequisite implemented in this lane
+
+Option B: `monster_summon/catalog.rs` reuses its original qualifier with one exact-ref index
+and outer-pin requalification of nested specs; `movement/monster_map.rs` reuses existing
+Durability scope/physical-transaction/native-world reads. `monster_summon/owner.rs` completes
+admission/policy/AI registration/replay or rollback synchronously. The production
+`monster_profile_cycle.rs` holds the transaction through consumption. Movement shares its
+original goal adoption/route install/step timer and search kernel, including charged cancellation.
+`monster_owner_cycle/respawn_job.rs` owns windows; `world_respawns.rs` composes wake/mutex/shutdown.
+Re-located `serve_gameplay` is in dispatch `gameplay_transport/mod.rs`; its edit is slot wiring.
+
+## File sizes and layer justification
+
+Every existing code file grew by at most 34 lines; large owners shrink after extraction.
+New files growing by more than 200 lines (all other new files are at most 198):
+
+| File (under crates/gameplay/) | Lines | Why this layer |
+|---|---:|---|
+| monster-ai/src/ai_think/summon_plan.rs | 385 | Extracted targeting plus one native scheduling pass belongs to AI. |
+| monster-ai/src/ai_think/creature_steps/creature_current_map.rs | 216 | Async current-Map adapter feeds the existing AI movement request/timer owner. |
+| monster-ai/src/monster_summon/catalog.rs | 215 | Extracted qualifier and admitted summon closure belong to native summon AI. |
+| entities/src/carrier/monster_summon_admission.rs | 240 | Extracted physical slots/links and current-fence wrappers belong to Entities. |
+| world/src/movement/monster_map.rs | 295 | Current terrain/Item/LocalObject facts and Movement decisions belong to World. |
+| dispatch/src/gameplay_transport/postgres_tests/loop_monster/summon_transaction.rs | 305 | Real composed PG admission/replay/rollback tests belong at dispatch. |
+
+Shared slots: gameplay_transport/mod.rs (+7 wiring), actor_spell.rs (+2 owner field/default),
+postgres_tests/loop_monster.rs (auto-mounted by the FLOW build.rs; no shared mount line), movement.rs (+1 module registration).
+Other large owners contain extraction/call-site changes; no new logic bodies in slot files.
+
+## Reused code and test-only seams
+
+- Native profile schedule, deterministic draws, occurrence conflict/replay and existing limits.
+- Existing behavior projection; existing summon qualifier, physical placement, memo and retirement.
+- Foundation owner fence/stamps, actor links/slots, Movement snapshots and decision commits.
+- CREATURE-MOVE-1 goal adoption, route install, step cadence/deadline lane, path budget,
+  A* labels/order/bounds and occupancy census; one shared kernel, no duplicate implementation.
+- Durability SpellItemScopeAuthority, scoped Item locks/reads, physical-XID proof,
+  initialized native tile/static WorldObject qualification and semantic-pass deadlines.
+- Existing spawn carrier/visibility and authored table_activation_spawns census.
+- Bestiary configured-admin/runtime and revision Harness cleanup; Dependencies::new(),
+  Dependencies::initialize()/owner(), prepare_current_session(), existing Item MINT API.
+- Existing native activation helper extracted (deleted from parent) and re-exported;
+  manifest/Thalom source and an existing source Item ranged Spell body reused.
+- Existing summon_fixture and Channel movement harness reused by child unit tests.
+- Small cfg(test/test-support) child wrappers: ai_think/summon_plan_test_support.rs exposes
+  timer/report observations; monster_summon/catalog_test_support.rs changes only the pin;
+  movement/monster_map/transaction_test_support.rs borrows the actual retained transaction.
+  No copied harness/fixture body, duplicate mount, test weakening or new PG target.
+
+## Changed files
+
+```text
+crates/gameplay/content/src/content/native_gameplay.rs
+crates/gameplay/content/src/content/native_gameplay/test_support/activation_fixture.rs
+crates/gameplay/dispatch/src/gameplay_transport/actor_spell.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/loop_monster.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/loop_monster/fixture.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/loop_monster/item_scope.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/loop_monster/shared_budget.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/loop_monster/sql_cancellation.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/loop_monster/summon_transaction.rs
+crates/gameplay/dispatch/src/gameplay_transport/mod.rs
+crates/gameplay/dispatch/src/gameplay_transport/monster_ai_cycle.rs
+crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle.rs
+crates/gameplay/dispatch/src/gameplay_transport/world_respawns.rs
+crates/gameplay/dispatch/src/gameplay_transport/world_respawns/world_respawns_tests.rs
+crates/gameplay/entities/src/carrier.rs
+crates/gameplay/entities/src/carrier/monster_summon_admission.rs
+crates/gameplay/monster-ai/src/ai_think.rs
+crates/gameplay/monster-ai/src/ai_think/behaviour_profile.rs
+crates/gameplay/monster-ai/src/ai_think/behaviour_profile/summon_projection.rs
+crates/gameplay/monster-ai/src/ai_think/channel_owner/channel_owner_creature_ai_tests.rs
+crates/gameplay/monster-ai/src/ai_think/channel_owner/channel_owner_creature_ai_tests/creature_snapshot_tests.rs
+crates/gameplay/monster-ai/src/ai_think/creature_steps.rs
+crates/gameplay/monster-ai/src/ai_think/creature_steps/creature_current_map.rs
+crates/gameplay/monster-ai/src/ai_think/creature_steps/creature_goal_adoption.rs
+crates/gameplay/monster-ai/src/ai_think/creature_steps/creature_paths.rs
+crates/gameplay/monster-ai/src/ai_think/creature_steps/creature_step_choice.rs
+crates/gameplay/monster-ai/src/ai_think/creature_steps/creature_step_timer.rs
+crates/gameplay/monster-ai/src/ai_think/native_profile.rs
+crates/gameplay/monster-ai/src/ai_think/profile_schedule/tests.rs
+crates/gameplay/monster-ai/src/ai_think/profile_schedule/tests/summon_plan_tests.rs
+crates/gameplay/monster-ai/src/ai_think/summon_plan.rs
+crates/gameplay/monster-ai/src/ai_think/summon_plan/summon_path.rs
+crates/gameplay/monster-ai/src/ai_think/summon_plan_test_support.rs
+crates/gameplay/monster-ai/src/monster_owner_cycle.rs
+crates/gameplay/monster-ai/src/monster_owner_cycle/respawn_job.rs
+crates/gameplay/monster-ai/src/monster_summon.rs
+crates/gameplay/monster-ai/src/monster_summon/catalog.rs
+crates/gameplay/monster-ai/src/monster_summon/catalog_test_support.rs
+crates/gameplay/monster-ai/src/monster_summon/owner.rs
+crates/gameplay/monster-ai/src/monster_summon/physical_admission.rs
+crates/gameplay/world/src/movement.rs
+crates/gameplay/world/src/movement/monster_map.rs
+crates/gameplay/world/src/movement/monster_map/transaction_test_support.rs
+crates/gameplay/world/src/movement/path_search.rs
+crates/gameplay/world/src/movement/path_search/current_path.rs
+crates/gameplay/world/src/movement/path_search/current_path/current_path_tests.rs
+crates/gameplay/world/src/movement/path_search/path_kernel.rs
+crates/gameplay/world/src/movement/path_search/path_labels.rs
+crates/gameplay/world/src/movement/path_search/path_occupancy.rs
+docs/agents/tasks/LOOP-MONSTER-1.md
+```
+
+## Review and unfinished
+
+Whole diff re-read against `/home/mole/oteryn-cache/CODEX-CHECKLIST.md`; all new
+constructor/field/trait/variant and caller sites searched under apps/, crates/, tools/.
+Each new production API has a live caller and real-dispatch coverage; test seams are cfg-gated.
+No task-scope implementation remains. No RL17 runtime/p99 measurement. No CI-only failure
+was deferred. Integrator retains independent review, freeze, CI/MQ and publication;
+no commit/push/branch mutation was performed, no frozen candidate or PR created here.
+Pending owner questions: none. Next step: integrator review of this local candidate.
+
+## FLOW port — 2026-10-23
+
+Ported onto `claude/happy-davinci-ijz3wy-6` (`49cdeaf5f`, main + FLOW-1/2). The dispatch PG
+suite moved to the auto-mounted `gameplay_transport/postgres_tests/loop_monster.rs` (children in
+`postgres_tests/loop_monster/`), so `monk_save_postgres_tests.rs` is unchanged. Per-session owner
+fields are read through `ComposedFreshAdmission::states` (DISPATCH-WIRING-1). The lane's
+CREATUREAI0 resource-limit edits already exist on the base as per-entry files 0496–0499 with
+equal content; the aggregate registry was not restored. No migration and no ID renumbering.
