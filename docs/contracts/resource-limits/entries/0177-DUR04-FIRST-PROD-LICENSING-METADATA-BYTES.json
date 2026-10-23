@@ -1,0 +1,19 @@
+{
+  "id": "DUR04-FIRST-PROD-LICENSING-METADATA-BYTES",
+  "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md+AMENDMENT_02",
+  "resource": "Licensing metadata atom in one first-production package binding",
+  "unit": "ASCII bytes",
+  "hard_maximum": 512,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 512
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Reject length/emptiness before retaining or copying licensing metadata identity; no raw legal document is loaded by the runtime profile.",
+  "client_visible": false,
+  "boundary_tests": [
+    "512-byte valid licensing metadata atom accepted",
+    "513-byte atom rejected before retention",
+    "empty licensing metadata rejected"
+  ]
+}

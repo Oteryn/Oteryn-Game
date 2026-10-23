@@ -1,0 +1,20 @@
+{
+  "id": "DUR03-RL-07-CRAFT-PAYLOAD-BYTES",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_CRAFT1_DECISION_2026-10-15.md",
+  "resource": "One encoded CONVERSION audit aggregate payload",
+  "unit": "bytes",
+  "hard_maximum": 42138,
+  "configurable_range": {
+    "minimum": 42138,
+    "maximum": 42138
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Checked on the encoded length before retaining or decoding; ANL01-EVENT-PAYLOAD-BYTES (196,608 B) still applies on top. 9 touched items at 4,682 B each (the per-item share of the first revision's 32,768 B ceiling for 7 items, rounded up). CRAFT-RT-1 measures the worst case (D50 method: the maximal nine-item aggregate, every key and revision at 512 B, every technical field at 128 B, maximal integers); a measured worst case above this row stops CRAFT-RT-1 for an amendment of CRAFT1 C3a.",
+  "client_visible": false,
+  "boundary_tests": [
+    "the measured worst-case payload is at most 42,138 B and accepted (boundary test recorded by CRAFT-RT-1)",
+    "max=42,138 bytes accepted",
+    "max+1=42,139 bytes rejected before decode (CAPACITY_EXCEEDED)"
+  ],
+  "notes": "CRAFT1-ITEM-CONVERSIONS-V1 C3a (DUR-03 \u00a739.3 CRAFT-1 amendment); conversion shape only (ConversionCause, one CONVERSION audit aggregate), the one-item DUR03-RL-01..08 rows are unchanged and DUR03-RL-03 and DUR03-RL-05 stay 0. Registered by the CRAFT-1 acceptance PR (ACCEPT-BATCH-2026-10-15 \u00a78) before the code that relies on it (CRAFT-RT-1); fixed ruleset bounds, a reference row above them needs an amendment of CRAFT1 C3a, never a silent raise."
+}

@@ -1,0 +1,23 @@
+{
+  "id": "HIGHSCORES0-RL-01",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_HIGHSCORES0_WORLD_HIGHSCORES_DECISION_2026-10-03.md",
+  "resource": "Interval between periodic World highscore snapshots",
+  "unit": "minutes",
+  "hard_maximum": 30,
+  "configurable_range": {
+    "minimum": 30,
+    "maximum": 30
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "One job per World publishes all 11 categories in one repeatable-read cut when the oldest current snapshot is 30 minutes old (database time, durable across restart) or on a planned reset; between passes the job sleeps until the earliest durable expiry. No client command can start a pass.",
+  "client_visible": false,
+  "boundary_tests": [
+    "a cut younger than 30 minutes is skipped and the next check is scheduled at its durable expiry",
+    "a planned reset publishes a complete cut regardless of age"
+  ],
+  "consumers": [
+    "apps/game-server/src/durability/highscore_snapshot.rs SNAPSHOT_INTERVAL_MS",
+    "apps/game-server/src/highscores/job.rs HighscoreWorldJob::run"
+  ],
+  "notes": "HIGHSCORES-0 \u00a77 (PARITY_PENDING). Registered by RANK-1 (HS-1)."
+}

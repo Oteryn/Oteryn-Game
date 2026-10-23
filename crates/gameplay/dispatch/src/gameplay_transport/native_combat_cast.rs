@@ -8,6 +8,7 @@
     dead_code,
     reason = "spell import candidate; awaits its production owner caller"
 )]
+use super::super::rune_use_bridge::LegacyRuneUse;
 use super::{
     ChannelSpellStates, check_owner_batch, commit_owner_batch, install_owner_batch,
     stage_player_batch,
@@ -64,7 +65,7 @@ mod native_world_item_cast;
 #[path = "ordinary_field_items.rs"]
 mod ordinary_field_items;
 #[path = "rune_item_cast.rs"]
-mod rune_item_cast;
+pub(super) mod rune_item_cast;
 use oteryn_gameplay_spell_rules::dispatch_plans::geometry as cast_plans;
 use serde_json::{Value, json};
 use sqlx::{Postgres, Transaction};
@@ -167,6 +168,7 @@ pub struct PendingNativeCast {
     session: GameSessionId,
     intent: SpellCastIntent,
     rune: Option<ItemSpellCastIntent>,
+    legacy: Option<LegacyRuneUse>,
     parameter: Option<ParameterSpellCastIntent>,
     fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
     prepared: PreparedNativeCombatCast,
@@ -178,6 +180,8 @@ pub struct PendingNativeCast {
 pub(in crate::gameplay_transport) enum NativeCastDispatch {
     NotApplicable,
     Outcome(super::SpellCastOutcome),
+    /// A legacy USE refusal retains its registered result encoding.
+    RuneRefused(oteryn_protocol_oteryn::world_object::UseDisposition),
     /// The FND owner must keep the original command outstanding, without terminal rejection.
     Pending,
 }
@@ -188,6 +192,7 @@ pub type NativeMarkerIntent = (
     SpellCastIntent,
     Option<ItemSpellCastIntent>,
     Option<ParameterSpellCastIntent>,
+    Option<LegacyRuneUse>,
 );
 
 /// The complete attempt of a committing writer, parked in the spell lane's `unresolved` record
@@ -314,7 +319,6 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             (!permit.has_unresolved()).then_some(permit)
         })
     }
-
     /// Resumes the parked writer's own retained retry path under the lane (§1.6): it installs a
     /// committed attempt, commits an uncommitted one in a new commit window, releases only on a
     /// definite rejection that path proves, and parks again on any other exit. The resolvers
@@ -322,7 +326,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
     async fn resolve_unresolved_spell_commit(&self, unresolved: UnresolvedLane) -> SpellLanePermit {
         // Locked while the attempt is still parked in the lane, so a cancellation here keeps it
         // there; the move into the caster's marker below has no await.
-        let mut states = self.spell_states.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         let (mut permit, attempt) = unresolved.into_resolution();
         let attempt = match attempt.downcast::<UnresolvedSpellCommit>() {
             Ok(attempt) => *attempt,
@@ -391,7 +395,12 @@ fn restore_parked_native(
         attempt.session,
         attempt.prepared.batch.command,
     );
-    let intent: NativeMarkerIntent = (attempt.intent, attempt.rune, attempt.parameter.clone());
+    let intent: NativeMarkerIntent = (
+        attempt.intent,
+        attempt.rune,
+        attempt.parameter.clone(),
+        attempt.legacy.clone(),
+    );
     super::PendingSpellMarker::restore(
         &mut states.pending_native,
         actor,
@@ -431,6 +440,7 @@ pub fn dispatch_outcome_token(dispatch: &NativeCastDispatch) -> &'static str {
     match dispatch {
         NativeCastDispatch::NotApplicable => "not_applicable",
         NativeCastDispatch::Pending => "pending",
+        NativeCastDispatch::RuneRefused(_) => "refused",
         NativeCastDispatch::Outcome(outcome) => match outcome.disposition {
             SpellCastDisposition::Cast => "cast",
             _ => "refused",
@@ -964,7 +974,10 @@ fn prepare_paid_self(
             caster,
             owned.binding().actor,
             command.game_session_id(),
-            owned.equipment_speed_bonus(content).ok(),
+            super::super::equipment_move::equipment_effects_owner::speed_term(
+                owned.equipment(),
+                content,
+            ),
             &facts,
             draw,
         )?;
@@ -1473,14 +1486,14 @@ pub fn replay(
     intent: &SpellCastIntent,
 ) -> Result<Option<CombatBatchReceipt>, Error> {
     replay_with_rune(
-        runtime, states, caster, character, lease, command, intent, None, None, &mut None,
+        runtime, states, caster, character, lease, command, intent, None, None, None, &mut None,
     )
 }
 #[allow(
     clippy::too_many_arguments,
     reason = "the owner turn binds every independently resolved fact explicitly"
 )]
-fn replay_with_rune(
+pub(in crate::gameplay_transport) fn replay_with_rune(
     runtime: &mut ChannelRuntimeV1,
     states: &mut ChannelSpellStates,
     caster: ExactActorRef,
@@ -1489,6 +1502,7 @@ fn replay_with_rune(
     command: CommandRef,
     intent: &SpellCastIntent,
     rune: Option<&ItemSpellCastIntent>,
+    legacy: Option<&LegacyRuneUse>,
     parameter: Option<&ParameterSpellCastIntent>,
     parameter_output: &mut Option<ParameterSpellCastResult>,
 ) -> Result<Option<CombatBatchReceipt>, Error> {
@@ -1496,8 +1510,17 @@ fn replay_with_rune(
         return Ok(None);
     };
     let saved: Value = serde_json::from_slice(&batch.binding).map_err(|_| Error::InvalidBatch)?;
-    if saved["intent"]
-        != source_original_intent(intent, rune, parameter).map_err(|_| Error::CommandConflict)?
+    let legacy_binding = legacy
+        .map(LegacyRuneUse::binding)
+        .transpose()
+        .map_err(|_| Error::CommandConflict)?;
+    if saved["legacy_rune_use"]
+        != legacy_binding
+            .map(|bytes| json!(bytes))
+            .unwrap_or(Value::Null)
+        || saved["intent"]
+            != source_original_intent(intent, rune, parameter)
+                .map_err(|_| Error::CommandConflict)?
     {
         return Err(Error::CommandConflict);
     }
@@ -2594,6 +2617,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
     ) -> Option<NativeCastDispatch> {
         let Some(mut permit) = self.spell_lane_permit().await else {
             return self
+                .states
                 .spell_states
                 .lock()
                 .await
@@ -2601,14 +2625,14 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 .then_some(NativeCastDispatch::Pending);
         };
         let original = {
-            let states = self.spell_states.lock().await;
+            let states = self.states.spell_states.lock().await;
             states
                 .pending_native
                 .iter()
                 .find(|p| p.is_for(actor, session))
                 .map(|p| (p.command.command_id().get(), p.intent.clone()))
         };
-        let (command, (intent, rune, parameter)) = original?;
+        let (command, (intent, rune, parameter, legacy)) = original?;
         let result = self
             .cast_native_combat_inner(
                 actor,
@@ -2616,6 +2640,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 command,
                 &intent,
                 rune,
+                legacy,
                 parameter,
                 &mut None,
                 access,
@@ -2624,6 +2649,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             )
             .await;
         if self
+            .states
             .spell_states
             .lock()
             .await
@@ -2646,11 +2672,11 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
     ) -> &'static str {
         let original = super::PendingSpellMarker::take_original(
-            &mut self.spell_states.lock().await.pending_native,
+            &mut self.states.spell_states.lock().await.pending_native,
             actor,
             session,
         );
-        let Some((command, (cast, rune, parameter))) = original else {
+        let Some((command, (cast, rune, parameter, legacy))) = original else {
             return "consumed";
         };
         let access = self.refresh_spell_access(actor, session).await;
@@ -2661,6 +2687,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 command,
                 &cast,
                 rune,
+                legacy,
                 parameter,
                 &mut None,
                 &access,
@@ -2669,7 +2696,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             )
             .await;
         let leftover = {
-            let mut states = self.spell_states.lock().await;
+            let mut states = self.states.spell_states.lock().await;
             super::PendingSpellMarker::take_attempt(&mut states.pending_native, actor, session)
         };
         if let Some(attempt) = leftover {
@@ -2679,7 +2706,6 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         }
         dispatch_outcome_token(&dispatch)
     }
-
     /// A missing registered source owner is passed explicitly by the caller and
     /// remains unknown. No default Premium, learned spell or Wheel grant is added.
     pub(in crate::gameplay_transport) async fn cast_native_combat<
@@ -2693,12 +2719,12 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         access: &A,
     ) -> NativeCastDispatch {
         self.cast_native_combat_inner(
-            actor, session, command_id, intent, None, None, &mut None, access, false, None,
+            actor, session, command_id, intent, None, None, None, &mut None, access, false, None,
         )
         .await
     }
-    /// Unallocated candidate port; caller supplies an exact original instance/revision,
-    /// while the real current Item owner derives custody and source count in SQL.
+    /// Gated legacy USE port: the current Item owner resolves the revision for a fresh
+    /// direct source; a retained attempt keeps its original instance and revision.
     pub(in crate::gameplay_transport) async fn cast_rune_item<
         A: super::super::spell_access_facts::CurrentSpellAccessOwner + Sync,
     >(
@@ -2707,19 +2733,34 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         command_id: u64,
         rune: &ItemSpellCastIntent,
+        legacy: LegacyRuneUse,
         access: &A,
     ) -> NativeCastDispatch {
+        let Some(mut permit) = self.spell_lane_permit().await else {
+            return NativeCastDispatch::Pending;
+        };
+        let mut rune = *rune;
+        if rune.expected_state_revision == 0 {
+            rune.expected_state_revision = match self
+                .current_legacy_rune_revision(&permit, session, command_id, &rune, &legacy)
+                .await
+            {
+                Ok(revision) => revision,
+                Err(outcome) => return outcome,
+            };
+        }
         self.cast_native_combat_inner(
             actor,
             session,
             command_id,
             &rune.intent,
-            Some(*rune),
+            Some(rune),
+            Some(legacy),
             None,
             &mut None,
             access,
             false,
-            None,
+            Some(&mut permit),
         )
         .await
     }
@@ -2740,6 +2781,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 session,
                 command_id,
                 &parameter.intent,
+                None,
                 None,
                 Some(parameter.clone()),
                 &mut output,
@@ -2766,6 +2808,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         command_id: u64,
         intent: &SpellCastIntent,
         rune: Option<ItemSpellCastIntent>,
+        legacy: Option<LegacyRuneUse>,
         parameter: Option<ParameterSpellCastIntent>,
         parameter_output: &mut Option<ParameterSpellCastResult>,
         access: &A,
@@ -2888,7 +2931,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             }
         };
         let mut runtime = self.runtime.lock().await;
-        let mut states = self.spell_states.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         if runtime.player_control_facts(actor, session).is_err()
             || runtime.owner_fence().is_err()
             || runtime.content_pin().server_artifact_digest() != native.source_digest()
@@ -2907,6 +2950,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             command,
             intent,
             rune.as_ref(),
+            legacy.as_ref(),
             parameter.as_ref(),
             parameter_output,
         ) {
@@ -2923,7 +2967,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             Ok(None) => {}
             Err(_) => return rejected(),
         }
-        let marker_intent: NativeMarkerIntent = (*intent, rune, parameter.clone());
+        let marker_intent: NativeMarkerIntent = (*intent, rune, parameter.clone(), legacy.clone());
         // The marker (§1.4) stays for the whole pass; the pass holds the attempt itself.
         let retained = match states
             .pending_native
@@ -2941,6 +2985,19 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
             None => {
+                if legacy.as_ref().is_some_and(|l| {
+                    l.fence
+                        != CurrentCharacterItemFence {
+                            character_id: fence.character_id,
+                            game_session_id: session,
+                            connection_generation: fence.connection_generation,
+                            character_lease_generation: fence.character_lease_generation,
+                            runtime_scope: fence.runtime_scope,
+                            scope_ownership_generation: fence.scope_ownership_generation,
+                        }
+                }) {
+                    return rejected();
+                }
                 if reconcile_only
                     || states.pending_native.len() >= MAX_PENDING_NATIVE
                     || states.pending_native.try_reserve(1).is_err()
@@ -2982,12 +3039,15 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         let intent = *intent;
         // SPELL-TARGET-1: the held attack target (ATTACK-0 §4), read last in the lock order.
         let attack_target = {
-            let mut attack = self.attack.lock().await;
+            let mut attack = self.states.attack.lock().await;
             // Best-effort allocation before SQL/installation; failure grants no activity.
             attack.prepare_shared_experience_record(&runtime, actor, session);
             // ATTACK-0 §4 (as amended by #2106): a `pacified` caster holds no target.
             attack.settle_pacified_target(&runtime, &states, actor, session);
-            attack.combat_state(actor, session, self.owner_now()).target
+            legacy
+                .as_ref()
+                .and_then(|r| r.creature)
+                .or_else(|| attack.combat_state(actor, session, self.owner_now()).target)
         };
         // The attempt lives in the external context before any committing await. Deadline
         // cancellation cannot discard the original normalized occurrence: before the commit
@@ -3093,7 +3153,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                             owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),&mut draw).await
                     } else if ordinary_combat::applicable(spell) {
                         ordinary_combat::prepare(&mut tx,owner.root,&authority,runtime,states,room,objects,content,&owned,
-                            owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),attack_target,&mut draw).await
+                            owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),legacy.as_ref(),attack_target,&mut draw).await
                     } else {
                         prepare_from_owners(&mut tx,owner.root,&authority,runtime,states,room,objects,content,&owned,
                             owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),&mut draw).await
@@ -3102,6 +3162,10 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                         Ok(p)=>p,Err(disposition)=>{
                         #[cfg(test)]
                         eprintln!("SEAM_EVIDENCE native_combat_prepare result={disposition:?} ordinary={}",ordinary_combat::applicable(spell));
+                        if let (Some(rune),Some(legacy))=(rune.as_ref(),legacy.as_ref()) {
+                            let refused=rune_item_cast::use_refusal(&mut tx,&authority,runtime,states,room,objects,spell,actor,rune,legacy,disposition,now).await;
+                            return Ok(NativeCastDispatch::RuneRefused(refused));
+                        }
                         return Ok(NativeCastDispatch::Outcome(super::SpellCastOutcome{disposition,vitals:super::observe_vitals(runtime,states,actor,session)}))
                     }
                     };
@@ -3119,7 +3183,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     }
                     ordinary_field_items::append_creations(&mut tx,&authority,owner.root,runtime,room,objects,content,&mut prepared,&mut request).await
                         .map_err(|_|DurabilityError::Unavailable)?;
-                    *pending=Some(PendingNativeCast{actor,session,intent,rune,parameter:parameter.clone(),fence,prepared,owned:owned.clone(),request});
+                    *pending=Some(PendingNativeCast{actor,session,intent,rune,legacy:legacy.clone(),parameter:parameter.clone(),fence,prepared,owned:owned.clone(),request});
                 }
                 let attempt=pending.as_mut().ok_or(DurabilityError::Unavailable)?;
                 // Current actor facts never come from historical cost/training rows.
@@ -3161,7 +3225,15 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                         Err(_)=>false,
                     }
                 }else{true};
-                (if original_tiles_current && original_party_current && carried_target_current && field_policy_current && companion_current && direct_current {
+                let rune_current=if let (Some(_), Some(rune))=(attempt.legacy.as_ref(), attempt.rune.as_ref()) {
+                    match rune_item_cast::reserve(&mut tx,&authority,runtime,room,content,spell,rune).await {
+                        Ok(reservation)=>attempt.request.operations.iter().any(|operation|
+                            matches!(operation,crate::durability::spell_items_abi::SpellItemOperation::ConsumeInventory(source)
+                                if source==reservation.consumption())),
+                        Err(_)=>false,
+                    }
+                }else{true};
+                (if original_tiles_current && original_party_current && carried_target_current && field_policy_current && companion_current && direct_current && rune_current {
                     attempt.prepared.validate_new_write(runtime,states,&owned,&attempt.owned,spell,
                         owner.owner_now().get(),reconnect.as_ref())
                 } else { Err(Error::SnapshotChanged) }).map_err(|_|item_tx::SpellItemError::Rejected(NATIVE_NEW_WRITE_REFUSED))
@@ -3176,7 +3248,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     // Only a successful rollback proves this attempt cannot later COMMIT.
                     tx.rollback().await.map_err(|_|DurabilityError::Unavailable)?;
                     let mut runtime=owner.runtime.lock().await;
-                    let mut states=owner.spell_states.lock().await;
+                    let mut states=owner.states.spell_states.lock().await;
                     if let Some(companion)=attempt.prepared.direct_companion.as_ref(){
                         companion.reservation.rollback_physical(&mut runtime).map_err(|_|DurabilityError::Unavailable)?;
                     }
@@ -3252,6 +3324,15 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                             return Err(error);
                         }
                     };
+                    #[cfg(test)]
+                    if legacy.is_some() && super::super::rune_use_bridge::test_faults::take(
+                        super::super::rune_use_bridge::test_faults::Point::BeforeCommit) {
+                        // Every real SQL write ran. A proven rollback retains the original
+                        // prepared attempt for retry and cannot install any runtime effect.
+                        tx.rollback().await.map_err(|_|DurabilityError::Unavailable)?;
+                        if let Ok(attempt)=window.reclaim_uncommitted(){*pending=Some(attempt);}
+                        return Err(DurabilityError::Unavailable);
+                    }
                     match crate::durability::spell_owner_commit::commit_spell_owner_transaction(tx,prepared,&mut window).await {
                         Ok(committed)=>(committed,window),
                         Err(error)=>{
@@ -3283,6 +3364,11 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 }
             };
             let (committed,window)=committed;
+            #[cfg(test)]
+            if legacy.is_some() && super::super::rune_use_bridge::test_faults::take(
+                super::super::rune_use_bridge::test_faults::Point::AfterCommit) {
+                return Err(DurabilityError::Unavailable);
+            }
             let receipt=training.map(|p|p.after_commit(&committed)).transpose().map_err(|_|DurabilityError::InvalidStoredState)?;
             let receipt=receipt.as_ref().map(|r|match r{
                 crate::durability::character_build::BuildCommitOutcome::Committed(r)|
@@ -3301,7 +3387,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 owner.character,owner.holder,&item_fence,command,active).await.map_err(|_|DurabilityError::Unavailable)?;
             drop(fresh);
             let mut runtime=owner.runtime.lock().await;
-            let mut states=owner.spell_states.lock().await;
+            let mut states=owner.states.spell_states.lock().await;
             // Phase 1: every fallible check borrows the attempt; nothing moves.
             let checked={
                 let state=states.get(&runtime,actor,session).ok_or(DurabilityError::Unavailable)?;
@@ -3312,7 +3398,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             };
             // Kill recording's only await comes before the window gives up the attempt, so a
             // cancellation here still parks it and the resolver installs and records again.
-            let mut attack=owner.attack.lock().await;
+            let mut attack=owner.states.attack.lock().await;
             // Phase 2: no awaited work, allocation, new random draw or fallible branch.
             let mut attempt=window.install();
             let batch=attempt.prepared.install_commit(&mut runtime,&mut states,checked,committed.companion(),committed.direct_companion());
@@ -3330,7 +3416,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         })).await;
         let (_, _, writer, guards, _) = context;
         drop(guards);
-        let mut states = self.spell_states.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         let (leftover, parked) = writer.finish();
         super::PendingSpellMarker::settle(
             &mut states.pending_native,

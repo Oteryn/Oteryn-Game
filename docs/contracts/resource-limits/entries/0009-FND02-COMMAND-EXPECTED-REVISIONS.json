@@ -1,0 +1,22 @@
+{
+  "id": "FND02-COMMAND-EXPECTED-REVISIONS",
+  "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+  "resource": "ClientCommand.expected_revision",
+  "unit": "entries",
+  "hard_maximum": 64,
+  "configurable_range": {
+    "minimum": 64,
+    "maximum": 64
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Bound revision vector before command normalization.",
+  "client_visible": true,
+  "boundary_tests": [
+    "64 unique revisions accepted",
+    "65 rejected",
+    "duplicate domain IDs rejected"
+  ],
+  "consumers": [
+    "server command decoder"
+  ]
+}

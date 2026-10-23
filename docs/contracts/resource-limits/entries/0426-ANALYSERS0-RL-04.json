@@ -1,0 +1,22 @@
+{
+  "id": "ANALYSERS0-RL-04",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_ANALYSERS0_HUNTING_ANALYSERS_DECISION_2026-10-03.md",
+  "resource": "Analyser facts pending for one session",
+  "unit": "facts per GameSession",
+  "hard_maximum": 1024,
+  "configurable_range": {
+    "minimum": 1024,
+    "maximum": 1024
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "A VecDeque of at most 1,024 encoded facts (each at most 401 bytes); above it the oldest is dropped and counted, and the next batch opens with dropped {count}.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=1024: 1,024 queued facts drop nothing",
+    "max+1=1025: the oldest fact is dropped and the next batch opens with dropped {count: 1}"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/analyser.rs MAX_ANALYSER_PENDING_FACTS, AnalyserPendingQueue"
+  ],
+  "notes": "ANALYSERS-0 \u00a76 (the pending-facts row, unnumbered in the decision). Registered by OTV2-20261003-analyser-wire1."
+}

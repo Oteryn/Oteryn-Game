@@ -1,0 +1,22 @@
+{
+  "id": "CREATUREAI0-RL-18",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_CREATURE_AI1_TARGETING_AND_THINK_PACKET_2026-10-04.md",
+  "resource": "Owner overrides held by one creature (forced target, forced distance 1)",
+  "unit": "overrides",
+  "hard_maximum": 2,
+  "configurable_range": {
+    "minimum": 2,
+    "maximum": 2
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Two fixed slots per creature think state; a newer override of the same kind replaces the older, so nothing grows.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=2: a forced target and a forced distance hold together",
+    "max+1: a third override replaces the older of its kind; the count stays 2"
+  ],
+  "consumers": [
+    "apps/game-server/src/ai_think.rs CREATUREAI0_OVERRIDES_PER_CREATURE: CreatureAiState::set_override"
+  ],
+  "notes": "CREATURE-AI-1 \u00a71.6. Test: apps/game-server/src/ai_think/think_tests.rs overrides_hold_replace_and_expire. Registered by OTV2-20261004-creature-ai-1."
+}

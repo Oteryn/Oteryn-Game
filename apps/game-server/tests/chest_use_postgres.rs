@@ -1,5 +1,5 @@
 #![allow(clippy::expect_used)]
-// Dedicated PostgreSQL 17 qualification for D39 (chest `USE` wiring to the CHEST-1 reward-claim
+// Dedicated PostgreSQL 18 qualification for D39 (chest `USE` wiring to the CHEST-1 reward-claim
 // MINT). Ordinary workspace runs report PRE-ROUTING/NONCANONICAL when the routed database is
 // absent. CHEST-1's own suite (`reward_claim_mint_postgres.rs`) proves the D40-D42/D92 MINT
 // matrix; these cases prove the D39 layer (`interaction_chest_use`) end to end.

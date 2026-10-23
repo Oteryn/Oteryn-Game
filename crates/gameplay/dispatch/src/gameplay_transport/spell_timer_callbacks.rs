@@ -294,7 +294,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Refresh external access before taking the Channel owner locks: refresh
         // itself reads those owners and must never recursively acquire the turn.
         let ordinary = {
-            let states = self.spell_states.lock().await;
+            let states = self.states.spell_states.lock().await;
             states
                 .spell_timers
                 .as_ref()
@@ -328,7 +328,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let permit = &permit;
         let mut runtime = self.runtime.lock().await;
-        let mut states = self.spell_states.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         let Some(timer) = states.spell_timers.as_ref() else {
             return Ok(FireReport::default());
         };

@@ -1,4 +1,4 @@
-// Three ADMIT0 store-boundary PostgreSQL 17.6 cases. Owners and fixtures come
+// Three ADMIT0 store-boundary PostgreSQL 18.6 cases. Owners and fixtures come
 // from the harness crate root; this module defines no alternate type universe.
 
 use crate::durability::admission_authority_guards::AdmissionGuardStore;
@@ -14,12 +14,16 @@ use std::sync::{
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
-async fn require_postgres_17_6(pool: &sqlx::PgPool) -> TestResult {
+async fn require_canonical_postgres(pool: &sqlx::PgPool) -> TestResult {
     let version: i32 = sqlx::query_scalar("SELECT current_setting('server_version_num')::int")
         .fetch_one(pool)
         .await?;
-    if version != 170006 {
-        return Err(format!("ADMIT0 requires PostgreSQL 17.6 (170006), received {version}").into());
+    if version.to_string() != oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM {
+        return Err(format!(
+            "ADMIT0 requires PostgreSQL 18.6 ({}), received {version}",
+            oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM
+        )
+        .into());
     }
     Ok(())
 }
@@ -33,7 +37,7 @@ async fn durable_counts(
 #[test]
 fn admit0_fresh_atomic_refusal_preserves_nonce_claims_and_reservations() -> TestResult {
     if postgres::postgres_e2e_availability()? == postgres::PostgresE2eAvailability::NotConfigured {
-        eprintln!("ADMIT0 PG NOT RUN: PostgreSQL 17.6 fixture is not configured");
+        eprintln!("ADMIT0 PG NOT RUN: PostgreSQL 18.6 fixture is not configured");
         return Ok(());
     }
     tokio::runtime::Builder::new_current_thread()
@@ -44,7 +48,7 @@ fn admit0_fresh_atomic_refusal_preserves_nonce_claims_and_reservations() -> Test
             let result = async {
                 let url = database.database_url()?;
                 let pool = sqlx::PgPool::connect(&url).await?;
-                require_postgres_17_6(&pool).await?;
+                require_canonical_postgres(&pool).await?;
                 durability::MigrationExecutor::connect_migration(&url)
                     .await?
                     .apply_embedded_ledger()
@@ -191,7 +195,7 @@ fn admit0_fresh_atomic_refusal_preserves_nonce_claims_and_reservations() -> Test
             .await;
             database.cleanup().await?;
             result?;
-            println!("ADMIT0_PG17_6_PASS fresh_atomic_refusal");
+            println!("ADMIT0_PG_PASS fresh_atomic_refusal");
             Ok::<(), Box<dyn std::error::Error>>(())
         })
 }
@@ -202,7 +206,7 @@ fn admit0_current_runtime_replacement_refuses_a_prepared_old_generation() -> Tes
         AdmissionAuthorityGuardStateV1, AdmissionPublicationPreconditionV1,
     };
     if postgres::postgres_e2e_availability()? == postgres::PostgresE2eAvailability::NotConfigured {
-        eprintln!("ADMIT0 current-owner PG NOT RUN: PostgreSQL 17.6 fixture is not configured");
+        eprintln!("ADMIT0 current-owner PG NOT RUN: PostgreSQL 18.6 fixture is not configured");
         return Ok(());
     }
     tokio::runtime::Builder::new_current_thread()
@@ -213,7 +217,7 @@ fn admit0_current_runtime_replacement_refuses_a_prepared_old_generation() -> Tes
             let result = async {
                 let url = database.database_url()?;
                 let pool = sqlx::PgPool::connect(&url).await?;
-                require_postgres_17_6(&pool).await?;
+                require_canonical_postgres(&pool).await?;
                 durability::MigrationExecutor::connect_migration(&url)
                     .await?
                     .apply_embedded_ledger()
@@ -306,7 +310,7 @@ fn admit0_current_runtime_replacement_refuses_a_prepared_old_generation() -> Tes
             .await;
             database.cleanup().await?;
             result?;
-            println!("ADMIT0_PG17_6_PASS current_runtime_replacement");
+            println!("ADMIT0_PG_PASS current_runtime_replacement");
             Ok::<(), Box<dyn std::error::Error>>(())
         })
 }
@@ -395,7 +399,7 @@ fn admit0_v2_prepare_and_commit_refusal_preserve_current_authority() -> TestResu
         )
     }
     if postgres::postgres_e2e_availability()? == postgres::PostgresE2eAvailability::NotConfigured {
-        eprintln!("ADMIT0 V2 PG NOT RUN: PostgreSQL 17.6 fixture is not configured");
+        eprintln!("ADMIT0 V2 PG NOT RUN: PostgreSQL 18.6 fixture is not configured");
         return Ok(());
     }
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(Box::pin(async {
@@ -403,7 +407,7 @@ fn admit0_v2_prepare_and_commit_refusal_preserve_current_authority() -> TestResu
         let result = async {
             let url = database.database_url()?;
             let pool = sqlx::PgPool::connect(&url).await?;
-            require_postgres_17_6(&pool).await?;
+            require_canonical_postgres(&pool).await?;
             durability::MigrationExecutor::connect_migration(&url).await?.apply_embedded_ledger().await?;
             let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint").fetch_one(&pool).await?;
             let owner = postgres::fresh::Source::new(now)?;
@@ -576,7 +580,7 @@ fn admit0_v2_prepare_and_commit_refusal_preserve_current_authority() -> TestResu
         }.await;
         database.cleanup().await?;
         result?;
-        println!("ADMIT0_PG17_6_PASS v2_prepare_commit_refusal");
+        println!("ADMIT0_PG_PASS v2_prepare_commit_refusal");
         Ok::<(), Box<dyn std::error::Error>>(())
     }))
 }

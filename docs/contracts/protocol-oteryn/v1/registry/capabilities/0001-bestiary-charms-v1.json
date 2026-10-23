@@ -1,0 +1,10 @@
+{
+  "id": 1,
+  "name": "BESTIARY_CHARMS_V1",
+  "owner_decision": "CHARM-5 wire, CHARM5_BESTIARY_CHARM_WIRE_PROPOSAL_V1 (Sol protocol acceptance #162 5907282001; CharmViewV1 bound and effect_active: Sol ruling #162 5913269950, owner D235)",
+  "owner": "Character Authority",
+  "command_types": [4, 5],
+  "state_domains": [4, 5],
+  "offered": false,
+  "offer_gate": "D170: the server does not offer this capability before CHARM-6 (unassign and reset) ships. Without it selected, domains 4 and 5 are never sent and command types 4 and 5 are refused as unsupported."
+}

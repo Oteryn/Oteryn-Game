@@ -1,0 +1,22 @@
+{
+  "id": "NRS-RESPONSE-BYTES",
+  "owner_contract": "OTERYN_GAME_NATIVE_RUNTIME_STATUS_PRODUCER_V1.md",
+  "resource": "ReportRuntimeStatusV1 success response body",
+  "unit": "bytes",
+  "hard_maximum": 256,
+  "configurable_range": {
+    "minimum": 256,
+    "maximum": 256
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "The shared bounded HTTP/1.1 reader caps the body first (NSRC-HTTP-RESPONSE-BODY-BYTES); the report decoder then refuses a body above 256 bytes before decoding.",
+  "client_visible": false,
+  "boundary_tests": [
+    "256 bytes decoded when the exact member set is present",
+    "257 bytes refused before decoding"
+  ],
+  "consumers": [
+    "apps/game-server/src/native_admission_source/runtime_status.rs"
+  ],
+  "notes": "Contract sections 3 and 11. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered' and never gates boot, serving, admission or shutdown. Registered by OTV2-20260929-runtime-status-producer (#162 owner-accepted package Q21, 5900403086)."
+}

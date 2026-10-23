@@ -471,6 +471,7 @@ impl DurabilityRoot {
                     .execute(&mut *tx)
                     .await?;
 
+                    super::tutorial_death::reset_in_transaction(&mut tx, fence.character_id, &request.respawn_position).await?;
                     let committed = CommittedCharacterDeath {
                         occurrence: request.occurrence,
                         character_id: fence.character_id,
@@ -1432,7 +1433,7 @@ fn decode_death_build(
     }
 }
 
-async fn load_death_build(
+pub(super) async fn load_death_build(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     character: CharacterId,
 ) -> std::result::Result<DurableBuildState, DurabilityError> {

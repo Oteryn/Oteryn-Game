@@ -409,7 +409,7 @@ mod tests {
     use serde_json::Value;
 
     const RESOURCE_REGISTRY: &str =
-        include_str!("../../../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json");
+        oteryn_protocol_oteryn::RESOURCE_LIMITS_REGISTRY_JSON;
 
     fn registered(id: &str) -> u64 {
         let registry: Value = serde_json::from_str(RESOURCE_REGISTRY).unwrap();

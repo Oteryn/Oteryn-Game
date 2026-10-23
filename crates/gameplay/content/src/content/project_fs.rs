@@ -919,7 +919,7 @@ mod linux {
         bytes
             .try_reserve_exact(value.len() / 2)
             .map_err(|_| conflict("journal raw-name allocation failed"))?;
-        for pair in value.as_bytes().chunks_exact(2) {
+        for pair in value.as_bytes().as_chunks::<2>().0 {
             let high = hex_digit(pair[0]).ok_or_else(|| conflict("journal raw name is not hex"))?;
             let low = hex_digit(pair[1]).ok_or_else(|| conflict("journal raw name is not hex"))?;
             bytes.push((high << 4) | low);

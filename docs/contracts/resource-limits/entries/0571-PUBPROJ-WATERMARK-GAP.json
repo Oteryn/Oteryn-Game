@@ -1,0 +1,21 @@
+{
+  "id": "PUBPROJ-WATERMARK-GAP",
+  "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md",
+  "resource": "Maximum gap between watermarks of one family",
+  "unit": "seconds",
+  "hard_maximum": 10,
+  "configurable_range": {
+    "minimum": 10,
+    "maximum": 10
+  },
+  "failure_category": "UNAVAILABLE",
+  "allocation_impact": "The publisher sends each family's watermark every 3 s while it has a source; no per-request allocation.",
+  "client_visible": false,
+  "boundary_tests": [
+    "apps/game-server/src/native_admission_source/public_projections_tests.rs: watermarks are sent only for families with a source"
+  ],
+  "consumers": [
+    "apps/game-server/src/native_admission_source/public_projections.rs"
+  ],
+  "notes": "Contract sections 3, 5 and 8. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered': the outbox row stays queued (or the World is retried by the next scan), the watermark stalls and Platform hides the family once it is stale; gameplay, admission and the change that caused it are unaffected. Registered by OTV2-20261015-public-projections-producer."
+}

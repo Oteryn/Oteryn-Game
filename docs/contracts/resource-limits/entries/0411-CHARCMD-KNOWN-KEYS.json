@@ -1,0 +1,21 @@
+{
+  "id": "CHARCMD-KNOWN-KEYS",
+  "owner_contract": "OTERYN_GAME_CHARACTER_AUTHORITY_COMMANDS_V1.md",
+  "resource": "Pending operations the consumer remembers between polls",
+  "unit": "entries",
+  "hard_maximum": 512,
+  "configurable_range": {
+    "minimum": 512,
+    "maximum": 512
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "A fixed-capacity map of settled and retrying keys; the oldest settled key is evicted first and an evicted key is only re-decided, which republishes its stored receipt.",
+  "client_visible": false,
+  "boundary_tests": [
+    "the known-key map never exceeds 512 entries"
+  ],
+  "consumers": [
+    "apps/game-server/src/native_admission_source/character_commands.rs"
+  ],
+  "notes": "Contract sections 3, 5 and 12. Internal Game-to-Platform boundary; no client wire. A refused or failed exchange stores nothing and publishes nothing: the intent stays PENDING and is retried until it expires. The consumer is disabled unless [platform.character_commands] is configured. Registered by CHAR-CMD-CONSUMER-1."
+}

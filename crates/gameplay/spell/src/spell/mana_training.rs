@@ -266,6 +266,7 @@ impl PreparedManaTraining {
 #[cfg(test)]
 mod tests {
     #![allow(clippy::unwrap_used, clippy::panic)]
+    mod first_vocation_vitals_tests;
     use super::*;
     fn formula() -> CompiledTrainingFormula {
         CompiledTrainingFormula::from_profile(
@@ -1186,3 +1187,5 @@ impl super::cast::PlayerSpellState {
         Ok(())
     }
 }
+
+mod first_vocation_vitals;

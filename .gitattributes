@@ -41,3 +41,12 @@ content/world/provenance/imports.json merge=oteryn-regen
 content/world/provenance/sources.json merge=oteryn-regen
 content/world/worlds/world.json merge=oteryn-regen
 rulesets/items/imbuements/index.json merge=oteryn-regen
+
+# Two mechanics appending at the same place (mod lines, fields, methods, dependencies, registry
+# entries, workflow steps) is not a conflict; tools/merge-driver/oteryn_additive_driver.py combines
+# only such insert-only hunks.
+*.rs merge=oteryn-additive
+*.toml merge=oteryn-additive
+*.md merge=oteryn-additive
+docs/contracts/*.json merge=oteryn-additive
+.github/workflows/*.yml merge=oteryn-additive

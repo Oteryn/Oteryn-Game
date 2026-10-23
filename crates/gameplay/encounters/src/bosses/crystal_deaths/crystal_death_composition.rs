@@ -7,6 +7,7 @@ use crate::content::{ProjectV2AuthoringProfile, ProjectV2SourceIdentityBinding, 
 use oteryn_gameplay_domain::domain::carrier_values::CarrierError;
 #[cfg(test)]
 use oteryn_gameplay_encounters::bosses::crystal_deaths::native_fixtures::CrystalRouterFixtureExt;
+use oteryn_gameplay_encounters::bosses::herald_of_fire::crystal_herald_quest::HeraldQuestRequest;
 use oteryn_gameplay_entities::ChannelRuntimeV1;
 use oteryn_gameplay_foundation::foundation::ChannelId;
 use oteryn_gameplay_foundation::foundation::ExactActorRef;
@@ -806,8 +807,7 @@ impl QualifiedCrystalDeaths {
         character_fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
         copy: &crate::durability::quest_state::QuestStateCopy,
         catalogue: std::sync::Arc<oteryn_gameplay_quests::quest::QuestStateCatalogue>,
-    ) -> Result<Option<oteryn_gameplay_encounters::bosses::herald_of_fire::crystal_herald_quest::HeraldQuestRequest>, CrystalDeathCompositionError>
-    {
+    ) -> Result<Option<HeraldQuestRequest>, CrystalDeathCompositionError> {
         self.current_owner(runtime, fence, stamp)?;
         if character_fence.runtime_scope != RuntimeScopeRefV1::channel(self.world, self.channel)
             || character_fence.scope_ownership_generation != self.generation
@@ -867,15 +867,13 @@ impl QualifiedCrystalDeaths {
                 .map_err(|_| {
                     CrystalDeathCompositionError::Source("Herald actual owner occurrence invalid")
                 })?;
-        Ok(Some(
-            oteryn_gameplay_encounters::bosses::herald_of_fire::crystal_herald_quest::HeraldQuestRequest::from_owner(
-                character_fence,
-                occurrence,
-                transition,
-                catalogue,
-                stamp,
-            ),
-        ))
+        Ok(Some(HeraldQuestRequest::from_owner(
+            character_fence,
+            occurrence,
+            transition,
+            catalogue,
+            stamp,
+        )))
     }
 }
 

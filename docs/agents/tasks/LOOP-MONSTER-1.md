@@ -248,10 +248,10 @@ New files growing by more than 200 lines (all other new files are at most 198):
 | monster-ai/src/monster_summon/catalog.rs | 215 | Extracted qualifier and admitted summon closure belong to native summon AI. |
 | entities/src/carrier/monster_summon_admission.rs | 240 | Extracted physical slots/links and current-fence wrappers belong to Entities. |
 | world/src/movement/monster_map.rs | 295 | Current terrain/Item/LocalObject facts and Movement decisions belong to World. |
-| dispatch/src/gameplay_transport/loop_monster_postgres_tests/summon_transaction.rs | 305 | Real composed PG admission/replay/rollback tests belong at dispatch. |
+| dispatch/src/gameplay_transport/postgres_tests/loop_monster/summon_transaction.rs | 305 | Real composed PG admission/replay/rollback tests belong at dispatch. |
 
 Shared slots: gameplay_transport/mod.rs (+7 wiring), actor_spell.rs (+2 owner field/default),
-monk_save_postgres_tests.rs (+3 single test mount), movement.rs (+1 module registration).
+postgres_tests/loop_monster.rs (auto-mounted by the FLOW build.rs; no shared mount line), movement.rs (+1 module registration).
 Other large owners contain extraction/call-site changes; no new logic bodies in slot files.
 
 ## Reused code and test-only seams
@@ -280,14 +280,13 @@ Other large owners contain extraction/call-site changes; no new logic bodies in 
 crates/gameplay/content/src/content/native_gameplay.rs
 crates/gameplay/content/src/content/native_gameplay/test_support/activation_fixture.rs
 crates/gameplay/dispatch/src/gameplay_transport/actor_spell.rs
-crates/gameplay/dispatch/src/gameplay_transport/loop_monster_postgres_tests.rs
-crates/gameplay/dispatch/src/gameplay_transport/loop_monster_postgres_tests/fixture.rs
-crates/gameplay/dispatch/src/gameplay_transport/loop_monster_postgres_tests/item_scope.rs
-crates/gameplay/dispatch/src/gameplay_transport/loop_monster_postgres_tests/shared_budget.rs
-crates/gameplay/dispatch/src/gameplay_transport/loop_monster_postgres_tests/sql_cancellation.rs
-crates/gameplay/dispatch/src/gameplay_transport/loop_monster_postgres_tests/summon_transaction.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/loop_monster.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/loop_monster/fixture.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/loop_monster/item_scope.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/loop_monster/shared_budget.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/loop_monster/sql_cancellation.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/loop_monster/summon_transaction.rs
 crates/gameplay/dispatch/src/gameplay_transport/mod.rs
-crates/gameplay/dispatch/src/gameplay_transport/monk_save_postgres_tests.rs
 crates/gameplay/dispatch/src/gameplay_transport/monster_ai_cycle.rs
 crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle.rs
 crates/gameplay/dispatch/src/gameplay_transport/world_respawns.rs
@@ -339,3 +338,12 @@ No task-scope implementation remains. No RL17 runtime/p99 measurement. No CI-onl
 was deferred. Integrator retains independent review, freeze, CI/MQ and publication;
 no commit/push/branch mutation was performed, no frozen candidate or PR created here.
 Pending owner questions: none. Next step: integrator review of this local candidate.
+
+## FLOW port — 2026-10-23
+
+Ported onto `claude/happy-davinci-ijz3wy-6` (`49cdeaf5f`, main + FLOW-1/2). The dispatch PG
+suite moved to the auto-mounted `gameplay_transport/postgres_tests/loop_monster.rs` (children in
+`postgres_tests/loop_monster/`), so `monk_save_postgres_tests.rs` is unchanged. Per-session owner
+fields are read through `ComposedFreshAdmission::states` (DISPATCH-WIRING-1). The lane's
+CREATUREAI0 resource-limit edits already exist on the base as per-entry files 0496–0499 with
+equal content; the aggregate registry was not restored. No migration and no ID renumbering.

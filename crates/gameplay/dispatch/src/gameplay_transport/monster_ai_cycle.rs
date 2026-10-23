@@ -50,7 +50,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return;
         }
-        let mut states = self.spell_states.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         if now.get() < states.next_monster_ai_pass_us {
             return;
         }
@@ -80,7 +80,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             think_player_census(&runtime, &states.monster_melee.think_players)
         };
         // ATTACK-1b: lock order runtime, spell states, attack.
-        let mut attack = self.attack.lock().await;
+        let mut attack = self.states.attack.lock().await;
         let semantic_now =
             oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now.get());
         let targets = melee_targets(room, &runtime, &states, &attack, &census, now.get());

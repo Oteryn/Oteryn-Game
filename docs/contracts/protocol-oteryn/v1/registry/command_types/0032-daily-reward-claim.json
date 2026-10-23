@@ -1,0 +1,10 @@
+{
+  "id": 32,
+  "name": "DAILY_REWARD_CLAIM",
+  "owner_decision": "DAILY_REWARD0 \u00a7\u00a73\u20137; CP wire allocation 2026-10-22 for DAILY-1",
+  "capability": 32,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/daily_reward_v1.proto#DailyRewardClaimV1",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/daily_reward_v1.proto#DailyRewardResultV1",
+  "max_payload_bytes": 10500,
+  "max_result_payload_bytes": 20
+}

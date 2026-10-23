@@ -1,6 +1,5 @@
 use super::*;
 use crate::bestiary_postgres_harness::{debug, fence, id};
-use crate::content::qualify_native_entry_room;
 use crate::foundation::{CommandId, ScopeOwnershipGeneration, WorldId, crystal_timer_fixture};
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
@@ -17,12 +16,18 @@ fn setup()
             runtime_scope: gameplay.runtime_scope,
             scope_ownership_generation: gameplay.scope_ownership_generation,
         },
-        content: ReferenceContentGeneration::from_content(
-            qualify_native_entry_room(WorldId::decode(&id(42)).map_err(debug)?)
-                .map_err(debug)?
-                .door(),
+        content: crate::foundation::MovementActorFixture::new(
+            crate::foundation::MovementLocalPosition {
+                x: 0,
+                y: 0,
+                floor: 0,
+            },
+            false,
         )
-        .map_err(debug)?,
+        .map_err(debug)?
+        .current_position()
+        .map_err(debug)?
+        .context(),
         position_revision: 7,
     };
     let (owner, work) = crystal_timer_fixture(
@@ -196,13 +201,17 @@ fn npc_travel_independent_current_owner_session_position_and_content_are_require
         crate::foundation::ConnectionGeneration::new(2).map_err(debug)?;
     changes.push(changed);
     let mut changed = capture.clone();
-    let mut content = qualify_native_entry_room(WorldId::decode(&id(42)).map_err(debug)?)
-        .map_err(debug)?
-        .door()
-        .clone();
-    content.content_lock.revision_digest_token =
-        crate::content::ProductionAtom::new("test lock", "changed-lock").map_err(debug)?;
-    changed.content = ReferenceContentGeneration::from_content(&content).map_err(debug)?;
+    changed.content = crate::foundation::MovementActorFixture::new(
+        crate::foundation::MovementLocalPosition {
+            x: 0,
+            y: 0,
+            floor: 0,
+        },
+        false,
+    )
+    .map_err(debug)?
+    .wrong_context()
+    .map_err(debug)?;
     changes.push(changed);
     for changed in changes {
         assert_eq!(

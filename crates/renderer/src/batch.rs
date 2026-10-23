@@ -86,7 +86,7 @@ impl QuadInstance {
             self.uv[2],
             self.uv[3],
         ];
-        for (chunk, value) in bytes.chunks_exact_mut(4).zip(floats) {
+        for (chunk, value) in bytes.as_chunks_mut::<4>().0.iter_mut().zip(floats) {
             chunk.copy_from_slice(&value.to_ne_bytes());
         }
         bytes
@@ -1029,7 +1029,9 @@ mod tests {
         let bytes = instance_bytes(&[instance, instance]);
         assert_eq!(bytes.len(), 2 * QUAD_INSTANCE_BYTES);
         let floats: Vec<f32> = bytes[..QUAD_INSTANCE_BYTES]
-            .chunks_exact(4)
+            .as_chunks::<4>()
+            .0
+            .iter()
             .map(|chunk| f32::from_ne_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]))
             .collect();
         assert_eq!(floats, [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]);

@@ -1,5 +1,5 @@
 #![allow(clippy::expect_used)]
-// D1112 installed-storage cases. Every selected case creates its own PostgreSQL17.6
+// D1112 installed-storage cases. Every selected case creates its own PostgreSQL 18.6
 // database through the actual embedded migration ledger; no fixture DDL is executed.
 extern crate oteryn_game_server as production_server;
 extern crate self as oteryn_game_server;

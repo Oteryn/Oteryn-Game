@@ -24,7 +24,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let permit = &permit;
         let mut runtime = self.runtime.lock().await;
-        let mut states = self.spell_states.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         if states.has_pending_spell_commit(actor, session)
             || runtime.actor_spell_reserved(actor)
             || active.source_digest() != runtime.content_pin().server_artifact_digest()

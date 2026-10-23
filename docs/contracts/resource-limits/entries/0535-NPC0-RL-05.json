@@ -1,0 +1,22 @@
+{
+  "id": "NPC0-RL-05",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md",
+  "resource": "Open conversations of one NPC",
+  "unit": "conversations",
+  "hard_maximum": 8,
+  "configurable_range": {
+    "minimum": 8,
+    "maximum": 8
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Bounds the customer queue and the domain 7 fan-out of one NPC. A further customer waits or is refused by NPC-TALK-1.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=8: eight customers are served",
+    "max+1=9: a ninth customer is not admitted"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/npc_service.rs MAX_OPEN_CONVERSATIONS_PER_NPC"
+  ],
+  "notes": "NPC-0 \u00a74.1 and NPC-BEHAVIOUR-0 \u00a77. Worker-set; enforced by NPC-TALK-1. Registered by OTV2-20261005-npc-wire-1 (NPC-WIRE-1)."
+}

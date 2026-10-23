@@ -126,8 +126,8 @@ impl Database {
             .fetch_one(&mut connection)
             .await?;
         assert!(
-            version.starts_with("17"),
-            "PostgreSQL 17 required: {version}"
+            version.starts_with("18"),
+            "PostgreSQL 18 required: {version}"
         );
         sqlx::migrate!("./migrations").run(&mut connection).await?;
         connection.close().await?;

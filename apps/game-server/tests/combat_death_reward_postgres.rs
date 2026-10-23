@@ -1,5 +1,5 @@
 #![allow(clippy::expect_used)]
-// Dedicated PostgreSQL 17 qualification for Combat D2b (creature death ->
+// Dedicated PostgreSQL 18 qualification for Combat D2b (creature death ->
 // loot MINT + R7 P03 XP composition). Ordinary workspace runs report
 // PRE-ROUTING/NONCANONICAL when the routed database is absent.
 extern crate oteryn_game_server as production_server;

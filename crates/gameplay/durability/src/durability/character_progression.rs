@@ -60,7 +60,7 @@ pub struct CurrentCharacterGameplayFence {
 
 impl CurrentCharacterGameplayFence {
     /// The same session, lease and scope authority without the CharacterRevision.
-    pub(super) const fn item_fence(&self) -> CurrentCharacterItemFence {
+    pub const fn item_fence(&self) -> CurrentCharacterItemFence {
         CurrentCharacterItemFence {
             character_id: self.character_id,
             game_session_id: self.game_session_id,
@@ -323,12 +323,13 @@ impl DurabilityRoot {
                     }
 
                     if quest_obligation {
-                        // Locked after `character_root` and the progression state, the order of
-                        // the quest writer that inserts it.
+                        // The already-held character_root lock serializes obligation inserts
+                        // and consumption with the quest writer. FOR UPDATE on the obligation
+                        // would require UPDATE, which the runtime role intentionally lacks.
                         let obligation = sqlx::query(
                             "SELECT character_id::text, amount \
                                FROM game_character_quest_xp_obligations \
-                              WHERE reward_occurrence_id = encode($1,'hex')::uuid FOR UPDATE",
+                              WHERE reward_occurrence_id = encode($1,'hex')::uuid",
                         )
                         .bind(request.occurrence.0.as_slice())
                         .fetch_optional(&mut *tx)

@@ -1,5 +1,5 @@
 #![allow(clippy::expect_used)]
-// Focused PostgreSQL 17.6 target for PROF-SHAPE-1a; the protected durability lane also runs
+// Focused PostgreSQL 18.6 target for PROF-SHAPE-1a; the protected durability lane also runs
 // these exact cases through durability_postgres.
 extern crate oteryn_game_server as production_server;
 extern crate self as oteryn_game_server;

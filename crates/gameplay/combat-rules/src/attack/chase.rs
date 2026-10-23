@@ -78,10 +78,8 @@ mod tests {
 
     #[test]
     fn the_refused_cell_cap_matches_its_registered_row() {
-        let registry: serde_json::Value = serde_json::from_str(include_str!(
-            "../../../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json"
-        ))
-        .unwrap();
+        let registry: serde_json::Value =
+            serde_json::from_str(oteryn_protocol_oteryn::RESOURCE_LIMITS_REGISTRY_JSON).unwrap();
         let entries = registry["entries"].as_array().unwrap();
         let row = entries
             .iter()

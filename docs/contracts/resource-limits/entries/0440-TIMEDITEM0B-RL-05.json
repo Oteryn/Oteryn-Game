@@ -1,0 +1,22 @@
+{
+  "allocation_impact": "The next write is issued only when the previous outcome is known; asking again returns the write in flight.",
+  "boundary_tests": [
+    "max=1: one checkpoint is in flight",
+    "max+1=2: a second request returns the same write, never a second one"
+  ],
+  "client_visible": false,
+  "configurable_range": {
+    "maximum": 1,
+    "minimum": 1
+  },
+  "consumers": [
+    "apps/game-server/src/domain/timed_item.rs TimedItemLane::next_step"
+  ],
+  "failure_category": "CAPACITY_EXCEEDED",
+  "hard_maximum": 1,
+  "id": "TIMEDITEM0B-RL-05",
+  "notes": "\u00a75.2; serializes checkpoint and expiry (D285). Registered by OTV2-20261003-timed-rt-1a.",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_TIMED_ITEM0B_RUNTIME_CHARGES_AND_DURATION_DECISION_2026-10-03.md",
+  "resource": "Timed writes in flight per item lane",
+  "unit": "writes"
+}

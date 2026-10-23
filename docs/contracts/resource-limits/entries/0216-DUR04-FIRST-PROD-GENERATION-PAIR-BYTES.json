@@ -1,0 +1,19 @@
+{
+  "id": "DUR04-FIRST-PROD-GENERATION-PAIR-BYTES",
+  "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md+AMENDMENT_03+AMENDMENT_04",
+  "resource": "Combined server and client-safe artifact bytes in one staging request",
+  "unit": "bytes",
+  "hard_maximum": 4347098,
+  "configurable_range": {
+    "minimum": 2,
+    "maximum": 4347098
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Use checked addition of the two projection-bounded inputs before staging either as a generation pair.",
+  "client_visible": false,
+  "boundary_tests": [
+    "4,347,098 cumulative bytes accepted only when both projection maxima pass",
+    "4,347,099 rejected",
+    "pair-byte checked-add overflow rejected"
+  ]
+}

@@ -35,7 +35,6 @@ pub mod character_progression;
 pub mod character_revision_sequencer;
 pub mod character_stance;
 
-
 pub mod character_wheel;
 pub mod charm_state;
 pub mod chat_text;
@@ -52,6 +51,7 @@ pub mod house_interior;
 pub mod house_interior_audit;
 pub mod house_scope_handoff;
 
+pub mod character_tutorial;
 pub mod item_decay_retire;
 pub mod item_decay_retire_audit;
 pub mod item_fee_burn;
@@ -66,7 +66,7 @@ pub mod item_transfer;
 pub mod item_transfer_audit;
 pub mod item_use;
 pub mod item_use_audit;
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 pub mod item_weight_lookup;
 pub mod mail;
 pub mod map_item_mint;
@@ -76,6 +76,7 @@ pub mod monk_state;
 pub mod native_admission_source;
 pub mod native_map_items;
 pub mod native_map_items_abi;
+pub mod newhaven_travel;
 pub mod npc_trade;
 pub mod npc_trade_audit;
 pub mod npc_travel;
@@ -99,6 +100,9 @@ pub mod spell_items_abi;
 pub mod spell_owner_commit;
 pub mod spell_parameter_result;
 pub mod spell_privacy;
+pub mod tutorial_corruptor;
+mod tutorial_death;
+pub mod tutorial_islet_placement;
 
 pub mod sqlstate_codes;
 pub mod starter_grant;
@@ -645,9 +649,8 @@ mod character_authority_linkage {
     #[test]
     fn character_authority_api_is_linked() {
         let _ = DurabilityRoot::configure_character_interpretation;
-        let _ = std::mem::size_of::<
-            crate::character_bootstrap_intent::CharacterBootstrapIntentV1,
-        >();
+        let _ =
+            std::mem::size_of::<crate::character_bootstrap_intent::CharacterBootstrapIntentV1>();
         let _ = std::mem::size_of::<CharacterAuditDelivery>();
         let _ = std::mem::size_of::<CharacterAuthorityError>();
         let _ = std::mem::size_of::<CharacterAuthorityRecord>();
@@ -886,7 +889,9 @@ impl MigrationFailureClass {
 #[derive(Debug)]
 pub enum DurabilityError {
     AdmissionGameSessionLedgerExhausted,
-    SessionUseAuthorization(crate::foundation::admission_authority_publication::GameSessionUseAuthorizationErrorV1),
+    SessionUseAuthorization(
+        crate::foundation::admission_authority_publication::GameSessionUseAuthorizationErrorV1,
+    ),
     Unavailable,
     Database(SqlxFailureClass),
     Migration(MigrationFailureClass),
@@ -2267,9 +2272,7 @@ fn encode_record_v2(record: &ReconnectDurabilityRecordV1) -> serde_json::Value {
     })
 }
 
-fn encode_evidence_v2(
-    evidence: &crate::foundation::AuthorityEvidenceFenceV1,
-) -> serde_json::Value {
+fn encode_evidence_v2(evidence: &crate::foundation::AuthorityEvidenceFenceV1) -> serde_json::Value {
     json!({
         "authority": evidence.authority(),
         "purpose": evidence.purpose(),
@@ -2282,7 +2285,9 @@ fn encode_evidence_v2(
 
 #[cfg(test)]
 mod terminal_replacement_schema_red_tests {
-    const MIGRATION: &str = include_str!("../../../../../apps/game-server/migrations/0001_admission_reconnect_journal.sql");
+    const MIGRATION: &str = include_str!(
+        "../../../../../apps/game-server/migrations/0001_admission_reconnect_journal.sql"
+    );
 
     #[test]
     fn terminal_replacement_forward_syncs_lagging_scope_fence_atomically() {
@@ -3455,3 +3460,6 @@ mod terminal_replacement_foundation_red_tests {
 }
 
 pub mod house_spell_acl;
+
+pub mod guild;
+pub mod guild_audit;

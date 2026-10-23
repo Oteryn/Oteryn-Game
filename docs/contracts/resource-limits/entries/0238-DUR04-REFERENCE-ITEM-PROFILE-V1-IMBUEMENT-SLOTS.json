@@ -1,0 +1,19 @@
+{
+  "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-IMBUEMENT-SLOTS",
+  "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+  "resource": "Known gameplay imbuement slot count on one Item",
+  "unit": "slots",
+  "hard_maximum": 3,
+  "configurable_range": {
+    "minimum": 0,
+    "maximum": 3
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Validate the scalar before retaining the Imbuement capability.",
+  "client_visible": true,
+  "boundary_tests": [
+    "slot count 3 accepted",
+    "slot count 4 rejected",
+    "known zero remains distinct from unknown/not-applicable"
+  ]
+}

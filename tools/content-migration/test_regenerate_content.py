@@ -19,6 +19,7 @@ import regenerate_content as rc
 SOURCES = "imports/tibiawiki/sources.json"
 DERIVED = "content/items/index.json"
 INTERACTIONS = "content/interactions/index.json"
+WORLD_PIN = "content/world/pins/oteryn.json"
 PIN_TEST = f'const DOCUMENTS: [(&str, usize, &str); 1] = [\n    ("definitions/reference.json", 1, "{"0" * 64}"),\n];\n'
 
 
@@ -48,7 +49,11 @@ def sources(*batches: str) -> dict:
     }
 
 
-def stopped_merge(root: Path, conflicting: list[str]) -> None:
+def world_pin(side: str, x: int = 1) -> dict:
+    return {"digest": side, "entry_start": {"x": x, "y": 2, "floor": 7}}
+
+
+def stopped_merge(root: Path, conflicting: list[str], *, moved_entry: bool = False) -> None:
     """Base, then `ours` and `theirs` each change every path in `conflicting`, then merge."""
     git(root, "init", "-q", "-b", "main")
     manifest = {"managed_files": [{"path": SOURCES}, {"path": DERIVED}]}
@@ -57,6 +62,7 @@ def stopped_merge(root: Path, conflicting: list[str]) -> None:
     write(root, SOURCES, sources("base"))
     write(root, DERIVED, {"items": ["base"]})
     write(root, INTERACTIONS, {"contract": "hand-written", "notes": "base"})
+    write(root, WORLD_PIN, world_pin("base"))
     git(root, "add", "-A")
     git(root, "commit", "-q", "-m", "base")
     git(root, "checkout", "-q", "-b", "theirs")
@@ -68,13 +74,19 @@ def stopped_merge(root: Path, conflicting: list[str]) -> None:
                 write(root, path, sources("base", f"{side}-batch"))
             elif path == INTERACTIONS:
                 write(root, path, {"contract": f"{side}-contract", "notes": side})
+            elif path == WORLD_PIN:
+                write(root, path, world_pin(side, 3 if moved_entry and side == "ours" else 1))
             else:
                 write(root, path, {"items": ["base", side]})
         git(root, "commit", "-q", "-am", side)
+    # The merge needs an identity too, or it stops before merging and leaves no conflict.
     merged = subprocess.run(
-        ["git", "merge", "-q", "theirs"], cwd=root, capture_output=True
+        ["git", "-c", "user.name=t", "-c", "user.email=t@t", "merge", "-q", "theirs"],
+        cwd=root,
+        capture_output=True,
     )
     assert merged.returncode != 0, "fixture merge must stop on conflicts"
+    assert sorted(unmerged(root)) == sorted(conflicting), unmerged(root)
 
 
 def resolve_in(root: Path) -> tuple[int, list[str]]:
@@ -131,6 +143,25 @@ def test_derived_only_conflict_is_resolved() -> None:
         }
 
 
+def test_world_pin_conflict_is_derived() -> None:
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        stopped_merge(root, [WORLD_PIN])
+        code, resolved = resolve_in(root)
+        # Either side parses; `pin-refresh` then rewrites its digests from the staged merge.
+        assert code == 0 and resolved == [WORLD_PIN], (code, resolved)
+        assert json.loads((root / WORLD_PIN).read_text(encoding="utf-8")) == world_pin("theirs")
+
+
+def test_world_pin_conflict_on_a_moved_entry_start_fails_closed() -> None:
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        stopped_merge(root, [WORLD_PIN], moved_entry=True)
+        code, _ = resolve_in(root)
+        assert code == 2, code
+        assert unmerged(root) == [WORLD_PIN], unmerged(root)
+
+
 def test_git_failure_while_enumerating_conflicts_fails_closed() -> None:
     with tempfile.TemporaryDirectory() as temp:
         root = Path(temp)
@@ -173,6 +204,8 @@ def main() -> None:
         test_import_conflict_fails_closed_and_keeps_both_sides,
         test_interactions_index_conflict_fails_closed,
         test_derived_only_conflict_is_resolved,
+        test_world_pin_conflict_is_derived,
+        test_world_pin_conflict_on_a_moved_entry_start_fails_closed,
         test_git_failure_while_enumerating_conflicts_fails_closed,
     ]
     for test in tests:

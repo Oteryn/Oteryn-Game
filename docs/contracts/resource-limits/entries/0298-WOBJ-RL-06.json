@@ -1,0 +1,22 @@
+{
+  "id": "WOBJ-RL-06",
+  "owner_contract": "../architecture/OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md",
+  "resource": "Nesting depth (ChildOccurrenceRef::ancestry_depth) of a timed-revert child occurrence; its caller-supplied forward occurrence is admitted at depth at most one less",
+  "unit": "occurrence nesting levels",
+  "hard_maximum": 4,
+  "configurable_range": {
+    "minimum": 4,
+    "maximum": 4
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "Checked in ScopeRevertDriver::apply_forward on the supplied forward occurrence before the revert child is derived, and on the derived child, before any ordinal is minted, anything is committed or any record is created; a violation fails the whole forward operation with the named error OccurrenceTooDeep.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=4: a forward occurrence at depth 3 schedules a revert child at depth 4",
+    "max+1=5: a forward occurrence at depth 4 is refused OccurrenceTooDeep with no ordinal, mutation or record"
+  ],
+  "consumers": [
+    "apps/game-server/src/world_object_revert.rs (ScopeRevertDriver::apply_forward; not yet wired into a live Channel or Instance owner)"
+  ],
+  "notes": "PR #1144 round 3 (Codex P2 4125881422): ChildOccurrenceRef owns its ancestry recursively, so the record bound needs a depth bound. Registered by OTV2-20260928-cw1-timed-revert-runtime (issue #162): a lane policy value, not a measurement."
+}

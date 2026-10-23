@@ -116,7 +116,6 @@ fn attempt_ref(attempt: &ResumeAttempt<'_>) -> Option<ReconnectAttemptRef> {
     let value = u64::from_be_bytes(bytes[..8].try_into().ok()?);
     ReconnectAttemptRef::new(value.max(1)).ok()
 }
-
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn resume_lost(
         &self,
@@ -124,6 +123,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> Result<AdmittedSession, AdmissionRefusal> {
         use AdmissionRefusal::{Rejected, Unavailable};
         let lost = self
+            .states
             .lost
             .lock()
             .map_err(|_| Unavailable)?
@@ -521,7 +521,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             );
             // SPELL-D8 §8.2: the Serene initialization evaluation runs in this owner step,
             // before the resumed actor's first command. An actor without spell state has none.
-            let _ = self.spell_states.lock().await.resume(
+            let _ = self.states.spell_states.lock().await.resume(
                 &runtime,
                 actor,
                 session_id,

@@ -1,0 +1,22 @@
+{
+  "id": "CREATUREAI0-RL-06",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_CREATURE_AI1_TARGETING_AND_THINK_PACKET_2026-10-04.md",
+  "resource": "Evaluation units of one creature think (1 + perceived players + eligible players + profile entries)",
+  "unit": "units",
+  "hard_maximum": 128,
+  "configurable_range": {
+    "minimum": 128,
+    "maximum": 128
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Counted before the think mutates anything; it reserves nothing. Replaces AI01-EVALUATION-WORK 8 for creature thinks.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=128: a think of 128 units runs",
+    "max+1=129: the think ends idle and over budget with zero mutation"
+  ],
+  "consumers": [
+    "apps/game-server/src/ai_think.rs CREATUREAI0_EVALUATION_UNITS_PER_THINK: CreatureAiState::think"
+  ],
+  "notes": "CREATURE-AI-1 \u00a71.3. Test: apps/game-server/src/ai_think/think_tests.rs evaluation_units_at_max_think_and_above_max_mutate_nothing. Registered by OTV2-20261004-creature-ai-1."
+}

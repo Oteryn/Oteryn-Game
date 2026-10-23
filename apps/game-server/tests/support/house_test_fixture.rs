@@ -7,7 +7,7 @@ pub type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 /// A House case's own database: the stub case's `house_interior_<nanos>`
 /// (unless `harness_only`) or the native harness's `it_<tag>_<nanos>` for a
-/// `house_interior_*` or `house_loader_*` tag, as the canonical test admin on 17.6.
+/// `house_interior_*` or `house_loader_*` tag, as the canonical test admin on 18.6.
 async fn dedicated_database(connection: &mut PgConnection, harness_only: bool) -> TestResult<bool> {
     let (database, actor, version): (String, String, String) = sqlx::query_as(
         "SELECT current_database(), session_user::text, current_setting('server_version_num')",
@@ -30,12 +30,14 @@ async fn dedicated_database(connection: &mut PgConnection, harness_only: bool) -
         && ((!harness_only && stem == "house_interior")
             || harness_tag("it_house_interior_")
             || harness_tag("it_house_loader_"));
-    Ok(named && actor == "oteryn_test_admin" && version == "170006")
+    Ok(named
+        && actor == "oteryn_test_admin"
+        && version == oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM)
 }
 
 pub async fn install(connection: &mut PgConnection) -> TestResult {
     if !dedicated_database(connection, false).await? {
-        return Err("house fixture requires a dedicated PostgreSQL 17.6 test database".into());
+        return Err("house fixture requires a dedicated PostgreSQL 18.6 test database".into());
     }
     sqlx::raw_sql(
         "CREATE TABLE test_house_properties (

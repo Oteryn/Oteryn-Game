@@ -1,0 +1,24 @@
+{
+  "id": 20,
+  "name": "ACTOR_COOLDOWNS",
+  "owner_decision": "SPELL-PRESENT-0 §4, §7-§10 and §13 (docs/architecture/reviews/OTERYN_GAME_SPELL_PRESENT0_SPELL_AND_COMBAT_PRESENTATION_DECISION_2026-09-30.md, accepted by ACCEPT-SPELL-PRESENT0-V1); numbers leased to PRESENT-WIRE-1 by the #1622 control plane",
+  "owner": "current ChannelRuntime (own actor only)",
+  "capability": 23,
+  "revision": "per GameSessionId, monotonic and never reused (FND-02 \u00a715): 0 at the initial snapshot, plus 1 for each delta sent; never reset or wound back at a resync snapshot, a reconnect or a channel transfer within the same GameSession; a resync, reconnect or channel transfer sends a snapshot of every running cooldown, re-expressed on the current runtime's clock, and never replays a delta",
+  "delta_types": [
+    {
+      "id": 1,
+      "name": "ACTOR_COOLDOWNS_DELTA_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/presentation_v1.proto#ActorCooldownsV1",
+      "max_payload_bytes": 65552
+    }
+  ],
+  "snapshot_types": [
+    {
+      "id": 1,
+      "name": "ACTOR_COOLDOWNS_SNAPSHOT_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/presentation_v1.proto#ActorCooldownsV1",
+      "max_payload_bytes": 65552
+    }
+  ]
+}
