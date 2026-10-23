@@ -1,0 +1,21 @@
+{
+  "id": "HOUSEWIRE1-RL-RESULT",
+  "owner_contract": "protocol-oteryn/v1/house_v1.proto",
+  "resource": "Management result body",
+  "unit": "bytes",
+  "hard_maximum": 32768,
+  "configurable_range": {
+    "minimum": 32768,
+    "maximum": 32768
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Bound before allocation or mutation; refuse excess.",
+  "client_visible": true,
+  "boundary_tests": [
+    "at limit accepted",
+    "above limit rejected"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/house.rs"
+  ]
+}
