@@ -12,8 +12,12 @@
 //! `oteryn-world-bundle-compiler pin-check <repository root> <out directory>`: checks every
 //! World pin under `content/world/pins/` against the tree, builds each bundle twice, and writes
 //! it to `<out directory>` with `artifact-name.txt`.
+//!
+//! `oteryn-world-bundle-compiler pin-refresh <repository root>`: rewrites every World pin, its
+//! identity file and the preproduction manifest to the tree's staged inputs (`pin_refresh`).
 
 mod entry_start;
+mod pin_refresh;
 
 use std::collections::BTreeSet;
 use std::fs;
@@ -30,7 +34,7 @@ use oteryn_world_bundle_compiler::compile::{
 };
 use oteryn_world_bundle_compiler::project::{self, Families};
 use oteryn_world_bundle_compiler::resolve::Registry;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
@@ -369,7 +373,7 @@ fn is_pin_file(name: &str) -> bool {
 }
 
 /// The reviewed pin of one World (`content/world/pins/<world slug>.json`).
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 struct Pin {
     schema: String,
@@ -382,7 +386,7 @@ struct Pin {
     inputs_digest: String,
 }
 
-#[derive(Deserialize, Clone, Copy)]
+#[derive(Deserialize, Serialize, Clone, Copy)]
 #[serde(deny_unknown_fields)]
 struct EntryStart {
     x: u16,
@@ -537,11 +541,9 @@ fn run_derive_identity(root: &Path, slug: &str) -> Result<String, Error> {
     identity_text(&derive_identity(root, slug)?)
 }
 
-/// Checks every pin and writes each bundle to `out`. Returns the JSON summary.
-fn run_pin_check(root: &Path, out: &Path) -> Result<Value, Error> {
-    let io = |e: std::io::Error| Error::Format(format!("{}: {e}", out.display()));
-    let pins = root.join(PINS);
-    let mut slugs: Vec<String> = fs::read_dir(&pins)
+/// The World slugs pinned under `pins`, in name order; at least one.
+fn pin_slugs(pins: &Path) -> Result<Vec<String>, Error> {
+    let mut slugs: Vec<String> = fs::read_dir(pins)
         .map_err(|e| Error::Format(format!("{}: {e}", pins.display())))?
         .filter_map(|entry| entry.ok()?.file_name().into_string().ok())
         .filter(|name| is_pin_file(name))
@@ -553,6 +555,14 @@ fn run_pin_check(root: &Path, out: &Path) -> Result<Value, Error> {
             "no World pin under content/world/pins".into(),
         ));
     }
+    Ok(slugs)
+}
+
+/// Checks every pin and writes each bundle to `out`. Returns the JSON summary.
+fn run_pin_check(root: &Path, out: &Path) -> Result<Value, Error> {
+    let io = |e: std::io::Error| Error::Format(format!("{}: {e}", out.display()));
+    let pins = root.join(PINS);
+    let slugs = pin_slugs(&pins)?;
     let tree = inputs_digest(root)?;
     fs::create_dir_all(out).map_err(io)?;
     let (mut reports, mut names) = (Vec::new(), Vec::new());
@@ -642,13 +652,15 @@ fn main() -> ExitCode {
         [_, command, root, out] if command == "pin-check" => {
             run_pin_check(Path::new(root), Path::new(out))
         }
+        [_, command, root] if command == "pin-refresh" => pin_refresh::run(Path::new(root)),
         _ => {
             eprintln!(
                 "usage: oteryn-world-bundle-compiler parity <repository root>\n       \
                  oteryn-world-bundle-compiler compile <repository root> <identity.json> <out> \
                  <production|non-production>\n       \
                  oteryn-world-bundle-compiler derive-identity <repository root> <world slug>\n       \
-                 oteryn-world-bundle-compiler pin-check <repository root> <out directory>"
+                 oteryn-world-bundle-compiler pin-check <repository root> <out directory>\n       \
+                 oteryn-world-bundle-compiler pin-refresh <repository root>"
             );
             return ExitCode::from(2);
         }

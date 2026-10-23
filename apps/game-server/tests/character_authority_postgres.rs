@@ -2320,8 +2320,6 @@ mod type2_audit_activation_postgres_cases;
 mod bestiary_postgres_harness;
 #[path = "support/bestiary_progress_postgres_cases.rs"]
 mod bestiary_progress_postgres_cases;
-#[path = "support/tutorial_progress_postgres_cases.rs"]
-mod tutorial_progress_postgres_cases;
 
 // LOOP-GROUND-1 Ground64 same-transaction admission (pure and native PostgreSQL
 // cases) on the CHARM-2 harness included above; its only test mount.
@@ -3093,13 +3091,6 @@ mod npc_econ_bank_postgres_cases;
 
 #[path = "support/mail_postgres_cases.rs"]
 mod mail_postgres_cases;
-
-#[path = "support/market_postgres_cases.rs"]
-mod market_postgres_cases;
-
-// NPC-TRADE-1 NPC BUY/SELL commit (migration 0082) on the B3 item-transfer harness.
-#[path = "support/npc_trade_postgres_cases.rs"]
-mod npc_trade_postgres_cases;
 #[path = "support/npc_travel_postgres_cases.rs"]
 mod npc_travel_postgres_cases;
 
@@ -3451,3 +3442,7 @@ mod character_appearance_postgres_cases;
 #[cfg(test)]
 #[path = "../src/lifted_tests/durability_npc_travel_postgres_fixture.rs"]
 mod durability_npc_travel_postgres_fixture;
+
+// Every case file in `support/authority_cases/` is mounted here by `build.rs`, so a new mechanic
+// adds its file there instead of editing this shared target.
+include!(concat!(env!("OUT_DIR"), "/authority_cases_mounts.rs"));

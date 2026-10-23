@@ -21,12 +21,6 @@ mod rune_use_bridge;
 #[path = "item_look_postgres_tests.rs"]
 mod item_look;
 
-#[path = "weather_wire_postgres_tests.rs"]
-mod weather_wire;
-
-#[path = "creature_move_postgres_tests.rs"]
-mod creature_move;
-
 #[path = "loop_map_pickup_tests.rs"]
 mod map_pickup;
 
@@ -41,6 +35,10 @@ mod tutorial_vitals_fixture;
 
 #[path = "equipment_effects_owner_tests/monk_scenario.rs"]
 pub(in crate::gameplay_transport) mod equipment_scenarios;
+
+// Every test file in `postgres_tests/` is mounted here by `build.rs`, so a new mechanic adds its
+// file there instead of another `#[path] mod` line in this shared list.
+include!(concat!(env!("OUT_DIR"), "/postgres_tests_mounts.rs"));
 
 use super::{ComposedFreshAdmission, MonkSave};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
