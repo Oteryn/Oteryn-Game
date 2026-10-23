@@ -243,6 +243,7 @@ async fn scenario(admin: String, case: Option<item_use_view_refresh_tests::Case>
         revision_sequencer:
             crate::durability::character_revision_sequencer::CharacterRevisionSequencer::new(),
         quest_catalogue: None,
+        quest_log_content: None,
         quest_sessions: std::sync::Mutex::default(),
         chat: crate::gameplay_transport::chat_intent::ChatRuntime::default(),
         npc_conversations: Default::default(),

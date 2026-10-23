@@ -5,8 +5,8 @@
 //! kind, whether it is shown in the log, its `start` track and value, `hide_when_completed`, and its
 //! missions (one track each, `[start_value, end_value]`, a name and a journal). It is checked
 //! against that revision's [`QuestStateCatalogue`]: every quest is declared, every track it names
-//! is declared, and each mission's track belongs to its quest. Tests build it in code; the journal
-//! text arrives with QUEST-CONTENT-2.
+//! is declared, and each mission's track belongs to its quest. [`loader`] composes the merged
+//! QUEST-CONTENT-2 journal sources against those admitted tracks.
 //!
 //! [`QuestLogContent`] is the active catalogue with the earlier revisions still loadable. The
 //! projection is computed from the session copy ([`QuestLogFacts`]) and never stored:
@@ -23,7 +23,11 @@
 //! Quests are canonical indexes per content generation: the position in the active catalogue's
 //! ascending Oteryn keys. Missions are indexed by their position in their quest's revision.
 //!
-//! Like the rest of this module it depends on `std` only.
+//! The projection uses `std` only; the pure content loader also uses serde and SHA-256.
+
+mod journal_source;
+pub mod loader;
+mod source_texts;
 
 use std::collections::BTreeMap;
 

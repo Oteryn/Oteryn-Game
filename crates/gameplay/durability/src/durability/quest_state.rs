@@ -8,7 +8,7 @@
 //! `commit_character_experience` (§5.3) and serializes with every Character writer on the
 //! `character_root` row lock. Lock order: the recovery fence and admission relations, the
 //! receipt key, the session checks, `character_root`, the obligation, the quest state, the
-//! tracks by key, the Character's quest XP obligations.
+//! tracks by key. The Character root lock also serializes its quest XP obligations.
 //!
 //! The receipt is keyed by (Character, cause occurrence, transition key) and binds the request
 //! only (§5.1): the same key and binding replay the first outcome without reacquiring session
@@ -528,15 +528,17 @@ impl DurabilityRoot {
                         }
                         None => None,
                     };
-                    // QUEST-GATE-0 §5.5: count the locked pending XP obligations before any
-                    // write; at RL-10 an XP-bearing transition is refused whole.
+                    // QUEST-GATE-0 §5.5: the already-held character_root lock serializes all
+                    // inserts and consumption of this Character's XP obligations. Count them
+                    // before any write; FOR UPDATE here would require the UPDATE privilege
+                    // intentionally absent from the runtime role. At RL-10 refuse whole.
                     let xp_full = match (refusal, transition.experience) {
                         (None, Some(_)) => {
                             let pending = sqlx::query(
                                 "SELECT reward_occurrence_id::text \
                                    FROM game_character_quest_xp_obligations \
                                   WHERE character_id = encode($1,'hex')::uuid \
-                                  ORDER BY reward_occurrence_id FOR UPDATE",
+                                  ORDER BY reward_occurrence_id",
                             )
                             .bind(id)
                             .fetch_all(&mut *tx)

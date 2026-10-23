@@ -39,6 +39,17 @@ mod first_vocation_vitals;
 #[path = "tutorial_vitals_postgres_fixture.rs"]
 mod tutorial_vitals_fixture;
 
+#[path = "quest_admission_postgres_tests.rs"]
+mod quest_admission;
+#[path = "quest_chest_postgres_tests.rs"]
+mod quest_chest_postgres_tests;
+#[path = "quest_log_postgres_tests.rs"]
+mod quest_log_postgres_tests;
+#[path = "quest_recovery_postgres_tests.rs"]
+mod quest_recovery;
+#[path = "quest_runtime_fixture.rs"]
+mod quest_runtime_fixture;
+
 #[path = "equipment_effects_owner_tests/monk_scenario.rs"]
 pub(in crate::gameplay_transport) mod equipment_scenarios;
 
@@ -229,6 +240,7 @@ impl Dependencies {
             revision_sequencer:
                 crate::durability::character_revision_sequencer::CharacterRevisionSequencer::new(),
             quest_catalogue: None,
+            quest_log_content: None,
             quest_sessions: std::sync::Mutex::default(),
             chat: crate::gameplay_transport::chat_intent::ChatRuntime::default(),
             npc_conversations: Default::default(),
