@@ -16,7 +16,7 @@ updated_at: 2026-10-03
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/tasks/active/OTV2-20260825-work-delivery-coordinator.md
-  - docs/agents/tasks/active/OTV2-20260929-item-id-1-tibia-id-keys.md
+  - docs/agents/tasks/archive/OTV2-20260929-item-id-1-tibia-id-keys.md
   - docs/agents/tasks/active/OTV2-20261001-charm-runtime-completion.md
   - docs/agents/tasks/archive/OTV2-20261003-active-packets-repoint.md
 public_contracts: []

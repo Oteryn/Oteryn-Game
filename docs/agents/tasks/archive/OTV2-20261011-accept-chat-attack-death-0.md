@@ -21,7 +21,7 @@ owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_ATTACK0_ATTACK_TARGET_AND_AUTO_ATTACK_DECISION_2026-09-30.md
   - docs/architecture/reviews/OTERYN_GAME_DEATH0_CHARACTER_DEATH_RECEIPT_DECISION_2026-09-28.md
   - docs/architecture/reviews/OTERYN_GAME_REFERENCE_FIRST_PLAYER_DEATH_DECISION_2026-09-28.md
-  - docs/agents/tasks/OTV2-20261011-entry-spell-tiles-1.md
+  - docs/agents/tasks/archive/OTV2-20261011-entry-spell-tiles-1.md
   - docs/agents/tasks/OTV2-20261011-boot-rat-policy-1.md
   - docs/agents/tasks/archive/OTV2-20261011-accept-chat-attack-death-0.md
 public_contracts: []
