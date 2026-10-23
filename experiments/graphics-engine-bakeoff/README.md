@@ -36,8 +36,8 @@ Window-loop frame times are useful throughput evidence but are not a substitute 
 From this directory:
 
 ```text
-cargo +1.95.0 run --release -p oteryn-graphics-bakeoff-wgpu -- --scenario normal --sprite-px 32 --warmup 180 --frames 900
-cargo +1.95.0 run --release -p oteryn-graphics-bakeoff-bevy -- --scenario normal --sprite-px 32 --warmup 180 --frames 900
+cargo +1.99.1 run --release -p oteryn-graphics-bakeoff-wgpu -- --scenario normal --sprite-px 32 --warmup 180 --frames 900
+cargo +1.99.1 run --release -p oteryn-graphics-bakeoff-bevy -- --scenario normal --sprite-px 32 --warmup 180 --frames 900
 ```
 
 Repeat each backend for `basic|normal|stress` and `32|64|128`. Compare candidates on the same machine, power profile, resolution, driver and run parameters. Close background GPU-heavy applications before a counted population.

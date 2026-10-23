@@ -35,24 +35,24 @@ jobs:
 
       - name: Install isolated Rust toolchain
         shell: pwsh
-        run: rustup toolchain install 1.95.0 --profile minimal --component clippy,rustfmt
+        run: rustup toolchain install 1.99.1 --profile minimal --component clippy,rustfmt
 
       - name: Resolve isolated metadata
         shell: pwsh
-        run: cargo +1.95.0 metadata --locked --manifest-path experiments/graphics-engine-bakeoff/Cargo.toml --format-version 1 | Out-Null
+        run: cargo +1.99.1 metadata --locked --manifest-path experiments/graphics-engine-bakeoff/Cargo.toml --format-version 1 | Out-Null
 
       - name: Verify formatting
         shell: pwsh
-        run: cargo +1.95.0 fmt --manifest-path experiments/graphics-engine-bakeoff/Cargo.toml --all --check
+        run: cargo +1.99.1 fmt --manifest-path experiments/graphics-engine-bakeoff/Cargo.toml --all --check
 
       - name: Test shared deterministic workload
         shell: pwsh
-        run: cargo +1.95.0 test --locked --manifest-path experiments/graphics-engine-bakeoff/Cargo.toml -p oteryn-graphics-bakeoff-shared
+        run: cargo +1.99.1 test --locked --manifest-path experiments/graphics-engine-bakeoff/Cargo.toml -p oteryn-graphics-bakeoff-shared
 
       - name: Build both renderer candidates
         shell: pwsh
-        run: cargo +1.95.0 build --locked --manifest-path experiments/graphics-engine-bakeoff/Cargo.toml --workspace --release
+        run: cargo +1.99.1 build --locked --manifest-path experiments/graphics-engine-bakeoff/Cargo.toml --workspace --release
 
       - name: Strict Clippy
         shell: pwsh
-        run: cargo +1.95.0 clippy --locked --manifest-path experiments/graphics-engine-bakeoff/Cargo.toml --workspace --all-targets -- -D warnings
+        run: cargo +1.99.1 clippy --locked --manifest-path experiments/graphics-engine-bakeoff/Cargo.toml --workspace --all-targets -- -D warnings

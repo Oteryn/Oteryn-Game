@@ -1,8 +1,8 @@
 # Existing S3-B qualification topology
 
 `run.sh` reuses the S3-A Platform containers and the S3-B Character-intent overlay.
-It requires Docker Compose/BuildKit, OpenSSL, Rust 1.94.0, an exact Platform
-checkout at the revision pinned in the script, and an isolated PostgreSQL 17.6
+It requires Docker Compose/BuildKit, OpenSSL, Rust 1.99.1, an exact Platform
+checkout at the revision pinned in the script, and an isolated PostgreSQL 18.6
 service selected through `OTERYN_TEST_POSTGRES_ADMIN_URL`. That database service
 is supplied separately; the runner does not create it. Its administration rights
 must be scoped to disposable qualification state. Host `sudo` is not required.

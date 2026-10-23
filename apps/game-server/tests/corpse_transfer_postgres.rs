@@ -1,5 +1,5 @@
 #![allow(clippy::expect_used)]
-// Dedicated PostgreSQL 17 qualification for D3-4 (DUR-03 TRANSFER out of a
+// Dedicated PostgreSQL 18 qualification for D3-4 (DUR-03 TRANSFER out of a
 // corpse container: the D133 exclusivity window and the corpse never a source). Ordinary
 // workspace runs report PRE-ROUTING/NONCANONICAL when the routed database is
 // absent.

@@ -1,4 +1,4 @@
-// Dedicated PostgreSQL 17.6 qualification for INBOX-1a (migration 0076).
+// Dedicated PostgreSQL 18.6 qualification for INBOX-1a (migration 0076).
 // Ordinary workspace runs report PRE-ROUTING/NONCANONICAL when the routed
 // database is absent.
 

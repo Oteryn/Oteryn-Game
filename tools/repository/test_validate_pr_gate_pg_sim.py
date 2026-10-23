@@ -55,7 +55,7 @@ class QualificationPlacementTests(unittest.TestCase):
                 self.assertTrue(self.validate(mq=self.mq.replace(marker, marker + "    if: false\n", 1)))
 
     def test_mq_cannot_drop_full_tests_or_exact_candidate_checkout(self):
-        for command in ("cargo +1.95.0 test --locked --workspace", "github.event.merge_group.head_sha"):
+        for command in ("cargo +1.99.1 test --locked --workspace", "github.event.merge_group.head_sha"):
             self.assertIn(command, self.mq)
             with self.subTest(command=command):
                 self.assertTrue(self.validate(mq=self.mq.replace(command, "removed", 1)))
