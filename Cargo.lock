@@ -2180,6 +2180,7 @@ dependencies = [
  "oteryn-gameplay-content",
  "oteryn-gameplay-domain",
  "oteryn-gameplay-economy",
+ "oteryn-gameplay-encounter-rules",
  "oteryn-gameplay-entities",
  "oteryn-gameplay-foundation",
  "oteryn-gameplay-housing",
@@ -2212,6 +2213,9 @@ name = "oteryn-gameplay-encounter-rules"
 version = "0.1.0"
 dependencies = [
  "oteryn-gameplay-content",
+ "oteryn-protocol-oteryn",
+ "oteryn-simulation-determinism",
+ "sha2 0.11.1",
 ]
 
 [[package]]

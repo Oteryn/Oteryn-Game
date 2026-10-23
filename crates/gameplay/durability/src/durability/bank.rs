@@ -28,7 +28,7 @@ pub use oteryn_gameplay_economy::bank::{
 };
 
 use super::bank_audit::{
-    self as audit, ASSET_GOLD, BANK_BALANCE_MAX, BANK_DEPOSIT_MAX, BANK_TRANSFER_MAX,
+    self as audit, ASSET_GOLD, BANK_DEPOSIT_MAX, BANK_TRANSFER_MAX,
     BANK_WITHDRAW_MAX, BankCauseV1, BankCoinLineV1, BankConversionCauseV1, BankEventIdentity,
     BankItemDefinitionV1, BankItemStateV1, BankOperationCauseV1, BankOperationV1,
     BankTransferCauseV1, BankValueLineV1, COIN_LINE_INPUT, COIN_LINE_OUTPUT, CONVERSION_DEPOSIT,
@@ -1073,14 +1073,14 @@ async fn lock_acting_root(connection: &mut PgConnection, acting: &Acting) -> Res
 
 /// A balance row, locked.
 #[derive(Debug, Clone, Copy)]
-struct Balance {
-    balance: u64,
-    last_entry_id: Option<[u8; 16]>,
+pub(super) struct Balance {
+    pub(super) balance: u64,
+    pub(super) last_entry_id: Option<[u8; 16]>,
 }
 
 /// The balance step: upsert the value-neutral zero row of each Account, then lock them all by
 /// `account_id`. Returned in the order of `accounts`.
-async fn lock_balances(
+pub(super) async fn lock_balances(
     connection: &mut PgConnection,
     world_id: WorldId,
     accounts: &[[u8; 16]],
@@ -1240,7 +1240,7 @@ async fn lock_backpack(
     }))
 }
 
-async fn new_entry_id(connection: &mut PgConnection) -> Result<[u8; 16]> {
+pub(super) async fn new_entry_id(connection: &mut PgConnection) -> Result<[u8; 16]> {
     let text: String = sqlx::query_scalar("SELECT game_character_uuid_v7()::text")
         .fetch_one(&mut *connection)
         .await?;
@@ -1833,7 +1833,9 @@ async fn deposit(
     let [balance] = lock_balances(tx, acting.world_id, &[acting.account_id]).await?[..] else {
         return Err(DurabilityError::InvalidStoredState.into());
     };
-    let Some(after) = credit(balance.balance, deposit.amount, BANK_BALANCE_MAX) else {
+    let Some(after) = super::bank_credit_headroom::credit_in_transaction(
+        tx, &acting.account_id, acting.world_id, balance.balance, deposit.amount,
+    ).await? else {
         return refuse(tx, acting, &request, binding, BankResult::BalanceLimit).await;
     };
 
@@ -2137,7 +2139,9 @@ async fn transfer(
         )
         .await;
     };
-    let Some(receiver_after) = credit(receiver.balance, transfer.amount, BANK_BALANCE_MAX) else {
+    let Some(receiver_after) = super::bank_credit_headroom::credit_in_transaction(
+        tx, &recipient_account, acting.world_id, receiver.balance, transfer.amount,
+    ).await? else {
         return refuse(
             tx,
             acting,

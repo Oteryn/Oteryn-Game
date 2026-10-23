@@ -1,0 +1,30 @@
+syntax = "proto3";
+package oteryn.protocol.v1.depot;
+// Capability 37, command 36. All singular fields reject duplicates/unknown fields.
+// A request re-resolves the nearest authored locker in Chebyshev reach 1, same floor.
+message DepotIntentV1 {
+  uint32 action = 1; // 1 browse/open, 2 deposit whole carried entry, 3 withdraw whole entry
+  uint32 box_number = 2; // 1..17
+  uint32 page = 3; // zero based, 32 entries, 0..468
+  optional uint32 town = 4; // 0..65535; required for moves, checked against current locker
+  uint64 item = 5; // deposit: session item handle; withdraw: displayed depot ordinal; browse: 0
+}
+message DepotEntryV1 {
+  uint64 ordinal = 1; // nonzero, descending, never reused
+  uint32 definition = 2; // admitted Item reference, nonzero
+  uint32 count = 3; // 1..100; whole stack consumes one entry
+}
+message DepotReplyV1 {
+  uint32 outcome = 1; // 1 opened, 2 moved, 3 no locker, 4 stale, 5 full,
+                      // 6 no backpack, 7 overweight, 8 unsupported, 9 rejected
+  uint32 box_number = 2;
+  uint32 page = 3;
+  optional uint32 town = 4;
+  uint32 total = 5; // selected box count, 0..15000
+  repeated DepotEntryV1 entries = 6; // <=32, descending ordinal
+}
+// Result carries the current selected page; committed moves also refresh inventory/container
+// domains. Unknown durable outcome disconnects before sequencing, then receipt replay decides.
+// There is no persistent open view or transferable locker authority. Reconnect starts closed.
+// A historical Moved replay after leaving the locker has absent town and an empty page:
+// the terminal transfer is acknowledged without granting a new locker view.
