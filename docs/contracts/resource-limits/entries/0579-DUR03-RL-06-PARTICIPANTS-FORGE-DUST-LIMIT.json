@@ -1,0 +1,23 @@
+{
+  "id": "DUR03-RL-06-PARTICIPANTS-FORGE-DUST-LIMIT",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_IMBUE_FORGE0_IMBUEMENTS_AND_EXALTATION_FORGE_DECISION_2026-09-30.md",
+  "failure_category": "CAPACITY_EXCEEDED",
+  "client_visible": false,
+  "consumers": [
+    "apps/game-server/src/durability/character_forge_dust.rs",
+    "apps/game-server/src/durability/character_forge_dust_audit.rs",
+    "apps/game-server/tests/support/forge_dust_limit_postgres_cases.rs"
+  ],
+  "notes": "Private complete-code review proposal only; root rechecks allocations before publication. No new event type/schema/retention tuple or Forge runtime admission.",
+  "resource": "Non-item asset participants in one material-free Forge DustLimit",
+  "unit": "participants per logical transaction",
+  "hard_maximum": 1,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 1
+  },
+  "allocation_impact": "The one acting Character dust asset; never a second Character or Account.",
+  "boundary_tests": [
+    "one Character accepted; changed Character/scope binding rejected by real current fence"
+  ]
+}

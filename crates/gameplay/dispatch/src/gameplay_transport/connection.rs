@@ -5469,9 +5469,8 @@ mod tests {
 
     #[test]
     fn idle_liveness_matches_the_registered_provisional_rows() -> Result<(), Box<dyn Error>> {
-        let registry: serde_json::Value = serde_json::from_str(include_str!(
-            "../../../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json"
-        ))?;
+        let registry: serde_json::Value =
+            serde_json::from_str(oteryn_protocol_oteryn::RESOURCE_LIMITS_REGISTRY_JSON)?;
         let row = |id: &str| {
             registry["entries"]
                 .as_array()

@@ -3,10 +3,8 @@
 use super::*;
 use serde_json::Value;
 
-const PROTOCOL_REGISTRY: &str =
-    include_str!("../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json");
-const RESOURCE_REGISTRY: &str =
-    include_str!("../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json");
+const PROTOCOL_REGISTRY: &str = crate::PROTOCOL_OTERYN_V1_REGISTRY_JSON;
+const RESOURCE_REGISTRY: &str = crate::RESOURCE_LIMITS_REGISTRY_JSON;
 
 fn mission(index: u32, name: &str, text: &str, done: bool) -> QuestMission {
     QuestMission {
@@ -399,7 +397,7 @@ fn registries_bind_capability_16_and_its_limits() {
     };
     let capability = find("capabilities", CAPABILITY_QUEST_LOG_V1);
     assert_eq!(capability["name"], "QUEST_LOG_V1");
-    assert_eq!(capability["offered"], false);
+    assert_eq!(capability["offered"], true);
     assert!(capability.get("requires").is_none());
     assert_eq!(
         capability["command_types"],

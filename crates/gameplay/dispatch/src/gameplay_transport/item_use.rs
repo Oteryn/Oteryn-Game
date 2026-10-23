@@ -542,10 +542,9 @@ mod tests {
     use crate::content::ReferenceUseEnforcementMode;
 
     fn limit(id: &str) -> u64 {
-        let registry: serde_json::Value = serde_json::from_str(include_str!(
-            "../../../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json"
-        ))
-        .expect("registry");
+        let registry: serde_json::Value =
+            serde_json::from_str(oteryn_protocol_oteryn::RESOURCE_LIMITS_REGISTRY_JSON)
+                .expect("registry");
         let entries = registry["entries"].as_array().expect("entries");
         let entry = entries.iter().find(|entry| entry["id"] == id).expect(id);
         entry["hard_maximum"].as_u64().expect("hard maximum")

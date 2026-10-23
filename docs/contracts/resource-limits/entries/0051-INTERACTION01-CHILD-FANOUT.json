@@ -1,0 +1,19 @@
+{
+  "id": "INTERACTION01-CHILD-FANOUT",
+  "owner_contract": "GAME-INTERACTION-01_SUCCESSOR_CHILD_IDENTITY_RETRY_CONTRACT_CANDIDATE.md",
+  "resource": "immediate child occurrences per parent",
+  "unit": "child occurrences",
+  "hard_maximum": 8,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 8
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
+  "client_visible": true,
+  "boundary_tests": [
+    "hard maximum accepted",
+    "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+    "checked arithmetic overflow rejected before allocation or partial mutation"
+  ]
+}

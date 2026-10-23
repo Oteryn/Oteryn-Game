@@ -1,0 +1,20 @@
+{
+  "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-INDEX-BYTES",
+  "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+  "resource": "Reference Item artifact index section",
+  "unit": "bytes",
+  "hard_maximum": 40789837,
+  "configurable_range": {
+    "minimum": 4,
+    "maximum": 40789837
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Validate index section length before retention; bound every entry atom before allocation/copy.",
+  "client_visible": true,
+  "boundary_tests": [
+    "40,789,837-byte index accepted only with exactly 38,157 valid entries",
+    "40,789,838 bytes rejected before retention",
+    "entry/section arithmetic overflow rejected"
+  ],
+  "notes": "4 + 38,157 * (1 + 2 + 512 + 2 + 512 + 4 + 4 + 32)."
+}

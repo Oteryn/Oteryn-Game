@@ -1,0 +1,22 @@
+{
+  "id": "NPC0-RL-06",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md",
+  "resource": "Travel confirmation timeout of an NPC conversation",
+  "unit": "seconds",
+  "hard_maximum": 30,
+  "configurable_range": {
+    "minimum": 30,
+    "maximum": 30
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "A pending travel confirmation holds one conversation state for at most 30 s; anything else or the timeout cancels it. No retained state after close.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=30: a yes at 30 s still confirms",
+    "max+1: a yes after 30 s cancels"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/npc_service.rs TRAVEL_CONFIRMATION_TIMEOUT_SECONDS"
+  ],
+  "notes": "NPC-0 \u00a74. Worker-set; enforced by NPC-TALK-1. Registered by OTV2-20261005-npc-wire-1 (NPC-WIRE-1)."
+}

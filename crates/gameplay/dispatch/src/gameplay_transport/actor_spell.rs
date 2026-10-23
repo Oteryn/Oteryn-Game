@@ -1487,10 +1487,9 @@ pub mod tests {
 
     #[test]
     fn spell_rl_01_matches_the_registered_row() {
-        let registry: serde_json::Value = serde_json::from_str(include_str!(
-            "../../../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json"
-        ))
-        .expect("registry");
+        let registry: serde_json::Value =
+            serde_json::from_str(oteryn_protocol_oteryn::RESOURCE_LIMITS_REGISTRY_JSON)
+                .expect("registry");
         let row = registry["entries"]
             .as_array()
             .and_then(|entries| entries.iter().find(|entry| entry["id"] == "SPELL-RL-01"))

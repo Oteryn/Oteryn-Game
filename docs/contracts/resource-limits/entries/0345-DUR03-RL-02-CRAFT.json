@@ -1,0 +1,19 @@
+{
+  "id": "DUR03-RL-02-CRAFT",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_CRAFT1_DECISION_2026-10-15.md",
+  "resource": "Location/custody lines of one DUR-03 item conversion transaction",
+  "unit": "location custody lines per logical transaction",
+  "hard_maximum": 9,
+  "configurable_range": {
+    "minimum": 9,
+    "maximum": 9
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Checked before any write; never truncated.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=9 admitted",
+    "max+1=10 rejected (CAPACITY_EXCEEDED)"
+  ],
+  "notes": "CRAFT1-ITEM-CONVERSIONS-V1 C3a (DUR-03 \u00a739.3 CRAFT-1 amendment); conversion shape only (ConversionCause, one CONVERSION audit aggregate), the one-item DUR03-RL-01..08 rows are unchanged and DUR03-RL-03 and DUR03-RL-05 stay 0. Registered by the CRAFT-1 acceptance PR (ACCEPT-BATCH-2026-10-15 \u00a78) before the code that relies on it (CRAFT-RT-1); fixed ruleset bounds, a reference row above them needs an amendment of CRAFT1 C3a, never a silent raise."
+}

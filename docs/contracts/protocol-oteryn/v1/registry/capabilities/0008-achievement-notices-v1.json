@@ -1,0 +1,10 @@
+{
+  "id": 8,
+  "name": "ACHIEVEMENT_NOTICES_V1",
+  "owner_decision": "ACHIEVEMENT-0 ACHIEVEMENT0-GRANT-RUNTIME-V1 §5 (docs/architecture/reviews/OTERYN_GAME_ACHIEVEMENT0_ACHIEVEMENT_GRANT_RUNTIME_DECISION_2026-10-03.md, D292); numbers leased to ACH-NOTIFY-1 by the #1622 control plane",
+  "owner": "Achievement domain module",
+  "command_types": [],
+  "state_domains": [13],
+  "offered": false,
+  "offer_gate": "Capability negotiation: the server selects no optional capability before the authoritative negotiation path is composed. Without it selected, domain 13 is never sent."
+}

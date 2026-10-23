@@ -12,6 +12,8 @@
 
 use std::collections::BTreeSet;
 pub mod actor_condition_snapshot_candidate;
+mod contract_registries;
+pub use contract_registries::{PROTOCOL_OTERYN_V1_REGISTRY_JSON, RESOURCE_LIMITS_REGISTRY_JSON};
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
 
@@ -408,10 +410,11 @@ pub const MAX_SNAPSHOT_ASSEMBLED_BYTES: u64 = 16_777_216;
 // capability requirement was assigned. 9 HIGHSCORES_V1 (HS-WIRE-1, RANK-1) is offered with its
 // command type 14 handler. CP D1442 registers 29 MAP_STATE_V1 (never offered: D1083 serves the
 // map as 18) and 30 WORLD_SPATIAL_FIELDS (FIELD-WIRE-1, not offered before the field payloads are
-// composed); both require 6. TUTORIAL-1 adds capability 31. Next unallocated capability is 32.
+// composed); both require 6. TUTORIAL-1 adds capability 31. DAILY-1 registers CP-allocated
+// capability 32. Next unallocated capability is 33.
 // Keep this sorted when a later owning gate allocates an additive capability ID.
 const REGISTERED_CAPABILITY_IDS_V1: &[u32] = &[
-    1, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 26, 28, 29, 30, 31,
+    1, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 26, 28, 29, 30, 31, 32,
 ];
 
 fn decode_uuid_v7(input: &[u8]) -> Result<[u8; 16], FoundationProtocolError> {
@@ -2603,6 +2606,7 @@ pub mod charm;
 mod charm_wire;
 pub mod chat;
 pub mod container_tree;
+pub mod daily_reward;
 pub mod damage_element;
 pub mod highscores;
 pub mod item_look;
@@ -4081,10 +4085,9 @@ mod tests {
     #[allow(clippy::expect_used)]
     fn error_codes_match_the_registry() {
         use FoundationProtocolError as E;
-        let registry: serde_json::Value = serde_json::from_str(include_str!(
-            "../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json"
-        ))
-        .expect("protocol registry");
+        let registry: serde_json::Value =
+            serde_json::from_str(crate::PROTOCOL_OTERYN_V1_REGISTRY_JSON)
+                .expect("protocol registry");
         let registered: Vec<(u64, &str, &str)> = registry["error_codes"]
             .as_array()
             .expect("error_codes")
@@ -4201,10 +4204,9 @@ mod tests {
     #[test]
     #[allow(clippy::expect_used)]
     fn admission_refusal_classes_match_the_registry() {
-        let registry: serde_json::Value = serde_json::from_str(include_str!(
-            "../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json"
-        ))
-        .expect("protocol registry");
+        let registry: serde_json::Value =
+            serde_json::from_str(crate::PROTOCOL_OTERYN_V1_REGISTRY_JSON)
+                .expect("protocol registry");
         let mut admission = Vec::new();
         for entry in registry["error_codes"].as_array().expect("error_codes") {
             let code = u32::try_from(entry["code"].as_u64().expect("code")).expect("u32 code");

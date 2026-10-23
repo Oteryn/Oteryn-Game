@@ -21,6 +21,16 @@ mod logout_e2e;
 mod map_bundle_domain;
 #[path = "loop_map_pickup_tests.rs"]
 mod map_pickup;
+#[path = "quest_admission_postgres_tests.rs"]
+mod quest_admission;
+#[path = "quest_chest_postgres_tests.rs"]
+mod quest_chest_postgres_tests;
+#[path = "quest_log_postgres_tests.rs"]
+mod quest_log_postgres_tests;
+#[path = "quest_recovery_postgres_tests.rs"]
+mod quest_recovery;
+#[path = "quest_runtime_fixture.rs"]
+mod quest_runtime_fixture;
 #[path = "rune_use_bridge_postgres_tests.rs"]
 mod rune_use_bridge;
 #[path = "tutorial_vitals_postgres_fixture.rs"]

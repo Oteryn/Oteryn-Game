@@ -18,6 +18,7 @@ use oteryn_protocol_oteryn::item_view::{
 };
 use oteryn_protocol_oteryn::logout::CAPABILITY_LOGOUT_V1;
 use oteryn_protocol_oteryn::npc_service::CAPABILITY_NPC_SERVICE_V1;
+use oteryn_protocol_oteryn::quest_log::CAPABILITY_QUEST_LOG_V1;
 use oteryn_protocol_oteryn::world_clock::CAPABILITY_WORLD_LIGHT_V1;
 use oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1;
 use oteryn_protocol_oteryn::world_spatial::CAPABILITY_PACED_MOVEMENT_V1;
@@ -95,11 +96,17 @@ const HIGHSCORES: OfferedCapability = OfferedCapability {
     requires: &[],
 };
 
+const QUEST_LOG: OfferedCapability = OfferedCapability {
+    id: CAPABILITY_QUEST_LOG_V1,
+    requires: &[],
+};
+
 /// The production offered set for a generation without a non-empty Item key set: the registry's
 /// `offered: true` entries except capability 4, ascending by ID. VIS-3 offers capability 6
 /// `WORLD_SPATIAL_ENTITIES`, SPEED-1 capability 13 `PACED_MOVEMENT_V1` and ATTACK-1b capability
 /// 17 `ATTACK_V1`, which requires 6; CHAT-WIRE-1 offers capability 7 `CHAT_V1`; RANK-1 offers
-/// capability 9 `HIGHSCORES_V1`; CLOCK-1 offers capability 19 and LOGOUT-WIRE-1 capability 21.
+/// capability 9 `HIGHSCORES_V1`; QUEST-RT-1 offers 16 after journal composition; CLOCK-1
+/// offers capability 19 and LOGOUT-WIRE-1 capability 21.
 /// A test keeps it equal to the registry and within `REGISTERED_CAPABILITY_IDS_V1`.
 pub const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     OfferedCapability {
@@ -115,6 +122,7 @@ pub const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
         id: CAPABILITY_PACED_MOVEMENT_V1,
         requires: &[],
     },
+    QUEST_LOG,
     OfferedCapability {
         id: CAPABILITY_ATTACK_V1,
         requires: &[CAPABILITY_WORLD_SPATIAL_ENTITIES],
@@ -128,7 +136,8 @@ pub const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
 /// The offered set of a World booted from a bundle (MAP-CUTOVER-1b, NPC-CMD-1a, ITEM-LOOP-1),
 /// ascending by ID: capability 3 `NPC_SERVICE_V1` (a bundle World places the NPCs), 4
 /// `ITEM_VIEW_MOVE_V1`, 6, 7, 9 `HIGHSCORES_V1`, 12 `ITEM_EQUIP_DROP_V1` (requires 4), 13, 14
-/// `CONTAINER_TREE_V1` (requires 4 and 12), 17, 18 `WORLD_MAP_VIEW_V1` (requires 4 and 6), 19,
+/// `CONTAINER_TREE_V1` (requires 4 and 12), 16 `QUEST_LOG_V1`, 17, 18 `WORLD_MAP_VIEW_V1`
+/// (requires 4 and 6), 19,
 /// 21, 26 and 28. A bundle World boots only against a generation whose Item key set names every
 /// bundle Item. ITEM-LOOP-1 (CP D1438) offers 12 and 14 here because only a bundle World
 /// composes their command type 9 equipment, ground and container destinations (equip, drop,
@@ -166,6 +175,7 @@ pub const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
         id: CAPABILITY_CONTAINER_TREE_V1,
         requires: &[CAPABILITY_ITEM_VIEW_MOVE_V1, CAPABILITY_ITEM_EQUIP_DROP_V1],
     },
+    QUEST_LOG,
     OfferedCapability {
         id: CAPABILITY_ATTACK_V1,
         requires: &[CAPABILITY_WORLD_SPATIAL_ENTITIES],
@@ -209,6 +219,7 @@ pub const ITEM_VIEW_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
         id: CAPABILITY_PACED_MOVEMENT_V1,
         requires: &[],
     },
+    QUEST_LOG,
     OfferedCapability {
         id: CAPABILITY_ATTACK_V1,
         requires: &[CAPABILITY_WORLD_SPATIAL_ENTITIES],

@@ -1,0 +1,18 @@
+{
+  "id": "DUR04-FIRST-PROD-FLOORS",
+  "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+  "resource": "Distinct z/floor planes in one first-production generation",
+  "unit": "floors",
+  "hard_maximum": 1,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 1
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Reject a second distinct floor before spatial lowering.",
+  "client_visible": false,
+  "boundary_tests": [
+    "one floor accepted",
+    "second distinct floor rejected"
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "CREATUREAI0-RL-08",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_CREATURE_AI0_CREATURE_AI_SPAWNS_AND_SUMMONS_DECISION_2026-10-01.md",
+  "resource": "Monster summons per creature: max_summons, summon entries and the count of one entry",
+  "unit": "summons and entries per creature",
+  "hard_maximum": 16,
+  "configurable_range": {
+    "minimum": 16,
+    "maximum": 16
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "Content validation refuses a creature with more than 16 summons (max_summons) or more than 8 summon entries; the carrier refuses a child past the parent's authored total or per-creature count (admit_native_summon). The channel-wide summon state scales with it per live creature: the native summon owner keeps at most CREATUREAI0-RL-04 creatures times 8 entries replay memos (NATIVE_SUMMON_MEMOS_PER_CHANNEL_MAX, 2,097,152), and the defence summon owner and the creature self-heal ledger at most CREATUREAI0-RL-04 creatures times the 8 defences of CREATUREAI0-RL-07 (CREATURE_DEFENCE_MEMOS_PER_CHANNEL_MAX). Each is an ActorMemoTable keyed by the exact creature and its entry in ordered maps (Codex 4243039220): a creature's first touch drops what its slot's former occupant left, and a full table drops dead creatures' memos before it refuses, so no lookup or insert passes over every memo. These replace the D57 envelope of 64 creatures times 8.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=16 summons and 8 entries: an authored summon set within both passes the profile schedule",
+    "max+1: max_summons 17, an entry count of 17 or a 9th summon entry is refused (InvalidSummonFacts, TooManyEntries)",
+    "channel scale: 100 summoners (more than the old 64-creature envelope) each summon, retire their dead children together and summon again"
+  ],
+  "consumers": [
+    "apps/game-server/src/content/project/v2/creature.rs v2 creature summons validation (max_summons <= 16, entries <= 8) and ai_think/profile_schedule.rs summon facts",
+    "apps/game-server/src/foundation/runtime_actor_carrier.rs CREATUREAI0_SUMMON_ENTRIES_PER_CREATURE_MAX, NATIVE_SUMMON_MEMOS_PER_CHANNEL_MAX, CREATUREAI0_DEFENCES_PER_CREATURE_MAX, CREATURE_DEFENCE_MEMOS_PER_CHANNEL_MAX (CreatureSelfHealLedger), ActorMemoTable",
+    "apps/game-server/src/monster_summon.rs NativeSummonOwner and DefenseSummonOwner replay memos"
+  ],
+  "notes": "CREATURE-AI-0 \u00a710. Registered by SPAWN-CEILINGS-1 (Codex 4242954089 on #1984). Tests: apps/game-server/src/ai_think/profile_schedule_tests.rs summon_parameters_reject_invalid_content_and_keep_explicit_zero_counts (max_summons 17, count 17) and the ninth-entry case before it; apps/game-server/src/monster_summon.rs more_than_sixty_four_summoners_each_summon_retire_together_and_summon_again and more_than_sixty_four_defence_summoners_each_summon (100 summoners each). Keyed memo table: runtime_actor_carrier.rs actor_memo_table_is_keyed_by_exact_creature_and_drops_stale_memos_by_slot (300 creatures times 8 entries)."
+}

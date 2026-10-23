@@ -1,0 +1,23 @@
+{
+  "allocation_impact": "Checked from the NPC row before the frame is decompressed, with the ratio cap (at most 1,024 times the frame) and the running raw total (MAP01-BUNDLE-TOTAL-RAW-BYTES).",
+  "boundary_tests": [
+    "an NPC row declaring exactly 1 MiB passes the size check",
+    "an NPC row declaring 1 MiB plus one byte is a Limit before decompression"
+  ],
+  "client_visible": false,
+  "configurable_range": {
+    "maximum": 1048576,
+    "minimum": 1048576
+  },
+  "consumers": [
+    "world bundle compiler",
+    "game server World runtime (MAP-LOAD-1)"
+  ],
+  "failure_category": "INVALID_INPUT",
+  "hard_maximum": 1048576,
+  "id": "NPCPLACE1-RL-03",
+  "notes": "NPC-PLACE-1b; decision NPC-PLACE-1 \u00a73.4; format document \u00a79 and \u00a714.",
+  "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+  "resource": "Raw (decompressed) NPC payload of one bundle",
+  "unit": "bytes"
+}

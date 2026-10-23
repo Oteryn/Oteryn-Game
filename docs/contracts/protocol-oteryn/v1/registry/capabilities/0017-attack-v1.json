@@ -1,0 +1,11 @@
+{
+  "id": 17,
+  "name": "ATTACK_V1",
+  "owner_decision": "ATTACK-0 §3 (docs/architecture/reviews/OTERYN_GAME_ATTACK0_ATTACK_TARGET_AND_AUTO_ATTACK_DECISION_2026-09-30.md) with ARCH-CORE-LOOP-PACKETS-2 §0.1 and §2.1 (docs/architecture/reviews/OTERYN_GAME_ARCH_BATCH_CORE_LOOP_PACKETS_2026-10-04.md); numbers leased by the #1622 control plane (D486) and registered by ATTACK-WIRE-1",
+  "owner": "current ChannelRuntime (the runtime actor's attack target, fight modes and in-fight deadline)",
+  "requires": [6],
+  "command_types": [11, 12],
+  "state_domains": [10],
+  "offered": true,
+  "offer_gate": "ATTACK-1b: offered. The owner-cycle auto-attack, the dispatch of command types 11 and 12 and the domain 10 emission are composed, and a production-path admission test selects it. It requires 6 WORLD_SPATIAL_ENTITIES, whose entries name the targets. Without it selected, domain 10 is never sent and command types 11 and 12 are refused as unsupported."
+}

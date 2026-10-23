@@ -4,6 +4,7 @@
 
 pub mod config;
 pub mod descriptor_facts;
+mod quest_log_content;
 mod runtime_status;
 pub mod serve;
 

@@ -1,0 +1,22 @@
+{
+  "id": "ITEMUSE0-RL-01",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_ITEM_USE0_USING_ITEMS_DECISION_2026-09-30.md",
+  "resource": "Item uses (USE of food or a potion) admitted per actor",
+  "unit": "uses per second (sliding 1,000 ms window, Channel owner clock)",
+  "hard_maximum": 5,
+  "configurable_range": {
+    "minimum": 5,
+    "maximum": 5
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Five owner-clock timestamps per present actor in Channel runtime state; nothing persisted. The cooldowns (food 200 ms, potions 1,000 ms shared, both PARITY_PENDING) bind first in practice.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=5: five uses admitted within one second",
+    "max+1=6: the sixth use within the same second answers EXHAUSTED; one is admitted again 1,000 ms after the first"
+  ],
+  "consumers": [
+    "USE of a main backpack entry under capability 15 (ITEM-USE-1c, gameplay_transport/item_use.rs)"
+  ],
+  "notes": "Registered by ITEM-USE-1c (#1622). Enforced at admission, before any read or reservation; the client sees EXHAUSTED."
+}

@@ -1,0 +1,10 @@
+{
+  "id": 22,
+  "name": "QUEST_LOG_QUERY",
+  "owner_decision": "QUEST-GATE-0 \u00a77 (docs/architecture/reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md); numbers allocated by the #1622 control plane (D485) and registered by QUEST-LOG-WIRE-1",
+  "capability": 16,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/quest_log_v1.proto#QuestLogQueryV1",
+  "result_schema": "none: an accepted query has an empty result payload and its domain 16 delta follows; an empty oneof, an unknown or unlisted quest index, a copy that is not loaded and a query over QUESTGATE0-RL-09 are REJECTED with an empty payload",
+  "max_payload_bytes": 62,
+  "max_result_payload_bytes": 0
+}

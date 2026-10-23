@@ -1,0 +1,18 @@
+{
+  "id": "GAMECAT-V1-CAPABILITY-COUNT",
+  "owner_contract": "OTERYN_GAME_PLATFORM_CATALOG_EXPORT_V1.md",
+  "resource": "Capability manifest or required-capability collection entries",
+  "unit": "entries",
+  "hard_maximum": 256,
+  "configurable_range": {
+    "minimum": 256,
+    "maximum": 256
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Bound capability collections before sorting, uniqueness and compatibility checks.",
+  "client_visible": false,
+  "boundary_tests": [
+    "256 entries accepted when semantically valid",
+    "257 rejected before unbounded collection work"
+  ]
+}

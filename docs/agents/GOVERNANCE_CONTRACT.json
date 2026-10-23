@@ -46,7 +46,7 @@
     "docs/architecture/FOUNDATION_DECISION_BACKLOG.md",
     "docs/architecture/GLOBAL_ARCHITECTURE_DECISION_REGISTER.md",
     "docs/contracts/CROSS_REPOSITORY_CONTRACT_LOCK.json",
-    "docs/contracts/RESOURCE_LIMITS_REGISTRY.json",
+    "docs/contracts/resource-limits/registry.json",
     "docs/contracts/FOUNDATION_ERROR_VOCABULARY.md",
     "docs/contracts/FOUNDATION_FAILURE_SCENARIOS.md"
   ],

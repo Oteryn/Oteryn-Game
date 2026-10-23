@@ -21,6 +21,7 @@ sha2.workspace = true
 
 [dev-dependencies]
 oteryn-gameplay-content = { version = "=0.1.0", path = "../content", features = ["test-support"] }
+oteryn-protocol-oteryn = { version = "=0.1.0", path = "../../protocol-oteryn" }
 
 [lints]
 workspace = true

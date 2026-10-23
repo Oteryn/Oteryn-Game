@@ -51,6 +51,7 @@ impl<'a, 'f, 's> ComposedTestOwner<'a, 'f, 's> {
             revision_sequencer:
                 crate::durability::character_revision_sequencer::CharacterRevisionSequencer::new(),
             quest_catalogue: None,
+            quest_log_content: None,
             wheel_ruleset: None,
             premium: crate::premium::refresh::PremiumRefresher::new(
                 Default::default(),

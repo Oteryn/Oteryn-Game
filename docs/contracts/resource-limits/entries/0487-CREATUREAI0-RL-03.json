@@ -1,0 +1,25 @@
+{
+  "allocation_impact": "Checked from the count before anything is reserved for it (compiler, writer and reader share spawn::validate); the reader also needs one byte per element.",
+  "boundary_tests": [
+    "a source of 64 points validates and a shard of 64 points is accepted",
+    "65 points are refused as Limit by validate and by the Spawn.Source shard parse; the reference map's largest source holds 55"
+  ],
+  "client_visible": false,
+  "configurable_range": {
+    "maximum": 64,
+    "minimum": 64
+  },
+  "consumers": [
+    "world bundle compiler",
+    "game server World runtime (MAP-LOAD-1)",
+    "game server creature spawn runtime (SPAWN-1b)",
+    "apps/game-server/src/foundation/runtime_actor_carrier.rs CREATUREAI0_SPAWN_POINTS_PER_SOURCE_MAX (SPAWN-CEILINGS-1)"
+  ],
+  "failure_category": "INVALID_INPUT",
+  "hard_maximum": 64,
+  "id": "CREATUREAI0-RL-03",
+  "notes": "SPAWN-CONTENT-1; CREATURE-AI-0 \u00a76.1; format document \u00a713. Test: tools/world-bundle-compiler/tests/spawns.rs. Game carrier test: apps/game-server/src/foundation/runtime_actor_carrier.rs spawn_*_max_accepted_max_plus_one_rejected / spawn_points_per_channel_ceiling_is_exact.",
+  "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+  "resource": "Points of one spawn source",
+  "unit": "points"
+}
