@@ -47,6 +47,15 @@ Run the checks selected by changed paths and preserve `game-gate`, repository pr
 - **CI:** run the local checks for every changed path before pushing and fix all failures of a run in one push. Push and CI economy: `docs/agents/CONTEXT_ROUTING.md`, *Push and CI economy*.
 - **Task records:** archive the task record in the final authoring commit of the PR that completes the task (`docs/agents/tasks/archive/README.md`). An archive-only PR is opened only under that README's exception, for records that could not close in their own PR.
 
+## Landing a mechanic without shared-file conflicts
+
+These rules supersede any task card that says to add a mount line to a shared target.
+
+- **PostgreSQL and lifted test files go into a mounted directory:** `apps/game-server/tests/support/authority_cases/` (the `character_authority_postgres` target), `apps/game-server/src/lifted_tests/auto/` (game-server lib tests) or `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/` (dispatch). Their build scripts mount every snake_case `.rs` file, so nobody edits the shared target files. Each directory's README states the convention.
+- **A case runs in route-less lanes too:** it returns `Ok(())` when `OTERYN_TEST_POSTGRES_ADMIN_URL` is absent. `route_less_case_guard` rejects a case that errors instead.
+- **World pins are regenerated, never hand-edited:** stage the inputs, run `cargo fmt`, then `oteryn-world-bundle-compiler pin-refresh .`. `tools/content-migration/regenerate_content.py --resolve` does this on a conflicted pin unless the entry start moved; `pin-check` stays the gate.
+- **Enqueue only a head whose own CI is green:** a change to the Seam, PostgreSQL code or migrations never bypasses the Merge Queue.
+
 ## Review guidelines
 
 These rules bind automated pull-request reviewers (Codex, Claude review) and the authors who answer them. `docs/agents/review/CODEX-CHECKLIST.md` lists the defect classes to check.
