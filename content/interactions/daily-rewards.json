@@ -21,47 +21,47 @@
   ],
   "items": [
     {
-      "key": "oteryn:item.daily.gold-converter",
+      "key": "oteryn:item.tibia.i25719",
       "charges": 100,
       "kind": "converter"
     },
     {
-      "key": "oteryn:item.daily.training.sword",
+      "key": "oteryn:item.tibia.i28540",
       "charges": 50,
       "kind": "training"
     },
     {
-      "key": "oteryn:item.daily.training.axe",
+      "key": "oteryn:item.tibia.i28541",
       "charges": 50,
       "kind": "training"
     },
     {
-      "key": "oteryn:item.daily.training.club",
+      "key": "oteryn:item.tibia.i28542",
       "charges": 50,
       "kind": "training"
     },
     {
-      "key": "oteryn:item.daily.training.wraps",
+      "key": "oteryn:item.tibia.i50292",
       "charges": 50,
       "kind": "training"
     },
     {
-      "key": "oteryn:item.daily.training.bow",
+      "key": "oteryn:item.tibia.i28543",
       "charges": 50,
       "kind": "training"
     },
     {
-      "key": "oteryn:item.daily.training.wand",
+      "key": "oteryn:item.tibia.i28545",
       "charges": 50,
       "kind": "training"
     },
     {
-      "key": "oteryn:item.daily.training.rod",
+      "key": "oteryn:item.tibia.i28544",
       "charges": 50,
       "kind": "training"
     },
     {
-      "key": "oteryn:item.daily.training.shield",
+      "key": "oteryn:item.tibia.i44064",
       "charges": 50,
       "kind": "training"
     }

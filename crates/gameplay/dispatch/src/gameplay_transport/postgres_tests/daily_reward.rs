@@ -197,7 +197,7 @@ fn scenario() -> TestResult {
             let picks = match day {
                 2 => potion.clone(),
                 4 => pick("oteryn:item.tibia.i266", 10)?,
-                6 => pick("oteryn:item.daily.training.sword", 1)?,
+                6 => pick("oteryn:item.tibia.i28540", 1)?,
                 _ => Vec::new(),
             };
             let input = [
