@@ -1,17 +1,18 @@
 //! Real command bytes -> production connection/composed owner -> runtime-role PostgreSQL -> result.
 use super::fixture::{Harness, debug, id, run};
-use super::weather_wire::fixture_access as transport;
 use super::{Dependencies, TestResult, prepare_current_session, reset};
 use crate::foundation::{MessageType, decode_wire_envelope};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{
-    AdmittedSession, FirstEntryOutcome, FreshAdmissionAuthority,
+    AdmittedSession, ConnectionEnd, FirstEntryOutcome, FreshAdmissionAuthority, IDLE_LIVENESS,
+    serve_admitted,
 };
 use crate::gameplay_transport::{ComposedFreshAdmission, item_fence_of};
 use oteryn_protocol_oteryn::house as wire;
 use oteryn_protocol_oteryn::{
     ClientCommandValue, CommandStatus, decode_command_result, encode_client_command,
 };
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 const HOUSE: &str = "oteryn:content.house.admiral_s_avenue_1";
 fn scalar(out: &mut Vec<u8>, tag: u8, mut value: u64) {
     out.push(tag << 3);
@@ -55,16 +56,28 @@ fn query() -> Vec<u8> {
     bytes(&mut b, 2, b"oteryn:content.area.city.liberty_bay");
     b
 }
+/// Sends the session's next fresh CommandId and keeps the ended continuity.
 async fn send(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
-    mut admitted: AdmittedSession,
+    admitted: &mut AdmittedSession,
+    kind: u32,
+    body: &[u8],
+) -> TestResult<(CommandStatus, Vec<u8>)> {
+    let command = admitted.continuity.next_command_id;
+    resend(owner, admitted, command, kind, body).await
+}
+/// SESSION-INGRESS-1: each connection resumes this GameSession's command stream, so the
+/// ended high-water mark and server sequence carry into the next connection.
+async fn resend(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
     command: u64,
     kind: u32,
     body: &[u8],
 ) -> TestResult<(CommandStatus, Vec<u8>)> {
-    admitted.continuity.next_command_id = command;
+    let before = *admitted;
     let frame = encode_client_command(
-        1,
+        before.continuity.connection_generation,
         &ClientCommandValue {
             command_id: command,
             command_type: kind,
@@ -72,10 +85,19 @@ async fn send(
         },
     )
     .map_err(debug)?;
-    let mut input = Vec::new();
-    input.extend_from_slice(&(frame.len() as u32).to_be_bytes());
-    input.extend_from_slice(&frame);
-    let (end, output) = transport::serve_input(owner, admitted, &input).await?;
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    client.write_all(&(frame.len() as u32).to_be_bytes()).await?;
+    client.write_all(&frame).await?;
+    client.shutdown().await?;
+    let end = serve_admitted(&mut server, before, owner, IDLE_LIVENESS).await;
+    drop(server);
+    let mut output = Vec::new();
+    client.read_to_end(&mut output).await?;
+    if let ConnectionEnd::AdmittedThenDisconnected(current)
+    | ConnectionEnd::AdmittedThenClosed(current, _) = &end
+    {
+        *admitted = *current;
+    }
     let mut c = 0;
     while c < output.len() {
         let n = u32::from_be_bytes(output[c..c + 4].try_into()?) as usize;
@@ -83,10 +105,38 @@ async fn send(
         c += 4 + n;
         if envelope.message_type() == MessageType::CommandResult {
             let result = decode_command_result(envelope.payload()).map_err(debug)?;
+            assert_eq!(result.command_id, command);
+            assert_eq!(
+                admitted.continuity.next_command_id,
+                before.continuity.next_command_id
+                    + u64::from(command == before.continuity.next_command_id)
+            );
+            assert!(admitted.continuity.server_sequence > before.continuity.server_sequence);
             return Ok((result.status, result.payload.to_vec()));
         }
     }
-    Err(format!("House result missing: {end}").into())
+    Err(format!("House result {command}/{kind} missing: {end:?}").into())
+}
+/// Reserves fresh IDs with reads up to `command` on a new session directory.
+async fn reach(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    command: u64,
+) -> TestResult {
+    while admitted.continuity.next_command_id < command {
+        assert_eq!(
+            send(owner, admitted, 57, &query()).await?.0,
+            CommandStatus::Accepted
+        );
+    }
+    assert_eq!(admitted.continuity.next_command_id, command);
+    Ok(())
+}
+/// Even a rejected command advances ingress: keep its continuity, restore the selection.
+fn resume(admitted: &mut AdmittedSession, ended: AdmittedSession) {
+    let selected = admitted.continuity.selected_capabilities;
+    admitted.continuity = ended.continuity;
+    admitted.continuity.selected_capabilities = selected;
 }
 #[test]
 fn house_wire_postgres_real_dispatch_acl_notice_replay_reload_and_fences() -> TestResult {
@@ -165,34 +215,43 @@ fn scenario() -> TestResult {
         assert!(admitted.continuity.selected_capabilities.contains(49));
         let body = acl(false, 1, &[id(41)]);
         let ok = wire::encode_house_result(wire::HouseDisposition::Ok, 2);
+        // deps.owner builds a fresh SessionCommands directory each time; later synthetic
+        // connections start there from this continuity to reach the durable House receipts.
+        let initial = admitted;
+        assert_eq!(initial.continuity.next_command_id, 1);
         assert_eq!(
-            send(&owner, admitted, 1, 56, &body).await?,
+            send(&owner, &mut admitted, 56, &body).await?,
             (CommandStatus::Accepted, ok.clone())
         );
-        assert_eq!(send(&owner, admitted, 1, 56, &body).await?.1, ok);
+        // A reconnect before acknowledgement replays the retained result.
         assert_eq!(
-            send(&owner, admitted, 1, 56, &acl(false, 1, &[])).await?.1,
-            wire::encode_house_result(wire::HouseDisposition::Conflict, 0)
+            resend(&owner, &mut admitted, 1, 56, &body).await?,
+            (CommandStatus::DuplicateReplay, ok.clone())
+        );
+        // FND-02 §13.4: replacement bytes under a reserved ID are not a new House intent.
+        assert_eq!(
+            resend(&owner, &mut admitted, 1, 56, &acl(false, 1, &[])).await?,
+            (CommandStatus::DuplicateReplay, ok.clone())
         );
         let row:(String,i64)=sqlx::query_as("SELECT acl_revision::text,(SELECT count(*) FROM game_house_acl_entries WHERE house_key=$1 AND list_key='guest') FROM game_house_properties WHERE house_key=$1").bind(HOUSE).fetch_one(&h.pool).await?;
         assert_eq!(row, ("2".into(), 1));
         assert_eq!(
-            send(&owner, admitted, 2, 56, &body).await?.1,
+            send(&owner, &mut admitted, 56, &body).await?.1,
             wire::encode_house_result(wire::HouseDisposition::Conflict, 0)
         );
         assert_eq!(
-            send(&owner, admitted, 3, 56, &acl(false, 2, &[])).await?.1,
+            send(&owner, &mut admitted, 56, &acl(false, 2, &[])).await?.1,
             wire::encode_house_result(wire::HouseDisposition::Ok, 3)
         );
         assert_eq!(
-            send(&owner, admitted, 4, 56, &acl(true, 3, &[id(41)]))
+            send(&owner, &mut admitted, 56, &acl(true, 3, &[id(41)]))
                 .await?
                 .1,
             wire::encode_house_result(wire::HouseDisposition::Ok, 4)
         );
         // Unknown Character and cross-World inputs refuse before any durable effect.
         assert_eq!(
-            send(&owner, admitted, 5, 56, &acl(false, 4, &[id(99)]))
+            send(&owner, &mut admitted, 56, &acl(false, 4, &[id(99)]))
                 .await?
                 .1,
             wire::encode_house_result(wire::HouseDisposition::Rejected, 0)
@@ -204,7 +263,7 @@ fn scenario() -> TestResult {
             .ok_or("World field")?;
         foreign[at + 15] ^= 1;
         assert_eq!(
-            send(&owner, admitted, 6, 56, &foreign).await?.1,
+            send(&owner, &mut admitted, 56, &foreign).await?.1,
             wire::encode_house_result(wire::HouseDisposition::Rejected, 0)
         );
         // Two days from the durable clock, plus replay and a range refusal.
@@ -216,13 +275,21 @@ fn scenario() -> TestResult {
         let mut date = Vec::new();
         scalar(&mut date, 1, due);
         let notice = intent(2, &date);
+        let notice_command = admitted.continuity.next_command_id;
+        assert_eq!(notice_command, 7);
         assert_eq!(
-            send(&owner, admitted, 7, 56, &notice).await?.1,
-            wire::encode_house_result(wire::HouseDisposition::Ok, 1)
+            send(&owner, &mut admitted, 56, &notice).await?,
+            (
+                CommandStatus::Accepted,
+                wire::encode_house_result(wire::HouseDisposition::Ok, 1)
+            )
         );
         assert_eq!(
-            send(&owner, admitted, 7, 56, &notice).await?.1,
-            wire::encode_house_result(wire::HouseDisposition::Ok, 1)
+            resend(&owner, &mut admitted, notice_command, 56, &notice).await?,
+            (
+                CommandStatus::DuplicateReplay,
+                wire::encode_house_result(wire::HouseDisposition::Ok, 1)
+            )
         );
         let persisted: Option<i64> = sqlx::query_scalar(
             "SELECT due_at_unix_ms FROM game_house_move_out_notices WHERE house_key=$1",
@@ -231,12 +298,26 @@ fn scenario() -> TestResult {
         .fetch_one(&h.pool)
         .await?;
         assert_eq!(persisted, Some(i64::try_from(due)?));
-        // A new composed runtime owner reads the durable notice (no cached management state).
-        let restarted = deps.owner(&h, &authority);
-        let page = send(&restarted, admitted, 8, 57, &query()).await?.1;
-        assert!(page.windows(HOUSE.len()).any(|w| w == HOUSE.as_bytes()));
+        // Here ingress has no retained result, so changed input under command 1 reaches the
+        // native House receipt conflict check.
+        let fresh = deps.owner(&h, &authority);
+        let mut conflict = initial;
         assert_eq!(
-            send(&restarted, admitted, 9, 56, &intent(3, &[])).await?.1,
+            send(&fresh, &mut conflict, 56, &acl(false, 1, &[])).await?.1,
+            wire::encode_house_result(wire::HouseDisposition::Conflict, 0)
+        );
+        drop(fresh);
+        // A new composed runtime owner reads the durable notice (no cached management state).
+        let mut restarted = deps.owner(&h, &authority);
+        restarted.movement_cells = &cells;
+        let mut admitted = initial;
+        reach(&restarted, &mut admitted, 8).await?;
+        let page = send(&restarted, &mut admitted, 57, &query()).await?.1;
+        assert!(page.windows(HOUSE.len()).any(|w| w == HOUSE.as_bytes()));
+        let cancel_command = admitted.continuity.next_command_id;
+        assert_eq!(cancel_command, 9);
+        assert_eq!(
+            send(&restarted, &mut admitted, 56, &intent(3, &[])).await?.1,
             wire::encode_house_result(wire::HouseDisposition::Ok, 2)
         );
         let persisted: Option<i64> = sqlx::query_scalar(
@@ -249,9 +330,10 @@ fn scenario() -> TestResult {
         let mut old = admitted;
         old.continuity.selected_capabilities = SelectedCapabilities::NONE;
         assert_eq!(
-            send(&owner, old, 10, 56, &body).await?,
+            send(&restarted, &mut old, 56, &body).await?,
             (CommandStatus::Rejected, vec![])
         );
+        resume(&mut admitted, old);
         let mut stale = admitted;
         let generation = crate::foundation::ConnectionGeneration::new(2).map_err(debug)?;
         stale.item_fence =
@@ -261,12 +343,13 @@ fn scenario() -> TestResult {
                     ..f
                 },
             );
+        // Direct authority call: an ID the wire stream never reaches in this scenario.
         let stale_result = owner
             .house_intent(
                 deps.actor,
                 crate::gameplay_transport::connection::UseCommand {
                     game_session_id: admitted.game_session_id,
-                    command_id: 11,
+                    command_id: 1_000,
                     item_fence: stale.item_fence,
                 },
                 wire::decode_house_intent(&acl(false, 4, &[])).map_err(debug)?,
@@ -288,19 +371,24 @@ fn scenario() -> TestResult {
         scalar(&mut door, 2, 4);
         bytes(&mut door, 3, &id(41));
         assert_eq!(
-            send(&owner, admitted, 12, 56, &intent(5, &door)).await?.1,
+            send(&restarted, &mut admitted, 56, &intent(5, &door))
+                .await?
+                .1,
             wire::encode_house_result(wire::HouseDisposition::Ok, 5)
         );
         let members:i64=sqlx::query_scalar("SELECT count(*) FROM game_house_acl_entries WHERE house_key=$1 AND list_key='door:6:0:-7'").bind(HOUSE).fetch_one(&h.pool).await?;
         assert_eq!(members, 1);
+        let mut old = admitted;
+        old.continuity.selected_capabilities = SelectedCapabilities::NONE;
         assert_eq!(
-            send(&owner, old, 13, 57, &query()).await?,
+            send(&restarted, &mut old, 57, &query()).await?,
             (CommandStatus::Rejected, vec![])
         );
+        resume(&mut admitted, old);
         let mut invalid_date = Vec::new();
         scalar(&mut invalid_date, 1, 0);
         assert_eq!(
-            send(&owner, admitted, 14, 56, &intent(2, &invalid_date))
+            send(&restarted, &mut admitted, 56, &intent(2, &invalid_date))
                 .await?
                 .1,
             wire::encode_house_result(wire::HouseDisposition::Rejected, 0)
@@ -313,13 +401,11 @@ fn scenario() -> TestResult {
         bytes(&mut wrong_door, 1, &wrong_position);
         scalar(&mut wrong_door, 2, 0);
         assert_eq!(
-            send(&owner, admitted, 15, 56, &intent(5, &wrong_door))
+            send(&restarted, &mut admitted, 56, &intent(5, &wrong_door))
                 .await?
                 .1,
             wire::encode_house_result(wire::HouseDisposition::Rejected, 0)
         );
-        // A later global revision never changes an already committed command's result.
-        assert_eq!(send(&owner, admitted, 1, 56, &body).await?.1, ok);
         let revision: String = sqlx::query_scalar(
             "SELECT acl_revision::text FROM game_house_properties WHERE house_key=$1",
         )
@@ -328,17 +414,27 @@ fn scenario() -> TestResult {
         .await?;
         assert_eq!(revision, "5");
         assert_eq!(
-            send(&owner, admitted, 16, 56, &intent(3, &[])).await?.1,
+            send(&restarted, &mut admitted, 56, &intent(3, &[])).await?.1,
             wire::encode_house_result(wire::HouseDisposition::Rejected, 0)
         );
+        // A later global revision never changes an already committed command's result:
+        // a new directory replays the durable receipts for commands 1 and 9.
+        let replayed = deps.owner(&h, &authority);
+        let mut replay = initial;
         assert_eq!(
-            send(&owner, admitted, 9, 56, &intent(3, &[])).await?.1,
+            send(&replayed, &mut replay, 56, &body).await?,
+            (CommandStatus::Accepted, ok)
+        );
+        reach(&replayed, &mut replay, cancel_command).await?;
+        assert_eq!(
+            send(&replayed, &mut replay, 56, &intent(3, &[])).await?.1,
             wire::encode_house_result(wire::HouseDisposition::Ok, 2)
         );
         let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_house_management_receipts")
             .fetch_one(&h.pool)
             .await?;
         assert_eq!(count, 6);
+        drop(replayed);
         drop(restarted);
         drop(owner);
         drop(authority);
