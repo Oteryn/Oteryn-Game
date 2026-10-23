@@ -1,0 +1,23 @@
+{
+  "id": "DUR03-RL-07-HOUSE-PAYLOAD-BYTES",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_HOUSE_OWN0_HOUSE_OWNERSHIP_DECISION_2026-09-30.md",
+  "resource": "HouseOperationV1 encoded payload",
+  "unit": "bytes",
+  "hard_maximum": 65536,
+  "configurable_range": {
+    "minimum": 65536,
+    "maximum": 65536
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Validate before House allocation or value mutation; House event 8 uses its own rows, never the Bank two-line row.",
+  "client_visible": false,
+  "boundary_tests": [
+    "four-value-line winner plus 256 captured eligibility views fits",
+    "65537 bytes rejected before allocation"
+  ],
+  "consumers": [
+    "crates/gameplay/housing/src/house_auction.rs",
+    "crates/gameplay/durability/src/durability/house_ownership.rs",
+    "crates/gameplay/durability/src/durability/house_ownership_audit.rs"
+  ]
+}
