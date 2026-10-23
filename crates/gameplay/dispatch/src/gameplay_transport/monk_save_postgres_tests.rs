@@ -1361,3 +1361,6 @@ mod death_ml_loss_composed {
         })
     }
 }
+
+#[path = "guild_chat_tests.rs"]
+mod guild_chat;

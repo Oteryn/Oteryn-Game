@@ -165,6 +165,11 @@ pub const GATED: &[(u32, &[u32], &[u32])] = &[
     // and neither is offered, so no session selects them.
     (CAPABILITY_MAP_STATE_V1, &[], &[]),
     (CAPABILITY_WORLD_SPATIAL_FIELDS, &[], &[]),
+    (
+        crate::chat::guild_room::CAPABILITY_CHAT_GUILD_ROOM_V1,
+        &[],
+        &[],
+    ),
 ];
 
 /// Core domains a selected capability replaces, as (capability, domains). MAP-WIRE-1 contract §3

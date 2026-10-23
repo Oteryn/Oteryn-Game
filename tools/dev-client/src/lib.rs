@@ -27,12 +27,12 @@ use oteryn_session::{Admission, CLIENT_SUPPORTED_CAPABILITIES, Session, SessionE
 pub use oteryn_session::{
     AppliedDelta, CastOutcome, CharacterInventory, ChatDisposition, ChatIntent, ChatLine, ChatLog,
     ChatOutcome, ChatRoom, ChatRoomSet, ChatSpeaker, ChatSpeechMode, ChatWireError, CommandOutcome,
-    DuplicateOutcome, EntityDetail, EntityKind, EntityRef, ItemEntry, ItemHandle,
-    ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome, ItemMoveOutcomeResult, JoinSnapshot,
-    MAX_CHARACTER_INVENTORY_ITEMS, MAX_CHAT_LOG_LINES, MAX_CHAT_NAME_BYTES, MAX_CHAT_TEXT_BYTES,
-    MAX_CHAT_WAIT_SECONDS, MAX_OPEN_CONTAINER_ENTRIES, MAX_QUEUED_EVENTS, OpenContainer,
-    SessionEvent, StepOutcome, UseOutcome, WorldEntities, WorldSpatialEntitiesDelta,
-    WorldSpatialEntity,
+    DuplicateOutcome, EntityDetail, EntityKind, EntityRef, GuildChatLine, GuildRoomState,
+    ItemEntry, ItemHandle, ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome,
+    ItemMoveOutcomeResult, JoinSnapshot, MAX_CHARACTER_INVENTORY_ITEMS, MAX_CHAT_LOG_LINES,
+    MAX_CHAT_NAME_BYTES, MAX_CHAT_TEXT_BYTES, MAX_CHAT_WAIT_SECONDS, MAX_OPEN_CONTAINER_ENTRIES,
+    MAX_QUEUED_EVENTS, OpenContainer, SessionEvent, StepOutcome, UseOutcome, WorldEntities,
+    WorldSpatialEntitiesDelta, WorldSpatialEntity,
 };
 use oteryn_session_tcp::{TcpAdapterError, TcpConnect, TcpTlsStream};
 use rustls::pki_types::CertificateDer;

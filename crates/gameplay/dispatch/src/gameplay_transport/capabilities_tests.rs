@@ -250,14 +250,14 @@ fn the_production_set_selects_only_capabilities_6_7_9_13_17_19_and_21_whatever_t
         SelectedCapabilities::select(PRODUCTION_OFFERED_CAPABILITIES, &everything)
             .as_ref()
             .map(SelectedCapabilities::as_slice),
-        Some(&[6, 7, 9, 13, 17, 19, 21, 26][..])
+        Some(&[6, 7, 9, 13, 17, 19, 21, 26, 31][..])
     );
     // MAP-ITEM-REF-1: the not-yet-offered Item view set adds 4, which requires 6.
     assert_eq!(
         SelectedCapabilities::select(ITEM_VIEW_OFFERED_CAPABILITIES, &everything)
             .as_ref()
             .map(SelectedCapabilities::as_slice),
-        Some(&[4, 6, 7, 9, 13, 17, 19, 21, 26][..])
+        Some(&[4, 6, 7, 9, 13, 17, 19, 21, 26, 31][..])
     );
     assert_eq!(
         SelectedCapabilities::select(ITEM_VIEW_OFFERED_CAPABILITIES, &[4, 13])
@@ -2743,3 +2743,6 @@ mod weather_wire {
         })
     }
 }
+
+#[path = "guild_chat/negotiation_tests.rs"]
+mod guild_chat;

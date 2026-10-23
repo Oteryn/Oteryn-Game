@@ -74,6 +74,7 @@ struct ChatSession {
 #[derive(Default)]
 pub struct ChatRuntime {
     sessions: Mutex<HashMap<GameSessionId, ChatSession>>,
+    pub(super) guild: super::guild_chat::GuildChatRuntime,
     /// What the NPCs of the Channel say; unset until the boot wiring installs it.
     npc_talk: OnceLock<Arc<NpcTalkBook>>,
     /// The World relay; unset on a node without one, which refuses room and private lines.
@@ -99,6 +100,7 @@ impl ChatRuntime {
         character: Option<[u8; 16]>,
         now: SemanticTimeMicros,
     ) {
+        self.guild.forget(session);
         if let Ok(mut sessions) = self.sessions.lock() {
             let entry = sessions.entry(session).or_insert_with(|| ChatSession {
                 name: name.to_owned(),
@@ -183,26 +185,7 @@ impl ChatRuntime {
     /// a private line to the session playing its recipient, a room line to every session that
     /// has the room open. Nothing is written or logged.
     pub fn deliver(&self, line: &RelayLine) {
-        let Ok(mut sessions) = self.sessions.lock() else {
-            return;
-        };
-        let name = line.sender_name.as_str();
-        match line.destination {
-            RelayDestination::Private { recipient } => {
-                for entry in sessions.values_mut() {
-                    if entry.character.as_ref() == Some(recipient.as_bytes()) {
-                        entry.egress.push(private_line(name, &line.text));
-                    }
-                }
-            }
-            RelayDestination::Room { room } => {
-                for entry in sessions.values_mut() {
-                    if entry.rooms.contains(room) {
-                        entry.egress.push(room_line(room, name, &line.text));
-                    }
-                }
-            }
-        }
+        self.deliver_relay(line);
     }
 
     /// Installs the NPC talk of the Channel once; a second install is ignored.
@@ -241,6 +224,7 @@ impl ChatRuntime {
 
     /// A reconnect of a known session: drops undelivered lines, keeps the name and limiter.
     pub fn refresh(&self, session: GameSessionId) {
+        self.guild.forget(session);
         if let Ok(mut sessions) = self.sessions.lock()
             && let Some(entry) = sessions.get_mut(&session)
         {
@@ -414,6 +398,7 @@ impl ChatRuntime {
     }
 
     pub fn forget(&self, session: GameSessionId) {
+        self.guild.forget(session);
         if let Ok(mut sessions) = self.sessions.lock() {
             sessions.remove(&session);
         }
@@ -470,70 +455,7 @@ impl ChatRuntime {
         intent: &ChatIntent,
         now: SemanticTimeMicros,
     ) -> Option<ChatIntentResult> {
-        let (mode, text) = match intent {
-            ChatIntent::Say { mode, text } => (mode, text),
-            ChatIntent::OpenRoom(room) => return Some(self.set_room(session, *room, true)),
-            ChatIntent::CloseRoom(room) => return Some(self.set_room(session, *room, false)),
-            ChatIntent::Private { text, .. } => {
-                return self.pre_gate_relay(session, None, text, now);
-            }
-            ChatIntent::Room { room, text } => {
-                return self.pre_gate_relay(session, Some(*room), text, now);
-            }
-        };
-        // Unusable text is refused here too, without the Channel and without a line, so it
-        // cannot be repeated against the locks for free.
-        if ChatText::parse(text).is_err() {
-            return Some(result(ChatDisposition::Rejected));
-        }
-        // A session without chat state (its open failed) or a poisoned map ends in
-        // `ChatUnavailable` on the full path too; refusing it here keeps it off the locks.
-        let unavailable = || Some(result(ChatDisposition::ChatUnavailable));
-        let Ok(mut sessions) = self.sessions.lock() else {
-            return unavailable();
-        };
-        let Some(entry) = sessions.get_mut(&session) else {
-            return unavailable();
-        };
-        entry
-            .limiter
-            .pre_gate(speech_mode(*mode), now)
-            .err()
-            .map(refusal)
-    }
-
-    /// The gate of a private line (`room` `None`) or a room line, before the Channel locks, the
-    /// recipient read and the relay: unusable text is `REJECTED`, an unknown session or a relay
-    /// that is not ready `CHAT_UNAVAILABLE`, a room that is not open `ROOM_NOT_OPEN`, all without
-    /// a line; then the limiter (mute, the Advertising interval, the bucket) takes its line.
-    fn pre_gate_relay(
-        &self,
-        session: GameSessionId,
-        room: Option<ChatRoom>,
-        text: &str,
-        now: SemanticTimeMicros,
-    ) -> Option<ChatIntentResult> {
-        if ChatText::parse(text).is_err() {
-            return Some(result(ChatDisposition::Rejected));
-        }
-        let unavailable = || Some(result(ChatDisposition::ChatUnavailable));
-        let Ok(mut sessions) = self.sessions.lock() else {
-            return unavailable();
-        };
-        let Some(entry) = sessions.get_mut(&session) else {
-            return unavailable();
-        };
-        if !self.relay_ready() {
-            return unavailable();
-        }
-        if room.is_some_and(|room| !entry.rooms.contains(room)) {
-            return Some(result(ChatDisposition::RoomNotOpen));
-        }
-        entry
-            .limiter
-            .pre_gate_relay(room == Some(ChatRoom::Advertising), now)
-            .err()
-            .map(refusal)
+        self.sender_gate(session, intent, now)
     }
 
     /// The name of a session about to send a relay line, after recording its recipient
@@ -1287,7 +1209,7 @@ mod tests {
         bytes
     }
 
-    fn relayed(destination: RelayDestination, sender: &str, text: &str) -> RelayLine {
+    pub(super) fn relayed(destination: RelayDestination, sender: &str, text: &str) -> RelayLine {
         RelayLine {
             message_id: [9; 16],
             sent_at_micros: 1,
@@ -1633,3 +1555,15 @@ mod tests {
         );
     }
 }
+
+#[path = "guild_chat/relay_delivery.rs"]
+mod relay_delivery;
+#[path = "guild_chat/sender_gate.rs"]
+mod sender_gate;
+
+#[path = "guild_chat/egress_acceptance.rs"]
+mod egress_acceptance;
+
+#[cfg(test)]
+#[path = "guild_chat/test_support.rs"]
+pub(super) mod guild_test_support;

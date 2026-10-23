@@ -298,6 +298,19 @@
       "state_domains": [],
       "offered": false,
       "offer_gate": "FIELD-WIRE-1: the server does not offer this capability before the field payloads and their domain are registered and composed. It requires 6 WORLD_SPATIAL_ENTITIES (RUNE-USE-0 \u00a711.4). While unoffered it is not in the ADMIT0 mandatory floor (registered AND offered), and a World declaring it fails boot closed."
+    },
+    {
+      "id": 31,
+      "name": "CHAT_GUILD_ROOM_V1",
+      "owner_decision": "GUILD-CHAT-1 Integrator decision 2026-10-22 (owner-delegated): extend chat_v1, connection-owner acceptance under fresh custody",
+      "owner": "World communication (Guild membership remains Guild-owned)",
+      "requires": [
+        7
+      ],
+      "command_types": [],
+      "state_domains": [],
+      "offered": true,
+      "offer_gate": "Extends CHAT_V1 command 13 with intent tag 6 and disposition 10 NOT_ALLOWED (common status ACCEPTED), domain 12 snapshot type 2 and line kind 5 with fields 9/10. Without selection all old CHAT_V1 bytes and behavior remain unchanged. No GUILD_V1 capability is activated."
     }
   ],
   "command_types": [
@@ -733,7 +746,7 @@
       "owner_decision": "CHAT-0 CHAT0-LOCAL-PRIVATE-WORLD-ROOMS-V1 §7 (docs/architecture/reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md, #1375); numbers leased to CHAT-1 by the #162 control plane",
       "owner": "World communication (current ChannelRuntime for local speech)",
       "capability": 7,
-      "revision": "per GameSessionId, strictly above any revision the session has seen, across reconnect, resume and transfer (the NPC-0 pattern); every admission, reconnect, resume and transfer starts with a snapshot of the open rooms; lines are never replayed from storage",
+      "revision": "per GameSessionId, strictly above any revision the session has seen, across reconnect, resume and transfer (the NPC-0 pattern); every admission, reconnect, resume and transfer starts with a snapshot of the open rooms; lines are never replayed from storage; capability 31 selects snapshot type 2 instead of 1, carrying the current guild/motd view; same revision stream",
       "delta_types": [
         {
           "id": 1,
@@ -754,6 +767,12 @@
           "name": "CHAT_SNAPSHOT_V1",
           "payload_schema": "docs/contracts/protocol-oteryn/v1/chat_v1.proto#ChatRoomsV1",
           "max_payload_bytes": 4
+        },
+        {
+          "id": 2,
+          "name": "GUILD_CHAT_SNAPSHOT_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/chat_v1.proto#GuildChatSnapshotV1",
+          "max_payload_bytes": 1049
         }
       ]
     },
@@ -1005,7 +1024,7 @@
   ],
   "allocation_ranges": {
     "message_type": {"invalid": 0, "foundation_reserved": [1, 255], "future_extension": [256, 2147483647]},
-    "capability_id": {"invalid": 0, "assignable": [1, 2147483647], "next_unallocated": 31},
+    "capability_id": {"invalid": 0, "assignable": [1, 2147483647], "next_unallocated": 32},
     "command_type": {"invalid": 0, "assignable": [1, 2147483647]},
     "state_domain_id": {"invalid": 0, "assignable": [1, 2147483647]},
     "delta_type": {"invalid": 0, "scope": "state_domain", "assignable": [1, 2147483647]},

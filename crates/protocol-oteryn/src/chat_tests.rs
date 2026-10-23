@@ -196,7 +196,7 @@ fn results_carry_a_wait_only_with_muted_and_exhausted() {
     for payload in [
         &[][..],
         &[0x08, 0x00],
-        &[0x08, 0x0a],
+        &[0x08, 0x0b],
         &[0x08, 0x02],
         &[0x08, 0x01, 0x10, 0x01],
         &[0x08, 0x01, 0x18, 0x01],
@@ -433,12 +433,20 @@ fn registries_bind_the_chat_wire_ids_and_limits() {
     );
     assert_eq!(
         types("snapshot_types"),
-        [(
-            u64::from(SNAPSHOT_TYPE_CHAT_V1),
-            "CHAT_SNAPSHOT_V1".to_owned(),
-            schema("ChatRoomsV1"),
-            MAX_CHAT_ROOMS_BYTES as u64
-        )]
+        [
+            (
+                u64::from(SNAPSHOT_TYPE_CHAT_V1),
+                "CHAT_SNAPSHOT_V1".to_owned(),
+                schema("ChatRoomsV1"),
+                MAX_CHAT_ROOMS_BYTES as u64
+            ),
+            (
+                u64::from(guild_room::SNAPSHOT_TYPE_GUILD_CHAT_V1),
+                "GUILD_CHAT_SNAPSHOT_V1".to_owned(),
+                schema("GuildChatSnapshotV1"),
+                guild_room::MAX_GUILD_CHAT_SNAPSHOT_BYTES as u64
+            )
+        ]
     );
 
     for message in [

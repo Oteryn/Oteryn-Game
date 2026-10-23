@@ -117,6 +117,7 @@ pub const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     WORLD_LIGHT,
     LOGOUT,
     WORLD_WEATHER,
+    super::guild_chat::OFFERED,
 ];
 
 /// The offered set of a World booted from a bundle (MAP-CUTOVER-1b, NPC-CMD-1a, ITEM-LOOP-1),
@@ -178,6 +179,7 @@ pub const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
         id: CAPABILITY_ITEM_LOOK_V1,
         requires: &[],
     },
+    super::guild_chat::OFFERED,
 ];
 
 /// MAP-ITEM-REF-1: the production offered set with capability 4 `ITEM_VIEW_MOVE_V1`, which
@@ -209,6 +211,7 @@ pub const ITEM_VIEW_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     WORLD_LIGHT,
     LOGOUT,
     WORLD_WEATHER,
+    super::guild_chat::OFFERED,
 ];
 
 /// Bound of one session's selection. A test keeps the production offered set within it.

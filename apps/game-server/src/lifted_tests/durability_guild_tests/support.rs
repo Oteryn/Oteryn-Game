@@ -1,34 +1,7 @@
 use super::*;
-const MIGRATION: &str = include_str!("../../../migrations/0132_guild_core.sql");
-// Retained source-qualified fixtures use the exact installed SQL, never a copied schema.
-use std::sync::LazyLock;
-pub(super) static GUILD_TABLES_PROPOSAL: LazyLock<&str> = LazyLock::new(|| {
-    MIGRATION
-        .split("-- GUILD TABLES BEGIN")
-        .nth(1)
-        .unwrap()
-        .split("-- GUILD GUARDS BEGIN")
-        .next()
-        .unwrap()
-});
-pub(super) static GUILD_GUARDS_PROPOSAL: LazyLock<&str> = LazyLock::new(|| {
-    MIGRATION
-        .split("-- GUILD GUARDS BEGIN")
-        .nth(1)
-        .unwrap()
-        .split("-- GUILD GRANTS BEGIN")
-        .next()
-        .unwrap()
-});
-pub(super) fn sid(number: u32, kind: u8) -> [u8; 16] {
-    let mut bytes = [0_u8; 16];
-    bytes[0] = 0xa1;
-    bytes[1] = kind;
-    bytes[6] = 0x70;
-    bytes[8] = 0x80;
-    bytes[12..].copy_from_slice(&number.to_be_bytes());
-    bytes
-}
+pub(super) use crate::durability::guild_chat_fixture::{
+    GUILD_GUARDS_PROPOSAL, GUILD_TABLES_PROPOSAL, sid,
+};
 pub(super) fn character(n: u32) -> CharacterId {
     CharacterId::from_bytes(if n == 0 { id(CHARACTER) } else { sid(n, 1) }).unwrap()
 }
@@ -39,20 +12,7 @@ pub(super) fn gid(n: u32) -> GuildId {
     GuildId::from_bytes(sid(n, 3)).unwrap()
 }
 pub(super) fn request(n: u32, guild: u32, op: GuildCommand) -> GuildRequest {
-    GuildRequest {
-        identity: GuildOperationIdentity {
-            occurrence: sid(n, 10),
-            transaction_id: sid(n, 11),
-            event_id: sid(n, 12),
-            occurred_at_unix_ms: 1_790_000_000_000,
-        },
-        command: CommandRef::new(
-            GameSessionId::decode(&id(fixture::SESSION)).unwrap(),
-            CommandId::new(u64::from(n)).unwrap(),
-        ),
-        guild_id: gid(guild),
-        operation: op,
-    }
+    crate::durability::guild_chat_fixture::request(n, gid(guild), fence().unwrap(), op).unwrap()
 }
 pub(super) fn result(value: GuildOutcome) -> GuildReceipt {
     match value {
@@ -70,17 +30,7 @@ pub(super) fn name(mut n: u32) -> String {
     }
     format!("Guild Fixture {letters}")
 }
-pub(super) fn uuid(bytes: [u8; 16]) -> String {
-    let h = bytes.iter().map(|b| format!("{b:02x}")).collect::<String>();
-    format!(
-        "{}-{}-{}-{}-{}",
-        &h[..8],
-        &h[8..12],
-        &h[12..16],
-        &h[16..20],
-        &h[20..]
-    )
-}
+pub(super) use crate::durability::guild_chat_fixture::uuid;
 
 /// Complete historical Character creation fixture, using the native decoder/binding, not a
 /// manufactured authority capability. The real recovery seal/full integrity check must pass.
@@ -94,53 +44,36 @@ pub(super) async fn historical_character_account(
     world: [u8; 16],
     owner: [u8; 16],
 ) -> TestResult {
-    sqlx::query("INSERT INTO game_character_account_guards VALUES(encode($1,'hex')::uuid) ON CONFLICT DO NOTHING")
-        .bind(owner.as_slice())
-        .execute(&h.pool)
-        .await?;
-    sqlx::query("INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,1,'profile-1','ruleset-1','content-1','starter-1',$4)")
-        .bind(character(n).as_bytes().as_slice()).bind(owner.as_slice()).bind(world.as_slice()).bind(name(n)).execute(&h.pool).await?;
-    let operation = sid(n, 30);
-    let decision = sid(n, 31);
-    let raw = serde_json::to_vec(
-        &serde_json::json!({"contract_version":2,"variant":"OPERATOR_CONTROL_PLANE_BOOTSTRAP",
-        "issuer_authority":"OTERYN_PLATFORM_CHARACTER_AUTHORITY","issuer_decision_id":uuid(decision),
-        "source_revision":(u64::from(n)+100).to_string(),"operation_id":uuid(operation),"operation":"INITIAL_CHARACTER_BOOTSTRAP",
-        "account_id":uuid(owner),"target_world_id":uuid(world),"requested_name":name(n),
-        "interpretation_context":{"profile_revision":"profile-1","ruleset_revision":"ruleset-1","content_revision":"content-1","starter_template_revision":"starter-1"},
-        "issued_at_source":"1","expires_at_source":"120","audience":"OTERYN_GAME_CHARACTER_AUTHORITY"}),
-    )?;
-    let intent = crate::character_bootstrap_intent::decode_producer_response(&raw, operation)
-        .map_err(debug)?;
-    sqlx::query("INSERT INTO game_character_operation_receipts(operation_id,command_binding,account_id,character_id,world_id,character_revision,event_id,occurred_at,server_build_id,transaction_id,issuer_decision_id,intent_source_revision,issued_at_source,expires_at_source) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,encode($4,'hex')::uuid,encode($5,'hex')::uuid,1,encode($6,'hex')::uuid,1,'test/1',encode($7,'hex')::uuid,encode($8,'hex')::uuid,$9,1,120)")
-        .bind(operation.as_slice()).bind(intent.binding()).bind(owner.as_slice()).bind(character(n).as_bytes().as_slice()).bind(world.as_slice())
-        .bind(sid(n,32).as_slice()).bind(sid(n,33).as_slice()).bind(decision.as_slice()).bind(i64::from(n)+100).execute(&h.pool).await?;
-    sqlx::query("INSERT INTO game_character_bootstrap_intent_floors(issuer_scope,source_revision,issuer_decision_id,intent_binding) SELECT 1,intent_source_revision,issuer_decision_id,command_binding FROM game_character_operation_receipts ORDER BY intent_source_revision DESC LIMIT 1 ON CONFLICT(issuer_scope) DO UPDATE SET source_revision=EXCLUDED.source_revision,issuer_decision_id=EXCLUDED.issuer_decision_id,intent_binding=EXCLUDED.intent_binding")
-        .execute(&h.pool).await?;
-    Ok(())
+    crate::durability::guild_chat_fixture::historical_character(
+        &h.pool,
+        n,
+        character(n),
+        owner,
+        world,
+        &name(n),
+    )
+    .await
 }
 pub(super) async fn initial_guild(h: &Harness, g: u32, leader: u32) -> TestResult {
-    sqlx::query("INSERT INTO game_guilds(guild_id,world_id,name,state,formation_deadline,vice_deficit_since,revision,created_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,2,9999999999999,1,1,1)")
-        .bind(gid(g).as_bytes().as_slice()).bind(id(WORLD).as_slice()).bind(name(g)).execute(&h.pool).await?;
-    for (rank, name) in [
-        (1_i16, "Leader"),
-        (2, "Vice Leader"),
-        (3, "Member"),
-        (4, "Visitor"),
-    ] {
-        sqlx::query("INSERT INTO game_guild_ranks(guild_id,level,name) VALUES(encode($1,'hex')::uuid,$2,$3)")
-            .bind(gid(g).as_bytes().as_slice()).bind(rank).bind(name).execute(&h.pool).await?;
-    }
-    initial_member(h, g, leader, 1).await
+    crate::durability::guild_chat_fixture::initial_guild(
+        &h.pool,
+        gid(g),
+        id(WORLD),
+        &name(g),
+        character(leader),
+        account(leader),
+    )
+    .await
 }
 pub(super) async fn initial_member(h: &Harness, g: u32, c: u32, rank: i16) -> TestResult {
-    sqlx::query("INSERT INTO game_guild_members(character_id,guild_id,rank_level,title,joined_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,'',1)")
-        .bind(character(c).as_bytes().as_slice()).bind(gid(g).as_bytes().as_slice()).bind(rank).execute(&h.pool).await?;
-    if rank <= 2 {
-        sqlx::query("INSERT INTO game_account_guild_leadership VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid)")
-        .bind(account(c).as_slice()).bind(gid(g).as_bytes().as_slice()).bind(character(c).as_bytes().as_slice()).execute(&h.pool).await?;
-    }
-    Ok(())
+    crate::durability::guild_chat_fixture::initial_member(
+        &h.pool,
+        gid(g),
+        character(c),
+        account(c),
+        rank,
+    )
+    .await
 }
 pub(super) async fn initial_invitation(
     h: &Harness,
@@ -161,35 +94,13 @@ pub(super) async fn historical_session(
     h: &Harness,
     n: u32,
 ) -> TestResult<CurrentCharacterItemFence> {
-    let session = sid(n, 20);
-    sqlx::query("INSERT INTO game_durability_reconnect_sessions(game_session_id,account_id,character_id,world_id,runtime_scope_kind,runtime_scope_world_id,runtime_scope_channel_id,control_loss_epoch,original_grace_deadline,predecessor_generation,character_lease_generation,scope_ownership_generation,current_generation,current_transport_ref,session_state) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,1,encode($4,'hex')::uuid,encode($5,'hex')::uuid,1,999999,1,1,1,1,$6,1)")
-        .bind(session.as_slice()).bind(account(n).as_slice()).bind(character(n).as_bytes().as_slice()).bind(id(WORLD).as_slice()).bind(id(fixture::CHANNEL).as_slice()).bind(sid(n,21).as_slice()).execute(&h.pool).await?;
-    sqlx::query("INSERT INTO game_durability_admission_account_guards VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,'test',1,'account-current',1,0,'{}')")
-        .bind(account(n).as_slice()).bind(character(n).as_bytes().as_slice()).bind(session.as_slice()).execute(&h.pool).await?;
-    sqlx::query("INSERT INTO game_durability_admission_character_guards VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,true,1,encode($4,'hex')::uuid,1,'test',1,'character-current',1,0,'{}')")
-        .bind(character(n).as_bytes().as_slice()).bind(account(n).as_slice()).bind(id(WORLD).as_slice()).bind(session.as_slice()).execute(&h.pool).await?;
-    Ok(CurrentCharacterItemFence {
-        character_id: character(n),
-        game_session_id: GameSessionId::decode(&session)?,
-        ..fence()?
-    })
+    crate::durability::guild_chat_fixture::historical_session(&h.pool, n, fence()?).await
 }
 pub(super) async fn prepare(h: &Harness) -> TestResult {
-    let version: String = sqlx::query_scalar("SHOW server_version_num")
-        .fetch_one(&h.pool)
-        .await?;
-    assert_eq!(version, "170006");
-    eprintln!("GUILD-NATIVE-PG server_version_num={version}");
-    // Only this isolated historical snapshot fixture is rebuilt; new real-path tests below
-    // use the installed migration without this setup. No production guards are relaxed.
-    h.pool.execute("DROP TABLE game_guild_disband_step_events,game_guild_disband_steps,game_guild_job_event_outbox,game_guild_job_checkpoints,game_guild_event_outbox,game_guild_operations,game_account_guild_leadership,game_guild_invitations,game_guild_members,game_guild_ranks,game_guilds CASCADE").await?;
-    h.pool.execute("DO $$ DECLARE f RECORD;BEGIN FOR f IN SELECT p.oid::regprocedure::text AS signature FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname=current_schema() AND p.proname LIKE 'game_guild_%' LOOP EXECUTE format('DROP FUNCTION IF EXISTS %s CASCADE',f.signature);END LOOP;END $$").await?;
-    h.pool.execute(*GUILD_TABLES_PROPOSAL).await?;
-    Ok(())
+    crate::durability::guild_chat_fixture::prepare(&h.pool).await
 }
 pub(super) async fn guard(h: &Harness) -> TestResult {
-    h.pool.execute(*GUILD_GUARDS_PROPOSAL).await?;
-    Ok(())
+    crate::durability::guild_chat_fixture::guard(&h.pool).await
 }
 pub(super) async fn apply(
     h: &Harness,
