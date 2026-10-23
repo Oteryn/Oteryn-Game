@@ -248,6 +248,7 @@ impl Track {
 struct Saved {
     cell: LastPositionCell,
     vitals: Option<LastVitals>,
+    rest: Option<[u32; 4]>,
 }
 
 impl Saved {
@@ -255,6 +256,7 @@ impl Saved {
         Self {
             cell: record.cell,
             vitals: record.vitals,
+            rest: record.rest,
         }
     }
 }
@@ -392,7 +394,11 @@ impl LastPositions {
         if let Ok(mut tracks) = self.tracks.lock()
             && let Some(track) = tracks.get_mut(&session)
         {
-            track.written = Some(Saved { cell, vitals: None });
+            track.written = Some(Saved {
+                cell,
+                vitals: None,
+                rest: None,
+            });
             track.checked = Instant::now();
         }
     }
@@ -484,6 +490,7 @@ pub(super) enum AdmissionPosition {
     Arrival(
         crate::durability::npc_travel::PendingArrival,
         Option<LastVitals>,
+        Option<[u32; 4]>,
     ),
     /// Step 3: the stored last position, placed only if it is valid (else step 4).
     Stored(StoredLastPosition),
@@ -515,7 +522,7 @@ pub(super) fn admitted_vitals(
             .record
             .vitals
             .map(|vitals| (vitals.health(), vitals.mana())),
-        AdmissionPosition::Arrival(_, vitals) => {
+        AdmissionPosition::Arrival(_, vitals, _) => {
             vitals.map(|vitals| (vitals.health(), vitals.mana()))
         }
         AdmissionPosition::Stored(_)
@@ -537,7 +544,7 @@ fn first_entry_input(
         AdmissionPosition::Respawn(pending) => {
             FirstEntryInput::Recorded(respawn_cell(&pending.respawn_position))
         }
-        AdmissionPosition::Arrival(pending, _) => {
+        AdmissionPosition::Arrival(pending, _, _) => {
             FirstEntryInput::Recorded(Some(position_of(pending.destination)))
         }
         AdmissionPosition::Stored(stored)
@@ -580,16 +587,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let actor = track.actor;
         let kept = track.written.and_then(|saved| saved.vitals);
         let runtime = self.runtime.lock().await;
-        let vitals = {
+        let (vitals, rest) = {
             let states = self.states.spell_states.lock().await;
             if states.is_dead(actor) {
                 return Captured::Dead;
             }
-            match states.saved_vitals(&runtime, actor, session) {
+            let vitals = match states.saved_vitals(&runtime, actor, session) {
                 Some(Some((health, mana))) => LastVitals::new(health, mana).or(kept),
                 Some(None) => None,
                 None => kept,
-            }
+            };
+            let rest = states
+                .get(&runtime, actor, session)
+                .map(|state| state.bed_rest_snapshot(self.owner_now().get()))
+                .or_else(|| track.written.and_then(|saved| saved.rest));
+            (vitals, rest)
         };
         let Ok(snapshot) = runtime.read_actor_position(actor) else {
             return Captured::Gone;
@@ -599,6 +611,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let mut placed = self.placed_record(&runtime, snapshot.position());
         placed.record.vitals = vitals;
+        placed.record.rest = rest;
         Captured::At(Capture {
             record: placed.record,
             write_sequence: placed.write_sequence,
@@ -616,6 +629,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let pin = runtime.content_pin();
         FinalLastPosition {
             record: LastPositionRecord {
+                rest: None,
                 world_id: self.world_id,
                 cell: cell_of(cell),
                 coordinate_frame_digest: pin.frame_binding_digest(),
@@ -694,6 +708,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         fence: CurrentCharacterGameplayFence,
     ) -> Result<AdmissionPosition, ()> {
+        self.root
+            .settle_bed_regen(self.character, self.holder, fence)
+            .await
+            .map_err(|_| ())?;
         match self
             .root
             .pending_respawn(self.character, self.holder, fence)
@@ -768,7 +786,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let written = match decided {
             AdmissionPosition::Stored(stored) => Some(Saved::of(&stored.record)),
             AdmissionPosition::FirstLogin => None,
-            AdmissionPosition::Respawn(_) | AdmissionPosition::Arrival(_, _) => {
+            AdmissionPosition::Respawn(_) | AdmissionPosition::Arrival(_, _, _) => {
                 operator_event("admitted_respawn_no_longer_pending");
                 return false;
             }
@@ -952,6 +970,7 @@ mod tests {
     fn stored(world_id: WorldId, frame: [u8; 32]) -> StoredLastPosition {
         StoredLastPosition {
             record: LastPositionRecord {
+                rest: None,
                 world_id,
                 cell: LastPositionCell {
                     x: 5,
@@ -1108,6 +1127,7 @@ mod tests {
         // The next deadline is measured from the capture, not from when its write settled.
         let captured = Instant::now();
         let saved = Saved {
+            rest: None,
             cell,
             vitals: LastVitals::new(40, 3),
         };
@@ -1131,6 +1151,7 @@ mod tests {
         assert_eq!(
             positions.tracked(session).and_then(|track| track.written),
             Some(Saved {
+                rest: None,
                 cell: respawn,
                 vitals: None
             })

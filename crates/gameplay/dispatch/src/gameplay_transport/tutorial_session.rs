@@ -182,11 +182,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .map_err(|_| ())?
         {
-            let vitals = match &decided {
-                AdmissionPosition::Stored(row) => row.record.vitals,
-                _ => None,
+            let (vitals, rest) = match &decided {
+                AdmissionPosition::Stored(row) => (row.record.vitals, row.record.rest),
+                _ => (None, None),
             };
-            return Ok(AdmissionPosition::Arrival(pending, vitals));
+            return Ok(AdmissionPosition::Arrival(pending, vitals, rest));
         }
         if !self.tutorial_enabled().await {
             return Ok(decided);
