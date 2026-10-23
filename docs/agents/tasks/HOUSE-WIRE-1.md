@@ -4,7 +4,7 @@
 task_id: HOUSE-WIRE-1
 title: "HOUSE-WIRE-1: HOUSE_V1 codecs, HOUSE_INTENT/HOUSE_QUERY and native request adapters"
 mode: IMPLEMENT
-status: waiting
+status: partial
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 5
@@ -18,7 +18,7 @@ briefs:
 base_branch: main
 branch: null
 pr: null
-needs_migration: false
+needs_migration: true
 needs_registry: true   # PROTOCOL_OTERYN_V1_REGISTRY, RESOURCE_LIMITS_REGISTRY
 needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
@@ -185,3 +185,122 @@ cargo +1.95.0 run -p oteryn-architecture-check -- workspace .
 - docs/agents/tasks/archive/WORLDINT-WIRE-1.md (wire pattern)
 - docs/reference/tibia-manual/houses.md
 - Draft #2145 (CP decisions D1170, D1261, D1345, D1350, D1354, D1384 on PR #2131)
+
+## Server wiring gap list
+
+Audit of this worktree HEAD, 2026-10-23; the houses row of
+`MECHANICS_STATUS.md` correctly reports BACKEND, not a dispatched mechanic.
+
+| Layer | On this HEAD | Missing server work |
+|---|---|---|
+| L3 | Auction/eligibility/value rules; Guest/Subowner/Door permissions | Management input validation and move-out date rules |
+| L4 | Migration 0143 auction/bid/settlement spine; 0038 ACL receipts/editor; fenced native participants | Management ACL entry point without spell editor/presence; move-out writer/query |
+| Protocol | No HOUSE_V1 codec or fragments | Commands 56/57, capability 49 (owner allocation supersedes provisional D1170); bounded request/results |
+| Dispatch/runtime | No house command branch or composed caller | Real connection dispatch into fenced durable writers |
+| Offer/content | No HOUSE_V1 offer; catalogue and qualified house tiles exist | Bundle offer and content target/door validation |
+| Qualification | Backend tests only | Filtered PostgreSQL wire-to-row-to-result/reload test in dispatch --lib |
+
+Scope boundary: OWN0 §1/§12 explicitly defers direct player-to-player transfer;
+rent collection/disposition and house-exit admission remain absent native owners.
+Do not fabricate success for these operations. Owner's server-first direction
+supersedes the card's old client-panel work; client paths are excluded.
+
+## Current server result (2026-10-23)
+
+Worktree baseline: `3c57781c3`, branch `claude/happy-davinci-ijz3wy-srv-housewire`.
+Local authoring only; no commit, publication, PR, freeze or merge. The full task is
+**PARTIAL**, not ready: the wire management paths below work against existing
+property rows, but acquisition activation, rent/disposition jobs and exit remain
+unfinished. No client path is changed.
+
+The new `house_management` owner uses canonical `game_house_acl_entries`, a
+property-global ACL CAS and the OWN0 200-member bound. It does not reinterpret or
+write legacy 0038 per-list/editor data. Migration 0168 refuses pre-existing legacy
+ACLs pending explicit reconciliation, installs management receipts and notices,
+and connects canonical character grants to the existing `game_house_access`
+grant port. The initial legacy-backed implementation was replaced before delivery.
+
+### Reference parity
+
+| Visible behavior | Reference evidence | Oteryn now |
+|---|---|---|
+| Remote Guest/Subowner list replacement | OWN0 §10/§11; manual §houses 5.7.3 | Command 56, canonical 200-member same-World lists, owner/subowner hierarchy, empty clear, global revision CAS; same-transaction immutable receipt |
+| Door list replacement | OWN0 §10; HOUSE-WIRE accepted coordinate binding | Native x/y 0..65535 and floor -15..0; exact bundled House/source door tags or qualified native placement; canonical coordinate list; unknown/ambiguous door refuses |
+| Town list, price, auction end, rent, actor's maximum | OWN0 §11; manual §houses 5.7.2 | Command 57, 20-row keyset pages, server catalogue town filter, active content pin, actor-only maximum and owner-only notice; global ACL revision exposed |
+| Proxy bids and replay | OWN0 §4; manual §houses 5.7.2 | Command 56 calls the existing Premium-gated `house_bid`; deterministic CommandRef operation identity; PostgreSQL positive/replay/conflict on an already-open auction |
+| Notice/cancel | D1384; OWN0 §6; manual §houses 5.7.2(c) | Durable absolute notice/cancel, one DB clock sample, inclusive 1–30 days, owner/session/content fenced, exact replay; this records intent, not disposition execution |
+| Downgrade and invalid input | HOUSE-WIRE accepted codec/gate decisions | Capability 49 gates commands 56/57 before decoding; old clients receive empty common rejection; strict bounded codecs, duplicate/unknown/invalid fields refuse |
+| Unknown commit | HOUSE-WIRE acceptance #5 | Disconnect without advancing next CommandId; retry reconciles the durable receipt before a second mutation |
+| Full rent and transfer | HOUSE-1b; OWN0 §5/§7 | Unfinished: rent/eviction scheduler, custody census/return to each captured reclaim subject, and final release. Here transfer means custody disposition; player resale remains deferred by OWN0 |
+| Exit and complete management reads | HOUSE-RUNTIME-1b; OWN0 §11 | Kick/leave refuse; named-House session rebind and private ACL list projection remain unfinished |
+
+### Unfinished
+
+- The shipped World has no qualified acquisition producer that creates/open-auctions
+  `game_house_properties`. Queries return only persisted, content-matching properties;
+  a VACANT anchor still cannot authorize bidding. Tests explicitly seed historical
+  owned/open-auction data and do not claim acquisition qualification.
+- No scheduler executes notices, settles auctions, charges periodic rent, performs
+  grace/eviction or returns item custody. The durable notice is not a vacate ACK.
+- No House exit owner, named-House session fence/rebind, guild ACL/exclusions,
+  private ACL-list read projection or canonical House change event/outbox is supplied.
+  Character-only management from an admitted Channel session is the qualified slice.
+- Protocol/persistence independent review and repository CI remain outstanding.
+  No repository content was sent for external review.
+- The earlier owner question about resale versus rent scope is superseded by reading
+  HOUSE-1b: accepted transfer is reclaim-subject custody, not priced player resale.
+
+### Validation evidence
+
+Evidence is local and against the working diff, not a frozen/published candidate.
+Final command outcomes are recorded below after completion. PostgreSQL execution
+uses the absolute queued wrapper; no admin URL is printed. No unfiltered PostgreSQL
+suite is run.
+
+Validation completed:
+
+- `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --lib house_wire --quiet`: **2 passed** with live PostgreSQL (latest run 7.89 s), production `serve_admitted`, composed authority and runtime-role writes. Cases: `house_wire_postgres_real_dispatch_acl_notice_replay_reload_and_fences`, `house_wire_postgres_bid_dispatch_replay_and_conflicting_maximum`.
+- `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-protocol-oteryn house --quiet`: **4 passed**, including the final 200/201-member boundary. The complete protocol library also passed **391** tests before the final additive ACL projection metadata; registry gating parity passed separately.
+- `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --lib capabilities --quiet`: **63 passed** after capability 49 registration and offer changes.
+- `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-housing --lib house_management --quiet`: **2 passed** (inclusive dates/overflow and native list keys).
+- Touched-package `cargo check --locked -p oteryn-gameplay-dispatch --quiet`: PASS; touched-package `clippy --all-targets -- -D warnings`: PASS. Vendored Tokio/sqlx emit pre-existing dependency warnings; no owned-code lint suppression was added.
+- `cargo fmt --all -- --check` plus explicit rustfmt check of auto-mounted PostgreSQL files: PASS.
+- `python3 tools/agents/validate_governance.py`: PASS; governance unit tests: **129 passed**.
+- `python3 tools/repository/validate_repository_policy.py`: PASS.
+- `git diff --check`: PASS. Whole-diff checklist review and workspace-wide enum/constructor/trait implementation search completed; no client consumer needs changing for these new mechanic-owned types.
+- Earlier failures were repaired: fixture lease binding, typed stale-generation expectations at the connection boundary, strict zero/floor test input, capability whitelist/offer expectations, and duplicate test-module mounting. No unrelated load-contention failure was encountered; CI-only unfinished tests: none.
+
+### Changed files
+
+- `apps/game-server/migrations/0168_house_management.sql`
+- `crates/gameplay/dispatch/src/gameplay_transport/capabilities.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/capability_quest_log_tests.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/connection.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/house_intent.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/house_query.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/mod.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/house_wire.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/house_wire/bid.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/house_wire_bundle.rs`
+- `crates/gameplay/durability/src/durability/house_management.rs`
+- `crates/gameplay/durability/src/durability/house_management/acl.rs`
+- `crates/gameplay/durability/src/durability/house_management/query.rs`
+- `crates/gameplay/durability/src/durability/mod.rs`
+- `crates/gameplay/housing/src/house_management.rs`
+- `crates/gameplay/housing/src/house_management_tests.rs`
+- `crates/gameplay/housing/src/lib.rs`
+- `crates/gameplay/world/src/map/facts.rs`
+- `crates/protocol-oteryn/src/capability_tables.rs`
+- `crates/protocol-oteryn/src/house.rs`
+- `crates/protocol-oteryn/src/house_tests.rs`
+- `crates/protocol-oteryn/src/lib.rs`
+- `docs/agents/tasks/HOUSE-WIRE-1.md`
+- `docs/contracts/protocol-oteryn/v1/house_v1.proto`
+- `docs/contracts/protocol-oteryn/v1/registry/capabilities/0049-house-v1.json`
+- `docs/contracts/protocol-oteryn/v1/registry/command_types/0056-house-intent.json`
+- `docs/contracts/protocol-oteryn/v1/registry/command_types/0057-house-query.json`
+- `docs/contracts/resource-limits/entries/0790-HOUSEWIRE1-RL-INTENT.json`
+- `docs/contracts/resource-limits/entries/0791-HOUSEWIRE1-RL-QUERY.json`
+- `docs/contracts/resource-limits/entries/0792-HOUSEWIRE1-RL-RESULT.json`
+- `docs/contracts/resource-limits/entries/0793-HOUSEWIRE1-RL-MEMBERS.json`
+- `docs/contracts/resource-limits/entries/0794-HOUSEWIRE1-RL-PAGE.json`

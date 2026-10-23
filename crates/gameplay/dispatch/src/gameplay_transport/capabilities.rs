@@ -133,6 +133,7 @@ pub const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     TUTORIAL_NOTICES,
     super::guild_chat::OFFERED,
     super::guild_intent::OFFERED,
+    super::house_intent::OFFERED,
 ];
 
 /// The offered set of a World booted from a bundle (MAP-CUTOVER-1b, NPC-CMD-1a, ITEM-LOOP-1),
@@ -205,6 +206,7 @@ pub const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     super::timed_item::OFFERED,
     super::guild_intent::OFFERED,
     super::vip::OFFERED,
+    super::house_intent::OFFERED,
 ];
 const BUNDLE_WORLD_UNTIMED_LEN: usize = BUNDLE_WORLD_OFFERED_CAPABILITIES.len() - 1;
 /// [`BUNDLE_WORLD_OFFERED_CAPABILITIES`] without capability 39, filtered at compile time so the
@@ -261,6 +263,7 @@ pub const ITEM_VIEW_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     TUTORIAL_NOTICES,
     super::guild_chat::OFFERED,
     super::guild_intent::OFFERED,
+    super::house_intent::OFFERED,
 ];
 
 /// Bound of one session's selection. A test keeps the production offered set within it.
