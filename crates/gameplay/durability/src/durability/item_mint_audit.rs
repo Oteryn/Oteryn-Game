@@ -342,6 +342,8 @@ pub enum OneItemOperationV1 {
     HouseTransfer(super::house_interior_audit::OneItemHouseTransferV1),
     #[prost(message, tag = "14")]
     PlayerTrade(super::player_trade::audit::OneItemPlayerTradeV1),
+    #[prost(message, tag = "15")]
+    Craft(super::item_craft::audit::OneItemCraftV1),
     // Private continuation proposal: root coordinates final allocation and Imbue tag 12.
     #[prost(message, tag = "13")]
     ForgeDustLimit(super::character_forge_dust_audit::OneItemForgeDustLimitV1),
@@ -353,7 +355,7 @@ pub struct OneItemTransactionV1 {
     pub interpretation_revision: u32,
     #[prost(
         oneof = "OneItemOperationV1",
-        tags = "2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14"
+        tags = "2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15"
     )]
     pub operation: Option<OneItemOperationV1>,
 }

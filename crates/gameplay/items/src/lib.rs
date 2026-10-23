@@ -5,6 +5,7 @@ pub mod equipment_effects;
 pub mod hotkey_search;
 pub mod imbuement;
 pub mod item_capacity;
+pub mod item_craft;
 pub mod item_timed_repair;
 pub mod item_transfer;
 pub mod item_weight_lookup;
