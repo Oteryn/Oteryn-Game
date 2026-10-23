@@ -44,6 +44,7 @@ pub mod creature_policy;
 pub mod creature_reward;
 mod cw2_b1_import;
 mod cw2_b4_import;
+pub mod daily_reward;
 mod digest;
 pub mod encounter_map_item;
 pub mod field_condition;
