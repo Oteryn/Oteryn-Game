@@ -253,3 +253,35 @@ fn registry_binds_the_notice_wire_ids_and_limits() {
         );
     }
 }
+
+// TEST-FUZZ-1: bounded randomized decoder and generated-value round trips.
+
+#[test]
+fn fuzz_decode_achievement_notices_snapshot() {
+    crate::decoder_fuzz_support::codec(
+        "decode_achievement_notices_snapshot",
+        |rng| AchievementWatermark {
+            fact_count: rng.u64() as u32,
+            total_points: rng.u64() as u32,
+        },
+        decode_achievement_notices_snapshot,
+        |v| encode_achievement_notices_snapshot(*v),
+    );
+}
+
+#[test]
+fn fuzz_decode_achievement_earned() {
+    crate::decoder_fuzz_support::codec(
+        "decode_achievement_earned",
+        |rng| {
+            earned(
+                "oteryn:achievement/allow_cookies",
+                &"é".repeat((rng.below((MAX_ACHIEVEMENT_NAME_BYTES / 2) as u64) + 1) as usize),
+                (rng.below(u32::MAX.into()) + 1) as u32,
+                rng.u64() as u32,
+            )
+        },
+        decode_achievement_earned,
+        |v| encode_achievement_earned(v).expect("earned"),
+    );
+}

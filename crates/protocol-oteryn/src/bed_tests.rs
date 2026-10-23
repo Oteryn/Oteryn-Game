@@ -87,3 +87,32 @@ fn bed_sleep_registry_and_schema_agree() {
     assert!(schema.contains("oteryn.protocol.v1.item_view.ItemTargetV1 target = 1;"));
     assert!(schema.contains("uint32 skill = 2;"));
 }
+
+// TEST-FUZZ-1: bounded randomized decoder and generated-value round trips.
+
+#[test]
+fn fuzz_decode_bed_sleep_intent() {
+    use crate::item_view::encode_item_target;
+    use oteryn_test_support::property::for_each_case;
+    let mut seeds = Vec::new();
+    for_each_case("bed_sleep_generated", |rng, _| {
+        let target = crate::item_view::ItemHandle::new(rng.u64().max(1)).expect("handle");
+        let skill = (rng.below(6) + 1) as u8;
+        let inner = encode_item_target(target);
+        let mut bytes = vec![10, inner.len() as u8];
+        bytes.extend(inner);
+        bytes.extend([16, skill]);
+        assert_eq!(
+            decode_bed_sleep_intent(&bytes),
+            Ok(BedSleepIntent { target, skill })
+        );
+        if seeds.len() < 16 {
+            seeds.push(bytes);
+        }
+        Ok(())
+    });
+    seeds.push(vec![10, 2, 8, 1, 16, 1]);
+    crate::decoder_fuzz_support::decoder("decode_bed_sleep_intent", seeds, |b| {
+        decode_bed_sleep_intent(b).map(|_| ())
+    });
+}
