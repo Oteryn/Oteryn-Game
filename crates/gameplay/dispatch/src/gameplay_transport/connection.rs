@@ -383,6 +383,7 @@ const ADMISSION_REFUSAL_WRITE_BOUND: std::time::Duration = std::time::Duration::
 pub trait FreshAdmissionAuthority {
     super::vip::authority_methods!();
     super::appearance_change::authority_methods!();
+    super::guild_intent::authority_methods!();
     fn admit(
         &self,
         attempt: FreshAdmissionAttempt<'_>,
@@ -2786,6 +2787,7 @@ where
             Achievements(AccountAchievementsReply),
             /// RANK-1 (HS-WIRE-1): command 14, a read of the session's World snapshots.
             Highscores(HighscoresReply),
+            Guild(Vec<u8>),
             Appearance(Option<oteryn_protocol_oteryn::appearance::ChangeResult>),
             /// ITEM-VIEW-1b: `USE` with an item target; the domain 11 delta follows the result.
             UseItem(OpenDecision, Option<ItemViewDelta>),
@@ -3268,6 +3270,22 @@ where
                     ),
                 }
             }
+        } else if super::guild_intent::owns(command.command_type) {
+            match authority
+                .guild_command(
+                    admitted,
+                    command.command_id,
+                    command.command_type,
+                    command.payload,
+                )
+                .await
+            {
+                super::guild_intent::GuildReply::Payload(bytes) => Dispatch::Guild(bytes),
+                super::guild_intent::GuildReply::Rejected => Dispatch::Unregistered,
+                super::guild_intent::GuildReply::Unavailable => {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                }
+            }
         } else if command.command_type == COMMAND_TYPE_QUEST_LOG_QUERY {
             // QUEST-LOG-WIRE-1: a read of the session's own quest copy. Over QUESTGATE0-RL-09 (2
             // per second per GameSession, sliding window) it is REJECTED with an empty payload
@@ -3716,7 +3734,7 @@ where
                 // The page is written once; move it out instead of copying up to 32 KiB.
                 (CommandStatus::Accepted, std::mem::take(payload))
             }
-            Dispatch::Highscores(HighscoresReply::Result(payload)) => {
+            Dispatch::Guild(payload) | Dispatch::Highscores(HighscoresReply::Result(payload)) => {
                 (CommandStatus::Accepted, std::mem::take(payload))
             }
             Dispatch::Unregistered
@@ -4161,6 +4179,7 @@ where
             | Dispatch::Look(..)
             | Dispatch::Achievements(_)
             | Dispatch::Highscores(_)
+            | Dispatch::Guild(_)
             | Dispatch::Vip(_)
             | Dispatch::Appearance(_)
             | Dispatch::Logout(_)
