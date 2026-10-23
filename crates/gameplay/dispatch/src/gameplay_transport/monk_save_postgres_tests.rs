@@ -1,8 +1,6 @@
 #![allow(clippy::expect_used)]
 
 // Keep sorted by module name; insert in order, never append.
-#[path = "creature_move_postgres_tests.rs"]
-mod creature_move;
 #[path = "equipment_effects_owner_tests/monk_scenario.rs"]
 pub(in crate::gameplay_transport) mod equipment_scenarios;
 #[path = "first_vocation_vitals_postgres_tests.rs"]
@@ -21,10 +19,6 @@ mod logout_e2e;
 mod map_bundle_domain;
 #[path = "loop_map_pickup_tests.rs"]
 mod map_pickup;
-#[path = "pvp_death_postgres_tests.rs"]
-mod pvp_death;
-#[path = "pvp_expiry_postgres_tests.rs"]
-mod pvp_expiry;
 #[path = "quest_admission_postgres_tests.rs"]
 mod quest_admission;
 #[path = "quest_chest_postgres_tests.rs"]
@@ -41,8 +35,10 @@ mod rune_use_bridge;
 mod tutorial_vitals_fixture;
 #[path = "vocationless_vitals_postgres_tests.rs"]
 mod vocationless_vitals;
-#[path = "weather_wire_postgres_tests.rs"]
-mod weather_wire;
+
+// Every test file in `postgres_tests/` is mounted here by `build.rs`, so a new mechanic adds its
+// file there instead of another `#[path] mod` line in this shared list.
+include!(concat!(env!("OUT_DIR"), "/postgres_tests_mounts.rs"));
 
 use super::{ComposedFreshAdmission, MonkSave};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
@@ -195,7 +191,7 @@ impl Dependencies {
         harness: &'a Harness,
         authority: &'a ReconciledCharacterAuthority<'f, 's>,
     ) -> ComposedFreshAdmission<'a, 'f, 's> {
-        crate::gameplay_transport::composed_test_owner::ComposedTestOwner {
+        let mut owner = crate::gameplay_transport::composed_test_owner::ComposedTestOwner {
             root: &harness.root,
             character: authority,
             holder: &harness.node,
@@ -218,7 +214,11 @@ impl Dependencies {
             achievements: &self.achievements,
             imported_charms: &self.charms,
             room: &self.room,
-        }.build()
+        }
+        .build();
+        // Combat suites (creature move, kill reward) install their bundle combat view here.
+        owner.rooms = crate::gameplay_transport::SeamRooms::new(None, self.combat_room.as_ref());
+        owner
     }
     async fn initialize(&self, owner: &ComposedFreshAdmission<'_, '_, '_>) {
         let runtime = self.runtime.lock().await;
