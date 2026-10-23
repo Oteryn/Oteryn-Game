@@ -635,6 +635,18 @@ pub trait FreshAdmissionAuthority {
         async { None }
     }
 
+    /// CRAFT-1: use-with a map cooking station. Replay resolves before current handles.
+    fn use_craft(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _intent: UseIntent,
+        _source: Option<ItemKey>,
+        _target: Option<ItemKey>,
+    ) -> impl Future<Output = Option<UseOutcome>> {
+        async { Some(UseOutcome::rejected()) }
+    }
+
     /// Capability 22's exact direct-entry Rune adapter. Unknown commits keep the command open.
     fn use_rune(
         &self,
@@ -2932,6 +2944,16 @@ where
                 admitted.continuity.selected_capabilities.as_slice(),
                 command.payload,
             ) {
+                Ok(intent) if intent.use_with_map_item.is_some() => {
+                    match super::item_craft::dispatch(authority, actor, UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: command.command_id,
+                        item_fence: admitted.item_fence,
+                    }, intent, item_view.as_ref()).await {
+                        Some(outcome) => Dispatch::Use(outcome),
+                        None => return ConnectionEnd::AdmittedThenDisconnected(admitted),
+                    }
+                }
                 Ok(intent) if super::rune_use_bridge::routes(
                     &intent, &admitted.continuity.selected_capabilities,
                 ) => match super::rune_use_bridge::dispatch(
