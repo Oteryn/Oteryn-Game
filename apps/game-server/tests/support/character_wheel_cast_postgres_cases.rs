@@ -26,7 +26,7 @@ use {
 const DIGEST: [u8; 32] = [1; 32];
 const LEVEL: i64 = 1050;
 const EXPERIENCE: i64 = 5000;
-const READY_CHARACTER_REVISION: u64 = 4;
+const READY_CHARACTER_REVISION: u64 = 5;
 
 fn run<F>(tag: &'static str, body: F) -> TestResult
 where
@@ -146,6 +146,7 @@ async fn prepare_current_owners(h: &Harness) -> TestResult {
             .await?;
         tx.commit().await?;
     }
+    crate::character_promotion_fixture::purchase(h, 4).await?;
     sqlx::query("INSERT INTO game_control_scope_grants VALUES (session_user, encode($1,'hex')::uuid, encode($2,'hex')::uuid, 4)")
         .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice()).execute(&h.pool).await?;
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid, encode($2,'hex')::uuid, 1, NULL, $3, $4, $5)")
@@ -372,10 +373,7 @@ async fn allocate(
                 slots: WheelSlots::new(points).map_err(debug)?,
             },
             Arc::clone(rules),
-            WheelChangeFacts {
-                promoted: true,
-                at_temple: false,
-            },
+            WheelChangeFacts { at_temple: false },
         )
         .await
         .map_err(debug)?;

@@ -4,6 +4,7 @@ pub mod bank_npc;
 pub mod greeting;
 pub mod npc_actor;
 pub mod npc_command;
+pub mod npc_promotion;
 pub mod npc_talk;
 pub mod npc_travel;
 pub mod npc_voice;

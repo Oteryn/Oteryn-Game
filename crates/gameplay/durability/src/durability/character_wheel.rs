@@ -66,8 +66,12 @@ pub struct CurrentWheelCastRead {
     raw: super::character_equipment::RawCastDurableFacts,
     allocation: WheelAllocation,
     ruleset_revision: String,
+    promoted: bool,
 }
 impl CurrentWheelCastRead {
+    pub fn promoted(&self) -> bool {
+        self.promoted
+    }
     pub fn raw(&self) -> &super::character_equipment::RawCastDurableFacts {
         &self.raw
     }
@@ -90,12 +94,15 @@ pub async fn read_current_allocation_in_transaction(
     let raw = super::character_equipment::read_raw_cast_facts_in_transaction(tx, authority)
         .await
         .map_err(|_| DurabilityError::Unavailable)?;
+    let promoted =
+        super::character_promotion::read_durable_promotion(tx, raw.fence.character_id).await?;
     let stored = read_wheel_state(tx, raw.fence.character_id, false).await?;
     let allocation = allocation_from_stored(tx, stored, ruleset).await?;
     Ok(CurrentWheelCastRead {
         raw,
         allocation,
         ruleset_revision: ruleset.revision().to_owned(),
+        promoted,
     })
 }
 
@@ -125,11 +132,9 @@ pub struct WheelChangeRequest {
     pub slots: WheelSlots,
 }
 
-/// Runtime facts read at the change: the Character's promotion (PREM-2; `false` until a durable
-/// promotion owner exists) and whether it stands where points may be removed (§7.3).
+/// Runtime position fact; permanent promotion is read under the writer's own fence.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct WheelChangeFacts {
-    pub promoted: bool,
     pub at_temple: bool,
 }
 
@@ -275,7 +280,16 @@ impl DurabilityRoot {
                         return refuse(WheelRefusal::NoChange);
                     }
                     let vocation = read_vocation(&mut tx, fence.character_id).await?;
-                    if let Err(reason) = eligibility(&ruleset, &vocation, level, facts.promoted) {
+                    if let Err(reason) = eligibility(
+                        &ruleset,
+                        &vocation,
+                        level,
+                        super::character_promotion::read_durable_promotion(
+                            &mut tx,
+                            fence.character_id,
+                        )
+                        .await?,
+                    ) {
                         return refuse(WheelRefusal::NotEligible(reason));
                     }
                     if let Err(refusal) = ruleset.validate(
@@ -951,25 +965,25 @@ fn decode_receipt(
     })
 }
 
-
 fn slot_columns(slots: &WheelSlots) -> Vec<i16> {
-        // Each value is at most 200.
-        slots.points()
-            .iter()
-            .map(|value| i16::try_from(*value).unwrap_or(i16::MAX))
-            .collect()
-    }
+    // Each value is at most 200.
+    slots
+        .points()
+        .iter()
+        .map(|value| i16::try_from(*value).unwrap_or(i16::MAX))
+        .collect()
+}
 
 fn stored_slots(values: &[i16]) -> std::result::Result<WheelSlots, DurabilityError> {
-        let mut points = [0_u16; WHEEL_SLOTS];
-        if values.len() != WHEEL_SLOTS {
-            return Err(DurabilityError::InvalidStoredState);
-        }
-        for (slot, value) in points.iter_mut().zip(values) {
-            *slot = u16::try_from(*value).map_err(|_| DurabilityError::InvalidStoredState)?;
-        }
-        WheelSlots::new(points).map_err(|_| DurabilityError::InvalidStoredState)
+    let mut points = [0_u16; WHEEL_SLOTS];
+    if values.len() != WHEEL_SLOTS {
+        return Err(DurabilityError::InvalidStoredState);
     }
+    for (slot, value) in points.iter_mut().zip(values) {
+        *slot = u16::try_from(*value).map_err(|_| DurabilityError::InvalidStoredState)?;
+    }
+    WheelSlots::new(points).map_err(|_| DurabilityError::InvalidStoredState)
+}
 
 #[cfg(test)]
 #[allow(clippy::expect_used, clippy::unwrap_used)]

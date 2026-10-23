@@ -458,7 +458,15 @@ fn death_receipts_join_one_chain_with_xp_receipts() -> TestResult {
         assert_eq!(pending, "temple:thais");
         expect_committed(pool, "respawn consumes r3", &consume_pending()).await?;
         expect_committed(pool, "xp r4", &award(62, 3, (50, 1035), (50, 1040))).await?;
-        expect_committed(pool, "hold blessings", &hold(&["spark", "twist", "wisdom"])).await?;
+        expect_committed(
+            pool,
+            "hold blessings",
+            &format!(
+                "SET LOCAL session_replication_role=replica; {}",
+                hold(&["spark", "twist", "wisdom"])
+            ),
+        )
+        .await?;
         let blessed = Death::new(63, 4, (50, 1040), (50, 1040))
             .blessings(&["spark", "twist", "wisdom"], &["twist"]);
         expect_committed(pool, "zero-loss death r5", &blessed.commit()).await?;
@@ -722,7 +730,15 @@ fn death_outcome_binds_blessings_pending_respawn_and_cell() -> TestResult {
         lost.lost_items = vec![102];
         expect_rejected(pool, "lost item before DEATH-3", &lost.commit(), "23514").await?;
 
-        expect_committed(pool, "hold blessings", &hold(&["spark", "twist"])).await?;
+        expect_committed(
+            pool,
+            "hold blessings",
+            &format!(
+                "SET LOCAL session_replication_role=replica; {}",
+                hold(&["spark", "twist"])
+            ),
+        )
+        .await?;
         // blessings_before must be the held set.
         let understated = death.clone().blessings(&["spark"], &[]);
         expect_rejected(
@@ -901,7 +917,7 @@ fn runtime_grants_and_canonical_blessing_sets() -> TestResult {
         )
         .fetch_all(pool)
         .await?;
-        // Blessing INSERT belongs to DEATH-4's receipt kind, not DEATH-0.
+        // PREM-5 grants INSERT only with its guarded purchase receipt.
         assert_eq!(
             granted,
             [
@@ -909,6 +925,7 @@ fn runtime_grants_and_canonical_blessing_sets() -> TestResult {
                 "oteryn_game_control/game_character_death_receipts:SELECT",
                 "oteryn_game_control/game_character_pending_respawns:SELECT",
                 "oteryn_game_runtime/game_character_blessings:DELETE",
+                "oteryn_game_runtime/game_character_blessings:INSERT",
                 "oteryn_game_runtime/game_character_blessings:SELECT",
                 "oteryn_game_runtime/game_character_death_receipts:INSERT",
                 "oteryn_game_runtime/game_character_death_receipts:SELECT",
