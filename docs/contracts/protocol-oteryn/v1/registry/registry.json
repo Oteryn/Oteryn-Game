@@ -39,7 +39,8 @@
     {"id": 11, "name": "SnapshotBegin", "direction": "SERVER_TO_CLIENT", "phase": "POST_ADMISSION", "sequencing": "NONE"},
     {"id": 12, "name": "SnapshotChunk", "direction": "SERVER_TO_CLIENT", "phase": "POST_ADMISSION", "sequencing": "NONE"},
     {"id": 13, "name": "SnapshotCommit", "direction": "SERVER_TO_CLIENT", "phase": "POST_ADMISSION", "sequencing": "NONE"},
-    {"id": 14, "name": "ProtocolError", "direction": "SERVER_TO_CLIENT", "phase": "ANY", "sequencing": "NONE"}
+    {"id": 14, "name": "ProtocolError", "direction": "SERVER_TO_CLIENT", "phase": "ANY", "sequencing": "NONE"},
+    {"id": 15, "name": "ObserverEnvelopeV1", "direction": "BIDIRECTIONAL", "phase": "ANY", "sequencing": "NONE", "status": "DORMANT", "owner_contract": "SPECTATE1-OBSERVER-CONTRACT-V1", "codec": "crates/protocol-oteryn/src/spectate.rs", "admission_gate": "Every pre-admission frame refused NOT_AVAILABLE; no Platform O2 profile exists; not a player WireEnvelope MessageType."}
   ],
   "capabilities": [],
   "command_types": [],

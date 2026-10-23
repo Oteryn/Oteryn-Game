@@ -1,0 +1,15 @@
+{
+  "id": 33,
+  "name": "SPECTATE_V1",
+  "owner_decision": "SPECTATE1-OBSERVER-CONTRACT-V1; integrator option A 2026-10-22; IDs moved from 31/31-32/23 to 33/34-35/25 at the DISPATCH-WIRING-1 port (TUTORIAL-1, BED-1 and DAILY-1 took them on main)",
+  "owner": "target runtime spectate owner",
+  "command_types": [
+    34,
+    35
+  ],
+  "state_domains": [
+    25
+  ],
+  "offered": false,
+  "offer_gate": "Requires green GRANT/SESSION/WIRE, independent security/privacy/protocol/concurrency review, Platform O2 observer bootstrap, durable audit writer, measured node capacity and explicit CP enablement. CONTACTS unavailable."
+}

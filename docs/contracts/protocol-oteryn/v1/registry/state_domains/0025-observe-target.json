@@ -1,0 +1,26 @@
+{
+  "id": 25,
+  "name": "OBSERVE_TARGET",
+  "owner_decision": "SPECTATE1-OBSERVER-CONTRACT-V1; integrator option A 2026-10-22; IDs moved from 23 to 25 at the DISPATCH-WIRING-1 port (TUTORIAL-1 took them on main)",
+  "owner": "target runtime spectate owner",
+  "capability": 33,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/spectate_v1.proto",
+  "revision": "DORMANT: never sent while capability 33 is unoffered; SPECTATE-WIRE-1 defines the revision rule before activation",
+  "delta_types": [
+    {
+      "id": 1,
+      "name": "OBSERVE_TARGET_STATE_DELTA_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/spectate_v1.proto#SpectateMessageV1 (TARGET_STATE: kind, active, count 0..50)",
+      "max_payload_bytes": 6
+    }
+  ],
+  "snapshot_types": [
+    {
+      "id": 1,
+      "name": "OBSERVE_TARGET_STATE_SNAPSHOT_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/spectate_v1.proto#SpectateMessageV1 (TARGET_STATE: kind, active, count 0..50)",
+      "max_payload_bytes": 6
+    }
+  ],
+  "status": "DORMANT"
+}
