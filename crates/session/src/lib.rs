@@ -19,6 +19,7 @@
 mod appearance_state;
 mod domain_dispatch;
 mod gated_command;
+mod guild_chat;
 pub use appearance_state::{AppearanceItemDictionary, AppearanceUpdate};
 use oteryn_protocol_oteryn::actor_spell::{self, SpellCastIntent};
 /// Spell types a client names when it casts and draws vitals: re-exported so the client needs no
@@ -30,6 +31,7 @@ use oteryn_protocol_oteryn::attack::{self, CAPABILITY_ATTACK_V1};
 pub use oteryn_protocol_oteryn::attack::{
     ActorCombatState, AttackIntentDisposition, ChaseMode, FightMode, FightModes,
 };
+pub use oteryn_protocol_oteryn::chat::guild_room::{GuildChatLine, GuildRoomState};
 use oteryn_protocol_oteryn::chat::{
     self, CAPABILITY_CHAT_V1, COMMAND_TYPE_CHAT_INTENT, STATE_DOMAIN_CHAT,
 };
@@ -142,6 +144,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     logout::CAPABILITY_LOGOUT_V1,
     oteryn_protocol_oteryn::appearance::CAPABILITY_APPEARANCE_V1,
     oteryn_protocol_oteryn::tutorial_notices::CAPABILITY_TUTORIAL_NOTICES_V1,
+    chat::guild_room::CAPABILITY_CHAT_GUILD_ROOM_V1,
 ];
 
 /// Capability-owned command types and state domains (`PROTOCOL_OTERYN_V1_REGISTRY.json`;
@@ -737,6 +740,7 @@ pub const MAX_CHAT_LOG_LINES: usize = 64;
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct ChatLog {
     rooms: ChatRoomSet,
+    guild: GuildRoomState,
     lines: VecDeque<ChatLine>,
 }
 
@@ -1159,6 +1163,7 @@ impl<S: SessionStream> Session<S> {
         let mut combat_revision = 0;
         let attack_selected = selected_capabilities.contains(&CAPABILITY_ATTACK_V1);
         let (mut spatial_revision, mut overlay_revision, mut vitals_revision) = (0, 0, 0);
+        guild_chat::check_selection(&selected_capabilities)?;
         let chat_selected = selected_capabilities.contains(&CAPABILITY_CHAT_V1);
         let mut chat = chat_selected.then(ChatLog::default);
         let mut chat_revision = 0;
@@ -1269,18 +1274,13 @@ impl<S: SessionStream> Session<S> {
                 ) => {
                     return Err(SessionError::UnselectedDomain { domain_id });
                 }
-                (STATE_DOMAIN_CHAT, chat::SNAPSHOT_TYPE_CHAT_V1) if chat_selected => {
-                    chat = Some(ChatLog {
-                        rooms: chat::decode_chat_rooms(domain.payload)?,
-                        lines: VecDeque::new(),
-                    });
-                    chat_revision = domain.revision;
-                }
                 (STATE_DOMAIN_CHAT, snapshot_type) if chat_selected => {
-                    return Err(SessionError::UnregisteredSnapshotType {
-                        domain_id: STATE_DOMAIN_CHAT,
+                    chat = Some(guild_chat::load_snapshot(
                         snapshot_type,
-                    });
+                        domain.payload,
+                        &selected_capabilities,
+                    )?);
+                    chat_revision = domain.revision;
                 }
                 (STATE_DOMAIN_CHAT, _) => {
                     return Err(SessionError::UnselectedDomain {
@@ -1853,6 +1853,7 @@ impl<S: SessionStream> Session<S> {
                 capability: CAPABILITY_CHAT_V1,
             });
         }
+        guild_chat::check_intent(intent, &self.selected_capabilities)?;
         let payload = chat::encode_chat_intent(intent)?;
         let outcome = self.exchange_chat(&payload).await;
         self.poison_on_error(outcome)
@@ -1863,6 +1864,7 @@ impl<S: SessionStream> Session<S> {
             .send_and_read_result(COMMAND_TYPE_CHAT_INTENT, payload)
             .await?;
         let decoded = chat::decode_chat_intent_result(&result.payload)?;
+        guild_chat::check_result(decoded.disposition, &self.selected_capabilities)?;
         check_status_pairing(
             result.command_id,
             result.status,
@@ -2429,7 +2431,7 @@ mod tests {
     };
     use tokio::io::DuplexStream;
 
-    type BoxError = Box<dyn StdError + Send + Sync>;
+    pub(super) type BoxError = Box<dyn StdError + Send + Sync>;
 
     const CONTENT_GENERATION: [u8; 32] = [0x11; 32];
     const DEADLINE: Duration = Duration::from_secs(5);
@@ -2441,7 +2443,7 @@ mod tests {
         ]
     }
 
-    fn spatial(x: i32) -> Vec<u8> {
+    pub(super) fn spatial(x: i32) -> Vec<u8> {
         encode_world_spatial(&WireSpatialObservation {
             content_generation: CONTENT_GENERATION,
             actor_position: ActorPosition { x, y: 0, floor: 0 },
@@ -2545,7 +2547,7 @@ mod tests {
         })
     }
 
-    fn block_on<F: Future>(future: F) -> Result<F::Output, BoxError> {
+    pub(super) fn block_on<F: Future>(future: F) -> Result<F::Output, BoxError> {
         Ok(tokio::runtime::Builder::new_multi_thread()
             .enable_all()
             .build()?
@@ -3462,7 +3464,7 @@ mod tests {
     }
 
     /// `join_peer` with the domain-1 snapshot `(type, payload)` the test chooses.
-    async fn join_peer_with(
+    pub(super) async fn join_peer_with(
         stream: &mut DuplexStream,
         advertised: &[u32],
         selected: &[u32],
@@ -3530,7 +3532,9 @@ mod tests {
         Ok(())
     }
 
-    fn admission_with(supported: &'static [u32]) -> Result<Admission<'static>, BoxError> {
+    pub(super) fn admission_with(
+        supported: &'static [u32],
+    ) -> Result<Admission<'static>, BoxError> {
         Ok(Admission {
             appearance_items: None,
             supported_capabilities: supported,
@@ -4378,7 +4382,7 @@ mod tests {
         let peer = tokio::spawn(async move {
             join_peer_with(
                 &mut server,
-                &[4, 6, 7, 13, 17, 21, 25, 31],
+                CLIENT_SUPPORTED_CAPABILITIES,
                 selected,
                 &[],
                 snapshot,
@@ -4398,7 +4402,7 @@ mod tests {
     #[test]
     fn the_advertised_set_is_closed_under_the_registry_requires() {
         // PROTOCOL_OTERYN_V1_REGISTRY.json `requires`: 4 needs 6, 12 needs 4, 14 needs 4 and 12.
-        let requires: &[(u32, &[u32])] = &[(4, &[6]), (12, &[4]), (14, &[4, 12])];
+        let requires: &[(u32, &[u32])] = &[(4, &[6]), (12, &[4]), (14, &[4, 12]), (36, &[7])];
         for (capability, needed) in requires {
             if CLIENT_SUPPORTED_CAPABILITIES.contains(capability) {
                 for need in *needed {
@@ -4848,7 +4852,7 @@ mod tests {
         // PROTOCOL_OTERYN_V1_REGISTRY.json: capability 7 requires nothing.
         assert_eq!(
             CLIENT_SUPPORTED_CAPABILITIES,
-            &[4, 6, 7, 13, 17, 21, 25, 31]
+            &[4, 6, 7, 13, 17, 21, 25, 31, 36]
         );
     }
 
@@ -5446,7 +5450,7 @@ mod tests {
         let peer = tokio::spawn(async move {
             join_peer_with(
                 &mut server,
-                &[4, 6, 7, 13, 17, 21, 25, 31],
+                CLIENT_SUPPORTED_CAPABILITIES,
                 ITEM_SELECTED,
                 &[],
                 snapshot,
@@ -5952,3 +5956,7 @@ mod tests {
         })?
     }
 }
+
+#[cfg(test)]
+#[path = "guild_chat_tests.rs"]
+mod guild_chat_tests;

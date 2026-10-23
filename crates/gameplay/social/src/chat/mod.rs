@@ -9,6 +9,7 @@
 
 pub mod egress;
 pub mod greeting;
+pub mod guild_room;
 pub mod line;
 pub mod relay;
 pub mod spam;

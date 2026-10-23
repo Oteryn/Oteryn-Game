@@ -4,7 +4,7 @@
 task_id: GUILD-CHAT-1
 title: "GUILD-CHAT-1: guild room on the World chat relay"
 mode: IMPLEMENT
-status: NOT_STARTED   # re-implementation pending under ADR-0022
+status: in_progress   # implemented and locally qualified; integrator review/CI/publication pending
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 4
@@ -17,7 +17,7 @@ base_branch: main
 branch: null
 pr: null
 needs_migration: false
-needs_registry: true   # only if CP resolves the open protocol decision below by extending chat_v1 (new ids)
+needs_registry: true   # capability 36 and snapshot type 2 registered under the integrator ruling
 needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
@@ -48,7 +48,10 @@ drafted earlier but must not assume unmerged schemas. HOUSE-ACL-1, HOUSE-WIRE-1,
 GUILDHALL-1 and every wire child stay held (SOCIAL-MAP-PACKETS §0.1); ARCH-BATCH-PREMIUM-SOCIAL-PACKETS §3
 lists GUILD-CHAT-1 after CHAT-2 and GUILD-1.
 
-## Open CP decision (not decided here)
+## CP decision history (resolved 2026-10-22)
+
+Historical blocker analysis is retained below. Both questions were resolved by the binding
+Integrator decision 2026-10-22 recorded at the end of this card, before any wire edit.
 
 **Where the guild chat protocol lives.** Two candidates, to be ruled by CP before any wire code:
 
@@ -159,17 +162,17 @@ Slot-only (final commit at the queue turn, after merging main): the relay codec 
 
 ## Acceptance criteria
 
-- [ ] A message reaches only current members at delivery time (an excluded member receives nothing after the exclusion commit).
-- [ ] The sender's later guild change never retargets an accepted line; receivers in another guild get nothing.
-- [ ] Login shows the guild message to a member only; no presence/location/Account leak (social baseline).
-- [ ] Forged destination/rank/name, foreign World, expired lease, old connection generation refused before seal.
-- [ ] Old private/room relay byte fixtures unchanged; widest new payload within the accepted bounds.
-- [ ] Every concurrent transition serialized (named lock or deterministic order) and the losing writer typed.
-- [ ] Durable state sufficient to resume after restart / session-generation change.
-- [ ] The CP protocol decision (chat_v1 vs GUILD_V1) is recorded before any wire change.
-- [ ] Structure: one mechanic per module file in its ADR-0022 layer.
-- [ ] Structure: new tests in their own child files, not appended to existing files.
-- [ ] Structure: edits to `mod.rs`/`lib.rs`/`connection.rs`/`capabilities.rs`/`chat_intent.rs` are wiring-only (`connection.rs` already over 8k lines).
+- [x] A message reaches only current members at delivery time (an excluded member receives nothing after the exclusion commit).
+- [x] The sender's later guild change never retargets an accepted line; receivers in another guild get nothing.
+- [x] Login shows the guild message to a member only; no presence/location/Account leak (social baseline).
+- [x] Forged destination/rank/name, foreign World, expired lease, old connection generation refused before seal.
+- [x] Old private/room relay byte fixtures unchanged; widest new payload within the accepted bounds.
+- [x] Every concurrent transition serialized (named lock or deterministic order) and the losing writer typed.
+- [x] Durable state sufficient to resume after restart / session-generation change.
+- [x] The CP protocol decision (chat_v1 vs GUILD_V1) is recorded before any wire change.
+- [x] Structure: one mechanic per module file in its ADR-0022 layer.
+- [x] Structure: new tests in their own child files, not appended to existing files.
+- [x] Structure: edits to `mod.rs`/`lib.rs`/`connection.rs`/`capabilities.rs`/`chat_intent.rs` are wiring-only (`connection.rs` already over 8k lines).
 
 Planned qualification (no product tests exist): PostgreSQL 17.6 guild storage reads (uncommitted changes
 invisible, rollback restores), authenticated-send negatives, relay codec roundtrip rank 1/2/20 and
@@ -194,3 +197,246 @@ cargo +1.95.0 run -p oteryn-architecture-check -- workspace .
 - `docs/architecture/reviews/OTERYN_GAME_GUILD0_GUILDS_AND_GUILDHALLS_DECISION_2026-09-30.md` §8
 - CHAT-0 §5 (guild-room relay payload amendment); `docs/agents/tasks/archive/CHAT-2A.md`, `CHAT-2B.md`
 - `docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md` §4, §5 (Wave 4), §7
+
+## Lane checkpoint 2026-10-22
+
+### Module layout planned before coding
+
+- L4 social: `chat/guild_room.rs` owns the guild destination and recipient binding;
+  `chat/guild_room_tests.rs` owns its tests. The existing seal/replay path is reused.
+- L4 durability: a separate `durability/guild_chat.rs` owns delivery custody if needed,
+  consuming the existing Guild reader without changing Guild core logic or migrations.
+- L5 dispatch: `gameplay_transport/guild_chat.rs` composes send, login and final
+  dequeue; its child test files exercise the real dispatch and connection path.
+- Shared slot files receive wiring only. Protocol modules and registrations remain
+  conditional on the CP ruling below. Existing `GuildId` and `GuildRank` need no
+  duplicate pure rules or identity types.
+
+### Prerequisite audit
+
+- Supplied baseline HEAD is `f0c8ac0493dda9e6c60f6e20d3842b3aba40e43d`
+  (GUILD-1 PR #2302). The worktree was clean at intake. This is a local baseline
+  observation, not evidence that the dependency merged to protected main.
+- The historical dependency row above does not describe this baseline: domain
+  `guild.rs`, durability `guild.rs` and `guild/chat_membership.rs`, migration 0132,
+  and the native Guild-chat PostgreSQL cases are present and registered.
+- Reuse `GuildId`, `GuildRank`, `read_guild_chat_membership`,
+  `read_guild_chat_recipient` and `read_current_guild_chat_data`. The transaction
+  reader validates recovery, node, session, lease, World and payload GuildId,
+  locking the Guild before the member. The convenience reads commit before
+  returning: their returned DATA is not delivery custody.
+- Reader consumer search across `apps/`, `crates/` and `tools/` found the existing
+  Guild tests, but no production chat consumer. The intended consumer belongs in
+  this lane; duplicating the Guild core is unnecessary.
+- Existing `RelayDestination` and `ChatLine` have no guild variant. The connection
+  currently dequeues, builds the chat delta, awaits the socket write and then
+  acknowledges delivery. It has no Guild custody acceptance seam.
+- Existing tests to reuse are
+  `apps/game-server/src/lifted_tests/durability_guild_tests/chat_tests.rs`, mounted
+  once by its existing owner. Their `text_run` reuses the item-transfer `Harness`,
+  requires configured PostgreSQL, and creates/cleans an isolated database.
+  No helper, fixture, harness, test registration or production module was copied.
+
+### Prior checkpoint: fail closed pending CP rulings (superseded)
+
+The continuation instruction permits implementing a missing prerequisite; it does
+not select the card's explicitly open protocol or security boundary. No wire or
+runtime code was changed. Two batched questions remain pending:
+
+1. Extend `chat_v1`, with compatible negotiation and documented tag/result
+   allocations authorized in this lane (recommended), or retain the hold until
+   `GUILD_V1`? Existing public room values and the four-bit room set cannot carry it.
+2. Accept connection-owner acceptance under fresh membership/session custody as
+   the delivery boundary, releasing locks before socket I/O and permitting an
+   accepted in-flight line to finish after exclusion commits (recommended), or
+   specify the stronger exclusion/socket-write guarantee?
+
+The relay payload, final delivery check and real-path tests remain one bundle.
+No isolated unused public API or test-only substitute was added while these
+decisions are pending. No prerequisite implementation is claimed.
+
+### Integrator decision 2026-10-22
+
+The owner-delegated integrator resolved both questions above before wire edits:
+
+1. Extend `chat_v1` using additive negotiated capability `CHAT_GUILD_ROOM_V1`
+   (next unallocated capability 36, requiring CHAT_V1/7). Preserve old peers'
+   command, snapshot, line and room-set layouts. Allocate guild intent tag 6,
+   guild line kind 5, GuildId/rank fields 9/10, guild-aware snapshot type 2,
+   and disposition 10 NOT_ALLOWED (common status ACCEPTED). Register the
+   allocations and bounds; do not activate GUILD_V1.
+2. Delivery linearizes at the connection owner's synchronous acceptance under
+   fresh durable membership/session custody. A line accepted before an exclusion
+   commits may finish writing afterward. Release custody before socket I/O.
+
+Module layout refinement before coding: protocol `chat/guild_room.rs` owns the
+additive codec; social `chat/guild_room.rs` owns destination conversion and queue
+class; durability `durability/guild_chat.rs` owns the bounded custody callback;
+dispatch `gameplay_transport/guild_chat.rs` and its mechanic children compose
+login/send/dequeue. Tests live in separate child files mounted once. Existing
+shared files receive delegation, variant/field registration and wiring only.
+
+### Integrator decision 2026-10-22: prerequisite implemented in this lane
+
+The missing production reader consumer and custody seam now use the existing Guild owner:
+`durability/guild_chat.rs` retains current canonical admission and Guild locks through the
+connection owner's synchronous acceptance; `gameplay_transport/guild_chat/{admission,send,dequeue}.rs`
+are its production callers. The Guild core and migration 0132 are unchanged. Admission/reconnect
+clears queued lines; the existing limiter and CHAT revision stream remain. A shared 64-read
+budget covers an entire connection refresh, including discarded lines. No immediate join motd
+policy, history, resend, Premium gate, GUILD_V1 or migration was added.
+
+### Final validation 2026-10-22
+
+All Cargo calls used `CARGO_NET_OFFLINE=true /home/mole/oteryn-cache/codex-bin/cargo +1.95.0`.
+The following exact test arguments passed (the parenthetical counts exclude filtered cases):
+
+```sh
+test --locked -p oteryn-gameplay-social guild_room --quiet # 5; --lib chat also passed 54
+test --locked -p oteryn-gameplay-social-rules guild_chat --quiet # 0: no optional pure leaf added
+test --locked -p oteryn-gameplay-dispatch --lib guild_chat --quiet -- --nocapture # 2
+test --locked -p oteryn-game-server --lib guild_chat_native --quiet -- --nocapture --test-threads=1 # 6
+test --locked -p oteryn-protocol-oteryn chat --quiet # 10; full package also passed 287
+test --locked -p oteryn-session chat --quiet # 5; full package also passed 65
+test --locked -p oteryn-synthetic-client-harness guild_chat --quiet # 1
+test --locked -p oteryn-gameplay-dispatch --lib chat_intent::tests --quiet # 19
+```
+
+Also passed: dispatch `the_production` (3) and `the_bundle_world_offered_set` (1);
+`fmt --all -- --check`; `clippy --locked --all-targets --quiet -- -D warnings` for
+social, durability, dispatch, protocol-oteryn, session, dev-client, synthetic-client-harness
+and game-server (each selected with its full `oteryn-` package name); architecture workspace
+check; governance validation and its 124 unit tests; `git diff --check`.
+PostgreSQL really ran: both routes reported `server_version_num=170006`; the dispatch route
+also reported `GUILD-CHAT-PG real connection, native Guild writes and relay active`.
+The real connection tests pin both exclusion orderings, including blocked socket I/O,
+rollback/invisibility, destination stability after join/move, DISBANDING removals, failed-read
+drop accounting and the shared owner-read budget. No load-contention failure was deferred.
+
+### Reuse and file-size record
+
+- Reused domain `GuildId`/`GuildRank`; the Guild transaction reader; canonical fresh-admission,
+  name reader and bounded semantic-pass/transaction APIs. No duplicate rules or Guild owner.
+- Reused ChatText, sender limiter/mute/readiness gate, ChatRelay send, quiet autocommit NOTIFY,
+  existing seal/key-ring/replay/lease path, and ChatEgress room shedding and in-flight accounting.
+- Reused monk-save Harness, Dependencies::new/initialize, fixture::join_two and native TCP frame
+  helpers. Moved existing Guild historical seed/setup/request bodies into test-support-only
+  `guild_chat_fixture.rs` plus `schema.rs`; their original support file delegates/re-exports them.
+- Reused the private relayed fixture through `guild_chat/test_support.rs`; exposed only test
+  visibility for Session's existing join/admission/spatial/runtime helpers. No copied harness.
+- Changed families: dispatch `guild_chat*`/`guild_chat/` and chat/capability/connection/module
+  wiring; durability `guild_chat*` and registration; social `chat/guild_room*`, relay payload/tests,
+  egress/module wiring; protocol `chat/`, chat codecs/tests, capability table/registry-ID wiring
+  and item-look allocation expectation; Session guild modules/tests and registrations; dev-client
+  re-exports; synthetic live guild modules/tests, CLI/model/module wiring; Guild test support;
+  this card, chat_v1.proto, protocol registry and resource registry.
+- Shared-slot edits: dispatch capabilities.rs, capabilities_tests.rs, chat_intent.rs, chat_relay.rs,
+  connection.rs, mod.rs and monk_save_postgres_tests.rs; durability/mod.rs; social chat/mod.rs,
+  relay/mod.rs, relay/tests.rs and egress.rs; protocol lib.rs/capability_tables.rs/chat.rs;
+  Session lib.rs and dev-client re-exports. Large parents contain wiring/delegation only.
+- No file grew by more than 200 lines. Largest new file: guild_chat_tests.rs (181 lines).
+  Largest existing Rust parent growth: connection.rs (31 lines); existing logic moved rather
+  than duplicated. Whole diff re-read against CODEX-CHECKLIST.md; all added enum/field/trait
+  consumers searched across apps/, crates/ and tools/ and covered by all-target clippy.
+
+### Unfinished
+
+Integrator security/protocol review of the frozen candidate, repository CI, dependency/base
+integration and publication. This worktree remains in AUTHORING on the supplied detached HEAD;
+no commit, push, ready-for-review transition, archive or merge is claimed. No owner question remains.
+
+### FLOW port qualification 2026-10-23 (GUILD-CHAT-1b)
+
+Current checkpoint supersedes the prior worktree/validation checkpoint: branch `port/guildchat`,
+baseline `17b79f106` (merged FLOW `49cdeaf5f`), AUTHORING, local changes uncommitted.
+Owned paths are the guild-chat dispatch modules/tests, protocol guild codec/allocation tests,
+Session guild tests/capability expectations, shared Guild test fixture, chat proto comments and
+this task record. No registry fragment or shared test mount was edited.
+
+- Guild capability is 36; tutorial remains 31, both occur in the sorted client set, and the
+  next-allocation assertion is 37. Protocol registry consistency tests passed.
+- Guild dispatch and its moved PostgreSQL cases use `states.chat`. The existing nested module
+  paths compiled unchanged under the automatic PostgreSQL mount.
+- The shared fixture asserts `CANONICAL_POSTGRES_SERVER_VERSION_NUM` and retains the
+  `GUILD-NATIVE-PG` diagnostic; both native routes reported `server_version_num=180006`.
+- All Cargo commands used `+1.99.1`, `--locked` where applicable, offline mode and
+  `CARGO_TARGET_DIR=/home/mole/oteryn-cache/target-codex/lanes/port-guildchat`, one build at a time.
+  All-target clippy with `-D warnings` passed for protocol, Session, dispatch, durability and server.
+  Formatting, repository policy, governance and its 124 unit tests passed.
+
+Exact Rust test arguments below all exited 0 (452 tests passed, none failed or ignored):
+
+```sh
+test --locked --quiet -p oteryn-protocol-oteryn -p oteryn-session # 295 + 66
+test --locked --quiet -p oteryn-gameplay-dispatch --lib guild_chat -- --nocapture --test-threads=1 # 2, live PG
+test --locked --quiet -p oteryn-gameplay-dispatch --lib capabilities::tests # 61
+test --locked --quiet -p oteryn-gameplay-dispatch --lib chat_intent::tests # 19
+test --locked --quiet -p oteryn-gameplay-durability --lib character_bootstrap_intent::tests # 3
+test --locked --quiet -p oteryn-game-server --lib guild_chat -- --nocapture --test-threads=1 # 6, live PG
+```
+
+Whole local diff re-read against the owner checklist and repository checklist. No new enum
+variant, struct field, trait method or public function was introduced; no consumer updates remain.
+No test was weakened, skipped, ignored or deleted. No contention failure was deferred.
+
+Unfinished: integrator review, repository CI and publication remain with the control plane;
+no local validation failure or owner question remains. Next step: integrator reviews the
+uncommitted port delta and publishes through its authorized lifecycle.
+
+### Merge conflict resolution 2026-10-23 (GUILD-CHAT-1b)
+
+AUTHORING on `port/guildchat`, HEAD `126705380c5d81299a70f411eba0c9d6d95c956f`,
+merging `origin/main` at `65e40c57f41180e48ee9b9640a8c62849b53b903`.
+The initial fetch could not write the sandbox's read-only external Git metadata;
+the merge was subsequently started outside this worker. No worker commit or push.
+
+Owned repair paths: Session `lib.rs` and `domain_dispatch.rs`; protocol `lib.rs`;
+Guild test `support.rs`; durability `mod.rs` and `guild_chat_fixture.rs`;
+dispatch `connection.rs` and `guild_chat/wire.rs`; this record.
+
+- Kept APP-3's appearance/domain/gated-command modules and the independent guild
+  module. Guild line capability checks now run in `domain_dispatch.rs`; the
+  reducer is not duplicated in `lib.rs`.
+- Took the sorted capability union, including 25 and 36, in the registry and
+  client expectation. Both negotiated features and their existing tests remain.
+- Kept the shared historical-character helper, incorporating main's v3 Male
+  intent, `requested_sex`, `sex=2` and historical-NULL explanation there.
+  Searched all Rust root inserts and guild fixture consumers for sibling copies.
+- Combined Guild, hunting-XP and party-kill module registrations. The connection
+  still delegates to the guild adapter, forwarding main's command ID to ordinary
+  chat so the party shared-XP command retains its receipt identity.
+
+All Cargo commands use queued offline `+1.99.1 --locked` execution; the wrapper
+selects `target-codex/lanes/port-guildchat`. PostgreSQL runs remain filtered to
+the Guild-chat mechanic. The broader task-card `guild` filter is superseded by
+the owner's mechanic-only PostgreSQL scope rule.
+
+Passed test arguments (no failed or ignored tests):
+
+```sh
+test -p oteryn-session --lib # 70
+test -p oteryn-protocol-oteryn --lib # 304
+test -p oteryn-game-server --lib guild_chat -- --test-threads=1 # 6, PostgreSQL
+test -p oteryn-gameplay-dispatch --lib guild_chat -- --test-threads=1 # 2, including real PostgreSQL dispatch
+test -p oteryn-game-server --lib appearance -- --test-threads=1 # 3
+```
+
+Formatting, governance, repository policy and `git diff --check` passed. No source
+conflict markers remain. The repair adds no enum variant, struct field, trait
+method or public function. Re-read the merge resolutions and effective Guild-chat
+diff against the owner checklist; searched constructors, matches, trait methods
+and the changed adapter signature across `apps/`, `crates/` and `tools/`.
+
+Unfinished: ordinary-chat regression checks and all-target clippy remain queued
+without a result. The lane's exclusive build lock is held; no new build artifact
+appeared for 16 minutes at the checkpoint. The worker asked the owner whether
+another validation holds `port-guildchat`; the lock holder is not visible in this
+sandbox's process namespace. Do not remove the lock or bypass the queued wrapper.
+Pending command sessions: `35391` (requested clippy, including durability) and
+`88183` (ordinary-chat regression, then social/synthetic-client all-target clippy).
+Index resolution/staging remains with the owner: this worker's hard rules forbid
+`git add` and its external Git metadata is read-only. Five index conflict entries
+therefore remain until the resolved files are staged. CI/publication remain with
+the integrator. No local test failure or load-contention deferral remains.
+Next step: identify the lane holder, collect the queued validation results, then
+stage the resolved files through the authorized integrator.

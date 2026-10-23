@@ -28,6 +28,7 @@ mod connection;
 mod container_view;
 mod equipment_move;
 pub mod fresh_evidence;
+mod guild_chat;
 mod highscores;
 mod input_gate;
 mod item_look;
@@ -2543,11 +2544,27 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.chat_speak(actor, session, command_id, &intent).await
     }
 
-    async fn chat_next(
+    async fn chat_guild_admit(
         &self,
-        session: GameSessionId,
+        admitted: AdmittedSession,
+    ) -> oteryn_protocol_oteryn::chat::guild_room::GuildRoomState {
+        self.guild_chat_admit(admitted).await
+    }
+
+    async fn chat_guild_intent(
+        &self,
+        admitted: AdmittedSession,
+        text: String,
+    ) -> oteryn_protocol_oteryn::chat::ChatIntentResult {
+        self.guild_chat_send(admitted, text).await
+    }
+
+    async fn chat_next_bound(
+        &self,
+        admitted: AdmittedSession,
+        remaining: &mut usize,
     ) -> Option<oteryn_protocol_oteryn::chat::ChatLine> {
-        self.states.chat.next(session)
+        self.guild_chat_next(admitted, remaining).await
     }
 
     async fn chat_delivered(&self, session: GameSessionId) {

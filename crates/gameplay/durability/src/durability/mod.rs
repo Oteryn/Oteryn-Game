@@ -14,5 +14,10 @@ pub mod native_world_items;
 #[allow(dead_code)]
 pub mod native_world_read;
 
+pub mod guild_chat;
+
+#[cfg(feature = "test-support")]
+pub mod guild_chat_fixture;
+
 pub mod hunting_xp;
 pub mod party_kill_xp;

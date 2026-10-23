@@ -73,7 +73,7 @@ fn the_widest_line_stays_inside_the_documented_bounds() {
     let text = seal_with_nonce(&ring, CHANNEL, &line, NONCE).expect("seal");
     assert!(text.len() <= 1_624, "{}", text.len());
     assert!(STANDARD.decode(&text).expect("base64").len() <= 1_216);
-    assert_eq!(SEALED_MAX_BYTES, 1_214);
+    assert_eq!(SEALED_MAX_BYTES, 1_217);
     assert_eq!(open(&ring, CHANNEL, &text, NOW), Ok(line));
 }
 
@@ -803,3 +803,6 @@ fn a_reconnect_after_the_database_clock_stepped_back_keeps_the_floor_past_the_ne
         Err(RelayError::BeforeStart)
     );
 }
+
+#[path = "guild_room_tests.rs"]
+mod guild_room;

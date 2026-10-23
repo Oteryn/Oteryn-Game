@@ -49,7 +49,7 @@ script: same commands, blank lines and # comments; at most 4096 lines / 1 MiB / 
 
 /// The chat help, shown only when the server selected capability 7.
 pub const CHAT_USAGE: &str = "\
-chat lines:  say TEXT | yell TEXT | whisper TEXT | pm NAME TEXT | pm \"NAME WITH SPACES\" TEXT
+chat lines:  say TEXT | yell TEXT | whisper TEXT | guild TEXT | pm NAME TEXT | pm \"NAME WITH SPACES\" TEXT
              room N TEXT | open N | close N (rooms: 1 World, 2 English, 3 Help, 4 Advertising)";
 
 /// The item help, shown only when the server selected capability 4.
@@ -259,6 +259,7 @@ fn parse_chat(line: &str) -> Option<ChatIntent> {
         "say" => say(ChatSpeechMode::Say),
         "yell" => say(ChatSpeechMode::Yell),
         "whisper" => say(ChatSpeechMode::Whisper),
+        "guild" => text(rest).map(|text| ChatIntent::Guild { text }),
         "pm" => {
             let (name, body) = split_recipient(rest)?;
             Some(ChatIntent::Private {
