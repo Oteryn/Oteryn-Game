@@ -267,6 +267,7 @@ fn commands_and_domains_follow_the_selection() {
     // Capability 21: command 23. Capability 23: domains 19 and 20.
     for (capability, commands, domains) in [
         (1, &[4, 5][..], &[4, 5][..]),
+        (37, &[36][..], &[][..]),
         (7, &[13][..], &[12][..]),
         (8, &[][..], &[13][..]),
         (10, &[][..], &[15][..]),
@@ -729,6 +730,7 @@ fn the_bundle_world_offered_set_is_3_the_item_view_set_12_14_and_18_requiring_4_
         CAPABILITY_CONTAINER_TREE_V1,
         CAPABILITY_WORLD_MAP_VIEW_V1,
         CAPABILITY_ITEM_LOOK_V1,
+        oteryn_protocol_oteryn::depot::CAPABILITY_DEPOT_V1,
         oteryn_protocol_oteryn::world_object::CAPABILITY_WORLD_INTERACTION_V1,
         oteryn_protocol_oteryn::world_object::CAPABILITY_ITEM_USE_V1,
     ];
@@ -762,7 +764,14 @@ fn the_bundle_world_offered_set_is_3_the_item_view_set_12_14_and_18_requiring_4_
     assert_eq!(requires(CAPABILITY_ITEM_LOOK_V1), Some(&[][..]));
     assert_eq!(requires(11), Some(&[15, 18][..]));
     assert_eq!(requires(15), Some(&[4][..]));
-    assert_eq!(BUNDLE_WORLD_OFFERED_CAPABILITIES.len(), shared.len() + 7);
+    assert_eq!(
+        requires(oteryn_protocol_oteryn::depot::CAPABILITY_DEPOT_V1),
+        Some(&[4][..])
+    );
+    assert_eq!(
+        BUNDLE_WORLD_OFFERED_CAPABILITIES.len(),
+        shared.len() + bundle_only.len()
+    );
     assert!(
         BUNDLE_WORLD_OFFERED_CAPABILITIES
             .windows(2)
@@ -1047,6 +1056,11 @@ fn an_unselected_capability_command_is_refused_and_a_core_one_dispatched()
             command(1, 13, b"chat"),
             command(2, 4, b"charm"),
             command(3, 1, &step),
+            command(
+                4,
+                oteryn_protocol_oteryn::depot::COMMAND_TYPE_DEPOT_INTENT,
+                &[8, 1, 16, 1],
+            ),
         ];
         let (_, written) = serve(&authority, session(SessionContinuity::FRESH)?, &frames).await?;
         let rejected = |sequence, id| {
@@ -1060,6 +1074,7 @@ fn an_unselected_capability_command_is_refused_and_a_core_one_dispatched()
         };
         assert!(written.contains(&rejected(1, 1)?));
         assert!(written.contains(&rejected(2, 2)?));
+        assert!(written.contains(&rejected(4, 4)?));
         assert_eq!(authority.steps.get(), 1);
         Ok(())
     })

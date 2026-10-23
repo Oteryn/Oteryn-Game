@@ -17,8 +17,11 @@
 //! and its command/sequence discipline. Every admission or codec error fails closed.
 
 mod appearance_state;
+mod depot;
 mod domain_dispatch;
 mod gated_command;
+mod map_transport;
+pub use oteryn_protocol_oteryn::depot::{DepotAction, DepotIntent, DepotOutcome, DepotReply};
 mod guild_chat;
 pub use appearance_state::{AppearanceItemDictionary, AppearanceUpdate};
 use oteryn_protocol_oteryn::actor_spell::{self, SpellCastIntent};
@@ -141,10 +144,12 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     CAPABILITY_CHAT_V1,
     CAPABILITY_PACED_MOVEMENT_V1,
     CAPABILITY_ATTACK_V1,
+    oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1,
     logout::CAPABILITY_LOGOUT_V1,
     oteryn_protocol_oteryn::appearance::CAPABILITY_APPEARANCE_V1,
     oteryn_protocol_oteryn::tutorial_notices::CAPABILITY_TUTORIAL_NOTICES_V1,
     chat::guild_room::CAPABILITY_CHAT_GUILD_ROOM_V1,
+    oteryn_protocol_oteryn::depot::CAPABILITY_DEPOT_V1,
 ];
 
 /// Capability-owned command types and state domains (`PROTOCOL_OTERYN_V1_REGISTRY.json`;
@@ -153,6 +158,16 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
 /// Capabilities 4 and 7 are routed by typed code (`Session::use_item`, `Session::move_item`, the
 /// item stores; `Session::chat`, the chat log), not through this table.
 const GATED_ROUTES: &[(u32, &[u32], &[u32])] = &[
+    (
+        oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1,
+        &[],
+        &[oteryn_protocol_oteryn::world_map::STATE_DOMAIN_WORLD_MAP_VIEW],
+    ),
+    (
+        oteryn_protocol_oteryn::depot::CAPABILITY_DEPOT_V1,
+        &[oteryn_protocol_oteryn::depot::COMMAND_TYPE_DEPOT_INTENT],
+        &[],
+    ),
     (31, &[], &[23]),
     (
         oteryn_protocol_oteryn::appearance::CAPABILITY_APPEARANCE_V1,
@@ -695,6 +710,8 @@ pub enum SessionEvent {
     WorldSpatialEntities(AppliedDelta<WorldSpatialEntitiesDelta>),
     /// Domain 2 `WORLD_OBJECT_OVERLAY`.
     WorldObjectOverlay(AppliedDelta<WorldObjectOverlayEntry>),
+    /// Domain 17: validated bundle map changes, bound to the admitted content and reset epoch.
+    WorldMap(AppliedDelta<oteryn_protocol_oteryn::world_map::WorldMapViewDelta>),
     /// Domain 3 `ACTOR_VITALS`.
     ActorVitals(AppliedDelta<ActorVitals>),
     /// Domain 10 `ACTOR_COMBAT_STATE`: the own actor's attack target, modes and in-fight flag,
@@ -722,6 +739,7 @@ impl SessionEvent {
                 world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY
             }
             Self::WorldObjectOverlay(_) => world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+            Self::WorldMap(_) => oteryn_protocol_oteryn::world_map::STATE_DOMAIN_WORLD_MAP_VIEW,
             Self::ActorVitals(_) => actor_spell::STATE_DOMAIN_ACTOR_VITALS,
             Self::ActorCombatState(_) => attack::STATE_DOMAIN_ACTOR_COMBAT_STATE,
             Self::ChatLine(_) | Self::ChatRooms(_) => STATE_DOMAIN_CHAT,
@@ -954,6 +972,7 @@ pub struct Session<S> {
     entities: Option<WorldEntities>,
     appearance: Option<appearance_state::AppearanceState>,
     chat_revision: u64,
+    map_header: Option<oteryn_protocol_oteryn::world_map::MapViewHeader>,
     inventory_revision: u64,
     container_revision: u64,
     inventory: Option<CharacterInventory>,
@@ -1335,6 +1354,20 @@ impl<S: SessionStream> Session<S> {
             ));
         }
         tutorial_notices::validate_join(&selected_capabilities, &gated_snapshots)?;
+        let map_header = map_transport::validate_join(
+            &selected_capabilities,
+            &gated_snapshots,
+            world_spatial_observation
+                .as_ref()
+                .ok_or(SessionError::MissingDomain(1))?
+                .content_generation,
+        )?;
+        if map_header.is_some() {
+            if world_object_overlay.is_some() {
+                return Err(SessionError::UnselectedDomain { domain_id: 2 });
+            }
+            world_object_overlay = Some(Vec::new());
+        }
         let snapshot = JoinSnapshot {
             game_session_id: accepted_fields.game_session_id,
             world_spatial: world_spatial_observation.ok_or(SessionError::MissingDomain(
@@ -1372,6 +1405,7 @@ impl<S: SessionStream> Session<S> {
             entities,
             appearance,
             chat_revision,
+            map_header,
             inventory_revision,
             container_revision,
             inventory,
@@ -2409,6 +2443,8 @@ fn check_status_pairing(
 #[cfg(test)]
 mod tests {
     mod appearance_session_tests;
+    #[path = "depot_map_tests.rs"]
+    mod depot_map_tests;
     include!("tutorial_notices_tests.rs");
     use super::*;
     use oteryn_protocol_oteryn::world_object::{
@@ -4852,7 +4888,7 @@ mod tests {
         // PROTOCOL_OTERYN_V1_REGISTRY.json: capability 7 requires nothing.
         assert_eq!(
             CLIENT_SUPPORTED_CAPABILITIES,
-            &[4, 6, 7, 13, 17, 21, 25, 31, 36]
+            &[4, 6, 7, 13, 17, 18, 21, 25, 31, 36, 37]
         );
     }
 
