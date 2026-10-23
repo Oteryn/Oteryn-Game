@@ -42,6 +42,74 @@ cross_repository_coordination_id: null
 external_repositories: []
 ```
 
+## CI repair of PostgreSQL shards 5 and 6 (2026-10-24 local worker)
+
+Returned to local AUTHORING from `6527b54fa` for the owner's bounded repair of PR #2351.
+The coordinator owns publication and the next freeze. The owner's hard prohibition on
+`git commit`/push takes precedence over the task's later commit request; no commit or push ran.
+
+Both reported failures reproduced against real PostgreSQL before repair:
+
+- Shard 5: the deliberately unavailable admission guard table makes the fenced PvP refresh
+  fail. `logout_in_fight` converted that failed read into `InFight { retry_after_ms: 1000 }`,
+  even without combat. Logout now returns `Unknown` before a terminal release and follows
+  ordinary control-loss reconciliation. Confirmed PvE and PvP locks still refuse logout.
+- Shard 6: empty consequences with a live ledger lacking source harm receipts returned
+  `Err(Unavailable(InvalidStoredState))`, rather than `Err(InvalidInput)`. Live contributor
+  derivation now returns the progression error type and explicitly rejects missing receipt
+  evidence as `InvalidInput`. Database/decoding failures remain unavailable, and the existing
+  death transaction rolls back every consequence. Valid receipt-backed derivation remains.
+
+No test expectations, fixtures, ignores or coverage changed. No new public functions, enum
+variants, struct fields or trait methods were added. Re-read the complete repair diff against
+`/home/mole/oteryn-cache/CODEX-CHECKLIST.md` and searched the workspace's `apps/`, `crates/`,
+`tools/` for the affected helper callers.
+
+All Cargo commands below used `/home/mole/oteryn-cache/codex-bin/cargo`,
+`CARGO_NET_OFFLINE=true` and the owner's lane target directory. PostgreSQL runs sourced the
+provided PG environment without printing it. All test commands used `--locked --quiet`.
+
+| Cargo test arguments (in addition to `--locked --quiet`) | Result |
+|---|---|
+| `-p oteryn-gameplay-dispatch --lib an_uncommitted_unknown_logout_becomes_an_ordinary_loss` | RED: reported `InFight` versus `Unknown`; GREEN in the complete logout group below |
+| `-p oteryn-gameplay-dispatch --lib gameplay_transport::monk_save::postgres_tests::logout_e2e` | 6 passed, 0 failed/ignored, 21.39s |
+| `-p oteryn-game-server --test character_authority_postgres pvp_death_empty_or_invalid_consequences_never_discard_a_live_ledger` | RED: `Unavailable(InvalidStoredState)`; GREEN: 1 passed, 0 failed/ignored, 7.96s |
+| `-p oteryn-game-server --test character_authority_postgres pvp_state_postgres_cases` | 8 passed, 0 failed/ignored, 20.88s |
+| `-p oteryn-game-server --test character_authority_postgres pvp_readmission_postgres_cases` | 10 passed, 0 failed/ignored, 6.31s |
+| `-p oteryn-gameplay-dispatch --lib pvp_` | 8 passed, 2 failed, 0 ignored, 168.55s; isolated reruns below |
+| `-p oteryn-gameplay-dispatch --lib pvp_live_wire_melee_spell_death_replay_and_reload` | 1 passed, 0 failed/ignored, 50.33s |
+| `-p oteryn-gameplay-dispatch --lib pvp_live_bundle_melee_spell_death_replay_and_reload` | 1 passed, 0 failed/ignored, 32.33s |
+| `-p oteryn-gameplay-dispatch --lib logout_tests` | 4 passed, 0 failed/ignored |
+| `-p oteryn-gameplay-durability --lib death_binding_covers_the_intent_and_excludes_retry_local_authority` | 1 passed, 0 failed/ignored |
+
+`cargo check --locked -p oteryn-gameplay-dispatch -p oteryn-gameplay-durability --quiet`,
+`cargo clippy --locked -p oteryn-gameplay-dispatch -p oteryn-gameplay-durability --all-targets
+--quiet -- -D warnings`, and `cargo fmt --all -- --check` passed. Existing vendored Tokio/SQLx
+warnings are unchanged.
+
+### Unfinished for the shard repair
+
+- CI-only, under the owner's shared-PC rule: grouped
+  `gameplay_transport::monk_save::postgres_tests::pvp_live::pvp_live_wire_melee_spell_death_replay_and_reload`
+  failed at the unchanged melee HP assertion (line 422), poisoning the fixture gate for
+  `gameplay_transport::monk_save::postgres_tests::pvp_live::pvp_live_bundle_melee_spell_death_replay_and_reload`.
+  Both passed when rerun alone. No unrelated timing/test change was made.
+- Coordinator publication and fresh repository CI on the resulting candidate. No remote CI,
+  freeze or merge success is claimed.
+
+Proposed commit message for the publishing coordinator:
+
+```text
+fix(pvp): preserve unknown logout and reject missing death consequences
+
+Keep failed fenced PvP reads on the unknown/control-loss path instead of reporting
+a fabricated fight lock. Reject empty death consequences without source receipts
+as InvalidInput while retaining database failures as unavailable.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01D1SN2sEo2yY1k19f6kjEHf
+```
+
 ## CI repair of PR #2351 (2026-10-23 local worker)
 
 Returned to local AUTHORING from `aaea61501` for the owner's bounded CI repair;

@@ -1,5 +1,6 @@
 //! Current same-transaction PvP observations and write-ahead harm, shared by swings and spells.
 use super::admission_journal::party_target_binding::current_colocated_party_character_in_transaction;
+use super::character_progression::CharacterProgressionError;
 use super::spell_field_policy::{FieldWorldType, read_world_field_policy_in_transaction};
 use super::spell_item_transaction::{SpellItemAuthority, SpellItemError, check_transaction};
 use super::{DurabilityError, DurabilityRoot};
@@ -237,22 +238,29 @@ pub async fn live_pvp_receipt_matches_in_transaction(
 }
 
 /// Derive only from live harm receipts in the victim's fenced death transaction.
-/// Foreign/fixture ledgers without source receipts still fail the death writer's comparison.
+/// A live ledger without source receipts needs explicit consequences; an empty request is
+/// invalid input, not a storage outage. Database failures retain their unavailable error.
 pub(super) async fn death_contributors_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     victim: crate::domain::CharacterId,
-) -> std::result::Result<Vec<super::pvp_death_request::PvpDeathContributor>, DurabilityError> {
+) -> std::result::Result<
+    Vec<super::pvp_death_request::PvpDeathContributor>,
+    CharacterProgressionError,
+> {
     let rows=sqlx::query("SELECT encode(uuid_send(l.contributor_character_id),'hex') AS contributor, (SELECT h.unjustified FROM game_character_pvp_harm h WHERE h.victim=l.victim_character_id AND h.attacker=l.contributor_character_id AND h.damage>0 AND h.created_at>=clock_timestamp()-interval '5 minutes' ORDER BY h.created_at DESC LIMIT 1) AS unjustified FROM game_character_pvp_ledger l WHERE l.victim_character_id=encode($1,'hex')::uuid AND l.last_at>=clock_timestamp()-interval '5 minutes' ORDER BY l.contributor_character_id LIMIT 81")
-        .bind(victim.as_bytes().as_slice()).fetch_all(&mut **tx).await?;
+        .bind(victim.as_bytes().as_slice()).fetch_all(&mut **tx).await.map_err(DurabilityError::from)?;
     if rows.len() > 80 {
-        return Err(DurabilityError::InvalidStoredState);
+        return Err(DurabilityError::InvalidStoredState.into());
     }
     let mut out = Vec::new();
     for row in rows {
-        let Some(unjustified) = row.try_get::<Option<bool>, _>("unjustified")? else {
-            return Err(DurabilityError::InvalidStoredState);
+        let Some(unjustified) = row
+            .try_get::<Option<bool>, _>("unjustified")
+            .map_err(DurabilityError::from)?
+        else {
+            return Err(CharacterProgressionError::InvalidInput);
         };
-        let hex: String = row.try_get("contributor")?;
+        let hex: String = row.try_get("contributor").map_err(DurabilityError::from)?;
         let mut bytes = [0; 16];
         for (i, b) in bytes.iter_mut().enumerate() {
             *b = u8::from_str_radix(&hex[i * 2..i * 2 + 2], 16)
