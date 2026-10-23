@@ -42,8 +42,8 @@ REWARD_CLAIM_COUNT = len(json.loads(
     (ROOT / "tools/content-schema/quest-authoring/samples/chests/claims.json").read_text())["claims"])
 # StarterKit likewise (tools/content-schema/starter-kit-authoring).
 STARTER_KIT_COUNT = 1
-SERVICE_FAMILY_COUNTS = {"Service.Trade": 324, "Service.Travel": 56, "Service.Bank": 1}
-SERVICE_FAMILY_NODES = {"Service.Trade": ("content/services/trade/", "offers"), "Service.Travel": ("content/services/travel/", "routes"), "Service.Bank": ("content/services/bank/", "bank")}
+SERVICE_FAMILY_COUNTS = {"Service.Trade": 324, "Service.Travel": 56, "Service.Bank": 1, "Service.Promotion": 4, "Service.Blessing": 3}
+SERVICE_FAMILY_NODES = {"Service.Trade": ("content/services/trade/", "offers"), "Service.Travel": ("content/services/travel/", "routes"), "Service.Bank": ("content/services/bank/", "bank"), "Service.Promotion": ("content/services/promotion/", "promotion"), "Service.Blessing": ("content/services/blessings/", "blessing")}
 
 class ValidationError(RuntimeError):
     pass

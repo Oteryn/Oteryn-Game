@@ -33,6 +33,8 @@
     "Quest": 352,
     "RewardClaim": 336,
     "Service.Bank": 1,
+    "Service.Blessing": 3,
+    "Service.Promotion": 4,
     "Service.Trade": 324,
     "Service.Travel": 56,
     "StarterKit": 1,
@@ -44,7 +46,7 @@
     "taxonomy": 12252
   },
   "legacy_blobs": {
-    "declarations": "ee9137f0660098070b25d1833dcbd9895a6160e0",
+    "declarations": "3fef5c16ae91bc041e8cdb548d86f262f3138bdd",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
     "imports": "49f94022e9642e2fe8e04b975a8334cbb25efcfe",
     "reference": "fd5c773204e554edd912f2dca001f5164297bf8e",
@@ -160,7 +162,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "378804372e4ee77c5340ca88504210939a3dbf323de8250689f38efae276f5cd"
+          "sha256": "e75f8d85e5cf5f43232737109871f7789573b482d10d28e31bb7516368cc0a56"
         },
         {
           "creates_canonical_identities": false,

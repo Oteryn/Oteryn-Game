@@ -50,6 +50,8 @@ CREATURE_FAMILIES = {
 SERVICE_FAMILIES = {
     "Service.Trade": ("content/services/trade/", "trade", "offers"),
     "Service.Bank": ("content/services/bank/", "bank", "bank"),
+    "Service.Promotion": ("content/services/promotion/", "promotion", "promotion"),
+    "Service.Blessing": ("content/services/blessings/", "blessing", "blessing"),
     "Service.Travel": ("content/services/travel/", "travel", "routes"),
 }
 # Canonical capability relations: a known typed fact names the ruleset that governs it.
@@ -500,7 +502,7 @@ def main() -> int:
                             "schema": declarations["schema"]}})
 
     service_records = [row for row in declarations["records"] if row.get("kind") == "Service"]
-    if len(service_records) != 381:
+    if len(service_records) != 388:
         raise RuntimeError(f"SERVICE_SOURCE_COUNT_MISMATCH:{len(service_records)}")
 
     service_shards: dict[str, list[str]] = {}

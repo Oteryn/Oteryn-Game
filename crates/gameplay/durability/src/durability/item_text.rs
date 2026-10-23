@@ -154,10 +154,7 @@ impl ItemTextWriteRequest {
     /// Capture the original native fence's Character identity as lookup DATA.
     /// The writer independently validates its actual fence; this capture grants
     /// no right to write and accepts no caller-supplied digest or outcome.
-    pub fn freeze_receipt_binding(
-        &self,
-        character_id: CharacterId,
-    ) -> FrozenItemTextWriteBinding {
+    pub fn freeze_receipt_binding(&self, character_id: CharacterId) -> FrozenItemTextWriteBinding {
         FrozenItemTextWriteBinding {
             command: self.command,
             character_id,
@@ -505,7 +502,7 @@ async fn persist_rewrite(
     })
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 #[allow(
     dead_code,
     reason = "PostgreSQL exercises are registered in the canonical PG target; the library unit target has no database"

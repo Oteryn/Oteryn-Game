@@ -8,11 +8,8 @@ pub fn project_wheel_stages(
     allocation: &WheelAllocation,
     vocation: &str,
     level: u32,
+    promoted: bool,
 ) -> Option<BTreeMap<String, u8>> {
-    let promoted = matches!(
-        vocation,
-        "elder_druid" | "elite_knight" | "exalted_monk" | "royal_paladin" | "master_sorcerer"
-    );
     let rules = crate::wheel::eligibility(ruleset, vocation, level, promoted).ok()?;
     let stages = crate::wheel::WheelStages::derive(ruleset, allocation, vocation, level, promoted);
     let mut value: BTreeMap<_, _> = rules

@@ -35,7 +35,7 @@ fn pvp_death_dispatch_commits_points_marks_and_skull_state_together() -> TestRes
         let mut current = fence(1)?;
         current.character_lease_generation = 2;
         let death = owner
-            .settle_source_player_death(current, request, None)
+            .settle_source_player_death(current, request, None, None)
             .await
             .map_err(debug)?;
         assert_eq!(

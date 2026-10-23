@@ -114,6 +114,7 @@ impl<A: CurrentSpellAccessOwner> CurrentSpellAccessOwner for WheelCastAccess<'_,
                 binding,
                 projections.premium.as_ref(),
                 now,
+                self.read.promoted(),
             );
         }
         Ok(projections)
@@ -134,6 +135,10 @@ fn wheel_raw_matches_binding(
         && binding.equipment_revision == raw.equipment.revision
 }
 
+#[allow(
+    clippy::too_many_arguments,
+    reason = "current cast projection inputs plus the durable promotion read"
+)]
 fn project_wheel_stages(
     ruleset: &crate::durability::character_wheel::WheelRuleset,
     allocation: &crate::durability::character_wheel::WheelAllocation,
@@ -142,13 +147,14 @@ fn project_wheel_stages(
     binding: &CastFactsBinding,
     premium: Option<&CurrentProjection<bool>>,
     now: u64,
+    promoted: bool,
 ) -> Option<CurrentProjection<BTreeMap<String, u8>>> {
     let premium = premium.filter(|p| p.current(binding, now) && p.value)?;
     if !allocation.current || binding.character_revision == 0 {
         return None;
     }
     let value = oteryn_gameplay_progression::spell_wheel::project_wheel_stages(
-        ruleset, allocation, vocation, level,
+        ruleset, allocation, vocation, level, promoted,
     )?;
     // CharacterRevision is independently read under the Character lock. Every Wheel write
     // advances it, including reset; no-row allocation does not need a fictional Wheel revision.
@@ -500,6 +506,7 @@ mod wheel_projection_tests {
             &binding,
             Some(&premium(&binding)),
             99,
+            true,
         )
         .expect("current zero read");
         assert_eq!(result.authority_revision, binding.character_revision);
@@ -532,6 +539,7 @@ mod wheel_projection_tests {
             &binding,
             Some(&premium(&binding)),
             1,
+            true,
         )
         .expect("current stages");
         let rules = ruleset.vocation("elder_druid").expect("actual vocation");
@@ -567,6 +575,14 @@ mod wheel_projection_tests {
                 &binding,
                 Some(&premium(&binding)),
                 1,
+                matches!(
+                    vocation,
+                    "elder_druid"
+                        | "elite_knight"
+                        | "exalted_monk"
+                        | "royal_paladin"
+                        | "master_sorcerer"
+                ),
             )
             .expect("source-bound consumer labels");
             assert_eq!(projected.value[revelation], 3);
@@ -587,7 +603,8 @@ mod wheel_projection_tests {
                 1050,
                 &binding,
                 None,
-                1
+                1,
+                true,
             )
             .is_none()
         );
@@ -600,7 +617,8 @@ mod wheel_projection_tests {
                 1050,
                 &binding,
                 Some(&premium),
-                100
+                100,
+                true,
             )
             .is_none()
         );
@@ -613,7 +631,8 @@ mod wheel_projection_tests {
                 1050,
                 &binding,
                 Some(&premium),
-                1
+                1,
+                true,
             )
             .is_none()
         );
@@ -627,7 +646,8 @@ mod wheel_projection_tests {
                 1050,
                 &binding,
                 Some(&premium),
-                1
+                1,
+                true,
             )
             .is_none()
         );
@@ -672,7 +692,8 @@ mod wheel_projection_tests {
                     1050,
                     &current,
                     Some(&premium),
-                    1
+                    1,
+                    true,
                 )
                 .is_none(),
                 "owner field {field}"
@@ -694,7 +715,8 @@ mod wheel_projection_tests {
                 1050,
                 &binding,
                 Some(&premium),
-                1
+                1,
+                true,
             )
             .is_none()
         );
@@ -713,7 +735,15 @@ mod wheel_projection_tests {
                     level,
                     &binding,
                     Some(&premium),
-                    1
+                    1,
+                    matches!(
+                        vocation,
+                        "elder_druid"
+                            | "elite_knight"
+                            | "exalted_monk"
+                            | "royal_paladin"
+                            | "master_sorcerer"
+                    ),
                 )
                 .is_none()
             );
@@ -728,7 +758,8 @@ mod wheel_projection_tests {
                 1050,
                 &seed,
                 Some(&super::wheel_projection_tests::premium(&seed)),
-                1
+                1,
+                true,
             )
             .is_none()
         );
