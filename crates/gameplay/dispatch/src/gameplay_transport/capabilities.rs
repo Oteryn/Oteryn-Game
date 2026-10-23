@@ -202,16 +202,30 @@ pub const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
         id: oteryn_protocol_oteryn::depot::CAPABILITY_DEPOT_V1,
         requires: &[CAPABILITY_ITEM_VIEW_MOVE_V1],
     },
-    super::guild_intent::OFFERED,
     super::timed_item::OFFERED,
+    super::guild_intent::OFFERED,
 ];
-/// The same bundle offer before the native timed definitions are available. Capability
-/// 39 is last, so preserving every older capability needs no duplicate table.
+const BUNDLE_WORLD_UNTIMED_LEN: usize = BUNDLE_WORLD_OFFERED_CAPABILITIES.len() - 1;
+/// [`BUNDLE_WORLD_OFFERED_CAPABILITIES`] without capability 39, filtered at compile time so the
+/// bundle offer keeps one source and stays ascending. Fails to compile unless 39 is offered
+/// exactly once.
+const BUNDLE_WORLD_UNTIMED_ARRAY: [OfferedCapability; BUNDLE_WORLD_UNTIMED_LEN] = {
+    let all = BUNDLE_WORLD_OFFERED_CAPABILITIES;
+    let mut out = [all[0]; BUNDLE_WORLD_UNTIMED_LEN];
+    let (mut from, mut to) = (0, 0);
+    while from < all.len() {
+        if all[from].id != super::timed_item::OFFERED.id {
+            out[to] = all[from];
+            to += 1;
+        }
+        from += 1;
+    }
+    assert!(to == BUNDLE_WORLD_UNTIMED_LEN);
+    out
+};
+/// The same bundle offer before the native timed definitions are available.
 pub(super) const BUNDLE_WORLD_UNTIMED_OFFERED_CAPABILITIES: &[OfferedCapability] =
-    match BUNDLE_WORLD_OFFERED_CAPABILITIES.split_last() {
-        Some((_, base)) => base,
-        None => &[],
-    };
+    &BUNDLE_WORLD_UNTIMED_ARRAY;
 
 /// MAP-ITEM-REF-1: the production offered set with capability 4 `ITEM_VIEW_MOVE_V1`, which
 /// requires 6, for a generation that pins a non-empty Item key set: the registry's whole

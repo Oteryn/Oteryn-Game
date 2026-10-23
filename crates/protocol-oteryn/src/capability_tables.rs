@@ -207,16 +207,16 @@ pub const GATED: &[(u32, &[u32], &[u32])] = &[
         &[],
     ),
     (
+        crate::timed_item::CAPABILITY_TIMED_ITEM_V1,
+        &[crate::timed_item::COMMAND_TYPE_TIMED_ITEM_INTENT],
+        &[],
+    ),
+    (
         crate::guild::CAPABILITY_GUILD_V1,
         &[
             crate::guild::COMMAND_TYPE_GUILD_INTENT,
             crate::guild::COMMAND_TYPE_GUILD_QUERY,
         ],
-        &[],
-    ),
-    (
-        crate::timed_item::CAPABILITY_TIMED_ITEM_V1,
-        &[crate::timed_item::COMMAND_TYPE_TIMED_ITEM_INTENT],
         &[],
     ),
 ];
