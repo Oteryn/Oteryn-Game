@@ -23,6 +23,7 @@ pub mod character_chat_name;
 pub mod character_chat_recipient;
 pub mod character_command;
 pub mod character_death;
+pub mod character_depot;
 pub mod character_equipment;
 mod character_experience_transaction;
 pub mod character_familiar;
