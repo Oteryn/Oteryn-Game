@@ -1,0 +1,22 @@
+{
+  "id": "HOUSEOWN0-RL-03",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_HOUSE_OWN0_HOUSE_OWNERSHIP_DECISION_2026-09-30.md",
+  "resource": "Proxy price increment with no reserve",
+  "unit": "gold",
+  "hard_maximum": 1,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 1
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Check in the owning House rule or durable pass before mutation.",
+  "client_visible": false,
+  "boundary_tests": [
+    "one bidder price zero",
+    "second maximum plus one capped at leader maximum"
+  ],
+  "consumers": [
+    "crates/gameplay/housing/src/house_auction.rs",
+    "crates/gameplay/durability/src/durability/house_ownership.rs"
+  ]
+}

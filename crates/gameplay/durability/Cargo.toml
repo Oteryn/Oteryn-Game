@@ -15,6 +15,7 @@ release-role = "production"
 test-support = ["oteryn-gameplay-content/test-support", "oteryn-gameplay-entities/test-support", "oteryn-gameplay-foundation/test-support"]
 
 [dependencies]
+oteryn-gameplay-encounter-rules = { version = "=0.1.0", path = "../encounter-rules" }
 oteryn-gameplay-social-rules = { version = "=0.1.0", path = "../social-rules" }
 oteryn-gameplay-combat-rules = { version = "=0.1.0", path = "../combat-rules" }
 oteryn-gameplay-characters = { version = "=0.1.0", path = "../characters" }

@@ -1,0 +1,24 @@
+{
+  "id": "DUR03-RL-03-HOUSE",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_HOUSE_OWN0_HOUSE_OWNERSHIP_DECISION_2026-09-30.md",
+  "resource": "House transaction ledger lines plus changed bid custody lines (DUR-03 House amendment)",
+  "unit": "value lines per logical transaction",
+  "hard_maximum": 200,
+  "configurable_range": {
+    "minimum": 4,
+    "maximum": 200
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Validate before House allocation or value mutation; House event 8 uses its own rows, never the Bank two-line row. This acquisition participant emits at most four; refund steps handle one Account per transaction, within the 100-bid ceiling.",
+  "client_visible": false,
+  "boundary_tests": [
+    "acquisition subshape: three ledger lines and one escrow line accepted",
+    "zero amounts create no lines",
+    "acquisition subshape refuses five lines; enclosing House transaction ceiling remains 200"
+  ],
+  "consumers": [
+    "crates/gameplay/housing/src/house_auction.rs",
+    "crates/gameplay/durability/src/durability/house_ownership.rs",
+    "crates/gameplay/durability/src/durability/house_ownership_audit.rs"
+  ]
+}

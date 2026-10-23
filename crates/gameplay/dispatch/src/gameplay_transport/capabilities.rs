@@ -197,6 +197,10 @@ pub const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     },
     TUTORIAL_NOTICES,
     super::guild_chat::OFFERED,
+    OfferedCapability {
+        id: oteryn_protocol_oteryn::depot::CAPABILITY_DEPOT_V1,
+        requires: &[CAPABILITY_ITEM_VIEW_MOVE_V1],
+    },
     super::timed_item::OFFERED,
 ];
 /// The same bundle offer before the native timed definitions are available. Capability

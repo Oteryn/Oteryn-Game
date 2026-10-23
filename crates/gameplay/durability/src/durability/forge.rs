@@ -1,6 +1,6 @@
-//! Private tier schema/read preparation (IMBUE-FORGE-0 §8), not a forge writer.
-//! No production migration, runtime registration, grants, asset mutation or audit
-//! cause is installed here. A caller must separately qualify current authority,
+//! Installed tier storage/read owner (IMBUE-FORGE-0 §8), not a forge writer.
+//! Migration 0156 supplies the single schema and atomic storage audit; runtime
+//! has SELECT only. A caller must separately qualify current authority,
 //! item ownership/location/lifecycle, Content compatibility, class cap and imbuements.
 
 use super::item_mint_audit::check_uuid_v7;
@@ -8,28 +8,8 @@ use crate::domain::forge::ItemTier;
 use sqlx::Row;
 use sqlx::postgres::PgConnection;
 
-/// Accepted-private schema for isolated qualification and the future inseparable
-/// migration/writer bundle. It deliberately grants no production write authority.
-/// Tier zero has no row; a tier cannot be reassigned to another ItemInstance.
-pub const PRIVATE_TIER_SCHEMA_SQL: &str = r"
-CREATE TABLE game_item_tiers (
-    item_instance_id UUID PRIMARY KEY REFERENCES game_item_instances(item_instance_id),
-    tier SMALLINT NOT NULL,
-    CONSTRAINT game_item_tier_range CHECK (tier BETWEEN 1 AND 10)
-);
-CREATE FUNCTION game_item_tier_identity_guard() RETURNS trigger
-LANGUAGE plpgsql AS $$
-BEGIN
-    IF NEW.item_instance_id <> OLD.item_instance_id THEN
-        RAISE EXCEPTION 'item tier cannot change its ItemInstance identity' USING ERRCODE = '23514';
-    END IF;
-    RETURN NEW;
-END;
-$$;
-CREATE TRIGGER game_item_tier_identity_immutable
-BEFORE UPDATE OF item_instance_id ON game_item_tiers
-FOR EACH ROW EXECUTE FUNCTION game_item_tier_identity_guard();
-";
+/// Installed by the normal GAME_MIGRATOR, never by a private test DDL path.
+pub const FORGE_TIER_MIGRATION_VERSION: i64 = 156;
 
 /// Raw stored data only: neither a live ownership witness nor forge permission.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
