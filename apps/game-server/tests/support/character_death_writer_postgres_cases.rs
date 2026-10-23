@@ -61,6 +61,7 @@ fn policy() -> FiniteProgressionPolicy<String, 10> {
 
 fn death(tag: u8, blessings: &[&str]) -> TestResult<CharacterDeathRequest<10>> {
     Ok(CharacterDeathRequest {
+        pvp_contributors: Vec::new(),
         occurrence: PlayerDeathOccurrence::from_bytes(id(tag))
             .map_err(|error| format!("{error:?}"))?,
         context: context(),
@@ -1425,3 +1426,7 @@ fn a_restart_before_the_placement_keeps_the_respawn_and_loses_experience_once() 
         })
     })
 }
+
+#[path = "pvp_death_request_fixture.rs"]
+mod pvp_death_request_fixture;
+pub(crate) use pvp_death_request_fixture::{join_pvp_writers, pvp_death_request};

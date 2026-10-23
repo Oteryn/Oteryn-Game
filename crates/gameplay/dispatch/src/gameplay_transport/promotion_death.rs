@@ -74,20 +74,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .and_then(|active| active.native_gameplay())
             .and_then(|native| native.training_formula())
             .map(|formula| formula as &dyn crate::durability::character_build::BuildFormula);
+        let premium = PremiumDeathGate {
+            admission: self,
+            session,
+        };
         match self
-            .root
-            .settle_runtime_player_death(
-                &self.revision_sequencer,
-                self.character,
-                self.holder,
-                fence,
-                request,
-                formula,
-                Some(&PremiumDeathGate {
-                    admission: self,
-                    session,
-                }),
-            )
+            .settle_source_player_death(fence, request, formula, Some(&premium))
             .await
         {
             Ok(committed) => (

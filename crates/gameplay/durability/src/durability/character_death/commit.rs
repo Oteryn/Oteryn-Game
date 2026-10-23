@@ -270,6 +270,18 @@ impl DurabilityRoot {
                     bind_death_build(receipt, build_loss.as_ref())
                         .execute(&mut *tx)
                         .await?;
+                    if let Err(error) =
+                        super::super::pvp_death_consequences::apply_pvp_death_in_transaction(
+                            &mut tx,
+                            fence.character_id,
+                            request.death_cell.world_id,
+                            request.occurrence.as_bytes(),
+                            &request.pvp_contributors,
+                        )
+                        .await
+                    {
+                        return Ok(Err(error));
+                    }
                     let consumed = sqlx::query(
                         "DELETE FROM game_character_blessings \
                           WHERE character_id = encode($1,'hex')::uuid",
