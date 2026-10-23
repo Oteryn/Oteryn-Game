@@ -4,7 +4,7 @@
 task_id: PARTY-XP-1
 title: "PARTY-XP-1: party shared experience and party spells"
 mode: IMPLEMENT
-status: NOT_STARTED
+status: waiting
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 3
@@ -21,6 +21,12 @@ needs_registry: true
 needs_content_regeneration: true
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#2192](https://github.com/Oteryn/Oteryn-Game/pull/2192), [#2280](https://github.com/Oteryn/Oteryn-Game/pull/2280). Existing shared-experience pure rules and party-spell owner view remain on main; the new multi-principal settlement draft is not retained. Evidence: `crates/gameplay/social-rules/src/shared_experience.rs`.
+
+Remaining: Real shared-XP kill settlement, toggle ingress/activity/PZ qualification, Prey/stamina ordering, content/feedback and replay/concurrency PG cases remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2172, branch skeleton/party-xp-1
 
@@ -128,9 +134,7 @@ Integration obligations:
 
 ## Remaining work
 
-Planner + split on the new layout; multi-principal kill settlement; party bonus and summon
-accounting; leader PZ accessor; toggle command; Prey/stamina ordering; party spell content
-and CHAT-2 feedback; registry rows; exactly-once/concurrency/restart PG cases.
+Real shared-XP kill settlement, toggle ingress/activity/PZ qualification, Prey/stamina ordering, content/feedback and replay/concurrency PG cases remain.
 
 ## Acceptance criteria
 

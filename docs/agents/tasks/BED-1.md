@@ -4,7 +4,7 @@
 task_id: BED-1
 title: "BED-1: sleeper table, bed USE and sleep, owner wake, offline settlement"
 mode: IMPLEMENT
-status: in_progress   # CP wire allocation implemented; runtime/persistence incomplete
+status: waiting
 repository: Oteryn/Oteryn-Game
 wave: 5
 class: "hard (persistence, session-generation fencing)"
@@ -21,6 +21,12 @@ needs_registry: true   # CP confirmed command 31 under WORLD_INTERACTION_V1
 needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#2304](https://github.com/Oteryn/Oteryn-Game/pull/2304). Command 31 codec and fail-closed dispatch boundary are merged. Evidence: `crates/gameplay/dispatch/src/gameplay_transport/bed_sleep.rs`.
+
+Remaining: Sleeper schema/owner, ACL/reservation composition, fenced sleep/logout, wake and offline settlement remain; a refusal handler is not working sleep. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2147, branch skeleton/bed-1
 

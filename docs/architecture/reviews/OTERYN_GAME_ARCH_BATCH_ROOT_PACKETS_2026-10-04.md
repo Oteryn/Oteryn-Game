@@ -138,7 +138,7 @@ max+1 test.
 Disposition: nothing in #513 blocks work. `DUR03-RL-08` (3) is the one value the decision says
 stage C must decide again. Recommendation to the control plane: close #513 and record the stage C
 re-decision of `DUR03-RL-08` on the stage C task, and move its active task record
-(`docs/agents/tasks/active/OTV2-20260917-dur03-reference-one-item-resource-evidence-513.md`,
+(`docs/agents/tasks/archive/OTV2-20260917-dur03-reference-one-item-resource-evidence-513.md`,
 status `blocked`) to the archive in that close. The record is outside this batch's owned paths.
 
 ### 1.7 The bank event's retention

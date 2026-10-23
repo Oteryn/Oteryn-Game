@@ -4,7 +4,7 @@
 task_id: BED-REGEN-1
 title: "BED-REGEN-1: native settlement integration and producer gates"
 mode: IMPLEMENT
-status: NOT_STARTED   # re-implementation pending under ADR-0022
+status: waiting
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 5
@@ -22,6 +22,12 @@ needs_registry: false
 needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **OPEN**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: none. No bed-regeneration owner is retained on main; offline arithmetic alone does not settle beds. Evidence: `crates/gameplay/characters/src/stamina.rs`.
+
+Remaining: Implement the BED-1/OFFLINE transaction participant after its durable food/vitals/Soul gates exist. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2148, branch skeleton/bed-regen-1
 (the draft is a 972-line "bounded checkpoint": a card only, with an inert source/patch appendix, no

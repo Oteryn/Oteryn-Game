@@ -4,7 +4,7 @@
 task_id: MAP-OVERLAY-1c
 title: "MAP-OVERLAY-1c: World reset (RETIRING -> drain -> Ground retirement -> atomic epoch N+1 ACTIVATED) and overlay retire"
 mode: IMPLEMENT
-status: NOT_STARTED   # re-implementation pending under ADR-0022
+status: waiting
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 3
@@ -19,6 +19,12 @@ needs_migration: true   # next free number at allocation time (only one migratio
 needs_registry: true    # RESOURCE_LIMITS_REGISTRY MAP01-RESET-RETIRE-MS row; GAME_EVENT_FOUNDATION_REGISTRY audit grammar if widened
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **OPEN**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: none. Map pickup still uses epoch 0 pending the reset owner; no MAP-OVERLAY-1c activation/drain owner is retained. Evidence: `crates/gameplay/dispatch/src/gameplay_transport/loop_map_pickup.rs`.
+
+Remaining: World RETIRING/drain/Ground retirement and atomic epoch activation, source fencing and measured reset qualification remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2167, branch skeleton/map-overlay-1c
 

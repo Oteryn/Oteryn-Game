@@ -4,7 +4,7 @@
 task_id: GUILDHALL-1
 title: "GUILDHALL-1: guildhall bid (split escrow), guild rent, ban, GUILD_DISBAND, guild ACL"
 mode: IMPLEMENT
-status: NOT_STARTED   # re-implementation pending under ADR-0022
+status: waiting
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 5
@@ -23,6 +23,12 @@ needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
 
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **OPEN**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: none. Guild core exists; no guildhall escrow/ownership writer from this card is retained. Evidence: `crates/gameplay/durability/src/durability/guild.rs`.
+
+Remaining: Hall split escrow, rank ACL, release and disband payout remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
+
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2153, branch skeleton/guildhall-1
 
 ## Goal
@@ -38,7 +44,7 @@ Inbox disposition stay with their House owners.
 |---|---|
 | BANK-1 | MERGED (#1766) |
 | HOUSE-RUNTIME-1a | MERGED (#2163) |
-| GUILD-1 (tables, guards, Resign/Disband writers, `GuildDisbandTransaction`) | MERGED (#2136) as unregistered checkpoint; sources removed by #2280 (d25623a36) as dead code — BLOCKING until the Guild core is re-landed (`docs/agents/tasks/GUILD-1.md`) |
+| GUILD-1 (tables, guards, Resign/Disband writers, `GuildDisbandTransaction`) | MERGED (#2136) as unregistered checkpoint; sources removed by #2280 (d25623a36) as dead code — BLOCKING until the Guild core is re-landed (`docs/agents/tasks/archive/GUILD-1.md`) |
 | GUILD-BANK-1 (`apply_guildhall_escrow_in_transaction`, guild ledger) | BLOCKING — re-implementation pending (draft #2139 closing) |
 | HOUSE-1a (auction, property/legacy anchor, `game_house_guild_disband_released_proven` delegate) | BLOCKING — re-implementation pending (draft #2137 closing) |
 | HOUSE-1b (rent collection, disposition, Inbox steps) | BLOCKING — re-implementation pending (draft #2141 closing) |

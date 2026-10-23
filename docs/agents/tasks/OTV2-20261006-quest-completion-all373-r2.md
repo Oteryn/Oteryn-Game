@@ -1,11 +1,18 @@
 # OTV2-20261006 Quest Completion All-373 R2
 
-status: implementing
+status: waiting
+pr: null
 base_main: 52712f633786721c0d255888a92c81165cd2d5c3
 branch: codex/quest-completion-all373-20261006-r2
 runtime_activation: false
 last_progress: completion candidate regenerated on current main with 303 canonical quest owners and 8 exact kill-to-Encounter binding candidates qualified fail-closed
 next_action: implement the first native event-dispatch lane for exact kill outcomes without promoting unrelated quest stages
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#1875](https://github.com/Oteryn/Oteryn-Game/pull/1875). All-373 completion candidate generation and binding/matrix preparation are merged. Evidence: `tools/content-schema/quest-authoring/quest_completion_import.py`.
+
+Remaining: Native event/reward binding and runtime activation of held chosen-stage candidates remain; candidate counts do not prove playable quests. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 ## Goal
 

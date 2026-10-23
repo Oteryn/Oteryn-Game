@@ -4,7 +4,7 @@
 task_id: APP-3
 title: "APP-3: appearance change command, actor appearance state and wire codec"
 mode: IMPLEMENT
-status: NOT_STARTED   # re-implementation pending under ADR-0022
+status: waiting
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 4
@@ -19,6 +19,12 @@ needs_migration: false
 needs_registry: true   # capability, command, state domain allocated by the protocol registry lease
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **OPEN**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: none. No permanent appearance-change codec/dispatch from this card is on main; temporary spell appearance is a different path. Evidence: `crates/protocol-oteryn/src/capability_tables.rs`.
+
+Remaining: Implement APP-3 permanent selection command and publication over the existing APP-1 owner. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2175, branch skeleton/app-3
 

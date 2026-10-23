@@ -4,7 +4,7 @@
 task_id: GUILD-CHAT-1
 title: "GUILD-CHAT-1: guild room on the World chat relay"
 mode: IMPLEMENT
-status: NOT_STARTED   # re-implementation pending under ADR-0022
+status: waiting
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 4
@@ -21,6 +21,12 @@ needs_registry: true   # only if CP resolves the open protocol decision below by
 needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **OPEN**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: none. Local/private/room chat exists; no guild-room relay/delivery implementation from this card is retained. Evidence: `crates/gameplay/dispatch/src/gameplay_transport/chat_intent.rs`.
+
+Remaining: Guild membership-bound chat destination, delivery rechecks and login message remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2142, branch skeleton/guild-chat-1
 (the draft carries a task record only; it has no code)
@@ -39,7 +45,7 @@ delivered. Relay payload, delivery-time membership check and tests are one insep
 | CHAT-2A (sealed relay payload, key ring, replay window) | MERGED (#2076); `docs/agents/tasks/archive/CHAT-2A.md` |
 | CHAT-2B (World relay over LISTEN/NOTIFY, rooms, private messages) | MERGED (#2227, restart of #2128) |
 | CHAT-0 accepted (§5 guild-room relay payload amendment) | ACCEPTED (ACCEPT-SOCIAL-MAP-0 §1 makes the GUILD0 amendment effective) |
-| GUILD-1 (membership truth, `GuildId`, rank, motd, revision) | MERGED (#2136) only as an unregistered checkpoint whose sources were removed by #2280 as dead code; **BLOCKING** until the Guild core is re-landed (`docs/agents/tasks/GUILD-1.md`, status NOT_FULLY_QUALIFIED). No `GuildId` type or membership reader exists on main |
+| GUILD-1 (membership truth, `GuildId`, rank, motd, revision) | MERGED (#2136) only as an unregistered checkpoint whose sources were removed by #2280 as dead code; **BLOCKING** until the Guild core is re-landed (`docs/agents/tasks/archive/GUILD-1.md`, status NOT_FULLY_QUALIFIED). No `GuildId` type or membership reader exists on main |
 | GUILD-WIRE-1 (`GUILD_V1` wire) | NOT_STARTED re-implementation (draft #2159 closing); held, **not** a prerequisite and not authorized by this card (`docs/agents/tasks/GUILD-WIRE-1.md`) |
 | CHAT-MUTE-CAST-1 / CHAT-WIRE-1 | MERGED (archive); the existing `Say`/room send path is the only consumer today |
 

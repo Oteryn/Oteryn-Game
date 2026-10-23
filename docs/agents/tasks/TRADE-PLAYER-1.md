@@ -4,7 +4,7 @@
 task_id: TRADE-PLAYER-1
 title: "TRADE-PLAYER-1: player-to-player trade"
 mode: IMPLEMENT
-status: NOT_STARTED
+status: waiting
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 4
@@ -20,6 +20,12 @@ needs_registry: true
 needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **OPEN**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: none. No player-to-player trade state/writer or capability is retained; NPC trade is a separate mechanic. Evidence: `crates/protocol-oteryn/src/capability_tables.rs`.
+
+Remaining: Offer/confirm/transfer state, atomic two-Character item/audit composition and real two-session/restart dispatch qualification remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2132, branch skeleton/trade-player-1
 
