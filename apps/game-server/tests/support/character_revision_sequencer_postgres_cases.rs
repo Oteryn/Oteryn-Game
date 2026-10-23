@@ -686,6 +686,7 @@ fn kill(tag: u8) -> TestResult<BestiaryKillRequest> {
 fn death(tag: u8) -> TestResult<CharacterDeathRequest<2>> {
     let xp = xp_request(tag)?;
     Ok(CharacterDeathRequest {
+        pvp_contributors: Vec::new(),
         occurrence: PlayerDeathOccurrence::from_bytes(id(tag)).map_err(debug)?,
         context: xp.context,
         policy_revision: "policy-1".into(),
@@ -1248,5 +1249,12 @@ fn durable_death_clears_harmony_and_serene_and_receipt_readback_cannot_restore_t
     })
 }
 
+#[allow(
+    dead_code,
+    unused_imports,
+    reason = "test-only wrapper consumed by the composed dispatch tests"
+)]
+#[path = "pvp_source_death_fixture.rs"]
+pub(super) mod pvp_source_death_fixture;
 #[path = "character_revision_sequencer_postgres_cases/tutorial_vitals_fixture.rs"]
 pub(super) mod tutorial_vitals_fixture;

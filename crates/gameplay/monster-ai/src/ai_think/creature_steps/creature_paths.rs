@@ -1,7 +1,7 @@
 //! Bounded path requests retained in the creature's existing table entry, never a second queue.
 use super::*;
 use crate::ai::{AiProvenance, AiProvenanceInput, PathRequest, RouteStep, build_path_proposal};
-use crate::movement::path_search::{CREATURE_COST, measured_route};
+use crate::movement::path_search::{PathOccupancy, measured_route};
 
 impl CreatureAiTable {
     pub(super) fn drain_creature_paths(
@@ -32,10 +32,7 @@ impl CreatureAiTable {
         if order.is_empty() {
             return;
         }
-        let mut occupied = std::collections::BTreeMap::<(i32, i32, i16), usize>::new();
-        for (_, at) in crate::movement::path_search::standing_positions(runtime) {
-            *occupied.entry((at.x, at.y, at.floor)).or_default() += 1;
-        }
+        let occupied = PathOccupancy::current(runtime);
         // No position/map mutation occurs during this drain. Reuse Movement's admission
         // answers across requests; the next drain and every step commit read fresh facts.
         let mut admissible = std::collections::HashMap::new();
@@ -71,51 +68,10 @@ impl CreatureAiTable {
                 {
                     return None;
                 }
-                let count = occupied.get(&(at.x, at.y, at.floor)).copied().unwrap_or(0);
-                Some(if count > usize::from(at == start) {
-                    CREATURE_COST
-                } else {
-                    0
-                })
+                Some(occupied.extra_cost(at, start))
             });
             budget.charge(false, work);
-            motion.pending = None;
-            match route {
-                Some(route) => {
-                    let steps: Vec<_> = route
-                        .into_iter()
-                        .map(|step| {
-                            let node = match step {
-                                crate::movement::CardinalStep::North => 0,
-                                crate::movement::CardinalStep::East => 1,
-                                crate::movement::CardinalStep::South => 2,
-                                crate::movement::CardinalStep::West => 3,
-                            };
-                            RouteStep::new(node, 1)
-                        })
-                        .collect();
-                    motion.route = build_path_proposal(
-                        PathRequest::new(
-                            provenance(runtime, actor, motion),
-                            entry.sequence,
-                            1,
-                            work,
-                        ),
-                        &steps,
-                    )
-                    .ok();
-                    motion.expected = Some(start);
-                    motion.cursor = 0;
-                }
-                None => {
-                    let back = matches!(motion.goal, MovementGoal::WalkBack { .. });
-                    motion.stop();
-                    entry.state.unreachable = !back;
-                    if back {
-                        entry.due_us = None;
-                    }
-                }
-            }
+            install_route(entry, runtime, start, route, work);
         }
     }
 }
@@ -143,4 +99,61 @@ pub(super) fn provenance(
         ruleset_revision: 1,
         determinism_profile_revision: 1,
     })
+}
+
+pub(super) fn install_route(
+    entry: &mut super::super::CreatureAiEntry,
+    runtime: &ChannelRuntimeV1,
+    start: MovementLocalPosition,
+    route: Option<Vec<crate::movement::CardinalStep>>,
+    work: usize,
+) {
+    let actor = entry.state.actor;
+    let motion = &mut entry.motion;
+    motion.pending = None;
+    match route {
+        Some(route) => {
+            let Ok(expected) = runtime.read_actor_position(actor) else {
+                motion.stop();
+                return;
+            };
+            if expected.position() != start {
+                motion.stop();
+                return;
+            }
+            let steps: Vec<_> = route
+                .into_iter()
+                .map(|step| {
+                    let node = match step {
+                        crate::movement::CardinalStep::North => 0,
+                        crate::movement::CardinalStep::East => 1,
+                        crate::movement::CardinalStep::South => 2,
+                        crate::movement::CardinalStep::West => 3,
+                    };
+                    RouteStep::new(node, 1)
+                })
+                .collect();
+            motion.route = build_path_proposal(
+                PathRequest::new(provenance(runtime, actor, motion), entry.sequence, 1, work),
+                &steps,
+            )
+            .ok();
+            motion.expected = Some(expected);
+            motion.target_snapshot = motion.goal.target().and_then(|(target, _)| {
+                runtime
+                    .read_actor_position(target)
+                    .ok()
+                    .map(|snapshot| (target, snapshot))
+            });
+            motion.cursor = 0;
+        }
+        None => {
+            let back = matches!(motion.goal, MovementGoal::WalkBack { .. });
+            motion.stop();
+            entry.state.unreachable = !back;
+            if back {
+                entry.due_us = None;
+            }
+        }
+    }
 }

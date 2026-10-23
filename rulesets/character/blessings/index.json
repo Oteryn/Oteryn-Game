@@ -4,7 +4,21 @@
   "kind": "ruleset",
   "owner": "Character/Death",
   "repository": "Oteryn/Oteryn-Game",
-  "population_state": "READY_UNPOPULATED",
+  "population_state": "POPULATED",
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Blessing definitions/effects; current ownership durable."
+  "notes": "Blessing definitions/effects; current ownership durable.",
+  "runtime_admission": "BLOCKED",
+  "runtime_switch_authorized": false,
+  "evidence_completeness": "COMPLETE_OTERYN_WORKING_PARAMETERS_GLOBAL_SOURCE_ARCHIVED",
+  "source_snapshot_target": "current-at-fetch-2026-10-18",
+  "payloads": [
+    {
+      "path": "rulesets/character/blessings/reference-evidence.json",
+      "sha256": "614a9e7bb219f3d2bb77b14322e39cbf7cc82b97d55f87202a99d8cbe2264b91"
+    },
+    {
+      "path": "rulesets/character/blessings/catalogue.json",
+      "sha256": "711e66f10180af340cc79083a4c70d4cc7642a969aa4d4f757726070956969b6"
+    }
+  ]
 }

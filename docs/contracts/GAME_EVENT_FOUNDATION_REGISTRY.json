@@ -132,7 +132,8 @@
       "deletion_or_anonymization_policy": "Delete the retained player-linked event envelope and payload at ordinary expiry; do not replace deletion with indefinite anonymized or pseudonymous retention. Expiry never weakens the authoritative guild, membership and guild bank tables, which this profile never deletes.",
       "legal_hold_policy": "Explicit case/legal authorization must record reason, authorizing actor, start time and exact affected records or scope, with audited placement, access, scope change and release; release returns to the original expiry without resetting the clock.",
       "policy_revision": 1
-    }
+    },
+    {"id": "SPECTATE_AUDIT_RETENTION_V1", "purpose": "Bounded investigation of consent grants and observer session admission/end; no public history or analytics.", "privacy_class": "SECURITY_SENSITIVE", "finite_retention_duration_or_ceiling": "P30D from the immutable trusted-server event timestamp; never refreshed.", "permitted_roles": ["authorized staff investigation", "authorized security investigation"], "export_redaction_policy": "Case-scoped audited staff/security export only; redact unrelated envelope fields; no public export.", "deletion_or_anonymization_policy": "Delete payload/envelope at original expiry; no indefinite derived history.", "legal_hold_policy": "Explicit case/legal authorization with recorded actor, reason, scope, start and audited access; release returns to original expiry.", "policy_revision": 1}
   ],
   "event_type_rules": {
     "id_type": "uint32",
@@ -183,7 +184,8 @@
       "privacy_class_floor": "RESTRICTED_PLAYER_LINKED",
       "retention_profile_id": "ECONOMY_LEDGER_RETENTION_V1",
       "atomic_mutation_evidence": true
-    }
+    },
+    {"id": 4, "name": "SPECTATE_OBSERVATION", "owner_gate": "SPECTATE1-OBSERVER-CONTRACT-V1", "payload_schema": "docs/contracts/game-events/v1/spectate.proto", "payload_message": "oteryn.events.v1.SpectateObservationV1", "current_schema_revision": 1, "durability_class": "DURABLE_AUDIT", "privacy_class_floor": "SECURITY_SENSITIVE", "retention_profile_id": "SPECTATE_AUDIT_RETENTION_V1", "atomic_mutation_evidence": false}
   ],
   "notes": [
     "Domain payloads are registered only by their owning gameplay/DUR gates; type 1 covers the enabled first-slice Character bootstrap/create mutation.",

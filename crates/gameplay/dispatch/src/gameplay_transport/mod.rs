@@ -39,12 +39,14 @@ mod logout;
 #[cfg(test)]
 mod logout_tests;
 mod loop_move;
+pub mod spectate_session;
 use crate::map::boot::BundleCollisionIndexExt;
 pub use last_position::LastPositionFlush;
 mod control_loss_reconciliation;
 mod map_door;
 mod monk_save;
 mod monster_ai_cycle;
+mod monster_profile_cycle;
 #[allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
@@ -59,9 +61,11 @@ mod npc_trade_command;
 mod npc_travel;
 mod npc_voice;
 mod paced_movement;
+mod pvp_death;
 mod tutorial_corruptor;
 mod tutorial_movement;
 mod tutorial_session;
+mod world_respawns;
 pub use npc_talk::NpcTalkBook;
 mod quest_admission;
 mod quest_log_source;
@@ -70,11 +74,15 @@ mod resume;
 mod rune_use_bridge;
 mod seam_rooms;
 pub use seam_rooms::SeamRooms;
+mod promotion_death;
+mod promotion_login;
 mod source_item_cycle;
+mod source_pvp_expiry;
 mod spell_access_facts;
 mod spell_character_facts;
 mod spell_magnitude_facts;
 pub mod spell_premium_coordinator;
+pub use promotion_login::PremiumSessions;
 mod spell_presentation_publisher;
 #[allow(
     unused_imports,
@@ -755,38 +763,6 @@ fn ends_session<E>(outcome: &Result<ExpiredLossReleaseV1, E>) -> bool {
     )
 }
 
-/// PREM-1b (D476): the sessions of this node holding each account's Premium registration.
-#[derive(Default)]
-pub struct PremiumSessions(
-    std::collections::HashMap<[u8; 16], std::collections::HashSet<GameSessionId>>,
-);
-
-impl PremiumSessions {
-    fn admit(&mut self, account_id: [u8; 16], session: GameSessionId) {
-        self.0.entry(account_id).or_default().insert(session);
-    }
-
-    /// Drops `session`'s registration. True only when it held one and was the account's last,
-    /// so a repeated release, or one racing a successor's admission, stops no pulls.
-    /// PREM-WIRE-1: the account `session` was admitted for, if it holds a registration.
-    fn account_of(&self, session: GameSessionId) -> Option<[u8; 16]> {
-        self.0
-            .iter()
-            .find_map(|(account, sessions)| sessions.contains(&session).then_some(*account))
-    }
-
-    fn release(&mut self, account_id: [u8; 16], session: GameSessionId) -> bool {
-        let Some(sessions) = self.0.get_mut(&account_id) else {
-            return false;
-        };
-        if !sessions.remove(&session) || !sessions.is_empty() {
-            return false;
-        }
-        self.0.remove(&account_id);
-        true
-    }
-}
-
 /// The durable terminal release a connection decides.
 #[derive(Clone, Copy)]
 enum TerminalRelease {
@@ -1318,62 +1294,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Err(error) => {
                 operator_event(&format!("settled_respawn_placement_failed reason={error}"));
                 false
-            }
-        }
-    }
-
-    /// The durable half of [`Self::settle_death`]. The death request carries the binding's
-    /// policy, the whole `CHARACTER_EXPERIENCE_TABLE_LEVELS` threshold table, by value across
-    /// the commit, so `settle_death` keeps this future on the heap: inline, it would grow every
-    /// step future that settles a death by several copies of that table.
-    async fn commit_death(
-        &self,
-        session: GameSessionId,
-        progression: &SessionProgressionBinding,
-        death: actor_spell::PlayerDeath,
-    ) -> (
-        DeathCommit,
-        Option<crate::durability::character_build::DurableBuildState>,
-    ) {
-        let (map_revision, respawn) = {
-            let runtime = self.runtime.lock().await;
-            (runtime.map_revision_digest(), runtime.respawn_position())
-        };
-        let request = player_death_request(
-            progression,
-            (self.world_id, self.channel_id),
-            map_revision,
-            death,
-            respawn,
-        );
-        let Ok(Some(fence)) = self.current_quest_fence(session).await else {
-            return (DeathCommit::Unavailable, None);
-        };
-        // CP D1425: the active generation's training formula prices the death's build loss.
-        let formula = self
-            .active_generation
-            .and_then(|active| active.native_gameplay())
-            .and_then(|native| native.training_formula())
-            .map(|formula| formula as &dyn crate::durability::character_build::BuildFormula);
-        match self
-            .root
-            .settle_runtime_player_death(
-                &self.revision_sequencer,
-                self.character,
-                self.holder,
-                fence,
-                request,
-                formula,
-            )
-            .await
-        {
-            Ok(committed) => (
-                DeathCommit::Settled,
-                committed.build_loss.map(|loss| loss.after),
-            ),
-            Err(error) => {
-                operator_event(&format!("player_death_settle_failed reason={error}"));
-                (death_commit_refusal(&error), None)
             }
         }
     }
@@ -2663,7 +2583,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         command: connection::UseCommand,
     ) -> Option<npc_command::NpcTalkOutcome> {
-        npc_command::resume_bank_talk(self, actor, command).await
+        npc_command::resume_npc_talk(self, actor, command).await
     }
 
     async fn npc_talk(
@@ -3739,6 +3659,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         }
         // PREM-1b: pull Premium before any Premium read; admission does not wait on it.
         self.admit_premium(*record.account_id.as_bytes(), attempt.game_session_id);
+        self.admit_promotion(attempt.game_session_id).await;
         let mut admitted = AdmittedSession {
             game_session_id: attempt.game_session_id,
             world_id: self.world_id,
@@ -4644,6 +4565,7 @@ fn player_death_request<const N: usize>(
         .map(|byte| format!("{byte:02x}"))
         .collect();
     crate::durability::character_death::CharacterDeathRequest {
+        pvp_contributors: Vec::new(),
         occurrence: death.occurrence,
         context: progression.context.clone(),
         policy_revision: progression.policy_revision.clone(),
@@ -6759,13 +6681,14 @@ mod death_ml_loss_postgres {
     use oteryn_gameplay_progression::hit_training::SkillFamily;
     use oteryn_simulation_determinism::{ExactI64, RoundingMode};
 
-    fn death(tag: u8) -> TestResult<CharacterDeathRequest<50>> {
+    pub(super) fn death(tag: u8) -> TestResult<CharacterDeathRequest<50>> {
         let thresholds = std::array::from_fn(|index| LevelThreshold {
             level: u32::try_from(index + 1).unwrap_or(u32::MAX),
             minimum_experience: ExactI64::new(i64::try_from(index).unwrap_or(i64::MAX) * 20),
         });
         let context = harness::context();
         Ok(CharacterDeathRequest {
+            pvp_contributors: Vec::new(),
             occurrence: PlayerDeathOccurrence::from_bytes(id(tag)).map_err(debug)?,
             policy: FiniteProgressionPolicy {
                 context: context.clone(),
@@ -6904,6 +6827,7 @@ mod death_ml_loss_postgres {
                 fence(3)?,
                 request.clone(),
                 Some(&formula as &dyn BuildFormula),
+                None,
             )
             .await
             .map_err(debug)?;
@@ -7188,6 +7112,7 @@ mod death_ml_loss_postgres {
                 fence(5)?,
                 request.clone(),
                 Some(table),
+                None,
             )
             .await
             .map_err(debug)?;

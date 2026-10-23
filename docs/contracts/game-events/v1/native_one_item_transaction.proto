@@ -389,7 +389,13 @@ message OneItemCharmUnassignV1 {
 message OneItemFeeBurnCauseV1 {
   oneof cause {
     OneItemCharmUnassignV1 charm_unassign = 1;
+    OneItemNpcPurchaseV1 promotion_purchase = 2;
+    OneItemNpcPurchaseV1 blessing_purchase = 3;
   }
+}
+message OneItemNpcPurchaseV1 {
+  string service_key = 1;
+  bytes occurrence = 2;
 }
 
 // One BURN line: a live coin stack in a direct entry of the main backpack.

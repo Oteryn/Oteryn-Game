@@ -1,12 +1,12 @@
 {
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
-  "content_revision": "npc-bank-1-20261015-r1",
-  "content_lock_digest": "d97c31a937d0df0bdbb018b3085677790145b9bfe22057ee5bf1c9f0073e26a4",
+  "content_revision": "npc-premium-services-20261022-r1",
+  "content_lock_digest": "06201a8f693ef231059f18c099a85a39e5c44515447b836ac2c17fa572684d1a",
   "min_runtime_version": "1",
   "required_capabilities": [],
   "ruleset_compatibility": [
     "oteryn:ruleset/entry-r1"
   ],
-  "provenance_summary": "lock:npc-bank-1-20261015-r1/0d97fc1e6951019ce0b596fe12d334917b7255059c9a721e6a3d8715b1294acb"
+  "provenance_summary": "lock:npc-premium-services-20261022-r1/d45371e6d661fce34a67de1c79e6fea4f66c1176d6f089b3d3e13b5f10be87b0"
 }

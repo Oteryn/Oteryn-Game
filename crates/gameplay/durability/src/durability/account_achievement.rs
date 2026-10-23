@@ -349,7 +349,7 @@ impl DurabilityRoot {
 /// Test-only granting transaction: the XP writer's complete gameplay fence,
 /// then each request in order, committed together or not at all. In
 /// production the reward-claim MINT is the granter (contract §5 step 4).
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 mod granting_harness {
     use super::*;
     use crate::durability::DurabilityRoot;
@@ -479,6 +479,4 @@ mod tests {
     fn the_display_read_is_linked() {
         let _ = crate::durability::DurabilityRoot::read_account_achievements;
     }
-
-
 }

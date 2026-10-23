@@ -15,6 +15,7 @@ impl CreatureAiTable {
         runtime: &mut ChannelRuntimeV1,
         cells: &NativeEntryMovementCells,
         blocking: &dyn CellBlocker,
+        current_map: Option<&crate::movement::monster_map::MonsterMap>,
         source: &dyn CurrentCreatureSpeedReader,
         ground: &dyn GroundSpeedSource,
         root: &GameplayDecisionRoot,
@@ -68,13 +69,14 @@ impl CreatureAiTable {
                 continue;
             };
             if motion.content != runtime.content_pin().server_artifact_digest()
-                || motion.expected.is_some_and(|at| at != snapshot.position())
+                || motion.expected.is_some_and(|expected| expected != snapshot)
+                || !motion.target_is_current(runtime)
                 || motion.goal.target().is_some_and(|(target, at)| {
                     !runtime
                         .read_actor_position(target)
                         .is_ok_and(|position| position.position() == at)
                 })
-                || !crate::movement::relocate::creature_cell_admissible(cells, blocking, next)
+                || !admits(cells, blocking, current_map, next)
                 || runtime.position_occupied_by_other(actor, next) != Ok(false)
                 || runtime.native_summon_role(actor) != Ok(None)
             {
@@ -94,20 +96,22 @@ impl CreatureAiTable {
                 owner_context: snapshot.context(),
                 content_scope: cells.scope(),
             };
-            if step_cardinal(
-                &mut runtime.borrow_movement_position(),
-                actor,
-                snapshot,
-                &selection,
-                cells.index(),
-                step,
-            )
-            .is_err()
-            {
+            let moved = match current_map {
+                Some(map) => map.step(runtime, cells, actor, snapshot, step),
+                None => step_cardinal(
+                    &mut runtime.borrow_movement_position(),
+                    actor,
+                    snapshot,
+                    &selection,
+                    cells.index(),
+                    step,
+                ),
+            };
+            if moved.is_err() {
                 motion.stop();
                 continue;
             }
-            motion.expected = Some(next);
+            motion.expected = moved.ok();
             if motion.route.is_some() {
                 motion.cursor += 1;
             }
@@ -128,6 +132,10 @@ impl CreatureAiTable {
                 continue;
             };
             let at = snapshot.position();
+            if !motion.target_is_current(runtime) {
+                motion.stop();
+                continue;
+            }
             if let Some((target, _)) = motion.goal.target() {
                 let Ok(position) = runtime.read_actor_position(target) else {
                     motion.stop();
@@ -168,12 +176,13 @@ impl CreatureAiTable {
                 actor,
                 at,
                 entry.state.profile.targeting().static_attack_chance_ppm,
-                motion.goal.target().is_none_or(|(_, target)| {
-                    crate::movement::relocate::creature_sight_clear(cells, blocking, at, target)
-                }),
+                motion
+                    .goal
+                    .target()
+                    .is_none_or(|(_, target)| sight(cells, blocking, current_map, at, target)),
                 root,
                 |next| {
-                    crate::movement::relocate::creature_cell_admissible(cells, blocking, next)
+                    admits(cells, blocking, current_map, next)
                         && runtime.position_occupied_by_other(actor, next) == Ok(false)
                 },
             ) else {
@@ -226,7 +235,13 @@ impl CreatureAiTable {
                 )
                 .is_ok()
             {
-                motion.expected = Some(at);
+                motion.expected = Some(snapshot);
+                motion.target_snapshot = motion.goal.target().and_then(|(target, _)| {
+                    runtime
+                        .read_actor_position(target)
+                        .ok()
+                        .map(|snapshot| (target, snapshot))
+                });
                 motion.due = Some(due);
                 motion.prepared = Some((step, next, near));
             }

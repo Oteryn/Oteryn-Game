@@ -2108,49 +2108,11 @@ pub mod test_support {
         controller
     }
 
-    /// The committed production manifest's generation, activated at node boot for `world`: every
-    /// pinned section including `loot_tables` (V8), so the reward table carries the real creature
-    /// rows (the rat's 5 XP and `oteryn:loot.creature.rat`). `source_world` replaces the
-    /// manifest's optional source-world addon (`None`: the accepted entry room). The returned pin
-    /// is the activation's own, which the Channel runtime and its combat room are built from.
-    pub fn activated_with_loot_tables(
-        world: oteryn_protocol_oteryn::WorldId,
-        source_world: Option<&[u8]>,
-    ) -> (
-        ContentActivationController,
-        crate::content::NativeEntryContentPin,
-    ) {
-        let manifest = Path::new(if env!("CARGO_PKG_NAME") == "oteryn-game-server" {
-            env!("CARGO_MANIFEST_DIR")
-        } else {
-            concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server")
-        })
-        .join("../../content/spells.manifest.json");
-        let mut supplied = NativeGameplayInput::from_manifest(&manifest).unwrap();
-        assert!(
-            supplied.loot_tables.is_some(),
-            "the manifest pins loot_tables"
-        );
-        supplied.source_world = source_world.map(pinned);
-        let room = crate::content::qualify_selected_native_gameplay_room(world, &supplied).unwrap();
-        let issuance = NativeEntryActivationIssuance {
-            world_id: world,
-            activation_sequence: 1,
-            server_artifact_digest: room.compiled().server_digest(),
-            client_artifact_digest: room.compiled().client_digest(),
-            frame_binding_digest: room.frame_binding().digest(),
-        };
-        let mut controller = ContentActivationController::new();
-        let pin = activate_native_entry_room_with_gameplay(
-            &mut controller,
-            &NodeBootQuiescence::before_channel_runtime(),
-            world,
-            &issuance,
-            &supplied,
-        )
-        .unwrap();
-        (controller, pin)
-    }
+    mod activation_fixture;
+    pub use activation_fixture::{
+        activated_loop_monster, activated_loop_monster_missing_child, activated_with_loot_tables,
+        loop_monster_inner_digest,
+    };
 }
 
 #[cfg(test)]

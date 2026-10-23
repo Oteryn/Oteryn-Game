@@ -709,6 +709,7 @@ fn admit_npc_presence_on_ranged_admitted(
     let npcs = npc_presence::apply(&mut draft, NPC_PRESENCE, NPC_PRESENCE_SHA256)?;
     // NPC-ECON-1 admits the one Bank service on top of the NPC presence package (DUR-04).
     npc_bank_services::apply(&mut draft)?;
+    oteryn_game_server::content::npc_catalogue::premium_services::install(&mut draft)?;
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, reconciled_limits())?;
     let tree_sha256 = write_documents(output, &documents)?;
     println!("npc_presence={npcs} tree_sha256={tree_sha256} predecessor_mode=true");

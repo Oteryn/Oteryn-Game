@@ -4,7 +4,7 @@
   "kind": "ruleset",
   "owner": "Party",
   "repository": "Oteryn/Oteryn-Game",
-  "population_state": "READY_UNPOPULATED",
+  "population_state": "POPULATED",
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Party/shared-EXP rules."
+  "notes": "shared-experience.json records the accepted channel-local policy and provenance; this authored row has no runtime loader yet."
 }
