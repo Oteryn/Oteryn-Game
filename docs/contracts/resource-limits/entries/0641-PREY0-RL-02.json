@@ -1,0 +1,22 @@
+{
+  "id": "PREY0-RL-02",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_PREY0_PREY_AND_HUNTING_TASKS_DECISION_2026-09-30.md",
+  "resource": "Creature keys per stored Prey list",
+  "unit": "keys",
+  "hard_maximum": 9,
+  "configurable_range": {
+    "minimum": 0,
+    "maximum": 9
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "Distinct nonempty keys; no automatic list initialization while draw content is unadmitted.",
+  "client_visible": true,
+  "boundary_tests": [
+    "prey_storage_rejects_invalid_bounds_and_preserves_all_bonus_grades"
+  ],
+  "consumers": [
+    "crates/gameplay/progression/src/prey.rs",
+    "apps/game-server/migrations/0152_prey_slot_state.sql"
+  ],
+  "notes": "HUNT-1 bounded rules/storage checkpoint; PREY0 section 12. Distinct nonempty keys; no automatic list initialization while draw content is unadmitted."
+}
