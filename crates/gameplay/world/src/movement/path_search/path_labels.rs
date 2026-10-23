@@ -45,6 +45,11 @@ impl SearchLabels {
         }
     }
 
+    pub(super) fn known_cost(&mut self, at: MovementLocalPosition) -> Option<Option<u32>> {
+        let tile = self.index.index(at, self.tiles.len());
+        self.tiles.get(tile).map(|tile| tile.extra)
+    }
+
     pub(super) fn get(&self, index: usize) -> Label {
         self.labels[index]
     }

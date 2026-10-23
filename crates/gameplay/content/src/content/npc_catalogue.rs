@@ -14,6 +14,7 @@ use super::{
     ProjectV2DefinitionRef, ProjectV2Family, ProjectV2Source, ProjectV2SourceIdentityBinding,
     WorldProject, capture_world_project,
 };
+pub mod premium_services;
 pub mod replies;
 pub mod service;
 #[allow(

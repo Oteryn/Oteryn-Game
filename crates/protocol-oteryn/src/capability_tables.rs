@@ -183,6 +183,14 @@ pub const GATED: &[(u32, &[u32], &[u32])] = &[
         ],
         &[STATE_DOMAIN_DAILY_REWARD],
     ),
+    (
+        crate::spectate::CAPABILITY_SPECTATE_V1,
+        &[
+            crate::spectate::COMMAND_TYPE_OBSERVE_GRANT_SET,
+            crate::spectate::COMMAND_TYPE_OBSERVE_GRANT_REVOKE,
+        ],
+        &[crate::spectate::STATE_DOMAIN_OBSERVE_TARGET],
+    ),
 ];
 
 /// Core domains a selected capability replaces, as (capability, domains). MAP-WIRE-1 contract §3

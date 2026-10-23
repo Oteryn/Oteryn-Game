@@ -1,0 +1,75 @@
+//! Closed fee-source bindings. The Charm bytes remain unchanged.
+use super::*;
+use crate::durability::item_fee_burn_audit::OneItemNpcPurchaseV1;
+
+impl FeeBurnCause {
+    pub(super) fn kind(&self) -> i16 {
+        match self {
+            Self::CharmUnassign { .. } => CAUSE_CHARM_UNASSIGN,
+            Self::PromotionPurchase { .. } => 2,
+            Self::BlessingPurchase { .. } => 3,
+        }
+    }
+    pub(super) fn occurrence(&self) -> &[u8; 16] {
+        match self {
+            Self::CharmUnassign { occurrence, .. } => occurrence.as_bytes(),
+            Self::PromotionPurchase { occurrence, .. }
+            | Self::BlessingPurchase { occurrence, .. } => occurrence,
+        }
+    }
+    pub(super) fn key(&self) -> &str {
+        match self {
+            Self::CharmUnassign { charm, .. } => charm.as_str(),
+            Self::PromotionPurchase { service, .. } | Self::BlessingPurchase { service, .. } => {
+                service
+            }
+        }
+    }
+    pub(super) fn charm_key(&self) -> Option<&str> {
+        matches!(self, Self::CharmUnassign { .. }).then(|| self.key())
+    }
+    pub(super) fn purchase_key(&self) -> Option<&str> {
+        (!matches!(self, Self::CharmUnassign { .. })).then(|| self.key())
+    }
+    pub(super) fn validate(&self) -> Result<()> {
+        check_uuid_v7(self.occurrence()).map_err(|_| FeeBurnError::InvalidInput)?;
+        match self {
+            Self::CharmUnassign { .. } => Ok(()),
+            Self::PromotionPurchase { service, .. }
+                if service.starts_with("oteryn:service.promotion.") =>
+            {
+                Ok(())
+            }
+            Self::BlessingPurchase { service, .. }
+                if service.starts_with("oteryn:service.blessing.") =>
+            {
+                Ok(())
+            }
+            _ => Err(FeeBurnError::InvalidInput),
+        }
+    }
+    pub(super) fn audit(&self) -> FeeBurnCauseV1 {
+        match self {
+            Self::CharmUnassign { charm, occurrence } => {
+                FeeBurnCauseV1::CharmUnassign(OneItemCharmUnassignV1 {
+                    charm_key: charm.as_str().into(),
+                    occurrence: occurrence.as_bytes().to_vec(),
+                })
+            }
+            Self::PromotionPurchase {
+                service,
+                occurrence,
+            } => FeeBurnCauseV1::PromotionPurchase(OneItemNpcPurchaseV1 {
+                service_key: service.clone(),
+                occurrence: occurrence.to_vec(),
+            }),
+            Self::BlessingPurchase {
+                service,
+                occurrence,
+            } => FeeBurnCauseV1::BlessingPurchase(OneItemNpcPurchaseV1 {
+                service_key: service.clone(),
+                occurrence: occurrence.to_vec(),
+            }),
+        }
+    }
+}

@@ -4,12 +4,15 @@ use super::movement_goal::{MovementGoal, NearCounter, destination};
 use crate::ai::PathProposal;
 use crate::content::{LogicalCell, NativeEntryMovementCells};
 use crate::foundation::owner_timer::{OwnerTimerLane, TimerFamily};
-use crate::foundation::{ChannelRuntimeV1, ExactActorRef, MovementLocalPosition};
+use crate::foundation::{
+    ChannelRuntimeV1, ExactActorRef, MovementLocalPosition, MovementPositionSnapshot,
+};
 use crate::map::floor::CellBlocker;
 use crate::movement::path_budget::ChannelPathBudget;
 use crate::movement::speed::{CurrentCreatureSpeedReader, GroundSpeedSource};
 use oteryn_simulation_determinism::GameplayDecisionRoot;
 
+mod creature_current_map;
 mod creature_goal_adoption;
 mod creature_paths;
 mod creature_step_choice;
@@ -35,7 +38,8 @@ pub(super) struct CreatureMotion {
     pub(super) pending: Option<u64>,
     pub(super) route: Option<PathProposal>,
     pub(super) cursor: usize,
-    pub(super) expected: Option<MovementLocalPosition>,
+    pub(super) expected: Option<MovementPositionSnapshot>,
+    pub(super) target_snapshot: Option<(ExactActorRef, MovementPositionSnapshot)>,
     pub(super) due: Option<u64>,
     pub(super) prepared: Option<(crate::movement::CardinalStep, MovementLocalPosition, bool)>,
 }
@@ -52,17 +56,23 @@ impl Default for CreatureMotion {
             route: None,
             cursor: 0,
             expected: None,
+            target_snapshot: None,
             due: None,
             prepared: None,
         }
     }
 }
 impl CreatureMotion {
+    fn target_is_current(&self, runtime: &ChannelRuntimeV1) -> bool {
+        self.target_snapshot
+            .is_none_or(|(actor, expected)| runtime.read_actor_position(actor) == Ok(expected))
+    }
     fn stop(&mut self) {
         self.goal = MovementGoal::Stand;
         self.pending = None;
         self.route = None;
         self.expected = None;
+        self.target_snapshot = None;
         self.due = None;
         self.prepared = None;
     }
@@ -97,9 +107,9 @@ impl CreatureAiTable {
             return None;
         }
         self.forget_dead(runtime);
-        self.refresh_goals(runtime, cells, blocking, navigation, now, source);
+        self.refresh_goals(runtime, cells, blocking, None, navigation, now, source);
         self.drain_creature_paths(runtime, cells, blocking, now, budget, player_waiting);
-        self.fire_steps(runtime, cells, blocking, source, ground, root, now);
+        self.fire_steps(runtime, cells, blocking, None, source, ground, root, now);
         let mut next = self.entries.values().filter_map(|e| e.motion.due).min();
         if self.entries.values().any(|e| e.motion.pending.is_some()) {
             let window = (now / crate::movement::path_budget::PATH_WINDOW_US)
@@ -121,4 +131,28 @@ fn cell(at: MovementLocalPosition) -> LogicalCell {
         y: at.y,
         z: i32::from(at.floor),
     }
+}
+
+fn admits(
+    cells: &NativeEntryMovementCells,
+    blocking: &dyn CellBlocker,
+    current: Option<&crate::movement::monster_map::MonsterMap>,
+    at: MovementLocalPosition,
+) -> bool {
+    current.map_or_else(
+        || crate::movement::relocate::creature_cell_admissible(cells, blocking, at),
+        |map| map.admits(at),
+    )
+}
+fn sight(
+    cells: &NativeEntryMovementCells,
+    blocking: &dyn CellBlocker,
+    current: Option<&crate::movement::monster_map::MonsterMap>,
+    from: MovementLocalPosition,
+    to: MovementLocalPosition,
+) -> bool {
+    current.map_or_else(
+        || crate::movement::relocate::creature_sight_clear(cells, blocking, from, to),
+        |map| map.sight(from, to),
+    )
 }

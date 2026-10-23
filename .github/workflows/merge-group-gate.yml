@@ -3,12 +3,14 @@ name: Game Merge Queue gate
 on:
   merge_group:
     types: [checks_requested]
+  push:
+    branches: [main]
 
 permissions: {}
 
 concurrency:
-  group: game-merge-group-${{ github.event.merge_group.head_sha }}
-  cancel-in-progress: true
+  group: game-merge-group-${{ github.event.merge_group.head_sha || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'merge_group' }}
 
 jobs:
   candidate:
@@ -30,14 +32,17 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
           EVENT_ACTION: ${{ github.event.action }}
-          BASE_REF: ${{ github.event.merge_group.base_ref || '' }}
-          BASE_SHA: ${{ github.event.merge_group.base_sha || '' }}
-          HEAD_SHA: ${{ github.event.merge_group.head_sha || '' }}
+          BASE_REF: ${{ github.event.merge_group.base_ref || github.ref }}
+          BASE_SHA: ${{ github.event.merge_group.base_sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.merge_group.head_sha || github.sha }}
           GITHUB_SHA_VALUE: ${{ github.sha }}
         run: |
           set -euo pipefail
-          [[ "$EVENT_NAME" == "merge_group" ]]
-          [[ "$EVENT_ACTION" == "checks_requested" ]]
+          case "$EVENT_NAME" in
+            merge_group) [[ "$EVENT_ACTION" == "checks_requested" ]] ;;
+            push) : ;; # post-merge full gate while the merge queue is off; BASE_REF below is github.ref
+            *) exit 1 ;;
+          esac
           [[ "$BASE_REF" == "refs/heads/main" ]]
           [[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]]
           [[ "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]
@@ -47,7 +52,7 @@ jobs:
       - name: Check out protected-base classifier input
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.merge_group.base_sha }}
+          ref: ${{ github.event.merge_group.base_sha || github.event.before }}
           fetch-depth: 0
           persist-credentials: false
 
@@ -55,8 +60,8 @@ jobs:
         id: lanes
         shell: bash
         env:
-          BASE_SHA: ${{ github.event.merge_group.base_sha }}
-          HEAD_SHA: ${{ github.event.merge_group.head_sha }}
+          BASE_SHA: ${{ github.event.merge_group.base_sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.merge_group.head_sha || github.sha }}
         run: |
           set -euo pipefail
           if ! rustup toolchain install 1.99.1 --profile minimal || ! cargo +1.99.1 metadata --locked --no-deps --all-features --format-version 1 > "$RUNNER_TEMP/queue-metadata.json"; then
@@ -217,15 +222,15 @@ jobs:
       - name: Check out exact merge-group candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.merge_group.head_sha }}
+          ref: ${{ github.event.merge_group.head_sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
 
       - name: Validate candidate repository contracts
         shell: bash
         env:
-          BASE_SHA: ${{ github.event.merge_group.base_sha }}
-          HEAD_SHA: ${{ github.event.merge_group.head_sha }}
+          BASE_SHA: ${{ github.event.merge_group.base_sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.merge_group.head_sha || github.sha }}
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$HEAD_SHA"
@@ -247,8 +252,8 @@ jobs:
         uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
         with:
           fail-on-severity: high
-          base-ref: ${{ github.event.merge_group.base_sha }}
-          head-ref: ${{ github.event.merge_group.head_sha }}
+          base-ref: ${{ github.event.merge_group.base_sha || github.event.before }}
+          head-ref: ${{ github.event.merge_group.head_sha || github.sha }}
 
   codeql:
     name: Merge Queue / CodeQL (${{ matrix.language }})
@@ -267,7 +272,7 @@ jobs:
       - name: Check out exact merge-group candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.merge_group.head_sha }}
+          ref: ${{ github.event.merge_group.head_sha || github.sha }}
           persist-credentials: false
 
       - name: Initialize CodeQL
@@ -292,12 +297,12 @@ jobs:
       - name: Check out exact merge-group candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.merge_group.head_sha }}
+          ref: ${{ github.event.merge_group.head_sha || github.sha }}
           persist-credentials: false
 
       - name: Verify checked-out SHA
         env:
-          EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}
+          EXPECTED_SHA: ${{ github.event.merge_group.head_sha || github.sha }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
       - name: Compile bounded fullworld producer and direct consumer
@@ -326,12 +331,12 @@ jobs:
       - name: Check out exact merge-group candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.merge_group.head_sha }}
+          ref: ${{ github.event.merge_group.head_sha || github.sha }}
           persist-credentials: false
 
       - name: Verify checked-out SHA
         env:
-          EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}
+          EXPECTED_SHA: ${{ github.event.merge_group.head_sha || github.sha }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
       - name: Install Rust toolchain
@@ -371,7 +376,7 @@ jobs:
       - name: Check out exact merge-group candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.merge_group.head_sha }}
+          ref: ${{ github.event.merge_group.head_sha || github.sha }}
           persist-credentials: false
 
       - name: Install Rust toolchain
@@ -543,17 +548,17 @@ jobs:
       - name: Check out exact merge-group candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.merge_group.head_sha }}
+          ref: ${{ github.event.merge_group.head_sha || github.sha }}
           persist-credentials: false
 
       - name: Verify exact merge-group SHA
         env:
-          EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}
+          EXPECTED_SHA: ${{ github.event.merge_group.head_sha || github.sha }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
       - name: Fetch exact merge-group base for PostgreSQL custody
         env:
-          BASE_SHA: ${{ github.event.merge_group.base_sha }}
+          BASE_SHA: ${{ github.event.merge_group.base_sha || github.event.before }}
         run: |
           set -euo pipefail
           [[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]]
@@ -601,8 +606,8 @@ jobs:
       - name: Archive registered PostgreSQL E2E targets
         shell: bash
         env:
-          BASE_SHA: ${{ github.event.merge_group.base_sha }}
-          HEAD_SHA: ${{ github.event.merge_group.head_sha }}
+          BASE_SHA: ${{ github.event.merge_group.base_sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.merge_group.head_sha || github.sha }}
         run: |
           set -euo pipefail
           archived_targets=()
@@ -712,7 +717,7 @@ jobs:
       - name: Record archive digests and candidate
         id: digest
         env:
-          HEAD_SHA: ${{ github.event.merge_group.head_sha }}
+          HEAD_SHA: ${{ github.event.merge_group.head_sha || github.sha }}
         run: |
           set -euo pipefail
           cd "$RUNNER_TEMP/pg-archives"
@@ -769,12 +774,12 @@ jobs:
       - name: Check out exact merge-group candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.merge_group.head_sha }}
+          ref: ${{ github.event.merge_group.head_sha || github.sha }}
           persist-credentials: false
 
       - name: Verify exact merge-group SHA
         env:
-          EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}
+          EXPECTED_SHA: ${{ github.event.merge_group.head_sha || github.sha }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
       - name: Install pinned cargo-nextest
@@ -799,7 +804,7 @@ jobs:
 
       - name: Verify archives were built for this candidate
         env:
-          EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}
+          EXPECTED_SHA: ${{ github.event.merge_group.head_sha || github.sha }}
           ARCHIVES_SHA256: ${{ needs.durability_postgres_build.outputs.archives_sha256 }}
         run: |
           set -euo pipefail
@@ -855,13 +860,13 @@ jobs:
       - name: Check out exact merge-group candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.merge_group.head_sha }}
+          ref: ${{ github.event.merge_group.head_sha || github.sha }}
           persist-credentials: false
 
       - name: Verify exact merge-group SHA
         shell: pwsh
         env:
-          EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}
+          EXPECTED_SHA: ${{ github.event.merge_group.head_sha || github.sha }}
         run: |
           if ((git rev-parse HEAD).Trim() -ne "$env:EXPECTED_SHA") {
             throw "checked-out revision does not match expected exact merge-group SHA"
@@ -874,7 +879,7 @@ jobs:
       - name: Derive release identity
         shell: pwsh
         env:
-          TARGET_SHA: ${{ github.event.merge_group.head_sha }}
+          TARGET_SHA: ${{ github.event.merge_group.head_sha || github.sha }}
         run: |
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
@@ -934,7 +939,7 @@ jobs:
       - name: Build and test unsigned installer
         shell: pwsh
         env:
-          TARGET_SHA: ${{ github.event.merge_group.head_sha }}
+          TARGET_SHA: ${{ github.event.merge_group.head_sha || github.sha }}
         run: >-
           .\apps\client\installer\ci-installer.ps1
           -ReleaseId $env:OTERYN_RELEASE_ID
@@ -972,7 +977,7 @@ jobs:
       - name: Check out exact merge-group candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.merge_group.head_sha }}
+          ref: ${{ github.event.merge_group.head_sha || github.sha }}
           persist-credentials: false
 
       - name: Check advisories licenses bans and sources
@@ -995,13 +1000,13 @@ jobs:
       - name: Check out exact merge-group candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.merge_group.head_sha }}
+          ref: ${{ github.event.merge_group.head_sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
 
       - name: Verify exact merge-group SHA
         env:
-          EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}
+          EXPECTED_SHA: ${{ github.event.merge_group.head_sha || github.sha }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
       - name: Check out exact public Platform producer
@@ -1072,13 +1077,13 @@ jobs:
       - name: Check out exact merge-group candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.merge_group.head_sha }}
+          ref: ${{ github.event.merge_group.head_sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
 
       - name: Verify exact merge-group SHA
         env:
-          EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}
+          EXPECTED_SHA: ${{ github.event.merge_group.head_sha || github.sha }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
       - name: Check out exact public Platform producer
