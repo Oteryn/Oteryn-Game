@@ -124,6 +124,18 @@ impl ChatRuntime {
         }
     }
 
+    /// A local Game feedback line, subject to the ordinary CHAT egress bound.
+    pub(super) fn push_party_spell_feedback(&self, session: GameSessionId, text: &str) {
+        if let Ok(mut sessions) = self.sessions.lock()
+            && let Some(entry) = sessions.get_mut(&session)
+        {
+            entry.egress.push(ChatLine::Private {
+                speaker_name: "Game".into(),
+                text: text.into(),
+            });
+        }
+    }
+
     /// Installs the World relay once; a second install is ignored.
     pub fn install_relay(&self, relay: Arc<ChatRelay>) {
         let _ = self.relay.set(relay);
@@ -793,11 +805,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         actor: ExactActorRef,
         session: GameSessionId,
+        command_id: u64,
         intent: &ChatIntent,
     ) -> ChatIntentResult {
         let now = self.owner_now();
         if let Some(refused) = self.states.chat.pre_gate(session, intent, now) {
             return refused;
+        }
+        if let Some(result) = self
+            .party_shared_xp_chat_command(actor, session, command_id, intent)
+            .await
+        {
+            return result;
         }
         if matches!(intent, ChatIntent::Private { .. } | ChatIntent::Room { .. }) {
             return self.chat_relay(actor, session, intent, now).await;

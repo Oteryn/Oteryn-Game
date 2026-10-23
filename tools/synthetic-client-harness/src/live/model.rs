@@ -638,6 +638,7 @@ impl RenderModel {
                         chat.rooms = delta.value;
                     }
                 }
+                SessionEvent::Appearance(_) => {}
                 SessionEvent::Inventory(delta) => {
                     if let Some(items) = next.items.as_mut() {
                         items.backpack = delta.value.clone();

@@ -190,6 +190,7 @@ impl DurabilityRoot {
                         return Ok(Err(error));
                     }
                     for target in &targets {
+                        super::party_pz_fact::lock_in_transaction(&mut tx,target.character_id.as_bytes()).await?;
                         let written = sqlx::query(
                             "INSERT INTO game_character_pvp_state AS s \
                                 (character_id, world_id, logout_block_until, pz_block_until, \

@@ -34,6 +34,7 @@ pub(super) async fn emit_relocation<S: AsyncWrite + Unpin, A: FreshAdmissionAuth
     generation: u64,
     sequence: &mut u64,
     revision: &mut u64,
+    appearances: &mut SessionAppearance,
     relocation: Option<WorldSpatialObservation>,
 ) -> Option<()> {
     if let Some(observation) = relocation {
@@ -48,6 +49,7 @@ pub(super) async fn emit_relocation<S: AsyncWrite + Unpin, A: FreshAdmissionAuth
             generation,
             sequence,
             revision,
+            appearances,
             observation,
         )
         .await?;

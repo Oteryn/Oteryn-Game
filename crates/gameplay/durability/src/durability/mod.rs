@@ -2,6 +2,7 @@
 
 include!("core_modules.rs");
 
+pub mod bed_sleep;
 pub mod daily_reward;
 pub mod daily_reward_claim;
 
@@ -17,3 +18,6 @@ pub mod guild_chat;
 
 #[cfg(feature = "test-support")]
 pub mod guild_chat_fixture;
+
+pub mod hunting_xp;
+pub mod party_kill_xp;

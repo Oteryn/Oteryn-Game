@@ -527,6 +527,7 @@ pub async fn connect_session(request: JoinRequest<'_>) -> Result<DevClientSessio
     let session = Session::admit(
         stream,
         Admission {
+            appearance_items: None,
             schema_revision: request.schema_revision,
             character_id: request.character_id,
             admission_material: request.admission_material,

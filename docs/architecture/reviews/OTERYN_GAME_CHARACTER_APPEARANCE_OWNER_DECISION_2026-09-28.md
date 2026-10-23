@@ -107,6 +107,16 @@ The owner accepts a selection only if, on this world's active content:
 Premium flags do not restrict usability in V1 (D61). When Premium activation is decided, that
 decision defines the premium gate and what happens to a premium selection on a non-premium account.
 
+### Owner decision 2026-10-22 — earned grant compatibility
+
+Earned-unlock authorization uses explicitly authored grant-key mappings
+(grant key -> outfit / addon identity) plus compatible provenance declarations
+in content; no derived canonical key encoding and no exact-active-revision
+equality rule. The test-only fixture mapping must be replaced by the authored
+content path on the production resolver. These declarations pass the existing
+per-field promotion and artifact admission boundaries. Missing mappings remain
+unavailable; Store remains unavailable and D61 remains effective.
+
 ### 4.4 Incompatible world
 
 If the stored selection is not valid on a world (a key missing or incompatible there, or a Store

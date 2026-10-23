@@ -1686,6 +1686,7 @@ mod chat_wire {
             &self,
             actor: ExactActorRef,
             session: GameSessionId,
+            _command_id: u64,
             intent: ChatIntent,
         ) -> oteryn_protocol_oteryn::chat::ChatIntentResult {
             if let Some(done) = self.chat.pre_gate(session, &intent, NOW) {

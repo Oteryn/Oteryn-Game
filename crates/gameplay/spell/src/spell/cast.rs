@@ -167,6 +167,13 @@ impl PlayerSpellState {
     pub const fn source_party_vitals(&self) -> (u32, u32) {
         (self.health, self.facts.max_health)
     }
+    /// Current owner-installed Premium fact on the same semantic clock as the kill.
+    pub fn hunting_premium_current(&self, now_micros: u64) -> bool {
+        self.premium_current
+            && self
+                .premium_valid_until_micros
+                .is_some_and(|until| now_micros < until)
+    }
     pub const fn source_party_vocation(&self) -> Vocation {
         self.facts.vocation
     }
