@@ -166,7 +166,7 @@ crates/gameplay/progression/src/promotion.rs
 crates/gameplay/progression/src/promotion_tests.rs
 crates/gameplay/progression/src/spell_wheel.rs
 docs/agents/evidence/PREM-2b-PREM-5-local-validation.md
-docs/agents/tasks/PREM-2b-PREM-5.md
+docs/agents/tasks/archive/PREM-2b-PREM-5.md
 docs/contracts/game-events/v1/native_one_item_transaction.proto
 rulesets/character/blessings/catalogue.json
 rulesets/character/blessings/index.json

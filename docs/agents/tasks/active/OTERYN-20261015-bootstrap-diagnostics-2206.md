@@ -31,6 +31,12 @@ cross_repository_coordination_id: null
 external_repositories: []
 ```
 
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#2208](https://github.com/Oteryn/Oteryn-Game/pull/2208). Temporal schedule row-lock privilege repair and static bootstrap diagnostic stages are merged. Evidence: `apps/game-server/src/node/serve.rs`.
+
+Remaining: Live bootstrap/QA Character acceptance remains an external operational fact not proved by repository source; the merged repair must not be reimplemented. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
+
 ## Outcome
 
 Governing issue: #2206. Continue the owner's QA provisioning request for #1942.

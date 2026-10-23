@@ -5,6 +5,7 @@ task_id: VIP-1
 title: "VIP-1: VIP list store, consent lifecycle and wire"
 mode: IMPLEMENT
 status: waiting
+pr: null
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 4
@@ -20,6 +21,12 @@ needs_registry: true
 needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **OPEN**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#2143](https://github.com/Oteryn/Oteryn-Game/pull/2143), [#2280](https://github.com/Oteryn/Oteryn-Game/pull/2280). Historical VIP metadata source merged in #2143 but was removed in the #2280 restructure; no current VIP owner or offered capability is retained. Evidence: `crates/protocol-oteryn/src/capability_tables.rs`.
+
+Remaining: Restore the native VIP owner in the accepted layout, consent lifecycle/migration and complete wire/handle/relay custody; do not count historical source as current backend. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 ## Goal
 

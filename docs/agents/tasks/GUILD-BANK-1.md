@@ -4,7 +4,7 @@
 task_id: GUILD-BANK-1
 title: "GUILD-BANK-1: guild balance, ledger and disband payout"
 mode: IMPLEMENT
-status: NOT_STARTED   # re-implementation pending under ADR-0022
+status: waiting
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 4
@@ -23,6 +23,12 @@ needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
 
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **OPEN**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: none. Guild core is merged, but this card's guild-bank owner is absent. Evidence: `crates/gameplay/durability/src/durability/guild.rs`.
+
+Remaining: Guild bank ledger, deposit/withdraw and disband custody/payout composition remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
+
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2139, branch skeleton/guild-bank-1
 
 ## Goal
@@ -37,7 +43,7 @@ claims (GUILD0 §5), as a financial participant composed into the real Guild tra
 | BANK-1 (Account bank, migrations 0071/0072) | MERGED (#1766) |
 | NPC-ECON-1 (shared Bank source, D1099 hunks waited on it) | MERGED (#2197) |
 | PREMIUM-1 / PREM-WIRE-1 | MERGED (#2110) |
-| GUILD-1 (Guild/rank/member tables, guards, `GuildDisbandTransaction`, disband controller) | MERGED (#2136) as unregistered checkpoint; its `domain/guild.rs`, `durability/guild.rs`, `guild_audit.rs` sources were removed by #2280 (d25623a36) as dead code — BLOCKING until the Guild core is re-landed (`docs/agents/tasks/GUILD-1.md`) |
+| GUILD-1 (Guild/rank/member tables, guards, `GuildDisbandTransaction`, disband controller) | MERGED (#2136) as unregistered checkpoint; its `domain/guild.rs`, `durability/guild.rs`, `guild_audit.rs` sources were removed by #2280 (d25623a36) as dead code — BLOCKING until the Guild core is re-landed (`docs/agents/tasks/archive/GUILD-1.md`) |
 | GUILDHALL-1 (Hall bid source / operation tables for the escrow participant) | BLOCKING for the Hall escrow participant only — re-implementation pending (draft #2153 closing) |
 | HOUSE-1a (property/bid release before payout, D1100) | BLOCKING for the disband payout composition — re-implementation pending (draft #2137 closing) |
 | Junior/OnIsland source (native source is still `NoStarterIsland`) | OPEN — owning source needed for a genuine OnIsland refusal |

@@ -4,7 +4,8 @@
 task_id: NPC-WORLD-1
 title: "NPC-WORLD-1: NPC world: travel, walking actors and voices"
 mode: IMPLEMENT
-status: NOT_FULLY_QUALIFIED
+status: waiting
+pr: null
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 3
@@ -21,6 +22,12 @@ needs_registry: true
 needs_content_regeneration: true
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#2157](https://github.com/Oteryn/Oteryn-Game/pull/2157), [#2129](https://github.com/Oteryn/Oteryn-Game/pull/2129), [#2308](https://github.com/Oteryn/Oteryn-Game/pull/2308). Travel/voice/walking preparation and admitted NPC facts are merged; Newhaven free Anna/Seagull routes now have real command/arrival composition. Evidence: `crates/gameplay/dispatch/src/gameplay_transport/newhaven_travel.rs`.
+
+Remaining: General paid/Premium travel fee/placement composition, walking owner handoffs and budgeted voice chat publication remain; free tutorial routes do not complete the family. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 ## Goal
 
@@ -830,6 +837,6 @@ Structure rules (binding acceptance criteria):
 - [ ] **Tests**: unit tests exist (travel 5, voice 10, actor 12); add PG test for pending arrival after restart in the real harness; **end-to-end through `connection.rs` dispatch**: talk to travel NPC, confirm destination, fee debited, character arrives, restart mid-hold resumes once; a walking NPC changes position in a spatial snapshot; a voice line reaches a nearby client.
 
 ### Blockers and dependencies (re-verified on origin/main `59785d76`)
-- CREATURE-MOVE-1 (chase/step composition): re-implementation pending (draft #2184 closing; card `docs/agents/tasks/CREATURE-MOVE-1.md`).
+- CREATURE-MOVE-1 (chase/step composition): re-implementation pending (draft #2184 closing; card `docs/agents/tasks/archive/CREATURE-MOVE-1.md`).
 - TRAVEL-CONTENT-1: BLOCKING (content draft #2235 open). D1357/D1358 native NPC source work: open.
 - MERGED: ADMIT-CAP-1 (#2187), NPC-CONTENT-2 (#2129), NPC-ECON-1 (#2197); NPC-TRAVEL-1, CHAT-1 and PREMIUM-1 merged earlier.

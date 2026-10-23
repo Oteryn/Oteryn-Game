@@ -4,7 +4,8 @@
 task_id: MARKET-1
 title: "MARKET-1: world market"
 mode: IMPLEMENT
-status: NOT_FULLY_QUALIFIED
+status: waiting
+pr: null
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 4
@@ -21,6 +22,12 @@ needs_content_regeneration: true
 merge_authority: CP_ONLY (builder never marks ready)
 checkpoint: BOUNDED (storage/query/selection components only; see last section)
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#2134](https://github.com/Oteryn/Oteryn-Game/pull/2134). Offer domain rules and private book/query/history selection are merged. Evidence: `crates/gameplay/durability/src/durability/market.rs`.
+
+Remaining: Installed Market ledger/offer/value writers, escrow/refund/expiry/fee audit, Inbox composition and client wire/runtime remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 ## Goal
 

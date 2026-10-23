@@ -4,7 +4,8 @@
 task_id: APP-2
 title: "APP-2: outfit and mount definitions"
 mode: IMPLEMENT
-status: NOT_FULLY_QUALIFIED
+status: waiting
+pr: null
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 4
@@ -20,6 +21,12 @@ needs_registry: false
 needs_content_regeneration: true
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#2173](https://github.com/Oteryn/Oteryn-Game/pull/2173). Canonical cosmetics authoring and candidate compiler are merged. Evidence: `crates/gameplay/content/src/content/native_gameplay/cosmetics_loader.rs`.
+
+Remaining: Active content/profile/sex/unlock admission and complete production outfit/mount population remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 ## Goal
 

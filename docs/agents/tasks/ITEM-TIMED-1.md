@@ -4,10 +4,10 @@
 task_id: ITEM-TIMED-1
 title: "ITEM-TIMED-1: timed items: charges, duration, repair"
 mode: IMPLEMENT
-status: in_progress
+status: waiting
 repository: Oteryn/Oteryn-Game
 issue: 1622
-pr: 2155
+pr: null
 wave: 3
 plan: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md"
 plan_row: "§4 row ITEM-TIMED-1; §7 'ITEM-TIMED-1' (TIMED_ITEM0/0B child graph)"
@@ -22,6 +22,12 @@ needs_registry: true
 needs_content_regeneration: true
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#1681](https://github.com/Oteryn/Oteryn-Game/pull/1681), [#2155](https://github.com/Oteryn/Oteryn-Game/pull/2155). Timed-state checkpoint foundations and native Soft Boots repair planning are merged. Evidence: `crates/gameplay/items/src/item_timed_repair.rs`.
+
+Remaining: Atomic repair fee/transform/audit execution, full ticking/expiry integration, placed-house consumers and parity qualification remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 ## Goal
 
