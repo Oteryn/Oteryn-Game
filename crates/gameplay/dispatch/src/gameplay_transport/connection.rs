@@ -381,6 +381,7 @@ const ADMISSION_REFUSAL_WRITE_BOUND: std::time::Duration = std::time::Duration::
 /// The owning fresh-admission authority. Production composes the real owners;
 /// nothing on the transport side can mark a connection admitted.
 pub trait FreshAdmissionAuthority {
+    super::vip::authority_methods!();
     /// The production session owner retains command truth across connection replacement.
     /// Transport-only authorities may omit the resumable command directory.
     fn session_commands(&self) -> Option<&super::session_ingress::SessionCommands> {
@@ -2792,6 +2793,7 @@ where
         // the session's own account: the admitted controller's, never the payload's; a session
         // without a controller binding has none and is REJECTED.
         enum Dispatch {
+            Vip(Option<Vec<u8>>),
             /// STEP-PACE-WIRE-1: the step and its `step_wait_ms` pacing receipt (0: none).
             Step(StepOutcome, u32),
             Use(UseOutcome),
@@ -3325,6 +3327,17 @@ where
                 }
                 _ => Dispatch::Unregistered,
             }
+        } else if (48..=50).contains(&command.command_type) {
+            Dispatch::Vip(
+                super::vip::dispatch(
+                    authority,
+                    admitted,
+                    command.command_id,
+                    command.command_type,
+                    command.payload,
+                )
+                .await,
+            )
         } else if command.command_type == COMMAND_TYPE_CHAT_INTENT {
             // CHAT-WIRE-1: spam control is the speaker's limiter inside the authority; a
             // malformed intent is REJECTED with an empty payload like any unregistered command.
@@ -3582,12 +3595,17 @@ where
         if let Dispatch::Appearance(None) = dispatch {
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
         }
+        if matches!(dispatch, Dispatch::Vip(None)) {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        }
         let Some(result_sequence) = sequence.checked_add(1) else {
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
         };
         sequence = result_sequence;
         admitted.continuity.server_sequence = sequence;
         let (status, result_payload) = match &mut dispatch {
+            Dispatch::Vip(Some(payload)) => (CommandStatus::Accepted, payload.clone()),
+            Dispatch::Vip(None) => return ConnectionEnd::AdmittedThenDisconnected(admitted),
             Dispatch::Appearance(Some(result)) => match appearance_change::result(*result) {
                 Some(result) => result,
                 None => return ConnectionEnd::AdmittedThenDisconnected(admitted),
@@ -4176,6 +4194,7 @@ where
             | Dispatch::Achievements(_)
             | Dispatch::Highscores(_)
             | Dispatch::Guild(_)
+            | Dispatch::Vip(_)
             | Dispatch::Appearance(_)
             | Dispatch::Logout(_)
             | Dispatch::Unregistered => {}

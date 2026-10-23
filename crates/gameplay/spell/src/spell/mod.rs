@@ -15,6 +15,7 @@ pub mod actor_execution;
 pub mod cast;
 use crate::spell::native::CompiledNativeSpellPlanExt;
 pub use oteryn_gameplay_combat_rules::chain;
+pub mod bed_regen;
 #[cfg(test)]
 mod chain_tests;
 pub mod combat_batch;

@@ -4,7 +4,7 @@
 task_id: BED-REGEN-1
 title: "BED-REGEN-1: native settlement integration and producer gates"
 mode: IMPLEMENT
-status: waiting
+status: locally_validated
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 5
@@ -17,7 +17,7 @@ briefs:
 base_branch: main
 branch: null
 pr: null
-needs_migration: false   # unless CP allocates the OFFLINE/vitals producer migration here; no number is chosen by this card
+needs_migration: true    # owner allocation 2026-10-23: 0166_bed_regen.sql
 needs_registry: false
 needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
@@ -176,12 +176,18 @@ projection key supersession, terminal release, same-lease reconnect), food-condi
 ## Validation
 
 ```sh
+# Use login=false to retain the queued cargo wrapper.
 cargo fmt --all -- --check
-cargo clippy --locked --workspace --all-targets -- -D warnings
-cargo test -p oteryn-gameplay-housing house_bed_regen
-cargo test -p oteryn-gameplay-durability bed_regen
-cargo test -p oteryn-game-server --test bed_regen_postgres   # PostgreSQL 17.6 harness
-cargo +1.95.0 run -p oteryn-architecture-check -- workspace .
+cargo clippy --locked -p oteryn-gameplay-foundation -p oteryn-gameplay-housing -p oteryn-gameplay-durability -p oteryn-gameplay-spell -p oteryn-gameplay-dispatch -p oteryn-game-server --all-targets --quiet -- -D warnings
+cargo test --locked -p oteryn-gameplay-housing --quiet house_bed_regen
+cargo test --locked -p oteryn-gameplay-spell --lib --quiet bed_regen
+cargo test --locked -p oteryn-gameplay-foundation --lib --quiet condition::
+cargo test --locked -p oteryn-gameplay-dispatch --lib --quiet bed_regen -- --test-threads=1
+cargo test --locked -p oteryn-gameplay-dispatch --lib --quiet last_position::tests
+python3 tools/agents/validate_governance.py
+python3 -m unittest discover -s tools/agents/tests
+python3 tools/repository/validate_repository_policy.py
+git diff --check
 ```
 
 ## Reference evidence
@@ -190,3 +196,122 @@ cargo +1.95.0 run -p oteryn-architecture-check -- workspace .
 - `docs/agents/tasks/archive/OTV2-20261013-char-vitals-1.md`, `OTV2-20261013-accept-char-vitals-0.md`, `OTV2-20261001-offline0.md`
 - CP coordination #2131: D1329, D1342, D1355, D1370, D1381, D1397/D1397a, D1399b, D1403, D1409, D1418, D1420, D1422
 - `docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md` §4, §5 (Wave 5), §7
+
+## Server wiring gap list (2026-10-23, initial HEAD; implementation below closes these gaps)
+
+| Layer | On this HEAD | Missing server work |
+|---|---|---|
+| L3 | BED0 accepted 30 s food/HP/mana, 900 s Soul; no arithmetic module | Bounded pure settlement math |
+| L4 | 0149 sleeper, immutable sleep receipt, occupancy revision and terminal-session writer | Fenced admission settlement, atomic receipt/projection/sleeper consume |
+| Durable vitals | 0084 ordered HP/mana projection; food and Soul runtime only | Save/restore food milliseconds, fractional online periods and Soul with projection |
+| Admission/dispatch | Real fresh first-entry loads Character facts and projection; bed sleep dispatch exists | Settle before actor becomes playable, restore extended state |
+| Wire/registry | Existing login and actor vitals snapshot/delta; bed intent command 31 under world interaction | No new protocol IDs or capability required |
+| Capability/content | Wake is admission-driven and independent of current bed content/Premium | No offer or content change needed |
+| Runtime | Channel admission caller exists; House sleep qualification remains BED-1-owned | Wire wake into production admission and test real connection vitals |
+
+Owner direction above supersedes historical dependency/status and validation snapshots. This basic
+server implementation uses the existing immutable BED-1 terminal sleep receipt as its provenance;
+full OFFLINE training markers remain a separate mechanic. No new PostgreSQL target is created.
+
+## Reference parity (server implementation, 2026-10-23)
+
+| Visible behavior | Reference evidence | Oteryn now |
+|---|---|---|
+| Food-funded HP and mana on wake | BED0 §7.2 accepted coefficients (`PARITY_PENDING` upstream parity label) | Each pool gains `floor(min(food_s,sleep_s)/30)`, independently capped at native maxima |
+| Food charged at full pools; sub-30 s remainder retained | Accepted decisions above | Debit is earned points × 30,000 ms; saved food millisecond remainder survives |
+| Soul without food | BED0 §7.2, manual Soul rate | One point / 900 sleep seconds, capped using native Character maxima |
+| Long sleep bounded | BED0 §7.1 / OFFLINE0 | 21-day cap, widened millisecond subtraction and one floor to seconds |
+| Owner frees bed while sleeper stays offline | BED0 §6–7 | Existing first free timestamp limits bed credits; occupancy revision advances on consumption |
+| Retry/restart | BED0 §5 / durable projection ordering | Same-session immutable settlement receipt; projection, receipt and sleeper deletion commit together |
+| Login presentation | CHAR-VITALS0 §3.3 and existing ACTOR_VITALS domain 3 | Restored before playable first entry, published by existing snapshots; no new wire IDs |
+| Online food/Soul persistence | CONDITIONS0 §6.3 and task requirement | Periodic/final/shutdown projection captures, fresh restore, death clears food and online fractional periods |
+
+Implementation paths: L3 `housing/src/house_bed_regen*.rs`; L4
+`durability/src/durability/bed_regen.rs` and ordered `character_last_position.rs`;
+`foundation/src/foundation/condition_bed_regen.rs` restores exact food duration;
+`spell/src/spell/bed_regen*.rs` captures/restores actor state; dispatch
+`gameplay_transport/bed_regen.rs`, admission/position capture and pending-arrival forwarding.
+Migration **0166** stores rest values, DB-stamped acquisition times and settlement receipts.
+Fresh admission receipt mirror format is unchanged: acquisition clocks live in a separate,
+immutable table maintained by an AFTER INSERT trigger.
+
+## Worktree validation checkpoint
+
+- Housing settlement boundaries: 1 passed (`house_bed_regen`).
+- Spell food/Soul/residual round trip, exact 1,200 s restore and death reset: **1 passed**.
+- Dispatch `bed_regen`: **4 passed**, including **3 routed PostgreSQL tests**. Covers admission
+  and result bytes, stale lease, transaction rollback, freed time, restart/replay, periodic rest
+  capture, atomic final sleep snapshot and sleep retry preserving the first capture.
+- Governance unit tests: **129 passed**.
+- Governance and repository-policy validators: passed.
+- Routed PG tests use `cargo` with `login=false`; a login shell selects the ordinary rustup
+  executable and does not supply the wrapper's PG route. The earlier route-less runs are **not PG evidence**.
+- Focused PG fixture initially found the strict fresh-receipt mirror check rejecting an added
+  receipt column. Replaced that column with the mechanic-owned immutable acquisition table;
+  the routed PG rerun passes.
+- No client, registry, workflow, repository-policy or manifest changes. No commits or publication.
+
+## Unfinished
+
+- No local validation remains pending. Repository CI and independent review have not run in this worktree.
+- Independent persistence review and repository CI belong to the coordinator's publication path.
+- BED-1's active House placement/reservation/Premium-qualified sleep entry remains its existing
+  producer gate. This task consumes its immutable sleep receipt and exact-lease durable snapshot;
+  it does not fabricate House placement or restore historical food/Soul that was never saved.
+- Full OFFLINE training/stamina marker composition is not implemented by this bed-only basic
+  settlement. No training or stamina credit is claimed.
+
+The BED-1 producer now accepts a final living actor capture on `BedSleepRequest.final_position`.
+Its existing terminal transaction commits that exact-lease projection with the sleep receipt and
+sleeper; replay never replaces the first capture. Legacy producers may omit it, but their old
+snapshot cannot fund a new lease's regeneration. Fixture constructor additions are compatibility
+updates only; existing assertions are retained.
+
+## Final local validation (2026-10-23)
+
+- `cargo clippy --locked` on foundation, housing, durability, spell, dispatch and game-server,
+  `--all-targets --quiet -- -D warnings`: **passed**.
+- `cargo fmt --all -- --check`: **passed**. Auto-mounted mechanic test files were also formatted
+  explicitly with the pinned rustfmt.
+- Focused tests: housing `house_bed_regen` **1 passed**; spell `bed_regen` **1 passed**;
+  foundation `condition::` **62 passed**; dispatch `bed_regen` **4 passed** (3 real PG cases);
+  dispatch `last_position::tests` **12 passed**.
+- Governance validator, governance unit tests (**129 passed**), repository-policy validator,
+  and `git diff --check`: **passed**.
+- Whole-diff checklist review completed, including new untracked files. Workspace-wide constructor,
+  match and caller sweep updated every `LastPositionRecord.rest`, `BedSleepRequest.final_position`,
+  `AdmissionPosition::Arrival` and `initialize_admitted` site. Each added public function has a
+  production caller exercised through the admission/dispatch tests. Existing tests were not
+  deleted, skipped or weakened; no unrelated contention failure was observed.
+- No client UI, protocol ids, dependencies, protected CI files, credentials, commits or pushes.
+
+## Changed files
+
+- `apps/game-server/migrations/0166_bed_regen.sql`
+- `apps/game-server/src/lifted_tests/auto/bed_sleep_postgres_cases.rs`
+- `apps/game-server/src/lifted_tests/durability_npc_travel_postgres_fixture.rs`
+- `apps/game-server/tests/durability_postgres.rs`
+- `apps/game-server/tests/support/character_last_position_postgres_cases.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/actor_spell.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/bed_regen.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/last_position.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/mod.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/newhaven_arrival.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/bed_regen.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/bed_regen_sleep.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/bed_sleep_fixture.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/tutorial_session.rs`
+- `crates/gameplay/durability/src/durability/bed_regen.rs`
+- `crates/gameplay/durability/src/durability/bed_sleep/mod.rs`
+- `crates/gameplay/durability/src/durability/character_last_position.rs`
+- `crates/gameplay/durability/src/durability/mod.rs`
+- `crates/gameplay/foundation/src/foundation/condition.rs`
+- `crates/gameplay/foundation/src/foundation/condition_bed_regen.rs`
+- `crates/gameplay/housing/src/house_bed_regen.rs`
+- `crates/gameplay/housing/src/house_bed_regen_tests.rs`
+- `crates/gameplay/housing/src/lib.rs`
+- `crates/gameplay/spell/src/spell/actor_conditions.rs`
+- `crates/gameplay/spell/src/spell/bed_regen.rs`
+- `crates/gameplay/spell/src/spell/bed_regen_tests.rs`
+- `crates/gameplay/spell/src/spell/mod.rs`
+- `docs/agents/tasks/BED-REGEN-1.md`

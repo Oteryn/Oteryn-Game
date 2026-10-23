@@ -5,6 +5,7 @@ pub mod actor_spell;
 pub mod appearance_change;
 mod attack;
 mod bank_npc;
+mod bed_regen;
 mod bed_sleep;
 mod bundle_map_position;
 mod depot;
@@ -45,6 +46,7 @@ mod logout;
 mod logout_tests;
 mod loop_move;
 pub mod spectate_session;
+mod vip;
 use crate::map::boot::BundleCollisionIndexExt;
 pub use last_position::LastPositionFlush;
 mod control_loss_reconciliation;
@@ -2512,6 +2514,7 @@ fn operator_event(line: &str) {
 }
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
+    vip::composed_methods!();
     fn session_commands(&self) -> Option<&session_ingress::SessionCommands> {
         Some(&self.states.command_ingress)
     }
@@ -4352,6 +4355,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 monk,
                 self.owner_now(),
                 saved_vitals,
+                (outcome == FirstEntryOutcome::Positioned)
+                    .then(|| bed_regen::admitted_rest(&decided, self.world_id))
+                    .flatten(),
             )
             .is_none()
         {
