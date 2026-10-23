@@ -298,6 +298,17 @@ impl BundleFacts {
         Some(self.doors.facts(key, facts, doors))
     }
 
+    /// Authored town binding of this top-level placement in the admitted bundle.
+    /// Reach, visibility and current session authority remain dispatch responsibilities.
+    pub fn depot_at(&self, pos: TilePos, ordinal: u8) -> Option<u16> {
+        let key = placement_key(pos, ordinal)?;
+        let found = self
+            .placements
+            .binary_search_by_key(&key, |(key, _)| *key)
+            .ok()?;
+        self.placements.get(found)?.1.attrs.depot
+    }
+
     /// MAP-PICKUP-1: the exact boot-time wrapper decision, before view normalization.
     /// The caller first verifies that the base tile holds this ordinal and compact id.
     pub fn pickup_entry(

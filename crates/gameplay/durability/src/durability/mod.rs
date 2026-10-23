@@ -2,6 +2,7 @@
 
 include!("core_modules.rs");
 
+pub mod bed_regen;
 pub mod bed_sleep;
 pub mod daily_reward;
 pub mod daily_reward_claim;
@@ -23,6 +24,8 @@ pub mod hunting_xp;
 pub mod party_kill_xp;
 pub mod prey;
 pub mod raid_schedule;
+
+pub mod vip;
 
 pub mod exercise_training;
 pub mod loop_training;

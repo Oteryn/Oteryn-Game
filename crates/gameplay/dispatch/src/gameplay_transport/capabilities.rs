@@ -132,6 +132,7 @@ pub const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     WORLD_WEATHER,
     TUTORIAL_NOTICES,
     super::guild_chat::OFFERED,
+    super::guild_intent::OFFERED,
 ];
 
 /// The offered set of a World booted from a bundle (MAP-CUTOVER-1b, NPC-CMD-1a, ITEM-LOOP-1),
@@ -197,6 +198,12 @@ pub const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     },
     TUTORIAL_NOTICES,
     super::guild_chat::OFFERED,
+    OfferedCapability {
+        id: oteryn_protocol_oteryn::depot::CAPABILITY_DEPOT_V1,
+        requires: &[CAPABILITY_ITEM_VIEW_MOVE_V1],
+    },
+    super::guild_intent::OFFERED,
+    super::vip::OFFERED,
 ];
 
 /// MAP-ITEM-REF-1: the production offered set with capability 4 `ITEM_VIEW_MOVE_V1`, which
@@ -231,6 +238,7 @@ pub const ITEM_VIEW_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     WORLD_WEATHER,
     TUTORIAL_NOTICES,
     super::guild_chat::OFFERED,
+    super::guild_intent::OFFERED,
 ];
 
 /// Bound of one session's selection. A test keeps the production offered set within it.

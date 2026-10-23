@@ -1,0 +1,10 @@
+{
+  "id": 50,
+  "name": "VIP_QUERY",
+  "owner_decision": "VIP-1 owner direction 2026-10-23; allocated commands 48\u201350, capability 43",
+  "capability": 43,
+  "payload_schema": "crates/protocol-oteryn/src/vip.rs#decode_request; docs/contracts/protocol-oteryn/v1/vip_v1.md",
+  "result_schema": "crates/protocol-oteryn/src/vip.rs#encode_result; docs/contracts/protocol-oteryn/v1/vip_v1.md",
+  "max_payload_bytes": 640,
+  "max_result_payload_bytes": 65536
+}

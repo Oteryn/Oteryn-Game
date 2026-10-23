@@ -427,6 +427,7 @@ fn owning_fresh_loss_is_atomic_and_raw_prepare_does_not_supply_authority()
                 sqlx::query("INSERT INTO game_character_roots SELECT character_id, '019a0000-0000-7000-8000-000000000040', world_id, 1, 1, 'profile-1', 'ruleset-1', 'content-1', 'starter-1', 'Fixture Hero' FROM game_durability_reconnect_sessions WHERE game_session_id = encode($1,'hex')::uuid").bind(id.as_bytes().as_slice()).execute(&pool).await?;
                 let final_position = durability::character_last_position::FinalLastPosition {
                     record: durability::character_last_position::LastPositionRecord {
+                        rest: None,
                         world_id,
                         cell: durability::character_last_position::LastPositionCell { x: 31, y: 32, floor: 7 },
                         coordinate_frame_digest: [1; 32], map_revision_digest: [2; 32], server_artifact_digest: [3; 32],
