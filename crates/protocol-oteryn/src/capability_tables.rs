@@ -214,6 +214,14 @@ pub const GATED: &[(u32, &[u32], &[u32])] = &[
         ],
         &[],
     ),
+    (
+        crate::guild_bank::CAPABILITY_GUILD_BANK_V1,
+        &[
+            crate::guild_bank::COMMAND_TYPE_GUILD_BANK_INTENT,
+            crate::guild_bank::COMMAND_TYPE_GUILD_BANK_QUERY,
+        ],
+        &[],
+    ),
 ];
 
 /// Core domains a selected capability replaces, as (capability, domains). MAP-WIRE-1 contract §3

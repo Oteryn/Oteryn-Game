@@ -10,6 +10,8 @@ pub mod admission_authority_guards;
 pub mod admission_journal;
 pub mod bank;
 pub mod bank_audit;
+pub mod guild_bank;
+mod guild_bank_audit;
 mod bank_credit_headroom;
 pub mod bestiary_progress;
 #[allow(

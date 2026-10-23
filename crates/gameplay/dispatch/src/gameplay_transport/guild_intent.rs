@@ -33,6 +33,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command_type: u32,
         payload: &[u8],
     ) -> GuildReply {
+        if super::guild_bank::owns(command_type) {
+            return self
+                .guild_bank_wire(admitted, command_id, command_type, payload)
+                .await;
+        }
         let Some(fence) = admitted.item_fence else {
             return GuildReply::Rejected;
         };
@@ -225,10 +230,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 pub(super) fn owns(kind: u32) -> bool {
-    matches!(
-        kind,
-        wire::COMMAND_TYPE_GUILD_INTENT | wire::COMMAND_TYPE_GUILD_QUERY
-    )
+    super::guild_bank::owns(kind)
+        || matches!(
+            kind,
+            wire::COMMAND_TYPE_GUILD_INTENT | wire::COMMAND_TYPE_GUILD_QUERY
+        )
 }
 fn failure(error: GuildError) -> GuildReply {
     match error {
