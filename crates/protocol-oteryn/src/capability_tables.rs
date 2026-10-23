@@ -201,6 +201,11 @@ pub const GATED: &[(u32, &[u32], &[u32])] = &[
         &[],
         &[],
     ),
+    (
+        crate::depot::CAPABILITY_DEPOT_V1,
+        &[crate::depot::COMMAND_TYPE_DEPOT_INTENT],
+        &[],
+    ),
 ];
 
 /// Core domains a selected capability replaces, as (capability, domains). MAP-WIRE-1 contract §3
