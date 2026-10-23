@@ -1,0 +1,22 @@
+{
+  "id": "SPAWNCEIL-RL-02",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_CREATURE_AI0_CREATURE_AI_SPAWNS_AND_SUMMONS_DECISION_2026-10-01.md",
+  "resource": "Native summon links one retirement call examines",
+  "unit": "links per call",
+  "hard_maximum": 256,
+  "configurable_range": {
+    "minimum": 256,
+    "maximum": 256
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "A per-call bound in ChannelRuntimeV1::retire_native_summons: the pass examines at most 256 links from a cursor kept with the links, in admission order and wrapping, and retires the dead children among them; the dead children past it keep their slots and links until a later call reaches them, so every link is examined within ceil(links / 256) calls. It never refuses: admit_native_summon first retires its own parent's dead children (at most 16, CREATUREAI0-RL-08), so a deferred retirement neither refuses a summon nor lets a parent hold more than 16 links. The retired slots leave the occupied index and the attacker leases in one pass per call. It reserves nothing.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=256: with 640 dead children one call retires 256",
+    "max+1: the rest retire on later calls, and an admission whose parent's dead children the next pass would not reach retires them first and succeeds"
+  ],
+  "consumers": [
+    "apps/game-server/src/foundation/runtime_actor_carrier.rs NATIVE_SUMMON_RETIREMENT_LINKS_PER_CALL_MAX: ChannelRuntimeV1::retire_native_summons and admit_native_summon"
+  ],
+  "notes": "CREATURE-AI-0 \u00a710 (implementation work budget under CREATUREAI0-RL-04 and RL-08, like SPAWNCEIL-RL-01). Registered by SPAWN-CEILINGS-1 (Codex 4243039217 on #1984, control-plane request). Test: apps/game-server/src/foundation/runtime_actor_carrier.rs summon_retirement_is_bounded_per_call_and_an_admission_retires_its_parent_first."
+}

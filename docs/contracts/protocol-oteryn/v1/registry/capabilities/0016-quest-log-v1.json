@@ -1,0 +1,10 @@
+{
+  "id": 16,
+  "name": "QUEST_LOG_V1",
+  "owner_decision": "QUEST-GATE-0 \u00a77 (docs/architecture/reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md); numbers allocated by the #1622 control plane (D485) and registered by QUEST-LOG-WIRE-1",
+  "owner": "current ChannelRuntime (the projection of the session's quest copy)",
+  "command_types": [22],
+  "state_domains": [16],
+  "offered": false,
+  "offer_gate": "QUEST-LOG-WIRE-1: the server does not offer this capability before the quest log content (missions, journal text and hide_when_completed, QUEST-CONTENT-2) and the production session copy source are composed. Without it selected, domain 16 is never sent and command type 22 is refused as unsupported. The domain is computed from the session's quest copy and never stored; a copy that is not loaded shows nothing and refuses every query."
+}

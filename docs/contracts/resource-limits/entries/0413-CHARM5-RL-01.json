@@ -1,0 +1,23 @@
+{
+  "id": "CHARM5-RL-01",
+  "owner_contract": "protocol-oteryn/CHARM5_BESTIARY_CHARM_WIRE_PROPOSAL_V1.md",
+  "resource": "Bestiary races in one BestiaryViewV1, and the largest race index",
+  "unit": "races per view",
+  "hard_maximum": 1024,
+  "configurable_range": {
+    "minimum": 1024,
+    "maximum": 1024
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "The decoder refuses the 1025th entry or a race index above 1024 before allocating for it; the whole view is at most 21504 bytes (state domain 4). A server view over the bound is a server fault and is never truncated.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=1024: a view of 1024 races at race index 1024 encodes and decodes",
+    "max+1=1025: a 1025th entry or race index 1025 is refused in both directions"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/bestiary.rs MAX_BESTIARY_VIEW_ENTRIES, MAX_BESTIARY_RACE",
+    "crates/protocol-oteryn/src/charm.rs CharmAssignIntentV1.race and CharmStateV1.assigned_race"
+  ],
+  "notes": "833 Bestiary races in the captured staticdata (CHARM-0 section 2). CHARM-5 proposal section 2; accepted by the Sol protocol ruling #162 5907282001. Registered by OTV2-20260930-charm-5-reg."
+}

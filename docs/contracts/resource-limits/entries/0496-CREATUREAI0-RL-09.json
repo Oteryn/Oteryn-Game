@@ -1,0 +1,23 @@
+{
+  "id": "CREATUREAI0-RL-09",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_CREATURE_MOVE1_STEPS_PATHS_AND_GOALS_PACKET_2026-10-04.md",
+  "resource": "Shared creature and player chase path expansions in one Channel per 50 ms window",
+  "unit": "expansions per window",
+  "hard_maximum": 65536,
+  "configurable_range": {
+    "minimum": 65536,
+    "maximum": 65536
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "One unit per actual expansion. Pending creature requests run by deadline then ExactActorRef, then player chase. Reserve 16,384 units while player chase waits; unused reserve returns in the same window. A request without 1,024 units available waits without failing.",
+  "client_visible": false,
+  "boundary_tests": [
+    "hard maximum accepted",
+    "hard maximum + 1 waits or is refused without partial mutation"
+  ],
+  "consumers": [
+    "crates/gameplay/world/src/movement/path_budget.rs",
+    "crates/gameplay/monster-ai/src/ai_think/creature_steps.rs"
+  ],
+  "notes": "One unit per actual expansion. Pending creature requests run by deadline then ExactActorRef, then player chase. Reserve 16,384 units while player chase waits; unused reserve returns in the same window. A request without 1,024 units available waits without failing."
+}

@@ -15,7 +15,6 @@ ROOT = Path(__file__).resolve().parents[2]
 CONTRACT_PATH = ROOT / "docs/agents/GOVERNANCE_CONTRACT.json"
 LANES_PATH = ROOT / "docs/agents/PROJECT_LANES.json"
 CONTRACT_LOCK_PATH = ROOT / "docs/contracts/CROSS_REPOSITORY_CONTRACT_LOCK.json"
-LIMITS_REGISTRY_PATH = ROOT / "docs/contracts/RESOURCE_LIMITS_REGISTRY.json"
 PROMPT_LIFECYCLE_PATH = ROOT / "docs/agents/PROMPT_LIFECYCLE.json"
 HANDOVER_LIFECYCLE_PATH = ROOT / "docs/agents/HANDOVER_LIFECYCLE.json"
 PROGRAM_LIFECYCLE_PATH = ROOT / "docs/agents/PROGRAM_LIFECYCLE.json"
@@ -599,12 +598,30 @@ def validate_current_state_hygiene(errors: list[str]) -> None:
                 )
 
 
+def load_fragment_registry(name: str, errors: list[str]) -> dict:
+    """A registry stored as one file per entry (REGISTRY-SPLIT-1), with its fragment checks.
+
+    `name` is `PROTOCOL` or `RESOURCE_LIMITS` of `tools/contracts/registry_fragments.py`,
+    imported here so the validator module also loads on its own.
+    """
+    sys.path.insert(0, str(ROOT / "tools/contracts"))
+    import registry_fragments
+
+    registry = getattr(registry_fragments, name)
+    problems = registry_fragments.validate(registry, ROOT)
+    errors.extend(problems)
+    if problems:
+        return {}
+    return registry_fragments.load(registry, ROOT)
+
+
 def main() -> int:
     errors: list[str] = []
     contract = load_json(CONTRACT_PATH, errors)
     lanes = load_json(LANES_PATH, errors)
     contract_lock = load_json(CONTRACT_LOCK_PATH, errors)
-    limits_registry = load_json(LIMITS_REGISTRY_PATH, errors)
+    limits_registry = load_fragment_registry("RESOURCE_LIMITS", errors)
+    load_fragment_registry("PROTOCOL", errors)
     prompt_lifecycle = load_json(PROMPT_LIFECYCLE_PATH, errors)
     handover_lifecycle = load_json(HANDOVER_LIFECYCLE_PATH, errors)
     program_lifecycle = load_json(PROGRAM_LIFECYCLE_PATH, errors)

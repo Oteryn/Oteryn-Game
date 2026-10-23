@@ -1,0 +1,10 @@
+{
+  "id": 6,
+  "name": "WORLD_SPATIAL_ENTITIES",
+  "owner_decision": "MOVE-RL-11-VISIBILITY-V1 (D84-D87, #162 comment 5875312123), VIS-2",
+  "owner": "current ChannelRuntime",
+  "command_types": [],
+  "state_domains": [1],
+  "offered": true,
+  "offer_gate": "VIS-3: the server does not offer this capability before the connection composes the VIS-1 interest set. Without it selected, domain 1 carries only the v1 types (own actor) and type 2 is never sent."
+}

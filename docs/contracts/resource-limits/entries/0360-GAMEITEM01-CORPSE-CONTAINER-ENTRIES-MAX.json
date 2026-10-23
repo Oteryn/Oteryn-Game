@@ -1,0 +1,22 @@
+{
+  "id": "GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_D3_CORPSE_CONTAINER_LOOT_WINDOW_DECAY_DECISION_2026-09-29.md",
+  "resource": "Direct Container(parent = corpse) entries of one creature's corpse ItemInstance",
+  "unit": "entries per corpse",
+  "hard_maximum": 16,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 16
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "The composing caller's whole-plan preflight checks the death's full accepted loot-plan entry count against this ceiling before any entry (corpse included) is frozen; the database also caps one corpse parent at 16 entries at commit under a corpse-row lock taken before counting (mirrors GAMEITEM01-CONTAINER-ENTRIES-MAX's backpack ceiling), so a concurrent race at the ceiling still admits at most 16.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=16: the 16th loot entry is placed in the corpse's container",
+    "max+1=17: the 17th loot entry is refused by the database, leaving exactly 16 live entries"
+  ],
+  "consumers": [
+    "apps/game-server/migrations/0013_corpse_container_mint.sql (game_item_corpse_container_entry_proven)"
+  ],
+  "notes": "D131, decision \u00a74.2: equal by construction to the already-accepted COMBAT01-LOOT-PLAN-ITEMS/COMBAT01-ITEMS-PER-CORPSE (both 16); the two must never diverge. Registered by OTV2-20260929-d3-1-corpse-migration."
+}

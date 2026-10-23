@@ -1,0 +1,23 @@
+{
+  "id": "DUR03-RL-03-BANK",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_BANK0_ACCOUNT_BANK_BALANCE_DECISION_2026-09-30.md",
+  "resource": "Value lines of one bank operation (BANK-0 \u00a75, \u00a78)",
+  "unit": "value lines per logical transaction",
+  "hard_maximum": 2,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 2
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "1 CONVERSION value line for a deposit or withdrawal, 2 TRANSFER value lines for a transfer; checked in the payload gate. DUR03-RL-03 stays 0 for every existing shape.",
+  "client_visible": false,
+  "boundary_tests": [
+    "a transfer carries exactly 2 value lines",
+    "3 value lines are rejected (CAPACITY_EXCEEDED)"
+  ],
+  "consumers": [
+    "apps/game-server/src/durability/bank_audit.rs",
+    "apps/game-server/src/durability/bank.rs (bank writer: checked before any ledger entry, coin line, balance change or event; a typed refusal or error writes no value)"
+  ],
+  "notes": "BANK-0 \u00a78 (owner answers 1b and Q1 b; ARCH-BATCH-ROOT-PACKETS-V1 \u00a71.8 and \u00a72.4); registered by BANK-1 before the code that relies on it."
+}

@@ -1,0 +1,22 @@
+{
+  "id": "SPELLPRES0-RL-05",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_SPELL_PRESENT0_SPELL_AND_COMBAT_PRESENTATION_DECISION_2026-09-30.md",
+  "resource": "bytes of one ACTOR_COOLDOWNS entry, its tag and length included",
+  "unit": "bytes",
+  "hard_maximum": 16,
+  "configurable_range": {
+    "minimum": 16,
+    "maximum": 16
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "An entry is at most 16 bytes: the kind, an id up to 2^28 - 1 (a spell index; a group ordinal is at most 16) and expires_at_ms below 2^42. server_now_ms, rtt_ms and rtt_estimated are per message (at most 15 bytes), outside the entry bound; a payload is at most 65,552 bytes. The decoder refuses a longer entry LimitExceeded.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=16: crates/protocol-oteryn/src/presentation_tests.rs cooldowns_round_trip_within_their_bounds (the largest entry is 16 bytes)",
+    "max+1=17: crates/protocol-oteryn/src/presentation_tests.rs malformed_cooldowns_fail_closed (a 17-byte entry is refused LimitExceeded)"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/presentation.rs MAX_COOLDOWN_ENTRY_BYTES and MAX_ACTOR_COOLDOWNS_BYTES"
+  ],
+  "notes": "SPELL-PRESENT-0 \u00a710 and \u00a713. Mirrors max_payload_bytes of the domain 20 types (16 + 4,096 x 16). Registered by PRESENT-WIRE-1 (MAGIC-CAST-1, #1622)."
+}

@@ -1,0 +1,22 @@
+{
+  "id": "PUBPROJ-PROFILE-BATCH",
+  "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md",
+  "resource": "Character profiles read from the outbox in one store pass and cleared in one",
+  "unit": "profiles",
+  "hard_maximum": 32,
+  "configurable_range": {
+    "minimum": 32,
+    "maximum": 32
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "One read pass returns at most 32 profile snapshots (each at most PUBPROJ-PROFILE-REQUEST-BYTES encoded); the rest wait for the next batch. Sends stay one at a time (PUBPROJ-INFLIGHT).",
+  "client_visible": false,
+  "boundary_tests": [
+    "apps/game-server/src/native_admission_source/public_projections_tests.rs: profiles are read and cleared in batches; a transient failure stops the batch and clears what was acknowledged"
+  ],
+  "consumers": [
+    "apps/game-server/src/native_admission_source/public_projections.rs",
+    "apps/game-server/src/durability/public_projections.rs"
+  ],
+  "notes": "Contract sections 8 and 11. Bounds the publisher's passes over the shared durability root. Internal Game-to-Platform boundary; no client wire. Registered by OTV2-20261015-public-projections-producer."
+}

@@ -1,0 +1,19 @@
+{
+  "id": "GAMECAT-V1-FILE-BYTES",
+  "owner_contract": "OTERYN_GAME_PLATFORM_CATALOG_EXPORT_V1.md",
+  "resource": "One native Game to Platform catalog input or output snapshot file",
+  "unit": "bytes",
+  "hard_maximum": 268435456,
+  "configurable_range": {
+    "minimum": 268435456,
+    "maximum": 268435456
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Check file size before full read/JSON parse and check output bytes before publication.",
+  "client_visible": false,
+  "boundary_tests": [
+    "268,435,456-byte file may proceed to other validation",
+    "268,435,457 rejected before JSON parse",
+    "output over hard maximum rejected before final publication"
+  ]
+}

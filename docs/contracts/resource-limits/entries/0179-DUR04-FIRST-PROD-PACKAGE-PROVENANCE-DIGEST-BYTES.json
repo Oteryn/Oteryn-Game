@@ -1,0 +1,19 @@
+{
+  "id": "DUR04-FIRST-PROD-PACKAGE-PROVENANCE-DIGEST-BYTES",
+  "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md+AMENDMENT_02",
+  "resource": "Derived package-provenance digest token",
+  "unit": "lowercase hex ASCII bytes",
+  "hard_maximum": 64,
+  "configurable_range": {
+    "minimum": 64,
+    "maximum": 64
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Recompute from the canonical five-field package binding and reject malformed or mismatching digest before staging.",
+  "client_visible": false,
+  "boundary_tests": [
+    "exact recomputed 64-byte digest accepted",
+    "wrong digest rejected before staging",
+    "63/65/non-hex digest rejected"
+  ]
+}

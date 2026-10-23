@@ -1,0 +1,11 @@
+{
+  "id": 11,
+  "name": "WORLD_INTERACTION_V1",
+  "owner_decision": "WORLD-INTERACTION-0 \u00a710.1 (docs/architecture/reviews/OTERYN_GAME_WORLD_INTERACTION0_DOORS_LEVERS_FIELDS_AND_WORLD_CLOCK_DECISION_2026-10-01.md); number and command type 15 leased to LOOP-WORLD-1 (WORLDINT-WIRE-1) by the #1622 control plane",
+  "owner": "current ChannelRuntime (the World object use and push rules)",
+  "requires": [15, 18],
+  "command_types": [15, 31],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "WORLDINT-USE-1: the server does not offer this capability before the first door, lever or push rule commits. Without it selected, the map_item and map_object arms of USE field 4 use_with, the GROUND destination and BLOCKED result of command type 9 for map-item and Ground sources, the dispositions 11 to 17 and 20 to 23 and the gate message id are never accepted or sent, and command types 15 and 31 are refused. BED_SLEEP_INTENT also requires the native House reservation, logout marker and admission settlement owners before activation. It extends command types 2 and 9 only; EQUIPMENT and results 10 and 11 of command type 9 stay with capability 12."
+}

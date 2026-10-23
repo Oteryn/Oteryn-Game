@@ -1,0 +1,21 @@
+{
+  "id": "FND02-STATE-DELTA-PAYLOAD-BYTES",
+  "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+  "resource": "StateDelta.payload",
+  "unit": "bytes",
+  "hard_maximum": 262144,
+  "configurable_range": {
+    "minimum": 262144,
+    "maximum": 262144
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Reject before domain-specific delta decode/allocation.",
+  "client_visible": true,
+  "boundary_tests": [
+    "262,144 accepted when the domain-specific limit permits",
+    "262,145 rejected"
+  ],
+  "consumers": [
+    "client state-delta decoder"
+  ]
+}

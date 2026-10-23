@@ -2080,6 +2080,7 @@ version = "0.1.0"
 dependencies = [
  "oteryn-gameplay-content",
  "oteryn-gameplay-progression",
+ "oteryn-protocol-oteryn",
  "oteryn-simulation-determinism",
  "serde",
  "serde_json",
@@ -2392,6 +2393,7 @@ name = "oteryn-gameplay-social-rules"
 version = "0.1.0"
 dependencies = [
  "oteryn-gameplay-domain",
+ "oteryn-protocol-oteryn",
  "oteryn-simulation-determinism",
  "serde",
  "serde_json",

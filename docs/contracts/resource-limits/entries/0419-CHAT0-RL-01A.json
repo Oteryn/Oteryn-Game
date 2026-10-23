@@ -1,0 +1,22 @@
+{
+  "id": "CHAT0-RL-01A",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md",
+  "resource": "Unicode scalar values of one chat text after trimming",
+  "unit": "Unicode scalar values",
+  "hard_maximum": 255,
+  "configurable_range": {
+    "minimum": 255,
+    "maximum": 255
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "Checked by the server after the wire's 1,020-byte bound (CHAT0-RL-01) and trimming; a longer text is refused with REJECTED and nothing is relayed.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=255: 255 four-byte scalars (1,020 bytes) are accepted",
+    "max+1=256: 256 scalars are refused"
+  ],
+  "consumers": [
+    "apps/game-server/src/chat/mod.rs TEXT_MAX_CHARS"
+  ],
+  "notes": "CHAT-0 \u00a74 and \u00a78 (the character half of CHAT0-RL-01). Registered by OTV2-20261001-chat-1b-1."
+}

@@ -1,0 +1,24 @@
+{
+  "id": 5,
+  "name": "CHARACTER_CHARMS",
+  "owner_decision": "CHARM-5 wire, CHARM5_BESTIARY_CHARM_WIRE_PROPOSAL_V1 (Sol protocol acceptance #162 5907282001; CharmViewV1 bound and effect_active: Sol ruling #162 5913269950, owner D235)",
+  "owner": "Character Authority",
+  "capability": 1,
+  "revision": "the CharacterRevision of the durable commit that last changed this domain's view; every admission, reconnect, resume and transfer starts with a full snapshot",
+  "delta_types": [
+    {
+      "id": 1,
+      "name": "CHARACTER_CHARMS_DELTA_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/charm_bestiary_v1.proto#CharmViewV1",
+      "max_payload_bytes": 554
+    }
+  ],
+  "snapshot_types": [
+    {
+      "id": 1,
+      "name": "CHARACTER_CHARMS_SNAPSHOT_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/charm_bestiary_v1.proto#CharmViewV1",
+      "max_payload_bytes": 554
+    }
+  ]
+}

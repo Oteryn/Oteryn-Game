@@ -1,0 +1,24 @@
+{
+  "id": "WOBJ-RL-04",
+  "owner_contract": "../architecture/OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md",
+  "resource": "Timed-revert (revert_after_ms) lifecycle records held by one scope revert driver in one scope generation, in any state (PENDING, IN_FLIGHT or TERMINAL)",
+  "unit": "records per scope generation",
+  "hard_maximum": 1024,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 1024
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Checked only after the forward operation's prepare returned Publish and before its commit; a full store fails the whole forward operation with no object mutation and no record. TERMINAL records are kept for the whole scope generation (the duplicate-delivery horizon) and are dropped with the scope-ephemeral driver on restart. Per record: the revert occurrence identity is bounded by WOBJ-RL-06 (4 levels) and WOBJ-RL-07 (4,096 key bytes), so one copy is at most 4,096 key bytes plus 4 x 512 bytes of per-level structure and allocation overhead (6,144 bytes); it is held twice (record key and due-order key, 12,288 bytes); placement, inverse transition and expected state are each bounded by FIRST_PRODUCTION_MAX_KEY_BYTES (512, so 1,536 bytes); fixed fields and map-node overhead stay within 512 bytes. That is at most 14,336 bytes per record and 14 MiB per scope generation, inside 16 MiB.",
+  "client_visible": false,
+  "boundary_tests": [
+    "configured capacity N (tested at N=1): N records are created by committed forward operations",
+    "N+1: the next committed-shaped forward operation fails CAPACITY_EXCEEDED before commit; object state and revision are unchanged",
+    "a forward operation whose prepare result is unchanged never reaches the check",
+    "a configured capacity above 1024 is refused when the driver limits are built"
+  ],
+  "consumers": [
+    "apps/game-server/src/world_object_revert.rs (ScopeRevertDriver::apply_forward; not yet wired into a live Channel or Instance owner)"
+  ],
+  "notes": "Section 7 open decisions 1 and 5, resolved by the owning lane in OTV2-20260928-cw1-timed-revert-runtime (issue #162): a lane policy value, not a measurement. Lowered from 4,096 to 1,024 in PR #1144 round 3 so the per-generation memory bound holds with the WOBJ-RL-06/07 identity bounds."
+}

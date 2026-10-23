@@ -410,10 +410,8 @@ fn negotiated_capability28_is_registered_without_inferred_requirements_and_29_is
             .map(|entry| entry.1),
         Some(&[][..])
     );
-    let registry: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json"
-    ))
-    .unwrap();
+    let registry: serde_json::Value =
+        serde_json::from_str(crate::PROTOCOL_OTERYN_V1_REGISTRY_JSON).unwrap();
     let entries: Vec<_> = registry["capabilities"]
         .as_array()
         .unwrap()

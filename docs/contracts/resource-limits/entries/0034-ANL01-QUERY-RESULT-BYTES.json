@@ -1,0 +1,19 @@
+{
+  "id": "ANL01-QUERY-RESULT-BYTES",
+  "owner_contract": "ANL-01_GAME_EVENT_AND_AUDIT_FOUNDATION_CONTRACT.md",
+  "resource": "Encoded bytes returned/materialized in one analytics/investigation query page",
+  "unit": "bytes",
+  "hard_maximum": 67108864,
+  "configurable_range": {
+    "minimum": 262144,
+    "maximum": 67108864
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Stream/page before 64 MiB and apply access/redaction before serialization.",
+  "client_visible": false,
+  "boundary_tests": [
+    "64 MiB accepted subject to row/access limits",
+    "one byte over paged/rejected",
+    "redaction cannot be bypassed by pagination"
+  ]
+}

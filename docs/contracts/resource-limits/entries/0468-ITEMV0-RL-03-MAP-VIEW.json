@@ -1,0 +1,23 @@
+{
+  "id": "ITEMV0-RL-03-MAP-VIEW",
+  "owner_contract": "../contracts/protocol-oteryn/candidates/MAP_WIRE_1_WORLD_MAP_VIEW_CANDIDATE_V1.md",
+  "resource": "Live item handles of one GameSession that selected capability 18 WORLD_MAP_VIEW_V1",
+  "unit": "handles per GameSession",
+  "hard_maximum": 1325,
+  "configurable_range": {
+    "minimum": 1325,
+    "maximum": 1325
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "ITEMV0-RL-03 (301) plus MAPW-RL-04 (1,024) = 1,325; with capability 14 also selected, ITEMV0-RL-03-CONTAINER-TREE (637) plus 1,024 = 1,661. The handle table is bounded by the selected value before inserting; a session without capability 18 keeps its earlier bound.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=1325: the views at their bounds hold 1,325 live handles (1,661 with capability 14)",
+    "max+1=1326: the table refuses a handle beyond the views' bounds (1,662 with capability 14)"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/item_view.rs MAX_LIVE_ITEM_HANDLES_MAP_VIEW",
+    "apps/game-server/src/gameplay_transport/item_view.rs ItemHandleTable"
+  ],
+  "notes": "MAP-WIRE-1 \u00a73 Handle budget. With capabilities 14 and 18 the bound is 637 + 1,024 = 1,661. Tests: item_view::tests, gameplay_transport::item_view::tests. Registered by OTV2-20261004-map-wire-2."
+}

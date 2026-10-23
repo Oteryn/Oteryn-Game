@@ -1,0 +1,10 @@
+{
+  "id": 12,
+  "name": "FIGHT_MODES_INTENT",
+  "owner_decision": "ATTACK-0 §3 (docs/architecture/reviews/OTERYN_GAME_ATTACK0_ATTACK_TARGET_AND_AUTO_ATTACK_DECISION_2026-09-30.md) with ARCH-CORE-LOOP-PACKETS-2 §0.1 and §2.1 (docs/architecture/reviews/OTERYN_GAME_ARCH_BATCH_CORE_LOOP_PACKETS_2026-10-04.md); numbers leased by the #1622 control plane (D486) and registered by ATTACK-WIRE-1",
+  "capability": 17,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/attack_v1.proto#FightModesIntentV1",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/attack_v1.proto#AttackIntentResultV1",
+  "max_payload_bytes": 6,
+  "max_result_payload_bytes": 2
+}

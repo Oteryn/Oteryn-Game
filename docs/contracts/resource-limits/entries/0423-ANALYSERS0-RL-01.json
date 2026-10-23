@@ -1,0 +1,22 @@
+{
+  "id": "ANALYSERS0-RL-01",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_ANALYSERS0_HUNTING_ANALYSERS_DECISION_2026-10-03.md",
+  "resource": "Facts in one analyser batch (domain 15 delta type 1)",
+  "unit": "facts per batch",
+  "hard_maximum": 64,
+  "configurable_range": {
+    "minimum": 64,
+    "maximum": 64
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "The decoder refuses a 65th fact before decoding it; the pending queue's batch builder stops at 64 and leaves the rest for the next sync unit (never dropped for size).",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=64: a batch of 64 facts round-trips",
+    "max+1=65: a 65-fact batch is refused in both directions"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/analyser.rs MAX_ANALYSER_BATCH_FACTS, AnalyserPendingQueue::take_batch"
+  ],
+  "notes": "ANALYSERS-0 \u00a74 and \u00a76. Registered by OTV2-20261003-analyser-wire1."
+}
