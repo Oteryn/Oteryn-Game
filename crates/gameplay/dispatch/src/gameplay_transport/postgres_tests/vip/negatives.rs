@@ -5,6 +5,7 @@ use crate::gameplay_transport::ComposedFreshAdmission;
 pub(super) async fn fences(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
+    add_command: u64,
     pool: &sqlx::PgPool,
 ) -> TestResult {
     let before: i64 = sqlx::query_scalar("SELECT count(*) FROM game_vip_command_receipts")
@@ -56,7 +57,7 @@ pub(super) async fn fences(
     tx.commit().await?;
     assert!(
         owner
-            .vip_command(admitted, 1, 48, &named(1, "Alice"))
+            .vip_command(admitted, add_command, 48, &named(1, "Alice"))
             .await
             .is_none()
     );
