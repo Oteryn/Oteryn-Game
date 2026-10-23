@@ -16,6 +16,7 @@ test-support = ["oteryn-gameplay-content/test-support", "oteryn-gameplay-entitie
 
 [dependencies]
 oteryn-gameplay-social-rules = { version = "=0.1.0", path = "../social-rules" }
+oteryn-gameplay-combat-rules = { version = "=0.1.0", path = "../combat-rules" }
 oteryn-gameplay-characters = { version = "=0.1.0", path = "../characters" }
 oteryn-gameplay-progression = { version = "=0.1.0", path = "../progression" }
 oteryn-gameplay-items = { version = "=0.1.0", path = "../items" }

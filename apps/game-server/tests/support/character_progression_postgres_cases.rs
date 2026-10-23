@@ -1280,3 +1280,9 @@ mod character_death_writer_postgres_cases;
 // wrappers.
 #[path = "character_progression_admission_postgres_cases.rs"]
 mod character_progression_admission_postgres_cases;
+
+#[allow(
+    unused_imports,
+    reason = "shared fixture re-export for the character-authority PvP cases"
+)]
+pub(crate) use character_death_writer_postgres_cases::{join_pvp_writers, pvp_death_request};
