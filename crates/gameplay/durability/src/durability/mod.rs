@@ -16,3 +16,5 @@ pub mod native_world_read;
 
 pub mod hunting_xp;
 pub mod party_kill_xp;
+
+pub mod raid_schedule;
