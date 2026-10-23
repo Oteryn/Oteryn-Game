@@ -14,4 +14,9 @@
 and is never hand-edited; `<slug>.ruleset.json` is the only hand-written identity source.
 `world-bundle-compiler pin-check <root> <out>` (the `world_bundle` job of `game-gate`) checks every
 pin, builds the bundle twice and writes `<slug>-<digest>.otwb` and `artifact-name.txt`.
-A stale pin is refreshed by running `pin-check` and copying the digests named in its refusal.
+A stale or merge-conflicted pin is never edited by hand: stage the inputs, then run
+`cargo run --locked --release -p oteryn-world-bundle-compiler -- pin-refresh .`, which rewrites
+every pin's digests and revisions, its identity file and the preproduction manifest's
+`[world_bundle]` table, keeping the reviewed `entry_start`. `python3
+tools/content-migration/regenerate_content.py --resolve` runs it on a merge that conflicted in a
+pin. `pin-check` stays the gate.

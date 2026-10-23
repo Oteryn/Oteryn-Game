@@ -86,7 +86,7 @@ Proposed new files (one mechanic per file, layer per ADR-0022):
   `plan_shared_xp_in_transaction` (same-transaction read + planner).
 - `crates/gameplay/dispatch/src/gameplay_transport/party_kill_settlement.rs` (new) + tests
   (new) — atomic multi-principal settlement called from the kill transaction.
-- `crates/gameplay/dispatch/src/gameplay_transport/party_xp_postgres_tests.rs` (new) —
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs` (new) —
   canonical PG cases, mounted once under dispatch `--lib`; no new PostgreSQL target.
 
 ## Accepted design (PARTY_PVP0 §5.1/§13, D118 §2.4, as built in the draft)
@@ -360,8 +360,8 @@ qualification always uses the wrapper-provided canonical database and asserts bo
 - `crates/gameplay/dispatch/src/gameplay_transport/party_spell_kill_time_tests.rs`
 - `crates/gameplay/dispatch/src/gameplay_transport/party_xp.rs`
 - `crates/gameplay/dispatch/src/gameplay_transport/party_xp_command.rs`
-- `crates/gameplay/dispatch/src/gameplay_transport/party_xp_postgres_support.rs`
-- `crates/gameplay/dispatch/src/gameplay_transport/party_xp_postgres_tests.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp/support.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs`
 - `crates/gameplay/durability/src/durability/character_experience_transaction.rs`
 - `crates/gameplay/durability/src/durability/hunting_xp.rs`
 - `crates/gameplay/durability/src/durability/party_kill_xp.rs`
@@ -480,7 +480,7 @@ QUEST-RT-1). Adaptations, no behavior change:
 
 - Channel session state now lives in `ChannelSessionStates`; the party XP owners and the PG
   suite read `states.spell_states`, `states.attack` and `states.chat`.
-- `party_xp_postgres_tests.rs` builds its owner through `ComposedTestOwner::build` and then
+- `postgres_tests/party_xp.rs` builds its owner through `ComposedTestOwner::build` and then
   overrides `active_generation`, `rooms` and `clock_origin`, as the kill-reward e2e does.
 - The native XP transaction keeps main's obligation read without `FOR UPDATE` (the held
   `character_root` lock serializes it; the runtime role lacks UPDATE there).

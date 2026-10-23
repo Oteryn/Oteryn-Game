@@ -67,7 +67,7 @@ pub(super) async fn initialize_build(
         .await
         .map_err(debug)?;
     let formula = crate::spell::mana_training::CompiledTrainingFormula::from_profile(
-        include_bytes!("../../../../../tools/content-schema/native-gameplay/build-training.json"),
+        include_bytes!("../../../../../../../tools/content-schema/native-gameplay/build-training.json"),
         "content-1",
     )
     .map_err(debug)?;

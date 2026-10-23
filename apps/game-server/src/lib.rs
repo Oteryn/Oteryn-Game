@@ -1005,10 +1005,6 @@ mod creature_icicle_tests;
 mod creature_appearance_content_tests;
 
 #[cfg(test)]
-#[path = "lifted_tests/creature_condition_content_tests.rs"]
-mod creature_condition_content_tests;
-
-#[cfg(test)]
 #[path = "lifted_tests/creature_condition_content_gate_tests.rs"]
 mod creature_condition_content_gate_tests;
 
@@ -1026,3 +1022,7 @@ mod quest_catalogue_boot_tests;
 
 #[cfg(test)]
 mod bundle_spawn_owner_tests;
+
+// Every test file in `lifted_tests/auto/` is mounted here by `build.rs`, so a new mechanic adds its
+// file there instead of another `#[cfg(test)] #[path] mod` block in this shared root.
+include!(concat!(env!("OUT_DIR"), "/lifted_tests_auto_mounts.rs"));

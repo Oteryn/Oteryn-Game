@@ -287,10 +287,6 @@ async fn plan_group(
     })
 }
 
-#[cfg(test)]
-#[path = "party_xp_postgres_tests.rs"]
-mod postgres_tests;
-
 /// Freeze bounded committed event data; consuming authority is re-proved in SQL.
 pub(super) fn capture_activity_at_death(
     runtime: &ChannelRuntimeV1,

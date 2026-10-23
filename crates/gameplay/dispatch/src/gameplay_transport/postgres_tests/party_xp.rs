@@ -146,7 +146,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         crate::content::native_gameplay::test_support::activated_with_loot_tables(
             world,
             Some(include_bytes!(
-                "../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
+                "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
             )),
         );
     let active = controller.active().expect("active");
@@ -323,9 +323,9 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         .map_err(debug)?,
     );
     let descriptor=crate::native_admission_source::descriptor::ProducerDescriptor::new("platform-test".into(),("127.0.0.1".into(),1),"source.test".into(),"source.test".into(),
-        vec![rustls::pki_types::CertificateDer::from(include_bytes!("../../../../../apps/game-server/tests/support/spell-save-tls-fixture/ca.der").to_vec())],
-        vec![rustls::pki_types::CertificateDer::from(include_bytes!("../../../../../apps/game-server/tests/support/spell-save-tls-fixture/client.der").to_vec())],
-        rustls::pki_types::PrivateKeyDer::try_from(include_bytes!("../../../../../apps/game-server/tests/support/spell-save-tls-fixture/client-key.der").to_vec())?).map_err(debug)?;
+        vec![rustls::pki_types::CertificateDer::from(include_bytes!("../../../../../../apps/game-server/tests/support/spell-save-tls-fixture/ca.der").to_vec())],
+        vec![rustls::pki_types::CertificateDer::from(include_bytes!("../../../../../../apps/game-server/tests/support/spell-save-tls-fixture/client.der").to_vec())],
+        rustls::pki_types::PrivateKeyDer::try_from(include_bytes!("../../../../../../apps/game-server/tests/support/spell-save-tls-fixture/client-key.der").to_vec())?).map_err(debug)?;
     let evidence = crate::gameplay_transport::fresh_evidence::FreshEvidenceSource::new(descriptor);
     let spells = native.spell_book();
     let achievements =
@@ -1038,6 +1038,6 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     Ok(())
 }
 
-#[path = "party_xp_postgres_support.rs"]
+#[path = "party_xp/support.rs"]
 mod support;
 use support::{initialize_build, join_two};
