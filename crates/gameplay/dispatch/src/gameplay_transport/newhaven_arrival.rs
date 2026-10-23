@@ -10,7 +10,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> Option<(StepOutcome, Option<Duration>)> {
-        if self.newhaven_travel.held(session) {
+        if self.states.newhaven_travel.held(session) {
             return None;
         }
         self.chase_step_now(actor, session).await
@@ -72,7 +72,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> Option<bool> {
         let fence = self.current_quest_fence(session).await.ok()??;
         let (frozen, capture, route, committed, mut placed) = {
-            let holds = self.newhaven_travel.holds.lock().ok()?;
+            let holds = self.states.newhaven_travel.holds.lock().ok()?;
             let held = holds.get(&session)?;
             if held.actor != actor || held.capture.session != fence.item_fence() {
                 return None;
@@ -100,7 +100,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     route,
                 )
                 .await;
-            let mut holds = self.newhaven_travel.holds.lock().ok()?;
+            let mut holds = self.states.newhaven_travel.holds.lock().ok()?;
             let held = holds.get_mut(&session)?;
             match result {
                 Err(CharacterProgressionError::Unavailable(_)) => return None,
@@ -125,14 +125,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if placed.is_none() {
             let current = self.current_quest_fence(session).await.ok()??;
             let mut runtime = self.runtime.lock().await;
-            let states = self.spell_states.lock().await;
+            let states = self.states.spell_states.lock().await;
             let position = runtime.read_actor_position(actor).ok()?;
             let independently_current = TravelCapture {
                 session: current.item_fence(),
                 content: position.context(),
                 position_revision: position.revision(),
             };
-            let mut holds = self.newhaven_travel.holds.lock().ok()?;
+            let mut holds = self.states.newhaven_travel.holds.lock().ok()?;
             let held = holds.get_mut(&session)?;
             if held.slot.placement_decision(
                 &independently_current,
@@ -184,7 +184,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .ok()?;
             held.placed = Some(record);
             placed = Some(record);
-            self.chat.close_out_of_range(&runtime, session);
+            self.states.chat.close_out_of_range(&runtime, session);
         }
         let current = self.current_quest_fence(session).await.ok()??;
         if current.item_fence() != capture.session {
@@ -205,7 +205,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if consumed == crate::durability::npc_travel::ArrivalConsume::Consumed {
             self.track_respawned(session, actor, &placed, current);
         }
-        let mut holds = self.newhaven_travel.holds.lock().ok()?;
+        let mut holds = self.states.newhaven_travel.holds.lock().ok()?;
         let held = holds.get_mut(&session)?;
         held.slot
             .consume_outcome(frozen.arrival.occurrence, ConsumeReplay::Complete)

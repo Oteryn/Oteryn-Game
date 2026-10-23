@@ -12,7 +12,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return (StepOutcome::rejected(), None);
         }
         // DEATH-2 §4.2: a dead player takes no input until its respawn.
-        if self.spell_states.lock().await.is_dead(actor) {
+        if self.states.spell_states.lock().await.is_dead(actor) {
             return (StepOutcome::rejected(), None);
         }
         use crate::movement::{CardinalStep, MovementError};
@@ -29,7 +29,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return (StepOutcome::rejected(), None);
         };
         let mut runtime = self.runtime.lock().await;
-        let mut states = self.spell_states.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         if states.has_pending_spell_commit(actor, session) {
             return (StepOutcome::rejected(), None);
         }
@@ -85,7 +85,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         match outcome {
             Ok((snapshot, duration)) => {
                 // NPC-TALK-2: a customer who stepped out of talk range ends its conversation now.
-                self.chat.close_out_of_range(&runtime, session);
+                self.states.chat.close_out_of_range(&runtime, session);
                 (
                     StepOutcome {
                         disposition: StepDisposition::Moved,
