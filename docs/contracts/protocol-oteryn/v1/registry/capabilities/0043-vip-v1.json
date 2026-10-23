@@ -1,0 +1,15 @@
+{
+  "id": 43,
+  "name": "VIP_V1",
+  "owner_decision": "VIP-1 owner server-first direction 2026-10-23 supersedes VIP0 \u00a77 offer timing for basic metadata and consent only",
+  "owner": "Game Account + World social metadata",
+  "requires": [],
+  "command_types": [
+    48,
+    49,
+    50
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES: basic durable list/consent requests and complete view query. No presence/status notifications; no state-domain id allocated. Content independent."
+}

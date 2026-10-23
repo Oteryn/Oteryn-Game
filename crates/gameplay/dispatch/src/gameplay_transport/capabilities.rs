@@ -197,6 +197,7 @@ pub const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     },
     TUTORIAL_NOTICES,
     super::guild_chat::OFFERED,
+    super::vip::OFFERED,
 ];
 
 /// MAP-ITEM-REF-1: the production offered set with capability 4 `ITEM_VIEW_MOVE_V1`, which

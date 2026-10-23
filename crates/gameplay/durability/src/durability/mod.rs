@@ -22,3 +22,5 @@ pub mod guild_chat_fixture;
 pub mod hunting_xp;
 pub mod party_kill_xp;
 pub mod prey;
+
+pub mod vip;
