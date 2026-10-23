@@ -89,6 +89,8 @@ Cross product/auxiliary renames, symlinks/submodules, special modes, malformed c
 
 The canonical Merge Queue workflow is `.github/workflows/merge-group-gate.yml`; it validates GitHub's exact synthetic `merge_group` head.
 
+While the GitHub merge queue is off, the same full gate also runs post-merge on every push to `main` (`push` trigger, no cancel-in-progress, `github.sha` as head and the previous main as base). It is a post-merge verdict, not a PR requirement; the `merge_group` trigger is kept so restoring the queue needs no workflow change.
+
 | Exact queue classification | Selected jobs |
 |---|---|
 | Complete valid diff containing only Markdown under `docs/architecture/**` | candidate/governance, dependency review and CodeQL; heavy Rust/PostgreSQL/Windows/supply-chain may be unselected |

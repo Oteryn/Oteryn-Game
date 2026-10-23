@@ -799,3 +799,5 @@ fn prepared_native_summon_population_consumes_explicit_owner_fixture_facts() {
         "native summon preparation: profiles={count} thinks_per_profile=32 requests={requests}; explicit fixture facts only; owner birth/authority not exercised"
     );
 }
+
+mod summon_plan_tests;

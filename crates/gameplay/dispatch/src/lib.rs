@@ -279,3 +279,5 @@ mod source_time_profile_bundle_tests;
 #[cfg(test)]
 #[path = "../../../../apps/game-server/src/lifted_tests/auto/bed_sleep_postgres_cases.rs"]
 mod bed_sleep_postgres_cases;
+#[path = "../../../../apps/game-server/tests/support/authority_cases/character_promotion_fixture.rs"]
+mod character_promotion_fixture;

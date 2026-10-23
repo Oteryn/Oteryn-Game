@@ -35,6 +35,9 @@ pub use oteryn_gameplay_npc::npc_command::{NpcContinuity, NpcTalkOutcome, NpcUpd
 
 /// The instants of the talk intents of the last second of one session.
 type RecentIntents = VecDeque<u64>;
+mod premium_purchase;
+mod service_context;
+pub(super) use premium_purchase::resume_npc_talk;
 
 /// What the server holds of one session's NPC state.
 #[derive(Default)]
@@ -45,6 +48,7 @@ struct SessionNpc {
     // D1103: confirmation and retained receipt intent use this existing session owner.
     vocation: Option<super::vocation_choice::NpcVocationConversation>,
     bank: Option<PendingBank>,
+    premium: Option<premium_purchase::PendingPurchase>,
 }
 
 pub struct PendingBank {
@@ -164,8 +168,6 @@ impl NpcConversations {
         true
     }
 
-    /// Current NPC owner facts under the Channel runtime lock. A Bank marker comes solely
-    /// from an admitted typed Service; a name or profession can never supply it.
     pub fn current_bank(
         &self,
         chat: &ChatRuntime,
@@ -174,31 +176,8 @@ impl NpcConversations {
         session: GameSessionId,
         intent: &NpcTalkIntent,
     ) -> Option<(u64, u64, String)> {
-        let visible = runtime.visible_entities();
-        let speaker = visible
-            .players
-            .iter()
-            .find(|player| player.actor == actor)?;
-        let npc = visible.npcs.iter().find(|npc| {
-            npc.actor.placement_identity() == intent.npc_actor.identity
-                && npc.generation == intent.npc_actor.generation
-        })?;
-        if chat.engaged(session) != Some(npc.actor)
-            || speaker.position.floor != npc.position.floor
-            || speaker.position.x.abs_diff(npc.position.x) > TALK_RANGE_TILES
-            || speaker.position.y.abs_diff(npc.position.y) > TALK_RANGE_TILES
-        {
-            return None;
-        }
-        let book = chat.npc_talk()?;
-        if !book.get(runtime.npc_key(npc.actor)?)?.bank() {
-            return None;
-        }
-        Some((
-            book.catalogue_revision(),
-            chat.npc_conversation_generation(session)?,
-            runtime.npc_key(npc.actor)?.to_owned(),
-        ))
+        let context = self.current_npc(chat, runtime, actor, session, intent)?;
+        chat.npc_talk()?.get(&context.2)?.bank().then_some(context)
     }
 
     pub fn bank_reply(intent: &NpcTalkIntent, line: String) -> NpcTalkOutcome {
@@ -603,6 +582,10 @@ pub(super) async fn npc_bank_talk(
         admission.states.npc_conversations.cancel_bank(session);
         return ordinary;
     }
+    if let Some(step) = premium_purchase::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        return premium_purchase::apply(admission, actor, command, intent, step).await;
+    }
     let Some((catalogue_revision, conversation_generation, npc_key)) = admission
         .states
         .npc_conversations
@@ -919,7 +902,7 @@ fn retained_bank_key(
     )))
 }
 
-fn bank_coin_definitions(
+pub(in crate::gameplay_transport) fn bank_coin_definitions(
     admission: &super::ComposedFreshAdmission<'_, '_, '_>,
     runtime: &ChannelRuntimeV1,
 ) -> Option<(
@@ -943,7 +926,7 @@ fn bank_coin_definitions(
     ))
 }
 
-fn bank_request(
+pub(in crate::gameplay_transport) fn bank_request(
     operation: &BankNpcOperation,
     coins: Option<BankCoinFacts>,
     session: GameSessionId,

@@ -13,10 +13,12 @@
 //!
 //! The search is pure; its occupancy helper reads the owner census. Nothing here is durable.
 
+pub mod current_path;
+mod path_kernel;
 mod path_labels;
 mod path_occupancy;
 mod path_tiles;
-pub use path_occupancy::standing_positions;
+pub use path_occupancy::{PathOccupancy, standing_positions};
 
 use path_labels::SearchLabels;
 use std::cmp::Reverse;
@@ -162,59 +164,17 @@ fn measured_search(
     expansions: &mut usize,
     mut tile_cost: impl FnMut(MovementLocalPosition) -> Option<u32>,
 ) -> Option<Vec<CardinalStep>> {
-    if start.floor != target.floor {
-        return None;
-    }
-    if is_goal(start, target, exact) {
-        return Some(Vec::new());
-    }
-    // Open entries are ordered by (total, estimate, neighbour order, discovery order).
-    let mut open = BinaryHeap::new();
-    let mut labels = SearchLabels::new(start, bounds.distance);
-    open.push(Reverse((
-        estimate(start, target, exact),
-        estimate(start, target, exact),
-        0_u8,
-        0_usize,
-    )));
-    while let Some(Reverse((_, _, _, index))) = open.pop() {
-        if labels.dominated(index) {
-            continue;
-        }
-        let label = labels.get(index);
-        let at = label.at;
-        if is_goal(at, target, exact) {
-            return Some(labels.route_to(index));
-        }
-        if *expansions >= bounds.work {
-            return None;
-        }
-        *expansions += 1;
-        if label.steps >= bounds.route_steps {
-            continue;
-        }
-        for (order, step) in (0_u8..).zip(NEIGHBOURS) {
-            let (dx, dy) = delta(step);
-            let (Some(nx), Some(ny)) = (at.x.checked_add(dx), at.y.checked_add(dy)) else {
-                continue;
-            };
-            let next = MovementLocalPosition {
-                x: nx,
-                y: ny,
-                floor: start.floor,
-            };
-            if chebyshev(start, next) > i64::from(bounds.distance) {
-                continue;
+    use path_kernel::{SearchKernel, SearchStep};
+    let mut search = SearchKernel::new(start, target, bounds, exact);
+    loop {
+        match search.next() {
+            SearchStep::Tile(at) => search.supply(tile_cost(at)),
+            SearchStep::Finished(route) => {
+                *expansions = search.expansions;
+                return route;
             }
-            let Some(next_index) = labels.visit(next, index, step, &mut tile_cost) else {
-                continue;
-            };
-            let next_cost = labels.get(next_index).cost;
-            let h = estimate(next, target, exact);
-            open.push(Reverse((next_cost.saturating_add(h), h, order, next_index)));
         }
     }
-    None
 }
 
 #[cfg(test)]

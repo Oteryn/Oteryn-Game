@@ -12,6 +12,7 @@ use super::{
     spell_access_facts::{AccessFactsError, CurrentSpellAccessOwner, owner_registration},
 };
 use crate::domain::premium::{PreDelivery, PremiumGate, PremiumStatus};
+mod promotion_gate;
 use crate::durability::premium_activation_latch::{
     EmptyLatchHeld, PreDeliveryBypass, PremiumActivationLatch, PremiumActivationRead, PremiumGateTx,
 };
@@ -26,6 +27,8 @@ use std::future::Future;
 use std::marker::PhantomData;
 use std::pin::Pin;
 use std::sync::{Arc, OnceLock};
+#[cfg(test)]
+pub(super) use tests::purchase_fixture;
 /// Explicit registration from a genuine independent trusted clock owner. SystemTime, database
 /// receipt time and a readiness field with guessed zero uncertainty cannot implement this port.
 pub mod clock_registration {
@@ -837,6 +840,7 @@ impl PremiumGateOwner for SpellPremiumCoordinator {
 #[cfg(test)]
 mod tests {
     #![allow(clippy::unwrap_used)]
+    pub(in crate::gameplay_transport) mod purchase_fixture;
     use super::*;
     use crate::domain::premium::PremiumRefusal;
     use crate::durability::premium_fence::{EntitlementState, PremiumEvidence};

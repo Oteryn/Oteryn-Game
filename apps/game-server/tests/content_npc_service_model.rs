@@ -29,8 +29,8 @@ fn pinned_catalogue_service_model_counts() {
     let counts: BTreeMap<&str, usize> = model.held_offer_counts();
     assert_eq!(model.npcs().len(), 1282);
     assert_eq!(model.held_npcs().len(), 0);
-    // NPC-ECON-1 adds Paulie's one Bank service.
-    assert_eq!(model.services().len(), 381);
+    // NPC-ECON-1 Bank plus PREM-5's four promotion and three blessing services.
+    assert_eq!(model.services().len(), 388);
     assert_eq!(model.admitted_offer_count(), 11_039);
     assert_eq!(model.admitted_route_count(), 195);
     assert_eq!(model.generated_reply_npc_count(), 446);

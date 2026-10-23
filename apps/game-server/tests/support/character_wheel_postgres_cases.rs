@@ -70,14 +70,10 @@ fn request(seed: u8, expected: u64, points: &[(usize, u16)]) -> TestResult<Wheel
     })
 }
 
-const ELIGIBLE: WheelChangeFacts = WheelChangeFacts {
-    promoted: true,
-    at_temple: false,
-};
-const AT_TEMPLE: WheelChangeFacts = WheelChangeFacts {
-    promoted: true,
-    at_temple: true,
-};
+const ELIGIBLE: WheelChangeFacts = WheelChangeFacts { at_temple: false };
+const AT_TEMPLE: WheelChangeFacts = WheelChangeFacts { at_temple: true };
+#[path = "character_wheel_promotion_tests.rs"]
+mod promotion_tests;
 
 async fn commit(
     harness: &Harness,
@@ -442,13 +438,14 @@ fn wheel_changes_commit_replay_and_refuse_writing_nothing() -> TestResult {
         );
         assert_eq!(snapshot(pool).await?, before);
         eligible(pool).await?;
+        crate::character_promotion_fixture::purchase(harness, 3).await?;
 
         // r4: the first change writes the state row pinned to the active revision.
         let first = committed(
             commit(
                 harness,
                 &authority,
-                fence(3)?,
+                fence(4)?,
                 request(1, 0, &[(15, 10)])?,
                 &r1,
                 ELIGIBLE,
@@ -456,7 +453,7 @@ fn wheel_changes_commit_replay_and_refuse_writing_nothing() -> TestResult {
             .await,
         )?;
         assert_eq!(first.kind, WheelReceiptKind::Allocation);
-        assert_eq!(first.committed_character_revision.get(), 4);
+        assert_eq!(first.committed_character_revision.get(), 5);
         assert_eq!(
             (first.before_wheel_revision, first.after_wheel_revision),
             (0, 1)
@@ -477,7 +474,7 @@ fn wheel_changes_commit_replay_and_refuse_writing_nothing() -> TestResult {
             commit(
                 harness,
                 &authority,
-                fence(3)?,
+                fence(4)?,
                 request(1, 0, &[(15, 10)])?,
                 &r1,
                 ELIGIBLE
@@ -489,7 +486,7 @@ fn wheel_changes_commit_replay_and_refuse_writing_nothing() -> TestResult {
             commit(
                 harness,
                 &authority,
-                fence(4)?,
+                fence(5)?,
                 request(1, 0, &[(15, 9)])?,
                 &r1,
                 ELIGIBLE
@@ -512,15 +509,6 @@ fn wheel_changes_commit_replay_and_refuse_writing_nothing() -> TestResult {
                 request(2, 1, &[(15, 10)])?,
                 ELIGIBLE,
                 WheelRefusal::NoChange,
-            ),
-            (
-                "not promoted",
-                request(2, 1, &[(15, 9)])?,
-                WheelChangeFacts {
-                    promoted: false,
-                    at_temple: true,
-                },
-                WheelRefusal::NotEligible(WheelIneligibility::NotPromoted),
             ),
             (
                 "capacity",
@@ -548,7 +536,7 @@ fn wheel_changes_commit_replay_and_refuse_writing_nothing() -> TestResult {
             ),
         ] {
             assert_eq!(
-                commit(harness, &authority, fence(4)?, request, &r1, facts).await,
+                commit(harness, &authority, fence(5)?, request, &r1, facts).await,
                 Ok(WheelCommitOutcome::Refused(refusal)),
                 "{case}"
             );
@@ -558,7 +546,7 @@ fn wheel_changes_commit_replay_and_refuse_writing_nothing() -> TestResult {
         // A stale session fence is refused before any Wheel read.
         let stale = CurrentCharacterGameplayFence {
             connection_generation: ConnectionGeneration::new(2).map_err(debug)?,
-            ..fence(4)?
+            ..fence(5)?
         };
         assert_eq!(
             commit(
@@ -580,7 +568,7 @@ fn wheel_changes_commit_replay_and_refuse_writing_nothing() -> TestResult {
             commit(
                 harness,
                 &authority,
-                fence(4)?,
+                fence(5)?,
                 request(2, 1, &[(16, 5)])?,
                 &r1,
                 AT_TEMPLE,
@@ -625,6 +613,7 @@ fn the_slot_retries_a_bypassed_wheel_change_once() -> TestResult {
     run("wheel_bypass", async |harness| {
         let pool = &harness.pool;
         eligible(pool).await?;
+        crate::character_promotion_fixture::purchase(harness, 3).await?;
         let r1 = ruleset(R1)?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
         let authority = harness
@@ -640,13 +629,13 @@ fn the_slot_retries_a_bypassed_wheel_change_once() -> TestResult {
                 .await
                 .map_err(debug)?
                 .get(),
-            3
+            4
         );
         // A writer that bypasses the sequencer moves the root under the held slot.
         expect_committed(
             pool,
             "bypass XP r4",
-            &award(60, 3, (LEVEL, EXPERIENCE), (LEVEL, EXPERIENCE + 10)),
+            &award(60, 4, (LEVEL, EXPERIENCE), (LEVEL, EXPERIENCE + 10)),
         )
         .await?;
         // The Wheel binding excludes the CharacterRevision: one retry commits at r5.
@@ -655,15 +644,15 @@ fn the_slot_retries_a_bypassed_wheel_change_once() -> TestResult {
                 &harness.root,
                 &authority,
                 &harness.node,
-                fence(3)?,
+                fence(4)?,
                 request(1, 0, &[(15, 10)])?,
                 Arc::clone(&r1),
                 ELIGIBLE,
             )
             .await,
         )?;
-        assert_eq!(retried.original_character_revision.get(), 4);
-        assert_eq!(retried.committed_character_revision.get(), 5);
+        assert_eq!(retried.original_character_revision.get(), 5);
+        assert_eq!(retried.committed_character_revision.get(), 6);
         drop(slot);
         drop(authority);
         drop(seal);
@@ -676,6 +665,7 @@ fn the_admission_reset_clears_a_stale_allocation_once() -> TestResult {
     run("wheel_reset", async |harness| {
         let pool = &harness.pool;
         eligible(pool).await?;
+        crate::character_promotion_fixture::purchase(harness, 3).await?;
         let r1 = ruleset(R1)?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
         let authority = harness
@@ -689,7 +679,7 @@ fn the_admission_reset_clears_a_stale_allocation_once() -> TestResult {
             commit(
                 harness,
                 &authority,
-                fence(3)?,
+                fence(4)?,
                 request(1, 0, &[(15, 10)])?,
                 &r1,
                 ELIGIBLE,
@@ -710,7 +700,7 @@ fn the_admission_reset_clears_a_stale_allocation_once() -> TestResult {
             &harness.root,
             &authority,
             &harness.node,
-            fence(4)?,
+            fence(5)?,
             &r2,
         )
         .await
@@ -718,7 +708,7 @@ fn the_admission_reset_clears_a_stale_allocation_once() -> TestResult {
         assert_eq!(kept.wheel_ruleset_revision.as_deref(), Some(R1));
         assert_eq!(kept.slots, slots(&[(15, 10)])?);
         assert!(kept.current);
-        assert_eq!(harness.root_revision().await?, "4");
+        assert_eq!(harness.root_revision().await?, "5");
 
         // A reset revision after it: before the reset the allocation fails closed (stages 0,
         // changes refused).
@@ -738,7 +728,7 @@ fn the_admission_reset_clears_a_stale_allocation_once() -> TestResult {
             commit(
                 harness,
                 &authority,
-                fence(4)?,
+                fence(5)?,
                 request(2, 1, &[(15, 9)])?,
                 &r3,
                 AT_TEMPLE
@@ -753,7 +743,7 @@ fn the_admission_reset_clears_a_stale_allocation_once() -> TestResult {
             &harness.root,
             &authority,
             &harness.node,
-            fence(4)?,
+            fence(5)?,
             &r3,
         )
         .await
@@ -767,10 +757,10 @@ fn the_admission_reset_clears_a_stale_allocation_once() -> TestResult {
                 current: true,
             }
         );
-        assert_eq!(harness.root_revision().await?, "5");
+        assert_eq!(harness.root_revision().await?, "6");
         let receipt: (String, String, String) = sqlx::query_as(
             "SELECT kind, before_wheel_ruleset_revision, wheel_ruleset_revision \
-               FROM game_character_wheel_receipts WHERE committed_character_revision = 5",
+               FROM game_character_wheel_receipts WHERE committed_character_revision = 6",
         )
         .fetch_one(pool)
         .await?;
@@ -788,7 +778,7 @@ fn the_admission_reset_clears_a_stale_allocation_once() -> TestResult {
                 &harness.root,
                 &authority,
                 &harness.node,
-                fence(5)?,
+                fence(6)?,
                 Arc::clone(&r3)
             )
             .await
@@ -804,7 +794,7 @@ fn the_admission_reset_clears_a_stale_allocation_once() -> TestResult {
             assert_eq!(
                 harness
                     .root
-                    .reset_character_wheel(&authority, &harness.node, fence(5)?, Arc::clone(active))
+                    .reset_character_wheel(&authority, &harness.node, fence(6)?, Arc::clone(active))
                     .await
                     .map_err(debug),
                 Ok(WheelResetOutcome::Unresolved)
@@ -821,7 +811,7 @@ fn the_admission_reset_clears_a_stale_allocation_once() -> TestResult {
                 commit(
                     harness,
                     &authority,
-                    fence(5)?,
+                    fence(6)?,
                     request(3, 2, &[(15, 1)])?,
                     active,
                     ELIGIBLE
@@ -837,7 +827,7 @@ fn the_admission_reset_clears_a_stale_allocation_once() -> TestResult {
             commit(
                 harness,
                 &authority,
-                fence(5)?,
+                fence(6)?,
                 request(3, 2, &[(15, 10)])?,
                 &r3,
                 ELIGIBLE,
@@ -863,6 +853,7 @@ fn wheel_guards_reject_inconsistent_rows() -> TestResult {
         );
         expect_rejected(pool, "state at revision one", &state_only, CHAIN).await?;
         eligible(pool).await?;
+        crate::character_promotion_fixture::purchase(harness, 3).await?;
 
         // A ruleset revision needs its 36 capacities.
         expect_rejected(
@@ -873,11 +864,11 @@ fn wheel_guards_reject_inconsistent_rows() -> TestResult {
         )
         .await?;
 
-        let first = Receipt::allocation(70, 3, 0, &[(15, 10)]);
+        let first = Receipt::allocation(70, 4, 0, &[(15, 10)]);
         // Row-only writes, a receipt without its rows and a receipt off the root fail.
-        let row_only = format!("{}{}", advance(3, LEVEL, EXPERIENCE), first.rows());
+        let row_only = format!("{}{}", advance(4, LEVEL, EXPERIENCE), first.rows());
         expect_rejected(pool, "rows without receipt", &row_only, PROGRESSION).await?;
-        let receipt_only = format!("{}{}", advance(3, LEVEL, EXPERIENCE), first.insert());
+        let receipt_only = format!("{}{}", advance(4, LEVEL, EXPERIENCE), first.insert());
         expect_rejected(pool, "receipt without rows", &receipt_only, CHAIN).await?;
         expect_rejected(pool, "receipt off the root", &first.insert(), AT_ROOT).await?;
         let mut wrong_slots = first.commit();
@@ -889,7 +880,7 @@ fn wheel_guards_reject_inconsistent_rows() -> TestResult {
         let mut wrong_total = first.commit();
         wrong_total.push_str(&format!(
             "UPDATE game_character_wheel_state SET allocated_total = 9, wheel_revision = 2, \
-               committed_character_revision = 5 WHERE character_id = {};",
+               committed_character_revision = 6 WHERE character_id = {};",
             uuid(CHARACTER)
         ));
         expect_rejected(pool, "state differs from the receipt", &wrong_total, CHAIN).await?;
@@ -914,7 +905,7 @@ fn wheel_guards_reject_inconsistent_rows() -> TestResult {
         )
         .await?;
         // Every slot within its capacity under the receipt's revision.
-        let over = Receipt::allocation(70, 3, 0, &[(15, 51)]);
+        let over = Receipt::allocation(70, 4, 0, &[(15, 51)]);
         expect_rejected(pool, "over capacity", &over.commit(), CHAIN).await?;
         // An allocation is a real change under one revision.
         let mut same = first.clone();
@@ -925,7 +916,7 @@ fn wheel_guards_reject_inconsistent_rows() -> TestResult {
         expect_committed(pool, "first allocation r4", &first.commit()).await?;
 
         // A later receipt continues from its predecessor.
-        let mut gap = Receipt::allocation(71, 4, 1, &[(15, 10), (9, 1)]);
+        let mut gap = Receipt::allocation(71, 5, 1, &[(15, 10), (9, 1)]);
         gap.before = vec![(15, 9)];
         expect_rejected(
             pool,
@@ -934,7 +925,7 @@ fn wheel_guards_reject_inconsistent_rows() -> TestResult {
             CHAIN,
         )
         .await?;
-        let mut skipped = Receipt::allocation(71, 4, 2, &[(15, 10), (9, 1)]);
+        let mut skipped = Receipt::allocation(71, 5, 2, &[(15, 10), (9, 1)]);
         skipped.before = vec![(15, 10)];
         expect_rejected(pool, "Wheel revision skipped", &skipped.commit(), CHAIN).await?;
 
@@ -950,7 +941,7 @@ fn wheel_guards_reject_inconsistent_rows() -> TestResult {
         )
         .await?;
         let reset = |destination: &str| {
-            let mut receipt = Receipt::allocation(72, 4, 1, &[]);
+            let mut receipt = Receipt::allocation(72, 5, 1, &[]);
             receipt.occurrence = "'01020304-0506-8708-8809-0a0b0c0d0e0f'::uuid".into();
             receipt.kind = "RULESET_RESET";
             receipt.before = vec![(15, 10)];
@@ -969,7 +960,7 @@ fn wheel_guards_reject_inconsistent_rows() -> TestResult {
         expect_rejected(pool, "reset that keeps points", &keeps.insert(), KIND).await?;
         expect_committed(pool, "reset to r3", &reset("wheel-r3").commit()).await?;
         // After it, an allocation must name the new revision as its source.
-        let mut old = Receipt::allocation(73, 5, 2, &[(15, 1)]);
+        let mut old = Receipt::allocation(73, 6, 2, &[(15, 1)]);
         old.rulesets = (R1.into(), R1.into());
         expect_rejected(
             pool,
