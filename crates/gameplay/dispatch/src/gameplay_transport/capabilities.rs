@@ -204,8 +204,8 @@ pub const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
         requires: &[CAPABILITY_ITEM_VIEW_MOVE_V1],
     },
     super::guild_intent::OFFERED,
-    super::vip::OFFERED,
     super::party_command::OFFERED,
+    super::vip::OFFERED,
 ];
 
 /// MAP-ITEM-REF-1: the production offered set with capability 4 `ITEM_VIEW_MOVE_V1`, which
