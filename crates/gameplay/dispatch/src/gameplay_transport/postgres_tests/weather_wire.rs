@@ -157,5 +157,5 @@ fn composed_server_serves_weather() -> TestResult {
     })
 }
 
-#[path = "weather_wire_fixture.rs"]
+#[path = "../weather_wire_fixture.rs"]
 pub(super) mod fixture_access;
