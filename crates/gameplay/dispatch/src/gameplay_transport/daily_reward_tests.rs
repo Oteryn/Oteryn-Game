@@ -1,5 +1,5 @@
-//! Reservation checks through the existing negotiation and real connection dispatch.
-//! These cases do not qualify a daily claim, value delivery or reset history.
+//! Authorities without composed DAILY content retain capability refusal.
+//! The composed accepted path is covered by postgres_tests/daily_reward.rs.
 
 use super::*;
 use oteryn_protocol_oteryn::daily_reward::{
@@ -8,7 +8,7 @@ use oteryn_protocol_oteryn::daily_reward::{
 };
 
 #[test]
-fn daily_reward_reservation_is_not_offered_or_selected() {
+fn daily_reward_uncomposed_offer_is_not_selected() {
     for offered in [
         PRODUCTION_OFFERED_CAPABILITIES,
         ITEM_VIEW_OFFERED_CAPABILITIES,
@@ -29,8 +29,7 @@ fn daily_reward_reservation_is_not_offered_or_selected() {
 }
 
 #[test]
-fn daily_reward_reserved_commands_are_refused_through_real_dispatch() -> Result<(), Box<dyn Error>>
-{
+fn daily_reward_uncomposed_authority_refuses_through_real_dispatch() -> Result<(), Box<dyn Error>> {
     run(async {
         let authority = NegotiatingAuthority::new(None);
         let (admitted, accepted) =
