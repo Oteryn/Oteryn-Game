@@ -336,7 +336,10 @@ mod postgres {
             let version: String = sqlx::query_scalar("SHOW server_version_num")
                 .fetch_one(&h.pool)
                 .await?;
-            assert_eq!(version, crate::CANONICAL_POSTGRES_SERVER_VERSION_NUM);
+            assert_eq!(
+                version,
+                oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM
+            );
             eprintln!("GROUND-CAP-NATIVE-PG server_version_num={version} fixture={tag}");
             let result = body(&h).await;
             h.cleanup().await?;

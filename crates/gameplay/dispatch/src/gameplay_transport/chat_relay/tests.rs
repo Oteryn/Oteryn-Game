@@ -6,7 +6,7 @@ use std::sync::atomic::{AtomicU64, Ordering as SeqOrdering};
 
 use oteryn_protocol_oteryn::chat::{ChatIntent, ChatLine, ChatRoom};
 use oteryn_simulation_determinism::SemanticTimeMicros;
-use sqlx::{Connection as _, Executor as _, PgConnection};
+use sqlx::{Connection as _, PgConnection};
 
 use super::*;
 use crate::durability::MigrationExecutor;
