@@ -654,3 +654,7 @@ mod tests {
         assert_eq!(encode_cooldowns(&c), Err(Error::Limit));
     }
 }
+
+#[cfg(test)]
+#[path = "spell_presentation_candidate_fuzz_tests.rs"]
+mod fuzz_tests;

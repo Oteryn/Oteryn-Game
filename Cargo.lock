@@ -2171,10 +2171,10 @@ version = "0.1.0"
 dependencies = [
  "base64 0.22.1",
  "oteryn-error-codes",
- "oteryn-gameplay-combat-rules",
  "oteryn-gameplay-admission-evidence",
  "oteryn-gameplay-character-recovery-fence",
  "oteryn-gameplay-characters",
+ "oteryn-gameplay-combat-rules",
  "oteryn-gameplay-content",
  "oteryn-gameplay-domain",
  "oteryn-gameplay-economy",
@@ -2558,6 +2558,7 @@ dependencies = [
 name = "oteryn-protocol-oteryn"
 version = "0.1.0"
 dependencies = [
+ "oteryn-test-support",
  "serde_json",
 ]
 

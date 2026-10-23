@@ -1,4 +1,5 @@
 #![allow(clippy::unwrap_used)]
+#![allow(clippy::expect_used)]
 
 use super::*;
 use std::num::NonZeroU64;
@@ -455,4 +456,49 @@ fn negotiated_capability28_has_no_inferred_requirements_and_unknown_ids_are_refu
         command["max_result_payload_bytes"].as_u64(),
         Some(longest.len() as u64)
     );
+}
+
+// TEST-FUZZ-1: bounded randomized decoder and generated-value round trips.
+
+#[test]
+fn fuzz_decode_item_look_intent() {
+    crate::decoder_fuzz_support::codec(
+        "decode_item_look_intent",
+        |rng| ItemLookIntent {
+            target: ItemLookTarget::Item(NonZeroU64::new(rng.u64().max(1)).expect("handle")),
+        },
+        decode_item_look_intent,
+        |v| encode_item_look_intent(*v).expect("intent"),
+    );
+}
+
+#[test]
+fn fuzz_decode_item_look_result() {
+    crate::decoder_fuzz_support::codec(
+        "decode_item_look_result",
+        |rng| ItemLookResult::Text("é".repeat((rng.below(256) + 1) as usize)),
+        decode_item_look_result,
+        |v| encode_item_look_result(v).expect("result"),
+    );
+}
+
+#[test]
+fn fuzz_item_look_selected_codecs() {
+    for extended in [false, true] {
+        let selection = ItemLookSelection { extended };
+        crate::decoder_fuzz_support::codec(
+            "decode_item_look_intent_for",
+            |rng| ItemLookIntent {
+                target: ItemLookTarget::Item(NonZeroU64::new(rng.u64().max(1)).expect("handle")),
+            },
+            |b| decode_item_look_intent_for(b, selection),
+            |v| encode_item_look_intent_for(*v, selection).expect("intent"),
+        );
+        crate::decoder_fuzz_support::codec(
+            "decode_item_look_result_for",
+            |rng| ItemLookResult::Text("é".repeat((rng.below(256) + 1) as usize)),
+            |b| decode_item_look_result_for(b, selection),
+            |v| encode_item_look_result_for(v, selection).expect("result"),
+        );
+    }
 }

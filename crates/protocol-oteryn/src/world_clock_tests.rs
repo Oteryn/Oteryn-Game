@@ -132,3 +132,19 @@ fn registry_binds_the_clock_wire_ids_and_limits() {
     assert!(SCHEMA.contains("message WorldClockV1 {"));
     assert!(SCHEMA.contains(&format!("At most\n// {MAX_WORLD_CLOCK_BYTES} bytes")));
 }
+
+// TEST-FUZZ-1: bounded randomized decoder and generated-value round trips.
+
+#[test]
+fn fuzz_decode_world_clock() {
+    crate::decoder_fuzz_support::codec(
+        "decode_world_clock",
+        |rng| WorldClock {
+            tibian_minute: rng.below(1440) as u16,
+            light_level: rng.u64() as u8,
+            light_color: rng.u64() as u8,
+        },
+        decode_world_clock,
+        |v| encode_world_clock(*v).expect("clock"),
+    );
+}

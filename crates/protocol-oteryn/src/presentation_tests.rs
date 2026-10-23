@@ -841,3 +841,7 @@ fn registry_binds_the_presentation_wire_ids_and_limits() {
         );
     }
 }
+
+#[cfg(test)]
+#[path = "presentation_fuzz_tests.rs"]
+mod fuzz_tests;

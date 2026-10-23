@@ -17,6 +17,7 @@ release-role = "production"
 serde_json.workspace = true
 
 [dev-dependencies]
+oteryn-test-support = { version = "=0.1.0", path = "../test-support" }
 serde_json.workspace = true
 
 [lints]
