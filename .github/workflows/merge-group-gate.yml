@@ -527,36 +527,18 @@ jobs:
           cargo +1.99.1 run --locked -p oteryn-synthetic-client-harness
           cargo +1.99.1 run --locked -p oteryn-game-server -- --smoke
 
-  durability_postgres:
-    name: Merge Queue / Durability PostgreSQL harness
+  durability_postgres_build:
+    name: Merge Queue / Durability PostgreSQL harness build
     needs: candidate
     if: needs.candidate.outputs.rust == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     permissions:
       contents: read
-    # The E2E legs run every registered target exactly once; any target not named below runs in the rest
-    # leg. The lib-1..3 legs run the PostgreSQL-backed library tests alone, split in three partitions.
-    strategy:
-      fail-fast: true
-      matrix:
-        shard: [character-authority, rest, lib-1, lib-2, lib-3]
-    services:
-      postgres:
-        image: postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc
-        env:
-          POSTGRES_USER: oteryn_test_admin
-          POSTGRES_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
-          POSTGRES_DB: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U oteryn_test_admin -d postgres"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 20
-    env:
-      OTERYN_TEST_POSTGRES_ADMIN_URL: postgresql://oteryn_test_admin:ci-${{ github.run_id }}-${{ github.run_attempt }}@127.0.0.1:5432/postgres
+    outputs:
+      archives_sha256: ${{ steps.digest.outputs.archives_sha256 }}
+    # No database here: this job verifies registered-target custody and compiles the PostgreSQL test set
+    # once into two nextest archives; the durability_postgres partitions only run them.
     steps:
       - name: Check out exact merge-group candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -599,19 +581,31 @@ jobs:
       - name: Verify locked metadata
         run: cargo +1.99.1 metadata --locked --format-version 1 >/dev/null
 
-      - name: Run registered PostgreSQL E2E targets
-        if: "!startsWith(matrix.shard, 'lib-')"
+      # cargo-nextest 0.9.146, pinned by SHA-256 as in the Rust Linux legs.
+      - name: Install pinned cargo-nextest
+        env:
+          NEXTEST_VERSION: 0.9.146
+          NEXTEST_SHA256: 682c21b777c333e96fd532e114d3a5a894e0729ab88d94c0a9f20f8419695428
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/cargo-nextest.tar.gz"
+          curl --proto '=https' --tlsv1.2 -fsSL --retry 3 -o "$archive" \
+            "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-${NEXTEST_VERSION}/cargo-nextest-${NEXTEST_VERSION}-x86_64-unknown-linux-gnu.tar.gz"
+          echo "${NEXTEST_SHA256}  ${archive}" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/nextest-bin"
+          tar -xzf "$archive" -C "$RUNNER_TEMP/nextest-bin"
+          echo "$RUNNER_TEMP/nextest-bin" >> "$GITHUB_PATH"
+
+      # Every registered target present at the candidate is archived exactly once; any target removed
+      # or renamed against the protected base fails here, before anything is compiled.
+      - name: Archive registered PostgreSQL E2E targets
         shell: bash
         env:
           BASE_SHA: ${{ github.event.merge_group.base_sha }}
           HEAD_SHA: ${{ github.event.merge_group.head_sha }}
-          SHARD: ${{ matrix.shard }}
         run: |
           set -euo pipefail
-          [[ "$SHARD" == character-authority || "$SHARD" == rest ]] || {
-            echo "Unknown PostgreSQL shard: $SHARD" >&2
-            exit 1
-          }
+          archived_targets=()
           verify_registered_target_binding() {
             local name="$1"
             local path="$2"
@@ -688,13 +682,8 @@ jobs:
               test -f "$path" && test ! -L "$path"
               test "$(git hash-object -- "$path")" = "$(git rev-parse "$HEAD_SHA:$path")"
               verify_registered_target_binding "$name" "$path"
-              local leg=rest
-              [[ "$name" == character_authority_postgres ]] && leg=character-authority
-              if [[ "$leg" != "$SHARD" ]]; then
-                echo "SHARD_SKIP: $name runs in the $leg leg"
-                return 0
-              fi
-              cargo +1.99.1 test --locked --workspace --test "$name"
+              archived_targets+=(--test "$name")
+              echo "ARCHIVED: $name"
             elif [[ -e "$path" ]]; then
               echo "Absent registered PostgreSQL target has unexpected checkout state: $name -> $path" >&2
               exit 1
@@ -706,11 +695,89 @@ jobs:
           run_registered_target character_authority_postgres apps/game-server/tests/character_authority_postgres.rs
           run_registered_target runtime_scope_assignment_postgres apps/game-server/tests/runtime_scope_assignment_postgres.rs
           run_registered_target native_admission_source_postgres apps/game-server/tests/native_admission_source_postgres.rs
+          (( ${#archived_targets[@]} > 0 )) || {
+            echo "No registered PostgreSQL target is present at the candidate" >&2
+            exit 1
+          }
+          mkdir -p "$RUNNER_TEMP/pg-archives"
+          cargo +1.99.1 nextest archive --locked --workspace "${archived_targets[@]}" --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst"
 
-      # cargo-nextest 0.9.146, pinned by SHA-256 as in the Rust Linux legs. The lib legs split the
-      # PostgreSQL-backed library tests by test-name hash into three parallel partitions.
+      # Library tests that need PostgreSQL skip in the Rust Linux lib shards, which have no database;
+      # this archive holds exactly the library tests the partitions run against the service.
+      - name: Archive PostgreSQL-backed library tests
+        run: |
+          set -euo pipefail
+          cargo +1.99.1 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"
+
+      - name: Record archive digests and candidate
+        id: digest
+        env:
+          HEAD_SHA: ${{ github.event.merge_group.head_sha }}
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/pg-archives"
+          printf '%s\n' "$HEAD_SHA" > head-sha
+          sha256sum head-sha pg-e2e.tar.zst pg-lib.tar.zst > SHA256SUMS
+          ls -l
+          echo "archives_sha256=$(sha256sum SHA256SUMS | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+
+      # The archives are already zstd-compressed and only live for this run's partitions.
+      - name: Upload PostgreSQL test archives
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: mq-postgres-test-archives
+          path: ${{ runner.temp }}/pg-archives/
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+          overwrite: true
+
+  durability_postgres:
+    name: Merge Queue / Durability PostgreSQL harness
+    needs: [candidate, durability_postgres_build]
+    if: needs.candidate.outputs.rust == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    # Each partition runs a disjoint count slice of both archives built once by durability_postgres_build;
+    # together the six run every registered E2E target and PostgreSQL-backed library test exactly once.
+    # These jobs install no toolchain and restore no cache: they cannot compile.
+    strategy:
+      fail-fast: true
+      matrix:
+        partition: [1, 2, 3, 4, 5, 6]
+    services:
+      postgres:
+        image: postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc
+        env:
+          POSTGRES_USER: oteryn_test_admin
+          POSTGRES_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U oteryn_test_admin -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      OTERYN_TEST_POSTGRES_ADMIN_URL: postgresql://oteryn_test_admin:ci-${{ github.run_id }}-${{ github.run_attempt }}@127.0.0.1:5432/postgres
+    steps:
+      # The test binaries read repository files through their compile-time CARGO_MANIFEST_DIR, so each
+      # partition checks out the same candidate at the same workspace path as the build job.
+      - name: Check out exact merge-group candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.merge_group.head_sha }}
+          persist-credentials: false
+
+      - name: Verify exact merge-group SHA
+        env:
+          EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
       - name: Install pinned cargo-nextest
-        if: startsWith(matrix.shard, 'lib-')
         env:
           NEXTEST_VERSION: 0.9.146
           NEXTEST_SHA256: 682c21b777c333e96fd532e114d3a5a894e0729ab88d94c0a9f20f8419695428
@@ -724,15 +791,53 @@ jobs:
           tar -xzf "$archive" -C "$RUNNER_TEMP/nextest-bin"
           echo "$RUNNER_TEMP/nextest-bin" >> "$GITHUB_PATH"
 
-      # Library tests that need PostgreSQL skip in the Rust Linux lib shards,
-      # which have no database; the three lib legs together run each of them once against the service.
-      - name: Run PostgreSQL-backed library tests
-        if: startsWith(matrix.shard, 'lib-')
+      - name: Download PostgreSQL test archives
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: mq-postgres-test-archives
+          path: ${{ runner.temp }}/pg-archives
+
+      - name: Verify archives were built for this candidate
         env:
-          SHARD: ${{ matrix.shard }}
+          EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}
+          ARCHIVES_SHA256: ${{ needs.durability_postgres_build.outputs.archives_sha256 }}
         run: |
           set -euo pipefail
-          cargo +1.99.1 nextest run --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --no-fail-fast --partition "hash:${SHARD#lib-}/3"
+          cd "$RUNNER_TEMP/pg-archives"
+          [[ "$ARCHIVES_SHA256" =~ ^[0-9a-f]{64}$ ]]
+          echo "${ARCHIVES_SHA256}  SHA256SUMS" | sha256sum -c -
+          sha256sum -c SHA256SUMS
+          test "$(cat head-sha)" = "$EXPECTED_SHA"
+          test "$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      # The partition is taken from the matrix position and size, so the slices always cover the
+      # whole archive whatever the matrix length; the label must agree with the position.
+      - name: Resolve partition
+        id: partition
+        env:
+          LABEL: ${{ matrix.partition }}
+          JOB_INDEX: ${{ strategy.job-index }}
+          JOB_TOTAL: ${{ strategy.job-total }}
+        run: |
+          set -euo pipefail
+          [[ "$JOB_INDEX" =~ ^[0-9]+$ && "$JOB_TOTAL" =~ ^[1-9][0-9]*$ ]]
+          test "$LABEL" = "$((JOB_INDEX + 1))"
+          echo "spec=count:$((JOB_INDEX + 1))/${JOB_TOTAL}" >> "$GITHUB_OUTPUT"
+
+      - name: Run registered PostgreSQL E2E targets
+        env:
+          PARTITION_SPEC: ${{ steps.partition.outputs.spec }}
+        run: |
+          set -euo pipefail
+          cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst" --workspace-remap "$GITHUB_WORKSPACE" --partition "$PARTITION_SPEC" --no-fail-fast
+
+      - name: Run PostgreSQL-backed library tests
+        if: ${{ !cancelled() && steps.partition.outcome == 'success' }}
+        env:
+          PARTITION_SPEC: ${{ steps.partition.outputs.spec }}
+        run: |
+          set -euo pipefail
+          cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst" --workspace-remap "$GITHUB_WORKSPACE" --partition "$PARTITION_SPEC" --no-fail-fast
 
   rust_windows:
     name: Merge Queue / Rust Windows client
