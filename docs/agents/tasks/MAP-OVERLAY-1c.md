@@ -15,7 +15,7 @@ class: "hard, persistence, authority and security review"
 base_branch: main
 branch: w2/map-overlay-1c
 pr: null
-needs_migration: true   # 0137_world_reset.sql; owner allocation in run 1c-e supersedes earlier provisional slots
+needs_migration: true   # 0148_world_reset.sql; owner allocation in run 1c-e supersedes earlier provisional slots
 needs_registry: true    # RESOURCE_LIMITS_REGISTRY MAP01-RESET-RETIRE-MS row; GAME_EVENT_FOUNDATION_REGISTRY audit grammar if widened
 merge_authority: CP_ONLY (builder never marks ready)
 ```
@@ -384,7 +384,7 @@ The planned-loss prerequisite source now uses the existing owners:
   `gameplay_drain.rs` carries the sealed signal through input quiescence and grace release.
 - Node `serve/world_reset.rs` watches every five seconds and retains retryable exit 17.
   Boot refuses RETIRING before content activation; the actual reset recovery runner is pending.
-- Migration `0137_world_reset.sql` installs the initial record schema and admission fences.
+- Migration `0148_world_reset.sql` installs the initial record schema and admission fences.
   It is unfinished: no initializer/publisher/activator capability or Ground writer is exposed.
 - Tests are single child registrations in Foundation, node and the existing dispatch PG fixture.
   The latter covers a healthy session, stale phase/target, codec reload and real grace release.
@@ -525,7 +525,7 @@ Files growing over 200 lines across the complete unmerged task:
   extracted in the preceding WIP (L4).
 - Dispatch `control_loss.rs` / `listener.rs`: existing transport/lifecycle owners
   extracted in the preceding WIP (L5).
-- Migration `0137_world_reset.sql`: the task's one allocated additive schema unit,
+- Migration `0148_world_reset.sql`: the task's one allocated additive schema unit,
   owning SQL constraints, trigger fences and receipt proofs in the existing migration owner.
 - This task record: retained prerequisite audit/owner decision, validation and
   continuation state; no runtime logic belongs here. Other existing large code files shrink or receive only bounded wiring / call-site changes.
@@ -545,7 +545,7 @@ existing native House-tile and HouseInterior owners, followed by atomic activati
 ### Files changed in this continuation
 
 - `.github/workflows/pr-postgres-harness.yml`
-- `apps/game-server/migrations/0137_world_reset.sql`
+- `apps/game-server/migrations/0148_world_reset.sql`
 - `apps/game-server/src/node/serve.rs`
 - `apps/game-server/src/node/serve/world_reset.rs`
 - `apps/game-server/tests/character_authority_postgres.rs`
@@ -593,7 +593,7 @@ commit, push or Git index mutation was created by this worker.
   `5b811c0f6cdc5fae0793f20203559900397c24dafffee215070f0f1ac8547e6c`).
   There is no workflow delta against `origin/main`. No other protected-path edit
   exists. Earlier notes proposing a workflow filter change are superseded.
-- Renamed the task migration to `apps/game-server/migrations/0137_world_reset.sql`
+- Renamed the task migration to `apps/game-server/migrations/0148_world_reset.sql`
   and changed the latest-guard registry test from version 132 to 137. All earlier
   provisional migration-number allocations in this record are superseded by the
   owner's run 1c-e allocation; 0132 and 0133 belong to other mechanics.
@@ -724,12 +724,12 @@ checkpoint.
 ### Changed-file manifest (complete unmerged task, including retained earlier runs)
 
 The workflow entry is the owner's restoration only, with zero delta from
-`origin/main`. The migration entry is the final 0137 path; the provisional 0132
+`origin/main`. The migration entry is the final 0148 path; the provisional 0132
 file has been removed. Files retained unchanged from the preceding run remain
 listed so a reviewer can inspect the complete task.
 
 - `.github/workflows/pr-postgres-harness.yml`
-- `apps/game-server/migrations/0137_world_reset.sql`
+- `apps/game-server/migrations/0148_world_reset.sql`
 - `apps/game-server/src/node/serve.rs`
 - `apps/game-server/src/node/serve/world_reset.rs`
 - `apps/game-server/src/node/serve/world_reset_tests.rs`
@@ -808,7 +808,7 @@ larger programme are now explicitly routed to 1d below.
   target/drain/empty Ground and atomically writes N+1, its calendar history, the
   active pointer, ACTIVATED and all per-Channel issuances. `NEW_EPOCH` and
   `HISTORICAL` remain distinct; historical replay creates no authority or issuance.
-- Migration remains **0137_world_reset.sql**. Its explicit owner-only initializer
+- Migration remains **0148_world_reset.sql**. Its explicit owner-only initializer
   records epoch zero from the database clock under `TIBIA_SERVER_SAVE_BERLIN_10`,
   never a seed or caller time. Publication checks the issued predecessor content,
   freezes the bounded cohort and preserves exact replay/conflict semantics.
@@ -952,10 +952,10 @@ The manifest is relative to the pre-task base `9f814e72a`, and includes the earl
 WIP plus all current tracked/untracked work. The protected workflow entry is the
 pre-existing restoration described above; its delta against `origin/main` is zero.
 The staged deletion of the provisional 0132 from the earlier WIP is preserved;
-the task's final migration is 0137. No index state was changed in this run.
+the task's final migration is 0148. No index state was changed in this run.
 
 - `.github/workflows/pr-postgres-harness.yml`
-- `apps/game-server/migrations/0137_world_reset.sql`
+- `apps/game-server/migrations/0148_world_reset.sql`
 - `apps/game-server/src/node/serve.rs`
 - `apps/game-server/src/node/serve/world_reset.rs`
 - `apps/game-server/src/node/serve/world_reset_tests.rs`

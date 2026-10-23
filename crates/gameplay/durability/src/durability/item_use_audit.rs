@@ -214,15 +214,16 @@ fn check_flask(
     let entry = flask.entry.as_ref().ok_or(AuditError::InvalidInput)?;
     check_state(after)?;
     check_entry(entry)?;
-    // The flask lands in the same main backpack, as another item than the potion and of
-    // another definition.
+    // BAGS-USE-1: source and flask may have different parents (nested source, main-backpack
+    // flask). The writer and SQL prove the same Character's carried tree; an audit entry alone
+    // cannot prove ancestry. Ordinals collide only within one parent. Self-parenting stays invalid.
     if after.world_id != source_before.world_id
         || after.lifecycle != ITEM_LIFECYCLE_LIVE
         || after.item_instance_id == source_before.item_instance_id
         || after.definition == source_before.definition
-        || entry.parent_item_instance_id != source_entry.parent_item_instance_id
         || entry.parent_item_instance_id == after.item_instance_id
-        || entry.placement_ordinal == source_entry.placement_ordinal
+        || (entry.parent_item_instance_id == source_entry.parent_item_instance_id
+            && entry.placement_ordinal == source_entry.placement_ordinal)
     {
         return Err(AuditError::InvalidInput);
     }
@@ -448,7 +449,7 @@ mod tests {
     use serde_json::Value;
 
     const RESOURCE_REGISTRY: &str =
-        include_str!("../../../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json");
+        oteryn_protocol_oteryn::RESOURCE_LIMITS_REGISTRY_JSON;
 
     fn registered(id: &str) -> u64 {
         let registry: Value = serde_json::from_str(RESOURCE_REGISTRY).unwrap();
@@ -576,6 +577,21 @@ mod tests {
             occurred_at_unix_ms: 1_790_000_000_000,
             server_build_id: "oteryn-game-server-test",
         }
+    }
+
+    #[test]
+    fn nested_source_and_main_flask_can_have_equal_ordinals_in_different_containers() {
+        let mut value = flask_stack();
+        value.source_entry.as_mut().unwrap().parent_item_instance_id = uuid(8);
+        value
+            .flask
+            .as_mut()
+            .unwrap()
+            .entry
+            .as_mut()
+            .unwrap()
+            .placement_ordinal = value.source_entry.as_ref().unwrap().placement_ordinal;
+        assert!(encode_item_use_event(identity(), value, mint::Type2EventTuple::V1).is_ok());
     }
 
     #[test]
@@ -840,8 +856,16 @@ mod tests {
             .entry
             .as_mut()
             .unwrap()
-            .parent_item_instance_id = uuid(8);
-        cases.push(("a flask outside the potion's backpack", value));
+            .parent_item_instance_id = value
+            .flask
+            .as_ref()
+            .unwrap()
+            .after
+            .as_ref()
+            .unwrap()
+            .item_instance_id
+            .clone();
+        cases.push(("a flask inside itself", value));
         let mut value = flask_new();
         value
             .flask

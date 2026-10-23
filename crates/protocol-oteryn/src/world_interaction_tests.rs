@@ -16,16 +16,14 @@ use crate::world_object::{
     encode_use_intent, encode_use_item_intent,
 };
 
-const PROTOCOL_REGISTRY: &str =
-    include_str!("../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json");
+const PROTOCOL_REGISTRY: &str = crate::PROTOCOL_OTERYN_V1_REGISTRY_JSON;
 const SCHEMA: &str =
     include_str!("../../../docs/contracts/protocol-oteryn/v1/world_interaction_v1.proto");
 const USE_SCHEMA: &str =
     include_str!("../../../docs/contracts/protocol-oteryn/v1/world_object_v1.proto");
 const ITEM_SCHEMA: &str =
     include_str!("../../../docs/contracts/protocol-oteryn/v1/item_view_v1.proto");
-const RESOURCE_REGISTRY: &str =
-    include_str!("../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json");
+const RESOURCE_REGISTRY: &str = crate::RESOURCE_LIMITS_REGISTRY_JSON;
 
 fn push(generation: u64, to_x: i32, to_y: i32) -> PushIntent {
     PushIntent {
@@ -488,7 +486,10 @@ fn registry_binds_the_world_interaction_ids_and_limits() {
     );
     assert_eq!(
         capability["command_types"],
-        serde_json::json!([COMMAND_TYPE_PUSH_INTENT])
+        serde_json::json!([
+            COMMAND_TYPE_PUSH_INTENT,
+            crate::bed::COMMAND_TYPE_BED_SLEEP_INTENT
+        ])
     );
     assert_eq!(capability["state_domains"], serde_json::json!([]));
     let command = only("command_types", COMMAND_TYPE_PUSH_INTENT);

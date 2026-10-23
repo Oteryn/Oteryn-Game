@@ -325,7 +325,7 @@ pub(super) async fn upsert_last_position(
     }
     let pending: bool = sqlx::query_scalar(
         "SELECT EXISTS (SELECT 1 FROM game_character_pending_respawns \
-          WHERE character_id = encode($1,'hex')::uuid)",
+          WHERE character_id = encode($1,'hex')::uuid) OR EXISTS (SELECT 1 FROM game_character_pending_arrivals WHERE character_id = encode($1,'hex')::uuid)",
     )
     .bind(character_id.as_slice())
     .fetch_one(&mut **tx)

@@ -70,7 +70,7 @@ impl TransientCapacity {
     }
     pub fn try_queue(&self) -> Result<QueuePermit<'_>, SourceError> {
         self.queued
-            .fetch_update(
+            .try_update(
                 std::sync::atomic::Ordering::AcqRel,
                 std::sync::atomic::Ordering::Acquire,
                 |n| (n < QUEUED_REQUESTS).then_some(n + 1),
@@ -105,7 +105,7 @@ impl QueuePermit<'_> {
         }
         self.owner
             .active
-            .fetch_update(
+            .try_update(
                 std::sync::atomic::Ordering::AcqRel,
                 std::sync::atomic::Ordering::Acquire,
                 |n| (n < PIPELINE_SLOTS).then_some(n + 1),

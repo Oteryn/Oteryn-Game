@@ -134,7 +134,7 @@ assert lock["family_counts"] == {
     "Item": 34043, "Mount": 252,
     **family_counts, "Document": 1609,
     "NPC": 1282, "Dialogue": 836, "Service.Trade": 324, "Service.Travel": 56, "Service.Bank": 1, "Encounter": 108, "Charm": 25,
-    "Proficiency": 443, "RewardClaim": source_claim_count, "StarterKit": 1,
+    "Proficiency": 443, "RewardClaim": source_claim_count, "StarterKit": 1, "item_conversion": 125,
     **{family: value["records"] for family, value in quest_families.items()},
 }
 assert lock["source_binding_counts"] == {"Item": 476, "Mount": 252, "Creature": 1863, "Encounter": 108, "NPC": 2747}

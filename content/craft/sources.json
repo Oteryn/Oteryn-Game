@@ -1,0 +1,573 @@
+{
+  "corpse_targets": [
+    "oteryn:item.tibia.i9582"
+  ],
+  "facts": {
+    "baking": {
+      "tables": {
+        "liquidContainers": [
+          133,
+          2524,
+          2873,
+          2874,
+          2875,
+          2876,
+          2877,
+          2879,
+          2880,
+          2881,
+          2882,
+          2885,
+          2893,
+          2901,
+          2902,
+          2903
+        ],
+        "millstones": [
+          1943,
+          1944,
+          1945,
+          1946
+        ],
+        "oven": [
+          2535,
+          2537,
+          2539,
+          2541
+        ]
+      }
+    },
+    "digging": {
+      "tables": {
+        "fruits": [
+          3584,
+          3585,
+          3586,
+          3587,
+          3588,
+          3589,
+          3590,
+          3591,
+          3592,
+          3593,
+          3595,
+          3596,
+          5096,
+          8011,
+          8012,
+          8013
+        ],
+        "holeId": [
+          294,
+          369,
+          370,
+          385,
+          394,
+          411,
+          412,
+          413,
+          432,
+          433,
+          435,
+          482,
+          483,
+          594,
+          595,
+          609,
+          610,
+          615,
+          868,
+          874,
+          1156,
+          4824,
+          7515,
+          7516,
+          7517,
+          7518,
+          7519,
+          7520,
+          7521,
+          7522,
+          7737,
+          7755,
+          7762,
+          7767,
+          7768,
+          8144,
+          8690,
+          8709,
+          12203,
+          12961,
+          17239,
+          19220,
+          23364
+        ],
+        "holes": [
+          593,
+          606,
+          608,
+          867,
+          21341
+        ],
+        "jungleGrass": [
+          3696,
+          3702,
+          17153
+        ],
+        "wildGrowth": [
+          2130,
+          3635,
+          30224
+        ]
+      }
+    },
+    "fishing": {
+      "tables": {
+        "lootCommon": [
+          3035,
+          3051,
+          3052,
+          3580,
+          236,
+          237
+        ],
+        "lootCommon1": [
+          3035,
+          237,
+          12557
+        ],
+        "lootRare": [
+          3026,
+          3029,
+          3032,
+          7158,
+          7159
+        ],
+        "lootRare1": [
+          3026,
+          12557
+        ],
+        "lootTrash": [
+          3119,
+          3123,
+          3264,
+          3409,
+          3578
+        ],
+        "lootVeryRare": [
+          281,
+          282,
+          9303
+        ],
+        "lootVeryRare1": [
+          281,
+          12557
+        ],
+        "waterIds": [
+          622,
+          4597,
+          4598,
+          4599,
+          4600,
+          12561,
+          12563,
+          4601,
+          4602,
+          4609,
+          4610,
+          4611,
+          4612,
+          4613,
+          4614,
+          629,
+          630,
+          631,
+          632,
+          633,
+          634,
+          7236,
+          9582,
+          13988,
+          13989,
+          12560,
+          21414
+        ]
+      }
+    },
+    "mechanical_fishing": {
+      "tables": {
+        "lootCommon": [
+          3035,
+          3051,
+          3052,
+          3580,
+          236,
+          237
+        ],
+        "lootRare": [
+          3026,
+          3029,
+          3032,
+          7158,
+          7159
+        ],
+        "lootTrash": [
+          3119,
+          3123,
+          3264,
+          3409,
+          3578
+        ],
+        "lootVeryRare": [
+          281,
+          282,
+          9303
+        ],
+        "waterIds": [
+          622,
+          4597,
+          4598,
+          4599,
+          4600,
+          4601,
+          4602,
+          4609,
+          4610,
+          4611,
+          4612,
+          4613,
+          4614,
+          629,
+          630,
+          631,
+          632,
+          633,
+          634,
+          7236,
+          9582,
+          13988,
+          13989
+        ]
+      }
+    },
+    "pick": {
+      "tables": {}
+    },
+    "shovel": {
+      "tables": {}
+    }
+  },
+  "item_facts": {
+    "12557": {
+      "fluid_container": false,
+      "max_stack": 100
+    },
+    "12802": {
+      "fluid_container": false,
+      "max_stack": 100
+    },
+    "133": {
+      "fluid_container": false,
+      "max_stack": 1
+    },
+    "13992": {
+      "fluid_container": false,
+      "max_stack": 100
+    },
+    "236": {
+      "fluid_container": false,
+      "max_stack": 100
+    },
+    "237": {
+      "fluid_container": false,
+      "max_stack": 100
+    },
+    "2524": {
+      "fluid_container": true,
+      "max_stack": 1
+    },
+    "281": {
+      "fluid_container": false,
+      "max_stack": 100
+    },
+    "282": {
+      "fluid_container": false,
+      "max_stack": 100
+    },
+    "2873": {
+      "fluid_container": true,
+      "max_stack": 1
+    },
+    "2874": {
+      "fluid_container": true,
+      "max_stack": 1
+    },
+    "2875": {
+      "fluid_container": true,
+      "max_stack": 1
+    },
+    "2876": {
+      "fluid_container": true,
+      "max_stack": 1
+    },
+    "2877": {
+      "fluid_container": true,
+      "max_stack": 1
+    },
+    "2879": {
+      "fluid_container": true,
+      "max_stack": 1
+    },
+    "2880": {
+      "fluid_container": true,
+      "max_stack": 1
+    },
+    "2881": {
+      "fluid_container": true,
+      "max_stack": 1
+    },
+    "2882": {
+      "fluid_container": true,
+      "max_stack": 1
+    },
+    "2885": {
+      "fluid_container": true,
+      "max_stack": 1
+    },
+    "2893": {
+      "fluid_container": true,
+      "max_stack": 1
+    },
+    "2901": {
+      "fluid_container": true,
+      "max_stack": 1
+    },
+    "2902": {
+      "fluid_container": true,
+      "max_stack": 1
+    },
+    "2903": {
+      "fluid_container": true,
+      "max_stack": 1
+    },
+    "3026": {
+      "fluid_container": false,
+      "max_stack": 100
+    },
+    "3029": {
+      "fluid_container": false,
+      "max_stack": 100
+    },
+    "3032": {
+      "fluid_container": false,
+      "max_stack": 100
+    },
+    "3035": {
+      "fluid_container": false,
+      "max_stack": 100
+    },
+    "3051": {
+      "fluid_container": false,
+      "max_stack": 1
+    },
+    "3052": {
+      "fluid_container": false,
+      "max_stack": 1
+    },
+    "30975": {
+      "fluid_container": false,
+      "max_stack": 100
+    },
+    "3119": {
+      "fluid_container": false,
+      "max_stack": 100
+    },
+    "3123": {
+      "fluid_container": false,
+      "max_stack": 100
+    },
+    "31686": {
+      "fluid_container": false,
+      "max_stack": 100
+    },
+    "3264": {
+      "fluid_container": false,
+      "max_stack": 1
+    },
+    "3409": {
+      "fluid_container": false,
+      "max_stack": 1
+    },
+    "3456": {
+      "fluid_container": false,
+      "max_stack": 1
+    },
+    "3457": {
+      "fluid_container": false,
+      "max_stack": 1
+    },
+    "3464": {
+      "fluid_container": false,
+      "max_stack": 1
+    },
+    "3483": {
+      "fluid_container": false,
+      "max_stack": 1
+    },
+    "3492": {
+      "fluid_container": false,
+      "max_stack": 100
+    },
+    "3578": {
+      "fluid_container": false,
+      "max_stack": 100
+    },
+    "3580": {
+      "fluid_container": false,
+      "max_stack": 100
+    },
+    "3600": {
+      "fluid_container": false,
+      "max_stack": 100
+    },
+    "3603": {
+      "fluid_container": false,
+      "max_stack": 100
+    },
+    "3604": {
+      "fluid_container": false,
+      "max_stack": 100
+    },
+    "3605": {
+      "fluid_container": false,
+      "max_stack": 100
+    },
+    "5466": {
+      "fluid_container": false,
+      "max_stack": 100
+    },
+    "5710": {
+      "fluid_container": false,
+      "max_stack": 1
+    },
+    "6276": {
+      "fluid_container": false,
+      "max_stack": 100
+    },
+    "6277": {
+      "fluid_container": false,
+      "max_stack": 100
+    },
+    "6574": {
+      "fluid_container": false,
+      "max_stack": 100
+    },
+    "7158": {
+      "fluid_container": false,
+      "max_stack": 100
+    },
+    "7159": {
+      "fluid_container": false,
+      "max_stack": 100
+    },
+    "8018": {
+      "fluid_container": false,
+      "max_stack": 100
+    },
+    "8019": {
+      "fluid_container": false,
+      "max_stack": 100
+    },
+    "8194": {
+      "fluid_container": false,
+      "max_stack": 100
+    },
+    "8195": {
+      "fluid_container": false,
+      "max_stack": 100
+    },
+    "8196": {
+      "fluid_container": false,
+      "max_stack": 100
+    },
+    "8197": {
+      "fluid_container": false,
+      "max_stack": 100
+    },
+    "8198": {
+      "fluid_container": false,
+      "max_stack": 1
+    },
+    "8199": {
+      "fluid_container": false,
+      "max_stack": 100
+    },
+    "9303": {
+      "fluid_container": false,
+      "max_stack": 1
+    },
+    "9306": {
+      "fluid_container": false,
+      "max_stack": 1
+    },
+    "9307": {
+      "fluid_container": false,
+      "max_stack": 1
+    },
+    "953": {
+      "fluid_container": false,
+      "max_stack": 100
+    }
+  },
+  "schema": "OTERYN_CRAFT_SOURCES/v1",
+  "sources": {
+    "appearances": {
+      "path": "data/items/appearances.dat",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
+    },
+    "baking": {
+      "lines": 67,
+      "path": "data-otservbr-global/scripts/actions/other/baking.lua",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "sha256": "7b27be26885114b198221feeaf6cf86d6cb236fb49a9105233497322d8ca602e"
+    },
+    "digging": {
+      "lines": 1182,
+      "path": "data-otservbr-global/scripts/lib/register_actions.lua",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "sha256": "43fc4eb36c5e3452038a3cc29e60f73abe7d4667eec32936f57a89931d8cfb17"
+    },
+    "fishing": {
+      "lines": 141,
+      "path": "data-otservbr-global/scripts/actions/other/fishing.lua",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "sha256": "07b353117965cf8ec4ee9586b41554449c1ff1f79ce983f04333dbc033288364"
+    },
+    "mechanical_fishing": {
+      "lines": 84,
+      "path": "data-otservbr-global/scripts/actions/other/mechanical_fishing.lua",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "sha256": "ae5abfe13cba01e0a8f9b7e9454a5fee6d8539738a911cb52120a1199f39960d"
+    },
+    "pick": {
+      "lines": 8,
+      "path": "data/scripts/actions/tools/pick.lua",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "sha256": "a3113874cb38e9325d7a2a1c056dd305242baa2267ffe5c252446d4e2da4f534"
+    },
+    "shovel": {
+      "lines": 8,
+      "path": "data/scripts/actions/tools/shovel.lua",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "sha256": "c1e04acfab4a9e625dc445125eafd89afbafe166c73948aad5ed37bb3a3e14e1"
+    }
+  }
+}

@@ -17,13 +17,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return;
         }
-        let wake = self.spell_states.lock().await.owner_wake.clone();
+        let wake = self.states.spell_states.lock().await.owner_wake.clone();
         loop {
             let mut notified = pin!(wake.notified());
             notified.as_mut().enable();
             let delay_us = {
                 let runtime = self.runtime.lock().await;
-                let states = self.spell_states.lock().await;
+                let states = self.states.spell_states.lock().await;
                 if runtime.owner_fence().is_err() {
                     return;
                 }
@@ -67,7 +67,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // the runtime lock that every admitted act holds through its commit.
             {
                 let _runtime = self.runtime.lock().await;
-                if let Ok(mut gate) = self.world_gate.lock() {
+                if let Ok(mut gate) = self.states.world_gate.lock() {
                     gate.begin_turn();
                 }
             }
@@ -90,7 +90,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         {
             let runtime = self.runtime.lock().await;
-            let mut states = self.spell_states.lock().await;
+            let mut states = self.states.spell_states.lock().await;
             let now = self.owner_now().get();
             if runtime.owner_fence().is_err() || now < states.next_party_deadline_pass_us {
                 return;
@@ -128,7 +128,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return false;
         };
         let runtime = self.runtime.lock().await;
-        let mut states = self.spell_states.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         if runtime.owner_fence().is_err()
             || source.source_digest() != runtime.content_pin().server_artifact_digest()
         {
@@ -204,7 +204,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return;
         };
         let runtime = self.runtime.lock().await;
-        let mut states = self.spell_states.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         let now = self.owner_now().get();
         if now < states.next_item_deadline_pass_us
             || runtime.owner_fence().is_err()

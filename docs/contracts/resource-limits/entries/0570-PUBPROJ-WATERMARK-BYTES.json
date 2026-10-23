@@ -1,0 +1,21 @@
+{
+  "id": "PUBPROJ-WATERMARK-BYTES",
+  "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md",
+  "resource": "Encoded PublishPublicProjectionWatermarkV1 request body",
+  "unit": "bytes",
+  "hard_maximum": 512,
+  "configurable_range": {
+    "minimum": 512,
+    "maximum": 512
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Fixed member set of bounded decimal strings, a family name and a source authority of at most 128 bytes; the length is checked before the exchange.",
+  "client_visible": false,
+  "boundary_tests": [
+    "apps/game-server/src/native_admission_source/public_projections_tests.rs worst_case_bodies_fit_their_bounds: the worst-case watermark encodes within 512 bytes"
+  ],
+  "consumers": [
+    "apps/game-server/src/native_admission_source/public_projections.rs"
+  ],
+  "notes": "Contract sections 3, 5 and 8. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered': the outbox row stays queued (or the World is retried by the next scan), the watermark stalls and Platform hides the family once it is stale; gameplay, admission and the change that caused it are unaffected. Registered by OTV2-20261015-public-projections-producer."
+}

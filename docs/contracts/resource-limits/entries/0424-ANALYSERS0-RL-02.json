@@ -1,0 +1,22 @@
+{
+  "id": "ANALYSERS0-RL-02",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_ANALYSERS0_HUNTING_ANALYSERS_DECISION_2026-10-03.md",
+  "resource": "Corpse items in one kill_loot fact",
+  "unit": "items per fact",
+  "hard_maximum": 32,
+  "configurable_range": {
+    "minimum": 32,
+    "maximum": 32
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "The decoder refuses a 33rd item before decoding it; the emitter sends more items as a second kill_loot fact for the same race.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=32: a kill_loot with 32 items round-trips",
+    "max+1=33: 33 items are refused in both directions"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/analyser.rs MAX_ANALYSER_LOOT_ITEMS"
+  ],
+  "notes": "ANALYSERS-0 \u00a74 and \u00a76. Registered by OTV2-20261003-analyser-wire1."
+}

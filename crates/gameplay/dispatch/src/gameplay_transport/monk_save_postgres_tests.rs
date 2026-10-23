@@ -1,37 +1,44 @@
 #![allow(clippy::expect_used)]
 
+// Keep sorted by module name; insert in order, never append.
+#[path = "equipment_effects_owner_tests/monk_scenario.rs"]
+pub(in crate::gameplay_transport) mod equipment_scenarios;
+#[path = "first_vocation_vitals_postgres_tests.rs"]
+mod first_vocation_vitals;
 #[path = "../../../../../apps/game-server/tests/support/character_revision_sequencer_postgres_cases.rs"]
 mod fixture;
-
 #[path = "monk_save_fresh_fixture.rs"]
 mod fresh_fixture;
-
-#[path = "kill_reward_postgres_e2e_tests.rs"]
-mod kill_reward_e2e;
-
-#[path = "planned_world_reset_postgres_tests.rs"]
-mod planned_world_reset;
-#[path = "../../../durability/src/durability/fresh_admission/retired_holder_release_postgres_tests.rs"]
-mod planned_world_reset_retired_holder;
-#[path = "world_reset_source_map_postgres_tests.rs"]
-mod planned_world_reset_source_map;
-#[path = "world_reset_activation_postgres_tests.rs"]
-mod world_reset_activation;
-
-#[path = "logout_postgres_tests.rs"]
-mod logout_e2e;
-
-#[path = "map_bundle_domain_postgres_tests.rs"]
-mod map_bundle_domain;
-
 #[path = "item_look_postgres_tests.rs"]
 mod item_look;
-
-#[path = "weather_wire_postgres_tests.rs"]
-mod weather_wire;
-
+#[path = "kill_reward_postgres_e2e_tests.rs"]
+mod kill_reward_e2e;
+#[path = "logout_postgres_tests.rs"]
+mod logout_e2e;
+#[path = "map_bundle_domain_postgres_tests.rs"]
+mod map_bundle_domain;
 #[path = "loop_map_pickup_tests.rs"]
 mod map_pickup;
+#[path = "quest_admission_postgres_tests.rs"]
+mod quest_admission;
+#[path = "quest_chest_postgres_tests.rs"]
+mod quest_chest_postgres_tests;
+#[path = "quest_log_postgres_tests.rs"]
+mod quest_log_postgres_tests;
+#[path = "quest_recovery_postgres_tests.rs"]
+mod quest_recovery;
+#[path = "quest_runtime_fixture.rs"]
+mod quest_runtime_fixture;
+#[path = "rune_use_bridge_postgres_tests.rs"]
+mod rune_use_bridge;
+#[path = "tutorial_vitals_postgres_fixture.rs"]
+mod tutorial_vitals_fixture;
+#[path = "vocationless_vitals_postgres_tests.rs"]
+mod vocationless_vitals;
+
+// Every test file in `postgres_tests/` is mounted here by `build.rs`, so a new mechanic adds its
+// file there instead of another `#[path] mod` line in this shared list.
+include!(concat!(env!("OUT_DIR"), "/postgres_tests_mounts.rs"));
 
 use super::{ComposedFreshAdmission, MonkSave};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
@@ -70,60 +77,14 @@ fn reset() {
     NOT_EXPIRED.set(0);
 }
 
-async fn prepare_current_session(harness: &Harness) -> TestResult {
-    use crate::durability::admission_authority_guards::AdmissionGuardStore;
-    use crate::foundation::admission_authority_publication::AdmissionAuthorityPublicationV1;
-    use crate::foundation::fresh_admission_durability::FreshAdmissionDurableOutcomeV1;
-    // The new harness starts with no admission claims/session/history.
-    // Complete owning evidence is published and committed through existing APIs.
-    let now: i64 =
-        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
-            .fetch_one(&harness.pool)
-            .await?;
-    let source = fresh_fixture::fresh::Source::new(now)?;
-    let mut runtime_source = fresh_fixture::fresh::Source::new(now)?;
-    runtime_source.rows.retain(|row| matches!(row.key,
-        crate::foundation::admission_authority_publication::AdmissionAuthorityGuardKeyV1::Runtime(_)));
-    let runtime_publication =
-        AdmissionAuthorityPublicationV1::prepare(&runtime_source, now).map_err(debug)?;
-    harness
-        .root
-        .publish_runtime_readiness(&harness.node, &runtime_publication)
-        .await
-        .map_err(debug)?;
-    let mut admission_source = fresh_fixture::fresh::Source::new(now)?;
-    admission_source.rows.retain(|row| !matches!(row.key,
-        crate::foundation::admission_authority_publication::AdmissionAuthorityGuardKeyV1::Runtime(_)));
-    let publication =
-        AdmissionAuthorityPublicationV1::prepare(&admission_source, now).map_err(debug)?;
-    let guards = AdmissionGuardStore::from_root(harness.root.clone());
-    guards
-        .publish(&publication)
-        .await
-        .map_err(|e| format!("fresh fixture publication: {e:?}"))?;
-    let store = FreshAdmissionStore::from_root(harness.root.clone());
-    let request = source.request()?;
-    assert!(matches!(
-        store
-            .commit(&request)
-            .await
-            .map_err(|e| format!("fresh fixture commit: {e:?}"))?,
-        FreshAdmissionDurableOutcomeV1::Committed(_)
-    ));
-    let (current, _) = store
-        .current_session_at(GameSessionId::decode(&id(50)).map_err(debug)?)
-        .await?;
-    assert_eq!(
-        current.session_state(),
-        crate::foundation::GameSessionState::Active
-    );
-    assert_eq!(current.current_character_lease().generation(), 2);
-    Ok(())
-}
+#[path = "monk_save_postgres_fixture/fresh_session.rs"]
+mod fresh_session;
+use fresh_session::prepare_current_session;
 
 struct Dependencies {
     runtime: Mutex<ChannelRuntimeV1>,
     room: crate::content::QualifiedNativeEntryRoom,
+    combat_room: Option<crate::content::QualifiedNativeEntryRoom>,
     door: Mutex<crate::world_runtime::LocalObjectRuntime>,
     evidence: FreshEvidenceSource,
     spells: crate::spell::SpellBook,
@@ -134,6 +95,19 @@ struct Dependencies {
 }
 impl Dependencies {
     fn new() -> TestResult<Self> {
+        let world = fence(1)?.runtime_scope.world_id();
+        Self::with_content(
+            ChannelContentPin::test(world),
+            crate::content::qualify_native_entry_room(world).map_err(debug)?,
+            crate::spell::cast::v1_spell_book().map_err(debug)?,
+        )
+    }
+
+    fn with_content(
+        pin: ChannelContentPin,
+        room: crate::content::QualifiedNativeEntryRoom,
+        spells: crate::spell::SpellBook,
+    ) -> TestResult<Self> {
         use rustls::pki_types::{CertificateDer, PrivateKeyDer};
         let expected = fence(1)?;
         let world = expected.runtime_scope.world_id();
@@ -148,12 +122,11 @@ impl Dependencies {
             1,
             "runtime-scope-assignment:1",
             2,
-            ChannelContentPin::test(world),
+            pin,
         )
         .map_err(debug)?;
         let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
         let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
-        let room = crate::content::qualify_native_entry_room(world).map_err(debug)?;
         let content = crate::world_runtime::ReferenceContentGeneration::from_content(room.door())
             .map_err(debug)?;
         let door_fence = crate::world_runtime::ScopeContentGenerationFence::for_test(
@@ -188,9 +161,10 @@ impl Dependencies {
         Ok(Self {
             runtime: Mutex::new(runtime),
             room,
+            combat_room: None,
             door: Mutex::new(door),
             evidence: FreshEvidenceSource::new(descriptor),
-            spells: crate::spell::cast::v1_spell_book().map_err(debug)?,
+            spells,
             achievements: crate::achievement_catalogue::AchievementCatalogue::embedded()
                 .map_err(debug)?,
             charms: crate::content::charm_source::CanonicalCharmCatalogue::embedded()
@@ -217,9 +191,7 @@ impl Dependencies {
         harness: &'a Harness,
         authority: &'a ReconciledCharacterAuthority<'f, 's>,
     ) -> ComposedFreshAdmission<'a, 'f, 's> {
-        ComposedFreshAdmission {
-            reset_epoch: 0,
-            emit: |_, _| {},
+        let mut owner = crate::gameplay_transport::composed_test_owner::ComposedTestOwner {
             root: &harness.root,
             character: authority,
             holder: &harness.node,
@@ -237,48 +209,20 @@ impl Dependencies {
             )
             .expect("an empty declared set binds"),
             runtime: &self.runtime,
-            movement_cells: self.room.movement_cells(),
             door: &self.door,
-            chest: self.room.door(),
             spells: &self.spells,
-            active_generation: None,
-            premium_coordinator: None,
-            rooms: crate::gameplay_transport::SeamRooms::new(None, None),
             achievements: &self.achievements,
             imported_charms: &self.charms,
-            spell_states: Mutex::default(),
-            world_gate: std::sync::Mutex::default(),
-            attack: Mutex::default(),
-            clock_origin: std::time::Instant::now(),
-            lost: std::sync::Mutex::default(),
-            revision_sequencer:
-                crate::durability::character_revision_sequencer::CharacterRevisionSequencer::new(),
-            quest_catalogue: None,
-            quest_sessions: std::sync::Mutex::default(),
-            chat: crate::gameplay_transport::chat_intent::ChatRuntime::default(),
-            npc_conversations: Default::default(),
-            wheel_ruleset: None,
-            wheel_sessions: std::sync::Mutex::default(),
-            progression_sessions: std::sync::Mutex::default(),
-            last_positions: crate::gameplay_transport::last_position::LastPositions::default(),
-            input_gate: Default::default(),
-            premium: crate::premium::refresh::PremiumRefresher::new(
-                Default::default(),
-                harness.root.clone(),
-                None,
-            ),
-            premium_sessions: std::sync::Mutex::default(),
-            fence_holders: Default::default(),
-            spell_lane: crate::durability::spell_owner_commit::SpellLane::new(
-                self.admitted.world_id,
-                self.admitted.channel_id,
-            ),
-            loop_ground: Default::default(),
+            room: &self.room,
         }
+        .build();
+        // Combat suites (creature move, kill reward) install their bundle combat view here.
+        owner.rooms = crate::gameplay_transport::SeamRooms::new(None, self.combat_room.as_ref());
+        owner
     }
     async fn initialize(&self, owner: &ComposedFreshAdmission<'_, '_, '_>) {
         let runtime = self.runtime.lock().await;
-        let mut states = owner.spell_states.lock().await;
+        let mut states = owner.states.spell_states.lock().await;
         assert!(
             states
                 .initialize(
@@ -826,13 +770,34 @@ mod death_ml_loss_composed {
         ContentActivationController,
         crate::content::NativeEntryContentPin,
     )> {
+        production_generation_with_source(world, content, None)
+    }
+
+    pub(super) fn production_generation_with_source(
+        world: WorldId,
+        content: &str,
+        source: Option<&[u8]>,
+    ) -> TestResult<(
+        ContentActivationController,
+        crate::content::NativeEntryContentPin,
+    )> {
+        use sha2::Digest;
         let manifest = std::path::Path::new(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/../../../apps/game-server"
         ))
         .join("../../content/spells.manifest.json");
         let mut supplied = NativeGameplayInput::from_manifest(&manifest).map_err(debug)?;
-        supplied.source_world = None;
+        supplied.source_world =
+            source.map(
+                |bytes| crate::content::native_gameplay::PinnedGameplayBytes {
+                    bytes: bytes.to_vec(),
+                    sha256: sha2::Sha256::digest(bytes)
+                        .iter()
+                        .map(|b| format!("{b:02x}"))
+                        .collect(),
+                },
+            );
         supplied
             .build_training
             .as_mut()
@@ -859,7 +824,7 @@ mod death_ml_loss_composed {
         Ok((controller, pin))
     }
 
-    async fn current_fence(
+    pub(super) async fn current_fence(
         owner: &ComposedFreshAdmission<'_, '_, '_>,
         session: GameSessionId,
     ) -> TestResult<CurrentCharacterGameplayFence> {
@@ -1100,7 +1065,7 @@ mod death_ml_loss_composed {
                             .map_err(debug)?,
                     )
                     .map_err(debug)?;
-                let mut states = owner.spell_states.lock().await;
+                let mut states = owner.states.spell_states.lock().await;
                 assert!(
                     states
                         .initialize(
@@ -1134,7 +1099,7 @@ mod death_ml_loss_composed {
             // A real lethal creature hit records the death.
             let death = {
                 let mut runtime = dependencies.runtime.lock().await;
-                let mut states = owner.spell_states.lock().await;
+                let mut states = owner.states.spell_states.lock().await;
                 let now = crate::foundation::owner_timer::SemanticTimeMicros::from_micros(
                     owner.owner_now().get(),
                 );
@@ -1146,12 +1111,12 @@ mod death_ml_loss_composed {
                     .player_death(&runtime, actor, session)
                     .ok_or("the lethal hit records the death")?
             };
-            assert!(owner.spell_states.lock().await.is_dead(actor));
+            assert!(owner.states.spell_states.lock().await.is_dead(actor));
             if case != Case::Clean {
                 // The death flush's own checkpoint for the try, retained under the stale fence
                 // (a retained checkpoint refuses creature hits, so it follows the death).
                 let runtime = dependencies.runtime.lock().await;
-                let mut states = owner.spell_states.lock().await;
+                let mut states = owner.states.spell_states.lock().await;
                 let state = states
                     .get_mut(&runtime, actor, session)
                     .ok_or("dead actor")?;
@@ -1198,7 +1163,7 @@ mod death_ml_loss_composed {
                     );
                 }
                 let runtime = dependencies.runtime.lock().await;
-                let mut states = owner.spell_states.lock().await;
+                let mut states = owner.states.spell_states.lock().await;
                 assert!(
                     states
                         .get_mut(&runtime, actor, session)
@@ -1242,11 +1207,11 @@ mod death_ml_loss_composed {
                 }
                 assert_eq!(death_receipts(&harness).await?, 0);
                 assert_eq!(build_row(&harness, &durable).await?, trained);
-                assert!(owner.spell_states.lock().await.is_dead(actor));
+                assert!(owner.states.spell_states.lock().await.is_dead(actor));
                 let current = current_fence(&owner, session).await?;
                 {
                     let runtime = dependencies.runtime.lock().await;
-                    let mut states = owner.spell_states.lock().await;
+                    let mut states = owner.states.spell_states.lock().await;
                     let state = states
                         .get_mut(&runtime, actor, session)
                         .ok_or("dead actor")?;
@@ -1294,7 +1259,7 @@ mod death_ml_loss_composed {
                 .await
                 .ok_or("the death settles and the actor respawns")?;
             assert_eq!(vitals.health, vitals.max_health);
-            assert!(!owner.spell_states.lock().await.is_dead(actor));
+            assert!(!owner.states.spell_states.lock().await.is_dead(actor));
 
             // The death receipt: binding version 2, its before build holds the flushed try, and
             // its after build is the SKILLS-0 §3.6 loss of the receipt's experience share.
@@ -1340,7 +1305,7 @@ mod death_ml_loss_composed {
             // The live actor continues from the lowered build: one more try saves on it.
             {
                 let runtime = dependencies.runtime.lock().await;
-                let mut states = owner.spell_states.lock().await;
+                let mut states = owner.states.spell_states.lock().await;
                 let state = states
                     .get_mut(&runtime, actor, session)
                     .ok_or("respawned actor")?;

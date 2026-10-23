@@ -1,0 +1,23 @@
+{
+  "id": "MOVE-RL-08",
+  "owner_contract": "OTERYN_GAME_MOVE_RL11_VISIBILITY_DECISION_2026-09-28.md",
+  "resource": "Enter, leave and update entries in one visibility delta",
+  "unit": "entries per delta",
+  "hard_maximum": 256,
+  "configurable_range": {
+    "minimum": 256,
+    "maximum": 256
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "A larger change is sent as a full snapshot (resync); a delta never exceeds 256 entries.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=256: a change of exactly 256 entries is a delta",
+    "max+1=257: a change of 257 entries becomes a resync snapshot"
+  ],
+  "consumers": [
+    "movement::interest::diff_interest",
+    "movement::interest::INTEREST_DELTA_ENTRIES_MAX"
+  ],
+  "notes": "Re-decided in D87. Decision section 4.4; #162 comment 5875958040. Wire consumer: VIS-2 WORLD_SPATIAL type 2 (capability 6)."
+}

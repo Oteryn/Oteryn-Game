@@ -40,26 +40,17 @@ pub async fn serve_gameplay(
         rooms: owners.rooms,
         achievements: owners.achievements,
         imported_charms: owners.imported_charms,
-        spell_states: Mutex::default(),
-        world_gate: std::sync::Mutex::default(),
-        attack: Mutex::default(),
         clock_origin: std::time::Instant::now(),
-        lost: std::sync::Mutex::default(),
+        states: channel_states::ChannelSessionStates::default(),
         revision_sequencer:
             crate::durability::character_revision_sequencer::CharacterRevisionSequencer::new(),
         quest_catalogue: Some(std::sync::Arc::clone(owners.quest_catalogue)),
-        quest_sessions: std::sync::Mutex::default(),
-        chat: chat_intent::ChatRuntime::default(),
-        npc_conversations: npc_command::NpcConversations::default(),
+        quest_log_content: Some(owners.quest_log_content.clone()),
         // WHEEL-W1: the embedded Wheel ruleset; without it every Wheel load fails closed.
         wheel_ruleset: crate::wheel_gem_data::WheelGemData::embedded()
             .ok()
             .and_then(|data| data.wheel_ruleset().ok())
             .map(std::sync::Arc::new),
-        wheel_sessions: std::sync::Mutex::default(),
-        progression_sessions: std::sync::Mutex::default(),
-        last_positions: last_position::LastPositions::default(),
-        input_gate: input_gate::InputGate::default(),
         // PREM-WIRE-1: one Premium fence. The refresher pulls into the consumer the spell casts
         // and every other Premium gate read; a node without the Premium reads keeps its own.
         premium: premium_refresher(
@@ -68,23 +59,23 @@ pub async fn serve_gameplay(
                 .premium_coordinator
                 .map_or_else(Default::default, |reads| reads.consumer()),
         ),
-        premium_sessions: std::sync::Mutex::default(),
-        fence_holders: FenceHolders::default(),
         spell_lane: crate::durability::spell_owner_commit::SpellLane::new(
             owners.world_id,
             owners.channel_id,
         ),
-        loop_ground: loop_move::LoopGroundCache::default(),
     };
     if let Some(book) = owners.npc_talk {
-        authority.chat.install_npc_talk(book);
+        authority.states.chat.install_npc_talk(book);
     }
     // CHAT-2B: the World chat relay, when its key file is configured.
     if let Some(relay) = chat_relay::configured(
         *owners.world_id.as_bytes(),
         owners.root.chat_relay_connect_options(),
     ) {
-        authority.chat.install_relay(std::sync::Arc::new(relay));
+        authority
+            .states
+            .chat
+            .install_relay(std::sync::Arc::new(relay));
     }
     // QUEST-STATE-0 §5.4: the owner cadence requests failed quest obligations again, whether or
     // not the session's connection runs any other cadence. It never ends on its own.
@@ -120,7 +111,7 @@ pub async fn serve_gameplay(
     let mut cycles = pin!(authority.run_source_owner_cycles(&cycles_stop));
     let mut quiesce = pin!(async {
         drain.requested().await;
-        authority.input_gate.quiesce().await;
+        authority.states.input_gate.quiesce().await;
     });
     let mut quiesced = false;
     // CHAR-POSITION-0 §3.2 (`CHARPOS0-RL-01`): the periodic last-position writes run on their own
@@ -135,8 +126,8 @@ pub async fn serve_gameplay(
     });
     // CHAT-2B: the relay listener; it parks once shutdown is requested.
     let mut relay = pin!(async {
-        match authority.chat.relay() {
-            Some(relay) => relay.run(&authority.chat, shutdown).await,
+        match authority.states.chat.relay() {
+            Some(relay) => relay.run(&authority.states.chat, shutdown).await,
             None => std::future::pending().await,
         }
     });

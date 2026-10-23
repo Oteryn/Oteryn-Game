@@ -1,0 +1,22 @@
+{
+  "id": "GAMEITEM01-CORPSE-REACHABLE-ITEMS",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_D3_CORPSE_CONTAINER_LOOT_WINDOW_DECAY_DECISION_2026-09-29.md",
+  "resource": "Items reachable through one creature's corpse (the corpse ItemInstance and its direct Container entries)",
+  "unit": "ItemInstances per corpse",
+  "hard_maximum": 17,
+  "configurable_range": {
+    "minimum": 17,
+    "maximum": 17
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Follows from one corpse item, depth 1 and at most 16 entries (the corpse item itself plus its 16 entries); mirrors GAMEITEM01-REACHABLE-ITEMS.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=17: a fully looted-into corpse (1 corpse item + 16 entries) is read in full",
+    "max+1=18: an 18th reachable item (a 17th entry) is refused"
+  ],
+  "consumers": [
+    "apps/game-server/migrations/0013_corpse_container_mint.sql (game_item_corpse_container_entries)"
+  ],
+  "notes": "D131; decision \u00a74.2. Registered by OTV2-20260929-d3-1-corpse-migration."
+}

@@ -1,0 +1,23 @@
+{
+  "id": "HIGHSCORES0-RL-03",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_HIGHSCORES0_WORLD_HIGHSCORES_DECISION_2026-10-03.md",
+  "resource": "Rows of one HIGHSCORES_QUERY_V1 result page",
+  "unit": "rows per page",
+  "hard_maximum": 50,
+  "configurable_range": {
+    "minimum": 50,
+    "maximum": 50
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "The reader selects at most 50 rows by stored position (LIMIT 50) plus one own row; the result is at most 9,878 bytes and the codec refuses a 51st row before encoding.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=50: a full page with has_more round-trips",
+    "max+1=51: a 51-row result is refused in both directions"
+  ],
+  "consumers": [
+    "apps/game-server/src/durability/highscore_snapshot.rs PAGE_ROWS",
+    "crates/protocol-oteryn/src/highscores.rs MAX_HIGHSCORES_PAGE_ROWS"
+  ],
+  "notes": "HIGHSCORES-0 \u00a76 and \u00a77. Registered by RANK-1 (HS-WIRE-1)."
+}

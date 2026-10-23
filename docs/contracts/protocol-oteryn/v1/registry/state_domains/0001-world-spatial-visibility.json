@@ -1,0 +1,36 @@
+{
+  "id": 1,
+  "name": "WORLD_SPATIAL_VISIBILITY",
+  "owner_decision": "#642 FIRST-CONTROL-WIRE-V1 (owner acceptance 5853424280)",
+  "owner": "current ChannelRuntime",
+  "delta_types": [
+    {
+      "id": 1,
+      "name": "WORLD_SPATIAL_DELTA_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/world_spatial_v1.proto#WorldSpatialDeltaV1",
+      "max_payload_bytes": 64
+    },
+    {
+      "id": 2,
+      "name": "WORLD_SPATIAL_ENTITIES_DELTA_V2",
+      "capability": 6,
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/world_spatial_v1.proto#WorldSpatialEntitiesDeltaV2",
+      "max_payload_bytes": 33792
+    }
+  ],
+  "snapshot_types": [
+    {
+      "id": 1,
+      "name": "WORLD_SPATIAL_SNAPSHOT_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/world_spatial_v1.proto#WorldSpatialSnapshotV1",
+      "max_payload_bytes": 64
+    },
+    {
+      "id": 2,
+      "name": "WORLD_SPATIAL_ENTITIES_SNAPSHOT_V2",
+      "capability": 6,
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/world_spatial_v1.proto#WorldSpatialEntitiesSnapshotV2",
+      "max_payload_bytes": 33792
+    }
+  ]
+}

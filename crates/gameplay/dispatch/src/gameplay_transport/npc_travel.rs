@@ -14,7 +14,6 @@ use std::time::{Duration, Instant};
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::durability::npc_travel::{ConsumeReplay, PendingArrival, TravelOccurrence};
 use crate::foundation::{CommandRef, RuntimeScopeRefV1, RuntimeWorkStamp, ScopeRuntimeFence};
-use crate::world_runtime::ReferenceContentGeneration;
 
 /// Immutable confirmed server-side facts. Construction does NOT admit a route or prove
 /// eligibility; the actual talk/content/quest/Premium/fee source must supply those checks.
@@ -32,7 +31,7 @@ pub struct FrozenTravel {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TravelCapture {
     pub session: CurrentCharacterItemFence,
-    pub content: ReferenceContentGeneration,
+    pub content: crate::foundation::MovementPositionContext,
     pub position_revision: u64,
 }
 

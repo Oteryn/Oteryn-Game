@@ -1,0 +1,24 @@
+{
+  "id": "GAMEITEM01-CONTAINER-ENTRIES-MAX",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_B3_INVENTORY_DESTINATION_CAPACITY_AND_STACKS_DECISION_2026-09-28.md",
+  "resource": "Direct entries of the equipped main backpack",
+  "unit": "entries per container",
+  "hard_maximum": 20,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 20
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "An entry-placing TRANSFER needs current_entry_count < definition_capacity, checked under the character_root row lock before any mutation; a declared capacity above 20 is refused; the database also caps one parent at 20 entries at commit; entry reads are bounded to 21 rows.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=20: the 20th entry is placed",
+    "max+1=21: the 21st entry is refused with the item left on Ground",
+    "a declared capacity of 21 is refused"
+  ],
+  "consumers": [
+    "apps/game-server/src/durability/item_transfer.rs (plan_transfer/load_entries)",
+    "apps/game-server/migrations/0011_item_transfer_backpack.sql (game_item_placement_proven)"
+  ],
+  "notes": "D81; B3 \u00a74.2/\u00a74.5; the backpack definition oteryn:item.registry.i00002752 declares capacity 20; registered by OTV2-20260928-b3-1-transfer."
+}

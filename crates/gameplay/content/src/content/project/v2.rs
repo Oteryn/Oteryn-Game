@@ -6,9 +6,11 @@ use super::*;
 
 mod creature;
 mod encounter;
+mod item_conversion;
 mod proficiency;
 pub use creature::*;
 pub use encounter::*;
+pub use item_conversion::*;
 pub use proficiency::*;
 
 pub const WORLD_PROJECT_V2_SOURCE_PROFILE: &str = "OTERYN_WORLD_PROJECT_SOURCE_PROFILE/v2";
@@ -68,6 +70,8 @@ pub enum ProjectV2Family {
     Mount,
     Charm,
     Proficiency,
+    #[serde(rename = "item_conversion")]
+    ItemConversion,
     Item,
     Creature,
     Ability,
@@ -260,6 +264,12 @@ pub enum ProjectV2Declaration {
         routes: Vec<ProjectV2TravelRoute>,
         fields: Vec<ProjectV2CandidateField>,
     },
+    #[serde(rename = "item_conversion")]
+    ItemConversion {
+        identity: ProjectV2Identity,
+        recipe: Box<ProjectV2ItemConversion>,
+        fields: Vec<ProjectV2CandidateField>,
+    },
     Interaction {
         identity: ProjectV2Identity,
         fields: Vec<ProjectV2CandidateField>,
@@ -293,6 +303,7 @@ impl ProjectV2Declaration {
             Self::Mount { .. } => ProjectV2Family::Mount,
             Self::Charm { .. } => ProjectV2Family::Charm,
             Self::Proficiency { .. } => ProjectV2Family::Proficiency,
+            Self::ItemConversion { .. } => ProjectV2Family::ItemConversion,
             Self::Npc { .. } => ProjectV2Family::Npc,
             Self::Dialogue { .. } => ProjectV2Family::Dialogue,
             Self::Service { .. } => ProjectV2Family::Service,
@@ -314,6 +325,7 @@ impl ProjectV2Declaration {
             | Self::Mount { identity, .. }
             | Self::Charm { identity, .. }
             | Self::Proficiency { identity, .. }
+            | Self::ItemConversion { identity, .. }
             | Self::Npc { identity, .. }
             | Self::Dialogue { identity, .. }
             | Self::Service { identity, .. }
@@ -335,6 +347,7 @@ impl ProjectV2Declaration {
             | Self::Mount { fields, .. }
             | Self::Charm { fields, .. }
             | Self::Proficiency { fields, .. }
+            | Self::ItemConversion { fields, .. }
             | Self::Npc { fields, .. }
             | Self::Dialogue { fields, .. }
             | Self::Service { fields, .. }
@@ -356,6 +369,7 @@ impl ProjectV2Declaration {
             | Self::Mount { fields, .. }
             | Self::Charm { fields, .. }
             | Self::Proficiency { fields, .. }
+            | Self::ItemConversion { fields, .. }
             | Self::Npc { fields, .. }
             | Self::Dialogue { fields, .. }
             | Self::Service { fields, .. }
@@ -415,6 +429,7 @@ impl ProjectV2Declaration {
     fn references(&self) -> Vec<(ProjectV2Family, &ProjectV2DefinitionRef)> {
         let mut references = Vec::new();
         match self {
+            Self::ItemConversion { recipe, .. } => references.extend(recipe.references()),
             Self::WorldObject {
                 presentation: Some(reference),
                 ..
@@ -2170,6 +2185,7 @@ fn validate_v2_declaration(
                 validate_v2_candidate_fields(&rank.fields)?;
             }
         }
+        ProjectV2Declaration::ItemConversion { recipe, .. } => recipe.validate_shape(limits)?,
         ProjectV2Declaration::Proficiency { levels, .. } => {
             validate_v2_proficiency_levels(levels, limits)?;
         }
@@ -2971,6 +2987,7 @@ fn validate_v2_state(
         }
         validate_v2_declaration(declaration, &require_ref, limits)?;
     }
+    item_conversion::validate_item_conversions(state, records, limits)?;
     for declaration in &state.declarations {
         let ProjectV2Declaration::Area { identity, .. } = declaration else {
             continue;

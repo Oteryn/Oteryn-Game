@@ -1,6 +1,6 @@
 //! Server Seam physical qualification. Runs only inside the disposable WP5
 //! topology (`tools/qualification/wp5_s3b`, seam target): the exact protected
-//! Platform producer behind TLS 1.3 mTLS plus PostgreSQL 17.6. The owners are
+//! Platform producer behind TLS 1.3 mTLS plus PostgreSQL 18.6. The owners are
 //! composed exactly as in S3-B, then every client case traverses the shipped
 //! `serve_gameplay` entry over real loopback TCP + TLS 1.3 + FND-02 framing.
 //! The fresh grant is signed with an ephemeral key whose public half the
@@ -412,9 +412,9 @@ async fn database() -> TestResult<(String, String)> {
     let version: String = sqlx::query_scalar("SHOW server_version_num")
         .fetch_one(&mut connection)
         .await?;
-    if version != "170006" {
+    if version != oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM {
         return Err(
-            format!("the seam qualification requires PostgreSQL 17.6, found {version}").into(),
+            format!("the seam qualification requires PostgreSQL 18.6, found {version}").into(),
         );
     }
     sqlx::migrate!("./migrations").run(&mut connection).await?;
@@ -799,6 +799,7 @@ fn first_control_frames(world: WorldId) -> TestResult<Vec<Vec<u8>>> {
             .to_vec(),
         revision: 0,
     };
+    let vitals_payload = vocationless_vitals_payload()?;
     let mut frames: Vec<Vec<u8>> = encode_single_chunk_snapshot(
         1,
         1,
@@ -820,6 +821,12 @@ fn first_control_frames(world: WorldId) -> TestResult<Vec<Vec<u8>>> {
                         door_overlay,
                     ])
                     .map_err(|_| "encode door overlay snapshot")?,
+            },
+            DomainSnapshot {
+                domain_id: oteryn_protocol_oteryn::actor_spell::STATE_DOMAIN_ACTOR_VITALS,
+                revision: 1,
+                snapshot_type: oteryn_protocol_oteryn::actor_spell::SNAPSHOT_TYPE_ACTOR_VITALS_V1,
+                payload: &vitals_payload,
             },
         ],
     )?
@@ -847,6 +854,22 @@ fn first_control_frames(world: WorldId) -> TestResult<Vec<Vec<u8>>> {
         encode_command_protocol_error(FoundationProtocolError::CommandSequenceGap, 1, 8, 7)?,
     ]);
     Ok(frames)
+}
+
+/// TUTORIAL-1: a vocationless level-1 Character joins with full vitals at revision 1, so every
+/// join snapshot of the seam carries this `ACTOR_VITALS` domain after the door overlay.
+fn vocationless_vitals_payload() -> TestResult<Vec<u8>> {
+    use oteryn_protocol_oteryn::actor_spell::{ActorVitals, encode_actor_vitals};
+    Ok(encode_actor_vitals(&ActorVitals {
+        health: 150,
+        max_health: 150,
+        mana: 55,
+        max_mana: 55,
+        soul: 100,
+        harmony: 0,
+        serene: false,
+    })
+    .map_err(|_| "encode vocationless vitals snapshot")?)
 }
 
 /// The exact frames after `ServerAccepted` for the USE-WIRE-V1 scenario (#162 5868482467,
@@ -924,6 +947,7 @@ fn use_wire_frames(world: WorldId) -> TestResult<Vec<Vec<u8>>> {
             &payload,
         )?)
     };
+    let vitals_payload = vocationless_vitals_payload()?;
     let mut frames: Vec<Vec<u8>> = encode_single_chunk_snapshot(
         1,
         1,
@@ -944,6 +968,12 @@ fn use_wire_frames(world: WorldId) -> TestResult<Vec<Vec<u8>>> {
                     0,
                 )])
                 .map_err(|_| "encode overlay snapshot")?,
+            },
+            DomainSnapshot {
+                domain_id: oteryn_protocol_oteryn::actor_spell::STATE_DOMAIN_ACTOR_VITALS,
+                revision: 1,
+                snapshot_type: oteryn_protocol_oteryn::actor_spell::SNAPSHOT_TYPE_ACTOR_VITALS_V1,
+                payload: &vitals_payload,
             },
         ],
     )?
@@ -1242,7 +1272,7 @@ fn node_boot_seam_against_running_node() -> TestResult {
 }
 
 #[test]
-#[ignore = "requires the disposable WP5 Platform + PostgreSQL 17.6 topology"]
+#[ignore = "requires the disposable WP5 Platform + PostgreSQL 18.6 topology"]
 fn server_seam_real_owners_over_tcp_tls() -> TestResult {
     let key_id = required("WP5_S3B_FRESH_KEY_ID")?;
     let signing = SigningKey::from_bytes(&hex32(&required("WP5_S3B_FRESH_KEY_SEED")?)?);
@@ -1599,12 +1629,11 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
     let listener = TcpListener::bind("127.0.0.1:0").await?;
     let address = listener.local_addr()?;
     let shutdown = CancellationToken::new();
-    let quest_catalogue = std::sync::Arc::new(
-        oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-s3b-1")
-            .map_err(|error| format!("quest catalogue: {error:?}"))?
-            .catalogue()
-            .clone(),
-    );
+    let (quest_catalogue, quest_log_content, _) = crate::node::serve::load_quest_catalogue(
+        oteryn_gameplay_quests::quest::loader::load_embedded_quest_state,
+        "content-s3b-1",
+    )
+    .map_err(|error| format!("quest catalogue: {error:?}"))?;
     let serve = serve_gameplay(
         &listener,
         GameplayListenerConfig {
@@ -1659,6 +1688,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
             npc_talk: None,
             imported_charms: &imported_charms,
             quest_catalogue: &quest_catalogue,
+            quest_log_content: &quest_log_content,
             last_position_flush: None,
         },
         &shutdown,
@@ -2468,6 +2498,7 @@ fn resume_frames(
             .to_vec(),
         revision: 0,
     };
+    let vitals_payload = vocationless_vitals_payload()?;
     frames.extend(encode_single_chunk_snapshot(
         generation,
         1,
@@ -2489,6 +2520,12 @@ fn resume_frames(
                         door_overlay,
                     ])
                     .map_err(|_| "encode door overlay snapshot")?,
+            },
+            DomainSnapshot {
+                domain_id: oteryn_protocol_oteryn::actor_spell::STATE_DOMAIN_ACTOR_VITALS,
+                revision: 1,
+                snapshot_type: oteryn_protocol_oteryn::actor_spell::SNAPSHOT_TYPE_ACTOR_VITALS_V1,
+                payload: &vitals_payload,
             },
         ],
     )?);

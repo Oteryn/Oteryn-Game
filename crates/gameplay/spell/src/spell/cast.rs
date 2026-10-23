@@ -365,17 +365,6 @@ impl PlayerSpellState {
         Some((next, gained))
     }
 
-    /// CHAR-VITALS-1: the health and mana a last-position write saves, or `None` while both are
-    /// at their maxima (the row then holds none, and the next actor starts at its maxima,
-    /// SPELL-D2).
-    pub const fn saved_vitals(&self) -> Option<(u32, u32)> {
-        if self.health == self.facts.max_health && self.mana == self.facts.max_mana {
-            None
-        } else {
-            Some((self.health, self.mana))
-        }
-    }
-
     /// CHAR-VITALS-1: a newly created runtime actor takes the health and mana its Character's
     /// last-position row saved, each capped at its current maximum, in the owner step that
     /// creates it, before its first command and before any vitals snapshot is sent. It is the
@@ -1788,3 +1777,5 @@ impl PlayerSpellState {
         Some(next)
     }
 }
+
+mod vocationless_vitals;

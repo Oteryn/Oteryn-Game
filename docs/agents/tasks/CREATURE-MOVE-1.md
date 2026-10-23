@@ -4,7 +4,7 @@
 task_id: CREATURE-MOVE-1
 title: "CREATURE-MOVE-1: speed step timer, A* paths, walk back, leash, dance, near-target, relocate"
 mode: IMPLEMENT
-status: NOT_STARTED   # re-implementation pending under ADR-0022
+status: IMPLEMENTED_LOCAL_VALIDATION_BLOCKED   # guard/release pass; full durability suite remains red
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 2
@@ -13,10 +13,10 @@ plan_row: "App. 7 LOOP-MONSTER-1 graph, CREATURE-MOVE-1 residue"
 brief: "docs/architecture/reviews/OTERYN_GAME_CREATURE_MOVE1_STEPS_PATHS_AND_GOALS_PACKET_2026-10-04.md (§1.1–§1.7)"
 class: "hard (movement); movement and performance review"
 base_branch: main
-branch: null
+branch: w2/creature-move-1
 pr: null
 needs_migration: false
-needs_registry: false   # RESOURCE_LIMITS_REGISTRY rows only if a new path budget row is needed
+needs_registry: true    # accepted RL-09/10/11/17 rows were absent from the baseline
 merge_authority: CP_ONLY (builder never marks ready)
 ```
 
@@ -143,35 +143,201 @@ No blockers. LOOP-MONSTER-1 (#2200 draft) consumes this task's caller.
 
 | Concern | Path |
 |---|---|
-| Search profile, walk-back target, field term | `crates/gameplay/world/src/movement/path_search.rs` (exists, 437 lines) |
-| Step duration, near ×2 | `crates/gameplay/world/src/movement/speed.rs` (exists, 436 lines) |
-| `relocate_creature`, creature destination admission | `crates/gameplay/world/src/movement/relocate.rs` (new), registered from `crates/gameplay/world/src/movement.rs` (1,362 lines: wiring only) |
-| Goals and near counter | `crates/gameplay/monster-ai/src/ai/movement_goal.rs` (new); state field in `crates/gameplay/monster-ai/src/ai_think.rs` (1,230 lines: call sites only) |
-| Route carrier / adoption | `crates/gameplay/monster-ai/src/ai/path_proposal.rs`, `crates/gameplay/monster-ai/src/ai/resolution.rs` (exist) |
-| Step timer family | `crates/gameplay/foundation/src/foundation/owner_timer.rs` (wiring); `crates/gameplay/monster-ai/src/ai_think/channel_owner.rs` |
-| Shared budget / player drain | `crates/gameplay/combat/src/combat/attack/chase.rs` (exists, 549 lines), `crates/gameplay/dispatch/src/gameplay_transport/attack.rs` (2,013 lines: call sites only) |
+| Search profile, walk-back target, field term | `crates/gameplay/world/src/movement/path_search.rs` (417 lines), with compact labels in `path_search/path_labels.rs` and bounded tile slots in `path_search/path_tiles.rs` |
+| Step duration, near ×2 | `crates/gameplay/world/src/movement/speed.rs` (469 lines) |
+| `relocate_creature`, creature destination admission | `crates/gameplay/world/src/movement/relocate.rs` (new), registered from `crates/gameplay/world/src/movement.rs` (1,365 lines: wiring only) |
+| Goals and near counter | `crates/gameplay/monster-ai/src/ai/movement_goal.rs` (new); state field in `crates/gameplay/monster-ai/src/ai_think.rs` (1,120 lines: call sites only) |
+| Route carrier / adoption | Existing immutable `ai/path_proposal.rs` reused; adoption in `ai_think/creature_steps/creature_paths.rs`, goal/content/map fencing in `creature_goal_adoption.rs` |
+| Step timer family | Existing `foundation/owner_timer.rs` reused unchanged; `StepFamily` and `DEADLINE_STATE` policy in `monster-ai/src/ai_think/creature_steps{,/creature_step_timer}.rs` |
+| Shared budget / player drain | `crates/gameplay/combat/src/combat/attack/chase.rs` (581 lines), `crates/gameplay/dispatch/src/gameplay_transport/attack.rs` (1,925 lines: call sites only) |
 | Cycle composition | `crates/gameplay/dispatch/src/gameplay_transport/monster_ai_cycle.rs` |
-| Tests | child files beside each module, e.g. `crates/gameplay/world/src/movement/relocate_tests.rs` (new), `crates/gameplay/monster-ai/src/ai/movement_goal_tests.rs` (new), `crates/gameplay/dispatch/src/gameplay_transport/attack_chase_budget_tests.rs` (new) |
+| Tests | Mechanic child suites under the existing owner; World relocation tests mount from `movement.rs::tests` to reuse its private runtime fixture |
 
 ## Acceptance criteria
 
-- [ ] A creature steps at its own speed on the step timer; near ×2 per §1.3; speed 0 stands.
-- [ ] A* paths bounded per §1.4 limits; walkability from the Movement predicate only; +180 field stub pinned.
-- [ ] Shared RL-09 window with the 16,384-unit player reserve; resumed drains keep planned occupancy.
-- [ ] Goals chase / keep distance / dance / flee / wander / walk back / stand per §1.5; leash and `relocate_creature` per packet.
-- [ ] Deterministic draws (`AI_DANCE`, `AI_WANDER`), replay identical; RL-17 measured on the integrated loop.
-- [ ] Structure: one mechanic per module file in its ADR-0022 layer.
-- [ ] Structure: new tests live in their own child files, not appended to existing files.
-- [ ] Structure: edits to `mod.rs`/`lib.rs`/`connection.rs`/`capabilities.rs` are wiring-only.
-- [ ] Structure: no file over ~1000 lines grows by more than ~150 lines (`movement.rs`, `ai_think.rs`, `attack.rs` take call sites only).
+- [x] A creature steps at its own speed on the step timer; near ×2 per §1.3; speed 0 stands.
+- [x] A* paths bounded per §1.4 limits; walkability from the Movement predicate only; +180 field stub pinned.
+- [x] Shared RL-09 window with the 16,384-unit player reserve; resumed drains keep planned occupancy.
+- [x] Goals chase / keep distance / dance / flee / wander / walk back / stand per §1.5; leash and `relocate_creature` per packet.
+- [x] Deterministic draws (`AI_DANCE`, `AI_WANDER`), replay identical; integrated release RL-17 p99 13.583111 ms in the latest continuation, below the unchanged 15 ms budget.
+- [x] Structure: one mechanic per module file in its ADR-0022 layer.
+- [x] Structure: new tests live in their own child files, not appended to existing files.
+- [x] Structure: edits to `mod.rs`/`lib.rs`/`connection.rs`/`capabilities.rs` are wiring-only.
+- [x] Structure: no file over ~1000 lines grows by more than ~150 lines (`movement.rs`, `ai_think.rs`, `attack.rs` take call sites only).
 
-## Validation
+## Local validation — 2026-10-22
+
+Base: `9f814e72a3a32ad2a6ed67787c2d67a2d39d4af3`; continuation from committed WIP `71b57e42103c4746e9873d1d9141a851c7f1d87e`, one writer on the allocated worktree. No commit, push, PR publication, migration or capability change. Every command below used `/home/mole/oteryn-cache/codex-bin/cargo` (+1.95.0, locked/offline resolution and wrapper PostgreSQL); the new PG scenario asserts configuration instead of silently skipping.
+
+`cargo +1.95.0 fmt --all -- --check`: PASS. `cargo +1.95.0 check --locked -p oteryn-gameplay-world -p oteryn-gameplay-monster-ai -p oteryn-gameplay-dispatch -p oteryn-gameplay-combat -p oteryn-gameplay-combat-rules -p oteryn-gameplay-entities --quiet`: PASS. `cargo +1.95.0 clippy --locked -p oteryn-gameplay-world -p oteryn-gameplay-monster-ai -p oteryn-gameplay-dispatch -p oteryn-gameplay-combat -p oteryn-gameplay-combat-rules -p oteryn-gameplay-entities --all-targets --quiet -- -D warnings`: PASS. Cargo manifests did not change, so no workspace clippy/check was run. The unchanged vendored Tokio missing-doc warning is outside these packages; Clippy exits 0.
+
+Each row is the exact `cargo +1.95.0 test --locked <package/flags> <filter> --quiet` invocation:
+
+| Package / flags | Filter | Result |
+|---|---|---|
+| `-p oteryn-gameplay-world` | `movement::` | 64 pass, including the existing eight Movement regressions and two compact-label/cache regressions |
+| `-p oteryn-gameplay-world` | `creature_path_tests` | 4 pass after final assertion cleanup |
+| `-p oteryn-gameplay-world` | `map::spell_tiles` | 5 pass, 1 existing measurement ignore |
+| `-p oteryn-gameplay-monster-ai` | `ai` | 69 pass, 2 measurement ignores; RL-17 explicitly run below |
+| `-p oteryn-gameplay-combat -p oteryn-gameplay-combat-rules` | `chase` | 10 + 5 pass |
+| `-p oteryn-gameplay-entities --features test-support` | `movement` | 7 pass |
+| `-p oteryn-gameplay-entities --features test-support` | `spawn` | 40 pass |
+| `-p oteryn-gameplay-dispatch` | `attack` | 55 pass; both caller orders and following waypoint across suspended drains |
+| `-p oteryn-gameplay-dispatch` | `monster_ai_cycle` | 12 pass |
+| `-p oteryn-gameplay-dispatch` | `creature_step_tests` | 1 pass after fixture borrow cleanup |
+| `-p oteryn-gameplay-dispatch` | `movement_speed_runtime_tests` | 2 pass; real condition delta/expiry, unknown ground and stale generation |
+| `-p oteryn-gameplay-dispatch` | `creature_movement_dispatch_steps_between_thinks_on_postgres` | 1 pass; real composed dispatch, source spawn, native speed deadline and leash relocation |
+
+`python3 tools/agents/validate_governance.py`: PASS. `python3 -m unittest discover -s tools/agents/tests`: 124 pass. `python3 tools/repository/validate_repository_policy.py`: PASS. `git diff --check`: PASS. Whole-diff D1462 review against `/home/mole/oteryn-cache/CODEX-CHECKLIST.md` and constructor/match/impl search over `apps/`, `crates/`, `tools/`: complete; old runtime think-step commits and their callers were removed. Tests moved to child files retain one registration each.
+
+## RL-17 release qualification — 2026-10-22
+
+Integrator decision: the **15 ms** budget and every think/search limit stay unchanged. Debug timings do not qualify RL-17.
+
+The unchanged integrated test measures 200 windows on the 128×128 bundle fixture with obstacles; every window asserts 1,024 thinks and exactly **65,536 charged expansions** (64 full 1,024-expansion searches). Host: AMD Ryzen 7 9800X3D, 16 logical CPUs. All timing commands exit 0; timing remains on-demand evidence rather than a CI timing assertion.
+
+| Candidate | Build | p99 |
+|---|---|---:|
+| Committed WIP (previous run) | debug | 750.348712 ms |
+| Committed WIP (this continuation, before repairs) | release | 66.124154 ms |
+| Final implementation | debug | 174.784910 ms |
+| Final implementation | release | **13.667385 ms — PASS ≤15 ms** |
+
+Exact final commands (the release command was also used before repairs):
 
 ```sh
-cargo fmt --all -- --check
-cargo clippy --workspace --all-targets -- -D warnings
-cargo test -p oteryn-gameplay-world movement::
-cargo test -p oteryn-gameplay-monster-ai ai
-cargo test -p oteryn-gameplay-dispatch attack
-python3 tools/agents/validate_governance.py
+/home/mole/oteryn-cache/codex-bin/cargo +1.95.0 test --release --locked -p oteryn-gameplay-monster-ai creature_movement_rl17_integrated_window_p99 --quiet -- --ignored --nocapture
+/home/mole/oteryn-cache/codex-bin/cargo +1.95.0 test --locked -p oteryn-gameplay-monster-ai creature_movement_rl17_integrated_window_p99 --quiet -- --ignored --nocapture
 ```
+
+`perf record -e cpu-clock -F 997 --call-graph dwarf -o .rl17-perf.data -- <release command above>` profiled the integrated window. Self samples identified A* bookkeeping (30.9% in `measured_search`, plus 10.4% in B-tree insertion) and repeated map admission/index lookups. Temporary local profiling traces were removed after analysis.
+
+World now stores step-aware labels and predecessors contiguously, with direct tile slots for the accepted 12/50-tile searches and sparse storage for wider existing callers. The same A* heap still orders by total, estimate, cardinal neighbour and discovery; the old tree-based implementation was removed. Tile admission/cost is read once per tile per search, including refusals. The creature path drain reuses the authoritative Movement admission result across requests only while map/position facts are immutable; the next drain and every step commit read fresh facts. Existing adopted paths, invalidation, shared budget/reserve and expansion charges are retained. No dependency or public API was added.
+
+New child regressions reuse `at`/`open`/`walk`: repeated labels read each tile once; the next search sees a formerly refused target reopen; route ties and checked coordinates hold at both `i32` plane edges. Existing shorter/dearer-label, 1,024/128 bounds, +180 field stub, resumed-player-occupancy, refusal and replay tests all pass. The actual dispatch/PG scenario reaches the optimized search through the production composition; existing `rust_linux` core unit execution (`not test(content::)`) includes it.
+
+Independent movement/determinism/performance review, CI, freeze/publication and MQ remain CP-owned. The field-owner +180 production term remains 0 by the accepted deferral; the stub regression pins +180 against occupancy alone. No RL-17 owner decision remains pending.
+
+## Delivered layout and reuse
+
+World owns shared A*, occupancy, work ledger and destination admission/relocation. Monster AI owns goal selection/adoption and the independent step family. Entities adds only exact creature compare-commit and spawn-origin reads. Combat extends its existing chase state/count; Dispatch composes those owners. Shared slot files receive wiring only.
+
+- Reused the existing cardinal A* bounds, tie ordering and step-aware dominance rules; extended its goal/measurement parameters without a second search. The continuation replaces its allocation-heavy state storage in World child modules, preserving the existing search API and callers.
+- Reused `creature_step_duration`, native effective speed/condition reads, `StepSpeedTable`, ground providers and `PacingTime::checked_after`; base speed 0 admits neither a search nor a step.
+- Reused `OwnerTimerLane`, `DeadlineState`, current owner stamps/fences and the existing one-think-per-creature table; no bespoke timer queue.
+- Reused immutable `PathProposal`/`PathRequest`/`RouteStep`, native profile qualification, the existing sight trace, carrier compare-commit and `locate_spawn_cell`/`spawn_definition`.
+- Moved the old creature admission rule into World and the existing standing census collector into shared Movement code; removed their former implementations. Existing player queue/order/count remains the only player drain.
+- Reused private `at`/`open`/`walk` and Movement runtime fixtures by mounting child tests under their owner, including the new compact-label/cache suite. No fixture body was copied and the continuation needs no wrapper or re-export. Reused the existing AI `Channel`, `rat`/`abilities` and actor fixture via the four-line `movement_fixtures.rs` wrapper.
+- Reused the existing bundle builder/palette/boot through `movement_arena.rs`; existing native speed fixture moved from Dispatch to World test support, with the old body deleted. Reused `two_chasers` for resumed drains and PG `Harness`/`Dependencies`/`prepare_current_session`, activated content and `with_spawns_for_test` for the real dispatch scenario.
+
+## Changed files and final sizes
+
+Paths below are relative to the repository; sizes are lines. This task record was updated last.
+
+| File | Lines |
+|---|---:|
+| `crates/gameplay/combat-rules/src/attack/chase.rs` | 121 |
+| `crates/gameplay/combat/src/combat/attack/chase.rs` | 581 |
+| `crates/gameplay/dispatch/src/gameplay_transport/attack.rs` | 1925 |
+| `crates/gameplay/dispatch/src/gameplay_transport/attack/attack_chase_search.rs` | 115 |
+| `crates/gameplay/dispatch/src/gameplay_transport/attack_chase_budget_tests.rs` | 90 |
+| `crates/gameplay/dispatch/src/gameplay_transport/channel_owner_auto_attack_tests.rs` | 1727 |
+| `crates/gameplay/dispatch/src/gameplay_transport/creature_move_postgres_tests.rs` | 231 |
+| `crates/gameplay/dispatch/src/gameplay_transport/monk_save_postgres_tests.rs` | 1368 |
+| `crates/gameplay/dispatch/src/gameplay_transport/monster_ai_cycle.rs` | 1140 |
+| `crates/gameplay/dispatch/src/gameplay_transport/monster_ai_cycle/tests/creature_step_tests.rs` | 209 |
+| `crates/gameplay/dispatch/src/lifted_tests/movement_speed_runtime_tests.rs` | 224 |
+| `crates/gameplay/entities/src/carrier.rs` | 12099 |
+| `crates/gameplay/entities/src/carrier/creature_relocation.rs` | 51 |
+| `crates/gameplay/monster-ai/src/ai/movement_goal.rs` | 188 |
+| `crates/gameplay/monster-ai/src/ai/movement_goal_tests.rs` | 106 |
+| `crates/gameplay/monster-ai/src/ai/tests.rs` | 155 |
+| `crates/gameplay/monster-ai/src/ai/tests/path_request_tests.rs` | 11 |
+| `crates/gameplay/monster-ai/src/ai_think.rs` | 1120 |
+| `crates/gameplay/monster-ai/src/ai_think/channel_owner.rs` | 328 |
+| `crates/gameplay/monster-ai/src/ai_think/channel_owner/channel_owner_creature_ai_tests.rs` | 876 |
+| `crates/gameplay/monster-ai/src/ai_think/channel_owner/channel_owner_creature_ai_tests/creature_cadence_tests.rs` | 275 |
+| `crates/gameplay/monster-ai/src/ai_think/channel_owner/channel_owner_creature_ai_tests/creature_movement_measure.rs` | 75 |
+| `crates/gameplay/monster-ai/src/ai_think/channel_owner/channel_owner_creature_ai_tests/creature_movement_tests.rs` | 155 |
+| `crates/gameplay/monster-ai/src/ai_think/channel_owner/channel_owner_creature_ai_tests/creature_path_tests.rs` | 167 |
+| `crates/gameplay/monster-ai/src/ai_think/channel_owner/channel_owner_creature_ai_tests/creature_return_tests.rs` | 81 |
+| `crates/gameplay/monster-ai/src/ai_think/channel_owner/channel_owner_creature_ai_tests/movement_timer_fixture.rs` | 47 |
+| `crates/gameplay/monster-ai/src/ai_think/creature_steps.rs` | 124 |
+| `crates/gameplay/monster-ai/src/ai_think/creature_steps/creature_goal_adoption.rs` | 101 |
+| `crates/gameplay/monster-ai/src/ai_think/creature_steps/creature_paths.rs` | 146 |
+| `crates/gameplay/monster-ai/src/ai_think/creature_steps/creature_step_choice.rs` | 68 |
+| `crates/gameplay/monster-ai/src/ai_think/creature_steps/creature_step_timer.rs` | 236 |
+| `crates/gameplay/monster-ai/src/ai_think/think_tests.rs` | 783 |
+| `crates/gameplay/monster-ai/src/ai_think/think_tests/movement_fixtures.rs` | 4 |
+| `crates/gameplay/world/src/map/spell_tiles.rs` | 820 |
+| `crates/gameplay/world/src/map/spell_tiles/tests/movement_arena.rs` | 45 |
+| `crates/gameplay/world/src/movement.rs` | 1365 |
+| `crates/gameplay/world/src/movement/path_budget.rs` | 76 |
+| `crates/gameplay/world/src/movement/path_budget/path_budget_tests.rs` | 46 |
+| `crates/gameplay/world/src/movement/path_search.rs` | 417 |
+| `crates/gameplay/world/src/movement/path_search/path_labels.rs` | 122 |
+| `crates/gameplay/world/src/movement/path_search/path_tiles.rs` | 44 |
+| `crates/gameplay/world/src/movement/path_search/tests/path_labels_tests.rs` | 40 |
+| `crates/gameplay/world/src/movement/path_search/path_occupancy.rs` | 15 |
+| `crates/gameplay/world/src/movement/path_search/tests/creature_path_tests.rs` | 79 |
+| `crates/gameplay/world/src/movement/relocate.rs` | 111 |
+| `crates/gameplay/world/src/movement/speed.rs` | 469 |
+| `crates/gameplay/world/src/movement/speed/creature_speed_fixture.rs` | 26 |
+| `crates/gameplay/world/src/movement/tests/relocate_tests.rs` | 47 |
+| `docs/agents/tasks/CREATURE-MOVE-1.md` | 343 |
+| `docs/contracts/RESOURCE_LIMITS_REGISTRY.json` | 12537 |
+
+No continuation source file grows by more than 200 lines; the existing search parent shrinks by 65 lines. Across the complete task, files growing by more than 200 lines (all new child files):
+
+- `creature_step_timer.rs` (236): L4 Monster AI owns current-fence deadline drain/rearm and submits steps through World.
+- `creature_cadence_tests.rs` (275): L4 tests cover actual timer/condition/near/zero-speed/clock and replay behavior using the existing Channel harness.
+- `creature_move_postgres_tests.rs` (231): L5 owns the real composed dispatch/PG acceptance; it reuses the existing durability harness and lower-layer owners.
+- `monster_ai_cycle/tests/creature_step_tests.rs` (209): moved existing accepted-room regression plus timer/relocation assertions belongs beside its Dispatch composition owner; the original registration/body was removed.
+
+
+## Integrator guard repair — 2026-10-22
+
+Continuation base: committed WIP `051a91f079c4f191b363208f35bf33f552070b7d`, branch `w2/creature-move-1`. Repair returned to AUTHORING in the exclusively allocated worktree; no commit, push, freeze, publication or external write. The historical validation above belongs to the earlier continuation; this section records the latest worktree results.
+
+Planned layout: reuse Dispatch's existing PostgreSQL seam owner in `monk_save_postgres_tests.rs`, configure it from `creature_move_postgres_tests.rs`, and keep any measured search optimization in World's existing `movement/path_search/path_tiles.rs`. No new module, helper, wrapper, re-export or test registration was needed.
+
+`Dependencies` now owns an optional combat room, initialized to `None` in its existing constructor. The creature test moves its existing bundle view into that field before calling the existing `Dependencies::owner`; the approved construction still always supplies `None` for the qualified room. Other callers retain their previous defaults. The extra construction in the creature test was removed; `bundle_gates_tests.rs` and its approved construction list are unchanged. Reused `Harness`, `prepare_current_session`, `Dependencies::owner`, the existing bundle view and real dispatch scenario without copying any fixture body.
+
+The requested fresh release measurement exceeded 15 ms, so the same integrated window was profiled with `perf record -e cpu-clock -F 997 --call-graph dwarf`. Resolved self samples attributed 10.87% to `TileIndex::index`, 13.68% to `SearchLabels::visit`, and 23.97% to the existing heap's push/pop. The only search edit is `#[inline]` on the existing tile-index method, making this hot lookup eligible for inlining across compilation units. The cardinal A*, tile cache, route ties, admission rules, work charges and every limit remain unchanged.
+
+| Latest continuation measurement | Build | p99 |
+|---|---|---:|
+| Before the inlining hint | release | 40.402791 ms |
+| Profiling run, including sampling overhead | release | 15.560902 ms |
+| Final repair | release | **13.583111 ms — PASS ≤15 ms** |
+| Final repair, informational only | debug | 341.758378 ms |
+
+Both exact RL-17 commands in the preceding qualification section were rerun through `/home/mole/oteryn-cache/codex-bin/cargo +1.95.0`. Each executed the existing 200-window test, asserting 1,024 thinks and 65,536 charged expansions per window. Debug remains nonqualifying; the release budget stays 15 ms.
+
+### Final worktree validation
+
+Every Cargo command used `/home/mole/oteryn-cache/codex-bin/cargo +1.95.0`, with locked/offline dependency resolution and the wrapper's PostgreSQL configuration. The following are exact arguments after that prefix:
+
+| Arguments | Result |
+|---|---|
+| `test --locked -p oteryn-gameplay-dispatch --lib --quiet -- --test-threads=4` | **904 passed**, 14 existing ignores; seam construction guard passes |
+| `test --locked -p oteryn-game-server --lib --quiet -- --test-threads=4` | **306 passed**, 3 existing ignores |
+| `test --locked -p oteryn-gameplay-dispatch creature_movement_dispatch_steps_between_thinks_on_postgres --quiet -- --nocapture` | **1 passed**, 0 ignored; the required-configuration assertion and actual database/dispatch body ran |
+| `test --locked -p oteryn-game-server --test durability_postgres --quiet -- --nocapture --test-threads=4` | **525 passed, 2 failed**, 0 ignored; complete run, 1467.36 s |
+
+The full durability failures are outside this repair's changed paths:
+
+- `postgres::durability_contract_tests::migration_lock_interruption_releases_before_any_ddl_and_allows_fresh_retry`: `Elapsed(())` from its existing 5-second migration retry timeout in `apps/game-server/tests/support/postgres.rs`.
+- `owning_fresh_loss_is_atomic_and_raw_prepare_does_not_supply_authority`: the existing committed-outcome assertion at `apps/game-server/tests/durability_postgres.rs:559`.
+
+Each failing case was then run alone with `test --locked -p oteryn-game-server --test durability_postgres <filter> --quiet -- --nocapture --test-threads=1`. The exact filters were `migration_lock_interruption_releases_before_any_ddl_and_allows_fresh_retry` (**1 passed**, 8.79 s) and `owning_fresh_loss_is_atomic_and_raw_prepare_does_not_supply_authority` (**1 passed**, 242.61 s). These isolated passes do not make the full-suite result green. No test, timeout, assertion or production rule was changed to answer those failures.
+
+PostgreSQL execution is confirmed by the creature scenario's mandatory configuration assertion and successful database body, and by all three full-suite `ADMIT0_PG17_6_PASS` markers: `current_runtime_replacement`, `fresh_atomic_refusal`, `v2_prepare_commit_refusal`. No missing-configuration skip marker occurred. The initial default-concurrency Dispatch run had seven availability/progression failures; both subsequent complete four-thread runs passed all 904 tests. Initial default-concurrency durability also finished 525/527, with migration timeout and legacy-claim availability failures; the final run's legacy-claim case passed.
+
+Every exact package/filter invocation in the earlier local-validation table was also rerun on the final source: World `movement::` **64**, `creature_path_tests` **4**, `map::spell_tiles` **5** (1 existing ignore); Monster AI `ai` **69** (2 existing measurement ignores); Combat/Combat Rules `chase` **10 + 5**; Entities with `test-support`, `movement` **7** and `spawn` **40**; Dispatch `attack` **55**, `monster_ai_cycle` **12**, `creature_step_tests` **1**, `movement_speed_runtime_tests` **2**. All passed. RL-17 was separately executed explicitly in both builds as recorded above.
+
+`check --locked` and `clippy --locked --all-targets --quiet -- -D warnings`, selecting each of the six packages in the earlier validation plus `-p oteryn-game-server`, both **PASS**. `fmt --all -- --check`: **PASS**. No manifest or lockfile changed, so no workspace check/clippy was run. Governance validation, 124 governance unit tests and repository-policy validation passed; `git diff --check` passed.
+
+The complete repair diff was reread against `/home/mole/oteryn-cache/CODEX-CHECKLIST.md`. Workspace-wide searches over `apps/`, `crates/`, `tools/` confirmed the one new private fixture field's constructor and use sites, and the single existing test registration. No public function, enum variant or trait method was added. No continuation file grew by more than 200 lines: the fixture grew by two lines, tile-index module by one, and the creature test retained its 231-line size. Existing search and RL-17 harnesses were reused. Temporary logs/profiling data were removed before this final task-card edit; file sizes above include this repair.
+
+**Unfinished:** a clean full `durability_postgres` run remains required despite both failing cases passing in isolation. Resolving that full-suite validation failure must preserve its current timeouts and assertions; no changes to other lanes' paths were attempted. Independent review, repository CI, freeze/publication and MQ remain CP-owned. This task is not marked ready.

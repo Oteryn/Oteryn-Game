@@ -1,0 +1,25 @@
+{
+  "id": "DUR03-RL-03-NPC-TRADE-BUY",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_BANK_FEE0_FEES_FROM_THE_BANK_DECISION_2026-09-30.md",
+  "resource": "Value lines in one DUR-03 NPC BUY trade transaction (the bank part of the price)",
+  "unit": "value lines per logical transaction",
+  "hard_maximum": 1,
+  "configurable_range": {
+    "minimum": 0,
+    "maximum": 1
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "Checked in the payload gate and before any write; never truncated. 1 when the carried coins are worth less than the BUY price and the rest is debited from the buyer's (Account, World) bank balance (one FEE_DEBIT value line, class BURN, OneItemNpcTradeV1 field 14 bank_debit, an OneItemFeeBankDebitV1); then every coin BURN is whole, there is no change MINT and burned + bank_debit = total. 0 for a coin-only BUY and for every SELL. Admitted only under the (2, DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V2) tuple.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=1: a BUY with a bank part carries exactly one value line and is accepted",
+    "0: a coin-only BUY and every SELL carry none",
+    "max+1=2 rejected (INVALID_INPUT); a SELL carrying the value line is rejected (INVALID_INPUT)",
+    "a (1, V1) event carrying the value line is rejected (INVALID_INPUT)"
+  ],
+  "consumers": [
+    "apps/game-server/src/durability/npc_trade_audit.rs",
+    "apps/game-server/src/durability/npc_trade.rs (in-transaction BUY with its bank part; the one FEE_DEBIT bank entry is written in the same transaction)"
+  ],
+  "notes": "BANK-FEE-0 \u00a74.3 and \u00a75 (NPC BUY) with NPC-0 \u00a75.3; NPC trade shape only: the DUR03-RL-01/02/06/07-NPC-TRADE-BUY rows are unchanged (the bank line adds one participant and 2 work units; the largest bank-part BUY of 20 whole burns, the bank line and the item MINT is 22 participants / 64 work units and fits the measured RL-07 byte rows). Registered by NPC-ECON-1 under the CP takeover grant on #2131."
+}

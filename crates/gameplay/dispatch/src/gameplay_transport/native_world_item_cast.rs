@@ -1201,7 +1201,11 @@ mod tests {
             let version: String = sqlx::query_scalar("SHOW server_version_num")
                 .fetch_one(&pool)
                 .await?;
-            assert_eq!(version, "170006", "canonical target is PostgreSQL 17.6");
+            assert_eq!(
+                version,
+                oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
+                "canonical target is PostgreSQL 18.6"
+            );
             oteryn_gameplay_durability::GAME_MIGRATOR.run(&pool).await?;
             seed_character(&pool).await?;
             check_retained_reads(&pool).await

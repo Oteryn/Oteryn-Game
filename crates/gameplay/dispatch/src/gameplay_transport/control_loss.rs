@@ -29,18 +29,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if result == ControlLossResult::Recorded {
             // §8.2: no command of the actor is accepted until a recovery initializes it again.
             let runtime = self.runtime.lock().await;
-            self.spell_states
+            self.states
+                .spell_states
                 .lock()
                 .await
                 .detach(&runtime, actor, admitted.game_session_id);
             // ATTACK-0 §3: the lost client's target stops swinging; its in-fight deadline runs on.
-            self.attack
+            self.states
+                .attack
                 .lock()
                 .await
                 .clear_target(actor, admitted.game_session_id);
         }
         if result == ControlLossResult::Recorded
-            && let Ok(mut lost) = self.lost.lock()
+            && let Ok(mut lost) = self.states.lost.lock()
         {
             lost.insert(admitted.game_session_id, admitted);
         }

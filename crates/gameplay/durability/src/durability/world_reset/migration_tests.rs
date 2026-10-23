@@ -5,7 +5,7 @@ fn world_reset_migration_preserves_the_latest_guard_definitions()
 -> Result<(), Box<dyn std::error::Error>> {
     let reset = oteryn_gameplay_durability::GAME_MIGRATOR
         .iter()
-        .find(|migration| migration.version == 137)
+        .find(|migration| migration.version == 148)
         .ok_or("allocated reset migration")?;
     for guard in [
         "game_item_decay_retire_consistency_guard",
@@ -16,7 +16,7 @@ fn world_reset_migration_preserves_the_latest_guard_definitions()
         assert!(reset.sql.as_str().contains(guard));
         for later in oteryn_gameplay_durability::GAME_MIGRATOR
             .iter()
-            .filter(|migration| migration.version > 137)
+            .filter(|migration| migration.version > 148)
         {
             if later.sql.as_str().contains(&format!("FUNCTION {guard}(")) {
                 assert!(

@@ -1,0 +1,25 @@
+{
+  "id": "BANK0-RL-01",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_BANK0_ACCOUNT_BANK_BALANCE_DECISION_2026-09-30.md",
+  "resource": "One Account bank balance of one World (BANK-0 \u00a73)",
+  "unit": "gold pieces",
+  "hard_maximum": 999999999999,
+  "configurable_range": {
+    "minimum": 999999999999,
+    "maximum": 999999999999
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Checked under the balance row lock before any write: a deposit's credit above it is the typed BALANCE_LIMIT and a transfer's credit above it on the recipient is RECIPIENT_CANNOT_RECEIVE_TRANSFERS, never a CHECK abort; migration 0071 bounds the balance and every entry's before and after.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=999,999,999,999: a deposit reaching it commits",
+    "max+1: a deposit of one more is refused BALANCE_LIMIT with no entry, coin line, event or balance change",
+    "a transfer credit above it is refused RECIPIENT_CANNOT_RECEIVE_TRANSFERS"
+  ],
+  "consumers": [
+    "apps/game-server/src/durability/bank_audit.rs",
+    "apps/game-server/src/durability/bank.rs (bank writer: checked before any ledger entry, coin line, balance change or event; a typed refusal or error writes no value)",
+    "apps/game-server/migrations/0071_account_bank.sql"
+  ],
+  "notes": "BANK-0 \u00a78 (owner answers 1b and Q1 b; ARCH-BATCH-ROOT-PACKETS-V1 \u00a71.8 and \u00a72.4); registered by BANK-1 before the code that relies on it."
+}

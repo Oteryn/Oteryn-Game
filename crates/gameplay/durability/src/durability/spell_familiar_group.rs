@@ -75,7 +75,7 @@ fn binding(
         .finalize()
         .into())
 }
-async fn read(
+pub(super) async fn read(
     tx: &mut Transaction<'_, Postgres>,
     character: CharacterId,
 ) -> std::result::Result<Option<FamiliarGroupSnapshot>, DurabilityError> {

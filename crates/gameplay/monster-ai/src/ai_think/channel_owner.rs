@@ -1,6 +1,6 @@
 //! CREATURE-AI-1 §2.1: the Channel owner's side of the creature think. The think
-//! (`CreatureAiState`) decides; these admit, wake, budget and commit its one step through
-//! Movement on the Channel runtime, and return each report's Ability proposals to the caller,
+//! (`CreatureAiState`) decides; these admit, wake and budget thinks, returning goals and Ability
+//! proposals to the caller. Independent step deadlines commit only through Movement; the caller
 //! which issues them through Ability. A refused step or proposal changes only the next think.
 //!
 //! The table is held beside `ChannelRuntimeV1` by its owner rather than inside `foundation`:
@@ -47,7 +47,9 @@ impl CreatureAiTable {
             return Err(CarrierError::NotCreature);
         }
         let anchor = runtime.read_actor_position(actor)?.position();
-        self.admit(CreatureAiState::new(actor, profile, anchor), now_us);
+        let mut state = CreatureAiState::new(actor, profile, anchor);
+        state.spawn = runtime.creature_spawn_cell(actor);
+        self.admit(state, now_us);
         Ok(())
     }
 
@@ -208,8 +210,8 @@ impl CreatureAiTable {
     }
 
     /// Runs the thinks due at `now_us` within `CREATUREAI0-RL-05`. `players` are the Channel's
-    /// player candidates with the owner's eligibility facts; `walkable` is the map's admission of
-    /// a cell. A dead or despawned creature leaves the table. Each step is committed here.
+    /// player candidates with the owner's eligibility facts. A dead or despawned creature
+    /// leaves the table. Position commits belong to the step lane.
     pub fn run_due_thinks(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
@@ -217,9 +219,8 @@ impl CreatureAiTable {
         root: &GameplayDecisionRoot,
         revisions: &RevisionSet,
         players: &[TargetCandidate],
-        walkable: impl Fn(MovementLocalPosition) -> bool,
     ) -> Vec<(ExactActorRef, ThinkReport)> {
-        self.run_due_thinks_until_next(runtime, now_us, root, revisions, players, walkable)
+        self.run_due_thinks_until_next(runtime, now_us, root, revisions, players)
             .0
     }
 
@@ -233,11 +234,9 @@ impl CreatureAiTable {
         root: &GameplayDecisionRoot,
         revisions: &RevisionSet,
         players: &[TargetCandidate],
-        walkable: impl Fn(MovementLocalPosition) -> bool,
     ) -> (Vec<(ExactActorRef, ThinkReport)>, Option<u64>) {
         let (taken, mut next) = self.take_due_bounded(now_us);
-        let reports =
-            self.run_taken_thinks(runtime, &taken, now_us, root, revisions, players, walkable);
+        let reports = self.run_taken_thinks(runtime, &taken, now_us, root, revisions, players);
         for actor in taken {
             if let Some(due) = self.due(actor) {
                 next = Some(next.map_or(due, |next| next.min(due)));
@@ -255,7 +254,6 @@ impl CreatureAiTable {
         root: &GameplayDecisionRoot,
         revisions: &RevisionSet,
         players: &[TargetCandidate],
-        walkable: impl Fn(MovementLocalPosition) -> bool,
     ) -> Vec<(ExactActorRef, ThinkReport)> {
         let mut reports = Vec::new();
         for &actor in taken {
@@ -279,19 +277,10 @@ impl CreatureAiTable {
                 root,
                 revisions,
             };
-            let report = self.think(actor, &facts, |destination| {
-                walkable(destination)
-                    && runtime.position_occupied_by_other(actor, destination) == Ok(false)
-            });
+            let report = self.think(actor, &facts);
             let Some(Ok(report)) = report else {
                 continue;
             };
-            if let Some(step) = report.step {
-                // A refused step changes only the next think.
-                let _ = runtime
-                    .borrow_movement_position()
-                    .commit_cardinal(snapshot, step.destination);
-            }
             reports.push((actor, report));
         }
         reports

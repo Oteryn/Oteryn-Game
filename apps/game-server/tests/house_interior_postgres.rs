@@ -1,5 +1,5 @@
 #![allow(clippy::expect_used)]
-// Focused HOUSE-RUNTIME-1a PostgreSQL 17.6 target. Canonical CI compiles these
+// Focused HOUSE-RUNTIME-1a PostgreSQL 18.6 target. Canonical CI compiles these
 // same bodies through character_authority_postgres; Cargo test=false avoids duplicates.
 extern crate oteryn_game_server as production_server;
 extern crate self as oteryn_game_server;

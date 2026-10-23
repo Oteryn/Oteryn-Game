@@ -1,0 +1,24 @@
+{
+  "id": 7,
+  "name": "NPC_CONVERSATION",
+  "owner_decision": "NPC-0 §4 (docs/architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md) with ARCH-NPC-PACKETS §1.3 and §2.3 (docs/architecture/reviews/OTERYN_GAME_ARCH_NPC_PACKETS_2026-10-05.md); numbers fixed by NPC-0 §4 and registered by NPC-WIRE-1",
+  "owner": "current ChannelRuntime",
+  "capability": 3,
+  "revision": "per GameSessionId, monotonic and never reused (FND-02 §15) across reconnect, resume and channel transfer; every admission, reconnect and channel transfer sends a snapshot above any revision the session has seen, and reconnect or transfer closes the conversation so that snapshot is empty (NPC-0 §4); a delta carries the whole domain after each change",
+  "delta_types": [
+    {
+      "id": 1,
+      "name": "NPC_CONVERSATION_DELTA_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/npc_service_v1.proto#NpcConversationV1",
+      "max_payload_bytes": 65665
+    }
+  ],
+  "snapshot_types": [
+    {
+      "id": 1,
+      "name": "NPC_CONVERSATION_SNAPSHOT_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/npc_service_v1.proto#NpcConversationV1",
+      "max_payload_bytes": 65665
+    }
+  ]
+}
