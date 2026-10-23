@@ -9,7 +9,7 @@ use super::item_transfer::{
 };
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
-use crate::content::native_gameplay::NativeGameplayState;
+use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
 use crate::foundation::CommandRef;
 use oteryn_gameplay_items::item_craft::cooking_conversion;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
