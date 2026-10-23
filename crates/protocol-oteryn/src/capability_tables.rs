@@ -202,6 +202,11 @@ pub const GATED: &[(u32, &[u32], &[u32])] = &[
         &[],
     ),
     (
+        crate::depot::CAPABILITY_DEPOT_V1,
+        &[crate::depot::COMMAND_TYPE_DEPOT_INTENT],
+        &[],
+    ),
+    (
         crate::guild::CAPABILITY_GUILD_V1,
         &[
             crate::guild::COMMAND_TYPE_GUILD_INTENT,
