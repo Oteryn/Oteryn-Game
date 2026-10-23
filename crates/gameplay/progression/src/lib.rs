@@ -19,3 +19,9 @@ pub mod wheel_gem_data;
 pub mod wheel_read;
 
 mod revision;
+
+#[cfg(test)]
+mod experience_property_tests;
+
+#[cfg(test)]
+mod mana_training_property_tests;

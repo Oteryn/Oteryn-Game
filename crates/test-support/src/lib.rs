@@ -1,5 +1,7 @@
 //! Deterministic, test-owned helpers for Oteryn technical contracts.
 
+pub mod property;
+
 use oteryn_diagnostics::{
     CorrelationId, DiagnosticBuildError, DiagnosticCategory, DiagnosticCode, DiagnosticEvent,
     DiagnosticField, DiagnosticValue, FieldKey, SafeText, Severity, StaticTextError,
