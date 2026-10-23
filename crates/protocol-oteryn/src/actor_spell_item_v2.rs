@@ -227,3 +227,7 @@ mod target_tests {
         assert!(encode_item_spell_cast_intent(&value).unwrap().len() < bytes.len());
     }
 }
+
+#[cfg(test)]
+#[path = "actor_spell_item_v2_fuzz_tests.rs"]
+mod fuzz_tests;

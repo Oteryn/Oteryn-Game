@@ -496,3 +496,7 @@ mod effect_only_result_tests {
         assert!(encode_parameter_spell_cast_result(&value).is_err());
     }
 }
+
+#[cfg(test)]
+#[path = "actor_spell_v2_fuzz_tests.rs"]
+mod fuzz_tests;

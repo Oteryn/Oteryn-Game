@@ -2565,6 +2565,7 @@ dependencies = [
 name = "oteryn-protocol-oteryn"
 version = "0.1.0"
 dependencies = [
+ "oteryn-test-support",
  "serde_json",
 ]
 

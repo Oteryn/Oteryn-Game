@@ -1,3 +1,5 @@
+#![allow(clippy::expect_used)]
+
 use super::*;
 
 #[test]
@@ -33,4 +35,22 @@ fn tutorial_notices_golden_vectors_and_strict_bounds() -> WireResult<()> {
     assert!(encode_tutorial_notice(&TutorialNotice::Hint(0)).is_err());
     assert!(encode_tutorial_notice(&TutorialNotice::StatusText("a".repeat(256))).is_err());
     Ok(())
+}
+
+// TEST-FUZZ-1: bounded randomized decoder and generated-value round trips.
+
+#[test]
+fn fuzz_decode_tutorial_notice() {
+    crate::decoder_fuzz_support::codec(
+        "decode_tutorial_notice",
+        |rng| {
+            if rng.bool() {
+                TutorialNotice::Hint((rng.below(255) + 1) as u8)
+            } else {
+                TutorialNotice::StatusText("é".repeat((rng.below(127) + 1) as usize))
+            }
+        },
+        decode_tutorial_notice,
+        |v| encode_tutorial_notice(v).expect("notice"),
+    );
 }

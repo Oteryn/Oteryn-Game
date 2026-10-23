@@ -4801,3 +4801,6 @@ mod tests {
 }
 
 pub mod spectate;
+
+#[cfg(test)]
+mod decoder_fuzz_support;

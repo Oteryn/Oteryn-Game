@@ -383,3 +383,39 @@ fn registries_bind_the_analyser_ids_and_limits() {
         Some(MAX_ANALYSER_PENDING_FACTS as u64)
     );
 }
+
+// TEST-FUZZ-1: bounded randomized decoder and generated-value round trips.
+
+#[test]
+fn fuzz_decode_analyser_fact() {
+    crate::decoder_fuzz_support::codec(
+        "decode_analyser_fact",
+        |rng| rng.pick(&every_kind()).clone(),
+        decode_analyser_fact,
+        |v| encode_analyser_fact(v).expect("fact"),
+    );
+}
+
+#[test]
+fn fuzz_decode_analyser_facts() {
+    crate::decoder_fuzz_support::codec(
+        "decode_analyser_facts",
+        |rng| {
+            (0..rng.below(4) + 1)
+                .map(|_| rng.pick(&every_kind()).clone())
+                .collect::<Vec<_>>()
+        },
+        decode_analyser_facts,
+        |v| encode_analyser_facts(v).expect("facts"),
+    );
+}
+
+#[test]
+fn fuzz_decode_analyser_snapshot() {
+    crate::decoder_fuzz_support::codec(
+        "decode_analyser_snapshot",
+        |_| (),
+        decode_analyser_snapshot,
+        |_| Vec::new(),
+    );
+}

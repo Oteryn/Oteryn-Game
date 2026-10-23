@@ -376,3 +376,57 @@ fn the_registries_bind_the_attack_constants() {
         assert!(ATTACK_PROTO.contains(row));
     }
 }
+
+// TEST-FUZZ-1: bounded randomized decoder and generated-value round trips.
+
+#[test]
+fn fuzz_decode_attack_target_intent() {
+    crate::decoder_fuzz_support::codec(
+        "decode_attack_target_intent",
+        |rng| rng.bool().then(|| target(rng.u64().max(1))),
+        decode_attack_target_intent,
+        |v| encode_attack_target_intent(v.as_ref()).expect("target"),
+    );
+}
+
+#[test]
+fn fuzz_decode_fight_modes_intent() {
+    crate::decoder_fuzz_support::codec(
+        "decode_fight_modes_intent",
+        |rng| FightModes {
+            fight_mode: *rng.pick(&[
+                FightMode::Offensive,
+                FightMode::Balanced,
+                FightMode::Defensive,
+            ]),
+            chase: *rng.pick(&[ChaseMode::Stand, ChaseMode::Chase]),
+            secure: rng.bool(),
+        },
+        decode_fight_modes_intent,
+        encode_fight_modes_intent,
+    );
+}
+
+#[test]
+fn fuzz_decode_attack_intent_result() {
+    crate::decoder_fuzz_support::codec(
+        "decode_attack_intent_result",
+        |rng| *rng.pick(&AttackIntentDisposition::ALL),
+        decode_attack_intent_result,
+        |v| encode_attack_intent_result(*v),
+    );
+}
+
+#[test]
+fn fuzz_decode_actor_combat_state() {
+    crate::decoder_fuzz_support::codec(
+        "decode_actor_combat_state",
+        |rng| ActorCombatState {
+            target: rng.bool().then(|| target(rng.u64().max(1))),
+            in_fight: rng.bool(),
+            ..worst_state()
+        },
+        decode_actor_combat_state,
+        |v| encode_actor_combat_state(v).expect("state"),
+    );
+}

@@ -333,3 +333,7 @@ mod tests {
         assert!(SCHEMA.contains("message WorldWeatherV1 {"));
     }
 }
+
+#[cfg(test)]
+#[path = "world_weather_fuzz_tests.rs"]
+mod fuzz_tests;

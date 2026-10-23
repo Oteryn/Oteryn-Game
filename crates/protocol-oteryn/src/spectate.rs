@@ -78,3 +78,7 @@ mod tests;
 #[cfg(test)]
 #[path = "spectate/frame_tests.rs"]
 mod frame_tests;
+
+#[cfg(test)]
+#[path = "spectate/fuzz_tests.rs"]
+mod fuzz_tests;
