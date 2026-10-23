@@ -7,4 +7,4 @@
 //! A retained zero row is occupied state, never permission for bare deletion.
 
 /// Installed by the normal GAME_MIGRATOR; this module does not execute DDL.
-pub const IMBUEMENT_MIGRATION_VERSION: i64 = 149;
+pub const IMBUEMENT_MIGRATION_VERSION: i64 = 150;
