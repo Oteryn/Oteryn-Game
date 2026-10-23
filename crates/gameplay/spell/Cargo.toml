@@ -34,6 +34,7 @@ sha2.workspace = true
 sqlx.workspace = true
 
 [dev-dependencies]
+oteryn-test-support = { version = "=0.1.0", path = "../../test-support" }
 oteryn-gameplay-combat = { version = "=0.1.0", path = "../combat", features = ["test-support"] }
 oteryn-gameplay-world = { version = "=0.1.0", path = "../world", features = ["test-support"] }
 oteryn-gameplay-content = { version = "=0.1.0", path = "../../gameplay/content", features = ["test-support"] }
