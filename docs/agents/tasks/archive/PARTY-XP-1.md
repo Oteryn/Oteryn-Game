@@ -4,7 +4,7 @@
 task_id: PARTY-XP-1
 title: "PARTY-XP-1: party shared experience and party spells"
 mode: IMPLEMENT
-status: in_progress
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 3
@@ -14,13 +14,21 @@ briefs:
   - docs/architecture/reviews/OTERYN_GAME_PARTY_PVP0_PARTIES_AND_PVP_DECISION_2026-09-30.md
 base_branch: main
 branch: w5/party-xp-1
-pr: null
+pr: 2322
 class: hard
 needs_migration: true
 needs_registry: true
 needs_content_regeneration: true
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@65e40c57f`): **DONE**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#2322](https://github.com/Oteryn/Oteryn-Game/pull/2322). The real kill drain reaches same-transaction party planning and atomic per-Character XP settlement, deterministic sequencers and replay receipts; eligibility rules, leader toggle and party-spell CHAT feedback are wired. Evidence: `crates/gameplay/dispatch/src/gameplay_transport/party_kill_settlement.rs`, `crates/gameplay/dispatch/src/gameplay_transport/party_xp_command.rs`, `crates/gameplay/dispatch/src/gameplay_transport/party_spell_feedback.rs` and `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs`. The retained focused validation records real-dispatch PostgreSQL split, refusal, rollback, replay/recovery and concurrent-kill cases; pure tests cover level/range/activity boundaries. Prey activation, full stamina lifecycle and future summon combat producers remain with their separately allocated owners.
+
+Tracking closeout: delivered on main; no active implementation ownership is retained by this historical card.
+
+Tracking validation (documentation reconciliation): `python3 tools/agents/validate_governance.py`: PASS; `python3 -m unittest discover -s tools/agents/tests`: PASS (129 tests); `python3 tools/repository/validate_repository_policy.py`: PASS; `git diff --check`: PASS. Cargo filters are not applicable to this documentation-only change; the implementation filters and historical results remain below.
 
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2172, branch skeleton/party-xp-1
 
@@ -347,7 +355,7 @@ qualification always uses the wrapper-provided canonical database and asserts bo
 - `crates/gameplay/entities/src/lib.rs`
 - `crates/gameplay/social-rules/src/lib.rs`
 - `crates/gameplay/spell/src/spell/cast.rs`
-- `docs/agents/tasks/PARTY-XP-1.md`
+- `docs/agents/tasks/archive/PARTY-XP-1.md`
 - `docs/contracts/resource-limits/entries/0368-COMBAT01-XP-DESCENDANTS-PER-DEATH.json`
 - `docs/contracts/resource-limits/entries/0369-COMBAT01-REWARD-PRINCIPALS.json`
 - `docs/contracts/resource-limits/entries/0609-PARTYPVP0-RL-04.json` through `0612-PARTYPVP0-RL-07.json`

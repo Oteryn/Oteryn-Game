@@ -136,7 +136,7 @@ The full repository unittest discovery still requires Node.js in CI or an existi
 - [docs/agents/tasks/OTV2-20261006-quest-completion-all373-r2.md](../tasks/OTV2-20261006-quest-completion-all373-r2.md) — PARTIAL.
 - [docs/agents/tasks/OTV2-20261011-boot-rat-policy-1.md](../tasks/OTV2-20261011-boot-rat-policy-1.md) — PARTIAL.
 - [docs/agents/tasks/PARTY-1.md](../tasks/PARTY-1.md) — PARTIAL.
-- [docs/agents/tasks/PARTY-XP-1.md](../tasks/PARTY-XP-1.md) — PARTIAL.
+- [docs/agents/tasks/archive/PARTY-XP-1.md](../tasks/archive/PARTY-XP-1.md) — PARTIAL.
 - [docs/agents/tasks/PROG-ADV-1.md](../tasks/PROG-ADV-1.md) — PARTIAL.
 - [docs/agents/tasks/PVP-DEATH-1.md](../tasks/PVP-DEATH-1.md) — PARTIAL.
 - [docs/agents/tasks/PVP-RT-1.md](../tasks/PVP-RT-1.md) — PARTIAL.
