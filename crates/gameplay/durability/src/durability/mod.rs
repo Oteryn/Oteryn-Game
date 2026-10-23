@@ -2,6 +2,7 @@
 
 include!("core_modules.rs");
 
+pub mod bed_sleep;
 pub mod daily_reward;
 pub mod daily_reward_claim;
 

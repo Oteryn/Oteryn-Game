@@ -611,12 +611,25 @@ pub trait FreshAdmissionAuthority {
     /// house reservation/logout owner refuses; decoding never grants bed access.
     fn sleep_in_bed(
         &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: BedSleepIntent,
+        target: ItemKey,
+    ) -> impl Future<Output = Result<UseOutcome, crate::durability::DurabilityError>> {
+        super::bed_sleep::sleep_with_owner(self, actor, command, intent, target)
+    }
+
+    /// The owning House runtime resolves the reciprocal bed, reservation,
+    /// Premium/reach/block checks and native sex before supplying this context.
+    /// Channel authorities have no House owner and retain the closed default.
+    fn prepare_bed_sleep(
+        &self,
         _actor: ExactActorRef,
         _command: UseCommand,
         _intent: BedSleepIntent,
         _target: ItemKey,
-    ) -> impl Future<Output = UseOutcome> {
-        async { UseOutcome::rejected() }
+    ) -> impl Future<Output = Option<crate::durability::bed_sleep::BedSleepOwner<'_, '_, '_>>> {
+        async { None }
     }
 
     /// Capability 22's exact direct-entry Rune adapter. Unknown commits keep the command open.
@@ -2844,20 +2857,24 @@ where
                 }
             }
         } else if command.command_type == COMMAND_TYPE_BED_SLEEP_INTENT {
-            Dispatch::Use(
-                super::bed_sleep::dispatch(
-                    authority,
-                    actor,
-                    UseCommand {
-                        game_session_id: admitted.game_session_id,
-                        command_id: command.command_id,
-                        item_fence: admitted.item_fence,
-                    },
-                    decode_bed_sleep_intent(command.payload),
-                    item_view.as_ref(),
-                )
-                .await,
+            match super::bed_sleep::dispatch(
+                authority,
+                actor,
+                UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: command.command_id,
+                    item_fence: admitted.item_fence,
+                },
+                decode_bed_sleep_intent(command.payload),
+                item_view.as_ref(),
             )
+            .await
+            {
+                Ok(outcome) => Dispatch::Use(outcome),
+                // An unacknowledged commit may already have ended the session.
+                // Send no refusal; the terminal/loss lifecycle reconciles it.
+                Err(_) => return ConnectionEnd::AdmittedThenControlLost(admitted),
+            }
         } else if command.command_type == COMMAND_TYPE_USE_INTENT {
             match decode_use_intent_target(
                 admitted.continuity.selected_capabilities.as_slice(),
@@ -3706,6 +3723,11 @@ where
                 }
             }
             Dispatch::Use(outcome) => {
+                if command.command_type == COMMAND_TYPE_BED_SLEEP_INTENT
+                    && outcome.disposition == UseDisposition::OfflineTraining
+                {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                }
                 // ITEM-VIEW-1b: a committed `USE` (the chest MINT) may have changed the
                 // backpack or open bags; their deltas follow the durable commit when changed.
                 // An unreadable backpack fails closed; the resumed snapshot restores it.
