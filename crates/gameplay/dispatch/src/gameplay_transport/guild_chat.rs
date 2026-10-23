@@ -1,5 +1,4 @@
 //! GUILD-CHAT-1 composition on the existing chat relay and Guild owner.
-use super::capabilities::OfferedCapability;
 use super::connection::AdmittedSession;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::foundation::{ChannelRuntimeV1, GameSessionId, RuntimeScopeRefV1};
@@ -15,11 +14,6 @@ mod admission;
 mod dequeue;
 mod send;
 pub(super) mod wire;
-
-pub(super) const OFFERED: OfferedCapability = OfferedCapability {
-    id: CAPABILITY_CHAT_GUILD_ROOM_V1,
-    requires: &[oteryn_protocol_oteryn::chat::CAPABILITY_CHAT_V1],
-};
 
 #[derive(Default)]
 pub(super) struct GuildChatRuntime {
