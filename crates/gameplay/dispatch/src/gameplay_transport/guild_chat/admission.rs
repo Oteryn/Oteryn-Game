@@ -13,7 +13,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         self.root
             .with_guild_chat_custody(self.character, self.holder, fence, None, |membership, _| {
-                self.chat.guild.bind(admitted);
+                self.states.chat.guild.bind(admitted);
                 membership.map_or(GuildRoomState::Absent, |member| GuildRoomState::Member {
                     guild_id: *member.guild_id.as_bytes(),
                     rank: member.rank.level(),

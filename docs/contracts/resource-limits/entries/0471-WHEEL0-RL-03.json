@@ -1,0 +1,22 @@
+{
+  "id": "WHEEL0-RL-03",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_WHEEL0_WHEEL_OF_DESTINY_DELIVERY_DECISION_2026-09-30.md",
+  "resource": "Augment stage of one Wheel augment perk",
+  "unit": "stage",
+  "hard_maximum": 2,
+  "configurable_range": {
+    "minimum": 2,
+    "maximum": 2
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "No allocation; the stage counts the full slots whose conviction perk names the augment, capped at 2.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=2: two full slots of one augment give stage 2",
+    "max+1: a third copy still gives stage 2"
+  ],
+  "consumers": [
+    "apps/game-server/src/durability/character_wheel.rs MAX_AUGMENT_STAGE, WheelStages::derive"
+  ],
+  "notes": "WHEEL-0 \u00a73 and \u00a78; test: character_wheel::tests::augments_count_full_slots_only. Registered by WHEEL-W1."
+}

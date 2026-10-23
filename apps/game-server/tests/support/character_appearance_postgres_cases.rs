@@ -1,5 +1,5 @@
 #![allow(clippy::expect_used)]
-// D1112 installed-storage cases. Every selected case creates its own PostgreSQL17.6
+// D1112 installed-storage cases. Every selected case creates its own PostgreSQL 18.6
 // database through the actual embedded migration ledger; no fixture DDL is executed.
 // Shared cases: included by the CI-run character_authority_postgres target and the thin standalone
 // wrapper, both of which provide the path-loaded crate root and the Bestiary harness.

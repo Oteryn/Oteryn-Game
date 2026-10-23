@@ -1,0 +1,11 @@
+{
+  "id": 14,
+  "name": "CONTAINER_TREE_V1",
+  "owner_decision": "BAGS-0 BAGS0-CONTAINERS-WITH-CONTENTS-V1 \u00a75 (docs/architecture/reviews/OTERYN_GAME_BAGS0_CONTAINERS_WITH_CONTENTS_DECISION_2026-09-30.md); numbers allocated by the #1622 control plane and registered by BAGS-WIRE-1",
+  "owner": "current ChannelRuntime (views and handles); Item durability (the tree TRANSFER behind command type 9, BAGS-1)",
+  "requires": [4, 12],
+  "command_types": [21],
+  "state_domains": [14],
+  "offered": false,
+  "offer_gate": "BAGS-1, ITEM-LOOP-1 (CP D1438): only a node serving a World booted from a bundle offers this capability (BUNDLE_WORLD_OFFERED_CAPABILITIES), where command type 9 moves an item within the durable container tree (depth and size bounded) and command type 21 observes durable containers; a fixture World never offers it, so this entry stays offered false. Without it selected, domain 14 is never sent, command type 21 is refused as unsupported, the CONTAINER destination of command type 9 (field 5) fails closed and USE field 2 on a container handle keeps its capability 4 meaning. Views are not durable: domain 14 is empty after every admission, reconnect, resume and channel transfer, and views close on death and logout."
+}

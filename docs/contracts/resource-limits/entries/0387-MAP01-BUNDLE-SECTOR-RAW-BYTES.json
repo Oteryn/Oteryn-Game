@@ -1,0 +1,25 @@
+{
+  "allocation_impact": "raw_length is checked against 16 MiB and against 1,024 times compressed_length before decompression; decompression writes into exactly raw_length bytes and the output must be exactly that long. The compressed frame is bounded by the file size.",
+  "boundary_tests": [
+    "a payload is accepted at a reduced sector_raw_bytes cap equal to the largest raw_length (ReadCaps), and rejected at one byte less",
+    "raw_length over 16 MiB is rejected before decompression",
+    "raw_length over 1,024 times the frame length is rejected before decompression",
+    "a frame that decompresses to a length other than raw_length is rejected"
+  ],
+  "client_visible": false,
+  "configurable_range": {
+    "maximum": 16777216,
+    "minimum": 16777216
+  },
+  "consumers": [
+    "world bundle compiler",
+    "game server World runtime (MAP-LOAD-1)"
+  ],
+  "failure_category": "INVALID_INPUT",
+  "hard_maximum": 16777216,
+  "id": "MAP01-BUNDLE-SECTOR-RAW-BYTES",
+  "notes": "MAP-BUNDLE-1a; ADR-0021 \u00a74.2 and \u00a74.8; format document \u00a79. Matches the B3 codec MAX_SECTOR_BYTES; ratio limit 1,024:1.",
+  "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+  "resource": "Decompressed payload of one sector, with its zstd frame as the compressed size",
+  "unit": "bytes"
+}

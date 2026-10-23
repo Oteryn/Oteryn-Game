@@ -1,0 +1,22 @@
+{
+  "id": "CHARM5-RL-03",
+  "owner_contract": "protocol-oteryn/CHARM5_BESTIARY_CHARM_WIRE_PROPOSAL_V1.md",
+  "resource": "Charms in one CharmViewV1, the largest charm index, and the largest assignment slot limit",
+  "unit": "charms per view",
+  "hard_maximum": 32,
+  "configurable_range": {
+    "minimum": 32,
+    "maximum": 32
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "The decoder refuses the 33rd entry, a charm index above 32 or a slot limit above 32 before allocating for it; the whole view is at most 554 bytes (state domain 5).",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=32: a view of 32 charms at charm index 32 with slot limit 32 is exactly 554 bytes and round-trips",
+    "max+1=33: a 33rd entry, charm index 33 or slot limit 33 is refused in both directions"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/charm.rs MAX_CHARMS, MAX_CHARM"
+  ],
+  "notes": "25 charms in the candidate catalogue. CHARM-5 proposal section 2; accepted by the Sol protocol ruling #162 5907282001. Registered by OTV2-20260930-charm-5-reg."
+}

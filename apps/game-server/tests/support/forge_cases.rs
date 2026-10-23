@@ -38,10 +38,10 @@ fn run_case(tag: &str, body: impl AsyncFnOnce(&mut PgConnection) -> TestResult) 
             let version: String = sqlx::query_scalar("SHOW server_version_num")
                 .fetch_one(&mut admin)
                 .await?;
-            if version != "170006" {
-                return Err("canonical target is PostgreSQL 17.6".into());
+            if version != oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM {
+                return Err("canonical target is PostgreSQL 18.6".into());
             }
-            eprintln!("CANONICAL PostgreSQL 17.6 private tier case: {tag}");
+            eprintln!("CANONICAL PostgreSQL 18.6 private tier case: {tag}");
             let nonce = std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)?
                 .as_nanos();

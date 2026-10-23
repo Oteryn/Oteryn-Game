@@ -1,7 +1,7 @@
 //! Negotiated CHAT_V1 guild extension. Public rooms retain their four-bit encoding.
 use super::*;
 
-pub const CAPABILITY_CHAT_GUILD_ROOM_V1: u32 = 31;
+pub const CAPABILITY_CHAT_GUILD_ROOM_V1: u32 = 36;
 pub const SNAPSHOT_TYPE_GUILD_CHAT_V1: u32 = 2;
 pub const MAX_GUILD_CHAT_SNAPSHOT_BYTES: usize = 1_049;
 

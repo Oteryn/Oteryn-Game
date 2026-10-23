@@ -1,4 +1,4 @@
-//! Candidate FAMILIAR-1 actual writer and restored-state admission cases on PostgreSQL17.6.
+//! Candidate FAMILIAR-1 actual writer and restored-state admission cases on PostgreSQL 18.6.
 #![allow(clippy::panic)]
 use crate::bestiary_postgres_harness::{
     CHARACTER, Harness, SESSION, TestResult, configured_admin, debug, fence, id, runtime,

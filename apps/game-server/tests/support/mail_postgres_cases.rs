@@ -1,4 +1,4 @@
-//! MAIL cases share the canonical target's routed PostgreSQL 17.6 database.
+//! MAIL cases share the canonical target's routed PostgreSQL 18.6 database.
 //! Without routing, the harness reports PRE-ROUTING / NONCANONICAL; that path
 //! does not qualify PostgreSQL behavior. A configured run executes every body.
 
@@ -551,7 +551,7 @@ fn run_text_history(
             let version: String = sqlx::query_scalar("SHOW server_version_num")
                 .fetch_one(&h.pool)
                 .await?;
-            assert_eq!(version, "170006", "native PostgreSQL 17.6 required");
+            assert_eq!(version, oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM, "native PostgreSQL 18.6 required");
             text_history_runtime_root(&h.root).await?;
             let item = mint_text_retirement_item(&h).await?;
             case(&h, item).await

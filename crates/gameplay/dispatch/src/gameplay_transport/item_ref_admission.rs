@@ -245,7 +245,7 @@ pub(super) async fn take_corpse_entry(
     };
     let (corpse, entry_id, native) = {
         let runtime = admission.runtime.lock().await;
-        let dead = admission.spell_states.lock().await.is_dead(actor);
+        let dead = admission.states.spell_states.lock().await.is_dead(actor);
         let (corpse, entry_id) = corpse_for_take(&runtime, dead, corpse, entry)?;
         pinned_index(&runtime, admission.active_generation).ok_or_else(rejected)?;
         let native = admission

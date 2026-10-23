@@ -1,4 +1,4 @@
-// ITEM-LOOP-1 (CP D1438) on PostgreSQL 17.6: the live item loop writer behind command 9.
+// ITEM-LOOP-1 (CP D1438) on PostgreSQL 18.6: the live item loop writer behind command 9.
 // One fenced receipt per CommandRef moves, merges, splits, nests, drops or picks up one item of
 // the carried tree under the 0128 proofs; every refusal writes nothing and a resent CommandRef
 // replays its receipt. A pickup weighs the carried graph against the capacity derived from the

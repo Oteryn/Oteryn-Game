@@ -1,0 +1,22 @@
+{
+  "id": "MOVE-VIEW-FLOORS",
+  "owner_contract": "OTERYN_GAME_MOVE_RL11_VISIBILITY_DECISION_2026-09-28.md",
+  "resource": "Floors visible to one observer",
+  "unit": "floors",
+  "hard_maximum": 8,
+  "configurable_range": {
+    "minimum": 5,
+    "maximum": 8
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Above ground (floor <= 7) floors 0..7 (8 floors); underground the observer floor +/- 2, clamped at 15 (5 floors, fewer at 14 and 15). Tiles beyond the floor rule are not candidates; never an error. Not configurable.",
+  "client_visible": true,
+  "boundary_tests": [
+    "floor 7 sees floors 0..7 and not 8",
+    "floor 10 sees 8..12; floor 14 sees 12..15; floor 15 sees 13..15"
+  ],
+  "consumers": [
+    "movement::interest::floor_visible"
+  ],
+  "notes": "D86. Decision section 4.4; #162 comment 5875958040."
+}

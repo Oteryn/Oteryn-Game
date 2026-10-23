@@ -10,11 +10,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         remaining: &mut usize,
     ) -> Option<ChatLine> {
         while *remaining > 0 {
-            let candidate = self.chat.peek_line(admitted.game_session_id)?;
+            let candidate = self.states.chat.peek_line(admitted.game_session_id)?;
             let ChatLine::Guild(line) = &candidate else {
-                return self.chat.next(admitted.game_session_id);
+                return self.states.chat.next(admitted.game_session_id);
             };
-            if !self.chat.guild.matches(&admitted) {
+            if !self.states.chat.guild.matches(&admitted) {
                 return None;
             }
             let guild = GuildId::from_bytes(line.guild_id).ok()?;
@@ -29,17 +29,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     fence,
                     Some(guild),
                     |membership, _| {
-                        self.chat
-                            .accept_guild_line(&admitted, &candidate, membership.is_some())
+                        self.states.chat.accept_guild_line(
+                            &admitted,
+                            &candidate,
+                            membership.is_some(),
+                        )
                     },
                 )
                 .await;
             match accepted {
                 Ok(Some(line)) => return Some(line),
-                Ok(None) => self.chat.guild.dropped(),
+                Ok(None) => self.states.chat.guild.dropped(),
                 Err(_) => {
-                    self.chat.discard_guild_line(&admitted, &candidate);
-                    self.chat.guild.dropped();
+                    self.states.chat.discard_guild_line(&admitted, &candidate);
+                    self.states.chat.guild.dropped();
                 }
             }
         }

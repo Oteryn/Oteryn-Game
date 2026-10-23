@@ -290,7 +290,7 @@ mod native_cosmetics {
             return Err(invalid("cosmetics source digest"));
         }
         let mut result = [0; 32];
-        for (out, pair) in result.iter_mut().zip(value.as_bytes().chunks_exact(2)) {
+        for (out, pair) in result.iter_mut().zip(value.as_bytes().as_chunks::<2>().0) {
             let pair = std::str::from_utf8(pair).map_err(|_| invalid("cosmetics digest UTF8"))?;
             *out = u8::from_str_radix(pair, 16).map_err(|_| invalid("cosmetics digest hex"))?;
         }
@@ -2261,7 +2261,7 @@ mod tests {
             serde_json::to_value(native.presentation_profiles()).unwrap(),
             serde_json::to_value(&expected_presentations).unwrap()
         );
-        assert_eq!(native.items.as_ref().unwrap().records.len(), 413);
+        assert_eq!(native.items.as_ref().unwrap().records.len(), 430);
         for species in [
             "rat",
             "skeleton",
@@ -2339,7 +2339,7 @@ mod tests {
                 "executable_spell_count": 246,
                 "creature_profile_count": native.creature_profiles().records.len(),
                 "presentation_profile_count": native.presentation_profiles().records.len(),
-                "item_policy_count": 413,
+                "item_policy_count": 430,
                 "qualification_boundary": "Actual source-world candidate compiled, strictly decoded and staged under both exact outer pins; runtime activation not performed",
                 "production_stage": "Passed; altered server and client issuance pins rejected",
                 "runtime_activation": "Not performed"

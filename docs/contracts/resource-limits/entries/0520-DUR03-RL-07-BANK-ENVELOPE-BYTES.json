@@ -1,0 +1,24 @@
+{
+  "id": "DUR03-RL-07-BANK-ENVELOPE-BYTES",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_BANK0_ACCOUNT_BANK_BALANCE_DECISION_2026-09-30.md",
+  "resource": "One encoded normative ANL-01 EventEnvelope carrying event type 3 BANK_OPERATION, including payload",
+  "unit": "bytes",
+  "hard_maximum": 25719,
+  "configurable_range": {
+    "minimum": 25719,
+    "maximum": 25719
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Check the encoded or borrowed envelope length before retaining, decoding, batching or publishing; ANL01-EVENT-ENVELOPE-BYTES (262,144 B) still applies on top. Migration 0071 sets the stored bank outbox ceiling to this row.",
+  "client_visible": false,
+  "boundary_tests": [
+    "the measured worst-case envelope (128-byte build id) is exactly 25,719 B and accepted",
+    "25,720 bytes rejected before decode"
+  ],
+  "consumers": [
+    "apps/game-server/src/durability/bank_audit.rs",
+    "apps/game-server/src/durability/bank.rs (bank writer: checked before any ledger entry, coin line, balance change or event; a typed refusal or error writes no value)",
+    "apps/game-server/migrations/0071_account_bank.sql"
+  ],
+  "notes": "BANK-0 \u00a78 (owner answers 1b and Q1 b; ARCH-BATCH-ROOT-PACKETS-V1 \u00a71.8 and \u00a72.4); registered by BANK-1 before the code that relies on it."
+}

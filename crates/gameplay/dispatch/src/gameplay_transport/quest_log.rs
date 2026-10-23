@@ -16,10 +16,7 @@
 //!   since the one it projected; a committed receipt that changes what the domain shows sends a
 //!   delta.
 //!
-//! Nothing here writes. Capability 16 stays `offered: false` until the quest log content and the
-//! production copy source are composed, so only the tests select it.
-
-#![cfg_attr(not(test), allow(dead_code))]
+//! Nothing here writes. Boot composes the journal content and the admitted-session copy source.
 
 use std::sync::Arc;
 

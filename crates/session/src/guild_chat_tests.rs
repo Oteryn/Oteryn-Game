@@ -31,8 +31,8 @@ fn guild_chat_client_keeps_login_motd_and_send_rank_and_not_allowed_status() -> 
         let peer = tokio::spawn(async move {
             join_peer_with(
                 &mut server,
-                &[7, 31],
-                &[7, 31],
+                &[7, 36],
+                &[7, 36],
                 &[],
                 (1, spatial(0)),
                 &[(
@@ -83,7 +83,7 @@ fn guild_chat_client_keeps_login_motd_and_send_rank_and_not_allowed_status() -> 
             server.read_to_end(&mut rest).await?;
             Ok::<(), BoxError>(())
         });
-        let mut session = Session::admit(client, admission_with(&[7, 31])?).await?;
+        let mut session = Session::admit(client, admission_with(&[7, 36])?).await?;
         assert_eq!(session.chat_log().ok_or("chat log")?.guild_room(), &guild);
         let outcome = session
             .chat(&ChatIntent::Guild {

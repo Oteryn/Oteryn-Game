@@ -17,7 +17,7 @@ base_branch: main
 branch: null
 pr: null
 needs_migration: false
-needs_registry: true   # capability 31 and snapshot type 2 registered under the integrator ruling
+needs_registry: true   # capability 36 and snapshot type 2 registered under the integrator ruling
 needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
@@ -260,7 +260,7 @@ decisions are pending. No prerequisite implementation is claimed.
 The owner-delegated integrator resolved both questions above before wire edits:
 
 1. Extend `chat_v1` using additive negotiated capability `CHAT_GUILD_ROOM_V1`
-   (next unallocated capability 31, requiring CHAT_V1/7). Preserve old peers'
+   (next unallocated capability 36, requiring CHAT_V1/7). Preserve old peers'
    command, snapshot, line and room-set layouts. Allocate guild intent tag 6,
    guild line kind 5, GuildId/rank fields 9/10, guild-aware snapshot type 2,
    and disposition 10 NOT_ALLOWED (common status ACCEPTED). Register the
@@ -344,3 +344,41 @@ drop accounting and the shared owner-read budget. No load-contention failure was
 Integrator security/protocol review of the frozen candidate, repository CI, dependency/base
 integration and publication. This worktree remains in AUTHORING on the supplied detached HEAD;
 no commit, push, ready-for-review transition, archive or merge is claimed. No owner question remains.
+
+### FLOW port qualification 2026-10-23 (GUILD-CHAT-1b)
+
+Current checkpoint supersedes the prior worktree/validation checkpoint: branch `port/guildchat`,
+baseline `17b79f106` (merged FLOW `49cdeaf5f`), AUTHORING, local changes uncommitted.
+Owned paths are the guild-chat dispatch modules/tests, protocol guild codec/allocation tests,
+Session guild tests/capability expectations, shared Guild test fixture, chat proto comments and
+this task record. No registry fragment or shared test mount was edited.
+
+- Guild capability is 36; tutorial remains 31, both occur in the sorted client set, and the
+  next-allocation assertion is 37. Protocol registry consistency tests passed.
+- Guild dispatch and its moved PostgreSQL cases use `states.chat`. The existing nested module
+  paths compiled unchanged under the automatic PostgreSQL mount.
+- The shared fixture asserts `CANONICAL_POSTGRES_SERVER_VERSION_NUM` and retains the
+  `GUILD-NATIVE-PG` diagnostic; both native routes reported `server_version_num=180006`.
+- All Cargo commands used `+1.99.1`, `--locked` where applicable, offline mode and
+  `CARGO_TARGET_DIR=/home/mole/oteryn-cache/target-codex/lanes/port-guildchat`, one build at a time.
+  All-target clippy with `-D warnings` passed for protocol, Session, dispatch, durability and server.
+  Formatting, repository policy, governance and its 124 unit tests passed.
+
+Exact Rust test arguments below all exited 0 (452 tests passed, none failed or ignored):
+
+```sh
+test --locked --quiet -p oteryn-protocol-oteryn -p oteryn-session # 295 + 66
+test --locked --quiet -p oteryn-gameplay-dispatch --lib guild_chat -- --nocapture --test-threads=1 # 2, live PG
+test --locked --quiet -p oteryn-gameplay-dispatch --lib capabilities::tests # 61
+test --locked --quiet -p oteryn-gameplay-dispatch --lib chat_intent::tests # 19
+test --locked --quiet -p oteryn-gameplay-durability --lib character_bootstrap_intent::tests # 3
+test --locked --quiet -p oteryn-game-server --lib guild_chat -- --nocapture --test-threads=1 # 6, live PG
+```
+
+Whole local diff re-read against the owner checklist and repository checklist. No new enum
+variant, struct field, trait method or public function was introduced; no consumer updates remain.
+No test was weakened, skipped, ignored or deleted. No contention failure was deferred.
+
+Unfinished: integrator review, repository CI and publication remain with the control plane;
+no local validation failure or owner question remains. Next step: integrator reviews the
+uncommitted port delta and publishes through its authorized lifecycle.

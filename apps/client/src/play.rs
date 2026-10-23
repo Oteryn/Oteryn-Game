@@ -9,7 +9,7 @@ use crate::combat_input::{CombatCommand, CombatReport, PlayCommand, run_combat};
 use crate::input::{ClickWalk, StepDir, StepResult, TargetKind, Targetable};
 use crate::scene::Scene;
 use crate::spell::{SPELL_SLOTS, SpellFeedback};
-use crate::world::{START, World};
+use crate::world::World;
 use oteryn_platform_client::native_login::PublicClass;
 use oteryn_renderer::{BatchError, TileCoord};
 use oteryn_session::{
@@ -188,6 +188,10 @@ impl PlayView {
         self.own
     }
 
+    pub const fn map_center(&self) -> (i32, i32, i16) {
+        (self.own.x, self.own.y, self.floor)
+    }
+
     #[must_use]
     pub const fn facing(&self) -> StepDir {
         self.facing
@@ -199,15 +203,11 @@ impl PlayView {
     }
 
     /// Draws `world` with the current own position on the start tile and the current floor on
-    /// the start floor.
+    /// the decoded map floor.
     pub fn set_world(&mut self, world: Arc<World>) -> Result<(), BatchError> {
         self.world = world;
-        self.map_floor = Some(self.floor);
-        // Wrapping keeps the offset exact for any join position: `own + anchor` wraps back to START.
-        self.anchor = TileCoord::new(
-            START.0.wrapping_sub(self.own.x),
-            START.1.wrapping_sub(self.own.y),
-        );
+        self.map_floor = Some(self.world.center().2);
+        self.anchor = TileCoord::new(0, 0);
         self.rebuild()
     }
 
@@ -993,12 +993,14 @@ mod tests {
         let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
         let world = Arc::new(World::load(&root)?);
         let mut view = view().map_err(|e| e.to_string())?;
+        view.apply(&moved_to(crate::world::START.0, crate::world::START.1, 7))
+            .map_err(|e| e.to_string())?;
         view.set_world(world).map_err(|e| e.to_string())?;
         let on_floor = view.scene().sprites().len();
         view.apply(&moved_to(100, 200, -1))
             .map_err(|e| e.to_string())?;
         let off_floor = view.scene().sprites().len();
-        view.apply(&moved_to(100, 200, 0))
+        view.apply(&moved_to(crate::world::START.0, crate::world::START.1, 7))
             .map_err(|e| e.to_string())?;
         assert!(off_floor < on_floor / 10, "{off_floor} of {on_floor}");
         assert_eq!(view.scene().sprites().len(), on_floor);

@@ -1,0 +1,20 @@
+{
+  "id": "AI01-ACTIVE-ACTORS",
+  "owner_contract": "GAME-AI-01_CREATURE_AI_SPAWN_PATHFINDING_CONTRACT_CANDIDATE.md",
+  "resource": "active AI actors per authoritative scope safety envelope",
+  "unit": "actors",
+  "hard_maximum": 256,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 256
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
+  "client_visible": false,
+  "boundary_tests": [
+    "hard maximum accepted",
+    "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+    "checked arithmetic overflow rejected before allocation or partial mutation"
+  ],
+  "notes": "For creature actors this envelope is replaced by CREATUREAI0-RL-04 (262,144; SPAWN-CEILINGS-1): no production creature path reads ResourceLimit::ActiveActors. It still bounds the ai::AiSnapshot bootstrap snapshot (apps/game-server/src/ai/snapshot.rs), which only tests construct."
+}

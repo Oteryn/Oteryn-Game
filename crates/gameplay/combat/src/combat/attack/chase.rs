@@ -12,7 +12,7 @@ use std::collections::VecDeque;
 
 use crate::foundation::MovementLocalPosition;
 use crate::movement::CardinalStep;
-use crate::movement::path_search::{CHASE_SEARCH_DISTANCE, chebyshev, delta, route_next_to};
+use crate::movement::path_search::{chebyshev, delta, measured_route};
 
 pub use crate::movement::path_search::CREATURE_COST;
 
@@ -39,6 +39,7 @@ pub struct ChaseState {
     /// `RANGED0-RL-03`: the owner time since which a due search has waited for the Channel's
     /// window budget.
     waiting_since: Option<u64>,
+    planned: Option<(u64, MovementLocalPosition, MovementLocalPosition)>,
 }
 
 /// What a chase check decided.
@@ -70,11 +71,13 @@ impl ChaseState {
         self.expected_at = None;
         self.goal = None;
         self.waiting_since = None;
+        self.planned = None;
     }
 
     /// A client step: drop the route; chase re-paths at its next 1,000 ms check (RANGED-0 §8,
     /// "client intent wins").
     pub fn yield_to_client(&mut self, now_us: u64) {
+        self.planned = None;
         self.route.clear();
         self.expected_at = None;
         self.goal = None;
@@ -121,23 +124,23 @@ impl ChaseState {
     }
 
     /// The Channel's drain runs this chase's search from `at` towards `target` at `now_us`
-    /// (`RANGED0-RL-03`); `false` when none ran (another floor or in reach). The route it adopts
-    /// starts at `at`.
-    pub fn search(
+    /// (`RANGED0-RL-03`); returns actual expansions, or `None` when another floor or reach
+    /// prevents a search. The adopted route starts at `at`.
+    pub fn measured_search(
         &mut self,
         now_us: u64,
         at: MovementLocalPosition,
         target: MovementLocalPosition,
         mut tile_cost: impl FnMut(MovementLocalPosition) -> Option<u32>,
-    ) -> bool {
+    ) -> Option<usize> {
         if at.floor != target.floor || chebyshev(at, target) <= 1 {
             self.hold();
-            return false;
+            return None;
         }
         self.waiting_since = None;
         self.refused.retain(|&(_, expires_us)| now_us < expires_us);
         let refused = &self.refused;
-        let route = route_next_to(at, target, CHASE_SEARCH_DISTANCE, |cell| {
+        let (route, work) = measured_route(at, target, false, |cell| {
             if refused.iter().any(|&(blocked, _)| blocked == cell) {
                 None
             } else {
@@ -158,7 +161,34 @@ impl ChaseState {
                 self.next_search_us = now_us.saturating_add(CHASE_FAILED_SEARCH_WAIT_MICROS);
             }
         }
-        true
+        self.planned = self
+            .next_cell()
+            .map(|next| (now_us / CHASE_WINDOW_MICROS, at, next));
+        Some(work)
+    }
+
+    /// First destination chosen in this window, including after next_step returned it, until
+    /// Movement commits it. An older window or changed start never supplies planned occupancy.
+    pub fn planned_cell(
+        &self,
+        now_us: u64,
+        at: MovementLocalPosition,
+    ) -> Option<MovementLocalPosition> {
+        self.planned
+            .filter(|(window, start, _)| *window == now_us / CHASE_WINDOW_MICROS && *start == at)
+            .map(|(_, _, next)| next)
+    }
+
+    #[cfg(test)]
+    fn search(
+        &mut self,
+        now_us: u64,
+        at: MovementLocalPosition,
+        target: MovementLocalPosition,
+        tile_cost: impl FnMut(MovementLocalPosition) -> Option<u32>,
+    ) -> bool {
+        self.measured_search(now_us, at, target, tile_cost)
+            .is_some()
     }
 
     /// The cell the route's next step enters, if a route is held.
@@ -204,6 +234,7 @@ impl ChaseState {
     /// the route is dropped and nothing is remembered (`RANGED0-RL-08`); the cell stays a path
     /// tile.
     pub fn step_refused(&mut self) {
+        self.planned = None;
         self.route.clear();
         self.expected_at = None;
         self.goal = None;
@@ -215,6 +246,7 @@ impl ChaseState {
     /// most [`CHASE_SEARCH_INTERVAL_MICROS`] after the last, detours around the cell while it is
     /// remembered.
     pub fn step_blocked(&mut self, now_us: u64) {
+        self.planned = None;
         if let Some(cell) = self.expected_at {
             self.refused.retain(|&(blocked, _)| blocked != cell);
             if self.refused.len() >= CHASE_REFUSED_CELLS {

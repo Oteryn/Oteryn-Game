@@ -142,7 +142,10 @@ fn check_operational_rules(
     if header.requirements.wheel_unlock == Some(true) && facts.wheel_unlocked != Some(true) {
         return Err(CastRejection::WheelUnlockRequired);
     }
-    if header.targeting.aggressive && facts.in_protection_zone {
+    if oteryn_gameplay_spell_rules::dispatch_plans::cast_legality::protection_rejected(
+        profile,
+        facts.in_protection_zone,
+    ) {
         return Err(CastRejection::ProtectionZoneRejected);
     }
     if header.targeting.needs_direction && !facts.direction_available {
@@ -161,41 +164,21 @@ fn check_operational_rules(
         return Err(CastRejection::OperationalFactsRequired);
     }
     if let Some(target) = facts.target_position {
-        if header.targeting.check_floor && target.floor != facts.caster_position.floor {
-            return Err(CastRejection::SpatialRuleRejected);
-        }
-        if header.targeting.block_walls && facts.line_of_sight_clear != Some(true) {
-            return Err(CastRejection::SpatialRuleRejected);
-        }
-        let distance = target
-            .x
-            .abs_diff(facts.caster_position.x)
-            .max(target.y.abs_diff(facts.caster_position.y));
-        if header
-            .targeting
-            .range_tiles
-            .is_some_and(|range| distance > range)
+        if oteryn_gameplay_spell_rules::dispatch_plans::cast_legality::position_refusal(
+            profile,
+            (
+                facts.caster_position.x,
+                facts.caster_position.y,
+                facts.caster_position.floor,
+            ),
+            (target.x, target.y, target.floor),
+            facts.line_of_sight_clear,
+            facts.target_tile_solid,
+            facts.target_tile_creature,
+        )
+        .is_some()
         {
             return Err(CastRejection::SpatialRuleRejected);
-        }
-        if let Some(rune) = &header.rune {
-            if !rune.allow_far_use && distance > 1 {
-                return Err(CastRejection::SpatialRuleRejected);
-            }
-            // Source Rune::playerRuneSpellCheck permits a known solid target
-            // cell when its independently resolved creature is present. Unknown
-            // solidity never receives this exception; blockingCreature still
-            // rejects occupied cells below when that source flag is set.
-            if rune.blocking.solid
-                && !(facts.target_tile_solid == Some(false)
-                    || (facts.target_tile_solid == Some(true)
-                        && facts.target_tile_creature == Some(true)))
-            {
-                return Err(CastRejection::SpatialRuleRejected);
-            }
-            if rune.blocking.creature && facts.target_tile_creature != Some(false) {
-                return Err(CastRejection::SpatialRuleRejected);
-            }
         }
     } else if header.carrier == "rune" && !carried_item {
         return Err(CastRejection::OperationalFactsRequired);

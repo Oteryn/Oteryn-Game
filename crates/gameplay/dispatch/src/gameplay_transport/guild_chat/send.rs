@@ -8,11 +8,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         admitted: AdmittedSession,
         text: String,
     ) -> ChatIntentResult {
-        if !self.chat.guild.matches(&admitted) {
+        if !self.states.chat.guild.matches(&admitted) {
             return result(ChatDisposition::Rejected);
         }
         if let Some(refused) =
-            self.chat
+            self.states
+                .chat
                 .pre_gate_relay(admitted.game_session_id, None, &text, self.owner_now())
         {
             return refused;
@@ -20,7 +21,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(text) = ChatText::parse(&text) else {
             return result(ChatDisposition::Rejected);
         };
-        let Some(relay) = self.chat.relay() else {
+        let Some(relay) = self.states.chat.relay() else {
             return result(ChatDisposition::ChatUnavailable);
         };
         let accepted = {

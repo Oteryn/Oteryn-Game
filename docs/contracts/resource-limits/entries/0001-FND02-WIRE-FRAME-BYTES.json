@@ -1,0 +1,25 @@
+{
+  "id": "FND02-WIRE-FRAME-BYTES",
+  "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+  "resource": "One post-TLS length-prefixed encoded WireEnvelope",
+  "unit": "bytes",
+  "hard_maximum": 1048576,
+  "configurable_range": {
+    "minimum": 1048576,
+    "maximum": 1048576
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Validate uint32_be length before allocating or reading the frame payload; never reserve from an unchecked peer length.",
+  "client_visible": true,
+  "boundary_tests": [
+    "0-byte frame rejected",
+    "1,048,576 bytes accepted when message-specific limits also permit",
+    "1,048,577 rejected before payload allocation",
+    "truncated frame rejected"
+  ],
+  "consumers": [
+    "client transport",
+    "server transport"
+  ],
+  "notes": "The four-byte prefix is excluded from payload_length."
+}

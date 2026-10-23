@@ -3,7 +3,7 @@ use crate::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES;
 use serde_json::Value;
 use std::error::Error;
 
-const REGISTRY: &str = include_str!("../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json");
+const REGISTRY: &str = crate::PROTOCOL_OTERYN_V1_REGISTRY_JSON;
 
 fn registry_capabilities() -> Result<Vec<Value>, Box<dyn Error>> {
     let registry: Value = serde_json::from_str(REGISTRY)?;

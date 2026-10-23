@@ -41,8 +41,7 @@ use std::error::Error;
 use std::future::Future;
 use tokio::io::{AsyncReadExt, AsyncWriteExt, DuplexStream};
 
-const REGISTRY: &str =
-    include_str!("../../../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json");
+const REGISTRY: &str = oteryn_protocol_oteryn::PROTOCOL_OTERYN_V1_REGISTRY_JSON;
 
 const CHARACTER: [u8; 16] = uuid_v7(0x11);
 const SESSION: [u8; 16] = uuid_v7(0x22);
@@ -236,37 +235,8 @@ fn selection_keeps_a_capability_only_with_all_its_requires() {
     assert_eq!(chain(&[1, 7, 8]), [7, 8]);
 }
 
-#[test]
-fn the_production_set_selects_only_capabilities_6_7_9_13_17_19_and_21_whatever_the_client_supports()
--> Result<(), Box<dyn Error>> {
-    let mut everything: Vec<u32> = Vec::new();
-    for capability in registry_capabilities()? {
-        everything.push(u32::try_from(capability["id"].as_u64().ok_or("id")?)?);
-    }
-    everything.extend([2, 3, 4, 5, 9, 11, 12, 13, 14]);
-    everything.sort_unstable();
-    everything.dedup();
-    assert_eq!(
-        SelectedCapabilities::select(PRODUCTION_OFFERED_CAPABILITIES, &everything)
-            .as_ref()
-            .map(SelectedCapabilities::as_slice),
-        Some(&[6, 7, 9, 13, 17, 19, 21, 26, 31][..])
-    );
-    // MAP-ITEM-REF-1: the not-yet-offered Item view set adds 4, which requires 6.
-    assert_eq!(
-        SelectedCapabilities::select(ITEM_VIEW_OFFERED_CAPABILITIES, &everything)
-            .as_ref()
-            .map(SelectedCapabilities::as_slice),
-        Some(&[4, 6, 7, 9, 13, 17, 19, 21, 26, 31][..])
-    );
-    assert_eq!(
-        SelectedCapabilities::select(ITEM_VIEW_OFFERED_CAPABILITIES, &[4, 13])
-            .as_ref()
-            .map(SelectedCapabilities::as_slice),
-        Some(&[13][..])
-    );
-    Ok(())
-}
+#[path = "capability_quest_log_tests.rs"]
+mod quest_log_offer;
 
 #[test]
 fn resume_keeps_exactly_the_original_selection() {
@@ -606,7 +576,11 @@ fn resume(supported: &[u32]) -> Vec<u8> {
     envelope(3, 0, &payload)
 }
 
-fn command(id: u64, command_type: u32, payload: &[u8]) -> Vec<u8> {
+pub(in crate::gameplay_transport) fn command(
+    id: u64,
+    command_type: u32,
+    payload: &[u8],
+) -> Vec<u8> {
     let mut body = Vec::new();
     scalar(&mut body, 1, id);
     scalar(&mut body, 2, u64::from(command_type));
@@ -1353,10 +1327,14 @@ fn item_use_wire_fields_4_and_5_are_rejected_without_capability_15() -> Result<(
 }
 
 // RUNE-WIRE-1 (RUNE-USE-0 §4): capability 22 RUNE_USE_V1 is registered, not offered before
-// RUNE-CAST-1, and requires 15; the USE position arm is REJECTED with or without it.
+// RUNE-CAST-1, and requires 15; an unqualified USE position source is REJECTED.
 
-/// An injected offered set: 4, 15 requiring 4 and 22 requiring 15.
-const RUNE_USE_OFFERED: &[OfferedCapability] = &[
+/// An injected offered set: 4, 6, 15 requiring 4 and 22 requiring 15.
+pub(in crate::gameplay_transport) const RUNE_USE_OFFERED: &[OfferedCapability] = &[
+    OfferedCapability {
+        id: CAPABILITY_WORLD_SPATIAL_ENTITIES,
+        requires: &[],
+    },
     OfferedCapability {
         id: CAPABILITY_ITEM_VIEW_MOVE_V1,
         requires: &[],
@@ -1372,7 +1350,7 @@ const RUNE_USE_OFFERED: &[OfferedCapability] = &[
 ];
 
 #[test]
-fn rune_wire_capability_21_is_registered_not_offered_and_requires_15() -> Result<(), Box<dyn Error>>
+fn rune_wire_capability_22_is_registered_not_offered_and_requires_15() -> Result<(), Box<dyn Error>>
 {
     use oteryn_protocol_oteryn::world_object::CAPABILITY_RUNE_USE_V1;
     let entry = registry_capabilities()?
@@ -1405,7 +1383,7 @@ fn rune_wire_capability_21_is_registered_not_offered_and_requires_15() -> Result
 }
 
 #[test]
-fn rune_wire_the_position_arm_is_rejected_with_or_without_capability_21()
+fn rune_wire_the_position_arm_is_rejected_for_missing_source_with_or_without_capability_22()
 -> Result<(), Box<dyn Error>> {
     use crate::foundation::CommandStatus;
     use oteryn_protocol_oteryn::actor_spell::SpellTargetPosition;
@@ -1431,7 +1409,7 @@ fn rune_wire_the_position_arm_is_rejected_with_or_without_capability_21()
         .map_err(|error| format!("{error:?}"))?;
         let frames = [command(1, COMMAND_TYPE_USE_INTENT, &at_position)];
         let rejected = encode_use_result(UseDisposition::Rejected).unwrap_or_default();
-        // Without 22 the arm is undecodable; under 22 it fails closed until RUNE-CAST-1.
+        // Without 22 the arm is undecodable; under 22 the authority refuses a missing source.
         for selected in [
             &[][..],
             &[CAPABILITY_ITEM_VIEW_MOVE_V1],
@@ -2744,5 +2722,7 @@ mod weather_wire {
     }
 }
 
+#[path = "daily_reward_tests.rs"]
+mod daily_reward;
 #[path = "guild_chat/negotiation_tests.rs"]
 mod guild_chat;

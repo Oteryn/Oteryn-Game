@@ -4,6 +4,8 @@
 //! and the swing-to-settlement composition in `tests/support/attack_kill_reward_postgres_cases.rs`.
 #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
 
+mod attack_chase_budget_tests;
+
 use super::*;
 use crate::content::native_gameplay::{
     NativeGameplayInput, NativeGameplayMapProfile, PinnedGameplayBytes,

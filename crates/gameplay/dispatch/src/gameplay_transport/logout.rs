@@ -7,7 +7,6 @@ use super::connection::{AdmittedSession, ControllerBinding, GraceExpiryResult};
 use super::{ComposedFreshAdmission, FenceHold, ReleaseAttempt, TerminalRelease, UnendedSettle};
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::foundation::{ExactActorRef, GameSessionId, GameSessionState};
-
 /// What the connection does after one logout command.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LogoutReply {
@@ -19,7 +18,6 @@ pub enum LogoutReply {
     /// the durable row (`ControlLossResult::Terminal`).
     Unknown,
 }
-
 /// `retry_after_ms` of an in-fight refusal: the time left until `until`, rounded up to whole
 /// milliseconds and within `1..=ATTACK0-RL-03`.
 pub(super) fn in_fight_retry_after_ms(until_micros: u64, now_micros: u64) -> u32 {
@@ -28,7 +26,6 @@ pub(super) fn in_fight_retry_after_ms(until_micros: u64, now_micros: u64) -> u32
         .unwrap_or(u32::MAX)
         .clamp(1, MAX_LOGOUT_RETRY_AFTER_MS)
 }
-
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// §1.6: one `LOGOUT_INTENT` of the admitted session. A pending durable spell commit is
     /// `BUSY`, a running in-fight deadline is `IN_FIGHT`; otherwise the session ends at once in a
@@ -41,6 +38,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return LogoutReply::Result(LogoutResult::Busy);
         };
         let session = admitted.game_session_id;
+        if self.states.newhaven_travel.held(session) {
+            return LogoutReply::Result(LogoutResult::Busy);
+        }
         if !self
             .reconcile_spells_before_control_loss(actor, session)
             .await
@@ -52,7 +52,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         self.release_logout(admitted, actor, controller).await
     }
-
     /// The `retry_after_ms` of a running in-fight deadline (ATTACK-0 §4), or `None`. A dead
     /// actor is not held, as at a closed client's release (`held_step`).
     async fn logout_in_fight(&self, actor: ExactActorRef, session: GameSessionId) -> Option<u32> {
@@ -66,7 +65,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             fact.sampled_at().get(),
         ))
     }
-
     /// One attempt of the release on the `Abandoned` path, with no retry: the client retries a
     /// `BUSY`. A failure before the commit reads the durable row and settles the fence
     /// (`settle_unended`) before `BUSY`, so no character write stays fenced.
@@ -119,17 +117,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                 }
                 UnendedSettle::Unknown => {
-                    self.fence_holders.keep(hold);
+                    self.states.fence_holders.keep(hold);
                     LogoutReply::Unknown
                 }
             },
             ReleaseAttempt::Unknown => {
-                self.fence_holders.keep(hold);
+                self.states.fence_holders.keep(hold);
                 LogoutReply::Unknown
             }
         }
     }
-
     /// §1.6: a session whose current row is TERMINAL when its transport loss is committed ended
     /// in a release whose acknowledgement was lost. Its actor is retired: Premium release, the
     /// exact actor slot removed, its fences forgotten. An unreadable row is `Unknown`, and the
@@ -151,7 +148,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         // KILL-REWARD-COMP-1 §1.3: the ended session's marks and parked kills go, as at a seal
         // of an already terminal session.
-        self.attack.lock().await.kills().discard_gone(session, None);
+        self.states
+            .attack
+            .lock()
+            .await
+            .kills()
+            .discard_gone(session, None);
         // Another release of the session already removed the slot.
         let gone = self
             .runtime
@@ -161,18 +163,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .is_err();
         if gone {
             self.release_premium(controller.account_id, session);
-            self.fence_holders.forget(session);
+            // This already-gone path only forgot fences; keep broader retirement cleanup separate.
+            self.states.fence_holders.forget(session);
             return GraceExpiryResult::Released;
         }
         self.retire_reconciled(controller.account_id, session, actor)
             .await
     }
-
     /// §1.6: the transport of an ACTIVE session was lost after an unknown logout. The fence that
     /// logout kept is lifted under the runtime lock and its kill marks are released, so the
     /// recorded loss and its grace expiry fence and settle as for any loss.
     pub(super) async fn lift_kept_logout(&self, session: GameSessionId, actor: ExactActorRef) {
-        let holds = self.fence_holders.take_transitions(session);
+        let holds = self.states.fence_holders.take_transitions(session);
         if holds.is_empty() {
             return;
         }
@@ -180,11 +182,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let mut runtime = self.runtime.lock().await;
             for mut hold in holds {
                 if self
+                    .states
                     .fence_holders
                     .lift(&mut runtime, actor, &mut hold)
                     .is_err()
                 {
-                    self.fence_holders.release(&mut hold);
+                    self.states.fence_holders.release(&mut hold);
                 }
             }
         }

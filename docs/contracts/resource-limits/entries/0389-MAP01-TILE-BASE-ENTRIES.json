@@ -1,0 +1,23 @@
+{
+  "allocation_impact": "The compiler rejects a tile over the limit; the reader rejects such a bundle. It is the reach of the per-tile hidden-item bitmask and bounds the placement key ordinal.",
+  "boundary_tests": [
+    "a tile with 64 top-level entries compiles",
+    "a tile with 65 top-level entries fails compilation"
+  ],
+  "client_visible": false,
+  "configurable_range": {
+    "maximum": 64,
+    "minimum": 64
+  },
+  "consumers": [
+    "world bundle compiler",
+    "game server World runtime (MAP-LOAD-1)"
+  ],
+  "failure_category": "INVALID_INPUT",
+  "hard_maximum": 64,
+  "id": "MAP01-TILE-BASE-ENTRIES",
+  "notes": "ADR-0021 \u00a74.4 (base map maximum 26); format document \u00a77 and \u00a79.",
+  "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+  "resource": "Top-level (depth 0) base entries on one tile",
+  "unit": "entries"
+}

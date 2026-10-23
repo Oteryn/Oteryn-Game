@@ -1,0 +1,20 @@
+{
+  "id": "DFR-PG-ROW-DESCRIPTION-NAME-BYTES",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_WP3_V2_SUPERSEDING_ARCHITECTURE_DECISION_2026-09-12.md",
+  "resource": "Aggregate RowDescription field-name bytes on one first-slice result description",
+  "unit": "UTF-8 bytes excluding NULs",
+  "hard_maximum": 2016,
+  "configurable_range": {
+    "minimum": 2016,
+    "maximum": 2016
+  },
+  "failure_category": "UNAVAILABLE",
+  "allocation_impact": "Use checked addition while scanning already frame-bounded names and reject aggregate bytes above 2016 before any owned field-name String/vector/statement-metadata allocation.",
+  "client_visible": false,
+  "boundary_tests": [
+    "2016 aggregate field-name bytes accepted only when field count <=32, each name <=63 and all other profile checks pass",
+    "2017 aggregate field-name bytes rejected as UNAVAILABLE before owned field-name allocation",
+    "Checked-add overflow or malformed NUL/UTF-8 structure rejected before retained metadata"
+  ],
+  "notes": "Derived first-slice maximum 32 fields * 63 UTF-8 bytes. This is conjunctive with, not additive to, the existing same-root R/T resident accounting."
+}

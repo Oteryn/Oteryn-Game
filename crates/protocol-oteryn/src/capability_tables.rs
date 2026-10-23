@@ -8,6 +8,7 @@ use crate::attack::{
     CAPABILITY_ATTACK_V1, COMMAND_TYPE_ATTACK_TARGET_INTENT, COMMAND_TYPE_FIGHT_MODES_INTENT,
     STATE_DOMAIN_ACTOR_COMBAT_STATE,
 };
+use crate::bed::COMMAND_TYPE_BED_SLEEP_INTENT;
 use crate::bestiary::STATE_DOMAIN_CHARACTER_BESTIARY;
 use crate::charm::{
     CAPABILITY_BESTIARY_CHARMS_V1, COMMAND_TYPE_CHARM_ASSIGN_INTENT,
@@ -16,6 +17,10 @@ use crate::charm::{
 use crate::chat::{CAPABILITY_CHAT_V1, COMMAND_TYPE_CHAT_INTENT, STATE_DOMAIN_CHAT};
 use crate::container_tree::{
     CAPABILITY_CONTAINER_TREE_V1, COMMAND_TYPE_CONTAINER_VIEW_INTENT, STATE_DOMAIN_CONTAINER_VIEWS,
+};
+use crate::daily_reward::{
+    CAPABILITY_DAILY_REWARD_V1, COMMAND_TYPE_DAILY_REWARD_CLAIM, COMMAND_TYPE_DAILY_REWARD_QUERY,
+    STATE_DOMAIN_DAILY_REWARD,
 };
 use crate::highscores::{CAPABILITY_HIGHSCORES_V1, COMMAND_TYPE_HIGHSCORES_QUERY_V1};
 use crate::item_view::{
@@ -104,7 +109,7 @@ pub const GATED: &[(u32, &[u32], &[u32])] = &[
     (CAPABILITY_ANALYSER_V1, &[], &[STATE_DOMAIN_ACTOR_ANALYSER]),
     (
         CAPABILITY_WORLD_INTERACTION_V1,
-        &[COMMAND_TYPE_PUSH_INTENT],
+        &[COMMAND_TYPE_PUSH_INTENT, COMMAND_TYPE_BED_SLEEP_INTENT],
         &[],
     ),
     (CAPABILITY_ITEM_EQUIP_DROP_V1, &[], &[]),
@@ -165,6 +170,19 @@ pub const GATED: &[(u32, &[u32], &[u32])] = &[
     // and neither is offered, so no session selects them.
     (CAPABILITY_MAP_STATE_V1, &[], &[]),
     (CAPABILITY_WORLD_SPATIAL_FIELDS, &[], &[]),
+    (
+        crate::tutorial_notices::CAPABILITY_TUTORIAL_NOTICES_V1,
+        &[],
+        &[crate::tutorial_notices::STATE_DOMAIN_TUTORIAL_NOTICES],
+    ),
+    (
+        CAPABILITY_DAILY_REWARD_V1,
+        &[
+            COMMAND_TYPE_DAILY_REWARD_CLAIM,
+            COMMAND_TYPE_DAILY_REWARD_QUERY,
+        ],
+        &[STATE_DOMAIN_DAILY_REWARD],
+    ),
     (
         crate::chat::guild_room::CAPABILITY_CHAT_GUILD_ROOM_V1,
         &[],

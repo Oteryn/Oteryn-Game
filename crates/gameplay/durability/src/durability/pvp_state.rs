@@ -268,7 +268,7 @@ impl DurabilityRoot {
     }
 }
 
-async fn load_pvp_state(
+pub(super) async fn load_pvp_state(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     character_id: CharacterId,
 ) -> std::result::Result<Option<StoredPvpState>, DurabilityError> {

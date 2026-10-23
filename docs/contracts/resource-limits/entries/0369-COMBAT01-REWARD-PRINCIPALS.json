@@ -1,0 +1,23 @@
+{
+  "id": "COMBAT01-REWARD-PRINCIPALS",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_VSL_COMBAT_RESOURCE_ROWS_DECISION_2026-09-28.md",
+  "resource": "Reward principals (characters eligible for a creature death's XP) settled per death",
+  "unit": "reward principals per death",
+  "hard_maximum": 1,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 1
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Checked first, before loot planning or any durability call: settle_creature_death_rewards rejects the whole composition up front unless exactly one reward principal was supplied.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=1: check_reward_principal_count(1) accepts",
+    "max+1=2: check_reward_principal_count(2) rejects",
+    "0: check_reward_principal_count(0) rejects (no silent no-op reward)"
+  ],
+  "consumers": [
+    "apps/game-server/src/combat/death_reward.rs (check_reward_principal_count, called from settle_creature_death_rewards before planning or minting anything)"
+  ],
+  "notes": "D77/D78 decision \u00a74.1 row 10: \"1 per death (single-principal slice)\". `COMBAT01-DEATH-WORKFLOWS-PER-SCOPE` (row 3) is deliberately not registered here: its own failure mode is recorded as structurally unreachable, bounded by the still-unregistered D57 creature-count envelope, and this composition keeps no scope-wide active-workflow counter to check; registering an unenforced ceiling would be a fake guard. Registered by OTV2-20260928-combat-d2b-death-reward-wiring."
+}

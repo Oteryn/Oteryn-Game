@@ -1,0 +1,20 @@
+{
+  "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-ITEM-RECORDS",
+  "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+  "resource": "Canonical Item records in each server or client-safe projection",
+  "unit": "records",
+  "hard_maximum": 38157,
+  "configurable_range": {
+    "minimum": 38157,
+    "maximum": 38157
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Validate exact identity/index/body cardinality before allocating record or index collections.",
+  "client_visible": true,
+  "boundary_tests": [
+    "38,157 unique native Item records accepted when all nested limits pass",
+    "38,156 or 38,158 records rejected before collection allocation",
+    "duplicate native identity rejected independently"
+  ],
+  "notes": "Protected identity closure; this profile performs no identity generation."
+}

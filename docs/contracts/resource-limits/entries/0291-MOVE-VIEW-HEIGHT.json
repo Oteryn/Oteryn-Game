@@ -1,0 +1,22 @@
+{
+  "id": "MOVE-VIEW-HEIGHT",
+  "owner_contract": "OTERYN_GAME_MOVE_RL11_VISIBILITY_DECISION_2026-09-28.md",
+  "resource": "Interest area height per Channel",
+  "unit": "tiles",
+  "hard_maximum": 28,
+  "configurable_range": {
+    "minimum": 11,
+    "maximum": 28
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "Fixed per Channel for its lifetime; default 14 (Reference). A height outside 11..28 is rejected at construction.",
+  "client_visible": true,
+  "boundary_tests": [
+    "min=11 and max=28 are accepted",
+    "min-1=10 and max+1=29 are rejected"
+  ],
+  "consumers": [
+    "movement::interest::VisibilitySettings"
+  ],
+  "notes": "D84. Decision section 4.4; #162 comment 5875958040."
+}

@@ -1,0 +1,11 @@
+{
+  "id": 4,
+  "name": "ITEM_VIEW_MOVE_V1",
+  "owner_decision": "ITEM-MOVE-WIRE-0 ITEM-MOVE-WIRE0-ITEM-VIEW-AND-MOVE-V1 §4 and §5 (docs/architecture/reviews/OTERYN_GAME_ITEM_MOVE_WIRE0_ITEM_VIEW_AND_MOVE_DECISION_2026-09-30.md, owner D212); numbers assigned by D212 and registered by ITEM-VIEW-1a (#1622 control plane)",
+  "owner": "current ChannelRuntime (views and handles); Item durability (the TRANSFER behind command type 9)",
+  "requires": [6],
+  "command_types": [9],
+  "state_domains": [9, 11],
+  "offered": true,
+  "offer_gate": "MAP-ITEM-REF-1 (ARCH-MAP-TRACK-PACKETS-V1 §2.7, ruling §1.6; CP D862): production reads domain 9 through the active generation's pinned Item key set (item_definition_ref = 1 + the Item compact id, ascending by key bytes). Offered since MAP-ITEM-REF-1 Part B composed corpse observation, the item target and the corpse take, and only by a generation pinning a non-empty Item key set; any other generation offers the registry set without this capability. Without it selected, domains 9 and 11 are never sent, command type 9 is refused as unsupported, a USE intent with the item target (field 2) fails closed and the D85 entry carries no item handle (field 10)."
+}

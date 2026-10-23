@@ -186,7 +186,6 @@ impl LoopGroundCache {
         }
     }
 }
-
 /// The Channel's loop Ground overlay over the bundle `base`; `None` without a pinned index or
 /// when the item owner cannot be read.
 pub async fn loop_ground(
@@ -194,7 +193,7 @@ pub async fn loop_ground(
     base: &Arc<WorldBase>,
     index: Option<&ItemDefinitionIndex>,
 ) -> Option<Arc<LoopGroundOverlay>> {
-    let (epoch, cached) = admission.loop_ground.cached();
+    let (epoch, cached) = admission.states.loop_ground.cached();
     if let Some(cached) = cached {
         return Some(cached);
     }
@@ -224,6 +223,7 @@ pub async fn loop_ground(
     );
     crate::map::overlay::pickup::rehide_taken_origins(&mut built.overlay, &taken).ok()?;
     let pending: Vec<_> = admission
+        .states
         .loop_ground
         .state
         .lock()
@@ -234,10 +234,9 @@ pub async fn loop_ground(
         .collect();
     crate::map::overlay::pickup::rehide_taken_origins(&mut built.overlay, &pending).ok()?;
     let built = Arc::new(built);
-    admission.loop_ground.store(epoch, &built);
+    admission.states.loop_ground.store(epoch, &built);
     Some(built)
 }
-
 /// The loop item receipt of command 9's CommandRef. A session without an item fence has none.
 pub(super) async fn committed_loop_move(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
@@ -308,7 +307,7 @@ pub(super) async fn move_loop_item(
     };
     let (native, pins, index) = {
         let mut runtime = admission.runtime.lock().await;
-        let states = admission.spell_states.lock().await;
+        let states = admission.states.spell_states.lock().await;
         let dead = states.is_dead(actor);
         let pending = states.has_pending_spell_commit(actor, command.game_session_id);
         drop(states);
@@ -393,11 +392,12 @@ pub(super) async fn move_loop_item(
         .await;
     drop(permit);
     if touches_ground && !matches!(committed, Ok(Err(_))) {
-        admission.loop_ground.invalidate();
+        admission.states.loop_ground.invalidate();
     }
     // ATTACK-2: a moved item may have been the swing weapon's container; the next swing reads
     // the equipment again.
     admission
+        .states
         .attack
         .lock()
         .await

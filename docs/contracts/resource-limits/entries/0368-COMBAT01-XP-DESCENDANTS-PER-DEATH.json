@@ -1,0 +1,23 @@
+{
+  "id": "COMBAT01-XP-DESCENDANTS-PER-DEATH",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_VSL_COMBAT_RESOURCE_ROWS_DECISION_2026-09-28.md",
+  "resource": "R7 P03 XP award descendants committed per creature death",
+  "unit": "XP descendants per death",
+  "hard_maximum": 1,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 1
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Enforced structurally, not by a counted check: settle_creature_death_rewards issues at most one commit_character_experience call per invocation, keyed by an ExperienceRewardOccurrence the physical Channel owner mints once per (death, character) and memoizes for the rest of the generation; a repeated composition call for the same death reuses that occurrence and resolves to the same already-committed receipt rather than a second descendant.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=1: one settle_creature_death_rewards call commits exactly one XP receipt (one_creature_death_mints_the_plan_and_awards_xp_once, PG)",
+    "max+1: a second settle_creature_death_rewards call for the same death reuses the memoized occurrence and leaves the XP receipt count at 1, not 2 (replay_is_idempotent_with_no_duplicate_mint_or_xp, PG)"
+  ],
+  "consumers": [
+    "apps/game-server/src/combat/death_reward.rs (settle_experience: one commit_character_experience call per invocation)",
+    "apps/game-server/src/foundation/runtime_actor_carrier.rs (CurrentOwnerCombatDeath::reward_occurrence: mints the occurrence at most once per (death, character) and memoizes it)"
+  ],
+  "notes": "Resource rows decision \u00a74.1 row 9. DUR-03 decision \u00a74.2: \"the Combat owner mints one server UUIDv7 ExperienceRewardOccurrence per (death, eligible character) ... every retry in that generation reuses it.\" Registered by OTV2-20260928-combat-d2b-death-reward-wiring."
+}
