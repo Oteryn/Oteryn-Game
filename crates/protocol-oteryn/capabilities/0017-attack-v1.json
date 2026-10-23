@@ -1,0 +1,22 @@
+{
+  "id": 17,
+  "name": "ATTACK_V1",
+  "constant": "attack::CAPABILITY_ATTACK_V1",
+  "requires": [
+    6
+  ],
+  "acceptance_requires": true,
+  "commands": [
+    11,
+    12
+  ],
+  "domains": [
+    10
+  ],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

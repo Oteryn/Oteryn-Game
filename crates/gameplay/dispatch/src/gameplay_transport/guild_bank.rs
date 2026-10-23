@@ -1,6 +1,5 @@
 //! GUILD-BANK-1: admitted wire -> native fenced writer. No Account/World comes from the payload.
 use super::ComposedFreshAdmission;
-use super::capabilities::OfferedCapability;
 use super::connection::AdmittedSession;
 use super::guild_intent::GuildReply;
 use crate::domain::guild::GuildId;
@@ -13,10 +12,6 @@ use crate::foundation::{CommandId, CommandRef, RuntimeScopeRefV1};
 use oteryn_protocol_oteryn::guild_bank::{self as wire, GuildBankAction, GuildBankReply};
 use sha2::{Digest, Sha256};
 
-pub(super) const OFFERED: OfferedCapability = OfferedCapability {
-    id: wire::CAPABILITY_GUILD_BANK_V1,
-    requires: &[],
-};
 pub(super) fn owns(kind: u32) -> bool {
     matches!(
         kind,

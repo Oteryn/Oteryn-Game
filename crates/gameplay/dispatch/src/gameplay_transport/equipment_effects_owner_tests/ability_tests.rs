@@ -5,7 +5,13 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     let input = input()?;
     let profiles: ItemProfilesDocument =
         serde_json::from_slice(&input.item_profiles.as_ref().ok_or("profiles")?.bytes)?;
-    assert_eq!(profiles.records.len(), 432);
+    // CRAFT-1 adds 22 cooking profiles from Canary items.xml/appearances.dat at
+    // 99902524e052f37574194466c2949c576e4ab269 (content/craft/runtime-item-profiles.json):
+    // millstones 1943..=1946; ovens 2535/2537/2539/2541; reed 30975/31686;
+    // trays 3464/8198; flour/dough/wheat 3603..=3605; cake 6276/6277;
+    // chocolate 8018/8019; garlic 8194/8196/8199. All have speed_bonus=0;
+    // the original 432 profiles are unchanged.
+    assert_eq!(profiles.records.len(), 454);
     let content = native(&input)?;
     let mut unknown_speed = std::collections::BTreeSet::new();
     for record in profiles.records {

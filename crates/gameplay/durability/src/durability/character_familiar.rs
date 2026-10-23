@@ -1280,7 +1280,8 @@ fn item_failure(error: super::spell_item_transaction::SpellItemError) -> Durabil
             CharacterProgressionError::Unavailable(value) => value,
             _ => DurabilityError::InvalidStoredState,
         },
-        super::spell_item_transaction::SpellItemError::Rejected(_) => {
+        super::spell_item_transaction::SpellItemError::Rejected(_)
+        | super::spell_item_transaction::SpellItemError::FieldCapabilityRefused => {
             DurabilityError::InvalidStoredState
         }
     }
@@ -1481,6 +1482,7 @@ impl DurabilityRoot {
                         &mut tx,
                         &item_authority,
                         &cost,
+                        &super::spell_items_abi::SpellFieldOrigin::Player(std::sync::Arc::new(|_, _, _| false)),
                     )
                     .await
                     .map_err(item_failure)?;

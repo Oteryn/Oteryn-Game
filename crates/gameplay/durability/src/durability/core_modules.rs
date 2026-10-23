@@ -48,6 +48,7 @@ pub mod content_activation;
 
 mod db;
 pub mod equipment_policy_abi;
+mod field_capability_port;
 pub mod forge;
 pub mod fresh_admission;
 pub mod fresh_admission_composition;
@@ -75,6 +76,7 @@ pub mod item_timed_state_audit;
 pub mod item_transfer;
 pub mod item_transfer_audit;
 pub mod item_use;
+pub mod item_craft;
 pub mod item_use_audit;
 #[cfg(any(test, feature = "test-support"))]
 pub mod item_weight_lookup;

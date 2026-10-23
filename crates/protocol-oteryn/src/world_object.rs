@@ -29,13 +29,17 @@ use crate::world_spatial_entities::{ENTITY_IDENTITY_BYTES, EntityRef};
 /// dispositions 7 to 10. Not offered before ITEM-USE-1.
 pub const CAPABILITY_ITEM_USE_V1: u32 = 15;
 /// The registry `requires` of capability 15.
-pub const CAPABILITY_ITEM_USE_V1_REQUIRES: &[u32] = &[CAPABILITY_ITEM_VIEW_MOVE_V1];
+pub const CAPABILITY_ITEM_USE_V1_REQUIRES: &[u32] = &[
+    CAPABILITY_ITEM_VIEW_MOVE_V1, // ITEM_VIEW_MOVE_V1
+];
 /// Registered capability `RUNE_USE_V1` (RUNE-USE-0 §4, RUNE-WIRE-1; number leased by the #1622
 /// control plane). It owns no command type or domain: it extends command type 2 with the `position`
 /// arm of field 4 and the dispositions 18 and 19. Not offered before RUNE-CAST-1.
 pub const CAPABILITY_RUNE_USE_V1: u32 = 22;
 /// The registry `requires` of capability 22.
-pub const CAPABILITY_RUNE_USE_V1_REQUIRES: &[u32] = &[CAPABILITY_ITEM_USE_V1];
+pub const CAPABILITY_RUNE_USE_V1_REQUIRES: &[u32] = &[
+    CAPABILITY_ITEM_USE_V1, // ITEM_USE_V1
+];
 /// Registered capability `WORLD_INTERACTION_V1` (WORLDINT-WIRE-1); see `world_interaction.rs`. It
 /// extends command type 2 with the `map_item` arm of field 4 and the dispositions 11 to 17,
 /// and BED0 dispositions 20 to 23.
@@ -782,6 +786,9 @@ pub fn decode_world_object_overlay_snapshot(
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 mod tests {
+    #[path = "capability_tests.rs"]
+    mod capability_tests;
+
     use super::*;
     use serde_json::Value;
 
@@ -929,72 +936,10 @@ mod tests {
         UseTarget::ItemByDefinition(NonZeroU32::new(index).expect("non-zero index"))
     }
 
-    const ITEM_USE: [u32; 2] = [CAPABILITY_ITEM_VIEW_MOVE_V1, CAPABILITY_ITEM_USE_V1];
-
-    #[test]
-    fn fields_4_and_5_round_trip_under_capability_15() {
-        let handle = ItemHandle::new(u64::MAX).expect("non-zero");
-        for intent in [
-            plain(UseTarget::Item(handle)),
-            plain(definition(1)),
-            plain(definition(u32::MAX)),
-            UseIntent {
-                target: UseTarget::Item(handle),
-                use_with: Some(creature(u64::MAX)),
-                use_with_map_item: None,
-                use_with_position: None,
-            },
-            UseIntent {
-                target: definition(u32::MAX),
-                use_with: Some(creature(1)),
-                use_with_map_item: None,
-                use_with_position: None,
-            },
-        ] {
-            let bytes = encode_item_use_intent(&intent).expect("encode");
-            assert!(bytes.len() <= 44, "{intent:?}");
-            assert_eq!(
-                decode_use_intent_target(&ITEM_USE, &bytes),
-                Ok(intent.clone())
-            );
-            // Without capability 15 (or without its requirement 4) fields 4 and 5 fail closed.
-            let plain_item =
-                matches!(intent.target, UseTarget::Item(_)) && intent.use_with.is_none();
-            for selected in [
-                &[CAPABILITY_ITEM_VIEW_MOVE_V1][..],
-                &[CAPABILITY_ITEM_USE_V1],
-            ] {
-                if plain_item && selected == [CAPABILITY_ITEM_VIEW_MOVE_V1] {
-                    // A plain field 2 stays valid under capability 4 alone.
-                    assert_eq!(
-                        decode_use_intent_target(selected, &bytes),
-                        Ok(intent.clone())
-                    );
-                    continue;
-                }
-                assert_eq!(
-                    decode_use_intent_target(selected, &bytes),
-                    Err(WorldObjectError::Malformed),
-                    "{selected:?} {bytes:?}"
-                );
-            }
-        }
-        // The largest intent with fields 4 and 5 is 44 bytes, far within ITEMUSE0-RL-03.
-        let worst = encode_item_use_intent(&UseIntent {
-            target: UseTarget::Item(handle),
-            use_with: Some(creature(u64::MAX)),
-            use_with_map_item: None,
-            use_with_position: None,
-        })
-        .expect("encode");
-        assert_eq!(worst.len(), 44);
-        // A world-object target still round trips under capability 15.
-        let object = encode_use_intent(&target(b"door", 3)).expect("encode");
-        assert_eq!(
-            decode_use_intent_target(&ITEM_USE, &object),
-            Ok(plain(UseTarget::WorldObject(target(b"door", 3))))
-        );
-    }
+    const ITEM_USE: [u32; 2] = [
+        CAPABILITY_ITEM_VIEW_MOVE_V1, // ITEM_VIEW_MOVE_V1
+        CAPABILITY_ITEM_USE_V1,       // ITEM_USE_V1
+    ];
 
     #[test]
     fn the_use_intent_is_bounded_at_529_bytes_under_capability_15() {
@@ -1464,9 +1409,9 @@ mod tests {
     }
 
     const RUNE_USE: [u32; 3] = [
-        CAPABILITY_ITEM_VIEW_MOVE_V1,
-        CAPABILITY_ITEM_USE_V1,
-        CAPABILITY_RUNE_USE_V1,
+        CAPABILITY_ITEM_VIEW_MOVE_V1, // ITEM_VIEW_MOVE_V1
+        CAPABILITY_ITEM_USE_V1,       // ITEM_USE_V1
+        CAPABILITY_RUNE_USE_V1,       // RUNE_USE_V1
     ];
 
     fn at(position: SpellTargetPosition, target: UseTarget) -> UseIntent {
@@ -1513,10 +1458,10 @@ mod tests {
                     Ok(intent.clone())
                 );
                 let with_world_interaction = [
-                    CAPABILITY_ITEM_VIEW_MOVE_V1,
-                    CAPABILITY_ITEM_USE_V1,
-                    CAPABILITY_WORLD_INTERACTION_V1,
-                    CAPABILITY_RUNE_USE_V1,
+                    CAPABILITY_ITEM_VIEW_MOVE_V1,    // ITEM_VIEW_MOVE_V1
+                    CAPABILITY_ITEM_USE_V1,          // ITEM_USE_V1
+                    CAPABILITY_WORLD_INTERACTION_V1, // WORLD_INTERACTION_V1
+                    CAPABILITY_RUNE_USE_V1,          // RUNE_USE_V1
                 ];
                 assert_eq!(
                     decode_use_intent_target(&with_world_interaction, &bytes),
@@ -1526,12 +1471,18 @@ mod tests {
                 for selected in [
                     &ITEM_USE[..],
                     &[
-                        CAPABILITY_ITEM_VIEW_MOVE_V1,
-                        CAPABILITY_ITEM_USE_V1,
-                        CAPABILITY_WORLD_INTERACTION_V1,
+                        CAPABILITY_ITEM_VIEW_MOVE_V1,    // ITEM_VIEW_MOVE_V1
+                        CAPABILITY_ITEM_USE_V1,          // ITEM_USE_V1
+                        CAPABILITY_WORLD_INTERACTION_V1, // WORLD_INTERACTION_V1
                     ],
-                    &[CAPABILITY_ITEM_VIEW_MOVE_V1, CAPABILITY_RUNE_USE_V1],
-                    &[CAPABILITY_ITEM_USE_V1, CAPABILITY_RUNE_USE_V1],
+                    &[
+                        CAPABILITY_ITEM_VIEW_MOVE_V1, // ITEM_VIEW_MOVE_V1
+                        CAPABILITY_RUNE_USE_V1,       // RUNE_USE_V1
+                    ],
+                    &[
+                        CAPABILITY_ITEM_USE_V1, // ITEM_USE_V1
+                        CAPABILITY_RUNE_USE_V1, // RUNE_USE_V1
+                    ],
                     &[CAPABILITY_RUNE_USE_V1],
                 ] {
                     assert_eq!(
