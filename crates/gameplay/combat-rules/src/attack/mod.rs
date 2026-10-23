@@ -27,3 +27,6 @@ pub use formulas::{
 pub use target::{AttackState, SwingPoll, TargetFacts, TargetRefusal};
 #[cfg(test)]
 use target::{SwingWait, TargetCleared, TargetValidity};
+
+#[cfg(test)]
+mod formulas_property_tests;

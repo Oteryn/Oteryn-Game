@@ -3,3 +3,6 @@
 pub mod bank;
 pub mod market;
 pub mod npc_trade;
+
+#[cfg(test)]
+mod bank_property_tests;
