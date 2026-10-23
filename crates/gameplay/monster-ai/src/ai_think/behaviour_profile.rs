@@ -13,6 +13,8 @@
 
 use std::collections::BTreeMap;
 
+mod summon_projection;
+
 use crate::ai_think::profile_schedule::{MAX_ATTACK_ENTRIES, MAX_DEFENCE_ENTRIES, validate_entry};
 use crate::content::{
     ProjectV2AbilityAuthoring, ProjectV2AbilityKind, ProjectV2BehaviorAuthoring,
@@ -137,6 +139,12 @@ impl CreatureBehaviourProfile {
     /// Attack plus defence entries: the think's proposal evaluation units.
     #[must_use]
     pub fn entry_count(&self) -> usize {
-        self.behavior.attacks.len() + self.behavior.defenses.len()
+        self.behavior.attacks.len()
+            + self.behavior.defenses.len()
+            + self
+                .behavior
+                .summons
+                .as_ref()
+                .map_or(0, |summons| summons.entries.len())
     }
 }
