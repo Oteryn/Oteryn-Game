@@ -133,7 +133,21 @@
       "legal_hold_policy": "Explicit case/legal authorization must record reason, authorizing actor, start time and exact affected records or scope, with audited placement, access, scope change and release; release returns to the original expiry without resetting the clock.",
       "policy_revision": 1
     },
-    {"id": "SPECTATE_AUDIT_RETENTION_V1", "purpose": "Bounded investigation of consent grants and observer session admission/end; no public history or analytics.", "privacy_class": "SECURITY_SENSITIVE", "finite_retention_duration_or_ceiling": "P30D from the immutable trusted-server event timestamp; never refreshed.", "permitted_roles": ["authorized staff investigation", "authorized security investigation"], "export_redaction_policy": "Case-scoped audited staff/security export only; redact unrelated envelope fields; no public export.", "deletion_or_anonymization_policy": "Delete payload/envelope at original expiry; no indefinite derived history.", "legal_hold_policy": "Explicit case/legal authorization with recorded actor, reason, scope, start and audited access; release returns to original expiry.", "policy_revision": 1}
+    {"id": "SPECTATE_AUDIT_RETENTION_V1", "purpose": "Bounded investigation of consent grants and observer session admission/end; no public history or analytics.", "privacy_class": "SECURITY_SENSITIVE", "finite_retention_duration_or_ceiling": "P30D from the immutable trusted-server event timestamp; never refreshed.", "permitted_roles": ["authorized staff investigation", "authorized security investigation"], "export_redaction_policy": "Case-scoped audited staff/security export only; redact unrelated envelope fields; no public export.", "deletion_or_anonymization_policy": "Delete payload/envelope at original expiry; no indefinite derived history.", "legal_hold_policy": "Explicit case/legal authorization with recorded actor, reason, scope, start and audited access; release returns to original expiry.", "policy_revision": 1},
+    {
+      "id": "STAFF_ACTION_AUDIT_RETENTION_V1",
+      "purpose": "Investigate signed operator actions; no public export, analytics or player text.",
+      "privacy_class": "RESTRICTED_PLAYER_LINKED",
+      "finite_retention_duration_or_ceiling": "P365D from immutable trusted server timestamp; never refreshed. Execution grace is 900000 milliseconds.",
+      "permitted_roles": [
+        "authorized staff investigation",
+        "authorized security investigation"
+      ],
+      "export_redaction_policy": "Case-scoped audited export only; redact unrelated identities. Never export signing keys or player text.",
+      "deletion_or_anonymization_policy": "Delete audit envelope at original expiry plus execution grace. Immutable control links, operation outcomes, receipts and sanction evidence remain while authoritative evidence requires them.",
+      "legal_hold_policy": "Explicit case/legal authorization with actor, reason, scope and start; release returns to original expiry.",
+      "policy_revision": 1
+    }
   ],
   "event_type_rules": {
     "id_type": "uint32",
@@ -196,6 +210,18 @@
       "durability_class": "DURABLE_AUDIT",
       "privacy_class_floor": "RESTRICTED_PLAYER_LINKED",
       "retention_profile_id": "ECONOMY_LEDGER_RETENTION_V1",
+      "atomic_mutation_evidence": true
+    },
+    {
+      "id": 5,
+      "name": "STAFF_ACTION",
+      "owner_gate": "GM-1_SIGNED_OPERATOR_V1",
+      "payload_schema": "docs/contracts/game-events/v1/staff_action.proto",
+      "payload_message": "oteryn.events.v1.StaffActionV1",
+      "current_schema_revision": 1,
+      "durability_class": "DURABLE_AUDIT",
+      "privacy_class_floor": "RESTRICTED_PLAYER_LINKED",
+      "retention_profile_id": "STAFF_ACTION_AUDIT_RETENTION_V1",
       "atomic_mutation_evidence": true
     }
   ],

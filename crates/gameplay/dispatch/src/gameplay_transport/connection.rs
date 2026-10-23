@@ -785,6 +785,15 @@ pub trait FreshAdmissionAuthority {
         async { None }
     }
 
+    fn staff_command(
+        &self,
+        _admitted: AdmittedSession,
+        _receipt: bool,
+        _payload: &[u8],
+    ) -> impl Future<Output = super::StaffReply> {
+        async { super::StaffReply::Rejected }
+    }
+
     /// QUEST-LOG-WIRE-1: the session's quest copy with the quest log content, unless the copy
     /// still has version `since` (`Unchanged`). `Unavailable` while the copy is not loaded: the
     /// domain then shows nothing new and every query is `REJECTED`.
@@ -2782,6 +2791,7 @@ where
             ItemMove(ItemMoveOutcome, Vec<ItemViewDelta>),
             /// QUEST-LOG-WIRE-1: an accepted command 22; the domain 16 delta follows the result.
             QuestLog(QuestLogDomain),
+            Staff(Option<Vec<u8>>),
             Look(ItemLookResult, ItemLookSelection),
             /// ATTACK-1b: commands 11 and 12; the domain 10 delta follows the result.
             Attack(AttackIntentDisposition),
@@ -3226,6 +3236,20 @@ where
                     ),
                 }
             }
+        } else if matches!(
+            command.command_type,
+            oteryn_protocol_oteryn::staff::COMMAND_TYPE_STAFF_REQUEST
+                | oteryn_protocol_oteryn::staff::COMMAND_TYPE_STAFF_RECEIPT
+        ) {
+            match super::staff::dispatch(authority, admitted, command.command_type, command.payload)
+                .await
+            {
+                super::StaffReply::Result(bytes) => Dispatch::Staff(Some(bytes)),
+                super::StaffReply::Rejected => Dispatch::Staff(None),
+                super::StaffReply::Unknown => {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                }
+            }
         } else if command.command_type == COMMAND_TYPE_QUEST_LOG_QUERY {
             // QUEST-LOG-WIRE-1: a read of the session's own quest copy. Over QUESTGATE0-RL-09 (2
             // per second per GameSession, sliding window) it is REJECTED with an empty payload
@@ -3605,6 +3629,10 @@ where
                 (CommandStatus::Accepted, payload)
             }
             Dispatch::QuestLog(_) => (CommandStatus::Accepted, Vec::new()),
+            Dispatch::Staff(result) => match result {
+                Some(bytes) => (CommandStatus::Accepted, bytes.clone()),
+                None => (CommandStatus::Rejected, Vec::new()),
+            },
             Dispatch::Chat(result) => {
                 let Ok(payload) = encode_chat_intent_result(result) else {
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
@@ -4078,6 +4106,7 @@ where
             | Dispatch::Highscores(_)
             | Dispatch::Appearance(_)
             | Dispatch::Logout(_)
+            | Dispatch::Staff(_)
             | Dispatch::Unregistered => {}
         }
         if newhaven_travel_transport::emit_relocation(

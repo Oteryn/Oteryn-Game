@@ -1,0 +1,23 @@
+{
+  "id": "GM1-RL-03",
+  "owner_contract": "../agents/tasks/GM-1.md",
+  "resource": "Signer principal bytes",
+  "unit": "bytes",
+  "hard_maximum": 64,
+  "configurable_range": {
+    "minimum": 64,
+    "maximum": 64
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Validate before allocation or execution; reject rather than truncate. CANDIDATE until exact-bound qualification; no capability or content grants operator authority.",
+  "client_visible": true,
+  "boundary_tests": [
+    "staff_wire_roundtrip_and_exact_limits",
+    "staff_wire_rejects_missing_duplicate_unknown_truncated_and_unsigned"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/staff.rs",
+    "crates/gameplay/durability/src/durability/staff.rs",
+    "crates/gameplay/durability/src/durability/staff/trust.rs"
+  ]
+}

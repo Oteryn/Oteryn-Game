@@ -498,6 +498,23 @@ impl ChatRuntime {
         Ok(name)
     }
 
+    /// Remaining automatic mute, without admitting a line or consuming its bucket.
+    pub(super) fn active_mute_wait(
+        &self,
+        session: GameSessionId,
+        now: SemanticTimeMicros,
+    ) -> Option<u32> {
+        let mut sessions = self.sessions.lock().ok()?;
+        let limiter = &mut sessions.get_mut(&session)?.limiter;
+        if !limiter.is_muted(now) {
+            return None;
+        }
+        match limiter.pre_gate(SpeechMode::Say, now) {
+            Err(ChatRefusal::Muted { seconds }) => Some(seconds),
+            _ => None,
+        }
+    }
+
     /// Whether `session` is muted at `now`.
     fn is_muted(&self, session: GameSessionId, now: SemanticTimeMicros) -> bool {
         self.sessions
@@ -808,6 +825,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command_id: u64,
         intent: &ChatIntent,
     ) -> ChatIntentResult {
+        if let Some(wait_seconds) = self.staff_mute_wait(session).await {
+            return ChatIntentResult {
+                disposition: ChatDisposition::Muted,
+                wait_seconds,
+            };
+        }
         let now = self.owner_now();
         if let Some(refused) = self.states.chat.pre_gate(session, intent, now) {
             return refused;
