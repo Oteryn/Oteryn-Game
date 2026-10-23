@@ -22,7 +22,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         decided: Option<&last_position::AdmissionPosition>,
     ) -> bool {
-        let Some(last_position::AdmissionPosition::Arrival(pending, vitals)) = decided else {
+        let Some(last_position::AdmissionPosition::Arrival(pending, vitals, rest)) = decided else {
             if !self.consume_admitted_respawn(session, actor, decided).await {
                 return false;
             }
@@ -43,6 +43,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             let mut placed = self.placed_record(&runtime, position.position());
             placed.record.vitals = *vitals;
+            placed.record.rest = *rest;
             placed
         };
         if self

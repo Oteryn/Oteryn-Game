@@ -1380,3 +1380,22 @@ and its layer justification remain in the inventory above. No implementation or
 local validation remains unfinished in this core allocation. CP review/publication/
 integration and the separately allocated Wire/Bank/Hall/Premium children remain
 outside this local-only continuation; no protocol IDs or GUILD_V1 offer are added.
+
+## Basic server wiring follow-up — GUILD-WIRE-1 (2026-10-23)
+
+The core's former player-call-site gap is closed in the current local authoring
+packet: `gameplay_transport/guild_intent.rs` calls the installed found,
+membership and rank writers from the admitted connection under capability 40.
+Players can found, invite by name, accept, leave, kick, revoke and set rank;
+private summary/roster and own invitation queries read the same durable state.
+No GUILD-1 schema or native result/action numbering is replaced.
+
+Historical merged status above still describes #2302. This follow-up is uncommitted
+and unmerged; GUILD-WIRE-1 owns validation/publication of the new caller. Broader
+wire gaps remain for edit-ranks/title/message/resign/disband and activity/public
+projections; Bank/Hall/emblems and client UI are outside the basic server scope.
+
+Local follow-up evidence: GUILD-WIRE-1's final grouped dispatch PostgreSQL filter
+`guild_wire_postgres` passes both real-connection scenarios on PostgreSQL 18.6,
+including unchanged CharacterRevision and one native event per successful mutation.
+See the active GUILD-WIRE-1 card for the exact commands and remaining broader scope.

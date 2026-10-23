@@ -206,6 +206,31 @@ pub const GATED: &[(u32, &[u32], &[u32])] = &[
         &[crate::depot::COMMAND_TYPE_DEPOT_INTENT],
         &[],
     ),
+    (
+        crate::guild::CAPABILITY_GUILD_V1,
+        &[
+            crate::guild::COMMAND_TYPE_GUILD_INTENT,
+            crate::guild::COMMAND_TYPE_GUILD_QUERY,
+        ],
+        &[],
+    ),
+    (
+        crate::vip::CAPABILITY_VIP_V1,
+        &[
+            crate::vip::COMMAND_TYPE_VIP_LIST,
+            crate::vip::COMMAND_TYPE_VIP_CONSENT,
+            crate::vip::COMMAND_TYPE_VIP_QUERY,
+        ],
+        &[],
+    ),
+    (
+        crate::house::CAPABILITY_HOUSE_V1,
+        &[
+            crate::house::COMMAND_TYPE_HOUSE_INTENT,
+            crate::house::COMMAND_TYPE_HOUSE_QUERY,
+        ],
+        &[],
+    ),
 ];
 
 /// Core domains a selected capability replaces, as (capability, domains). MAP-WIRE-1 contract §3
