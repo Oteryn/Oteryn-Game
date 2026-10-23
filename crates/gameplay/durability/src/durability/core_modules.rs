@@ -46,6 +46,7 @@ pub mod content_activation;
 
 mod db;
 pub mod equipment_policy_abi;
+mod field_capability_port;
 pub mod forge;
 pub mod fresh_admission;
 pub mod fresh_admission_composition;

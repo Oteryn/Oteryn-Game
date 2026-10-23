@@ -6,7 +6,6 @@ pub mod bed_regen;
 pub mod bed_sleep;
 pub mod daily_reward;
 pub mod daily_reward_claim;
-mod field_capability_port;
 
 pub mod creature_source_items;
 pub mod mail_text_policy;
