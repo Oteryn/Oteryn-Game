@@ -36,6 +36,7 @@ mod guild_chat;
 mod guild_intent;
 mod highscores;
 mod input_gate;
+mod item_craft;
 mod item_look;
 mod item_move;
 mod item_ref_admission;
@@ -2948,6 +2949,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         definition: std::num::NonZeroU32,
     ) -> UseOutcome {
         self.use_item_definition(actor, command, definition).await
+    }
+
+    async fn use_craft(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<item_view::ItemKey>,
+        target: Option<item_view::ItemKey>,
+    ) -> Option<UseOutcome> {
+        self.use_cooking_conversion(actor, command, intent, source, target)
+            .await
     }
 
     async fn use_rune(
