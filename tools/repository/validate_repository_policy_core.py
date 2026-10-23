@@ -43,12 +43,12 @@ EXPECTED_MERGE_GATE_TRIGGER_BLOCK = """on:
 EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256 = "ff75ac35780038e15ba648e99b8540ef474d2b34b093fe684c045dc302265bd4"
 EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = "331213b6a65f8852cd43eaeba80d7cb4bc9b5dc928399cf679475c85bf0a589e"
 EXPECTED_MERGE_GATE_FINAL_JOB_SHA256 = "9c5223ecee21f441d85fec7995135e8361f0c711876810b5a076de28e010e032"
-EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "5bed54ebea7f88cc67262280053a06d2fba60a385601c7260b8ee2641e68d70e"
-EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "ebfafb92bf321b9e0fd794f32dfca7f84eb8f00c345fb550bfa5bede99ee501b"
+EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "4102f456f4fed6e8cbcb5b9b53356279f7fae42017b1157b4dae1eac7b17bde4"
+EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "24b5197d8c22835f08a27423ae909f2bdf6b240e7c64026ce76174753c820e4c"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
-EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256 = "5581be5d2fda53c0f56d91d3f49f19966dd369a5bdb59adf2dbbabc8786f4c00"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "b5d1bf99f7f6034af56b03d849fd3eedf495e3f5"
-EXPECTED_POST_MERGE_RUST_SHA256 = "29dd4e3b9e734fd26c9ff741d2a45f23f394d0abf6c5cb1ff3a7b46489588ef9"
+EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256 = "0aa50bfeaab0042f2a8fec7e7e302a7f056e77170db28bea7e0a6ed32dea1dd9"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "ff5430f3d203f49cd35d129e69aaf9677764dd03"
+EXPECTED_POST_MERGE_RUST_SHA256 = "39d0b76e70a55d733b697eefe46264f753e3ac8ffdf955bf03beaeb30e60732c"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
     "on",
@@ -513,27 +513,27 @@ def main() -> int:
                 "ref: ${{ github.event.merge_group.head_sha }}",
                 "EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}",
                 'run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"',
-                "cargo +1.95.0 run --locked --release -p oteryn-world-bundle-compiler -- pin-check . \"$RUNNER_TEMP/world-bundle\"",
+                "cargo +1.99.1 run --locked --release -p oteryn-world-bundle-compiler -- pin-check . \"$RUNNER_TEMP/world-bundle\"",
                 "if-no-files-found: error",
             ),
             "rust_linux": (
                 "    name: Merge Queue / Rust Linux workspace\n",
                 "      fail-fast: true\n",
                 "        shard: [lint, lib-content, lib-rest, integration-heavy, integration-rest, build-smoke]\n",
-                "cargo +1.95.0 clippy --locked --workspace --all-targets -- -D warnings",
+                "cargo +1.99.1 clippy --locked --workspace --all-targets -- -D warnings",
                 "python tools/repository/test_check_duplicate_test_sources.py",
                 'python tools/repository/check_duplicate_test_sources.py "$RUNNER_TEMP/clippy-messages.jsonl"',
                 "NEXTEST_SHA256: 682c21b777c333e96fd532e114d3a5a894e0729ab88d94c0a9f20f8419695428",
                 "echo \"${NEXTEST_SHA256}  ${archive}\" | sha256sum -c -",
-                "cargo +1.95.0 nextest run --locked --workspace --lib --no-fail-fast -E 'test(content::)'",
-                "cargo +1.95.0 nextest run --locked --workspace --lib --no-fail-fast -E 'not test(content::)'",
+                "cargo +1.99.1 nextest run --locked --workspace --lib --no-fail-fast -E 'test(content::)'",
+                "cargo +1.99.1 nextest run --locked --workspace --lib --no-fail-fast -E 'not test(content::)'",
                 'python tools/repository/plan_rust_test_shards.py "$RUNNER_TEMP/metadata.json" "$SHARD"',
-                'cargo +1.95.0 nextest run --locked --workspace "${shard_args[@]}" --no-fail-fast',
-                "cargo +1.95.0 build --locked --workspace --bins --examples --benches",
-                "cargo +1.95.0 test --locked --workspace --bins",
-                "cargo +1.95.0 test --locked --workspace --doc",
-                "cargo +1.95.0 run --locked -p oteryn-synthetic-client-harness",
-                "cargo +1.95.0 run --locked -p oteryn-game-server -- --smoke",
+                'cargo +1.99.1 nextest run --locked --workspace "${shard_args[@]}" --no-fail-fast',
+                "cargo +1.99.1 build --locked --workspace --bins --examples --benches",
+                "cargo +1.99.1 test --locked --workspace --bins",
+                "cargo +1.99.1 test --locked --workspace --doc",
+                "cargo +1.99.1 run --locked -p oteryn-synthetic-client-harness",
+                "cargo +1.99.1 run --locked -p oteryn-game-server -- --smoke",
             ),
             "durability_postgres": (
                 "    name: Merge Queue / Durability PostgreSQL harness\n",
@@ -544,7 +544,7 @@ def main() -> int:
                 'git cat-file -e "$HEAD_SHA:$path"',
                 'if [[ "$base_present" == true && "$head_present" == false ]]; then',
                 "verify_registered_target_binding() {",
-                'cargo +1.95.0 metadata --locked --no-deps --format-version 1 > "$metadata"',
+                'cargo +1.99.1 metadata --locked --no-deps --format-version 1 > "$metadata"',
                 "owners = [package for package in packages if package.get('name') == 'oteryn-game-server']",
                 "expected_manifest = (pathlib.Path.cwd() / 'apps/game-server/Cargo.toml').resolve(strict=True)",
                 "observed_manifest = pathlib.Path(owners[0]['manifest_path']).resolve(strict=True)",
@@ -554,12 +554,12 @@ def main() -> int:
                 "expected = (pathlib.Path.cwd() / registered_path).resolve(strict=True)",
                 "observed = pathlib.Path(matches[0]['src_path']).resolve(strict=True)",
                 'verify_registered_target_binding "$name" "$path"',
-                'cargo +1.95.0 test --locked --workspace --test "$name"',
+                'cargo +1.99.1 test --locked --workspace --test "$name"',
                 "run_registered_target durability_postgres apps/game-server/tests/durability_postgres.rs",
                 "run_registered_target character_authority_postgres apps/game-server/tests/character_authority_postgres.rs",
                 "run_registered_target runtime_scope_assignment_postgres apps/game-server/tests/runtime_scope_assignment_postgres.rs",
                 "run_registered_target native_admission_source_postgres apps/game-server/tests/native_admission_source_postgres.rs",
-                "cargo +1.95.0 test --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib",
+                "cargo +1.99.1 test --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib",
             ),
             "rust_windows": (
                 "    name: Merge Queue / Rust Windows client\n",
@@ -574,13 +574,13 @@ def main() -> int:
                 r".\apps\client\installer\ci-installer.ps1",
                 "-GameCommit $env:TARGET_SHA",
                 "          if-no-files-found: error",
-                "cargo +1.95.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc",
-                "cargo +1.95.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc",
+                "cargo +1.99.1 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc",
+                "cargo +1.99.1 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc",
                 "--target x86_64-pc-windows-msvc",
                 '$client = ".\\target\\x86_64-pc-windows-msvc\\release\\oteryn-client.exe"',
                 "Test-Path -LiteralPath $client -PathType Leaf",
                 "& $client --smoke",
-                "cargo +1.95.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc",
+                "cargo +1.99.1 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc",
             ),
             "rust_supply_chain": (
                 "    name: Merge Queue / Rust supply chain\n",
