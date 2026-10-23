@@ -48,6 +48,7 @@ mod logout;
 mod logout_tests;
 mod loop_move;
 pub mod spectate_session;
+mod vip;
 use crate::map::boot::BundleCollisionIndexExt;
 pub use last_position::LastPositionFlush;
 mod control_loss_reconciliation;
@@ -2514,6 +2515,7 @@ fn operator_event(line: &str) {
 }
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
+    vip::composed_methods!();
     appearance_change::composed_methods!();
     guild_intent::composed_methods!();
     house_intent::composed_methods!();
