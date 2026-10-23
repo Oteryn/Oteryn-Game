@@ -1,0 +1,17 @@
+{
+  "id": 30,
+  "name": "WORLD_SPATIAL_FIELDS",
+  "constant": "capability_tables::CAPABILITY_WORLD_SPATIAL_FIELDS",
+  "requires": [
+    6
+  ],
+  "acceptance_requires": true,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": false
+  }
+}

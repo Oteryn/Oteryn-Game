@@ -146,15 +146,3 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         disposition(result)
     }
 }
-
-pub(super) const WORLD_INTERACTION_OFFER: super::capabilities::OfferedCapability =
-    super::capabilities::OfferedCapability {
-        id: oteryn_protocol_oteryn::world_object::CAPABILITY_WORLD_INTERACTION_V1,
-        requires:
-            &oteryn_protocol_oteryn::world_interaction::CAPABILITY_WORLD_INTERACTION_V1_REQUIRES,
-    };
-pub(super) const ITEM_USE_OFFER: super::capabilities::OfferedCapability =
-    super::capabilities::OfferedCapability {
-        id: oteryn_protocol_oteryn::world_object::CAPABILITY_ITEM_USE_V1,
-        requires: oteryn_protocol_oteryn::world_object::CAPABILITY_ITEM_USE_V1_REQUIRES,
-    };
