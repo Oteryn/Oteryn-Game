@@ -7,6 +7,7 @@ pub mod charm_effects;
 pub mod daily_reward;
 pub mod hit_training;
 pub mod mana_training;
+pub mod prey;
 pub mod proficiency;
 pub mod proficiency_modification;
 pub mod promotion;
