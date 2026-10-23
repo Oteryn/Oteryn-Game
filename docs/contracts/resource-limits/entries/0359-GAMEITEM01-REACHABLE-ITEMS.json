@@ -1,0 +1,22 @@
+{
+  "id": "GAMEITEM01-REACHABLE-ITEMS",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_B3_INVENTORY_DESTINATION_CAPACITY_AND_STACKS_DECISION_2026-09-28.md",
+  "resource": "Items reachable through one character's container slot (the main backpack and its direct entries)",
+  "unit": "ItemInstances per character",
+  "hard_maximum": 21,
+  "configurable_range": {
+    "minimum": 21,
+    "maximum": 21
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Follows from one slot item, depth 1 and at most 20 entries; reads of the main backpack are bounded to 1 + 21 rows and a larger stored set is invalid state.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=21: the main backpack with 20 entries is read in full",
+    "max+1=22: a 21st entry (the 22nd reachable item) is refused"
+  ],
+  "consumers": [
+    "apps/game-server/src/durability/item_transfer.rs (read_character_backpack/load_entries)"
+  ],
+  "notes": "B3 \u00a74.5; registered by OTV2-20260928-b3-1-transfer."
+}

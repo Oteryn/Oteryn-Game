@@ -1,0 +1,22 @@
+{
+  "id": "FND02-STATE-DOMAINS-PER-SYNC",
+  "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+  "resource": "State domains in one ResyncRequest or SnapshotBody",
+  "unit": "entries",
+  "hard_maximum": 256,
+  "configurable_range": {
+    "minimum": 256,
+    "maximum": 256
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Bound domain vectors/maps before construction.",
+  "client_visible": true,
+  "boundary_tests": [
+    "256 unique domains accepted",
+    "257 rejected",
+    "duplicate domain IDs rejected"
+  ],
+  "consumers": [
+    "client/server reconciliation"
+  ]
+}

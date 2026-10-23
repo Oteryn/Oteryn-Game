@@ -1,0 +1,10 @@
+{
+  "id": 23,
+  "name": "LOGOUT_INTENT",
+  "owner_decision": "ARCH-KILL-REWARD-LOGOUT-1 §1.6 (docs/architecture/reviews/OTERYN_GAME_ARCH_KILL_REWARD_LOGOUT_PACKETS_2026-10-04.md); the proposed capability 19 was already WORLD_LIGHT_V1 and 20 is leased to CONNECTION_TRACE_V1 (D770), so LOGOUT-WIRE-1 registers the next free capability, 21, with the proposed command type 23; numbers leased to LOGOUT-WIRE-1 by the #1622 control plane",
+  "capability": 21,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/logout_v1.proto#LogoutIntentV1",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/logout_v1.proto#LogoutResultV1",
+  "max_payload_bytes": 0,
+  "max_result_payload_bytes": 6
+}

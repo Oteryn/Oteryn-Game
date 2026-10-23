@@ -1,0 +1,23 @@
+{
+  "allocation_impact": "Bounded at bundle read by NPCPLACE1-RL-01, before any actor exists; the actor runtime (NPC-ACTOR-1) creates at most one actor per placement.",
+  "boundary_tests": [
+    "a bundle of exactly 2,048 placements is read",
+    "a bundle of 2,049 placements is refused at read, so no channel holds more than 2,048 NPC actors"
+  ],
+  "client_visible": false,
+  "configurable_range": {
+    "maximum": 2048,
+    "minimum": 2048
+  },
+  "consumers": [
+    "world bundle compiler",
+    "game server World runtime (MAP-LOAD-1)"
+  ],
+  "failure_category": "INVALID_INPUT",
+  "hard_maximum": 2048,
+  "id": "NPCBEH0-RL-01",
+  "notes": "NPC-BEHAVIOUR-0 \u00a73.1; decision NPC-PLACE-1 \u00a73.4. Registered by NPC-PLACE-1b.",
+  "owner_contract": "OTERYN_GAME_NPC_BEHAVIOUR0_NPC_PRESENCE_WALKING_VOICES_AND_FOCUS_DECISION_2026-10-01.md",
+  "resource": "NPC actors of one channel; every bundle placement is one actor on every channel",
+  "unit": "actors"
+}

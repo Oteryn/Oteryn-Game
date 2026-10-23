@@ -1,0 +1,10 @@
+{
+  "id": 7,
+  "name": "CHAT_V1",
+  "owner_decision": "CHAT-0 CHAT0-LOCAL-PRIVATE-WORLD-ROOMS-V1 §7 (docs/architecture/reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md, #1375); numbers leased to CHAT-1 by the #162 control plane",
+  "owner": "World communication (current ChannelRuntime for local speech)",
+  "command_types": [13],
+  "state_domains": [12],
+  "offered": true,
+  "offer_gate": "CHAT-WIRE-1: offered. The dispatch of command type 13 and the domain 12 emission are composed for local say, whisper and yell, and a production-path admission test selects it. Private messages, rooms and the World relay answer CHAT_UNAVAILABLE until CHAT-2, and no room is open. Without it selected, domain 12 is never sent and command type 13 is refused as unsupported."
+}

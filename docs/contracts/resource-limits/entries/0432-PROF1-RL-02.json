@@ -1,0 +1,22 @@
+{
+  "id": "PROF1-RL-02",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_PROFICIENCY1B_PERK_MODIFICATION_VALUE_SHAPES_DECISION_2026-10-03.md",
+  "resource": "Rank of a modified perk",
+  "unit": "rank",
+  "hard_maximum": 10,
+  "configurable_range": {
+    "minimum": 10,
+    "maximum": 10
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "SMALLINT CHECK rank BETWEEN 1 AND 10; RANK_UP and ORB_RANK refuse at rank 10 (RANK_MAX).",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=10: ORB_RANK reaches rank 10 and a rank-10 row is well formed",
+    "max+1=11: RANK_UP at rank 10 is RANK_MAX and rank 11 is not well formed"
+  ],
+  "consumers": [
+    "apps/game-server/src/domain/weapon_proficiency.rs PROFICIENCY_MODIFICATION_RANK_MAX"
+  ],
+  "notes": "PROFICIENCY-1B \u00a74.1 and \u00a712; tests: weapon_proficiency::modification_tests::limits_hold_at_max_and_refuse_max_plus_one, rank_operations_refuse_max_offer_and_outdated_revisions. Registered by OTV2-20261003-prof-shape-1."
+}

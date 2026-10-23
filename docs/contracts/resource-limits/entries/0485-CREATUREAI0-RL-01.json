@@ -1,0 +1,25 @@
+{
+  "allocation_impact": "Checked from the count before anything is reserved for it (compiler, writer and reader share spawn::validate); the reader also needs one byte per element.",
+  "boundary_tests": [
+    "a table of 2,048 sources of 64 points (131,072 points) validates, encodes inside the raw cap and decodes equal",
+    "one more point is refused as Limit by validate and by decode; the reference map holds 83,286"
+  ],
+  "client_visible": false,
+  "configurable_range": {
+    "maximum": 131072,
+    "minimum": 131072
+  },
+  "consumers": [
+    "world bundle compiler",
+    "game server World runtime (MAP-LOAD-1)",
+    "game server creature spawn runtime (SPAWN-1b)",
+    "apps/game-server/src/foundation/runtime_actor_carrier.rs CREATUREAI0_SPAWN_POINTS_PER_CHANNEL_MAX (SPAWN-CEILINGS-1)"
+  ],
+  "failure_category": "INVALID_INPUT",
+  "hard_maximum": 131072,
+  "id": "CREATUREAI0-RL-01",
+  "notes": "SPAWN-CONTENT-1; CREATURE-AI-0 \u00a76.1; format document \u00a713. Test: tools/world-bundle-compiler/tests/spawns.rs. Game carrier test: apps/game-server/src/foundation/runtime_actor_carrier.rs spawn_*_max_accepted_max_plus_one_rejected / spawn_points_per_channel_ceiling_is_exact. Carrier headroom (SPAWN-CEILINGS-1): an activation also leaves SPAWN_ACTIVATION_PLAYER_HEADROOM (500, the D128 players-per-Channel design target) carrier slots free for players, so the 131,072-actor pre-production carrier accepts at most 130,572 points and refuses more as CAPACITY_EXCEEDED with nothing kept; test activation_keeps_player_headroom_in_the_pre_production_carrier.",
+  "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+  "resource": "Spawn points of one World map in the spawn family of a bundle",
+  "unit": "points"
+}

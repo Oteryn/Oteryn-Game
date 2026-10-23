@@ -1,0 +1,19 @@
+{
+  "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-CLIENT-BODY-BYTES",
+  "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+  "resource": "Aggregate client-safe Item body section",
+  "unit": "bytes",
+  "hard_maximum": 130992981,
+  "configurable_range": {
+    "minimum": 0,
+    "maximum": 130992981
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Use checked multiplication/addition before section allocation; enforce every nested client record bound.",
+  "client_visible": true,
+  "boundary_tests": [
+    "130,992,981-byte body accepted only with 38,157 valid bounded records",
+    "130,992,982 bytes rejected before section allocation",
+    "aggregate arithmetic overflow rejected"
+  ]
+}

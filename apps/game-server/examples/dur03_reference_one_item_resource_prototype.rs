@@ -3353,9 +3353,8 @@ mod candidate {
                     bounded(maximum.checked_add(1).ok_or(Failure::Overflow)?, maximum).is_err()
                 );
             }
-            let registry: Value = serde_json::from_str(include_str!(
-                "../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json"
-            ))?;
+            let registry: Value =
+                serde_json::from_str(oteryn_protocol_oteryn::RESOURCE_LIMITS_REGISTRY_JSON)?;
             let text = serde_json::to_string(&registry)?;
             for (id, maximum) in [
                 ("ANL01-EVENT-PAYLOAD-BYTES", PAYLOAD_MAX),

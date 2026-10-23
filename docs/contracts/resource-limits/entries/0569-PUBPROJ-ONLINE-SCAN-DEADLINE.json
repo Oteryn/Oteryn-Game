@@ -1,0 +1,21 @@
+{
+  "id": "PUBPROJ-ONLINE-SCAN-DEADLINE",
+  "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md",
+  "resource": "From a world_online scan's cut to the last changed World's acknowledgement",
+  "unit": "seconds",
+  "hard_maximum": 5,
+  "configurable_range": {
+    "minimum": 5,
+    "maximum": 5
+  },
+  "failure_category": "UNAVAILABLE",
+  "allocation_impact": "A scan that does not finish within 5 s does not advance complete_through; each world_online exchange is bounded at 3 s on a cold connection.",
+  "client_visible": false,
+  "boundary_tests": [
+    "apps/game-server/src/native_admission_source/public_projections_tests.rs: a scan past its deadline leaves the watermark at the last good cut"
+  ],
+  "consumers": [
+    "apps/game-server/src/native_admission_source/public_projections.rs"
+  ],
+  "notes": "Contract sections 3, 5 and 8. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered': the outbox row stays queued (or the World is retried by the next scan), the watermark stalls and Platform hides the family once it is stale; gameplay, admission and the change that caused it are unaffected. Registered by OTV2-20261015-public-projections-producer."
+}

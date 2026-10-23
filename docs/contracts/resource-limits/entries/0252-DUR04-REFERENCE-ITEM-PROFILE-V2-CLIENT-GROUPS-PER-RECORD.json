@@ -1,0 +1,20 @@
+{
+  "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-CLIENT-GROUPS-PER-RECORD",
+  "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+  "resource": "Present typed capability groups in one artifact v5 client-safe Item body",
+  "unit": "groups",
+  "hard_maximum": 12,
+  "configurable_range": {
+    "minimum": 0,
+    "maximum": 12
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Reject group count before allocation and reject every server-only group through the v5 projection allowlist (v4 allowlist plus UseRequirements).",
+  "client_visible": true,
+  "boundary_tests": [
+    "12 allowlisted ordered unique groups accepted",
+    "13 groups rejected before allocation",
+    "each server-only group rejected independently"
+  ],
+  "notes": "v4 keeps 11 under the V1 row."
+}

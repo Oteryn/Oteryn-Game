@@ -1,0 +1,24 @@
+{
+  "id": 11,
+  "name": "OPEN_CONTAINER",
+  "owner_decision": "ITEM-MOVE-WIRE-0 ITEM-MOVE-WIRE0-ITEM-VIEW-AND-MOVE-V1 §4 and §5 (docs/architecture/reviews/OTERYN_GAME_ITEM_MOVE_WIRE0_ITEM_VIEW_AND_MOVE_DECISION_2026-09-30.md, owner D212); numbers assigned by D212 and registered by ITEM-VIEW-1a (#1622 control plane)",
+  "owner": "current ChannelRuntime",
+  "capability": 4,
+  "revision": "per GameSessionId, monotonic and never reused (FND-02 §15), carried in resume state across reconnect, resume and channel transfer; every admission, reconnect and transfer sends a snapshot above any revision the session has seen; a delta carries the whole view and is emitted only after the durable commit that changed it",
+  "delta_types": [
+    {
+      "id": 1,
+      "name": "OPEN_CONTAINER_DELTA_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/item_view_v1.proto#OpenContainerV1",
+      "max_payload_bytes": 507
+    }
+  ],
+  "snapshot_types": [
+    {
+      "id": 1,
+      "name": "OPEN_CONTAINER_SNAPSHOT_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/item_view_v1.proto#OpenContainerV1",
+      "max_payload_bytes": 507
+    }
+  ]
+}

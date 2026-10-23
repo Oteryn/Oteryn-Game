@@ -1,0 +1,22 @@
+{
+  "allocation_impact": "The holder.",
+  "boundary_tests": [
+    "max=1: the holder",
+    "max+1=2: refused"
+  ],
+  "client_visible": false,
+  "configurable_range": {
+    "maximum": 1,
+    "minimum": 1
+  },
+  "consumers": [
+    "apps/game-server/src/durability/item_timed_state_audit.rs TimedShape::check"
+  ],
+  "failure_category": "CAPACITY_EXCEEDED",
+  "hard_maximum": 1,
+  "id": "DUR03-RL-06-TIMED-CHECKPOINT-PARTICIPANTS",
+  "notes": "\u00a712. Registered by OTV2-20261003-timed-rt-1b.",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_TIMED_ITEM0B_RUNTIME_CHARGES_AND_DURATION_DECISION_2026-10-03.md",
+  "resource": "Participants of a timed checkpoint or composed checkpoint",
+  "unit": "participants"
+}

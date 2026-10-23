@@ -1,0 +1,24 @@
+{
+  "id": 23,
+  "name": "TUTORIAL_NOTICES",
+  "owner_decision": "TUTORIAL-1 owner Q3(a), owner D1463 and 2026-10-22 continuation",
+  "owner": "current ChannelRuntime",
+  "capability": 31,
+  "revision": "per GameSessionId, monotonic; retained across reconnect; snapshots never replay notices",
+  "delta_types": [
+    {
+      "id": 1,
+      "name": "TUTORIAL_NOTICE_DELTA_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/tutorial_notices_v1.proto#TutorialNoticeV1",
+      "max_payload_bytes": 260
+    }
+  ],
+  "snapshot_types": [
+    {
+      "id": 1,
+      "name": "TUTORIAL_NOTICES_SNAPSHOT_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/tutorial_notices_v1.proto#TutorialNoticesSnapshotV1",
+      "max_payload_bytes": 2
+    }
+  ]
+}

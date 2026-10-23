@@ -1,0 +1,22 @@
+{
+  "id": "SPELL-RL-03",
+  "owner_contract": "../architecture/OTERYN_PLAYER_SPELL_CAST_WIRE_AND_VITALS_CONTRACT_CANDIDATE_V1.md",
+  "resource": "Actors in one ACTOR_VITALS snapshot or delta",
+  "unit": "actors per snapshot or delta",
+  "hard_maximum": 1,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 1
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "The payload carries only the session's own actor; a second actor cannot be encoded by the ActorVitalsV1 payload schema.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=1: the own actor's vitals are carried in a snapshot or delta",
+    "max+1=2: a second actor cannot be encoded by the ActorVitalsV1 payload schema"
+  ],
+  "consumers": [
+    "ACTOR_VITALS state domain 3, delta type 1, snapshot type 1 (crates/protocol-oteryn/src/actor_spell.rs)"
+  ],
+  "notes": "SPELL-D6 (RL-03 = 1), #162 owner acceptance 5867161696; contract section 7. SPELL-RL-04 (spells in one content-generation spell book) needs a finite measured value at registration (SPELL-D6) and is left to composition. Registered by OTV2-20260929-spell-cast-wire-w1 (#162 allocation 5894588548)."
+}

@@ -1,0 +1,24 @@
+{
+  "id": "DUR03-AUDIT-RETENTION-S",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
+  "resource": "Ordinary retention ceiling of one event type 2 durable-audit event (profile DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V1)",
+  "unit": "elapsed seconds",
+  "hard_maximum": 7776000,
+  "configurable_range": {
+    "minimum": 7776000,
+    "maximum": 7776000
+  },
+  "failure_category": "UNAVAILABLE",
+  "allocation_impact": "Expiry = envelope trusted-server timestamp + 7,776,000 s over [start, expiry); never recomputed or refreshed; deletion subject only to an explicit audited case/legal hold.",
+  "client_visible": false,
+  "boundary_tests": [
+    "expiry - 1 s retained",
+    "expiry and later expired"
+  ],
+  "consumers": [
+    "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
+    "apps/game-server/src/durability/item_mint.rs (stage C runtime MINT: stores game_item_audit_outbox.expires_at = occurred_at + 7,776,000,000 ms; no audit purge path yet)",
+    "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)"
+  ],
+  "notes": "P90D, decision \u00a73.1 and OTERYN_DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_DECISION_2026-09-27.md. Registered by OTV2-20260928-dur03-b4-binding-513."
+}

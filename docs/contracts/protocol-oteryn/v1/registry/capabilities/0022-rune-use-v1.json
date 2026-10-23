@@ -1,0 +1,11 @@
+{
+  "id": 22,
+  "name": "RUNE_USE_V1",
+  "owner_decision": "RUNE-USE-0 §4 (docs/architecture/reviews/OTERYN_GAME_RUNE_USE0_USING_RUNES_DECISION_2026-09-30.md, accepted #2107, §6.1 amended by #2106); number leased by the #1622 control plane (20 is CONNECTION_TRACE_V1 and 21 is leased to LOGOUT-WIRE-1) and registered by RUNE-WIRE-1",
+  "owner": "current ChannelRuntime (USE dispatch of a rune; rune casting, RUNE-CAST-1)",
+  "requires": [15],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "RUNE-CAST-1: the server does not offer this capability before rune casting ships. It extends command type 2 with the UseWithV1 position arm (field 5, a SpellTargetPositionV1 in the SPELL-D7 frame, at most 16 bytes, valid only for a rune) and with dispositions 18 TARGET_ILLEGAL and 19 PROTECTION_ZONE, and owns no command type or domain; the intent stays at most 529 bytes (RUNEUSE0-RL-04) and the result at most 4. A pacified or powerless rune refusal is REQUIREMENT_NOT_MET on the wire (§6.1). Without it selected, a rune is NOTHING_TO_USE, the position arm is REJECTED and dispositions 18 and 19 are never sent. Until RUNE-CAST-1 a selected session's position arm is REJECTED."
+}

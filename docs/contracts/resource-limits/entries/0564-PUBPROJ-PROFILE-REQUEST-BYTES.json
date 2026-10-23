@@ -1,0 +1,22 @@
+{
+  "id": "PUBPROJ-PROFILE-REQUEST-BYTES",
+  "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md",
+  "resource": "Encoded PublishCharacterProfileV1 request body",
+  "unit": "bytes",
+  "hard_maximum": 2048,
+  "configurable_range": {
+    "minimum": 2048,
+    "maximum": 2048
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "At most one profile entry with one guild membership and a 64-byte name: at most 680 bytes in total; the length is checked before the exchange.",
+  "client_visible": false,
+  "boundary_tests": [
+    "apps/game-server/src/native_admission_source/public_projections_tests.rs worst_case_bodies_fit_their_bounds: the worst-case profile encodes within 2048 bytes"
+  ],
+  "consumers": [
+    "apps/game-server/src/native_admission_source/public_projections.rs",
+    "apps/game-server/src/durability/public_projections.rs"
+  ],
+  "notes": "Contract sections 3, 5 and 8. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered': the outbox row stays queued (or the World is retried by the next scan), the watermark stalls and Platform hides the family once it is stale; gameplay, admission and the change that caused it are unaffected. Registered by OTV2-20261015-public-projections-producer."
+}

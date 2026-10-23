@@ -28,10 +28,9 @@ mod tests {
 
     #[test]
     fn egress_bound_is_the_registered_chat0_rl_11_row() {
-        let registry: serde_json::Value = serde_json::from_str(include_str!(
-            "../../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json"
-        ))
-        .expect("resource registry");
+        let registry: serde_json::Value =
+            serde_json::from_str(oteryn_protocol_oteryn::RESOURCE_LIMITS_REGISTRY_JSON)
+                .expect("resource registry");
         let rows: Vec<&serde_json::Value> = registry["entries"]
             .as_array()
             .expect("entries")

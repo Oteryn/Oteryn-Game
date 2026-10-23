@@ -1134,7 +1134,7 @@ pub(super) mod tests {
     use serde_json::Value;
 
     const RESOURCE_REGISTRY: &str =
-        include_str!("../../../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json");
+        oteryn_protocol_oteryn::RESOURCE_LIMITS_REGISTRY_JSON;
     const EVENT_REGISTRY: &str =
         include_str!("../../../../../docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json");
 

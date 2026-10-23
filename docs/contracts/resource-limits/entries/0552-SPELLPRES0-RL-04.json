@@ -1,0 +1,22 @@
+{
+  "id": "SPELLPRES0-RL-04",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_SPELL_PRESENT0_SPELL_AND_COMBAT_PRESENTATION_DECISION_2026-09-30.md",
+  "resource": "entries in one ACTOR_COOLDOWNS snapshot or delta (state domain 20)",
+  "unit": "entries",
+  "hard_maximum": 4096,
+  "configurable_range": {
+    "minimum": 16,
+    "maximum": 4096
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "At most one entry per {kind, id}; a repeated key fails closed. The codec ceiling is the FND-02 repeated-field limit; the producer bound is SPELL-RL-04 (spells in one content-generation spell book) plus 16 group slots, set when composition measures SPELL-RL-04. The decoder refuses a 4,097th entry LimitExceeded before storing it.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=4096: crates/protocol-oteryn/src/presentation_tests.rs cooldowns_round_trip_within_their_bounds (4,096 distinct entries encode and decode)",
+    "max+1=4097: crates/protocol-oteryn/src/presentation_tests.rs cooldowns_round_trip_within_their_bounds (a 4,097th entry is refused LimitExceeded in both directions)"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/presentation.rs MAX_COOLDOWN_ENTRIES"
+  ],
+  "notes": "SPELL-PRESENT-0 \u00a710 and \u00a713 (SPELL-RL-04 + 16). SPELL-RL-04 is still unregistered (SPELL-D6 leaves it to composition), so the effective value is configured within this range by SPELL-PRESENT-1 and never above 4,096. Registered by PRESENT-WIRE-1 (MAGIC-CAST-1, #1622)."
+}
