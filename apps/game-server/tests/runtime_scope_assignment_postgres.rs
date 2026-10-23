@@ -1,6 +1,6 @@
 // Dedicated PostgreSQL target for GameNode process-incarnation registration and
 // the Channel-only runtime-scope assignment writer. Ordinary workspace runs skip
-// when the routed PostgreSQL service is absent; only configured PostgreSQL 17.6
+// when the routed PostgreSQL service is absent; only configured PostgreSQL 18.6
 // runs count as qualification evidence.
 extern crate oteryn_game_server as production_server;
 extern crate self as oteryn_game_server;
@@ -94,8 +94,9 @@ impl Database {
             .fetch_one(&mut connection)
             .await?;
         assert_eq!(
-            version, "170006",
-            "canonical target requires PostgreSQL 17.6"
+            version,
+            oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
+            "canonical target requires PostgreSQL 18.6"
         );
         sqlx::migrate!("./migrations").run(&mut connection).await?;
         // Deployment administration (OPS-NODE-BOOT-01 D2): the owner grants

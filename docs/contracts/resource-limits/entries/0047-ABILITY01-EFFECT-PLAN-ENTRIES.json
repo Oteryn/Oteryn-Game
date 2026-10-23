@@ -1,0 +1,19 @@
+{
+  "id": "ABILITY01-EFFECT-PLAN-ENTRIES",
+  "owner_contract": "GAME-ABILITY-01_WHOLE_GATE_OWNER_ACCEPTANCE_BASELINE.md",
+  "resource": "typed entries in one staged Effect Plan",
+  "unit": "typed plan entries",
+  "hard_maximum": 2,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 2
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
+  "client_visible": true,
+  "boundary_tests": [
+    "hard maximum accepted",
+    "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+    "checked arithmetic overflow rejected before allocation or partial mutation"
+  ]
+}

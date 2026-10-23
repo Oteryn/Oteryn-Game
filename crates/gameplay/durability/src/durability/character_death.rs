@@ -852,7 +852,7 @@ fn decode_death_build(
     }
 }
 
-async fn load_death_build(
+pub(super) async fn load_death_build(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     character: CharacterId,
 ) -> std::result::Result<DurableBuildState, DurabilityError> {

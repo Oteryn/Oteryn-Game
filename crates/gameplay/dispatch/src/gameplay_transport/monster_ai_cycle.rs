@@ -1,6 +1,9 @@
 //! First playable wild-monster dispatch: explicitly activated physical melee only.
 //! Uses the actual positioned census, bound Creature policies and existing AI-4
-//! owner. Summons, ranged/defensive/custom spells and movement remain disabled.
+//! owner. Ordinary creatures use their independent Movement-owner step deadlines.
+#[cfg(test)]
+use crate::movement::relocate::{accepted_entry_movement, cell_open, creature_cell_admissible};
+
 use super::ComposedFreshAdmission;
 use super::actor_spell::ChannelSpellStates;
 use super::attack::ChannelAttackStates;
@@ -44,7 +47,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return;
         }
-        let mut states = self.spell_states.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         if now.get() < states.next_monster_ai_pass_us {
             return;
         }
@@ -74,7 +77,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             think_player_census(&runtime, &states.monster_melee.think_players)
         };
         // ATTACK-1b: lock order runtime, spell states, attack.
-        let mut attack = self.attack.lock().await;
+        let mut attack = self.states.attack.lock().await;
         let semantic_now =
             oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now.get());
         let targets = melee_targets(room, &runtime, &states, &attack, &census, now.get());
@@ -166,8 +169,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 },
             )
             .collect::<Vec<_>>();
-        // CREATURE-MOVE-1: a think's one cardinal step (chase, flee or wander within the spawn
-        // radius) is committed here when its destination is a walkable, open, ordinary cell.
+        // CREATURE-MOVE-1: thinks select goals; Movement owns destination admission and commits.
+        // Independent step deadlines run even between swing passes.
         // Lock order: runtime, spell states, attack, then the door runtime (read only).
         // Every door cell, open or closed: a creature never stands in a doorway (CREATURE-DOOR-1).
         // The entry door is bound in the entry frame: it is no obstacle on a bundle World, whose
@@ -184,8 +187,46 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             &GameplayDecisionRoot::from_bytes(content.source_digest()),
             &revisions,
             &candidates,
-            |destination| creature_cell_admissible(cells, &doors, destination),
         );
+        let qualified_ground = crate::movement::speed::QualifiedCellGroundSpeed { cells };
+        let ground: &dyn crate::movement::speed::GroundSpeedSource =
+            if crate::movement::source_floor_change::is_source_profile(cells) {
+                &qualified_ground
+            } else {
+                &crate::movement::speed::EngineeringGroundSpeed
+            };
+        let player_waiting = attack.players_waiting(now.get());
+        let mut next_step = melee_owner.creature_ai.drive_movement(
+            &mut runtime,
+            cells,
+            &doors,
+            room.map_revision_digest(),
+            content,
+            ground,
+            &GameplayDecisionRoot::from_bytes(content.source_digest()),
+            now.get(),
+            &mut attack.path_budget,
+            player_waiting,
+        );
+        // Creature requests precede players, whose unused reserve returns in this same turn.
+        attack.drain_chase_searches(&runtime, room, semantic_now, &|at| {
+            super::attack::chase_path_tile(cells, &doors, at)
+        });
+        if player_waiting && !attack.players_waiting(now.get()) {
+            next_step = melee_owner.creature_ai.drive_movement(
+                &mut runtime,
+                cells,
+                &doors,
+                room.map_revision_digest(),
+                content,
+                ground,
+                &GameplayDecisionRoot::from_bytes(content.source_digest()),
+                now.get(),
+                &mut attack.path_budget,
+                false,
+            );
+        }
+        let next_think = next_think.into_iter().chain(next_step).min();
         // CREATUREAI0-RL-05 (Codex 4243189401): thinks left due past this window's budget, or
         // due before the next interval pass, run in a pass of their own as soon as the budget
         // allows, not one think interval later. Such a pass only thinks: swings keep their one
@@ -431,74 +472,12 @@ fn swing_window(len: usize, cursor: usize) -> (usize, usize) {
     )
 }
 
-/// CREATURE-MOVE-1 (CREATURE-AI-0 §5.3, R2): whether a creature may step onto `cell`. It is a
-/// Walkable cell of the qualified room, no door cell (open or closed) covers it, it is neither a
-/// protection-zone nor a floor-change tile, and it is no bundle teleport (WORLD-INTERACTION-0
-/// §6.5: monsters never enter one). A creature never opens a door and never changes floors by a
-/// step. The check reads only; the step is committed by the Channel owner.
-///
-/// LIMIT (CREATURE-MOVE-1c): durable ground items and fields (Magic Wall, Wild Growth) are not
-/// consulted here. No SQL, spell lane or durable-item snapshot enters the AI pass; the step uses
-/// only what the Movement owner holds in memory. CREATURE-MOVE-1c adds an in-memory blocking
-/// overlay owned by the Movement owner, revalidated atomically at the step commit.
-fn creature_cell_admissible(
-    cells: &crate::content::NativeEntryMovementCells,
-    doors: &std::collections::BTreeSet<LogicalCell>,
-    cell: MovementLocalPosition,
-) -> bool {
-    let target = LogicalCell {
-        x: cell.x,
-        y: cell.y,
-        z: i32::from(cell.floor),
-    };
-    let tile = match cells.spell_tiles().lookup(cells.scope(), target) {
-        Ok(tile) => Some((tile.flags().protection_zone, tile.flags().floor_change)),
-        // An accepted entry room without a tile document (ENTRY-SPELL-TILES-1 gave
-        // `native_entry_room.json` one) answers every lookup `Unknown`. Its Movement owner admits
-        // a player step on terrain and doors alone ("accepted entry movement",
-        // `field_step_ingress`), so a creature step follows the same rule.
-        Err(crate::content::SpellTileLookupError::Unknown) if accepted_entry_movement(cells) => {
-            Some((false, false))
-        }
-        // Unknown cells of a tile-qualified map, an absent tile or another scope refuse.
-        Err(_) => None,
-    };
-    cell_open(
-        cells.index().lookup(cells.scope(), target) == Ok(crate::content::CollisionClass::Walkable),
-        doors.contains(&target),
-        crate::map::floor::is_teleport(cells, target),
-        tile,
-    )
-}
-
-/// Whether `cells` move by the accepted entry movement: the entry-room collision index (not a
-/// source world, not a bundle) outside the source profile. Its tiles are qualified from the room's
-/// own optional tile document, so `Unknown` there means only "no document"; a source-qualified
-/// map's `Unknown` names a genuinely unknown cell and a bundle's lookup is another scope.
-fn accepted_entry_movement(cells: &crate::content::NativeEntryMovementCells) -> bool {
-    matches!(
-        cells.index(),
-        crate::content::native_cell_lookup::NativeMovementCollisionIndex::Entry(_)
-    ) && !crate::movement::source_floor_change::is_source_profile(cells)
-}
-
 /// BUNDLE-MONSTER-AI-1: whether `cells` are a World Bundle's.
 fn bundle_cells(cells: &crate::content::NativeEntryMovementCells) -> bool {
     matches!(
         cells.index(),
         crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(_)
     )
-}
-
-/// The step rule over the facts of one cell. `tile` is `(protection_zone, floor_change)`, or
-/// `None` when the tile facts are unknown, which refuses (fail closed, like the think pass).
-const fn cell_open(walkable: bool, door: bool, teleport: bool, tile: Option<(bool, bool)>) -> bool {
-    match tile {
-        Some((protection_zone, floor_change)) => {
-            walkable && !door && !teleport && !protection_zone && !floor_change
-        }
-        None => false,
-    }
 }
 
 /// A present dead actor still has an observable vitals state until respawn. It must
@@ -670,6 +649,7 @@ fn local_target_indices(
 
 #[cfg(test)]
 mod tests {
+    mod creature_step_tests;
     use super::*;
     fn position(x: i32, floor: i16) -> MovementLocalPosition {
         MovementLocalPosition { x, y: 0, floor }
@@ -1049,143 +1029,6 @@ mod tests {
         ] {
             assert!(!creature_cell_admissible(&cells, &none, at(x)), "{why}");
         }
-    }
-
-    /// CREATURE-MOVE-1 (Codex 4242014304): in the accepted entry room the spawned rats, thinking
-    /// with the room's own rat behaviour, commit a real chase step through `run_due_thinks`: the
-    /// den rat steps west onto the east cell; the den-north rat's chase step is the door cell and
-    /// is refused, so it stays.
-    #[test]
-    #[allow(clippy::expect_used)]
-    fn a_spawned_rat_commits_a_chase_step_in_the_accepted_entry_room() {
-        use {
-            crate::foundation::{ChannelId, NodeId, WorldId},
-            oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
-        };
-        let world = WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1])
-            .expect("world");
-        let channel = ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])
-            .expect("channel");
-        let node =
-            NodeId::decode(&[1, 0, 0, 0, 0, 3, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 3]).expect("node");
-        let (room, door) = entry_room_and_door(world, channel);
-        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
-            world,
-            channel,
-            node,
-            1,
-            1,
-            1,
-            "runtime-scope-assignment:1",
-            8,
-            ChannelContentPin::test(world),
-        )
-        .expect("runtime");
-        let source = room.spawn_source().expect("D116 spawn source");
-        assert_eq!(
-            runtime.realize_activation_spawns(vec![source.activation_facts()]),
-            Ok(2)
-        );
-        let rat_at = |runtime: &ChannelRuntimeV1, at: MovementLocalPosition| {
-            runtime
-                .spawn_point_creatures()
-                .into_iter()
-                .find_map(|(_, _, live)| {
-                    live.filter(|rat| {
-                        runtime
-                            .read_actor_position(*rat)
-                            .is_ok_and(|p| p.position() == at)
-                    })
-                })
-                .expect("a spawned rat on the cell")
-        };
-        let den = rat_at(&runtime, cell(2, 0));
-        let den_north = rat_at(&runtime, cell(2, -1));
-        let session =
-            GameSessionId::decode(&[1, 0, 0, 0, 0, 4, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 4])
-                .expect("session");
-        let reservation = runtime.reserve_fresh_session(session).expect("reserve");
-        let player = runtime.commit_fresh_session(reservation).expect("player");
-        runtime
-            .initialize_pinned_test_position(player, cell(0, 0))
-            .expect("player on the entry start");
-
-        // The room's own hostile rat behaviour, its swing cleared as the AI pass clears it.
-        let room_source: serde_json::Value =
-            serde_json::from_slice(crate::content::NATIVE_ENTRY_ROOM_SOURCE).expect("room source");
-        let profile = room_source["authoring_profiles"]
-            .as_array()
-            .expect("authoring profiles")
-            .iter()
-            .find(|profile| profile["target"]["key"] == "oteryn:behavior/rat-hostile")
-            .expect("rat behaviour");
-        let mut behavior: ProjectV2BehaviorAuthoring =
-            serde_json::from_value(profile["data"]["profile"].clone()).expect("behaviour");
-        behavior.attacks.clear();
-        behavior.defenses.clear();
-        let mut table = crate::ai_think::CreatureAiTable::default();
-        for rat in [den, den_north] {
-            table
-                .admit_creature(
-                    &runtime,
-                    rat,
-                    Some(&behavior),
-                    &std::collections::BTreeMap::new(),
-                    0,
-                )
-                .expect("admitted");
-        }
-        let candidates = [TargetCandidate {
-            actor: player,
-            position: cell(0, 0),
-            eligible: true,
-            invisible: false,
-            health: 0,
-            damage: 0,
-        }];
-        let revisions = crate::ability::RevisionSet::new(
-            "ruleset:ai-v1",
-            "content:test",
-            "world:ai-v1",
-            "formula:source-melee-baseline",
-            "simulation:v1",
-        )
-        .expect("revisions");
-        let doors = door.collision_cells().clone();
-        let cells = room.movement_cells();
-        let reports = table.run_due_thinks(
-            &mut runtime,
-            0,
-            &GameplayDecisionRoot::from_bytes([9; 32]),
-            &revisions,
-            &candidates,
-            |destination| creature_cell_admissible(cells, &doors, destination),
-        );
-        assert_eq!(reports.len(), 2, "both rats thought");
-        let step = |rat| {
-            reports
-                .iter()
-                .find(|(actor, _)| *actor == rat)
-                .and_then(|(_, report)| report.step)
-                .map(|step| step.destination)
-        };
-        assert_eq!(step(den), Some(cell(1, 0)), "chase step west");
-        assert_eq!(step(den_north), None, "the chase step is the door cell");
-        assert_eq!(
-            runtime
-                .read_actor_position(den)
-                .expect("den rat")
-                .position(),
-            cell(1, 0),
-            "the step was committed"
-        );
-        assert_eq!(
-            runtime
-                .read_actor_position(den_north)
-                .expect("den-north rat")
-                .position(),
-            cell(2, -1)
-        );
     }
 
     #[test]

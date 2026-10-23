@@ -29,16 +29,16 @@ pub(super) fn prepare(
     intent: &NpcTalkIntent,
     runtime: &ChannelRuntimeV1,
 ) -> Option<Step> {
-    let context = admission.npc_conversations.current_npc(
-        &admission.chat,
+    let context = admission.states.npc_conversations.current_npc(
+        &admission.states.chat,
         runtime,
         actor,
         command.game_session_id,
         intent,
     )?;
-    let book = admission.chat.npc_talk()?;
+    let book = admission.states.chat.npc_talk()?;
     let entry = book.get(&context.2)?;
-    let mut sessions = admission.npc_conversations.sessions.lock().ok()?;
+    let mut sessions = admission.states.npc_conversations.sessions.lock().ok()?;
     let state = sessions.get_mut(&command.game_session_id)?;
     let pending = state.premium.take();
     let now = admission.owner_now().get();
@@ -112,8 +112,8 @@ pub(super) async fn apply(
         return rejected();
     }
     let runtime = admission.runtime.lock().await;
-    if admission.npc_conversations.current_npc(
-        &admission.chat,
+    if admission.states.npc_conversations.current_npc(
+        &admission.states.chat,
         &runtime,
         actor,
         command.game_session_id,
@@ -176,6 +176,7 @@ pub(super) async fn apply(
         )
     };
     let Some(account) = admission
+        .states
         .premium_sessions
         .lock()
         .ok()

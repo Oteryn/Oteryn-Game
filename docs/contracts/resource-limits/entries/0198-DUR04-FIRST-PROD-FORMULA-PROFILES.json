@@ -1,0 +1,19 @@
+{
+  "id": "DUR04-FIRST-PROD-FORMULA-PROFILES",
+  "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+  "resource": "Product formula profile definitions",
+  "unit": "definitions",
+  "hard_maximum": 1,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 1
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Reject excess profiles; fixture/evidence/test-only profile markers remain invalid independently of count.",
+  "client_visible": false,
+  "boundary_tests": [
+    "1 product-release formula profile accepted",
+    "2 profiles rejected",
+    "fixture-only profile rejected"
+  ]
+}

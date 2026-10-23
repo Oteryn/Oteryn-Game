@@ -1,0 +1,24 @@
+{
+  "id": 17,
+  "name": "WORLD_MAP_VIEW",
+  "owner_decision": "ARCH-MAP-WIRE-1 \u00a71.1-\u00a71.5 (docs/architecture/reviews/OTERYN_GAME_ARCH_MAP_WIRE_PACKETS_2026-10-04.md) with the MAP-WIRE-1 contract \u00a73 (docs/contracts/protocol-oteryn/candidates/MAP_WIRE_1_WORLD_MAP_VIEW_CANDIDATE_V1.md); numbers leased by the #1622 control plane and registered by MAP-WIRE-2",
+  "owner": "current ChannelRuntime",
+  "capability": 18,
+  "revision": "per GameSessionId, monotonic and never reused (FND-02 \u00a715); every admission, reconnect, resume, channel transfer, teleport, floor change and reset-epoch change sends a snapshot of the window, and a delta carries the changed, newly visible and cleared tiles after each actor step and each committed change of a tile in view, or a snapshot instead when it would exceed MAPW-RL-03 entries or the handle budget membership changes beyond it",
+  "delta_types": [
+    {
+      "id": 1,
+      "name": "WORLD_MAP_VIEW_DELTA_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/world_map_v1.proto#WorldMapViewDeltaV1",
+      "max_payload_bytes": 93376
+    }
+  ],
+  "snapshot_types": [
+    {
+      "id": 1,
+      "name": "WORLD_MAP_VIEW_SNAPSHOT_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/world_map_v1.proto#WorldMapViewSnapshotV1",
+      "max_payload_bytes": 725888
+    }
+  ]
+}

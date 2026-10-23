@@ -333,7 +333,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Lock order (§1.2): the lane before any Channel guard.
         let permit = self.spell_lane_permit().await?;
         let mut runtime = self.runtime.lock().await;
-        let mut states = self.spell_states.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         if states.has_pending_spell_commit(actor, session) {
             return None;
         }

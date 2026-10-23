@@ -606,7 +606,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if physical.control_loss.is_some() {
             return None;
         }
-        let mut states = self.spell_states.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         let state = states.get_mut(&runtime, actor, session)?;
         let player_revision = state.revision();
         Some(PremiumOwnerBinding {
@@ -644,7 +644,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             ));
         }
         let runtime = self.runtime.lock().await;
-        let mut states = self.spell_states.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         if states.has_pending_spell_commit(actor, session) {
             return Ok(false);
         }
@@ -804,7 +804,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// The account admitted with `session` on this node, from its Premium registration: the
     /// account a session's Premium gate reads.
     pub fn session_account(&self, session: GameSessionId) -> Option<[u8; 16]> {
-        self.premium_sessions
+        self.states
+            .premium_sessions
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .account_of(session)
@@ -818,7 +819,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 }
-
 impl PremiumGateOwner for SpellPremiumCoordinator {
     async fn with_premium_gate<T: Send, F: PremiumGateOperation<T>>(
         &self,

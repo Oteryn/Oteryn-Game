@@ -1,14 +1,14 @@
 {
   "schema": "OTERYN_WORLD_PIN/v1",
-  "digest": "0d1af67e1f45f0fc24ef29a180b1ea7104e89e62f7b5ac0db211e4f8b2fe48da",
+  "digest": "52a827a27e07e1ac36b480110542f630d9ace980a16f4be2f68d8332d7b7222e",
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
   "content_revision": "npc-premium-services-20261022-r1",
   "production": false,
   "entry_start": {
-    "x": 32369,
-    "y": 32238,
+    "x": 32534,
+    "y": 32513,
     "floor": -7
   },
-  "inputs_digest": "586e918cb7a76a7181ac15a1ef42a21b18445a292e0b68edfd6bc95e140bc28a"
+  "inputs_digest": "e39f508911894340a527df69c141bfb5293a7b96128b3dd34f8b07e74a7da82f"
 }

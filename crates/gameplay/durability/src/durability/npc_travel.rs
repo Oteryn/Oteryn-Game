@@ -17,7 +17,7 @@ use super::character_last_position::{
     FinalLastPosition, LastPositionCell, LastPositionKey, LastPositionWrite, upsert_last_position,
 };
 use super::character_progression::{
-    CharacterProgressionError, CurrentCharacterGameplayFence, assert_session_fence,
+    CharacterProgressionError, CurrentCharacterGameplayFence, assert_item_only_fence,
 };
 use super::db::{
     begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
@@ -181,7 +181,7 @@ pub async fn read_fenced(
     if !history_valid {
         return Err(TravelStoreError::Integrity);
     }
-    assert_session_fence(tx, &fence.item_fence(), node)
+    assert_item_only_fence(tx, &fence.item_fence(), node)
         .await?
         .map_err(TravelStoreError::Fence)?;
     let row = load_arrival(tx, fence.character_id).await?;
@@ -239,6 +239,7 @@ pub async fn consume_in_transaction(
     if written != LastPositionWrite::Written {
         return Err(TravelStoreError::PositionNotWritten(written));
     }
+    super::newhaven_travel::complete_in_transaction(tx, fence.character_id, occurrence).await?;
     Ok(ArrivalConsume::Consumed)
 }
 

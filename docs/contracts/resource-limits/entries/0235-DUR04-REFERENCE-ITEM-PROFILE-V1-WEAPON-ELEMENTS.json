@@ -1,0 +1,19 @@
+{
+  "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-WEAPON-ELEMENTS",
+  "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+  "resource": "Typed elemental entries in one Weapon record",
+  "unit": "entries",
+  "hard_maximum": 5,
+  "configurable_range": {
+    "minimum": 0,
+    "maximum": 5
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Check count before allocation; validate closed kinds, canonical order and uniqueness.",
+  "client_visible": true,
+  "boundary_tests": [
+    "5 unique typed elements accepted",
+    "6th entry rejected before allocation",
+    "duplicate, unsorted or unknown kind rejected"
+  ]
+}

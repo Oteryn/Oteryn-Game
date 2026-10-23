@@ -1,4 +1,4 @@
-// Dedicated PostgreSQL 17.6 qualification for PRIV-GUARD-1. Ordinary workspace
+// Dedicated PostgreSQL 18.6 qualification for PRIV-GUARD-1. Ordinary workspace
 // runs report PRE-ROUTING/NONCANONICAL when the routed database is absent.
 
 // Standalone target for local focused runs. The cases use SQL only, so the

@@ -373,7 +373,7 @@ mod tests {
         };
         let mut connection = sqlx::PgConnection::connect(&url).await.expect("local PG");
             let version: String = sqlx::query_scalar("SHOW server_version").fetch_one(&mut connection).await.expect("server version");
-            assert!(version.starts_with("17.6"), "qualification requires PostgreSQL 17.6");
+            assert!(version.starts_with("18.6"), "qualification requires PostgreSQL 18.6");
         let mut tx = connection.begin().await.expect("isolated transaction");
         sqlx::raw_sql("CREATE TEMP TABLE game_character_roots AS SELECT '01020304-0506-7008-800a-0b0c0d0e0f01'::uuid character_id, 2::numeric character_revision;
             CREATE TEMP TABLE game_character_proficiency_receipts AS SELECT character_id, 1::numeric original_character_revision, 2::numeric committed_character_revision,

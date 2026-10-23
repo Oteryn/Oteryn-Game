@@ -131,8 +131,8 @@ changed-path and reuse inventory is in the local validation report):
 - `crates/gameplay/durability/src/durability/promotion_purchase.rs` (new),
   `blessing_purchase.rs` (new) — L4 SQL writers (receipts, fee, provenance).
 - `crates/gameplay/npc/src/npc_promotion.rs` (new) — L4 NPC consumer for both services.
-- `crates/gameplay/dispatch/src/gameplay_transport/promotion_npc_postgres_tests.rs` (new) — e2e.
-- `apps/game-server/tests/support/character_promotion_postgres_cases.rs` (new).
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/promotion_npc.rs` (new) — e2e.
+- `apps/game-server/tests/support/authority_cases/character_promotion_postgres_cases.rs` (new).
 - `rulesets/character/blessings/` + `docs/reference/content-prep/blessings-content-1/`
   (from #2237, with the owner pricing ruling).
 - `apps/game-server/migrations/0133_character_promotion_purchases.sql` (new) — provisional
@@ -267,7 +267,7 @@ when extracted; no parallel implementation or duplicate new test registration re
 | New file growing by >200 lines | Lines | Owner/layer |
 |---|---:|---|
 | `dispatch/.../npc_command/premium_purchase.rs` | 299 | L5 live NPC/fence/receipt composition |
-| `dispatch/.../promotion_npc_postgres_tests.rs` | 437 | Own real dispatch/PG suite |
+| `dispatch/.../postgres_tests/promotion_npc.rs` | 437 | Own real dispatch/PG suite |
 | `durability/.../character_death/commit.rs` | 316 | Existing L4 fenced SQL writer extracted |
 | `durability/.../character_death/settlement.rs` | 312 | Existing L4 sequenced settlement extracted |
 | `rulesets/character/blessings/reference-evidence.json` | 752 | Archived source evidence data |
@@ -276,8 +276,8 @@ Reused owners include native NPC talk/rate/range, Bank coin facts and fallback,
 Type2 fee/audit, Character fences/recovery/sequencer, the Premium gate/latch,
 canonical content materialization, domain soul/death/Wheel/Charm rules, and the
 existing SQL consistency guard. Test reuse: moved GOLD-FEE builders in
-`item_fee_burn/test_support.rs`; `monk_save_content_fixture.rs` retains the one
-Dependencies constructor; `tests/purchase_fixture.rs` exposes private native
+`item_fee_burn/test_support.rs`; the monk-save `Dependencies::with_content` constructor
+takes the real pin (FLOW port; the lane's own default-constructor file is gone); `tests/purchase_fixture.rs` exposes private native
 clock/evidence; `charm_state_promotion_fixture.rs` exposes the existing private
 Charm catalogue. The report lists every reuse site and all 110 changed files.
 

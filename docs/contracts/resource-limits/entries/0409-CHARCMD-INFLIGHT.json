@@ -1,0 +1,21 @@
+{
+  "id": "CHARCMD-INFLIGHT",
+  "owner_contract": "OTERYN_GAME_CHARACTER_AUTHORITY_COMMANDS_V1.md",
+  "resource": "Concurrent Platform exchanges per character-command consumer",
+  "unit": "exchanges",
+  "hard_maximum": 1,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 1
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "The consumer performs list, read and publish sequentially; no queue beyond the one exchange is retained.",
+  "client_visible": false,
+  "boundary_tests": [
+    "the consumer performs one exchange per step and never overlaps two"
+  ],
+  "consumers": [
+    "apps/game-server/src/native_admission_source/character_commands.rs"
+  ],
+  "notes": "Contract sections 3, 5 and 12. Internal Game-to-Platform boundary; no client wire. A refused or failed exchange stores nothing and publishes nothing: the intent stays PENDING and is retried until it expires. The consumer is disabled unless [platform.character_commands] is configured. Registered by CHAR-CMD-CONSUMER-1."
+}

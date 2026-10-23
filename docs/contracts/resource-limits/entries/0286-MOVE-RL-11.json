@@ -1,0 +1,22 @@
+{
+  "id": "MOVE-RL-11",
+  "owner_contract": "OTERYN_GAME_MOVE_RL11_VISIBILITY_DECISION_2026-09-28.md",
+  "resource": "Semantic entities in one WORLD_SPATIAL_VISIBILITY snapshot or delta",
+  "unit": "entities per snapshot or delta",
+  "hard_maximum": 256,
+  "configurable_range": {
+    "minimum": 256,
+    "maximum": 256
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "A snapshot carries at most 256 entities (nearest first, own actor always included); a delta at most 256 entries, a larger change is a snapshot. Encoders refuse the 257th before encoding.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=256: a snapshot of 256 entities (own actor included) encodes within 33,792 bytes and decodes",
+    "max+1=257: encode and decode both refuse the 257th entity"
+  ],
+  "consumers": [
+    "WORLD_SPATIAL_VISIBILITY state domain 1, snapshot type 2 and delta type 2 (capability 6 WORLD_SPATIAL_ENTITIES)"
+  ],
+  "notes": "Re-decided from 1 in D87 (decision section 4.4), registered with the VIS-2 schema revision. Sessions without capability 6 keep the v1 own-actor-only types."
+}

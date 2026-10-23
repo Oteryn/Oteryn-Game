@@ -1,0 +1,23 @@
+{
+  "id": "QUESTGATE0-RL-07",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md",
+  "resource": "Quests in one quest list projection (domain 16 QuestListV1)",
+  "unit": "quests per projection",
+  "hard_maximum": 1024,
+  "configurable_range": {
+    "minimum": 1024,
+    "maximum": 1024
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "As QUESTSTATE0-RL-05 (quest states per Character). A list entry is at most 10 bytes as an element, so 1,024 entries are 10,240 bytes, within QUESTGATE0-RL-08-BYTES. A quest log catalogue with more listable quests does not load.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=1024: 1,024 ascending entries encode and decode",
+    "max+1=1025: a 1,025th entry fails closed both ways"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/quest_log.rs MAX_LISTED_QUESTS",
+    "apps/game-server/src/quest/log.rs"
+  ],
+  "notes": "QUEST-GATE-0 \u00a79; tests: quest_log::tests::the_list_holds_1024_ascending_quests_and_refuses_more, quest::log::tests::at_most_1024_quests_are_listable. Registered by OTV2-20261004-quest-log-wire-1."
+}

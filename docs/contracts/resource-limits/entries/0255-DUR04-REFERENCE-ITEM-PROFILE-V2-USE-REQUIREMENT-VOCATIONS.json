@@ -1,0 +1,20 @@
+{
+  "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-USE-REQUIREMENT-VOCATIONS",
+  "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+  "resource": "Vocation entries per artifact v5 use-requirements group",
+  "unit": "vocations",
+  "hard_maximum": 6,
+  "configurable_range": {
+    "minimum": 0,
+    "maximum": 6
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Check count before allocation; require sorted unique members from the closed six-value domain.",
+  "client_visible": true,
+  "boundary_tests": [
+    "6 unique vocations accepted",
+    "7th entry rejected before allocation",
+    "duplicate or unknown vocation rejected"
+  ],
+  "notes": "Group 17; enforcement_mode admits ON_USE only. Enforcement belongs to RUNE-USE-0 and RANGED-0."
+}

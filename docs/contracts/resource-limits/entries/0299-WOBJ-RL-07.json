@@ -1,0 +1,23 @@
+{
+  "id": "WOBJ-RL-07",
+  "owner_contract": "../architecture/OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md",
+  "resource": "Rendered size of a timed-revert forward or child occurrence identity: the bytes of its Debug rendering, which contains every one of its semantic-key bytes (ancestry, definition, target, edge and revision context) at least once, so it bounds the total key bytes",
+  "unit": "bytes",
+  "hard_maximum": 4096,
+  "configurable_range": {
+    "minimum": 4096,
+    "maximum": 4096
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "Measured with a counting writer that stops at the limit without allocating, on the supplied forward occurrence and on the derived revert child, before any ordinal is minted, anything is committed or any record is created; a violation fails the whole forward operation with the named error OccurrenceTooLarge.",
+  "client_visible": false,
+  "boundary_tests": [
+    "a forward occurrence whose rendering is within 4,096 bytes schedules its revert child",
+    "a forward occurrence with a key longer than 4,096 bytes is refused OccurrenceTooLarge with no ordinal, mutation or record",
+    "a caller-supplied revision context that makes the derived child exceed 4,096 bytes is refused OccurrenceTooLarge the same way"
+  ],
+  "consumers": [
+    "apps/game-server/src/world_object_revert.rs (ScopeRevertDriver::apply_forward; not yet wired into a live Channel or Instance owner)"
+  ],
+  "notes": "PR #1144 round 3 (Codex P2 4125881422): SemanticKey has no length bound of its own. Registered by OTV2-20260928-cw1-timed-revert-runtime (issue #162): a lane policy value, not a measurement."
+}

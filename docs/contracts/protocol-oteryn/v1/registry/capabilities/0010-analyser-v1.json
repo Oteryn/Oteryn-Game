@@ -1,0 +1,12 @@
+{
+  "id": 10,
+  "name": "ANALYSER_V1",
+  "owner_decision": "ANALYSERS-0 ANALYSERS0-HUNTING-ANALYSERS-V1 \u00a74 and \u00a76 (docs/architecture/reviews/OTERYN_GAME_ANALYSERS0_HUNTING_ANALYSERS_DECISION_2026-10-03.md, D298); numbers leased to ANALYSER-WIRE-1 by the #1622 control plane",
+  "owner": "Analyser module (facts derived from committed combat, loot, item-use and progression outcomes)",
+  "command_types": [],
+  "state_domains": [
+    15
+  ],
+  "offered": false,
+  "offer_gate": "ANALYSER-EMIT-1: the server does not offer this capability before the first emitter ships. Without it selected, domain 15 is never sent."
+}

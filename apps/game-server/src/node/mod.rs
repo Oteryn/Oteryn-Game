@@ -4,6 +4,7 @@
 
 pub mod config;
 pub mod descriptor_facts;
+mod quest_log_content;
 mod runtime_status;
 pub mod serve;
 
@@ -116,3 +117,7 @@ pub fn uuid_text(bytes: &[u8; 16]) -> String {
         &hex[20..32]
     )
 }
+
+mod cancellation;
+pub mod guild_jobs;
+mod guild_scheduler;

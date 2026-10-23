@@ -8,3 +8,5 @@ pub mod release_policy;
 pub mod shared_experience;
 pub mod spam;
 pub mod trust_policy;
+
+pub mod guild;

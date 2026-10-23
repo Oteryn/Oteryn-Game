@@ -37,7 +37,8 @@ pub const CAPABILITY_RUNE_USE_V1: u32 = 22;
 /// The registry `requires` of capability 22.
 pub const CAPABILITY_RUNE_USE_V1_REQUIRES: &[u32] = &[CAPABILITY_ITEM_USE_V1];
 /// Registered capability `WORLD_INTERACTION_V1` (WORLDINT-WIRE-1); see `world_interaction.rs`. It
-/// extends command type 2 with the `map_item` arm of field 4 and the dispositions 11 to 17.
+/// extends command type 2 with the `map_item` arm of field 4 and the dispositions 11 to 17,
+/// and BED0 dispositions 20 to 23.
 pub use crate::world_interaction::CAPABILITY_WORLD_INTERACTION_V1;
 
 pub const COMMAND_TYPE_USE_INTENT: u32 = 2;
@@ -169,17 +170,24 @@ pub enum UseDisposition {
     /// from a protection zone.
     TargetIllegal = 18,
     ProtectionZone = 19,
+    /// BED0 §4, under WORLD_INTERACTION_V1.
+    BedChooseSkill = 20,
+    BedOccupied = 21,
+    BedWoken = 22,
+    OfflineTraining = 23,
 }
 
 impl UseDisposition {
     /// The dispositions a session without capability 11 cannot decode.
     pub fn needs_world_interaction(self) -> bool {
         ((Self::Locked as u32)..=(Self::NotPossible as u32)).contains(&(self as u32))
+            || ((Self::BedChooseSkill as u32)..=(Self::OfflineTraining as u32))
+                .contains(&(self as u32))
     }
 
     /// The dispositions a session without capability 22 cannot decode.
     pub fn needs_rune_use(self) -> bool {
-        (self as u32) >= (Self::TargetIllegal as u32)
+        matches!(self, Self::TargetIllegal | Self::ProtectionZone)
     }
 }
 
@@ -598,6 +606,10 @@ pub fn decode_use_result_with_gate(
         17 => UseDisposition::NotPossible,
         18 => UseDisposition::TargetIllegal,
         19 => UseDisposition::ProtectionZone,
+        20 => UseDisposition::BedChooseSkill,
+        21 => UseDisposition::BedOccupied,
+        22 => UseDisposition::BedWoken,
+        23 => UseDisposition::OfflineTraining,
         _ => return Err(WorldObjectError::Malformed),
     };
     let gate_message_id = match (disposition, gate) {
@@ -773,10 +785,8 @@ mod tests {
     use super::*;
     use serde_json::Value;
 
-    const PROTOCOL_REGISTRY: &str =
-        include_str!("../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json");
-    const RESOURCE_REGISTRY: &str =
-        include_str!("../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json");
+    const PROTOCOL_REGISTRY: &str = crate::PROTOCOL_OTERYN_V1_REGISTRY_JSON;
+    const RESOURCE_REGISTRY: &str = crate::RESOURCE_LIMITS_REGISTRY_JSON;
 
     fn target(placement: &[u8], expected_revision: u64) -> WorldObjectTarget {
         WorldObjectTarget {
@@ -1121,7 +1131,7 @@ mod tests {
             Ok((UseDisposition::Sealed, Some(5)))
         );
         assert_eq!(
-            decode_use_result(&[0x08, 0x14]),
+            decode_use_result(&[0x08, 0x18]),
             Err(WorldObjectError::Malformed)
         );
         assert_eq!(
@@ -1679,9 +1689,9 @@ mod tests {
         assert!(!UseDisposition::NotPossible.needs_rune_use());
         assert!(UseDisposition::NotPossible.needs_world_interaction());
         assert!(!UseDisposition::RequirementNotMet.needs_rune_use());
-        // 20 stays unknown and fails closed.
+        // 24 stays unknown and fails closed.
         assert_eq!(
-            decode_use_result(&[0x08, 20]),
+            decode_use_result(&[0x08, 24]),
             Err(WorldObjectError::Malformed)
         );
     }

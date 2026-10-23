@@ -1,0 +1,22 @@
+{
+  "id": "COMBAT01-LOOT-PLAN-ENTRIES",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_VSL_COMBAT_RESOURCE_ROWS_DECISION_2026-09-28.md",
+  "resource": "Loot-table entries planned for one creature death",
+  "unit": "loot plan entries per death",
+  "hard_maximum": 16,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 16
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Checked before allocating any plan storage; a source loot table over the ceiling is rejected whole, never truncated to fit.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=16: a 16-entry loot table is planned",
+    "max+1=17: a 17-entry loot table is rejected before planning"
+  ],
+  "consumers": [
+    "apps/game-server/src/combat/loot_plan.rs (plan_creature_loot: rejects a loot table with more than 16 entries before planning)"
+  ],
+  "notes": "D77, decision \u00a74.1: \"16 pozycji\". Registered by OTV2-20260928-combat-d2a-loot-plan."
+}

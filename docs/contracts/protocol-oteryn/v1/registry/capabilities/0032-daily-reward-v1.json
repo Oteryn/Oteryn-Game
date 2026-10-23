@@ -1,0 +1,15 @@
+{
+  "id": 32,
+  "name": "DAILY_REWARD_V1",
+  "owner_decision": "DAILY_REWARD0 \u00a7\u00a73\u20137; CP wire allocation 2026-10-22 for DAILY-1",
+  "owner": "Character + World daily rewards; Account + World jokers",
+  "command_types": [
+    32,
+    33
+  ],
+  "state_domains": [
+    24
+  ],
+  "offered": false,
+  "offer_gate": "DAILY-1: offer only after the native claim, bound-item lifecycle, authored content and committed World-reset history are composed. No client receives domain 24 or dispatches commands 32/33 without selection. Free lane until PREM-3."
+}

@@ -23,6 +23,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return;
         };
         let account = self
+            .states
             .premium_sessions
             .lock()
             .ok()
@@ -33,7 +34,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             _ => false,
         };
-        if let Ok(mut sessions) = self.premium_sessions.lock() {
+        if let Ok(mut sessions) = self.states.premium_sessions.lock() {
             sessions.1.insert(
                 session,
                 oteryn_gameplay_progression::promotion::login_projection(promoted, premium),

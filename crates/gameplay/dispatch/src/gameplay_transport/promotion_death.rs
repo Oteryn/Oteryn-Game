@@ -13,6 +13,7 @@ impl DeathPremiumOwner for PremiumDeathGate<'_, '_, '_, '_> {
         Box::pin(async move {
             let account = self
                 .admission
+                .states
                 .premium_sessions
                 .lock()
                 .ok()

@@ -162,6 +162,7 @@ pub(super) async fn prepare(
     training_occurrence: BuildOccurrence,
     now: SemanticTimeMicros,
     rune: Option<&oteryn_protocol_oteryn::actor_spell_item_v2::ItemSpellCastIntent>,
+    legacy: Option<&super::super::super::rune_use_bridge::LegacyRuneUse>,
     attack_target: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
     draw: &mut (dyn FnMut(i64, i64) -> i64 + Send),
 ) -> Result<PreparedNativeCombatCast, SpellCastDisposition> {
@@ -183,6 +184,7 @@ pub(super) async fn prepare(
         training_occurrence,
         now,
         rune,
+        legacy,
         None,
         attack_target,
         draw,
@@ -262,6 +264,7 @@ pub(super) async fn prepare_named(
         training_occurrence,
         now,
         None,
+        None,
         Some((named_target, parameter)),
         None,
         draw,
@@ -288,6 +291,7 @@ async fn prepare_inner(
     training_occurrence: BuildOccurrence,
     now: SemanticTimeMicros,
     rune: Option<&oteryn_protocol_oteryn::actor_spell_item_v2::ItemSpellCastIntent>,
+    legacy: Option<&super::super::super::rune_use_bridge::LegacyRuneUse>,
     named: Option<(
         ExactActorRef,
         &oteryn_protocol_oteryn::actor_spell_v2::ParameterSpellCastIntent,
@@ -736,6 +740,7 @@ async fn prepare_inner(
         spell,
         intent,
         rune,
+        legacy,
         named,
         &before,
         &preview,
@@ -823,6 +828,7 @@ async fn prepare_inner(
         spell,
         intent,
         rune,
+        legacy,
         named,
         &before,
         &paid,
@@ -911,6 +917,7 @@ fn lower(
     spell: &SpellDefinition,
     intent: &SpellCastIntent,
     rune: Option<&oteryn_protocol_oteryn::actor_spell_item_v2::ItemSpellCastIntent>,
+    legacy: Option<&super::super::super::rune_use_bridge::LegacyRuneUse>,
     named: Option<(
         ExactActorRef,
         &oteryn_protocol_oteryn::actor_spell_v2::ParameterSpellCastIntent,
@@ -1470,6 +1477,9 @@ fn lower(
         application_targets.len(),
         source_delays.len()
     );
+    if let (Some(legacy), Some(rune)) = (legacy, rune) {
+        super::super::super::rune_use_bridge::bind_batch(&mut batch, legacy, rune)?;
+    }
     let presentation = states
         .presentations
         .as_mut()

@@ -290,6 +290,7 @@ impl DurabilityRoot {
                     .execute(&mut *tx)
                     .await?;
 
+                    crate::durability::tutorial_death::reset_in_transaction(&mut tx, fence.character_id, &request.respawn_position).await?;
                     let committed = CommittedCharacterDeath {
                         occurrence: request.occurrence,
                         character_id: fence.character_id,

@@ -4,6 +4,7 @@ pub mod account_achievement;
 pub mod achievement_catalogue;
 pub mod bestiary;
 pub mod charm_effects;
+pub mod daily_reward;
 pub mod hit_training;
 pub mod mana_training;
 pub mod proficiency;

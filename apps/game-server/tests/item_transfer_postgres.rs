@@ -1,5 +1,5 @@
 #![allow(clippy::expect_used)]
-// Dedicated PostgreSQL 17 qualification for B3-1 (DUR-03 TRANSFER into the
+// Dedicated PostgreSQL 18 qualification for B3-1 (DUR-03 TRANSFER into the
 // CharacterEquipment container slot and main backpack entries). Ordinary
 // workspace runs report PRE-ROUTING/NONCANONICAL when the routed database is
 // absent.

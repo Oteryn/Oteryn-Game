@@ -146,7 +146,7 @@ fn logout_in_fight_is_refused_and_changes_nothing() -> TestResult {
         let now = owner.owner_now();
         {
             let runtime = owner.runtime.lock().await;
-            owner.attack.lock().await.record_hit_taken(
+            owner.states.attack.lock().await.record_hit_taken(
                 &runtime,
                 dependencies.actor,
                 dependencies.admitted.game_session_id,
@@ -154,6 +154,7 @@ fn logout_in_fight_is_refused_and_changes_nothing() -> TestResult {
             );
         }
         let until = owner
+            .states
             .attack
             .lock()
             .await
@@ -163,7 +164,6 @@ fn logout_in_fight_is_refused_and_changes_nothing() -> TestResult {
                 now,
             )
             .ok_or("the hit starts the in-fight deadline")?;
-
         let LogoutReply::Result(LogoutResult::InFight { retry_after_ms }) =
             owner.logout_session(dependencies.admitted).await
         else {

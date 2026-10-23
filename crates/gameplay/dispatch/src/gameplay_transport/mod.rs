@@ -4,9 +4,11 @@
 pub mod actor_spell;
 mod attack;
 mod bank_npc;
+mod bed_sleep;
 #[cfg(test)]
 mod bundle_gates_tests;
 mod capabilities;
+mod channel_states;
 mod character_progression_binding;
 #[cfg(test)]
 mod character_progression_binding_tests;
@@ -14,6 +16,8 @@ pub mod charm;
 mod chat_intent;
 mod chat_relay;
 mod combat_lock_fact;
+#[cfg(test)]
+mod composed_test_owner;
 mod connection;
 mod container_view;
 mod equipment_move;
@@ -33,6 +37,7 @@ mod logout_tests;
 mod loop_move;
 use crate::map::boot::BundleCollisionIndexExt;
 pub use last_position::LastPositionFlush;
+mod control_loss_reconciliation;
 mod map_door;
 mod monk_save;
 mod monster_ai_cycle;
@@ -41,14 +46,24 @@ mod monster_ai_cycle;
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
 mod monster_quest_death;
+mod newhaven_arrival;
+mod newhaven_travel;
 mod npc_actor;
 mod npc_command;
 mod npc_talk;
 mod npc_trade_command;
 mod npc_travel;
 mod npc_voice;
+mod paced_movement;
+mod tutorial_corruptor;
+mod tutorial_movement;
+mod tutorial_session;
 pub use npc_talk::NpcTalkBook;
+mod quest_admission;
+mod quest_log_source;
+pub use connection::quest_log;
 mod resume;
+mod rune_use_bridge;
 mod seam_rooms;
 pub use seam_rooms::SeamRooms;
 mod promotion_death;
@@ -454,6 +469,7 @@ pub struct GameplaySeamOwners<'a, 'f, 's> {
     pub imported_charms: &'a crate::content::charm_source::CanonicalCharmCatalogue,
     /// The quest catalogue loaded at boot for the served content revision (QUEST-CAT-BOOT-1).
     pub quest_catalogue: &'a std::sync::Arc<oteryn_gameplay_quests::quest::QuestStateCatalogue>,
+    pub quest_log_content: &'a quest_log::QuestLogLines,
     /// CHAR-POSITION-1: the node's shutdown write of the tracked last positions; `None` when the
     /// caller never withdraws readiness through it.
     pub last_position_flush: Option<&'a LastPositionFlush>,
@@ -562,26 +578,17 @@ pub async fn serve_gameplay(
         rooms: owners.rooms,
         achievements: owners.achievements,
         imported_charms: owners.imported_charms,
-        spell_states: Mutex::default(),
-        world_gate: std::sync::Mutex::default(),
-        attack: Mutex::default(),
         clock_origin: std::time::Instant::now(),
-        lost: std::sync::Mutex::default(),
+        states: channel_states::ChannelSessionStates::default(),
         revision_sequencer:
             crate::durability::character_revision_sequencer::CharacterRevisionSequencer::new(),
         quest_catalogue: Some(std::sync::Arc::clone(owners.quest_catalogue)),
-        quest_sessions: std::sync::Mutex::default(),
-        chat: chat_intent::ChatRuntime::default(),
-        npc_conversations: npc_command::NpcConversations::default(),
+        quest_log_content: Some(owners.quest_log_content.clone()),
         // WHEEL-W1: the embedded Wheel ruleset; without it every Wheel load fails closed.
         wheel_ruleset: crate::wheel_gem_data::WheelGemData::embedded()
             .ok()
             .and_then(|data| data.wheel_ruleset().ok())
             .map(std::sync::Arc::new),
-        wheel_sessions: std::sync::Mutex::default(),
-        progression_sessions: std::sync::Mutex::default(),
-        last_positions: last_position::LastPositions::default(),
-        input_gate: input_gate::InputGate::default(),
         // PREM-WIRE-1: one Premium fence. The refresher pulls into the consumer the spell casts
         // and every other Premium gate read; a node without the Premium reads keeps its own.
         premium: premium_refresher(
@@ -590,23 +597,23 @@ pub async fn serve_gameplay(
                 .premium_coordinator
                 .map_or_else(Default::default, |reads| reads.consumer()),
         ),
-        premium_sessions: std::sync::Mutex::default(),
-        fence_holders: FenceHolders::default(),
         spell_lane: crate::durability::spell_owner_commit::SpellLane::new(
             owners.world_id,
             owners.channel_id,
         ),
-        loop_ground: loop_move::LoopGroundCache::default(),
     };
     if let Some(book) = owners.npc_talk {
-        authority.chat.install_npc_talk(book);
+        authority.states.chat.install_npc_talk(book);
     }
     // CHAT-2B: the World chat relay, when its key file is configured.
     if let Some(relay) = chat_relay::configured(
         *owners.world_id.as_bytes(),
         owners.root.chat_relay_connect_options(),
     ) {
-        authority.chat.install_relay(std::sync::Arc::new(relay));
+        authority
+            .states
+            .chat
+            .install_relay(std::sync::Arc::new(relay));
     }
     // QUEST-STATE-0 §5.4: the owner cadence requests failed quest obligations again, whether or
     // not the session's connection runs any other cadence. It never ends on its own.
@@ -650,8 +657,8 @@ pub async fn serve_gameplay(
     });
     // CHAT-2B: the relay listener; it parks once shutdown is requested.
     let mut relay = pin!(async {
-        match authority.chat.relay() {
-            Some(relay) => relay.run(&authority.chat, shutdown).await,
+        match authority.states.chat.relay() {
+            Some(relay) => relay.run(&authority.states.chat, shutdown).await,
             None => std::future::pending().await,
         }
     });
@@ -769,21 +776,10 @@ pub struct ComposedFreshAdmission<'a, 'f, 's> {
     pub achievements: &'a crate::achievement_catalogue::AchievementCatalogue,
     // Keep the same imported catalogue resident for every connection served by this owner.
     pub imported_charms: &'a crate::content::charm_source::CanonicalCharmCatalogue,
-    /// The Channel owner's player vitals and cooldowns (spell cast §4). Always locked after
-    /// `runtime`, never before, like `door`.
-    pub spell_states: Mutex<actor_spell::ChannelSpellStates>,
-    /// The world-interaction admission gate (`WORLD_INTERACTION0` §3.4): a leaf lock, never held
-    /// across another.
-    pub world_gate: std::sync::Mutex<map_door::WorldActionGate>,
-    /// The Channel owner's attack targets, fight modes and in-fight deadlines (ATTACK-1b).
-    /// Always locked after `runtime` and `spell_states`, never before.
-    pub attack: Mutex<attack::ChannelAttackStates>,
     /// Origin of the owner clock cooldowns are measured on: process-local and monotonic, never a
     /// client or wall-clock time (spell cast §2).
     pub clock_origin: std::time::Instant,
-    /// Ended admitted sessions whose loss is durably recorded and whose grace has not ended:
-    /// the only sessions a `ClientResume` can name. At most one entry per admitted session.
-    pub lost: std::sync::Mutex<std::collections::HashMap<GameSessionId, AdmittedSession>>,
+    pub states: channel_states::ChannelSessionStates,
     /// One revision-advancing write in flight per Character (CHAR-REV-SEQ-1). Never awaited
     /// while `runtime` is locked.
     pub revision_sequencer:
@@ -791,50 +787,16 @@ pub struct ComposedFreshAdmission<'a, 'f, 's> {
     /// The quest catalogue of the served content revision (QUEST-STATE-0 §4); `None` while no
     /// quest content is loaded.
     pub quest_catalogue: Option<std::sync::Arc<oteryn_gameplay_quests::quest::QuestStateCatalogue>>,
-    /// The quest copy of each admitted session (QUEST-STATE-0 §7), loaded at fresh admission
-    /// and resume. Never held across an await.
-    pub quest_sessions: std::sync::Mutex<std::collections::HashMap<GameSessionId, QuestSession>>,
-    /// CHAT-WIRE-1: speaker name, spam limiter and queued lines of each chatting session.
-    pub chat: chat_intent::ChatRuntime,
-    /// NPC-CMD-1a: the NPC conversation and talk limit of each session with capability 3.
-    pub npc_conversations: npc_command::NpcConversations,
+    pub quest_log_content: Option<quest_log::QuestLogLines>,
     /// The active Wheel ruleset (WHEEL-0 §4, §5.1); `None` when the embedded catalogue does not
     /// read, and every Wheel load then fails closed.
     pub wheel_ruleset: Option<std::sync::Arc<crate::durability::character_wheel::WheelRuleset>>,
-    /// The Wheel allocation of each admitted session (WHEEL-0 §4 "Load"), after the admission
-    /// Wheel reset; `None` when the load failed. The allocation only, never an eligibility
-    /// result. Never held across an await.
-    pub wheel_sessions: std::sync::Mutex<
-        std::collections::HashMap<
-            GameSessionId,
-            Option<crate::durability::character_wheel::WheelAllocation>,
-        >,
-    >,
-    /// The progression binding of each bound admitted session (ARCH-PROGRESSION-SOURCE-0 §1.4),
-    /// inserted at fresh admission and removed in `retire`, so a `ClientResume` of a lost
-    /// session finds the same binding, or when the durable death writer refuses its context
-    /// (`settle_session_death`), which leaves the session unbound. An unbound session has no
-    /// entry. Never held across an await.
-    pub progression_sessions: ProgressionSessions,
-    /// CHAR-POSITION-1: the sessions whose last position this owner writes, and the write
-    /// sequence generator (CHAR-POSITION-0 §3.2).
-    pub last_positions: last_position::LastPositions,
-    /// OPS-SAVE-2: closed by the shutdown flush; admissions and commands run under its permits.
-    pub input_gate: input_gate::InputGate,
     /// PREM-1b: the account's Premium pulls, started at fresh admission and reconnect without
     /// waiting on them, and cancelled when the session is released.
     pub premium: crate::premium::refresh::PremiumRefresher,
-    /// PREM-1b (D476): the sessions holding each account's Premium registration, so a late
-    /// release of one session never cancels another's pulls.
-    pub premium_sessions: std::sync::Mutex<PremiumSessions>,
-    /// The releases holding each write fence of the slot (CHARM-DESC-FENCE-LEASE step c).
-    pub fence_holders: FenceHolders,
     /// The Channel's spell lane (ARCH-SPELL-LOCK-2 §1.2): taken before `runtime` by every
     /// key-33 caller and never while a Channel guard is held.
     pub spell_lane: crate::durability::spell_owner_commit::SpellLane,
-    /// ITEM-LOOP-1: the Channel's loop Ground items as a map overlay, rebuilt after each drop or
-    /// pickup. A leaf lock, never held across an await.
-    pub loop_ground: loop_move::LoopGroundCache,
 }
 
 /// The progression binding one admitted session holds (ARCH-PROGRESSION-SOURCE-0 §1.4): the
@@ -1062,18 +1024,7 @@ fn settled_respawn_disposition(
     }
 }
 
-/// One admitted session's quest state (QUEST-STATE-0 §5.4, §7).
-#[derive(Debug)]
-pub struct QuestSession {
-    /// `None`: the load failed or exceeded a bound; quest actions fail closed.
-    #[allow(
-        dead_code,
-        reason = "the session copy is read by QUEST-PRED-1's predicates"
-    )]
-    pub copy: Option<crate::durability::quest_state::QuestStateCopy>,
-    /// When the pending obligations may be requested again after a failed attempt.
-    pub retry_at: Option<std::time::Instant>,
-}
+pub use quest_admission::QuestSession;
 
 /// SPEED-1: the level a player's effective speed uses until a Character progression owner
 /// supplies it (as `character_cast_facts` waits for one).
@@ -1352,55 +1303,6 @@ enum UnendedSettle {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    /// Complete only retained original occurrences while their current active
-    /// session still owns the actor. A loss must not detach an uncertain payment.
-    async fn reconcile_spells_before_control_loss(
-        &self,
-        actor: ExactActorRef,
-        session: GameSessionId,
-    ) -> bool {
-        let access = self.refresh_spell_access(actor, session).await;
-        if matches!(
-            self.reconcile_pending_native_for_control_loss(actor, session, &access)
-                .await,
-            Some(actor_spell::NativeCastDispatch::Pending)
-        ) {
-            return false;
-        }
-        if matches!(
-            self.reconcile_pending_familiar_for_control_loss(actor, session, &access)
-                .await,
-            Some(actor_spell::NativeCastDispatch::Pending)
-        ) {
-            return false;
-        }
-        if matches!(
-            self.reconcile_pending_world_items(actor, session, &access)
-                .await,
-            actor_spell::NativeCastDispatch::Pending
-        ) {
-            return false;
-        }
-        if self
-            .reconcile_pending_parameters_for_control_loss(actor, session, &access)
-            .await
-            .is_some_and(|result| matches!(result.cast, actor_spell::NativeCastDispatch::Pending))
-        {
-            return false;
-        }
-        let _ = self
-            .reconcile_pending_stance_for_control_loss(actor, session)
-            .await;
-        let cleanup_access = self.refresh_spell_access(actor, session).await;
-        let _ = self
-            .drain_familiar_deaths(actor, session, &cleanup_access)
-            .await;
-        let _ = self.save_spell_training(actor, session, true).await;
-        let runtime = self.runtime.lock().await;
-        let states = self.spell_states.lock().await;
-        !states.has_pending_spell_commit(actor, session) && !runtime.actor_spell_reserved(actor)
-    }
-
     async fn save_familiar_at_actor_end(
         &self,
         actor: ExactActorRef,
@@ -1474,7 +1376,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             async {
                 let now = self.owner_now();
                 let runtime = self.runtime.lock().await;
-                let mut states = self.spell_states.lock().await;
+                let mut states = self.states.spell_states.lock().await;
                 if let Some(after) = lowered.get() {
                     // A replayed death rebases again onto the same receipt; an actor this step
                     // cannot reach stays dead for the next cadence.
@@ -1507,22 +1409,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         SessionDeath,
         Option<crate::durability::character_build::DurableBuildState>,
     ) {
+        self.states.newhaven_travel.death(session);
         let mut lowered = None;
         let lowered_slot = &mut lowered;
-        let settled = settle_session_death(&self.progression_sessions, session, |progression| {
-            Box::pin(async move {
-                if !self
-                    .flush_training_before_death(actor, session, death, releasing)
-                    .await
-                {
-                    return DeathCommit::Unavailable;
-                }
-                let (commit, after) = self.commit_death(session, &progression, death).await;
-                *lowered_slot = after;
-                commit
+        let settled =
+            settle_session_death(&self.states.progression_sessions, session, |progression| {
+                Box::pin(async move {
+                    if !self
+                        .flush_training_before_death(actor, session, death, releasing)
+                        .await
+                    {
+                        return DeathCommit::Unavailable;
+                    }
+                    let (commit, after) = self.commit_death(session, &progression, death).await;
+                    *lowered_slot = after;
+                    commit
+                })
             })
-        })
-        .await;
+            .await;
         (settled, lowered)
     }
 
@@ -1564,7 +1468,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // read back before the release may settle from the durable build.
                 let training_left = save == actor_spell::TrainingSave::FencedOut && {
                     let runtime = self.runtime.lock().await;
-                    self.spell_states
+                    self.states
+                        .spell_states
                         .lock()
                         .await
                         .has_training_to_flush(&runtime, actor, session)
@@ -1608,7 +1513,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // The Character's revision writer, as the training save holds it, before the runtime lock.
         let _slot = self.revision_sequencer.acquire(character).await;
         let runtime = self.runtime.lock().await;
-        let mut states = self.spell_states.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         let binding = runtime.binding();
         if current.current_runtime_scope()
             != RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id())
@@ -1717,10 +1622,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         match placed {
             Ok(placed) => {
                 if placed {
-                    self.last_positions
+                    self.states
+                        .last_positions
                         .respawned(session, respawned.record.cell);
                     // NPC-TALK-2: a respawned customer away from its NPC ends its conversation.
-                    self.chat
+                    self.states
+                        .chat
                         .close_out_of_range(&*self.runtime.lock().await, session);
                 }
                 placed
@@ -1745,7 +1652,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> bool {
         let death = {
             let runtime = self.runtime.lock().await;
-            let states = self.spell_states.lock().await;
+            let states = self.states.spell_states.lock().await;
             states.player_death(&runtime, actor, session)
         };
         match death {
@@ -1761,7 +1668,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         // pre-death build.
                         if let Some(after) = lowered {
                             let runtime = self.runtime.lock().await;
-                            let mut states = self.spell_states.lock().await;
+                            let mut states = self.states.spell_states.lock().await;
                             if let Some(state) = states.get_mut(&runtime, actor, session) {
                                 state.rebase_after_death(&after);
                             }
@@ -1921,7 +1828,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             _ => None,
         };
-        if let Ok(mut sessions) = self.wheel_sessions.lock() {
+        if let Ok(mut sessions) = self.states.wheel_sessions.lock() {
             sessions.insert(session, allocation);
         }
     }
@@ -1942,7 +1849,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(ruleset) = &self.wheel_ruleset else {
             return crate::durability::character_wheel::WheelStages::default();
         };
-        self.wheel_sessions
+        self.states
+            .wheel_sessions
             .lock()
             .ok()
             .and_then(|sessions| sessions.get(&session).cloned().flatten())
@@ -1958,58 +1866,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .unwrap_or_default()
     }
 
-    /// Reload the quest copy of `session` from the store and request its pending obligations
-    /// again. A failed load or an attempt without an outcome is tried again after
-    /// [`QUEST_OBLIGATION_RETRY`] on the owner cadence. `insert` is false for a refresh of a
-    /// session that may have ended meanwhile: it then updates only a session still present.
-    async fn refresh_quest_session(&self, session: GameSessionId, insert: bool) {
-        let fence = self.current_quest_fence(session).await;
-        let (copy, retry) = match fence {
-            Ok(Some(fence)) => {
-                let admission = crate::durability::quest_state::admit_character_quest_state(
-                    &self.revision_sequencer,
-                    self.root,
-                    self.character,
-                    self.holder,
-                    fence,
-                    self.quest_catalogue.as_ref(),
-                )
-                .await;
-                let retry = admission.retry || admission.copy.is_none();
-                (Some(admission.copy), retry)
-            }
-            // A proven terminal session: no quest action and nothing to retry.
-            Ok(None) => (Some(None), false),
-            // A failed read proves nothing: keep the current copy and try again.
-            Err(()) => (None, true),
-        };
-        let retry_at = retry.then(|| std::time::Instant::now() + QUEST_OBLIGATION_RETRY);
-        if let Ok(mut sessions) = self.quest_sessions.lock() {
-            match (copy, sessions.get_mut(&session)) {
-                (Some(copy), Some(entry)) => *entry = QuestSession { copy, retry_at },
-                (Some(copy), None) if insert => {
-                    sessions.insert(session, QuestSession { copy, retry_at });
-                }
-                (None, Some(entry)) => entry.retry_at = retry_at,
-                (None, None) if insert => {
-                    sessions.insert(
-                        session,
-                        QuestSession {
-                            copy: None,
-                            retry_at,
-                        },
-                    );
-                }
-                _ => {}
-            }
-        }
-    }
-
     /// The owner cadence: refresh every session whose backoff has passed. The map lock is
     /// never held across an await.
     async fn refresh_due_quest_sessions(&self) {
         let now = std::time::Instant::now();
-        let due: Vec<GameSessionId> = match self.quest_sessions.lock() {
+        let due: Vec<GameSessionId> = match self.states.quest_sessions.lock() {
             Ok(mut sessions) => sessions
                 .iter_mut()
                 .filter(|(_, entry)| entry.retry_at.is_some_and(|at| at <= now))
@@ -2027,21 +1888,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
     /// Refresh `session` on the owner cadence after the backoff.
     fn schedule_quest_refresh(&self, session: GameSessionId) {
-        if let Ok(mut sessions) = self.quest_sessions.lock()
+        if let Ok(mut sessions) = self.states.quest_sessions.lock()
             && let Some(entry) = sessions.get_mut(&session)
         {
             entry.retry_at = Some(std::time::Instant::now() + QUEST_OBLIGATION_RETRY);
-        }
-    }
-
-    fn forget_quest_session(&self, session: GameSessionId) {
-        self.chat.forget(session);
-        self.npc_conversations.forget(session);
-        if let Ok(mut sessions) = self.quest_sessions.lock() {
-            sessions.remove(&session);
-        }
-        if let Ok(mut sessions) = self.wheel_sessions.lock() {
-            sessions.remove(&session);
         }
     }
 
@@ -2051,13 +1901,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         session: GameSessionId,
     ) -> Option<std::sync::Arc<SessionProgressionBinding>> {
-        session_progression_binding(&self.progression_sessions, session)
-    }
-
-    fn forget_progression_session(&self, session: GameSessionId) {
-        if let Ok(mut sessions) = self.progression_sessions.lock() {
-            sessions.remove(&session);
-        }
+        session_progression_binding(&self.states.progression_sessions, session)
     }
 
     /// ARCH-PROGRESSION-SOURCE-0 §1.5: the progression step of a fresh admission whose first
@@ -2091,7 +1935,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         match binding {
             character_progression_binding::ProgressionBinding::Bound(policy) => {
                 let binding = std::sync::Arc::new(SessionProgressionBinding::from_content(*policy));
-                if let Ok(mut sessions) = self.progression_sessions.lock() {
+                if let Ok(mut sessions) = self.states.progression_sessions.lock() {
                     sessions.insert(session, binding);
                 }
             }
@@ -2106,44 +1950,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 
-    /// The gameplay fence of `session` from current durable reads; its expected revision is
-    /// replaced by the revision slot's cursor at commit. `Ok(None)` when the session is proven
-    /// terminal; `Err` when a read failed, which proves nothing.
-    async fn current_quest_fence(
-        &self,
-        session: GameSessionId,
-    ) -> Result<Option<crate::durability::character_progression::CurrentCharacterGameplayFence>, ()>
-    {
-        let store = FreshAdmissionStore::from_root(self.root.clone());
-        let (current, _) = store.current_session_at(session).await.map_err(|_| ())?;
-        if current.session_state() == crate::foundation::GameSessionState::Terminal {
-            return Ok(None);
-        }
-        let character_id =
-            domain::CharacterId::from_bytes(*current.commit().character_id().as_bytes())
-                .map_err(|_| ())?;
-        let record = self
-            .root
-            .read_current_character(self.character, character_id)
-            .await
-            .map_err(|_| ())?;
-        Ok(Some(
-            crate::durability::character_progression::CurrentCharacterGameplayFence {
-                character_id,
-                game_session_id: session,
-                connection_generation: current.current_connection_generation(),
-                character_lease_generation: current.current_character_lease().generation(),
-                runtime_scope: current.current_runtime_scope(),
-                scope_ownership_generation: current.current_scope_generation(),
-                expected_character_revision: record.revision,
-            },
-        ))
-    }
-
     /// Drop the lost entry of `session` only if it is still the one that ended at
     /// `generation`; a later resumed and lost again connection keeps its own entry.
+    /// Keep this conditional removal separate from terminal cleanup: resume uses it too.
     fn forget_lost(&self, session: GameSessionId, generation: u64) {
-        if let Ok(mut lost) = self.lost.lock()
+        if let Ok(mut lost) = self.states.lost.lock()
             && lost
                 .get(&session)
                 .is_some_and(|entry| entry.continuity.connection_generation == generation)
@@ -2158,12 +1969,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// joins its own fence and a resume of that epoch lifts it. An unknown expiry keeps its hold
     /// for the next one, so the lifecycle's retries count the release once.
     async fn release_after_grace(&self, admitted: AdmittedSession) -> GraceExpiryResult {
-        let mut held = self.fence_holders.resume(admitted.game_session_id);
+        let mut held = self.states.fence_holders.resume(admitted.game_session_id);
         let result = self.release_grace_attempts(admitted, &mut held).await;
         if result == GraceExpiryResult::Unknown
             && let Some(hold) = held
         {
-            self.fence_holders.keep(hold);
+            self.states.fence_holders.keep(hold);
         }
         result
     }
@@ -2206,11 +2017,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }) = mark
             else {
                 if let Some(hold) = held.as_mut() {
-                    self.fence_holders.release(hold);
+                    self.states.fence_holders.release(hold);
                 }
                 // Every hold kept on the session is of a lost epoch that is over.
-                while let Some(mut stale) = self.fence_holders.resume(session) {
-                    self.fence_holders.release(&mut stale);
+                while let Some(mut stale) = self.states.fence_holders.resume(session) {
+                    self.states.fence_holders.release(&mut stale);
                 }
                 // KILL-REWARD-COMP-1 §1.3: no release of the resumed epoch committed, so a kill
                 // mark an unknown outcome kept is cleared as retryable.
@@ -2219,7 +2030,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             let token = TransitionFence::GraceExpiry(epoch);
             if let Some(stale) = held.as_mut().filter(|hold| hold.token != token) {
-                self.fence_holders.release(stale);
+                self.states.fence_holders.release(stale);
             }
             let hold = match &mut *held {
                 Some(hold) if hold.token == token => hold,
@@ -2359,11 +2170,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// is waited for, never replaced.
     async fn fence_transition(&self, actor: ExactActorRef, hold: &mut FenceHold) -> FenceStep {
         let mut runtime = self.runtime.lock().await;
-        match self.fence_holders.fence(&mut runtime, actor, hold) {
+        match self.states.fence_holders.fence(&mut runtime, actor, hold) {
             Ok(()) => FenceStep::Fenced,
             Err(CarrierError::WriteFenceBusy) => FenceStep::Wait,
             Err(error) => {
-                self.fence_holders.release(hold);
+                self.states.fence_holders.release(hold);
                 FenceStep::Refused(error)
             }
         }
@@ -2389,6 +2200,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return UnendedSettle::Terminal;
         }
         match self
+            .states
             .fence_holders
             .lift(&mut *self.runtime.lock().await, actor, hold)
         {
@@ -2407,10 +2219,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .remove_terminal_session(session, actor)
         {
             Ok(()) => {
-                self.fence_holders.forget(session);
-                self.forget_quest_session(session);
-                self.forget_progression_session(session);
-                self.last_positions.forget(session);
+                self.states.forget_session(session);
                 GraceExpiryResult::Released
             }
             Err(_) => GraceExpiryResult::Unknown,
@@ -2433,6 +2242,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// PREM-1b: start (or wake) the account's Premium pulls for `session`.
     fn admit_premium(&self, account_id: [u8; 16], session: GameSessionId) {
         let mut sessions = self
+            .states
             .premium_sessions
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
@@ -2443,8 +2253,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// PREM-1b (D476): `session` is over; the account's Premium pulls stop only when no other
     /// session of the account holds them. Decided under the same lock as admission, so a
     /// successor admitted before a late release keeps its pulls.
+    /// Keep this here: the non-moved refresher must release under the registration lock.
     fn release_premium(&self, account_id: [u8; 16], session: GameSessionId) {
         let mut sessions = self
+            .states
             .premium_sessions
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
@@ -2474,8 +2286,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> bool {
         let now = self.owner_now();
         let step = {
-            let states = self.spell_states.lock().await;
-            let attack = self.attack.lock().await;
+            let states = self.states.spell_states.lock().await;
+            let attack = self.states.attack.lock().await;
             held_step(&states, &attack, actor, session, now, limit)
         };
         let Some(step) = step else {
@@ -2574,7 +2386,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // The fence stays: the epoch's grace expiry, which joins the same token, takes
                 // the hold over instead of counting it again.
                 UnendedSettle::Unknown => {
-                    self.fence_holders.keep(hold);
+                    self.states.fence_holders.keep(hold);
                     GraceExpiryResult::Unknown
                 }
             };
@@ -2792,7 +2604,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         target: &oteryn_protocol_oteryn::world_object::WorldObjectTarget,
     ) -> UseOutcome {
         let mut runtime = self.runtime.lock().await;
-        if self.spell_states.lock().await.is_dead(actor) {
+        if self.states.spell_states.lock().await.is_dead(actor) {
             return UseOutcome::rejected();
         }
         // The USE's own GameSession must still be the actor's bound session with no control
@@ -2808,6 +2620,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // owner pass resets the turn cap under the same lock, so an act is counted in the turn
         // that commits it and its order is the owner lock's.
         let admitted = self
+            .states
             .world_gate
             .lock()
             .is_ok_and(|mut gate| gate.admit(actor, self.clock_origin.elapsed()));
@@ -2862,7 +2675,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         {
             let mut runtime = self.runtime.lock().await;
-            if self.spell_states.lock().await.is_dead(actor) {
+            if self.states.spell_states.lock().await.is_dead(actor) {
                 return UseOutcome::rejected();
             }
             let Ok(expected) = runtime.borrow_movement_position().read(actor) else {
@@ -3124,6 +2937,15 @@ fn bundle_map_position<'a>(
 }
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
+    async fn observe_quest_log(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        since: Option<u64>,
+    ) -> quest_log::QuestLogObservation {
+        self.quest_log_observation(actor, session, since).await
+    }
+
     fn world_weather(&self) -> Option<&crate::world_weather::WorldWeatherSource> {
         // WEATHER-1 (D1027 signed off, D1448): the shipped Oteryn-designed data, `None` (never
         // offered) when it is missing or invalid. The data is public and stateless: its binding
@@ -3152,27 +2974,27 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         &self,
         session: GameSessionId,
     ) -> Option<oteryn_protocol_oteryn::chat::ChatLine> {
-        self.chat.next(session)
+        self.states.chat.next(session)
     }
 
     async fn chat_delivered(&self, session: GameSessionId) {
-        self.chat.delivered(session);
+        self.states.chat.delivered(session);
     }
 
     async fn chat_rooms_changed(
         &self,
         session: GameSessionId,
     ) -> Option<oteryn_protocol_oteryn::chat::ChatRoomSet> {
-        self.chat.take_rooms_change(session)
+        self.states.chat.take_rooms_change(session)
     }
 
     async fn npc_session_open(&self, session: GameSessionId) {
         // A client without chat still has a conversation state, held with the chat session.
-        if !self.chat.knows(session) {
+        if !self.states.chat.knows(session) {
             self.chat_open(session).await;
         }
-        self.npc_conversations.cancel_bank(session);
-        self.chat.set_npc_service(session);
+        self.states.npc_conversations.cancel_bank(session);
+        self.states.chat.set_npc_service(session);
     }
 
     async fn npc_follow(
@@ -3182,8 +3004,9 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         shown: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
     ) -> Option<npc_command::NpcUpdate> {
         let runtime = self.runtime.lock().await;
-        self.npc_conversations
-            .follow(&self.chat, &runtime, session, shown)
+        self.states
+            .npc_conversations
+            .follow(&self.states.chat, &runtime, session, shown)
     }
 
     async fn resume_npc_bank(
@@ -3200,7 +3023,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         intent: oteryn_protocol_oteryn::npc_service::NpcTalkIntent,
     ) -> npc_command::NpcTalkOutcome {
-        npc_command::npc_bank_talk(self, actor, command, intent).await
+        self.vocation_talk(actor, command, intent).await
+    }
+
+    fn take_tutorial_notice(
+        &self,
+        session: GameSessionId,
+    ) -> Option<oteryn_protocol_oteryn::tutorial_notices::TutorialNotice> {
+        self.states.tutorial_sessions.take(session)
     }
 
     async fn npc_trade(
@@ -3368,7 +3198,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         let now_us = self.owner_now().get();
         let mut lights = world_spatial::EntityLights::new();
         if let Ok(census) = runtime.positioned_melee_census() {
-            let states = self.spell_states.lock().await;
+            let states = self.states.spell_states.lock().await;
             for (actor, _, session) in census {
                 let spell = session
                     .and_then(|session| states.get(&runtime, actor, session))
@@ -3445,106 +3275,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         direction: StepDirection,
     ) -> (StepOutcome, Option<Duration>) {
-        if !self.ensure_source_map_initialized().await {
-            return (StepOutcome::rejected(), None);
-        }
-        // DEATH-2 §4.2: a dead player takes no input until its respawn.
-        if self.spell_states.lock().await.is_dead(actor) {
-            return (StepOutcome::rejected(), None);
-        }
-        use crate::movement::{CardinalStep, MovementError};
-        let cardinal = match direction {
-            StepDirection::North => CardinalStep::North,
-            StepDirection::East => CardinalStep::East,
-            StepDirection::South => CardinalStep::South,
-            StepDirection::West => CardinalStep::West,
-        };
-        let equipment = self.read_movement_equipment(actor, session).await;
-        let now = self.owner_now().get();
-        // Lock order (§1.2): the lane before any Channel guard.
-        let Some(permit) = self.spell_lane_permit().await else {
-            return (StepOutcome::rejected(), None);
-        };
-        let mut runtime = self.runtime.lock().await;
-        let mut states = self.spell_states.lock().await;
-        if states.has_pending_spell_commit(actor, session) {
-            return (StepOutcome::rejected(), None);
-        }
-        // The closed bundle doors are read live per candidate cell, not collected per step: a
-        // teleport landing never relocates a player onto one (WORLD-INTERACTION-0 §6.6).
-        let (none, bundle_doors, legacy);
-        let blocking: &dyn crate::map::floor::CellBlocker = if self
-            .rooms
-            .gate_source_world()
-            .is_some_and(|room| room.source_world().is_some())
-        {
-            none = std::collections::BTreeSet::<crate::content::LogicalCell>::new();
-            &none
-        } else if let Some(map) = self.bundle_map() {
-            bundle_doors = crate::map::floor::BundleDoors(map.facts.doors());
-            &bundle_doors
-        } else {
-            legacy = self.door.lock().await.blocking_cells().clone();
-            &legacy
-        };
-        let equipped_speed_delta = equipment
-            .as_ref()
-            .and_then(|read| read.current_delta(&runtime, &states, actor, session));
-        // MAP-CUTOVER-1b (§1.2): a bundle World has no field items; a step reads only the bundle
-        // collision index.
-        let outcome = if self.bundle_map().is_some() {
-            states.step_with_creature_field_contact(
-                &mut runtime,
-                self.movement_cells,
-                actor,
-                session,
-                now,
-                cardinal,
-                blocking,
-                equipped_speed_delta,
-                None,
-                None,
-            )
-        } else {
-            self.step_with_field_ingress(
-                &permit,
-                &mut runtime,
-                &mut states,
-                actor,
-                session,
-                now,
-                cardinal,
-                blocking,
-                equipped_speed_delta,
-            )
-            .await
-        };
-        match outcome {
-            Ok((snapshot, duration)) => {
-                // NPC-TALK-2: a customer who stepped out of talk range ends its conversation now.
-                self.chat.close_out_of_range(&runtime, session);
-                (
-                    StepOutcome {
-                        disposition: StepDisposition::Moved,
-                        moved_to: Some(Self::observation(&runtime, snapshot.position())),
-                    },
-                    Some(duration),
-                )
-            }
-            Err(
-                MovementError::Blocked
-                | MovementError::Cell(
-                    crate::content::static_cell_engine::StaticCellEngineError::Absent,
-                ),
-            ) => (
-                StepOutcome {
-                    disposition: StepDisposition::Blocked,
-                    moved_to: None,
-                },
-                None,
-            ),
-            Err(_) => (StepOutcome::rejected(), None),
-        }
+        self.tutorial_paced_step(actor, session, direction).await
     }
 
     /// CHASE-1 (RANGED-0 §8): the owner's chase step (`attack::chase_step_now`).
@@ -3553,7 +3284,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> Option<(StepOutcome, Option<Duration>)> {
-        self.chase_step_now(actor, session).await
+        self.newhaven_chase_step(actor, session).await
     }
 
     async fn yield_chase_to_client(&self, actor: ExactActorRef, session: GameSessionId) {
@@ -3605,6 +3336,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.use_item_definition(actor, command, definition).await
     }
 
+    async fn use_rune(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        key: Option<item_view::ItemKey>,
+        visible: bool,
+    ) -> Option<UseOutcome> {
+        self.use_legacy_rune(actor, command, intent, key, visible)
+            .await
+    }
+
     /// One `USE_INTENT` for the admitted actor against the one entry-room door (#162
     /// 5868482467, USE-WIRE-V1). The client names only the target placement and its expected
     /// revision; the server selects the unique bound transition
@@ -3639,7 +3382,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         }
         let mut runtime = self.runtime.lock().await;
         // DEATH-2 §4.2: a dead player takes no input until its respawn.
-        if self.spell_states.lock().await.is_dead(actor) {
+        if self.states.spell_states.lock().await.is_dead(actor) {
             return UseOutcome::rejected();
         }
         let Ok(expected) = runtime.borrow_movement_position().read(actor) else {
@@ -3727,7 +3470,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         game_session_id: GameSessionId,
     ) -> Option<(u64, actor_spell::ActorVitals)> {
         let runtime = self.runtime.lock().await;
-        let states = self.spell_states.lock().await;
+        let states = self.states.spell_states.lock().await;
         actor_spell::observe_vitals(&runtime, &states, actor, game_session_id)
     }
 
@@ -3748,7 +3491,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         }
         let now = self.owner_now();
         let runtime = self.runtime.lock().await;
-        let mut states = self.spell_states.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         actor_spell::cast_in_channel(
             &runtime,
             &mut states,
@@ -3839,7 +3582,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         // DEATH-2 §4.5: a dead player's cadence tick settles its death and respawns it.
         let death = {
             let runtime = self.runtime.lock().await;
-            let states = self.spell_states.lock().await;
+            let states = self.states.spell_states.lock().await;
             states.player_death(&runtime, actor, game_session_id)
         };
         if let Some(death) = death {
@@ -3881,7 +3624,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         } else {
             let now = self.owner_now();
             let mut runtime = self.runtime.lock().await;
-            let mut states = self.spell_states.lock().await;
+            let mut states = self.states.spell_states.lock().await;
             states.tick_in_environment(
                 &mut runtime,
                 self.movement_cells,
@@ -3918,7 +3661,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     ) -> oteryn_protocol_oteryn::attack::AttackIntentDisposition {
         let now = self.owner_now();
         let runtime = self.runtime.lock().await;
-        let states = self.spell_states.lock().await;
+        let states = self.states.spell_states.lock().await;
         let Some(state) = states.get(&runtime, actor, game_session_id) else {
             return oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected;
         };
@@ -3947,7 +3690,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 return oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected;
             }
         }
-        self.attack.lock().await.set_target(
+        self.states.attack.lock().await.set_target(
             &runtime,
             self.rooms.gate_attack_target(),
             actor,
@@ -3965,9 +3708,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         modes: oteryn_protocol_oteryn::attack::FightModes,
     ) -> oteryn_protocol_oteryn::attack::AttackIntentDisposition {
         let runtime = self.runtime.lock().await;
-        let states = self.spell_states.lock().await;
+        let states = self.states.spell_states.lock().await;
         if states.get(&runtime, actor, game_session_id).is_some()
             && self
+                .states
                 .attack
                 .lock()
                 .await
@@ -3987,8 +3731,8 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         let now = self.owner_now();
         // ATTACK-1b lock order: runtime, spell states, attack.
         let runtime = self.runtime.lock().await;
-        let states = self.spell_states.lock().await;
-        let mut attack = self.attack.lock().await;
+        let states = self.states.spell_states.lock().await;
+        let mut attack = self.states.attack.lock().await;
         attack.settle_pacified_target(&runtime, &states, actor, game_session_id);
         Some(attack.combat_state(actor, game_session_id, now))
     }
@@ -4020,18 +3764,20 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         if result == ControlLossResult::Recorded {
             // §8.2: no command of the actor is accepted until a recovery initializes it again.
             let runtime = self.runtime.lock().await;
-            self.spell_states
+            self.states
+                .spell_states
                 .lock()
                 .await
                 .detach(&runtime, actor, admitted.game_session_id);
             // ATTACK-0 §3: the lost client's target stops swinging; its in-fight deadline runs on.
-            self.attack
+            self.states
+                .attack
                 .lock()
                 .await
                 .clear_target(actor, admitted.game_session_id);
         }
         if result == ControlLossResult::Recorded
-            && let Ok(mut lost) = self.lost.lock()
+            && let Ok(mut lost) = self.states.lost.lock()
         {
             lost.insert(admitted.game_session_id, admitted);
         }
@@ -4039,7 +3785,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     }
 
     async fn enter_input(&self) -> Option<input_gate::InputPermit<'_>> {
-        self.input_gate.enter().await
+        self.states.input_gate.enter().await
     }
 
     async fn resume(
@@ -4047,13 +3793,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         attempt: connection::ResumeAttempt<'_>,
     ) -> Result<AdmittedSession, AdmissionRefusal> {
         // OPS-SAVE-2: no session begins while the node quiesces for its shutdown save.
-        let Some(_permit) = self.input_gate.enter().await else {
+        let Some(_permit) = self.states.input_gate.enter().await else {
             return Err(AdmissionRefusal::Unavailable);
         };
         let admitted = self.resume_lost(attempt).await?;
         // ATTACK-0 §3 Reconnect: only the target is cleared; the in-fight deadline is kept.
         if let Some(actor) = admitted.runtime_actor {
-            self.attack
+            self.states
+                .attack
                 .lock()
                 .await
                 .clear_target(actor, admitted.game_session_id);
@@ -4104,7 +3851,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         use AdmissionRefusal::{Classified, Rejected, Unavailable};
         use FoundationProtocolError as N8;
         // OPS-SAVE-2: no session begins while the node quiesces for its shutdown save.
-        let Some(_permit) = self.input_gate.enter().await else {
+        let Some(_permit) = self.states.input_gate.enter().await else {
             return Err(Unavailable);
         };
         let malformed = Classified(N8::AdmissionGrantMalformed);
@@ -4405,7 +4152,11 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
         ) {
             let settled = self
-                .consume_admitted_respawn(admitted.game_session_id, actor, decided.as_ref())
+                .consume_admitted_newhaven_arrival(
+                    admitted.game_session_id,
+                    actor,
+                    decided.as_ref(),
+                )
                 .await;
             admitted.first_entry = respawned_first_entry(admitted.first_entry, settled);
         }
@@ -4595,13 +4346,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         intent: actor_spell::SpellCastIntent,
     ) -> Option<actor_spell::SpellCastOutcome> {
         // CHAT-0 §6: a muted character cannot cast any spell.
-        if let Some(outcome) = self.chat.muted_cast(game_session_id, self.owner_now()) {
+        if let Some(outcome) = self
+            .states
+            .chat
+            .muted_cast(game_session_id, self.owner_now())
+        {
             return Some(outcome);
         }
         // CONDITIONS-0 §3.5: the condition gates answer next, ahead of every dispatcher.
         let gated = {
             let runtime = self.runtime.lock().await;
-            let states = self.spell_states.lock().await;
+            let states = self.states.spell_states.lock().await;
             actor_spell::condition_gated_cast(
                 &runtime,
                 &states,
@@ -4643,6 +4398,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             actor_spell::NativeCastDispatch::Outcome(outcome) => return Some(outcome),
             actor_spell::NativeCastDispatch::Pending => return None,
+            actor_spell::NativeCastDispatch::RuneRefused(_) => {
+                return Some(actor_spell::SpellCastOutcome::rejected());
+            }
             actor_spell::NativeCastDispatch::NotApplicable => (),
         }
         match self
@@ -4651,6 +4409,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             actor_spell::NativeCastDispatch::Outcome(outcome) => return Some(outcome),
             actor_spell::NativeCastDispatch::Pending => return None,
+            actor_spell::NativeCastDispatch::RuneRefused(_) => {
+                return Some(actor_spell::SpellCastOutcome::rejected());
+            }
             actor_spell::NativeCastDispatch::NotApplicable => (),
         }
         match self
@@ -4662,11 +4423,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Some(outcome)
             }
             actor_spell::NativeCastDispatch::Pending => None,
+            actor_spell::NativeCastDispatch::RuneRefused(_) => {
+                Some(actor_spell::SpellCastOutcome::rejected())
+            }
             actor_spell::NativeCastDispatch::NotApplicable => {
                 let outcome = self
                     .cast_spell(actor, game_session_id, command_id, intent)
                     .await;
                 if self
+                    .states
                     .spell_states
                     .lock()
                     .await
@@ -4684,11 +4449,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// the caster's held target before the intent's completion is answered.
     async fn settle_pacified_target(&self, actor: ExactActorRef, game_session_id: GameSessionId) {
         let runtime = self.runtime.lock().await;
-        let states = self.spell_states.lock().await;
-        self.attack
-            .lock()
-            .await
-            .settle_pacified_target(&runtime, &states, actor, game_session_id);
+        let states = self.states.spell_states.lock().await;
+        self.states.attack.lock().await.settle_pacified_target(
+            &runtime,
+            &states,
+            actor,
+            game_session_id,
+        );
     }
 
     /// Record authoritative unexpected control loss, fresh-origin or after a resume. The owning
@@ -4980,29 +4747,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             spell_character_facts::CastFactsLoad::Ready {
                 facts,
                 character_revision,
-            } => (Some(facts), character_revision),
-            spell_character_facts::CastFactsLoad::NoVocation { character_revision } => {
-                (None, character_revision)
             }
+            | spell_character_facts::CastFactsLoad::NoVocation {
+                facts,
+                character_revision,
+            } => (facts, character_revision),
             spell_character_facts::CastFactsLoad::Unavailable => {
                 return (FirstEntryOutcome::RefusedUnavailable, None, None);
             }
         };
         #[cfg(test)]
         stage("character_facts_loaded");
-        let monk = match facts {
-            Some(_) => {
-                let Ok(character_id) =
-                    domain::CharacterId::from_bytes(*current.commit().character_id().as_bytes())
-                else {
-                    return (FirstEntryOutcome::RefusedUnavailable, None, None);
-                };
-                match self.load_monk_state(character_id).await {
-                    Some(values) => values,
-                    None => return (FirstEntryOutcome::RefusedUnavailable, None, None),
-                }
-            }
-            None => (0, 0),
+        let Some(monk) = self.load_monk_state(character_id).await else {
+            return (FirstEntryOutcome::RefusedUnavailable, None, None);
         };
         let build = match self
             .root
@@ -5082,6 +4839,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return (FirstEntryOutcome::RefusedUnavailable, None, None);
             }
         }
+        // EQUIP-0 §4 / SPELL-LOCK-2: acquire the lane before final authority revalidation.
+        let Some(permit) = self.spell_lane_permit().await else {
+            return (FirstEntryOutcome::RefusedUnavailable, None, None);
+        };
         // Character facts, monk and stance loads are data reads, never current session authority.
         // Reject a changed root and resolve session, guard and assignment again after them.
         let Ok(latest_character) = self
@@ -5124,7 +4885,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 scope_ownership_generation: current.current_scope_generation(),
                 expected_character_revision: character_revision,
             };
-        let Ok(decided) = self.read_admission_position(position_fence).await else {
+        let Ok(decided) = self.read_tutorial_admission_position(position_fence).await else {
             return (FirstEntryOutcome::RefusedUnavailable, None, None);
         };
         #[cfg(test)]
@@ -5136,6 +4897,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             Err(_) => return (FirstEntryOutcome::RefusedStaleAuthority, None, None),
         }
+        // Hold the lane through installation; the equipment reader runs before runtime locks.
+        let Ok(equipment_effects) = self.read_admission_effects(game_session_id).await else {
+            return (FirstEntryOutcome::RefusedUnavailable, None, None);
+        };
         // One Channel-owner lock covers the binding comparison and the write.
         let mut runtime = self.runtime.lock().await;
         let expected = FirstEntryExpectation {
@@ -5179,52 +4944,54 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let saved_vitals = (outcome == FirstEntryOutcome::Positioned)
             .then(|| last_position::admitted_vitals(&decided, self.world_id))
             .flatten();
-        if let Some(facts) = facts
-            && self
-                .spell_states
-                .lock()
-                .await
-                .initialize_admitted(
-                    &runtime,
-                    actor,
-                    game_session_id,
-                    facts,
-                    monk,
-                    self.owner_now(),
-                    saved_vitals,
-                )
-                .is_none()
-        {
-            return (FirstEntryOutcome::RefusedByChannel, None, None);
-        }
-        if facts.is_some()
-            && !self.spell_states.lock().await.load_owned_stance(
+        if self
+            .states
+            .spell_states
+            .lock()
+            .await
+            .initialize_admitted(
                 &runtime,
                 actor,
                 game_session_id,
-                &stance,
-                self.spells,
+                facts,
+                monk,
+                self.owner_now(),
+                saved_vitals,
             )
+            .is_none()
         {
             return (FirstEntryOutcome::RefusedByChannel, None, None);
         }
-        if facts.is_some()
-            && !self.spell_states.lock().await.load_owned_build(
-                &runtime,
-                actor,
-                game_session_id,
-                &build,
-            )
+        if self
+            .install_admission_suppressions(&runtime, actor, game_session_id, equipment_effects)
+            .await
+            .is_none()
         {
             return (FirstEntryOutcome::RefusedByChannel, None, None);
         }
-        if facts.is_some()
-            && let Some(formula) = self
-                .active_generation
-                .and_then(|active| active.native_gameplay())
-                .and_then(|native| native.training_formula())
+        if !self.states.spell_states.lock().await.load_owned_stance(
+            &runtime,
+            actor,
+            game_session_id,
+            &stance,
+            self.spells,
+        ) {
+            return (FirstEntryOutcome::RefusedByChannel, None, None);
+        }
+        if !self.states.spell_states.lock().await.load_owned_build(
+            &runtime,
+            actor,
+            game_session_id,
+            &build,
+        ) {
+            return (FirstEntryOutcome::RefusedByChannel, None, None);
+        }
+        if let Some(formula) = self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+            .and_then(|native| native.training_formula())
         {
-            let mut states = self.spell_states.lock().await;
+            let mut states = self.states.spell_states.lock().await;
             if states
                 .get_mut(&runtime, actor, game_session_id)
                 .is_none_or(|state| state.enable_owned_training(&build, formula).is_err())
@@ -5233,6 +5000,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         drop(runtime);
+        drop(permit);
         #[cfg(test)]
         stage("runtime_facts_initialized");
         if self
@@ -7523,7 +7291,7 @@ pub use spell_presentations::SpellPresentationOwner;
 
 pub use crate::spell::spell_presentations;
 
-/// DEATH-ML-LOSS-1 (CP D1433, #2193 Codex P1 4304911165) on PostgreSQL 17.6: a trained actor
+/// DEATH-ML-LOSS-1 (CP D1433, #2193 Codex P1 4304911165) on PostgreSQL 18.6: a trained actor
 /// whose death lowers its build is rebased onto the receipt's post-loss build at respawn, so its
 /// next training save commits on the lowered durable build instead of returning `Unknown`.
 #[cfg(test)]
@@ -8084,6 +7852,7 @@ mod death_ml_loss_postgres {
     }
 }
 
+mod first_vocation_vitals;
 mod vocation_choice;
 
 mod monster_combat_states;

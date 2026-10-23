@@ -56,7 +56,7 @@ Every file growing by more than 200 lines (all are new):
 | File | Lines | Layer justification |
 |---|---:|---|
 | `crates/gameplay/dispatch/src/gameplay_transport/npc_command/premium_purchase.rs` | 299 | L5 composition: live NPC/session facts, lower-layer transaction and receipt reply/resume. |
-| `crates/gameplay/dispatch/src/gameplay_transport/promotion_npc_postgres_tests.rs` | 437 | Own mechanic e2e suite over the existing dispatch/PG harness. |
+| `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/promotion_npc.rs` | 437 | Own mechanic e2e suite over the existing dispatch/PG harness. |
 | `crates/gameplay/durability/src/durability/character_death/commit.rs` | 316 | Existing L4 fenced SQL writer extracted from the oversized parent. |
 | `crates/gameplay/durability/src/durability/character_death/settlement.rs` | 312 | Existing L4 sequenced settlement extracted from the oversized parent. |
 | `rulesets/character/blessings/reference-evidence.json` | 752 | Archived source evidence data; no runtime logic. |
@@ -76,8 +76,8 @@ apps/game-server/tests/content_npc_service_model.rs
 apps/game-server/tests/content_world_project_repository.rs
 apps/game-server/tests/support/character_death_receipts_postgres_cases.rs
 apps/game-server/tests/support/character_death_writer_postgres_cases.rs
-apps/game-server/tests/support/character_promotion_fixture.rs
-apps/game-server/tests/support/character_promotion_postgres_cases.rs
+apps/game-server/tests/support/authority_cases/character_promotion_fixture.rs
+apps/game-server/tests/support/authority_cases/character_promotion_postgres_cases.rs
 apps/game-server/tests/support/character_wheel_cast_postgres_cases.rs
 apps/game-server/tests/support/character_wheel_postgres_cases.rs
 apps/game-server/tests/support/character_wheel_promotion_tests.rs
@@ -121,7 +121,7 @@ crates/gameplay/dispatch/src/gameplay_transport/npc_command/premium_purchase.rs
 crates/gameplay/dispatch/src/gameplay_transport/npc_command/service_context.rs
 crates/gameplay/dispatch/src/gameplay_transport/promotion_death.rs
 crates/gameplay/dispatch/src/gameplay_transport/promotion_login.rs
-crates/gameplay/dispatch/src/gameplay_transport/promotion_npc_postgres_tests.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/promotion_npc.rs
 crates/gameplay/dispatch/src/gameplay_transport/spell_access_facts.rs
 crates/gameplay/dispatch/src/gameplay_transport/spell_premium_coordinator.rs
 crates/gameplay/dispatch/src/gameplay_transport/spell_premium_coordinator/promotion_gate.rs

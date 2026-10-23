@@ -266,12 +266,13 @@ impl SceneGpu {
         sprites: &SpriteBatch,
     ) {
         let mut screen = [0_u8; UNIFORM_BYTES as usize];
+        let (chunks, _) = screen.as_chunks_mut::<4>();
         for (chunk, value) in
-            screen
-                .chunks_exact_mut(4)
+            chunks
+                .iter_mut()
                 .zip([size.width() as f32, size.height() as f32, 0.0, 0.0])
         {
-            chunk.copy_from_slice(&value.to_ne_bytes());
+            *chunk = value.to_ne_bytes();
         }
         queue.write_buffer(&self.uniform, 0, &screen);
         let tile_bytes = instance_bytes(tiles.instances());

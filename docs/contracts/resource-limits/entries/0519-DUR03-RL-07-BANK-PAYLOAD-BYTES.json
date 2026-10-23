@@ -1,0 +1,23 @@
+{
+  "id": "DUR03-RL-07-BANK-PAYLOAD-BYTES",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_BANK0_ACCOUNT_BANK_BALANCE_DECISION_2026-09-30.md",
+  "resource": "One encoded oteryn.events.v2.BankOperationV1 payload (event type 3)",
+  "unit": "bytes",
+  "hard_maximum": 25419,
+  "configurable_range": {
+    "minimum": 25419,
+    "maximum": 25419
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Check the payload length before decoding; encode only after encoded_len passed. Measured worst case: a 20-input deposit of whole crystal stacks with a 99 platinum and 99 gold change, 512-byte revisions and maximal integers.",
+  "client_visible": false,
+  "boundary_tests": [
+    "the measured worst-case payload is exactly 25,419 B and accepted",
+    "25,420 bytes rejected before decode"
+  ],
+  "consumers": [
+    "apps/game-server/src/durability/bank_audit.rs",
+    "apps/game-server/src/durability/bank.rs (bank writer: checked before any ledger entry, coin line, balance change or event; a typed refusal or error writes no value)"
+  ],
+  "notes": "BANK-0 \u00a78 (owner answers 1b and Q1 b; ARCH-BATCH-ROOT-PACKETS-V1 \u00a71.8 and \u00a72.4); registered by BANK-1 before the code that relies on it."
+}

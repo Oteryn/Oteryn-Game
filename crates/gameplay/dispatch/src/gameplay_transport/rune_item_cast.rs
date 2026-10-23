@@ -17,6 +17,35 @@ use oteryn_gameplay_durability::durability::native_world_items::{
 use oteryn_protocol_oteryn::actor_spell_item_v2::ItemSpellCastIntent;
 use sqlx::{Postgres, Transaction};
 
+#[path = "rune_item_cast/use_refusal.rs"]
+mod use_refusal;
+pub(super) use use_refusal::use_refusal;
+
+/// Read the direct donor's revision under current authority. This only prepares a
+/// consumption; the existing Rune reservation independently verifies it before payment.
+#[allow(clippy::too_many_arguments)]
+pub(in crate::gameplay_transport) async fn current_revision(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &SpellItemAuthority,
+    runtime: &ChannelRuntimeV1,
+    room: &QualifiedNativeEntryRoom,
+    content: &NativeGameplayState,
+    spell: &SpellDefinition,
+    instance: [u8; 16],
+) -> Result<u64, SpellItemError> {
+    let (rune, placement) = source_context(authority, runtime, room, content, spell)?;
+    let source = items::prepare_inventory_consumption_in_transaction(
+        tx,
+        authority,
+        &rune.item,
+        1,
+        Some(instance),
+        &placement,
+    )
+    .await?;
+    Ok(source.state_revision)
+}
+
 pub(super) async fn reserve(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemAuthority,
@@ -26,25 +55,7 @@ pub(super) async fn reserve(
     spell: &SpellDefinition,
     intent: &ItemSpellCastIntent,
 ) -> Result<DurableRuneUseReservation, SpellItemError> {
-    let Carrier::Rune { item, charges, .. } = spell.carrier else {
-        return Err(SpellItemError::Rejected("exact Rune carrier required"));
-    };
-    let policy = content
-        .item_policy_for_source_id(item)
-        .ok_or(SpellItemError::Rejected(
-            "Rune active source policy missing",
-        ))?;
-    let rune = QualifiedRuneDefinition::from_native_policy(policy, item, charges)
-        .map_err(SpellItemError::Rejected)?;
-    let (_, position) = runtime
-        .positioned_player_for_session(authority.game_session_id())
-        .map_err(|_| SpellItemError::Rejected("Rune current caster absent"))?
-        .ok_or(SpellItemError::Rejected(
-            "Rune current caster position absent",
-        ))?;
-    let target = SpellGroundTarget::for_native_tile_read(room, runtime, position.position())
-        .map_err(SpellItemError::Rejected)?;
-    let placement = target.placement(Vec::new());
+    let (rune, placement) = source_context(authority, runtime, room, content, spell)?;
     items::prepare_rune_instance_consumption_in_transaction(
         tx,
         authority,
@@ -63,6 +74,40 @@ pub(super) async fn reserve(
         },
     )
     .await
+}
+
+fn source_context(
+    authority: &SpellItemAuthority,
+    runtime: &ChannelRuntimeV1,
+    room: &QualifiedNativeEntryRoom,
+    content: &NativeGameplayState,
+    spell: &SpellDefinition,
+) -> Result<
+    (
+        QualifiedRuneDefinition,
+        crate::durability::item_mint::GroundPlacement,
+    ),
+    SpellItemError,
+> {
+    let Carrier::Rune { item, charges, .. } = spell.carrier else {
+        return Err(SpellItemError::Rejected("exact Rune carrier required"));
+    };
+    let policy = content
+        .item_policy_for_source_id(item)
+        .ok_or(SpellItemError::Rejected(
+            "Rune active source policy missing",
+        ))?;
+    let rune = QualifiedRuneDefinition::from_native_policy(policy, item, charges)
+        .map_err(SpellItemError::Rejected)?;
+    let (_, position) = runtime
+        .positioned_player_for_session(authority.game_session_id())
+        .map_err(|_| SpellItemError::Rejected("Rune current caster absent"))?
+        .ok_or(SpellItemError::Rejected(
+            "Rune current caster position absent",
+        ))?;
+    let target = SpellGroundTarget::for_native_tile_read(room, runtime, position.position())
+        .map_err(SpellItemError::Rejected)?;
+    Ok((rune, target.placement(Vec::new())))
 }
 
 /// Preallocate the exact equipped successor before durable COMMIT. Bag Rune

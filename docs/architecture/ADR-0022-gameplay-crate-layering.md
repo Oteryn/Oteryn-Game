@@ -59,7 +59,7 @@ runtime logic belongs to `encounters`; its pure decisions belong to
 
 ## Enforcement
 
-`cargo +1.95.0 run -p oteryn-architecture-check -- workspace .` reads the layer,
+`cargo +1.99.1 run -p oteryn-architecture-check -- workspace .` reads the layer,
 peer-edge and gameplay-rule sections alongside the existing membership/edge
 policy. It requires one layer assignment for every gameplay member, checks
 normal/build dependency direction, and inspects Cargo metadata for prohibited

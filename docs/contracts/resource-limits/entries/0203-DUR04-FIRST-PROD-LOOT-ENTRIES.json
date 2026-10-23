@@ -1,0 +1,18 @@
+{
+  "id": "DUR04-FIRST-PROD-LOOT-ENTRIES",
+  "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+  "resource": "Loot entries",
+  "unit": "definitions",
+  "hard_maximum": 1,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 1
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Reject a second loot entry before reference/RNG validation.",
+  "client_visible": false,
+  "boundary_tests": [
+    "1 loot entry accepted",
+    "2 loot entries rejected"
+  ]
+}

@@ -20,7 +20,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / ".github/workflows/merge-group-gate.yml"
 LIFECYCLE = ROOT / "tools/agents/tests/test_governance_lifecycle_discovery.py"
-APPROVED = "f7225cb11f103e9c9d598c2aeb65ecaacd0794e7"
+APPROVED = "2e9a555b2094b8394e4ecddc4019d5275b819542"
 LIFECYCLE_COMMAND = "python tools/agents/tests/test_governance_lifecycle_discovery.py"
 REGISTERED_POSTGRES_TARGETS = (
     ("durability_postgres", "apps/game-server/tests/durability_postgres.rs"),
@@ -33,13 +33,13 @@ NATIVE_POLICY = (
     "$PSNativeCommandUseErrorActionPreference = $true",
 )
 WINDOWS_REQUIRED_FRAGMENTS = (
-    "cargo +1.95.0 build --locked --release -p oteryn-client --target x86_64-pc-windows-msvc",
-    "cargo +1.95.0 clippy --locked -p oteryn-client --all-targets --target x86_64-pc-windows-msvc -- -D warnings",
+    "cargo +1.99.1 build --locked --release -p oteryn-client --target x86_64-pc-windows-msvc",
+    "cargo +1.99.1 clippy --locked -p oteryn-client --all-targets --target x86_64-pc-windows-msvc -- -D warnings",
     '$client = ".\\target\\x86_64-pc-windows-msvc\\release\\oteryn-client.exe"',
     "Test-Path -LiteralPath $client -PathType Leaf",
     "& $client --smoke",
-    "cargo +1.95.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc",
-    "cargo +1.95.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc",
+    "cargo +1.99.1 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc",
+    "cargo +1.99.1 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc",
 )
 
 
@@ -144,15 +144,24 @@ def _queue_lane_routing_canaries(candidate: str) -> None:
 
 def _postgres_cache_consumer_regressions() -> None:
     # The PostgreSQL harness executes only in MQ; main is a cache producer.
-    for filename, job in (("merge-group-gate.yml", "durability_postgres"),):
+    for filename, job in (("merge-group-gate.yml", "durability_postgres_build"),):
         text = (ROOT / ".github/workflows" / filename).read_text(encoding="utf-8")
         block = text.split("  " + job + ":\n", 1)[1]
         block = re.split(r"^  [A-Za-z_][A-Za-z_0-9-]*:\n", block, maxsplit=1, flags=re.M)[0]
         assert "actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9" in block
         assert "actions/cache/save@" not in block
-        assert "key: rust-linux-v2-1.95.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}" in block
-        assert "            rust-linux-v2-1.95.0-${{ hashFiles('Cargo.lock') }}-\n" in block
+        assert "key: rust-linux-v2-1.99.1-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}" in block
+        assert "            rust-linux-v2-1.99.1-${{ hashFiles('Cargo.lock') }}-\n" in block
         assert block.index("Restore trimmed Cargo cache") < block.index("Verify locked metadata")
+        assert block.index("Verify locked metadata") < block.index("Archive registered PostgreSQL E2E targets")
+    # The PostgreSQL partitions only download and run the archives: no toolchain, cache or compile.
+    text = (ROOT / ".github/workflows/merge-group-gate.yml").read_text(encoding="utf-8")
+    block = text.split("  durability_postgres:\n", 1)[1]
+    block = re.split(r"^  [A-Za-z_][A-Za-z_0-9-]*:\n", block, maxsplit=1, flags=re.M)[0]
+    assert "    needs: [candidate, durability_postgres_build]\n" in block
+    for forbidden in ("rustup ", "cargo +", "cargo build", "cargo test", "actions/cache/"):
+        assert forbidden not in block, forbidden
+    assert block.count("--workspace-remap \"$GITHUB_WORKSPACE\" --partition \"$PARTITION_SPEC\"") == 2
 
 
 def _atlas_queue_canaries(original: str, core) -> None:
@@ -310,7 +319,7 @@ def main() -> int:
         "      - name: Classify trusted merge-group lanes",
         "path.startswith('docs/architecture/') and path.endswith('.md')",
         "result = {'rust': 'false', 'windows': 'false', 'surface': 'architecture-docs'}",
-        "cargo +1.95.0 metadata --locked --no-deps --all-features --format-version 1 > \"$RUNNER_TEMP/queue-metadata.json\"",
+        "cargo +1.99.1 metadata --locked --no-deps --all-features --format-version 1 > \"$RUNNER_TEMP/queue-metadata.json\"",
         "if result['surface'] == 'full' and isinstance(records, list) and records:",
         "candidate_modes_verified=module.candidate_modes_safe(head),",
         "if routed.get('rust') is False and routed.get('windows') is False:",
@@ -320,6 +329,7 @@ def main() -> int:
 
     for job, condition in (
         ("rust_linux", "if: needs.candidate.outputs.rust == 'true'"),
+        ("durability_postgres_build", "if: needs.candidate.outputs.rust == 'true'"),
         ("durability_postgres", "if: needs.candidate.outputs.rust == 'true'"),
         ("rust_windows", "if: needs.candidate.outputs.windows == 'true'"),
         ("rust_supply_chain", "if: needs.candidate.outputs.rust == 'true'"),
@@ -329,7 +339,7 @@ def main() -> int:
         block = core.indented_yaml_mapping_block(original, job, 2)
         assert block is not None and condition in block, (job, condition)
 
-    postgres = core.indented_yaml_mapping_block(original, "durability_postgres", 2)
+    postgres = core.indented_yaml_mapping_block(original, "durability_postgres_build", 2)
     assert postgres is not None
     for fragment in (
         "          BASE_SHA: ${{ github.event.merge_group.base_sha }}",
@@ -338,7 +348,7 @@ def main() -> int:
         '            if git cat-file -e "$HEAD_SHA:$path" 2>/dev/null; then',
         '            if [[ "$base_present" == true && "$head_present" == false ]]; then',
         "          verify_registered_target_binding() {",
-        '            cargo +1.95.0 metadata --locked --no-deps --format-version 1 > "$metadata"',
+        '            cargo +1.99.1 metadata --locked --no-deps --format-version 1 > "$metadata"',
         "              owners = [package for package in packages if package.get('name') == 'oteryn-game-server']",
         "              expected_manifest = (pathlib.Path.cwd() / 'apps/game-server/Cargo.toml').resolve(strict=True)",
         "              observed_manifest = pathlib.Path(owners[0]['manifest_path']).resolve(strict=True)",
@@ -348,7 +358,8 @@ def main() -> int:
         "              expected = (pathlib.Path.cwd() / registered_path).resolve(strict=True)",
         "              observed = pathlib.Path(matches[0]['src_path']).resolve(strict=True)",
         '              verify_registered_target_binding "$name" "$path"',
-        '              cargo +1.95.0 test --locked --workspace --test "$name"',
+        '              archived_targets+=(--test "$name")',
+        '          cargo +1.99.1 nextest archive --locked --workspace "${archived_targets[@]}" --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst"',
     ):
         assert fragment in postgres, f"Merge Queue PostgreSQL routing missing: {fragment}"
     for name, target in REGISTERED_POSTGRES_TARGETS:
@@ -411,7 +422,7 @@ def main() -> int:
         assert policy in windows, f"Merge Queue Windows block lacks fail-closed policy: {policy}"
     for fragment in WINDOWS_REQUIRED_FRAGMENTS:
         assert windows.count(fragment) == 1, f"required Windows fragment missing or duplicated: {fragment}"
-    assert "cargo +1.95.0 run --locked -p oteryn-client --target x86_64-pc-windows-msvc -- --smoke" not in windows
+    assert "cargo +1.99.1 run --locked -p oteryn-client --target x86_64-pc-windows-msvc -- --smoke" not in windows
     # Release identity must be embedded before compiling the exact queue client;
     # installer lifecycle runs after that production build, never just on the PR.
     assert windows.index("- name: Derive release identity") < windows.index("- name: Build lint and smoke production client")
@@ -450,15 +461,16 @@ def main() -> int:
             return core.main()
 
     mutations = 0
-    for job in ("durability_postgres", "rust_windows"):
+    for job in ("durability_postgres_build", "durability_postgres", "rust_windows"):
         for key in ("if: false", "continue-on-error: true", '"continue-on-error": true'):
             changed = original.replace(f"  {job}:\n", f"  {job}:\n    {key}\n", 1)
             assert changed != original and validate(changed) != 0, (job, key)
             mutations += 1
     for command in (
-        '              cargo +1.95.0 test --locked --workspace --test "$name"',
-        "        run: cargo +1.95.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc",
-        "        run: cargo +1.95.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc",
+        '          cargo +1.99.1 nextest archive --locked --workspace "${archived_targets[@]}" --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst"',
+        '          cargo +1.99.1 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"',
+        "        run: cargo +1.99.1 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc",
+        "        run: cargo +1.99.1 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc",
     ):
         assert command in original
         for replacement in (
@@ -473,6 +485,22 @@ def main() -> int:
         marker = f"          run_registered_target {name} {target}"
         assert original.count(marker) == 1
         assert validate(original.replace(marker, "", 1)) != 0
+        mutations += 1
+
+    for archive in ("pg-e2e", "pg-lib"):
+        run = (
+            f'          cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/{archive}.tar.zst" '
+            '--workspace-remap "$GITHUB_WORKSPACE" --partition "$PARTITION_SPEC" --no-fail-fast'
+        )
+        assert original.count(run) == 1, run
+        for replacement in ("", run.replace("cargo-nextest", "echo cargo-nextest", 1), run.replace(' --partition "$PARTITION_SPEC"', "", 1)):
+            assert validate(original.replace(run, replacement, 1)) != 0, (archive, replacement)
+            mutations += 1
+    for compile_step in ("        run: rustup toolchain install 1.99.1 --profile minimal\n",):
+        partitions = core.indented_yaml_mapping_block(original, "durability_postgres", 2)
+        marker = "      - name: Install pinned cargo-nextest\n"
+        changed = original.replace(partitions, partitions.replace(marker, "      - name: Install Rust toolchain\n" + compile_step + "\n" + marker, 1), 1)
+        assert changed != original and validate(changed) != 0
         mutations += 1
 
     for fragment in installer_fragments:
@@ -493,7 +521,7 @@ def main() -> int:
     mutations += 1
 
     binding_fragments = (
-        '            cargo +1.95.0 metadata --locked --no-deps --format-version 1 > "$metadata"',
+        '            cargo +1.99.1 metadata --locked --no-deps --format-version 1 > "$metadata"',
         "              expected_manifest = (pathlib.Path.cwd() / 'apps/game-server/Cargo.toml').resolve(strict=True)",
         "              observed_manifest = pathlib.Path(owners[0]['manifest_path']).resolve(strict=True)",
         "              if observed_manifest != expected_manifest:",

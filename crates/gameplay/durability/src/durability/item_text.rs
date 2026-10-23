@@ -583,7 +583,7 @@ pub mod tests {
         let version: String = sqlx::query_scalar("SHOW server_version_num")
             .fetch_one(&mut *connection)
             .await?;
-        assert_eq!(version, "170006", "native PostgreSQL 17.6 required");
+        assert_eq!(version, oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM, "native PostgreSQL 18.6 required");
         let mut tx = connection.begin().await?;
         sqlx::query("SET LOCAL session_replication_role=replica")
             .execute(&mut *tx)
