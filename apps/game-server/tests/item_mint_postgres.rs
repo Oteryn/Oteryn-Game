@@ -1,5 +1,5 @@
 #![allow(clippy::expect_used)]
-// Dedicated PostgreSQL 17 qualification for DUR-03 stage C (one-item Ground
+// Dedicated PostgreSQL 18 qualification for DUR-03 stage C (one-item Ground
 // MINT). Ordinary workspace runs report PRE-ROUTING/NONCANONICAL when the
 // routed database is absent.
 extern crate oteryn_game_server as production_server;

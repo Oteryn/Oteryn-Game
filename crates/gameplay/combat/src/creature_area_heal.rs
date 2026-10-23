@@ -77,7 +77,7 @@ impl CreatureHealCatalog {
             return Err(AreaHealError::InvalidSource);
         }
         let mut bytes = [0u8; 16];
-        for (i, pair) in value.chunks_exact(2).enumerate() {
+        for (i, pair) in value.as_chunks::<2>().0.iter().enumerate() {
             let nibble = |b: u8| if b <= b'9' { b - b'0' } else { b - b'a' + 10 };
             bytes[i] = (nibble(pair[0]) << 4) | nibble(pair[1]);
         }

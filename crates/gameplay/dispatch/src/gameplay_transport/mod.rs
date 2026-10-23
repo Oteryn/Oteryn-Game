@@ -7430,7 +7430,7 @@ pub use spell_presentations::SpellPresentationOwner;
 
 pub use crate::spell::spell_presentations;
 
-/// DEATH-ML-LOSS-1 (CP D1433, #2193 Codex P1 4304911165) on PostgreSQL 17.6: a trained actor
+/// DEATH-ML-LOSS-1 (CP D1433, #2193 Codex P1 4304911165) on PostgreSQL 18.6: a trained actor
 /// whose death lowers its build is rebased onto the receipt's post-loss build at respawn, so its
 /// next training save commits on the lowered durable build instead of returning `Unknown`.
 #[cfg(test)]

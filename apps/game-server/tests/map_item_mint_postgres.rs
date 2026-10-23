@@ -1,5 +1,5 @@
 #![allow(clippy::expect_used)]
-// Dedicated PostgreSQL 17 qualification for MAP-OVERLAY-1b (DUR-03 map-item
+// Dedicated PostgreSQL 18 qualification for MAP-OVERLAY-1b (DUR-03 map-item
 // MINT of a map-authored entry into Ground at its tile, then the B3-1
 // TRANSFER), plus the overlay side of the pickup against a fixture bundle;
 // the cases live in support/map_item_mint_postgres_cases.rs.

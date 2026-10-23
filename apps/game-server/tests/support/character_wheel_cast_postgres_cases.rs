@@ -1,4 +1,4 @@
-//! The cast's real SQL Wheel reader and access adapter, on the existing PostgreSQL 17.6 harness.
+//! The cast's real SQL Wheel reader and access adapter, on the existing PostgreSQL 18.6 harness.
 //! SQL fixtures advance the actual receipt chains; current authority comes from independent
 //! recovery/node/session/lease/Content owners, never from an allocation row or admission cache.
 use super::*;

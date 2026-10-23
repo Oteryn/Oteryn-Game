@@ -1289,6 +1289,10 @@ where
 
 /// Decode the entry frame, obtain the owning authority's decision and, only on
 /// commit, write `ServerAccepted`.
+#[allow(
+    clippy::result_large_err,
+    reason = "one terminal end per connection; boxing would only add an allocation"
+)]
 pub async fn admit_frame<S, A, I>(
     stream: &mut S,
     frame: &[u8],
@@ -1932,8 +1936,7 @@ where
     }
     // NPC-CMD-1a: with capability 3, domain 7 (no conversation: a fresh snapshot ends it) and
     // domain 8 (a closed window), each above its last revision.
-    let npc_snapshots: Option<(Vec<u8>, Vec<u8>)>;
-    if admitted
+    let npc_snapshots: Option<(Vec<u8>, Vec<u8>)> = if admitted
         .continuity
         .selected_capabilities
         .domain_selected(STATE_DOMAIN_NPC_CONVERSATION)
@@ -1955,10 +1958,10 @@ where
             conversation_revision,
             window_revision,
         };
-        npc_snapshots = Some((conversation, window));
+        Some((conversation, window))
     } else {
-        npc_snapshots = None;
-    }
+        None
+    };
     if let Some((conversation, window)) = &npc_snapshots {
         domains.push(DomainSnapshot {
             domain_id: STATE_DOMAIN_NPC_CONVERSATION,

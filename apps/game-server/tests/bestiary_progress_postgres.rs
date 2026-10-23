@@ -1,5 +1,5 @@
 #![allow(clippy::expect_used)]
-// Dedicated PostgreSQL 17.6 qualification for CHARM-2 Bestiary kill progress
+// Dedicated PostgreSQL 18.6 qualification for CHARM-2 Bestiary kill progress
 // (migration 0019). Ordinary workspace runs report PRE-ROUTING/NONCANONICAL
 // when the routed database is absent.
 extern crate oteryn_game_server as production_server;

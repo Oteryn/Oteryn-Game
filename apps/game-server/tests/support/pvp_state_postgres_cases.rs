@@ -1,4 +1,4 @@
-//! PVP-1 PvP state on PostgreSQL 17.6 (PARTY-PVP-0 §6.2, §8.1; migration 0081).
+//! PVP-1 PvP state on PostgreSQL 18.6 (PARTY-PVP-0 §6.2, §8.1; migration 0081).
 //! The parent harness provides the migrations and an independently seeded current session.
 use crate::bestiary_postgres_harness::{
     CHANNEL, CHARACTER, Harness, TestResult, WORLD, configured_admin, debug, fence, id, runtime,

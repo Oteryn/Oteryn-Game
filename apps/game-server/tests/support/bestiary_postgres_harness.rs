@@ -1,4 +1,4 @@
-// Shared PostgreSQL 17.6 harness for the CHARM-2 Bestiary cases: one
+// Shared PostgreSQL 18.6 harness for the CHARM-2 Bestiary cases: one
 // bootstrapped Character (41) on a live Channel session (50) in World 42 /
 // Channel 43, held by node 1 at scope ownership generation 1. Every wrapper
 // provides the same path-loaded crate root.
@@ -92,7 +92,11 @@ impl Database {
         let version: String = sqlx::query_scalar("SHOW server_version_num")
             .fetch_one(&mut connection)
             .await?;
-        assert_eq!(version, "170006", "canonical target is PostgreSQL 17.6");
+        assert_eq!(
+            version,
+            oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
+            "canonical target is PostgreSQL 18.6"
+        );
         oteryn_gameplay_durability::GAME_MIGRATOR
             .run(&mut connection)
             .await?;

@@ -43,7 +43,8 @@ async fn position(h: &fixture::Harness) -> TestResult<Option<String>> {
 }
 
 pub(crate) fn npc_travel_native_postgres_replay_fences_rollback_and_reload() -> TestResult {
-    let admin = fixture::configured_admin().ok_or("canonical PostgreSQL17.6 must be configured")?;
+    let admin =
+        fixture::configured_admin().ok_or("canonical PostgreSQL 18.6 must be configured")?;
     fixture::runtime()?.block_on(async {
         let h = fixture::Harness::create(admin, "npc_travel", true).await?;
         let result = exercise(&h).await;
@@ -412,7 +413,7 @@ async fn exercise(h: &fixture::Harness) -> TestResult {
     ));
     assert_eq!(row(h).await?, before);
     println!(
-        "Canonical PostgreSQL17.6; genuine native recovery/session/owner APIs; exact occurrence consume/replay/rollback/reload PASS; no physical placement or fee writer claimed"
+        "Canonical PostgreSQL 18.6; genuine native recovery/session/owner APIs; exact occurrence consume/replay/rollback/reload PASS; no physical placement or fee writer claimed"
     );
     Ok(())
 }
