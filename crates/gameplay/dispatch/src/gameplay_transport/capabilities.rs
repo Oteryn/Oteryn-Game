@@ -132,6 +132,7 @@ pub const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     WORLD_WEATHER,
     TUTORIAL_NOTICES,
     super::guild_chat::OFFERED,
+    super::guild_intent::OFFERED,
     super::party_command::OFFERED,
 ];
 
@@ -202,6 +203,7 @@ pub const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
         id: oteryn_protocol_oteryn::depot::CAPABILITY_DEPOT_V1,
         requires: &[CAPABILITY_ITEM_VIEW_MOVE_V1],
     },
+    super::guild_intent::OFFERED,
     super::party_command::OFFERED,
 ];
 
@@ -237,6 +239,7 @@ pub const ITEM_VIEW_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     WORLD_WEATHER,
     TUTORIAL_NOTICES,
     super::guild_chat::OFFERED,
+    super::guild_intent::OFFERED,
     super::party_command::OFFERED,
 ];
 

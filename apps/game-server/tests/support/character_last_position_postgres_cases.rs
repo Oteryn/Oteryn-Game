@@ -43,6 +43,7 @@ where
 
 fn record(x: i32) -> LastPositionRecord {
     LastPositionRecord {
+        rest: None,
         world_id: WorldId::decode(&id(WORLD)).expect("World"),
         cell: LastPositionCell { x, y: 6, floor: 7 },
         coordinate_frame_digest: [1; 32],
