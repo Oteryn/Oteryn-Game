@@ -47,7 +47,7 @@ EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "4102f456f4fed6e8cbcb5b9b53356279f7fae420
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "24b5197d8c22835f08a27423ae909f2bdf6b240e7c64026ce76174753c820e4c"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
 EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256 = "0aa50bfeaab0042f2a8fec7e7e302a7f056e77170db28bea7e0a6ed32dea1dd9"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "b6bdd8defc3cbd5864b4e10545cb51adcca2047f"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "32772ca630c2be4066a7941df3ccc324e746f10a"
 EXPECTED_POST_MERGE_RUST_SHA256 = "39d0b76e70a55d733b697eefe46264f753e3ac8ffdf955bf03beaeb30e60732c"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
@@ -59,6 +59,8 @@ EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
 EXPECTED_MERGE_GROUP_GATE_TRIGGER_BLOCK = """on:
   merge_group:
     types: [checks_requested]
+  push:
+    branches: [main]
 """
 EXPECTED_MERGE_GROUP_JOB_KEYS = [
     "candidate",
@@ -459,7 +461,7 @@ def main() -> int:
             )
         trigger_block = top_level_yaml_mapping_block(text, "on")
         if trigger_block != EXPECTED_MERGE_GROUP_GATE_TRIGGER_BLOCK:
-            errors.append("merge-group gate trigger must be exactly merge_group/checks_requested")
+            errors.append("merge-group gate trigger must be exactly merge_group/checks_requested plus push to main")
         jobs_block = top_level_yaml_mapping_block(text, "jobs")
         job_keys = yaml_mapping_keys_at_indent(jobs_block or "", 2)
         if job_keys != EXPECTED_MERGE_GROUP_JOB_KEYS:
@@ -472,6 +474,8 @@ def main() -> int:
             "candidate": (
                 "    name: Merge Queue / candidate and governance\n",
                 "[[ \"$BASE_REF\" == \"refs/heads/main\" ]]",
+                "merge_group) [[ \"$EVENT_ACTION\" == \"checks_requested\" ]] ;;",
+                "BASE_REF: ${{ github.event.merge_group.base_ref || github.ref }}",
                 "[[ \"$HEAD_SHA\" == \"$GITHUB_SHA_VALUE\" ]]",
                 "git diff --check \"$BASE_SHA\" \"$HEAD_SHA\"",
                 "python tools/agents/validate_governance.py",
@@ -482,8 +486,8 @@ def main() -> int:
             "dependency_review": (
                 "    name: Merge Queue / dependency review\n",
                 "actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294",
-                "base-ref: ${{ github.event.merge_group.base_sha }}",
-                "head-ref: ${{ github.event.merge_group.head_sha }}",
+                "base-ref: ${{ github.event.merge_group.base_sha || github.event.before }}",
+                "head-ref: ${{ github.event.merge_group.head_sha || github.sha }}",
             ),
             "codeql": (
                 "    name: Merge Queue / CodeQL (${{ matrix.language }})\n",
@@ -495,8 +499,8 @@ def main() -> int:
                 "    name: Merge Queue / Atlas fullworld source\n",
                 "    needs: candidate\n",
                 "    if: needs.candidate.outputs.atlas_fullworld != 'false'\n",
-                "ref: ${{ github.event.merge_group.head_sha }}",
-                "EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}",
+                "ref: ${{ github.event.merge_group.head_sha || github.sha }}",
+                "EXPECTED_SHA: ${{ github.event.merge_group.head_sha || github.sha }}",
                 'run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"',
                 "python -S -m py_compile",
                 "tools/game-atlas-fullworld-source/producer.py",
@@ -510,8 +514,8 @@ def main() -> int:
                 "    name: Merge Queue / World bundle\n",
                 "    needs: candidate\n",
                 "    if: needs.candidate.outputs.world_bundle != 'false'\n",
-                "ref: ${{ github.event.merge_group.head_sha }}",
-                "EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}",
+                "ref: ${{ github.event.merge_group.head_sha || github.sha }}",
+                "EXPECTED_SHA: ${{ github.event.merge_group.head_sha || github.sha }}",
                 'run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"',
                 "cargo +1.99.1 run --locked --release -p oteryn-world-bundle-compiler -- pin-check . \"$RUNNER_TEMP/world-bundle\"",
                 "if-no-files-found: error",
@@ -538,8 +542,8 @@ def main() -> int:
             "durability_postgres": (
                 "    name: Merge Queue / Durability PostgreSQL harness\n",
                 "image: postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc",
-                "BASE_SHA: ${{ github.event.merge_group.base_sha }}",
-                "HEAD_SHA: ${{ github.event.merge_group.head_sha }}",
+                "BASE_SHA: ${{ github.event.merge_group.base_sha || github.event.before }}",
+                "HEAD_SHA: ${{ github.event.merge_group.head_sha || github.sha }}",
                 'git cat-file -e "$BASE_SHA:$path"',
                 'git cat-file -e "$HEAD_SHA:$path"',
                 'if [[ "$base_present" == true && "$head_present" == false ]]; then',
@@ -563,10 +567,10 @@ def main() -> int:
             ),
             "rust_windows": (
                 "    name: Merge Queue / Rust Windows client\n",
-                "EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}",
+                "EXPECTED_SHA: ${{ github.event.merge_group.head_sha || github.sha }}",
                 "$ErrorActionPreference = 'Stop'",
                 "$PSNativeCommandUseErrorActionPreference = $true",
-                "TARGET_SHA: ${{ github.event.merge_group.head_sha }}",
+                "TARGET_SHA: ${{ github.event.merge_group.head_sha || github.sha }}",
                 '"OTERYN_RELEASE_ID=$version+dev.ci.g$($env:TARGET_SHA.Substring(0, 12))" >> $env:GITHUB_ENV',
                 "INNO_SETUP_SHA256: 9c73c3bae7ed48d44112a0f48e66742c00090bdb5bef71d9d3c056c66e97b732",
                 "Inno Setup download SHA-256 mismatch",
@@ -591,7 +595,7 @@ def main() -> int:
             "node_boot": (
                 "    name: Merge Queue / Node boot against the real Platform\n",
                 "    if: needs.candidate.outputs.server_qualification != 'false'\n",
-                "EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}",
+                "EXPECTED_SHA: ${{ github.event.merge_group.head_sha || github.sha }}",
                 "ref: 5d4883acf7079e26fd51e03f460166730de1ada0",
                 "bash tools/qualification/node_boot/run.sh | tee \"$evidence\"",
                 "grep -Fxq 'NODE_BOOT_RESULT=NODE_BOOT_PASS' \"$evidence\"",
@@ -599,7 +603,7 @@ def main() -> int:
             "server_seam": (
                 "    name: Merge Queue / Server Seam over TCP+TLS\n",
                 "    if: needs.candidate.outputs.server_qualification != 'false'\n",
-                "EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}",
+                "EXPECTED_SHA: ${{ github.event.merge_group.head_sha || github.sha }}",
                 "ref: 5d4883acf7079e26fd51e03f460166730de1ada0",
                 "WP5_QUALIFICATION=seam bash tools/qualification/wp5_s3b/run.sh | tee \"$evidence\"",
                 "grep -Fxq 'S3B_RESULT=SEAM_PASS' \"$evidence\"",

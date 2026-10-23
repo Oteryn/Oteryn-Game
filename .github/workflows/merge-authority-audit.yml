@@ -26,7 +26,7 @@ jobs:
       contents: read
       pull-requests: read
     env:
-      EXPECTED_MERGE_GROUP_GATE_BLOB: "b6bdd8defc3cbd5864b4e10545cb51adcca2047f"
+      EXPECTED_MERGE_GROUP_GATE_BLOB: "32772ca630c2be4066a7941df3ccc324e746f10a"
       EXPECTED_AGENT_GOVERNANCE_BLOB: "3eaca9487acac87939bd349d4a9f86c2288568b3"
       EXPECTED_MERGE_GATE_BLOB: "3355238424e5d73ee59ba6217166ddfb5eeb508a"
     steps:
@@ -194,12 +194,12 @@ jobs:
                   f'expected {expected_gate_blob}, got {actual_blob}'
               )
 
-          merge_group_head_expression = '$' + '{{ github.event.merge_group.head_sha }}'
+          merge_group_head_expression = '$' + '{{ github.event.merge_group.head_sha || github.sha }}'
           durability_result_expression = '$' + '{{ needs.durability_postgres.result }}'
           world_bundle_result_expression = '$' + '{{ needs.world_bundle.result }}'
           world_bundle_required_expression = '$' + '{{ needs.candidate.outputs.world_bundle }}'
           required = (
-              '  merge_group:\n    types: [checks_requested]\n',
+              '  merge_group:\n    types: [checks_requested]\n  push:\n    branches: [main]\n',
               '    name: game-gate\n',
               '    if: always()\n',
               '    needs: [candidate, dependency_review, codeql, atlas_fullworld, world_bundle, rust_linux, durability_postgres, rust_windows, rust_supply_chain, node_boot, server_seam]\n',

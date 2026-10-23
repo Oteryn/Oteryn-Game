@@ -20,7 +20,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / ".github/workflows/merge-group-gate.yml"
 LIFECYCLE = ROOT / "tools/agents/tests/test_governance_lifecycle_discovery.py"
-APPROVED = "b6bdd8defc3cbd5864b4e10545cb51adcca2047f"
+APPROVED = "32772ca630c2be4066a7941df3ccc324e746f10a"
 LIFECYCLE_COMMAND = "python tools/agents/tests/test_governance_lifecycle_discovery.py"
 REGISTERED_POSTGRES_TARGETS = (
     ("durability_postgres", "apps/game-server/tests/durability_postgres.rs"),
@@ -193,7 +193,7 @@ def _atlas_queue_canaries(original: str, core) -> None:
 
     job = core.indented_yaml_mapping_block(original, "atlas_fullworld", 2)
     assert "    if: needs.candidate.outputs.atlas_fullworld != 'false'\n" in job
-    assert "ref: ${{ github.event.merge_group.head_sha }}" in job
+    assert "ref: ${{ github.event.merge_group.head_sha || github.sha }}" in job
     gate = core.indented_yaml_mapping_block(original, "game_gate", 2)
     assert "codeql, atlas_fullworld, world_bundle, rust_linux" in gate
     assert "ATLAS_FULLWORLD: ${{ needs.atlas_fullworld.result }}" in gate
@@ -262,7 +262,7 @@ def _world_bundle_queue_canaries(original: str, core) -> None:
 
     job = core.indented_yaml_mapping_block(original, "world_bundle", 2)
     assert "    if: needs.candidate.outputs.world_bundle != 'false'\n" in job
-    assert "ref: ${{ github.event.merge_group.head_sha }}" in job
+    assert "ref: ${{ github.event.merge_group.head_sha || github.sha }}" in job
     gate = core.indented_yaml_mapping_block(original, "game_gate", 2)
     assert "world_bundle, rust_linux" in gate
     assert "WORLD_BUNDLE: ${{ needs.world_bundle.result }}" in gate
@@ -294,6 +294,8 @@ def main() -> int:
     spec.loader.exec_module(core)
     original = GATE.read_text(encoding="utf-8")
     assert core.git_blob_sha(original.encode()) == APPROVED, "queue protected blob pin drifted"
+    assert "  push:\n    branches: [main]\n" in original, "post-merge push to main trigger missing"
+    assert "cancel-in-progress: ${{ github.event_name == 'merge_group' }}" in original
     assert core.main() == 0, "approved queue workflow must pass full policy"
     _atlas_queue_canaries(original, core)
     _world_bundle_queue_canaries(original, core)
@@ -306,7 +308,7 @@ def main() -> int:
         "      rust: ${{ steps.lanes.outputs.rust }}",
         "      windows: ${{ steps.lanes.outputs.windows }}",
         "      - name: Check out protected-base classifier input",
-        "          ref: ${{ github.event.merge_group.base_sha }}",
+        "          ref: ${{ github.event.merge_group.base_sha || github.event.before }}",
         "      - name: Classify trusted merge-group lanes",
         "path.startswith('docs/architecture/') and path.endswith('.md')",
         "result = {'rust': 'false', 'windows': 'false', 'surface': 'architecture-docs'}",
@@ -332,8 +334,8 @@ def main() -> int:
     postgres = core.indented_yaml_mapping_block(original, "durability_postgres", 2)
     assert postgres is not None
     for fragment in (
-        "          BASE_SHA: ${{ github.event.merge_group.base_sha }}",
-        "          HEAD_SHA: ${{ github.event.merge_group.head_sha }}",
+        "          BASE_SHA: ${{ github.event.merge_group.base_sha || github.event.before }}",
+        "          HEAD_SHA: ${{ github.event.merge_group.head_sha || github.sha }}",
         '            if git cat-file -e "$BASE_SHA:$path" 2>/dev/null; then',
         '            if git cat-file -e "$HEAD_SHA:$path" 2>/dev/null; then',
         '            if [[ "$base_present" == true && "$head_present" == false ]]; then',
@@ -416,7 +418,7 @@ def main() -> int:
     # installer lifecycle runs after that production build, never just on the PR.
     assert windows.index("- name: Derive release identity") < windows.index("- name: Build lint and smoke production client")
     assert windows.index("- name: Build lint and smoke production client") < windows.index("- name: Build and test unsigned installer")
-    assert windows.count("TARGET_SHA: ${{ github.event.merge_group.head_sha }}") == 2
+    assert windows.count("TARGET_SHA: ${{ github.event.merge_group.head_sha || github.sha }}") == 2
     installer_fragments = (
         '"OTERYN_RELEASE_ID=$version+dev.ci.g$($env:TARGET_SHA.Substring(0, 12))" >> $env:GITHUB_ENV',
         "INNO_SETUP_SHA256: 9c73c3bae7ed48d44112a0f48e66742c00090bdb5bef71d9d3c056c66e97b732",
