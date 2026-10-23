@@ -13,13 +13,144 @@ plan_row: "§4 Epic 6 row DAILY-1 (row 47); §7 'DAILY-1'"
 briefs:
   - docs/architecture/reviews/OTERYN_GAME_DAILY_REWARD0_DAILY_REWARD_SYSTEM_DECISION_2026-10-03.md
 base_branch: main
-branch: w5/daily-1
-pr: null
+branch: claude/happy-davinci-ijz3wy-daily
+pr: 2345
 needs_migration: true
 needs_registry: true
 needs_content_regeneration: true
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+## PR #2345 CI repair — 2026-10-23
+
+Returned to **AUTHORING** for the owner's local-only repair of
+`claude/happy-davinci-ijz3wy-daily`, starting at `0f2bbcbd1` (reported CI head
+`0f2bbcb`). The coordinator owns publication, successor freeze, independent
+review and CI; this worker does not commit or push. Bound META 3.1.0 at
+`1bfb5ff98c8aa156e73669a14e083a1d464c29fb` was refreshed read-only.
+
+Initial PostgreSQL 18.6 / `180006` reproduction, before production edits:
+
+- Inbox inventory **FAIL**, exactly the two new DAILY-1 reader functions.
+  `game_daily_reward_bound_custody` and `game_daily_reward_line_guard` only
+  SELECT/RAISE; neither writes Inbox rows. Retain the closed inventory and every
+  Inbox mutation assertion; explicitly register the two readers.
+- Corpse boundary **PASS**, 1 test, 9.45 s; database
+  `it_corpseboundary_1792788658471164962`.
+- Native admission resource bounds **PASS**, 1 test, 5.23 s.
+- Guild membership payload guard **PASS**, 1 test, 32.73 s; five real isolated
+  `it_guild_event_whole_*` databases reported `180006`.
+
+No PostgreSQL exception occurred in the three reported shard-5 cases, so their
+CI failure cannot honestly be attributed to a constraint exception locally.
+The native admission case writes no item locations. `from_commit_error` maps
+database exceptions to `CommitRejected`; `CommitOutcomeUnknown` also represents
+deadline/connection failures, and `RootUnavailable` is a readiness refusal.
+The reported shard-5 failures remain CI-only pending successor CI evidence.
+
+The custody guard did perform unnecessary work: every item/location event
+walked its tree and called the binding proof even when no item was bound. The
+repair skips empty binding sets and invokes the proof only for bound affected
+tree members. The original depth-eight/501-node traversal stays bounded before
+the primary-key binding join. No index is missing from these lookups: bindings
+has its item primary key and nested entries has its parent index. Deferred
+final-state validation stays necessary because binding follows native MINT;
+an immediate binding predicate would miss those newly bound items.
+
+The real-dispatch regression keeps the original custody proof and rejects any
+call for an unbound item. With the original migration it fails at COMMIT with
+the instrumented PostgreSQL exception `DAILY custody proof visited an unbound
+item` (`crs_daily_dispatch_1792788898904681392`, `180006`). This proves unnecessary
+proof invocation, **not** the cause of the three CI timing/readiness failures.
+The fixed scenario checks an unrelated deferred event both before and after a
+real daily binding exists, and retains the original seven-day/replay/rollback
+assertions and production custody proof. A positive probe also requires a real
+bound MINT to invoke that original proof; disabling the guard cannot satisfy the
+regression.
+
+Repair-owned paths:
+
+- `apps/game-server/migrations/0159_daily_reward_delivery.sql`
+- `apps/game-server/tests/support/character_inbox_postgres_cases.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/daily_reward.rs`
+- `docs/agents/tasks/DAILY-1.md`
+
+### CI-repair commands
+
+The qualification commands below use the absolute wrapper, `--locked` and
+offline dependency resolution. Each PostgreSQL command has a mechanic/module
+filter; no complete PostgreSQL target or guild suite is run. The guild batch is
+the two-case event-guard module containing the reported failure.
+
+```bash
+export CARGO_NET_OFFLINE=true
+/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --lib --quiet -- daily --test-threads=1 --nocapture
+/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-durability --lib --quiet -- daily --test-threads=1 --nocapture
+/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-game-server --test character_authority_postgres --quiet -- character_inbox_postgres_cases:: --test-threads=1 --nocapture
+/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-game-server --test character_authority_postgres --quiet -- corpse_transfer_postgres_cases:: --test-threads=1 --nocapture
+/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-game-server --test native_admission_source_postgres --quiet -- resource_bounds_accept_max_and_reject_max_plus_one_before_retention --nocapture
+/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-game-server --lib --quiet -- durability_guild_tests::event_guard_tests:: --test-threads=1 --nocapture
+/home/mole/oteryn-cache/codex-bin/cargo clippy --locked -p oteryn-game-server -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch --all-targets --quiet -- -D warnings
+/home/mole/oteryn-cache/codex-bin/cargo fmt --all
+/home/mole/oteryn-cache/codex-bin/cargo fmt --all --check
+rustfmt --edition 2024 --check crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/daily_reward.rs
+python3 tools/agents/validate_governance.py
+python3 tools/repository/validate_repository_policy.py
+python3 -m unittest discover -s tools/agents/tests
+git diff --check
+```
+
+### CI-repair results
+
+After resuming from the auth outage, preserved and reviewed the existing repair
+and repeated qualification on the unchanged code. All **22 tests passed**,
+including all four originally reported cases and the strengthened real-dispatch
+regression. PostgreSQL cases ran with the real wrapper-provided route, not the
+unconfigured early return. The results below are from this resumed run; the
+original-HEAD reproduction evidence above is retained from the earlier run.
+
+| Filter/batch | Passed | Duration |
+|---|---:|---:|
+| dispatch `daily` (including positive proof probe) | 3 | 22.65 s |
+| durability `daily` | 5 | 37.36 s |
+| `character_inbox_postgres_cases::` | 6 | 153.61 s |
+| `corpse_transfer_postgres_cases::` | 5 | 35.67 s |
+| native admission resource bounds | 1 | 5.04 s |
+| `durability_guild_tests::event_guard_tests::` | 2 | 56.89 s |
+
+Final dispatch evidence: `crs_daily_dispatch_1792790530787903992`, `180006`,
+start and cleanup markers. DAILY durability reported five `bp_daily_*`
+databases with `180006` and cleanup markers. Corpse and guild likewise emitted
+their real database/version markers; the inbox and native admission harnesses
+assert the canonical server version. The formerly failing corpse boundary case
+used `it_corpseboundary_1792790819151422875`; the guild membership case reported
+five `it_guild_event_whole_*` databases.
+
+Clippy **PASS** for all targets of game-server, durability and dispatch with
+`-D warnings` (existing vendored Tokio/SQLx warnings only). Cargo fmt, the explicit
+auto-mounted-file rustfmt check, both Python validators and `git diff --check`
+**PASS**. No crate manifest or lockfile changed, so workspace clippy was not run.
+Governance unit tests also **PASS**, 129 tests.
+
+Re-read the complete repair diff against
+`/home/mole/oteryn-cache/CODEX-CHECKLIST.md`. Searched `apps/`, `crates/`, `tools/`
+for the affected SQL functions and the new private test helper. No enum variant,
+Rust struct field, trait method or public Rust function was added, so no
+constructor/exhaustive-match/implementation migration is required. The real
+custody proof stays enabled; no test assertion or timeout was weakened. No Git
+index, commit, push, branch switch, reset, stash, credential, Docker, workflow or
+repository-routing mutation occurred.
+
+### CI-repair Unfinished
+
+- CI-only: `two_players_at_the_window_boundary_transfer_the_entry_once`,
+  `resource_bounds_accept_max_and_reject_max_plus_one_before_retention`, and
+  `guild_event_guard_membership_payload_has_complete_binding` passed alone on
+  the original HEAD. Their reported CI exceptions could not be reproduced or
+  captured. No deadline was increased; successor PostgreSQL shards 4/5 remain
+  coordinator CI qualification.
+- Coordinator-owned successor publication, independent review and CI. The
+  earlier mechanic/content parity limitations below are unchanged.
 
 ## Server wiring gap list — 2026-10-23
 

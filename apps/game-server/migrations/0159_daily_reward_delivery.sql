@@ -185,11 +185,18 @@ CREATE FUNCTION game_daily_reward_custody_guard() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public AS $$
 DECLARE item UUID; child UUID;
 BEGIN
+    -- A binding is inserted after native MINT, so eligibility must be checked
+    -- here at deferred execution, never in an immediate trigger WHEN clause.
+    -- Ordinary item traffic must not walk custody trees when DAILY is unused.
+    IF NOT EXISTS(SELECT 1 FROM public.game_item_bindings) THEN RETURN NULL; END IF;
     IF TG_OP='DELETE' THEN item:=OLD.item_instance_id; ELSE item:=NEW.item_instance_id; END IF;
     FOR child IN WITH RECURSIVE tree(id,depth) AS (
         SELECT item,0 UNION ALL
         SELECT e.item_instance_id,t.depth+1 FROM tree t JOIN public.game_item_nested_entries e ON e.parent_item_instance_id=t.id WHERE t.depth<8
-    ) SELECT id FROM tree LIMIT 501 LOOP
+    ) SELECT b.item_instance_id FROM (SELECT id FROM tree LIMIT 501) affected
+        JOIN public.game_item_bindings b ON b.item_instance_id=affected.id LOOP
+        -- Keep the ancestor walk for bound descendants, but never invoke the
+        -- owner/location proof for unrelated, unbound members of the tree.
         PERFORM public.game_daily_reward_bound_custody(child);
     END LOOP;
     RETURN NULL;

@@ -60,6 +60,23 @@ async fn epoch(h: &Harness, value: u64) -> TestResult {
     Ok(())
 }
 
+async fn unrelated_custody_event(h: &Harness) -> TestResult {
+    // Exercise the actual deferred trigger on an unrelated item. The fixture
+    // table adds no item authority, and must work with or without daily bindings.
+    sqlx::raw_sql(
+        "BEGIN; \
+         CREATE TEMP TABLE daily_fixture_custody(item_instance_id uuid) ON COMMIT DROP; \
+         CREATE CONSTRAINT TRIGGER daily_fixture_custody \
+           AFTER INSERT ON daily_fixture_custody DEFERRABLE INITIALLY DEFERRED \
+           FOR EACH ROW EXECUTE FUNCTION game_daily_reward_custody_guard(); \
+         INSERT INTO daily_fixture_custody VALUES('00000000-0000-0000-0000-000000000001'); \
+         COMMIT;",
+    )
+    .execute(&h.pool)
+    .await?;
+    Ok(())
+}
+
 #[test]
 fn daily_reward_real_dispatch_delivers_replays_reloads_and_orders_seven_days() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -84,6 +101,24 @@ fn scenario() -> TestResult {
             .fetch_one(&harness.pool)
             .await?;
         eprintln!("DAILY-DISPATCH-PG database={database} server_version_num={version}");
+        // Keep the real custody proof, but reject any invocation for an unbound
+        // item. This also checks every subsequent native MINT in this scenario.
+        sqlx::raw_sql(
+            "CREATE TABLE daily_fixture_custody_proofs(item_instance_id uuid NOT NULL); \
+             ALTER FUNCTION game_daily_reward_bound_custody(uuid) RENAME TO daily_fixture_bound_custody; \
+             CREATE FUNCTION game_daily_reward_bound_custody(p_item uuid) RETURNS void \
+             LANGUAGE plpgsql AS $$ BEGIN \
+               IF NOT EXISTS(SELECT 1 FROM public.game_item_bindings WHERE item_instance_id=p_item) THEN \
+                 RAISE EXCEPTION 'DAILY custody proof visited an unbound item'; \
+               END IF; \
+               INSERT INTO public.daily_fixture_custody_proofs VALUES(p_item); \
+               PERFORM public.daily_fixture_bound_custody(p_item); \
+             END $$; \
+             REVOKE ALL ON FUNCTION game_daily_reward_bound_custody(uuid) FROM PUBLIC;",
+        )
+        .execute(&harness.pool)
+        .await?;
+        unrelated_custody_event(&harness).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
         let authority = harness
             .root
@@ -166,6 +201,16 @@ fn scenario() -> TestResult {
         assert_eq!(values[5].2, [8, 2]);
         let receipt: (i64,i64,i64,i64)=sqlx::query_as("SELECT (SELECT count(*) FROM game_character_daily_reward_claims),(SELECT count(*) FROM game_character_daily_reward_lines),(SELECT count(*) FROM game_item_bindings),(SELECT count(*) FROM game_item_character_inbox_locations)").fetch_one(&harness.pool).await?;
         assert_eq!(receipt, (1, 1, 1, 1));
+        let proof_seen: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM daily_fixture_custody_proofs JOIN game_item_bindings USING(item_instance_id))",
+        )
+        .fetch_one(&harness.pool)
+        .await?;
+        assert!(
+            proof_seen,
+            "bound MINT must still run the real custody proof"
+        );
+        unrelated_custody_event(&harness).await?;
         let quantity:i64=sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE minted_transaction_id=encode($1,'hex')::uuid").bind(&first_id).fetch_one(&harness.pool).await?;
         assert_eq!(quantity, 5);
         // No selected capability: no DAILY payload and no additional durable row.
