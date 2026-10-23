@@ -4,7 +4,7 @@
 task_id: MINING-1
 title: "MINING-1: mining and map-resource gathering"
 mode: IMPLEMENT
-status: waiting   # contract verification and lane allocation pending
+status: waiting   # server allocation received; gathering-yield rule unresolved
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 3
@@ -14,7 +14,7 @@ briefs:
   - docs/architecture/reviews/OTERYN_GAME_CRAFT1_DECISION_2026-10-15.md
 class: "hard, persistence and economy review"
 base_branch: main
-branch: null
+branch: claude/happy-davinci-ijz3wy-srv-mining
 pr: null
 needs_migration: true   # allocated at lane start
 needs_registry: true   # resource-limit ranges allocated at lane start
@@ -25,6 +25,30 @@ merge_authority: CP_ONLY (builder never marks ready)
 ## Goal
 
 Use a carried pick on an admitted stone or ore map resource, obtain rule-defined drops, and prevent reuse until its cooldown/respawn permits it. Reuse native item-use, map ownership and mint authority; gathering yields are separate from CRAFT-DIG-1 tile opening.
+
+## Server wiring gap list
+
+Read-only audit on 2026-10-23 at `151c4bb8372cea1672e4106afd6b1d0b8253445c`.
+The owner's current packet allocates server implementation, migration **0167** if
+needed, resource-limit entries **0780–0786**, and command types **54–55** /
+capability **48** only if the existing USE wire cannot serve the mechanic.
+Client UI and publication are outside this worker's scope.
+
+| Layer | Exists on this HEAD | Missing for MINING-1 |
+| --- | --- | --- |
+| L3 rules | `items/src/reach.rs` provides same-floor Chebyshev-one reach; content digging validation preserves hole return timers. | No `items/src/mining/`, admitted ore/stone yield table, depletion rule or occurrence-bound draw. |
+| L4 writer | `durability/item_use.rs` provides carried-item fencing and command receipts; `map_item_mint.rs` provides scope/reset-bound map MINT and reconciliation. | No mining writer/receipt/node state. Existing map pickup uses separate MINT and TRANSFER transactions, so it cannot supply the required atomic backpack reward plus depletion unchanged. |
+| Schema | Existing item lifecycle and map MINT migrations; no mining migration/table found. | Migration 0167, if needed, must admit the mining cause, receipts, node transition and runtime grants together. No migration authored while the yield rule is unresolved. |
+| Protocol | `protocol-oteryn/src/world_object.rs`: command 2 USE, carried handle or definition plus `MapUseTarget::Object` / `Item`; bounded codec and result tests already exist. Registry fragments register capabilities 11 and 15. | No new command/codec appears necessary. Mining must use the existing negotiated USE arms; capabilities 11 and 15 are currently absent from the bundle offer. |
+| Dispatch | `gameplay_transport/item_use.rs`, `loop_map_pickup.rs`, and `connection.rs` provide working reference paths. | No mining handler; `connection.rs` currently rejects decoded `use_with_map_item`. Resolve live tool/target, reach, scope, item fence and capacity before the atomic writer. |
+| Offer / runtime | `capabilities.rs` offers bundle item views and map views; game-server `node/serve.rs` composes existing world owners. | No mining catalogue/node admission or runtime caller. Offering the shared interaction capability also needs its existing contract gates honored. |
+| PG E2E | Dispatch `postgres_tests/README.md` describes auto-mounted mechanic cases; BAGS-USE has a real `serve_admitted` byte exchange. | No mining case. Add one filtered auto-mounted case covering reward/result, contention, refusal, replay and durable reload once rules are accepted. |
+
+**Blocking product input:** CRAFT1 C5 and WORLD-INTERACTION-0 §6 explicitly
+exclude gathering yields. The Reference audit below does not establish a generic
+ore/stone mining table. The owner was asked to supply another Reference source or
+accept explicit Oteryn node/output, quantity/chance and respawn rules. No yield,
+cooldown or mint authority is inferred from the implementation allocation.
 
 ## Dependencies
 
@@ -78,7 +102,26 @@ Canary (`opentibiabr/canary`) source paths to consult as evidence:
 
 TibiaWiki page names to consult: **Pick, Mining, Iron Ore**.
 
-TODO: which tiles actually support gathering rather than opening; tool consumption; eligible ores, quantities and probabilities; cooldown/respawn duration; reset/restart behaviour. If upstream has no mining-yield rule, record that gap and obtain an accepted rule instead of calling invented drops parity.
+### Reference parity table — 2026-10-23 audit
+
+Canary source revision: `52550d5e3c0ffe565f4bd1014f4e5575abf1059b`.
+Evidence is limited to the named source paths and the delegated implementation;
+this is not a claim that every quest script in Canary was audited.
+
+| Visible behavior | Reference evidence | Oteryn now |
+| --- | --- | --- |
+| A normal pick invokes tool behavior without an ordinary tool burn. | [pick.lua](https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/data/scripts/actions/tools/pick.lua) registers item 3456 and delegates to `onUsePick`; the delegated handler does not consume the pick. | Carried USE codec exists; mining tool qualification is absent. |
+| Pickable ground opens a hole rather than yielding ore. | [tile_pick.lua](https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/data-otservbr-global/startup/tables/tile_pick.lua) assigns action 101; [register_actions.lua, `onUsePick`](https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/data-otservbr-global/scripts/lib/register_actions.lua) transforms eligible ground and starts decay. | CRAFT1 C5 owns volatile hole opening and explicitly excludes gathering yields. Its timer cannot be reused as a mining respawn rule. |
+| One positioned stone disappears for 20 seconds, with no reward. | The same `onUsePick` removes stone 1772 at `(32648,32134,10)` and recreates it after 20,000 ms; no item is awarded by that branch. | No mining node. The obstacle timer does not establish an ore yield. |
+| Quest crystals and liquid silver have specific rewards and timers. | `onUsePick` has Secret Library crystal selection with a per-player 120-second timer; Grimvale silver has 40% success, a per-player 120-second attempt timer and a 600-second vein return after success. | These are distinct quest-specific rules, not an admitted generic iron/stone table. |
+| A shiny stone is consumed to produce coins or a diamond. | `onUsePick`, target 10310: 1% crystal coin, 5% gold coin, 45% platinum coin, 49% small diamond; the target is removed. | This conversion does not satisfy renewable ore/stone mining. |
+| Ordinary ore acquisition is not established as pick mining. | [TibiaWiki Pick](https://tibia.fandom.com/wiki/Pick) describes hole/stone/ice use; [Iron Ore](https://tibia.fandom.com/wiki/Iron_Ore) lists creature drops and quest acquisition. No generic table was established; no authoritative Mining page was found in this bounded lookup. | Generic yield quantities/chances and respawn duration remain **UNKNOWN**. Custom-server mining pages are not substituted as Tibia parity. |
+| Depletion and receipts survive restart. | The inspected timed map changes use runtime decay/events, not proof of durable shared mining receipts. | Durable restart behavior is required by the current owner packet, a deliberate difference to record in the accepted gathering rule. |
+
+Still required: accept eligible node/output definitions, quantities/probabilities
+and respawn timing, and record the deliberate durable reset/restart semantics.
+If upstream has no matching rule, obtain an accepted Oteryn rule instead of calling
+invented drops parity.
 
 Evidence is not runtime authority. Record pinned source revisions and any deliberate
 difference in the implementation packet before content admission.
@@ -93,6 +136,21 @@ difference in the implementation packet before content admission.
 - [ ] Production callers and real-dispatch end-to-end tests cover all new public APIs.
 
 ## Validation
+
+### Audit checkpoint evidence — 2026-10-23
+
+- `python3 tools/agents/validate_governance.py` — PASS (22 policy documents,
+  9 project lanes).
+- `python3 tools/repository/validate_repository_policy.py` — PASS (23 files,
+  68 workflows, exact-candidate routing regressions).
+- `python3 -m unittest discover -s tools/agents/tests` — PASS, 129 tests.
+- `git diff --check` — PASS.
+- Whole task-card diff reviewed against the owner's
+  `~/oteryn-cache/CODEX-CHECKLIST.md`. Only the task card changed; no new enum
+  variants, struct fields, trait methods or public functions require site updates.
+- Cargo filters covering this change: **none** (task-card-only audit). No Rust
+  compilation, clippy, rustfmt or PostgreSQL qualification is claimed. The
+  commands below remain planned implementation checks, not executed evidence.
 
 Planned commands after implementation; these filters must name the actual new tests
 and produce nonzero test counts. Run only this mechanic's PostgreSQL cases. The
@@ -115,6 +173,16 @@ PG cases must exercise the installed migrator/runtime role, commit/reload,
 rollback, replay/conflict, stale fences, scope isolation and concurrent writers.
 Add mechanic-specific property tests and an end-to-end dispatch case; include
 restart/unknown-commit reconciliation rather than storage-only success claims.
+
+## Unfinished
+
+- Required owner input: identify the Reference mining table or accept an explicit
+  Oteryn-specific node/output, quantity/chance and respawn rule. The allocation
+  supplies durability requirements but not those product values.
+- L3 mining rules, L4 atomic writer/schema, USE dispatch, content/runtime offer
+  and real-dispatch PG E2E remain unimplemented pending that input. No backend-only
+  slice was added and a player gains no mining behavior from this audit.
+- No commit, publication, client edit, migration or registry allocation was made.
 
 ## Risks
 
