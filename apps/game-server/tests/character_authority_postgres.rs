@@ -2443,6 +2443,8 @@ mod quest_state_postgres_cases;
 // protected lane.
 #[path = "support/reward_claim_mint_postgres_cases.rs"]
 mod reward_claim_mint_postgres_cases;
+#[path = "support/route_less_case_guard.rs"]
+mod route_less_case_guard;
 #[path = "support/tutorial_progress_postgres_cases.rs"]
 mod tutorial_progress_postgres_cases;
 // GOLD-FEE-ACT-1 type-2 audit activation (migration 0079).

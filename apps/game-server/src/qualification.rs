@@ -799,6 +799,7 @@ fn first_control_frames(world: WorldId) -> TestResult<Vec<Vec<u8>>> {
             .to_vec(),
         revision: 0,
     };
+    let vitals_payload = vocationless_vitals_payload()?;
     let mut frames: Vec<Vec<u8>> = encode_single_chunk_snapshot(
         1,
         1,
@@ -820,6 +821,12 @@ fn first_control_frames(world: WorldId) -> TestResult<Vec<Vec<u8>>> {
                         door_overlay,
                     ])
                     .map_err(|_| "encode door overlay snapshot")?,
+            },
+            DomainSnapshot {
+                domain_id: oteryn_protocol_oteryn::actor_spell::STATE_DOMAIN_ACTOR_VITALS,
+                revision: 1,
+                snapshot_type: oteryn_protocol_oteryn::actor_spell::SNAPSHOT_TYPE_ACTOR_VITALS_V1,
+                payload: &vitals_payload,
             },
         ],
     )?
@@ -847,6 +854,22 @@ fn first_control_frames(world: WorldId) -> TestResult<Vec<Vec<u8>>> {
         encode_command_protocol_error(FoundationProtocolError::CommandSequenceGap, 1, 8, 7)?,
     ]);
     Ok(frames)
+}
+
+/// TUTORIAL-1: a vocationless level-1 Character joins with full vitals at revision 1, so every
+/// join snapshot of the seam carries this `ACTOR_VITALS` domain after the door overlay.
+fn vocationless_vitals_payload() -> TestResult<Vec<u8>> {
+    use oteryn_protocol_oteryn::actor_spell::{ActorVitals, encode_actor_vitals};
+    Ok(encode_actor_vitals(&ActorVitals {
+        health: 150,
+        max_health: 150,
+        mana: 55,
+        max_mana: 55,
+        soul: 100,
+        harmony: 0,
+        serene: false,
+    })
+    .map_err(|_| "encode vocationless vitals snapshot")?)
 }
 
 /// The exact frames after `ServerAccepted` for the USE-WIRE-V1 scenario (#162 5868482467,
@@ -924,6 +947,7 @@ fn use_wire_frames(world: WorldId) -> TestResult<Vec<Vec<u8>>> {
             &payload,
         )?)
     };
+    let vitals_payload = vocationless_vitals_payload()?;
     let mut frames: Vec<Vec<u8>> = encode_single_chunk_snapshot(
         1,
         1,
@@ -944,6 +968,12 @@ fn use_wire_frames(world: WorldId) -> TestResult<Vec<Vec<u8>>> {
                     0,
                 )])
                 .map_err(|_| "encode overlay snapshot")?,
+            },
+            DomainSnapshot {
+                domain_id: oteryn_protocol_oteryn::actor_spell::STATE_DOMAIN_ACTOR_VITALS,
+                revision: 1,
+                snapshot_type: oteryn_protocol_oteryn::actor_spell::SNAPSHOT_TYPE_ACTOR_VITALS_V1,
+                payload: &vitals_payload,
             },
         ],
     )?
@@ -2467,6 +2497,7 @@ fn resume_frames(
             .to_vec(),
         revision: 0,
     };
+    let vitals_payload = vocationless_vitals_payload()?;
     frames.extend(encode_single_chunk_snapshot(
         generation,
         1,
@@ -2488,6 +2519,12 @@ fn resume_frames(
                         door_overlay,
                     ])
                     .map_err(|_| "encode door overlay snapshot")?,
+            },
+            DomainSnapshot {
+                domain_id: oteryn_protocol_oteryn::actor_spell::STATE_DOMAIN_ACTOR_VITALS,
+                revision: 1,
+                snapshot_type: oteryn_protocol_oteryn::actor_spell::SNAPSHOT_TYPE_ACTOR_VITALS_V1,
+                payload: &vitals_payload,
             },
         ],
     )?);
