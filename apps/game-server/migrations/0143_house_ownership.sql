@@ -28,6 +28,19 @@ CREATE TABLE game_house_properties (
  CHECK((state IN (3,4,5))=(owner_character_id IS NOT NULL)),
  CHECK(owner_character_id IS NULL OR (paid_until IS NOT NULL AND acquisition_receipt_ref IS NOT NULL))
 );
+
+-- 0132 conservatively treated any property owner as a Guild terminal participant.
+-- This spine permits only private houses/shops, with Character/Account ownership;
+-- it cannot hold Guild property. Keep genuine Guild owners fail-closed. A later
+-- Guildhall owner must compose its release/payout before enabling Guild cleanup.
+-- GUILD PARTICIPANT GUARD BEGIN
+CREATE OR REPLACE FUNCTION game_guild_core_participants_installed() RETURNS BOOLEAN
+LANGUAGE sql STABLE AS $$ SELECT EXISTS(SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+   WHERE n.nspname=current_schema() AND c.relkind IN('r','p')
+     AND (c.relname LIKE 'game_guild_bank_%' OR c.relname LIKE 'game_guildhall_%'
+       OR c.relname LIKE 'game_house_guild_%')) $$;
+-- GUILD PARTICIPANT GUARD END
+
 CREATE TABLE game_house_tiles (
  world_id UUID NOT NULL, house_key TEXT NOT NULL,
  spatial_position BYTEA NOT NULL CHECK(octet_length(spatial_position) BETWEEN 1 AND 128),

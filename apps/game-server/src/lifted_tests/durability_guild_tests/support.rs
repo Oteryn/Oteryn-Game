@@ -192,6 +192,16 @@ pub(super) async fn prepare(h: &Harness) -> TestResult {
 }
 pub(super) async fn guard(h: &Harness) -> TestResult {
     h.pool.execute(*GUILD_GUARDS_PROPOSAL).await?;
+    // Rebuilding the historical Guild snapshot must retain the later ordinary-House
+    // participant correction, using the exact installed SQL rather than a copied guard.
+    let house_guard = include_str!("../../../migrations/0143_house_ownership.sql")
+        .split("-- GUILD PARTICIPANT GUARD BEGIN")
+        .nth(1)
+        .unwrap()
+        .split("-- GUILD PARTICIPANT GUARD END")
+        .next()
+        .unwrap();
+    h.pool.execute(house_guard).await?;
     Ok(())
 }
 pub(super) async fn apply(

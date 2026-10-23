@@ -16,6 +16,8 @@ use std::{future::Future, sync::Arc};
 
 const HOUSE: &str = "oteryn:content.house.thais_1";
 
+#[path = "house_ownership_tests/guild_participants.rs"]
+mod guild_participants;
 #[path = "house_ownership_tests/integrity.rs"]
 mod integrity;
 
