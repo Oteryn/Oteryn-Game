@@ -204,6 +204,7 @@ pub const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     },
     super::timed_item::OFFERED,
     super::guild_intent::OFFERED,
+    super::vip::OFFERED,
 ];
 const BUNDLE_WORLD_UNTIMED_LEN: usize = BUNDLE_WORLD_OFFERED_CAPABILITIES.len() - 1;
 /// [`BUNDLE_WORLD_OFFERED_CAPABILITIES`] without capability 39, filtered at compile time so the

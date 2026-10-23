@@ -46,6 +46,7 @@ mod logout;
 mod logout_tests;
 mod loop_move;
 pub mod spectate_session;
+mod vip;
 mod timed_item;
 mod timed_item_clock;
 mod timed_item_content;
@@ -2523,6 +2524,7 @@ fn operator_event(line: &str) {
 }
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
+    vip::composed_methods!();
     async fn timed_item(
         &self,
         actor: ExactActorRef,
