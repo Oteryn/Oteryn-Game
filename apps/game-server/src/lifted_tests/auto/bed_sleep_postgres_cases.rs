@@ -2,7 +2,7 @@
 //! House fixture; sleep authorization uses native ownership/ACL tables, never
 //! test_house_properties. The sex/head/skill are server fixture intent, not
 //! evidence for the still-unimplemented active map/reservation/OFFLINE owners.
-#[path = "../../../tests/support/house_scope_handoff_fixture.rs"]
+#[path = "../support/house_scope_handoff_fixture.rs"]
 mod house_fixture;
 use crate::bestiary_postgres_harness::{CHARACTER, Harness, TestResult, WORLD, debug, id, runtime};
 use crate::content::LogicalCell;
