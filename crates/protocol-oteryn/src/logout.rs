@@ -3,8 +3,7 @@
 //! Schema: `docs/contracts/protocol-oteryn/v1/logout_v1.proto`, from ARCH-KILL-REWARD-LOGOUT-1
 //! §1.6. Capability 21 `LOGOUT_V1` (no requirement) and command type 23 `LOGOUT_INTENT` are
 //! registered in `PROTOCOL_OTERYN_V1_REGISTRY.json`. The decision proposed capability 19, which
-//! was already `WORLD_LIGHT_V1`, and 20 is leased to `CONNECTION_TRACE_V1` (D770), so the
-//! capability takes the next free number.
+//! was already `WORLD_LIGHT_V1`, and 20 is leased to `CONNECTION_TRACE_V1` (D770).
 //!
 //! The intent is always empty. Decoding of the result is strict, and encoding refuses the same
 //! values as a fault before any byte is emitted: a zero or unknown code, a `retry_after_ms` with

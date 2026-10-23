@@ -1,14 +1,8 @@
 //! Server-owned scheduled announcement; the player can observe, never activate it.
 use super::ComposedFreshAdmission;
-use super::capabilities::OfferedCapability;
 use super::connection::{FreshAdmissionAuthority, UseCommand};
 use crate::durability::character_progression::CharacterProgressionError;
-use oteryn_protocol_oteryn::world_event::{CAPABILITY_WORLD_EVENT_V1, decode_world_event_query};
-
-pub(super) const OFFERED: OfferedCapability = OfferedCapability {
-    id: CAPABILITY_WORLD_EVENT_V1,
-    requires: &[],
-};
+use oteryn_protocol_oteryn::world_event::decode_world_event_query;
 
 /// None is an unknown/unavailable commit: disconnect without a terminal result.
 pub(super) type Reply = Option<Result<Vec<u8>, ()>>;

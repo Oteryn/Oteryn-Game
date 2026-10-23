@@ -13,6 +13,8 @@ use std::path::{Path, PathBuf};
 
 use serde_json::Value;
 
+mod build_capabilities;
+
 struct Registry {
     output: &'static str,
     base: &'static str,
@@ -283,11 +285,28 @@ fn assemble(root: &Path, registry: &Registry) -> Result<String, String> {
 
 fn run() -> Result<(), String> {
     watch(Path::new("build.rs"));
+    watch(Path::new("build_capabilities.rs"));
     let manifest = std::env::var("CARGO_MANIFEST_DIR").map_err(|error| error.to_string())?;
     let out = std::env::var("OUT_DIR").map_err(|error| error.to_string())?;
     let root = Path::new(&manifest).join("../..");
     for registry in [&PROTOCOL, &RESOURCE_LIMITS] {
         let aggregate = assemble(&root, registry)?;
+        if registry.prefix_is_id {
+            let entries = fragments(&root.join("crates/protocol-oteryn/capabilities"))?
+                .iter()
+                .map(|fragment| build_capabilities::parse(&fragment.name, &fragment.text))
+                .collect::<Result<Vec<_>, _>>()?;
+            let registry = serde_json::from_str(&aggregate).map_err(|error| error.to_string())?;
+            let (registered, tables) = build_capabilities::render(&entries, &registry)?;
+            for (name, text) in [
+                ("registered_capabilities.rs", registered),
+                ("capability_tables.rs", tables),
+            ] {
+                let target = Path::new(&out).join(name);
+                fs::write(&target, text)
+                    .map_err(|error| format!("{}: {error}", target.display()))?;
+            }
+        }
         let target = Path::new(&out).join(registry.output);
         fs::write(&target, aggregate).map_err(|error| format!("{}: {error}", target.display()))?;
     }

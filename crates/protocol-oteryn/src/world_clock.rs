@@ -15,8 +15,9 @@ use crate::charm_wire::{WireResult, push_nonzero_varint_field, read_uint32_field
 /// Registered capability `WORLD_LIGHT_V1`: no command type, state domain 18, requires 6.
 pub const CAPABILITY_WORLD_LIGHT_V1: u32 = 19;
 /// The capability `WORLD_LIGHT_V1` requires: 6 `WORLD_SPATIAL_ENTITIES`, the world state it rides on.
-pub const CAPABILITY_WORLD_LIGHT_V1_REQUIRES: [u32; 1] =
-    [crate::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES];
+pub const CAPABILITY_WORLD_LIGHT_V1_REQUIRES: [u32; 1] = [
+    crate::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES, // WORLD_SPATIAL_ENTITIES
+];
 /// Registered state domain `WORLD_CLOCK` (capability 19).
 pub const STATE_DOMAIN_WORLD_CLOCK: u32 = 18;
 /// Delta type 1 `WORLD_CLOCK_DELTA_V1`.
