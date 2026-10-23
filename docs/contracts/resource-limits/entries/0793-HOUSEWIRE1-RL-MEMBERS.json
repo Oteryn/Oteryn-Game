@@ -1,0 +1,21 @@
+{
+  "id": "HOUSEWIRE1-RL-MEMBERS",
+  "owner_contract": "protocol-oteryn/v1/house_v1.proto",
+  "resource": "Character members in one native ACL list",
+  "unit": "entries",
+  "hard_maximum": 200,
+  "configurable_range": {
+    "minimum": 200,
+    "maximum": 200
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Bound before allocation or mutation; refuse excess.",
+  "client_visible": true,
+  "boundary_tests": [
+    "at limit accepted",
+    "above limit rejected"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/house.rs"
+  ]
+}
