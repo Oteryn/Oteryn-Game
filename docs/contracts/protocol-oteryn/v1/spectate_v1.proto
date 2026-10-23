@@ -1,0 +1,45 @@
+syntax = "proto3";
+package oteryn.protocol.v1.spectate;
+
+// Dormant SPECTATE1 candidate, capability 33 (never offered). No observer admission
+// profile/bootstrap is defined by this schema. Every family-15 frame before admission
+// is refused NOT_AVAILABLE; player admission/recovery never authenticates an observer.
+// Existing uint32-be framing and WireEnvelope fields 1=15, 2=generation, 4=payload.
+// No server/gameplay command sequence; observer identity is supplied by future O2.
+message SpectateMessageV1 {
+  enum Kind {
+    KIND_UNSPECIFIED = 0;
+    GRANT_SET = 1;
+    GRANT_REVOKE = 2;
+    TARGET_STATE = 3;
+    STOP = 4;
+    WORLD_FRAME = 5;
+    END = 6;
+    NOT_AVAILABLE = 7;
+    NOT_ALLOWED = 8;
+    KEEPALIVE = 9;
+  }
+  enum Audience { AUDIENCE_UNSPECIFIED = 0; CODE = 1; CONTACTS = 2; }
+  enum EndReason {
+    END_REASON_UNSPECIFIED = 0;
+    REVOKED = 1;
+    TARGET_GONE = 2;
+    TARGET_MOVED = 3;
+    OVERLOAD = 4;
+    NOT_OBSERVABLE = 5;
+    OBSERVER_STOPPED = 6;
+  }
+  Kind kind = 1;
+  optional Audience audience = 2; // only GRANT_SET; CONTACTS uniformly unavailable
+  optional bool active = 3; // TARGET_STATE only, both fields required
+  optional uint32 count = 4; // 0..50, zero when inactive; no identities
+  optional uint32 domain = 5; // WORLD_FRAME only: 1,12,17,19
+  optional uint32 payload_type = 6; // existing payload type, nonzero
+  optional bytes payload = 7; // unchanged world payload; bounded by its native codec, including full map snapshots
+  optional EndReason end_reason = 8; // END only
+  optional bool snapshot = 9; // WORLD_FRAME only, required
+}
+// Strict codecs reject unknown/repeated fields and fields from other kinds.
+// Commands 34/35 reserve target GRANT_SET/GRANT_REVOKE. Domain 25 reserves TARGET_STATE.
+// Native Game-only owner returns the generated secret solely to its consenting target;
+// client delivery/activation remains gated, as do all production admission paths.
