@@ -731,6 +731,7 @@ fn the_bundle_world_offered_set_is_3_the_item_view_set_12_14_and_18_requiring_4_
         CAPABILITY_WORLD_MAP_VIEW_V1,
         CAPABILITY_ITEM_LOOK_V1,
         oteryn_protocol_oteryn::depot::CAPABILITY_DEPOT_V1,
+        oteryn_protocol_oteryn::vip::CAPABILITY_VIP_V1,
         oteryn_protocol_oteryn::world_object::CAPABILITY_WORLD_INTERACTION_V1,
         oteryn_protocol_oteryn::world_object::CAPABILITY_ITEM_USE_V1,
     ];
@@ -764,6 +765,10 @@ fn the_bundle_world_offered_set_is_3_the_item_view_set_12_14_and_18_requiring_4_
     assert_eq!(requires(CAPABILITY_ITEM_LOOK_V1), Some(&[][..]));
     assert_eq!(requires(11), Some(&[15, 18][..]));
     assert_eq!(requires(15), Some(&[4][..]));
+    assert_eq!(
+        requires(oteryn_protocol_oteryn::vip::CAPABILITY_VIP_V1),
+        Some(&[][..])
+    );
     assert_eq!(
         requires(oteryn_protocol_oteryn::depot::CAPABILITY_DEPOT_V1),
         Some(&[4][..])
