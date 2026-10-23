@@ -42,6 +42,73 @@ is re-implemented fresh on the current layout. Beds are BED-1 (out of scope).
 
 Offline training (Premium statue) and exercise weapons/dummies.
 
+## Server wiring gap list
+
+Local audit, 2026-10-23 at `3c57781c321e643a67457374d1d42b6dbabd9133`
+(before implementation; `MECHANICS_STATUS.md` E2E audit and this worktree inspected).
+Client UI is outside this allocation.
+
+| Layer | Present on this HEAD | Missing |
+|---|---|---|
+| L3 | Native build/relevel formula, hit/mana training, stamina regeneration | Offline pool/settlement planner and exercise scheduling/rates |
+| L4 | Fenced, revision-serialized build writer; composed build transaction port; item timed charges | Offline markers, DB session/lease clocks and immediate predecessor link; atomic exercise charge/build settlement |
+| Schema | Build row/receipts (0030), timed item state | OFFLINE0 build fields and marker invariants; reserved migration 0173 only |
+| Protocol | Logout, item/world use and capability negotiation | Training codec/registry (reserved commands 66–67, capability 54) |
+| Dispatch | Real admission, logout, item-use, build checkpoints | Training dispatch and admission/logout settlement callers |
+| Content/offer | Native training curves; staged Reference item evidence | Admitted statue/dummy facts and charge rates; bundle capability offer |
+| Qualification | Auto-mounted dispatch PostgreSQL test tree | Real command bytes → dispatch → durable write → result bytes, replay/fence/reload tests |
+
+### Reference parity table
+
+| Visible behavior | Reference evidence | Oteryn now |
+|---|---|---|
+| Premium statue selects a skill and logs out | Accepted OFFLINE0 §6; `training-content-1/facts.json`, `training.offline` | No statue caller or durable activation |
+| Next login settles once, after at least 600 seconds offline | Accepted OFFLINE0 §5; `gameplay-source-reconciliation.json` retains the donor formula as unqualified | No settlement; only shared stamina arithmetic exists |
+| Exercise weapon trains every two seconds and disappears at its last charge | Accepted EXERCISE0 §§2–5; staged charge counts are PROVEN | Generic timed-item owner exists; no exercise caller/composed build write |
+| Skill/magic gain per charge | `gameplay-source-reconciliation.json`: melee 7 donor tries vs 7.2 community hit equivalents; bow units conflict; 600 base mana corroborated but final gain unqualified | No runtime rate selected |
+
+### Current checkpoint and pending decision (2026-10-23)
+
+`status: waiting` remains accurate. Only this card is changed; no implementation or
+new player-visible server behavior is claimed. Audit classification: PROVEN for
+the missing server layers above; UNKNOWN/CONFLICT for unresolved Reference gains.
+
+The source reconciliation dated 2026-10-19 explicitly records
+`SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN`,
+`selected_for_native_runtime: false` and
+`runtime_admission: BLOCKED_PENDING_NATIVE_QUALIFICATION` for offline formulas and
+exercise gains, including the 600-mana candidate. Its README states that source
+code alone does not meet the original official/controlled-gameplay evidence
+requirement. The accepted briefs describe provisional formulas; the newer source
+packet does not select them for runtime. The present instruction to fail closed
+on missing source facts does not resolve that rate selection explicitly.
+
+Owner question (pending; supersedes the earlier magic-only alternative): use the
+accepted OFFLINE0 formulas and retained Canary exercise gains as provisional
+Oteryn rules for this basic server task, retaining the accepted two-second tick
+and documenting parity gaps, or keep rate selection blocked pending qualified
+Reference values? Recommendation: explicitly select the provisional rules for
+this task. No owner-funded Reference measurement or paid review was triggered.
+
+Unfinished: L3 planner, FND clock/predecessor port, migration 0173, marker writer,
+exercise charge/build composition, admitted content, wire/offer/dispatch,
+admission/logout callers and PostgreSQL E2E. Next step after rate selection is
+the mechanic-owned L3/content implementation followed by the composed durable
+writer and real wire qualification; no backend-only completion is acceptable.
+
+Validation for the current documentation-only delta:
+
+- `python3 tools/agents/validate_governance.py`: PASS.
+- `python3 -m unittest discover -s tools/agents/tests`: PASS, 129 tests.
+- `python3 tools/repository/validate_repository_policy.py`: PASS.
+- `git diff --check`: PASS.
+- Whole diff reviewed against `~/oteryn-cache/CODEX-CHECKLIST.md`: no new Rust
+  enum variants, fields, trait methods or public functions; no production paths,
+  tests, workflow policy, credentials or client files changed.
+- Cargo test filters: none added or run; no Rust crate touched and no PostgreSQL
+  qualification claimed. Focused unit/PG filters must be recorded when the
+  implementation exists.
+
 ## Dependencies (re-verified on origin/main 59785d76, 2026-10-22)
 
 | Dependency | State |
