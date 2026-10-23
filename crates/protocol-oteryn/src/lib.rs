@@ -13,6 +13,7 @@
 use std::collections::BTreeSet;
 pub mod actor_condition_snapshot_candidate;
 pub mod appearance;
+pub mod command_replay;
 mod contract_registries;
 pub use contract_registries::{PROTOCOL_OTERYN_V1_REGISTRY_JSON, RESOURCE_LIMITS_REGISTRY_JSON};
 use std::error::Error;

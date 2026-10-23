@@ -381,6 +381,11 @@ const ADMISSION_REFUSAL_WRITE_BOUND: std::time::Duration = std::time::Duration::
 /// The owning fresh-admission authority. Production composes the real owners;
 /// nothing on the transport side can mark a connection admitted.
 pub trait FreshAdmissionAuthority {
+    /// The production session owner retains command truth across connection replacement.
+    /// Transport-only authorities may omit the resumable command directory.
+    fn session_commands(&self) -> Option<&super::session_ingress::SessionCommands> {
+        None
+    }
     super::appearance_change::authority_methods!();
     fn admit(
         &self,
@@ -2154,7 +2159,11 @@ where
         admitted.continuity.combat.snapshot_sent(*revision, *state);
     }
     let mut sequence = admitted.continuity.server_sequence;
-    let mut next_command = admitted.continuity.next_command_id;
+    let Some(mut commands) =
+        super::session_ingress::SessionCommandStream::open(authority.session_commands(), &admitted)
+    else {
+        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+    };
     // NPC-ECON-1: only a connection that continues an earlier one of this GameSession can carry
     // an accepted original Bank command. A fresh admission (generation 1 at CommandId 1, FND-02)
     // is the session's first connection, so its first command never touches the Bank journal;
@@ -2365,6 +2374,7 @@ where
             })
             .await
         };
+        let buffered_original = matches!(&next, Next::StepDue);
         let (frame, arrived_while_buffered) = match next {
             // SPEED-1: the buffered step is due; its frame runs now, before any frame held
             // behind it.
@@ -2735,33 +2745,37 @@ where
                 Err(error) => return close_admitted(stream, admitted, error).await,
             },
         };
-        if command.command_id != next_command {
-            // FND-02 §13.2: a lower ID is never re-executed and no outcome is retained; a
-            // higher ID is a gap that names the expected ID.
-            let (error, expected) = if command.command_id < next_command {
-                (FoundationProtocolError::CommandOutcomeExpired, 0)
-            } else {
-                (FoundationProtocolError::CommandSequenceGap, next_command)
-            };
-            let _ = match encode_command_protocol_error(
-                error,
-                generation,
-                command.command_id,
-                expected,
-            ) {
-                Ok(frame) => write_frame(stream, &frame).await,
-                Err(_) => Ok(()),
-            };
-            return ConnectionEnd::AdmittedThenClosed(admitted, error);
+        match commands.begin(command.command_id, generation, sequence, buffered_original) {
+            Err((error, expected)) => {
+                let _ = match encode_command_protocol_error(
+                    error,
+                    generation,
+                    command.command_id,
+                    expected,
+                ) {
+                    Ok(frame) => write_frame(stream, &frame).await,
+                    Err(_) => Ok(()),
+                };
+                return ConnectionEnd::AdmittedThenClosed(admitted, error);
+            }
+            Ok(super::session_ingress::CommandAction::Replay(frame)) => {
+                sequence += 1; // begin checked the successor before encoding the replay.
+                admitted.continuity.server_sequence = sequence;
+                if write_frame(stream, &frame).await.is_err() {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                }
+                continue;
+            }
+            Ok(super::session_ingress::CommandAction::Pending) => continue,
+            Ok(super::session_ingress::CommandAction::Execute) => {}
         }
+        admitted.continuity.next_command_id = commands.next_command_id();
         // Unknown command types and malformed payloads have no effect. The result payload
         // belongs to the command type, so an unregistered type gets none. USE_INTENT (command
         // type 2, USE-WIRE-V1 #162 5868482467) is dispatched under the same FND-02 CommandId
-        // sequencing this loop already enforces above for every command: a CommandId can be
-        // acted on at most once per connection generation, so a replay of the same CommandId
-        // never makes a second transition.
-        // WORLD_ACTOR_SPELL_CAST_INTENT (command type 3) follows the same discipline: a replayed
-        // CommandId expires above, so a retry never casts or pays a second time (SPELL-D3).
+        // session ingress above for every command. A reserved CommandId never becomes a
+        // second operation, including across a same-GameSession connection replacement.
+        // Spell retries likewise never cast or pay a second time (SPELL-D3).
         // ACCOUNT_ACHIEVEMENTS_QUERY (command type 10, display contract D223-D228) is a read of
         // the session's own account: the admitted controller's, never the payload's; a session
         // without a controller binding has none and is REJECTED.
@@ -3510,15 +3524,11 @@ where
         if let Dispatch::Appearance(None) = dispatch {
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
         }
-        let (Some(result_sequence), Some(following)) =
-            (sequence.checked_add(1), next_command.checked_add(1))
-        else {
+        let Some(result_sequence) = sequence.checked_add(1) else {
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
         };
         sequence = result_sequence;
-        next_command = following;
         admitted.continuity.server_sequence = sequence;
-        admitted.continuity.next_command_id = next_command;
         let (status, result_payload) = match &mut dispatch {
             Dispatch::Appearance(Some(result)) => match appearance_change::result(*result) {
                 Some(result) => result,
@@ -3692,6 +3702,10 @@ where
         let Ok(result) = result else {
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
         };
+        if commands.terminalize(command.command_id, &result).is_none() {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        }
+        admitted.continuity.next_command_id = commands.next_command_id();
         if let Dispatch::Logout(LogoutResult::Accepted) = dispatch {
             // §1.6: the release committed before this result. No command is read any more and
             // the transport closes cleanly; a failed write is no control loss either. A second
