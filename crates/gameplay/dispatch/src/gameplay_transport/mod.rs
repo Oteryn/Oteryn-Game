@@ -32,6 +32,7 @@ pub mod fresh_evidence;
 mod guild_chat;
 mod guild_intent;
 mod highscores;
+mod house_move_out;
 mod input_gate;
 mod item_look;
 mod item_move;
@@ -2513,6 +2514,7 @@ fn operator_event(line: &str) {
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     appearance_change::composed_methods!();
     guild_intent::composed_methods!();
+    house_move_out::composed_methods!();
     async fn observe_quest_log(
         &self,
         actor: ExactActorRef,

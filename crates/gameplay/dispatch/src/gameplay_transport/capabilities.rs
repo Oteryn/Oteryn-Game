@@ -133,6 +133,7 @@ pub const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     TUTORIAL_NOTICES,
     super::guild_chat::OFFERED,
     super::guild_intent::OFFERED,
+    super::house_move_out::OFFERED,
 ];
 
 /// The offered set of a World booted from a bundle (MAP-CUTOVER-1b, NPC-CMD-1a, ITEM-LOOP-1),
@@ -203,6 +204,7 @@ pub const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
         requires: &[CAPABILITY_ITEM_VIEW_MOVE_V1],
     },
     super::guild_intent::OFFERED,
+    super::house_move_out::OFFERED,
 ];
 
 /// MAP-ITEM-REF-1: the production offered set with capability 4 `ITEM_VIEW_MOVE_V1`, which
@@ -238,6 +240,7 @@ pub const ITEM_VIEW_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     TUTORIAL_NOTICES,
     super::guild_chat::OFFERED,
     super::guild_intent::OFFERED,
+    super::house_move_out::OFFERED,
 ];
 
 /// Bound of one session's selection. A test keeps the production offered set within it.
