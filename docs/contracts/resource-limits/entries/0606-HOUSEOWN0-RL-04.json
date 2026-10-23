@@ -1,0 +1,22 @@
+{
+  "id": "HOUSEOWN0-RL-04",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_HOUSE_OWN0_HOUSE_OWNERSHIP_DECISION_2026-09-30.md",
+  "resource": "Anti-sniping extension window",
+  "unit": "microseconds",
+  "hard_maximum": 900000000,
+  "configurable_range": {
+    "minimum": 900000000,
+    "maximum": 900000000
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Check in the owning House rule or durable pass before mutation.",
+  "client_visible": false,
+  "boundary_tests": [
+    "last-window bid extends deadline",
+    "bid at deadline refused"
+  ],
+  "consumers": [
+    "crates/gameplay/housing/src/house_auction.rs",
+    "crates/gameplay/durability/src/durability/house_ownership.rs"
+  ]
+}

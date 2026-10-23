@@ -1,5 +1,6 @@
 //! L3 rules: house access lists, entry/handoff tiles, interior and rent rules.
 
+pub mod house_auction;
 pub mod house_interior;
 pub mod house_scope;
 pub mod house_scope_handoff;

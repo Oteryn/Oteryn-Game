@@ -7,6 +7,7 @@ mod attack;
 mod bank_npc;
 mod bed_sleep;
 mod bundle_map_position;
+mod depot;
 use bundle_map_position::bundle_map_position;
 #[cfg(test)]
 use bundle_map_position::bundle_world_map;
@@ -2718,6 +2719,16 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         request: item_move::EquipmentMove,
     ) -> item_move::EquipmentMoveResult {
         equipment_move::move_equipment(self, actor, command, request).await
+    }
+
+    async fn depot(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::depot::DepotIntent,
+        item: Option<item_view::ItemKey>,
+    ) -> Option<oteryn_protocol_oteryn::depot::DepotReply> {
+        depot::execute(self, actor, command, intent, item).await
     }
 
     async fn committed_loop_move(
