@@ -19,7 +19,7 @@ use oteryn_gameplay_social_rules::egress::{self, LineClass};
 /// Translate a wire line into its pure drop class.
 fn drop_rank(line: &ChatLine) -> u8 {
     egress::drop_rank(match line {
-        ChatLine::Room { .. } => LineClass::Room,
+        ChatLine::Guild(_) | ChatLine::Room { .. } => LineClass::Room,
         ChatLine::Local { .. } => LineClass::Local,
         ChatLine::Private { .. } => LineClass::Private,
         ChatLine::Dropped => LineClass::Dropped,
@@ -70,6 +70,14 @@ impl ChatEgress {
         let line = self.next_for_write()?;
         self.delivered();
         Some(line)
+    }
+
+    pub fn peek(&self) -> Option<&ChatLine> {
+        if self.marker_owed {
+            Some(&ChatLine::Dropped)
+        } else {
+            self.lines.front()
+        }
     }
 
     fn take(&mut self) -> Option<ChatLine> {

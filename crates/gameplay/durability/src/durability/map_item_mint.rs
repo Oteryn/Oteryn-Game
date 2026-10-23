@@ -784,6 +784,13 @@ async fn admit(
     {
         return Ok(Err(MapItemMintError::AuthorityRejected));
     }
+    let epoch_current: bool = sqlx::query_scalar(
+        "SELECT game_world_reset_map_epoch_current(encode($1,'hex')::uuid,$2::text::numeric)",
+    ).bind(reservation.world_id.as_slice()).bind(request.reset_epoch.to_string())
+        .fetch_one(&mut **tx).await?;
+    if !epoch_current {
+        return Ok(Err(MapItemMintError::AuthorityRejected));
+    }
     lock_entry(tx, request, reservation).await?;
     let already_taken: bool = sqlx::query_scalar(
         "SELECT EXISTS (SELECT 1 FROM game_map_item_mint_receipts \

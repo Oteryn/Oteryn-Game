@@ -54,6 +54,12 @@ impl QualifiedHousePlacement {
     }
 }
 impl QualifiedHouseTiles {
+    /// Reset's HOUSE-1a seam admits only a qualified, explicitly empty catalogue.
+    /// Unknown metadata and every actual House remain closed until that owner lands.
+    pub fn is_known_empty(&self) -> bool {
+        self.houses.as_ref().is_some_and(Vec::is_empty)
+    }
+
     pub(super) fn from_source_world(
         world: &super::native_spell_world::QualifiedNativeSpellWorld,
     ) -> Self {

@@ -405,7 +405,7 @@ impl ChatRelay {
                 }
                 reconnect = false;
                 next_tick = Instant::now() + TICK;
-                self.report_drops(reported);
+                self.report_drops(chat, reported);
             }
             let remaining = next_tick.saturating_duration_since(Instant::now());
             match tokio::time::timeout(remaining, listener.try_recv()).await {
@@ -511,12 +511,15 @@ impl ChatRelay {
         }
     }
 
-    fn report_drops(&self, reported: &mut Instant) {
+    fn report_drops(&self, chat: &ChatRuntime, reported: &mut Instant) {
         if reported.elapsed() < DROP_REPORT {
             return;
         }
         *reported = Instant::now();
-        let dropped = self.dropped.swap(0, Ordering::Relaxed);
+        let dropped = self
+            .dropped
+            .swap(0, Ordering::Relaxed)
+            .saturating_add(chat.guild.take_drops());
         if dropped > 0 {
             operator_event(&format!("chat_relay_dropped lines={dropped}"));
         }

@@ -3019,17 +3019,9 @@ impl PostGraceDurabilityFlowV1 {
 #[path = "control_loss_durability_tests.rs"]
 mod control_loss_durability_tests;
 
-/// Classification from the owning runtime, never a caller supplied loss flag.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ControlLossCauseV1 {
-    AuthoritativeUnexpectedLoss,
-    HealthyController,
-    SocketClosedOnly,
-    ProcessRestartOnly,
-    GracefulLogout,
-    HealthyMigration,
-    Suspected,
-}
+#[path = "planned_world_reset.rs"]
+mod planned_world_reset;
+pub use planned_world_reset::ControlLossCauseV1;
 /// Complete prior continuity. Fresh origin is asserted by the sealed owner,
 /// not inferred from a missing database row. Resumed history remains retained.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -3085,7 +3077,7 @@ impl ControlLossObservationV1 {
             || !self.runtime_ready
             || self.placement_identity == [0; 16]
             || self.placement_revision == 0
-            || self.cause != ControlLossCauseV1::AuthoritativeUnexpectedLoss
+            || !self.cause.admits(self.session.commit().world_id())
             || self.session.session_state() != GameSessionState::Active
             || self.session.current_transport().is_none()
             || self.account_presence.character_id() != self.session.commit().character_id()

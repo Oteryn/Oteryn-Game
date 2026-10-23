@@ -4,7 +4,7 @@
 task_id: TRADE-PLAYER-1
 title: "TRADE-PLAYER-1: player-to-player trade"
 mode: IMPLEMENT
-status: waiting
+status: waiting   # TRADE-PLAYER-1 slice merged (#2332); remaining slices per card
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 4
@@ -13,7 +13,7 @@ plan_row: "§4 Epic 2 row TRADE-PLAYER-1 (row 82); §7 'TRADE-PLAYER-1, MAIL-1, 
 briefs:
   - docs/architecture/reviews/OTERYN_GAME_PLAYER_TRADE0_DIRECT_PLAYER_TRADE_DECISION_2026-09-30.md
 base_branch: main
-branch: null
+branch: claude/happy-davinci-ijz3wy-trade-player-1
 pr: null
 needs_migration: true
 needs_registry: true
@@ -223,3 +223,163 @@ cargo test --locked -p oteryn-game-server --test character_authority_postgres pl
 - PLAYER_TRADE0 brief §3–§6; DUR-03 §34 trade swap paragraph (amended by PLAYER_TRADE0)
 - Completion plan §4, §5 (Wave 4), §7; coordination #1622 / #2131 (D1158, D1311, D1315, D1369, D1377, D1378)
 - Archive: OTV2-20260930-item-move-wire1
+
+
+## Current pass — local AUTHORING, 2026-10-23
+
+Task `TRADE-PLAYER-1`; base/head `ac3f7fbc6` (`origin/main`), local changes only.
+No freeze, commit, publication, PR transition or external review was performed.
+Bound META policy 3.1.0 at `1bfb5ff98c8aa156e73669a14e083a1d464c29fb`
+was refreshed read-only before implementation. The owner's current local-only scope
+supersedes the historical card publication/validation commands.
+
+Owned paths: economy `player_trade.rs` and `player_trade/`; durability
+`player_trade.rs` and `player_trade/`; wiring in the two crate module lists;
+fence-only split in `item_transfer.rs`; reuse visibility in `item_loop_move.rs`;
+additive audit tag/inventory in `item_mint_audit.rs`; migration `0147_player_trade.sql`;
+sole PG auto mount `src/lifted_tests/auto/player_trade_postgres_cases.rs`;
+Inbox read-only inventory; native type-2 schema/registry and seven trade resource
+fragments `0598`–`0604`; this task card. No workflow or repository-policy changes.
+
+### Step 0 — actual dependency and existing-owner inventory
+
+Every dependency row was checked with `git log --oneline origin/main --grep <ID>`
+and a bounded source/archive search. No player-trade code, table, handler or wire
+operation exists on this main; NPC trade is a different existing mechanic.
+
+| Dependency | Actual evidence on `ac3f7fbc6` |
+|---|---|
+| ITEM-LOOP-1 | Merged `a43c37f12` (#2190); live `item_loop_move.rs` and dispatch item-move handler. Extended/reused, no parallel inventory owner. |
+| ITEM-MOVE-2a | Included by #2190; current direct/nested move and equipment owners exist. |
+| ITEM-VIEW-1b, VIS-2 | Existing `SessionItemView`/`observe_inventory`; archived item-view and MOVE-RL11 visibility decisions. Later BAGS-WIRE-1 `bf03807cf` (#1720) consumes these. |
+| ADMIT-CAP-1 | Merged `94288ef41` (#2187); fresh/V2 capability admission checks remain in place. |
+| MAIL-1 | Merged `5b814baa1` (#2133); reuse existing Inbox exclusion/read-only proof inventory. |
+| PLAYER_TRADE0 acceptance | Decision `1f8c18e82` (#1365), accepted text on main. |
+| SESSION-INGRESS-1 | No matching main commit or common session-owned ingress implementation. Still blocking wire/activation. |
+| D1377 | Existing `SpellLanePermit` is reusable for staged DB calls; it is not the missing shared physical-mutation/trade exclusion integration. Still blocking activation. |
+
+Existing durable owners reused: `character_item_fence_is_current` (split to allow
+both live fences before ordered roots), equipment authority/active Content check,
+`carried_weight`, derived B3-3 capacity, direct-slot/entry reads, type-2 activation
+transaction, recovery pass/deadline and outbox. `protocol-oteryn` gets no trade wire
+ID. Tag 14 is next free after native audit tag 13 (tag 12 remains another lane's
+proposal). Highest main migration is 0144; 0147 follows the owner's lower bound.
+`MECHANICS_STATUS.md` is absent on main, so none was created. Test-support has no
+`property` module on main: framework property tests skipped; deterministic boundary
+cross-products cover arithmetic overflow and capacity bounds.
+
+### Delivered in this pass
+
+- L3 leaf, identity/range/visibility, trade-flag, incoming capacity/free-entry rules;
+  immutable counter-offer/accept lifecycle, monotonic 120-second idle cancellation,
+  typed invalidation and TRANSFERRING retention.
+- L4 fenced observation, immutable request, one atomic two-leaf exchange with
+  ordered roots/items/slots, complete before-state recheck, no merge/freed-entry
+  credit, reciprocal receipts and one type-2 audit event. Items retain definition,
+  quantity, keys, timed/text state and item/Character revisions.
+- Immutable READY pair key (native counter-offer CommandRef), unique across committed
+  occurrences as well as both full-u64 accept CommandRefs.
+- Occurrence-locked recovery lookup and replay of the exact original binding before
+  live fences. A failed/unknown storage operation leaves resolution to this lookup;
+  no pre-swap durable reservations or Inbox writes.
+- Additive immutable cause/participant/receipt schema with full-u64 CommandRefs,
+  runtime SELECT/INSERT only on outcomes, exact same-transaction shape/state/custody
+  checks and preserved earlier item proof arms (including HOUSE).
+
+### Unfinished
+
+- SESSION-INGRESS-1 / D1377: the sole Channel book, current visibility/LOS/map
+  admission, per-actor busy index, FND issuance/terminalization and durable-outcome
+  cache, movement/logout/death/kick/reconnect physical routing and reservation
+  exclusion. L3 exposes the invalidation rules; no live handler invokes them yet.
+- Wire/capability/domain/command registration, normalization, both-session egress
+  and real-dispatch/two-admitted-session E2E. Storage ports in this writer-only
+  pass consequently have no active dispatch caller; do not mark runtime acceptance
+  or the production-caller/E2E checklist complete.
+- BAGS-TRADE-1 container trees, equipped/ground/corpse sources and house-tile trade
+  remain outside the accepted leaf slice. They are refused, not silently supported.
+- Independent exact-head persistence/security review and CI remain integration work
+  for the control plane; this worker did not publish or spend on review.
+
+## Reference parity
+
+Read-only source, pinned 2026-10-23:
+[Canary game.cpp](https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/src/game/game.cpp)
+and [Canary player.cpp](https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/src/creatures/players/player.cpp).
+This is emulator evidence; it is not a claim of access to CipSoft internals.
+The existing accepted decision identifies official-manual evidence separately.
+Each row is a named row of economy `player_trade_reference_parity_table`.
+
+| Rule / source function | Reference value and accepted slice | L3 test row |
+|---|---|---|
+| Partner distance / `playerRequestTrade` | Chebyshev distance ≤2 | `range_2` |
+| Partner floor / `playerRequestTrade` | Same floor | `same_floor` |
+| Sight line / request and accept | Qualified line of sight required | `sight_line` |
+| Self trade / `playerRequestTrade` | Refused | `no_self` |
+| Item / `playerRequestTrade` | Pickupable required | `pickupable` |
+| Offer item count / `playerRequestTrade` | One root, at most 100 items in Reference; this slice one whole leaf, nonempty containers deferred | `one_root_100_items` |
+| Handshake / `internalStartTrade`, `playerAcceptTrade` | Counter-offer and both accepts before transfer | `counter_offer_both_accept` |
+| Placement / `playerAcceptTrade` | Room tested before removal; IGNOREAUTOSTACK, no merge | `room_before_removal_no_merge` |
+| Capacity / `playerAcceptTrade` | Incoming weight must fit before removal | `incoming_capacity` |
+| Change / `checkTradeState` | Item changes cancel before transfer | `item_change_cancels` |
+| Movement / `onCreatureMove` | Losing range cancels before transfer | `distance_cancels` |
+| Logout / `onRemoveCreature` | Partner trade closed on removal | `logout_cancels` |
+
+
+### Validation for this local delta
+
+All final Cargo commands used the queued wrapper (`login=false` preserves its PATH),
+with the toolchain from `rust-toolchain.toml` and locked dependencies. Earlier direct
+Cargo's route-less PG result was discarded and rerun through the wrapper. Actual
+PG marker: `it_player_trade_atomic_1792772936179567736`, `server_version_num=180006`.
+
+| Check | Result |
+|---|---|
+| `cargo fmt --all -- --check` | PASS; new included durability/auto-test modules also formatted explicitly |
+| `cargo clippy --locked --quiet -p oteryn-gameplay-economy -p oteryn-gameplay-durability -p oteryn-game-server --all-targets -- -D warnings` | PASS |
+| `cargo test --locked --quiet -p oteryn-gameplay-economy --lib` | 15 passed; includes the 12-row Reference table and arithmetic boundary cross-product |
+| `cargo test --locked --quiet -p oteryn-gameplay-durability --lib player_trade -- --nocapture` | 1 passed; both type-2 tuples, canonical roundtrip, malformed bindings, field-bound payload/envelope 6880/7163 B (under 7936/9216) |
+| `cargo test --locked --quiet -p oteryn-gameplay-durability --lib item_mint_audit -- --nocapture` | 24 passed; additive tag preserves earlier encodings and the complete type-2 writer/fence inventory |
+| `cargo test --locked --quiet -p oteryn-game-server --lib player_trade -- --test-threads=1 --nocapture` | 1 real PG case passed; setup, per-side before-value/fence refusals, no-room/weight/flags, rollback after the first reciprocal write, incomplete SQL shape, role grants, two-root serialization, newer first connection, closed-pair reuse refusal, cold-root replay |
+| `python3 tools/repository/validate_repository_policy.py` | PASS |
+| `git diff --check` | PASS |
+
+Re-read the complete local delta against `/home/mole/oteryn-cache/CODEX-CHECKLIST.md`;
+reviewed ordered locks (including Content-before-root), fresh same-transaction proofs,
+immutable outcomes, complete runtime write grants and earlier proof preservation.
+Workspace constructor/impl/match sweep: 98 new-mechanic sites in 13 Rust files;
+also examined all 16 files referencing `OneItemOperationV1` across `apps/`, `crates/`
+and `tools/`. No external exhaustive consumer needed a new arm; all existing codecs
+select their closed variant and the native oneof tag list now includes 14.
+The production-caller and real-dispatch E2E requirements remain explicitly unfinished
+under the ingress/physical-exclusion gate above. No full PG suite was run; the changed
+MAIL whitelist remains for CI's existing MAIL filter. No unrelated contention failures.
+
+### Changed files (complete local manifest)
+
+- `apps/game-server/migrations/0147_player_trade.sql`
+- `apps/game-server/src/lifted_tests/auto/player_trade_postgres_cases.rs`
+- `apps/game-server/tests/support/character_inbox_postgres_cases.rs`
+- `crates/gameplay/durability/src/durability/core_modules.rs`
+- `crates/gameplay/durability/src/durability/item_loop_move.rs`
+- `crates/gameplay/durability/src/durability/item_mint_audit.rs`
+- `crates/gameplay/durability/src/durability/item_transfer.rs`
+- `crates/gameplay/durability/src/durability/player_trade.rs`
+- `crates/gameplay/durability/src/durability/player_trade/audit.rs`
+- `crates/gameplay/durability/src/durability/player_trade/player_trade_audit_tests.rs`
+- `crates/gameplay/durability/src/durability/player_trade/snapshot.rs`
+- `crates/gameplay/durability/src/durability/player_trade/storage.rs`
+- `crates/gameplay/economy/src/lib.rs`
+- `crates/gameplay/economy/src/player_trade.rs`
+- `crates/gameplay/economy/src/player_trade/lifecycle.rs`
+- `crates/gameplay/economy/src/player_trade/player_trade_tests.rs`
+- `docs/agents/tasks/TRADE-PLAYER-1.md`
+- `docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json`
+- `docs/contracts/game-events/v1/native_one_item_transaction.proto`
+- `docs/contracts/resource-limits/entries/0625-DUR03-RL-01-TRADE.json`
+- `docs/contracts/resource-limits/entries/0626-DUR03-RL-02-TRADE.json`
+- `docs/contracts/resource-limits/entries/0627-DUR03-RL-06-TRADE-PARTICIPANTS.json`
+- `docs/contracts/resource-limits/entries/0628-DUR03-RL-06-TRADE-EFFECT-WORK-UNITS.json`
+- `docs/contracts/resource-limits/entries/0629-DUR03-RL-07-TRADE-PAYLOAD-BYTES.json`
+- `docs/contracts/resource-limits/entries/0630-DUR03-RL-07-TRADE-ENVELOPE-BYTES.json`
+- `docs/contracts/resource-limits/entries/0631-TRADE0-RL-02.json`
