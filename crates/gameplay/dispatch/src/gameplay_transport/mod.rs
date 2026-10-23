@@ -107,6 +107,7 @@ mod world_map;
 
 /// ADMIT0: the boot-bound Channel required gameplay capabilities (D1081-D1084).
 pub mod world_required_capabilities;
+mod world_required_field_guard;
 pub mod world_spatial;
 
 use crate::achievement_catalogue::AccountAchievementsRequest;

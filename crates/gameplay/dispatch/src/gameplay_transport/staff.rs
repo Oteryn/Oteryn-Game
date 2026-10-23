@@ -1,13 +1,9 @@
 //! Logged-in transport for signed operators. Negotiation carries bytes, never authority.
+use super::ComposedFreshAdmission;
 use super::connection::{AdmittedSession, FreshAdmissionAuthority};
-use super::{ComposedFreshAdmission, capabilities::OfferedCapability};
 use crate::foundation::GameSessionId;
 use oteryn_protocol_oteryn::staff as wire;
 use std::time::Duration;
-pub(super) const OFFERED: OfferedCapability = OfferedCapability {
-    id: wire::CAPABILITY_STAFF_V1,
-    requires: &[],
-};
 
 /// A storage failure never becomes a terminal rejection of a possibly committed action.
 #[derive(Debug, Clone, PartialEq, Eq)]

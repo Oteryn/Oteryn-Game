@@ -292,8 +292,8 @@ fn the_registries_bind_the_attack_constants() {
     assert_eq!(
         capability["command_types"],
         serde_json::json!([
-            COMMAND_TYPE_ATTACK_TARGET_INTENT,
-            COMMAND_TYPE_FIGHT_MODES_INTENT
+            COMMAND_TYPE_ATTACK_TARGET_INTENT, // ATTACK_TARGET_INTENT
+            COMMAND_TYPE_FIGHT_MODES_INTENT,   // FIGHT_MODES_INTENT
         ])
     );
     assert_eq!(

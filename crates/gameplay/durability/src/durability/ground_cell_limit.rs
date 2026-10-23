@@ -17,6 +17,10 @@ use crate::character_recovery_fence::CharacterRecoveryFenceV1;
 use crate::foundation::{ChannelId, RuntimeScopeRefV1, WorldId};
 use sqlx::{Postgres, Row, Transaction};
 
+#[cfg(test)]
+#[path = "ground_cell_limit_tests.rs"]
+mod tests;
+
 pub const GROUND_CELL_ROOT_LIMIT: usize = 64;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -95,7 +99,7 @@ fn source_error(error: SpellItemError) -> super::DurabilityError {
         SpellItemError::Training(
             super::character_progression::CharacterProgressionError::Unavailable(error),
         ) => error,
-        SpellItemError::Training(_) => super::DurabilityError::InvalidStoredState,
+        SpellItemError::Training(_) | SpellItemError::FieldCapabilityRefused => super::DurabilityError::InvalidStoredState,
     }
 }
 
