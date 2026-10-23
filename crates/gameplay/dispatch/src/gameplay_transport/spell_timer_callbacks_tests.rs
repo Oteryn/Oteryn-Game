@@ -127,7 +127,7 @@ fn hit(f: &mut Fixture, sequence: u64, magnitude: i64) -> CombatBatchReceipt {
         },
         binding: b"source-qualified:due-step".to_vec(),
         anchor: None,
-        now_us: None,
+        now_us: Some(oteryn_simulation_determinism::SemanticTimeMicros::from_micros(100_999)),
         now_ms: 100,
         effects: vec![OwnerCombatEffect {
             target: f.rat,
@@ -167,6 +167,7 @@ fn a_lethal_due_receipt_appends_one_entry_and_a_non_lethal_one_none() {
     let queue = KillSettlementQueue::default();
     let rewards = rewards();
     let sink = KillSink {
+        activity: &[],
         queue: &queue,
         rewards: &rewards,
     };
@@ -192,6 +193,7 @@ fn a_lethal_receipt_without_a_reward_row_appends_nothing() {
     let queue = KillSettlementQueue::default();
     let rewards = CreatureRewardTable::default();
     let sink = KillSink {
+        activity: &[],
         queue: &queue,
         rewards: &rewards,
     };
@@ -199,3 +201,6 @@ fn a_lethal_receipt_without_a_reward_row_appends_nothing() {
     record_batch_kills(&mut f.runtime, sink, &lethal, 1_000);
     assert_eq!(queue.counts(), (0, 0, 0));
 }
+
+#[path = "party_spell_kill_time_tests.rs"]
+mod party_xp_time_tests;

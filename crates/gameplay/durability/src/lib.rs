@@ -32,3 +32,7 @@ use oteryn_gameplay_domain::domain;
 use oteryn_gameplay_entities as foundation;
 #[allow(unused_imports)]
 use oteryn_gameplay_native_admission_source as native_admission_source;
+
+#[cfg(test)]
+#[path = "durability/character_appearance/command_replay/command_replay_tests.rs"]
+mod appearance_command_replay_tests;

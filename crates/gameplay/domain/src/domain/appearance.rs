@@ -10,6 +10,10 @@ pub enum Sex {
     Male,
 }
 
+#[path = "appearance/earned_cosmetics.rs"]
+mod earned_cosmetics;
+pub use earned_cosmetics::EarnedCosmetics;
+
 /// Head, body, legs and feet palette indices.
 pub type Colours = [u16; 4];
 
@@ -42,9 +46,31 @@ pub enum UnlockFact {
     Incompatible,
 }
 
+/// Identity selected by an explicitly authored earned-grant mapping.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EarnedCosmetic<'a> {
+    Outfit(&'a str),
+    Addon(&'a str, u8),
+    Mount(&'a str),
+}
+
 /// The active content of this world.
 pub trait AppearanceContent<K> {
     fn palette_size(&self) -> u16;
+    /// At most 4096 explicitly authored keys for bounded transaction-bound reads.
+    fn earned_grant_keys(&self) -> Vec<String> {
+        Vec::new()
+    }
+    /// Interpret an earned fact using authored mappings and compatible provenance.
+    /// Content without declarations grants nothing; revision equality is not authority.
+    fn earned_unlock(
+        &self,
+        _grant_key: &str,
+        _provenance: &str,
+        _target: EarnedCosmetic<'_>,
+    ) -> UnlockFact {
+        UnlockFact::Absent
+    }
     /// The outfit's addon count, or `None` when the key is not in the active content.
     fn outfit_addon_count(&self, outfit: &K) -> Option<u8>;
     fn outfit_is_starter(&self, outfit: &K, sex: Sex) -> bool;

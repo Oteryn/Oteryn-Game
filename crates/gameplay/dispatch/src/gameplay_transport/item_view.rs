@@ -500,7 +500,7 @@ struct OpenCorpse {
 }
 
 /// One connection's view of domains 9 and 11 and its handle table.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SessionItemView {
     table: ItemHandleTable,
     inventory_revision: u64,
