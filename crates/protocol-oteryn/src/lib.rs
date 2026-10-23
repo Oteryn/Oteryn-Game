@@ -413,11 +413,12 @@ pub const MAX_SNAPSHOT_ASSEMBLED_BYTES: u64 = 16_777_216;
 // map as 18) and 30 WORLD_SPATIAL_FIELDS (FIELD-WIRE-1, not offered before the field payloads are
 // composed); both require 6. TUTORIAL-1 adds capability 31. DAILY-1 registers CP-allocated
 // capability 32. Capability 33 is dormant SPECTATE_V1 (SPECTATE-1b). GUILD-CHAT-1 registers
-// capability 36 CHAT_GUILD_ROOM_V1, which requires 7. Next unallocated capability is 37.
+// capability 36 CHAT_GUILD_ROOM_V1, which requires 7. EVENTS-WORLD-1 reserves 53 for
+// WORLD_EVENT_V1; IDs 37–52 may be allocated by parallel lanes.
 // Keep this sorted when a later owning gate allocates an additive capability ID.
 const REGISTERED_CAPABILITY_IDS_V1: &[u32] = &[
     1, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 25, 26, 28, 29, 30,
-    31, 32, 33, 36,
+    31, 32, 33, 36, 53,
 ];
 
 fn decode_uuid_v7(input: &[u8]) -> Result<[u8; 16], FoundationProtocolError> {
@@ -2621,6 +2622,7 @@ pub mod quest_log;
 pub mod spell_presentation_candidate;
 pub mod tutorial_notices;
 pub mod world_clock;
+pub mod world_event;
 pub mod world_interaction;
 pub mod world_map;
 pub mod world_object;

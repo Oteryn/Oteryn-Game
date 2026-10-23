@@ -1,0 +1,18 @@
+syntax = "proto3";
+package oteryn.protocol.v1;
+
+// Capability 53, command 64. Empty query; World and session are admission facts.
+message WorldEventQueryV1 {}
+
+// Immutable reset-selected Oteryn gathering, returned only after a durable
+// session-generation-fenced observation receipt commits. Odd epochs are active,
+// even epochs inactive. Epoch zero is inactive before the first planned reset.
+// Active state ends at the next reset; no client-selected time or activation.
+// ACTIVE requires a nonempty announcement (<=128 UTF-8 bytes); INACTIVE requires
+// an empty announcement. Maximum encoded result: 144 bytes. Strict decoding
+// rejects unknown/repeated fields, invalid booleans and control characters.
+message WorldEventStateV1 {
+  uint64 reset_epoch = 1;
+  bool active = 2;
+  string announcement = 3;
+}

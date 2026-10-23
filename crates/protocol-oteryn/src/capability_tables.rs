@@ -201,6 +201,11 @@ pub const GATED: &[(u32, &[u32], &[u32])] = &[
         &[],
         &[],
     ),
+    (
+        crate::world_event::CAPABILITY_WORLD_EVENT_V1,
+        &[crate::world_event::COMMAND_TYPE_WORLD_EVENT_QUERY],
+        &[],
+    ),
 ];
 
 /// Core domains a selected capability replaces, as (capability, domains). MAP-WIRE-1 contract §3
