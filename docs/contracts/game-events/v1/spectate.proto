@@ -1,0 +1,26 @@
+syntax = "proto3";
+package oteryn.events.v1;
+
+// SPECTATE1 O9 / D1118. ANL EventEnvelope type 4. Target session occurs only in
+// EventEnvelope.game_session_id. No code, account, actor identity or position.
+message SpectateObservationV1 {
+  enum Kind {
+    KIND_UNSPECIFIED = 0;
+    GRANT_CREATED = 1;
+    GRANT_ENDED = 2;
+    OBSERVER_ADMITTED = 3;
+    OBSERVER_ENDED = 4;
+  }
+  enum EndReason {
+    END_REASON_UNSPECIFIED = 0;
+    REVOKED = 1;
+    TARGET_GONE = 2;
+    TARGET_MOVED = 3;
+    OVERLOAD = 4;
+    NOT_OBSERVABLE = 5;
+    OBSERVER_STOPPED = 6;
+  }
+  Kind kind = 1;
+  optional bytes observer_session_id = 2; // exactly UUIDv7, only observer events
+  EndReason end_reason = 3; // terminal events only; OBSERVER_STOPPED only for observer
+}
