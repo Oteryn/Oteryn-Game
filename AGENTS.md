@@ -33,7 +33,7 @@ Read the nearest `AGENTS.md` for a touched path. Editing only your own task reco
 
 Do not write outside the current task's repository, branch and owned paths. Preserve unrelated work. Changes to protocol, identities, authority, persistence, public contracts or production trust require their accepted owning contract and applicable independent review. Production, protected-environment, live-account, credential and external-repository mutations require separate explicit authority.
 
-Run the checks selected by changed paths and preserve `game-gate`, repository protection and Merge Queue. Never weaken authorization, tests, provenance, compatibility or protection to make work pass. Do not expose secrets or private data. Third-party and proprietary materials may be used as reference evidence for compatibility research, reverse engineering, data extraction, comparison and faithful reimplementation. Reference use does not automatically grant the right to redistribute original third-party asset files.
+Run the checks selected by changed paths and preserve `game-gate` and repository protection. Never weaken authorization, tests, provenance, compatibility or protection to make work pass. Do not expose secrets or private data. Third-party and proprietary materials may be used as reference evidence for compatibility research, reverse engineering, data extraction, comparison and faithful reimplementation. Reference use does not automatically grant the right to redistribute original third-party asset files.
 
 ## Context economy and live-state reads
 
@@ -55,7 +55,7 @@ These rules supersede any task card that says to add a mount line to a shared ta
 - **A case runs in route-less lanes too:** it returns `Ok(())` when `OTERYN_TEST_POSTGRES_ADMIN_URL` is absent. `route_less_case_guard` rejects a case that errors instead.
 - **World pins are regenerated, never hand-edited:** stage the inputs, run `cargo fmt`, then `oteryn-world-bundle-compiler pin-refresh .`. `tools/content-migration/regenerate_content.py --resolve` does this on a conflicted pin unless the entry start moved; `pin-check` stays the gate.
 - **Merge `origin/main` locally with the merge drivers registered** (`tools/merge-driver/install.sh`, once per clone): `oteryn-additive` combines insert-only hunks in Rust, TOML, Markdown, workflow and `docs/contracts/*.json` files (two `mod` lines, fields, methods, dependencies or registry entries at one place), `oteryn-regen` takes the incoming derived registry. Then run `cargo fmt` and `tools/merge-driver/regen.sh`. Only a real edit-versus-edit conflict stops for a person.
-- **Enqueue only a head whose own CI is green:** a change to the Seam, PostgreSQL code or migrations never bypasses the Merge Queue.
+- **Merge only a head whose own CI is green**, the PostgreSQL legs included.
 
 ## Review guidelines
 
