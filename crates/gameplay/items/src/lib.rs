@@ -12,6 +12,7 @@ pub mod item_weight_lookup;
 pub mod look;
 pub mod loot_plan;
 pub mod mail;
+pub mod mining;
 pub mod pickup;
 pub mod stacking;
 pub mod starter_grant;
