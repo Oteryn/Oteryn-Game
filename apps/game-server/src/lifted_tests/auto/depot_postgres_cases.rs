@@ -301,7 +301,6 @@ fn depot_runtime_cannot_bypass_missing_locker_writer_or_remove_storage() -> Test
         let mut connection = PgConnection::connect(&harness.database.url).await?;
         connection.execute("SET ROLE oteryn_game_runtime").await?;
         for command in [
-            "DELETE FROM game_item_character_depot_locations",
             "UPDATE game_item_character_depot_locations SET box_number=2",
             "TRUNCATE game_item_character_depot_locations",
             "DELETE FROM game_character_depot_box_counters",
@@ -314,6 +313,17 @@ fn depot_runtime_cannot_bypass_missing_locker_writer_or_remove_storage() -> Test
                 "{command}"
             );
         }
+        // The playable migration grants only fenced deletion and explicit insert columns.
+        // Exercise the new grant: the transfer proof must still reject an unproven write.
+        assert_eq!(
+            sqlstate(
+                connection
+                    .execute("DELETE FROM game_item_character_depot_locations")
+                    .await
+            )?,
+            "23514"
+        );
+        assert_eq!(sqlstate(connection.execute("INSERT INTO game_item_character_depot_locations (item_instance_id,world_id,character_id,town_id,box_number) SELECT item_instance_id,world_id,character_id,1,1 FROM game_item_character_depot_locations").await)?,"23514");
         let count: i64 =
             sqlx::query_scalar("SELECT count(*) FROM game_item_character_depot_locations")
                 .fetch_one(&mut connection)
