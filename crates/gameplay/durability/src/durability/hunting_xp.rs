@@ -1,7 +1,7 @@
 //! Minimum PREY-0/D118 durable hunting state consumed by creature XP.
 //! Slot absence is PREY-0 §6.5's uninitialized slot, never a synthetic active bonus.
 use super::{DurabilityError, character_progression::CurrentCharacterGameplayFence};
-use sqlx::{Postgres, Row, Transaction};
+use sqlx::{Postgres, Transaction};
 
 #[derive(Debug, Clone, Copy)]
 pub struct HuntingXpModifiers {
@@ -32,7 +32,8 @@ pub(super) async fn read_in_transaction(
         stamina_minutes: stamina.unwrap_or(2520),
     };
     let rows = sqlx::query(
-        "SELECT p.slot,p.slot_epoch,p.grade,p.bonus_percent FROM game_character_prey_slots p \
+        "SELECT p.slot,p.slot_epoch,p.grade,p.bonus_type,p.bonus_percent,p.state,\
+         p.creature_key,p.creature_list,p.option,p.free_reroll_at,p.hunting_s_left FROM game_character_prey_slots p \
          JOIN game_character_roots r USING(character_id) \
          WHERE p.character_id=encode($1,'hex')::uuid AND p.creature_key=$2 \
          AND p.state='ACTIVE' AND p.bonus_type='XP' AND p.hunting_s_left>0 \
@@ -49,10 +50,11 @@ pub(super) async fn read_in_transaction(
         return Err(DurabilityError::InvalidStoredState);
     }
     if let Some(row) = rows.first() {
-        result.prey_slot = Some(row.try_get("slot")?);
-        result.prey_epoch = Some(row.try_get("slot_epoch")?);
-        result.prey_grade = Some(row.try_get("grade")?);
-        result.prey_percent = row.try_get("bonus_percent")?;
+        let (slot, epoch, bonus) = super::prey::decode_xp_slot(row)?;
+        result.prey_slot = Some(slot);
+        result.prey_epoch = Some(epoch);
+        result.prey_grade = Some(i16::from(bonus.grade));
+        result.prey_percent = i16::from(bonus.percent);
     }
     Ok(result)
 }
