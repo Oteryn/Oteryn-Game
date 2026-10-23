@@ -1,0 +1,21 @@
+{
+  "id": "LOOPTRAIN1-RL-REQUEST-BYTES",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_EXERCISE0_EXERCISE_WEAPONS_AND_DUMMIES_DECISION_2026-10-03.md",
+  "resource": "Training command payload",
+  "unit": "bytes",
+  "hard_maximum": 32,
+  "configurable_range": {
+    "minimum": 32,
+    "maximum": 32
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Bounded mechanic-owned payload/configuration or one 60-second exercise checkpoint interval; no queued unbounded work.",
+  "client_visible": true,
+  "boundary_tests": [
+    "loop_training_decoders_refuse_duplicates_unknowns_overflow_and_cross_action_fields"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/loop_training.rs MAX_TRAINING_REQUEST_BYTES"
+  ],
+  "notes": "LOOP-TRAIN-1 owner-reserved ordinals 0840\u20130846. Rate values remain PROVISIONAL / GATED OFF."
+}

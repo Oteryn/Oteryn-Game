@@ -23,3 +23,7 @@ pub mod hunting_xp;
 pub mod party_kill_xp;
 pub mod prey;
 pub mod raid_schedule;
+
+pub mod exercise_training;
+pub mod loop_training;
+pub mod offline_training_state;

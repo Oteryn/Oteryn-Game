@@ -607,6 +607,31 @@ pub trait FreshAdmissionAuthority {
         }
     }
 
+    fn offline_training(
+        &self,
+        _admitted: AdmittedSession,
+        _command: UseCommand,
+        _target: ItemKey,
+    ) -> impl Future<Output = Option<oteryn_protocol_oteryn::loop_training::TrainingResult>> {
+        async { Some(oteryn_protocol_oteryn::loop_training::TrainingResult::REFUSED) }
+    }
+    fn exercise_training(
+        &self,
+        _admitted: AdmittedSession,
+        _command: UseCommand,
+        _intent: oteryn_protocol_oteryn::loop_training::ExerciseIntent,
+        _weapon: Option<ItemKey>,
+        _dummy: Option<ItemKey>,
+    ) -> impl Future<Output = Option<oteryn_protocol_oteryn::loop_training::TrainingResult>> {
+        async { Some(oteryn_protocol_oteryn::loop_training::TrainingResult::REFUSED) }
+    }
+    fn training_activity(
+        &self,
+        _admitted: AdmittedSession,
+        _kind: u32,
+    ) -> impl Future<Output = bool> {
+        async { true }
+    }
     /// BED0 §9: choice from a live map-item handle. An authority without the
     /// house reservation/logout owner refuses; decoding never grants bed access.
     fn sleep_in_bed(
@@ -2774,6 +2799,7 @@ where
             /// RANK-1 (HS-WIRE-1): command 14, a read of the session's World snapshots.
             Highscores(HighscoresReply),
             Appearance(Option<oteryn_protocol_oteryn::appearance::ChangeResult>),
+            Training(oteryn_protocol_oteryn::loop_training::TrainingResult),
             /// ITEM-VIEW-1b: `USE` with an item target; the domain 11 delta follows the result.
             UseItem(OpenDecision, Option<ItemViewDelta>),
             /// BAGS-WIRE-1: command 21; the domain 14 delta follows the result.
@@ -2830,6 +2856,13 @@ where
             None
         };
         let mut npc_relocation = None;
+        if input_permit.is_some()
+            && !authority
+                .training_activity(admitted, command.command_type)
+                .await
+        {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        }
         let mut dispatch = if let Some(outcome) = retained_bank {
             Dispatch::Npc(
                 outcome.disposition,
@@ -2890,6 +2923,24 @@ where
                     Dispatch::Step(outcome, wait)
                 }
             }
+        } else if matches!(command.command_type, 66 | 67) {
+            let Some(result) = super::loop_training::wire::dispatch(
+                authority,
+                admitted,
+                UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: command.command_id,
+                    item_fence: admitted.item_fence,
+                },
+                command.command_type,
+                command.payload,
+                item_view.as_ref(),
+            )
+            .await
+            else {
+                return ConnectionEnd::AdmittedThenControlLost(admitted);
+            };
+            Dispatch::Training(result)
         } else if command.command_type == COMMAND_TYPE_BED_SLEEP_INTENT {
             match super::bed_sleep::dispatch(
                 authority,
@@ -3519,7 +3570,24 @@ where
         next_command = following;
         admitted.continuity.server_sequence = sequence;
         admitted.continuity.next_command_id = next_command;
+        let training_logged_out =
+            matches!(&dispatch,Dispatch::Training(result) if result.disposition==3);
         let (status, result_payload) = match &mut dispatch {
+            Dispatch::Training(result) => {
+                let Ok(payload) =
+                    oteryn_protocol_oteryn::loop_training::encode_training_result(*result)
+                else {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                };
+                (
+                    if result.disposition == 4 {
+                        CommandStatus::Rejected
+                    } else {
+                        CommandStatus::Accepted
+                    },
+                    payload,
+                )
+            }
             Dispatch::Appearance(Some(result)) => match appearance_change::result(*result) {
                 Some(result) => result,
                 None => return ConnectionEnd::AdmittedThenDisconnected(admitted),
@@ -4077,8 +4145,12 @@ where
             | Dispatch::Achievements(_)
             | Dispatch::Highscores(_)
             | Dispatch::Appearance(_)
+            | Dispatch::Training(_)
             | Dispatch::Logout(_)
             | Dispatch::Unregistered => {}
+        }
+        if training_logged_out {
+            return ConnectionEnd::AdmittedThenLoggedOut(admitted);
         }
         if newhaven_travel_transport::emit_relocation(
             stream,

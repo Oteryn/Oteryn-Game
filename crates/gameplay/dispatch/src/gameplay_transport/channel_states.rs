@@ -49,6 +49,7 @@ pub struct ChannelSessionStates {
     /// The Channel owner's player vitals and cooldowns (spell cast §4). Always locked after
     /// `runtime`, never before, like `door`.
     pub spell_states: Mutex<actor_spell::ChannelSpellStates>,
+    pub(super) training: super::loop_training::TrainingRuntime,
     pub(super) tutorial_sessions: tutorial_session::TutorialSessions,
     /// The Wheel allocation of each admitted session (WHEEL-0 §4 "Load"), after the admission
     /// Wheel reset; `None` when the load failed. The allocation only, never an eligibility

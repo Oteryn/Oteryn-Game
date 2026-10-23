@@ -331,7 +331,7 @@ impl DurabilityRoot {
     }
 }
 
-fn validate_checkpoint(request: &TimedCheckpointRequest) -> Result<()> {
+pub(super) fn validate_checkpoint(request: &TimedCheckpointRequest) -> Result<()> {
     let definition = &request.definition.definition;
     if check_uuid_v7(&request.item_instance_id).is_err()
         || check_uuid_v7(&request.transaction_id).is_err()
@@ -376,7 +376,7 @@ async fn replay(
 }
 
 /// The checkpoint body, after the fence locked `holder`'s root in this transaction.
-async fn write_checkpoint(
+pub(super) async fn write_checkpoint(
     connection: &mut PgConnection,
     holder: CharacterId,
     request: &TimedCheckpointRequest,
@@ -606,7 +606,7 @@ fn valid_definition(definition: &TypedDefinitionRef) -> bool {
         && (1..=512).contains(&definition.revision_ref.len())
 }
 
-fn validate_expiry(request: &TimedExpiryRequest) -> Result<()> {
+pub(super) fn validate_expiry(request: &TimedExpiryRequest) -> Result<()> {
     let full = request.definition.full;
     let reason_value = match request.reason {
         ExpireReason::TimeExhausted => full.remaining_ms(),
@@ -663,7 +663,7 @@ async fn replay_expiry(
 }
 
 /// The expiry body, after the fence locked the holder's root in this transaction.
-async fn write_expiry(
+pub(super) async fn write_expiry(
     connection: &mut PgConnection,
     fence: &CurrentCharacterGameplayFence,
     request: &TimedExpiryRequest,

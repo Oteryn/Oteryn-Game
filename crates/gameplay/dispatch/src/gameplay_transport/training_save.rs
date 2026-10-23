@@ -22,6 +22,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         force: bool,
     ) -> TrainingSave {
+        if !self.training_before_save(actor, session, force).await {
+            return TrainingSave::Unknown;
+        }
         let saved = self.save_spell_training_once(actor, session, force).await;
         if saved != TrainingSave::Saved
             || !self

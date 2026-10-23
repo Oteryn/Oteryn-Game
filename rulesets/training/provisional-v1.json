@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "provisional": true,
+  "enabled": false,
+  "source": "OFFLINE0; training-content-1/gameplay-source-reconciliation.json; Canary 52550d5 data/XML/vocations.xml (PROVISIONAL, not Global parity)",
+  "exercise_gains": [
+    600,
+    7,
+    7,
+    7,
+    7,
+    7,
+    7,
+    0
+  ],
+  "vocations": [
+    {
+      "vocation": "none",
+      "top_attack_ms": 2000,
+      "mana_amount": 2,
+      "top_mana_ticks_ms": 6000
+    },
+    {
+      "vocation": "sorcerer",
+      "top_attack_ms": 2000,
+      "mana_amount": 2,
+      "top_mana_ticks_ms": 2000
+    },
+    {
+      "vocation": "druid",
+      "top_attack_ms": 2000,
+      "mana_amount": 2,
+      "top_mana_ticks_ms": 2000
+    },
+    {
+      "vocation": "paladin",
+      "top_attack_ms": 2000,
+      "mana_amount": 2,
+      "top_mana_ticks_ms": 3000
+    },
+    {
+      "vocation": "knight",
+      "top_attack_ms": 2000,
+      "mana_amount": 2,
+      "top_mana_ticks_ms": 6000
+    },
+    {
+      "vocation": "master_sorcerer",
+      "top_attack_ms": 2000,
+      "mana_amount": 2,
+      "top_mana_ticks_ms": 2000
+    },
+    {
+      "vocation": "elder_druid",
+      "top_attack_ms": 2000,
+      "mana_amount": 2,
+      "top_mana_ticks_ms": 2000
+    },
+    {
+      "vocation": "royal_paladin",
+      "top_attack_ms": 2000,
+      "mana_amount": 2,
+      "top_mana_ticks_ms": 3000
+    },
+    {
+      "vocation": "elite_knight",
+      "top_attack_ms": 2000,
+      "mana_amount": 2,
+      "top_mana_ticks_ms": 6000
+    },
+    {
+      "vocation": "monk",
+      "top_attack_ms": 2000,
+      "mana_amount": 2,
+      "top_mana_ticks_ms": 6000
+    },
+    {
+      "vocation": "exalted_monk",
+      "top_attack_ms": 2000,
+      "mana_amount": 2,
+      "top_mana_ticks_ms": 6000
+    }
+  ],
+  "statues": {
+    "oteryn:item.tibia.i16198": 3,
+    "oteryn:item.tibia.i16199": 4,
+    "oteryn:item.tibia.i16200": 2,
+    "oteryn:item.tibia.i16201": 5,
+    "oteryn:item.tibia.i16202": 0,
+    "oteryn:item.tibia.i50296": 1
+  },
+  "dummies": [
+    "oteryn:item.tibia.i28558",
+    "oteryn:item.tibia.i28565"
+  ],
+  "weapons": {
+    "oteryn:item.tibia.i28552": 3,
+    "oteryn:item.tibia.i35279": 3,
+    "oteryn:item.tibia.i35285": 3,
+    "oteryn:item.tibia.i28553": 4,
+    "oteryn:item.tibia.i35280": 4,
+    "oteryn:item.tibia.i35286": 4,
+    "oteryn:item.tibia.i28554": 2,
+    "oteryn:item.tibia.i35281": 2,
+    "oteryn:item.tibia.i35287": 2,
+    "oteryn:item.tibia.i28555": 5,
+    "oteryn:item.tibia.i35282": 5,
+    "oteryn:item.tibia.i35288": 5,
+    "oteryn:item.tibia.i28556": 0,
+    "oteryn:item.tibia.i28557": 0,
+    "oteryn:item.tibia.i35283": 0,
+    "oteryn:item.tibia.i35284": 0,
+    "oteryn:item.tibia.i35289": 0,
+    "oteryn:item.tibia.i35290": 0,
+    "oteryn:item.tibia.i50294": 1,
+    "oteryn:item.tibia.i50295": 1,
+    "oteryn:item.tibia.i44065": 6,
+    "oteryn:item.tibia.i44066": 6,
+    "oteryn:item.tibia.i44067": 6
+  },
+  "percent_scale": 100,
+  "offline_divisors": [
+    1,
+    2,
+    2,
+    2,
+    2,
+    4,
+    4,
+    0
+  ]
+}

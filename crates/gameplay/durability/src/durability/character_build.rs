@@ -132,7 +132,7 @@ impl DurableBuildState {
     }
 
     /// A stored state; a value outside the bounds is corrupt and fails closed.
-    fn stored(
+    pub(super) fn stored(
         row: &sqlx::postgres::PgRow,
         vocation: &str,
         suffix: &str,
@@ -218,27 +218,44 @@ pub enum BuildCause {
     VocationChoice,
     /// One vocation key to another; every family equal.
     Promotion,
+    /// OFFLINE0: fenced terminal logout marker.
+    Logout,
+    /// OFFLINE0: once-per-lease admission settlement.
+    OfflineSettlement,
 }
 
 impl BuildCause {
     const fn key(self) -> &'static str {
         match self {
             Self::Training => "training",
+            Self::Logout => "logout",
+            Self::OfflineSettlement => "offline_settlement",
             Self::VocationChoice => "vocation_choice",
             Self::Promotion => "promotion",
         }
     }
 
     fn parse(key: &str) -> Option<Self> {
-        [Self::Training, Self::VocationChoice, Self::Promotion]
-            .into_iter()
-            .find(|cause| cause.key() == key)
+        [
+            Self::Training,
+            Self::VocationChoice,
+            Self::Promotion,
+            Self::Logout,
+            Self::OfflineSettlement,
+        ]
+        .into_iter()
+        .find(|cause| cause.key() == key)
     }
 
     /// The direction of the 0030 cause CHECK, checked before any write.
     fn admits(self, before: &DurableBuildState, after: &DurableBuildState) -> bool {
         let (from, to) = (before.families(), after.families());
         match self {
+            Self::Logout => before == after,
+            Self::OfflineSettlement => {
+                before.vocation == after.vocation
+                    && from.iter().zip(&to).all(|(from, to)| to >= from)
+            }
             Self::Training => {
                 before.vocation == after.vocation
                     && from.iter().zip(&to).all(|(from, to)| to >= from)
@@ -396,6 +413,7 @@ pub(super) async fn prepare_character_build_with_recovery(
         policy_digest,
         formula.content_revision().to_owned(),
         binding,
+        None,
     )
     .await??;
     let physical_transaction: String = sqlx::query_scalar("SELECT pg_current_xact_id()::text")
@@ -417,7 +435,11 @@ pub(super) async fn prepare_character_build_with_recovery(
     })
 }
 
-async fn apply_build_in_transaction(
+#[allow(
+    clippy::too_many_arguments,
+    reason = "existing build participant plus OFFLINE0 columns"
+)]
+pub(super) async fn apply_build_in_transaction(
     tx: &mut sqlx::Transaction<'_, Postgres>,
     node: &NodeIncarnationProof,
     fence: &CurrentCharacterGameplayFence,
@@ -425,7 +447,14 @@ async fn apply_build_in_transaction(
     policy_digest: [u8; 32],
     content_revision: String,
     binding: Vec<u8>,
+    offline: Option<super::offline_training_state::OfflineChange>,
 ) -> std::result::Result<Result<BuildCommitOutcome>, DurabilityError> {
+    if !request.cause.admits(&request.before, &request.after)
+        || binding.is_empty()
+        || binding.len() > 1024
+    {
+        return Ok(Err(CharacterProgressionError::InvalidInput));
+    }
     sqlx::query(
         "SELECT pg_advisory_xact_lock(hashtextextended(\
                          'oteryn:character-build:' || encode($1, 'hex'), 0))",
@@ -506,6 +535,17 @@ async fn apply_build_in_transaction(
         }
     }
 
+    let offline_before =
+        super::offline_training_state::load(tx, fence.character_id.as_bytes()).await?;
+    let offline = offline.unwrap_or(super::offline_training_state::OfflineChange {
+        before: offline_before,
+        after: offline_before,
+    });
+    if offline.before != offline_before
+        || !super::offline_training_state::admits(request.cause, offline)
+    {
+        return Ok(Err(CharacterProgressionError::BuildStateMismatch));
+    }
     let committed_revision = root
         .revision
         .checked_add(1)
@@ -542,7 +582,8 @@ async fn apply_build_in_transaction(
         family_columns!("", "_after"),
         ", stance_before, stance_after, profile_revision, ruleset_revision, \
                            content_revision, simulation_revision, evidence_revision, \
-                           declaration_revision, policy_revision, reward_revision, committed_at) \
+                           declaration_revision, policy_revision, reward_revision, committed_at, \
+                           stamina_minutes_before, stamina_minutes_after, offline_pool_s_before, offline_pool_s_after, offline_skill_before, offline_skill_after) \
                          SELECT encode($1,'hex')::uuid, $2, $3, s.character_id, \
                            $4::text::numeric(20,0), $5::text::numeric(20,0), $6, s.level, \
                            s.level, s.total_experience, s.total_experience, \
@@ -553,7 +594,7 @@ async fn apply_build_in_transaction(
                            $41, NULL, s.profile_revision, s.ruleset_revision, \
                            s.content_revision, s.simulation_revision, s.evidence_revision, \
                            s.declaration_revision, s.policy_revision, s.reward_revision, \
-                           floor(extract(epoch FROM statement_timestamp())*1000)::bigint \
+                           floor(extract(epoch FROM statement_timestamp())*1000)::bigint, $43,$44,$45,$46,$47,$48 \
                            FROM game_character_progression_state s \
                           WHERE s.character_id = encode($42,'hex')::uuid"
     ))
@@ -567,6 +608,18 @@ async fn apply_build_in_transaction(
     let receipt = receipt
         .bind(request.pruned_stance.clone())
         .bind(character)
+        .bind(i32::from(offline.before.stamina_minutes))
+        .bind(i32::from(offline.after.stamina_minutes))
+        .bind(
+            i32::try_from(offline.before.pool_seconds)
+                .map_err(|_| DurabilityError::InvalidStoredState)?,
+        )
+        .bind(
+            i32::try_from(offline.after.pool_seconds)
+                .map_err(|_| DurabilityError::InvalidStoredState)?,
+        )
+        .bind(offline.before.skill_code()?)
+        .bind(offline.after.skill_code()?)
         .execute(&mut **tx)
         .await?;
     if receipt.rows_affected() != 1 {
@@ -575,17 +628,17 @@ async fn apply_build_in_transaction(
     let row = sqlx::query(concat!(
         "INSERT INTO game_character_build_state(character_id, vocation, ",
         family_columns!("", ""),
-        ", committed_character_revision, last_build_occurrence_id) \
+        ", committed_character_revision, last_build_occurrence_id, stamina_minutes, offline_pool_s, offline_skill) \
                          VALUES (encode($1,'hex')::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10, \
                            $11, $12, $13, $14, $15, $16, $17, $18, $19::text::numeric(20,0), \
-                           encode($20,'hex')::uuid) \
+                           encode($20,'hex')::uuid, $21,$22,$23) \
                          ON CONFLICT (character_id) DO UPDATE SET (vocation, ",
         family_columns!("", ""),
-        ", committed_character_revision, last_build_occurrence_id) = \
+        ", committed_character_revision, last_build_occurrence_id, stamina_minutes, offline_pool_s, offline_skill) = \
                            (EXCLUDED.vocation, ",
         family_columns!("EXCLUDED.", ""),
         ", EXCLUDED.committed_character_revision, \
-                           EXCLUDED.last_build_occurrence_id)"
+                           EXCLUDED.last_build_occurrence_id, EXCLUDED.stamina_minutes, EXCLUDED.offline_pool_s, EXCLUDED.offline_skill)"
     ))
     .bind(character);
     let row = request
@@ -593,6 +646,12 @@ async fn apply_build_in_transaction(
         .bind(row)
         .bind(&committed)
         .bind(request.occurrence.0.as_slice())
+        .bind(i32::from(offline.after.stamina_minutes))
+        .bind(
+            i32::try_from(offline.after.pool_seconds)
+                .map_err(|_| DurabilityError::InvalidStoredState)?,
+        )
+        .bind(offline.after.skill_code()?)
         .execute(&mut **tx)
         .await?;
     if row.rows_affected() != 1 {
@@ -717,6 +776,7 @@ impl DurabilityRoot {
                         policy_digest,
                         content_revision,
                         binding,
+                        None,
                     )
                     .await?;
                     if outcome.is_ok() {

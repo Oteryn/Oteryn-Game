@@ -324,6 +324,8 @@ pub struct FreshAdmissionStore {
     /// CHAR-POSITION-0 §3.2 "At logout": the last position the terminal release writes in its
     /// own transaction, before `session_state` becomes 3. `None` writes nothing.
     final_position: Option<super::character_last_position::FinalLastPosition>,
+    /// OFFLINE0: revalidated in the same physical terminal-release transaction.
+    training_logout: Option<super::loop_training::TrainingLogout>,
 }
 impl FreshAdmissionStore {
     /// One ADMIT0 predicate at both deciding owners. The caller holds the admission
@@ -388,11 +390,21 @@ impl FreshAdmissionStore {
         }
     }
 
+    /// OFFLINE0 participant: the final build marker commits with the terminal release.
+    #[must_use]
+    pub fn with_training_logout(&self, training: super::loop_training::TrainingLogout) -> Self {
+        Self {
+            training_logout: Some(training),
+            ..self.clone()
+        }
+    }
+
     #[must_use]
     pub fn from_root(root: super::DurabilityRoot) -> Self {
         Self {
             guards: AdmissionGuardStore::from_root(root),
             maximum_operation_bytes: super::MAX_FRESH_OPERATION_BYTES,
+            training_logout: None,
             final_position: None,
             retired_holder: None,
         }
@@ -1812,6 +1824,7 @@ impl FreshAdmissionStore {
                 maximum_guard_bytes: super::MAX_ADMISSION_GUARD_BYTES,
             },
             maximum_operation_bytes: super::MAX_FRESH_OPERATION_BYTES,
+            training_logout: None,
             final_position: None,
             retired_holder: None,
         }

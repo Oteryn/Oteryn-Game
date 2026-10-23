@@ -77,7 +77,18 @@ pub mod fresh {
                 account_id: account_id.into(),
                 minimum_generation: 1,
                 allowed: true,
-                provenance: provenance(FreshEvidencePurposeV1::PlatformSecurity, self.now),
+                provenance: self
+                    .rows
+                    .iter()
+                    .find_map(|row| match &row.state {
+                        AdmissionAuthorityGuardStateV1::Account { security, .. } => {
+                            Some(security.provenance.clone())
+                        }
+                        _ => None,
+                    })
+                    .unwrap_or_else(|| {
+                        provenance(FreshEvidencePurposeV1::PlatformSecurity, self.now)
+                    }),
             })
         }
     }
@@ -93,11 +104,26 @@ pub mod fresh {
             }
             Ok(FreshPublishedCurrentObservationV1 {
                 facts: self.current.clone(),
-                account_publication_revision: 1,
-                character_publication_revision: 1,
-                runtime_publication_revision: 1,
-                expected_lease_generation: 1,
-                proposed_lease_generation: 2,
+                account_publication_revision: self
+                    .rows
+                    .first()
+                    .map_or(1, |row| row.publication_revision),
+                character_publication_revision: self
+                    .rows
+                    .get(1)
+                    .map_or(1, |row| row.publication_revision),
+                runtime_publication_revision: self
+                    .rows
+                    .get(2)
+                    .map_or(1, |row| row.publication_revision),
+                expected_lease_generation: self.current.character_lease_generation,
+                proposed_lease_generation: self
+                    .current
+                    .character_lease_generation
+                    .checked_add(1)
+                    .ok_or(
+                    Fnd04ConsumerError::FreshAccountCharacterConflict,
+                )?,
                 account_presence_available: true,
                 character_eligible: true,
                 runtime_ready: true,
@@ -149,7 +175,8 @@ pub mod fresh {
                     .source_revision
                     .checked_add(1)
                     .ok_or(AdmissionAuthorityPublicationErrorV1::Invalid)?;
-                row.source.decision_identity = "game-acquire-2".into();
+                row.source.decision_identity =
+                    format!("game-acquire-{}", row.source.source_revision);
                 row.source.source_observed_at = now;
                 match &mut row.state {
                     AdmissionAuthorityGuardStateV1::Account { security, presence } => {

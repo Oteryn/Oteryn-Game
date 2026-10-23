@@ -124,6 +124,12 @@ impl Expect {
 }
 
 impl RevisionSlot {
+    /// A composed loop-training transaction (or an unknown outcome) changed the root.
+    /// The next queued writer reloads it; no historical receipt grants a current cursor.
+    pub fn observe_loop_training(&mut self) {
+        *self.cursor = None;
+    }
+
     #[must_use]
     pub fn character_id(&self) -> CharacterId {
         self.character_id

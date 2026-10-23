@@ -7,6 +7,7 @@ mod attack;
 mod bank_npc;
 mod bed_sleep;
 mod bundle_map_position;
+mod loop_training;
 use bundle_map_position::bundle_map_position;
 #[cfg(test)]
 use bundle_map_position::bundle_world_map;
@@ -1874,13 +1875,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// Step (c) for a TERMINAL session: the durable fact that allows removing the exact actor.
     /// Its fence is never lifted; the slot goes with it.
     async fn retire(&self, session: GameSessionId, actor: ExactActorRef) -> GraceExpiryResult {
-        match self
+        let removed = self
             .runtime
             .lock()
             .await
-            .remove_terminal_session(session, actor)
-        {
+            .remove_terminal_session(session, actor);
+        match removed {
             Ok(()) => {
+                self.states.training.forget(session).await;
                 self.states.forget_session(session);
                 GraceExpiryResult::Released
             }
@@ -2123,6 +2125,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         // CHAR-POSITION-0 §3.2 "At logout": the release writes the fenced actor's cell.
         let releasing = self.final_position_store(store, session, actor).await;
+        let Some(releasing) = self
+            .training_release_store(releasing, admitted, logout.is_some())
+            .await
+        else {
+            return ReleaseAttempt::Retry;
+        };
         let outcome = match release {
             TerminalRelease::Abandoned(transport) => {
                 releasing
@@ -2638,9 +2646,12 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     /// `required_capabilities` against this same offer; a bundle World's floor holds 18, so
     /// admission requires it through the authenticated check in `admit`, not here.
     fn offered_capabilities(&self) -> &'static [capabilities::OfferedCapability] {
-        world_required_capabilities::offered_for_scope(
-            self.bundle_map().is_some(),
-            self.active_generation,
+        loop_training::offer(
+            self,
+            world_required_capabilities::offered_for_scope(
+                self.bundle_map().is_some(),
+                self.active_generation,
+            ),
         )
     }
 
@@ -3385,6 +3396,28 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.reconcile_terminal_session(admitted).await
     }
 
+    async fn offline_training(
+        &self,
+        admitted: AdmittedSession,
+        command: connection::UseCommand,
+        target: item_view::ItemKey,
+    ) -> Option<oteryn_protocol_oteryn::loop_training::TrainingResult> {
+        self.offline_training(admitted, command, target).await
+    }
+    async fn exercise_training(
+        &self,
+        admitted: AdmittedSession,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::loop_training::ExerciseIntent,
+        weapon: Option<item_view::ItemKey>,
+        dummy: Option<item_view::ItemKey>,
+    ) -> Option<oteryn_protocol_oteryn::loop_training::TrainingResult> {
+        self.exercise_training(admitted, command, intent, weapon, dummy)
+            .await
+    }
+    async fn training_activity(&self, admitted: AdmittedSession, kind: u32) -> bool {
+        self.loop_training_activity(admitted, kind).await
+    }
     async fn logout(&self, admitted: AdmittedSession) -> logout::LogoutReply {
         self.logout_session(admitted).await
     }
@@ -3717,6 +3750,9 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await;
             admitted.first_entry = respawned_first_entry(admitted.first_entry, settled);
+        }
+        if writes_after_progression(positioned, admitted.first_entry) {
+            self.admit_loop_training(&mut admitted).await;
         }
         if writes_after_progression(positioned, admitted.first_entry) {
             self.admit_quest_session(&admitted).await;
