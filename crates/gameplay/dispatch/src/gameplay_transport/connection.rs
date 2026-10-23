@@ -691,6 +691,17 @@ pub trait FreshAdmissionAuthority {
         async { EquipmentMoveResult::Refused(EquipmentMoveRefusal::Rejected) }
     }
 
+    /// Depot requests are resolved by the live Channel and fenced native item owner.
+    fn depot(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _intent: oteryn_protocol_oteryn::depot::DepotIntent,
+        _item: Option<ItemKey>,
+    ) -> impl Future<Output = Option<oteryn_protocol_oteryn::depot::DepotReply>> {
+        async { None }
+    }
+
     /// ITEM-LOOP-1 replay: the item loop receipt of this command 9's CommandRef, read after the
     /// equipment replay and before its handle is resolved. `None` when it cannot be read: the
     /// connection ends before the CommandId is sequenced.
@@ -2794,6 +2805,7 @@ where
             ContainerView(ContainerViewOutcome, Option<ItemViewDelta>),
             /// ITEM-MOVE-1: command 9; the domain 11 and domain 9 deltas follow the result.
             ItemMove(ItemMoveOutcome, Vec<ItemViewDelta>),
+            Depot(oteryn_protocol_oteryn::depot::DepotReply),
             /// QUEST-LOG-WIRE-1: an accepted command 22; the domain 16 delta follows the result.
             QuestLog(QuestLogDomain),
             Look(ItemLookResult, ItemLookSelection),
@@ -3130,6 +3142,34 @@ where
                     Dispatch::ContainerView(outcome, delta)
                 }
                 _ => Dispatch::Unregistered,
+            }
+        } else if command.command_type == oteryn_protocol_oteryn::depot::COMMAND_TYPE_DEPOT_INTENT {
+            if let Ok(intent) = oteryn_protocol_oteryn::depot::decode_depot_intent(command.payload)
+            {
+                let item = match intent.action {
+                    oteryn_protocol_oteryn::depot::DepotAction::Deposit(handle) => {
+                        item_view.as_ref().and_then(|view| view.resolve(handle))
+                    }
+                    _ => None,
+                };
+                let Some(reply) = authority
+                    .depot(
+                        actor,
+                        UseCommand {
+                            game_session_id: admitted.game_session_id,
+                            command_id: command.command_id,
+                            item_fence: admitted.item_fence,
+                        },
+                        intent,
+                        item,
+                    )
+                    .await
+                else {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                };
+                Dispatch::Depot(reply)
+            } else {
+                Dispatch::Unregistered
             }
         } else if command.command_type == COMMAND_TYPE_ITEM_MOVE_INTENT {
             // ITEM-MOVE-1 (WIRE-0 §5): replay first, then an entry of the open corpse into the
@@ -3616,6 +3656,12 @@ where
                 CommandStatus::Accepted,
                 encode_container_view_result(*outcome),
             ),
+            Dispatch::Depot(reply) => {
+                let Ok(payload) = oteryn_protocol_oteryn::depot::encode_depot_reply(reply) else {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                };
+                (CommandStatus::Accepted, payload)
+            }
             Dispatch::ItemMove(outcome, _) => {
                 let Ok(payload) = encode_item_move_result_for(
                     *outcome,
@@ -3966,6 +4012,27 @@ where
                 admitted.continuity.server_sequence = sequence;
                 if write_frame(stream, &frame).await.is_err() {
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                }
+            }
+            Dispatch::Depot(reply) => {
+                if reply.outcome == oteryn_protocol_oteryn::depot::DepotOutcome::Moved {
+                    let Some(view) = item_view.as_mut() else {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    };
+                    if item_use_view_refresh::refresh(
+                        stream,
+                        authority,
+                        actor,
+                        &mut admitted,
+                        view,
+                        container_views.as_mut(),
+                        &mut sequence,
+                    )
+                    .await
+                    .is_none()
+                    {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    }
                 }
             }
             Dispatch::ItemMove(outcome, deltas) => {
