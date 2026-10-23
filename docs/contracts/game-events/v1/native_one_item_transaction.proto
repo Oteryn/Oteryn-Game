@@ -114,6 +114,7 @@ message OneItemTransactionV1 {
     OneItemHouseTransferV1 house_transfer = 11; // HOUSE-RUNTIME-1a additive candidate slot tag
     // Private proposal only; root coordinates Imbue tag 12 and rechecks before publication.
     OneItemForgeDustLimitV1 forge_dust_limit = 13; // material-free D1230 closed shape
+    OneItemCraftV1 craft = 15; // CRAFT-1: fixed cooking consume/mint proof
     OneItemPlayerTradeV1 player_trade = 14; // TRADE-PLAYER-1 writer-only; two reciprocal leaves
   }
 }
@@ -661,3 +662,8 @@ message OneItemTimedRepairV1 {
   OneItemTimedRowV1 row_after = 5;
   uint64 placement_ordinal = 6;
 }
+
+// CRAFT-1 canonical JSON proof: recipe, bounded original USE, character, complete
+// source before-state, fresh outputs and ordinals, station and scope generation.
+// Fixed cooking only: one input unit, at most four new outputs, no random draw.
+message OneItemCraftV1 { bytes proof = 1; }
