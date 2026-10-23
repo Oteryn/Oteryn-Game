@@ -4,7 +4,7 @@
   "kind": "ruleset",
   "owner": "PvP",
   "repository": "Oteryn/Oteryn-Game",
-  "population_state": "READY_UNPOPULATED",
+  "population_state": "POPULATED",
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Skull/frag policy."
+  "notes": "skull-policy.json pins the Open-PvP skull constants and provenance; the first World remains OPTIONAL and the PVP-0 go-live gate is unchanged."
 }

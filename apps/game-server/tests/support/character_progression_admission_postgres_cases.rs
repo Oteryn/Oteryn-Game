@@ -111,6 +111,7 @@ const INITIALIZED: &str = "1|1|0|profile-1|ruleset-1|content-1|simulation-1|evid
 
 fn death(policy: &FiniteProgressionPolicy<String, 2>) -> TestResult<CharacterDeathRequest<2>> {
     Ok(CharacterDeathRequest {
+        pvp_contributors: Vec::new(),
         occurrence: PlayerDeathOccurrence::from_bytes(id(95))
             .map_err(|error| format!("{error:?}"))?,
         context: policy.context.clone(),
