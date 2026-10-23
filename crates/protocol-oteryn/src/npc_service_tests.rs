@@ -861,3 +861,7 @@ fn the_intent_result_matches_the_hand_written_golden_bytes() {
         assert_eq!(decode_npc_intent_result(&[0x08, value]), Ok(disposition));
     }
 }
+
+#[cfg(test)]
+#[path = "npc_service_fuzz_tests.rs"]
+mod fuzz_tests;

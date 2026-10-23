@@ -1050,3 +1050,7 @@ fn the_registries_bind_the_world_map_constants() {
         assert!(WORLD_MAP_PROTO.contains(row), "{row}");
     }
 }
+
+#[cfg(test)]
+#[path = "world_map_fuzz_tests.rs"]
+mod fuzz_tests;

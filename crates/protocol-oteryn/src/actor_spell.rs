@@ -1072,3 +1072,7 @@ mod tests {
         assert_eq!(limit("SPELL-RL-03"), Some(1));
     }
 }
+
+#[cfg(test)]
+#[path = "actor_spell_fuzz_tests.rs"]
+mod fuzz_tests;

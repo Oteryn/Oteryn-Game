@@ -1696,3 +1696,7 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+#[path = "world_object_fuzz_tests.rs"]
+mod fuzz_tests;

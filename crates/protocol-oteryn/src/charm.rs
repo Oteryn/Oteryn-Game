@@ -1090,3 +1090,7 @@ mod tests {
         assert_eq!(limit("CHARM5-RL-05"), Some(u64::from(MAX_CHARM_BALANCE)));
     }
 }
+
+#[cfg(test)]
+#[path = "charm_fuzz_tests.rs"]
+mod fuzz_tests;
