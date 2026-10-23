@@ -24,7 +24,204 @@ merge_authority: CP_ONLY (builder never marks ready)
 
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2147, branch skeleton/bed-1
 
-## Current implementation checkpoint — 2026-10-22 CP allocation continuation
+## Latest checkpoint — 2026-10-22 BED-1 run 1d
+
+**NOT_FULLY_QUALIFIED — fenced durable participant and dispatch adapter implemented;
+House gameplay activation and OFFLINE integration remain incomplete.**
+Local AUTHORING on `w5/bed-1`, HEAD
+`6a3e9c833260001b8e7414c5c15182627da5f388`; no frozen SHA, PR, publication,
+external write or Git mutation. Run 1c's uncommitted 0139 storage work and its
+seven PostgreSQL cases are preserved.
+
+Implemented this slice:
+
+- `durability/bed_sleep/mod.rs::BedSleepOwner::commit` consumes the borrowed
+  recovery authority, current node incarnation and existing `HousePresenceProof`.
+  Presence must name the same World, House, session and scope generation. The
+  bounded semantic transaction independently checks the active native House
+  session's transport, connection/lease/scope generations, actual assignment,
+  live Character root and latest complete session-use membership. No type-2
+  audit event or type-2 transaction opener is added.
+- The narrow definer in provisional 0139 locks the session, property and ordered
+  old/target House revisions before sleeper mutation. It replaces the Character's
+  older row, inserts the sleeper, terminalizes the House session/attempts and
+  records the immutable `(GameSessionId, CommandId)` receipt in one transaction.
+  Exact replay returns the first result before effects; changed reuse conflicts.
+  A stale fence, missing native property, denied ACL or occupied bed writes no
+  sleeper, receipt, session change or occupancy revision. Overflow rolls back
+  the entire operation. An older row of this Character is cleanup, not another
+  Character's occupancy.
+- Sleep authorization uses the existing native `game_house_ownership` and
+  `game_house_acl` model: owner, Guest or Subowner membership/wildcard; door-only
+  grants do not authorize sleep. Neither service role receives direct table
+  access. Runtime receives only the bounded sleep function's EXECUTE surface.
+- The existing `sleep_in_bed` callback now delegates to the durable owner when
+  `prepare_bed_sleep` supplies a House context, binding its session/fence,
+  CommandId and skill to the sequenced command. The default supplies none and
+  still refuses. Known success answers `OFFLINE_TRAINING` and ends the transport;
+  an uncertain durable result sends no refusal and enters control-loss handling.
+- Five PostgreSQL cases cover commit/replay/conflict, older-row cleanup,
+  immutable receipt/role boundaries, seven fence/scope mutations, native ACL
+  refusal plus Guest/Subowner grants, occupancy and rollback on overflow. The
+  cases are lib-mounted in durability, dispatch and game-server, as CI permits.
+  Eight existing House fixture helpers were moved without body changes to one
+  reusable support file; every existing House test and assertion is preserved.
+- `bed_sleep_successful_real_dispatch_commits_the_native_owner` exercises the
+  actual BED adapter, session handle lookup and default owner delegation through
+  the real PostgreSQL commit. It also checks stale handles and mismatched command
+  binding. This is adapter-to-owner evidence: House admission uses the accepted
+  §10 fixture, and fixed server fixture presence/head/sex/skill do not qualify an
+  active bed resolver, reservation, native actor retirement or OFFLINE activation.
+  The two existing command-loop capability/refusal tests remain unchanged.
+
+Final-source validation through `/home/mole/oteryn-cache/codex-bin/cargo`, 1.95.0:
+
+| Invocation / check | Result |
+|---|---|
+| `test --locked -p oteryn-gameplay-durability --lib --quiet bed_sleep -- --test-threads=1` | PASS, 5 actual PG tests, 48.80 s |
+| `test --locked -p oteryn-gameplay-dispatch --lib --quiet bed_sleep -- --test-threads=1` | PASS, 8 tests: 6 actual PG and 2 transport, 32.66 s |
+| `test --locked -p oteryn-game-server --lib --quiet bed_sleep -- --test-threads=1` | PASS, 5 actual PG tests, 26.33 s |
+| `test --locked -p oteryn-game-server --test character_authority_postgres --quiet bed_sleeper_storage -- --test-threads=1` | PASS, 7 actual PG storage regressions, 51.91 s |
+| `clippy --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --all-targets --quiet -- -D warnings` | PASS |
+| `fmt --all -- --check`; standalone new-file rustfmt; `git diff --check` | PASS |
+| Governance validator / governance unit suite | PASS / 124 tests |
+
+Every PG case requires the configured PostgreSQL 17.6 harness; none skipped and
+no unfiltered PG suite ran. Initial failures were our fixture setup: additional
+admin-seeded Characters must follow recovery qualification, and native ACL rows
+require their exact receipt in the same transaction. Both were repaired without
+weakening a guard or test. The existing vendored Tokio missing-documentation
+warning remains dependency output; all three requested Clippy packages passed.
+No unrelated load-contention failure is deferred to CI.
+
+D1462: reread the whole local diff and new files against
+`/home/mole/oteryn-cache/CODEX-CHECKLIST.md`; searched all `apps/`, `crates/` and
+`tools/` matches, constructors, implementations and consumers of `BedSleepOutcome`,
+`BedSleepRequest`, `BedSleepOwner`, fixture presence and the authority callbacks.
+All five outcome variants are handled. The new public commit has its production
+BED dispatch caller and the named adapter-to-PG test above. SQL lookups are keyed
+or bounded to the two ACL lists/two affected Houses; every new SQL function's
+call, grant and pinned search path was inspected. Existing fixture helper bodies
+and all House test names were mechanically compared with HEAD. No tests were
+deleted, skipped or weakened, and no Cargo/dependency/protected CI path changed.
+
+Changed files (including the carried run 1c delta):
+
+- `apps/game-server/migrations/0149_bed_sleeper.sql`
+- `apps/game-server/src/lib.rs`
+- `apps/game-server/tests/character_authority_postgres.rs`
+- `apps/game-server/tests/support/bed_sleeper_postgres_cases.rs` (carried unchanged)
+- `apps/game-server/tests/support/bed_sleep_postgres_cases.rs`
+- `apps/game-server/tests/support/house_scope_handoff_fixture.rs`
+- `apps/game-server/tests/support/house_scope_handoff_postgres_cases.rs`
+- `crates/gameplay/durability/src/durability/bed_sleep/mod.rs`
+- `crates/gameplay/durability/src/durability/mod.rs`
+- `crates/gameplay/durability/src/lib.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/bed_sleep.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/bed_sleep_dispatch_postgres_tests.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/connection.rs`
+- `crates/gameplay/dispatch/src/lib.rs`
+- `docs/agents/tasks/BED-1.md`
+
+Unfinished (next slice; no gameplay acceptance checkbox completed):
+
+1. Production House runtime context, active reciprocal bed/head resolution,
+   bed handle presentation, reservation/reach/logout-block/Premium checks and the
+   native sex source. Existing production authorities keep `prepare_bed_sleep`
+   closed. Property lifecycle/content fences and granting-guild locks/currentness
+   still require their owners; the native House entry access function remains
+   the no-row stub. The basic native bed ACL check is not those prerequisites.
+2. Shared `character_build` logout/offline-settlement markers, activation and
+   provenance, same-transaction attachment, prior-lease/latest-build-receipt
+   checks, admission consumption and the 21-day cap. The new terminal sleep
+   receipt is explicitly not an OFFLINE marker or a training backend.
+3. Runtime-only owner wake/bed removal, specific-cause disposition hooks before
+   ownership UPDATE, occupancy view refresh and settlement/restart/race coverage.
+4. Full native connection-loop success with real map-authored bed handles and
+   House actor retirement/reconciliation. The passing adapter/PG test does not
+   qualify the missing producers or admission/settlement composition.
+5. Integrator slot qualification: migration allocation/renumbering, inseparable
+   provenance/marker hooks before activation and independent frozen-head review.
+
+## Prior checkpoint — 2026-10-22 BED-1b storage continuation
+
+**NOT_FULLY_QUALIFIED — storage sub-part only; BED-1b remains incomplete.**
+Local AUTHORING on `w5/bed-1` at `6a3e9c833260001b8e7414c5c15182627da5f388`;
+no freeze, PR, publication or external write.
+The owner's one-run continuation permits a coherent tested sub-part when the
+whole slice cannot finish. The committed BED-1a transport work is preserved.
+
+Implemented provisional migration `0149_bed_sleeper.sql`:
+
+- Native World/House property FK, Character FK and Character-to-World check;
+  full nonzero u64 lease; native signed i32 logical coordinates; closed sex and
+  wake causes; millisecond timestamps and paired, ordered free fields.
+- One row per Character, including freed rows; one open row per native bed key;
+  immutable sleep identity and one-way open-to-freed updates.
+- Per-House occupancy revisions initialized for existing/new properties and
+  advanced atomically on insert/free/delete. Rejection, rollback and overflow
+  retain the preceding state.
+- The native ownership UPDATE invokes a SECURITY DEFINER fallback that locks
+  the House revision before waking open sleepers with `owner_change`. Same-owner
+  revisions do not wake. Prior specific-cause frees retain their first cause/time.
+- Neither runtime nor control receives direct sleeper/revision privileges or
+  callable mutation functions. All four new functions are trigger-only definers
+  with pinned search paths. This is not a logout/activation provenance API.
+
+Seven storage PostgreSQL cases are registered through
+`tests/support/bed_sleeper_postgres_cases.rs` in the existing
+`character_authority_postgres` CI target. They require the configured 17.6
+harness, assert embedded migration 139, and cover storage identity, occupancy,
+closed fields, one-way frees, native control-role owner changes, first-cause
+preservation, rollback/overflow, role privileges and competing inserts/locks.
+Their admin-seeded sleeper rows are test data, not successful gameplay evidence.
+
+Validation through `/home/mole/oteryn-cache/codex-bin/cargo`, toolchain 1.95.0:
+
+| Invocation / check | Result |
+|---|---|
+| `test --locked -p oteryn-game-server --test character_authority_postgres --quiet bed_sleeper_storage -- --test-threads=1` | PASS, 7 actual PG tests, 60.39 s on the final source; no skips |
+| `test --locked -p oteryn-gameplay-dispatch --lib --quiet bed_sleep` | PASS, 2 transport tests |
+| `clippy --locked -p oteryn-gameplay-durability -p oteryn-game-server --all-targets --quiet -- -D warnings` | PASS |
+| `fmt --all -- --check`; new-file rustfmt; `git diff --check` | PASS |
+| Governance validator / governance unit suite | PASS / 124 tests |
+
+The first PG run exposed a test helper calling the UUID generator as the control
+role; the helper now binds distinct fixture receipt IDs without expanding any
+role's privileges. The Clippy sweep replaced `unwrap_err` with an assertion
+helper that requires both rejection and the exact SQLSTATE. No test was weakened.
+An existing `vendor/tokio-1.53.1` missing-documentation warning was printed by
+dependency compilation; both requested Clippy packages passed. No unfiltered PG
+suite ran, and no unrelated contention failure is deferred to CI.
+
+D1462: reread the complete local delta and both new files against
+`/home/mole/oteryn-cache/CODEX-CHECKLIST.md`; searched `apps/`, `crates/`, `tools/`
+for every new SQL function and verified its trigger registration. No Rust enum
+variant, struct field, trait method or public function was added, so there are no
+new Rust match/constructor/impl consumers. No Type2 transaction opener was added.
+The existing harness parent grows by two wiring lines; tests live in their own
+child. Dispatch success/settlement E2E remains unimplemented, not qualified by
+the passing storage and refusal tests. No Git mutation was performed by this run.
+
+Unfinished:
+
+1. `bed_sleep*.rs` durable caller-TX owner, using
+   `begin_type2_transaction(holder, deadline)` for every Type2 opener; fenced
+   sleep plus logout/activation, first-receipt replay and old-row cleanup.
+2. Shared `character_build` logout/offline-settlement markers and admission
+   settlement, including prior-lease/latest-receipt checks, deletion and the
+   21-day sleep cap. Those owners still have no production marker path here.
+3. Active reciprocal bundle bed resolution and House reservation/property/guild/
+   Premium/reach/current-scope evidence. The existing House access owner remains
+   the no-row stub; coordinates alone must never authorize sleep.
+4. Production `FreshAdmissionAuthority::sleep_in_bed`, runtime-only owner wake
+   and bed removal, specific-cause disposition writer integration, and real
+   dispatch/PG coverage of commit, ACL/fence refusal, wake and settlement.
+5. Slot qualification: install provenance guards and the real writer/hooks
+   inseparably before activation; migration renumbering and independent review
+   remain integrator work. No BED gameplay acceptance checkbox is completed.
+
+## Prior checkpoint — 2026-10-22 CP allocation continuation
 
 **NOT_FULLY_QUALIFIED — BED-1 is incomplete.** The earlier wire-allocation
 question is resolved; no new wire decision is requested. The integrator assigns
@@ -202,9 +399,9 @@ drafted earlier but must not assume unmerged schemas.
 
 - `crates/gameplay/housing/src/house_bed.rs` (new, L3 pure rules: stored bed key, freed causes, sleep-duration cap)
 - `crates/gameplay/housing/src/house_bed_tests.rs` (new)
-- `crates/gameplay/durability/src/durability/bed_sleeper.rs` (new, sleeper storage, caller-TX read/lock, free/delete steps)
+- `crates/gameplay/durability/src/durability/bed_sleep/` (fenced durable sleep/logout owner); future read/free/settlement children remain on this owner
 - `crates/gameplay/durability/src/durability/bed_sleeper_tests.rs` (new)
-- `apps/game-server/tests/bed_sleeper_postgres.rs` (new)
+- `apps/game-server/tests/support/bed_sleep_postgres_cases.rs`, lib-mounted in the three touched crates; retained storage cases use `character_authority_postgres` (no new PostgreSQL target)
 - `docs/agents/tasks/BED-1.md`
 
 Slot-only (final commit at the queue turn): the migration (number: next free number at
@@ -303,13 +500,16 @@ Integration still owned elsewhere and required before activation:
 
 ## Validation
 
+Use `/home/mole/oteryn-cache/codex-bin/cargo` for every Cargo invocation. Owner
+2026-10-22 PG scope overrides historical target/full-suite commands above.
+
 ```sh
 cargo fmt --all -- --check
-cargo clippy --locked --workspace --all-targets -- -D warnings
-cargo test -p oteryn-gameplay-housing house_bed
-cargo test -p oteryn-gameplay-durability bed_sleeper
-cargo test -p oteryn-game-server --test bed_sleeper_postgres   # PostgreSQL 17.6 harness
-cargo +1.95.0 run -p oteryn-architecture-check -- workspace .
+cargo clippy --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --all-targets --quiet -- -D warnings
+cargo test --locked -p oteryn-gameplay-durability --lib --quiet bed_sleep -- --test-threads=1
+cargo test --locked -p oteryn-gameplay-dispatch --lib --quiet bed_sleep -- --test-threads=1
+cargo test --locked -p oteryn-game-server --lib --quiet bed_sleep -- --test-threads=1
+cargo test --locked -p oteryn-game-server --test character_authority_postgres --quiet bed_sleeper_storage -- --test-threads=1
 ```
 
 ## Reference evidence

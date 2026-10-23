@@ -133,11 +133,11 @@ async fn fixture_character_world(h: &Harness, seed: u8, owner: u8, world: u8) ->
         )
     };
     let raw = serde_json::to_vec(&serde_json::json!({
-        "contract_version":2,"variant":"OPERATOR_CONTROL_PLANE_BOOTSTRAP",
+        "contract_version":3,"variant":"OPERATOR_CONTROL_PLANE_BOOTSTRAP",
         "issuer_authority":"OTERYN_PLATFORM_CHARACTER_AUTHORITY","issuer_decision_id":uuid(decision),
         "source_revision":seed.to_string(),"operation_id":uuid(operation),"operation":"INITIAL_CHARACTER_BOOTSTRAP",
         "account_id":uuid(id(owner)),"target_world_id":uuid(id(world)),
-        "requested_name":format!("Vip Fixture {}{}",char::from(b'A'+seed/26),char::from(b'A'+seed%26)),
+        "requested_sex":"Male","requested_name":format!("Vip Fixture {}{}",char::from(b'A'+seed/26),char::from(b'A'+seed%26)),
         "interpretation_context":{"profile_revision":"profile-1","ruleset_revision":"ruleset-1","content_revision":"content-1","starter_template_revision":"starter-1"},
         "issued_at_source":"1","expires_at_source":"120","audience":"OTERYN_GAME_CHARACTER_AUTHORITY"
     }))?;

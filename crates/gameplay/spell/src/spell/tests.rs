@@ -693,3 +693,6 @@ fn only_a_spender_scales_its_damage_bounds_by_the_harmony_multiplier() {
         (Some(multiplier.apply(98)), Some(multiplier.apply(143)))
     );
 }
+
+#[path = "cast_property_tests.rs"]
+mod property_tests;

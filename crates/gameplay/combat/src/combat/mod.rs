@@ -25,6 +25,7 @@ pub use death_reward::{
     RewardProgressionBinding, capture_projected_death_facts, check_corpse_container_capacity,
     check_inflight_loot_mint_capacity, check_reward_principal_count, loot_plan_seed,
     settle_creature_death_rewards, settle_creature_death_rewards_with_bestiary,
+    settle_creature_death_rewards_with_party_experience,
 };
 #[allow(
     unused_imports,

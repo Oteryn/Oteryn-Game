@@ -59,6 +59,8 @@ def parse(data: bytes):
 def promotion_paths(document):
     result = {"/source_manifest_sha256", "/source_appearances_sha256", "/palette",
               "/fallbacks/female", "/fallbacks/male"}
+    if "grant_mappings" in document:
+        result.add("/grant_mappings")
     for family, fields in [
         ("outfits", ["key", "revision", "female", "male", "addon_count", "starter_female", "starter_male",
                      "starter_addons_female", "starter_addons_male", "premium", "unlock_sources",
@@ -128,6 +130,21 @@ def validate(authoring):
         keys.add(row["key"])
         if row["speed_bonus"] != authoring["profile"]["mount_speed_bonus"]:
             raise ValueError("Reference ruleset mount speed disagreement")
+    grants = set()
+    mounts = {row["key"] for row in document["mounts"]}
+    for mapping in document.get("grant_mappings", []):
+        if mapping["grant_key"] in grants:
+            raise ValueError("duplicate cosmetics grant key")
+        grants.add(mapping["grant_key"])
+        target = mapping["target"]
+        if target["kind"] == "Mount":
+            valid = target["mount_key"] in mounts
+        else:
+            outfit = outfits.get(target["outfit_key"])
+            valid = outfit is not None and (target["kind"] == "Outfit"
+                    or target["addon"] <= outfit["addon_count"])
+        if not valid:
+            raise ValueError("unknown cosmetics grant target")
     for sex in ["female", "male"]:
         fallback = document["fallbacks"][sex]
         row = outfits.get(fallback["outfit_key"])

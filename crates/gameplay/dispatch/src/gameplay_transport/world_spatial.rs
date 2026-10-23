@@ -5,6 +5,7 @@
 //! has no dependency on this one. This module re-exports the whole original `pub` surface
 //! unchanged, so nothing else in this crate needed to change.
 
+mod appearance_visibility;
 use std::collections::BTreeMap;
 
 use crate::movement::interest::{
@@ -221,7 +222,7 @@ pub enum VisibilityUpdate {
 /// creature's `light`. A shown entity whose light changes is updated at most once per
 /// [`LIGHT_UPDATE_INTERVAL_MS`]; until then it keeps the light last sent, even in an entry sent
 /// for a move.
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct SessionVisibility {
     shown: Option<VisibilityQuery>,
     entities: BTreeMap<[u8; ENTITY_IDENTITY_BYTES], WorldSpatialEntity>,
