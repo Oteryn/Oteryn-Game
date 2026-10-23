@@ -2402,13 +2402,8 @@ mod mail_postgres_cases;
 // standalone target through the same protected lane.
 #[path = "support/map_item_mint_postgres_cases.rs"]
 mod map_item_mint_postgres_cases;
-#[path = "support/market_postgres_cases.rs"]
-mod market_postgres_cases;
 #[path = "support/npc_econ_bank_postgres_cases.rs"]
 mod npc_econ_bank_postgres_cases;
-// NPC-TRADE-1 NPC BUY/SELL commit (migration 0082) on the B3 item-transfer harness.
-#[path = "support/npc_trade_postgres_cases.rs"]
-mod npc_trade_postgres_cases;
 #[path = "support/npc_travel_postgres_cases.rs"]
 mod npc_travel_postgres_cases;
 // PG-COVERAGE-1: fails when a standalone `*_postgres.rs` target has cases that
@@ -2445,8 +2440,6 @@ mod quest_state_postgres_cases;
 mod reward_claim_mint_postgres_cases;
 #[path = "support/route_less_case_guard.rs"]
 mod route_less_case_guard;
-#[path = "support/tutorial_progress_postgres_cases.rs"]
-mod tutorial_progress_postgres_cases;
 // GOLD-FEE-ACT-1 type-2 audit activation (migration 0079).
 #[path = "support/type2_audit_activation_postgres_cases.rs"]
 mod type2_audit_activation_postgres_cases;
@@ -3412,3 +3405,7 @@ async fn character_commands_flow(database: &Database) -> TestResult {
     assert_eq!(record.account_id.as_bytes(), &id(41));
     Ok(())
 }
+
+// Every case file in `support/authority_cases/` is mounted here by `build.rs`, so a new mechanic
+// adds its file there instead of editing this shared target.
+include!(concat!(env!("OUT_DIR"), "/authority_cases_mounts.rs"));

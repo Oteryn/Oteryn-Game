@@ -16,7 +16,7 @@ use std::{future::Future, sync::Arc};
 
 const HOUSE: &str = "oteryn:content.house.thais_1";
 
-#[path = "house_ownership_integrity_tests.rs"]
+#[path = "house_ownership_tests/integrity.rs"]
 mod integrity;
 
 fn run<F, Fut>(tag: &'static str, body: F) -> TestResult

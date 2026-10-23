@@ -59,8 +59,9 @@ Integration order decided by CP (D1162/D1349): HOUSE-1b → HOUSE-1a → MAP-OVE
   `house_auction/{eligibility,eligibility_tests,value}.rs` (L3 pure rules).
 - `crates/gameplay/durability/src/durability/house_ownership.rs`;
   `house_ownership/{bid,eligibility,premium,settlement,value}.rs` (L4 durable owner).
-- `crates/gameplay/durability/src/durability/house_ownership_audit{,_tests}.rs`;
-  `house_ownership{,_integrity}_tests.rs` (the PG files mount once in game-server `--lib`).
+- `crates/gameplay/durability/src/durability/house_ownership_audit{,_tests}.rs`.
+- `apps/game-server/src/lifted_tests/auto/house_ownership_tests{.rs,/integrity.rs}` (the PG
+  files, auto-mounted once in game-server `--lib`).
 - `crates/gameplay/durability/src/durability/bank_credit_headroom.rs` (prerequisite).
 - `apps/game-server/migrations/0143_house_ownership.sql` (new migration only).
 - `apps/game-server/tests/support/bestiary_postgres_harness.rs` (reuse and cleanup);

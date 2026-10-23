@@ -4,7 +4,7 @@ use super::*;
 fn house_ownership_existing_acl_fixture_uses_the_canonical_spine() -> TestResult {
     run("house_ownership_existing_acl", |h| async move {
         let source = include_str!(
-            "../../../../../apps/game-server/tests/support/house_spell_privacy_cases.sql"
+            "../../../../tests/support/house_spell_privacy_cases.sql"
         );
         let source = source
             .strip_prefix("\\set ON_ERROR_STOP on\n")
