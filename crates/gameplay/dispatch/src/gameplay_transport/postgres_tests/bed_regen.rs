@@ -22,8 +22,10 @@ async fn seed(h: &Harness, freed: bool) -> TestResult {
     let slept = wake - 900_000;
     sqlx::query("INSERT INTO game_durability_reconnect_sessions(game_session_id,account_id,character_id,world_id,runtime_scope_kind,runtime_scope_world_id,runtime_scope_channel_id,control_loss_epoch,original_grace_deadline,predecessor_generation,character_lease_generation,scope_ownership_generation,current_generation,session_state) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,1,encode($4,'hex')::uuid,encode($5,'hex')::uuid,1,999999,1,1,1,1,3)")
         .bind(id(49).as_slice()).bind(id(40).as_slice()).bind(id(41).as_slice()).bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
-    sqlx::query("INSERT INTO game_house_ownership VALUES(encode($1,'hex')::uuid,'oteryn:content.house.bed_regen',encode($2,'hex')::uuid,1,game_character_uuid_v7())")
-        .bind(id(42).as_slice()).bind(id(41).as_slice()).execute(&h.pool).await?;
+    sqlx::query(include_str!(
+        "../../../../../../apps/game-server/tests/support/owned_house_fixture.sql"
+    ))
+        .bind(id(42).as_slice()).bind("oteryn:content.house.bed_regen").bind(id(41).as_slice()).execute(&h.pool).await?;
     sqlx::query("INSERT INTO game_house_bed_sleepers VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'oteryn:content.house.bed_regen',100,200,-7,1,'male',$3,NULL,NULL)")
         .bind(id(41).as_slice()).bind(id(42).as_slice()).bind(slept).execute(&h.pool).await?;
     sqlx::query("INSERT INTO game_house_bed_sleep_receipts VALUES(encode($1,'hex')::uuid,1,jsonb_build_array(encode($2,'hex')::uuid,encode($3,'hex')::uuid,'oteryn:content.house.bed_regen',1,1,1,'transport',100,200,-7,'male',6),$4)")
