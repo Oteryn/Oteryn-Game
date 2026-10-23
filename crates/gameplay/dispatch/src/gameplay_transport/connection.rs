@@ -382,8 +382,10 @@ const ADMISSION_REFUSAL_WRITE_BOUND: std::time::Duration = std::time::Duration::
 /// nothing on the transport side can mark a connection admitted.
 pub trait FreshAdmissionAuthority {
     super::vip::authority_methods!();
+    super::house_intent::authority_methods!();
     super::appearance_change::authority_methods!();
     super::guild_intent::authority_methods!();
+    super::daily_reward::authority_methods!();
     fn admit(
         &self,
         attempt: FreshAdmissionAttempt<'_>,
@@ -632,6 +634,18 @@ pub trait FreshAdmissionAuthority {
         _target: ItemKey,
     ) -> impl Future<Output = Option<crate::durability::bed_sleep::BedSleepOwner<'_, '_, '_>>> {
         async { None }
+    }
+
+    /// CRAFT-1: use-with a map cooking station. Replay resolves before current handles.
+    fn use_craft(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _intent: UseIntent,
+        _source: Option<ItemKey>,
+        _target: Option<ItemKey>,
+    ) -> impl Future<Output = Option<UseOutcome>> {
+        async { Some(UseOutcome::rejected()) }
     }
 
     /// Capability 22's exact direct-entry Rune adapter. Unknown commits keep the command open.
@@ -1464,6 +1478,7 @@ where
     );
     let offered =
         super::appearance_change::offer::offered(&offered, authority.appearance_available());
+    let offered = super::daily_reward::offered(&offered, authority.daily_reward_available());
     let Some(selected) = SelectedCapabilities::select(&offered, bootstrap.supported_capabilities)
     else {
         return Err(ConnectionEnd::AdmissionRefused(
@@ -2803,6 +2818,7 @@ where
             Guild(Vec<u8>),
             Party(Vec<u8>),
             Appearance(Option<oteryn_protocol_oteryn::appearance::ChangeResult>),
+            DailyReward(Option<Vec<u8>>),
             /// ITEM-VIEW-1b: `USE` with an item target; the domain 11 delta follows the result.
             UseItem(OpenDecision, Option<ItemViewDelta>),
             /// BAGS-WIRE-1: command 21; the domain 14 delta follows the result.
@@ -2824,6 +2840,7 @@ where
             NpcTrade(NpcIntentDisposition, NpcUpdate, Vec<ItemViewDelta>),
             /// LOGOUT-WIRE-1: command 23; `ACCEPTED` ends the connection after the result.
             Logout(LogoutResult),
+            House(Option<Vec<u8>>),
             Unregistered,
         }
         // LOGOUT-RL-01: a second logout read before the first one's result.
@@ -2944,6 +2961,16 @@ where
                 admitted.continuity.selected_capabilities.as_slice(),
                 command.payload,
             ) {
+                Ok(intent) if intent.use_with_map_item.is_some() => {
+                    match super::item_craft::dispatch(authority, actor, UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: command.command_id,
+                        item_fence: admitted.item_fence,
+                    }, intent, item_view.as_ref()).await {
+                        Some(outcome) => Dispatch::Use(outcome),
+                        None => return ConnectionEnd::AdmittedThenDisconnected(admitted),
+                    }
+                }
                 Ok(intent) if super::rune_use_bridge::routes(
                     &intent, &admitted.continuity.selected_capabilities,
                 ) => match super::rune_use_bridge::dispatch(
@@ -3570,6 +3597,44 @@ where
                 )
                 .await,
             )
+        } else if matches!(
+            command.command_type,
+            oteryn_protocol_oteryn::house::COMMAND_TYPE_HOUSE_INTENT
+                | oteryn_protocol_oteryn::house::COMMAND_TYPE_HOUSE_QUERY
+        ) {
+            Dispatch::House(
+                super::house_intent::dispatch(
+                    authority,
+                    actor,
+                    UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: command.command_id,
+                        item_fence: admitted.item_fence,
+                    },
+                    command.payload,
+                    command.command_type == oteryn_protocol_oteryn::house::COMMAND_TYPE_HOUSE_QUERY,
+                )
+                .await,
+            )
+        } else if matches!(
+            command.command_type,
+            oteryn_protocol_oteryn::daily_reward::COMMAND_TYPE_DAILY_REWARD_CLAIM
+                | oteryn_protocol_oteryn::daily_reward::COMMAND_TYPE_DAILY_REWARD_QUERY
+        ) {
+            Dispatch::DailyReward(
+                super::daily_reward::dispatch(
+                    authority,
+                    actor,
+                    UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: command.command_id,
+                        item_fence: admitted.item_fence,
+                    },
+                    command.command_type,
+                    command.payload,
+                )
+                .await,
+            )
         } else if command.command_type == COMMAND_TYPE_HIGHSCORES_QUERY_V1 {
             // HIGHSCORES0 §6: the World and the asking Character are the admitted session's.
             match decode_highscores_query(command.payload) {
@@ -3610,7 +3675,7 @@ where
             other => other,
         };
         drop(input_permit);
-        if let Dispatch::Appearance(None) = dispatch {
+        if matches!(dispatch, Dispatch::Appearance(None) | Dispatch::House(None)) {
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
         }
         if matches!(dispatch, Dispatch::Vip(None)) {
@@ -3628,6 +3693,11 @@ where
         let (status, result_payload) = match &mut dispatch {
             Dispatch::Vip(Some(payload)) => (CommandStatus::Accepted, payload.clone()),
             Dispatch::Vip(None) => return ConnectionEnd::AdmittedThenDisconnected(admitted),
+            Dispatch::House(Some(payload)) => (CommandStatus::Accepted, payload.clone()),
+            Dispatch::House(None) => return ConnectionEnd::AdmittedThenDisconnected(admitted),
+            Dispatch::DailyReward(payload) => {
+                super::daily_reward::result(command.command_type, payload.take())
+            }
             Dispatch::Appearance(Some(result)) => match appearance_change::result(*result) {
                 Some(result) => result,
                 None => return ConnectionEnd::AdmittedThenDisconnected(admitted),
@@ -4216,7 +4286,9 @@ where
             | Dispatch::Vip(_)
             | Dispatch::Party(_)
             | Dispatch::Appearance(_)
+            | Dispatch::DailyReward(_)
             | Dispatch::Logout(_)
+            | Dispatch::House(_)
             | Dispatch::Unregistered => {}
         }
         if newhaven_travel_transport::emit_relocation(
