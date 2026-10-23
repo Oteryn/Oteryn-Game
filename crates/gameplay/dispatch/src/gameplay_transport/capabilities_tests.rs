@@ -731,6 +731,7 @@ fn the_bundle_world_offered_set_is_3_the_item_view_set_12_14_and_18_requiring_4_
         CAPABILITY_WORLD_MAP_VIEW_V1,
         CAPABILITY_ITEM_LOOK_V1,
         oteryn_protocol_oteryn::depot::CAPABILITY_DEPOT_V1,
+        oteryn_protocol_oteryn::vip::CAPABILITY_VIP_V1,
     ];
     let shared: Vec<OfferedCapability> = BUNDLE_WORLD_OFFERED_CAPABILITIES
         .iter()
@@ -760,6 +761,10 @@ fn the_bundle_world_offered_set_is_3_the_item_view_set_12_14_and_18_requiring_4_
         Some(WORLD_WEATHER.requires)
     );
     assert_eq!(requires(CAPABILITY_ITEM_LOOK_V1), Some(&[][..]));
+    assert_eq!(
+        requires(oteryn_protocol_oteryn::vip::CAPABILITY_VIP_V1),
+        Some(&[][..])
+    );
     assert_eq!(
         requires(oteryn_protocol_oteryn::depot::CAPABILITY_DEPOT_V1),
         Some(&[4][..])
