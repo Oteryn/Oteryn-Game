@@ -3315,12 +3315,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 return oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected;
             }
         }
+        let room = self.rooms.gate_attack_target();
         if let Some(permit) = permit.as_ref()
             && !self
                 .pvp_selection_allowed(
                     permit,
                     &runtime,
                     &states,
+                    room,
                     actor,
                     game_session_id,
                     command_id,
@@ -3332,7 +3334,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         }
         self.states.attack.lock().await.set_target(
             &runtime,
-            self.rooms.gate_attack_target(),
+            room,
             actor,
             game_session_id,
             now,

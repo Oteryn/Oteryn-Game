@@ -120,6 +120,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         permit: &SpellLanePermit,
         runtime: &ChannelRuntimeV1,
         states: &ChannelSpellStates,
+        room: Option<&QualifiedNativeEntryRoom>,
         actor: ExactActorRef,
         session: crate::foundation::GameSessionId,
         command_id: u64,
@@ -135,7 +136,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if player.actor == actor {
             return true;
         }
-        let Some(room) = self.rooms.gate_attack_target() else {
+        let Some(room) = room else {
             return false;
         };
         let modes = self

@@ -17,7 +17,7 @@ use crate::gameplay_transport::capabilities::{SelectedCapabilities, test_command
 use crate::gameplay_transport::connection::{
     FirstEntryOutcome, FreshAdmissionAuthority, IDLE_LIVENESS, serve_admitted,
 };
-use crate::gameplay_transport::{SeamRooms, item_fence_of};
+use crate::gameplay_transport::item_fence_of;
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use oteryn_protocol_oteryn::{actor_spell, attack, decode_command_result};
 use std::time::Duration;
@@ -172,10 +172,10 @@ fn scenario(mode: i16) -> TestResult {
             room.map_revision_digest(),
             (2, if mode == 4 { 0 } else { 11 }, floor),
         );
-        let deps = Dependencies::with_content(cp, room.clone(), native.spell_book().clone())?;
+        let mut deps = Dependencies::with_content(cp, room.clone(), native.spell_book().clone())?;
+        deps.combat_room = Some(room);
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
-        owner.rooms = SeamRooms::new((mode != 5 && mode != 6).then_some(&room), Some(&room));
         if let Some(cells) = cells.as_ref() {
             owner.movement_cells = cells;
         }

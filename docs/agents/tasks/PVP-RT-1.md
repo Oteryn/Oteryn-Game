@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/happy-davinci-ijz3wy-srv-pvprt
 issue: 1622
-pr: null
+pr: 2351
 base_sha: c3ad75d493945469c3f12b01363b4268c6215681
 plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md App. 7 PARTY/PVP PVP-RT-1; wave 2"
 class: "hard (combat), combat and security review"
@@ -41,6 +41,62 @@ blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
 ```
+
+## CI repair of PR #2351 (2026-10-23 local worker)
+
+Returned to local AUTHORING from `aaea61501` for the owner's bounded CI repair;
+the coordinator owns publication and the next freeze. No commit or push is authorized here.
+
+The PvP selection helper duplicated the already sanctioned attack-target room lookup, and its
+PostgreSQL fixture constructed the seam rooms directly. Selection now receives the same gated
+combat room as `set_target`; the fixture supplies `Dependencies::combat_room` to its existing
+constructor. Neither security inventory nor gate semantics changes.
+
+The shared spell-tile test World had gained PvP cells at x 14–16, making the monster-AI test's
+outside cell x 14 walkable. Restored the original 13-cell fixture and shape count. A separate
+spell-tile fixture retains PvP/PZ flag coverage and checks no-PvP precedence over PvP. The shared
+fixture also explicitly checks that x 14 is absent. No production border rule changes.
+
+Resumed the interrupted repair from the existing working tree, preserving its code changes.
+Refreshed the bound META 3.1.0 policy at its exact immutable commit before validation.
+All Cargo commands use the absolute queued wrapper with `CARGO_NET_OFFLINE=true`;
+no dependencies were downloaded.
+
+| Exact command | Result |
+|---|---|
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --lib bundle_gates --quiet` | 5 passed |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --lib monster_ai_cycle --quiet` | 12 passed |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --lib spell_tiles --quiet` | 0 matching tests; actual owning-crate run below |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-world --lib spell_tiles --quiet` | 6 passed, 1 existing ignored |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --lib pvp_live --quiet` | 5 real PostgreSQL E2E cases passed, 0 failed/ignored; 243.36s on resumed validation |
+| `/home/mole/oteryn-cache/codex-bin/cargo --config 'target.x86_64-unknown-linux-gnu.runner=["env","-u","OTERYN_TEST_POSTGRES_ADMIN_URL"]' test --locked -p oteryn-gameplay-dispatch --lib --quiet` | 989 passed, 14 existing ignored, 0 failed; 83.28s on resumed validation |
+| `/home/mole/oteryn-cache/codex-bin/cargo clippy --locked -p oteryn-gameplay-dispatch -p oteryn-gameplay-world --all-targets --quiet -- -D warnings` | Passed |
+| `/home/mole/oteryn-cache/codex-bin/cargo fmt --all` | Passed |
+| `/home/mole/oteryn-cache/codex-bin/cargo fmt --all --check` | Passed |
+| `python3 tools/agents/validate_governance.py` | Passed: 22 policy documents, 9 project lanes |
+| `python3 -m unittest discover -s tools/agents/tests` | 129 passed |
+| `python3 tools/repository/validate_repository_policy.py` | Passed: 23 files, 68 workflows |
+| `git diff --check` | Passed |
+
+The full dispatch command deliberately runs without a PostgreSQL route, as requested for the
+non-PG unit suite; its route-less PG returns are not PostgreSQL qualification. Only `pvp_live`
+is run against PostgreSQL. No tests, ignore attributes or gate assertions were weakened.
+Existing vendored Tokio/SQLx dependency warnings remain unchanged.
+
+Changed files for this repair:
+
+- `crates/gameplay/dispatch/src/gameplay_transport/mod.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/pvp_live.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/pvp_live.rs`
+- `crates/gameplay/world/src/map/spell_tiles.rs`
+- `docs/agents/tasks/PVP-RT-1.md`
+
+Re-read the complete repair diff against `/home/mole/oteryn-cache/CODEX-CHECKLIST.md`.
+The changed helper's only production caller was found across `apps/`, `crates/`, `tools/` and
+updated. No enum variants, struct fields, trait methods or public functions were added.
+
+Unfinished for this repair: coordinator publication and fresh repository CI on the resulting
+candidate. All requested local checks passed. No remote CI success, freeze or merge is claimed.
 
 ## Server wiring gap list (2026-10-23 local worker)
 

@@ -404,9 +404,6 @@ pub mod tests {
                 tile(11, 0, 0, &[0, 8]),
                 tile(12, 0, 1, &[0, 8]),
                 tile(13, 0, 0, &[0]),
-                tile(14, 4, 0, &[0]),
-                tile(15, 16, 0, &[0]),
-                tile(16, 5, 0, &[0]),
             ],
         };
         let bytes = bundle::write(
@@ -538,9 +535,6 @@ pub mod tests {
         assert_eq!(grass.pvp_zone(), Some(false));
         // Tile flag bit 0 is the protection zone.
         assert!(lookup(2).expect("zone").flags().protection_zone);
-        assert_eq!(lookup(14).expect("no PvP").no_pvp_zone(), Some(true));
-        assert_eq!(lookup(15).expect("PvP").pvp_zone(), Some(true));
-        assert_eq!(lookup(16).expect("PZ wins").no_pvp_zone(), Some(false));
         // A non-walkable ground blocks.
         assert_eq!(
             lookup(3).expect("water"),
@@ -575,6 +569,52 @@ pub mod tests {
     }
 
     #[test]
+    fn bundle_spell_tiles_pvp_zone_precedence() {
+        use oteryn_world_bundle::sector::{Attrs, Item, Tile};
+        use oteryn_world_bundle::writer::Sector;
+
+        // Keep zone-specific cells out of the shared World's boundary fixture.
+        let cases = [
+            (1, 0, false, false, false),
+            (2, 4, false, true, false),
+            (3, 16, false, false, true),
+            (4, 5, true, false, false),
+            (5, 17, true, false, false),
+            (6, 20, false, true, false),
+        ];
+        let world = world_from_bundle(bundle(Some(vec![Sector {
+            floor: -7,
+            sx: 0,
+            sy: 0,
+            tiles: cases
+                .iter()
+                .map(|&(x, flags, _, _, _)| Tile {
+                    x,
+                    y: 0,
+                    flags,
+                    house: 0,
+                    zones: Vec::new(),
+                    items: vec![Item {
+                        palette: 0,
+                        depth: 0,
+                        attrs: Attrs::default(),
+                    }],
+                })
+                .collect(),
+        }])));
+        let (_, cells) = cells(&world);
+        for (x, _, protection, no_pvp, pvp) in cases {
+            let tile = cells
+                .spell_tiles()
+                .lookup(cells.scope(), at(i32::from(x)))
+                .expect("zone tile");
+            assert_eq!(tile.flags().protection_zone, protection, "x {x}");
+            assert_eq!(tile.no_pvp_zone(), Some(no_pvp), "x {x}");
+            assert_eq!(tile.pvp_zone(), Some(pvp), "x {x}");
+        }
+    }
+
+    #[test]
     fn bundle_tiles_without_a_source_are_unknown_and_outside_the_map_absent() {
         let world = world();
         let (entry, cells) = cells(&world);
@@ -592,6 +632,7 @@ pub mod tests {
         // No tile there, a floor without tiles, and coordinates outside the native plane.
         for cell in [
             at(0),
+            at(14),
             at(20),
             LogicalCell { x: 1, y: 0, z: 6 },
             LogicalCell { x: 1, y: 0, z: 16 },
@@ -663,7 +704,7 @@ pub mod tests {
         assert!(!Arc::ptr_eq(&tiles, &other));
         assert_eq!(tiles, other);
         assert_eq!(tiles.tiles.len(), first.base().tile_count());
-        // 16 tiles: 3 unknown, and the grass at x 13 shares the shape of x 1. The coin and the box
+        // 13 tiles: 3 unknown, and the grass at x 13 shares the shape of x 1. The coin and the box
         // intern no shape; the usable door's shape (not blocked, unlike the sealed door) stays
         // interned and its tile is unknown.
         assert_eq!(
@@ -674,7 +715,7 @@ pub mod tests {
                 .count(),
             3
         );
-        assert_eq!(tiles.shapes.len(), 12);
+        assert_eq!(tiles.shapes.len(), 10);
         let (_, cells) = cells(&first);
         let lookup = |x| cells.spell_tiles().lookup(cells.scope(), at(x));
         assert!(std::ptr::eq(
