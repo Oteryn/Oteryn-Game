@@ -57,7 +57,7 @@ impl CreatureMotion {
         {
             return None;
         }
-        if self.expected != Some(at) {
+        if self.expected.map(|snapshot| snapshot.position()) != Some(at) {
             self.route = None;
         }
         let node = self.route.as_ref()?.steps().get(self.cursor)?.node();

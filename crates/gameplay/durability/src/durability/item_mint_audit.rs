@@ -820,7 +820,7 @@ pub fn encode_mint_event(
 }
 
 /// Golden type-2 envelopes for the GOLD-FEE-2 compatibility qualification (test builds only).
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 pub mod golden {
     #![allow(clippy::unwrap_used, clippy::panic)]
     use super::{AuditError, EventEnvelopeV1, decode_envelope};

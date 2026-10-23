@@ -26,6 +26,7 @@ use {
     oteryn_gameplay_domain::domain::carrier_values::CarrierError,
 };
 pub mod interest;
+pub mod monster_map;
 pub mod pacing;
 pub mod path_budget;
 pub mod path_search;

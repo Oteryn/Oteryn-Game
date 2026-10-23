@@ -2,11 +2,13 @@
 use super::*;
 
 impl CreatureAiTable {
+    #[allow(clippy::too_many_arguments)]
     pub(super) fn refresh_goals(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         cells: &NativeEntryMovementCells,
         blocking: &dyn CellBlocker,
+        current_map: Option<&crate::movement::monster_map::MonsterMap>,
         navigation: [u8; 32],
         now: u64,
         source: &dyn CurrentCreatureSpeedReader,
@@ -35,9 +37,12 @@ impl CreatureAiTable {
                     || (i64::from(at.y) - i64::from(spawn.y)).abs() > 50
                     || (i32::from(at.floor) - i32::from(spawn.floor)).abs() > 2)
             {
-                let _ = crate::movement::relocate::relocate_creature(
-                    runtime, actor, cells, blocking, spawn,
-                );
+                let _ = match current_map {
+                    Some(map) => map.relocate(runtime, actor, spawn),
+                    None => crate::movement::relocate::relocate_creature(
+                        runtime, actor, cells, blocking, spawn,
+                    ),
+                };
                 entry.due_us = None;
                 entry.state.target = None;
                 entry.motion.stop();
@@ -78,17 +83,16 @@ impl CreatureAiTable {
                         distance,
                         ..
                     } => {
-                        !crate::movement::relocate::creature_sight_clear(
-                            cells, blocking, at, target,
-                        ) || (goal
-                            .local_step(at, 1_000_000, 0, |next| {
-                                crate::movement::relocate::creature_cell_admissible(
-                                    cells, blocking, next,
-                                ) && runtime.position_occupied_by_other(actor, next) == Ok(false)
-                            })
-                            .is_none()
-                            && crate::movement::path_search::chebyshev(at, target)
-                                != i64::from(distance))
+                        !sight(cells, blocking, current_map, at, target)
+                            || (goal
+                                .local_step(at, 1_000_000, 0, |next| {
+                                    admits(cells, blocking, current_map, next)
+                                        && runtime.position_occupied_by_other(actor, next)
+                                            == Ok(false)
+                                })
+                                .is_none()
+                                && crate::movement::path_search::chebyshev(at, target)
+                                    != i64::from(distance))
                     }
                     MovementGoal::WalkBack { spawn } => at != spawn,
                     _ => false,

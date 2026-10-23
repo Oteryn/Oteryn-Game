@@ -1,4 +1,14 @@
 //! Existing MONSTER-SUMMON-1 proposal -> exact native physical owner. No factory/grant defaults.
+#[path = "monster_summon/catalog.rs"]
+mod catalog;
+#[cfg(any(test, feature = "test-support"))]
+#[path = "monster_summon/catalog_test_support.rs"]
+mod catalog_test_support;
+#[path = "monster_summon/owner.rs"]
+pub mod owner;
+#[path = "monster_summon/physical_admission.rs"]
+mod physical_admission;
+
 use crate::ai_think::ThinkOccurrence;
 use crate::ai_think::profile_schedule::{
     MonsterSummonFacts, ObservedSummonCount, ProfileSummonProposal,
@@ -79,132 +89,7 @@ fn member(draft: &ProjectV2Draft, r: &Ref) -> bool {
     r.family==ProjectV2Family::Creature && draft.core.records.iter().filter(|record|matches!(record,ProjectReferenceRecord::Creature{identity,..}if identity.family=="Creature"&&identity.key==r.key&&identity.revision==r.revision)).count()==1
  &&draft.state.source_identity_bindings.iter().any(|b|b.target==*r&&b.disposition==ProjectV2SourceIdentityDisposition::Exact&&draft.state.sources.iter().any(|s|s.key==b.source_key&&s.revision==b.source_revision))
 }
-impl NativeSummonCatalog {
-    pub fn from_project(
-        runtime: &ChannelRuntimeV1,
-        parent: &Ref,
-        draft: &ProjectV2Draft,
-        loader_digest: [u8; 32],
-    ) -> Result<Self, SummonError> {
-        if !native_draft_world_matches(runtime, draft)
-            || loader_digest != runtime.content_pin().server_artifact_digest()
-            || !member(draft, parent)
-        {
-            return Err(SummonError::InvalidSource);
-        }
-        let record = draft
-            .core
-            .records
-            .iter()
-            .find_map(|r| match r {
-                ProjectReferenceRecord::Creature {
-                    identity, behavior, ..
-                } if identity.key == parent.key && identity.revision == parent.revision => {
-                    Some(behavior)
-                }
-                _ => None,
-            })
-            .ok_or(SummonError::InvalidSource)?;
-        let behavior = draft
-            .state
-            .authoring_profiles
-            .iter()
-            .find_map(|p| match &p.data {
-                Data::Behavior(b)
-                    if p.target.key == record.key && p.target.revision == record.revision =>
-                {
-                    Some(b)
-                }
-                _ => None,
-            })
-            .ok_or(SummonError::InvalidSource)?;
-        let summons = behavior
-            .summons
-            .as_ref()
-            .ok_or(SummonError::InvalidSource)?;
-        if summons.entries.len() > 8 || summons.max_summons > 16 || summons.max_summons == 0 {
-            return Err(SummonError::InvalidSource);
-        }
-        let entries = summons
-            .entries
-            .iter()
-            .enumerate()
-            .map(|(index, e)| {
-                if !member(draft, &e.creature) {
-                    return Err(SummonError::UndefinedTarget);
-                }
-                if e.interval_ms == 0 || e.chance_ppm > 1_000_000 || e.count == 0 || e.count > 16 {
-                    return Err(SummonError::InvalidSource);
-                }
-                let profiles = draft
-                    .state
-                    .authoring_profiles
-                    .iter()
-                    .filter(|p| p.target == e.creature)
-                    .collect::<Vec<_>>();
-                let [p] = profiles.as_slice() else {
-                    return Err(SummonError::InvalidSource);
-                };
-                let Data::Creature(child) = &p.data else {
-                    return Err(SummonError::InvalidSource);
-                };
-                let health = child
-                    .health
-                    .and_then(|h| i64::try_from(h).ok())
-                    .filter(|h| *h > 0)
-                    .ok_or(SummonError::InvalidSource)?;
-                Ok(NativeSummonSpec {
-                    parent: parent.clone(),
-                    child: e.creature.clone(),
-                    health,
-                    index,
-                    total: summons.max_summons,
-                    count: e.count,
-                    content: loader_digest,
-                    admission: NativeSummonAdmissionSpec::qualified(
-                        &parent.key,
-                        &e.creature.key,
-                        health,
-                        index,
-                        summons.max_summons,
-                        e.count,
-                        loader_digest,
-                    )
-                    .map_err(SummonError::Carrier)?,
-                })
-            })
-            .collect();
-        Ok(Self {
-            parent: parent.clone(),
-            entries,
-            targets: summons.entries.iter().map(|e| e.creature.clone()).collect(),
-            content: loader_digest,
-        })
-    }
-    pub fn facts(
-        &self,
-        runtime: &ChannelRuntimeV1,
-        occurrence: ThinkOccurrence,
-        target_with_path: Option<ExactActorRef>,
-    ) -> MonsterSummonFacts {
-        MonsterSummonFacts {
-            occurrence,
-            is_summon: current_source_creature_role(runtime, occurrence.actor)
-                .map(|role| !role.is_ordinary())
-                .unwrap_or(true),
-            target_with_path,
-            total_count: runtime.native_summon_count(occurrence.actor, None),
-            entry_counts: self
-                .targets
-                .iter()
-                .map(|creature| ObservedSummonCount {
-                    creature: creature.clone(),
-                    count: runtime.native_summon_count(occurrence.actor, Some(&creature.key)),
-                })
-                .collect(),
-        }
-    }
-}
+
 /// All facts come from the actual current map/path owner under the same Channel turn.
 /// Unknown terrain, floor-change, PZ, teleport, sight/path or admission never means allow.
 pub trait SummonLocationPolicy {
@@ -230,189 +115,16 @@ pub struct SummonReceipt {
     pub newly_created: bool,
     pub position: MovementLocalPosition,
 }
+#[derive(Debug)]
 struct SummonMemo {
     sequence: u64,
     binding: [u8; 32],
     result: Result<SummonReceipt, SummonError>,
 }
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct NativeSummonOwner {
     /// By parent and summon entry (Codex 4243039220).
     memos: ActorMemoTable<usize, SummonMemo>,
-}
-impl NativeSummonOwner {
-    pub fn execute(
-        &mut self,
-        runtime: &mut ChannelRuntimeV1,
-        fence: &ScopeRuntimeFence,
-        stamp: RuntimeWorkStamp,
-        catalog: &NativeSummonCatalog,
-        proposal: &ProfileSummonProposal,
-        policy: &mut dyn SummonLocationPolicy,
-    ) -> Result<SummonReceipt, SummonError> {
-        let b = runtime.binding();
-        if !fence.is_current_for_scope(
-            RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
-            b.scope_generation(),
-        ) || !fence.accepts_stamp(stamp)
-        {
-            return Err(SummonError::StaleOwner);
-        }
-        if catalog.content != runtime.content_pin().server_artifact_digest() {
-            return Err(SummonError::InvalidSource);
-        }
-        if !runtime.matches_live_creature_identity(
-            proposal.occurrence.actor,
-            catalog.parent.key.as_bytes(),
-        ) || !current_source_creature_role(runtime, proposal.occurrence.actor)
-            .map(CurrentSourceCreatureRole::is_ordinary)
-            .unwrap_or(false)
-        {
-            return Err(SummonError::StaleParent);
-        }
-        if runtime
-            .read_actor_position(proposal.target_with_path)
-            .is_err()
-        {
-            return Err(SummonError::StaleTarget);
-        }
-        let source = catalog
-            .entries
-            .get(proposal.entry_index)
-            .ok_or(SummonError::InvalidSource)?
-            .as_ref()
-            .map_err(|e| *e)?;
-        if proposal.creature != source.child
-            || proposal.maximum_total != source.total
-            || proposal.maximum_of_creature != source.count
-        {
-            return Err(SummonError::InvalidSource);
-        }
-        let binding = Sha256::digest(format!("{:?}:{proposal:?}", source).as_bytes()).into();
-        let parent = proposal.occurrence.actor;
-        // The live parent's slot drops its former occupant's memos; the memos of other dead
-        // parents go only when the table is full (Codex 4243039220).
-        self.memos.evict_stale_at(parent);
-        if let Some(m) = self.memos.get(parent, &source.index) {
-            if proposal.occurrence.sequence < m.sequence {
-                return Err(SummonError::Superseded);
-            }
-            if proposal.occurrence.sequence == m.sequence {
-                return if binding == m.binding {
-                    m.result.clone().map(|r| SummonReceipt {
-                        newly_created: false,
-                        ..r
-                    })
-                } else {
-                    Err(SummonError::ReplayConflict)
-                };
-            }
-        } else {
-            // `CREATUREAI0-RL-04` live summoners times `CREATUREAI0-RL-08` entries (Codex
-            // 4242954089): when full, the memos of dead parents are dropped first.
-            if self.memos.len() >= NATIVE_SUMMON_MEMOS_PER_CHANNEL_MAX {
-                self.memos.prune(|a| runtime.contains_live_creature(a));
-            }
-            if self.memos.len() >= NATIVE_SUMMON_MEMOS_PER_CHANNEL_MAX {
-                return Err(SummonError::Capacity);
-            }
-        }
-        let result = self.place(runtime, fence, stamp, source, proposal, policy);
-        let memo = SummonMemo {
-            sequence: proposal.occurrence.sequence,
-            binding,
-            result: result.clone(),
-        };
-        self.memos.insert(parent, source.index, memo);
-        result
-    }
-    fn place(
-        &self,
-        runtime: &mut ChannelRuntimeV1,
-        fence: &ScopeRuntimeFence,
-        stamp: RuntimeWorkStamp,
-        source: &NativeSummonSpec,
-        proposal: &ProfileSummonProposal,
-        policy: &mut dyn SummonLocationPolicy,
-    ) -> Result<SummonReceipt, SummonError> {
-        if policy.current_target_reachable(
-            runtime,
-            proposal.occurrence.actor,
-            proposal.target_with_path,
-            stamp,
-        ) != Some(true)
-        {
-            return Err(SummonError::MissingMap);
-        }
-        let center = runtime
-            .read_actor_position(proposal.occurrence.actor)
-            .map_err(SummonError::Carrier)?
-            .position();
-        let mut free = Vec::new();
-        for (dx, dy) in [
-            (0, 0),
-            (-1, -1),
-            (0, -1),
-            (1, -1),
-            (-1, 0),
-            (1, 0),
-            (-1, 1),
-            (0, 1),
-            (1, 1),
-        ] {
-            let position = MovementLocalPosition {
-                x: center.x.checked_add(dx).ok_or(SummonError::InvalidSource)?,
-                y: center.y.checked_add(dy).ok_or(SummonError::InvalidSource)?,
-                floor: center.floor,
-            };
-            let allowed = policy
-                .current_cell_admits(
-                    runtime,
-                    proposal.occurrence.actor,
-                    &source.child,
-                    position,
-                    stamp,
-                )
-                .ok_or(SummonError::MissingMap)?;
-            if allowed && runtime.native_summon_cell_free(position) {
-                if dx == 0 && dy == 0 {
-                    free.clear();
-                    free.push(position);
-                    break;
-                }
-                free.push(position)
-            }
-        }
-        if free.is_empty() {
-            return Err(SummonError::NoFreeTile);
-        }
-        let digest = Sha256::digest(format!("summon-place:{proposal:?}").as_bytes());
-        let mut id = [0; 16];
-        id.copy_from_slice(&digest[..16]);
-        let root = GameplayDecisionRoot::from_bytes(source.content);
-        let draw = deterministic_decision_u64(
-            &root,
-            DecisionOccurrenceId::from_bytes(id),
-            "SUMMON_PLACE",
-            source.index as u64,
-        )
-        .map_err(|_| SummonError::InvalidSource)?;
-        let position = free[(draw % (free.len() as u64)) as usize];
-        let child = runtime
-            .admit_native_summon(
-                fence,
-                stamp,
-                proposal.occurrence.actor,
-                &source.admission,
-                position,
-            )
-            .map_err(SummonError::Carrier)?;
-        Ok(SummonReceipt {
-            child,
-            newly_created: true,
-            position,
-        })
-    }
 }
 
 #[cfg(any(test, feature = "test-support"))]

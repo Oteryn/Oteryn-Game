@@ -16,10 +16,11 @@
 //! `oteryn-world-bundle-compiler pin-refresh <repository root>`: rewrites every World pin, its
 //! identity file and the preproduction manifest to the tree's staged inputs (`pin_refresh`).
 
+mod cargo_inputs;
 mod entry_start;
 mod pin_refresh;
 
-use std::collections::BTreeSet;
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
@@ -336,7 +337,8 @@ fn run_compile(root: &Path, identity: &Path, out: &Path, class: &str) -> Result<
 /// The repository paths the compiler reads or builds from: a path is a directory prefix when it
 /// ends with `/`. `tools/repository/classify_pr_test_lanes.py` lists the same paths
 /// (`WORLD_BUNDLE_INPUT_PATHS`); a test keeps the two equal. A PR that adds a build input adds
-/// its path to both lists.
+/// its path to both lists. The root `Cargo.toml` and `Cargo.lock` enter the `inputs_digest` in
+/// the World-scoped form of `cargo_inputs`; the lane still runs on any change to them.
 const INPUT_PATHS: &[&str] = &[
     "content/world/",
     "content/houses/",
@@ -352,7 +354,7 @@ const INPUT_PATHS: &[&str] = &[
     "rust-toolchain.toml",
     ".cargo/",
 ];
-const INPUTS_DOMAIN: &str = "oteryn:world-bundle/inputs/v1";
+const INPUTS_DOMAIN: &str = "oteryn:world-bundle/inputs/v2";
 const PINS: &str = "content/world/pins";
 const PIN_SCHEMA: &str = "OTERYN_WORLD_PIN/v1";
 
@@ -472,8 +474,52 @@ fn identity_text(identity: &Identity) -> Result<String, Error> {
         .map_err(|e| Error::Format(e.to_string()))
 }
 
+/// The indexed bytes of the blob `blob`.
+fn blob_text(root: &Path, blob: &str) -> Result<String, Error> {
+    let output = Command::new("git")
+        .arg("-C")
+        .arg(root)
+        .args(["cat-file", "blob", blob])
+        .output()
+        .map_err(|e| Error::Format(format!("git cat-file: {e}")))?;
+    if !output.status.success() {
+        return Err(Error::Format(format!("git cat-file {blob} failed")));
+    }
+    String::from_utf8(output.stdout).map_err(|_| Error::Format(format!("blob {blob} is not UTF-8")))
+}
+
+/// Replaces the blob ids of the root `Cargo.toml` and `Cargo.lock` with the SHA-256 of their
+/// World-scoped forms (`cargo_inputs`), after checking that each World crate is a listed
+/// input directory whose indexed manifest names it.
+fn scope_cargo_inputs(root: &Path, lines: &mut BTreeMap<String, String>) -> Result<(), Error> {
+    let indexed = |lines: &BTreeMap<String, String>, path: &str| {
+        let blob = lines
+            .get(path)
+            .ok_or_else(|| Error::Format(format!("{path} is not a tracked input")))?;
+        blob_text(root, blob)
+    };
+    for (name, directory) in cargo_inputs::WORLD_PACKAGES {
+        let manifest = format!("{directory}Cargo.toml");
+        if !INPUT_PATHS.contains(directory)
+            || cargo_inputs::package_name(&indexed(lines, &manifest)?).as_deref() != Some(*name)
+        {
+            return Err(Error::Format(format!(
+                "the World crate `{name}` is not the package of the input {manifest}"
+            )));
+        }
+    }
+    let (lock, closure) = cargo_inputs::lock_closure(&indexed(lines, "Cargo.lock")?)?;
+    let manifest = cargo_inputs::workspace_manifest(&indexed(lines, "Cargo.toml")?, &closure)?;
+    for (path, canonical) in [("Cargo.lock", lock), ("Cargo.toml", manifest)] {
+        lines.insert(path.to_owned(), hex(&Sha256::digest(canonical.as_bytes())));
+    }
+    Ok(())
+}
+
 /// The squash-stable identity of the compiler inputs: SHA-256 over the domain tag and one
-/// `<git blob id> <path>` line per tracked input file, ascending by path, without the pin files.
+/// `<id> <path>` line per tracked input file, ascending by path, without the pin files. The id
+/// is the git blob id, except for the root `Cargo.toml` and `Cargo.lock`, whose id is the
+/// SHA-256 of their World-scoped form (`scope_cargo_inputs`).
 fn inputs_digest(root: &Path) -> Result<String, Error> {
     let output = Command::new("git")
         .arg("-C")
@@ -487,7 +533,7 @@ fn inputs_digest(root: &Path) -> Result<String, Error> {
     }
     let listing = String::from_utf8(output.stdout)
         .map_err(|_| Error::Format("git ls-files: path is not UTF-8".into()))?;
-    let mut lines = BTreeSet::new();
+    let mut lines = BTreeMap::new();
     for row in listing.split('\0').filter(|row| !row.is_empty()) {
         let (meta, path) = row
             .split_once('\t')
@@ -500,10 +546,12 @@ fn inputs_digest(root: &Path) -> Result<String, Error> {
             .strip_prefix(PINS)
             .and_then(|rest| rest.strip_prefix('/'))
             .is_some_and(|name| !name.contains('/') && is_pin_file(name));
-        if !in_pins {
-            lines.insert((path.to_owned(), blob.to_owned()));
+        // An unmerged path lists one row per stage; it has no single content to hash.
+        if !in_pins && lines.insert(path.to_owned(), blob.to_owned()).is_some() {
+            return Err(Error::Format(format!("git ls-files: {path} is unmerged")));
         }
     }
+    scope_cargo_inputs(root, &mut lines)?;
     let mut hash = Sha256::new();
     hash.update(INPUTS_DOMAIN.as_bytes());
     hash.update(b"\n");

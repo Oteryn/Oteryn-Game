@@ -2600,6 +2600,7 @@ fn derived_capacity_follows_real_level_award_and_death_receipts() -> TestResult 
                 &harness.node,
                 capacity_gameplay_fence(after_gain.character_revision.get())?,
                 CharacterDeathRequest {
+                    pvp_contributors: Vec::new(),
                     occurrence,
                     context: death_policy.context,
                     policy_revision: death_policy.policy_revision,

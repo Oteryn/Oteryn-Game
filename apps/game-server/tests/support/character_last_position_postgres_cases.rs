@@ -271,6 +271,7 @@ fn death(tag: u8) -> TestResult<CharacterDeathRequest<10>> {
         };
     }
     Ok(CharacterDeathRequest {
+        pvp_contributors: Vec::new(),
         occurrence: PlayerDeathOccurrence::from_bytes(id(tag)).map_err(debug)?,
         context: context(),
         policy_revision: "policy-1".into(),

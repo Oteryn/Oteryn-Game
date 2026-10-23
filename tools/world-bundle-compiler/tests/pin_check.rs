@@ -267,6 +267,109 @@ fn inputs_digest_is_stable_across_squash_and_pin_edits_and_moves_with_inputs() {
     assert_eq!(stale(&dir), tree);
 }
 
+/// PIN-SCOPE-1: the root `Cargo.toml` and `Cargo.lock` count only in what can reach a build of
+/// the World crates.
+#[test]
+fn inputs_digest_takes_the_cargo_inputs_of_the_world_crates_only() {
+    let dir = Scratch::new("cargo");
+    dir.write_json(&dir.pin_file(), &pin(&"0".repeat(64), &"0".repeat(64)));
+    let stale = |dir: &Scratch| {
+        let out = dir.check();
+        assert!(!out.status.success());
+        let tree = word_after(&stderr(&out), "the tree's ");
+        assert_eq!(tree.len(), 64, "{}", stderr(&out));
+        tree
+    };
+    let tree = stale(&dir);
+    let edit = |path: &str, from: &str, to: &str| {
+        let text = fs::read_to_string(dir.path(path)).unwrap();
+        assert_eq!(text.matches(from).count(), 1, "{path}: {from}");
+        fs::write(dir.path(path), text.replacen(from, to, 1)).unwrap();
+        git(&dir.0, &["add", "-A"]);
+    };
+    let restore = || {
+        git(
+            &dir.0,
+            &["checkout", "-q", "HEAD", "--", "Cargo.toml", "Cargo.lock"],
+        )
+    };
+
+    // An unrelated workspace member, its new lock package, an unrelated dependency bump in the
+    // lock and in [workspace.dependencies], and a manifest comment do not move it.
+    edit(
+        "Cargo.toml",
+        "    \"tools/world-bundle-compiler\",\n",
+        "    \"tools/world-bundle-compiler\",\n    \"tools/unrelated\", # new crate\n",
+    );
+    edit(
+        "Cargo.lock",
+        "[[package]]\nname = \"rcgen\"\n",
+        "[[package]]\nname = \"oteryn-unrelated\"\nversion = \"0.1.0\"\ndependencies = [\n \"rcgen\",\n \"serde\",\n]\n\n\
+         [[package]]\nname = \"rcgen\"\n",
+    );
+    edit(
+        "Cargo.lock",
+        "8774e05a7d0de114588e6a28fe7e71694b82614ed569d86d8b389dfbc98b8ad8",
+        &"9".repeat(64),
+    );
+    edit(
+        "Cargo.toml",
+        "rcgen = { version = \"=0.14.10\"",
+        "rcgen = { version = \"=0.14.11\"",
+    );
+    edit(
+        "Cargo.toml",
+        "[workspace.package]\n",
+        "# The package defaults.\n[workspace.package]\n",
+    );
+    assert_eq!(stale(&dir), tree);
+    restore();
+    assert_eq!(stale(&dir), tree);
+
+    // The checksum or version of a package in the closure, a World workspace dependency and a
+    // profile each move it.
+    for (path, from, to) in [
+        (
+            "Cargo.lock",
+            "db3ae9bf90af6e40197bef767eeefc46ad6397420fe873830bd85e5fbbfb3c70",
+            "0".repeat(64),
+        ),
+        (
+            "Cargo.lock",
+            "name = \"zstd\"\nversion = \"0.14.3\"",
+            "name = \"zstd\"\nversion = \"0.14.4\"".to_owned(),
+        ),
+        (
+            "Cargo.toml",
+            "zstd = { version = \"=0.14.3\"",
+            "zstd = { version = \"=0.14.4\"".to_owned(),
+        ),
+        (
+            "Cargo.toml",
+            "[workspace.lints.rust]\n",
+            "[profile.release]\nopt-level = 2\n\n[workspace.lints.rust]\n".to_owned(),
+        ),
+    ] {
+        edit(path, from, &to);
+        assert_ne!(stale(&dir), tree, "{path}: {to}");
+        restore();
+    }
+    assert_eq!(stale(&dir), tree);
+
+    // A lock whose World crates reach another path package is refused.
+    edit(
+        "Cargo.lock",
+        "name = \"oteryn-world-bundle-compiler\"\nversion = \"0.1.0\"\ndependencies = [\n",
+        "name = \"oteryn-world-bundle-compiler\"\nversion = \"0.1.0\"\ndependencies = [\n \"oteryn-foundation\",\n",
+    );
+    let out = dir.check();
+    assert!(
+        !out.status.success() && stderr(&out).contains("oteryn-foundation"),
+        "{}",
+        stderr(&out)
+    );
+}
+
 // Each run compiles the whole World twice; in a debug build that takes tens of minutes, so
 // it runs with `cargo test --release` (the `world_bundle` job runs the real pin-check in release).
 #[test]
