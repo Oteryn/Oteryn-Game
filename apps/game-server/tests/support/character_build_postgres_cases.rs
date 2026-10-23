@@ -781,9 +781,28 @@ fn build_grants_and_admission_verifier() -> TestResult {
                 "oteryn_game_control/game_character_build_state:SELECT",
                 "oteryn_game_runtime/game_character_build_receipts:INSERT",
                 "oteryn_game_runtime/game_character_build_receipts:SELECT",
-                "oteryn_game_runtime/game_character_build_state:INSERT",
                 "oteryn_game_runtime/game_character_build_state:SELECT",
-                "oteryn_game_runtime/game_character_build_state:UPDATE",
+            ]
+        );
+        // Migration 0141 narrows runtime build writes to the build columns: stamina has no
+        // runtime writer until STAMINA-1 admits its fenced one.
+        let column_writes: Vec<String> = sqlx::query_scalar(
+            "SELECT c.column_name || ':' || p.privilege \
+               FROM (VALUES ('vocation'), ('fishing_tries'), ('stamina_minutes')) c(column_name), \
+                    (VALUES ('INSERT'), ('UPDATE')) p(privilege) \
+              WHERE has_column_privilege('oteryn_game_runtime', 'game_character_build_state', \
+                    c.column_name, p.privilege) \
+              ORDER BY c.column_name || ':' || p.privilege COLLATE \"C\"",
+        )
+        .fetch_all(pool)
+        .await?;
+        assert_eq!(
+            column_writes,
+            [
+                "fishing_tries:INSERT",
+                "fishing_tries:UPDATE",
+                "vocation:INSERT",
+                "vocation:UPDATE",
             ]
         );
         let public: bool = sqlx::query_scalar(
