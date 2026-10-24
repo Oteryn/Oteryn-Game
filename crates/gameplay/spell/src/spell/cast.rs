@@ -164,6 +164,7 @@ impl PlayerSpellState {
 }
 
 mod gate;
+mod live_skill;
 mod prepare;
 mod state;
 mod vocationless_vitals;
@@ -171,6 +172,7 @@ mod vocationless_vitals;
 pub use gate::{
     CastContext, admit_condition_gates, cast, condition_gate, disposition, store_condition_gate,
 };
+pub use live_skill::SwingSkills;
 pub use prepare::{
     PaidFocusOwnerCast, PaidNativeCallbackCast, PaidNativeCast, PaidOrdinaryCast,
     PaidSourceSelfCast, prepare_conjure_owner_cast_with_caster,

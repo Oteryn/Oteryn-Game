@@ -16,7 +16,31 @@ pub const WEAPON_REFRESH_MICROS: u64 = 1_000_000;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SwingWeapon {
     Fists,
-    Melee { attack: u32 },
+    Melee { attack: u32, skill: MeleeSkill },
+}
+
+/// The skill a melee weapon trains and swings with (`player.cpp` `getWeaponSkill`): a club,
+/// sword, axe or fist weapon uses its own skill.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MeleeSkill {
+    Fist,
+    Club,
+    Sword,
+    Axe,
+}
+
+impl MeleeSkill {
+    /// The index of this skill in the seven owned skills (fist, club, sword, axe, distance,
+    /// shielding, fishing).
+    #[must_use]
+    pub const fn index(self) -> usize {
+        match self {
+            Self::Fist => 0,
+            Self::Club => 1,
+            Self::Sword => 2,
+            Self::Axe => 3,
+        }
+    }
 }
 
 /// The swing weapon of `items` (`player.cpp:405-464` `getWeapon`): the first hand, left (6) then
@@ -54,8 +78,15 @@ pub fn swing_weapon<'a>(
                 let ReferenceItemField::Known(attack) = weapon.attack else {
                     return None;
                 };
+                let skill = match kind {
+                    ReferenceWeaponType::Club => MeleeSkill::Club,
+                    ReferenceWeaponType::Sword => MeleeSkill::Sword,
+                    ReferenceWeaponType::Axe => MeleeSkill::Axe,
+                    _ => MeleeSkill::Fist,
+                };
                 return Some(SwingWeapon::Melee {
                     attack: u32::try_from(attack.0).ok()?,
+                    skill,
                 });
             }
         }
