@@ -1,69 +1,32 @@
 #![allow(clippy::expect_used)]
 /// Revision-advancing durable writers and the only non-test source files allowed to call
 /// them. Every other writer reaches them through a [`RevisionSlot`].
-const SEQUENCED_WRITERS: [(&str, &str); 15] = [
-    (
-        ".commit_cyclopedia(",
-        "durability/character_revision_sequencer/cyclopedia.rs",
-    ),
-    (
-        ".commit_character_experience(",
-        "durability/character_revision_sequencer.rs",
-    ),
-    (
-        ".commit_character_death(",
-        "durability/character_revision_sequencer.rs",
-    ),
-    (
-        ".commit_bestiary_kill(",
-        "durability/character_revision_sequencer.rs",
-    ),
-    (
-        ".commit_charm_command(",
-        "durability/character_revision_sequencer.rs",
-    ),
-    (
-        ".commit_character_monk_state_save(",
-        "durability/character_revision_sequencer.rs",
-    ),
-    (
-        ".commit_character_build(",
-        "durability/character_revision_sequencer.rs",
-    ),
-    (
-        ".commit_character_proficiency(",
-        "durability/character_revision_sequencer.rs",
-    ),
-    (
-        ".commit_character_quest_transition(",
-        "durability/character_revision_sequencer.rs",
-    ),
-    (
-        ".commit_character_proficiency_modification(",
-        "durability/character_revision_sequencer.rs",
-    ),
-    (
-        ".commit_character_quest_experience(",
-        "durability/character_revision_sequencer.rs",
-    ),
-    (
-        ".commit_character_wheel(",
-        "durability/character_revision_sequencer.rs",
-    ),
-    (
-        ".reset_character_wheel(",
-        "durability/character_revision_sequencer.rs",
-    ),
-    // Revision-advancing fees run inside their sequenced Character source.
-    // ITEM-TIMED-1 is the accepted item-only exception under the same locked root.
-    (
-        "burn_fee_in_transaction(",
-        "durability/charm_state.rs|durability/npc_purchase.rs|durability/character_cyclopedia.rs|durability/item_timed_runtime/repair.rs",
-    ),
-    (
-        ".commit_npc_purchase(",
-        "durability/character_revision_sequencer/npc_purchase.rs",
-    ),
+// Keep each registration on one line so parallel additions remain insert-only.
+#[rustfmt::skip]
+const SEQUENCED_WRITERS: &[(&str, &str)] = &[
+    (".commit_bestiary_kill(", "durability/character_revision_sequencer.rs"),
+    (".commit_character_build(", "durability/character_revision_sequencer.rs"),
+    (".commit_character_death(", "durability/character_revision_sequencer.rs"),
+    (".commit_character_experience(", "durability/character_revision_sequencer.rs"),
+    (".commit_character_monk_state_save(", "durability/character_revision_sequencer.rs"),
+    (".commit_character_proficiency(", "durability/character_revision_sequencer.rs"),
+    (".commit_character_proficiency_modification(", "durability/character_revision_sequencer.rs"),
+    (".commit_character_quest_experience(", "durability/character_revision_sequencer.rs"),
+    (".commit_character_quest_transition(", "durability/character_revision_sequencer.rs"),
+    (".commit_character_wheel(", "durability/character_revision_sequencer.rs"),
+    (".commit_charm_command(", "durability/character_revision_sequencer.rs"),
+    (".commit_cyclopedia(", "durability/character_revision_sequencer/cyclopedia.rs"),
+    (".commit_npc_purchase(", "durability/character_revision_sequencer/npc_purchase.rs"),
+    (".reset_character_wheel(", "durability/character_revision_sequencer.rs"),
+];
+
+// Revision-advancing fees run inside their sequenced Character source.
+// ITEM-TIMED-1 is the accepted item-only exception under the same locked root.
+const FEE_WRITERS: &[&str] = &[
+    "durability/character_cyclopedia.rs",
+    "durability/charm_state.rs",
+    "durability/item_timed_runtime/repair.rs",
+    "durability/npc_purchase.rs",
 ];
 
 /// The non-test part of a source file: from the first `#[cfg(test)]` that, after any other
@@ -88,8 +51,14 @@ fn production_source(source: &str) -> &str {
 
 fn bypasses(path: &str, source: &str) -> Vec<String> {
     let source = production_source(source);
+    let fee_writers = FEE_WRITERS.join("|");
     SEQUENCED_WRITERS
         .iter()
+        .copied()
+        .chain(std::iter::once((
+            "burn_fee_in_transaction(",
+            fee_writers.as_str(),
+        )))
         .filter(|(call, allowed)| {
             !allowed.split('|').any(|allowed| path.ends_with(allowed))
                 && source.lines().any(|line| {
@@ -161,4 +130,14 @@ fn the_structural_gate_catches_a_bypass_writer() {
     let tested = "pub async fn commit_charm_command(\n#[cfg(test)]\n#[allow(clippy::expect_used)]\nmod tests { x.commit_charm_command(); }";
     assert!(bypasses("src/durability/charm_state.rs", tested).is_empty());
     assert!(bypasses("src/gameplay_transport/charm_native.rs", tested).is_empty());
+}
+
+#[test]
+fn writer_registrations_are_sorted_and_unique() {
+    assert!(
+        SEQUENCED_WRITERS
+            .windows(2)
+            .all(|pair| pair[0].0 < pair[1].0)
+    );
+    assert!(FEE_WRITERS.windows(2).all(|pair| pair[0] < pair[1]));
 }

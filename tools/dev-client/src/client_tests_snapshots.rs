@@ -127,10 +127,10 @@ fn connect_and_join_rejects_fewer_chunks_than_snapshot_begin_declared()
         |error| {
             matches!(
                 error,
-                DevClientError::UnexpectedMessage {
+                DevClientError::Session(SessionError::UnexpectedMessage {
                     expected: MessageType::SnapshotChunk,
                     actual: MessageType::SnapshotCommit
-                }
+                })
             )
         },
     ))?
@@ -145,10 +145,10 @@ fn connect_and_join_rejects_a_wrong_chunk_index() -> Result<(), Box<dyn StdError
         |error| {
             matches!(
                 error,
-                DevClientError::ChunkIndexMismatch {
+                DevClientError::Session(SessionError::ChunkIndexMismatch {
                     expected: 0,
                     actual: 1
-                }
+                })
             )
         },
     ))?
@@ -170,10 +170,10 @@ fn connect_and_join_rejects_an_assembled_length_mismatch()
         |error| {
             matches!(
                 error,
-                DevClientError::AssembledLengthMismatch {
+                DevClientError::Session(SessionError::AssembledLengthMismatch {
                     expected: 100,
                     actual: 0
-                }
+                })
             )
         },
     ))?
@@ -321,9 +321,9 @@ async fn run_server_accepted_nonzero_generation_case() -> Result<(), Box<dyn Std
     .await;
     assert!(matches!(
         result,
-        Err(DevClientError::Protocol(
+        Err(DevClientError::Session(SessionError::Protocol(
             FoundationProtocolError::MalformedEnvelope
-        ))
+        )))
     ));
     server.await??;
     Ok(())
@@ -346,7 +346,9 @@ fn connect_and_join_rejects_a_snapshot_begin_with_a_nonzero_server_sequence()
         |error| {
             matches!(
                 error,
-                DevClientError::Protocol(FoundationProtocolError::MalformedEnvelope)
+                DevClientError::Session(SessionError::Protocol(
+                    FoundationProtocolError::MalformedEnvelope
+                ))
             )
         },
     ))?

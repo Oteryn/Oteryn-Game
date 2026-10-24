@@ -1,5 +1,11 @@
 # Architect batch: serving the imported world content on a node
 
+PIN-V2-1 update: the pin and input-digest requirements below describe v1. The current
+[World pin format](../../../content/world/pins/README.md) is `OTERYN_WORLD_PIN/v2`:
+`inputs_digest` is reported by the compiler, without being stored or compared in the pin.
+The two-build byte equality, equivalence, exact bundle digest, identity and entry-cell
+checks remain required. `pin-refresh` migrates v1; `pin-check` rejects it.
+
 - Batch: `ARCH-WORLD-CONTENT-SERVE-1` (owner `1a`)
 - Status: **ACCEPTED WHEN THIS DECISION MERGES** for the rulings, leases and packets below.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)

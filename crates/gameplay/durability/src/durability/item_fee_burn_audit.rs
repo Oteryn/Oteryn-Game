@@ -64,8 +64,7 @@ pub struct OneItemCharmUnassignV1 {
 /// The closed `FeeBurnCause`: one variant per admitted fee source.
 #[derive(Clone, PartialEq, Eq, prost::Oneof)]
 pub enum FeeBurnCauseV1 {
-    #[prost(message, tag = "5")]
-    NpcRepair(Box<OneItemTimedRepairV1>),
+    // Keep sorted by tag; insert in order, never append.
     #[prost(message, tag = "1")]
     CharmUnassign(OneItemCharmUnassignV1),
     #[prost(message, tag = "2")]
@@ -74,6 +73,9 @@ pub enum FeeBurnCauseV1 {
     BlessingPurchase(OneItemNpcPurchaseV1),
     #[prost(message, tag = "4")]
     AreaDonation(OneItemAreaDonationV1),
+    #[prost(message, tag = "5")]
+    NpcRepair(Box<OneItemTimedRepairV1>),
+    // End tag-sorted variants.
 }
 
 mod purchase_cause;
@@ -83,7 +85,17 @@ pub use repair_cause::OneItemTimedRepairV1;
 
 #[derive(Clone, PartialEq, Eq, Message)]
 pub struct OneItemFeeBurnCauseV1 {
-    #[prost(oneof = "FeeBurnCauseV1", tags = "1, 2, 3, 4, 5")]
+    #[prost(
+        oneof = "FeeBurnCauseV1",
+        tags(
+            // Keep sorted by tag; insert in order, never append.
+            1, // CharmUnassign
+            2, // PromotionPurchase
+            3, // BlessingPurchase
+            4, // AreaDonation
+            5, // NpcRepair
+        )
+    )]
     pub cause: Option<FeeBurnCauseV1>,
 }
 

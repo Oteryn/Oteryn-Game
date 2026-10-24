@@ -1781,7 +1781,13 @@ mod tests {
             serde_json::to_value(native.presentation_profiles()).unwrap(),
             serde_json::to_value(&expected_presentations).unwrap()
         );
-        assert_eq!(native.items.as_ref().unwrap().records.len(), 434);
+        let expected_items: ItemProfilesDocument =
+            serde_json::from_slice(&input.item_profiles.as_ref().unwrap().bytes).unwrap();
+        let expected_item_policy_count = expected_items.records.len();
+        assert_eq!(
+            native.items.as_ref().unwrap().records.len(),
+            expected_item_policy_count
+        );
         for species in [
             "rat",
             "skeleton",
@@ -1859,7 +1865,7 @@ mod tests {
                 "executable_spell_count": 246,
                 "creature_profile_count": native.creature_profiles().records.len(),
                 "presentation_profile_count": native.presentation_profiles().records.len(),
-                "item_policy_count": 434,
+                "item_policy_count": expected_item_policy_count,
                 "qualification_boundary": "Actual source-world candidate compiled, strictly decoded and staged under both exact outer pins; runtime activation not performed",
                 "production_stage": "Passed; altered server and client issuance pins rejected",
                 "runtime_activation": "Not performed"

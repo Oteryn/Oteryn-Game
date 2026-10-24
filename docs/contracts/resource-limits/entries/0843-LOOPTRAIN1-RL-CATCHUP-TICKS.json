@@ -1,0 +1,21 @@
+{
+  "id": "LOOPTRAIN1-RL-CATCHUP-TICKS",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_EXERCISE0_EXERCISE_WEAPONS_AND_DUMMIES_DECISION_2026-10-03.md",
+  "resource": "Exercise catch-up work in one owner cadence",
+  "unit": "ticks per pass",
+  "hard_maximum": 30,
+  "configurable_range": {
+    "minimum": 30,
+    "maximum": 30
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Bounded mechanic-owned payload/configuration or one 60-second exercise checkpoint interval; no queued unbounded work.",
+  "client_visible": false,
+  "boundary_tests": [
+    "loop_training_postgres_exercise_real_wire_atomic_stop_replay_fence_and_reload"
+  ],
+  "consumers": [
+    "crates/gameplay/dispatch/src/gameplay_transport/loop_training/exercise.rs advance_exercise"
+  ],
+  "notes": "LOOP-TRAIN-1 owner-reserved ordinals 0840\u20130846. Rate values remain PROVISIONAL / GATED OFF."
+}

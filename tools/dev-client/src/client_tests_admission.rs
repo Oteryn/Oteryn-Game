@@ -206,10 +206,10 @@ async fn run_mismatched_snapshot_id_case() -> Result<(), Box<dyn StdError + Send
     .await;
     assert!(matches!(
         result,
-        Err(DevClientError::SnapshotIdMismatch {
+        Err(DevClientError::Session(SessionError::SnapshotIdMismatch {
             expected: 1,
             actual: 2
-        })
+        }))
     ));
     server.await??;
     Ok(())
@@ -249,7 +249,9 @@ async fn run_stalls_after_admission_case() -> Result<(), Box<dyn StdError + Send
     .await;
     assert!(matches!(
         result,
-        Err(DevClientError::Timeout("SnapshotBegin"))
+        Err(DevClientError::Session(SessionError::Timeout(
+            "SnapshotBegin"
+        )))
     ));
     server.abort();
     Ok(())
@@ -306,10 +308,12 @@ async fn run_unregistered_snapshot_type_case() -> Result<(), Box<dyn StdError + 
     .await;
     assert!(matches!(
         result,
-        Err(DevClientError::UnregisteredSnapshotType {
-            domain_id: 1,
-            snapshot_type: 2
-        })
+        Err(DevClientError::Session(
+            SessionError::UnregisteredSnapshotType {
+                domain_id: 1,
+                snapshot_type: 2
+            }
+        ))
     ));
     server.await??;
     Ok(())

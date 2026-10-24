@@ -439,7 +439,7 @@ macro_rules! authority_methods {
         fn daily_reward(
             &self,
             _actor: crate::foundation::ExactActorRef,
-            _command: super::connection::UseCommand,
+            _command: $crate::gameplay_transport::connection::UseCommand,
             _claim: Option<oteryn_protocol_oteryn::daily_reward::DailyRewardClaim>,
         ) -> impl std::future::Future<Output = Option<Vec<u8>>> {
             async { None }

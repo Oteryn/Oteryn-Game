@@ -21,7 +21,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         )
         .await
     {
-        Some(payload) => Dispatch::Party(payload),
+        Some(payload) => Dispatch::Reply(crate::foundation::CommandStatus::Accepted, payload),
         None => Dispatch::Unregistered,
     }
 }

@@ -1,0 +1,4 @@
+name=chat
+commands=13
+[route]
+routing::chat::route(authority, session.actor, &session.admitted, command).await

@@ -1,5 +1,5 @@
 {
-  "schema": "OTERYN_WORLD_PIN/v1",
+  "schema": "OTERYN_WORLD_PIN/v2",
   "digest": "0b037a2ad2ff44aef4c8bb9fdd590947ff4a3f5114717028de4b6233a9d551dd",
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
@@ -9,6 +9,5 @@
     "x": 32534,
     "y": 32513,
     "floor": -7
-  },
-  "inputs_digest": "dc4e40a52d7988a4dc3107515c034ae3530a56679eb3dbf635469dd14fd522d9"
+  }
 }

@@ -14,7 +14,7 @@ use oteryn_protocol_oteryn::{
     decode_wire_envelope,
 };
 use oteryn_protocol_oteryn::{
-    ChannelId, DomainSnapshot, ServerAcceptedValue, WorldId, encode_server_accepted,
+    ChannelId, DomainSnapshot, MessageType, ServerAcceptedValue, WorldId, encode_server_accepted,
     encode_single_chunk_snapshot,
 };
 use oteryn_session::{read_frame, write_frame};

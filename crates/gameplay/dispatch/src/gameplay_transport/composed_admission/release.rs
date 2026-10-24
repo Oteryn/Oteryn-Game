@@ -148,6 +148,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         // CHAR-POSITION-0 §3.2 "At logout": the release writes the fenced actor's cell.
         let releasing = self.final_position_store(store, session, actor).await;
+        let Some(releasing) = self
+            .training_release_store(releasing, admitted, logout.is_some())
+            .await
+        else {
+            return ReleaseAttempt::Retry;
+        };
         let outcome = match release {
             TerminalRelease::Abandoned(transport) => {
                 releasing

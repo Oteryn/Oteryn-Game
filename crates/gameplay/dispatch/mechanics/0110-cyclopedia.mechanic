@@ -1,0 +1,11 @@
+name=cyclopedia
+commands=72,73
+transport=cyclopedia
+composed=cyclopedia
+authority=cyclopedia
+offer=30,cyclopedia::offered,cyclopedia_available
+[route]
+match routing::cyclopedia::route(authority, &session.admitted, command).await {
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

@@ -11,9 +11,8 @@ impl<S: SessionStream> Session<S> {
         payload: &[u8],
     ) -> Result<GatedCommandResult, SessionError> {
         self.ensure_usable()?;
-        let owned = GATED_ROUTES
-            .iter()
-            .any(|(id, commands, _)| *id == capability && commands.contains(&command_type));
+        let owned = gated_routes()
+            .any(|(id, commands, _)| id == capability && commands.contains(&command_type));
         if !owned || !self.is_selected(capability) {
             return Err(SessionError::CapabilityNotSelected { capability });
         }

@@ -6,8 +6,12 @@ use oteryn_protocol_oteryn::actor_spell::{SpellTargetPosition, encode_actor_vita
 use serde_json::Value;
 
 use super::*;
+use crate::ability::AbilityOccurrence;
 use crate::ability::RevisionSet;
+use crate::spell::{CastRejection, CasterState, ResolvedEffect};
 use crate::spell::{CasterPremium, OperationalCastFacts};
+use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellCastIntent, SpellTarget};
+use oteryn_simulation_determinism::SemanticTimeMicros;
 
 const CASTER: &str = "actor:caster";
 

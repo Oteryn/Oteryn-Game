@@ -1,7 +1,11 @@
 //! Native appearance commands. Retained intents never rebase at a newer Character root.
+#[path = "appearance_change/catalogue.rs"]
 mod catalogue;
+#[path = "appearance_change/command_replay.rs"]
 mod command_replay;
+#[path = "appearance_change/observation.rs"]
 pub mod observation;
+#[path = "appearance_change/offer.rs"]
 pub(super) mod offer;
 use super::connection::UseCommand;
 use super::*;
@@ -272,8 +276,8 @@ fn current_runtime(
 macro_rules! authority_methods {
     () => {
         fn appearance_available(&self) -> bool { false }
-        fn appearance_observation(&self, _actor: crate::foundation::ExactActorRef, _session: crate::foundation::GameSessionId, _entities: Vec<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>) -> impl std::future::Future<Output=Option<super::appearance_change::observation::Observation>> { async { None } }
-        fn appearance_change(&self, _actor: crate::foundation::ExactActorRef, _command: super::connection::UseCommand, _change: oteryn_protocol_oteryn::appearance::Change) -> impl std::future::Future<Output=Option<oteryn_protocol_oteryn::appearance::ChangeResult>> { async { Some(oteryn_protocol_oteryn::appearance::ChangeResult::Rejected) } }
+        fn appearance_observation(&self, _actor: crate::foundation::ExactActorRef, _session: crate::foundation::GameSessionId, _entities: Vec<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>) -> impl std::future::Future<Output=Option<$crate::gameplay_transport::appearance_change::observation::Observation>> { async { None } }
+        fn appearance_change(&self, _actor: crate::foundation::ExactActorRef, _command: $crate::gameplay_transport::connection::UseCommand, _change: oteryn_protocol_oteryn::appearance::Change) -> impl std::future::Future<Output=Option<oteryn_protocol_oteryn::appearance::ChangeResult>> { async { Some(oteryn_protocol_oteryn::appearance::ChangeResult::Rejected) } }
     };
 }
 pub(super) use authority_methods;

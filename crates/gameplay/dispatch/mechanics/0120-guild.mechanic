@@ -1,0 +1,10 @@
+name=guild
+commands=40,41,68,69
+transport=guild_intent
+composed=guild_intent
+authority=guild_intent
+[route]
+match routing::guild::route(authority, &session.admitted, command).await {
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

@@ -1,0 +1,5 @@
+name=attack
+commands=11
+[route]
+routing::combat_intent::route(authority, session.actor, &mut session.admitted, command)
+    .await

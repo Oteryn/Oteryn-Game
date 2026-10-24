@@ -194,7 +194,7 @@ fn chat_is_refused_and_has_no_log_while_capability_7_is_unselected() -> Result<(
             .ok_or("chat must be refused")?;
         assert!(matches!(
             error,
-            DevClientError::CapabilityNotSelected { capability: 7 }
+            DevClientError::Session(SessionError::CapabilityNotSelected { capability: 7 })
         ));
         assert_eq!(session.next_command_id(), FIRST_COMMAND_ID);
         drop(session);
@@ -226,7 +226,7 @@ fn item_commands_are_refused_and_have_no_state_while_capability_4_is_unselected(
             .ok_or("use_item must be refused")?;
         assert!(matches!(
             error,
-            DevClientError::CapabilityNotSelected { capability: 4 }
+            DevClientError::Session(SessionError::CapabilityNotSelected { capability: 4 })
         ));
         let error = session
             .move_item(&ItemMoveIntent {
@@ -238,7 +238,7 @@ fn item_commands_are_refused_and_have_no_state_while_capability_4_is_unselected(
             .ok_or("move_item must be refused")?;
         assert!(matches!(
             error,
-            DevClientError::CapabilityNotSelected { capability: 4 }
+            DevClientError::Session(SessionError::CapabilityNotSelected { capability: 4 })
         ));
         assert_eq!(session.next_command_id(), FIRST_COMMAND_ID);
         drop(session);
@@ -355,9 +355,9 @@ async fn run_unencodable_use_case() -> Result<(), BoxError> {
     let oversized = vec![b'x'; 513];
     assert!(matches!(
         session.use_object(&oversized, 0).await,
-        Err(DevClientError::WorldObject(
+        Err(DevClientError::Session(SessionError::WorldObject(
             world_object::WorldObjectError::LimitExceeded
-        ))
+        )))
     ));
     assert_eq!(session.next_command_id(), FIRST_COMMAND_ID);
     assert_eq!(
