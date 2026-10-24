@@ -8,7 +8,7 @@
 //! command that set the target and the ordinal counts the swings of that lineage from 0.
 //! ATTACK-2: the swing uses the held melee weapon's attack (fists otherwise), and the creature
 //! meets it with its block budget, its source defence and its armor (§4, §5).
-//! Player targets (PvP) and distance weapons are out of scope.
+//! Player targets use the same physical batch with current PvP legality and durable harm.
 //!
 //! CHASE-1 (RANGED-0 §8): with `chase=CHASE` and a held target the owner steps the player towards
 //! the nearest tile next to it, one Movement-owner step at a time on the player's own pacing
@@ -415,6 +415,26 @@ fn target_facts(
         attacker_reentry_protected,
         target_reentry_protected: false,
     };
+    if runtime
+        .visible_entities()
+        .players
+        .iter()
+        .any(|p| p.actor == target)
+        && target != attacker
+    {
+        let to = runtime.read_actor_position(target).ok()?.position();
+        return Some(TargetFacts {
+            present_and_visible: sees(from, to),
+            attackable_kind: true,
+            alive: true,
+            same_floor: to.floor == from.floor,
+            distance: from.x.abs_diff(to.x).max(from.y.abs_diff(to.y)),
+            attacker_in_protection_zone,
+            target_in_protection_zone: in_protection_zone(room, to)?,
+            attacker_reentry_protected: false,
+            target_reentry_protected: false,
+        });
+    }
     if !runtime.contains_live_creature(target) {
         return Some(absent);
     }
@@ -584,15 +604,22 @@ impl ChannelAttackStates {
         if visible
             .players
             .iter()
-            .any(|player| named(player.actor, player.generation))
+            .any(|p| p.actor == actor && named(p.actor, p.generation))
         {
             return AttackIntentDisposition::TargetNotACreature;
         }
         let Some(creature) = visible
             .creatures
             .iter()
-            .find(|creature| named(creature.actor, creature.generation))
-            .map(|creature| creature.actor)
+            .find(|c| named(c.actor, c.generation))
+            .map(|c| c.actor)
+            .or_else(|| {
+                visible
+                    .players
+                    .iter()
+                    .find(|p| named(p.actor, p.generation))
+                    .map(|p| p.actor)
+            })
         else {
             return AttackIntentDisposition::TargetNotVisible;
         };
@@ -1201,6 +1228,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(constants) = AttackConstants::checked_in() else {
             return;
         };
+        let Some(mut pvp_permit) = self.spell_lane_permit().await else {
+            return;
+        };
         let now = self.owner_now();
         let mut runtime = self.runtime.lock().await;
         let digest = runtime.content_pin().server_artifact_digest();
@@ -1210,7 +1240,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return;
         }
-        let states = self.states.spell_states.lock().await;
+        let mut states = self.states.spell_states.lock().await;
+        let objects = self.door.lock().await;
         let mut attack = self.states.attack.lock().await;
         attack.prune(&runtime);
         let ChannelAttackStates {
@@ -1297,29 +1328,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 continue;
             };
             let character = *lease.character_id().as_bytes();
-            let Ok(snapshot) = runtime.companion_snapshot(target) else {
-                entry.clear_target();
-                continue;
-            };
-            let race_key = snapshot.state.policy.definition_key.clone();
-            // The creature's content defence and armor (ATTACK-0 §5, `monster.cpp:242-251`);
-            // a creature without them takes no hit (fail closed).
-            let (Some(defense), Some(armor)) =
-                (snapshot.state.policy.defense, snapshot.state.policy.armor)
-            else {
-                continue;
-            };
-            let creature_max_health = u64::try_from(snapshot.maximum_health).unwrap_or(0);
-            run_charm_hook(
-                self.imported_charms,
-                character,
-                &race_key,
-                &root,
-                swing_occurrence(entry.actor, swing.lineage, ordinal, b"damage-calculation"),
-                CharmHookEvent::AttackDamageCalculation {
-                    source: CharmHitSource::CharacterAttack,
-                },
-            );
             let mode = constants.fight_mode(fight_mode(entry.modes.fight_mode));
             let (formula, attack_value, revision) = match weapon.weapon {
                 SwingWeapon::Fists => (
@@ -1358,12 +1366,111 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             ) else {
                 continue;
             };
-            entry
-                .state
-                .record_hit(swing.at, constants.in_fight_micros());
+            if runtime.contains_live_creature(target) {
+                entry
+                    .state
+                    .record_hit(swing.at, constants.in_fight_micros());
+            }
             if damage <= 0 {
                 continue;
             }
+            if !runtime.contains_live_creature(target) {
+                let Some(black) = self
+                    .pvp_target_legal(
+                        &pvp_permit,
+                        &runtime,
+                        &states,
+                        room,
+                        &objects,
+                        entry.actor,
+                        target,
+                        swing.lineage,
+                        entry.modes.secure,
+                    )
+                    .await
+                else {
+                    entry.clear_target();
+                    continue;
+                };
+                let Ok(raw) = u32::try_from(damage) else {
+                    entry.clear_target();
+                    continue;
+                };
+                let magnitude =
+                    i64::from(oteryn_gameplay_combat_rules::pvp::pvp_damage(raw, black));
+                let atom = actor_atom(target);
+                let Some(plan) = swing_plan(
+                    entry.actor,
+                    swing.lineage,
+                    ordinal,
+                    magnitude,
+                    &digest,
+                    &atom,
+                    revision,
+                ) else {
+                    continue;
+                };
+                let batch = crate::spell::combat_batch::OwnerCombatBatch {
+                    caster: entry.actor,
+                    attacker: lease.character_id(),
+                    current_lease_generation: lease.generation(),
+                    command: swing.lineage,
+                    occurrence: plan.occurrence().clone().into(),
+                    binding: b"oteryn:pvp-melee:v1".to_vec(),
+                    anchor: None,
+                    now_us: Some(now),
+                    now_ms: now.get() / 1000,
+                    effects: vec![crate::spell::combat_batch::OwnerCombatEffect {
+                        target,
+                        sub_ordinal: ordinal,
+                        change: crate::spell::combat_batch::OwnerCombatChange::Damage {
+                            target_atom: atom,
+                            magnitude,
+                        },
+                    }],
+                    deferred: None,
+                };
+                if !self
+                    .pvp_swing(
+                        &mut pvp_permit,
+                        &mut runtime,
+                        &mut states,
+                        room,
+                        &objects,
+                        batch,
+                        ordinal,
+                        entry.modes.secure,
+                        black,
+                    )
+                    .await
+                {
+                    entry.clear_target();
+                }
+                continue;
+            }
+            let Ok(snapshot) = runtime.companion_snapshot(target) else {
+                entry.clear_target();
+                continue;
+            };
+            let race_key = snapshot.state.policy.definition_key.clone();
+            // The creature's content defence and armor (ATTACK-0 §5, `monster.cpp:242-251`);
+            // a creature without them takes no hit (fail closed).
+            let (Some(defense), Some(armor)) =
+                (snapshot.state.policy.defense, snapshot.state.policy.armor)
+            else {
+                continue;
+            };
+            let creature_max_health = u64::try_from(snapshot.maximum_health).unwrap_or(0);
+            run_charm_hook(
+                self.imported_charms,
+                character,
+                &race_key,
+                &root,
+                swing_occurrence(entry.actor, swing.lineage, ordinal, b"damage-calculation"),
+                CharmHookEvent::AttackDamageCalculation {
+                    source: CharmHitSource::CharacterAttack,
+                },
+            );
             let index = match blocks.iter().position(|(creature, _)| *creature == target) {
                 Some(index) => index,
                 None => {
