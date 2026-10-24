@@ -320,6 +320,7 @@ pub struct OneItemMintV1 {
 /// [`super::npc_trade_audit`]) and `item_use` (tag 10, [`super::item_use_audit`]).
 #[derive(Clone, PartialEq, Eq, prost::Oneof)]
 pub enum OneItemOperationV1 {
+    // Keep sorted by tag; insert in order, never append.
     #[prost(message, tag = "2")]
     Mint(OneItemMintV1),
     #[prost(message, tag = "3")]
@@ -340,13 +341,14 @@ pub enum OneItemOperationV1 {
     ItemUse(super::item_use_audit::OneItemUseV1),
     #[prost(message, tag = "11")]
     HouseTransfer(super::house_interior_audit::OneItemHouseTransferV1),
+    // Private continuation proposal: root coordinates final allocation and Imbue tag 12.
+    #[prost(message, tag = "13")]
+    ForgeDustLimit(super::character_forge_dust_audit::OneItemForgeDustLimitV1),
     #[prost(message, tag = "14")]
     PlayerTrade(super::player_trade::audit::OneItemPlayerTradeV1),
     #[prost(message, tag = "15")]
     Craft(super::item_craft::audit::OneItemCraftV1),
-    // Private continuation proposal: root coordinates final allocation and Imbue tag 12.
-    #[prost(message, tag = "13")]
-    ForgeDustLimit(super::character_forge_dust_audit::OneItemForgeDustLimitV1),
+    // End tag-sorted variants.
 }
 
 #[derive(Clone, PartialEq, Eq, Message)]
@@ -355,7 +357,22 @@ pub struct OneItemTransactionV1 {
     pub interpretation_revision: u32,
     #[prost(
         oneof = "OneItemOperationV1",
-        tags = "2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15"
+        tags(
+            // Keep sorted by tag; insert in order, never append.
+            2,  // Mint
+            3,  // Transfer
+            4,  // RewardClaimMint
+            5,  // DecayRetire
+            6,  // FeeBurn
+            7,  // TimedExpiry
+            8,  // MapItemMint
+            9,  // NpcTrade
+            10, // ItemUse
+            11, // HouseTransfer
+            13, // ForgeDustLimit
+            14, // PlayerTrade
+            15, // Craft
+        )
     )]
     pub operation: Option<OneItemOperationV1>,
 }
@@ -1134,6 +1151,7 @@ pub mod golden {
 #[cfg(test)]
 pub(super) mod tests {
     #![allow(clippy::expect_used, clippy::unwrap_used)]
+    mod oneof_wire_tests;
     use super::*;
     use serde_json::Value;
 
