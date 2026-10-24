@@ -13,3 +13,5 @@ pub mod trust_policy;
 pub mod guild;
 #[cfg(test)]
 mod party_ruleset_tests;
+
+pub mod staff;

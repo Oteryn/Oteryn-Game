@@ -15,6 +15,7 @@ pub mod actor_condition_snapshot_candidate;
 pub mod appearance;
 mod contract_registries;
 pub mod depot;
+pub mod party;
 pub use contract_registries::{PROTOCOL_OTERYN_V1_REGISTRY_JSON, RESOURCE_LIMITS_REGISTRY_JSON};
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
@@ -2535,6 +2536,7 @@ pub mod container_tree;
 pub mod daily_reward;
 pub mod damage_element;
 pub mod guild;
+pub mod guild_bank;
 pub mod highscores;
 pub mod item_look;
 pub mod item_view;
@@ -4541,3 +4543,5 @@ pub mod spectate;
 mod decoder_fuzz_support;
 
 pub mod house;
+
+pub mod staff;

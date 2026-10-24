@@ -4,7 +4,7 @@
 task_id: GUILD-BANK-1
 title: "GUILD-BANK-1: guild balance, ledger and disband payout"
 mode: IMPLEMENT
-status: waiting
+status: in_progress
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 4
@@ -15,7 +15,7 @@ briefs:
   - docs/architecture/reviews/OTERYN_GAME_GUILD0_GUILDS_AND_GUILDHALLS_DECISION_2026-09-30.md   # §4.1, §4.4, §5, §11
   - docs/architecture/reviews/OTERYN_GAME_BANK0_ACCOUNT_BANK_BALANCE_DECISION_2026-09-30.md     # guild amendment
 base_branch: main
-branch: null
+branch: claude/happy-davinci-ijz3wy-srv-gbank
 pr: null
 needs_migration: true
 needs_registry: true   # Bank/Guild event payloads, retention, resource limits
@@ -25,18 +25,184 @@ merge_authority: CP_ONLY (builder never marks ready)
 
 Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **OPEN**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
 
-Merged evidence: none. Guild core is merged, but this card's guild-bank owner is absent. Evidence: `crates/gameplay/durability/src/durability/guild.rs`.
+Historical merged audit evidence: none. The 2026-10-23 local authoring result below adds the missing bank owner; it is uncommitted and does not change live Issue/PR status.
 
-Remaining: Guild bank ledger, deposit/withdraw and disband custody/payout composition remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
+`pr: null`: this local work has no publication or merge authority. Full Guildhall escrow/property release composition remains dependent on its owning mechanics.
 
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2139, branch skeleton/guild-bank-1
+
+## Server wiring gap list
+
+Local authoring audit, 2026-10-23; the E2E audit row in
+`docs/agents/tasks/MECHANICS_STATUS.md` classifies Guild as BACKEND. This HEAD
+already has the basic Guild wire owner (`guild_intent.rs`), beyond that snapshot.
+No client work, publication, dependency download or external review is authorized here.
+Bound META 3.1.0 resolved read-only at `1bfb5ff98c8aa156e73669a14e083a1d464c29fb`.
+
+| Layer | This HEAD before this task | Missing server work |
+|---|---|---|
+| L3 rules | Account-bank arithmetic and native Guild rank/state rules exist; no guild-bank module | Transfer conservation, rank/junior refusals, ceiling-safe payout and claims |
+| L4 storage | Account bank and Guild core are present; no guild-bank writer/tables | Fenced receipt/replay, guild balance/ledger, paired Account entries, payout and retained claims |
+| Migration | Guild core 0132, House owner 0143, roster 0161 exist | Allocated 0174 for the bank participant and guards; preserve existing Bank/House arms |
+| Dispatch/wire | Guild commands 40/41 exist; no bank command handler/codec | Mechanic-owned handler and bounded commands 68/69, capability 55 |
+| Capability/content | Basic Guild available on every World; bank absent | Offer 55 with durable owner; no extra content required |
+| Runtime/disband | Server composes `ComposedFreshAdmission`; real disband controller exists, stops when financial/property participants exist | Register bank wire and integrate payout only after genuine House/Hall release proof |
+| PostgreSQL E2E | Real Guild dispatch fixture exists; no bank E2E | Auto-mounted dispatch --lib cases for wire, durable conservation, replay/reload and refusals |
+
+## Local server result (resumed 2026-10-24)
+
+Basic server implementation and focused validation are complete locally; status remains `in_progress` for independent review and
+programme publication. No commit, push, protected CI/routing edit, client edit or external review
+trigger was made. The owner's current basic-server direction supersedes the historical new-test-target
+and workspace-wide validation suggestions below.
+
+- Capability **55** is registered, admitted and offered on every supported World, including the
+  shipped bundle. Commands **68/69** reach the existing real `serve_admitted` Guild dispatch route.
+  No additional content is needed.
+- Members deposit from their Account/World bank; ranks 1/2 withdraw to their own bank. Guild state,
+  current native role, shared BANK-0 Junior source, recovery, node assignment, session generation,
+  lease, root and runtime ownership are checked. There is no extra Premium condition on money moves.
+- Migration **0174** adds immutable request-bound receipts, Guild balance/ledger and symbolic paired
+  Account entries, bounded BANK/GUILD native owner evidence and permanently retained disband claims.
+  Existing numeric Bank/Fee/NPC and House trigger arms remain installed unchanged. Ordinary Bank
+  readers/audit accept above-soft retained balances; ordinary incoming credits retain the soft cap.
+- Payout runs only with the genuine `GuildDisbandTransaction`, rechecking its physical xid/current
+  recovery/assignment/Guild before writing. The World scheduler commits payout once before bounded
+  member cleanup. The shared hard headroom subtracts current House and Market held custody. Excess
+  stays with the original leader's immutable Account/World claim, including after `DISBANDED`.
+- Command 69 reads a member's latest 30-day ledger with a 100-row descending cursor, or lists the
+  authenticated Account/World's open claims with a 100-row ascending GuildId cursor. Command 68
+  delivers partial claims without membership. Original successful/refused receipts survive reload;
+  changed payload bytes on the same occurrence are rejected.
+- Current House 0143 supports only Character property. No Guildhall/property custody source is
+  installed. This is proven from the installed schema; any uncomposed Hall/Guild-property owner
+  blocks payout and cleanup. The test adds such an owner and proves that funds stay untouched.
+
+### Resume checkpoint (2026-10-24)
+
+- Resumed the existing uncommitted delta on local base `cb5b3de92d2e19df53e05a7e0f5b9d98fa11d299`.
+  No frozen candidate or PR exists. Refreshed the bound META 3.1.0 policy read-only at its exact
+  bound revision; no external review, publication or credential mutation was performed.
+- Whole-diff review found a first insufficient-funds deposit could persist an empty Guild balance.
+  Added a real-dispatch regression, observed it fail on that extra row, then isolated lazy balance
+  creation and value planning in a native SQL savepoint. Every plan refusal rolls it back before
+  storing only the immutable replay receipt. Financial state and owner evidence stay unchanged.
+- Extended the same PostgreSQL E2E to replay the original denied member withdrawal after promotion
+  to vice and again after Root reconstruction and disband cleanup. Both return the original refusal.
+- New mechanic modules remain below 800 lines (largest: the 750-line dispatch E2E). Removed 16
+  inherited `.guild-bank*.log` scratch files from the repository root.
+
+### Reference parity
+
+| Visible behavior | Reference evidence | Oteryn now |
+|---|---|---|
+| Separate Guild bank; every member deposits, leader/vice withdraw | `docs/reference/tibia-manual/guilds.md` §5.8.1; official owner capture 2026-09-28 | Real commands 68/69, current membership/rank checked under the Guild lock; ordinary members refused withdrawals |
+| Balance and rolling 30-day activity visible to members | Same official capture §5.8.1; GUILD0 §§4.4/5.1 | Durable Guild balance and paged ledger; outsiders receive no financial projection |
+| Transfer from/to Account bank, no coins or new value | Accepted GUILD0 §5.2 and BANK0 §3 amendment | Paired immutable chains and bounded TRANSFER owner records commit atomically; audit failure rolls everything back |
+| Soft credit cap and Junior restrictions; no extra Premium check | Accepted GUILD0 §5.2 and BANK0 §4.4 | Soft caps enforced, existing native Junior source reused; pure OnIsland refusal qualified (native island source remains unavailable) |
+| Leader receives disband balance after release | GUILD0 §5.3, explicit Oteryn decision; manual silent (`PARITY_PENDING`) | Genuine disband transaction pays once, hard headroom includes House/Market custody, pending unknown release owners fail closed |
+| Overflow survives disband/restart and is claimable by the same Account/World | Accepted GUILD0 §5.3 | Retained immutable entitlement, positive partial delivery near 9e15, zero row kept terminal, own claim discovery after membership cleanup |
+| Lost acknowledgement/retry never moves money twice | GUILD-BANK-1 accepted occurrence/replay decision | Real dispatch replays successful and denied receipts after owner/Root reconstruction; promotion cannot change an earlier withdrawal refusal; two independent Roots produce one spend and one typed insufficient-balance result |
+
+### Validation evidence
+
+All cargo commands use `/home/mole/oteryn-cache/codex-bin/cargo`; PostgreSQL tests use the wrapper's
+private route and create isolated databases. The new E2E confirmed `server_version_num=180006`.
+No PostgreSQL suite was run without a mechanic filter.
+
+Fresh resume validation uses `CARGO_NET_OFFLINE=true` and
+`CARGO_TARGET_DIR=/home/mole/oteryn-cache/target-codex/lanes/srv-gbank`. Exact mechanic test selectors:
+
+| Package | `cargo test --locked` selector | Resume result |
+|---|---|---|
+| `oteryn-protocol-oteryn`, `oteryn-gameplay-economy` | `--lib` (pure unit suites) | 394 + 25 passed |
+| `oteryn-gameplay-dispatch` | `--lib guild_bank_postgres_real_dispatch -- --nocapture` | 1 passed on PostgreSQL 18.6 after the savepoint repair |
+| `oteryn-gameplay-dispatch` | `--lib capabilit` | 94 passed |
+| `oteryn-gameplay-durability` | `--lib guild_bank` | 1 passed |
+| `oteryn-gameplay-durability` | `--lib bank_audit::tests` | 5 passed |
+| `oteryn-game-server` | `--lib guild_core_terminal -- --nocapture` | 3 passed |
+| `oteryn-game-server` | `--lib house_ownership_guild_participants_require_a_guild_owner -- --nocapture` | 1 passed on PostgreSQL 18.6 |
+| `oteryn-game-server` | `--lib house_ownership_recovered_bid_escrow_replay_conflict_and_session_fence -- --nocapture` | 1 passed on PostgreSQL 18.6 |
+
+Final resume `fmt --all -- --check` and `clippy --locked` on all targets of all five touched
+packages with `-D warnings` passed after the repair. Governance and repository-policy validators
+and all 129 governance unit tests passed, including a final run after the task-card evidence update.
+The whole-diff owner checklist and workspace enum/constructor/caller sweep found no remaining hit.
+
+Historical 2026-10-23 evidence retained below:
+
+- `test --locked -p oteryn-protocol-oteryn -p oteryn-gameplay-economy --quiet`: 394 protocol + 25 economy tests passed (codec/registry bounds and conservation properties included).
+- `test --locked -p oteryn-gameplay-dispatch --lib guild_bank_postgres_real_dispatch -- --nocapture`: **1 passed**, real runtime-role PostgreSQL and connection frames; member/vice rights, both ceilings, raw-payload conflict, stale lease, omitted capability, malformed bytes, audit-failure rollback, independent competing writers, unknown-release refusal, payout once, positive partial claims, full delivery, native Root reload, immutable zero custody and negative SQL balance/claim probes.
+- `test --locked -p oteryn-game-server --lib guild_core_terminal -- --nocapture`: **3 passed**, including foreign xid/unassigned World, an uncomposed financial owner and two-Root core cleanup. Historical fixtures explicitly remove this later bank owner when reconstructing the old core-only schema; the installed-schema E2E does not do that.
+- `test --locked -p oteryn-gameplay-durability --lib bank_audit::tests --quiet`: **5 passed**; high-balance Guild payout audit regression is also mounted under filter `guild_bank`.
+- `test --locked -p oteryn-gameplay-dispatch --lib capabilities::tests --quiet`: **61 passed**, including registry offers, accepted capability 55 and bundle availability.
+- `test --locked -p oteryn-gameplay-durability --lib guild_bank --quiet`: **1 passed**, ordinary Bank audit can spend retained balances above the soft cap, but refuses above the hard ceiling.
+- `test --locked --offline -p oteryn-game-server --lib house_ownership_guild_participants_require_a_guild_owner -- --nocapture`: **1 passed**. The new installed Bank owner is asserted first; the existing core-only snapshot then preserves every original House-only and unknown-owner assertion.
+- `test --locked --offline -p oteryn-game-server --lib house_ownership_recovered_bid_escrow_replay_conflict_and_session_fence -- --nocapture`: **1 passed**. Shared hard headroom reserves the same 100 liquid + 500 held House gold; ordinary incoming credits retain the separate soft cap. Both compatibility regressions were observed failing before the fixture/expectation repair and passing afterwards; neither was load contention.
+- `fmt --all` and `fmt --all -- --check`: passed. Final `clippy --locked --offline -p oteryn-gameplay-economy -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-protocol-oteryn -p oteryn-game-server --all-targets --quiet -- -D warnings`: **passed**, including both compatibility-test repairs. Existing warnings come only from vendored Tokio/sqlx dependencies; no dependency was edited or downloaded.
+- `python3 tools/agents/validate_governance.py`: passed. `python3 tools/repository/validate_repository_policy.py`: passed. `python3 -m unittest discover -s tools/agents/tests`: **129 passed**.
+- Whole-diff D1462 review includes the owner checklist, all new enum/field/constructor/impl sites across `apps/`, `crates/`, `tools/`, production callers and real-dispatch coverage. No production unwrap/expect, new PostgreSQL target, client path or forbidden CI routing file was added.
+
+### Changed files (local, uncommitted)
+
+```text
+apps/game-server/migrations/0174_guild_bank.sql
+apps/game-server/src/lifted_tests/auto/house_ownership_tests.rs
+apps/game-server/src/lifted_tests/auto/house_ownership_tests/guild_participants.rs
+crates/gameplay/dispatch/src/gameplay_transport/capabilities.rs
+crates/gameplay/dispatch/src/gameplay_transport/capability_quest_log_tests.rs
+crates/gameplay/dispatch/src/gameplay_transport/guild_bank.rs
+crates/gameplay/dispatch/src/gameplay_transport/guild_intent.rs
+crates/gameplay/dispatch/src/gameplay_transport/mod.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/guild_bank.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/guild_bank/seed.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/guild_bank/transport.rs
+crates/gameplay/durability/src/durability/bank_audit.rs
+crates/gameplay/durability/src/durability/core_modules.rs
+crates/gameplay/durability/src/durability/guild/disband.rs
+crates/gameplay/durability/src/durability/guild_bank.rs
+crates/gameplay/durability/src/durability/guild_bank/payout.rs
+crates/gameplay/durability/src/durability/guild_bank/query.rs
+crates/gameplay/durability/src/durability/guild_bank/storage.rs
+crates/gameplay/durability/src/durability/guild_bank_audit.rs
+crates/gameplay/durability/src/durability/guild_bank_bank_audit_tests.rs
+crates/gameplay/durability/src/durability/guild_chat_fixture/schema.rs
+crates/gameplay/economy/src/guild_bank.rs
+crates/gameplay/economy/src/guild_bank_tests.rs
+crates/gameplay/economy/src/lib.rs
+crates/protocol-oteryn/src/capability_tables.rs
+crates/protocol-oteryn/src/guild_bank.rs
+crates/protocol-oteryn/src/guild_bank_tests.rs
+crates/protocol-oteryn/src/lib.rs
+docs/agents/tasks/GUILD-BANK-1.md
+docs/contracts/protocol-oteryn/v1/guild_bank_v1.proto
+docs/contracts/protocol-oteryn/v1/registry/capabilities/0055-guild-bank-v1.json
+docs/contracts/protocol-oteryn/v1/registry/command_types/0068-guild-bank-intent.json
+docs/contracts/protocol-oteryn/v1/registry/command_types/0069-guild-bank-query.json
+docs/contracts/resource-limits/entries/0850-GUILDBANK-RL-01.json
+docs/contracts/resource-limits/entries/0851-GUILDBANK-RL-02.json
+docs/contracts/resource-limits/entries/0852-GUILDBANK-RL-03.json
+docs/contracts/resource-limits/entries/0853-GUILDBANK-RL-04.json
+```
+
+### Unfinished / outside this basic server slice
+
+- Full GUILDHALL-1 escrow reserve/release/settlement and genuine Guild-property/Inbox disposition are
+  still absent owners; no substitute proof or table is provided. Installing an unknown owner blocks
+  disband until its accepted release composition lands.
+- A genuine Junior/OnIsland authority source is still absent, as for BANK-1. No false source is invented.
+- Native symbolic owner evidence follows the current Guild core proposal pattern, not a new numeric
+  ANL EventEnvelope allocation. Its eventual event admission/export/retention integration remains
+  with the accepted registry and retention owners.
+- Independent persistence/economy review, repository CI, publication/merge and final task archival
+  remain with the coordinator. No request to spend or send repository contents was issued here.
 
 ## Goal
 
 Guild balance and ledger, deposit and withdraw, disband payout and its retained custody
 claims (GUILD0 §5), as a financial participant composed into the real Guild transactions.
 
-## Dependencies (re-verified on origin/main 59785d76, 2026-10-22)
+## Dependencies (historical allocation snapshot; current local findings above)
 
 | Dependency | State |
 |---|---|
@@ -58,7 +224,7 @@ drafted earlier but must not assume unmerged schemas.
 - `crates/gameplay/durability/src/durability/guild_bank.rs` (new, deposit/withdraw/claim transactions and disband payout participant)
 - `crates/gameplay/durability/src/durability/guild_bank_audit.rs` (new, closed TRANSFER-only conservation and bounded evidence)
 - `crates/gameplay/durability/src/durability/guild_bank_tests.rs` (new)
-- `apps/game-server/tests/guild_bank_postgres.rs` (new)
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/guild_bank.rs` and `guild_bank/` (auto-mounted existing --lib PG tree)
 - `docs/agents/tasks/GUILD-BANK-1.md`
 
 Slot-only (final commit at the queue turn): the migration (number: next free number at
@@ -123,38 +289,47 @@ allocation time (only one migration PR in the queue)); module registration in
   missing SELECT on `game_guild_job_checkpoints` (42501 instead of 23514), repaired without
   weakening a guard. The two disband-port bodies were drafted, not executed.
 
-## Findings and open questions
+## Historical findings and current disposition
 
 - Production Bank readers, closed ledger enums, audit codecs and balances above the soft
-  ceiling need coordinated shared BANK-1 updates in the same slot.
+  ceiling needed coordinated shared BANK-1 updates. Addressed locally by migration 0174's
+  symbolic arms and the hard-ceiling audit change; numeric paths remain unchanged.
 - Shared credit-headroom seam (`HOUSE-1a-BANK-HEADROOM`, SOCIAL-MAP §1.12) must be one helper
-  covering Bank + Market held + House held + Guildhall held + incoming.
+  covering Bank + Market held + House held + Guildhall held + incoming. The installed owners
+  now share that helper; Guildhall remains absent and blocks disband if introduced uncomposed.
 - Nonzero partial claims near 9e15 were arithmetic-only on the draft; a positive nonzero claim
-  delivery is unqualified.
+  delivery is now qualified by the real-dispatch PostgreSQL E2E above.
 
 ## Acceptance criteria
 
-- [ ] Deposit/withdraw conserve gold across account and guild balances (property test).
-- [ ] Disband pays out once; custody claims survive restart.
-- [ ] Junior and Premium rules of BANK-0 apply.
-- [ ] The payout runs only inside the genuine Guild disband transaction after House/Hall release.
-- [ ] Every concurrent transition serialized (named lock or deterministic order) and losing writer typed.
-- [ ] Durable state sufficient to resume after restart / session-generation change.
+- [x] Deposit/withdraw conserve gold across account and guild balances (property test).
+- [x] Disband pays out once; custody claims survive restart.
+- [ ] Junior and Premium rules of BANK-0 apply. Native BANK-0 source and pure OnIsland refusal are reused/qualified; genuine OnIsland source still absent.
+- [x] The payout runs only inside the genuine Guild disband transaction after House/Hall release.
+- [x] Every concurrent transition serialized (named lock or deterministic order) and losing writer typed.
+- [x] Durable state sufficient to resume after restart / session-generation change.
 - [ ] Every BLOCKING dependency above merged (or acceptance landed) before the PR leaves draft.
-- [ ] Structure: one mechanic per module file in its ADR-0022 layer (pure arithmetic in `economy`, storage in `durability`).
-- [ ] Structure: new tests in their own child files (`<module>_tests.rs` or `apps/game-server/tests/` child), not appended to existing files.
-- [ ] Structure: edits to `mod.rs`/`lib.rs`/`connection.rs`/`capabilities.rs` are wiring-only.
-- [ ] Structure: no file over ~1000 lines grows by more than ~150 lines.
+- [x] Structure: one mechanic per module file in its ADR-0022 layer (pure arithmetic in `economy`, storage in `durability`).
+- [x] Structure: new tests in their own child files (`<module>_tests.rs` or `apps/game-server/tests/` child), not appended to existing files.
+- [x] Structure: edits to `mod.rs`/`lib.rs`/`connection.rs`/`capabilities.rs` are wiring-only.
+- [x] Structure: no file over ~1000 lines grows by more than ~150 lines.
 
 ## Validation
 
 ```sh
-cargo fmt --all -- --check
-cargo clippy --locked --workspace --all-targets -- -D warnings
-cargo test -p oteryn-gameplay-economy guild_bank
-cargo test -p oteryn-gameplay-durability guild_bank
-cargo test -p oteryn-game-server --test guild_bank_postgres   # PostgreSQL 17.6 harness
-cargo +1.95.0 run -p oteryn-architecture-check -- workspace .
+/home/mole/oteryn-cache/codex-bin/cargo fmt --all -- --check
+/home/mole/oteryn-cache/codex-bin/cargo clippy --locked --offline -p oteryn-gameplay-economy -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-protocol-oteryn -p oteryn-game-server --all-targets --quiet -- -D warnings
+/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-protocol-oteryn -p oteryn-gameplay-economy --quiet
+/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-durability --lib guild_bank --quiet
+/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-durability --lib bank_audit::tests --quiet
+/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --lib capabilities::tests --quiet
+/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --lib guild_bank_postgres_real_dispatch -- --nocapture
+/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-game-server --lib guild_core_terminal -- --nocapture
+/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-game-server --lib house_ownership_guild_participants_require_a_guild_owner -- --nocapture
+/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-game-server --lib house_ownership_recovered_bid_escrow_replay_conflict_and_session_fence -- --nocapture
+python3 tools/agents/validate_governance.py
+python3 tools/repository/validate_repository_policy.py
+git diff --check
 ```
 
 ## Reference evidence
