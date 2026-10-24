@@ -130,6 +130,7 @@ pub fn request(
 ) -> TestResult<GuildRequest> {
     Ok(GuildRequest {
         identity: GuildOperationIdentity {
+            wire_digest: None,
             occurrence: sid(n, 10),
             transaction_id: sid(n, 11),
             event_id: sid(n, 12),

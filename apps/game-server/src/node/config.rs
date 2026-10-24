@@ -248,6 +248,7 @@ pub struct BootConfig {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct NodeConfig {
+    pub staff: Option<crate::durability::staff::StaffConfig>,
     pub listener: ListenerConfig,
     pub scope: ScopeConfig,
     pub database: DatabaseConfig,

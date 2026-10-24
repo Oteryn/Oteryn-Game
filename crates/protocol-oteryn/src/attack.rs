@@ -22,8 +22,9 @@ pub use crate::charm_wire::CyclopediaWireError as AttackWireError;
 /// Registered capability `ATTACK_V1`: command types 11 and 12, state domain 10.
 pub const CAPABILITY_ATTACK_V1: u32 = 17;
 /// The capability `ATTACK_V1` requires: 6 `WORLD_SPATIAL_ENTITIES`, which names the targets.
-pub const CAPABILITY_ATTACK_V1_REQUIRES: [u32; 1] =
-    [crate::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES];
+pub const CAPABILITY_ATTACK_V1_REQUIRES: [u32; 1] = [
+    crate::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES, // WORLD_SPATIAL_ENTITIES
+];
 /// Registered command type `ATTACK_TARGET_INTENT` (capability 17).
 pub const COMMAND_TYPE_ATTACK_TARGET_INTENT: u32 = 11;
 /// Registered command type `FIGHT_MODES_INTENT` (capability 17).

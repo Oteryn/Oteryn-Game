@@ -64,6 +64,15 @@ pub mod test_support;
 /// The closed `FeeBurnCause` (decision §4.4): one variant per admitted fee source.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FeeBurnCause {
+    AreaDonation {
+        world: WorldId,
+        area: u32,
+        occurrence: [u8; 16],
+    },
+    NpcRepair {
+        occurrence: [u8; 16],
+        repair: Box<super::item_fee_burn_audit::OneItemTimedRepairV1>,
+    },
     CharmUnassign {
         charm: CharmKey,
         occurrence: CharmCommandOccurrence,
@@ -219,6 +228,10 @@ pub async fn burn_fee_in_transaction(
     fence: &CurrentCharacterGameplayFence,
     request: &FeeBurnRequest,
 ) -> Result<FeeBurnOutcome> {
+    if matches!(&request.cause, FeeBurnCause::AreaDonation { world, .. } if *world != fence.runtime_scope.world_id())
+    {
+        return Err(FeeBurnError::InvalidInput);
+    }
     let tuple = tx.tuple().tuple();
     burn_fee(tx, fence, request, tuple).await
 }
@@ -265,7 +278,10 @@ async fn burn_fee(
     let committed = fence
         .expected_character_revision
         .get()
-        .checked_add(1)
+        .checked_add(u64::from(!matches!(
+            request.cause,
+            FeeBurnCause::NpcRepair { .. }
+        )))
         .and_then(|value| CharacterRevision::new(value).ok())
         .ok_or(FeeBurnError::InvalidInput)?;
     if !(1..=fee_gold_units_max(tuple)).contains(&request.fee_gold_units)

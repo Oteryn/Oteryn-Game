@@ -11,6 +11,33 @@ pub struct OneItemNpcPurchaseV1 {
 
 pub(super) fn check(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
     match value.cause.as_ref().and_then(|value| value.cause.as_ref()) {
+        Some(FeeBurnCauseV1::AreaDonation(cause))
+            if cause.area == 1
+                && cause.world == value.world_id
+                && (1..=10_000_000).contains(&value.fee_gold_units) =>
+        {
+            check_uuid_v7(&cause.world)?;
+            check_uuid_v7(&cause.occurrence)
+        }
+        Some(FeeBurnCauseV1::NpcRepair(repair))
+            if value.fee_gold_units == 10_000
+                && value.lines.len() <= 19
+                && repair.before.as_ref().is_some_and(|item| {
+                    item.world_id == value.world_id
+                        && value.lines.iter().all(|line| {
+                            line.before
+                                .as_ref()
+                                .is_none_or(|coin| coin.item_instance_id != item.item_instance_id)
+                        })
+                        && value.change.iter().all(|line| {
+                            line.after
+                                .as_ref()
+                                .is_none_or(|coin| coin.item_instance_id != item.item_instance_id)
+                        })
+                }) =>
+        {
+            super::repair_cause::check(repair)
+        }
         Some(FeeBurnCauseV1::CharmUnassign(cause)) => {
             CharmKey::new(cause.charm_key.clone()).map_err(|_| AuditError::InvalidInput)?;
             check_uuid_v7(&cause.occurrence)

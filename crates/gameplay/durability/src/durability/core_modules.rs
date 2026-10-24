@@ -10,6 +10,8 @@ pub mod admission_authority_guards;
 pub mod admission_journal;
 pub mod bank;
 pub mod bank_audit;
+pub mod guild_bank;
+mod guild_bank_audit;
 mod bank_credit_headroom;
 pub mod bestiary_progress;
 #[allow(
@@ -46,11 +48,13 @@ pub mod content_activation;
 
 mod db;
 pub mod equipment_policy_abi;
+mod field_capability_port;
 pub mod forge;
 pub mod fresh_admission;
 pub mod fresh_admission_composition;
 pub mod ground_cell_limit;
 pub mod highscore_snapshot;
+pub mod house_disposition;
 pub mod house_interior;
 pub mod house_interior_audit;
 pub mod house_ownership;
@@ -68,11 +72,14 @@ pub mod item_loop_move;
 pub mod item_mint;
 pub mod item_mint_audit;
 pub mod item_text;
+pub mod item_timed_repair;
+pub mod item_timed_runtime;
 pub mod item_timed_state;
 pub mod item_timed_state_audit;
 pub mod item_transfer;
 pub mod item_transfer_audit;
 pub mod item_use;
+pub mod item_craft;
 pub mod item_use_audit;
 #[cfg(any(test, feature = "test-support"))]
 pub mod item_weight_lookup;
@@ -95,6 +102,7 @@ pub mod premium_fence;
 pub mod promotion_purchase;
 pub mod public_projections;
 pub mod pvp_state;
+pub mod pvp_live;
 pub mod party_pz_fact;
 pub mod pvp_death_consequences;
 mod pvp_death_request;
@@ -3480,3 +3488,5 @@ pub mod house_spell_acl;
 
 pub mod guild;
 pub mod guild_audit;
+
+pub mod character_cyclopedia;

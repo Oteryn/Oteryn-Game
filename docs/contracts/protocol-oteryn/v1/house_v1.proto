@@ -1,0 +1,53 @@
+syntax = "proto3";
+package oteryn.protocol.v1;
+// Capability 49. Commands 56/57. Required fields include explicit scalar zeroes.
+// Unknown, duplicate, missing fields and multiple actions refuse. UUIDs are 16-byte UUIDv7.
+// Optional scalar declarations retain explicit zero presence; every request field except cursor is required by the strict codec.
+// Intent <=4168 B, query <=1056 B, result <=32768 B. Keys/town/cursor <=512 UTF-8 B.
+// Management works remotely; the server obtains the current session/lease/scope, never the body.
+message HouseTargetV1 { bytes world_id = 1; string house_key = 2; }
+message HouseAmountV1 { optional uint64 amount = 1; }
+message HouseEmptyV1 {}
+message HouseAclV1 {
+  uint32 role = 1; // 1 Guest, 2 Subowner. Empty members clears. Native limit: 200 unique members.
+  optional uint64 expected_revision = 2;
+  repeated bytes character_ids = 3;
+}
+message HouseDoorPositionV1 { optional uint32 x = 1; optional uint32 y = 2; optional sint32 floor = 3; } // x/y <=65535, floor -15..0
+message HouseDoorV1 { HouseDoorPositionV1 position = 1; optional uint64 expected_revision = 2; repeated bytes character_ids = 3; }
+message HouseKickV1 { bytes character_id = 1; }
+message HouseIntentV1 {
+  oneof action {
+    HouseAmountV1 bid = 1;
+    HouseAmountV1 move_out_unix_ms = 2;
+    HouseEmptyV1 cancel_move_out = 3;
+    HouseAclV1 acl = 4;
+    HouseDoorV1 door = 5;
+    HouseKickV1 kick = 6;
+    HouseEmptyV1 leave = 7;
+  }
+  HouseTargetV1 target = 8;
+}
+message HouseQueryV1 { bytes world_id = 1; string town = 2; optional string cursor = 3; }
+message HouseSummaryV1 {
+  string house_key = 1;
+  uint32 state = 2; // native property state 1..6
+  uint64 rent_gold = 3;
+  uint64 revision = 4;
+  uint64 acl_revision = 10; // property-global CAS revision for all lists
+  bool owned = 5; // true only for this Character
+  uint64 current_price = 7;
+  optional uint64 ends_at_unix_ms = 8;
+  optional uint64 own_bid_maximum = 9; // this Character only
+  optional uint64 move_out_unix_ms = 6; // current owner only, same ownership generation
+}
+message HouseResultV1 {
+  uint32 disposition = 1; // 1 OK, 2 REJECTED, 3 CONFLICT; no result on ambiguous commit
+  uint64 revision = 2; // ACL/notice revision; 0 on refusal
+  repeated HouseSummaryV1 houses = 3; // <=20, sorted by native House key
+  optional string cursor = 4; // exclusive keyset cursor only when more results exist
+}
+// No unsolicited state/domain. An unselected command is REJECTED with empty payload before decode.
+// Unsupported native owners (acquisition/exit) refuse; transfer is deferred by OWN0.
+// Move-out OK records a notice, not execution of disposition; cancellation clears that notice.
+// Rent is a read-only catalogue/property projection; no player-supplied amount is debited.

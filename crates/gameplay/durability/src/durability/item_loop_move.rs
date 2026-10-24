@@ -23,7 +23,6 @@ use super::character_equipment::{EquipmentError, assert_current_equipment_in_tra
 use super::ground_cell_limit::{
     GroundCellAdmissionError, GroundCellLimitError, check_ground_cell_root_insert_with_recovery,
 };
-use oteryn_gameplay_items::item_capacity::{CapacityMove, CapacityRefusal, IncomingWeight, plan_capacity};
 use super::item_mint::{GroundItemInstance, GroundPlacement, TypedDefinitionRef, uuid_text};
 use super::item_transfer::{
     BackpackEntry, CurrentCharacterItemFence, GAMEITEM01_CONTAINER_ENTRIES_MAX, InventoryItem,
@@ -36,6 +35,9 @@ use super::spell_owner_commit::SpellLanePermit;
 use super::{DurabilityError, DurabilityRoot};
 use crate::domain::CharacterId;
 use crate::foundation::{ChannelId, CommandRef, WorldId};
+use oteryn_gameplay_items::item_capacity::{
+    CapacityMove, CapacityRefusal, IncomingWeight, plan_capacity,
+};
 use serde::Serialize;
 use serde_json::json;
 use sqlx::{Postgres, Row, Transaction};
@@ -53,6 +55,10 @@ const KIND_NONE: i16 = 0;
 const KIND_MAIN: i16 = 1;
 const KIND_NESTED: i16 = 2;
 const KIND_GROUND: i16 = 3;
+const KIND_DEPOT: i16 = 4;
+#[path = "depot_move.rs"]
+mod depot_move;
+pub use depot_move::DepotMove;
 const KIND_UNCHANGED: i16 = 9;
 
 const OPERATION_MOVE: i16 = 1;
@@ -203,7 +209,7 @@ fn ground_error(error: GroundCellAdmissionError) -> LoopError {
             LoopError::Refused(LoopMoveRefusal::NoRoom)
         }
         GroundCellAdmissionError::Limit(GroundCellLimitError::IncompatibleInput)
-        | GroundCellAdmissionError::Source(SpellItemError::Rejected(_)) => {
+        | GroundCellAdmissionError::Source(SpellItemError::FieldCapabilityRefused | SpellItemError::Rejected(_)) => {
             LoopError::Refused(LoopMoveRefusal::Blocked)
         }
         GroundCellAdmissionError::Source(SpellItemError::Durability(error)) => {
@@ -403,6 +409,7 @@ enum SourceKind {
     Main,
     Nested { parent: [u8; 16] },
     Ground,
+    Depot,
 }
 
 impl SourceKind {
@@ -411,6 +418,7 @@ impl SourceKind {
             Self::Main => KIND_MAIN,
             Self::Nested { .. } => KIND_NESTED,
             Self::Ground => KIND_GROUND,
+            Self::Depot => KIND_DEPOT,
         }
     }
 }
@@ -425,6 +433,10 @@ enum Target {
         entries: Vec<BackpackEntry>,
     },
     Ground(GroundPlacement),
+    Depot {
+        town: u16,
+        box_number: u8,
+    },
 }
 
 struct Line {
@@ -534,8 +546,20 @@ async fn plan_loop_destination<C: ItemLoopContent>(
     content: &C,
     plan: LoopPlan<'_>,
 ) -> LoopResult<PlannedDestination> {
-    let LoopPlan { character, world, item, definition, facts, quantity, count, partial,
-        source, height, size, destination } = plan;
+    let LoopPlan {
+        character,
+        world,
+        item,
+        definition,
+        facts,
+        quantity,
+        count,
+        partial,
+        source,
+        height,
+        size,
+        destination,
+    } = plan;
     let Some(slot) = load_slot(tx, character).await? else {
         return refuse(LoopMoveRefusal::NoBackpack);
     };
@@ -576,22 +600,22 @@ async fn plan_loop_destination<C: ItemLoopContent>(
                 return refuse(LoopMoveRefusal::NotSupported);
             };
             if let Some(item) = item {
-            let inside: bool = sqlx::query_scalar(
-                "WITH RECURSIVE up(item, hops) AS ( \
+                let inside: bool = sqlx::query_scalar(
+                    "WITH RECURSIVE up(item, hops) AS ( \
                    SELECT encode($1,'hex')::uuid, 0 \
                    UNION ALL \
                    SELECT n.parent_item_instance_id, up.hops + 1 \
                      FROM up JOIN game_item_nested_entries n ON n.item_instance_id = up.item \
                     WHERE up.hops < 16) \
                  SELECT EXISTS (SELECT 1 FROM up WHERE item = encode($2,'hex')::uuid)",
-            )
-            .bind(parent.as_slice())
-            .bind(item.as_slice())
-            .fetch_one(&mut **tx)
-            .await?;
-            if inside {
-                return refuse(LoopMoveRefusal::NotSupported);
-            }
+                )
+                .bind(parent.as_slice())
+                .bind(item.as_slice())
+                .fetch_one(&mut **tx)
+                .await?;
+                if inside {
+                    return refuse(LoopMoveRefusal::NotSupported);
+                }
             }
             Target::Container {
                 kind: KIND_NESTED,
@@ -654,7 +678,7 @@ async fn plan_loop_destination<C: ItemLoopContent>(
             && match source {
                 SourceKind::Main => *parent == slot.item_instance_id,
                 SourceKind::Nested { parent: from } => from == *parent,
-                SourceKind::Ground => false,
+                SourceKind::Ground | SourceKind::Depot => false,
             };
         let occupied = entries.len() - usize::from(already_here);
         if placed && occupied + 1 > *capacity as usize {
@@ -663,7 +687,7 @@ async fn plan_loop_destination<C: ItemLoopContent>(
         // The carried tree grows only by what is placed: a pickup's subtree or a split's fresh
         // stack. A full merge retires its source and adds nothing, so it passes at the ceiling.
         let added = if placed {
-            (if source == SourceKind::Ground {
+            (if matches!(source, SourceKind::Ground | SourceKind::Depot) {
                 size
             } else {
                 0
@@ -684,7 +708,7 @@ async fn plan_loop_destination<C: ItemLoopContent>(
     }
 
     // B3-3: a pickup brings the whole stack into the Character.
-    if source == SourceKind::Ground {
+    if matches!(source, SourceKind::Ground | SourceKind::Depot) {
         let unit = match content.weight_of(definition) {
             Ok(unit) => unit,
             Err(ItemWeightRefused::Unknown) => return refuse(LoopMoveRefusal::WeightUnknown),
@@ -715,7 +739,11 @@ async fn plan_loop_destination<C: ItemLoopContent>(
         }
     }
 
-    Ok(PlannedDestination { target, receiver, rest })
+    Ok(PlannedDestination {
+        target,
+        receiver,
+        rest,
+    })
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -729,6 +757,7 @@ async fn apply_loop_move<C: ItemLoopContent>(
     content: &C,
     request: &LoopMoveRequest,
     intent: &[u8],
+    depot: Option<DepotMove>,
 ) -> LoopResult<LoopMoveReceipt> {
     let character = fence.character_id;
     let (world_id, channel_id) =
@@ -745,12 +774,14 @@ async fn apply_loop_move<C: ItemLoopContent>(
     };
     let row = sqlx::query(
         "SELECT e.character_id::text AS entry_character, \
+                d.character_id::text AS depot_character, d.town_id, d.box_number, \
                 n.parent_item_instance_id::text AS nested_parent, \
                 g.channel_id::text AS ground_channel, g.spatial_position AS ground_cell, \
                 COALESCE(game_item_loop_drop_ref(g.corpse_ref), false) \
                 OR game_item_loop_map_mint_source(i.item_instance_id) AS loop_pickup \
            FROM game_item_instances i \
            LEFT JOIN game_item_container_entries e ON e.item_instance_id = i.item_instance_id \
+           LEFT JOIN game_item_character_depot_locations d ON d.item_instance_id = i.item_instance_id \
            LEFT JOIN game_item_nested_entries n ON n.item_instance_id = i.item_instance_id \
            LEFT JOIN game_item_ground_locations g ON g.item_instance_id = i.item_instance_id \
           WHERE i.item_instance_id = encode($1,'hex')::uuid",
@@ -767,7 +798,19 @@ async fn apply_loop_move<C: ItemLoopContent>(
     {
         return refuse(LoopMoveRefusal::Stale);
     }
-    let source = if let Some(owner) = entry_character {
+    let depot_character = optional_uuid(row.try_get("depot_character")?)?;
+    let source = if let Some(owner) = depot_character {
+        let Some(access) = depot.filter(|access| !access.deposit) else {
+            return refuse(LoopMoveRefusal::NotSupported);
+        };
+        if owner != *character.as_bytes()
+            || row.try_get::<i32, _>("town_id")? != i32::from(access.town)
+            || row.try_get::<i16, _>("box_number")? != i16::from(access.box_number)
+        {
+            return refuse(LoopMoveRefusal::Stale);
+        }
+        SourceKind::Depot
+    } else if let Some(owner) = entry_character {
         if owner != *character.as_bytes() {
             return refuse(LoopMoveRefusal::Stale);
         }
@@ -791,6 +834,12 @@ async fn apply_loop_move<C: ItemLoopContent>(
         return refuse(LoopMoveRefusal::NotSupported);
     };
 
+    if let Some(access) = depot
+        && ((access.deposit && !matches!(source, SourceKind::Main | SourceKind::Nested { .. }))
+            || (!access.deposit && source != SourceKind::Depot))
+    {
+        return refuse(LoopMoveRefusal::Stale);
+    }
     let Some(facts) = content.loop_facts(&definition) else {
         return refuse(LoopMoveRefusal::NotSupported);
     };
@@ -806,10 +855,33 @@ async fn apply_loop_move<C: ItemLoopContent>(
         return refuse(LoopMoveRefusal::NotSupported);
     }
     let (height, size) = loop_subtree(tx, request.item).await?;
-    let PlannedDestination { target, receiver, rest } = plan_loop_destination(tx, content, LoopPlan {
-        character, world, item: Some(request.item), definition: &definition, facts: &facts,
-        quantity, count, partial, source, height, size, destination: &request.destination,
-    }).await?;
+    let PlannedDestination {
+        target,
+        receiver,
+        rest,
+    } = if let Some(access) = depot.filter(|access| access.deposit) {
+        depot_move::plan_deposit(tx, character, access, height, quantity, &facts).await?
+    } else {
+        plan_loop_destination(
+            tx,
+            content,
+            LoopPlan {
+                character,
+                world,
+                item: Some(request.item),
+                definition: &definition,
+                facts: &facts,
+                quantity,
+                count,
+                partial,
+                source,
+                height,
+                size,
+                destination: &request.destination,
+            },
+        )
+        .await?
+    };
     let fresh = partial;
     let topup = count - rest;
     let placed = rest > 0;
@@ -835,6 +907,7 @@ async fn apply_loop_move<C: ItemLoopContent>(
             Some(i16::try_from(*capacity).map_err(|_| DurabilityError::InvalidStoredState)?),
             None,
         ),
+        Target::Depot { .. } => (KIND_DEPOT, None, None, None),
         Target::Ground(ground) => (
             KIND_GROUND,
             None,
@@ -964,11 +1037,11 @@ async fn apply_loop_move<C: ItemLoopContent>(
         "INSERT INTO game_item_loop_move_receipts (transaction_id, event_id, character_id, \
                 game_session_id, command_id, connection_generation, lease_generation, world_id, \
                 channel_id, scope_generation, content_digest, operation, line_count, intent, \
-                intent_sha256) \
+                intent_sha256, depot_town, depot_box) \
          VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, \
                  encode($4,'hex')::uuid, $5::text::numeric(20,0), $6::text::numeric(20,0), \
                  $7::text::numeric(20,0), encode($8,'hex')::uuid, encode($9,'hex')::uuid, \
-                 $10::text::numeric(20,0), $11, $12, $13, $14, sha256($14))",
+                 $10::text::numeric(20,0), $11, $12, $13, $14, sha256($14), $15, $16)",
     )
     .bind(transaction_id.as_slice())
     .bind(event_id.as_slice())
@@ -984,6 +1057,8 @@ async fn apply_loop_move<C: ItemLoopContent>(
     .bind(operation)
     .bind(i16::try_from(lines.len()).map_err(|_| DurabilityError::InvalidStoredState)?)
     .bind(intent)
+    .bind(depot.map(|access| i32::from(access.town)))
+    .bind(depot.map(|access| i16::from(access.box_number)))
     .execute(&mut **tx)
     .await?;
     for (index, line) in lines.iter().enumerate() {
@@ -1023,6 +1098,9 @@ async fn apply_loop_move<C: ItemLoopContent>(
             SourceKind::Nested { .. } => {
                 "DELETE FROM game_item_nested_entries \
                   WHERE item_instance_id = encode($1,'hex')::uuid"
+            }
+            SourceKind::Depot => {
+                "DELETE FROM game_item_character_depot_locations WHERE item_instance_id = encode($1,'hex')::uuid"
             }
             SourceKind::Ground => {
                 "DELETE FROM game_item_ground_locations \
@@ -1067,6 +1145,9 @@ async fn apply_loop_move<C: ItemLoopContent>(
     }
     if placed {
         match &target {
+            Target::Depot { town, box_number } => {
+                depot_move::place(tx, placed_item, world, character, *town, *box_number).await?;
+            }
             Target::Container {
                 kind: KIND_MAIN,
                 parent,
@@ -1224,6 +1305,25 @@ impl DurabilityRoot {
         request: LoopMoveRequest,
     ) -> std::result::Result<std::result::Result<LoopMoveReceipt, LoopMoveRefusal>, DurabilityError>
     {
+        self.commit_loop_with_depot(
+            permit, recovery, node, fence, command, content, request, None,
+        )
+        .await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    async fn commit_loop_with_depot<C: ItemLoopContent>(
+        &self,
+        permit: &SpellLanePermit,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: &CurrentCharacterItemFence,
+        command: CommandRef,
+        content: &C,
+        request: LoopMoveRequest,
+        depot: Option<DepotMove>,
+    ) -> std::result::Result<std::result::Result<LoopMoveReceipt, LoopMoveRefusal>, DurabilityError>
+    {
         permit.check_scope(fence.runtime_scope)?;
         let record = recovery
             .record_for(self)
@@ -1238,7 +1338,11 @@ impl DurabilityRoot {
                     let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
                     let attempt: LoopResult<std::result::Result<LoopMoveReceipt, LoopMoveRefusal>> =
                         async {
-                            let intent = intent_bytes(fence.character_id, &request)?;
+                            let intent = match depot {
+                                Some(access) => serde_json::to_vec(&json!({"character": fence.character_id.as_bytes(), "request": request, "depot": access}))
+                                    .map_err(|_| DurabilityError::InvalidStoredState)?,
+                                None => intent_bytes(fence.character_id, &request)?,
+                            };
                             lock_loop_command(&mut tx, command).await?;
                             if let Some(replay) =
                                 committed_loop_move(&mut tx, command, fence.character_id, &intent)
@@ -1248,7 +1352,7 @@ impl DurabilityRoot {
                             }
                             apply_loop_move(
                                 &mut tx, permit, &record, &node, &fence, command, content,
-                                &request, &intent,
+                                &request, &intent, depot,
                             )
                             .await
                             .map(Ok)

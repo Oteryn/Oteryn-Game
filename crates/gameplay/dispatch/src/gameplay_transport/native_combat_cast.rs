@@ -200,6 +200,7 @@ pub type NativeMarkerIntent = (
 /// variant holds its install fields by value.
 #[derive(Debug)]
 pub enum UnresolvedSpellCommit {
+    Pvp(Box<super::super::pvp_live::PendingPvpHit>),
     Native(Box<PendingNativeCast>),
     WorldItem(Box<super::world_item_cast::PreparedWorldItemCast>),
     Parameter(Box<super::parameter_cast::PreparedParameterCast>),
@@ -340,6 +341,11 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             }
         };
         let marker = match attempt {
+            UnresolvedSpellCommit::Pvp(hit) => {
+                drop(states);
+                self.resolve_pvp_hit(&mut permit, *hit).await;
+                return permit;
+            }
             UnresolvedSpellCommit::Native(attempt) => restore_parked_native(&mut states, *attempt),
             UnresolvedSpellCommit::WorldItem(attempt) => {
                 super::world_item_cast::restore_parked_world_items(&mut states, *attempt)
@@ -611,8 +617,22 @@ impl PreparedNativeCombatCast {
                 .map_err(|_| Error::SnapshotChanged)?;
         }
         let mut physical = runtime.stage_spell_batch(&self.batch)?;
-        let player = stage_player_batch(runtime, states, &self.batch, Some(self.paid.clone()))
+        let mut player = stage_player_batch(runtime, states, &self.batch, Some(self.paid.clone()))
             .map_err(|_| Error::PlayerVitalsOwnerRequired)?;
+        // A committed-but-uninstalled attempt retains its original legality grant and death
+        // identity. A new-write verdict may replace the grant after fresh qualification.
+        if let Some(original) = self.installation.as_ref() {
+            player.pvp_locks.clone_from(&original.player.pvp_locks);
+            player.deaths.clone_from(&original.player.deaths);
+        }
+        states
+            .deaths
+            .try_reserve(self.batch.effects.len())
+            .map_err(|_| Error::InvalidBatch)?;
+        states
+            .pvp_locks
+            .try_reserve(self.batch.effects.len().saturating_mul(2))
+            .map_err(|_| Error::InvalidBatch)?;
         runtime.reserve_spell_batch(&mut physical)?;
         self.installation = Some(PreparedOwnerInstallation {
             physical,
@@ -3038,16 +3058,17 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         };
         let intent = *intent;
         // SPELL-TARGET-1: the held attack target (ATTACK-0 §4), read last in the lock order.
-        let attack_target = {
+        let (attack_target, pvp_secure) = {
             let mut attack = self.states.attack.lock().await;
             // Best-effort allocation before SQL/installation; failure grants no activity.
             attack.prepare_shared_experience_record(&runtime, actor, session);
             // ATTACK-0 §4 (as amended by #2106): a `pacified` caster holds no target.
             attack.settle_pacified_target(&runtime, &states, actor, session);
-            legacy
-                .as_ref()
-                .and_then(|r| r.creature)
-                .or_else(|| attack.combat_state(actor, session, self.owner_now()).target)
+            let state = attack.combat_state(actor, session, self.owner_now());
+            (
+                legacy.as_ref().and_then(|r| r.creature).or(state.target),
+                state.modes.secure,
+            )
         };
         // The attempt lives in the external context before any committing await. Deadline
         // cancellation cannot discard the original normalized occurrence: before the commit
@@ -3153,7 +3174,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                             owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),&mut draw).await
                     } else if ordinary_combat::applicable(spell) {
                         ordinary_combat::prepare(&mut tx,owner.root,&authority,runtime,states,room,objects,content,&owned,
-                            owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),legacy.as_ref(),attack_target,&mut draw).await
+                            owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),legacy.as_ref(),attack_target,pvp_secure,&mut draw).await
                     } else {
                         prepare_from_owners(&mut tx,owner.root,&authority,runtime,states,room,objects,content,&owned,
                             owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),&mut draw).await
@@ -3233,7 +3254,11 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                         Err(_)=>false,
                     }
                 }else{true};
-                (if original_tiles_current && original_party_current && carried_target_current && field_policy_current && companion_current && direct_current && rune_current {
+                let pvp_current=super::super::pvp_live::record_spell_harm(
+                    &mut tx,owner.root,&authority,runtime,states,room,objects,
+                    &attempt.prepared.batch,&mut attempt.prepared.installation.as_mut().ok_or(DurabilityError::Unavailable)?.player,
+                    pvp_secure).await.is_ok();
+                (if pvp_current && original_tiles_current && original_party_current && carried_target_current && field_policy_current && companion_current && direct_current && rune_current {
                     attempt.prepared.validate_new_write(runtime,states,&owned,&attempt.owned,spell,
                         owner.owner_now().get(),reconnect.as_ref())
                 } else { Err(Error::SnapshotChanged) }).map_err(|_|item_tx::SpellItemError::Rejected(NATIVE_NEW_WRITE_REFUSED))
@@ -3241,9 +3266,9 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             // Release after S: the COMMIT and the post-commit transaction hold only the lane.
             *guards=None;
             let attempt=pending.as_ref().ok_or(DurabilityError::Unavailable)?;
-            let items=match item_tx::apply_spell_items_in_transaction_guarded(&mut tx,&authority,&attempt.request,verdict).await {
+            let items=match item_tx::apply_spell_items_in_transaction_guarded(&mut tx,&authority,&attempt.request,verdict,&crate::gameplay_transport::world_required_field_guard::player_origin(&owner.required_capabilities)).await {
                 Ok(items)=>items,
-                Err(item_tx::SpellItemError::Rejected(NATIVE_NEW_WRITE_REFUSED))=>{
+                Err(item_tx::SpellItemError::Rejected(NATIVE_NEW_WRITE_REFUSED) | item_tx::SpellItemError::FieldCapabilityRefused)=>{
                     // The writer holds the exact-command lock and found no historical receipt.
                     // Only a successful rollback proves this attempt cannot later COMMIT.
                     tx.rollback().await.map_err(|_|DurabilityError::Unavailable)?;

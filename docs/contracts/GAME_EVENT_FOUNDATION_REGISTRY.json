@@ -133,7 +133,21 @@
       "legal_hold_policy": "Explicit case/legal authorization must record reason, authorizing actor, start time and exact affected records or scope, with audited placement, access, scope change and release; release returns to the original expiry without resetting the clock.",
       "policy_revision": 1
     },
-    {"id": "SPECTATE_AUDIT_RETENTION_V1", "purpose": "Bounded investigation of consent grants and observer session admission/end; no public history or analytics.", "privacy_class": "SECURITY_SENSITIVE", "finite_retention_duration_or_ceiling": "P30D from the immutable trusted-server event timestamp; never refreshed.", "permitted_roles": ["authorized staff investigation", "authorized security investigation"], "export_redaction_policy": "Case-scoped audited staff/security export only; redact unrelated envelope fields; no public export.", "deletion_or_anonymization_policy": "Delete payload/envelope at original expiry; no indefinite derived history.", "legal_hold_policy": "Explicit case/legal authorization with recorded actor, reason, scope, start and audited access; release returns to original expiry.", "policy_revision": 1}
+    {"id": "SPECTATE_AUDIT_RETENTION_V1", "purpose": "Bounded investigation of consent grants and observer session admission/end; no public history or analytics.", "privacy_class": "SECURITY_SENSITIVE", "finite_retention_duration_or_ceiling": "P30D from the immutable trusted-server event timestamp; never refreshed.", "permitted_roles": ["authorized staff investigation", "authorized security investigation"], "export_redaction_policy": "Case-scoped audited staff/security export only; redact unrelated envelope fields; no public export.", "deletion_or_anonymization_policy": "Delete payload/envelope at original expiry; no indefinite derived history.", "legal_hold_policy": "Explicit case/legal authorization with recorded actor, reason, scope, start and audited access; release returns to original expiry.", "policy_revision": 1},
+    {
+      "id": "STAFF_ACTION_AUDIT_RETENTION_V1",
+      "purpose": "Investigate signed operator actions; no public export, analytics or player text.",
+      "privacy_class": "RESTRICTED_PLAYER_LINKED",
+      "finite_retention_duration_or_ceiling": "P365D from immutable trusted server timestamp; never refreshed. Execution grace is 900000 milliseconds.",
+      "permitted_roles": [
+        "authorized staff investigation",
+        "authorized security investigation"
+      ],
+      "export_redaction_policy": "Case-scoped audited export only; redact unrelated identities. Never export signing keys or player text.",
+      "deletion_or_anonymization_policy": "Delete audit envelope at original expiry plus execution grace. Immutable control links, operation outcomes, receipts and sanction evidence remain while authoritative evidence requires them.",
+      "legal_hold_policy": "Explicit case/legal authorization with actor, reason, scope and start; release returns to original expiry.",
+      "policy_revision": 1
+    }
   ],
   "event_type_rules": {
     "id_type": "uint32",
@@ -197,6 +211,18 @@
       "privacy_class_floor": "RESTRICTED_PLAYER_LINKED",
       "retention_profile_id": "ECONOMY_LEDGER_RETENTION_V1",
       "atomic_mutation_evidence": true
+    },
+    {
+      "id": 5,
+      "name": "STAFF_ACTION",
+      "owner_gate": "GM-1_SIGNED_OPERATOR_V1",
+      "payload_schema": "docs/contracts/game-events/v1/staff_action.proto",
+      "payload_message": "oteryn.events.v1.StaffActionV1",
+      "current_schema_revision": 1,
+      "durability_class": "DURABLE_AUDIT",
+      "privacy_class_floor": "RESTRICTED_PLAYER_LINKED",
+      "retention_profile_id": "STAFF_ACTION_AUDIT_RETENTION_V1",
+      "atomic_mutation_evidence": true
     }
   ],
   "notes": [
@@ -208,6 +234,7 @@
     "HOUSE-RUNTIME-1a adds candidate type-2 operation tag 11 `house_transfer` (OneItemHouseTransferV1), a closed one-item Character inventory/equipment → House, House → own inventory, or same-House tile-move under accepted HOUSE_RUNTIME0 §6.1 and HOUSE_RT_INBOX_PACKETS_2026-10-04 §1.3/§2.1. It preserves the ItemInstance/quantity/definition and reclaim subject (new own placement initializes it), carries WorldId with no ChannelId, and writes exactly one same-transaction receipt/event with no value, transform, expansion or CharacterRevision advance. Existing operation tags/fields and type-2 schema/retention tuples are unchanged. Native payload/envelope bounds remain DUR03-RL-07 (7,936/9,216 B). Tag 11 is the slot candidate next-free value for CP/architect review, not a claim of an independently reserved number; this registration grants no gameplay/client dispatch, production access/tile grant or collection authority.",
     "Private ITEM-FORGE-1 continuation proposes type-2 operation tag13 forge_dust_limit (OneItemForgeDustLimitV1): one acting Character dust debit plus exact D1230 +20 limit state transition; cost25+n, n0..224, resulting limit up to4600. No ItemInstance/material, gold fee, RNG or recipe field. The exact current Content server-artifact digest, D1230 ruleset and actual SimulationDeterminismProfileRevision bind the reserved occurrence; terminal REVISION_CHANGED has receipt only, no audit/effect/history. Same occurrence (including a new CommandRef) returns the original outcome. Native receipts/ledger/balance remain authoritative after P90D audit expiry; bounded own history contains no retained envelope. Existing tags2..11 and current schema/retention tuples retain their interpretation. Tag13 is coordinated only for this private review packet, with Imbue12 composed by root; not a CP reservation or runtime/SQL/production collection grant.",
     "D1152/D1318/D1356 extends existing reward_claim_mint operation tag 4 with optional OneItemRewardClaimMintV1.inbox field 5 (RewardClaimInboxMintV1, ordered 1..20 fresh states and permanent Inbox ordinals). This shape is exclusive with legacy after/destination. It binds the actual full-u64 CommandRef, Character/World, session and lease generations, immutable source/plan/spec hashes, TransactionId and frozen EventId/time. The actual Root mints, places, writes its receipt and registered audit, and lets the source write its claim and bindings in that same transaction; refusal rolls all value back. D1356 installs the complete source migration in standing 0101_mail.sql. The eight DUR03-RL-*-REWARD-INBOX rows stay CANDIDATE until native prost/JSON execution prints actual sizes (proposed 20-output/32768-payload/34816-envelope caps). Existing tag 4 CHEST bytes, outer operation tags, type-2 schema/retention tuples and other source caps are unchanged. Production activation is after #2197; actual source claim integration and own-head compiled/native qualification remain NOT_RUN at author handoff. Registration grants no gameplay admission or collection authority.",
-    "TRADE-PLAYER-1 adds writer-only native type-2 operation tag 14 player_trade (OneItemPlayerTradeV1), next free after main tag 13 with tag 12 reserved by the Imbue lane. PLAYER-TRADE0 §§5–6: exactly two unchanged ItemInstances, two distinct-account Characters of one Channel, four reciprocal custody lines, six effect work units, zero value/transform/expansion lines, one atomic receipt/event transaction. The canonical JSON version-1 binding includes both before observations and full session/lease/scope, Node registration and Content bindings; text is represented by SHA-256, not copied. Current schema/retention tuples and all earlier tags are unchanged. DUR03-RL-*-TRADE rows bound the shape within existing 7936/9216 byte ceilings. Wire, FND issuance and runtime activation wait for SESSION-INGRESS-1 and shared physical exclusion; registration grants no such activation."
+    "TRADE-PLAYER-1 adds writer-only native type-2 operation tag 14 player_trade (OneItemPlayerTradeV1), next free after main tag 13 with tag 12 reserved by the Imbue lane. PLAYER-TRADE0 §§5–6: exactly two unchanged ItemInstances, two distinct-account Characters of one Channel, four reciprocal custody lines, six effect work units, zero value/transform/expansion lines, one atomic receipt/event transaction. The canonical JSON version-1 binding includes both before observations and full session/lease/scope, Node registration and Content bindings; text is represented by SHA-256, not copied. Current schema/retention tuples and all earlier tags are unchanged. DUR03-RL-*-TRADE rows bound the shape within existing 7936/9216 byte ceilings. Wire, FND issuance and runtime activation wait for SESSION-INGRESS-1 and shared physical exclusion; registration grants no such activation.",
+    "CRAFT-1 adds native type-2 operation tag 15 craft (OneItemCraftV1): basic certain cooking consumes one main-backpack input unit and mints at most four fresh output stacks under one session-generation fence, root lock, immutable CommandRef receipt and audit. The canonical JSON proof binds original bounded USE bytes, recipe, character, complete source before-state, station definition, outputs and ordinals, scope generation. Existing schema/retention tuples and earlier operation tags remain unchanged. No random recipe is admitted by this basic executor."
   ]
 }

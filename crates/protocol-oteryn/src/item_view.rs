@@ -38,8 +38,9 @@ use crate::charm_wire::{
 /// target and the D85 item handle.
 pub const CAPABILITY_ITEM_VIEW_MOVE_V1: u32 = 4;
 /// Capability 4 requires `WORLD_SPATIAL_ENTITIES`, which carries corpses in domain 1.
-pub const CAPABILITY_ITEM_VIEW_MOVE_V1_REQUIRES: &[u32] =
-    &[crate::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES];
+pub const CAPABILITY_ITEM_VIEW_MOVE_V1_REQUIRES: &[u32] = &[
+    crate::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES, // WORLD_SPATIAL_ENTITIES
+];
 pub const STATE_DOMAIN_CHARACTER_INVENTORY: u32 = 9;
 pub const SNAPSHOT_TYPE_CHARACTER_INVENTORY_V1: u32 = 1;
 pub const DELTA_TYPE_CHARACTER_INVENTORY_V1: u32 = 1;
@@ -50,7 +51,9 @@ pub const COMMAND_TYPE_ITEM_MOVE_INTENT: u32 = 9;
 /// Registered capability `ITEM_EQUIP_DROP_V1` (ITEM-MOVE-WIRE-1 §3): extends command type 9 and
 /// domain 9 of capability 4, so it owns no command type or domain of its own.
 pub const CAPABILITY_ITEM_EQUIP_DROP_V1: u32 = 12;
-pub const CAPABILITY_ITEM_EQUIP_DROP_V1_REQUIRES: &[u32] = &[CAPABILITY_ITEM_VIEW_MOVE_V1];
+pub const CAPABILITY_ITEM_EQUIP_DROP_V1_REQUIRES: &[u32] = &[
+    CAPABILITY_ITEM_VIEW_MOVE_V1, // ITEM_VIEW_MOVE_V1
+];
 
 /// `ITEMV0-RL-01`: items in one domain-9 view, the main backpack included (ITEM-MOVE-WIRE-1 §6.3
 /// supersedes WIRE-0's 21 so the nine equipment slots fit later).

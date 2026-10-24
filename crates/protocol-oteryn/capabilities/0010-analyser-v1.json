@@ -1,0 +1,17 @@
+{
+  "id": 10,
+  "name": "ANALYSER_V1",
+  "constant": "analyser::CAPABILITY_ANALYSER_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [],
+  "domains": [
+    15
+  ],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": false
+  }
+}

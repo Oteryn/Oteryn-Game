@@ -62,9 +62,9 @@ pub(super) async fn roundtrip(
     listener: &mut sqlx::postgres::PgListener,
     ring: &RelayKeyRing,
     channel: &str,
-) -> TestResult<RelayLine> {
-    let (mut server, mut client) = tokio::io::duplex(64);
-    let serving = async { serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await };
+) -> TestResult<(RelayLine, AdmittedSession)> {
+    let (server, mut client) = tokio::io::duplex(64);
+    let serving = serve(server, admitted, owner);
     let driving = async {
         assert_eq!(
             login(&mut client, true).await?,
@@ -74,12 +74,18 @@ pub(super) async fn roundtrip(
                 motd: "Welcome members".into()
             }
         );
-        send(&mut client, 1, "hello guild").await?;
+        send(
+            &mut client,
+            admitted.continuity.next_command_id,
+            "hello guild",
+        )
+        .await?;
         loop {
             let frame = read_frame(&mut client).await?;
             let env = decode_wire_envelope(&frame).map_err(debug)?;
             if env.message_type() == MessageType::CommandResult {
                 let result = decode_command_result(env.payload()).map_err(debug)?;
+                assert_eq!(result.command_id, admitted.continuity.next_command_id);
                 assert_eq!(result.status, CommandStatus::Accepted);
                 assert_eq!(
                     chat::decode_chat_intent_result(result.payload)
@@ -131,28 +137,40 @@ pub(super) async fn roundtrip(
         client.shutdown().await?;
         Ok(line)
     };
-    let (_, result): (_, TestResult<RelayLine>) =
+    let (ended, result): (_, TestResult<RelayLine>) =
         tokio::time::timeout(Duration::from_secs(20), fixture::join_two(serving, driving)).await?;
     let accepted = result?;
-    let mut old = admitted;
+    // These synthetic connection replacements retain the same GameSession. FND-02
+    // §13 requires its command high-water mark and server sequence to survive them.
+    let mut old = ended?;
+    assert_eq!(
+        old.continuity.next_command_id,
+        admitted.continuity.next_command_id + 1
+    );
     old.continuity.selected_capabilities =
         SelectedCapabilities::select(owner.offered_capabilities(), &[6, 7])
             .ok_or("old CHAT selection")?;
-    let (mut server, mut client) = tokio::io::duplex(256);
-    let serving = async { serve_admitted(&mut server, old, owner, IDLE_LIVENESS).await };
+    let (server, mut client) = tokio::io::duplex(256);
+    let serving = serve(server, old, owner);
     let driving = async {
         login(&mut client, false).await?;
         owner
             .states
             .chat
             .deliver(&payload(gid(90)?, "unoffered peers receive none")?);
-        send(&mut client, 1, "forged unnegotiated guild intent").await?;
+        send(
+            &mut client,
+            old.continuity.next_command_id,
+            "forged unnegotiated guild intent",
+        )
+        .await?;
         loop {
             let frame = read_frame(&mut client).await?;
             let env = decode_wire_envelope(&frame).map_err(debug)?;
             assert_ne!(env.message_type(), MessageType::StateDelta);
             if env.message_type() == MessageType::CommandResult {
                 let result = decode_command_result(env.payload()).map_err(debug)?;
+                assert_eq!(result.command_id, old.continuity.next_command_id);
                 assert_eq!(result.status, CommandStatus::Rejected);
                 assert!(result.payload.is_empty());
                 break;
@@ -161,10 +179,16 @@ pub(super) async fn roundtrip(
         client.shutdown().await?;
         Ok(())
     };
-    let (_, result): (_, TestResult) =
+    let (ended, result): (_, TestResult) =
         tokio::time::timeout(Duration::from_secs(20), fixture::join_two(serving, driving)).await?;
     result?;
-    Ok(accepted)
+    let mut ended = ended?;
+    assert_eq!(
+        ended.continuity.next_command_id,
+        old.continuity.next_command_id + 1
+    );
+    ended.continuity.selected_capabilities = admitted.continuity.selected_capabilities;
+    Ok((accepted, ended))
 }
 
 pub(super) async fn member_login(client: &mut tokio::io::DuplexStream) -> TestResult {
