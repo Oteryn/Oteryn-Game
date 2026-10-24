@@ -1,0 +1,21 @@
+{
+  "id": "PARTY1-HANDLES",
+  "owner_contract": "protocol-oteryn/v1/party_v1.proto",
+  "resource": "Retained opaque handles per connection",
+  "unit": "handles",
+  "hard_maximum": 4096,
+  "configurable_range": {
+    "minimum": 4096,
+    "maximum": 4096
+  },
+  "failure_category": "PARTY_UNAVAILABLE",
+  "allocation_impact": "Bounded basic party command/query; existing PARTYPVP0 bounds remain unchanged.",
+  "client_visible": true,
+  "boundary_tests": [
+    "party_membership_handles_are_bounded_and_session_scoped"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/party.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/party_command.rs"
+  ]
+}

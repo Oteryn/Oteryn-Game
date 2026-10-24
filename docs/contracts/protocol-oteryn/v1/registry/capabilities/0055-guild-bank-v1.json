@@ -1,0 +1,14 @@
+{
+  "id": 55,
+  "name": "GUILD_BANK_V1",
+  "owner_decision": "GUILD-BANK-1 owner allocation 2026-10-23",
+  "owner": "World Guild bank owner",
+  "requires": [],
+  "command_types": [
+    68,
+    69
+  ],
+  "state_domains": [],
+  "offered": true,
+  "offer_gate": "Fenced Guild bank and genuine Guild disband controller composed on every World; no content prerequisite. Uninstalled Guildhall/property release proofs fail closed."
+}
