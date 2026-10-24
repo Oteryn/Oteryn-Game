@@ -578,6 +578,24 @@ pub trait FreshAdmissionAuthority {
         None
     }
 
+    /// ITEM-TIMED-1: one bounded timed-item payload; None preserves an unknown commit.
+    fn timed_item(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _payload: &[u8],
+        _target: Option<ItemKey>,
+    ) -> impl Future<Output = Option<Vec<u8>>> {
+        async {
+            oteryn_protocol_oteryn::timed_item::encode_timed_item_result(
+                oteryn_protocol_oteryn::timed_item::TimedItemResult::refused(
+                    oteryn_protocol_oteryn::timed_item::TimedDisposition::Rejected,
+                ),
+            )
+            .ok()
+        }
+    }
+
     /// One `USE_INTENT` for the admitted actor against a world-object placement (USE-WIRE-V1,
     /// #162 5868482467), applied by the Channel owner.
     ///
@@ -601,6 +619,16 @@ pub trait FreshAdmissionAuthority {
         _item: ItemKey,
     ) -> impl Future<Output = UseOutcome> {
         async { UseOutcome::rejected() }
+    }
+
+    /// A timed USE keeps an ambiguous commit open for receipt reconciliation.
+    fn use_item_completion(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        item: ItemKey,
+    ) -> impl Future<Output = Option<UseOutcome>> {
+        async move { Some(self.use_item(actor, command, item).await) }
     }
 
     /// BAGS-USE-1: field 5, resolved by the owner against the complete carried tree.
@@ -2856,6 +2884,7 @@ where
             Guild(Vec<u8>),
             Party(Vec<u8>),
             HouseMoveOut(Vec<u8>),
+            Timed(Vec<u8>, Vec<ItemViewDelta>),
             Appearance(Option<oteryn_protocol_oteryn::appearance::ChangeResult>),
             DailyReward(Option<Vec<u8>>),
             /// ITEM-VIEW-1b: `USE` with an item target; the domain 11 delta follows the result.
@@ -3092,9 +3121,10 @@ where
                         None => None,
                     };
                     match (item_view.as_mut(), key, observation) {
-                        (_, Some(key), _) if consumable => Dispatch::Use(
-                            authority
-                                .use_item(
+                        (_, Some(key), _) if consumable => {
+                            let Some(outcome) = tokio::time::timeout(
+                                std::time::Duration::from_secs(10),
+                                authority.use_item_completion(
                                     actor,
                                     UseCommand {
                                         game_session_id: admitted.game_session_id,
@@ -3102,9 +3132,12 @@ where
                                         item_fence: admitted.item_fence,
                                     },
                                     key,
-                                )
-                                .await,
-                        ),
+                                ),
+                            ).await.ok().flatten() else {
+                                return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                            };
+                            Dispatch::Use(outcome)
+                        },
                         (Some(view), Some(key), _) if container.is_some() => {
                             let Some(views) = container_views.as_mut() else {
                                 return ConnectionEnd::AdmittedThenDisconnected(admitted);
@@ -3242,6 +3275,28 @@ where
             } else {
                 Dispatch::Unregistered
             }
+        } else if command.command_type
+            == oteryn_protocol_oteryn::timed_item::COMMAND_TYPE_TIMED_ITEM_INTENT
+        {
+            let Some((payload, deltas)) = super::timed_item_wire::dispatch(
+                authority,
+                actor,
+                UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: command.command_id,
+                    item_fence: admitted.item_fence,
+                },
+                command.payload,
+                item_view.as_mut(),
+            )
+            .await
+            else {
+                return ConnectionEnd::AdmittedThenDisconnected(admitted);
+            };
+            if let Some(view) = item_view.as_ref() {
+                admitted.continuity.item_view = view.continuity();
+            }
+            Dispatch::Timed(payload, deltas)
         } else if command.command_type == COMMAND_TYPE_ITEM_MOVE_INTENT {
             // ITEM-MOVE-1 (WIRE-0 §5): replay first, then an entry of the open corpse into the
             // main backpack. An unknown outcome ends the connection before the CommandId is
@@ -3925,6 +3980,14 @@ where
                 // The page is written once; move it out instead of copying up to 32 KiB.
                 (CommandStatus::Accepted, std::mem::take(payload))
             }
+            Dispatch::Timed(payload, _) => (
+                if super::timed_item_wire::accepted(payload) {
+                    CommandStatus::Accepted
+                } else {
+                    CommandStatus::Rejected
+                },
+                std::mem::take(payload),
+            ),
             Dispatch::HouseMoveOut(payload)
             | Dispatch::Guild(payload)
             | Dispatch::Highscores(HighscoresReply::Result(payload)) => {
@@ -4201,6 +4264,20 @@ where
                         return ConnectionEnd::AdmittedThenDisconnected(admitted);
                     }
                     admitted.continuity.vitals_revision = to;
+                }
+            }
+            Dispatch::Timed(_, deltas) => {
+                for delta in deltas {
+                    let Some((delta_sequence, frame)) =
+                        item_view_delta(generation, sequence, &delta)
+                    else {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    };
+                    sequence = delta_sequence;
+                    admitted.continuity.server_sequence = sequence;
+                    if write_frame(stream, &frame).await.is_err() {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    }
                 }
             }
             Dispatch::UseItem(_, Some(delta)) | Dispatch::ContainerView(_, Some(delta)) => {

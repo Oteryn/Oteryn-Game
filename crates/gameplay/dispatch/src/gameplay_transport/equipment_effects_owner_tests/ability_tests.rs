@@ -10,9 +10,9 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     // millstones 1943..=1946; ovens 2535/2537/2539/2541; reed 30975/31686;
     // trays 3464/8198; flour/dough/wheat 3603..=3605; cake 6276/6277;
     // chocolate 8018/8019; garlic 8194/8196/8199. All have speed_bonus=0;
-    // the original 432 profiles are unchanged.
+    // the original 432 profiles are unchanged. ITEM-TIMED-1 adds 4 timed-item profiles.
     // MINING-1 adds the pick 3456, shiny stone 10310 and small diamond 3028.
-    assert_eq!(profiles.records.len(), 457);
+    assert_eq!(profiles.records.len(), 461);
     let content = native(&input)?;
     let mut unknown_speed = std::collections::BTreeSet::new();
     for record in profiles.records {

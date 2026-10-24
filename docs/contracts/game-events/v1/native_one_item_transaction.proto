@@ -394,6 +394,7 @@ message OneItemFeeBurnCauseV1 {
     OneItemNpcPurchaseV1 promotion_purchase = 2;
     OneItemNpcPurchaseV1 blessing_purchase = 3;
     OneItemAreaDonationV1 area_donation = 4;
+    OneItemTimedRepairV1 npc_repair = 5;
   }
 }
 message OneItemNpcPurchaseV1 {
@@ -485,6 +486,7 @@ message OneItemTimedExpiryV1 {
   uint32 reason = 9; // 1 TimeExhausted, 2 ChargesExhausted
   OneItemTimedRowV1 row_before = 10;
   OneItemTimedRowV1 row_after = 11;
+  optional uint32 equipment_slot = 12; // genuine equipment custody; mutually exclusive with entry/container slot
 }
 
 // The base-map entry one map-item MINT takes: placement_key is the bundle's
@@ -656,6 +658,16 @@ message OneItemAreaDonationV1 {
   bytes world = 1;
   uint32 area = 2;
   bytes occurrence = 3;
+}
+
+// ITEM-TIMED-1: fixed Aldo repair and coin/bank evidence share one FeeBurn event.
+message OneItemTimedRepairV1 {
+  bytes occurrence = 1;
+  OneItemStateV1 before = 2;
+  OneItemStateV1 after = 3;
+  OneItemTimedRowV1 row_before = 4;
+  OneItemTimedRowV1 row_after = 5;
+  uint64 placement_ordinal = 6;
 }
 
 // CRAFT-1 canonical JSON proof: recipe, bounded original USE, character, complete

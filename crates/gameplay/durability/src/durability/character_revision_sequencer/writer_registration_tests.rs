@@ -54,10 +54,11 @@ const SEQUENCED_WRITERS: [(&str, &str); 15] = [
         ".reset_character_wheel(",
         "durability/character_revision_sequencer.rs",
     ),
-    // The fee burn runs only inside its source's sequenced Character transaction.
+    // Revision-advancing fees run inside their sequenced Character source.
+    // ITEM-TIMED-1 is the accepted item-only exception under the same locked root.
     (
         "burn_fee_in_transaction(",
-        "durability/charm_state.rs|durability/npc_purchase.rs|durability/character_cyclopedia.rs",
+        "durability/charm_state.rs|durability/npc_purchase.rs|durability/character_cyclopedia.rs|durability/item_timed_runtime/repair.rs",
     ),
     (
         ".commit_npc_purchase(",

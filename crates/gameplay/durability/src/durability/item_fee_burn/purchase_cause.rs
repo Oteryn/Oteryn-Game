@@ -7,6 +7,7 @@ impl FeeBurnCause {
         match self {
             Self::AreaDonation { .. } => 4,
             Self::CharmUnassign { .. } => CAUSE_CHARM_UNASSIGN,
+            Self::NpcRepair { .. } => 5,
             Self::PromotionPurchase { .. } => 2,
             Self::BlessingPurchase { .. } => 3,
         }
@@ -15,6 +16,7 @@ impl FeeBurnCause {
         match self {
             Self::AreaDonation { occurrence, .. } => occurrence,
             Self::CharmUnassign { occurrence, .. } => occurrence.as_bytes(),
+            Self::NpcRepair { occurrence, .. } => occurrence,
             Self::PromotionPurchase { occurrence, .. }
             | Self::BlessingPurchase { occurrence, .. } => occurrence,
         }
@@ -23,6 +25,7 @@ impl FeeBurnCause {
         match self {
             Self::AreaDonation { .. } => "oteryn:area.entry_environs",
             Self::CharmUnassign { charm, .. } => charm.as_str(),
+            Self::NpcRepair { .. } => "oteryn:service.repair.aldo",
             Self::PromotionPurchase { service, .. } | Self::BlessingPurchase { service, .. } => {
                 service
             }
@@ -39,6 +42,12 @@ impl FeeBurnCause {
         match self {
             Self::CharmUnassign { .. } => Ok(()),
             Self::AreaDonation { area: 1, .. } => Ok(()),
+            Self::NpcRepair { occurrence, repair }
+                if repair.occurrence.as_slice() == occurrence =>
+            {
+                super::super::item_fee_burn_audit::repair_cause::check(repair)
+                    .map_err(|_| FeeBurnError::InvalidInput)
+            }
             Self::PromotionPurchase { service, .. }
                 if service.starts_with("oteryn:service.promotion.") =>
             {
@@ -65,6 +74,7 @@ impl FeeBurnCause {
                     occurrence: occurrence.to_vec(),
                 },
             ),
+            Self::NpcRepair { repair, .. } => FeeBurnCauseV1::NpcRepair(repair.clone()),
             Self::CharmUnassign { charm, occurrence } => {
                 FeeBurnCauseV1::CharmUnassign(OneItemCharmUnassignV1 {
                     charm_key: charm.as_str().into(),

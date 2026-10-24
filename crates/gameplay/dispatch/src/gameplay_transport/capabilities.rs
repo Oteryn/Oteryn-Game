@@ -89,6 +89,27 @@ pub const ITEM_VIEW_OFFERED_CAPABILITIES: &[OfferedCapability] =
     &offers::<{ capability_tables::ITEM_VIEW_OFFERS_V1.len() }>(
         capability_tables::ITEM_VIEW_OFFERS_V1,
     );
+const BUNDLE_WORLD_UNTIMED_LEN: usize = BUNDLE_WORLD_OFFERED_CAPABILITIES.len() - 1;
+/// [`BUNDLE_WORLD_OFFERED_CAPABILITIES`] without capability 39, filtered at compile time so the
+/// bundle offer keeps one source and stays ascending. Fails to compile unless 39 is offered
+/// exactly once.
+const BUNDLE_WORLD_UNTIMED_ARRAY: [OfferedCapability; BUNDLE_WORLD_UNTIMED_LEN] = {
+    let all = BUNDLE_WORLD_OFFERED_CAPABILITIES;
+    let mut out = [all[0]; BUNDLE_WORLD_UNTIMED_LEN];
+    let (mut from, mut to) = (0, 0);
+    while from < all.len() {
+        if all[from].id != oteryn_protocol_oteryn::timed_item::CAPABILITY_TIMED_ITEM_V1 {
+            out[to] = all[from];
+            to += 1;
+        }
+        from += 1;
+    }
+    assert!(to == BUNDLE_WORLD_UNTIMED_LEN);
+    out
+};
+/// The same bundle offer before the native timed definitions are available.
+pub(super) const BUNDLE_WORLD_UNTIMED_OFFERED_CAPABILITIES: &[OfferedCapability] =
+    &BUNDLE_WORLD_UNTIMED_ARRAY;
 
 /// Bound of one session's selection. A test keeps the production offered set within it.
 pub const SELECTED_CAPACITY: usize = 32;

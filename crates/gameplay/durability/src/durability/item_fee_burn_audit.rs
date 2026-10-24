@@ -64,6 +64,8 @@ pub struct OneItemCharmUnassignV1 {
 /// The closed `FeeBurnCause`: one variant per admitted fee source.
 #[derive(Clone, PartialEq, Eq, prost::Oneof)]
 pub enum FeeBurnCauseV1 {
+    #[prost(message, tag = "5")]
+    NpcRepair(Box<OneItemTimedRepairV1>),
     #[prost(message, tag = "1")]
     CharmUnassign(OneItemCharmUnassignV1),
     #[prost(message, tag = "2")]
@@ -75,11 +77,13 @@ pub enum FeeBurnCauseV1 {
 }
 
 mod purchase_cause;
+pub(super) mod repair_cause;
 pub use purchase_cause::OneItemNpcPurchaseV1;
+pub use repair_cause::OneItemTimedRepairV1;
 
 #[derive(Clone, PartialEq, Eq, Message)]
 pub struct OneItemFeeBurnCauseV1 {
-    #[prost(oneof = "FeeBurnCauseV1", tags = "1, 2, 3, 4")]
+    #[prost(oneof = "FeeBurnCauseV1", tags = "1, 2, 3, 4, 5")]
     pub cause: Option<FeeBurnCauseV1>,
 }
 
@@ -183,14 +187,18 @@ pub fn fee_burn_usage(value: &OneItemFeeBurnV1) -> TransactionResourceUsage {
     let count = value.lines.len() as u64;
     let minted = value.change.len() as u64;
     let bank = u64::from(value.bank_debit.is_some());
+    let repair = u64::from(matches!(
+        value.cause.as_ref().and_then(|cause| cause.cause.as_ref()),
+        Some(FeeBurnCauseV1::NpcRepair(_))
+    ));
     TransactionResourceUsage {
-        touched_item_instances: count + minted,
+        touched_item_instances: count + minted + repair,
         location_custody_lines: whole + minted,
         value_lines: bank,
-        transform_lines: 0,
+        transform_lines: repair,
         container_expansion: 0,
-        participants: count + minted + bank,
-        effect_work_units: 3 * whole + 2 * (count - whole) + 2 * minted + 2 * bank,
+        participants: count + minted + bank + repair,
+        effect_work_units: 3 * whole + 2 * (count - whole) + 2 * minted + 2 * bank + 4 * repair,
         events: 1,
     }
 }
@@ -244,7 +252,15 @@ pub fn check_fee_burn(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
     };
     if (value.lines.is_empty() && bank == 0)
         || value.fee_gold_units == 0
-        || value.committed_character_revision < 2
+        || value.committed_character_revision
+            < if matches!(
+                value.cause.as_ref().and_then(|c| c.cause.as_ref()),
+                Some(FeeBurnCauseV1::NpcRepair(_))
+            ) {
+                1
+            } else {
+                2
+            }
         || value.runtime_scope_ownership_generation == 0
     {
         return Err(AuditError::InvalidInput);
@@ -303,7 +319,15 @@ pub fn check_fee_burn(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
         return Err(AuditError::InvalidInput);
     }
     check_change(value)?;
-    check_fee_usage(&fee_burn_usage(value))
+    let usage = fee_burn_usage(value);
+    if matches!(
+        value.cause.as_ref().and_then(|cause| cause.cause.as_ref()),
+        Some(FeeBurnCauseV1::NpcRepair(_))
+    ) {
+        repair_cause::check_usage(&usage)
+    } else {
+        check_fee_usage(&usage)
+    }
 }
 
 /// The bank part's closed value line: `FEE_DEBIT`, class BURN, gold, in the fee's World, a
@@ -539,6 +563,7 @@ pub struct OneItemAreaDonationV1 {
 mod tests {
     #![allow(clippy::expect_used, clippy::unwrap_used)]
     mod purchase_cause_tests;
+    mod timed_repair_tests;
     use super::super::item_mint_audit::{OneItemTypedDefinitionRevisionV1, decode_payload};
     use super::*;
     use serde_json::Value;

@@ -562,6 +562,25 @@
   }
 }"#,
     r#"{
+  "id": 39,
+  "name": "TIMED_ITEM_V1",
+  "constant": "timed_item::CAPABILITY_TIMED_ITEM_V1",
+  "requires": [
+    4
+  ],
+  "acceptance_requires": false,
+  "commands": [
+    38
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}"#,
+    r#"{
   "id": 40,
   "name": "GUILD_V1",
   "constant": "guild::CAPABILITY_GUILD_V1",
