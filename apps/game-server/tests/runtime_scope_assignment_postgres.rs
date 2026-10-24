@@ -12,12 +12,7 @@ pub mod character_bootstrap_intent;
 pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
 #[path = "support/domain_shim.rs"]
 pub mod domain;
-#[allow(dead_code, unused_imports)]
-#[path = "../src/durability"]
-mod durability {
-    // Recompile the shared core; native world adapters use the full library Content context.
-    include!("../../../crates/gameplay/durability/src/durability/core_modules.rs");
-}
+use oteryn_gameplay_durability::durability;
 #[allow(dead_code, unused_imports)]
 pub use oteryn_gameplay_entities as foundation;
 #[allow(dead_code, unused_imports)]

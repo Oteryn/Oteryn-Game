@@ -1,5 +1,5 @@
-// Include the unchanged Foundation source in this test crate so privately sealed
-// fixture owners and Durability use one type universe, without a production seal.
+// Use the shared durability library and existing test-support fixtures for this
+// target's PostgreSQL integration cases.
 extern crate oteryn_game_server as production_server;
 extern crate self as oteryn_game_server;
 pub use production_server::admission_evidence;
@@ -28,12 +28,7 @@ mod character_forge_dust_postgres_cases;
 mod character_proficiency_modification_postgres_cases;
 #[path = "support/character_revision_sequencer_postgres_cases.rs"]
 mod character_revision_sequencer_postgres_cases;
-#[allow(dead_code, unused_imports)]
-#[path = "../src/durability"]
-mod durability {
-    // Recompile the shared core; native world adapters use the full library Content context.
-    include!("../../../crates/gameplay/durability/src/durability/core_modules.rs");
-}
+use oteryn_gameplay_durability::durability;
 #[path = "support/highscores_session_postgres_cases.rs"]
 mod highscores_session_postgres_cases;
 #[path = "support/item_timed_postgres_cases.rs"]

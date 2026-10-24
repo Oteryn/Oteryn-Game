@@ -26,12 +26,7 @@ pub mod character_bootstrap_intent;
 pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
 #[path = "support/domain_shim.rs"]
 pub mod domain;
-#[allow(dead_code, unused_imports)]
-#[path = "../src/durability"]
-mod durability {
-    // Recompile the shared core; native world adapters use the full library Content context.
-    include!("../../../crates/gameplay/durability/src/durability/core_modules.rs");
-}
+use oteryn_gameplay_durability::durability;
 #[allow(dead_code, unused_imports)]
 pub use oteryn_gameplay_entities as foundation;
 pub use oteryn_gameplay_native_admission_source as native_admission_source;
@@ -46,7 +41,6 @@ mod bestiary_postgres_harness;
 use admission_evidence::{Facts, Request, Response, decode_response, encode_request};
 use base64::Engine as _;
 use base64::engine::general_purpose::{STANDARD, URL_SAFE_NO_PAD};
-use character_bootstrap_intent::read_authenticated_intent;
 use character_recovery_fence::CharacterRecoveryStore;
 use durability::DurabilityRoot;
 use durability::admission_authority_guards::GuardPublicationDisposition;
@@ -83,6 +77,7 @@ use foundation::{
     WorldId,
 };
 use native_admission_source::{TransientCapacity, descriptor::ProducerDescriptor};
+use oteryn_gameplay_durability::character_bootstrap_intent::read_authenticated_intent;
 use rustls::pki_types::{CertificateDer, PrivateKeyDer};
 use sqlx::{Connection, Executor};
 use std::time::{SystemTime, UNIX_EPOCH};
