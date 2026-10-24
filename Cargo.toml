@@ -131,3 +131,8 @@ panic = "deny"
 todo = "deny"
 unimplemented = "deny"
 unwrap_used = "deny"
+
+[profile.dev]
+# Line tables keep file:line in panics and backtraces; full debug info
+# (CARGO_PROFILE_DEV_DEBUG=2) doubles target/ and slows incremental links.
+debug = "line-tables-only"
