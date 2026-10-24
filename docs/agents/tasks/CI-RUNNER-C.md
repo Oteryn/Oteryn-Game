@@ -8,7 +8,7 @@ status: in_review
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/happy-davinci-ijz3wy-cirunner
-pr: null
+pr: 2385
 owner: standalone CI-RUNNER-C worker
 created_at: 2026-10-24
 updated_at: 2026-10-24
@@ -87,16 +87,30 @@ NOT_APPLICABLE: this task changes CI runner selection, not game runtime behavior
   ledger report lookup follows `CARGO_TARGET_DIR` with the hosted default intact.
 - Required offline repository/governance checks pass.
 
-## Measurement plan
+## Measurements after rollout
 
-UNKNOWN: real self-hosted duration improvements require live runs after rollout.
-Compare all four `rust_fast` leg durations on the same kind of PR (similar changed
-crates and change size), first hosted and then with the variable enabled. Use
-fresh equivalent changes without ledger hits, record runner image/environment,
-cache state, queue time separately from execution time, and distinguish cold
-from warm self-hosted builds. Compare Clippy, each test shard, and overall
-`rust_fast` completion; include toolchain/setup and compile/test time. No speedup
-is claimed from offline checks.
+PROVEN (live runs, 2026-10-24): #2385 merged, four runners `molehill-game-1..4`
+registered with label `oteryn-molehill`, and `OTERYN_SELF_HOSTED_RUST=on`.
+Durations are job execution times of the `rust_fast` legs, read from the
+GitHub Actions job records; queue time is excluded.
+
+| `rust_fast` leg | Hosted `ubuntu-24.04` (earlier PRs) | Molehill cold, #2386 run 40095302354 | Molehill warm, #2387 run 40097838921 |
+|---|---:|---:|---:|
+| Clippy | 5-9 min | 8.5 min | ~4.5 min |
+| Tests 1/3 | 5-9 min | 13.9 min | ~4.3 min |
+| Tests 2/3 | 5-9 min | 11.0 min | ~4.8 min |
+| Tests 3/3 | 5-9 min | 12.7 min | ~4.6 min |
+| Whole merge gate | not re-measured | ~15 min | ~9 min |
+
+The cold run is the first build in each runner's empty target directory, so it
+is slower than hosted with its restored Cargo cache. Once each runner's target
+is warm, every leg is about 2x faster than hosted. The two PRs differ in changed
+crates (durability/game-server versus entities), so the comparison is
+indicative, not a controlled benchmark.
+
+Decision: keep four runners and the variable `on`. The fallback is unchanged:
+set `OTERYN_SELF_HOSTED_RUST=off` (or delete it) when Molehill is offline, then
+cancel and rerun queued legs.
 
 ## Validation and self-review
 
@@ -151,4 +165,3 @@ PostgreSQL and rustfmt qualification are NOT_APPLICABLE.
   assertions are unchanged. The focused PR-gate unittest class did run in full.
 - Full actionlint retains the baseline ShellCheck findings listed above; fixing
   other jobs or changing ledger key arguments is outside this task's scope.
-- Publication and live rollout measurements are outside this worktree-only task.
