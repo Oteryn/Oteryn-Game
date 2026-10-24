@@ -690,4 +690,22 @@
     "bundle_world": false
   }
 }"#,
+    r#"{
+  "id": 59,
+  "name": "HOUSE_MOVE_OUT_V1",
+  "constant": "house_move_out::CAPABILITY_HOUSE_MOVE_OUT_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [
+    76,
+    77
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}"#,
 ]

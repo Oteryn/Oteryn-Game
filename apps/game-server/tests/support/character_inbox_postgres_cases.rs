@@ -734,7 +734,7 @@ fn inbox_rows_are_immutable_and_no_other_writer_touches_them() -> TestResult {
         tx.rollback().await?;
 
         // Closed inventory: native Inbox delivery and location/TRANSFER guards,
-        // plus MAIL's and DAILY-1's read-only proofs. Unexpected readers or
+        // plus the registered read-only custody proofs. Unexpected readers or
         // writers still fail this exact inventory; every Inbox DML guard stays on.
         let readers: Vec<String> = sqlx::query_scalar(
             "SELECT proname::text FROM pg_proc \
@@ -754,6 +754,8 @@ fn inbox_rows_are_immutable_and_no_other_writer_touches_them() -> TestResult {
                 // neither function inserts, updates or deletes Inbox rows.
                 "game_daily_reward_bound_custody",
                 "game_daily_reward_line_guard",
+                "game_house_disposition_delivery_proven",
+                "game_house_disposition_native_removal_proven",
                 "game_item_location_exclusive",
                 "game_item_transfer_consistency_guard",
                 // TRADE-PLAYER-1: read-only final-custody proof, no Inbox mutation.

@@ -97,6 +97,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             states.next_party_deadline_pass_us = now.saturating_add(1_000_000);
         }
+        let _ = self.drain_source_house_dispositions().await;
         let _ = self.drain_source_pvp_expiry().await;
         let _ = self.drain_source_party_expiry().await;
         let _ = self.drain_source_party_offline_presence().await;

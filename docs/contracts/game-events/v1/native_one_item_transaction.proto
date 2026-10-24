@@ -575,7 +575,7 @@ message OneItemNpcTradeV1 {
 // Closed ItemUseCause (decision ITEM-USE-0 §4.2): the variant and the using
 // command's CommandRef, which is the cause's identity.
 message OneItemUseCauseV1 {
-  uint32 kind = 1; // 1 Food, 2 Potion
+  uint32 kind = 1; // 1 Food, 2 Potion, 3 PickRefine (MINING-1; required one-unit output)
   string content_revision = 6;
   string ruleset_revision = 7;
   string sim_revision = 8;
