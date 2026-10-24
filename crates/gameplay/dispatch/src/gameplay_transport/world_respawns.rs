@@ -32,6 +32,26 @@ impl RespawnWake for MonotonicRespawnWake {
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn run_world_respawns(&self, shutdown: &CancellationToken) -> RespawnExit {
+        // A busy durability holder is transient; never stop the world's existing spawn loop.
+        loop {
+            let Some(initialized) =
+                stopping_first(self.initialize_cyclopedia_respawn(), shutdown).await
+            else {
+                return RespawnExit::Shutdown;
+            };
+            if initialized.is_ok() {
+                break;
+            }
+            if stopping_first(
+                tokio::time::sleep(std::time::Duration::from_secs(1)),
+                shutdown,
+            )
+            .await
+            .is_none()
+            {
+                return RespawnExit::Shutdown;
+            }
+        }
         drive(
             self.runtime,
             &MonotonicRespawnWake::from_origin(self.clock_origin),

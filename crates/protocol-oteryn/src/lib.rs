@@ -4546,3 +4546,5 @@ mod decoder_fuzz_support;
 pub mod house;
 
 pub mod staff;
+
+pub mod cyclopedia;

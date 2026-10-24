@@ -387,6 +387,7 @@ pub trait FreshAdmissionAuthority {
     super::guild_intent::authority_methods!();
     super::daily_reward::authority_methods!();
     super::house_move_out::authority_methods!();
+    super::cyclopedia::authority_methods!();
     fn admit(
         &self,
         attempt: FreshAdmissionAttempt<'_>,
@@ -1501,6 +1502,7 @@ where
     let offered =
         super::appearance_change::offer::offered(&offered, authority.appearance_available());
     let offered = super::daily_reward::offered(&offered, authority.daily_reward_available());
+    let offered = super::cyclopedia::offered(&offered, authority.cyclopedia_available());
     let Some(selected) = SelectedCapabilities::select(&offered, bootstrap.supported_capabilities)
     else {
         return Err(ConnectionEnd::AdmissionRefused(
@@ -3353,6 +3355,22 @@ where
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 }
             }
+        } else if matches!(command.command_type, 72 | 73) {
+            match authority
+                .cyclopedia_command(
+                    admitted,
+                    command.command_id,
+                    command.command_type,
+                    command.payload,
+                )
+                .await
+            {
+                super::guild_intent::GuildReply::Payload(bytes) => Dispatch::Guild(bytes),
+                super::guild_intent::GuildReply::Rejected => Dispatch::Unregistered,
+                super::guild_intent::GuildReply::Unavailable => {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                }
+            }
         } else if super::guild_intent::owns(command.command_type) {
             match authority
                 .guild_command(
@@ -4337,6 +4355,25 @@ where
                     if write_frame(stream, &frame).await.is_err() {
                         return ConnectionEnd::AdmittedThenDisconnected(admitted);
                     }
+                }
+            }
+            Dispatch::Guild(_)
+                if command.command_type == 73 && command.payload.first() == Some(&4) =>
+            {
+                if let Some(view) = item_view.as_mut()
+                    && item_use_view_refresh::refresh(
+                        stream,
+                        authority,
+                        actor,
+                        &mut admitted,
+                        view,
+                        container_views.as_mut(),
+                        &mut sequence,
+                    )
+                    .await
+                    .is_none()
+                {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 }
             }
             Dispatch::UseItem(_, None)

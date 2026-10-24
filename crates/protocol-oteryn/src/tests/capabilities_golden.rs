@@ -673,6 +673,24 @@
   }
 }"#,
     r#"{
+  "id": 57,
+  "name": "CYCLOPEDIA_MAP_V1",
+  "constant": "cyclopedia::CAPABILITY_CYCLOPEDIA_MAP_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [
+    72,
+    73
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": false
+  }
+}"#,
+    r#"{
   "id": 59,
   "name": "HOUSE_MOVE_OUT_V1",
   "constant": "house_move_out::CAPABILITY_HOUSE_MOVE_OUT_V1",
