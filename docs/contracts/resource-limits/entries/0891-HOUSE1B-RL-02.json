@@ -1,0 +1,21 @@
+{
+  "id": "HOUSE1B-RL-02",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_HOUSE_OWN0_HOUSE_OWNERSHIP_DECISION_2026-09-30.md",
+  "resource": "House disposition atomic custody step",
+  "unit": "items",
+  "hard_maximum": 100,
+  "configurable_range": {
+    "minimum": 100,
+    "maximum": 100
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "Bounded before mutation; oversized census and malformed wire refuse without partial effects.",
+  "client_visible": false,
+  "boundary_tests": [
+    "house_move_out_postgres_real_dispatch"
+  ],
+  "consumers": [
+    "crates/gameplay/housing/src/house_transfer.rs"
+  ],
+  "notes": "HOUSE-1b server basic form. The immutable census is never truncated to fit."
+}

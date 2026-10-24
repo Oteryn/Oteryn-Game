@@ -70,6 +70,8 @@ pub enum FeeBurnCauseV1 {
     PromotionPurchase(OneItemNpcPurchaseV1),
     #[prost(message, tag = "3")]
     BlessingPurchase(OneItemNpcPurchaseV1),
+    #[prost(message, tag = "4")]
+    AreaDonation(OneItemAreaDonationV1),
 }
 
 mod purchase_cause;
@@ -77,7 +79,7 @@ pub use purchase_cause::OneItemNpcPurchaseV1;
 
 #[derive(Clone, PartialEq, Eq, Message)]
 pub struct OneItemFeeBurnCauseV1 {
-    #[prost(oneof = "FeeBurnCauseV1", tags = "1, 2, 3")]
+    #[prost(oneof = "FeeBurnCauseV1", tags = "1, 2, 3, 4")]
     pub cause: Option<FeeBurnCauseV1>,
 }
 
@@ -523,6 +525,16 @@ pub fn encode_fee_burn_event_with(
     Ok(wire)
 }
 
+#[derive(Clone, PartialEq, Eq, Message)]
+pub struct OneItemAreaDonationV1 {
+    #[prost(bytes = "vec", tag = "1")]
+    pub world: Vec<u8>,
+    #[prost(uint32, tag = "2")]
+    pub area: u32,
+    #[prost(bytes = "vec", tag = "3")]
+    pub occurrence: Vec<u8>,
+}
+
 #[cfg(test)]
 mod tests {
     #![allow(clippy::expect_used, clippy::unwrap_used)]
@@ -531,8 +543,7 @@ mod tests {
     use super::*;
     use serde_json::Value;
 
-    const RESOURCE_REGISTRY: &str =
-        oteryn_protocol_oteryn::RESOURCE_LIMITS_REGISTRY_JSON;
+    const RESOURCE_REGISTRY: &str = oteryn_protocol_oteryn::RESOURCE_LIMITS_REGISTRY_JSON;
 
     fn uuid(tag: u8) -> Vec<u8> {
         let mut bytes = vec![0; 16];

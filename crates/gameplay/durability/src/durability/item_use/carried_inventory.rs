@@ -146,7 +146,7 @@ impl DurabilityRoot {
     }
 }
 
-async fn read_use_inventory(
+pub(super) async fn read_use_inventory(
     connection: &mut PgConnection,
     fence: &CurrentCharacterItemFence,
     content_revision: String,

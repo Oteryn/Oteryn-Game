@@ -1653,6 +1653,9 @@ pub struct SpawnDefinition {
 /// SPAWN-1b: what one spawn point realizes and when it respawns.
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct SpawnPointDefinition {
+    /// Oteryn default, not Reference-qualified: standalone area factor (no event composition).
+    /// Assigned only by the admitted map owner.
+    cyclopedia_improved: bool,
     /// D115: 60,000,000 (60 s, in the owner clock's microsecond unit).
     respawn_delay_micros: u64,
     creature_target_identity: String,
@@ -1695,6 +1698,7 @@ impl SpawnDefinition {
                     (
                         cell,
                         SpawnPointDefinition {
+                            cyclopedia_improved: false,
                             respawn_delay_micros,
                             creature_target_identity: creature_target_identity.clone(),
                             creature_initial_health,
@@ -1765,6 +1769,7 @@ impl SpawnDefinition {
                     Ok((
                         cell,
                         SpawnPointDefinition {
+                            cyclopedia_improved: false,
                             respawn_delay_micros: activation_micros(respawn_delay_ms)?,
                             creature_target_identity: creature,
                             creature_initial_health: activation_health(initial_health)?,
@@ -1797,7 +1802,8 @@ impl SpawnDefinition {
     fn timing(&self, ordinal: usize) -> Result<spawn::PointTiming, CarrierError> {
         let point = self.point(ordinal)?;
         Ok(spawn::PointTiming {
-            respawn_delay_micros: point.respawn_delay_micros,
+            respawn_delay_micros: point.respawn_delay_micros
+                / if point.cyclopedia_improved { 2 } else { 1 },
             occupancy_retry_interval_micros: self.occupancy_retry_interval_micros,
             blockable: point.blockable,
         })
@@ -3499,6 +3505,26 @@ impl ChannelRuntimeV1 {
             .spawn_index(SpawnSourceId(point.source))
             .map(|index| &self.carrier.spawns[index])
             .ok_or(CarrierError::UnknownSpawnSource)
+    }
+
+    /// Apply the current World epoch's area membership to home-spawn timing only.
+    /// Reassignment is idempotent; raids, summons and other non-home actors have no point.
+    pub fn apply_cyclopedia_respawn(
+        &mut self,
+        improved: impl Fn(LocalPosition, &str) -> bool,
+    ) -> Result<(), CarrierError> {
+        self.owner_fence()?;
+        for source in &mut self.carrier.spawns {
+            for (cell, point) in source
+                .definition
+                .placement_cells
+                .iter()
+                .zip(&mut source.definition.points)
+            {
+                point.cyclopedia_improved = improved(*cell, &point.creature_target_identity);
+            }
+        }
+        Ok(())
     }
 
     fn spawn_timing(&self, point: spawn::SpawnPoint) -> Result<spawn::PointTiming, CarrierError> {

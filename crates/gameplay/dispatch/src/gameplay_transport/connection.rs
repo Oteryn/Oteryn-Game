@@ -391,6 +391,8 @@ pub trait FreshAdmissionAuthority {
     super::appearance_change::authority_methods!();
     super::guild_intent::authority_methods!();
     super::daily_reward::authority_methods!();
+    super::house_move_out::authority_methods!();
+    super::cyclopedia::authority_methods!();
     fn admit(
         &self,
         attempt: FreshAdmissionAttempt<'_>,
@@ -614,6 +616,18 @@ pub trait FreshAdmissionAuthority {
                 ..UseOutcome::rejected()
             }
         }
+    }
+
+    /// MINING-1: original USE is retained for replay before either handle is resolved.
+    fn use_pick(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _intent: UseIntent,
+        _source: Option<ItemKey>,
+        _target: Option<ItemKey>,
+    ) -> impl Future<Output = Option<UseOutcome>> {
+        async { Some(UseOutcome::rejected()) }
     }
 
     /// BED0 §9: choice from a live map-item handle. An authority without the
@@ -1493,6 +1507,7 @@ where
     let offered =
         super::appearance_change::offer::offered(&offered, authority.appearance_available());
     let offered = super::daily_reward::offered(&offered, authority.daily_reward_available());
+    let offered = super::cyclopedia::offered(&offered, authority.cyclopedia_available());
     let Some(selected) = SelectedCapabilities::select(&offered, bootstrap.supported_capabilities)
     else {
         return Err(ConnectionEnd::AdmissionRefused(
@@ -2840,6 +2855,7 @@ where
             Highscores(HighscoresReply),
             Guild(Vec<u8>),
             Party(Vec<u8>),
+            HouseMoveOut(Vec<u8>),
             Appearance(Option<oteryn_protocol_oteryn::appearance::ChangeResult>),
             DailyReward(Option<Vec<u8>>),
             /// ITEM-VIEW-1b: `USE` with an item target; the domain 11 delta follows the result.
@@ -2986,7 +3002,7 @@ where
                 command.payload,
             ) {
                 Ok(intent) if intent.use_with_map_item.is_some() => {
-                    match super::item_craft::dispatch(authority, actor, UseCommand {
+                    match super::mining::dispatch_map_use(authority, actor, UseCommand {
                         game_session_id: admitted.game_session_id,
                         command_id: command.command_id,
                         item_fence: admitted.item_fence,
@@ -3010,12 +3026,12 @@ where
                     None => return ConnectionEnd::AdmittedThenDisconnected(admitted),
                 },
                 // ITEM-USE-WIRE-1: fields 4 and 5 decode only under capability 15.
-                // Creature, map-item and position targets still fail closed here.
+                // Creature and unrouted position targets still fail closed here.
                 Ok(UseIntent {
                     use_with: Some(_), ..
                 })
-                // WORLDINT-WIRE-1: the map_item arm of field 4 decodes only under capability 11, which is not offered
-                // before WORLDINT-USE-1 composes the interaction gate.
+                // WORLDINT-WIRE-1: map targets decode only under capability 11; the
+                // mechanic owner above keeps unsupported tool actions closed.
                 | Ok(UseIntent {
                     use_with_map_item: Some(_),
                     ..
@@ -3333,6 +3349,40 @@ where
                         },
                         selection,
                     ),
+                }
+            }
+        } else if super::house_move_out::owns(command.command_type) {
+            match authority
+                .house_move_out_command(
+                    admitted,
+                    command.command_id,
+                    command.command_type,
+                    command.payload,
+                )
+                .await
+            {
+                super::house_move_out::HouseMoveOutReply::Payload(bytes) => {
+                    Dispatch::HouseMoveOut(bytes)
+                }
+                super::house_move_out::HouseMoveOutReply::Rejected => Dispatch::Unregistered,
+                super::house_move_out::HouseMoveOutReply::Unavailable => {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                }
+            }
+        } else if matches!(command.command_type, 72 | 73) {
+            match authority
+                .cyclopedia_command(
+                    admitted,
+                    command.command_id,
+                    command.command_type,
+                    command.payload,
+                )
+                .await
+            {
+                super::guild_intent::GuildReply::Payload(bytes) => Dispatch::Guild(bytes),
+                super::guild_intent::GuildReply::Rejected => Dispatch::Unregistered,
+                super::guild_intent::GuildReply::Unavailable => {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 }
             }
         } else if super::guild_intent::owns(command.command_type) {
@@ -3875,7 +3925,9 @@ where
                 // The page is written once; move it out instead of copying up to 32 KiB.
                 (CommandStatus::Accepted, std::mem::take(payload))
             }
-            Dispatch::Guild(payload) | Dispatch::Highscores(HighscoresReply::Result(payload)) => {
+            Dispatch::HouseMoveOut(payload)
+            | Dispatch::Guild(payload)
+            | Dispatch::Highscores(HighscoresReply::Result(payload)) => {
                 (CommandStatus::Accepted, std::mem::take(payload))
             }
             Dispatch::Unregistered
@@ -4319,11 +4371,31 @@ where
                     }
                 }
             }
+            Dispatch::Guild(_)
+                if command.command_type == 73 && command.payload.first() == Some(&4) =>
+            {
+                if let Some(view) = item_view.as_mut()
+                    && item_use_view_refresh::refresh(
+                        stream,
+                        authority,
+                        actor,
+                        &mut admitted,
+                        view,
+                        container_views.as_mut(),
+                        &mut sequence,
+                    )
+                    .await
+                    .is_none()
+                {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                }
+            }
             Dispatch::UseItem(_, None)
             | Dispatch::ContainerView(_, None)
             | Dispatch::Look(..)
             | Dispatch::Achievements(_)
             | Dispatch::Highscores(_)
+            | Dispatch::HouseMoveOut(_)
             | Dispatch::Guild(_)
             | Dispatch::Vip(_)
             | Dispatch::Party(_)

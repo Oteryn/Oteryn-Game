@@ -45,6 +45,7 @@ use sqlx::postgres::PgConnection;
 
 mod carried_inventory;
 mod carried_source;
+pub mod mining;
 
 pub use carried_inventory::ItemUseInventory;
 use carried_source::lock_use_path;
@@ -54,6 +55,11 @@ use carried_source::lock_use_path;
 pub enum ItemUseKind {
     Food,
     Potion,
+    PickRefine {
+        tool: [u8; 16],
+        wire_binding: [u8; 32],
+        percentile: u8,
+    },
 }
 
 impl ItemUseKind {
@@ -61,6 +67,7 @@ impl ItemUseKind {
         match self {
             Self::Food => ITEM_USE_CAUSE_FOOD,
             Self::Potion => ITEM_USE_CAUSE_POTION,
+            Self::PickRefine { .. } => mining::PICK_REFINE_CAUSE,
         }
     }
 }
@@ -164,8 +171,17 @@ fn valid_definition(definition: &TypedDefinitionRef) -> bool {
 
 impl ItemUseRequest {
     fn validate(&self) -> Result<()> {
+        if let ItemUseKind::PickRefine {
+            tool, percentile, ..
+        } = self.kind
+            && (check_uuid_v7(&tool).is_err()
+                || tool == self.source_item_instance_id
+                || !(1..=100).contains(&percentile))
+        {
+            return Err(ItemUseError::InvalidInput);
+        }
         let flask_valid = match (&self.flask, self.kind) {
-            (ItemUseFlaskPlan::None, _) => true,
+            (ItemUseFlaskPlan::None, ItemUseKind::Food | ItemUseKind::Potion) => true,
             (_, ItemUseKind::Food) => false,
             (ItemUseFlaskPlan::Missing, ItemUseKind::Potion) => true,
             (
@@ -174,7 +190,7 @@ impl ItemUseRequest {
                     definition,
                     quantity_before,
                 },
-                ItemUseKind::Potion,
+                ItemUseKind::Potion | ItemUseKind::PickRefine { .. },
             ) => {
                 check_uuid_v7(item_instance_id).is_ok()
                     && *item_instance_id != self.source_item_instance_id
@@ -188,7 +204,7 @@ impl ItemUseRequest {
                     definition,
                     placement_ordinal,
                 },
-                ItemUseKind::Potion,
+                ItemUseKind::Potion | ItemUseKind::PickRefine { .. },
             ) => {
                 check_uuid_v7(item_instance_id).is_ok()
                     && *item_instance_id != self.source_item_instance_id
@@ -196,6 +212,7 @@ impl ItemUseRequest {
                     && *definition != self.source_definition
                     && *placement_ordinal != 0
             }
+            (_, ItemUseKind::PickRefine { .. }) => false,
         };
         if !flask_valid
             || self.command_id == 0
@@ -227,6 +244,16 @@ impl ItemUseRequest {
         let mut hasher = Sha256::new();
         hasher.update(b"oteryn.item_use.request.v1");
         hasher.update(self.kind.code().to_be_bytes());
+        if let ItemUseKind::PickRefine {
+            tool,
+            wire_binding,
+            percentile,
+        } = self.kind
+        {
+            hasher.update(tool);
+            hasher.update(wire_binding);
+            hasher.update([percentile]);
+        }
         hasher.update(self.command_id.to_be_bytes());
         text(&mut hasher, &self.content_revision);
         text(&mut hasher, &self.ruleset_revision);
@@ -302,13 +329,28 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         request: ItemUseRequest,
     ) -> Result<ItemUseOutcome> {
+        if matches!(request.kind, ItemUseKind::PickRefine { .. }) {
+            return Err(ItemUseError::InvalidInput);
+        }
+        self.commit_use(authority, node, fence, request, None).await
+    }
+
+    async fn commit_use(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        request: ItemUseRequest,
+        weights: Option<&dyn super::item_loop_move::ItemLoopContent>,
+    ) -> Result<ItemUseOutcome> {
         request.validate()?;
         let recovery = authority
             .record_for(self)
             .map_err(|_| ItemUseError::AuthorityRejected)?;
         let node = node.clone();
+        let mut context = weights;
         self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
+            .run_with_context(&mut context, move |holder, deadline, weights| {
                 Box::pin(async move {
                     let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
@@ -322,6 +364,33 @@ impl DurabilityRoot {
                         Err(ItemUseError::Unavailable(error)) => return Err(error),
                         Err(error) => return Ok(Err(error)),
                     }
+                    if let Some(content) = *weights {
+                        use super::character_equipment::{
+                            EquipmentError, assert_current_equipment_in_transaction,
+                        };
+                        let command = crate::foundation::CommandRef::new(
+                            fence.game_session_id,
+                            crate::foundation::CommandId::new(request.command_id)
+                                .map_err(|_| DurabilityError::InvalidStoredState)?,
+                        );
+                        match assert_current_equipment_in_transaction(
+                            &mut tx,
+                            &recovery,
+                            &node,
+                            &fence,
+                            Some(command),
+                            content.loop_content_digest(),
+                        )
+                        .await
+                        {
+                            Ok(_) => {}
+                            Err(EquipmentError::Durability(error)) => return Err(error),
+                            Err(EquipmentError::Database(error)) => return Err(error.into()),
+                            Err(EquipmentError::Rejected(_)) => {
+                                return Ok(Err(ItemUseError::AuthorityRejected));
+                            }
+                        }
+                    }
                     match assert_item_only_fence(&mut tx, &fence, &node).await? {
                         Ok(root) => {
                             if root.content_revision != request.content_revision
@@ -334,6 +403,13 @@ impl DurabilityRoot {
                         Err(_) => return Ok(Err(ItemUseError::AuthorityRejected)),
                     }
                     let tuple = tx.tuple();
+                    if let ItemUseKind::PickRefine { .. } = request.kind {
+                        match mining::admit(&mut tx, &fence, &request, *weights).await {
+                            Ok(()) => {}
+                            Err(ItemUseError::Unavailable(error)) => return Err(error),
+                            Err(error) => return Ok(Err(error)),
+                        }
+                    }
                     match write(&mut tx, &fence, &request, tuple).await {
                         Ok(outcome) => {
                             tx.commit(deadline).await?;
