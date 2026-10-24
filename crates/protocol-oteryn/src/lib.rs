@@ -4543,3 +4543,5 @@ pub mod spectate;
 mod decoder_fuzz_support;
 
 pub mod house;
+
+pub mod staff;
