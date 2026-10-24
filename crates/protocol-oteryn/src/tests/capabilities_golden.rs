@@ -637,6 +637,24 @@
   }
 }"#,
     r#"{
+  "id": 51,
+  "name": "STAFF_V1",
+  "constant": "staff::CAPABILITY_STAFF_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [
+    60,
+    61
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}"#,
+    r#"{
   "id": 53,
   "name": "WORLD_EVENT_V1",
   "constant": "world_event::CAPABILITY_WORLD_EVENT_V1",
