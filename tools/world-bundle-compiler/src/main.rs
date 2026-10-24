@@ -356,7 +356,7 @@ const INPUT_PATHS: &[&str] = &[
 ];
 const INPUTS_DOMAIN: &str = "oteryn:world-bundle/inputs/v2";
 const PINS: &str = "content/world/pins";
-const PIN_SCHEMA: &str = "OTERYN_WORLD_PIN/v1";
+const PIN_SCHEMA: &str = "OTERYN_WORLD_PIN/v2";
 
 fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
@@ -385,7 +385,6 @@ struct Pin {
     content_revision: String,
     production: bool,
     entry_start: EntryStart,
-    inputs_digest: String,
 }
 
 #[derive(Deserialize, Serialize, Clone, Copy)]
@@ -615,18 +614,16 @@ fn run_pin_check(root: &Path, out: &Path) -> Result<Value, Error> {
     fs::create_dir_all(out).map_err(io)?;
     let (mut reports, mut names) = (Vec::new(), Vec::new());
     for slug in slugs {
-        let fail = |what: String| Error::Format(format!("pin {slug}: {what}"));
-        let pin: Pin = serde_json::from_slice(&read(&pins.join(format!("{slug}.json")))?)
-            .map_err(|e| fail(e.to_string()))?;
-        if pin.schema != PIN_SCHEMA {
-            return Err(fail(format!("schema is not {PIN_SCHEMA}")));
-        }
-        if pin.inputs_digest != tree {
+        let fail =
+            |what: String| Error::Format(format!("pin {slug}: {what}; inputs_digest {tree}"));
+        let bytes = read(&pins.join(format!("{slug}.json")))?;
+        let value = json(&bytes, "pin")?;
+        if value["schema"] != PIN_SCHEMA {
             return Err(fail(format!(
-                "inputs_digest {} differs from the tree's {tree}",
-                pin.inputs_digest
+                "schema is not {PIN_SCHEMA}; regenerate with pin-refresh"
             )));
         }
+        let pin: Pin = serde_json::from_slice(&bytes).map_err(|e| fail(e.to_string()))?;
         let identity = derive_identity(root, &slug)?;
         let committed = fs::read_to_string(pins.join(format!("{slug}.identity.json")))
             .map_err(|e| fail(format!("identity file: {e}")))?;

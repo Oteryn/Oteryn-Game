@@ -56,6 +56,7 @@ impl Scratch {
                 "Cargo.toml",
                 "Cargo.lock",
                 "rust-toolchain.toml",
+                "deploy/synology-game/preprod-topology.toml",
                 ".cargo",
                 "vendor",
             ],
@@ -128,7 +129,7 @@ fn word_after(text: &str, marker: &str) -> String {
         .nth(1)
         .and_then(|rest| rest.split_whitespace().next())
         .unwrap_or_default()
-        .trim_end_matches([',', '.'])
+        .trim_end_matches([',', '.', ';'])
         .to_owned()
 }
 
@@ -144,17 +145,35 @@ fn reviewed_revision() -> String {
         .to_owned()
 }
 
-fn pin(inputs: &str, digest: &str) -> Value {
+fn pin(digest: &str) -> Value {
     json!({
-        "schema": "OTERYN_WORLD_PIN/v1",
+        "schema": "OTERYN_WORLD_PIN/v2",
         "digest": digest,
         "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
         "world_schema_version": "reference-schema-v1",
         "content_revision": reviewed_revision(),
         "production": false,
         "entry_start": {"x": 32369, "y": 32238, "floor": -7},
-        "inputs_digest": inputs,
     })
+}
+
+#[test]
+fn pin_check_rejects_v1_with_a_refresh_instruction_and_removed_v2_fields() {
+    let dir = Scratch::new("schema");
+    let mut legacy = pin(&"0".repeat(64));
+    legacy["schema"] = json!("OTERYN_WORLD_PIN/v1");
+    legacy["inputs_digest"] = json!("0".repeat(64));
+    dir.write_json(&dir.pin_file(), &legacy);
+    let out = dir.check();
+    assert!(!out.status.success());
+    assert!(stderr(&out).contains("schema is not OTERYN_WORLD_PIN/v2"));
+    assert!(stderr(&out).contains("pin-refresh"));
+
+    legacy["schema"] = json!("OTERYN_WORLD_PIN/v2");
+    dir.write_json(&dir.pin_file(), &legacy);
+    let out = dir.check();
+    assert!(!out.status.success());
+    assert!(stderr(&out).contains("unknown field `inputs_digest`"));
 }
 
 #[test]
@@ -223,14 +242,15 @@ fn derive_identity_takes_each_field_from_its_source_and_refuses_bad_sources() {
 #[test]
 fn inputs_digest_is_stable_across_squash_and_pin_edits_and_moves_with_inputs() {
     let dir = Scratch::new("inputs");
-    // The first run names the tree's inputs_digest in its refusal.
-    let wrong = pin(&"0".repeat(64), &"0".repeat(64));
+    // A production pin fails before the build and reports the diagnostic input digest.
+    let mut wrong = pin(&"0".repeat(64));
+    wrong["production"] = json!(true);
     dir.write_json(&dir.pin_file(), &wrong);
     let out = dir.check();
     assert!(!out.status.success());
-    let tree = word_after(&stderr(&out), "the tree's ");
+    let tree = word_after(&stderr(&out), "inputs_digest ");
     assert_eq!(tree.len(), 64, "{}", stderr(&out));
-    let stale = |dir: &Scratch| word_after(&stderr(&dir.check()), "the tree's ");
+    let stale = |dir: &Scratch| word_after(&stderr(&dir.check()), "inputs_digest ");
 
     // A pin file edit does not move it; neither do a commit or a squash into one commit.
     let mut edited = wrong.clone();
@@ -272,11 +292,13 @@ fn inputs_digest_is_stable_across_squash_and_pin_edits_and_moves_with_inputs() {
 #[test]
 fn inputs_digest_takes_the_cargo_inputs_of_the_world_crates_only() {
     let dir = Scratch::new("cargo");
-    dir.write_json(&dir.pin_file(), &pin(&"0".repeat(64), &"0".repeat(64)));
+    let mut production = pin(&"0".repeat(64));
+    production["production"] = json!(true);
+    dir.write_json(&dir.pin_file(), &production);
     let stale = |dir: &Scratch| {
         let out = dir.check();
         assert!(!out.status.success());
-        let tree = word_after(&stderr(&out), "the tree's ");
+        let tree = word_after(&stderr(&out), "inputs_digest ");
         assert_eq!(tree.len(), 64, "{}", stderr(&out));
         tree
     };
@@ -379,10 +401,8 @@ fn inputs_digest_takes_the_cargo_inputs_of_the_world_crates_only() {
 )]
 fn pin_check_accepts_the_reviewed_pin_and_refuses_every_drift() {
     let dir = Scratch::new("check");
-    let first = pin(&"0".repeat(64), &"0".repeat(64));
+    let first = pin(&"0".repeat(64));
     dir.write_json(&dir.pin_file(), &first);
-    let tree = word_after(&stderr(&dir.check()), "the tree's ");
-    dir.write_json(&dir.pin_file(), &pin(&tree, &"0".repeat(64)));
     let out = dir.check();
     assert!(!out.status.success());
     let digest = word_after(&stderr(&out), "is not the tree's ");
@@ -390,22 +410,48 @@ fn pin_check_accepts_the_reviewed_pin_and_refuses_every_drift() {
 
     // The reviewed pin passes (each run builds twice and compares); the artifact name
     // carries the digest.
-    let good = pin(&tree, &digest);
+    let good = pin(&digest);
     dir.write_json(&dir.pin_file(), &good);
+
+    // Refresh migrates v1 without changing bundle identity or the reviewed entry cell.
+    let mut legacy = good.clone();
+    legacy["schema"] = json!("OTERYN_WORLD_PIN/v1");
+    legacy["inputs_digest"] = json!("0".repeat(64));
+    dir.write_json(&dir.pin_file(), &legacy);
+    let refresh = Command::new(BIN)
+        .arg("pin-refresh")
+        .arg(&dir.0)
+        .output()
+        .expect("compiler runs");
+    assert!(refresh.status.success(), "{}", stderr(&refresh));
+    assert_eq!(dir.json(&dir.pin_file()), good);
+    let report: Value = serde_json::from_slice(&refresh.stdout).unwrap();
+    assert_eq!(report["pins"][0]["digest"], digest);
+
+    // Compiler-only input changes are reported; they do not stale an identical bundle pin.
+    fs::write(dir.path("tools/world-bundle-compiler/NOTE.txt"), "x").unwrap();
+    git(&dir.0, &["add", "-A"]);
     let out = dir.check();
     assert!(out.status.success(), "{}", stderr(&out));
+    let checked: Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert_ne!(checked["inputs_digest"], report["inputs_digest"]);
+    assert_eq!(checked["pins"][0]["digest"], digest);
+    assert_eq!(dir.json(&dir.pin_file()), good);
     let name = fs::read_to_string(dir.path("out/artifact-name.txt")).unwrap();
     assert_eq!(name.trim(), format!("world-bundle-{digest}"));
     let written = fs::read(dir.path(&format!("out/{SLUG}-{digest}.otwb"))).unwrap();
 
-    // A production pin, a stale inputs_digest and a stale revision each fail.
+    // A production pin, a v1 pin, a v2 pin with a removed field and a stale revision fail.
     let mut production = good.clone();
     production["production"] = json!(true);
-    let mut stale = good.clone();
-    stale["inputs_digest"] = json!("1".repeat(64));
+    let mut legacy = good.clone();
+    legacy["schema"] = json!("OTERYN_WORLD_PIN/v1");
+    legacy["inputs_digest"] = json!("1".repeat(64));
+    let mut removed = good.clone();
+    removed["inputs_digest"] = json!("1".repeat(64));
     let mut revision = good.clone();
     revision["content_revision"] = json!("other");
-    for bad in [production, stale, revision] {
+    for bad in [production, legacy, removed, revision] {
         dir.write_json(&dir.pin_file(), &bad);
         assert!(!dir.check().status.success(), "{bad}");
     }
@@ -489,8 +535,6 @@ fn pin_check_accepts_the_reviewed_pin_and_refuses_every_drift() {
     let mut edited = dir.json(&identity);
     edited["provenance_summary"] = json!("lock:hand-edited");
     dir.write_json(&identity, &edited);
-    let tree = word_after(&stderr(&dir.check()), "the tree's ");
-    dir.write_json(&dir.pin_file(), &pin(&tree, &digest));
     let out = dir.check();
     assert!(!out.status.success() && stderr(&out).contains("identity file"));
 }
