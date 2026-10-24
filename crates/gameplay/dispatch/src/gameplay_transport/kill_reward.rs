@@ -1276,6 +1276,14 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         drop(slot);
         drop(other_slots);
         drop(permit);
+        if let Ok(outcome) = &outcome
+            && let Ok(xp) = &outcome.rewards.xp
+        {
+            admission
+                .states
+                .soul_kills
+                .mark(super::soul_kill_live::soul_hook(xp));
+        }
         let mut runtime = admission.runtime.lock().await;
         if let Ok(outcome) = &outcome
             && let CorpseBind::Refused(error) =

@@ -95,6 +95,8 @@ pub struct PlayerSpellState {
     pub(super) regen_health_ms: u32,
     pub(super) regen_mana_ms: u32,
     pub(super) soul: u32,
+    /// VITALS-SOUL-1: the running soul kill window, if any. Runtime-only.
+    pub(super) soul_window: Option<super::soul_window::SoulWindow>,
     pub cooldowns: Cooldowns,
     pub(super) revision: u64,
     /// SPELL-D8 §8.2: a monk's live Harmony and Serene; `None` for every other vocation.
@@ -145,6 +147,7 @@ impl PlayerSpellState {
                 premium_current: false,
                 premium_valid_until_micros: None,
                 soul: facts.max_soul,
+                soul_window: None,
                 cooldowns: Cooldowns::default(),
                 revision: 1,
                 monk,
