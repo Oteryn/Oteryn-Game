@@ -29,7 +29,10 @@ use crate::world_spatial::ActorPosition;
 pub const CAPABILITY_WORLD_MAP_VIEW_V1: u32 = 18;
 /// Capability 18 requires `WORLD_SPATIAL_ENTITIES` (6) and `ITEM_VIEW_MOVE_V1` (4): item handles
 /// and `ItemTargetV1` are capability-4 types.
-pub const CAPABILITY_WORLD_MAP_VIEW_REQUIRES: [u32; 2] = [4, 6];
+pub const CAPABILITY_WORLD_MAP_VIEW_REQUIRES: [u32; 2] = [
+    4, // ITEM_VIEW_MOVE_V1
+    6, // WORLD_SPATIAL_ENTITIES
+];
 /// Registered state domain `WORLD_MAP_VIEW`, owned by the current ChannelRuntime.
 pub const STATE_DOMAIN_WORLD_MAP_VIEW: u32 = 17;
 pub const SNAPSHOT_TYPE_WORLD_MAP_VIEW_SNAPSHOT_V1: u32 = 1;

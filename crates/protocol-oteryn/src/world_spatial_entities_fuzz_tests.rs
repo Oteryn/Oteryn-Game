@@ -130,7 +130,15 @@ fn fuzz_entity_snapshot_and_delta_decoders() {
 
 #[test]
 fn fuzz_selected_spatial_view_decoders() {
-    for caps in [&[][..], &[6][..], &[4, 6, 19][..]] {
+    for caps in [
+        &[][..],
+        &[6][..],
+        &[
+            4,  // ITEM_VIEW_MOVE_V1
+            6,  // WORLD_SPATIAL_ENTITIES
+            19, // WORLD_LIGHT_V1
+        ][..],
+    ] {
         let fields = EntityFields::selected(caps);
         for kind in [1, 2] {
             if kind == 2 && !caps.contains(&6) {

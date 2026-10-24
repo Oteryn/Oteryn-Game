@@ -1,0 +1,22 @@
+{
+  "id": 4,
+  "name": "ITEM_VIEW_MOVE_V1",
+  "constant": "item_view::CAPABILITY_ITEM_VIEW_MOVE_V1",
+  "requires": [
+    6
+  ],
+  "acceptance_requires": true,
+  "commands": [
+    9
+  ],
+  "domains": [
+    9,
+    11
+  ],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

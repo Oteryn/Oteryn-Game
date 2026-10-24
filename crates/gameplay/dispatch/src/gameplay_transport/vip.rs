@@ -1,15 +1,9 @@
 //! VIP-1 server command composition; no presence/UI surface is installed here.
 use super::ComposedFreshAdmission;
-use super::capabilities::OfferedCapability;
 use super::connection::{AdmittedSession, FreshAdmissionAuthority};
 use crate::domain::premium::PremiumStatus;
 use crate::durability::vip::VipPrepared;
 use oteryn_protocol_oteryn::vip::{self as wire, Operation};
-
-pub(super) const OFFERED: OfferedCapability = OfferedCapability {
-    id: wire::CAPABILITY_VIP_V1,
-    requires: &[],
-};
 
 macro_rules! authority_methods {
     () => {

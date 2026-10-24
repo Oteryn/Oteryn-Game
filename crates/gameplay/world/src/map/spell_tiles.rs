@@ -28,8 +28,9 @@
 //!   source: the bundle and the served definitions state neither `movable` nor `block_pathfind`.
 //!   They fail closed as `true`, so rope, levitate and house-kick relocation refuse every bundle
 //!   tile as a destination. Follow-up BUNDLE-TILES-IMMOVABLE-1 sources them.
-//! - **PvP zones.** OTBM flags 4 and 16, with PZ/no-PvP precedence, as in the source loader.
-//! - **Source step facts** (height and floor-change kinds) stay unknown
+//! - **PvP zones.** Retained OTBM tile flags, using the pinned Canary loader's priority:
+//!   protection zone, then NoPvP (bit 2), then PvP (bit 4). ADMIT-CAP-2.
+//! - **Source step facts** (height, floor-change kinds) stay unknown
 //!   ([`QualifiedSpellTile::source_step`] is `None`).
 //!
 //! A tile is **unknown** (`SpellTileLookupError::Unknown`, so a cast or attack on it is refused)
@@ -68,6 +69,15 @@ impl crate::content::bundle_spell_tiles::BundleTileBase for WorldBase {
 /// OTBM `PROTECTIONZONE`, tile flag bit 0.
 const PROTECTION_ZONE: u32 = 1;
 
+// Canary 99902524e052f37574194466c2949c576e4ab269:
+// src/io/io_definitions.hpp:73-76; src/io/iomap.cpp:167-173.
+// Bundle format §5 / compiler equivalence retain the source tile flags unchanged.
+fn pvp_zones(flags: u32) -> (bool, bool) {
+    let no_pvp = flags & PROTECTION_ZONE == 0 && flags & (1 << 2) != 0;
+    let pvp = flags & PROTECTION_ZONE == 0 && !no_pvp && flags & (1 << 4) != 0;
+    (no_pvp, pvp)
+}
+
 /// The spell tile facts of one palette entry.
 #[derive(Debug, Clone, Copy)]
 struct PaletteSpell {
@@ -86,8 +96,7 @@ struct Shape {
     block_projectile: bool,
     floor_change: bool,
     protection_zone: bool,
-    no_pvp_zone: bool,
-    pvp_zone: bool,
+    pvp_zones: (bool, bool),
 }
 
 impl Shape {
@@ -105,7 +114,7 @@ impl Shape {
                 floor_change: self.floor_change,
                 protection_zone: self.protection_zone,
             },
-            Some((self.no_pvp_zone, self.pvp_zone)),
+            Some(self.pvp_zones),
         )
     }
 }
@@ -222,10 +231,7 @@ impl SpellTilesBuilder {
                 block_projectile,
                 floor_change,
                 protection_zone: tile.flags & PROTECTION_ZONE != 0,
-                no_pvp_zone: tile.flags & PROTECTION_ZONE == 0 && tile.flags & 4 != 0,
-                pvp_zone: tile.flags & PROTECTION_ZONE == 0
-                    && tile.flags & 4 == 0
-                    && tile.flags & 16 != 0,
+                pvp_zones: pvp_zones(tile.flags),
             };
             let id = match self.interned.get(&shape) {
                 Some(id) => *id,
@@ -286,6 +292,9 @@ pub mod tests {
     use std::num::NonZeroU32;
 
     pub mod movement_arena;
+    mod admit_cap_2 {
+        include!("admit_cap_2_bundle_zones_tests.rs");
+    }
 
     /// The rope spot ground items (`tools/content-schema/world-authoring/README.md`, *Floor
     /// changes*). Their ground id is carried as `ground_source_id`; they are not `floor_change`.
@@ -529,7 +538,7 @@ pub mod tests {
         assert!(grass.ground_present());
         assert_eq!(grass.ground_source_id(), Some(100));
         assert_eq!(grass.ground_speed(), Some(150));
-        // Zone flags are known even though source step height remains unknown.
+        // Height/floor-change source facts remain unknown; retained flags qualify zones.
         assert_eq!(grass.source_step(), None);
         assert_eq!(grass.no_pvp_zone(), Some(false));
         assert_eq!(grass.pvp_zone(), Some(false));
@@ -632,7 +641,6 @@ pub mod tests {
         // No tile there, a floor without tiles, and coordinates outside the native plane.
         for cell in [
             at(0),
-            at(14),
             at(20),
             LogicalCell { x: 1, y: 0, z: 6 },
             LogicalCell { x: 1, y: 0, z: 16 },

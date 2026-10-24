@@ -385,6 +385,7 @@ pub trait FreshAdmissionAuthority {
     super::house_intent::authority_methods!();
     super::appearance_change::authority_methods!();
     super::guild_intent::authority_methods!();
+    super::daily_reward::authority_methods!();
     fn admit(
         &self,
         attempt: FreshAdmissionAttempt<'_>,
@@ -1465,6 +1466,7 @@ where
     );
     let offered =
         super::appearance_change::offer::offered(&offered, authority.appearance_available());
+    let offered = super::daily_reward::offered(&offered, authority.daily_reward_available());
     let Some(selected) = SelectedCapabilities::select(&offered, bootstrap.supported_capabilities)
     else {
         return Err(ConnectionEnd::AdmissionRefused(
@@ -2802,6 +2804,7 @@ where
             Highscores(HighscoresReply),
             Guild(Vec<u8>),
             Appearance(Option<oteryn_protocol_oteryn::appearance::ChangeResult>),
+            DailyReward(Option<Vec<u8>>),
             /// ITEM-VIEW-1b: `USE` with an item target; the domain 11 delta follows the result.
             UseItem(OpenDecision, Option<ItemViewDelta>),
             /// BAGS-WIRE-1: command 21; the domain 14 delta follows the result.
@@ -3581,6 +3584,25 @@ where
                 )
                 .await,
             )
+        } else if matches!(
+            command.command_type,
+            oteryn_protocol_oteryn::daily_reward::COMMAND_TYPE_DAILY_REWARD_CLAIM
+                | oteryn_protocol_oteryn::daily_reward::COMMAND_TYPE_DAILY_REWARD_QUERY
+        ) {
+            Dispatch::DailyReward(
+                super::daily_reward::dispatch(
+                    authority,
+                    actor,
+                    UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: command.command_id,
+                        item_fence: admitted.item_fence,
+                    },
+                    command.command_type,
+                    command.payload,
+                )
+                .await,
+            )
         } else if command.command_type == COMMAND_TYPE_HIGHSCORES_QUERY_V1 {
             // HIGHSCORES0 §6: the World and the asking Character are the admitted session's.
             match decode_highscores_query(command.payload) {
@@ -3641,6 +3663,9 @@ where
             Dispatch::Vip(None) => return ConnectionEnd::AdmittedThenDisconnected(admitted),
             Dispatch::House(Some(payload)) => (CommandStatus::Accepted, payload.clone()),
             Dispatch::House(None) => return ConnectionEnd::AdmittedThenDisconnected(admitted),
+            Dispatch::DailyReward(payload) => {
+                super::daily_reward::result(command.command_type, payload.take())
+            }
             Dispatch::Appearance(Some(result)) => match appearance_change::result(*result) {
                 Some(result) => result,
                 None => return ConnectionEnd::AdmittedThenDisconnected(admitted),
@@ -4227,6 +4252,7 @@ where
             | Dispatch::Guild(_)
             | Dispatch::Vip(_)
             | Dispatch::Appearance(_)
+            | Dispatch::DailyReward(_)
             | Dispatch::Logout(_)
             | Dispatch::House(_)
             | Dispatch::Unregistered => {}
@@ -4579,6 +4605,9 @@ async fn send_error<S: AsyncWrite + Unpin>(
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 mod tests {
+    #[path = "capability_tests.rs"]
+    mod capability_tests;
+
     mod bed_sleep_dispatch_tests {
         include!("bed_sleep_dispatch_tests.rs");
     }
@@ -6722,78 +6751,6 @@ mod tests {
             assert_eq!(frames, expected);
             // The unregistered type never reached `use_object`.
             assert_eq!(authority.uses.borrow().len(), 1);
-            Ok(())
-        })
-    }
-
-    /// WORLDINT-WIRE-1: a `SEALED` authority outcome carries its gate message id through the
-    /// server to the result under capability 11, and is refused as plain `Rejected` without it.
-    #[test]
-    fn a_sealed_use_carries_its_gate_message_id_only_under_capability_11()
-    -> Result<(), Box<dyn Error>> {
-        run(async {
-            let authority = UseAuthority {
-                uses: RefCell::new(Vec::new()),
-                commands: RefCell::new(Vec::new()),
-                overlay: None,
-                watermark: None,
-                outcome: UseOutcome {
-                    disposition: UseDisposition::Sealed,
-                    committed: None,
-                    earned: EarnedNotice::NoneEarned,
-                    gate_message_id: Some(42),
-                },
-            };
-            let use_type = u64::from(COMMAND_TYPE_USE_INTENT);
-            let frames_with = |capabilities: &'static [u32]| {
-                let offered = [
-                    OfferedCapability {
-                        id: CAPABILITY_ITEM_USE_V1,
-                        requires: &[],
-                    },
-                    OfferedCapability {
-                        id: 18,
-                        requires: &[],
-                    },
-                    OfferedCapability {
-                        id: CAPABILITY_WORLD_INTERACTION_V1,
-                        requires: &[CAPABILITY_ITEM_USE_V1, 18],
-                    },
-                ];
-                let selected =
-                    SelectedCapabilities::select(&offered, capabilities).expect("selection");
-                let admitted = AdmittedSession {
-                    continuity: SessionContinuity {
-                        selected_capabilities: selected,
-                        ..SessionContinuity::FRESH
-                    },
-                    ..positioned().expect("session")
-                };
-                (
-                    admitted,
-                    use_command(1, 1, use_type, b"oteryn:cell/entry-door", 0),
-                )
-            };
-            let result_present = |frames: &[Vec<u8>], status, payload: &[u8]| {
-                (0..64u64).any(|sequence| {
-                    encode_command_result(1, 1, sequence, status, payload)
-                        .is_ok_and(|expected| frames.contains(&expected))
-                })
-            };
-            let (admitted, command) =
-                frames_with(&[CAPABILITY_ITEM_USE_V1, 18, CAPABILITY_WORLD_INTERACTION_V1]);
-            let (_end, frames) = drive_session(&authority, admitted, &[command]).await?;
-            let sealed =
-                encode_use_result_with_gate(UseDisposition::Sealed, Some(42)).expect("sealed");
-            assert!(result_present(&frames, CommandStatus::Accepted, &sealed));
-
-            let (admitted, command) = frames_with(&[CAPABILITY_ITEM_USE_V1]);
-            let (_end, frames) = drive_session(&authority, admitted, &[command]).await?;
-            assert!(result_present(
-                &frames,
-                CommandStatus::Rejected,
-                &encode_use_result(UseDisposition::Rejected).unwrap_or_default()
-            ));
             Ok(())
         })
     }
