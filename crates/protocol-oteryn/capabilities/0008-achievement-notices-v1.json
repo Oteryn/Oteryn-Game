@@ -1,0 +1,17 @@
+{
+  "id": 8,
+  "name": "ACHIEVEMENT_NOTICES_V1",
+  "constant": "achievement_notices::CAPABILITY_ACHIEVEMENT_NOTICES_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [],
+  "domains": [
+    13
+  ],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": false
+  }
+}

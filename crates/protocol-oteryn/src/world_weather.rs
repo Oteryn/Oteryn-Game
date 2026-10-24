@@ -21,8 +21,9 @@ use crate::charm_wire::{
 /// D1137 allocated leaf ID; registered, and D1027 signed off.
 pub const CAPABILITY_WORLD_WEATHER_V1: u32 = 26;
 /// D1027: weather requires the World-spatial context.
-pub const CAPABILITY_WORLD_WEATHER_V1_REQUIRES: [u32; 1] =
-    [crate::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES];
+pub const CAPABILITY_WORLD_WEATHER_V1_REQUIRES: [u32; 1] = [
+    crate::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES, // WORLD_SPATIAL_ENTITIES
+];
 /// D1137 allocated leaf ID; this constant does not register a state domain or enable an offer.
 pub const STATE_DOMAIN_WORLD_WEATHER: u32 = 22;
 /// Delta type 1 `WORLD_WEATHER_DELTA_V1`; snapshot and delta carry the same full replacement.

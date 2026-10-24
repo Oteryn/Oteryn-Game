@@ -1,6 +1,5 @@
 //! Basic Guild wire composition. Only native Guild writers decide roles and durable effects.
 use super::ComposedFreshAdmission;
-use super::capabilities::OfferedCapability;
 use super::connection::AdmittedSession;
 use crate::domain::{
     CharacterId,
@@ -14,10 +13,6 @@ use crate::foundation::{CommandId, CommandRef, RuntimeScopeRefV1};
 use oteryn_protocol_oteryn::guild::{self as wire, GuildIntent};
 use sha2::{Digest, Sha256};
 
-pub(super) const OFFERED: OfferedCapability = OfferedCapability {
-    id: wire::CAPABILITY_GUILD_V1,
-    requires: &[],
-};
 #[derive(Debug)]
 pub enum GuildReply {
     Rejected,

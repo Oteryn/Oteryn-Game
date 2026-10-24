@@ -1,0 +1,21 @@
+{
+  "id": 1,
+  "name": "BESTIARY_CHARMS_V1",
+  "constant": "charm::CAPABILITY_BESTIARY_CHARMS_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [
+    4,
+    5
+  ],
+  "domains": [
+    4,
+    5
+  ],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": false
+  }
+}

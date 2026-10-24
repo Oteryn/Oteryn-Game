@@ -184,6 +184,7 @@ mod tests {
                 ground_destination: true,
                 decay: None,
                 decay_chain: Vec::new(),
+                field_class: crate::durability::spell_items_abi::SpellFieldClass::NotField,
             },
             state_revision: 5,
             quantity_before: 2,

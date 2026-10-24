@@ -204,6 +204,7 @@ impl QualifiedItemDefinition {
             ground_destination: record.admission.legal_destinations.contains(&D::Ground),
             decay,
             decay_chain: Vec::new(),
+            field_class: qualify_field_class(&record.semantics.classification)?,
         })
     }
 
@@ -259,7 +260,24 @@ impl QualifiedItemDefinition {
             ground_destination: false,
             decay: None,
             decay_chain: Vec::new(),
+            field_class: qualify_field_class(&item.semantics.classification)?,
         })
+    }
+}
+fn qualify_field_class(
+    classification: &crate::content::ReferenceItemField<
+        crate::content::ReferenceItemClassification,
+    >,
+) -> Result<SpellFieldClass, &'static str> {
+    use crate::content::{ReferenceItemField as F, ReferenceItemType};
+    match classification {
+        F::Known(classification) => match classification.item_type {
+            F::Known(ReferenceItemType::MagicField) => Ok(SpellFieldClass::Field),
+            F::Known(_) | F::NotApplicable => Ok(SpellFieldClass::NotField),
+            _ => Err("unknown spell Item field classification"),
+        },
+        F::NotApplicable => Ok(SpellFieldClass::NotField),
+        _ => Err("unknown spell Item classification"),
     }
 }
 impl DurableCorpseReservation {
