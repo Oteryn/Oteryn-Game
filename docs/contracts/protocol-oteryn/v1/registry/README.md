@@ -28,12 +28,13 @@ dispatch offered sets. Do not edit those generated tables or add another list of
 
 Module declarations remain additive insertions in the protocol and dispatch modules; the
 `oteryn-additive` merge driver already handles them. Full-set property tests read the fragments.
-CAPS-SPLIT-1 also retains explicit golden snapshots (`src/tests/capabilities_golden.rs` in
-protocol and `capability_offers_golden_tests.rs` in dispatch) to prove this refactor preserves
-every current value. An intentional future capability-set change updates its golden facts as
-well as adding its fragments. Golden entries have trailing commas, so these changes are pure
-insertions handled by the additive merge driver. Existing mechanic-specific assertions remain
-in their modules.
+CAPS-SPLIT-1 also retains explicit golden snapshots to prove this refactor preserves every
+current value. CAPS-SPLIT-2 stores them as one file per capability in
+`crates/protocol-oteryn/src/tests/capabilities_golden/`, named like the runtime fragment; the
+protocol golden test and dispatch `capability_offers_golden_tests.rs` read that directory. An
+intentional future capability-set change adds or updates its golden file as well as its runtime
+fragment, so parallel capability changes touch different files and need no ordering. Existing
+mechanic-specific assertions remain in their modules.
 
 Command decoding/routing still edits `gameplay_transport/connection.rs`. CAPS-SPLIT-1 defers
 per-mechanic route registration to a separate change because the current chain also determines
