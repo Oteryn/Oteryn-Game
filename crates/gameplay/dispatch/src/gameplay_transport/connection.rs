@@ -812,6 +812,18 @@ pub trait FreshAdmissionAuthority {
         async { None }
     }
 
+    /// PARTY-1: basic session-fenced membership commands and own-state query.
+    fn party_command(
+        &self,
+        _admitted: AdmittedSession,
+        _command_id: u64,
+        _command_type: u32,
+        _payload: &[u8],
+        _view: &mut super::party_command::SessionPartyView,
+    ) -> impl Future<Output = Option<Vec<u8>>> {
+        std::future::ready(None)
+    }
+
     /// QUEST-LOG-WIRE-1: the session's quest copy with the quest log content, unless the copy
     /// still has version `since` (`Unchanged`). `Unavailable` while the copy is not loaded: the
     /// domain then shows nothing new and every query is `REJECTED`.
@@ -1841,6 +1853,7 @@ where
     // ITEM-VIEW-1b: with capability 4, domains 9 and 11 above every revision the session has
     // seen, with fresh handles. The revisions advance before the write. An unreadable backpack
     // fails closed; the carried open corpse is shown again only while it is in reach.
+    let mut party_view = super::party_command::SessionPartyView::default();
     let mut item_view = None;
     let item_snapshot;
     if admitted
@@ -2809,6 +2822,7 @@ where
             /// RANK-1 (HS-WIRE-1): command 14, a read of the session's World snapshots.
             Highscores(HighscoresReply),
             Guild(Vec<u8>),
+            Party(Vec<u8>),
             Appearance(Option<oteryn_protocol_oteryn::appearance::ChangeResult>),
             DailyReward(Option<Vec<u8>>),
             WorldEvent(Result<Vec<u8>, ()>),
@@ -3358,6 +3372,24 @@ where
                 )
                 .await,
             )
+        } else if matches!(
+            command.command_type,
+            oteryn_protocol_oteryn::party::COMMAND_TYPE_PARTY_INTENT
+                | oteryn_protocol_oteryn::party::COMMAND_TYPE_PARTY_QUERY
+        ) {
+            match authority
+                .party_command(
+                    admitted,
+                    command.command_id,
+                    command.command_type,
+                    command.payload,
+                    &mut party_view,
+                )
+                .await
+            {
+                Some(payload) => Dispatch::Party(payload),
+                None => Dispatch::Unregistered,
+            }
         } else if command.command_type == COMMAND_TYPE_CHAT_INTENT {
             // CHAT-WIRE-1: spam control is the speaker's limiter inside the authority; a
             // malformed intent is REJECTED with an empty payload like any unregistered command.
@@ -3780,6 +3812,7 @@ where
                 };
                 (CommandStatus::Accepted, payload)
             }
+            Dispatch::Party(payload) => (CommandStatus::Accepted, payload.clone()),
             Dispatch::QuestLog(_) => (CommandStatus::Accepted, Vec::new()),
             Dispatch::Chat(result) => {
                 let Ok(payload) = encode_chat_intent_result(result) else {
@@ -4277,6 +4310,7 @@ where
             | Dispatch::Highscores(_)
             | Dispatch::Guild(_)
             | Dispatch::Vip(_)
+            | Dispatch::Party(_)
             | Dispatch::WorldEvent(_)
             | Dispatch::Appearance(_)
             | Dispatch::DailyReward(_)

@@ -89,6 +89,20 @@ fn guild_world_job_installed_migration_real_commands_and_restart_cleanup() -> Te
             run_guild_world_pass(&h.root, &authority, &h.node, world, &mut cursor)
                 .await
                 .map_err(debug)?;
+            // GUILD-BANK-1: with the bank installed the first committed step only pays the
+            // Guild balance to the leader; membership cleanup starts on the next tick.
+            assert_eq!(h.count("game_guild_members").await?, 5);
+            assert_eq!(h.count("game_guild_disband_steps").await?, 0);
+            // The fair cursor now sits on this Guild: the next tick finds nothing after it and
+            // wraps, and the tick after that starts membership cleanup.
+            run_guild_world_pass(&h.root, &authority, &h.node, world, &mut cursor)
+                .await
+                .map_err(debug)?;
+            assert!(cursor.is_none());
+            assert_eq!(h.count("game_guild_members").await?, 5);
+            run_guild_world_pass(&h.root, &authority, &h.node, world, &mut cursor)
+                .await
+                .map_err(debug)?;
             assert_eq!(h.count("game_guild_members").await?, 1);
             let restarted = DurabilityRoot::connect_test_runtime(&h.database.url)?;
             assert!(restarted.maintain_ready_once().await?);

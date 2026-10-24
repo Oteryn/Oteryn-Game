@@ -33,6 +33,7 @@ mod connection;
 mod container_view;
 mod equipment_move;
 pub mod fresh_evidence;
+mod guild_bank;
 mod guild_chat;
 mod guild_intent;
 mod highscores;
@@ -2520,6 +2521,18 @@ fn operator_event(line: &str) {
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     vip::composed_methods!();
+    async fn party_command(
+        &self,
+        admitted: connection::AdmittedSession,
+        command_id: u64,
+        command_type: u32,
+        payload: &[u8],
+        view: &mut party_command::SessionPartyView,
+    ) -> Option<Vec<u8>> {
+        self.party_wire_command(admitted, command_id, command_type, payload, view)
+            .await
+    }
+
     appearance_change::composed_methods!();
     guild_intent::composed_methods!();
     house_intent::composed_methods!();
@@ -6709,6 +6722,7 @@ mod tests {
     }
 }
 
+pub mod party_command;
 mod party_kill_settlement;
 mod party_spell_feedback;
 mod party_spell_owner;
