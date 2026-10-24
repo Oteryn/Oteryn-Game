@@ -97,10 +97,17 @@ fn capability_tables_are_all_fragment_facts() -> Result<(), Box<dyn Error>> {
 
 #[test]
 fn caps_split_1_golden_preserves_every_current_capability_fact() -> Result<(), Box<dyn Error>> {
-    let expected: Vec<Value> = include!("tests/capabilities_golden.rs")
-        .iter()
-        .map(|text| serde_json::from_str(text))
-        .collect::<Result<_, _>>()?;
+    let directory = Path::new(env!("CARGO_MANIFEST_DIR")).join("src/tests/capabilities_golden");
+    let mut expected: Vec<Value> = Vec::new();
+    for item in std::fs::read_dir(directory)? {
+        let item = item?;
+        if item.path().extension().is_some_and(|ext| ext == "json") {
+            expected.push(serde_json::from_str(&std::fs::read_to_string(
+                item.path(),
+            )?)?);
+        }
+    }
+    expected.sort_by_key(|entry| entry["id"].as_u64());
     assert_eq!(facts()?, expected);
     Ok(())
 }

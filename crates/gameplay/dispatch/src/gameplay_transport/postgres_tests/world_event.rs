@@ -4,11 +4,14 @@ use crate::foundation::{
     ChannelId, MessageType, ScopeOwnershipGeneration, WorldId, decode_wire_envelope,
 };
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
-use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+use crate::gameplay_transport::connection::{
+    ConnectionEnd, FreshAdmissionAuthority, IDLE_LIVENESS, serve_admitted,
+};
 use oteryn_protocol_oteryn::world_event as wire;
 use oteryn_protocol_oteryn::{
     ClientCommandValue, CommandStatus, decode_command_result, encode_client_command,
 };
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 #[path = "world_event/reset_fixture.rs"]
 mod event_fixture;
@@ -103,9 +106,10 @@ fn scenario(epochs: u64) -> TestResult {
         );
         admitted.continuity.selected_capabilities =
             SelectedCapabilities::select(offered, &[6, 53]).ok_or("capability 53")?;
+        let fresh = admitted;
 
         // Malformed query never reaches storage. A valid query commits its exact result.
-        let results = exchange(&owner, admitted, &[(1, &[0]), (2, &[])]).await?;
+        let results = exchange(&owner, &mut admitted, &[(1, &[0]), (2, &[])]).await?;
         assert_eq!(results.len(), 2);
         assert_eq!(results[0], (CommandStatus::Rejected, Vec::new()));
         assert_eq!(results[1].0, CommandStatus::Accepted);
@@ -126,7 +130,7 @@ fn scenario(epochs: u64) -> TestResult {
         unsupported.continuity.selected_capabilities =
             SelectedCapabilities::select(offered, &[6]).ok_or("base capability")?;
         assert_eq!(
-            exchange(&owner, unsupported, &[(3, &[])]).await?,
+            exchange(&owner, &mut unsupported, &[(3, &[])]).await?,
             [(CommandStatus::Rejected, Vec::new())]
         );
         assert_eq!(receipt_count(&h).await?, 1);
@@ -140,13 +144,26 @@ fn scenario(epochs: u64) -> TestResult {
             .active_world_event_epoch(world)
             .await?
             .ok_or("restart epoch")?;
-        let replay = exchange(&restarted, admitted, &[(2, &[]), (3, &[])]).await?;
+        // The reconstructed fixture owner has no retained ingress. Start with fresh
+        // admission continuity and reach the durable receipt IDs in stream order.
+        admitted = fresh;
+        assert_eq!(
+            exchange(&restarted, &mut admitted, &[(1, &[0])]).await?,
+            [(CommandStatus::Rejected, Vec::new())]
+        );
+        let replay = exchange(&restarted, &mut admitted, &[(2, &[]), (3, &[])]).await?;
         assert_eq!(
             replay,
             [
                 (CommandStatus::Accepted, stored.clone()),
-                (CommandStatus::Accepted, stored)
+                (CommandStatus::Accepted, stored.clone())
             ]
+        );
+        assert_eq!(receipt_count(&h).await?, 2);
+        // Same-session retries replay retained terminal truth (SESSION-INGRESS-1).
+        assert_eq!(
+            exchange(&restarted, &mut admitted, &[(3, &[])]).await?,
+            [(CommandStatus::DuplicateReplay, stored)]
         );
         assert_eq!(receipt_count(&h).await?, 2);
 
@@ -154,7 +171,11 @@ fn scenario(epochs: u64) -> TestResult {
         // Start at CommandId 1 so generic outstanding-Bank reconciliation does
         // not consume the stale fence before this mechanic's dispatch boundary.
         for which in 0..7 {
-            let mut forged = admitted;
+            // Each independent negative starts a fresh fixture ingress at ID 1.
+            let mut negative = deps.owner(&h, &authority);
+            negative.active_generation = controller.active();
+            negative.reset_epoch = epochs;
+            let mut forged = fresh;
             let f = forged.item_fence.as_mut().ok_or("fence")?;
             match which {
                 0 => {
@@ -185,15 +206,18 @@ fn scenario(epochs: u64) -> TestResult {
                 _ => forged.item_fence = None,
             }
             assert_eq!(
-                exchange(&restarted, forged, &[(1, &[])]).await?,
+                exchange(&negative, &mut forged, &[(1, &[])]).await?,
                 [(CommandStatus::Rejected, Vec::new())],
                 "negative fence {which} at epoch {epochs}"
             );
         }
         // Stale boot epoch and zero CommandId fail closed at their owning boundaries.
-        restarted.reset_epoch = epochs + 1;
+        let mut stale_boot = deps.owner(&h, &authority);
+        stale_boot.active_generation = controller.active();
+        stale_boot.reset_epoch = epochs + 1;
+        let mut stale_boot_session = fresh;
         assert_eq!(
-            exchange(&restarted, admitted, &[(4, &[])]).await?,
+            exchange(&stale_boot, &mut stale_boot_session, &[(1, &[])]).await?,
             [(CommandStatus::Rejected, Vec::new())]
         );
         assert!(
@@ -212,21 +236,44 @@ fn scenario(epochs: u64) -> TestResult {
                 .await
                 .is_err()
         );
-        // A failed query commit emits no terminal result; retrying its retained
-        // CommandId after recovery commits exactly one receipt.
-        restarted.reset_epoch = epochs;
+        // A failed query commit emits no terminal result and leaves its original
+        // ingress reservation unresolved; a same-session retry must fail closed.
         sqlx::query("CREATE FUNCTION reject_event_query() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'injected query failure' USING ERRCODE='23514'; END $$").execute(&h.pool).await?;
         sqlx::query("CREATE TRIGGER reject_event_query BEFORE INSERT ON game_world_event_query_receipts FOR EACH ROW EXECUTE FUNCTION reject_event_query()").execute(&h.pool).await?;
         assert!(
-            exchange(&restarted, admitted, &[(4, &[])])
+            exchange(&restarted, &mut admitted, &[(4, &[])])
                 .await?
                 .is_empty()
         );
+        assert_eq!(admitted.continuity.next_command_id, 5);
         assert_eq!(receipt_count(&h).await?, 2);
         sqlx::query("DROP TRIGGER reject_event_query ON game_world_event_query_receipts")
             .execute(&h.pool)
             .await?;
-        let recovered = exchange(&restarted, admitted, &[(4, &[])]).await?;
+        assert!(
+            exchange(&restarted, &mut admitted, &[(4, &[])])
+                .await?
+                .is_empty()
+        );
+        assert_eq!(admitted.continuity.next_command_id, 5);
+        assert_eq!(receipt_count(&h).await?, 2);
+        drop(restarted);
+        let mut restarted = deps.owner(&h, &authority);
+        restarted.active_generation = controller.active();
+        restarted.reset_epoch = epochs;
+        // The reconstructed fixture owner starts a new ingress from its initial
+        // admission. Replay durable receipt IDs before retrying the failed ID.
+        admitted = fresh;
+        assert_eq!(
+            exchange(&restarted, &mut admitted, &[(1, &[0])]).await?,
+            [(CommandStatus::Rejected, Vec::new())]
+        );
+        assert_eq!(
+            exchange(&restarted, &mut admitted, &[(2, &[]), (3, &[])]).await?,
+            replay
+        );
+        assert_eq!(receipt_count(&h).await?, 2);
+        let recovered = exchange(&restarted, &mut admitted, &[(4, &[])]).await?;
         assert_eq!(recovered.len(), 1);
         assert_eq!(recovered[0].0, CommandStatus::Accepted);
         assert_eq!(
@@ -245,10 +292,11 @@ fn scenario(epochs: u64) -> TestResult {
         assert!(h.root.active_world_event_epoch(world).await.is_err());
         restarted.reset_epoch = 99;
         assert!(
-            exchange(&restarted, admitted, &[(5, &[])])
+            exchange(&restarted, &mut admitted, &[(5, &[])])
                 .await?
                 .is_empty()
         );
+        assert_eq!(admitted.continuity.next_command_id, 6);
         assert_eq!(receipt_count(&h).await?, 3);
         sqlx::query("UPDATE game_world_reset_active SET reset_epoch=$1::text::numeric")
             .bind(epochs.to_string())
@@ -276,17 +324,13 @@ async fn receipt_count(h: &Harness) -> TestResult<i64> {
 
 async fn exchange(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
-    mut admitted: AdmittedSession,
+    admitted: &mut AdmittedSession,
     commands: &[(u64, &[u8])],
 ) -> TestResult<Vec<(CommandStatus, Vec<u8>)>> {
-    // Recreate the connection with its retained next/outstanding CommandId.
-    if let Some((command_id, _)) = commands.first() {
-        admitted.continuity.next_command_id = *command_id;
-    }
     let mut input = Vec::new();
     for (command_id, payload) in commands {
         let frame = encode_client_command(
-            1,
+            admitted.continuity.connection_generation,
             &ClientCommandValue {
                 command_id: *command_id,
                 command_type: wire::COMMAND_TYPE_WORLD_EVENT_QUERY,
@@ -297,7 +341,22 @@ async fn exchange(
         input.extend_from_slice(&u32::try_from(frame.len())?.to_be_bytes());
         input.extend_from_slice(&frame);
     }
-    let (_, output) = weather_wire::fixture_access::serve_input(owner, admitted, &input).await?;
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    client.write_all(&input).await?;
+    client.shutdown().await?;
+    let end = tokio::time::timeout(
+        Duration::from_secs(30),
+        serve_admitted(&mut server, *admitted, owner, IDLE_LIVENESS),
+    )
+    .await?;
+    match end {
+        ConnectionEnd::AdmittedThenDisconnected(current)
+        | ConnectionEnd::AdmittedThenClosed(current, _) => *admitted = current,
+        other => return Err(format!("world event connection ended {other:?}").into()),
+    }
+    drop(server);
+    let mut output = Vec::new();
+    client.read_to_end(&mut output).await?;
     let mut cursor = 0;
     let mut results = Vec::new();
     while cursor < output.len() {

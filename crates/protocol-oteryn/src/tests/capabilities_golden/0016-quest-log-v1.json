@@ -1,0 +1,19 @@
+{
+  "id": 16,
+  "name": "QUEST_LOG_V1",
+  "constant": "quest_log::CAPABILITY_QUEST_LOG_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [
+    22
+  ],
+  "domains": [
+    16
+  ],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}
