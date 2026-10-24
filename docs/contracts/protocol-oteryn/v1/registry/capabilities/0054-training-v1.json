@@ -1,0 +1,18 @@
+{
+  "id": 54,
+  "name": "TRAINING_V1",
+  "owner_decision": "LOOP-TRAIN-1 owner allocation 2026-10-23",
+  "owner": "LOOP-TRAIN-1",
+  "requires": [
+    4,
+    18,
+    21
+  ],
+  "command_types": [
+    66,
+    67
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Only a bundle with admitted native training content and explicit OTERYN_ENABLE_PROVISIONAL_TRAINING=1 opt-in. Shipped data enabled=false. Rates PROVISIONAL / GATED OFF; no Reference runtime selection is inferred."
+}

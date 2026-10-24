@@ -32,3 +32,5 @@ pub mod vip;
 pub mod house_management;
 
 pub mod staff;
+
+pub mod exercise_training;

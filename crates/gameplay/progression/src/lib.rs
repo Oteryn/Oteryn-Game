@@ -6,6 +6,7 @@ pub mod bestiary;
 pub mod charm_effects;
 pub mod daily_reward;
 pub mod hit_training;
+pub mod loop_training;
 pub mod mana_training;
 pub mod prey;
 pub mod proficiency;

@@ -323,6 +323,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             admitted.first_entry = respawned_first_entry(admitted.first_entry, settled);
         }
         if writes_after_progression(positioned, admitted.first_entry) {
+            self.admit_loop_training(&mut admitted).await;
+        }
+        if writes_after_progression(positioned, admitted.first_entry) {
             self.admit_quest_session(&admitted).await;
         }
         Ok(admitted)

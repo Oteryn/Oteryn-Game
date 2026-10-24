@@ -73,13 +73,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         actor: ExactActorRef,
     ) -> GraceExpiryResult {
-        match self
+        let removed = self
             .runtime
             .lock()
             .await
-            .remove_terminal_session(session, actor)
-        {
+            .remove_terminal_session(session, actor);
+        match removed {
             Ok(()) => {
+                self.states.training.forget(session).await;
                 self.states.forget_session(session);
                 GraceExpiryResult::Released
             }

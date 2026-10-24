@@ -49,6 +49,7 @@ pub(super) enum Dispatch {
     Appearance(Option<oteryn_protocol_oteryn::appearance::ChangeResult>),
     DailyReward(Option<Vec<u8>>),
     WorldEvent(Result<Vec<u8>, ()>),
+    Training(oteryn_protocol_oteryn::loop_training::TrainingResult),
     /// ITEM-VIEW-1b: `USE` with an item target; the domain 11 delta follows the result.
     UseItem(OpenDecision, Option<ItemViewDelta>),
     /// BAGS-WIRE-1: command 21; the domain 14 delta follows the result.

@@ -45,7 +45,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let _ = self
             .drain_familiar_deaths(actor, session, &cleanup_access)
             .await;
-        let _ = self.save_spell_training(actor, session, true).await;
+        if self.save_spell_training(actor, session, true).await
+            == actor_spell::TrainingSave::Unknown
+        {
+            return false;
+        }
         let runtime = self.runtime.lock().await;
         let states = self.states.spell_states.lock().await;
         let settled = !states.has_pending_spell_commit(actor, session)

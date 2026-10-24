@@ -2574,3 +2574,5 @@ pub mod staff;
 pub mod cyclopedia;
 
 pub mod timed_item;
+
+pub mod loop_training;

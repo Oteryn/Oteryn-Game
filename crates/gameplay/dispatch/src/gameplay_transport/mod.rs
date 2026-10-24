@@ -12,6 +12,7 @@ mod daily_reward;
 mod depot;
 mod house_intent;
 mod house_query;
+mod loop_training;
 use bundle_map_position::bundle_map_position;
 #[cfg(test)]
 use bundle_map_position::bundle_world_map;
@@ -1246,9 +1247,12 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     /// `required_capabilities` against this same offer; a bundle World's floor holds 18, so
     /// admission requires it through the authenticated check in `admit`, not here.
     fn offered_capabilities(&self) -> &'static [capabilities::OfferedCapability] {
-        world_required_capabilities::offered_for_scope(
-            self.bundle_map().is_some(),
-            self.active_generation,
+        loop_training::offer(
+            self,
+            world_required_capabilities::offered_for_scope(
+                self.bundle_map().is_some(),
+                self.active_generation,
+            ),
         )
     }
 
@@ -1651,6 +1655,28 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.reconcile_terminal_session(admitted).await
     }
 
+    async fn offline_training(
+        &self,
+        admitted: AdmittedSession,
+        command: connection::UseCommand,
+        target: item_view::ItemKey,
+    ) -> Option<oteryn_protocol_oteryn::loop_training::TrainingResult> {
+        self.offline_training(admitted, command, target).await
+    }
+    async fn exercise_training(
+        &self,
+        admitted: AdmittedSession,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::loop_training::ExerciseIntent,
+        weapon: Option<item_view::ItemKey>,
+        dummy: Option<item_view::ItemKey>,
+    ) -> Option<oteryn_protocol_oteryn::loop_training::TrainingResult> {
+        self.exercise_training(admitted, command, intent, weapon, dummy)
+            .await
+    }
+    async fn training_activity(&self, admitted: AdmittedSession, kind: u32) -> bool {
+        self.loop_training_activity(admitted, kind).await
+    }
     async fn logout(&self, admitted: AdmittedSession) -> logout::LogoutReply {
         self.logout_session(admitted).await
     }

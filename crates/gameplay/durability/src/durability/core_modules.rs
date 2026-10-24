@@ -83,6 +83,8 @@ pub mod item_craft;
 pub mod item_use_audit;
 #[cfg(any(test, feature = "test-support"))]
 pub mod item_weight_lookup;
+pub mod loop_training;
+pub mod offline_training_state;
 pub mod mail;
 pub mod player_trade;
 pub mod map_item_mint;

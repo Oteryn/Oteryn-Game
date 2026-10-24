@@ -29,6 +29,7 @@ impl FreshAdmissionStore {
             let encoded_successors = evidence.transition.successors.iter().map(|row| encode_guard(row, store.guards.maximum_guard_bytes)).collect::<Result<Vec<_>>>()?;
             let decided_at: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint").fetch_one(&mut *tx).await?;
             let successors = transition.validate_locked(&rows, current, decided_at).map_err(|_| DurabilityError::Unavailable)?;
+            if let Some(training) = &store.training_logout { training.prepare(&mut tx).await?; }
             if let Some(final_position) = store.final_position {
                 write_final_position(&mut tx, &current, &final_position).await?;
             }

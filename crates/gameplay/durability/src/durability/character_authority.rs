@@ -721,6 +721,7 @@ async fn verify_character_integrity(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     definitions: Option<&dyn super::character_proficiency::ProficiencyDefinitions>,
 ) -> std::result::Result<(), DurabilityError> {
+    super::offline_training_state::verify(tx).await?;
     super::npc_purchase::verify_purchase_integrity(tx).await?;
     creation_integrity::verify(tx).await?;
     // P03 progression is optional at revision one because initialization is a
