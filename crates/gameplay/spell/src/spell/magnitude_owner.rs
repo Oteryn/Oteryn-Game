@@ -211,6 +211,7 @@ pub struct PreparedMagnitudeOwner {
     plan: NativeCombatPlan,
     targets: Vec<Target>,
     shared_extensions: Option<(bool, bool)>,
+    pvp_targets: Vec<(ExactActorRef, bool)>,
 }
 
 fn invalid<T>() -> Result<T, Error> {
@@ -269,6 +270,34 @@ impl PreparedMagnitudeOwner {
         bindings: &[LiveActorBinding],
         players: &[(ExactActorRef, &PlayerSpellState)],
         now_ms: u64,
+    ) -> Result<Self, Error> {
+        Self::qualify_pvp(
+            runtime,
+            caster,
+            actor,
+            session,
+            attributes,
+            plan,
+            bindings,
+            players,
+            now_ms,
+            &[],
+        )
+    }
+
+    /// Same magnitude owner, with the live dispatch's current legal unarmoured player set.
+    #[allow(clippy::too_many_arguments)]
+    pub fn qualify_pvp(
+        runtime: &ChannelRuntimeV1,
+        caster: &PlayerSpellState,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        attributes: Option<&MagnitudeOwnedAttributes>,
+        plan: &NativeCombatPlan,
+        bindings: &[LiveActorBinding],
+        players: &[(ExactActorRef, &PlayerSpellState)],
+        now_ms: u64,
+        pvp_targets: &[(ExactActorRef, bool)],
     ) -> Result<Self, Error> {
         let original = attributes.ok_or(Error::InvalidBatch)?;
         if original.policy == MagnitudePolicy::BaselineTest
@@ -407,6 +436,18 @@ impl PreparedMagnitudeOwner {
             };
             if hits.iter().any(|hit| hit.target == binding.source_id) && element != Element::Healing
             {
+                if let TargetOwner::Player(_) = &owner {
+                    if !pvp_targets.iter().any(|(a, _)| *a == binding.actor) {
+                        return invalid();
+                    }
+                    targets.push(Target {
+                        source_id: binding.source_id,
+                        actor: binding.actor,
+                        atom: binding.target_atom.clone(),
+                        owner,
+                    });
+                    continue;
+                }
                 let TargetOwner::Creature(creature) = &owner else {
                     return invalid();
                 };
@@ -452,6 +493,7 @@ impl PreparedMagnitudeOwner {
             plan: plan.clone(),
             targets,
             shared_extensions: None,
+            pvp_targets: pvp_targets.to_vec(),
         })
     }
 
@@ -667,6 +709,31 @@ impl PreparedMagnitudeOwner {
         }
         if let Some(side) = hit.side_percent {
             value = signed_round(value as f64 * f64::from(side) / 100.0)?;
+        }
+        if let TargetOwner::Player(_) = &target.owner {
+            let black = self
+                .pvp_targets
+                .iter()
+                .find(|(a, _)| *a == target.actor)
+                .ok_or(Error::InvalidBatch)?
+                .1;
+            if let Some(ConditionValues::Attributes {
+                damage_dealt_percent,
+                ..
+            }) = condition_attributes(&self.caster, self.now_ms)?
+            {
+                value = percent(value, damage_dealt_percent)?;
+            }
+            let bonus = needed(a.source_damage_multiplier_percent)?
+                .checked_add(hit.bonus_percent)
+                .ok_or(Error::InvalidMagnitude)?;
+            value = compound(value, bonus)?
+                .checked_add(i64::from(needed(a.wheel_flat_damage)?))
+                .ok_or(Error::InvalidMagnitude)?;
+            return Ok(i64::from(oteryn_gameplay_combat_rules::pvp::pvp_damage(
+                u32::try_from(value.max(0)).map_err(|_| Error::InvalidMagnitude)?,
+                black,
+            )));
         }
         let TargetOwner::Creature(source_target) = &target.owner else {
             return invalid();

@@ -37,6 +37,16 @@ pub(super) async fn lock_use_path(
         return Err(ItemUseError::StaleState);
     }
     let mut items = path.clone();
+    let tool_path = if let ItemUseKind::PickRefine { tool, .. } = request.kind {
+        let tool_path = use_path(connection, &tool).await?;
+        if !(2..=9).contains(&tool_path.len()) || tool_path.last() != Some(backpack) {
+            return Err(ItemUseError::StaleState);
+        }
+        items.extend_from_slice(&tool_path);
+        Some((tool, tool_path))
+    } else {
+        None
+    };
     if let ItemUseFlaskPlan::Stack {
         item_instance_id, ..
     } = request.flask
@@ -62,6 +72,11 @@ pub(super) async fn lock_use_path(
     .await?;
     if locked.len() != items.len()
         || use_path(connection, &request.source_item_instance_id).await? != path
+    {
+        return Err(ItemUseError::StaleState);
+    }
+    if let Some((tool, path)) = tool_path
+        && use_path(connection, &tool).await? != path
     {
         return Err(ItemUseError::StaleState);
     }

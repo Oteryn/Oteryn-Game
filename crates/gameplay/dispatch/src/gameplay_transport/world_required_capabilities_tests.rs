@@ -431,9 +431,7 @@ fn real_scope_offer_enforces_the_registered_d1083_floor() {
 
 #[test]
 fn invalid_weather_documents_leave_capability_26_unoffered_and_a_required_26_refuses_boot() {
-    use super::super::capabilities::{
-        BUNDLE_WORLD_OFFERED_CAPABILITIES, PRODUCTION_OFFERED_CAPABILITIES,
-    };
+    use super::super::capabilities::PRODUCTION_OFFERED_CAPABILITIES;
     const WEATHER: u32 = oteryn_protocol_oteryn::world_weather::CAPABILITY_WORLD_WEATHER_V1;
     // Invalid documents: the loader fails, so no source is bound.
     let index = include_str!("../../../../../content/weather/index.json");
@@ -480,11 +478,11 @@ fn invalid_weather_documents_leave_capability_26_unoffered_and_a_required_26_ref
     // The default sets are the bound sets: the shipped data loads in this build.
     assert_eq!(
         offered_for_scope_with(true, None, true),
-        BUNDLE_WORLD_OFFERED_CAPABILITIES
+        super::super::capabilities::BUNDLE_WORLD_UNTIMED_OFFERED_CAPABILITIES
     );
     assert_eq!(
         offered_for_scope(true, None),
-        BUNDLE_WORLD_OFFERED_CAPABILITIES
+        super::super::capabilities::BUNDLE_WORLD_UNTIMED_OFFERED_CAPABILITIES
     );
     assert_eq!(
         offered_for_scope_with(false, None, true),

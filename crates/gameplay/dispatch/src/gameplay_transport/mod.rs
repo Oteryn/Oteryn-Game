@@ -31,12 +31,14 @@ mod combat_lock_fact;
 mod composed_test_owner;
 mod connection;
 mod container_view;
+mod cyclopedia;
 mod equipment_move;
 pub mod fresh_evidence;
 mod guild_bank;
 mod guild_chat;
 mod guild_intent;
 mod highscores;
+mod house_move_out;
 mod input_gate;
 mod item_craft;
 mod item_look;
@@ -50,8 +52,14 @@ mod logout;
 #[cfg(test)]
 mod logout_tests;
 mod loop_move;
+mod mining;
 pub mod spectate_session;
 mod staff;
+mod timed_item;
+mod timed_item_clock;
+mod timed_item_content;
+mod timed_item_use;
+mod timed_item_wire;
 mod vip;
 use crate::map::boot::BundleCollisionIndexExt;
 pub use last_position::LastPositionFlush;
@@ -76,6 +84,7 @@ mod npc_travel;
 mod npc_voice;
 mod paced_movement;
 mod pvp_death;
+mod pvp_live;
 mod tutorial_corruptor;
 mod tutorial_movement;
 mod tutorial_session;
@@ -356,6 +365,9 @@ fn held_step(
 ) -> Option<Duration> {
     if states.is_dead(actor) {
         return None;
+    }
+    if pvp_live::logout_blocked(states, actor, session, now) {
+        return Some(Duration::from_millis(250).min(limit));
     }
     let until = attack.in_fight_until(actor, session, now)?;
     Some(hold_step(until.get().saturating_sub(now.get())).min(limit))
@@ -1118,6 +1130,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         death: actor_spell::PlayerDeath,
         releasing: bool,
     ) -> bool {
+        if !self.stop_timed_actor(actor, session).await {
+            return false;
+        }
         match self
             .root
             .reconcile_character_death(self.character, death.occurrence)
@@ -1960,11 +1975,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         limit: Duration,
     ) -> bool {
         let now = self.owner_now();
-        let step = {
+        let mut step = {
             let states = self.states.spell_states.lock().await;
             let attack = self.states.attack.lock().await;
             held_step(&states, &attack, actor, session, now, limit)
         };
+        let recheck = {
+            let states = self.states.spell_states.lock().await;
+            !states.is_dead(actor) && pvp_live::tracked(&states, actor, session)
+        };
+        if step.is_none() && recheck {
+            // A victim's settled death can extend this contributor's durable kill lock.
+            // Recheck before release even when its cached ordinary hit lock has elapsed;
+            // a session with no cached lock entry contributed to no PvP harm here.
+            if !self.refresh_pvp_locks(actor, session).await {
+                tokio::time::sleep(Duration::from_millis(250).min(limit)).await;
+                return true;
+            }
+            let states = self.states.spell_states.lock().await;
+            let attack = self.states.attack.lock().await;
+            step = held_step(&states, &attack, actor, session, self.owner_now(), limit);
+        }
         let Some(step) = step else {
             return false;
         };
@@ -2090,6 +2121,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .settle_released_death(actor, session, settled_death)
             .await
         {
+            return ReleaseAttempt::Retry;
+        }
+        if !self.stop_timed_actor(actor, session).await {
             return ReleaseAttempt::Retry;
         }
         match self.fence_transition(actor, hold).await {
@@ -2535,11 +2569,24 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .await
     }
 
+    async fn timed_item(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        payload: &[u8],
+        target: Option<item_view::ItemKey>,
+    ) -> Option<Vec<u8>> {
+        self.timed_item_command(actor, command, payload, target)
+            .await
+    }
+
     appearance_change::composed_methods!();
     guild_intent::composed_methods!();
     house_intent::composed_methods!();
     daily_reward::composed_methods!();
     staff::composed_methods!();
+    house_move_out::composed_methods!();
+    cyclopedia::composed_methods!();
     async fn observe_quest_log(
         &self,
         actor: ExactActorRef,
@@ -2947,6 +2994,30 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.use_backpack_item(actor, command, item).await
     }
 
+    async fn use_pick(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<item_view::ItemKey>,
+        target: Option<item_view::ItemKey>,
+    ) -> Option<UseOutcome> {
+        self.use_pick_impl(actor, command, intent, source, target)
+            .await
+    }
+
+    async fn use_item_completion(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        item: item_view::ItemKey,
+    ) -> Option<UseOutcome> {
+        if let Some(outcome) = self.use_timed_item(actor, command, item).await {
+            return outcome;
+        }
+        Some(self.use_item(actor, command, item).await)
+    }
+
     async fn use_item_by_definition(
         &self,
         actor: ExactActorRef,
@@ -3104,6 +3175,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         game_session_id: GameSessionId,
     ) -> Option<(u64, actor_spell::ActorVitals)> {
+        let restored = pvp_live::tracked(
+            &*self.states.spell_states.lock().await,
+            actor,
+            game_session_id,
+        );
+        if !restored && !self.refresh_pvp_locks(actor, game_session_id).await {
+            return None;
+        }
         let runtime = self.runtime.lock().await;
         let states = self.states.spell_states.lock().await;
         actor_spell::observe_vitals(&runtime, &states, actor, game_session_id)
@@ -3301,6 +3380,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command_id: u64,
         target: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
     ) -> oteryn_protocol_oteryn::attack::AttackIntentDisposition {
+        let permit = if target.is_some() {
+            let Some(permit) = self.spell_lane_permit().await else {
+                return oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected;
+            };
+            Some(permit)
+        } else {
+            None
+        };
         let now = self.owner_now();
         let runtime = self.runtime.lock().await;
         let states = self.states.spell_states.lock().await;
@@ -3332,9 +3419,26 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 return oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected;
             }
         }
+        let room = self.rooms.gate_attack_target();
+        if let Some(permit) = permit.as_ref()
+            && !self
+                .pvp_selection_allowed(
+                    permit,
+                    &runtime,
+                    &states,
+                    room,
+                    actor,
+                    game_session_id,
+                    command_id,
+                    target,
+                )
+                .await
+        {
+            return oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected;
+        }
         self.states.attack.lock().await.set_target(
             &runtime,
-            self.rooms.gate_attack_target(),
+            room,
             actor,
             game_session_id,
             now,
@@ -3376,7 +3480,9 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         let states = self.states.spell_states.lock().await;
         let mut attack = self.states.attack.lock().await;
         attack.settle_pacified_target(&runtime, &states, actor, game_session_id);
-        Some(attack.combat_state(actor, game_session_id, now))
+        let mut state = attack.combat_state(actor, game_session_id, now);
+        state.in_fight |= pvp_live::logout_blocked(&states, actor, game_session_id, now);
+        Some(state)
     }
 
     /// ATTACK-1b: every 250 ms while a session has domain 10, so a 2000 ms swing is late by at
@@ -3613,6 +3719,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                     }
                     _ => Unavailable,
                 })?;
+            // LOOP-MAP-1: initialize selection and home-spawn factors before a player is admitted.
+            self.initialize_cyclopedia_respawn()
+                .await
+                .map_err(|_| Unavailable)?;
             let mut flow = FreshAdmissionDurabilityFlowV1::begin(authorization, transition)
                 .map_err(|_| Rejected)?;
             let mut prepared = PreparedRequest(None);

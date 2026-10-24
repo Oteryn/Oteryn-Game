@@ -48,3 +48,29 @@ fn promotion_audit_refuses_a_bank_part_and_wrong_service_family() {
     });
     assert!(check_fee_burn(&value).is_err());
 }
+
+#[test]
+fn cyclopedia_area_donation_audit_binds_world_area_and_occurrence() {
+    let mut value = burn(vec![coin_line(Coin::Crystal, 3, 1, 2, 0)], 20_000);
+    value.cause = Some(OneItemFeeBurnCauseV1 {
+        cause: Some(FeeBurnCauseV1::AreaDonation(OneItemAreaDonationV1 {
+            world: value.world_id.clone(),
+            area: 1,
+            occurrence: uuid(70),
+        })),
+    });
+    assert_eq!(value.cause.as_ref().unwrap().encode_to_vec()[0], 0x22);
+    let envelope =
+        encode_fee_burn_event_with(identity(), value.clone(), Type2EventTuple::V1).unwrap();
+    assert_eq!(decode_fee_burn_envelope(&envelope).unwrap().1, value);
+    for (world, area) in [(uuid(2), 1), (uuid(1), 0), (uuid(1), 2)] {
+        value.cause = Some(OneItemFeeBurnCauseV1 {
+            cause: Some(FeeBurnCauseV1::AreaDonation(OneItemAreaDonationV1 {
+                world,
+                area,
+                occurrence: uuid(70),
+            })),
+        });
+        assert!(check_fee_burn(&value).is_err());
+    }
+}

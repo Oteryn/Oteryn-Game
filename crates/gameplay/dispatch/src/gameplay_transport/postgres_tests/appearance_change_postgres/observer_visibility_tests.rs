@@ -4,7 +4,9 @@ use crate::foundation::admission_authority_publication::{
     AdmissionAuthorityGuardKeyV1, AdmissionAuthorityPublicationV1,
 };
 
-pub(super) async fn admit(harness: &Harness) -> TestResult {
+pub(in crate::gameplay_transport::monk_save::postgres_tests) async fn admit(
+    harness: &Harness,
+) -> TestResult {
     let now: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
             .fetch_one(&harness.pool)
@@ -96,7 +98,7 @@ pub(super) async fn admit(harness: &Harness) -> TestResult {
     Ok(())
 }
 
-pub(super) async fn initialize(
+pub(in crate::gameplay_transport::monk_save::postgres_tests) async fn initialize(
     dependencies: &Dependencies,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
 ) -> TestResult<ExactActorRef> {

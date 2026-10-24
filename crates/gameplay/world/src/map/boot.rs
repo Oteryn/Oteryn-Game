@@ -217,6 +217,7 @@ impl CheckedBundle {
             .map_err(BootRefusal::FloorChain)?;
         Ok(BundleWorld {
             map: Arc::new(BundleMap {
+                entry_start: self.start,
                 overlay: ChannelOverlay::new(Arc::clone(&self.base), world_id, channel_id),
                 facts,
                 floors,
@@ -501,6 +502,8 @@ impl BundleWorld {
 /// empty until MAP-CUTOVER-1c (§1.2), and the bundle's map facts.
 #[derive(Debug)]
 pub struct BundleMap {
+    /// The bundle-authored entry anchor, also used by basic Cyclopedia content.
+    pub entry_start: TilePos,
     pub overlay: ChannelOverlay,
     pub facts: BundleFacts,
     pub floors: FloorTable,

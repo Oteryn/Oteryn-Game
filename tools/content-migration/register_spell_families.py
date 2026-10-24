@@ -219,8 +219,12 @@ def outputs(root: Path = ROOT) -> dict[str, bytes]:
     admit_consumable_profiles(root, generated)
     import tutorial_movement_profiles
     tutorial_movement_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import timed_item_profiles
+    timed_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import craft_runtime_profiles
     craft_runtime_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import mining_item_profiles
+    mining_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     pin_repository_inputs(root, generated)
     descriptors = spell_import.descriptors(root, generated)
     for family, path in FAMILY_INDEXES.items():

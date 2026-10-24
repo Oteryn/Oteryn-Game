@@ -2,27 +2,32 @@
 
 ```yaml
 task_id: PVP-RT-1
-title: "PVP-RT-1: PvP combat runtime (skeleton)"
+title: "PVP-RT-1: basic live player attacks and spells"
 mode: IMPLEMENTATION
-status: waiting
+status: in_progress
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: skeleton/pvp-rt-1
+branch: claude/happy-davinci-ijz3wy-srv-pvprt
 issue: 1622
-pr: null
+pr: 2351
 base_sha: c3ad75d493945469c3f12b01363b4268c6215681
 plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md App. 7 PARTY/PVP PVP-RT-1; wave 2"
 class: "hard (combat), combat and security review"
-migration: no
+migration: 0164
 registry: no
 owner: resource_resume
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
-updated_at: 2026-10-16
+updated_at: 2026-10-23
 execution_policy: continuous_progress
 owned_paths:
-  - crates/gameplay/combat-rules/src/pvp/lock.rs
-  - apps/game-server/tests/pvp_rt_readmission_postgres.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/pvp_live.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/pvp_live_locks.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/pvp_live.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/pvp_live/
+  - crates/gameplay/durability/src/durability/pvp_live.rs
+  - crates/gameplay/durability/src/durability/pvp_live_ledger.rs
+  - apps/game-server/migrations/0164_live_pvp_harm.sql
   - docs/agents/tasks/PVP-RT-1.md
 slot_only_paths:
   - mod.rs
@@ -36,6 +41,269 @@ blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
 ```
+
+## CI repair of PostgreSQL shards 5 and 6 (2026-10-24 local worker)
+
+Returned to local AUTHORING from `6527b54fa` for the owner's bounded repair of PR #2351.
+The coordinator owns publication and the next freeze. The owner's hard prohibition on
+`git commit`/push takes precedence over the task's later commit request; no commit or push ran.
+
+Both reported failures reproduced against real PostgreSQL before repair:
+
+- Shard 5: the deliberately unavailable admission guard table makes the fenced PvP refresh
+  fail. `logout_in_fight` converted that failed read into `InFight { retry_after_ms: 1000 }`,
+  even without combat. Logout now returns `Unknown` before a terminal release and follows
+  ordinary control-loss reconciliation. Confirmed PvE and PvP locks still refuse logout.
+- Shard 6: empty consequences with a live ledger lacking source harm receipts returned
+  `Err(Unavailable(InvalidStoredState))`, rather than `Err(InvalidInput)`. Live contributor
+  derivation now returns the progression error type and explicitly rejects missing receipt
+  evidence as `InvalidInput`. Database/decoding failures remain unavailable, and the existing
+  death transaction rolls back every consequence. Valid receipt-backed derivation remains.
+
+No test expectations, fixtures, ignores or coverage changed. No new public functions, enum
+variants, struct fields or trait methods were added. Re-read the complete repair diff against
+`/home/mole/oteryn-cache/CODEX-CHECKLIST.md` and searched the workspace's `apps/`, `crates/`,
+`tools/` for the affected helper callers.
+
+All Cargo commands below used `/home/mole/oteryn-cache/codex-bin/cargo`,
+`CARGO_NET_OFFLINE=true` and the owner's lane target directory. PostgreSQL runs sourced the
+provided PG environment without printing it. All test commands used `--locked --quiet`.
+
+| Cargo test arguments (in addition to `--locked --quiet`) | Result |
+|---|---|
+| `-p oteryn-gameplay-dispatch --lib an_uncommitted_unknown_logout_becomes_an_ordinary_loss` | RED: reported `InFight` versus `Unknown`; GREEN in the complete logout group below |
+| `-p oteryn-gameplay-dispatch --lib gameplay_transport::monk_save::postgres_tests::logout_e2e` | 6 passed, 0 failed/ignored, 21.39s |
+| `-p oteryn-game-server --test character_authority_postgres pvp_death_empty_or_invalid_consequences_never_discard_a_live_ledger` | RED: `Unavailable(InvalidStoredState)`; GREEN: 1 passed, 0 failed/ignored, 7.96s |
+| `-p oteryn-game-server --test character_authority_postgres pvp_state_postgres_cases` | 8 passed, 0 failed/ignored, 20.88s |
+| `-p oteryn-game-server --test character_authority_postgres pvp_readmission_postgres_cases` | 10 passed, 0 failed/ignored, 6.31s |
+| `-p oteryn-gameplay-dispatch --lib pvp_` | 8 passed, 2 failed, 0 ignored, 168.55s; isolated reruns below |
+| `-p oteryn-gameplay-dispatch --lib pvp_live_wire_melee_spell_death_replay_and_reload` | 1 passed, 0 failed/ignored, 50.33s |
+| `-p oteryn-gameplay-dispatch --lib pvp_live_bundle_melee_spell_death_replay_and_reload` | 1 passed, 0 failed/ignored, 32.33s |
+| `-p oteryn-gameplay-dispatch --lib logout_tests` | 4 passed, 0 failed/ignored |
+| `-p oteryn-gameplay-durability --lib death_binding_covers_the_intent_and_excludes_retry_local_authority` | 1 passed, 0 failed/ignored |
+
+`cargo check --locked -p oteryn-gameplay-dispatch -p oteryn-gameplay-durability --quiet`,
+`cargo clippy --locked -p oteryn-gameplay-dispatch -p oteryn-gameplay-durability --all-targets
+--quiet -- -D warnings`, and `cargo fmt --all -- --check` passed. Existing vendored Tokio/SQLx
+warnings are unchanged.
+
+### Unfinished for the shard repair
+
+- CI-only, under the owner's shared-PC rule: grouped
+  `gameplay_transport::monk_save::postgres_tests::pvp_live::pvp_live_wire_melee_spell_death_replay_and_reload`
+  failed at the unchanged melee HP assertion (line 422), poisoning the fixture gate for
+  `gameplay_transport::monk_save::postgres_tests::pvp_live::pvp_live_bundle_melee_spell_death_replay_and_reload`.
+  Both passed when rerun alone. No unrelated timing/test change was made.
+- Coordinator publication and fresh repository CI on the resulting candidate. No remote CI,
+  freeze or merge success is claimed.
+
+Proposed commit message for the publishing coordinator:
+
+```text
+fix(pvp): preserve unknown logout and reject missing death consequences
+
+Keep failed fenced PvP reads on the unknown/control-loss path instead of reporting
+a fabricated fight lock. Reject empty death consequences without source receipts
+as InvalidInput while retaining database failures as unavailable.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01D1SN2sEo2yY1k19f6kjEHf
+```
+
+## CI repair of PR #2351 (2026-10-23 local worker)
+
+Returned to local AUTHORING from `aaea61501` for the owner's bounded CI repair;
+the coordinator owns publication and the next freeze. No commit or push is authorized here.
+
+The PvP selection helper duplicated the already sanctioned attack-target room lookup, and its
+PostgreSQL fixture constructed the seam rooms directly. Selection now receives the same gated
+combat room as `set_target`; the fixture supplies `Dependencies::combat_room` to its existing
+constructor. Neither security inventory nor gate semantics changes.
+
+The shared spell-tile test World had gained PvP cells at x 14–16, making the monster-AI test's
+outside cell x 14 walkable. Restored the original 13-cell fixture and shape count. A separate
+spell-tile fixture retains PvP/PZ flag coverage and checks no-PvP precedence over PvP. The shared
+fixture also explicitly checks that x 14 is absent. No production border rule changes.
+
+Resumed the interrupted repair from the existing working tree, preserving its code changes.
+Refreshed the bound META 3.1.0 policy at its exact immutable commit before validation.
+All Cargo commands use the absolute queued wrapper with `CARGO_NET_OFFLINE=true`;
+no dependencies were downloaded.
+
+| Exact command | Result |
+|---|---|
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --lib bundle_gates --quiet` | 5 passed |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --lib monster_ai_cycle --quiet` | 12 passed |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --lib spell_tiles --quiet` | 0 matching tests; actual owning-crate run below |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-world --lib spell_tiles --quiet` | 6 passed, 1 existing ignored |
+| `/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --lib pvp_live --quiet` | 5 real PostgreSQL E2E cases passed, 0 failed/ignored; 243.36s on resumed validation |
+| `/home/mole/oteryn-cache/codex-bin/cargo --config 'target.x86_64-unknown-linux-gnu.runner=["env","-u","OTERYN_TEST_POSTGRES_ADMIN_URL"]' test --locked -p oteryn-gameplay-dispatch --lib --quiet` | 989 passed, 14 existing ignored, 0 failed; 83.28s on resumed validation |
+| `/home/mole/oteryn-cache/codex-bin/cargo clippy --locked -p oteryn-gameplay-dispatch -p oteryn-gameplay-world --all-targets --quiet -- -D warnings` | Passed |
+| `/home/mole/oteryn-cache/codex-bin/cargo fmt --all` | Passed |
+| `/home/mole/oteryn-cache/codex-bin/cargo fmt --all --check` | Passed |
+| `python3 tools/agents/validate_governance.py` | Passed: 22 policy documents, 9 project lanes |
+| `python3 -m unittest discover -s tools/agents/tests` | 129 passed |
+| `python3 tools/repository/validate_repository_policy.py` | Passed: 23 files, 68 workflows |
+| `git diff --check` | Passed |
+
+The full dispatch command deliberately runs without a PostgreSQL route, as requested for the
+non-PG unit suite; its route-less PG returns are not PostgreSQL qualification. Only `pvp_live`
+is run against PostgreSQL. No tests, ignore attributes or gate assertions were weakened.
+Existing vendored Tokio/SQLx dependency warnings remain unchanged.
+
+Changed files for this repair:
+
+- `crates/gameplay/dispatch/src/gameplay_transport/mod.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/pvp_live.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/pvp_live.rs`
+- `crates/gameplay/world/src/map/spell_tiles.rs`
+- `docs/agents/tasks/PVP-RT-1.md`
+
+Re-read the complete repair diff against `/home/mole/oteryn-cache/CODEX-CHECKLIST.md`.
+The changed helper's only production caller was found across `apps/`, `crates/`, `tools/` and
+updated. No enum variants, struct fields, trait methods or public functions were added.
+
+Unfinished for this repair: coordinator publication and fresh repository CI on the resulting
+candidate. All requested local checks passed. No remote CI success, freeze or merge is claimed.
+
+## Server wiring gap list (2026-10-23 local worker)
+
+Owner's current server-first allocation supersedes the historical path restrictions below.
+Reuse ATTACK_V1 (commands 11/12) and the existing spell commands; no new protocol IDs.
+
+| Layer | Exists on this HEAD | Missing live wiring |
+|---|---|---|
+| L3 | `combat-rules/src/pvp/{legality,lock,skull}.rs`: ordered refusals, damage factor, deadlines and consequences | Current player facts and legality before each live harm |
+| L4 | `durability/pvp_state.rs`, migrations 0081/0142, fenced deadline restore and death consequences | Transactional current relationships, harm ledger and idempotent live harm |
+| Dispatch | `attack.rs` creature swings; native/ordinary spell owner batches; `pvp_death.rs` death seam | Player attacks, player spell damage, live ledger into death request |
+| Protocol/registry | Bounded attack and spell request/result codecs and registry entries already exist | Reuse existing payloads/results; no new registry allocation needed |
+| Capability/content | Attack/spell offers follow qualified bundle gates; source tiles carry PZ/no-PvP facts | Explicit current World PvP policy; missing policy must refuse |
+| Runtime | Real server invokes combat cadence, spell composition and player-death settlement | End-to-end player harm and PostgreSQL dispatch coverage |
+
+## Current server implementation (2026-10-23)
+
+Local AUTHORING only: no commit, push, PR, freeze or external review. The owner authorizes
+server wiring and the small shared owner registrations for this allocation; historical
+readmission-only restrictions below do not describe this allocation.
+
+The existing ATTACK_V1 and spell requests/results are reused unchanged. Player target selection
+and each swing read independently current admitted identities, the explicit published World
+policy, tile zones, party/guild membership, skulls and retaliation. Missing policy or observations
+refuse. The same legality gate selects legal recipients before immediate ordinary spell draws and
+payment. Default secure mode protects unmarked players; its existing toggle permits ordinary
+aggression (the separate four-mode expert extension is not introduced).
+
+One existing combat batch owns HP/conditions, lethal occurrence, payment and physical replay.
+Migration 0164 adds immutable harm receipts and bounded aggression keyed by the current actor
+placements and scope generation; old incarnations cannot grant retaliation. Live harm writes the
+16-full/64-compact victim ledger and conservative deadlines before physical installation. Spell
+harm shares the existing cost/training SQL transaction and retained commit lane. Unknown melee
+commits retain their physical batch until source-fenced receipt reconciliation. Death settlement
+derives contributors from live receipts in the existing victim death transaction; historical
+explicit contributor packets keep their existing behavior.
+
+The shipped bundle already carries OTBM zone bits. Its projection now supplies no-PvP/PvP facts
+with the source loader's PZ/no-PvP precedence, so no new content, capability or registry ID is
+needed. World mode still requires the existing control-published policy; this worker does not
+publish production configuration. An Optional World continues to refuse player harm.
+
+### Reference parity table
+
+| Visible behavior | Reference evidence | Oteryn now |
+|---|---|---|
+| World, level, zones, login immunity and group protection precede harm | PARTY-PVP0 §7.2; existing `combat-rules/pvp/legality.rs` ordered rules | Current fenced source facts before selection and every live harm; unknowns refuse |
+| Secure mode prevents attacking unmarked players | PARTY-PVP0 §7.2 rule 6; ATTACK_V1 fight modes | Existing secure toggle applies to attacks and immediate damage spells |
+| PvP factor before incoming mitigation | PARTY-PVP0 §7.3 | 50%, 100% against a black skull; existing player condition/mana-shield owner handles incoming damage |
+| Combat remains after disconnect/restart | PARTY-PVP0 §8.1 and PVP-1 deadlines | Durable write-ahead and live logout/PZ locks; remaining-time restore (source and bundle PostgreSQL E2E) |
+| Damage contributors survive retry | PARTY-PVP0 §8.3, migrations 0081/0142 | Bounded ledger and immutable harm receipts; unknown-commit reconciliation |
+| Lethal PvP feeds consequences once | PARTY-PVP0 §9; existing PVP-DEATH-1 writer | Live receipt attribution enters the existing death transaction (source and bundle PostgreSQL E2E) |
+| Source and shipped bundle zones share semantics | Existing source loader `native_spell_world.rs` OTBM flags | Both projections expose explicit no-PvP/PvP facts; PZ takes precedence |
+
+### Validation evidence
+
+Local basic implementation is wired; status remains `in_progress` for the publishing control
+plane's independent review/CI and the explicit parity limits below. No client or registry edits.
+Early direct-Cargo runs lacked the provided wrapper's PostgreSQL route and are **not** PostgreSQL
+evidence. All reported Cargo executions below use the queued wrapper (non-login shell).
+
+| Exact Cargo command (all use `--locked`) | Result |
+|---|---|
+| `cargo test --locked -p oteryn-gameplay-dispatch --lib pvp_live --quiet` | 5 passed; 0 failed; 0 ignored; 0 measured; 997 filtered out; finished in 238.26s |
+| `cargo test --locked -p oteryn-gameplay-dispatch --lib pvp_death --quiet` | 1 PostgreSQL test passed |
+| `cargo test --locked -p oteryn-gameplay-dispatch --lib gameplay_transport::attack:: --quiet` | 38 passed |
+| `cargo test --locked -p oteryn-gameplay-dispatch --lib actor_spell::owner_commit --quiet` | 7 passed |
+| `cargo test --locked -p oteryn-gameplay-combat-rules --lib pvp --quiet` | 15 passed |
+| `cargo test --locked -p oteryn-gameplay-content --lib native_spell --quiet` | 18 passed |
+| `cargo test --locked -p oteryn-gameplay-world --lib spell_tiles --quiet` | 5 passed; 1 pre-existing ignored test, unchanged |
+| `cargo test --locked -p oteryn-gameplay-entities --features test-support --lib runtime_actor_spell --quiet` | 26 passed |
+| `cargo test --locked -p oteryn-gameplay-spell --lib combat_execution --quiet` | 8 passed |
+| `cargo test --locked -p oteryn-gameplay-durability --lib death_binding_covers_the_intent_and_excludes_retry_local_authority --quiet` | 1 passed |
+
+`cargo clippy --locked -p oteryn-gameplay-dispatch -p oteryn-gameplay-durability
+-p oteryn-gameplay-spell -p oteryn-gameplay-entities -p oteryn-gameplay-content
+-p oteryn-gameplay-world -p oteryn-game-server --all-targets --quiet -- -D warnings` passed.
+`cargo fmt --all --check` and explicit nonrecursive rustfmt checks for the 23 changed Rust
+implementation/test files passed; the include-only `core_modules.rs` has one module registration,
+with its existing unrelated module order preserved. Governance and repository-policy validators
+passed, and all 129 governance unit tests passed during authoring. `git diff --check` passed.
+Vendored Tokio/SQLx emit existing dependency warnings; their sources are unchanged.
+
+The five `pvp_live` tests are auto-mounted under dispatch's PostgreSQL `--lib` tree, already run by
+repository CI. They cover admitted-session attack/spell bytes and result bytes, durable harm,
+Optional/PZ/no-PvP refusal without harm rows, source and bundle tiles, rollback before COMMIT,
+commit-before-install reconciliation, one death consequence on replay, and a fresh Root's live
+lock restore. A real subsequent spell also refreshes an existing compact Damage contributor
+without violating the database retention guard. The final assertion also expires the contributor's
+local hit cache and proves that the disconnect-release boundary restores the longer durable kill
+lock.
+
+Re-read the full tracked diff and all new files against the owner's CODEX-CHECKLIST. Reviewed
+bounded SQL reads, transaction/session fences, current relationship serialization, immutable
+receipts, unknown-commit recovery and module mounts. Scanned `apps/`, `crates/`, `tools/` for every
+added struct/enum field and variant, constructor, match and implementation. The new public
+storage/magnitude functions have production combat callers exercised by the real-dispatch tests.
+
+### Changed files (current local allocation)
+
+- `apps/game-server/migrations/0164_live_pvp_harm.sql`
+- `apps/game-server/tests/support/character_revision_sequencer_postgres_cases/appearance_fixture.rs`
+- `crates/gameplay/content/src/content/project/native_spell_tiles.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/actor_spell.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/actor_spell_commit.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/attack.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/combat_lock_fact.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/logout.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/mod.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/native_combat_cast.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/ordinary_combat.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/paced_movement.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/appearance_change_postgres.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/appearance_change_postgres/observer_visibility_tests.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/pvp_live.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/pvp_live/bundle_fixture.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/pvp_live.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/pvp_live_locks.rs`
+- `crates/gameplay/durability/src/durability/core_modules.rs`
+- `crates/gameplay/durability/src/durability/pvp_death_consequences.rs`
+- `crates/gameplay/durability/src/durability/pvp_live.rs`
+- `crates/gameplay/durability/src/durability/pvp_live_ledger.rs`
+- `crates/gameplay/entities/src/carrier/runtime_actor_spell.rs`
+- `crates/gameplay/spell/src/spell/magnitude_owner.rs`
+- `crates/gameplay/world/src/map/spell_tiles.rs`
+- `docs/agents/tasks/PVP-RT-1.md`
+
+### Unfinished
+
+The basic numerical path currently requires independently confirmed empty target equipment;
+armour/defence/absorb/reflect owners are not approximated. Player summons, fields, DoT, delayed or
+chain player damage, assists, friendly fire, Join Aggression, the four-mode expert extension and
+client skull projections remain gated/outside this basic server slice. All-source damage ratios,
+compact-to-full promotion and complete advanced death parity remain separate acceptance work. Existing compact contributors remain compact; at 16 full/64 compact
+contributors new aggression refuses until an entry expires, preserving migration 0081 guards.
+The default Optional World intentionally cannot harm players; Open requires its existing explicit control-published World
+policy. This change does not publish that configuration. Client UI is untouched.
+Independent review and repository CI remain for the publishing control plane; repository content
+was not sent to an external reviewer.
 
 Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
 
