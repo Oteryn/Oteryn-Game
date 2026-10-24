@@ -38,7 +38,21 @@ impl DurabilityRoot {
                             return Ok(GuildDisbandOutcome::NoLongerPending);
                         };
                         if core_participants_installed(&mut tx).await? {
-                            return Ok(GuildDisbandOutcome::WaitingForHouseDisposition);
+                            use crate::durability::guild_bank::{
+                                PayoutProgress, ensure_disband_payout,
+                            };
+                            match ensure_disband_payout(&mut tx, &context).await? {
+                                PayoutProgress::Blocked => {
+                                    return Ok(GuildDisbandOutcome::WaitingForHouseDisposition);
+                                }
+                                PayoutProgress::Paid => {
+                                    return Ok(GuildDisbandOutcome::Advanced {
+                                        step: 1,
+                                        removed: 0,
+                                    });
+                                }
+                                PayoutProgress::AlreadyPaid => {}
+                            }
                         }
                         super::disband_cleanup::advance_disband_transaction(&mut tx, &context).await
                     }

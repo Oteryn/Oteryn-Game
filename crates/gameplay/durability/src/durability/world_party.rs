@@ -13,6 +13,7 @@ use crate::foundation::{
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use sqlx::{Postgres, Row, Transaction};
+pub mod ingress;
 type Result<T> = std::result::Result<T, SpellItemError>;
 fn reject(s: &'static str) -> SpellItemError {
     SpellItemError::Rejected(s)
@@ -555,6 +556,17 @@ async fn apply_world_party_command_inner(
                 disposition = "NOT_LEADER"
             } else {
                 sqlx::query("DELETE FROM game_party_invitations WHERE party_id=encode($1,'hex')::uuid AND invitee=encode($2,'hex')::uuid").bind(party.ok_or(reject("leader party"))?.as_slice()).bind(target.as_slice()).execute(&mut **tx).await?;
+            }
+        }
+        PartyAction::Kick { target } => {
+            if snapshot.leader != Some(character) {
+                disposition = "NOT_LEADER";
+            } else if target == character || !snapshot.members.iter().any(|m| m.character == target)
+            {
+                disposition = "NOT_MEMBER";
+            } else {
+                remove_member_with_succession(tx, party.ok_or(reject("leader party"))?, target)
+                    .await?;
             }
         }
         PartyAction::TransferLeader { target } => {

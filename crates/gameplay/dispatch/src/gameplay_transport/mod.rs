@@ -33,6 +33,7 @@ mod connection;
 mod container_view;
 mod equipment_move;
 pub mod fresh_evidence;
+mod guild_bank;
 mod guild_chat;
 mod guild_intent;
 mod highscores;
@@ -50,9 +51,11 @@ mod logout;
 mod logout_tests;
 mod loop_move;
 pub mod spectate_session;
+mod staff;
 mod vip;
 use crate::map::boot::BundleCollisionIndexExt;
 pub use last_position::LastPositionFlush;
+pub use staff::StaffReply;
 mod control_loss_reconciliation;
 mod map_door;
 mod monk_save;
@@ -2520,6 +2523,18 @@ fn operator_event(line: &str) {
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     vip::composed_methods!();
+    async fn party_command(
+        &self,
+        admitted: connection::AdmittedSession,
+        command_id: u64,
+        command_type: u32,
+        payload: &[u8],
+        view: &mut party_command::SessionPartyView,
+    ) -> Option<Vec<u8>> {
+        self.party_wire_command(admitted, command_id, command_type, payload, view)
+            .await
+    }
+
     fn session_commands(&self) -> Option<&session_ingress::SessionCommands> {
         Some(&self.states.command_ingress)
     }
@@ -2527,6 +2542,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     guild_intent::composed_methods!();
     house_intent::composed_methods!();
     daily_reward::composed_methods!();
+    staff::composed_methods!();
     async fn observe_quest_log(
         &self,
         actor: ExactActorRef,
@@ -3105,6 +3121,9 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command_id: u64,
         intent: actor_spell::SpellCastIntent,
     ) -> actor_spell::SpellCastOutcome {
+        if self.staff_muted(game_session_id).await {
+            return actor_spell::SpellCastOutcome::rejected();
+        }
         if let Some(outcome) = self
             .cast_durable_stance(actor, game_session_id, command_id, &intent)
             .await
@@ -3946,6 +3965,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command_id: u64,
         intent: actor_spell::SpellCastIntent,
     ) -> Option<actor_spell::SpellCastOutcome> {
+        if self.staff_muted(game_session_id).await {
+            return Some(actor_spell::SpellCastOutcome::rejected());
+        }
         // CHAT-0 §6: a muted character cannot cast any spell.
         if let Some(outcome) = self
             .states
@@ -6709,6 +6731,7 @@ mod tests {
     }
 }
 
+pub mod party_command;
 mod party_kill_settlement;
 mod party_spell_feedback;
 mod party_spell_owner;
