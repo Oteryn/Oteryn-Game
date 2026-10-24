@@ -14,6 +14,7 @@ use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{
     AdmittedSession, FirstEntryOutcome, FreshAdmissionAuthority,
 };
+use crate::gameplay_transport::guild_intent::GuildReply;
 use crate::gameplay_transport::{ComposedFreshAdmission, item_fence_of};
 use oteryn_protocol_oteryn::guild_bank::*;
 use oteryn_protocol_oteryn::{CommandStatus, guild as guild_wire};
@@ -48,6 +49,51 @@ async fn command(
     )
     .await?;
     assert_eq!(status, CommandStatus::Accepted);
+    let reply = decode_guild_bank_reply(&bytes).map_err(debug)?;
+    assert_eq!(reply.code, code);
+    Ok(reply)
+}
+/// The latest command's retained result, replayed by the Channel's command stream.
+async fn replayed(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    s: &mut AdmittedSession,
+    id: u64,
+    intent: &GuildBankIntent,
+    code: u8,
+) -> TestResult<GuildBankReply> {
+    let (status, bytes) = exchange(
+        owner,
+        s,
+        id,
+        COMMAND_TYPE_GUILD_BANK_INTENT,
+        &encode_guild_bank_intent(intent).map_err(debug)?,
+    )
+    .await?;
+    assert_eq!(status, CommandStatus::DuplicateReplay);
+    let reply = decode_guild_bank_reply(&bytes).map_err(debug)?;
+    assert_eq!(reply.code, code);
+    Ok(reply)
+}
+/// The family's own durable receipt beneath the command stream (SESSION-INGRESS-1), which
+/// retains only the latest result of a GameSession.
+async fn native(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    s: AdmittedSession,
+    intent: &GuildBankIntent,
+    code: u8,
+) -> TestResult<GuildBankReply> {
+    let id = s.continuity.next_command_id;
+    let GuildReply::Payload(bytes) = owner
+        .guild_command(
+            s,
+            id,
+            COMMAND_TYPE_GUILD_BANK_INTENT,
+            &encode_guild_bank_intent(intent).map_err(debug)?,
+        )
+        .await
+    else {
+        return Err("guild bank receipt".into());
+    };
     let reply = decode_guild_bank_reply(&bytes).map_err(debug)?;
     assert_eq!(reply.code, code);
     Ok(reply)
@@ -189,6 +235,8 @@ fn scenario() -> TestResult {
             controller: None,
             ..leader
         };
+        // A distinct GameSession starts its own command stream.
+        member.continuity.next_command_id = 1;
         let g = guild(
             &owner,
             &mut leader,
@@ -235,28 +283,31 @@ fn scenario() -> TestResult {
         let before_failure = bank_seed::financial_snapshot(&h).await?;
         sqlx::raw_sql("CREATE FUNCTION guild_bank_test_fail() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'injected audit failure'; END $$; CREATE TRIGGER guild_bank_test_fail BEFORE INSERT ON game_guild_bank_event_outbox FOR EACH ROW EXECUTE FUNCTION guild_bank_test_fail()")
             .execute(&h.pool).await?;
-        assert!(
-            exchange(
-                &owner,
-                &mut member,
-                initial.continuity.next_command_id,
-                COMMAND_TYPE_GUILD_BANK_INTENT,
-                &encode_guild_bank_intent(&deposit).map_err(debug)?
-            )
-            .await
-            .is_err()
-        );
+        // An unavailable original would end the session's command stream on the wire, so
+        // check the family handler itself: the same command still runs once afterwards.
+        assert!(matches!(
+            owner
+                .guild_command(
+                    initial,
+                    initial.continuity.next_command_id,
+                    COMMAND_TYPE_GUILD_BANK_INTENT,
+                    &encode_guild_bank_intent(&deposit).map_err(debug)?
+                )
+                .await,
+            GuildReply::Unavailable
+        ));
         assert_eq!(bank_seed::financial_snapshot(&h).await?, before_failure);
         sqlx::raw_sql("DROP TRIGGER guild_bank_test_fail ON game_guild_bank_event_outbox; DROP FUNCTION guild_bank_test_fail()")
             .execute(&h.pool).await?;
         member = initial;
         let paid = command(&owner, &mut member, deposit.clone(), 1).await?;
         assert_eq!((paid.bank_balance, paid.guild_balance), (500, 500));
-        let mut replay = initial;
+        let paid_id = initial.continuity.next_command_id;
         assert_eq!(
-            command(&owner, &mut replay, deposit.clone(), 1).await?,
+            replayed(&owner, &mut member, paid_id, &deposit, 1).await?,
             paid
         );
+        assert_eq!(native(&owner, initial, &deposit, 1).await?, paid);
         let before = bank_seed::financial_snapshot(&h).await?;
         let refused_withdrawal = member;
         let denied = command(
@@ -291,24 +342,22 @@ fn scenario() -> TestResult {
         .await?;
         assert_eq!(bank_seed::financial_snapshot(&h).await?, before);
         // Same occurrence with changed bytes is rejected; original receipt remains immutable.
-        let mut conflict = initial;
-        let conflict_id = conflict.continuity.next_command_id;
-        assert_eq!(
-            exchange(
-                &owner,
-                &mut conflict,
-                conflict_id,
-                COMMAND_TYPE_GUILD_BANK_INTENT,
-                &encode_guild_bank_intent(&GuildBankIntent {
-                    guild: g,
-                    action: GuildBankAction::Deposit(499)
-                })
-                .map_err(debug)?
-            )
-            .await?
-            .0,
-            CommandStatus::Rejected
-        );
+        // The command stream no longer retains it, so ask the family's own receipt.
+        assert!(matches!(
+            owner
+                .guild_command(
+                    initial,
+                    paid_id,
+                    COMMAND_TYPE_GUILD_BANK_INTENT,
+                    &encode_guild_bank_intent(&GuildBankIntent {
+                        guild: g,
+                        action: GuildBankAction::Deposit(499)
+                    })
+                    .map_err(debug)?
+                )
+                .await,
+            GuildReply::Rejected
+        ));
         // Malformed, unnegotiated and stale-generation commands never write money or evidence.
         let mut old = member;
         old.continuity.selected_capabilities = SelectedCapabilities::NONE;
@@ -330,6 +379,10 @@ fn scenario() -> TestResult {
             .0,
             CommandStatus::Rejected
         );
+        // Even a refused command advances this GameSession's command stream.
+        let selected = member.continuity.selected_capabilities;
+        member.continuity = old.continuity;
+        member.continuity.selected_capabilities = selected;
         let mut stale = member;
         stale
             .item_fence
@@ -350,17 +403,6 @@ fn scenario() -> TestResult {
                 .await,
             crate::gameplay_transport::guild_intent::GuildReply::Rejected
         ));
-        assert!(
-            exchange(
-                &owner,
-                &mut stale,
-                stale_id,
-                COMMAND_TYPE_GUILD_BANK_INTENT,
-                &encode_guild_bank_intent(&deposit).map_err(debug)?
-            )
-            .await
-            .is_err()
-        );
         let malformed_id = member.continuity.next_command_id;
         assert_eq!(
             exchange(
@@ -410,12 +452,11 @@ fn scenario() -> TestResult {
             (withdrawal.bank_balance, withdrawal.guild_balance),
             (600, 400)
         );
-        let mut replay_refusal = refused_withdrawal;
         assert_eq!(
-            command(
+            native(
                 &owner,
-                &mut replay_refusal,
-                GuildBankIntent {
+                refused_withdrawal,
+                &GuildBankIntent {
                     guild: g,
                     action: GuildBankAction::Withdraw(1)
                 },
@@ -573,7 +614,9 @@ fn scenario() -> TestResult {
         .fetch_one(&h.pool)
         .await?;
         assert_eq!(state, 4);
-        // Account-bound custody survives membership cleanup and owner reconstruction.
+        // Account-bound custody survives membership cleanup and owner reconstruction; the
+        // Channel keeps each GameSession's command stream (SESSION-INGRESS-1).
+        let commands = std::mem::take(&mut owner.states.command_ingress);
         drop(owner);
         drop(authority);
         h.root = fixture::tutorial_vitals_fixture::reopen_root(&h)?;
@@ -591,6 +634,7 @@ fn scenario() -> TestResult {
             .await
             .map_err(debug)?;
         let mut owner = deps.owner(&h, &authority);
+        owner.states.command_ingress = commands;
         owner.premium_coordinator = Some(&coordinator);
         deps.initialize(&owner).await;
         assert_eq!(query(&owner, &mut leader, g).await?.claim, 797);
@@ -602,14 +646,12 @@ fn scenario() -> TestResult {
             }]
         );
         assert!(open_claims(&owner, &mut member).await?.is_empty());
-        let mut replay = initial;
-        assert_eq!(command(&owner, &mut replay, deposit, 1).await?, paid);
-        let mut replay_refusal = refused_withdrawal;
+        assert_eq!(native(&owner, initial, &deposit, 1).await?, paid);
         assert_eq!(
-            command(
+            native(
                 &owner,
-                &mut replay_refusal,
-                GuildBankIntent {
+                refused_withdrawal,
+                &GuildBankIntent {
                     guild: g,
                     action: GuildBankAction::Withdraw(1)
                 },
@@ -618,8 +660,7 @@ fn scenario() -> TestResult {
             .await?,
             denied
         );
-        let mut replay_disband = before_disband;
-        command(&owner, &mut replay_disband, disband, 1).await?;
+        native(&owner, before_disband, &disband, 1).await?;
         let new_guild = guild(
             &owner,
             &mut leader,
@@ -654,20 +695,16 @@ fn scenario() -> TestResult {
             (delivered.bank_balance, delivered.claim),
             (HARD_MAX - 7, 697)
         );
-        let mut retry = before_claim;
+        let claim = GuildBankIntent {
+            guild: g,
+            action: GuildBankAction::Claim,
+        };
+        let claim_id = before_claim.continuity.next_command_id;
         assert_eq!(
-            command(
-                &owner,
-                &mut retry,
-                GuildBankIntent {
-                    guild: g,
-                    action: GuildBankAction::Claim
-                },
-                1
-            )
-            .await?,
+            replayed(&owner, &mut leader, claim_id, &claim, 1).await?,
             delivered
         );
+        assert_eq!(native(&owner, before_claim, &claim, 1).await?, delivered);
         command(
             &owner,
             &mut leader,
@@ -740,6 +777,27 @@ fn scenario() -> TestResult {
         assert_eq!(
             error.as_database_error().and_then(|e| e.code()).as_deref(),
             Some("23514")
+        );
+        assert_eq!(bank_seed::financial_snapshot(&h).await?, snapshot);
+        // The reconnect Bank prelude independently disconnects an already stale socket. Its
+        // reserved original then ends that GameSession's command stream, so this goes last.
+        let mut stale = member;
+        stale
+            .item_fence
+            .as_mut()
+            .ok_or("fence")?
+            .character_lease_generation += 1;
+        let stale_id = stale.continuity.next_command_id;
+        assert!(
+            exchange(
+                &owner,
+                &mut stale,
+                stale_id,
+                COMMAND_TYPE_GUILD_BANK_INTENT,
+                &encode_guild_bank_intent(&deposit).map_err(debug)?
+            )
+            .await
+            .is_err()
         );
         assert_eq!(bank_seed::financial_snapshot(&h).await?, snapshot);
         drop(owner);

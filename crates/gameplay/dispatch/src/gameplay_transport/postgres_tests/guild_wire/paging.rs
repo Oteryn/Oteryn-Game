@@ -82,7 +82,6 @@ fn paging() -> TestResult {
         } = query(
             &owner,
             &mut admitted,
-            1,
             GuildQuery::Roster { guild, after: None },
         )
         .await?
@@ -97,7 +96,6 @@ fn paging() -> TestResult {
         } = query(
             &owner,
             &mut admitted,
-            2,
             GuildQuery::Roster {
                 guild,
                 after: Some(after),
@@ -116,10 +114,11 @@ fn paging() -> TestResult {
                 .all(|w| (w[0].level, w[0].character) < (w[1].level, w[1].character))
         );
         let other = seed::sid(999, 3);
+        let command = admitted.continuity.next_command_id;
         let (status, bytes) = exchange(
             &owner,
             &mut admitted,
-            3,
+            command,
             COMMAND_TYPE_GUILD_QUERY,
             &encode_guild_query(&GuildQuery::Roster {
                 guild: other,

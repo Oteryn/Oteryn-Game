@@ -68,12 +68,19 @@ fn scenario() -> TestResult {
         sqlx::query("INSERT INTO game_house_ownership VALUES(encode($1,'hex')::uuid,$2,NULL,1,encode($3,'hex')::uuid)").bind(id(42).as_slice()).bind(HOUSE).bind(id(75).as_slice()).execute(&mut *tx).await?;
         sqlx::query("INSERT INTO game_house_auctions(auction_id,world_id,house_key,first_rent,ends_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,0,clock_timestamp()+interval '2 days')").bind(id(76).as_slice()).bind(id(42).as_slice()).bind(HOUSE).execute(&mut *tx).await?;
         tx.commit().await?;
+        let initial = admitted;
         let mut amount = Vec::new();
         scalar(&mut amount, 1, 0);
         let request = intent(1, &amount);
         let ok = wire::encode_house_result(wire::HouseDisposition::Ok, 0);
-        assert_eq!(send(&owner, admitted, 1, 56, &request).await?.1, ok);
-        assert_eq!(send(&owner, admitted, 1, 56, &request).await?.1, ok);
+        assert_eq!(
+            send(&owner, &mut admitted, 56, &request).await?,
+            (CommandStatus::Accepted, ok.clone())
+        );
+        assert_eq!(
+            resend(&owner, &mut admitted, 1, 56, &request).await?,
+            (CommandStatus::DuplicateReplay, ok.clone())
+        );
         let row:(i64,i64)=sqlx::query_as("SELECT maximum,escrow_gold FROM game_house_bids WHERE auction_id=encode($1,'hex')::uuid AND account_id=encode($2,'hex')::uuid").bind(id(76).as_slice()).bind(id(40).as_slice()).fetch_one(&h.pool).await?;
         assert_eq!(row, (0, 0));
         let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_house_operations")
@@ -82,12 +89,28 @@ fn scenario() -> TestResult {
         assert_eq!(count, 1);
         let mut amount = Vec::new();
         scalar(&mut amount, 1, 1);
+        let changed = intent(1, &amount);
+        // FND-02 §13.4: replacement bytes under a reserved ID are not a new bid.
         assert_eq!(
-            send(&owner, admitted, 1, 56, &intent(1, &amount)).await?.1,
+            resend(&owner, &mut admitted, 1, 56, &changed).await?,
+            (CommandStatus::DuplicateReplay, ok)
+        );
+        let page = send(&owner, &mut admitted, 57, &query()).await?.1;
+        assert!(page.windows(HOUSE.len()).any(|w| w == HOUSE.as_bytes()));
+        // A fresh session directory has no retained result, so the changed maximum under
+        // command 1 reaches the native House receipt conflict check.
+        let mut restarted = deps.owner(&h, &authority);
+        restarted.premium_coordinator = Some(&gate);
+        let mut reloaded = initial;
+        assert_eq!(
+            send(&restarted, &mut reloaded, 56, &changed).await?.1,
             wire::encode_house_result(wire::HouseDisposition::Conflict, 0)
         );
-        let page = send(&owner, admitted, 2, 57, &query()).await?.1;
-        assert!(page.windows(HOUSE.len()).any(|w| w == HOUSE.as_bytes()));
+        let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_house_operations")
+            .fetch_one(&h.pool)
+            .await?;
+        assert_eq!(count, 1);
+        drop(restarted);
         drop(owner);
         drop(authority);
         drop(seal);

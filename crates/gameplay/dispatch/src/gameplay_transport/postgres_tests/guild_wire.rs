@@ -87,18 +87,27 @@ async fn exchange(
     .await?;
     match &ended {
         crate::gameplay_transport::connection::ConnectionEnd::AdmittedThenDisconnected(current)
-        | crate::gameplay_transport::connection::ConnectionEnd::AdmittedThenClosed(current, _) => *admitted = *current,
+        | crate::gameplay_transport::connection::ConnectionEnd::AdmittedThenClosed(current, _) => {
+            *admitted = *current
+        }
         _ => {}
     }
-    result.map_err(|error| format!("guild command {id}/{kind} ended {ended:?}: {error}").into())
+    let reply =
+        result.map_err(|error| format!("guild command {id}/{kind} ended {ended:?}: {error}"))?;
+    assert_eq!(
+        admitted.continuity.next_command_id,
+        before.continuity.next_command_id + u64::from(id == before.continuity.next_command_id)
+    );
+    assert!(admitted.continuity.server_sequence > before.continuity.server_sequence);
+    Ok(reply)
 }
 async fn intent(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
-    id: u64,
     action: GuildIntent,
     code: u8,
 ) -> TestResult<GuildIntentResult> {
+    let id = admitted.continuity.next_command_id;
     let (status, bytes) = exchange(
         owner,
         admitted,
@@ -115,9 +124,9 @@ async fn intent(
 async fn query(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
-    id: u64,
     q: GuildQuery,
 ) -> TestResult<GuildQueryResult> {
+    let id = admitted.continuity.next_command_id;
     let (status, bytes) = exchange(
         owner,
         admitted,
@@ -177,13 +186,20 @@ fn scenario() -> TestResult {
             deps.admitted.world_id,
             deps.admitted.channel_id,
             crate::foundation::NodeId::decode(&id(1)).map_err(debug)?,
-            1, 1, 1, "runtime-scope-assignment:1", 3,
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            3,
             crate::foundation::ChannelContentPin::test(deps.admitted.world_id),
-        ).map_err(debug)?;
-        let reservation=runtime.reserve_fresh_session(deps.admitted.game_session_id).map_err(debug)?;
-        deps.actor=runtime.commit_fresh_session(reservation).map_err(debug)?;
-        deps.admitted.runtime_actor=Some(deps.actor);
-        deps.runtime=tokio::sync::Mutex::new(runtime);
+        )
+        .map_err(debug)?;
+        let reservation = runtime
+            .reserve_fresh_session(deps.admitted.game_session_id)
+            .map_err(debug)?;
+        deps.actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+        deps.admitted.runtime_actor = Some(deps.actor);
+        deps.runtime = tokio::sync::Mutex::new(runtime);
         let coordinator =
             crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator::new(
                 Default::default(),
@@ -210,6 +226,7 @@ fn scenario() -> TestResult {
         leader.continuity.selected_capabilities =
             SelectedCapabilities::select(owner.offered_capabilities(), &[40])
                 .ok_or("guild selection")?;
+        let initial_leader = leader;
         let mut guests = Vec::new();
         for fence in guest_fences {
             let actor = {
@@ -240,39 +257,82 @@ fn scenario() -> TestResult {
         // Prove the Guild mutation fence on a fresh command, before reconnect's independent
         // Bank reconciliation prelude can reject the same stale lease first.
         let mut stale = leader;
-        stale.item_fence.as_mut().ok_or("fence")?.character_lease_generation += 1;
-        assert_eq!(exchange(&owner,&mut stale,1,COMMAND_TYPE_GUILD_INTENT,
-            &encode_guild_intent(&GuildIntent::Found{name:"Wire Guild".into()}).map_err(debug)?
-        ).await?.0,CommandStatus::Rejected);
-        let before_ack = leader;
-        let found = GuildIntent::Found {
+        stale
+            .item_fence
+            .as_mut()
+            .ok_or("fence")?
+            .character_lease_generation += 1;
+        let stale_command = stale.continuity.next_command_id;
+        assert_eq!(
+            exchange(
+                &owner,
+                &mut stale,
+                stale_command,
+                COMMAND_TYPE_GUILD_INTENT,
+                &encode_guild_intent(&GuildIntent::Found {
+                    name: "Wire Guild".into()
+                })
+                .map_err(debug)?
+            )
+            .await?
+            .0,
+            CommandStatus::Rejected
+        );
+        // Even a rejected command advances this GameSession's ingress. Retain its ended
+        // continuity while restoring the current lease for the next fresh command.
+        leader.continuity = stale.continuity;
+        let found_command = leader.continuity.next_command_id;
+        let found = encode_guild_intent(&GuildIntent::Found {
             name: "Wire Guild".into(),
-        };
-        let r = intent(&owner, &mut leader, 1, found.clone(), 1).await?;
-        let guild = r.guild;
-        assert_eq!(r.revision, Some(1));
-        // Reconnect from before acknowledgement: byte-identical receipt, despite a fresh clock read.
-        let mut replay = before_ack;
-        assert_eq!(intent(&owner, &mut replay, 1, found, 1).await?, r);
-        let mut changed = before_ack;
-        let (status, _) = exchange(
+        })
+        .map_err(debug)?;
+        let (status, receipt) = exchange(
             &owner,
-            &mut changed,
-            1,
+            &mut leader,
+            found_command,
             COMMAND_TYPE_GUILD_INTENT,
-            &encode_guild_intent(&GuildIntent::Found {
-                name: "Other Guild".into(),
-            })
-            .map_err(debug)?,
+            &found,
         )
         .await?;
-        assert_eq!(status, CommandStatus::Rejected);
-        intent(&owner, &mut leader, 2, GuildIntent::Leave { guild }, 2).await?; // leader cannot leave
-        intent(&owner, &mut one, 1, GuildIntent::Join { guild }, 5).await?; // not invited
+        assert_eq!(status, CommandStatus::Accepted);
+        let r = decode_guild_intent_result(&receipt).map_err(debug)?;
+        assert_eq!(r.code, 1);
+        let guild = r.guild;
+        assert_eq!(r.revision, Some(1));
+        // Reconnect before acknowledgement replaces only the connection: the ended
+        // high-water mark and server sequence survive, and the reserved ID replays.
+        let (status, replayed) = exchange(
+            &owner,
+            &mut leader,
+            found_command,
+            COMMAND_TYPE_GUILD_INTENT,
+            &found,
+        )
+        .await?;
+        assert_eq!(status, CommandStatus::DuplicateReplay);
+        assert_eq!(replayed, receipt);
+        assert_eq!(decode_guild_intent_result(&replayed).map_err(debug)?, r);
+        let changed = encode_guild_intent(&GuildIntent::Found {
+            name: "Other Guild".into(),
+        })
+        .map_err(debug)?;
+        let (status, replayed) = exchange(
+            &owner,
+            &mut leader,
+            found_command,
+            COMMAND_TYPE_GUILD_INTENT,
+            &changed,
+        )
+        .await?;
+        // FND-02 §13.4: replacement bytes are not interpreted as a new Guild intent.
+        assert_eq!(status, CommandStatus::DuplicateReplay);
+        assert_eq!(replayed, receipt);
+        assert_eq!(decode_guild_intent_result(&replayed).map_err(debug)?, r);
+        intent(&owner, &mut leader, GuildIntent::Leave { guild }, 2).await?; // leader cannot leave
+        intent(&owner, &mut one, GuildIntent::Join { guild }, 5).await?; // not invited
         intent(
             &owner,
             &mut leader,
-            3,
             GuildIntent::Invite {
                 guild,
                 name: "Guest One".into(),
@@ -280,17 +340,17 @@ fn scenario() -> TestResult {
             1,
         )
         .await?;
-        let invitations = query(&owner, &mut one, 2, GuildQuery::Invitations).await?;
+        let invitations = query(&owner, &mut one, GuildQuery::Invitations).await?;
         assert!(
             matches!(invitations,GuildQueryResult::Invitations(ref list) if list.len()==1 && list[0].guild==guild)
         );
-        intent(&owner, &mut one, 3, GuildIntent::Join { guild }, 1).await?;
+        intent(&owner, &mut one, GuildIntent::Join { guild }, 1).await?;
         assert_eq!(
-            query(&owner, &mut one, 4, GuildQuery::Invitations).await?,
+            query(&owner, &mut one, GuildQuery::Invitations).await?,
             GuildQueryResult::Invitations(vec![])
         );
         let GuildQueryResult::Own(Some(summary)) =
-            query(&owner, &mut leader, 4, GuildQuery::Own).await?
+            query(&owner, &mut leader, GuildQuery::Own).await?
         else {
             return Err("missing own guild".into());
         };
@@ -300,7 +360,6 @@ fn scenario() -> TestResult {
         intent(
             &owner,
             &mut leader,
-            5,
             GuildIntent::SetRank {
                 guild,
                 character,
@@ -313,7 +372,6 @@ fn scenario() -> TestResult {
         intent(
             &owner,
             &mut leader,
-            6,
             GuildIntent::SetRank {
                 guild,
                 character,
@@ -326,7 +384,6 @@ fn scenario() -> TestResult {
         intent(
             &owner,
             &mut one,
-            5,
             GuildIntent::Kick {
                 guild,
                 character: *leader.item_fence.ok_or("leader")?.character_id.as_bytes(),
@@ -337,7 +394,6 @@ fn scenario() -> TestResult {
         intent(
             &owner,
             &mut leader,
-            7,
             GuildIntent::Invite {
                 guild,
                 name: "Guest Two".into(),
@@ -348,7 +404,6 @@ fn scenario() -> TestResult {
         intent(
             &owner,
             &mut leader,
-            8,
             GuildIntent::RevokeInvite {
                 guild,
                 character: second,
@@ -356,11 +411,10 @@ fn scenario() -> TestResult {
             1,
         )
         .await?;
-        intent(&owner, &mut two, 1, GuildIntent::Join { guild }, 5).await?;
+        intent(&owner, &mut two, GuildIntent::Join { guild }, 5).await?;
         intent(
             &owner,
             &mut leader,
-            9,
             GuildIntent::Invite {
                 guild,
                 name: "Guest Two".into(),
@@ -368,11 +422,10 @@ fn scenario() -> TestResult {
             1,
         )
         .await?;
-        intent(&owner, &mut two, 2, GuildIntent::Join { guild }, 1).await?;
+        intent(&owner, &mut two, GuildIntent::Join { guild }, 1).await?;
         intent(
             &owner,
             &mut leader,
-            10,
             GuildIntent::Kick {
                 guild,
                 character: second,
@@ -381,11 +434,11 @@ fn scenario() -> TestResult {
         )
         .await?;
         assert_eq!(
-            query(&owner, &mut two, 3, GuildQuery::Own).await?,
+            query(&owner, &mut two, GuildQuery::Own).await?,
             GuildQueryResult::Own(None)
         );
         let GuildQueryResult::Roster { members, next, .. } =
-            query(&owner, &mut one, 6, GuildQuery::Roster { guild, after: None }).await?
+            query(&owner, &mut one, GuildQuery::Roster { guild, after: None }).await?
         else {
             return Err("missing roster".into());
         };
@@ -393,7 +446,7 @@ fn scenario() -> TestResult {
         assert_eq!(members[1].character, character);
         assert_eq!(members[1].level, 2);
         assert!(next.is_none());
-        intent(&owner, &mut one, 7, GuildIntent::Leave { guild }, 1).await?;
+        intent(&owner, &mut one, GuildIntent::Leave { guild }, 1).await?;
         let count: i64 = sqlx::query_scalar(
             "SELECT count(*) FROM game_guild_members WHERE guild_id=encode($1,'hex')::uuid",
         )
@@ -405,11 +458,12 @@ fn scenario() -> TestResult {
         assert_eq!(revision, "1");
         let mut old = leader;
         old.continuity.selected_capabilities = SelectedCapabilities::NONE;
+        let command = old.continuity.next_command_id;
         assert_eq!(
             exchange(
                 &owner,
                 &mut old,
-                11,
+                command,
                 COMMAND_TYPE_GUILD_QUERY,
                 &encode_guild_query(&GuildQuery::Own).map_err(debug)?
             )
@@ -417,11 +471,12 @@ fn scenario() -> TestResult {
             .0,
             CommandStatus::Rejected
         );
+        let command = old.continuity.next_command_id;
         assert_eq!(
             exchange(
                 &owner,
                 &mut old,
-                12,
+                command,
                 COMMAND_TYPE_GUILD_INTENT,
                 &encode_guild_intent(&GuildIntent::Found {
                     name: "No Capability".into()
@@ -432,10 +487,21 @@ fn scenario() -> TestResult {
             .0,
             CommandStatus::Rejected
         );
+        // Capability-negative replacements also consume fresh IDs on the same session.
+        let selected = leader.continuity.selected_capabilities;
+        leader.continuity = old.continuity;
+        leader.continuity.selected_capabilities = selected;
+        let command = leader.continuity.next_command_id;
         assert_eq!(
-            exchange(&owner, &mut leader, 11, COMMAND_TYPE_GUILD_INTENT, &[0xff])
-                .await?
-                .0,
+            exchange(
+                &owner,
+                &mut leader,
+                command,
+                COMMAND_TYPE_GUILD_INTENT,
+                &[0xff]
+            )
+            .await?
+            .0,
             CommandStatus::Rejected
         );
         // No in-memory Guild cache: new composed owner and reopened authority read committed data.
@@ -449,27 +515,53 @@ fn scenario() -> TestResult {
         let mut restarted = deps.owner(&h, &authority);
         restarted.premium_coordinator = Some(&coordinator);
         deps.initialize(&restarted).await;
+        // deps.owner builds a fresh ChannelSessionStates/SessionCommands directory. These
+        // synthetic connections start at its initial continuity to exercise the durable
+        // Guild journal, not to claim production same-GameSession recovery after truth loss.
+        let mut reloaded = initial_leader;
         let GuildQueryResult::Own(Some(summary)) =
-            query(&restarted, &mut leader, 12, GuildQuery::Own).await?
+            query(&restarted, &mut reloaded, GuildQuery::Own).await?
         else {
             return Err("guild lost on reload".into());
         };
         assert_eq!(summary.name, "Wire Guild");
         assert_eq!(summary.revision, 10);
-        let mut replay = before_ack;
+        assert_eq!(reloaded.continuity.next_command_id, found_command);
+        // Here ingress has no retained founding result, so the changed input reaches the
+        // native Guild receipt conflict check under the original durable command identity.
+        let (status, bytes) = exchange(
+            &restarted,
+            &mut reloaded,
+            found_command,
+            COMMAND_TYPE_GUILD_INTENT,
+            &changed,
+        )
+        .await?;
+        assert_eq!(status, CommandStatus::Rejected);
+        assert!(bytes.is_empty());
+        drop(restarted);
+        // A second fresh directory avoids replaying the conflict rejection retained above.
+        // Reserve the preceding ID with a read, then replay the original durable receipt.
+        let mut restarted = deps.owner(&h, &authority);
+        restarted.premium_coordinator = Some(&coordinator);
+        deps.initialize(&restarted).await;
+        let mut replay = initial_leader;
         assert_eq!(
-            intent(
-                &restarted,
-                &mut replay,
-                1,
-                GuildIntent::Found {
-                    name: "Wire Guild".into()
-                },
-                1
-            )
-            .await?,
-            r
+            query(&restarted, &mut replay, GuildQuery::Own).await?,
+            GuildQueryResult::Own(Some(summary))
         );
+        assert_eq!(replay.continuity.next_command_id, found_command);
+        let (status, replayed) = exchange(
+            &restarted,
+            &mut replay,
+            found_command,
+            COMMAND_TYPE_GUILD_INTENT,
+            &found,
+        )
+        .await?;
+        assert_eq!(status, CommandStatus::Accepted);
+        assert_eq!(replayed, receipt);
+        assert_eq!(decode_guild_intent_result(&replayed).map_err(debug)?, r);
         let rows: i64 =
             sqlx::query_scalar("SELECT count(*) FROM game_guild_operations WHERE result=0")
                 .fetch_one(&h.pool)
