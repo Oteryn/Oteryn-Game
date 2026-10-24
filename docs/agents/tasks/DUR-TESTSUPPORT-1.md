@@ -3,13 +3,17 @@
 ```yaml
 task_id: DUR-TESTSUPPORT-1
 mode: IMPLEMENT
-status: implemented-local
+status: published-for-review
 repository: Oteryn/Oteryn-Game
 branch: claude/happy-davinci-ijz3wy-durtest
-base_sha: 1fcf3ded6ec8d2b0f383b9e9798bb367928a8074
+base_sha: fcd048da6f7d49116c16455fa2ad6a82881d38ce
+candidate_head: 8299042e7de994db457dd917eb710a680ee63259
 pr: null
-publication: uncommitted (owner instruction)
+publication: pushed to the task branch by the coordinator for PR review
 ```
+
+The original implementation evidence below predates the rebase. The follow-up
+section at the end supersedes its current-state and unchanged-source claims.
 
 ## Result and scope
 
@@ -234,3 +238,188 @@ Publication, full-suite GitHub CI and merge are for the coordinator. This worker
 left all changes uncommitted and did not stage, commit or push. No PR or frozen
 remote candidate is claimed; archive the task record in the coordinator's final
 authoring commit when the task's completing PR is prepared.
+
+
+## Follow-up — three PostgreSQL regressions (2026-10-24)
+
+State: explicitly returned to **AUTHORING** for this local repair; no published
+or frozen remote candidate exists. HEAD is `8299042e7`, based on `fcd048da6`.
+The owner requested an uncommitted repair and forbids Git publication/mutation.
+The follow-up adds ownership of only
+`crates/gameplay/durability/src/durability/fresh_admission.rs` to the original
+owned paths. There is no manifest, feature-definition or test-body change.
+
+### Baseline and reproduction
+
+**PROVEN:** each of the three reported cases passes twice on immutable
+`origin/main` (`fcd048da6f7d49116c16455fa2ad6a82881d38ce`) and fails twice on
+unmodified HEAD, in isolation with `--exact`. These are regressions introduced
+by linking the shared library, not pre-existing failures or shared-PC load.
+
+The hard current-directory-only rule and session sandbox prohibit the requested
+sibling worktree. Instead, `git archive --format=tar fcd048da6f7d49116c16455fa2ad6a82881d38ce`
+was extracted into
+`target/DUR-TESTSUPPORT-1/follow-up/durtest-base/` inside the current worktree.
+No worktree was added or Git state changed. The archive contains the complete
+tracked baseline tree, with no source normalization. Baseline runs used the
+separate requested target directory
+`/home/mole/oteryn-cache/target-codex/lanes/durtest-base`; HEAD and repair runs use
+`/home/mole/oteryn-cache/target-codex/lanes/durtest`.
+
+The queued wrapper overrides `CARGO_TARGET_DIR` from the detected Git root.
+Initial baseline repetitions therefore used the `durtest` build lane; those
+additional passing runs are retained in `base-results-initial-shared-lane.json`.
+Baseline was then rerun twice per case with
+`GIT_CEILING_DIRECTORIES=$PWD/..` while inside the archive, making the wrapper's
+normal fallback select the `durtest-base` lane. These final separately routed
+runs are the baseline evidence in the table and `base-results.json`. No wrapper
+or Git configuration was modified.
+
+For **each** directory, each command below ran **twice**, using the relevant
+`CARGO_TARGET_DIR` above; baseline also set `GIT_CEILING_DIRECTORIES` as described
+(the cargo arguments are identical across phases):
+
+```sh
+/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-game-server --test durability_postgres -- complete_reconnect_resumes_an_owning_loss_session_exactly_once --exact --nocapture
+/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-game-server --test durability_postgres -- resumed_session_loss_opens_the_next_epoch_and_resumes_again --exact --nocapture
+/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-game-server --test durability_postgres -- world_required_capabilities_postgres_cases::admit0_v2_prepare_and_commit_refusal_preserve_current_authority --exact --nocapture
+```
+
+| Exact test | Main, run 1 / 2 | HEAD, run 1 / 2 | Repair, run 1 / 2 |
+| --- | --- | --- | --- |
+| `complete_reconnect_resumes_an_owning_loss_session_exactly_once` | PASS / PASS | FAIL / FAIL, line 6105 | PASS / PASS |
+| `resumed_session_loss_opens_the_next_epoch_and_resumes_again` | PASS / PASS | FAIL / FAIL, line 6471 | PASS / PASS |
+| `world_required_capabilities_postgres_cases::admit0_v2_prepare_and_commit_refusal_preserve_current_authority` | PASS / PASS | FAIL / FAIL, line 563 | PASS / PASS |
+
+Each baseline/HEAD run executed exactly one test; passing runs exited 0 and
+failing runs exited 101. All used the absolute queued cargo wrapper with actual
+PostgreSQL configuration; no missing-configuration early return occurred.
+Exact commands, working directories, durations, exit codes and full local logs
+are in `target/DUR-TESTSUPPORT-1/follow-up/{base,head,fixed}-results.json` and the
+corresponding `.log` files. The separate baseline snapshot metadata is in
+`baseline-snapshot.json`.
+
+### Root cause and bounded repair
+
+**PROVEN:** `apply_complete_reconnect` and
+`apply_complete_reconnect_with_capabilities` already use
+`#[cfg(any(test, feature = "test-support"))]`, but their common private
+implementation's ADMIT0 match still checked only `cfg!(test)` twice. Compiling
+the former `include!` inside the test target made both checks true; linking the
+library makes them false despite the enabled `test-support` feature.
+Consequently the first two cases rejected legitimate PREPAREs, while the third
+rejected before calling its independently observed capability check.
+
+Both private match guards now use `cfg!(any(test, feature = "test-support"))`,
+matching the existing test seams. This retains source reuse and avoids an
+exception that recompiles all core tests in `durability_postgres`. No new
+manifest or feature is necessary. No hook registry or duplicated static state
+is involved. A workspace search found these are the only `cfg!(test)` runtime
+checks in durability source.
+
+Production behavior is unchanged: without `test-support`, the two predicates
+retain their previous values. Even with that feature, the production
+`apply_registered_complete_reconnect` always supplies `Some(custody)` and
+`Some(capabilities)`, so it continues through registered recovery validation
+and the mandatory capability callback. The real caller is
+`crates/gameplay/dispatch/src/gameplay_transport/resume.rs::decide`.
+Only the already gated test entry points can supply `None` custody.
+
+### Rebased test-name parity
+
+**PROVEN preservation:** every name in the original **901-name** union remains,
+with **0 lost**. Rebase onto `fcd048da6` brought eight upstream guard/wire tests:
+seven shared core cases plus the library-only sorted-module-registration guard.
+Thus the current total union is **909 before -> 909 after**, including all 901
+original names. Claiming a total of 901 on the rebased tree would omit upstream
+tests. This repair adds or removes **zero** registrations.
+
+The shared include core is now **425** tests (formerly 418), and the durability
+library is **443** tests (formerly 435). `durability_postgres` remains **153**
+integration tests, versus **578** total on current main. The new executable
+lists for main/repair `durability_postgres` and repair durability `--lib` are in
+`follow-up/*-list.names`. The other 26 integration inventories are reused from
+unchanged source: the only upstream edit under `apps/game-server/tests/` since
+the original base is `integration_rest/spell_lane_key33_pin.rs`, outside these
+targets. `follow-up/parity.json` records this bounded reuse, every row below and
+all eight added names. The historical inventories remain intact.
+
+The `durability_postgres` row is directly measured. Rebased before counts for
+the other 26 rows are **DERIVED** from their unchanged integration inventories
+and the seven directly measured upstream additions to the shared core; the
+pre-existing combat duplicate-mount normalization still applies to its row.
+
+| Target | Rebased before | After | Removed, in lib | Lost |
+| --- | ---: | ---: | ---: | ---: |
+| `account_achievement_postgres` | 458 | 33 | 425 | 0 |
+| `bank_postgres` | 442 | 17 | 425 | 0 |
+| `bestiary_progress_postgres` | 441 | 16 | 425 | 0 |
+| `character_forge_dust_postgres` | 444 | 19 | 425 | 0 |
+| `character_proficiency_modification_postgres` | 446 | 21 | 425 | 0 |
+| `character_progression_postgres` | 480 | 55 | 425 | 0 |
+| `charm_state_postgres` | 462 | 37 | 425 | 0 |
+| `chest_use_postgres` | 492 | 67 | 425 | 0 |
+| `combat_bestiary_postgres` | 444 | 19 | 425 | 0 |
+| `combat_death_reward_postgres` | 453 | 28 | 425 | 0 |
+| `combat_pickup_postgres` | 478 | 53 | 425 | 0 |
+| `corpse_decay_postgres` | 467 | 42 | 425 | 0 |
+| `corpse_transfer_postgres` | 462 | 37 | 425 | 0 |
+| `durability_postgres` | 578 | 153 | 425 | 0 |
+| `house_interior_postgres` | 485 | 60 | 425 | 0 |
+| `item_fee_burn_postgres` | 444 | 19 | 425 | 0 |
+| `item_mint_postgres` | 462 | 37 | 425 | 0 |
+| `item_ref_production` | 472 | 47 | 425 | 0 |
+| `item_timed_state_postgres` | 449 | 24 | 425 | 0 |
+| `item_transfer_postgres` | 457 | 32 | 425 | 0 |
+| `item_use_postgres` | 449 | 24 | 425 | 0 |
+| `map_item_mint_postgres` | 447 | 22 | 425 | 0 |
+| `native_admission_source_postgres` | 451 | 26 | 425 | 0 |
+| `npc_econ_bank_postgres` | 465 | 40 | 425 | 0 |
+| `reward_claim_mint_postgres` | 448 | 23 | 425 | 0 |
+| `runtime_scope_assignment_postgres` | 459 | 34 | 425 | 0 |
+| `wp5_s3b_composition` | 438 | 13 | 425 | 0 |
+
+No test bodies, assertions, enum variants, struct fields, trait methods or
+public functions were added or changed. Workspace-wide constructor/match/impl
+migrations and new-public-function production/dispatch E2E requirements are
+NOT_APPLICABLE. All 318 current durability source files match current main
+except the three-line repair in `fresh_admission.rs`.
+
+### Follow-up validation and unfinished work
+
+**PROVEN:** all six repaired exact PostgreSQL runs pass (two per case), and
+all nine cargo validation/listing commands exit 0. Under
+`CARGO_TARGET_DIR=/home/mole/oteryn-cache/target-codex/lanes/durtest`:
+
+```sh
+/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-durability --lib -- durability::fresh_admission::resource_preflight_tests:: --nocapture
+/home/mole/oteryn-cache/codex-bin/cargo fmt --all --check
+/home/mole/oteryn-cache/codex-bin/cargo check --locked --offline -p oteryn-gameplay-durability --lib --quiet
+/home/mole/oteryn-cache/codex-bin/cargo clippy --locked --offline -p oteryn-gameplay-durability --all-targets --quiet -- -D warnings
+/home/mole/oteryn-cache/codex-bin/cargo clippy --locked --offline -p oteryn-gameplay-durability --all-targets --features test-support --quiet -- -D warnings
+/home/mole/oteryn-cache/codex-bin/cargo clippy --locked --offline -p oteryn-game-server --test durability_postgres --quiet -- -D warnings
+```
+
+The focused unit filter executes **2 tests, both PASS**. The remaining three
+cargo commands are `-- --list` for baseline/repair `durability_postgres` and
+repair `oteryn-gameplay-durability --lib`; their full arguments, working
+directories, output paths, durations and exit codes are in
+`follow-up/validation-results.json`. Governance validation and all **129**
+`tools/agents/tests` pass. `git diff --check` passes. The complete candidate
+diff against main and the local repair diff were re-read against
+`/home/mole/oteryn-cache/CODEX-CHECKLIST.md`; no remaining finding. No test,
+assertion, authorization or production capability requirement was weakened.
+
+The in-directory baseline archive has been removed; cleanup and the exact
+318-file source comparison are retained in `follow-up/baseline-cleanup.json`
+and `follow-up/source-comparison.json`. No sibling worktree was created, and
+no Git state mutation, credential access, Docker use, dependency download or
+external write occurred. The repair and this card remain **uncommitted**.
+
+**Unfinished:** the requested unfiltered `durability_postgres` target has not
+run: the owner's PG SCOPE hard rule explicitly overrides task-card validation
+lists and forbids it on this shared PC. An explicit exception was requested
+but has not been granted; full-target validation remains with the coordinator
+or CI. No unrelated load-contention failure needs a CI-only deferral. The
+original 901-name union is fully retained, while the rebased union is 909
+because of eight upstream additions, as itemized above.

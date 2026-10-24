@@ -2530,15 +2530,15 @@ impl FreshAdmissionStore {
         // ADMIT0: PREPARE and COMMIT both require the independently locked current
         // runtime binding before any reservation, nonce consumption or session switch.
         // Exact historical receipts above retain their original outcome; replaying one
-        // is not a fresh authority grant. Only the cfg(test) seam may omit the check.
+        // is not a fresh authority grant. Only the test/test-support seam may omit the check.
         match (&custody, &capabilities) {
-            (_, Some(check)) if custody.is_some() || cfg!(test) => {
+            (_, Some(check)) if custody.is_some() || cfg!(any(test, feature = "test-support")) => {
                 if !store.check_current_runtime_capabilities(&mut tx,
                     current.current_runtime_scope(), current.current_scope_generation().get(), check).await? {
                     return Ok(CompleteReconnectOutcomeV1::Rejected);
                 }
             }
-            (None, None) if cfg!(test) => {}
+            (None, None) if cfg!(any(test, feature = "test-support")) => {}
             _ => return Ok(CompleteReconnectOutcomeV1::Rejected),
         }
         if commit {
