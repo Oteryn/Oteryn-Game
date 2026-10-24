@@ -29,59 +29,22 @@ const SQL_KEY33_FUNCTIONS: [(&str, &str); 3] = [
 ];
 
 /// Production Rust functions that take the key-33 lock or write a key-33 table.
-const RUST_KEY33_SITES: [(&str, &str); 13] = [
-    (
-        "crates/gameplay/durability/src/durability/item_decay_retire.rs",
-        "apply_retire",
-    ),
-    (
-        "crates/gameplay/durability/src/durability/item_loop_move.rs",
-        "apply_loop_move",
-    ),
-    (
-        "crates/gameplay/durability/src/durability/item_mint.rs",
-        "insert_mint_with_corpse_attribution",
-    ),
-    (
-        "crates/gameplay/durability/src/durability/item_mint.rs",
-        "insert_corpse_loot_mint",
-    ),
-    (
-        "crates/gameplay/durability/src/durability/item_transfer.rs",
-        "apply_transfer",
-    ),
-    (
-        "crates/gameplay/durability/src/durability/map_item_mint.rs",
-        "apply_mint",
-    ),
-    (
-        "crates/gameplay/durability/src/durability/native_map_items.rs",
-        "initialize_in_transaction",
-    ),
-    (
-        "crates/gameplay/durability/src/durability/native_map_items.rs",
-        "adopt_current_ground",
-    ),
-    (
-        "crates/gameplay/durability/src/durability/spell_item_temporal.rs",
-        "drain_due_items_in_transaction",
-    ),
-    (
-        "crates/gameplay/durability/src/durability/spell_item_temporal.rs",
-        "drain_due_field_chains_in_transaction",
-    ),
-    (
-        "crates/gameplay/durability/src/durability/spell_item_transaction.rs",
-        "assert_spell_item_scope_with_recovery",
-    ),
-    (
-        "crates/gameplay/durability/src/durability/spell_item_transaction.rs",
-        "expire_due_spell_items_bounded",
-    ),
-    (
-        "crates/gameplay/durability/src/durability/spell_item_transaction.rs",
-        "assert_spell_item_authority_with_recovery",
-    ),
+// Keep each registration on one line so parallel additions remain insert-only.
+#[rustfmt::skip]
+const RUST_KEY33_SITES: &[(&str, &str)] = &[
+    ("crates/gameplay/durability/src/durability/item_decay_retire.rs", "apply_retire"),
+    ("crates/gameplay/durability/src/durability/item_loop_move.rs", "apply_loop_move"),
+    ("crates/gameplay/durability/src/durability/item_mint.rs", "insert_corpse_loot_mint"),
+    ("crates/gameplay/durability/src/durability/item_mint.rs", "insert_mint_with_corpse_attribution"),
+    ("crates/gameplay/durability/src/durability/item_transfer.rs", "apply_transfer"),
+    ("crates/gameplay/durability/src/durability/map_item_mint.rs", "apply_mint"),
+    ("crates/gameplay/durability/src/durability/native_map_items.rs", "adopt_current_ground"),
+    ("crates/gameplay/durability/src/durability/native_map_items.rs", "initialize_in_transaction"),
+    ("crates/gameplay/durability/src/durability/spell_item_temporal.rs", "drain_due_field_chains_in_transaction"),
+    ("crates/gameplay/durability/src/durability/spell_item_temporal.rs", "drain_due_items_in_transaction"),
+    ("crates/gameplay/durability/src/durability/spell_item_transaction.rs", "assert_spell_item_authority_with_recovery"),
+    ("crates/gameplay/durability/src/durability/spell_item_transaction.rs", "assert_spell_item_scope_with_recovery"),
+    ("crates/gameplay/durability/src/durability/spell_item_transaction.rs", "expire_due_spell_items_bounded"),
 ];
 
 /// Lane-derived proofs: a permit or window directly, or a scope/item authority that is only
@@ -597,4 +560,9 @@ fn no_cast_writer_awaits_after_its_window_gives_up_the_attempt() {
         lock < install && install < record,
         "native takes the attack guard before the window gives up the attempt"
     );
+}
+
+#[test]
+fn rust_key33_sites_are_sorted_and_unique() {
+    assert!(RUST_KEY33_SITES.windows(2).all(|pair| pair[0] < pair[1]));
 }
