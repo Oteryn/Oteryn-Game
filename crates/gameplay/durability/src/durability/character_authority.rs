@@ -17,6 +17,7 @@ use oteryn_gameplay_characters::character_authority_audit::{
     encode_bootstrap,
 };
 use sqlx::Row;
+use std::sync::LazyLock;
 
 type Result<T> = std::result::Result<T, CharacterAuthorityError>;
 const MAX_CONTEXT_BYTES: usize = 128;
@@ -710,91 +711,39 @@ pub(super) async fn account_security(
     })
 }
 
-/// Complete first-slice integrity: each root has exactly one creation receipt, from the
-/// operator bootstrap with its reconstructed intent binding or from a committed create
-/// command (migration 0087), and no operation identity is in both receipt tables; every retained audit event binds to that
-/// receipt and root with an intact payload hash. Expired events may be absent.
-/// The retained intent source high-water exists exactly when a receipt exists
-/// and equals the newest receipt's decision, so a restore can neither drop nor
-/// regress it (absence is never initialized to zero).
-async fn verify_character_integrity(
-    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    definitions: Option<&dyn super::character_proficiency::ProficiencyDefinitions>,
-) -> std::result::Result<(), DurabilityError> {
-    super::offline_training_state::verify(tx).await?;
-    super::npc_purchase::verify_purchase_integrity(tx).await?;
-    creation_integrity::verify(tx).await?;
-    // P03 progression is optional at revision one because initialization is a
-    // separate owner.  Once a Character advances, typed state and a complete,
-    // gap-free immutable receipt chain must explain the global revision and the
-    // current state.  The chain has one receipt per revision of any kind: XP
-    // award (0009), death (0016), stance (0017), Bestiary kill (0019), charm
-    // command (0020), monk state save (0026), build change (0030), proficiency
-    // (0032), familiar state change (0033) or quest transition (0056), each
-    // `before` equal to its predecessor's `after` across kinds.  The bootstrap
-    // receipt remains bound to initial revision 1.
-    sqlx::query(
-        "WITH chain AS ( \
-           SELECT character_id, original_character_revision, committed_character_revision, \
-                  level_before, level_after, experience_before, experience_after, \
-                  profile_revision, ruleset_revision, content_revision, simulation_revision, \
-                  evidence_revision, declaration_revision, policy_revision, reward_revision \
-              FROM game_character_xp_receipts \
-           UNION ALL SELECT character_id, original_character_revision, committed_character_revision, \
-                  level_before, level_after, experience_before, experience_after, \
-                  profile_revision, ruleset_revision, content_revision, simulation_revision, \
-                  evidence_revision, declaration_revision, policy_revision, reward_revision \
-              FROM game_character_death_receipts \
-           UNION ALL SELECT character_id, original_character_revision, committed_character_revision, \
-                  level_before, level_after, experience_before, experience_after, \
-                  profile_revision, ruleset_revision, content_revision, simulation_revision, \
-                  evidence_revision, declaration_revision, policy_revision, reward_revision \
-              FROM game_character_stance_receipts \
-           UNION ALL SELECT character_id, original_character_revision, committed_character_revision, \
-                  level_before, level_after, experience_before, experience_after, \
-                  profile_revision, ruleset_revision, content_revision, simulation_revision, \
-                  evidence_revision, declaration_revision, policy_revision, reward_revision \
-              FROM game_character_bestiary_kill_receipts \
-           UNION ALL SELECT character_id, original_character_revision, committed_character_revision, \
-                  level_before, level_after, experience_before, experience_after, \
-                  profile_revision, ruleset_revision, content_revision, simulation_revision, \
-                  evidence_revision, declaration_revision, policy_revision, reward_revision \
-              FROM game_character_charm_receipts \
-           UNION ALL SELECT character_id, original_character_revision, committed_character_revision, \
-                  level_before, level_after, experience_before, experience_after, \
-                  profile_revision, ruleset_revision, content_revision, simulation_revision, \
-                  evidence_revision, declaration_revision, policy_revision, reward_revision \
-              FROM game_character_monk_state_receipts \
-           UNION ALL SELECT character_id, original_character_revision, committed_character_revision, \
-                  level_before, level_after, experience_before, experience_after, \
-                  profile_revision, ruleset_revision, content_revision, simulation_revision, \
-                  evidence_revision, declaration_revision, policy_revision, reward_revision \
-              FROM game_character_build_receipts \
-           UNION ALL SELECT character_id, original_character_revision, committed_character_revision, \
-                  level_before, level_after, experience_before, experience_after, \
-                  profile_revision, ruleset_revision, content_revision, simulation_revision, \
-                  evidence_revision, declaration_revision, policy_revision, reward_revision \
-              FROM game_character_proficiency_receipts \
-           UNION ALL SELECT character_id, original_character_revision, committed_character_revision, \
-                  level_before, level_after, experience_before, experience_after, \
-                  profile_revision, ruleset_revision, content_revision, simulation_revision, \
-                  evidence_revision, declaration_revision, policy_revision, reward_revision \
-              FROM game_character_familiar_receipts \
-           UNION ALL SELECT character_id, original_character_revision, committed_character_revision, \
-                  level_before, level_after, experience_before, experience_after, \
-                  profile_revision, ruleset_revision, content_revision, simulation_revision, \
-                  evidence_revision, declaration_revision, policy_revision, reward_revision \
-              FROM game_character_quest_receipts \
-           UNION ALL SELECT character_id, original_character_revision, committed_character_revision, \
-                  level_before, level_after, experience_before, experience_after, \
-                  profile_revision, ruleset_revision, content_revision, simulation_revision, \
-                  evidence_revision, declaration_revision, policy_revision, reward_revision \
-              FROM game_character_premium_revision_chain \
-           UNION ALL SELECT character_id, original_character_revision, committed_character_revision, \
-                  level_before, level_after, experience_before, experience_after, \
-                  profile_revision, ruleset_revision, content_revision, simulation_revision, \
-                  evidence_revision, declaration_revision, policy_revision, reward_revision \
-              FROM game_character_wheel_receipts) \
+// UNION ALL arm order is irrelevant: the query checks only for the existence of an
+// invalid row; chain continuity and latest state are joined by Character revision.
+const RECEIPT_CHAIN_TABLES: &[&str] = &[
+    "game_character_bestiary_kill_receipts",
+    "game_character_build_receipts",
+    "game_character_charm_receipts",
+    "game_character_death_receipts",
+    "game_character_familiar_receipts",
+    "game_character_monk_state_receipts",
+    "game_character_premium_revision_chain",
+    "game_character_proficiency_receipts",
+    "game_character_quest_receipts",
+    "game_character_stance_receipts",
+    "game_character_wheel_receipts",
+    "game_character_xp_receipts",
+];
+
+static CHARACTER_INTEGRITY_SQL: LazyLock<String> = LazyLock::new(|| {
+    let chain = RECEIPT_CHAIN_TABLES
+        .iter()
+        .map(|table| {
+            format!(
+                "SELECT character_id, original_character_revision, committed_character_revision, \
+                 level_before, level_after, experience_before, experience_after, \
+                 profile_revision, ruleset_revision, content_revision, simulation_revision, \
+                 evidence_revision, declaration_revision, policy_revision, reward_revision \
+                 FROM {table}"
+            )
+        })
+        .collect::<Vec<_>>()
+        .join(" UNION ALL ");
+    format!(
+        "WITH chain AS ({chain}) \
          SELECT 1 FROM game_character_roots r \
            LEFT JOIN game_character_progression_state s USING (character_id) \
           WHERE (r.character_revision <> 1 AND s.character_id IS NULL) \
@@ -847,11 +796,37 @@ async fn verify_character_integrity(
              OR x.declaration_revision <> s.declaration_revision \
              OR x.policy_revision <> s.policy_revision \
              OR x.reward_revision <> s.reward_revision \
-         LIMIT 1",
+         LIMIT 1"
     )
-    .fetch_optional(&mut **tx)
-    .await?
-    .map_or(Ok(()), |_| Err(DurabilityError::Unavailable))?;
+});
+
+/// Complete first-slice integrity: each root has exactly one creation receipt, from the
+/// operator bootstrap with its reconstructed intent binding or from a committed create
+/// command (migration 0087), and no operation identity is in both receipt tables; every retained audit event binds to that
+/// receipt and root with an intact payload hash. Expired events may be absent.
+/// The retained intent source high-water exists exactly when a receipt exists
+/// and equals the newest receipt's decision, so a restore can neither drop nor
+/// regress it (absence is never initialized to zero).
+async fn verify_character_integrity(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    definitions: Option<&dyn super::character_proficiency::ProficiencyDefinitions>,
+) -> std::result::Result<(), DurabilityError> {
+    super::offline_training_state::verify(tx).await?;
+    super::npc_purchase::verify_purchase_integrity(tx).await?;
+    creation_integrity::verify(tx).await?;
+    // P03 progression is optional at revision one because initialization is a
+    // separate owner.  Once a Character advances, typed state and a complete,
+    // gap-free immutable receipt chain must explain the global revision and the
+    // current state.  The chain has one receipt per revision of any kind: XP
+    // award (0009), death (0016), stance (0017), Bestiary kill (0019), charm
+    // command (0020), monk state save (0026), build change (0030), proficiency
+    // (0032), familiar state change (0033) or quest transition (0056), each
+    // `before` equal to its predecessor's `after` across kinds.  The bootstrap
+    // receipt remains bound to initial revision 1.
+    sqlx::query(CHARACTER_INTEGRITY_SQL.as_str())
+        .fetch_optional(&mut **tx)
+        .await?
+        .map_or(Ok(()), |_| Err(DurabilityError::Unavailable))?;
     super::character_appearance::verify_character_appearance_integrity(tx)
         .await
         .map_err(|error| match error {
@@ -1129,4 +1104,18 @@ async fn assert_predecessor_admission(
         return Err(DurabilityError::Unavailable);
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod inventory_tests {
+    use super::RECEIPT_CHAIN_TABLES;
+
+    #[test]
+    fn receipt_chain_tables_are_sorted_and_unique() {
+        assert!(
+            RECEIPT_CHAIN_TABLES
+                .windows(2)
+                .all(|pair| pair[0] < pair[1])
+        );
+    }
 }
