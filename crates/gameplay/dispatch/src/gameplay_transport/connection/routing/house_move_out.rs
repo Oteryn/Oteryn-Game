@@ -21,7 +21,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             .await
         {
             transport::house_move_out::HouseMoveOutReply::Payload(bytes) => {
-                Dispatch::HouseMoveOut(bytes)
+                Dispatch::Reply(crate::foundation::CommandStatus::Accepted, bytes)
             }
             transport::house_move_out::HouseMoveOutReply::Rejected => Dispatch::Unregistered,
             transport::house_move_out::HouseMoveOutReply::Unavailable => {

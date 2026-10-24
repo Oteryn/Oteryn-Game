@@ -16,9 +16,6 @@ pub(super) fn encode(
         Dispatch::House(None) => {
             return Err(ServeEnd::Disconnected);
         }
-        Dispatch::DailyReward(payload) => {
-            crate::gameplay_transport::daily_reward::result(command.command_type, payload.take())
-        }
         Dispatch::Training(result) => {
             let Ok(payload) =
                 oteryn_protocol_oteryn::loop_training::encode_training_result(*result)
@@ -138,12 +135,8 @@ pub(super) fn encode(
             };
             (CommandStatus::Accepted, payload)
         }
-        Dispatch::Party(payload) => (CommandStatus::Accepted, payload.clone()),
+        Dispatch::Reply(status, payload) => (*status, std::mem::take(payload)),
         Dispatch::QuestLog(_) => (CommandStatus::Accepted, Vec::new()),
-        Dispatch::Staff(result) => match result {
-            Some(bytes) => (CommandStatus::Accepted, bytes.clone()),
-            None => (CommandStatus::Rejected, Vec::new()),
-        },
         Dispatch::Chat(result) => {
             let Ok(payload) = encode_chat_intent_result(result) else {
                 return Err(ServeEnd::Disconnected);
@@ -190,8 +183,6 @@ pub(super) fn encode(
             // The page is written once; move it out instead of copying up to 32 KiB.
             (CommandStatus::Accepted, std::mem::take(payload))
         }
-        Dispatch::WorldEvent(Ok(payload)) => (CommandStatus::Accepted, std::mem::take(payload)),
-        Dispatch::WorldEvent(Err(())) => (CommandStatus::Rejected, Vec::new()),
         Dispatch::Timed(payload, _) => (
             if crate::gameplay_transport::timed_item_wire::accepted(payload) {
                 CommandStatus::Accepted
@@ -200,9 +191,7 @@ pub(super) fn encode(
             },
             std::mem::take(payload),
         ),
-        Dispatch::HouseMoveOut(payload)
-        | Dispatch::Guild(payload)
-        | Dispatch::Highscores(HighscoresReply::Result(payload)) => {
+        Dispatch::Guild(payload) | Dispatch::Highscores(HighscoresReply::Result(payload)) => {
             (CommandStatus::Accepted, std::mem::take(payload))
         }
         Dispatch::Unregistered

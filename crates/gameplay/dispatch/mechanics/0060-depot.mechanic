@@ -1,0 +1,15 @@
+name=depot
+commands=36
+[route]
+match routing::depot::route(
+    authority,
+    session.actor,
+    &session.admitted,
+    command,
+    &session.item_view,
+)
+.await
+{
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

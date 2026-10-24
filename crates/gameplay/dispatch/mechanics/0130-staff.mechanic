@@ -1,0 +1,9 @@
+name=staff
+commands=60,61
+transport=staff
+composed=staff
+[route]
+match routing::staff::route(authority, &session.admitted, command).await {
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

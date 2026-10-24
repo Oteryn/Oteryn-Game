@@ -1,0 +1,10 @@
+name=fight_modes
+commands=12
+[route]
+routing::combat_intent::route_modes(
+    authority,
+    session.actor,
+    &mut session.admitted,
+    command,
+)
+.await

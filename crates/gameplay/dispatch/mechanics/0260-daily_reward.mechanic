@@ -1,0 +1,8 @@
+name=daily_reward
+commands=32,33
+transport=daily_reward
+composed=daily_reward
+authority=daily_reward
+offer=20,daily_reward::offered,daily_reward_available
+[route]
+routing::daily_reward::route(authority, session.actor, &session.admitted, command).await

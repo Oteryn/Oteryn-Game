@@ -22,7 +22,10 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         )
         .await
         {
-            Some(reply) => Dispatch::WorldEvent(reply),
+            Some(Ok(bytes)) => Dispatch::Reply(crate::foundation::CommandStatus::Accepted, bytes),
+            Some(Err(())) => {
+                Dispatch::Reply(crate::foundation::CommandStatus::Rejected, Vec::new())
+            }
             None => return None,
         }
     })

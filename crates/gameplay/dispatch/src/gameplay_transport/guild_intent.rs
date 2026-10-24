@@ -224,13 +224,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 }
-pub(super) fn owns(kind: u32) -> bool {
-    super::guild_bank::owns(kind)
-        || matches!(
-            kind,
-            wire::COMMAND_TYPE_GUILD_INTENT | wire::COMMAND_TYPE_GUILD_QUERY
-        )
-}
 fn failure(error: GuildError) -> GuildReply {
     match error {
         GuildError::InvalidInput | GuildError::NotCurrent | GuildError::ConflictingOccurrence => {
@@ -245,12 +238,13 @@ macro_rules! authority_methods {
     () => {
         fn guild_command(
             &self,
-            _admitted: super::connection::AdmittedSession,
+            _admitted: $crate::gameplay_transport::connection::AdmittedSession,
             _id: u64,
             _kind: u32,
             _payload: &[u8],
-        ) -> impl std::future::Future<Output = super::guild_intent::GuildReply> {
-            async { super::guild_intent::GuildReply::Rejected }
+        ) -> impl std::future::Future<Output = $crate::gameplay_transport::guild_intent::GuildReply>
+        {
+            async { $crate::gameplay_transport::guild_intent::GuildReply::Rejected }
         }
     };
 }
