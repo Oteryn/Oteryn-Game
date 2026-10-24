@@ -30,8 +30,9 @@ use crate::world_spatial_entities::{ENTITY_IDENTITY_BYTES, EntityRef};
 pub const CAPABILITY_PRESENTATION_V1: u32 = 23;
 /// The capability `PRESENTATION_V1` requires: 6 `WORLD_SPATIAL_ENTITIES`, whose D85 identities
 /// the events name (§7).
-pub const CAPABILITY_PRESENTATION_V1_REQUIRES: [u32; 1] =
-    [crate::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES];
+pub const CAPABILITY_PRESENTATION_V1_REQUIRES: [u32; 1] = [
+    crate::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES, // WORLD_SPATIAL_ENTITIES
+];
 /// Registered state domain `WORLD_PRESENTATION` (capability 23).
 pub const STATE_DOMAIN_WORLD_PRESENTATION: u32 = 19;
 /// Delta type 1 `WORLD_PRESENTATION_BATCH_V1`.

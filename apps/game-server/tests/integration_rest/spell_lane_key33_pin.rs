@@ -154,7 +154,12 @@ fn rs_files(dir: &Path, out: &mut Vec<PathBuf>) {
     for entry in fs::read_dir(dir).expect("source dir") {
         let path = entry.expect("dir entry").path();
         if path.is_dir() {
-            if path.file_name().is_some_and(|name| name != "tests") {
+            // Test-only module trees (`tests`, `postgres_tests`, `lifted_tests`, ...) hold fixtures.
+            if path
+                .file_name()
+                .and_then(|name| name.to_str())
+                .is_some_and(|name| name != "tests" && !name.ends_with("_tests"))
+            {
                 rs_files(&path, out);
             }
         } else if path.extension().is_some_and(|ext| ext == "rs")
@@ -355,7 +360,7 @@ fn guarded_cast_writers_reserve_in_s_and_release_a_definite_rejection() {
     for (file, refusal, releases) in [
         (
             "../../crates/gameplay/dispatch/src/gameplay_transport/native_combat_cast.rs",
-            "Rejected(NATIVE_NEW_WRITE_REFUSED))=>{",
+            "Rejected(NATIVE_NEW_WRITE_REFUSED)|item_tx::SpellItemError::FieldCapabilityRefused)=>{",
             &[
                 "release_definitely_uncommitted_spell_batch(&installation.physical)",
                 ".release_definitely_uncommitted(presentation)",
@@ -363,7 +368,7 @@ fn guarded_cast_writers_reserve_in_s_and_release_a_definite_rejection() {
         ),
         (
             "../../crates/gameplay/dispatch/src/gameplay_transport/world_item_cast.rs",
-            "Rejected(WORLD_ITEM_NEW_GRANT_REFUSED))=>{",
+            "Rejected(WORLD_ITEM_NEW_GRANT_REFUSED)|items::SpellItemError::FieldCapabilityRefused)=>{",
             &[
                 "release_definitely_uncommitted_spell_batch(&attempt.physical)",
                 ".release_definitely_uncommitted(&attempt.presentation)",
@@ -371,7 +376,7 @@ fn guarded_cast_writers_reserve_in_s_and_release_a_definite_rejection() {
         ),
         (
             "../../crates/gameplay/dispatch/src/gameplay_transport/parameter_cast.rs",
-            "Rejected(PARAMETER_NEW_GRANT_REFUSED))=>{",
+            "Rejected(PARAMETER_NEW_GRANT_REFUSED)|items::SpellItemError::FieldCapabilityRefused)=>{",
             &["release_definitely_uncommitted_spell_batch(&installation.physical)"][..],
         ),
     ] {

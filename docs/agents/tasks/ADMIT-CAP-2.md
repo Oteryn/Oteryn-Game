@@ -4,7 +4,7 @@
 task_id: ADMIT-CAP-2
 title: "ADMIT-CAP-2: player field effects behind world-required capabilities"
 mode: IMPLEMENT
-status: waiting
+status: blocked
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 3
@@ -13,10 +13,10 @@ plan_row: "§4 row ADMIT-CAP-2; §7 'ADMIT-CAP-1, ADMIT-CAP-2' (ADMIT0 §6)"
 brief: "docs/architecture/reviews/OTERYN_GAME_ADMIT0_WORLD_REQUIRED_CAPABILITIES_DECISION_2026-10-01.md (§3–§7)"
 class: "hard, authority and protocol review"
 base_branch: main
-branch: null
+branch: claude/happy-davinci-ijz3wy-srv-admitcap
 pr: null
 needs_migration: false
-needs_registry: true   # field refusal outcome / error-code row, owned by the protocol/error CP owner
+needs_registry: false  # existing USE / spell result codecs; activation registry work remains FIELD-WIRE-1
 merge_authority: CP_ONLY (builder never marks ready)
 ```
 
@@ -27,6 +27,26 @@ Merged evidence: none. No field-creation guard from this card is retained on mai
 Remaining: Implement the player field/wall guard at the current guarded write boundaries. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2150, branch skeleton/admit-cap-2
+
+## Server wiring gap list
+
+Audit of allocated HEAD `cb5b3de92d2e19df53e05a7e0f5b9d98fa11d299` (2026-10-23), before implementation. No separate
+E2E audit table is present in this checkout; the card's qualification matrix and current
+production callers are the evidence for this audit.
+
+| Layer | Present on HEAD | Missing server work |
+|---|---|---|
+| L3 | Ordinary field selection, native Barrier plans, immutable generation-bound capability closure | Require **both** 30 and 11 after checking the current scope/generation/policy binding; project retained bundle PvP-zone flags separately from unknown height/floor facts |
+| L4 | Atomic spell-item/cost/training receipts, session fences, exact receipt replay, durable field provenance and decay | Mandatory explicit origin and positive field/wall qualification at the guarded writer, after replay |
+| Storage | Existing spell-item receipts, Ground custody, field policy and provenance | No new table or migration needed; field/barrier Ground provenance must use the bounded `spell:<session>:<command>` reference already used by item casts |
+| Dispatch / wire | Command 3 spell cast and result codec; real native caster and barrier preparation | Legacy USE admitted only rune 3174; qualify single-tile Fire Field 3188, forward the bound predicate, use definite rollback on refusal and check player field ingress |
+| Offer / runtime | Boot and admission share the actual offered closure | 30 is explicitly closed pending FIELD-WIRE-1 payloads/domain; 11 is closed pending WORLDINT-USE-1. Neither can truthfully be offered just by adding an offer line |
+| E2E | Existing native-cast and admission PG fixtures in dispatch `--lib` | Mechanic-owned real-wire refusal/no-trace and locked-writer replay qualification |
+
+The existing USE request/result codec (command 2 with capability 22), and the native spell-item transaction are reused; no command or capability ID is allocated.
+Positive production activation still requires the registered field visibility payloads
+and the world interaction activation contract. A capability bit alone cannot substitute
+for field visibility to every admitted player.
 
 ## Goal
 
@@ -167,7 +187,7 @@ change wait for their owners.
 | Callers | `crates/gameplay/dispatch/src/gameplay_transport/{ordinary_field_items,native_world_item_cast,native_combat_cast,world_item_cast,field_step_ingress,spell_periodic}.rs` (call sites only; `native_combat_cast.rs` 3,584, `native_world_item_cast.rs` 1,383, `world_item_cast.rs` 1,101 lines) |
 | Gate inventory | `crates/gameplay/dispatch/src/gameplay_transport/bundle_gates_tests.rs` (keep world-item casts and field ingress closed) |
 | Capability tables | `crates/gameplay/dispatch/src/gameplay_transport/capabilities.rs`, `crates/protocol-oteryn/src/capability_tables.rs` (no offer change in this task) |
-| PG cases | new child case file under `apps/game-server/tests/support/` (new), mounted from `character_authority_postgres.rs` |
+| PG cases | `gameplay_transport/postgres_tests/admit_cap_2.rs` in dispatch `--lib`; `durability/field_capability_port_postgres_tests.rs` reuses the Ground fixture in durability `--lib` |
 
 ## Qualification matrix
 
@@ -199,18 +219,117 @@ No RNG draw or field/condition cursor is consumed on refusal.
 
 ## Open questions
 
-- Confirm with CP that both `WORLD_SPATIAL_FIELDS` (now 30) and `WORLD_INTERACTION_V1` are required (D1442 supersedes the D1132 interaction-only checkpoint).
-- Reuse `CurrentCapabilityCheck` or add `field_capability_port.rs`.
-- Field refusal outcome code and registry row (protocol/error owner).
+- Both 30 and 11 are required by accepted ADMIT0 §6; the interaction-only checkpoint is superseded.
+- The closed durability port reuses `CurrentCapabilityCheck` and its existing locked runtime-guard reader.
+- A dedicated field refusal code/registry row remains activation work; existing USE/spell `Rejected` carries this basic refusal.
 
-## Validation
+## Validation (owner-scoped local commands)
+
+All cargo commands below use `/home/mole/oteryn-cache/codex-bin/cargo`; the wrapper
+supplies PostgreSQL configuration. No URL is retained here. Full PG suites remain CI work.
 
 ```sh
 cargo fmt --all -- --check
-cargo clippy --workspace --all-targets -- -D warnings
-cargo test -p oteryn-gameplay-dispatch world_required
-cargo test -p oteryn-gameplay-durability spell_item
-cargo test -p oteryn-protocol-oteryn
-OTERYN_TEST_POSTGRES_ADMIN_URL=... cargo test -p oteryn-game-server --test character_authority_postgres field
+cargo clippy --locked -p oteryn-gameplay-dispatch -p oteryn-gameplay-durability -p oteryn-gameplay-spell-rules -p oteryn-gameplay-content -p oteryn-gameplay-world --all-targets --quiet -- -D warnings
+cargo test --locked -p oteryn-gameplay-dispatch --lib world_required_field_guard --quiet
+cargo test --locked -p oteryn-gameplay-dispatch --lib ordinary_field_items --quiet
+cargo test --locked -p oteryn-gameplay-dispatch --lib actual_step_and_creature_field_initial_hp_dot_publish_together --quiet
+cargo test --locked -p oteryn-gameplay-spell-rules --lib --quiet
+cargo test --locked -p oteryn-gameplay-content --lib native_spell_tiles --quiet
+cargo test --locked -p oteryn-gameplay-world --lib admit_cap_2 --quiet
+cargo test --locked -p oteryn-gameplay-world --lib bundle_tiles --quiet
+cargo test --locked -p oteryn-gameplay-durability --lib admit_cap_2_postgres --quiet -- --nocapture
+cargo test --locked -p oteryn-gameplay-dispatch --lib admit_cap_2_postgres --quiet -- --nocapture
 python3 tools/agents/validate_governance.py
+python3 -m unittest discover -s tools/agents/tests
+python3 tools/repository/validate_repository_policy.py
+git diff --check
 ```
+
+Auto-mounted test files were additionally checked with `rustfmt --check --edition 2024`.
+The dispatch case lives in the existing auto-mounted PostgreSQL `--lib` tree, and the
+writer cases reuse the Ground fixture mounted into durability `--lib`. No test target
+or CI routing file is added.
+
+
+## Reference parity (2026-10-23 server wiring)
+
+| Visible behavior | Reference evidence | Oteryn now |
+|---|---|---|
+| A field requires support in every admitted session of the current Channel generation | Accepted ADMIT0 §§3–4, §6 (Oteryn admission rule, not a Tibia wire behavior) | Guard checks current scope/generation/policy before both 11 and 30; optional session selection cannot grant permission |
+| Fire Field rune uses a current physical rune and creates the qualified field on the target tile | Pinned source catalog `content/abilities/definitions/player-spells.json`, rune carrier 3188; `ordinary_field_items` source mapping cites Canary `99902524` combat.cpp 1189–1244 | Single-tile carrier reaches the existing real USE/native-cast path; payment and field share its receipt; NoPvP conversion and tile restrictions remain enforced |
+| Bundle tile zones affect field selection without guessing height or floor-change facts | Bundle format §5 and compiler equivalence retain source flags; [pinned Canary flag definitions](https://github.com/opentibiabr/canary/blob/99902524e052f37574194466c2949c576e4ab269/src/io/io_definitions.hpp#L73), [loader priority](https://github.com/opentibiabr/canary/blob/99902524e052f37574194466c2949c576e4ab269/src/io/iomap.cpp#L167) | Known raw flags now qualify NoPvP/PvP, with protection-zone precedence; absent qualification and source height/floor-change facts remain unknown |
+| A Magic Wall / Wild Growth barrier is a wall even without a damage recipe | Pinned native Barrier profile / `native_items::plan_barrier`; card D1207/D1208 | Exact Barrier preview qualifies Wall; sampled plan must name the same Item; lifetime and collision do not classify ordinary items |
+| A refused new cast does not consume its rune or change vitals | Card's accepted no-trace rule and existing atomic spell receipt contract | Typed durable refusal follows the existing definite rollback; no new receipt, Item, Ground, spell line, schedule or audit row |
+| An uncertain historical cast cannot debit again | Existing spell-item exact CommandRef receipt contract | Exact receipt classification still precedes the new guard; the guard does not convert historical success into an uncommitted refusal |
+| Monster/system fields retain their own source authority | Card's typed `DurableCreatureFieldOrigin` branch and FIELD-1 scope | Creature writer and periodic DOT remain unchanged; player-origin ingress alone requires the binding; blocking walls never become passable on refusal |
+
+## Unfinished / activation boundary
+
+- Production capability 30 still has no FIELD-WIRE-1 payload/domain, baseline, delta or
+  observer emission. This is server visibility work, not just missing test-world content.
+- Production capabilities 11, 15 and 22 retain their existing activation gates. Bundle
+  field ingress and source-Item initialization also remain closed. Enabling offer bits
+  would admit players without the registered visibility/interaction path.
+- The positive PG wire fixture explicitly supplies a **test-only** registered-edge
+  capability graph. It is not evidence that the shipped/default World offers fields.
+- No client paths, migrations, resource-limit IDs or protocol IDs are changed. A dedicated
+  field-capability wire refusal code remains the protocol/error owner's activation work;
+  this basic path uses existing `USE::Rejected` with internal typed refusal.
+- Full FIELD-2 player PvP/standing-periodic activation and restart/owner-replacement
+  qualification remain dependent work; no new stored capability flag is introduced.
+
+
+## Worktree delivery state
+
+The guard, writer/origin plumbing, native Fire Field USE eligibility, retained bundle-zone projection and real-wire PG
+qualification are implemented locally. **The task remains blocked for production
+activation**, for the explicit dependencies listed above. No commit, push or PR was made.
+
+## Validation evidence (local worktree, 2026-10-23)
+
+| Check | Result |
+|---|---|
+| Dispatch real-wire PG `admit_cap_2_postgres` | PASS, 1 test / 2 boot configurations: missing requirements refuses without changes; complete test graph commits one field and one debit, reloads the Ground row, and refuses an expired-handle replay without another debit |
+| Durability PG `admit_cap_2_postgres` | PASS, 3 tests on PostgreSQL 18.6 (`180006`): Field/Wall, Ground/Inventory with both overflow settings, wrong-origin relabel refusal, non-field control, exact receipt before new-write refusal |
+| Dispatch guard / ordinary fields / creature contact | PASS, 2 / 8 / 1 tests respectively |
+| Spell rules | PASS, 61 tests |
+| Content native spell tiles / source unknown tiles | PASS, 3 / 1 tests |
+| Bundle zone projection / existing bundle tiles | PASS, 3 / 4 tests. One pre-existing full pinned-artifact test remains ignored without `OTERYN_PINNED_WORLD_BUNDLE`; it is not counted as qualification |
+| Clippy | PASS, all targets of dispatch, durability, spell-rules, content and world, `--locked`, `-D warnings` |
+| Format / governance / repository policy / whitespace | PASS; governance unit tests: 129 passed |
+
+No test was removed, loosened or newly ignored. The old assertions that bundle PvP
+zones are unknown were replaced by stronger, source-backed known-zone assertions;
+separate cases retain unknown-zone refusal and exercise raw-flag precedence through boot.
+All added enum/struct constructor and match sites were searched across `apps/`, `crates/`
+and `tools/`; no client paths or protected CI routing files changed.
+
+## Changed files
+
+- `crates/gameplay/content/src/content/project/native_spell_tiles.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/field_step_ingress.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/mod.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/native_combat_cast.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/native_world_item_cast.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/ordinary_field_items.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/parameter_cast.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/admit_cap_2.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/rune_item_cast.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/world_item_cast.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/world_required_field_guard.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/world_required_field_guard_tests.rs`
+- `crates/gameplay/durability/src/durability/character_familiar.rs`
+- `crates/gameplay/durability/src/durability/field_capability_port.rs`
+- `crates/gameplay/durability/src/durability/field_capability_port_postgres_tests.rs`
+- `crates/gameplay/durability/src/durability/ground_cell_limit.rs`
+- `crates/gameplay/durability/src/durability/ground_cell_limit_tests.rs`
+- `crates/gameplay/durability/src/durability/item_loop_move.rs`
+- `crates/gameplay/durability/src/durability/mod.rs`
+- `crates/gameplay/durability/src/durability/native_world_items.rs`
+- `crates/gameplay/durability/src/durability/spell_item_transaction.rs`
+- `crates/gameplay/durability/src/durability/spell_items_abi.rs`
+- `crates/gameplay/spell-rules/src/dispatch_plans/rune_use.rs`
+- `crates/gameplay/world/src/map/admit_cap_2_bundle_zones_tests.rs`
+- `crates/gameplay/world/src/map/spell_tiles.rs`
+- `docs/agents/tasks/ADMIT-CAP-2.md`

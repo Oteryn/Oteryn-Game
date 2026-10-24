@@ -13,12 +13,6 @@ use oteryn_protocol_oteryn::timed_item::*;
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 
-pub(super) const OFFERED: super::capabilities::OfferedCapability =
-    super::capabilities::OfferedCapability {
-        id: CAPABILITY_TIMED_ITEM_V1,
-        requires: &[oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_VIEW_MOVE_V1],
-    };
-
 #[derive(Default)]
 pub(super) struct TimedRuntime {
     pub(super) sessions: tokio::sync::Mutex<HashMap<GameSessionId, SessionClock>>,

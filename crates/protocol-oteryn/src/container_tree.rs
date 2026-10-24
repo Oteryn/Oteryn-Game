@@ -32,8 +32,10 @@ use crate::item_view::{
 /// destination of command type 9 and USE field 2 on a container handle.
 pub const CAPABILITY_CONTAINER_TREE_V1: u32 = 14;
 /// BAGS-0 §5: capability 14 requires capability 4 and `ITEM_EQUIP_DROP_V1`.
-pub const CAPABILITY_CONTAINER_TREE_V1_REQUIRES: &[u32] =
-    &[CAPABILITY_ITEM_VIEW_MOVE_V1, CAPABILITY_ITEM_EQUIP_DROP_V1];
+pub const CAPABILITY_CONTAINER_TREE_V1_REQUIRES: &[u32] = &[
+    CAPABILITY_ITEM_VIEW_MOVE_V1,  // ITEM_VIEW_MOVE_V1
+    CAPABILITY_ITEM_EQUIP_DROP_V1, // ITEM_EQUIP_DROP_V1
+];
 pub const STATE_DOMAIN_CONTAINER_VIEWS: u32 = 14;
 pub const SNAPSHOT_TYPE_CONTAINER_VIEWS_V1: u32 = 1;
 pub const DELTA_TYPE_CONTAINER_VIEWS_V1: u32 = 1;

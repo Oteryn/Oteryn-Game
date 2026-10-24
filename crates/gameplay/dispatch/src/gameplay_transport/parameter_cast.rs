@@ -1102,9 +1102,9 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 let _=window.install();
                 return Ok(ParameterCastDispatch{cast:NativeCastDispatch::Outcome(SpellCastOutcome{disposition:private_result.disposition,vitals:None}),result:Some(private_result)})
             };
-            let outcome=match items::apply_spell_items_in_transaction_guarded(&mut tx,&authority,&installation.request,verdict).await{
+            let outcome=match items::apply_spell_items_in_transaction_guarded(&mut tx,&authority,&installation.request,verdict,&crate::gameplay_transport::world_required_field_guard::player_origin(&owner.required_capabilities)).await{
                 Ok(outcome)=>outcome,
-                Err(items::SpellItemError::Rejected(PARAMETER_NEW_GRANT_REFUSED))=>{
+                Err(items::SpellItemError::Rejected(PARAMETER_NEW_GRANT_REFUSED) | items::SpellItemError::FieldCapabilityRefused)=>{
                     // The writer holds the exact-command lock and found no historical receipt.
                     // Only a successful rollback proves this attempt cannot later COMMIT.
                     tx.rollback().await.map_err(|_|DurabilityError::Unavailable)?;
