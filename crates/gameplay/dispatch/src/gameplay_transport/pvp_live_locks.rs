@@ -19,6 +19,17 @@ pub(in crate::gameplay_transport) fn lock_mut(
     };
     &mut states.pvp_locks[index].2
 }
+/// Whether this session already carries a cached lock entry (from a PvP hit or a durable refresh).
+pub(in crate::gameplay_transport) fn tracked(
+    states: &ChannelSpellStates,
+    actor: ExactActorRef,
+    session: crate::foundation::GameSessionId,
+) -> bool {
+    states
+        .pvp_locks
+        .iter()
+        .any(|(a, s, _)| *a == actor && *s == session)
+}
 pub(in crate::gameplay_transport) fn logout_blocked(
     states: &ChannelSpellStates,
     actor: ExactActorRef,

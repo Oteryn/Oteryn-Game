@@ -1970,9 +1970,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let attack = self.states.attack.lock().await;
             held_step(&states, &attack, actor, session, now, limit)
         };
-        if step.is_none() && !self.states.spell_states.lock().await.is_dead(actor) {
+        let recheck = {
+            let states = self.states.spell_states.lock().await;
+            !states.is_dead(actor) && pvp_live::tracked(&states, actor, session)
+        };
+        if step.is_none() && recheck {
             // A victim's settled death can extend this contributor's durable kill lock.
-            // Recheck before release even when its cached ordinary hit lock has elapsed.
+            // Recheck before release even when its cached ordinary hit lock has elapsed;
+            // a session with no cached lock entry contributed to no PvP harm here.
             if !self.refresh_pvp_locks(actor, session).await {
                 tokio::time::sleep(Duration::from_millis(250).min(limit)).await;
                 return true;
@@ -3133,14 +3138,11 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         game_session_id: GameSessionId,
     ) -> Option<(u64, actor_spell::ActorVitals)> {
-        let restored = self
-            .states
-            .spell_states
-            .lock()
-            .await
-            .pvp_locks
-            .iter()
-            .any(|(a, s, _)| *a == actor && *s == game_session_id);
+        let restored = pvp_live::tracked(
+            &*self.states.spell_states.lock().await,
+            actor,
+            game_session_id,
+        );
         if !restored && !self.refresh_pvp_locks(actor, game_session_id).await {
             return None;
         }
