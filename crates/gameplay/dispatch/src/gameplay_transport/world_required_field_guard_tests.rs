@@ -112,6 +112,13 @@ fn world_required_field_guard_production_offer_stays_closed_and_successor_does_n
         Err(FieldCapabilityRefusal::MissingCapability(11))
     );
     assert_eq!(check(&next, current, 2, "policy-2"), Ok(()));
+    // CRAFT-1 offers 11 to bundle Worlds; the field pair stays closed while 30 is unoffered.
     let offer = super::super::world_required_capabilities::offered_for_scope(true, None);
-    assert!(!offer.iter().any(|entry| [11, 30].contains(&entry.id)));
+    assert!(!offer.iter().any(|entry| entry.id == 30));
+    assert!(
+        BoundRequiredCapabilities::for_channel_boot(&[11, 30], current, 3, "policy-3", offer)
+            .is_err()
+    );
+    let production = super::super::world_required_capabilities::offered_for_scope(false, None);
+    assert!(!production.iter().any(|entry| [11, 30].contains(&entry.id)));
 }
