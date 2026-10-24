@@ -53,7 +53,7 @@ const INVENTORY: &[Entry] = &[
         accessor: "gate_attack_target",
         key: "",
         state: COMBAT_ENABLE,
-        calls: &[("gameplay_transport/mod.rs", 1)],
+        calls: &[("gameplay_transport/composed_admission/combat.rs", 1)],
     },
     Entry {
         gate: "auto-attack drain",
@@ -181,7 +181,7 @@ const INVENTORY: &[Entry] = &[
         state: Gate::SourceWorldBranch,
         calls: &[
             ("gameplay_transport/attack.rs", 1),
-            ("gameplay_transport/mod.rs", 2),
+            ("gameplay_transport/composed_admission/objects.rs", 2),
             ("gameplay_transport/paced_movement.rs", 1),
         ],
     },
