@@ -274,6 +274,11 @@ async fn scenario(h: &Harness) -> TestResult {
     old.continuity.selected_capabilities =
         SelectedCapabilities::select(owner.offered_capabilities(), &[6]).ok_or("old selection")?;
     roundtrip(&owner, &mut old, &[Step::Leave]).await?;
+    // One GameSession keeps one command stream: the ended continuity carries into the next
+    // connection, restoring the party selection for the current client.
+    let selected = admitted[0].continuity.selected_capabilities;
+    admitted[0].continuity = old.continuity;
+    admitted[0].continuity.selected_capabilities = selected;
     roundtrip(
         &owner,
         &mut admitted[0],
@@ -298,6 +303,8 @@ async fn scenario(h: &Harness) -> TestResult {
         .character_lease_generation = 1;
     let refused = roundtrip(&owner, &mut stale, &[Step::Leave]).await?;
     assert_eq!(refused[0].disposition, PartyDisposition::Rejected);
+    // Carry the stale connection's ended continuity while keeping the current lease.
+    admitted[2].continuity = stale.continuity;
     for a in admitted.iter_mut().skip(1) {
         let results = roundtrip(&owner, a, &[Step::Query, Step::Accept]).await?;
         assert_eq!(results[0].invitations.len(), 1);
@@ -313,8 +320,12 @@ async fn scenario(h: &Harness) -> TestResult {
     let result = roundtrip(&owner, &mut admitted[0], &[Step::Leave]).await?;
     assert_eq!(result[0].disposition, PartyDisposition::Ok);
     // Rebuild the production owner and all connection-local handles. SQL remains authority.
+    // The Channel keeps each GameSession's command stream (SESSION-INGRESS-1), so the
+    // sessions continue on their ended continuity while the party caches start empty.
+    let commands = std::mem::take(&mut owner.states.command_ingress);
     drop(owner);
     owner = make_owner();
+    owner.states.command_ingress = commands;
     let result = roundtrip(&owner, &mut admitted[1], &[Step::Query]).await?;
     assert_eq!(result[0].members.len(), 2);
     assert!(

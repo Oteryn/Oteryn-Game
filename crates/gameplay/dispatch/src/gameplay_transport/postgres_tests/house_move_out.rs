@@ -101,6 +101,27 @@ async fn command(
     action: u8,
     due: i64,
 ) -> TestResult<HouseMoveOutReply> {
+    reply(owner, admitted, id, action, due, CommandStatus::Accepted).await
+}
+/// SESSION-INGRESS-1: a reserved ID on this GameSession's command stream replays the
+/// retained result instead of reaching the House family again.
+async fn replayed(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    id: u64,
+    action: u8,
+    due: i64,
+) -> TestResult<HouseMoveOutReply> {
+    reply(owner, admitted, id, action, due, CommandStatus::DuplicateReplay).await
+}
+async fn reply(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    id: u64,
+    action: u8,
+    due: i64,
+    expected: CommandStatus,
+) -> TestResult<HouseMoveOutReply> {
     let request = HouseMoveOutRequest {
         house: HOUSE.into(),
         action,
@@ -118,7 +139,7 @@ async fn command(
         &encode_house_move_out_request(&request).map_err(debug)?,
     )
     .await?;
-    assert_eq!(status, CommandStatus::Accepted, "command {id}");
+    assert_eq!(status, expected, "command {id}");
     decode_house_move_out_reply(&bytes).map_err(debug)
 }
 fn scenario() -> TestResult {
@@ -149,14 +170,14 @@ fn scenario() -> TestResult {
                 .0;
         admitted.item_fence = item_fence_of(current);
         let original = admitted;
-        {
+        let mut commands = {
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
                 .root
                 .open_character_authority(&seal)
                 .await
                 .map_err(debug)?;
-            let owner = deps.owner(&h, &authority);
+            let mut owner = deps.owner(&h, &authority);
             deps.initialize(&owner).await;
             owner
                 .runtime
@@ -182,32 +203,48 @@ fn scenario() -> TestResult {
             let noticed = command(&owner, &mut admitted, 2, 1, due).await?;
             assert_eq!(noticed.state, 1);
             assert_eq!(noticed.due_at_unix_ms, due);
-            let mut replay = before_notice;
-            assert_eq!(command(&owner, &mut replay, 2, 1, due).await?, noticed);
-            let mut changed = before_notice;
+            assert_eq!(replayed(&owner, &mut admitted, 2, 1, due).await?, noticed);
             let bytes = encode_house_move_out_request(&HouseMoveOutRequest {
                 house: HOUSE.into(),
                 action: 1,
                 due_at_unix_ms: due + 1,
             })
             .map_err(debug)?;
-            assert_eq!(
-                exchange(&owner, &mut changed, 2, COMMAND_TYPE_HOUSE_MOVE_OUT, &bytes)
-                    .await?
-                    .0,
-                CommandStatus::Rejected
-            );
+            // FND-02 §13.4: replacement bytes under a reserved ID are not a new House intent.
+            let (status, replay) =
+                exchange(&owner, &mut admitted, 2, COMMAND_TYPE_HOUSE_MOVE_OUT, &bytes).await?;
+            assert_eq!(status, CommandStatus::DuplicateReplay);
+            assert_eq!(decode_house_move_out_reply(&replay).map_err(debug)?, noticed);
+            // The native House receipt still refuses changed input under the committed ID.
+            assert!(matches!(
+                owner
+                    .house_move_out_command(before_notice, 2, COMMAND_TYPE_HOUSE_MOVE_OUT, &bytes)
+                    .await,
+                crate::gameplay_transport::house_move_out::HouseMoveOutReply::Rejected
+            ));
             let cancel_before = admitted;
             let cancelled = command(&owner, &mut admitted, 3, 2, 0).await?;
             assert_eq!(cancelled.state, 4);
             assert_eq!(cancelled.operation, noticed.operation);
+            assert_eq!(replayed(&owner, &mut admitted, 3, 2, 0).await?, cancelled);
             let second = command(&owner, &mut admitted, 4, 1, due).await?;
             assert_ne!(second.operation, noticed.operation);
-            let mut replay_cancel = cancel_before;
-            assert_eq!(
-                command(&owner, &mut replay_cancel, 3, 2, 0).await?,
-                cancelled
-            );
+            // Once a newer command retires the stream's retained result, the native receipt
+            // still answers the earlier cancel.
+            let cancel = encode_house_move_out_request(&HouseMoveOutRequest {
+                house: HOUSE.into(),
+                action: 2,
+                due_at_unix_ms: 0,
+            })
+            .map_err(debug)?;
+            let crate::gameplay_transport::house_move_out::HouseMoveOutReply::Payload(receipt) =
+                owner
+                    .house_move_out_command(cancel_before, 3, COMMAND_TYPE_HOUSE_MOVE_OUT, &cancel)
+                    .await
+            else {
+                return Err("cancel receipt".into());
+            };
+            assert_eq!(decode_house_move_out_reply(&receipt).map_err(debug)?, cancelled);
             assert_eq!(
                 command(&owner, &mut admitted, 5, 0, 0).await?.operation,
                 second.operation
@@ -235,13 +272,22 @@ fn scenario() -> TestResult {
             ));
             // No capability, malformed payload, invalid deadlines and wrong owner.
             for (mut session, kind, bytes) in seed::invalid_commands(original, admitted, due)? {
+                // Every connection resumes this GameSession's command stream; keep the
+                // case's capability selection.
+                let selected = session.continuity.selected_capabilities;
+                session.continuity = admitted.continuity;
+                session.continuity.selected_capabilities = selected;
                 let next = session.continuity.next_command_id;
                 assert_eq!(
                     exchange(&owner, &mut session, next, kind, &bytes).await?.0,
                     CommandStatus::Rejected
                 );
+                let selected = admitted.continuity.selected_capabilities;
+                admitted.continuity = session.continuity;
+                admitted.continuity.selected_capabilities = selected;
             }
-        }
+            std::mem::take(&mut owner.states.command_ingress)
+        };
         // An earlier-day NOTICE is historical DATA only; no current authority is derived from it.
         seed::overdue(&h).await?;
         seed::prepare_entrant(&h).await?;
@@ -255,12 +301,15 @@ fn scenario() -> TestResult {
                 .open_character_authority(&seal)
                 .await
                 .map_err(debug)?;
-            let owner = deps.owner(&h, &authority);
+            // The Channel keeps each GameSession's command stream (SESSION-INGRESS-1).
+            let mut owner = deps.owner(&h, &authority);
+            owner.states.command_ingress = std::mem::take(&mut commands);
             owner
                 .drain_source_house_dispositions()
                 .await
                 .map_err(debug)?;
-            let result = command(&owner, &mut admitted, 7 + phase, 0, 0).await?;
+            let next = admitted.continuity.next_command_id;
+            let result = command(&owner, &mut admitted, next, 0, 0).await?;
             assert_eq!(
                 (result.state, result.census_count, result.delivered),
                 (state, 101, count)
@@ -269,6 +318,7 @@ fn scenario() -> TestResult {
                 seed::assert_frozen(&h).await?;
                 seed::blocked_steps_rollback(&h, &owner).await?;
             }
+            commands = std::mem::take(&mut owner.states.command_ingress);
         }
         seed::assert_final(&h, *recipient.as_bytes()).await?;
         seed::assert_runtime_privileges(&h).await?;

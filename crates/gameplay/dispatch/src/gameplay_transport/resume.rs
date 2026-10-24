@@ -133,6 +133,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let (Some(actor), Some(controller)) = (lost.runtime_actor, lost.controller) else {
             return Err(Rejected);
         };
+        if !self.states.command_ingress.resumable(&lost) {
+            return Err(Rejected);
+        }
         // The client can only resume from what the server already sent.
         if attempt.last_applied_server_sequence > lost.continuity.server_sequence {
             return Err(Rejected);

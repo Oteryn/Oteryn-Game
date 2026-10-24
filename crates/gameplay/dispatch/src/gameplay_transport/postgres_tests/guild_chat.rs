@@ -13,7 +13,8 @@ use crate::durability::{guild::*, item_transfer::CurrentCharacterItemFence};
 use crate::foundation::{MessageType, decode_wire_envelope};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{
-    AdmittedSession, FirstEntryOutcome, FreshAdmissionAuthority, IDLE_LIVENESS, serve_admitted,
+    AdmittedSession, ConnectionEnd, FirstEntryOutcome, FreshAdmissionAuthority, IDLE_LIVENESS,
+    serve_admitted,
 };
 use crate::gameplay_transport::tcp_tls::{read_frame, write_frame};
 use crate::gameplay_transport::{ComposedFreshAdmission, item_fence_of};
@@ -45,6 +46,20 @@ fn gid(n: u32) -> TestResult<GuildId> {
 use guild_fixture::request;
 fn payload(guild: GuildId, text: &str) -> TestResult<RelayLine> {
     Ok(crate::gameplay_transport::chat_intent::guild_test_support::line(guild, text))
+}
+
+async fn serve(
+    mut server: tokio::io::DuplexStream,
+    admitted: AdmittedSession,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+) -> TestResult<AdmittedSession> {
+    let end = serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await;
+    // Close the peer even on an early refusal so the driver observes EOF immediately.
+    drop(server);
+    match end {
+        ConnectionEnd::AdmittedThenDisconnected(ended) => Ok(ended),
+        other => Err(format!("unexpected guild connection end: {other:?}").into()),
+    }
 }
 
 #[test]
@@ -170,10 +185,10 @@ fn scenario() -> TestResult {
         let channel = channel_name(&guild_fixture::uuid(id(42))).map_err(debug)?;
         listener.listen(&channel).await?;
         eprintln!("GUILD-CHAT-PG real connection, native Guild writes and relay active");
-        let accepted =
+        let (accepted, admitted) =
             wire_tests::roundtrip(&h, &owner, admitted, &mut listener, &ring, &channel).await?;
         fence_tests::negatives(&owner, admitted).await?;
-        custody_tests::accept_before_exclude(&h, &owner, admitted, leader).await?;
+        let admitted = custody_tests::accept_before_exclude(&h, &owner, admitted, leader).await?;
         transitions_tests::move_and_disband(&h, &owner, admitted, other_leader, accepted).await?;
         drop(listener);
         drop(owner);
