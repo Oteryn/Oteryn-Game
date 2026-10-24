@@ -18,7 +18,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import item_id_alias_table as table
 
-RUST_SOURCE = table.ROOT / "crates/gameplay/content-promotion/src/content/cw2_b1_import.rs"
+RUST_SOURCE = (
+    table.ROOT / "crates/gameplay/content-promotion/src/content/cw2_b1_import.rs"
+)
 INDEX = {"retired_ids": [9]}
 UNION = {5, 6, 9, 3031}
 
