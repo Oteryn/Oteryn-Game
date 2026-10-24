@@ -6,6 +6,8 @@ pub mod bed_regen;
 pub mod bed_sleep;
 pub mod daily_reward;
 pub mod daily_reward_claim;
+pub mod daily_reward_delivery;
+mod daily_reward_jokers;
 
 pub mod creature_source_items;
 pub mod mail_text_policy;
@@ -26,3 +28,5 @@ pub mod prey;
 pub mod raid_schedule;
 
 pub mod vip;
+
+pub mod house_management;

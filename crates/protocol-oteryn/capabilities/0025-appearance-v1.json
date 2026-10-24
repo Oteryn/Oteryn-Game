@@ -1,0 +1,21 @@
+{
+  "id": 25,
+  "name": "APPEARANCE_V1",
+  "constant": "appearance::CAPABILITY_APPEARANCE_V1",
+  "requires": [
+    6
+  ],
+  "acceptance_requires": false,
+  "commands": [
+    25
+  ],
+  "domains": [
+    21
+  ],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": false
+  }
+}

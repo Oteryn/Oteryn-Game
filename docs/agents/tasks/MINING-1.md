@@ -54,8 +54,8 @@ resource-limit entries 0780–0786 were not needed.
 | Schema | `game_item_use_records`, nested-source proofs (0131) | Migration 0167 admits cause 3 PickRefine with a required output and an immutable tool/wire/draw proof, deferred atomicity checks and runtime-role grants. |
 | Protocol / registry | Existing bounded command 2 USE, carried source, definition hotkey, use-with item/object and result codecs | Existing codec reused unchanged; no command/capability allocation or registry edit. Audit proto documents additive cause 3. |
 | Dispatch | Food/potion owner and USE ingress; map use-with rejected | Mechanic-owned `gameplay_transport/mining/` routes USE, retains original bytes and reconciles replay before stale handles can refuse. Unknown commits disconnect without sequencing a terminal refusal. Unsupported map/quest actions still refuse. |
-| Offer / runtime | Bundle-world production composition and Item index | Content-qualified offer adds existing capabilities 11 and 15 with their dependency closure. Existing composed production authority forwards to the mechanic; no new game-server runtime owner is needed. |
-| Content | Item identities existed, but native policies for pick, shiny stone and diamond were absent | Exactly three native profiles added from admitted identity/physical facts and pinned Reference stack flags. Native provider now has 435 profiles; generated manifest/index/lock digests regenerated. |
+| Offer / runtime | Bundle-world production composition and Item index | Existing capabilities 11 and 15 are bundle-world offers in their registry fragments since CAPS-SPLIT-1/CRAFT-1; no mining offer layer. Map-target USE routes a live-instance target to the pick and keeps a committed pick replay before CRAFT-1's station owner. Existing composed production authority forwards to the mechanic; no new game-server runtime owner is needed. |
+| Content | Item identities existed, but native policies for pick, shiny stone and diamond were absent | Exactly three native profiles added from admitted identity/physical facts and pinned Reference stack flags. Native provider now has 457 profiles with CRAFT-1; generated manifest/index/lock digests regenerated. |
 | PG E2E | Auto-mounted dispatch lib tree and production `serve_admitted` | `postgres_tests/mining.rs` exercises command/result bytes, nested custody, wrong tool/target, full backpack, missing capability, stale generation, lost acknowledgement, replay/conflict and reload using the installed runtime role. |
 | Remaining map owner | C5 content validation, base-map overlay and door owner | No new map transformation, positioned obstacle or quest-state writer in this change. |
 
@@ -91,7 +91,6 @@ Passed so far (2026-10-23):
 - `cargo clippy --locked -p oteryn-game-server --all-targets --quiet -- -D warnings`.
 - Items `mining::`: 1 exhaustive rule test.
 - Durability `item_use_audit::tests`: 8 tests.
-- Dispatch `mining::offer::tests`: 1 negotiation/offer test.
 - Dispatch `item_use::tests`: 5 existing item-use gate/rule tests.
 - Dispatch `world_required_capabilities::tests`: 17 boot/negotiation tests.
 - Dispatch `equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes`: 1 consumer test.
@@ -111,7 +110,6 @@ Exact cargo test commands (all use the queued wrapper, PG scope is mechanic-only
 ```sh
 /home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-items --lib mining:: --quiet
 /home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-durability --lib item_use_audit::tests --quiet
-/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --lib mining::offer::tests --quiet
 /home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --lib item_use::tests --quiet
 /home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --lib world_required_capabilities::tests --quiet
 /home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --lib mining_pick_refining --quiet -- --nocapture
@@ -142,7 +140,7 @@ publication was performed; independent candidate review remains with the lead.
   item-use transaction/ancestry modules and audit cause decoder.
 - `crates/gameplay/dispatch/src/gameplay_transport/mining/`, auto-mounted
   `postgres_tests/mining.rs` and its child fixtures; minimal USE trait/registration
-  and content-qualified offer composition; exact native profile count/unknown
+  and map-target routing ahead of CRAFT-1; exact native profile count/unknown
   speed assertions updated in the existing equipment consumer test.
 - `apps/game-server/migrations/0167_pick_refining.sql`.
 - Native profile registration helper/tests, three-item Reference facts, generated
@@ -170,7 +168,6 @@ publication was performed; independent candidate review remains with the lead.
 - `crates/gameplay/dispatch/src/gameplay_transport/equipment_effects_owner_tests/ability_tests.rs`
 - `crates/gameplay/dispatch/src/gameplay_transport/item_use.rs`
 - `crates/gameplay/dispatch/src/gameplay_transport/mining/mod.rs`
-- `crates/gameplay/dispatch/src/gameplay_transport/mining/offer.rs`
 - `crates/gameplay/dispatch/src/gameplay_transport/mod.rs`
 - `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/mining.rs`
 - `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/mining/fixture.rs`

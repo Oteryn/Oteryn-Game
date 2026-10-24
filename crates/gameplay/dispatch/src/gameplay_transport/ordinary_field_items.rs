@@ -243,7 +243,20 @@ pub(super) async fn append_creations(
             item_instance_id: id,
             definition: qualified,
             quantity: 1,
-            placement: target.placement(Vec::new()),
+            placement: target.placement(
+                format!(
+                    "spell:{}:{}",
+                    request
+                        .command
+                        .game_session_id()
+                        .as_bytes()
+                        .iter()
+                        .map(|byte| format!("{byte:02x}"))
+                        .collect::<String>(),
+                    request.command.command_id().get()
+                )
+                .into_bytes(),
+            ),
             lifetime_millis: None,
             description: None,
             blocks_movement: flags

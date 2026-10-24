@@ -18,7 +18,11 @@ fn daily_reward_registry_uses_only_cp_allocated_ids() -> Result<(), Box<dyn std:
     );
     let capability = only("capabilities", CAPABILITY_DAILY_REWARD_V1)?;
     assert_eq!(capability["name"], "DAILY_REWARD_V1");
-    assert_eq!(capability["command_types"], serde_json::json!([32, 33]));
+    let expected = [
+        32, // DAILY_REWARD_CLAIM
+        33, // DAILY_REWARD_QUERY
+    ];
+    assert_eq!(capability["command_types"], serde_json::json!(expected));
     assert_eq!(capability["state_domains"], serde_json::json!([24]));
     assert_eq!(capability["offered"], false);
     for (id, limit) in [

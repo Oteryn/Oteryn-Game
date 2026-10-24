@@ -110,7 +110,7 @@ async fn run(
     };
     use std::num::NonZeroU64;
     let selected = crate::gameplay_transport::capabilities::SelectedCapabilities::select(
-        crate::gameplay_transport::mining::offer::offered(owner.active_generation),
+        crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
         &[4, 6, 11, 12, 14, 15, 18],
     )
     .expect("bundle capabilities");

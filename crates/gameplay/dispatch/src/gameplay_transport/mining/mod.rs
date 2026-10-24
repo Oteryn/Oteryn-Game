@@ -19,7 +19,34 @@ use oteryn_simulation_determinism::{
 };
 use sha2::{Digest, Sha256};
 
-pub(super) mod offer;
+/// One map-target USE. CRAFT-1 owns map-station targets; a map-item handle naming a
+/// live instance is a pick target. An unresolved handle may still be a retained pick
+/// receipt whose last stone was transformed, so only its committed replay is kept
+/// before the station owner.
+pub(super) async fn dispatch_map_use<A: FreshAdmissionAuthority>(
+    authority: &A,
+    actor: ExactActorRef,
+    command: UseCommand,
+    intent: UseIntent,
+    view: Option<&SessionItemView>,
+) -> Option<UseOutcome> {
+    let target = match intent.use_with_map_item {
+        Some(MapUseTarget::Item(handle)) => Some(view.and_then(|v| v.resolve(handle))),
+        _ => None,
+    };
+    match target {
+        Some(Some(ItemKey::Instance(_))) => dispatch(authority, actor, command, intent, view).await,
+        Some(None) => {
+            let replay = dispatch(authority, actor, command, intent.clone(), view).await?;
+            if replay.disposition == UseDisposition::Committed {
+                Some(replay)
+            } else {
+                super::item_craft::dispatch(authority, actor, command, intent, view).await
+            }
+        }
+        _ => super::item_craft::dispatch(authority, actor, command, intent, view).await,
+    }
+}
 
 pub(super) async fn dispatch<A: FreshAdmissionAuthority>(
     authority: &A,

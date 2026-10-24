@@ -31,6 +31,23 @@ pub struct QualifiedItemDefinition {
     pub ground_destination: bool,
     pub decay: Option<QualifiedItemDecay>,
     pub decay_chain: Vec<QualifiedItemDecayStage>,
+    pub field_class: SpellFieldClass,
+}
+
+/// Positive source qualification, independent of decay or collision flags.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SpellFieldClass {
+    Field,
+    Wall,
+    NotField,
+}
+
+/// Every spell-item caller identifies its actual source; player sources cannot
+/// obtain an exemption by omitting a capability predicate.
+pub enum SpellFieldOrigin {
+    Player(super::fresh_admission::CurrentCapabilityCheck),
+    Monster,
+    System,
 }
 
 /// Complete bounded source field lifecycle, captured in the original mint.

@@ -382,8 +382,10 @@ const ADMISSION_REFUSAL_WRITE_BOUND: std::time::Duration = std::time::Duration::
 /// nothing on the transport side can mark a connection admitted.
 pub trait FreshAdmissionAuthority {
     super::vip::authority_methods!();
+    super::house_intent::authority_methods!();
     super::appearance_change::authority_methods!();
     super::guild_intent::authority_methods!();
+    super::daily_reward::authority_methods!();
     fn admit(
         &self,
         attempt: FreshAdmissionAttempt<'_>,
@@ -644,6 +646,18 @@ pub trait FreshAdmissionAuthority {
         _target: ItemKey,
     ) -> impl Future<Output = Option<crate::durability::bed_sleep::BedSleepOwner<'_, '_, '_>>> {
         async { None }
+    }
+
+    /// CRAFT-1: use-with a map cooking station. Replay resolves before current handles.
+    fn use_craft(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _intent: UseIntent,
+        _source: Option<ItemKey>,
+        _target: Option<ItemKey>,
+    ) -> impl Future<Output = Option<UseOutcome>> {
+        async { Some(UseOutcome::rejected()) }
     }
 
     /// Capability 22's exact direct-entry Rune adapter. Unknown commits keep the command open.
@@ -1464,6 +1478,7 @@ where
     );
     let offered =
         super::appearance_change::offer::offered(&offered, authority.appearance_available());
+    let offered = super::daily_reward::offered(&offered, authority.daily_reward_available());
     let Some(selected) = SelectedCapabilities::select(&offered, bootstrap.supported_capabilities)
     else {
         return Err(ConnectionEnd::AdmissionRefused(
@@ -2801,6 +2816,7 @@ where
             Highscores(HighscoresReply),
             Guild(Vec<u8>),
             Appearance(Option<oteryn_protocol_oteryn::appearance::ChangeResult>),
+            DailyReward(Option<Vec<u8>>),
             /// ITEM-VIEW-1b: `USE` with an item target; the domain 11 delta follows the result.
             UseItem(OpenDecision, Option<ItemViewDelta>),
             /// BAGS-WIRE-1: command 21; the domain 14 delta follows the result.
@@ -2822,6 +2838,7 @@ where
             NpcTrade(NpcIntentDisposition, NpcUpdate, Vec<ItemViewDelta>),
             /// LOGOUT-WIRE-1: command 23; `ACCEPTED` ends the connection after the result.
             Logout(LogoutResult),
+            House(Option<Vec<u8>>),
             Unregistered,
         }
         // LOGOUT-RL-01: a second logout read before the first one's result.
@@ -2942,6 +2959,16 @@ where
                 admitted.continuity.selected_capabilities.as_slice(),
                 command.payload,
             ) {
+                Ok(intent) if intent.use_with_map_item.is_some() => {
+                    match super::mining::dispatch_map_use(authority, actor, UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: command.command_id,
+                        item_fence: admitted.item_fence,
+                    }, intent, item_view.as_ref()).await {
+                        Some(outcome) => Dispatch::Use(outcome),
+                        None => return ConnectionEnd::AdmittedThenDisconnected(admitted),
+                    }
+                }
                 Ok(intent) if super::rune_use_bridge::routes(
                     &intent, &admitted.continuity.selected_capabilities,
                 ) => match super::rune_use_bridge::dispatch(
@@ -2952,16 +2979,6 @@ where
                         item_fence: admitted.item_fence,
                     },
                     intent, item_view.as_ref(), visibility.as_ref(),
-                ).await {
-                    Some(outcome) => Dispatch::Use(outcome),
-                    None => return ConnectionEnd::AdmittedThenDisconnected(admitted),
-                },
-                Ok(intent) if intent.use_with_map_item.is_some() => match super::mining::dispatch(
-                    authority, actor, UseCommand {
-                        game_session_id: admitted.game_session_id,
-                        command_id: command.command_id,
-                        item_fence: admitted.item_fence,
-                    }, intent, item_view.as_ref(),
                 ).await {
                     Some(outcome) => Dispatch::Use(outcome),
                     None => return ConnectionEnd::AdmittedThenDisconnected(admitted),
@@ -3560,6 +3577,44 @@ where
                 )
                 .await,
             )
+        } else if matches!(
+            command.command_type,
+            oteryn_protocol_oteryn::house::COMMAND_TYPE_HOUSE_INTENT
+                | oteryn_protocol_oteryn::house::COMMAND_TYPE_HOUSE_QUERY
+        ) {
+            Dispatch::House(
+                super::house_intent::dispatch(
+                    authority,
+                    actor,
+                    UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: command.command_id,
+                        item_fence: admitted.item_fence,
+                    },
+                    command.payload,
+                    command.command_type == oteryn_protocol_oteryn::house::COMMAND_TYPE_HOUSE_QUERY,
+                )
+                .await,
+            )
+        } else if matches!(
+            command.command_type,
+            oteryn_protocol_oteryn::daily_reward::COMMAND_TYPE_DAILY_REWARD_CLAIM
+                | oteryn_protocol_oteryn::daily_reward::COMMAND_TYPE_DAILY_REWARD_QUERY
+        ) {
+            Dispatch::DailyReward(
+                super::daily_reward::dispatch(
+                    authority,
+                    actor,
+                    UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: command.command_id,
+                        item_fence: admitted.item_fence,
+                    },
+                    command.command_type,
+                    command.payload,
+                )
+                .await,
+            )
         } else if command.command_type == COMMAND_TYPE_HIGHSCORES_QUERY_V1 {
             // HIGHSCORES0 §6: the World and the asking Character are the admitted session's.
             match decode_highscores_query(command.payload) {
@@ -3600,7 +3655,7 @@ where
             other => other,
         };
         drop(input_permit);
-        if let Dispatch::Appearance(None) = dispatch {
+        if matches!(dispatch, Dispatch::Appearance(None) | Dispatch::House(None)) {
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
         }
         if matches!(dispatch, Dispatch::Vip(None)) {
@@ -3618,6 +3673,11 @@ where
         let (status, result_payload) = match &mut dispatch {
             Dispatch::Vip(Some(payload)) => (CommandStatus::Accepted, payload.clone()),
             Dispatch::Vip(None) => return ConnectionEnd::AdmittedThenDisconnected(admitted),
+            Dispatch::House(Some(payload)) => (CommandStatus::Accepted, payload.clone()),
+            Dispatch::House(None) => return ConnectionEnd::AdmittedThenDisconnected(admitted),
+            Dispatch::DailyReward(payload) => {
+                super::daily_reward::result(command.command_type, payload.take())
+            }
             Dispatch::Appearance(Some(result)) => match appearance_change::result(*result) {
                 Some(result) => result,
                 None => return ConnectionEnd::AdmittedThenDisconnected(admitted),
@@ -4204,7 +4264,9 @@ where
             | Dispatch::Guild(_)
             | Dispatch::Vip(_)
             | Dispatch::Appearance(_)
+            | Dispatch::DailyReward(_)
             | Dispatch::Logout(_)
+            | Dispatch::House(_)
             | Dispatch::Unregistered => {}
         }
         if newhaven_travel_transport::emit_relocation(
@@ -4555,6 +4617,9 @@ async fn send_error<S: AsyncWrite + Unpin>(
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 mod tests {
+    #[path = "capability_tests.rs"]
+    mod capability_tests;
+
     mod bed_sleep_dispatch_tests {
         include!("bed_sleep_dispatch_tests.rs");
     }
@@ -6698,78 +6763,6 @@ mod tests {
             assert_eq!(frames, expected);
             // The unregistered type never reached `use_object`.
             assert_eq!(authority.uses.borrow().len(), 1);
-            Ok(())
-        })
-    }
-
-    /// WORLDINT-WIRE-1: a `SEALED` authority outcome carries its gate message id through the
-    /// server to the result under capability 11, and is refused as plain `Rejected` without it.
-    #[test]
-    fn a_sealed_use_carries_its_gate_message_id_only_under_capability_11()
-    -> Result<(), Box<dyn Error>> {
-        run(async {
-            let authority = UseAuthority {
-                uses: RefCell::new(Vec::new()),
-                commands: RefCell::new(Vec::new()),
-                overlay: None,
-                watermark: None,
-                outcome: UseOutcome {
-                    disposition: UseDisposition::Sealed,
-                    committed: None,
-                    earned: EarnedNotice::NoneEarned,
-                    gate_message_id: Some(42),
-                },
-            };
-            let use_type = u64::from(COMMAND_TYPE_USE_INTENT);
-            let frames_with = |capabilities: &'static [u32]| {
-                let offered = [
-                    OfferedCapability {
-                        id: CAPABILITY_ITEM_USE_V1,
-                        requires: &[],
-                    },
-                    OfferedCapability {
-                        id: 18,
-                        requires: &[],
-                    },
-                    OfferedCapability {
-                        id: CAPABILITY_WORLD_INTERACTION_V1,
-                        requires: &[CAPABILITY_ITEM_USE_V1, 18],
-                    },
-                ];
-                let selected =
-                    SelectedCapabilities::select(&offered, capabilities).expect("selection");
-                let admitted = AdmittedSession {
-                    continuity: SessionContinuity {
-                        selected_capabilities: selected,
-                        ..SessionContinuity::FRESH
-                    },
-                    ..positioned().expect("session")
-                };
-                (
-                    admitted,
-                    use_command(1, 1, use_type, b"oteryn:cell/entry-door", 0),
-                )
-            };
-            let result_present = |frames: &[Vec<u8>], status, payload: &[u8]| {
-                (0..64u64).any(|sequence| {
-                    encode_command_result(1, 1, sequence, status, payload)
-                        .is_ok_and(|expected| frames.contains(&expected))
-                })
-            };
-            let (admitted, command) =
-                frames_with(&[CAPABILITY_ITEM_USE_V1, 18, CAPABILITY_WORLD_INTERACTION_V1]);
-            let (_end, frames) = drive_session(&authority, admitted, &[command]).await?;
-            let sealed =
-                encode_use_result_with_gate(UseDisposition::Sealed, Some(42)).expect("sealed");
-            assert!(result_present(&frames, CommandStatus::Accepted, &sealed));
-
-            let (admitted, command) = frames_with(&[CAPABILITY_ITEM_USE_V1]);
-            let (_end, frames) = drive_session(&authority, admitted, &[command]).await?;
-            assert!(result_present(
-                &frames,
-                CommandStatus::Rejected,
-                &encode_use_result(UseDisposition::Rejected).unwrap_or_default()
-            ));
             Ok(())
         })
     }
