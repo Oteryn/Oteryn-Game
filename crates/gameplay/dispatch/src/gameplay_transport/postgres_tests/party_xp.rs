@@ -16,6 +16,11 @@ use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use std::time::Duration;
 use tokio::sync::Mutex;
 
+/// Swing draws come from the content-pinned decision root, so any content change reshuffles
+/// how many 3-second passes a kill takes. The budget only bounds the loop; every assertion
+/// on who hit, who earned and how awards serialize is unchanged.
+const REAL_SWING_PASSES: u32 = 256;
+
 #[derive(Clone, Copy)]
 enum Case {
     Shared,
@@ -553,7 +558,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
                 oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
             );
         }
-        for pass in 0..64 {
+        for pass in 0..REAL_SWING_PASSES {
             owner.refresh_attack_weapon(actor, session).await;
             owner.drain_auto_attacks().await;
             let runtime = owner.runtime.lock().await;
@@ -577,7 +582,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
                 );
                 break;
             }
-            assert!(pass < 63, "foreign contributor hit");
+            assert!(pass + 1 < REAL_SWING_PASSES, "foreign contributor hit");
             drop(runtime);
             owner.clock_origin = owner
                 .clock_origin
@@ -626,7 +631,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
                 oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
             );
         }
-        for pass in 0..64 {
+        for pass in 0..REAL_SWING_PASSES {
             owner.refresh_attack_weapon(actor, session).await;
             owner.drain_auto_attacks().await;
             let runtime = owner.runtime.lock().await;
@@ -643,7 +648,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
                 );
                 break;
             }
-            assert!(pass < 63, "ally earned committed activity");
+            assert!(pass + 1 < REAL_SWING_PASSES, "ally earned committed activity");
             drop(runtime);
             owner.clock_origin = owner
                 .clock_origin
@@ -683,7 +688,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
         );
     }
-    for pass in 0..64 {
+    for pass in 0..REAL_SWING_PASSES {
         for (actor, session) in &players {
             owner.refresh_attack_weapon(*actor, *session).await;
         }
@@ -697,7 +702,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         }) {
             break;
         }
-        assert!(pass < 63, "real swings killed the rat");
+        assert!(pass + 1 < REAL_SWING_PASSES, "real swings killed the rat");
         owner.clock_origin = owner
             .clock_origin
             .checked_sub(Duration::from_secs(3))
@@ -750,7 +755,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             target
         };
         let mut other_active = false;
-        for pass in 0..64 {
+        for pass in 0..REAL_SWING_PASSES {
             owner.clock_origin = owner
                 .clock_origin
                 .checked_sub(Duration::from_secs(3))
@@ -797,7 +802,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
                     other_active = true;
                 }
             }
-            assert!(pass < 63, "second real kill");
+            assert!(pass + 1 < REAL_SWING_PASSES, "second real kill");
         }
     }
     if matches!(case, Case::Stale) {
