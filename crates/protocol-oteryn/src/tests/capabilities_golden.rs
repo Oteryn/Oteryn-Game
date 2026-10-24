@@ -580,6 +580,26 @@
   }
 }"#,
     r#"{
+  "id": 42,
+  "name": "PARTY_V1",
+  "constant": "party::CAPABILITY_PARTY_V1",
+  "requires": [
+    6
+  ],
+  "acceptance_requires": false,
+  "commands": [
+    45,
+    46
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}"#,
+    r#"{
   "id": 43,
   "name": "VIP_V1",
   "constant": "vip::CAPABILITY_VIP_V1",

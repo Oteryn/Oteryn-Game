@@ -15,6 +15,7 @@ pub mod actor_condition_snapshot_candidate;
 pub mod appearance;
 mod contract_registries;
 pub mod depot;
+pub mod party;
 pub use contract_registries::{PROTOCOL_OTERYN_V1_REGISTRY_JSON, RESOURCE_LIMITS_REGISTRY_JSON};
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
