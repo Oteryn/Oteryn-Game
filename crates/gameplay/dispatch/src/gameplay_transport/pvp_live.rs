@@ -541,22 +541,51 @@ pub(super) use locks::{PvpBlocker, lock_mut, logout_blocked, pz_blocked, tracked
 
 #[cfg(test)]
 pub(super) mod faults {
+    use std::cell::RefCell;
+    use tokio::sync::oneshot;
+
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     pub(in crate::gameplay_transport) enum Point {
         BeforeCommit,
         AfterCommit,
     }
-    thread_local! {static ARMED:std::cell::Cell<Option<Point>>=const{std::cell::Cell::new(None)};}
-    pub(in crate::gameplay_transport) fn arm(point: Point) {
-        ARMED.set(Some(point));
+    thread_local! {
+        static ARMED: RefCell<Option<(Point, oneshot::Sender<()>)>> = const { RefCell::new(None) };
+    }
+    pub(in crate::gameplay_transport) fn arm(point: Point) -> oneshot::Receiver<()> {
+        let (sender, receiver) = oneshot::channel();
+        ARMED.with_borrow_mut(|armed| {
+            assert!(armed.is_none(), "previous PvP fault was never consumed");
+            *armed = Some((point, sender));
+        });
+        receiver
     }
     pub(super) fn take(point: Point) -> bool {
-        if ARMED.get() == Some(point) {
-            eprintln!("PVP_FAULT consumed={point:?}");
-            ARMED.set(None);
-            true
-        } else {
-            false
-        }
+        ARMED.with_borrow_mut(|armed| {
+            if let Some((_, sender)) = armed.take_if(|(pending, _)| *pending == point) {
+                eprintln!("PVP_FAULT consumed={point:?}");
+                let _ = sender.send(());
+                true
+            } else {
+                false
+            }
+        })
+    }
+
+    #[test]
+    fn pvp_live_fault_notification_requires_the_exact_point() {
+        let mut consumed = arm(Point::BeforeCommit);
+        assert_eq!(
+            consumed.try_recv(),
+            Err(oneshot::error::TryRecvError::Empty)
+        );
+        assert!(!take(Point::AfterCommit));
+        assert_eq!(
+            consumed.try_recv(),
+            Err(oneshot::error::TryRecvError::Empty)
+        );
+        assert!(take(Point::BeforeCommit));
+        assert_eq!(consumed.try_recv(), Ok(()));
+        assert!(!take(Point::BeforeCommit));
     }
 }

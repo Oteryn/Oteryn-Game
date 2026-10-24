@@ -108,6 +108,55 @@ async fn health(
         .vitals()
         .health)
 }
+
+async fn melee_fault(
+    client: &mut DuplexStream,
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    command_id: u64,
+    payload: &[u8],
+    point: crate::gameplay_transport::pvp_live::faults::Point,
+) -> TestResult {
+    let mut consumed = crate::gameplay_transport::pvp_live::faults::arm(point);
+    let result = command(
+        client,
+        command_id,
+        attack::COMMAND_TYPE_ATTACK_TARGET_INTENT,
+        payload,
+    )
+    .await?;
+    assert_eq!(
+        attack::decode_attack_intent_result(&result).map_err(debug)?,
+        attack::AttackIntentDisposition::Ok
+    );
+    // The serving loop alone drives combat and reconciliation. An explicit owner
+    // drain here races that loop for the harness's single database holder and can
+    // clear the target on RootUnavailable. Observe the real fault and lane instead.
+    tokio::time::timeout(Duration::from_secs(10), async {
+        loop {
+            match consumed.try_recv() {
+                Ok(()) => break,
+                Err(tokio::sync::oneshot::error::TryRecvError::Empty) => {
+                    wait_live(client, Duration::from_millis(25)).await?;
+                }
+                Err(error) => return Err(error.into()),
+            }
+        }
+        loop {
+            match owner.spell_lane.acquire().await {
+                Ok(permit) => {
+                    drop(permit);
+                    return Ok::<_, Box<dyn std::error::Error>>(());
+                }
+                Err(unresolved) => drop(unresolved),
+            }
+            wait_live(client, Duration::from_millis(25)).await?;
+        }
+    })
+    .await
+    .map_err(|_| format!("live melee did not reach and reconcile {point:?}"))??;
+    Ok(())
+}
+
 fn scenario(mode: i16) -> TestResult {
     // One mechanic uses one database bootstrap at a time on the owner's shared cluster.
     static CASES: std::sync::Mutex<()> = std::sync::Mutex::new(());
@@ -372,53 +421,28 @@ fn scenario(mode: i16) -> TestResult {
                 attack::AttackIntentDisposition::Ok
             );
             wait_live(&mut client, Duration::from_secs(10)).await?;
-            use crate::gameplay_transport::pvp_live::faults::{Point, arm};
-            arm(Point::BeforeCommit);
-            let result = command(
+            use crate::gameplay_transport::pvp_live::faults::Point;
+            melee_fault(
                 &mut client,
+                &owner,
                 3,
-                attack::COMMAND_TYPE_ATTACK_TARGET_INTENT,
                 &payload,
+                Point::BeforeCommit,
             )
             .await?;
-            assert_eq!(
-                attack::decode_attack_intent_result(&result).map_err(debug)?,
-                attack::AttackIntentDisposition::Ok
-            );
-            owner.refresh_attack_weapon(actor, session).await;
-            owner.drain_auto_attacks().await;
-            drop(
-                owner
-                    .spell_lane_permit()
-                    .await
-                    .ok_or("resolve rolled-back hit")?,
-            );
             assert_eq!(health(&owner, target).await?, original_health);
             let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_pvp_harm")
                 .fetch_one(&h.pool)
                 .await?;
             assert_eq!(count, 0, "a rolled-back attempt leaves no durable harm");
-            arm(Point::AfterCommit);
-            wait_live(&mut client, Duration::from_millis(2100)).await?;
-            let result = command(
+            melee_fault(
                 &mut client,
+                &owner,
                 4,
-                attack::COMMAND_TYPE_ATTACK_TARGET_INTENT,
                 &payload,
+                Point::AfterCommit,
             )
             .await?;
-            assert_eq!(
-                attack::decode_attack_intent_result(&result).map_err(debug)?,
-                attack::AttackIntentDisposition::Ok
-            );
-            owner.refresh_attack_weapon(actor, session).await;
-            owner.drain_auto_attacks().await;
-            drop(
-                owner
-                    .spell_lane_permit()
-                    .await
-                    .ok_or("resolve committed hit")?,
-            );
             assert!(
                 health(&owner, target).await? < original_health,
                 "live melee changes player HP"
