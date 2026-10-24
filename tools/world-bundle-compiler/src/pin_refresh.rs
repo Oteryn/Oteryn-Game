@@ -25,7 +25,17 @@ pub(super) fn run(root: &Path) -> Result<Value, Error> {
     for slug in super::pin_slugs(&pins)? {
         let fail = |what: String| Error::Format(format!("pin {slug}: {what}"));
         let path = pins.join(format!("{slug}.json"));
-        let old: Pin = serde_json::from_slice(&read(&path)?).map_err(|e| fail(e.to_string()))?;
+        let mut old: Value =
+            serde_json::from_slice(&read(&path)?).map_err(|e| fail(e.to_string()))?;
+        if old["schema"] == "OTERYN_WORLD_PIN/v1" {
+            // Refresh is the migration path; pin-check accepts only v2.
+            if let Some(fields) = old.as_object_mut() {
+                fields.remove("inputs_digest");
+            }
+        } else if old["schema"] != PIN_SCHEMA {
+            return Err(fail(format!("unsupported schema; expected {PIN_SCHEMA}")));
+        }
+        let old: Pin = serde_json::from_value(old).map_err(|e| fail(e.to_string()))?;
         let identity = derive_identity(root, &slug)?;
         write(
             &pins.join(format!("{slug}.identity.json")),
@@ -40,7 +50,6 @@ pub(super) fn run(root: &Path) -> Result<Value, Error> {
             content_revision: identity.content_revision.clone(),
             production: false,
             entry_start: old.entry_start,
-            inputs_digest: tree.clone(),
         };
         let text = serde_json::to_string_pretty(&pin).map_err(|e| fail(e.to_string()))? + "\n";
         write(&path, &text)?;

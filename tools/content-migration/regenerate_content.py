@@ -408,7 +408,7 @@ def main() -> int:
             if path in derived
         ]
         run(["git", "add", "-A", "--", *sorted(set(conflicted) | set(changed))])
-        # The pin hashes the staged inputs, so it is refreshed last, on the staged merge.
+        # Refresh the bundle pin last; the input digest is a staged-tree diagnostic only.
         run(["cargo", "+1.99.1", "run", "--locked", "--release", "-p", "oteryn-world-bundle-compiler", "--", "pin-refresh", "."])
         run(["git", "add", "--", WORLD_PINS, PREPROD_MANIFEST])
     print("Derived content regenerated. Review `git status` and commit.")
