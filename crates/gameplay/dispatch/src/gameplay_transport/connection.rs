@@ -612,6 +612,18 @@ pub trait FreshAdmissionAuthority {
         }
     }
 
+    /// MINING-1: original USE is retained for replay before either handle is resolved.
+    fn use_pick(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _intent: UseIntent,
+        _source: Option<ItemKey>,
+        _target: Option<ItemKey>,
+    ) -> impl Future<Output = Option<UseOutcome>> {
+        async { Some(UseOutcome::rejected()) }
+    }
+
     /// BED0 §9: choice from a live map-item handle. An authority without the
     /// house reservation/logout owner refuses; decoding never grants bed access.
     fn sleep_in_bed(
@@ -2974,7 +2986,7 @@ where
                 command.payload,
             ) {
                 Ok(intent) if intent.use_with_map_item.is_some() => {
-                    match super::item_craft::dispatch(authority, actor, UseCommand {
+                    match super::mining::dispatch_map_use(authority, actor, UseCommand {
                         game_session_id: admitted.game_session_id,
                         command_id: command.command_id,
                         item_fence: admitted.item_fence,
@@ -2998,12 +3010,12 @@ where
                     None => return ConnectionEnd::AdmittedThenDisconnected(admitted),
                 },
                 // ITEM-USE-WIRE-1: fields 4 and 5 decode only under capability 15.
-                // Creature, map-item and position targets still fail closed here.
+                // Creature and unrouted position targets still fail closed here.
                 Ok(UseIntent {
                     use_with: Some(_), ..
                 })
-                // WORLDINT-WIRE-1: the map_item arm of field 4 decodes only under capability 11, which is not offered
-                // before WORLDINT-USE-1 composes the interaction gate.
+                // WORLDINT-WIRE-1: map targets decode only under capability 11; the
+                // mechanic owner above keeps unsupported tool actions closed.
                 | Ok(UseIntent {
                     use_with_map_item: Some(_),
                     ..
