@@ -386,6 +386,7 @@ pub trait FreshAdmissionAuthority {
     super::appearance_change::authority_methods!();
     super::guild_intent::authority_methods!();
     super::daily_reward::authority_methods!();
+    super::house_move_out::authority_methods!();
     fn admit(
         &self,
         attempt: FreshAdmissionAttempt<'_>,
@@ -2826,6 +2827,7 @@ where
             Highscores(HighscoresReply),
             Guild(Vec<u8>),
             Party(Vec<u8>),
+            HouseMoveOut(Vec<u8>),
             Appearance(Option<oteryn_protocol_oteryn::appearance::ChangeResult>),
             DailyReward(Option<Vec<u8>>),
             /// ITEM-VIEW-1b: `USE` with an item target; the domain 11 delta follows the result.
@@ -3319,6 +3321,24 @@ where
                         },
                         selection,
                     ),
+                }
+            }
+        } else if super::house_move_out::owns(command.command_type) {
+            match authority
+                .house_move_out_command(
+                    admitted,
+                    command.command_id,
+                    command.command_type,
+                    command.payload,
+                )
+                .await
+            {
+                super::house_move_out::HouseMoveOutReply::Payload(bytes) => {
+                    Dispatch::HouseMoveOut(bytes)
+                }
+                super::house_move_out::HouseMoveOutReply::Rejected => Dispatch::Unregistered,
+                super::house_move_out::HouseMoveOutReply::Unavailable => {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 }
             }
         } else if super::guild_intent::owns(command.command_type) {
@@ -3865,7 +3885,9 @@ where
                 // The page is written once; move it out instead of copying up to 32 KiB.
                 (CommandStatus::Accepted, std::mem::take(payload))
             }
-            Dispatch::Guild(payload) | Dispatch::Highscores(HighscoresReply::Result(payload)) => {
+            Dispatch::HouseMoveOut(payload)
+            | Dispatch::Guild(payload)
+            | Dispatch::Highscores(HighscoresReply::Result(payload)) => {
                 (CommandStatus::Accepted, std::mem::take(payload))
             }
             Dispatch::Unregistered
@@ -4310,6 +4332,7 @@ where
             | Dispatch::Look(..)
             | Dispatch::Achievements(_)
             | Dispatch::Highscores(_)
+            | Dispatch::HouseMoveOut(_)
             | Dispatch::Guild(_)
             | Dispatch::Vip(_)
             | Dispatch::Party(_)

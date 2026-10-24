@@ -4,7 +4,7 @@
 task_id: HOUSE-1b
 title: "HOUSE-1b: canonical house disposition and absolute move-out commands"
 mode: IMPLEMENT
-status: waiting
+status: implementing
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 5
@@ -18,10 +18,10 @@ briefs:
   - docs/architecture/reviews/OTERYN_GAME_HOUSE_RT_INBOX_PACKETS_2026-10-04.md                # §1.2, §1.6
   - docs/architecture/reviews/OTERYN_GAME_BED0_HOUSE_BEDS_DECISION_2026-10-01.md              # §6 disposition freeing
 base_branch: main
-branch: null
+branch: claude/happy-davinci-ijz3wy-srv-house1b
 pr: null
 needs_migration: true
-needs_registry: true   # registered HouseOperation event
+needs_registry: true   # protocol 76/77, capability 59; extends existing event 8
 needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
@@ -62,6 +62,10 @@ Integration order decided by CP (D1162/D1349): HOUSE-1b → HOUSE-1a → MAP-OVE
 HOUSE-1b lands first because it owns the canonical disposition schema that HOUSE-1a consumes.
 
 ## Owned paths (ADR-0022 layout)
+
+The 2026-10-23 server-first owner instruction supersedes the original standalone PostgreSQL
+target planned below. The actual delta uses the existing dispatch `--lib` auto-mount; its full
+owned-file manifest appears at the end of this card. No new test target or client path is added.
 
 - `crates/gameplay/housing/src/house_move_out.rs` (new, L3 pure rules: notice deadline bounds, notice/cancel state machine)
 - `crates/gameplay/housing/src/house_move_out_tests.rs` (new)
@@ -220,17 +224,17 @@ Guild fence ABI (agreed boundary with HOUSE-1a):
 
 ## Acceptance criteria
 
-- [ ] Move-out returns every House item exactly once to its captured reclaim subject's Inbox (no owner fallback).
-- [ ] Notice/cancel bounded by one DB clock sample; replay returns the original outcome.
-- [ ] Freeze census bounded (2000) and immutable; steps bounded (100) and replay-safe.
-- [ ] Restart mid-disposition resumes from durable state without redelivery.
+- [x] Move-out returns every House item exactly once to its captured reclaim subject's Inbox (no owner fallback).
+- [x] Notice/cancel bounded by one DB clock sample; replay returns the original outcome.
+- [x] Freeze census bounded (2000) and immutable; steps bounded (100) and replay-safe.
+- [x] Restart mid-disposition resumes from durable state without redelivery.
 - [ ] Every concurrent transition serialized (named lock or deterministic order) and the losing writer typed.
-- [ ] DRAINED keeps ownership and content fence; final release is HOUSE-1a's.
+- [x] DRAINED keeps ownership and content fence; final release is HOUSE-1a's.
 - [ ] Every BLOCKING dependency above merged (or acceptance landed) before the PR leaves draft.
-- [ ] One mechanic per module file in its ADR-0022 layer.
-- [ ] New tests in their own child files.
-- [ ] Edits to mod.rs/lib.rs/connection.rs/capabilities.rs are wiring-only.
-- [ ] No file over ~1000 lines grows by more than ~150 lines.
+- [x] One mechanic per module file in its ADR-0022 layer.
+- [x] New tests in their own child files.
+- [x] Edits to mod.rs/lib.rs/connection.rs/capabilities.rs are wiring-only.
+- [x] No file over ~1000 lines grows by more than ~150 lines.
 
 ## Validation commands
 
@@ -252,3 +256,162 @@ cargo +1.95.0 run -p oteryn-architecture-check -- workspace .
 - docs/agents/tasks/archive/OTV2-20261010-house-1-contract.md
 - docs/reference/tibia-manual/houses.md
 - Draft #2141 (decisions D1349, D1366, D1367, D1371, D1382, D1384, D1403, D1409, D1413, D1415 on CP PR #2131)
+
+## Server wiring gap list
+
+Audit on `cb5b3de92d2e19df53e05a7e0f5b9d98fa11d299` (2026-10-23), before implementation. The E2E audit row
+`MECHANICS_STATUS.md: houses` says BACKEND; source inspection confirms this residue.
+
+| Layer | Pre-change HEAD | Implemented server delta |
+|---|---|---|
+| L3 | House custody, handoff, auction rules | Absolute move-out notice/cancel and bounded transfer rules |
+| L4 / migrations | 0038 owner anchor, 0025/0095 custody, 0076 Inbox; 0143 acquisition | Canonical disposition operation/census/step and fenced owner writer (0178) |
+| Dispatch / runtime | Admitted Channel runtime, current item fence, house handoff | Mechanic handler and due-job caller |
+| protocol-oteryn | No move-out command or capability | Bounded request/result codec; reserved commands 76–77, capability 59 |
+| Capability | No house disposition offer | Offer in all three production sets, including bundle/default Worlds; no loaded-House prerequisite |
+| Qualification | Foundation tests only | Real admitted dispatch notice/cancel, custody/replay/restart PostgreSQL E2E |
+
+AUTHORING only; local worker edits, no publication or frozen candidate in this session.
+
+## Server basic-form result (2026-10-23, local AUTHORING)
+
+Implemented locally; no commit, publication, frozen SHA or PR was created. The basic server
+path is `ClientCommand(76/77) -> serve_admitted -> house_move_out -> DurabilityRoot ->
+0178 native port -> CommandResult`. The existing source Channel owner cycle discovers due
+operations, commits freeze, then drains one bounded batch per house per pass. It needs a
+current execution Channel in the owning World, never a loaded House assignment or an actor
+session for the job. Pending work and the scan cursor survive reconstructed Roots.
+
+A logged-in owner can schedule an absolute 1–30 day notice, cancel the actual pending notice
+before its due instant, and query its durable state/counts. No client identity, owner revision,
+reclaim subject, operation identity or authority boolean is accepted from the wire. There is
+no price, direct resale or client UI change. Capability 59 has no spatial-content dependency;
+existing native ownership must authorize every command, including in the default/bundle World.
+
+Canonical operation, command receipts, census, steps and Foundation event 8 are installed only
+by MIGRATOR (0178). Canonical tables and producer functions remain private. A narrow runtime
+SECURITY DEFINER ingress independently verifies Node possession, execution scope and full
+session/admission fences; the Rust bridge also retains `character_item_fence_is_current`.
+Historical receipt replay precedes clock/owner/current-fence reads. New commands, checkpoints
+and every native item removal require a same-physical-transaction HouseOperation event.
+The ordinary source removal predicate retains both 0095 player arms. The exact Inbox reader
+inventory gains only the two read-only disposition proofs.
+
+Freeze snapshots at most 2000 exact item/location/provenance records and their sorted-ID
+SHA-256. Item, provenance, location and entry triggers retain the content fence through
+DRAINED. The freeze transaction frees open bed sleepers with the existing `disposition`
+terminal cause. Custody waits for canonical live House sessions and unreleased PREPARED or
+COMMITTED entrants; it never invents quiescence. Steps retain (operation, step, item, subject,
+ordinal) and call the real Inbox writer. Errors abort the entire house transaction. A job
+pass has a retained cursor and at most 100 houses, so an occupied/oversized house cannot
+starve all later houses. Each house commits separately; there is no native same-pass retry.
+
+### Reference parity
+
+| Visible behavior | Reference evidence | Oteryn now |
+|---|---|---|
+| Schedule moving out 1–30 days ahead | `docs/reference/tibia-manual/houses.md`, Getting Houses / Moving Out; accepted HOUSE-OWN-0 §6 | Command 76 Notice uses one DB-clock millisecond sample, inclusive bounds and checked L3 arithmetic |
+| Cancel an outstanding owner notice | D1384 and this card's accepted owner-command contract | Command 76 Cancel targets the actual pending operation, closes at due/freeze, retains original replay outcome |
+| Automatic return of remaining belongings | Manual Moving Out; HOUSE-CUSTODY-0 §3.2 | Due World job returns each item to its captured reclaim subject, with no owner fallback (accepted Oteryn difference) |
+| Bounded, restart-safe custody work | HOUSE-OWN-0 §§7,9 and HOUSE_RT_INBOX_PACKETS §1.2 | Exact immutable census <=2000; steps <=100; native Inbox, immutable step receipts, fresh-Root reload |
+| House cannot acquire new contents/entrants while draining | Accepted disposition/fence and handoff contract in this card | Native content/item/provenance/entry fences; prepared entrants prevent delivery |
+| House becomes vacant and may be acquired again | Manual Moving Out; HOUSE-OWN-0 §7 release | Intentionally remains DRAINED with owner/fence retained; final reconciliation is HOUSE-1a's owning step |
+
+### Validation evidence
+
+Evidence is for the local worktree delta, not a published/frozen candidate. Commands use the
+absolute queued wrapper `/home/mole/oteryn-cache/codex-bin/cargo`, toolchain from
+`rust-toolchain.toml`, `--locked` and offline dependency resolution. PostgreSQL tests execute
+against the wrapper-provided PostgreSQL 18.6 route; no route-less early return is qualification.
+
+- `cargo test --locked -p oteryn-protocol-oteryn --lib` (includes filter `house_move_out`, registry/capability mapping).
+- `cargo test --locked -p oteryn-gameplay-housing --lib` (includes filters `house_move_out` and `house_transfer`).
+- `cargo test --locked -p oteryn-gameplay-dispatch --lib capabilities::tests`.
+- `cargo test --locked -p oteryn-gameplay-dispatch --lib house_move_out_postgres`:
+  `house_move_out_postgres_real_dispatch` and `house_move_out_postgres_oversized_census`.
+  Real dispatch covers query/notice/cancel, original-result replay and changed binding,
+  cancel replay isolation from a newer notice, malformed/wrong-kind/no-capability/non-owner/
+  deadline rejection, and the mechanic's stale lease check. The connection's independent
+  stale-lease Bank prelude disconnects before command dispatch; that direct-handler negative
+  case is explicitly separate from the wire scenario. A second Character is created by the
+  actual authenticated bootstrap. The historical 101-item house drains 100 + 1 with a 50/51
+  subject split, reconstructing Root/owner at freeze, partial drain and DRAINED; the command and restart phases
+  use `oteryn_game_runtime` (the test also verifies the connection role). Native guards prove entry/provenance/item/DRAINED fencing,
+  prepared-entry waiting, injected Inbox failure rollback, no redelivery and retained ownership.
+  The 2001-item case refuses without any census row or lost item.
+- `cargo test --locked -p oteryn-game-server --test character_authority_postgres inbox_rows_are_immutable_and_no_other_writer_touches_them` (D1413 exact reader inventory).
+- `cargo clippy --locked -p oteryn-gameplay-dispatch -p oteryn-gameplay-housing -p oteryn-gameplay-durability -p oteryn-protocol-oteryn -p oteryn-game-server --all-targets -- -D warnings`.
+- `cargo fmt --all -- --check`; explicit rustfmt check of include-mounted durability and dispatch test children.
+- `python3 tools/agents/validate_governance.py`; `python3 -m unittest discover -s tools/agents/tests`;
+  `python3 tools/repository/validate_repository_policy.py`; `git diff --check`.
+
+Whole-diff D1462 checklist and workspace constructor/match/impl sweep cover the new L3 command,
+durable error, wire request/reply, private dispatch variant/authority method and event fields.
+Each production public function has a server caller and is reached by the dispatch E2E.
+Protocol ids are exclusively 76/77 and 59; new resource entries are exclusively 0890–0894.
+
+### Unfinished / integration boundary
+
+- HOUSE-1a owns final owner/Account-slot/ACL reconciliation, fence release and reacquisition.
+  Acquisition/catalogue activation and House-scoped admission remain their owners' gates;
+  this change neither manufactures ownership nor bypasses House grants.
+- House-scoped owner commands and actual committed-House-session exit/quiescence qualification
+  need HOUSE-ACL-1 / HOUSE-RUNTIME-1b/1c. This implementation accepts current Channel sessions;
+  existing House sessions/reservations keep custody closed.
+- LO-01's accepted lock-order exception, full original 24-case concurrency/foreign-Channel/
+  successor-connection/positive-sleeper qualification, and independent exact-head review remain
+  required before production integration. The original historical draft's 24/24 is not reused
+  as evidence for this implementation. No unrelated PG suites were run on the shared PC.
+- Rent/eviction, Guild disposition and direct resale remain outside the ordinary move-out path.
+  The real Guild fence ABI stays fail-closed for partial/incompatible installation.
+- Client UI is outside this task. No client paths, workflows, policy enforcement, credentials,
+  dependency files or Git publication state were changed. The task record remains active for
+  CP integration, rather than being archived by an uncommitted worker.
+
+Verified local results: protocol **393/393**, housing **24/24**, capability negotiation
+**61/61**, mechanic PostgreSQL **2/2**, D1413 Inbox PostgreSQL **1/1**, governance Python
+unit tests **129/129**. The PostgreSQL E2E also checks that native removal and checkpoint
+writes without the physical HouseOperation event fail, before the production writer runs.
+
+### Changed-file manifest
+
+```text
+apps/game-server/migrations/0178_house_disposition.sql
+apps/game-server/tests/support/character_inbox_postgres_cases.rs
+crates/gameplay/dispatch/src/gameplay_transport/capabilities.rs
+crates/gameplay/dispatch/src/gameplay_transport/capability_quest_log_tests.rs
+crates/gameplay/dispatch/src/gameplay_transport/connection.rs
+crates/gameplay/dispatch/src/gameplay_transport/house_move_out.rs
+crates/gameplay/dispatch/src/gameplay_transport/mod.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/house_move_out.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/house_move_out/fixture.rs
+crates/gameplay/dispatch/src/gameplay_transport/source_item_cycle.rs
+crates/gameplay/durability/src/durability/core_modules.rs
+crates/gameplay/durability/src/durability/house_disposition.rs
+crates/gameplay/durability/src/durability/house_disposition/audit.rs
+crates/gameplay/durability/src/durability/house_disposition/jobs.rs
+crates/gameplay/housing/src/house_move_out.rs
+crates/gameplay/housing/src/house_move_out_tests.rs
+crates/gameplay/housing/src/house_transfer.rs
+crates/gameplay/housing/src/house_transfer_tests.rs
+crates/gameplay/housing/src/lib.rs
+crates/protocol-oteryn/src/capability_tables.rs
+crates/protocol-oteryn/src/house_move_out.rs
+crates/protocol-oteryn/src/house_move_out_tests.rs
+crates/protocol-oteryn/src/lib.rs
+docs/agents/tasks/HOUSE-1b.md
+docs/contracts/game-events/v2/house_operation.proto
+docs/contracts/protocol-oteryn/v1/house_move_out_v1.proto
+docs/contracts/protocol-oteryn/v1/registry/capabilities/0059-house-move-out-v1.json
+docs/contracts/protocol-oteryn/v1/registry/command_types/0076-house-move-out.json
+docs/contracts/protocol-oteryn/v1/registry/command_types/0077-house-move-out-query.json
+docs/contracts/resource-limits/entries/0890-HOUSE1B-RL-01.json
+docs/contracts/resource-limits/entries/0891-HOUSE1B-RL-02.json
+docs/contracts/resource-limits/entries/0892-HOUSE1B-RL-03.json
+docs/contracts/resource-limits/entries/0893-HOUSE1B-RL-04.json
+docs/contracts/resource-limits/entries/0894-HOUSE1B-RL-05.json
+```
+
+Final local checks: clippy `-D warnings` on all five touched crates, rustfmt (including
+auto-mounted children), both governance validators and `git diff --check`: **PASS**.
+No CI-only contention failures or pending local check remain.

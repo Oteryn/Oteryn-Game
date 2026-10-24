@@ -37,6 +37,7 @@ mod guild_bank;
 mod guild_chat;
 mod guild_intent;
 mod highscores;
+mod house_move_out;
 mod input_gate;
 mod item_craft;
 mod item_look;
@@ -2539,6 +2540,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     house_intent::composed_methods!();
     daily_reward::composed_methods!();
     staff::composed_methods!();
+    house_move_out::composed_methods!();
     async fn observe_quest_log(
         &self,
         actor: ExactActorRef,

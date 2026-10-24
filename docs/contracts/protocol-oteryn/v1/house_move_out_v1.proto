@@ -1,0 +1,17 @@
+syntax = "proto3";
+package oteryn.protocol.v1;
+// Capability 59; command 76 requires action 1/2, command 77 action 0.
+// Strict bounded codec: all scalars explicitly present, duplicate/unknown fields refused.
+// House is an exact World-local content key, 512 bytes maximum. No client identity/fence input.
+message HouseMoveOutRequestV1 {
+  string house = 1;
+  uint32 action = 2; // 0 query, 1 notice, 2 cancel actual pending notice
+  uint64 due_at_unix_ms = 3; // <= i64::MAX; zero except notice; DB clock 1–30 days inclusive
+}
+message HouseMoveOutReplyV1 {
+  optional bytes operation = 1; // 16-byte server-minted UUIDv7; absent only at state 0
+  uint32 state = 2; // 0 none, 1 notice, 2 frozen, 3 drained (owner retained), 4 cancelled
+  uint64 due_at_unix_ms = 3;
+  uint32 census_count = 4; // <= 2000
+  uint32 delivered = 5; // <= census_count
+}
