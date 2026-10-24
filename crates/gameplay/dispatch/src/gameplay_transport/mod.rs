@@ -56,6 +56,7 @@ mod item_use;
 mod item_view;
 mod kill_reward;
 mod last_position;
+mod level_up_live;
 mod listener;
 mod logout;
 #[cfg(test)]

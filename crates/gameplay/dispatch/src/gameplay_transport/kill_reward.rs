@@ -1188,14 +1188,17 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                     Some(super::party_kill_settlement::SettledPartyXp {
                         xp: Err(CombatDeathRewardXpError::Progression(error)),
                         slots: Vec::new(),
+                        leveled: Vec::new(),
                     })
                 }
             }
         } else {
             None
         };
-        let (party_xp, mut other_slots) =
-            party.map_or((None, Vec::new()), |p| (Some(p.xp), p.slots));
+        let (party_xp, mut other_slots, mut leveled) = party
+            .map_or((None, Vec::new(), Vec::new()), |p| {
+                (Some(p.xp), p.slots, p.leveled)
+            });
         let mut slot = if let Some(index) = other_slots
             .iter()
             .position(|s| s.character_id() == self.fence.character_id)
@@ -1276,6 +1279,12 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         drop(slot);
         drop(other_slots);
         drop(permit);
+        if let Ok(outcome) = &outcome
+            && let Ok(xp) = &outcome.rewards.xp
+        {
+            leveled.extend(super::level_up_live::leveled_character(xp));
+        }
+        admission.states.level_refresh.mark(leveled);
         if let Ok(outcome) = &outcome
             && let Ok(xp) = &outcome.rewards.xp
         {

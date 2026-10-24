@@ -3,7 +3,7 @@
 use super::{
     FenceHolders, PremiumSessions, ProgressionSessions, QuestSession, actor_spell,
     appearance_change, attack, chat_intent, connection::AdmittedSession, input_gate, last_position,
-    loop_move, map_door, newhaven_travel, npc_command, tutorial_session,
+    level_up_live, loop_move, map_door, newhaven_travel, npc_command, tutorial_session,
 };
 use crate::foundation::GameSessionId;
 use tokio::sync::Mutex;
@@ -28,6 +28,9 @@ pub struct ChannelSessionStates {
     /// CHAR-POSITION-1: the sessions whose last position this owner writes, and the write
     /// sequence generator (CHAR-POSITION-0 §3.2).
     pub last_positions: last_position::LastPositions,
+    /// LEVELUP-LIVE-1: Characters whose kill settlement committed a level increase that the
+    /// live actor has not installed yet. A leaf lock, never held across an await.
+    pub(super) level_refresh: level_up_live::LevelRefresh,
     /// ITEM-LOOP-1: the Channel's loop Ground items as a map overlay, rebuilt after each drop or
     /// pickup. A leaf lock, never held across an await.
     pub loop_ground: loop_move::LoopGroundCache,
