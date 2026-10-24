@@ -2536,6 +2536,7 @@ pub mod container_tree;
 pub mod daily_reward;
 pub mod damage_element;
 pub mod guild;
+pub mod guild_bank;
 pub mod highscores;
 pub mod item_look;
 pub mod item_view;

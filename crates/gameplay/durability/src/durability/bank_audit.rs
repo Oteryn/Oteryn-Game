@@ -222,8 +222,8 @@ fn check_value_line(
         || line.line_class != class
         || line.amount != amount
         || after != Some(line.balance_after)
-        || line.balance_before > BANK_BALANCE_MAX
-        || line.balance_after > BANK_BALANCE_MAX
+        || line.balance_before > oteryn_gameplay_economy::guild_bank::ACCOUNT_HARD_MAX
+        || line.balance_after > oteryn_gameplay_economy::guild_bank::ACCOUNT_HARD_MAX
     {
         return Err(AuditError::InvalidInput);
     }
@@ -1001,3 +1001,7 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+#[path = "guild_bank_bank_audit_tests.rs"]
+mod guild_bank_tests;

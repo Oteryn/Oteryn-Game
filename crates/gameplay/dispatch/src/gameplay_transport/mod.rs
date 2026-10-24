@@ -33,6 +33,7 @@ mod connection;
 mod container_view;
 mod equipment_move;
 pub mod fresh_evidence;
+mod guild_bank;
 mod guild_chat;
 mod guild_intent;
 mod highscores;
