@@ -62,7 +62,9 @@ fn train_lowering_death_respawn_then_train_save_commits() -> TestResult {
 
 async fn train_die_respawn_train(h: &Harness) -> TestResult {
     let formula = CompiledTrainingFormula::from_profile(
-        include_bytes!("../../../../../../tools/content-schema/native-gameplay/build-training.json"),
+        include_bytes!(
+            "../../../../../../tools/content-schema/native-gameplay/build-training.json"
+        ),
         &harness::context().content,
     )
     .map_err(debug)?;
@@ -289,7 +291,9 @@ async fn die_respawn_relog(h: &Harness) -> TestResult {
     };
     use crate::gameplay_transport::{CastFactsLoad, load_character_cast_facts};
     let formula = CompiledTrainingFormula::from_profile(
-        include_bytes!("../../../../../../tools/content-schema/native-gameplay/build-training.json"),
+        include_bytes!(
+            "../../../../../../tools/content-schema/native-gameplay/build-training.json"
+        ),
         &harness::context().content,
     )
     .map_err(debug)?;
