@@ -164,6 +164,7 @@ impl PlayerSpellState {
 }
 
 mod gate;
+mod level_up_vitals;
 mod live_skill;
 mod prepare;
 mod state;
