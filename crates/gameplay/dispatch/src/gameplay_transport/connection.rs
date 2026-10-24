@@ -4,7 +4,9 @@
 
 pub(super) mod appearance_change;
 mod moved_step;
+mod routing;
 use crate::combat_pickup::GroundPickupError;
+use routing::Dispatch;
 #[path = "newhaven_travel_transport.rs"]
 mod newhaven_travel_transport;
 #[path = "tutorial_notices_transport.rs"]
@@ -2886,48 +2888,7 @@ where
         // ACCOUNT_ACHIEVEMENTS_QUERY (command type 10, display contract D223-D228) is a read of
         // the session's own account: the admitted controller's, never the payload's; a session
         // without a controller binding has none and is REJECTED.
-        enum Dispatch {
-            Vip(Option<Vec<u8>>),
-            /// STEP-PACE-WIRE-1: the step and its `step_wait_ms` pacing receipt (0: none).
-            Step(StepOutcome, u32),
-            Use(UseOutcome),
-            Spell(SpellCastOutcome),
-            Achievements(AccountAchievementsReply),
-            /// RANK-1 (HS-WIRE-1): command 14, a read of the session's World snapshots.
-            Highscores(HighscoresReply),
-            Guild(Vec<u8>),
-            Party(Vec<u8>),
-            HouseMoveOut(Vec<u8>),
-            Timed(Vec<u8>, Vec<ItemViewDelta>),
-            Appearance(Option<oteryn_protocol_oteryn::appearance::ChangeResult>),
-            DailyReward(Option<Vec<u8>>),
-            WorldEvent(Result<Vec<u8>, ()>),
-            Training(oteryn_protocol_oteryn::loop_training::TrainingResult),
-            /// ITEM-VIEW-1b: `USE` with an item target; the domain 11 delta follows the result.
-            UseItem(OpenDecision, Option<ItemViewDelta>),
-            /// BAGS-WIRE-1: command 21; the domain 14 delta follows the result.
-            ContainerView(ContainerViewOutcome, Option<ItemViewDelta>),
-            /// ITEM-MOVE-1: command 9; the domain 11 and domain 9 deltas follow the result.
-            ItemMove(ItemMoveOutcome, Vec<ItemViewDelta>),
-            Depot(oteryn_protocol_oteryn::depot::DepotReply),
-            /// QUEST-LOG-WIRE-1: an accepted command 22; the domain 16 delta follows the result.
-            QuestLog(QuestLogDomain),
-            Staff(Option<Vec<u8>>),
-            Look(ItemLookResult, ItemLookSelection),
-            /// ATTACK-1b: commands 11 and 12; the domain 10 delta follows the result.
-            Attack(AttackIntentDisposition),
-            /// CHAT-WIRE-1: command 13; lines reach the hearers' domain 12 on their own ticks.
-            Chat(ChatIntentResult),
-            /// NPC-CMD-1a: commands 7 and 8; the domain 7 payload follows the result.
-            Npc(NpcIntentDisposition, NpcUpdate, bool),
-            /// NPC-TRADE-2: the result, the domain 9 deltas of a committed trade, then the domain
-            /// 7 and 8 payloads.
-            NpcTrade(NpcIntentDisposition, NpcUpdate, Vec<ItemViewDelta>),
-            /// LOGOUT-WIRE-1: command 23; `ACCEPTED` ends the connection after the result.
-            Logout(LogoutResult),
-            House(Option<Vec<u8>>),
-            Unregistered,
-        }
+
         // LOGOUT-RL-01: a second logout read before the first one's result.
         let mut second_logout = false;
         // A read that failed while a logout ran: the peer is gone once the result is written.
@@ -3048,660 +3009,168 @@ where
             };
             Dispatch::Training(result)
         } else if command.command_type == COMMAND_TYPE_BED_SLEEP_INTENT {
-            match super::bed_sleep::dispatch(
+            match routing::bed::route(authority, actor, &admitted, command, &item_view).await {
+                Some(dispatch) => dispatch,
+                None => return ConnectionEnd::AdmittedThenControlLost(admitted),
+            }
+        } else if command.command_type == COMMAND_TYPE_USE_INTENT {
+            match routing::use_item::route(
                 authority,
                 actor,
-                UseCommand {
-                    game_session_id: admitted.game_session_id,
-                    command_id: command.command_id,
-                    item_fence: admitted.item_fence,
-                },
-                decode_bed_sleep_intent(command.payload),
-                item_view.as_ref(),
+                &mut admitted,
+                command,
+                &mut item_view,
+                &mut container_views,
+                &visibility,
             )
             .await
             {
-                Ok(outcome) => Dispatch::Use(outcome),
-                // An unacknowledged commit may already have ended the session.
-                // Send no refusal; the terminal/loss lifecycle reconciles it.
-                Err(_) => return ConnectionEnd::AdmittedThenControlLost(admitted),
-            }
-        } else if command.command_type == COMMAND_TYPE_USE_INTENT {
-            match decode_use_intent_target(
-                admitted.continuity.selected_capabilities.as_slice(),
-                command.payload,
-            ) {
-                Ok(intent) if intent.use_with_map_item.is_some() => {
-                    match super::mining::dispatch_map_use(authority, actor, UseCommand {
-                        game_session_id: admitted.game_session_id,
-                        command_id: command.command_id,
-                        item_fence: admitted.item_fence,
-                    }, intent, item_view.as_ref()).await {
-                        Some(outcome) => Dispatch::Use(outcome),
-                        None => return ConnectionEnd::AdmittedThenDisconnected(admitted),
-                    }
-                }
-                Ok(intent) if super::rune_use_bridge::routes(
-                    &intent, &admitted.continuity.selected_capabilities,
-                ) => match super::rune_use_bridge::dispatch(
-                    authority, actor,
-                    UseCommand {
-                        game_session_id: admitted.game_session_id,
-                        command_id: command.command_id,
-                        item_fence: admitted.item_fence,
-                    },
-                    intent, item_view.as_ref(), visibility.as_ref(),
-                ).await {
-                    Some(outcome) => Dispatch::Use(outcome),
-                    None => return ConnectionEnd::AdmittedThenDisconnected(admitted),
-                },
-                // ITEM-USE-WIRE-1: fields 4 and 5 decode only under capability 15.
-                // Creature and unrouted position targets still fail closed here.
-                Ok(UseIntent {
-                    use_with: Some(_), ..
-                })
-                // WORLDINT-WIRE-1: map targets decode only under capability 11; the
-                // mechanic owner above keeps unsupported tool actions closed.
-                | Ok(UseIntent {
-                    use_with_map_item: Some(_),
-                    ..
-                })
-                // RUNE-WIRE-1: position uses without a qualified bridge route fail closed.
-                | Ok(UseIntent {
-                    use_with_position: Some(_),
-                    ..
-                }) => Dispatch::Use(UseOutcome::rejected()),
-                Ok(UseIntent {
-                    target: UseTarget::ItemByDefinition(definition),
-                    use_with: None,
-                    use_with_map_item: None,
-                    use_with_position: None,
-                }) => Dispatch::Use(authority.use_item_by_definition(actor, UseCommand {
-                    game_session_id: admitted.game_session_id,
-                    command_id: command.command_id,
-                    item_fence: admitted.item_fence,
-                }, definition).await),
-                // ITEM-VIEW-1b §4.3: a handle that is not live is STALE before any authority
-                // call; opening writes nothing.
-                Ok(UseIntent {
-                    target: UseTarget::Item(handle),
-                    use_with: None,
-                    use_with_map_item: None,
-                    use_with_position: None,
-                }) => {
-                    let key = item_view.as_ref().and_then(|view| view.resolve(handle));
-                    // BAGS-WIRE-1: with capability 14 a container in reach opens in a new view,
-                    // and one out of reach is TOO_FAR; anything else takes the corpse path.
-                    let container = match (key, &container_views) {
-                        (Some(key), Some(_)) => authority.observe_container(actor, admitted.item_fence, key).await,
-                        _ => None,
-                    };
-                    let carried_entry = matches!(container, Some(ContainerObservation::NotAContainer));
-                    let container = container.filter(|observation| {
-                        matches!(
-                            observation,
-                            ContainerObservation::Container { .. } | ContainerObservation::TooFar
-                        )
-                    });
-                    // BAGS-USE-1: a carried entry of an open view can be used under capability
-                    // 15. The owner revalidates custody before PREPARE; equipped sources fail closed.
-                    let consumable = container.is_none()
-                        && matches!(key, Some(ItemKey::Instance(_)))
-                        && admitted
-                            .continuity
-                            .selected_capabilities
-                            .contains(CAPABILITY_ITEM_USE_V1)
-                        && item_view
-                            .as_ref()
-                            .zip(key)
-                            .is_some_and(|(view, key)| view.is_backpack_entry(&key)
-                                || (carried_entry && !view.is_main_backpack(&key)
-                                    && view.equipped_slot(&key).is_none()));
-                    let observation = match key.filter(|_| container.is_none() && !consumable) {
-                        Some(key) => authority.observe_item_target(actor, key).await,
-                        None => None,
-                    };
-                    match (item_view.as_mut(), key, observation) {
-                        (_, Some(key), _) if consumable => {
-                            let Some(outcome) = tokio::time::timeout(
-                                std::time::Duration::from_secs(10),
-                                authority.use_item_completion(
-                                    actor,
-                                    UseCommand {
-                                        game_session_id: admitted.game_session_id,
-                                        command_id: command.command_id,
-                                        item_fence: admitted.item_fence,
-                                    },
-                                    key,
-                                ),
-                            ).await.ok().flatten() else {
-                                return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                            };
-                            Dispatch::Use(outcome)
-                        },
-                        (Some(view), Some(key), _) if container.is_some() => {
-                            let Some(views) = container_views.as_mut() else {
-                                return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                            };
-                            let opened = views.apply(view, PendingOpen::new_view(key), container);
-                            admitted.continuity.item_view = view.continuity();
-                            let Ok((outcome, delta)) = opened else {
-                                return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                            };
-                            Dispatch::UseItem(
-                                match outcome {
-                                    ContainerViewOutcome::Opened => OpenDecision::Open,
-                                    ContainerViewOutcome::TooFar => OpenDecision::TooFar,
-                                    ContainerViewOutcome::Stale | ContainerViewOutcome::Closed => {
-                                        OpenDecision::StaleState
-                                    }
-                                    ContainerViewOutcome::NotAContainer
-                                    | ContainerViewOutcome::TooManyViews => {
-                                        OpenDecision::NothingToUse
-                                    }
-                                },
-                                delta,
-                            )
-                        }
-                        (Some(view), Some(key), Some(observation)) => {
-                            let opened = view.open(key, observation);
-                            admitted.continuity.item_view = view.continuity();
-                            let Ok((decision, delta)) = opened else {
-                                return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                            };
-                            Dispatch::UseItem(decision, delta)
-                        }
-                        _ => Dispatch::UseItem(OpenDecision::StaleState, None),
-                    }
-                }
-                Ok(UseIntent {
-                    target: UseTarget::WorldObject(target),
-                    use_with: None,
-                    use_with_map_item: None,
-                    use_with_position: None,
-                }) => Dispatch::Use(
-                    authority
-                        .use_object(
-                            actor,
-                            UseCommand {
-                                game_session_id: admitted.game_session_id,
-                                command_id: command.command_id,
-                                item_fence: admitted.item_fence,
-                            },
-                            target,
-                        )
-                        .await,
-                ),
-                Err(_) => Dispatch::Use(UseOutcome::rejected()),
+                Some(dispatch) => dispatch,
+                None => return ConnectionEnd::AdmittedThenDisconnected(admitted),
             }
         } else if command.command_type == COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT {
-            match decode_spell_cast_intent(command.payload) {
-                Ok(intent) => match authority
-                    .cast_spell_completion(
-                        actor,
-                        admitted.game_session_id,
-                        command.command_id,
-                        intent,
-                    )
-                    .await
-                {
-                    Some(outcome) => Dispatch::Spell(outcome),
-                    // Preserve continuity's original next command and no terminal
-                    // outcome; reconnect/reconciliation cannot pay or reroll twice.
-                    None => return ConnectionEnd::AdmittedThenDisconnected(admitted),
-                },
-                Err(_) => Dispatch::Spell(SpellCastOutcome::rejected()),
+            match routing::spell::route(authority, actor, &admitted, command).await {
+                Some(dispatch) => dispatch,
+                None => return ConnectionEnd::AdmittedThenDisconnected(admitted),
             }
         } else if command.command_type == COMMAND_TYPE_CONTAINER_VIEW_INTENT {
-            // BAGS-WIRE-1: non-durable view command. Over BAGS0-RL-04 (10 per second, sliding
-            // window) it is REJECTED with an empty payload before decoding, as is a malformed one.
-            // The window is per GameSession and travels in the continuity.
-            let admitted_rate = match (&container_views, item_view.as_mut()) {
-                (Some(_), Some(view)) => {
-                    let admitted_rate = view.admit_view_command(tokio::time::Instant::now());
-                    admitted.continuity.item_view = view.continuity();
-                    admitted_rate
-                }
-                _ => false,
-            };
-            match (
-                container_views.as_mut().filter(|_| admitted_rate),
-                item_view.as_mut(),
-                decode_container_view_intent(command.payload),
-            ) {
-                (Some(views), Some(view), Ok(intent)) => {
-                    let decided = match views.plan(view, intent) {
-                        Ok(ContainerPlan::Decided(outcome, delta)) => Ok((outcome, delta)),
-                        Ok(ContainerPlan::Observe(pending)) => {
-                            let observation = authority
-                                .observe_container(actor, admitted.item_fence, pending.key())
-                                .await;
-                            views.apply(view, pending, observation)
-                        }
-                        Err(error) => Err(error),
-                    };
-                    admitted.continuity.item_view = view.continuity();
-                    let Ok((outcome, delta)) = decided else {
-                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                    };
-                    Dispatch::ContainerView(outcome, delta)
-                }
-                _ => Dispatch::Unregistered,
+            match routing::container_view::route(
+                authority,
+                actor,
+                &mut admitted,
+                command,
+                &mut container_views,
+                &mut item_view,
+            )
+            .await
+            {
+                Some(dispatch) => dispatch,
+                None => return ConnectionEnd::AdmittedThenDisconnected(admitted),
             }
         } else if command.command_type == oteryn_protocol_oteryn::depot::COMMAND_TYPE_DEPOT_INTENT {
-            if let Ok(intent) = oteryn_protocol_oteryn::depot::decode_depot_intent(command.payload)
-            {
-                let item = match intent.action {
-                    oteryn_protocol_oteryn::depot::DepotAction::Deposit(handle) => {
-                        item_view.as_ref().and_then(|view| view.resolve(handle))
-                    }
-                    _ => None,
-                };
-                let Some(reply) = authority
-                    .depot(
-                        actor,
-                        UseCommand {
-                            game_session_id: admitted.game_session_id,
-                            command_id: command.command_id,
-                            item_fence: admitted.item_fence,
-                        },
-                        intent,
-                        item,
-                    )
-                    .await
-                else {
-                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                };
-                Dispatch::Depot(reply)
-            } else {
-                Dispatch::Unregistered
+            match routing::depot::route(authority, actor, &admitted, command, &item_view).await {
+                Some(dispatch) => dispatch,
+                None => return ConnectionEnd::AdmittedThenDisconnected(admitted),
             }
         } else if command.command_type
             == oteryn_protocol_oteryn::timed_item::COMMAND_TYPE_TIMED_ITEM_INTENT
         {
-            let Some((payload, deltas)) = super::timed_item_wire::dispatch(
+            match routing::timed_item::route(
                 authority,
                 actor,
-                UseCommand {
-                    game_session_id: admitted.game_session_id,
-                    command_id: command.command_id,
-                    item_fence: admitted.item_fence,
-                },
-                command.payload,
-                item_view.as_mut(),
+                &mut admitted,
+                command,
+                &mut item_view,
             )
             .await
-            else {
-                return ConnectionEnd::AdmittedThenDisconnected(admitted);
-            };
-            if let Some(view) = item_view.as_ref() {
-                admitted.continuity.item_view = view.continuity();
+            {
+                Some(dispatch) => dispatch,
+                None => return ConnectionEnd::AdmittedThenDisconnected(admitted),
             }
-            Dispatch::Timed(payload, deltas)
         } else if command.command_type == COMMAND_TYPE_ITEM_MOVE_INTENT {
-            // ITEM-MOVE-1 (WIRE-0 §5): replay first, then an entry of the open corpse into the
-            // main backpack. An unknown outcome ends the connection before the CommandId is
-            // sequenced, so the resent command is answered by replay.
-            match item_view.as_mut() {
-                Some(view) => {
-                    let selection = ItemMoveSelection {
-                        equip_drop: selected_capabilities.contains(CAPABILITY_ITEM_EQUIP_DROP_V1),
-                        container_tree: selected_capabilities
-                            .contains(CAPABILITY_CONTAINER_TREE_V1),
-                        world_interaction: selected_capabilities
-                            .contains(CAPABILITY_WORLD_INTERACTION_V1),
-                    };
-                    let step = item_move::item_move(
-                        authority,
-                        actor,
-                        UseCommand {
-                            game_session_id: admitted.game_session_id,
-                            command_id: command.command_id,
-                            item_fence: admitted.item_fence,
-                        },
-                        command.payload,
-                        selection,
-                        view,
-                    )
-                    .await;
-                    admitted.continuity.item_view = view.continuity();
-                    match step {
-                        ItemMoveStep::Result(outcome, mut deltas) => {
-                            // ITEM-LOOP-1: the open container views show the committed tree.
-                            if let (ItemMoveOutcome::Moved, Some(views)) =
-                                (outcome, container_views.as_mut())
-                            {
-                                let refreshed = super::container_view::refresh::refresh(
-                                    authority,
-                                    actor,
-                                    admitted.item_fence,
-                                    views,
-                                    view,
-                                )
-                                .await;
-                                admitted.continuity.item_view = view.continuity();
-                                let Ok(delta) = refreshed else {
-                                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                                };
-                                deltas.extend(delta);
-                            }
-                            Dispatch::ItemMove(outcome, deltas)
-                        }
-                        ItemMoveStep::Disconnect => {
-                            return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                        }
-                    }
-                }
-                None => Dispatch::Unregistered,
+            match routing::item_move::route(
+                authority,
+                actor,
+                &mut admitted,
+                command,
+                &mut item_view,
+                &mut container_views,
+                selected_capabilities,
+            )
+            .await
+            {
+                Some(dispatch) => dispatch,
+                None => return ConnectionEnd::AdmittedThenDisconnected(admitted),
             }
         } else if command.command_type == COMMAND_TYPE_ITEM_LOOK_INTENT {
-            let selection = ItemLookSelection {
-                extended: selected_capabilities.contains(CAPABILITY_ITEM_LOOK_V1),
-            };
-            if !admitted.continuity.look.admit(tokio::time::Instant::now()) {
-                Dispatch::Look(
-                    ItemLookResult::Refused(ItemLookRefusal::RateLimited),
-                    selection,
-                )
-            } else {
-                match decode_item_look_intent_for(command.payload, selection) {
-                    Err(_) => Dispatch::Unregistered,
-                    Ok(intent) => Dispatch::Look(
-                        match intent.target {
-                            ItemLookTarget::Creature(entity) => {
-                                match known_creature_generation(entity) {
-                                    Err(refusal) => ItemLookResult::Refused(refusal),
-                                    Ok(_)
-                                        if !visibility
-                                            .as_ref()
-                                            .is_some_and(|view| view.shows(entity)) =>
-                                    {
-                                        ItemLookResult::Refused(ItemLookRefusal::NotVisible)
-                                    }
-                                    Ok(_) => {
-                                        authority
-                                            .look_creature(actor, admitted.game_session_id, entity)
-                                            .await
-                                    }
-                                }
-                            }
-                            ItemLookTarget::Item(handle) => match item_view.as_ref() {
-                                None => ItemLookResult::Refused(ItemLookRefusal::NotAvailable),
-                                Some(views) if views.resolve(handle).is_none() => {
-                                    ItemLookResult::Refused(ItemLookRefusal::NotAvailable)
-                                }
-                                Some(views) => {
-                                    authority
-                                        .look_item(
-                                            actor,
-                                            admitted.game_session_id,
-                                            admitted.item_fence,
-                                            views,
-                                            handle,
-                                        )
-                                        .await
-                                }
-                            },
-                        },
-                        selection,
-                    ),
-                }
-            }
+            routing::item_look::route(
+                authority,
+                actor,
+                &mut admitted,
+                command,
+                selected_capabilities,
+                &visibility,
+                &item_view,
+            )
+            .await
         } else if super::house_move_out::owns(command.command_type) {
-            match authority
-                .house_move_out_command(
-                    admitted,
-                    command.command_id,
-                    command.command_type,
-                    command.payload,
-                )
-                .await
-            {
-                super::house_move_out::HouseMoveOutReply::Payload(bytes) => {
-                    Dispatch::HouseMoveOut(bytes)
-                }
-                super::house_move_out::HouseMoveOutReply::Rejected => Dispatch::Unregistered,
-                super::house_move_out::HouseMoveOutReply::Unavailable => {
-                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                }
+            match routing::house_move_out::route(authority, &admitted, command).await {
+                Some(dispatch) => dispatch,
+                None => return ConnectionEnd::AdmittedThenDisconnected(admitted),
             }
         } else if matches!(command.command_type, 72 | 73) {
-            match authority
-                .cyclopedia_command(
-                    admitted,
-                    command.command_id,
-                    command.command_type,
-                    command.payload,
-                )
-                .await
-            {
-                super::guild_intent::GuildReply::Payload(bytes) => Dispatch::Guild(bytes),
-                super::guild_intent::GuildReply::Rejected => Dispatch::Unregistered,
-                super::guild_intent::GuildReply::Unavailable => {
-                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                }
+            match routing::cyclopedia::route(authority, &admitted, command).await {
+                Some(dispatch) => dispatch,
+                None => return ConnectionEnd::AdmittedThenDisconnected(admitted),
             }
         } else if super::guild_intent::owns(command.command_type) {
-            match authority
-                .guild_command(
-                    admitted,
-                    command.command_id,
-                    command.command_type,
-                    command.payload,
-                )
-                .await
-            {
-                super::guild_intent::GuildReply::Payload(bytes) => Dispatch::Guild(bytes),
-                super::guild_intent::GuildReply::Rejected => Dispatch::Unregistered,
-                super::guild_intent::GuildReply::Unavailable => {
-                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                }
+            match routing::guild::route(authority, &admitted, command).await {
+                Some(dispatch) => dispatch,
+                None => return ConnectionEnd::AdmittedThenDisconnected(admitted),
             }
         } else if matches!(
             command.command_type,
             oteryn_protocol_oteryn::staff::COMMAND_TYPE_STAFF_REQUEST
                 | oteryn_protocol_oteryn::staff::COMMAND_TYPE_STAFF_RECEIPT
         ) {
-            match super::staff::dispatch(authority, admitted, command.command_type, command.payload)
-                .await
-            {
-                super::StaffReply::Result(bytes) => Dispatch::Staff(Some(bytes)),
-                super::StaffReply::Rejected => Dispatch::Staff(None),
-                super::StaffReply::Unknown => {
-                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                }
+            match routing::staff::route(authority, &admitted, command).await {
+                Some(dispatch) => dispatch,
+                None => return ConnectionEnd::AdmittedThenDisconnected(admitted),
             }
         } else if command.command_type == COMMAND_TYPE_QUEST_LOG_QUERY {
-            // QUEST-LOG-WIRE-1: a read of the session's own quest copy. Over QUESTGATE0-RL-09 (2
-            // per second per GameSession, sliding window) it is REJECTED with an empty payload
-            // before decoding, as is a malformed query, one naming a quest that is not listed,
-            // and any query while the copy is not loaded.
-            let admitted_rate = quest_log.is_some()
-                && admitted
-                    .continuity
-                    .quest_log
-                    .queries
-                    .admit(tokio::time::Instant::now());
-            match (
-                quest_log.as_mut().filter(|_| admitted_rate),
-                decode_quest_log_query(command.payload),
-            ) {
-                (Some(state), Ok(query)) => {
-                    let observation = authority
-                        .observe_quest_log(actor, admitted.game_session_id, None)
-                        .await;
-                    match state.query(&mut admitted.continuity.quest_log, &query, observation) {
-                        Some(Ok(domain)) => Dispatch::QuestLog(domain),
-                        Some(Err(_)) => return ConnectionEnd::AdmittedThenDisconnected(admitted),
-                        None => Dispatch::Unregistered,
-                    }
-                }
-                _ => Dispatch::Unregistered,
+            match routing::quest_log::route(
+                authority,
+                actor,
+                &mut admitted,
+                command,
+                &mut quest_log,
+            )
+            .await
+            {
+                Some(dispatch) => dispatch,
+                None => return ConnectionEnd::AdmittedThenDisconnected(admitted),
             }
         } else if (48..=50).contains(&command.command_type) {
-            Dispatch::Vip(
-                super::vip::dispatch(
-                    authority,
-                    admitted,
-                    command.command_id,
-                    command.command_type,
-                    command.payload,
-                )
-                .await,
-            )
+            routing::vip::route(authority, &admitted, command).await
         } else if matches!(
             command.command_type,
             oteryn_protocol_oteryn::party::COMMAND_TYPE_PARTY_INTENT
                 | oteryn_protocol_oteryn::party::COMMAND_TYPE_PARTY_QUERY
         ) {
-            match authority
-                .party_command(
-                    admitted,
-                    command.command_id,
-                    command.command_type,
-                    command.payload,
-                    &mut party_view,
-                )
-                .await
-            {
-                Some(payload) => Dispatch::Party(payload),
-                None => Dispatch::Unregistered,
-            }
+            routing::party::route(authority, &admitted, command, &mut party_view).await
         } else if command.command_type == COMMAND_TYPE_CHAT_INTENT {
-            // CHAT-WIRE-1: spam control is the speaker's limiter inside the authority; a
-            // malformed intent is REJECTED with an empty payload like any unregistered command.
-            match super::guild_chat::wire::dispatch(
+            routing::chat::route(authority, actor, &admitted, command).await
+        } else if command.command_type == COMMAND_TYPE_NPC_TALK_INTENT {
+            match routing::npc::route(
                 authority,
-                admitted,
                 actor,
-                command.command_id,
-                command.payload,
+                &admitted,
+                command,
+                &mut buffered,
+                &mut npc_relocation,
             )
             .await
             {
-                Some(result) => Dispatch::Chat(result),
-                None => Dispatch::Unregistered,
+                Some(dispatch) => dispatch,
+                None => return ConnectionEnd::AdmittedThenDisconnected(admitted),
             }
-        } else if command.command_type == COMMAND_TYPE_NPC_TALK_INTENT {
-            // NPC-CMD-1a: a malformed intent is REJECTED, but it still spends the session's
-            // NPC0-RL-04 allowance: it reaches the limiter as an intent with no text.
-            let intent = decode_npc_talk_intent(command.payload).unwrap_or(NpcTalkIntent {
-                npc_actor: WireEntityRef {
-                    identity: Default::default(),
-                    generation: 0,
-                },
-                text: String::new(),
-            });
-            let before_npc = authority.observe(actor).await;
-            let outcome = authority
-                .npc_talk(
-                    actor,
-                    UseCommand {
-                        game_session_id: admitted.game_session_id,
-                        command_id: command.command_id,
-                        item_fence: admitted.item_fence,
-                    },
-                    intent,
-                )
-                .await;
-            if outcome.unknown {
-                return ConnectionEnd::AdmittedThenDisconnected(admitted);
-            }
-            npc_relocation = newhaven_travel_transport::retire_buffer(
+        } else if command.command_type == COMMAND_TYPE_NPC_TRADE_INTENT {
+            match routing::npc_trade::route(
                 authority,
                 actor,
-                before_npc,
-                &mut buffered,
+                &mut admitted,
+                command,
+                &mut item_view,
             )
-            .await;
-            Dispatch::Npc(
-                outcome.disposition,
-                NpcUpdate {
-                    conversation: outcome.conversation,
-                    window: outcome.window,
-                },
-                outcome.inventory_changed,
-            )
-        } else if command.command_type == COMMAND_TYPE_NPC_TRADE_INTENT {
-            // NPC-TRADE-2: a malformed intent is REJECTED. A committed trade answers OK and the
-            // inventory delta (domain 9) follows when the session shows items; an unknown outcome
-            // ends the connection before the CommandId is sequenced, so the resend replays.
-            let step = match decode_npc_trade_intent(command.payload) {
-                Ok(intent) => {
-                    authority
-                        .npc_trade(
-                            actor,
-                            UseCommand {
-                                game_session_id: admitted.game_session_id,
-                                command_id: command.command_id,
-                                item_fence: admitted.item_fence,
-                            },
-                            intent,
-                        )
-                        .await
-                }
-                Err(_) => NpcTradeStep::Refused(super::npc_command::NpcTradeRefusal::only(
-                    NpcIntentDisposition::Rejected,
-                )),
-            };
-            match step {
-                NpcTradeStep::Traded => {
-                    let mut deltas = Vec::new();
-                    if let Some(view) = item_view.as_mut() {
-                        let Some(inventory) = item_move::observe_inventory(
-                            authority,
-                            actor,
-                            admitted.game_session_id,
-                            view,
-                        )
-                        .await
-                        else {
-                            return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                        };
-                        let Ok(delta) = view.inventory_committed(inventory) else {
-                            return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                        };
-                        admitted.continuity.item_view = view.continuity();
-                        deltas.extend(delta);
-                    }
-                    Dispatch::NpcTrade(NpcIntentDisposition::Ok, NpcUpdate::default(), deltas)
-                }
-                NpcTradeStep::Refused(refusal) => {
-                    Dispatch::NpcTrade(refusal.disposition, refusal.update, Vec::new())
-                }
-                NpcTradeStep::Unknown => return ConnectionEnd::AdmittedThenDisconnected(admitted),
+            .await
+            {
+                Some(dispatch) => dispatch,
+                None => return ConnectionEnd::AdmittedThenDisconnected(admitted),
             }
         } else if command.command_type == COMMAND_TYPE_ATTACK_TARGET_INTENT {
-            // ATTACK-1b: over ATTACK0-RL-01 (25 per second per GameSession, sliding window) it is
-            // REJECTED with an empty payload before decoding, as is a malformed intent.
-            let admitted_rate = admitted
-                .continuity
-                .combat
-                .target_intents
-                .admit(tokio::time::Instant::now());
-            match decode_attack_target_intent(command.payload) {
-                Ok(target) if admitted_rate => Dispatch::Attack(
-                    authority
-                        .attack_target(actor, admitted.game_session_id, command.command_id, target)
-                        .await,
-                ),
-                _ => Dispatch::Unregistered,
-            }
+            routing::combat_intent::route(authority, actor, &mut admitted, command).await
         } else if command.command_type == COMMAND_TYPE_FIGHT_MODES_INTENT {
-            // ATTACK-1b: ATTACK0-RL-02, as command 11.
-            let admitted_rate = admitted
-                .continuity
-                .combat
-                .mode_intents
-                .admit(tokio::time::Instant::now());
-            match decode_fight_modes_intent(command.payload) {
-                Ok(modes) if admitted_rate => Dispatch::Attack(
-                    authority
-                        .fight_modes(actor, admitted.game_session_id, modes)
-                        .await,
-                ),
-                _ => Dispatch::Unregistered,
-            }
+            routing::combat_intent::route_modes(authority, actor, &mut admitted, command).await
         } else if command.command_type == COMMAND_TYPE_LOGOUT_INTENT {
             // LOGOUT-WIRE-1 (§1.6): a non-empty intent is REJECTED with an empty payload before
             // any authority call. While the logout runs, frames are read and held, in order, for
@@ -3749,103 +3218,32 @@ where
                 }
             }
         } else if command.command_type == COMMAND_TYPE_ACCOUNT_ACHIEVEMENTS_QUERY {
-            match (
-                decode_account_achievements_query(command.payload),
-                admitted.controller,
-            ) {
-                (Ok(query), Some(controller)) => Dispatch::Achievements(
-                    authority
-                        .account_achievements(AccountAchievementsRequest {
-                            account_id: controller.account_id,
-                            page: query.page,
-                            game_session_id: *admitted.game_session_id.as_bytes(),
-                            command_id: command.command_id,
-                        })
-                        .await,
-                ),
-                _ => Dispatch::Achievements(AccountAchievementsReply::Rejected),
-            }
+            routing::achievements::route(authority, &admitted, command).await
         } else if command.command_type
             == oteryn_protocol_oteryn::appearance::COMMAND_TYPE_APPEARANCE_CHANGE
         {
-            Dispatch::Appearance(
-                appearance_change::dispatch(
-                    authority,
-                    actor,
-                    UseCommand {
-                        game_session_id: admitted.game_session_id,
-                        command_id: command.command_id,
-                        item_fence: admitted.item_fence,
-                    },
-                    command.payload,
-                )
-                .await,
-            )
+            routing::appearance::route(authority, actor, &admitted, command).await
         } else if matches!(
             command.command_type,
             oteryn_protocol_oteryn::house::COMMAND_TYPE_HOUSE_INTENT
                 | oteryn_protocol_oteryn::house::COMMAND_TYPE_HOUSE_QUERY
         ) {
-            Dispatch::House(
-                super::house_intent::dispatch(
-                    authority,
-                    actor,
-                    UseCommand {
-                        game_session_id: admitted.game_session_id,
-                        command_id: command.command_id,
-                        item_fence: admitted.item_fence,
-                    },
-                    command.payload,
-                    command.command_type == oteryn_protocol_oteryn::house::COMMAND_TYPE_HOUSE_QUERY,
-                )
-                .await,
-            )
+            routing::house::route(authority, actor, &admitted, command).await
         } else if matches!(
             command.command_type,
             oteryn_protocol_oteryn::daily_reward::COMMAND_TYPE_DAILY_REWARD_CLAIM
                 | oteryn_protocol_oteryn::daily_reward::COMMAND_TYPE_DAILY_REWARD_QUERY
         ) {
-            Dispatch::DailyReward(
-                super::daily_reward::dispatch(
-                    authority,
-                    actor,
-                    UseCommand {
-                        game_session_id: admitted.game_session_id,
-                        command_id: command.command_id,
-                        item_fence: admitted.item_fence,
-                    },
-                    command.command_type,
-                    command.payload,
-                )
-                .await,
-            )
+            routing::daily_reward::route(authority, actor, &admitted, command).await
         } else if command.command_type
             == oteryn_protocol_oteryn::world_event::COMMAND_TYPE_WORLD_EVENT_QUERY
         {
-            match super::world_event::dispatch(
-                authority,
-                UseCommand {
-                    game_session_id: admitted.game_session_id,
-                    command_id: command.command_id,
-                    item_fence: admitted.item_fence,
-                },
-                command.payload,
-            )
-            .await
-            {
-                Some(reply) => Dispatch::WorldEvent(reply),
+            match routing::world_event::route(authority, &admitted, command).await {
+                Some(dispatch) => dispatch,
                 None => return ConnectionEnd::AdmittedThenDisconnected(admitted),
             }
         } else if command.command_type == COMMAND_TYPE_HIGHSCORES_QUERY_V1 {
-            // HIGHSCORES0 §6: the World and the asking Character are the admitted session's.
-            match decode_highscores_query(command.payload) {
-                Ok(query) => Dispatch::Highscores(
-                    authority
-                        .highscores(admitted.world_id, admitted.game_session_id, query)
-                        .await,
-                ),
-                Err(_) => Dispatch::Highscores(HighscoresReply::Rejected),
-            }
+            routing::highscores::route(authority, &admitted, command).await
         } else {
             Dispatch::Unregistered
         };
