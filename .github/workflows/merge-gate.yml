@@ -628,7 +628,9 @@ jobs:
     name: Merge gate / Rust changed-crate Clippy and unit tests (${{ matrix.leg }})
     needs: [scope, lanes]
     if: needs.lanes.outputs.rust == 'true'
-    runs-on: ubuntu-24.04
+    # OTERYN_SELF_HOSTED_RUST=on uses Molehill; turn it off or delete it when the PC is offline.
+    # Forks and dependabot stay hosted because PR code would run on the owner's machine.
+    runs-on: ${{ (vars.OTERYN_SELF_HOSTED_RUST == 'on' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') && fromJSON('["self-hosted","linux","x64","oteryn-molehill"]') || 'ubuntu-24.04' }}
     timeout-minutes: 45
     permissions:
       contents: read
@@ -666,6 +668,25 @@ jobs:
 
       - name: Install Rust toolchain
         run: rustup toolchain install 1.99.1 --profile minimal --component clippy,rustfmt
+
+      - name: Select persistent self-hosted Cargo target directory
+        if: runner.environment == 'self-hosted'
+        run: |
+          set -euo pipefail
+          if [[ "${OTERYN_CI_TARGET_ROOT:-}" != /* ]]; then
+            echo 'OTERYN_CI_TARGET_ROOT must be set to an absolute path on the self-hosted runner' >&2
+            exit 1
+          fi
+          if [[ ! "${RUNNER_NAME:-}" =~ ^[A-Za-z0-9._-]+$ ]]; then
+            echo 'RUNNER_NAME must be a plain runner name on the self-hosted runner' >&2
+            exit 1
+          fi
+          # One directory per runner: a runner runs one job at a time, so concurrent jobs
+          # (other shards or other PRs) never share artifacts or the JUnit report.
+          export CARGO_TARGET_DIR="$OTERYN_CI_TARGET_ROOT/$RUNNER_NAME/merge-gate"
+          echo "CARGO_TARGET_DIR=$CARGO_TARGET_DIR" >> "$GITHUB_ENV"
+          # Never consume the report of this runner's previous job.
+          rm -f -- "$CARGO_TARGET_DIR/nextest/rust-fast/junit.xml"
 
       - name: Select changed workspace crates
         env:
@@ -820,7 +841,7 @@ jobs:
         run: python -I tools/repository/job_result_key.py select --plan "$RUNNER_TEMP/jr-plan.json" --packages "$RUNNER_TEMP/rust-fast-packages.tsv" --dir "$RUNNER_TEMP/jobresult" --out "$RUNNER_TEMP/rust-fast-run.tsv"
 
       - name: Restore trimmed Cargo cache from protected main
-        if: steps.jr_hit.outputs.hit != 'true'
+        if: runner.environment == 'github-hosted' && steps.jr_hit.outputs.hit != 'true'
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: |
@@ -834,10 +855,11 @@ jobs:
             rust-linux-v2-1.99.1-
 
       # Restore only: the protected-main producer in rust.yml is the only cache writer.
+      # The self-hosted runner keeps a warm target dir instead.
       # Old mtimes on files unchanged since the cached commit let Cargo reuse those units;
       # changed files keep fresh mtimes, so this exact head is still built and tested.
       - name: Normalize source mtimes for the restored Cargo cache
-        if: steps.jr_hit.outputs.hit != 'true'
+        if: runner.environment == 'github-hosted' && steps.jr_hit.outputs.hit != 'true'
         run: python tools/repository/normalize_cargo_mtimes.py
 
       # One invocation over the whole workspace, as in the rust.yml cache producer: Cargo unifies
@@ -914,7 +936,7 @@ jobs:
         run: |
           set -euo pipefail
           if [[ "$KIND" == 'tests' ]]; then
-            junit="target/nextest/rust-fast/junit.xml"
+            junit="${CARGO_TARGET_DIR:-target}/nextest/rust-fast/junit.xml"
             if [[ ! -f "$junit" ]]; then
               printf '<testsuites/>\n' > "$RUNNER_TEMP/empty-junit.xml"
               junit="$RUNNER_TEMP/empty-junit.xml"
