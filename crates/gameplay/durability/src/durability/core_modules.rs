@@ -4,27 +4,27 @@
 // constructs and revalidates reconnect authority; the runtime must submit the
 // resulting request asynchronously and consume its completion as new input.
 
+// Keep sorted by module name; insert in order, never append.
 pub mod account_achievement;
 pub mod account_characters_projection;
 pub mod admission_authority_guards;
 pub mod admission_journal;
 pub mod bank;
 pub mod bank_audit;
-pub mod guild_bank;
-mod guild_bank_audit;
 mod bank_credit_headroom;
 pub mod bestiary_progress;
+pub mod blessing_purchase;
 #[allow(
     dead_code,
     reason = "APP-1 production caller awaits admitted content, sex and grant owners"
 )]
 pub mod character_appearance;
 pub mod character_authority;
-
 pub mod character_build;
 pub mod character_chat_name;
 pub mod character_chat_recipient;
 pub mod character_command;
+pub mod character_cyclopedia;
 pub mod character_death;
 pub mod character_depot;
 pub mod character_equipment;
@@ -40,12 +40,11 @@ pub mod character_progression;
 pub mod character_promotion;
 pub mod character_revision_sequencer;
 pub mod character_stance;
-
+pub mod character_tutorial;
 pub mod character_wheel;
 pub mod charm_state;
 pub mod chat_text;
 pub mod content_activation;
-
 mod db;
 pub mod equipment_policy_abi;
 mod field_capability_port;
@@ -53,19 +52,22 @@ pub mod forge;
 pub mod fresh_admission;
 pub mod fresh_admission_composition;
 pub mod ground_cell_limit;
+pub mod guild;
+pub mod guild_audit;
+pub mod guild_bank;
+mod guild_bank_audit;
 pub mod highscore_snapshot;
 pub mod house_disposition;
 pub mod house_interior;
 pub mod house_interior_audit;
 pub mod house_ownership;
 mod house_ownership_audit;
-pub mod imbuement;
 pub mod house_scope_handoff;
-
-pub mod character_tutorial;
+pub mod house_spell_acl;
+pub mod imbuement;
+pub mod item_craft;
 pub mod item_decay_retire;
 pub mod item_decay_retire_audit;
-pub mod blessing_purchase;
 pub mod item_fee_burn;
 pub mod item_fee_burn_audit;
 pub mod item_loop_move;
@@ -79,14 +81,11 @@ pub mod item_timed_state_audit;
 pub mod item_transfer;
 pub mod item_transfer_audit;
 pub mod item_use;
-pub mod item_craft;
 pub mod item_use_audit;
 #[cfg(any(test, feature = "test-support"))]
 pub mod item_weight_lookup;
 pub mod loop_training;
-pub mod offline_training_state;
 pub mod mail;
-pub mod player_trade;
 pub mod map_item_mint;
 pub mod map_item_mint_audit;
 pub mod market;
@@ -99,17 +98,19 @@ pub mod npc_purchase;
 pub mod npc_trade;
 pub mod npc_trade_audit;
 pub mod npc_travel;
+pub mod offline_training_state;
+pub mod party_pz_fact;
+pub mod player_trade;
 pub mod premium_activation_latch;
 pub mod premium_fence;
 pub mod promotion_purchase;
 pub mod public_projections;
-pub mod pvp_state;
-pub mod pvp_live;
-pub mod party_pz_fact;
 pub mod pvp_death_consequences;
 mod pvp_death_request;
-mod pvp_skull_storage;
 mod pvp_expiry;
+pub mod pvp_live;
+mod pvp_skull_storage;
+pub mod pvp_state;
 pub mod quest_state;
 pub mod recovery_evidence_composition;
 pub mod reward_claim_mint;
@@ -126,17 +127,16 @@ pub mod spell_items_abi;
 pub mod spell_owner_commit;
 pub mod spell_parameter_result;
 pub mod spell_privacy;
+pub mod sqlstate_codes;
+pub mod starter_grant;
 pub mod tutorial_corruptor;
 mod tutorial_death;
 pub mod tutorial_islet_placement;
-
-pub mod sqlstate_codes;
-pub mod starter_grant;
-
 pub mod world_event;
-pub mod world_reset;
 pub mod world_house_instance;
 pub mod world_party;
+pub mod world_reset;
+// End sorted module declarations.
 
 pub use admission_journal::AdmissionReconnectJournal;
 pub use db::{DB_PASS_DEADLINE, DurabilityRoot, DurabilityRootConfig};
@@ -1568,10 +1568,3 @@ mod terminal_replacement_schema_red_tests;
 #[allow(clippy::expect_used, clippy::too_many_arguments)]
 #[path = "core_modules_terminal_replacement_foundation_red_tests.rs"]
 mod terminal_replacement_foundation_red_tests;
-
-pub mod house_spell_acl;
-
-pub mod guild;
-pub mod guild_audit;
-
-pub mod character_cyclopedia;
