@@ -391,35 +391,8 @@ pub const MAX_SNAPSHOT_CHUNKS: u32 = 256;
 pub const MAX_SNAPSHOT_CHUNK_BYTES: usize = 524_288;
 pub const MAX_SNAPSHOT_ASSEMBLED_BYTES: u64 = 16_777_216;
 
-// The optional capabilities PROTOCOL_OTERYN_V1_REGISTRY.json registers: 1 BESTIARY_CHARMS_V1
-// (CHARM-5, not offered before CHARM-6), 4 ITEM_VIEW_MOVE_V1 (ITEM-VIEW-1a, not offered before
-// ITEM-MOVE-1), 6 WORLD_SPATIAL_ENTITIES (VIS-2, not offered before the
-// server composes it), 7 CHAT_V1 (CHAT-1, not offered before CHAT-1b-2 composes it), 8
-// ACHIEVEMENT_NOTICES_V1 (ACH-NOTIFY-1, not offered before capability negotiation is composed) and
-// 10 ANALYSER_V1 (ANALYSER-WIRE-1, not offered before ANALYSER-EMIT-1) and 12 ITEM_EQUIP_DROP_V1
-// (ITEM-EQUIP-WIRE-1, not offered before ITEM-MOVE-2a) and 14 CONTAINER_TREE_V1 (BAGS-WIRE-1, not
-// offered before BAGS-1) and 15 ITEM_USE_V1 (ITEM-USE-WIRE-1, not offered before ITEM-USE-1) and
-// 16 QUEST_LOG_V1 (QUEST-LOG-WIRE-1, not offered before the quest log
-// content and the production session copy are composed) and 17 ATTACK_V1 (ATTACK-WIRE-1, not
-// offered before ATTACK-1b) and 3 NPC_SERVICE_V1 (NPC-WIRE-1, not offered before NPC-TALK-1) and
-// 22 RUNE_USE_V1 (RUNE-WIRE-1, not offered before RUNE-CAST-1) and 23 PRESENTATION_V1
-// (PRESENT-WIRE-1, not offered before SPELL-PRESENT-1 or COMBAT-PRESENT-1). Registered is not
-// offered. 13 PACED_MOVEMENT_V1 (SPEED-1) is offered: it adds the step result TOO_EARLY. 21
-// LOGOUT_V1 (LOGOUT-WIRE-1) is offered with its command handler.
-// 26 WORLD_WEATHER_V1 (WEATHER-1, D1137) is offered (D1027 signed off) on a connection whose
-// authority exposes the shipped weather source; it requires 6.
-// 28 ITEM_LOOK_V1 (CP D1240/D1240a) is registered, not offered; no additional
-// capability requirement was assigned. 9 HIGHSCORES_V1 (HS-WIRE-1, RANK-1) is offered with its
-// command type 14 handler. CP D1442 registers 29 MAP_STATE_V1 (never offered: D1083 serves the
-// map as 18) and 30 WORLD_SPATIAL_FIELDS (FIELD-WIRE-1, not offered before the field payloads are
-// composed); both require 6. TUTORIAL-1 adds capability 31. DAILY-1 registers CP-allocated
-// capability 32. Capability 33 is dormant SPECTATE_V1 (SPECTATE-1b). GUILD-CHAT-1 registers
-// capability 36 CHAT_GUILD_ROOM_V1, which requires 7. Capability 37 DEPOT_V1 owns command 36. HOUSE-WIRE-1 adds owner-allocated 49.
-// Keep this sorted when a later owning gate allocates an additive capability ID.
-const REGISTERED_CAPABILITY_IDS_V1: &[u32] = &[
-    1, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 25, 26, 28, 29, 30,
-    31, 32, 33, 36, 37, 40, 43, 49, 57,
-];
+mod registered_capabilities;
+use registered_capabilities::{CAPABILITY_REQUIREMENTS_V1, REGISTERED_CAPABILITY_IDS_V1};
 
 fn decode_uuid_v7(input: &[u8]) -> Result<[u8; 16], FoundationProtocolError> {
     let value: [u8; 16] = input
@@ -712,57 +685,6 @@ fn validate_acceptance_value(
     }
     validate_capability_closure(capabilities)
 }
-
-/// A selected capability whose requirement is not selected with it (ITEM-MOVE-WIRE-0 §4: 4
-/// requires 6; ITEM-EQUIP-DROP: 12 requires 4; BAGS-0 §5: 14 requires 4 and 12; ITEM-USE-0 §3:
-/// 15 requires 4; ATTACK-WIRE-1: 17 requires 6; LOOP-CLOCK-1: 19 requires 6; PRESENT-WIRE-1: 23 requires 6; WORLDINT-WIRE-1: 11 requires 15 and 18; RUNE-WIRE-1: 22 requires 15) is an invalid set, refused on encode and decode of both `ServerAccepted` and `ServerResumeAccepted`.
-const CAPABILITY_REQUIREMENTS_V1: &[(u32, &[u32])] = &[
-    (
-        item_view::CAPABILITY_ITEM_VIEW_MOVE_V1,
-        item_view::CAPABILITY_ITEM_VIEW_MOVE_V1_REQUIRES,
-    ),
-    (
-        item_view::CAPABILITY_ITEM_EQUIP_DROP_V1,
-        item_view::CAPABILITY_ITEM_EQUIP_DROP_V1_REQUIRES,
-    ),
-    (
-        container_tree::CAPABILITY_CONTAINER_TREE_V1,
-        container_tree::CAPABILITY_CONTAINER_TREE_V1_REQUIRES,
-    ),
-    (
-        world_object::CAPABILITY_ITEM_USE_V1,
-        world_object::CAPABILITY_ITEM_USE_V1_REQUIRES,
-    ),
-    (
-        attack::CAPABILITY_ATTACK_V1,
-        &attack::CAPABILITY_ATTACK_V1_REQUIRES,
-    ),
-    (
-        world_clock::CAPABILITY_WORLD_LIGHT_V1,
-        &world_clock::CAPABILITY_WORLD_LIGHT_V1_REQUIRES,
-    ),
-    (
-        world_interaction::CAPABILITY_WORLD_INTERACTION_V1,
-        &world_interaction::CAPABILITY_WORLD_INTERACTION_V1_REQUIRES,
-    ),
-    (
-        world_object::CAPABILITY_RUNE_USE_V1,
-        world_object::CAPABILITY_RUNE_USE_V1_REQUIRES,
-    ),
-    (
-        presentation::CAPABILITY_PRESENTATION_V1,
-        &presentation::CAPABILITY_PRESENTATION_V1_REQUIRES,
-    ),
-    (
-        world_weather::CAPABILITY_WORLD_WEATHER_V1,
-        &world_weather::CAPABILITY_WORLD_WEATHER_V1_REQUIRES,
-    ),
-    // CP D1240/D1240a assigns no additional requirements for ITEM_LOOK_V1.
-    (28, &[]),
-    // CP D1442: MAP_STATE_V1 and WORLD_SPATIAL_FIELDS each require 6 WORLD_SPATIAL_ENTITIES.
-    (29, &[6]),
-    (30, &[6]),
-];
 
 fn validate_capability_closure(selected: &[u32]) -> Result<(), FoundationProtocolError> {
     let missing = CAPABILITY_REQUIREMENTS_V1
@@ -2633,6 +2555,9 @@ pub mod world_weather;
 
 #[cfg(test)]
 mod tests {
+    #[path = "capability_selection_tests.rs"]
+    mod capability_selection_tests;
+
     use super::*;
 
     #[test]
@@ -2730,111 +2655,6 @@ mod tests {
         let post_admission_error =
             encode_protocol_error(FoundationProtocolError::MalformedEnvelope, 7)?;
         decode_wire_envelope(&post_admission_error)?.validate(Direction::ServerToClient, true)?;
-        Ok(())
-    }
-
-    /// #1703 P2 4175400422 and #1711 P2: a selected set naming 4 without 6, or 12 without 4, is
-    /// refused by the encoder and by ingress decode of both acceptance messages (ITEM-USE-WIRE-1:
-    /// and 15 without 4).
-    #[test]
-    fn acceptance_refuses_a_selected_capability_without_its_requirement()
-    -> Result<(), FoundationProtocolError> {
-        let (session, world, channel) = (test_uuid_v7(1), test_uuid_v7(2), test_uuid_v7(3));
-        let accepted = ServerAcceptedValue {
-            game_session_id: GameSessionId::decode(&session)?,
-            world_id: WorldId::decode(&world)?,
-            channel_id: ChannelId::decode(&channel)?,
-            connection_generation: 1,
-            current_server_sequence: 0,
-            next_command_id: 1,
-            schema_revision: 1,
-            selected_capabilities: &[],
-        };
-        let resumed = ServerResumeAcceptedValue {
-            game_session_id: accepted.game_session_id,
-            connection_generation: 2,
-            current_server_sequence: 0,
-            next_command_id: 1,
-            schema_revision: 1,
-            selected_capabilities: &[],
-        };
-        for (selected, valid) in [
-            (&[4_u32][..], false),
-            (&[4, 12][..], false),
-            (&[6, 12][..], false),
-            (&[12][..], false),
-            (&[4, 6][..], true),
-            (&[4, 6, 12][..], true),
-            (&[14][..], false),
-            (&[4, 6, 14][..], false),
-            (&[6, 12, 14][..], false),
-            (&[4, 6, 12, 14][..], true),
-            (&[15][..], false),
-            (&[6, 15][..], false),
-            (&[4, 6, 15][..], true),
-            (&[17][..], false),
-            (&[4, 17][..], false),
-            (&[6, 17][..], true),
-            (&[4, 6, 17][..], true),
-            (&[19][..], false),
-            (&[4, 19][..], false),
-            (&[6, 19][..], true),
-            (&[4, 6, 19][..], true),
-            (&[11][..], false),
-            (&[4, 6, 11, 15][..], false),
-            (&[4, 6, 11, 15, 18][..], true),
-            (&[22][..], false),
-            (&[4, 6, 22][..], false),
-            (&[4, 6, 15, 22][..], true),
-        ] {
-            let expected = |result: Result<(), FoundationProtocolError>| match valid {
-                true => assert!(result.is_ok(), "{selected:?}"),
-                false => assert_eq!(
-                    result,
-                    Err(FoundationProtocolError::InvalidCapabilitySet),
-                    "{selected:?}"
-                ),
-            };
-            expected(
-                encode_server_accepted(&ServerAcceptedValue {
-                    selected_capabilities: selected,
-                    ..accepted
-                })
-                .map(drop),
-            );
-            expected(
-                encode_server_resume_accepted(&ServerResumeAcceptedValue {
-                    selected_capabilities: selected,
-                    ..resumed
-                })
-                .map(drop),
-            );
-            let wide: Vec<usize> = selected.iter().map(|&c| c as usize).collect();
-            expected(
-                decode_wire_envelope(&test_envelope(
-                    2,
-                    &test_server_accepted_payload(1, 1, 1, [&session, &world, &channel], &wide),
-                ))
-                .map(drop),
-            );
-            expected(
-                decode_wire_envelope(&test_envelope(
-                    4,
-                    &test_server_resume_accepted_payload(2, 1, 1, &session, &wide),
-                ))
-                .map(drop),
-            );
-            expected(
-                decode_server_accepted(&test_server_accepted_payload(
-                    1,
-                    1,
-                    1,
-                    [&session, &world, &channel],
-                    &wide,
-                ))
-                .map(drop),
-            );
-        }
         Ok(())
     }
 
@@ -3109,25 +2929,6 @@ mod tests {
             decode_snapshot_chunk(explicit_zero),
             Err(FoundationProtocolError::MalformedEnvelope)
         );
-    }
-
-    #[test]
-    fn seam_typed_bootstrap_borrows_validated_material() -> Result<(), FoundationProtocolError> {
-        let id = test_uuid_v7(1);
-        let wire = test_envelope(1, &test_client_bootstrap_payload(1, 1, 2, &id, &[7, 9]));
-        let envelope = decode_wire_envelope(&wire)?;
-        let view = envelope.client_bootstrap()?;
-        assert_eq!(view.protocol_major, 1);
-        assert_eq!(view.transport_profile, 1);
-        assert_eq!(view.schema_revision, 2);
-        assert_eq!(view.character_id.as_bytes(), &id);
-        assert_eq!(view.admission_material, &[0xaa]);
-        assert_eq!(view.client_build_id, "test-client");
-        assert_eq!(view.supported_capabilities, &[7, 9]);
-        let start = wire.as_ptr() as usize;
-        assert!((start..start + wire.len()).contains(&(view.admission_material.as_ptr() as usize)));
-        assert!(envelope.client_resume().is_err());
-        Ok(())
     }
 
     #[test]
@@ -3463,75 +3264,6 @@ mod tests {
                 Err(FoundationProtocolError::MalformedEnvelope)
             );
         }
-    }
-
-    #[test]
-    fn selected_capabilities_are_registry_closed_but_supported_unknowns_are_additive() {
-        let session = test_uuid_v7(1);
-        let world = test_uuid_v7(2);
-        let channel = test_uuid_v7(3);
-        assert!(
-            decode_wire_envelope(&test_envelope(
-                1,
-                &test_client_bootstrap_payload(1, 1, 1, &session, &[777])
-            ))
-            .is_ok()
-        );
-        assert!(
-            decode_wire_envelope(&test_envelope(
-                3,
-                &test_client_resume_payload(1, 1, 1, &session, &[777])
-            ))
-            .is_ok()
-        );
-        // 1 BESTIARY_CHARMS_V1, 4 ITEM_VIEW_MOVE_V1, 6 WORLD_SPATIAL_ENTITIES, 7 CHAT_V1, 8
-        // ACHIEVEMENT_NOTICES_V1 and 10 ANALYSER_V1 are registered; 2 is reserved for PROF-WIRE-1
-        // and 1000 is unallocated: a selected capability this build does not know fails.
-        for selected in [
-            &[6_usize][..],
-            &[1, 6][..],
-            &[4, 6][..],
-            &[7][..],
-            &[8][..],
-            &[10][..],
-            &[1, 4, 6, 7, 8, 10][..],
-        ] {
-            assert!(
-                decode_wire_envelope(&test_envelope(
-                    2,
-                    &test_server_accepted_payload(1, 1, 1, [&session, &world, &channel], selected)
-                ))
-                .is_ok()
-            );
-        }
-        assert_eq!(
-            decode_wire_envelope(&test_envelope(
-                2,
-                &test_server_accepted_payload(1, 1, 1, [&session, &world, &channel], &[1000])
-            )),
-            Err(FoundationProtocolError::CapabilityMismatch)
-        );
-        assert!(
-            decode_wire_envelope(&test_envelope(
-                2,
-                &test_server_accepted_payload(1, 1, 1, [&session, &world, &channel], &[1])
-            ))
-            .is_ok()
-        );
-        assert_eq!(
-            decode_wire_envelope(&test_envelope(
-                2,
-                &test_server_accepted_payload(1, 1, 1, [&session, &world, &channel], &[2])
-            )),
-            Err(FoundationProtocolError::CapabilityMismatch)
-        );
-        assert_eq!(
-            decode_wire_envelope(&test_envelope(
-                4,
-                &test_server_resume_accepted_payload(2, 1, 1, &session, &[2])
-            )),
-            Err(FoundationProtocolError::CapabilityMismatch)
-        );
     }
 
     #[test]

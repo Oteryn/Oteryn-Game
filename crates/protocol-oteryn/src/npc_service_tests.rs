@@ -688,7 +688,10 @@ fn the_registries_bind_the_npc_service_constants() {
     );
     assert_eq!(
         capability["command_types"],
-        serde_json::json!([COMMAND_TYPE_NPC_TALK_INTENT, COMMAND_TYPE_NPC_TRADE_INTENT])
+        serde_json::json!([
+            COMMAND_TYPE_NPC_TALK_INTENT,  // NPC_TALK_INTENT
+            COMMAND_TYPE_NPC_TRADE_INTENT, // NPC_TRADE_INTENT
+        ])
     );
     assert_eq!(
         capability["state_domains"],
