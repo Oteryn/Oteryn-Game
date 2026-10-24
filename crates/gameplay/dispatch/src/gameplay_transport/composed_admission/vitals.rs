@@ -54,6 +54,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .respawn_after_death(actor, game_session_id, death)
                 .await;
         }
+        self.refresh_level_up_vitals(actor, game_session_id).await;
         if self
             .active_generation
             .and_then(|active| active.native_gameplay())
