@@ -256,6 +256,8 @@ fn accessor_arms(function: &syn::ImplItemFn) -> Option<Vec<(String, Room)>> {
         return None;
     }
     let mut arms = Vec::new();
+    // syn 3 carries a match guard as `Pat::Guard`, so the literal and wildcard
+    // pattern checks also reject guarded arms.
     for arm in keys {
         let syn::Pat::Lit(syn::ExprLit {
             lit: syn::Lit::Str(key),
@@ -264,12 +266,12 @@ fn accessor_arms(function: &syn::ImplItemFn) -> Option<Vec<(String, Room)>> {
         else {
             return None;
         };
-        if !attrs.is_empty() || !arm.attrs.is_empty() || arm.guard.is_some() {
+        if !attrs.is_empty() || !arm.attrs.is_empty() {
             return None;
         }
         arms.push((key.value(), field_room(&arm.body)?));
     }
-    if !default.attrs.is_empty() || default.guard.is_some() {
+    if !default.attrs.is_empty() {
         return None;
     }
     arms.push(("_".to_owned(), field_room(&default.body)?));
