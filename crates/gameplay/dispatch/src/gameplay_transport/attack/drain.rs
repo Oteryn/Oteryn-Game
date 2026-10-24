@@ -6,7 +6,7 @@ use crate::ability::exact_actor_resolution::{ExactActorProposal, resolve_exact_a
 use crate::combat_attack::{SwingPoll, player_fist_formula, player_melee_formula};
 use crate::gameplay_transport::actor_spell::ChannelSpellStates;
 use crate::gameplay_transport::kill_reward::KillSettlementQueue;
-use crate::spell::cast::CharacterCastFacts;
+use crate::spell::cast::{CharacterCastFacts, SwingSkills};
 use crate::spell::combat_execution::actor_atom;
 use crate::spell::formula::FormulaInputs;
 use oteryn_gameplay_combat_rules::attack::target::Swing;
@@ -17,6 +17,7 @@ use oteryn_gameplay_progression::charm_effects::{
 struct SelectedSwing {
     target: ExactActorRef,
     character_facts: CharacterCastFacts,
+    skills: SwingSkills,
     weapon: WeaponFacts,
     swing: Swing<ExactActorRef, CommandRef>,
     ordinal: u16,
@@ -339,6 +340,18 @@ fn select_swing(
                 .is_ok_and(|age| age <= constants.attack_interval_micros())
     })?;
     let character_facts = player.character_facts();
+    // MELEE-SKILL-1: the swing reads the attacker's live skill of the swung weapon (fist for
+    // fists) and live shielding, before the swing is taken, so an unresolved skill takes none.
+    let attack_index = match weapon.weapon {
+        SwingWeapon::Fists => 0,
+        SwingWeapon::Melee { skill, .. } => skill.index(),
+    };
+    let skills = player
+        .swing_skills(attack_index, now.get())?
+        .unwrap_or(SwingSkills {
+            attack: constants.starting_skill,
+            shielding: constants.starting_skill,
+        });
     let facts = target_facts(runtime, room, entry.actor, entry.session, target, now)?;
     let swing = match entry
         .state
@@ -363,6 +376,7 @@ fn select_swing(
     Some(SelectedSwing {
         target,
         character_facts,
+        skills,
         weapon,
         swing,
         ordinal,
@@ -379,6 +393,7 @@ fn draw_swing_damage(
     let SelectedSwing {
         target,
         character_facts,
+        skills,
         swing,
         ordinal,
         ..
@@ -390,7 +405,7 @@ fn draw_swing_damage(
             constants.fist.attack,
             "formula:player-fist",
         ),
-        SwingWeapon::Melee { attack } => (
+        SwingWeapon::Melee { attack, .. } => (
             player_melee_formula(constants),
             attack,
             "formula:player-melee",
@@ -400,10 +415,10 @@ fn draw_swing_damage(
         level: character_facts.level,
         magic_level: character_facts.magic_level,
         base_power: None,
-        attack_skill: constants.starting_skill,
+        attack_skill: skills.attack,
         attack_value,
         attack_factor: mode.attack_factor,
-        shielding_skill: constants.starting_skill,
+        shielding_skill: skills.shielding,
         shield_defense: None,
     };
     let Ok((minimum, maximum)) = formula.bounds(&inputs) else {

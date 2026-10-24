@@ -1247,6 +1247,7 @@ mod sees_tests {
 mod weapon_tests {
     use super::*;
     use crate::durability::item_mint::TypedDefinitionRef;
+    use oteryn_gameplay_combat_rules::resolution::MeleeSkill;
 
     fn item(slot: u8, tibia_id: u32) -> EquippedItem {
         EquippedItem {
@@ -1292,20 +1293,32 @@ mod weapon_tests {
         assert_eq!(weapon_of(&[]), Some(SwingWeapon::Fists));
         assert_eq!(
             weapon_of(&[(5, 3264)]),
-            Some(SwingWeapon::Melee { attack: 14 })
+            Some(SwingWeapon::Melee {
+                attack: 14,
+                skill: MeleeSkill::Sword
+            })
         );
         assert_eq!(
             weapon_of(&[(6, 3289)]),
-            Some(SwingWeapon::Melee { attack: 10 })
+            Some(SwingWeapon::Melee {
+                attack: 10,
+                skill: MeleeSkill::Club
+            })
         );
         assert_eq!(
             weapon_of(&[(6, 3412), (5, 3264)]),
-            Some(SwingWeapon::Melee { attack: 14 }),
+            Some(SwingWeapon::Melee {
+                attack: 14,
+                skill: MeleeSkill::Sword
+            }),
             "a shield is skipped for the other hand"
         );
         assert_eq!(
             weapon_of(&[(6, 3289), (5, 3264)]),
-            Some(SwingWeapon::Melee { attack: 10 }),
+            Some(SwingWeapon::Melee {
+                attack: 10,
+                skill: MeleeSkill::Club
+            }),
             "the left hand is read first"
         );
         assert_eq!(weapon_of(&[(6, 3412)]), Some(SwingWeapon::Fists));
@@ -1313,7 +1326,10 @@ mod weapon_tests {
         assert_eq!(weapon_of(&[(5, 25760)]), Some(SwingWeapon::Fists));
         assert_eq!(
             weapon_of(&[(6, 3447), (5, 3264)]),
-            Some(SwingWeapon::Melee { attack: 14 }),
+            Some(SwingWeapon::Melee {
+                attack: 14,
+                skill: MeleeSkill::Sword
+            }),
             "ammunition is skipped"
         );
         assert_eq!(
