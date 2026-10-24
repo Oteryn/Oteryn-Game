@@ -10,14 +10,66 @@
 //! (authority, admission, connection handling, durable command-lifecycle bookkeeping) stay in
 //! `oteryn-game-server`; the game server re-exports what it needs from here.
 
-use std::collections::BTreeSet;
+// Keep sorted by module name; insert in order, never append.
+pub mod account_achievements;
+pub mod achievement_notices;
 pub mod actor_condition_snapshot_candidate;
+pub mod actor_spell;
+pub mod actor_spell_item_v2;
+pub mod actor_spell_v2;
+pub mod analyser;
 pub mod appearance;
+pub mod attack;
+pub mod bed;
+pub mod bestiary;
+pub mod capability_tables;
+pub mod charm;
+mod charm_wire;
+pub mod chat;
 pub mod command_replay;
+pub mod container_tree;
 mod contract_registries;
+pub mod cyclopedia;
+pub mod daily_reward;
+pub mod damage_element;
+#[cfg(test)]
+mod decoder_fuzz_support;
 pub mod depot;
+pub mod guild;
+pub mod guild_bank;
+pub mod highscores;
+pub mod house;
+pub mod house_move_out;
+pub mod item_look;
+pub mod item_view;
+pub mod logout;
+pub mod loop_training;
+pub mod npc_service;
 pub mod party;
+pub mod presentation;
+pub mod quest_log;
+mod registered_capabilities;
+pub mod spectate;
+pub mod spell_presentation_candidate;
+pub mod staff;
+#[cfg(test)]
+#[path = "tests/lib_tests.rs"]
+mod tests;
+pub mod timed_item;
+pub mod tutorial_notices;
+pub mod vip;
+pub mod world_clock;
+pub mod world_event;
+pub mod world_interaction;
+pub mod world_map;
+pub mod world_object;
+pub mod world_spatial;
+pub mod world_spatial_entities;
+pub mod world_weather;
+// End sorted module declarations.
+
 pub use contract_registries::{PROTOCOL_OTERYN_V1_REGISTRY_JSON, RESOURCE_LIMITS_REGISTRY_JSON};
+use std::collections::BTreeSet;
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
 
@@ -393,7 +445,6 @@ pub const MAX_SNAPSHOT_CHUNKS: u32 = 256;
 pub const MAX_SNAPSHOT_CHUNK_BYTES: usize = 524_288;
 pub const MAX_SNAPSHOT_ASSEMBLED_BYTES: u64 = 16_777_216;
 
-mod registered_capabilities;
 use registered_capabilities::{CAPABILITY_REQUIREMENTS_V1, REGISTERED_CAPABILITY_IDS_V1};
 
 fn decode_uuid_v7(input: &[u8]) -> Result<[u8; 16], FoundationProtocolError> {
@@ -2519,60 +2570,3 @@ pub fn decode_framed_envelope(
     }
     decode_wire_envelope(body)
 }
-
-pub mod account_achievements;
-pub mod achievement_notices;
-pub mod actor_spell;
-pub mod actor_spell_item_v2;
-pub mod actor_spell_v2;
-pub mod analyser;
-pub mod attack;
-pub mod bed;
-pub mod bestiary;
-pub mod capability_tables;
-pub mod charm;
-mod charm_wire;
-pub mod chat;
-pub mod container_tree;
-pub mod daily_reward;
-pub mod damage_element;
-pub mod guild;
-pub mod guild_bank;
-pub mod highscores;
-pub mod house_move_out;
-pub mod item_look;
-pub mod item_view;
-pub mod logout;
-pub mod npc_service;
-pub mod presentation;
-pub mod quest_log;
-pub mod spell_presentation_candidate;
-pub mod tutorial_notices;
-pub mod vip;
-pub mod world_clock;
-pub mod world_event;
-pub mod world_interaction;
-pub mod world_map;
-pub mod world_object;
-pub mod world_spatial;
-pub mod world_spatial_entities;
-pub mod world_weather;
-
-#[cfg(test)]
-#[path = "tests/lib_tests.rs"]
-mod tests;
-
-pub mod spectate;
-
-#[cfg(test)]
-mod decoder_fuzz_support;
-
-pub mod house;
-
-pub mod staff;
-
-pub mod cyclopedia;
-
-pub mod timed_item;
-
-pub mod loop_training;

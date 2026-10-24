@@ -2,35 +2,66 @@
 
 include!("core_modules.rs");
 
+// Keep sorted by module name; insert in order, never append.
 pub mod bed_regen;
 pub mod bed_sleep;
+pub mod creature_source_items;
 pub mod daily_reward;
 pub mod daily_reward_claim;
 pub mod daily_reward_delivery;
 mod daily_reward_jokers;
-
-pub mod creature_source_items;
+pub mod exercise_training;
+pub mod guild_chat;
+#[cfg(feature = "test-support")]
+pub mod guild_chat_fixture;
+pub mod house_management;
+pub mod hunting_xp;
 pub mod mail_text_policy;
-
 #[allow(dead_code)]
 pub mod native_world_items;
 #[allow(dead_code)]
 pub mod native_world_read;
-
-pub mod guild_chat;
-
-#[cfg(feature = "test-support")]
-pub mod guild_chat_fixture;
-
-pub mod hunting_xp;
 pub mod party_kill_xp;
 pub mod prey;
 pub mod raid_schedule;
-
-pub mod vip;
-
-pub mod house_management;
-
 pub mod staff;
+pub mod vip;
+// End sorted module declarations.
 
-pub mod exercise_training;
+#[cfg(test)]
+#[test]
+fn module_registration_block_is_sorted_and_complete() -> Result<(), &'static str> {
+    let source = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/src/durability/mod.rs"
+    ));
+    let (before, rest) = source
+        .split_once("// Keep sorted by module name; insert in order, never append.\n")
+        .ok_or("module registration block header")?;
+    let (block, after) = rest
+        .split_once("// End sorted module declarations.\n")
+        .ok_or("module registration block footer")?;
+
+    fn module_name(line: &str) -> Option<&str> {
+        let line = line.trim();
+        let declaration = if let Some(rest) = line.strip_prefix("pub(") {
+            rest.split_once(')')?.1.trim_start()
+        } else {
+            line.strip_prefix("pub ").unwrap_or(line)
+        };
+        declaration.strip_prefix("mod ").map(|name| {
+            assert!(name.ends_with(';'), "one module declaration per line");
+            name.trim_end_matches(';')
+        })
+    }
+
+    for line in before.lines().chain(after.lines()) {
+        assert!(module_name(line).is_none(), "module outside block: {line}");
+    }
+    let names: Vec<_> = block.lines().filter_map(module_name).collect();
+    assert!(!names.is_empty(), "module registration block is empty");
+    for pair in names.windows(2) {
+        assert!(pair[0] < pair[1], "modules out of order: {pair:?}");
+    }
+    Ok(())
+}
