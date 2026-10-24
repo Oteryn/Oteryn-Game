@@ -345,3 +345,15 @@ impl TrainingLogout {
         Ok(())
     }
 }
+
+impl super::fresh_admission::TerminalReleaseParticipant for TrainingLogout {
+    fn prepare<'a, 'c>(
+        &'a self,
+        tx: &'a mut Transaction<'c, Postgres>,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), DurabilityError>> + Send + 'a>>
+    where
+        'c: 'a,
+    {
+        Box::pin(TrainingLogout::prepare(self, tx))
+    }
+}

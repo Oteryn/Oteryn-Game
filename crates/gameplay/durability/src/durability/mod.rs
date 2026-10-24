@@ -33,4 +33,3 @@ pub mod house_management;
 
 pub mod exercise_training;
 pub mod loop_training;
-pub mod offline_training_state;

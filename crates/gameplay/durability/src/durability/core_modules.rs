@@ -79,6 +79,8 @@ pub mod item_use_audit;
 #[cfg(any(test, feature = "test-support"))]
 pub mod item_weight_lookup;
 pub mod mail;
+// OFFLINE0 receipt fields read by the core build/authority writers.
+pub mod offline_training_state;
 pub mod player_trade;
 pub mod map_item_mint;
 pub mod map_item_mint_audit;

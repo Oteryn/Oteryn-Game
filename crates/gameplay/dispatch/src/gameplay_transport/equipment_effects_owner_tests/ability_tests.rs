@@ -11,7 +11,10 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     // trays 3464/8198; flour/dough/wheat 3603..=3605; cake 6276/6277;
     // chocolate 8018/8019; garlic 8194/8196/8199. All have speed_bonus=0;
     // the original 432 profiles are unchanged.
-    assert_eq!(profiles.records.len(), 454);
+    // LOOP-TRAIN-1 adds 23 training/exercise weapon profiles
+    // (tools/content-migration/loop_training_profiles.py): 28552..=28557, 35279..=35290,
+    // 44065..=44067, 50294/50295. All have speed_bonus=0; the prior 454 are unchanged.
+    assert_eq!(profiles.records.len(), 477);
     let content = native(&input)?;
     let mut unknown_speed = std::collections::BTreeSet::new();
     for record in profiles.records {

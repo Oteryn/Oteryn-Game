@@ -325,7 +325,18 @@ pub struct FreshAdmissionStore {
     /// own transaction, before `session_state` becomes 3. `None` writes nothing.
     final_position: Option<super::character_last_position::FinalLastPosition>,
     /// OFFLINE0: revalidated in the same physical terminal-release transaction.
-    training_logout: Option<super::loop_training::TrainingLogout>,
+    training_logout: Option<std::sync::Arc<dyn TerminalReleaseParticipant>>,
+}
+
+/// OFFLINE0: a terminal-release participant owned outside the shared core (LOOP-TRAIN-1's
+/// logout marker), revalidated in the same physical transaction before `session_state` is 3.
+pub trait TerminalReleaseParticipant: Send + Sync {
+    fn prepare<'a, 'c>(
+        &'a self,
+        tx: &'a mut sqlx::Transaction<'c, sqlx::Postgres>,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<()>> + Send + 'a>>
+    where
+        'c: 'a;
 }
 impl FreshAdmissionStore {
     /// One ADMIT0 predicate at both deciding owners. The caller holds the admission
@@ -392,9 +403,12 @@ impl FreshAdmissionStore {
 
     /// OFFLINE0 participant: the final build marker commits with the terminal release.
     #[must_use]
-    pub fn with_training_logout(&self, training: super::loop_training::TrainingLogout) -> Self {
+    pub fn with_training_logout(
+        &self,
+        training: impl TerminalReleaseParticipant + 'static,
+    ) -> Self {
         Self {
-            training_logout: Some(training),
+            training_logout: Some(std::sync::Arc::new(training)),
             ..self.clone()
         }
     }
