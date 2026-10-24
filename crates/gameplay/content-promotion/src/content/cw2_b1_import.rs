@@ -46,7 +46,7 @@ pub const CW2_B1_VASE_KEY: &str = "oteryn:item.decor.vase";
 pub const CW2_B1_VASE_REVISION: &str = "definition-r1";
 pub const CW2_B1_NATIVE_ITEM_BATCH_REVISION: &str = "definition-r1";
 pub const CW2_B1_NATIVE_ITEM_BATCH_COUNT: usize = 64;
-pub const CW2_B1_FULL_ITEM_FAMILY_COUNT: usize = 38_157;
+use super::CW2_B1_FULL_ITEM_FAMILY_COUNT;
 pub const CW2_B1_OPAQUE_ITEM_COUNT: usize =
     CW2_B1_FULL_ITEM_FAMILY_COUNT - CW2_B1_NATIVE_ITEM_BATCH_COUNT;
 pub const CW2_B1_FULL_ITEM_REVISION: &str = "definition-r1";

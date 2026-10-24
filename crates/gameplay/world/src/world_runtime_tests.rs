@@ -1,19 +1,21 @@
 #![allow(clippy::items_after_test_module)]
 use super::*;
 use crate::content::{
-    CW2_B1_VASE_KEY, CW2_B1_VASE_REVISION, CanonicalProjectDocuments, ClientProjectionClass,
-    ContentActivationController, ContentLockBinding, ContentLockEntry, CoordinateFrameRef,
-    DefinitionRevisionRef, EvidenceBindingRef, EvidenceDisposition, FootprintCell,
-    LOCAL_OBJECT_RETAG_INTENT_FAMILY, MapRevisionRef, OwnerCapabilityRequirement,
-    PackageManifestBinding, PlacementRef, ProductionAtom, ProjectDraft, ProjectEvidenceLimits,
-    ReferenceDefinition, ReferenceItemDestination, ReferenceItemPhysicalClass,
-    ReferenceItemStackClass, Sha256HexDigest, TypedDefinitionRef, compile_reference_playable,
-    protected_cw2_b1_vase_import, stage_reference_playable,
+    CanonicalProjectDocuments, ClientProjectionClass, ContentActivationController,
+    ContentLockBinding, ContentLockEntry, CoordinateFrameRef, DefinitionRevisionRef,
+    EvidenceBindingRef, EvidenceDisposition, FootprintCell, LOCAL_OBJECT_RETAG_INTENT_FAMILY,
+    MapRevisionRef, OwnerCapabilityRequirement, PackageManifestBinding, PlacementRef,
+    ProductionAtom, ProjectDraft, ProjectEvidenceLimits, ReferenceDefinition,
+    ReferenceItemDestination, ReferenceItemPhysicalClass, ReferenceItemStackClass, Sha256HexDigest,
+    TypedDefinitionRef, compile_reference_playable, stage_reference_playable,
 };
 use crate::foundation::{
     ChannelId, CharacterId, CharacterLease, CommandIdError, FoundationProtocolError,
     FreshAdmissionCommit, FreshAdmissionFacts, GameSessionId, GenerationError,
     MAX_OUTSTANDING_COMMANDS,
+};
+use oteryn_gameplay_content_promotion::content::{
+    CW2_B1_VASE_KEY, CW2_B1_VASE_REVISION, protected_cw2_b1_vase_import,
 };
 
 const OPEN_TRANSITION: &str = "oteryn:reference.transition.local-object-open";

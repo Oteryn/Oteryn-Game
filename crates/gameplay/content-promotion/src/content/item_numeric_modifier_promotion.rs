@@ -4,7 +4,7 @@ use super::{
     ProjectionDocument, ReferenceItemDefinition, ReferenceItemField, ReferenceItemPhysicalClass,
     ReferenceItemSemantics, ReferenceItemSkillModifiers, ReferenceItemStackClass,
     ReferenceModifierBinding, ReferenceModifierParameter, ReferenceSkillModifierKind,
-    reference_playable::validate_item_definition, world_project_sha256,
+    validate_item_definition, world_project_sha256,
 };
 use serde::Deserialize;
 use std::collections::{BTreeMap, BTreeSet};

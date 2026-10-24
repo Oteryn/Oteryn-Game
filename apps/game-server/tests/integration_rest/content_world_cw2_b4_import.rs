@@ -1,6 +1,7 @@
 #![allow(clippy::expect_used, clippy::panic)]
 
 use oteryn_game_server::content::*;
+use oteryn_gameplay_content_promotion::content::*;
 use serde_json::{Value, json};
 
 const B4_EVIDENCE: &[u8] = include_bytes!(

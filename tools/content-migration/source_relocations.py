@@ -24,7 +24,7 @@ RELOCATIONS = {
         "apps/game-server/src/content/item_identity.rs",
         "0df52c391a1d56e5d82be269ddcd480233f923007cfdf35b9a79226bf2868dde",
     ): (
-        "crates/gameplay/content/src/content/item_identity.rs",
+        "crates/gameplay/content-promotion/src/content/item_identity.rs",
         "40c254806d0a55b5c2e938801beb9f0d17430a6825662ac31c89ca83747f3bea",
     ),
     # The same carve: the A12 helper reads the native admission through this ledger.

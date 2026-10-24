@@ -8,22 +8,23 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use oteryn_game_server::content::{
+    CW2_B1_FULL_ITEM_FAMILY_COUNT, CandidateValue, CanonicalProjectDocuments,
+    DefinitionIdentityDocument, ImportBatch, ItemStackDocument, ProjectDraft,
+    ProjectEvidenceLimits, ProjectFilesystemLimits, ProjectReferenceRecord,
+    ProjectV2AuthoringProfile, ProjectV2CandidateField, ProjectV2CandidateValue,
+    ProjectV2Declaration, ProjectV2DefinitionRef, ProjectV2Draft, ProjectV2EditorEntry,
+    ProjectV2EvidenceClass, ProjectV2Family, ProjectV2Identity, ProjectV2ItemAuthoring,
+    ProjectV2ItemForgeProfile, ProjectV2ItemLifecycle, ProjectV2ItemSourceLifecycle,
+    ProjectV2ItemTaxonomy, ProjectV2Source, ProjectV2SourceIdentityBinding,
+    ProjectV2SourceIdentityDisposition, ProjectV2State, ProjectionDocument, ReferenceCells,
+    ReferenceItemField, ReferenceItemImbuement, ReferenceItemPresentation, ReferenceItemSemantics,
+    ReferenceItemStack, ReferenceItemTradeRestrictions, ReferenceItemWeapon,
+    ReferenceRationalPercent, ReferenceSignedPoints, ReferenceWeaponType, ReimportDecision,
+    ReimportFieldState, capture_world_project, item_abilities::apply_equip_abilities_v1,
+};
+use oteryn_gameplay_content_promotion::content::{
     CW2_B1_DONOR_EPOCH2_ALLOCATION_DIGEST_SHA256, CW2_B1_DONOR_EPOCH2_MINTED_COUNT,
-    CW2_B1_DONOR_EPOCH2_REVISION, CW2_B1_FULL_ITEM_FAMILY_COUNT, CW2_B1_FULL_ITEM_REVISION,
-    CandidateValue, CanonicalProjectDocuments, DefinitionIdentityDocument, ImportBatch,
-    ItemStackDocument, ProjectDraft, ProjectEvidenceLimits, ProjectFilesystemLimits,
-    ProjectReferenceRecord, ProjectV2AuthoringProfile, ProjectV2CandidateField,
-    ProjectV2CandidateValue, ProjectV2Declaration, ProjectV2DefinitionRef, ProjectV2Draft,
-    ProjectV2EditorEntry, ProjectV2EvidenceClass, ProjectV2Family, ProjectV2Identity,
-    ProjectV2ItemAuthoring, ProjectV2ItemForgeProfile, ProjectV2ItemLifecycle,
-    ProjectV2ItemSourceLifecycle, ProjectV2ItemTaxonomy, ProjectV2Source,
-    ProjectV2SourceIdentityBinding, ProjectV2SourceIdentityDisposition, ProjectV2State,
-    ProjectionDocument, R7_P04_GOLD_COIN_EVIDENCE_PACKET, ReferenceCells, ReferenceItemField,
-    ReferenceItemImbuement, ReferenceItemPresentation, ReferenceItemSemantics, ReferenceItemStack,
-    ReferenceItemTradeRestrictions, ReferenceItemWeapon, ReferenceRationalPercent,
-    ReferenceSignedPoints, ReferenceWeaponType, ReimportDecision, ReimportFieldState,
-    capture_world_project,
-    item_abilities::apply_equip_abilities_v1,
+    CW2_B1_DONOR_EPOCH2_REVISION, CW2_B1_FULL_ITEM_REVISION, R7_P04_GOLD_COIN_EVIDENCE_PACKET,
     item_admission::{
         apply_item_admission_v1, apply_item_admission_v2, apply_item_admission_v2_cheese,
         apply_item_admission_v3,

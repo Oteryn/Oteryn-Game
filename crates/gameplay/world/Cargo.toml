@@ -35,6 +35,7 @@ sqlx.workspace = true
 tokio = { workspace = true, features = ["signal"] }
 
 [dev-dependencies]
+oteryn-gameplay-content-promotion = { version = "=0.1.0", path = "../content-promotion" }
 oteryn-world-bundle = { version = "=0.1.0", path = "../../world-bundle", features = ["writer"] }
 oteryn-gameplay-content = { version = "=0.1.0", path = "../../gameplay/content", features = ["test-support"] }
 oteryn-gameplay-durability = { version = "=0.1.0", path = "../../gameplay/durability", features = ["test-support"] }
