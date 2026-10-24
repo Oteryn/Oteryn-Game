@@ -82,6 +82,7 @@ pub(super) fn run_scenario() -> TestResult {
         );
         let mut target_admitted = selected(target_deps.admitted)?;
         target_admitted.item_fence = Some(target);
+        let add_command = admitted.continuity.next_command_id;
         let (mut left_server, mut left) = tokio::io::duplex(128 * 1024);
         let (mut right_server, mut right) = tokio::io::duplex(128 * 1024);
         let left_serving = serve_admitted(&mut left_server, admitted, &owner, IDLE_LIVENESS);
@@ -98,8 +99,17 @@ pub(super) fn run_scenario() -> TestResult {
             login(&mut right)
                 .await
                 .map_err(|e| format!("VIP target login: {e}"))?;
-            let (mut a, mut b) = (1, 1);
+            let (mut a, mut b) = (
+                admitted.continuity.next_command_id,
+                target_admitted.continuity.next_command_id,
+            );
             let add = ok(&mut left, &mut a, &named(1, "Alice")).await?;
+            // Retained ingress outcomes replay without interpreting replacement bytes.
+            for name in ["Alice", "Other Name"] {
+                let (status, bytes) = reply(&mut left, add_command, &named(1, name)).await?;
+                assert_eq!(status, CommandStatus::DuplicateReplay);
+                assert_eq!(bytes, add);
+            }
             let entry = number(&add)?;
             assert_eq!(entry, 1);
             let invitation = view(&ok(&mut right, &mut b, &[8, 12]).await?)?;
@@ -288,7 +298,7 @@ pub(super) fn run_scenario() -> TestResult {
         assert_eq!(receipts, 1);
         drop(second_owner);
         drop(second_authority);
-        super::negatives::fences(&owner, admitted, &h.pool).await?;
+        super::negatives::fences(&owner, admitted, add_command, &h.pool).await?;
         let wrong_node = crate::durability::runtime_scope_assignment::NodeIncarnationProof::new(
             h.node.fact(),
             crate::durability::runtime_scope_assignment::BootstrapSecret::from_bytes([0; 32]),
@@ -318,13 +328,13 @@ pub(super) fn run_scenario() -> TestResult {
         tx.commit().await?;
         assert_eq!(
             owner
-                .vip_command(admitted, 1, 48, &named(1, "Alice"))
+                .vip_command(admitted, add_command, 48, &named(1, "Alice"))
                 .await
                 .ok_or("replay")?,
             add
         );
         let conflict = owner
-            .vip_command(admitted, 1, 48, &named(1, "Other Name"))
+            .vip_command(admitted, add_command, 48, &named(1, "Other Name"))
             .await
             .ok_or("binding conflict")?;
         assert_eq!(code(&conflict)?, 10);
@@ -352,13 +362,34 @@ pub(super) fn run_scenario() -> TestResult {
             .await
             .map_err(debug)?;
         let owner = deps.owner(&h, &authority);
-        let mut resumed = admitted;
-        resumed.continuity.next_command_id = next;
+        // A new owner has a fresh SessionCommands directory. Use initial continuity to
+        // exercise the durable journal, not same-GameSession recovery after truth loss.
+        let (mut server, mut client) = tokio::io::duplex(128 * 1024);
+        let serving = serve_admitted(&mut server, admitted, &owner, IDLE_LIVENESS);
+        let driving = async {
+            login(&mut client).await?;
+            let mut a = admitted.continuity.next_command_id;
+            assert_eq!(a, add_command);
+            assert_eq!(
+                command(&mut client, &mut a, &named(1, "Other Name")).await?.0,
+                10
+            );
+            client.shutdown().await?;
+            Ok::<_, Box<dyn std::error::Error>>(())
+        };
+        let (_, outcome) =
+            tokio::time::timeout(Duration::from_secs(30), fixture::join_two(serving, driving))
+                .await?;
+        outcome?;
+        drop(owner);
+        // Discard the conflict's retained rejection before testing reload independently.
+        let owner = deps.owner(&h, &authority);
+        let resumed = admitted;
         let (mut server, mut client) = tokio::io::duplex(128 * 1024);
         let serving = serve_admitted(&mut server, resumed, &owner, IDLE_LIVENESS);
         let driving = async {
             login(&mut client).await?;
-            let mut a = next;
+            let mut a = resumed.continuity.next_command_id;
             let snapshot = view(&ok(&mut client, &mut a, &[8, 12]).await?)?;
             assert_eq!(snapshot["entries"][0]["description"], "trusted friend");
             assert_eq!(snapshot["entries"][0]["icon"], 10);
@@ -367,14 +398,20 @@ pub(super) fn run_scenario() -> TestResult {
             let added = ok(&mut client, &mut a, &named(1, "Alice")).await?;
             assert!(number(&added)? > entry);
             client.shutdown().await?;
-            Ok::<_, Box<dyn std::error::Error>>(())
+            Ok::<_, Box<dyn std::error::Error>>(a)
         };
-        let (_, outcome) =
+        let (ended, outcome) =
             tokio::time::timeout(Duration::from_secs(30), fixture::join_two(serving, driving))
                 .await?;
-        outcome?;
+        let next = outcome?;
+        let crate::gameplay_transport::connection::ConnectionEnd::AdmittedThenDisconnected(
+            mut old,
+        ) = ended else {
+            return Err(format!("VIP reload connection ended {ended:?}").into());
+        };
+        assert_eq!(old.continuity.next_command_id, next);
+        assert!(old.continuity.server_sequence > resumed.continuity.server_sequence);
         // Capability-negative wire: command gate returns the common empty rejection.
-        let mut old = admitted;
         old.continuity.selected_capabilities =
             SelectedCapabilities::select(BUNDLE_WORLD_OFFERED_CAPABILITIES, &[])
                 .ok_or("old selection")?;
@@ -385,7 +422,7 @@ pub(super) fn run_scenario() -> TestResult {
             let frame = encode_client_command(
                 1,
                 &ClientCommandValue {
-                    command_id: 1,
+                    command_id: old.continuity.next_command_id,
                     command_type: 50,
                     payload: &[8, 12],
                 },

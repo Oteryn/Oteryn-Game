@@ -96,6 +96,7 @@ pub use connection::quest_log;
 mod resume;
 mod rune_use_bridge;
 mod seam_rooms;
+pub mod session_ingress;
 pub use seam_rooms::SeamRooms;
 mod promotion_death;
 mod promotion_login;
@@ -2580,6 +2581,9 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .await
     }
 
+    fn session_commands(&self) -> Option<&session_ingress::SessionCommands> {
+        Some(&self.states.command_ingress)
+    }
     appearance_change::composed_methods!();
     guild_intent::composed_methods!();
     house_intent::composed_methods!();
@@ -3866,6 +3870,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             continuity: SessionContinuity::FRESH,
             item_fence,
         };
+        self.states.command_ingress.admit(admitted.game_session_id);
         // ARCH-PROGRESSION-SOURCE-0 §1.5: before the respawn settle and the quest session, so
         // before the session is input-eligible or writes anything that advances the root.
         let positioned = matches!(

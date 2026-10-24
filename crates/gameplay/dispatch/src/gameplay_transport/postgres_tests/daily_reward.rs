@@ -1,11 +1,16 @@
 //! DAILY-1: admitted session -> literal wire -> atomic Inbox/claim -> result/reload.
 use super::*;
 use crate::foundation::{MessageType, decode_wire_envelope};
+use crate::gameplay_transport::ComposedFreshAdmission;
 use crate::gameplay_transport::capabilities::{
     PRODUCTION_OFFERED_CAPABILITIES, SelectedCapabilities,
 };
-use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
+use crate::gameplay_transport::connection::{
+    AdmittedSession, ConnectionEnd, FirstEntryOutcome, FreshAdmissionAuthority, IDLE_LIVENESS,
+    serve_admitted,
+};
 use oteryn_protocol_oteryn::daily_reward as wire;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 fn frame(command_id: u64, command_type: u32, payload: &[u8]) -> TestResult<Vec<u8>> {
     let bytes = oteryn_protocol_oteryn::encode_client_command(
@@ -18,6 +23,60 @@ fn frame(command_id: u64, command_type: u32, payload: &[u8]) -> TestResult<Vec<u
     )
     .map_err(debug)?;
     Ok([u32::try_from(bytes.len())?.to_be_bytes().as_slice(), &bytes].concat())
+}
+/// SESSION-INGRESS-1: each connection continues this GameSession's command stream, so the
+/// commands are numbered from `first` and the ended continuity carries into the next one.
+async fn serve_from(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    first: u64,
+    commands: &[(u32, &[u8])],
+) -> TestResult<(String, Vec<u8>)> {
+    let mut input = Vec::new();
+    for (offset, (kind, payload)) in (0..).zip(commands) {
+        input.extend(frame(first + offset, *kind, payload)?);
+    }
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    client.write_all(&input).await?;
+    client.shutdown().await?;
+    let end = serve_admitted(&mut server, *admitted, owner, IDLE_LIVENESS).await;
+    drop(server);
+    let mut output = Vec::new();
+    client.read_to_end(&mut output).await?;
+    if let ConnectionEnd::AdmittedThenDisconnected(current)
+    | ConnectionEnd::AdmittedThenClosed(current, _) = &end
+    {
+        *admitted = *current;
+    }
+    Ok((format!("{end:?}"), output))
+}
+async fn serve(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    commands: &[(u32, &[u8])],
+) -> TestResult<(String, Vec<u8>)> {
+    let first = admitted.continuity.next_command_id;
+    serve_from(owner, admitted, first, commands).await
+}
+/// A rebuilt owner has a fresh SessionCommands directory, so the session starts again at
+/// CommandId 1. Command 4's original claim bytes then reach DAILY itself, whose durable
+/// receipt for that CommandId settles them.
+async fn replay_claim(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    initial: AdmittedSession,
+    claim: &[u8],
+) -> TestResult<Vec<u8>> {
+    let mut fresh = initial;
+    let (end, output) = serve(
+        owner,
+        &mut fresh,
+        &[(33, &[]), (33, &[]), (33, &[]), (32, claim)],
+    )
+    .await?;
+    let values = results(&output)?;
+    assert_eq!(values.len(), 4, "{end}; {values:?}");
+    assert_eq!(values[3].0, 4);
+    Ok(values[3].2.clone())
 }
 fn pick(key: &str, quantity: u8) -> TestResult<Vec<u8>> {
     let mut bytes = vec![
@@ -180,17 +239,21 @@ fn scenario() -> TestResult {
             },
         )
         .map_err(debug)?;
-        let input = [
-            frame(1, 33, &[])?,
-            frame(2, 32, &potion)?,
-            frame(3, 2, &shrine)?,
-            frame(4, 32, &potion)?,
-            frame(5, 33, &[])?,
-            frame(6, 32, &potion)?,
-        ]
-        .concat();
-        let (end, output) =
-            super::weather_wire::fixture_access::serve_input(&owner, admitted, &input).await?;
+        let initial = admitted;
+        assert_eq!(initial.continuity.next_command_id, 1);
+        let (end, output) = serve(
+            &owner,
+            &mut admitted,
+            &[
+                (33, &[]),
+                (32, &potion),
+                (2, &shrine),
+                (32, &potion),
+                (33, &[]),
+                (32, &potion),
+            ],
+        )
+        .await?;
         let values = results(&output)?;
         assert_eq!(values.len(), 6, "{end}; {values:?}");
         assert_eq!(values[1].2, [8, 4], "no shrine opened; {values:?}");
@@ -213,31 +276,43 @@ fn scenario() -> TestResult {
         unrelated_custody_event(&harness).await?;
         let quantity:i64=sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE minted_transaction_id=encode($1,'hex')::uuid").bind(&first_id).fetch_one(&harness.pool).await?;
         assert_eq!(quantity, 5);
+        // Same-session new connection bytes settle a lost acknowledgement: the retained
+        // result replays and the reserved CommandId never becomes a second claim.
+        let last = admitted.continuity.next_command_id - 1;
+        let (end, output) = serve_from(&owner, &mut admitted, last, &[(32, &potion)]).await?;
+        assert_eq!(
+            results(&output)?,
+            [(
+                last,
+                crate::foundation::CommandStatus::DuplicateReplay,
+                values[5].2.clone()
+            )],
+            "{end}"
+        );
+        // A lost acknowledgement of the claim itself, after the session directory is gone.
+        let mut rebuilt = dependencies.owner(&harness, &authority);
+        rebuilt.active_generation = generation.active();
+        dependencies.initialize(&rebuilt).await;
+        assert_eq!(replay_claim(&rebuilt, initial, &potion).await?, [8, 2]);
+        drop(rebuilt);
         // No selected capability: no DAILY payload and no additional durable row.
+        let selected = admitted.continuity.selected_capabilities;
         let mut legacy = admitted;
         legacy.continuity.selected_capabilities = SelectedCapabilities::NONE;
-        let (_, output) = super::weather_wire::fixture_access::serve_input(
-            &owner,
-            legacy,
-            &frame(1, 32, &potion)?,
-        )
-        .await?;
+        let (_, output) = serve(&owner, &mut legacy, &[(32, &potion)]).await?;
         assert!(
             results(&output)?
                 .iter()
                 .all(|r| r.1 == crate::foundation::CommandStatus::Rejected && r.2.is_empty())
         );
-        // Same-session new connection bytes settle a lost acknowledgement.
-        admitted.continuity.next_command_id = 4;
-        let (_, output) = super::weather_wire::fixture_access::serve_input(
-            &owner,
-            admitted,
-            &frame(4, 32, &potion)?,
-        )
-        .await?;
-        assert_eq!(results(&output)?[0].2, [8, 2]);
+        admitted = legacy;
+        admitted.continuity.selected_capabilities = selected;
+        let count: i64 =
+            sqlx::query_scalar("SELECT count(*) FROM game_character_daily_reward_claims")
+                .fetch_one(&harness.pool)
+                .await?;
+        assert_eq!(count, 1);
         for day in 2..=7 {
-            admitted.continuity.next_command_id = day * 10;
             epoch(&harness, day).await?;
             let picks = match day {
                 2 => potion.clone(),
@@ -245,13 +320,7 @@ fn scenario() -> TestResult {
                 6 => pick("oteryn:item.tibia.i28540", 1)?,
                 _ => Vec::new(),
             };
-            let input = [
-                frame(day * 10, 2, &shrine)?,
-                frame(day * 10 + 1, 32, &picks)?,
-            ]
-            .concat();
-            let (end, output) =
-                super::weather_wire::fixture_access::serve_input(&owner, admitted, &input).await?;
+            let (end, output) = serve(&owner, &mut admitted, &[(2, &shrine), (32, &picks)]).await?;
             let values = results(&output)?;
             assert_eq!(
                 values.last().and_then(|r| r.2.get(1)),
@@ -274,24 +343,19 @@ fn scenario() -> TestResult {
                 .await?;
         assert_eq!(state, (1, 7));
         // Rebuild the composed owner and replay an OLD command after later epochs.
-        admitted.continuity.next_command_id = 4;
-        let (_, output) = super::weather_wire::fixture_access::serve_input(
-            &owner,
-            admitted,
-            &frame(4, 32, &potion)?,
-        )
-        .await?;
-        assert_eq!(results(&output)?[0].2, [8, 2]);
+        let mut rebuilt = dependencies.owner(&harness, &authority);
+        rebuilt.active_generation = generation.active();
+        dependencies.initialize(&rebuilt).await;
+        assert_eq!(replay_claim(&rebuilt, initial, &potion).await?, [8, 2]);
+        drop(rebuilt);
         let count: i64 =
             sqlx::query_scalar("SELECT count(*) FROM game_character_daily_reward_claims")
                 .fetch_one(&harness.pool)
                 .await?;
         assert_eq!(count, 7);
         epoch(&harness, 9).await?;
-        admitted.continuity.next_command_id = 90;
-        let gap = [frame(90, 2, &shrine)?, frame(91, 32, &potion)?].concat();
-        let (_, output) =
-            super::weather_wire::fixture_access::serve_input(&owner, admitted, &gap).await?;
+        let gap: [(u32, &[u8]); 2] = [(2, &shrine), (32, &potion)];
+        let (_, output) = serve(&owner, &mut admitted, &gap).await?;
         assert_eq!(results(&output)?.last().and_then(|r| r.2.get(1)), Some(&1));
         let jokers:(i16,i32,i16)=sqlx::query_as("SELECT j.jokers,s.streak,c.jokers_spent FROM game_account_daily_reward_jokers j JOIN game_character_daily_rewards s USING(world_id) JOIN game_character_daily_reward_claims c ON c.character_id=s.character_id AND c.reset_epoch=s.last_claim_epoch").fetch_one(&harness.pool).await?;
         assert_eq!(jokers, (0, 8, 1));
@@ -299,18 +363,16 @@ fn scenario() -> TestResult {
         epoch(&harness, 10).await?;
         sqlx::raw_sql("CREATE FUNCTION daily_fixture_fail() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'injected DAILY line failure'; END $$; CREATE CONSTRAINT TRIGGER daily_fixture_fail AFTER INSERT ON game_character_daily_reward_lines DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION daily_fixture_fail()")
             .execute(&harness.pool).await?;
-        admitted.continuity.next_command_id = 100;
-        let retry = [frame(100, 2, &shrine)?, frame(101, 32, &potion)?].concat();
-        let (_, output) =
-            super::weather_wire::fixture_access::serve_input(&owner, admitted, &retry).await?;
+        let retry: [(u32, &[u8]); 2] = [(2, &shrine), (32, &potion)];
+        let (_, output) = serve(&owner, &mut admitted, &retry).await?;
         assert_ne!(results(&output)?.last().and_then(|r| r.2.get(1)), Some(&1));
         let rollback:(i64,i64,i64,i64)=sqlx::query_as("SELECT (SELECT count(*) FROM game_character_daily_reward_claims),(SELECT count(*) FROM game_character_daily_reward_lines),(SELECT count(*) FROM game_item_bindings),(SELECT count(*) FROM game_item_character_inbox_locations)").fetch_one(&harness.pool).await?;
         assert_eq!(rollback, (8, 8, 6, 6));
         sqlx::query("DROP TRIGGER daily_fixture_fail ON game_character_daily_reward_lines")
             .execute(&harness.pool)
             .await?;
-        let (end, output) =
-            super::weather_wire::fixture_access::serve_input(&owner, admitted, &retry).await?;
+        // The refused claim is terminal for its CommandId; the client retries as new commands.
+        let (end, output) = serve(&owner, &mut admitted, &retry).await?;
         let retried = results(&output)?;
         assert_eq!(
             retried.last().and_then(|r| r.2.get(1)),
@@ -319,10 +381,7 @@ fn scenario() -> TestResult {
         );
 
         epoch(&harness, 11).await?;
-        admitted.continuity.next_command_id = 110;
-        let invalid = [frame(110, 32, &[255])?, frame(111, 32, &potion)?].concat();
-        let (_, output) =
-            super::weather_wire::fixture_access::serve_input(&owner, admitted, &invalid).await?;
+        let (_, output) = serve(&owner, &mut admitted, &[(32, &[255]), (32, &potion)]).await?;
         assert_eq!(
             results(&output)?
                 .iter()
@@ -331,7 +390,7 @@ fn scenario() -> TestResult {
             [vec![8, 3], vec![8, 3]]
         );
         let mut stale = admitted;
-        stale.continuity.next_command_id = 112;
+        let stale_command = stale.continuity.next_command_id;
         let mut stale_fence = stale.item_fence.ok_or("fence")?;
         stale_fence.connection_generation =
             crate::foundation::ConnectionGeneration::new(99).map_err(debug)?;
@@ -341,7 +400,7 @@ fn scenario() -> TestResult {
             dependencies.actor,
             crate::gameplay_transport::connection::UseCommand {
                 game_session_id: stale.game_session_id,
-                command_id: 112,
+                command_id: stale_command,
                 item_fence: stale.item_fence,
             },
             32,
@@ -349,9 +408,7 @@ fn scenario() -> TestResult {
         )
         .await;
         assert_eq!(refused, Some(vec![8, 5]));
-        let (_, output) =
-            super::weather_wire::fixture_access::serve_input(&owner, stale, &frame(112, 32, &[])?)
-                .await?;
+        let (_, output) = serve(&owner, &mut stale, &[(32, &[])]).await?;
         assert!(
             results(&output)?.is_empty(),
             "the connection drops a stale generation before command ingress"
@@ -369,14 +426,10 @@ fn scenario() -> TestResult {
         let mut restarted = dependencies.owner(&harness, &authority);
         restarted.active_generation = generation.active();
         dependencies.initialize(&restarted).await;
-        admitted.continuity.next_command_id = 4;
-        let (_, output) = super::weather_wire::fixture_access::serve_input(
-            &restarted,
-            admitted,
-            &frame(4, 32, &potion)?,
-        )
-        .await?;
-        assert_eq!(results(&output)?.last().and_then(|r| r.2.get(1)), Some(&2));
+        assert_eq!(
+            replay_claim(&restarted, initial, &potion).await?.get(1),
+            Some(&2)
+        );
         let count: i64 =
             sqlx::query_scalar("SELECT count(*) FROM game_character_daily_reward_claims")
                 .fetch_one(&harness.pool)

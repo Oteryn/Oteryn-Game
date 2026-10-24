@@ -13,6 +13,7 @@
 use std::collections::BTreeSet;
 pub mod actor_condition_snapshot_candidate;
 pub mod appearance;
+pub mod command_replay;
 mod contract_registries;
 pub mod depot;
 pub mod party;

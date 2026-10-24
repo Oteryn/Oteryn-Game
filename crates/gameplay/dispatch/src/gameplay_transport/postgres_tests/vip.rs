@@ -145,6 +145,17 @@ async fn command(
     sequence: &mut u64,
     payload: &[u8],
 ) -> TestResult<(u8, Vec<u8>)> {
+    let command_id = *sequence;
+    *sequence += 1;
+    let (status, bytes) = reply(client, command_id, payload).await?;
+    assert_eq!(status, CommandStatus::Accepted);
+    Ok((code(&bytes)?, bytes))
+}
+async fn reply(
+    client: &mut tokio::io::DuplexStream,
+    command_id: u64,
+    payload: &[u8],
+) -> TestResult<(CommandStatus, Vec<u8>)> {
     let kind = match payload[1] {
         1..=6 => 48,
         7..=11 => 49,
@@ -153,28 +164,27 @@ async fn command(
     let frame = encode_client_command(
         1,
         &ClientCommandValue {
-            command_id: *sequence,
+            command_id,
             command_type: kind,
             payload,
         },
     )
     .map_err(debug)?;
-    *sequence += 1;
     write_frame(client, &frame).await?;
     loop {
         let frame = read_frame(client).await.map_err(|e| {
             format!(
                 "VIP operation {} command {}: {e}",
                 payload[1],
-                *sequence - 1
+                command_id
             )
         })?;
         let env = decode_wire_envelope(&frame).map_err(debug)?;
         if env.message_type() == MessageType::CommandResult {
             let r = decode_command_result(env.payload()).map_err(debug)?;
-            assert_eq!(r.status, CommandStatus::Accepted);
+            assert_eq!(r.command_id, command_id);
             assert!(r.payload.len() <= oteryn_protocol_oteryn::vip::MAX_RESULT_BYTES);
-            return Ok((code(r.payload)?, r.payload.to_vec()));
+            return Ok((r.status, r.payload.to_vec()));
         }
     }
 }

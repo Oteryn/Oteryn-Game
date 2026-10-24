@@ -25,7 +25,7 @@ use oteryn_protocol_oteryn::world_object::{
     COMMAND_TYPE_USE_INTENT, UseDisposition, UseIntent, UseTarget, decode_use_result,
     encode_item_use_intent,
 };
-use oteryn_protocol_oteryn::{decode_command_result, decode_snapshot_chunk};
+use oteryn_protocol_oteryn::{CommandStatus, decode_command_result, decode_snapshot_chunk};
 use tokio::io::AsyncWriteExt;
 
 // Future activation graph, only in this test. The production offer remains closed.
@@ -284,11 +284,7 @@ async fn field_case(admin: String, enabled: bool) -> TestResult {
         eprintln!("ADMIT-CAP-2-PG connection enabled={enabled} ended");
         drop(server);
         match end {
-            ConnectionEnd::AdmittedThenDisconnected(_) if !enabled => {}
-            ConnectionEnd::AdmittedThenClosed(
-                _,
-                crate::foundation::FoundationProtocolError::CommandOutcomeExpired,
-            ) if enabled => {}
+            ConnectionEnd::AdmittedThenDisconnected(_) => {}
             other => return Err(format!("unexpected connection end: {other:?}").into()),
         }
         Ok::<_, Box<dyn std::error::Error>>(())
@@ -368,24 +364,18 @@ async fn field_case(admin: String, enabled: bool) -> TestResult {
                     .await
                     .map_err(|error| format!("field wire enabled={enabled}: {error}"))?;
                 let envelope = decode_wire_envelope(&bytes).map_err(debug)?;
-                if envelope.message_type() == MessageType::ProtocolError {
+                assert_ne!(envelope.message_type(), MessageType::ProtocolError);
+                if envelope.message_type() == MessageType::CommandResult {
+                    // FND-02 §13.2: the retained outcome replays; the family is not called
+                    // again, which the single receipt and quantity below prove durably.
+                    let result = decode_command_result(envelope.payload()).map_err(debug)?;
+                    assert_eq!(result.status, CommandStatus::DuplicateReplay);
                     assert_eq!(
-                        bytes,
-                        crate::foundation::encode_command_protocol_error(
-                            crate::foundation::FoundationProtocolError::CommandOutcomeExpired,
-                            1,
-                            admitted.continuity.next_command_id,
-                            0
-                        )
-                        .map_err(debug)?
+                        decode_use_result(result.payload).map_err(debug)?,
+                        UseDisposition::Committed
                     );
                     break;
                 }
-                assert_ne!(
-                    envelope.message_type(),
-                    MessageType::CommandResult,
-                    "an expired Item handle must not invoke a new cast"
-                );
             }
         }
         client.shutdown().await?;

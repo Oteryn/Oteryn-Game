@@ -19,6 +19,8 @@ pub struct ChannelSessionStates {
     /// CHAT-WIRE-1: speaker name, spam limiter and queued lines of each chatting session.
     pub chat: chat_intent::ChatRuntime,
     pub(super) daily_rewards: super::daily_reward::DailyRewardSessions,
+    /// SESSION-INGRESS-1: the ordered command stream and latest terminal result per session.
+    pub command_ingress: super::session_ingress::SessionCommands,
     /// The releases holding each write fence of the slot (CHARM-DESC-FENCE-LEASE step c).
     pub fence_holders: FenceHolders,
     /// OPS-SAVE-2: closed by the shutdown flush; admissions and commands run under its permits.
@@ -72,6 +74,7 @@ impl ChannelSessionStates {
         self.fence_holders.forget(session);
         self.appearance_commands.forget(session);
         self.chat.forget(session);
+        self.command_ingress.forget(session);
         self.npc_conversations.forget(session);
         if let Ok(mut sessions) = self.quest_sessions.lock() {
             sessions.remove(&session);
