@@ -1041,7 +1041,9 @@ fn actual_job_restart_preserves_durable_deadline_after_a_failed_reset() -> TestR
             while h.count("game_world_highscore_snapshots").await? != 22 {
                 tokio::time::sleep(std::time::Duration::from_millis(20)).await;
             }
-            assert!(job.completed_passes() >= 3);
+            // The cut commits before the run loop counts its pass, so the rows can be visible
+            // while the counter still reads 2: wait for the third pass, bounded by the timeout.
+            wait_for_passes(&job, 3).await;
             // Uses the actual run-loop timer. The old process-relative +30min scheduler
             // times out here; neither the skipped restart nor the reset error may postpone it.
             assert_eq!(h.count("game_world_highscore_snapshots").await?, 22);
