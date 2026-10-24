@@ -91,6 +91,8 @@ crates/gameplay/entities/src/carrier/runtime_actor_spell_tests.rs | relocation_s
 crates/gameplay/spell/src/spell/companion_lifecycle.rs | companion_source_seal::Sealed | CompanionSpawnReservation
 crates/gameplay/spell/src/spell/companion_lifecycle.rs | direct_companion_source_seal::Sealed | DirectCompanionReservation
 crates/gameplay/spell/src/spell/house_execution.rs | house_presence_seal::Sealed | CurrentHousePresence<'_>
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/bed_sleep_fixture.rs | house_presence_seal::Sealed | FixturePresence
+apps/game-server/src/lifted_tests/auto/bed_sleep_postgres_cases.rs | house_presence_seal::Sealed | FixturePresence
 crates/gameplay/spell/src/spell/source_map_initialization.rs | map_initializer_seal::Sealed | CurrentNativeMapInitialization<'_>
 crates/gameplay/spell/src/spell/world_execution.rs | relocation_seal::Sealed | SpellRelocationProof<'_, '_>
 crates/gameplay/world/src/map/floor.rs | source_step_seal::Sealed | BundleStepProof<'_>
