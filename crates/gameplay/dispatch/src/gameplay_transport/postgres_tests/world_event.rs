@@ -235,8 +235,9 @@ fn scenario(epochs: u64) -> TestResult {
         );
         assert_eq!(receipt_count(&h).await?, 3);
         // Corrupt persisted state with just the event binding missing. Neither
-        // channel boot nor real dispatch may synthesize a replacement decision.
-        sqlx::query("INSERT INTO game_world_reset_epochs SELECT world_id,99,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month FROM game_world_reset_epochs WHERE reset_epoch=0").execute(&h.pool).await?;
+        // channel boot nor real dispatch may synthesize a replacement decision. DAILY-1's
+        // reset-history trigger needs the injected epoch to activate after the real ones.
+        sqlx::query("INSERT INTO game_world_reset_epochs SELECT world_id,99,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,clock_timestamp(),reset_month FROM game_world_reset_epochs WHERE reset_epoch=0").execute(&h.pool).await?;
         sqlx::query("UPDATE game_world_reset_active SET reset_epoch=99")
             .execute(&h.pool)
             .await?;
