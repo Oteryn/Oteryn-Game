@@ -30,12 +30,7 @@ pub mod combat_pickup;
 pub mod content;
 #[path = "support/domain_shim.rs"]
 pub mod domain;
-#[allow(dead_code, unused_imports)]
-#[path = "../src/durability"]
-mod durability {
-    // Recompile the shared core; native world adapters use the full library Content context.
-    include!("../../../crates/gameplay/durability/src/durability/core_modules.rs");
-}
+use oteryn_gameplay_durability::durability;
 #[allow(dead_code, unused_imports)]
 pub use oteryn_gameplay_entities as foundation;
 #[allow(dead_code, unused_imports)]
@@ -53,7 +48,7 @@ mod corpse_transfer_postgres_cases;
 #[path = "support/combat_pickup_postgres_cases.rs"]
 mod combat_pickup_postgres_cases;
 
-// The path-loaded Durability NPC-travel fixture shares this PostgreSQL harness.
+// Shared PostgreSQL harness for this target's integration cases.
 #[allow(dead_code)] // Each standalone target uses only part of the shared fixture API.
 #[path = "support/bestiary_postgres_harness.rs"]
 mod bestiary_postgres_harness;

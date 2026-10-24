@@ -12,12 +12,7 @@ pub mod character_bootstrap_intent;
 pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
 #[path = "support/domain_shim.rs"]
 pub mod domain;
-#[allow(dead_code, unused_imports)]
-#[path = "../src/durability"]
-mod durability {
-    // Recompile the shared core; native world adapters use the full library Content context.
-    include!("../../../crates/gameplay/durability/src/durability/core_modules.rs");
-}
+use oteryn_gameplay_durability::durability;
 #[allow(dead_code, unused_imports)]
 pub use oteryn_gameplay_entities as foundation;
 #[allow(dead_code, unused_imports)]
@@ -25,12 +20,20 @@ pub use oteryn_gameplay_native_admission_source as native_admission_source;
 
 // Standalone target for local focused runs; the protected PostgreSQL lane also
 // includes these exact cases through character_authority_postgres.
+#[allow(
+    dead_code,
+    reason = "shared cases also expose fixtures for the character authority PvP cases"
+)]
 #[path = "support/character_progression_postgres_cases.rs"]
 mod character_progression_postgres_cases;
 
 #[path = "support/character_proficiency_postgres_cases.rs"]
 mod character_proficiency_postgres_cases;
 
+#[allow(
+    dead_code,
+    reason = "this target uses a subset of the shared PG harness"
+)]
 #[path = "support/bestiary_postgres_harness.rs"]
 mod bestiary_postgres_harness;
 
