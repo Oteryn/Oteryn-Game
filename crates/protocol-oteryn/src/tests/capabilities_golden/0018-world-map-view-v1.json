@@ -1,0 +1,22 @@
+{
+  "id": 18,
+  "name": "WORLD_MAP_VIEW_V1",
+  "constant": "world_map::CAPABILITY_WORLD_MAP_VIEW_V1",
+  "requires": [
+    4,
+    6
+  ],
+  "acceptance_requires": false,
+  "commands": [],
+  "domains": [
+    17
+  ],
+  "supersedes": [
+    2
+  ],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

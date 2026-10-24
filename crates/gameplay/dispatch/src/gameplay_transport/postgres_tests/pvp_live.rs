@@ -19,7 +19,7 @@ use crate::gameplay_transport::connection::{
 };
 use crate::gameplay_transport::item_fence_of;
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
-use oteryn_protocol_oteryn::{actor_spell, attack, decode_command_result};
+use oteryn_protocol_oteryn::{CommandStatus, actor_spell, attack, decode_command_result};
 use std::time::Duration;
 #[path = "pvp_live/bundle_fixture.rs"]
 mod bundle_fixture;
@@ -539,6 +539,12 @@ fn scenario(mode: i16) -> TestResult {
                     .0,
                 crate::gameplay_transport::SessionDeath::Durable
             );
+            // SESSION-INGRESS-1 replays the latest retained CommandId from its durable
+            // receipt instead of re-executing the cast after death.
+            let harm_before: i64 =
+                sqlx::query_scalar("SELECT count(*) FROM game_character_pvp_harm")
+                    .fetch_one(&h.pool)
+                    .await?;
             let frame = test_command(
                 8,
                 actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT,
@@ -548,12 +554,26 @@ fn scenario(mode: i16) -> TestResult {
             client.write_all(&frame).await?;
             loop {
                 let f = super::item_look::read_frame(&mut client).await?;
-                if decode_wire_envelope(&f).map_err(debug)?.message_type()
-                    == MessageType::ProtocolError
-                {
+                let env = decode_wire_envelope(&f).map_err(debug)?;
+                if env.message_type() == MessageType::LivenessProbe {
+                    ack(&mut client, env.payload()).await?;
+                }
+                if env.message_type() == MessageType::CommandResult {
+                    let replay = decode_command_result(env.payload()).map_err(debug)?;
+                    assert_eq!(replay.command_id, 8);
+                    assert_eq!(replay.status, CommandStatus::DuplicateReplay);
+                    assert_eq!(
+                        actor_spell::decode_spell_cast_result(replay.payload).map_err(debug)?,
+                        actor_spell::SpellCastDisposition::Cast
+                    );
                     break;
                 }
             }
+            let harm_after: i64 =
+                sqlx::query_scalar("SELECT count(*) FROM game_character_pvp_harm")
+                    .fetch_one(&h.pool)
+                    .await?;
+            assert_eq!(harm_after, harm_before, "a replayed cast writes no new harm");
             client.shutdown().await?;
             Ok(())
         };

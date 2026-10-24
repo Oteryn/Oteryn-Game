@@ -6,6 +6,7 @@ use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{
     AdmittedSession, FirstEntryOutcome, FreshAdmissionAuthority,
 };
+use crate::gameplay_transport::guild_intent::GuildReply;
 use oteryn_protocol_oteryn::CommandStatus;
 #[path = "cyclopedia/fixture.rs"]
 mod support;
@@ -146,17 +147,22 @@ fn scenario() -> TestResult {
             support::exchange(&owner, &mut old, 1, 72, &[]).await?.0,
             CommandStatus::Rejected
         );
-        let (status, initial) = support::exchange(&owner, &mut admitted, 1, 72, &[]).await?;
+        // Even a refused command advances this GameSession's command stream.
+        let selected = admitted.continuity.selected_capabilities;
+        admitted.continuity = old.continuity;
+        admitted.continuity.selected_capabilities = selected;
+        assert_eq!(admitted.continuity.next_command_id, 2);
+        let (status, initial) = support::exchange(&owner, &mut admitted, 2, 72, &[]).await?;
         assert_eq!(status, CommandStatus::Accepted);
         assert_eq!(initial[0], 0);
         assert_eq!(count(&initial), 0);
         // Insufficient Premium is a typed refusal and writes no discovery state.
         owner.premium_coordinator = None;
-        let (_, refused) = support::exchange(&owner, &mut admitted, 2, 73, &request(1, 0)).await?;
+        let (_, refused) = support::exchange(&owner, &mut admitted, 3, 73, &request(1, 0)).await?;
         assert_eq!(refused[0], 2);
         owner.premium_coordinator = Some(&premium);
         let before_start = admitted;
-        let (_, started) = support::exchange(&owner, &mut admitted, 3, 73, &request(1, 0)).await?;
+        let (_, started) = support::exchange(&owner, &mut admitted, 4, 73, &request(1, 0)).await?;
         assert_eq!(started[0], 0);
         assert_eq!(started[28], 0, "start excludes the game window");
         let progress: String =
@@ -166,16 +172,28 @@ fn scenario() -> TestResult {
         let progress: crate::domain::cyclopedia::MapProgress = serde_json::from_str(&progress)?;
         let first_points = progress.exploration.ok_or("durable exploration")?.points;
         assert_eq!(first_points.len(), 8);
-        // Simulate process state replacement and a lost ACK; same command reaches PostgreSQL.
+        // Simulate process state replacement and a lost ACK. The Channel keeps the GameSession's
+        // command stream (SESSION-INGRESS-1), which replays the retained result; the same
+        // command still reaches PostgreSQL through the native receipt.
+        let commands = std::mem::take(&mut owner.states.command_ingress);
         drop(owner);
         let mut owner = deps.owner(&h, &authority);
+        owner.states.command_ingress = commands;
         owner.movement_cells = &cells;
         owner.active_generation = Some(generation);
         owner.premium_coordinator = Some(&premium);
-        let mut lost_ack = before_start;
-        let (_, replay) = support::exchange(&owner, &mut lost_ack, 3, 73, &request(1, 0)).await?;
+        let (status, replay) =
+            support::exchange(&owner, &mut admitted, 4, 73, &request(1, 0)).await?;
+        assert_eq!(status, CommandStatus::DuplicateReplay);
         assert_eq!(started, replay);
-        let (_, shuffled) = support::exchange(&owner, &mut admitted, 4, 73, &request(2, 0)).await?;
+        let GuildReply::Payload(replay) = owner
+            .cyclopedia_command(before_start, 4, 73, &request(1, 0))
+            .await
+        else {
+            return Err("start receipt".into());
+        };
+        assert_eq!(started, replay);
+        let (_, shuffled) = support::exchange(&owner, &mut admitted, 5, 73, &request(2, 0)).await?;
         assert_eq!(shuffled[0], 0);
         assert!(revision(&shuffled) > revision(&started));
         let progress: String =
@@ -212,17 +230,17 @@ fn scenario() -> TestResult {
                 }
             }
             let (_, found) =
-                support::exchange(&owner, &mut admitted, 5 + index as u64, 73, &request(3, 0))
+                support::exchange(&owner, &mut admitted, 6 + index as u64, 73, &request(3, 0))
                     .await?;
             assert_eq!(found[0], 0);
             assert_eq!(count(&found), index as u8 + 1);
             assert_eq!(found[9], u8::from(index == 6));
         }
-        let (_, discovered) = support::exchange(&owner, &mut admitted, 12, 72, &[]).await?;
+        let (_, discovered) = support::exchange(&owner, &mut admitted, 13, 72, &[]).await?;
         assert_eq!(discovered[9], 1);
         assert_eq!(discovered[28], 0);
         assert_eq!(
-            support::exchange(&owner, &mut admitted, 13, 73, &request(4, 0))
+            support::exchange(&owner, &mut admitted, 14, 73, &request(4, 0))
                 .await?
                 .0,
             CommandStatus::Rejected
@@ -231,7 +249,7 @@ fn scenario() -> TestResult {
         assert_eq!(initial[27], 1, "fixture World must allow a donation");
         let before_donation = admitted;
         let (_, donated) =
-            support::exchange_inventory(&owner, &mut admitted, 14, 73, &request(4, 15)).await?;
+            support::exchange_inventory(&owner, &mut admitted, 15, 73, &request(4, 15)).await?;
         assert_eq!(donated[0], 0);
         assert_eq!(pool(&donated), 15);
         let balance: i64 = sqlx::query_scalar("SELECT balance FROM game_account_bank_balances")
@@ -247,39 +265,39 @@ fn scenario() -> TestResult {
             1
         );
         // Restart replay cannot charge again, even after the consumed coins disappeared.
+        let commands = std::mem::take(&mut owner.states.command_ingress);
         drop(owner);
         let mut owner = deps.owner(&h, &authority);
+        owner.states.command_ingress = commands;
         owner.movement_cells = &cells;
         owner.active_generation = Some(generation);
         owner.premium_coordinator = Some(&premium);
-        let mut retry = before_donation;
         assert_eq!(
-            support::exchange(&owner, &mut retry, 14, 73, &request(4, 15))
-                .await?
-                .1,
-            donated
+            support::exchange(&owner, &mut admitted, 15, 73, &request(4, 15)).await?,
+            (CommandStatus::DuplicateReplay, donated.clone())
         );
-        let (_, reloaded) = support::exchange(&owner, &mut admitted, 15, 72, &[]).await?;
+        let GuildReply::Payload(retry) = owner
+            .cyclopedia_command(before_donation, 15, 73, &request(4, 15))
+            .await
+        else {
+            return Err("donation receipt".into());
+        };
+        assert_eq!(retry, donated);
+        let (_, reloaded) = support::exchange(&owner, &mut admitted, 16, 72, &[]).await?;
         assert_eq!(reloaded[9], 1);
         assert_eq!(pool(&reloaded), 15);
-        let (_, poor) = support::exchange(&owner, &mut admitted, 16, 73, &request(4, 1000)).await?;
+        let (_, poor) = support::exchange(&owner, &mut admitted, 17, 73, &request(4, 1000)).await?;
         assert_eq!(poor[0], 6);
         assert_eq!(pool(&poor), 15);
         let mut stale = admitted;
         let mut fence = stale.item_fence.ok_or("fence")?;
         fence.character_lease_generation += 1;
         stale.item_fence = Some(fence);
-        assert!(
-            support::exchange(&owner, &mut stale, 17, 73, &request(4, 1))
-                .await
-                .is_err(),
-            "stale session cannot even construct its admitted snapshot"
-        );
         assert!(matches!(
             owner
-                .cyclopedia_command(stale, 17, 73, &request(4, 1))
+                .cyclopedia_command(stale, 18, 73, &request(4, 1))
                 .await,
-            crate::gameplay_transport::guild_intent::GuildReply::Rejected
+            GuildReply::Rejected
         ));
         assert_eq!(
             sqlx::query_scalar::<_, i64>("SELECT balance FROM game_account_bank_balances")
@@ -310,18 +328,18 @@ fn scenario() -> TestResult {
             .execute(&h.pool)
             .await?;
         assert_eq!(
-            support::exchange(&owner, &mut admitted, 17, 72, &[])
+            support::exchange(&owner, &mut admitted, 18, 72, &[])
                 .await?
                 .0,
             CommandStatus::Rejected,
             "old boot cannot cross the active epoch"
         );
         owner.reset_epoch = 1;
-        let (_, epoch) = support::exchange(&owner, &mut admitted, 18, 72, &[]).await?;
+        let (_, epoch) = support::exchange(&owner, &mut admitted, 19, 72, &[]).await?;
         assert_eq!(epoch[27], 2);
         assert_eq!(pool(&epoch), 0);
         let (_, frozen_pool) =
-            support::exchange(&owner, &mut admitted, 19, 73, &request(4, 1)).await?;
+            support::exchange(&owner, &mut admitted, 20, 73, &request(4, 1)).await?;
         assert_eq!(
             frozen_pool[0], 7,
             "current improved area refuses donation atomically"
@@ -331,6 +349,34 @@ fn scenario() -> TestResult {
                 .fetch_one(&h.pool)
                 .await?,
             990
+        );
+        // A stale socket reserves its command before the Bank prelude refuses it, so its
+        // unresolved original ends this GameSession's command stream (SESSION-INGRESS-1):
+        // exercise it last.
+        let mut stale = admitted;
+        let mut fence = stale.item_fence.ok_or("fence")?;
+        fence.character_lease_generation += 1;
+        stale.item_fence = Some(fence);
+        let stale_id = stale.continuity.next_command_id;
+        assert!(
+            support::exchange(&owner, &mut stale, stale_id, 73, &request(4, 1))
+                .await
+                .is_err(),
+            "stale session cannot even construct its admitted snapshot"
+        );
+        assert_eq!(
+            sqlx::query_scalar::<_, i64>("SELECT balance FROM game_account_bank_balances")
+                .fetch_one(&h.pool)
+                .await?,
+            990
+        );
+        assert_eq!(
+            sqlx::query_scalar::<_, i64>(
+                "SELECT count(*) FROM game_account_bank_entries WHERE kind=5"
+            )
+            .fetch_one(&h.pool)
+            .await?,
+            1
         );
         {
             let mut runtime = owner.runtime.lock().await;

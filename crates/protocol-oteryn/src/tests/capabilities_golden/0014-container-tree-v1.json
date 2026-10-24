@@ -1,0 +1,22 @@
+{
+  "id": 14,
+  "name": "CONTAINER_TREE_V1",
+  "constant": "container_tree::CAPABILITY_CONTAINER_TREE_V1",
+  "requires": [
+    4,
+    12
+  ],
+  "acceptance_requires": true,
+  "commands": [
+    21
+  ],
+  "domains": [
+    14
+  ],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

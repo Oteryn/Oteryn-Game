@@ -1,0 +1,17 @@
+{
+  "id": 12,
+  "name": "ITEM_EQUIP_DROP_V1",
+  "constant": "item_view::CAPABILITY_ITEM_EQUIP_DROP_V1",
+  "requires": [
+    4
+  ],
+  "acceptance_requires": true,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}
