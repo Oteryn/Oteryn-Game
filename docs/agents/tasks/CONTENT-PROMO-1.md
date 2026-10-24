@@ -120,8 +120,18 @@ wrapper; rustfmt uses `/home/mole/.cargo/bin/cargo fmt` for the four touched
 crates. No PostgreSQL code is touched and no PostgreSQL suite is run.
 
 - Move proof: compare all relocated sources against `git show HEAD:<old path>`;
-  all 30 match after only the two import adjustments and rustfmt whitespace.
+  all 30 match after only the two import adjustments and rustfmt whitespace,
+  plus the one repinned `ITEM_NAME15_PACKET_SHA256` constant below.
   All original inline tests and embedded include paths remain present.
+- Item-authoring pins: the name15 source qualification record pins
+  `item_name_promotion.rs` at its pre-carve path. The record stays byte-identical;
+  `tools/content-migration/source_relocations.py` gains a `VERBATIM_MOVES` entry
+  (same pinned digest, new path) that `lower_item_name15_packet.py` resolves its input
+  pins through. The regenerated `OTV2-20261002-item-name15-promotion-v1.json` differs
+  only in its compiler digest; `ITEM_NAME15_PACKET_SHA256` is repinned to it. Every
+  offline step of the `item-authoring` job passes locally, as do
+  `test_source_relocations.py`, `test_item_official_navigation.py` and
+  `test_item_bounded7_navigation.py`.
 - `cargo check --locked --offline -p oteryn-gameplay-content-promotion --all-targets --quiet`: PASS.
 - `cargo test --locked --offline -p oteryn-gameplay-content-promotion --quiet`: PASS, 106 tests.
 - `cargo test --locked --offline -p oteryn-gameplay-content --lib --quiet`: PASS,
@@ -244,12 +254,15 @@ The 30 module rows above each map
 - `crates/gameplay/content/src/content/mod.rs`
 - `crates/gameplay/world/Cargo.toml`
 - `crates/gameplay/world/src/world_runtime_tests.rs`
+- `docs/agents/evidence/OTV2-20261002-item-name15-promotion-v1.json`
 - `docs/agents/tasks/MECHANICS_STATUS.md`
 - `tools/content-census/g4_item_crystal_binding_generator.py`
 - `tools/content-census/item_id_alias_table_self_test.py`
 - `tools/content-census/item_key_references.py`
 - `tools/content-migration/source_relocations.py`
+- `tools/content-migration/test_source_relocations.py`
 - `tools/content-schema/item-authoring/donor_census.py`
+- `tools/content-schema/item-authoring/lower_item_name15_packet.py`
 - `tools/content-schema/item-authoring/lower_promotion_packet.py`
 - `tools/content-schema/item-authoring/test_lower_promotion_packet.py`
 - `tools/repository/classify_pr_test_lanes.py`

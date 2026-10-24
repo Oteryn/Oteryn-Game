@@ -36,11 +36,20 @@ RELOCATIONS = {
         "ab3cb5adc65b9afabeb15cef77f26a68febef3a31da40c57a98d734ada48aae3",
     ),
 }
+# pinned path -> current path, for sources a structural change moved byte-identically,
+# so the recorded pin digest still names the current bytes.
+VERBATIM_MOVES = {
+    # CONTENT-PROMO-1 carve: the Item name promotion moved into the content-promotion
+    # crate unchanged.
+    "crates/gameplay/content/src/content/item_name_promotion.rs": (
+        "crates/gameplay/content-promotion/src/content/item_name_promotion.rs"
+    ),
+}
 MOVED = {
     pinned: current
     for (pinned, _), (current, _) in RELOCATIONS.items()
     if pinned != current
-}
+} | VERBATIM_MOVES
 
 
 def digest(data: bytes) -> str:
@@ -60,7 +69,7 @@ def read_text(root: Path, path: str) -> str:
 def read_pinned(root: Path, path: str, expected: str) -> bytes | None:
     """The current bytes of a pinned source, or None when its pin does not hold."""
     relocated = RELOCATIONS.get((path, expected))
-    current, current_digest = relocated if relocated else (path, expected)
+    current, current_digest = relocated if relocated else (current_path(path), expected)
     target = Path(root) / current
     if not target.is_file():
         return None

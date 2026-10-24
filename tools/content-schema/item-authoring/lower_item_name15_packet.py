@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import sys
 import xml.etree.ElementTree as ET
 
 import appearance_membership as membership
@@ -11,6 +12,10 @@ from engine_items import decode_appearance_object, protobuf_fields
 from lower_client_market_packet import WORLD_FLAGS
 
 ROOT = base.ROOT
+sys.path.insert(0, str(ROOT / "tools/content-migration"))
+
+from source_relocations import current_path as relocated_path
+
 COMPILER = "tools/content-schema/item-authoring/lower_item_name15_packet.py"
 PROOF = "docs/agents/evidence/OTV2-20261002-item-name15-source-qualification-v2.json"
 PROOF_SHA = "28e3f2a42c71b448926fa31cbb76c86c8d7f6c00996e04fe0265487458a15f20"
@@ -105,7 +110,7 @@ def qualify(source, definition, owners):
 
 def load_inputs(root, proof):
     for path, digest in proof["input_digests"].items():
-        base.checked(root, path, digest)
+        base.checked(root, relocated_path(path), digest)
     historical = proof["historical_source"]
     old = json.loads(base.checked(root, historical["path"], historical["sha256"]))
     if (

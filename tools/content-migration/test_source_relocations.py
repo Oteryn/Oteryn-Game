@@ -44,6 +44,17 @@ class SourceRelocationTests(unittest.TestCase):
             copy.unlink()
             self.assertIsNone(ledger.read_pinned(directory, pinned, pinned_digest))
 
+    def test_a_verbatim_move_keeps_its_pin_digest_and_fails_closed(self):
+        for pinned, current in ledger.VERBATIM_MOVES.items():
+            self.assertFalse((ROOT / pinned).exists(), pinned)
+            self.assertEqual(ledger.current_path(pinned), current)
+            data = (ROOT / current).read_bytes()
+            self.assertEqual(
+                ledger.read_pinned(ROOT, pinned, ledger.digest(data)), data
+            )
+            self.assertIsNone(ledger.read_pinned(ROOT, pinned, "0" * 64))
+            self.assertEqual(ledger.read_text(ROOT, pinned), data.decode())
+
     def test_unrelocated_pins_still_check_their_own_bytes(self):
         path = "tools/content-migration/source_relocations.py"
         data = (ROOT / path).read_bytes()
