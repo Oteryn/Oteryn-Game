@@ -4,20 +4,16 @@
 include!(concat!(env!("OUT_DIR"), "/mechanic_methods.rs"));
 include!(concat!(env!("OUT_DIR"), "/mechanic_modules.rs"));
 
+// Test mounts, including #[path] mounts, share this block.
+// Keep sorted by module name; insert in order, never append.
 pub mod actor_spell;
 mod attack;
 mod bank_npc;
 mod bed_regen;
 mod bed_sleep;
-mod bundle_map_position;
-mod depot;
-mod house_query;
-mod loop_training;
-use bundle_map_position::bundle_map_position;
-#[cfg(test)]
-use bundle_map_position::bundle_world_map;
 #[cfg(test)]
 mod bundle_gates_tests;
+mod bundle_map_position;
 mod capabilities;
 mod channel_states;
 mod character_gameplay_fence;
@@ -31,13 +27,26 @@ mod combat_lock_fact;
 mod composed_admission;
 #[cfg(test)]
 mod composed_test_owner;
+mod condition_snapshots;
 mod connection;
 mod container_view;
+mod control_loss;
+mod control_loss_reconciliation;
+/// DEATH-ML-LOSS-1 (CP D1433, #2193 Codex P1 4304911165) on PostgreSQL 18.6: a trained actor
+/// whose death lowers its build is rebased onto the receipt's post-loss build at respawn, so its
+/// next training save commits on the lowered durable build instead of returning `Unknown`.
+#[cfg(test)]
+#[path = "tests/death_ml_loss_postgres.rs"]
+mod death_ml_loss_postgres;
+mod depot;
 mod equipment_move;
+mod first_vocation_vitals;
 pub mod fresh_evidence;
+pub mod gameplay_drain;
 mod guild_bank;
 mod guild_chat;
 mod highscores;
+mod house_query;
 mod input_gate;
 mod item_craft;
 mod item_look;
@@ -47,24 +56,17 @@ mod item_use;
 mod item_view;
 mod kill_reward;
 mod last_position;
+mod listener;
 mod logout;
 #[cfg(test)]
 mod logout_tests;
 mod loop_move;
-mod mining;
-pub mod spectate_session;
-mod timed_item;
-mod timed_item_clock;
-mod timed_item_content;
-mod timed_item_use;
-mod timed_item_wire;
-use crate::map::boot::BundleCollisionIndexExt;
-pub use last_position::LastPositionFlush;
-pub use staff::StaffReply;
-mod control_loss_reconciliation;
+mod loop_training;
 mod map_door;
+mod mining;
 mod monk_save;
 mod monster_ai_cycle;
+mod monster_combat_states;
 mod monster_profile_cycle;
 #[allow(
     dead_code,
@@ -80,44 +82,69 @@ mod npc_trade_command;
 mod npc_travel;
 mod npc_voice;
 mod paced_movement;
+pub mod party_command;
+mod party_kill_settlement;
+mod party_spell_feedback;
+mod party_spell_owner;
+mod party_xp;
+mod party_xp_command;
+mod promotion_death;
+mod promotion_login;
 mod pvp_death;
 mod pvp_live;
-mod tutorial_corruptor;
-mod tutorial_movement;
-mod tutorial_session;
-mod world_respawns;
-pub use npc_talk::NpcTalkBook;
 mod quest_admission;
 mod quest_log_source;
-pub use connection::quest_log;
 mod resume;
 mod rune_use_bridge;
 mod seam_rooms;
+mod serving;
 pub mod session_ingress;
-pub use seam_rooms::SeamRooms;
-mod promotion_death;
-mod promotion_login;
 mod source_item_cycle;
 mod source_pvp_expiry;
+pub mod spectate_session;
 mod spell_access_facts;
 mod spell_character_facts;
 mod spell_magnitude_facts;
+mod spell_parameter_cast;
 pub mod spell_premium_coordinator;
-pub use promotion_login::PremiumSessions;
 mod spell_presentation_publisher;
+mod tcp_tls;
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+mod tests;
+mod timed_item;
+mod timed_item_clock;
+mod timed_item_content;
+mod timed_item_use;
+mod timed_item_wire;
+mod tutorial_corruptor;
+mod tutorial_movement;
+mod tutorial_session;
+mod vocation_choice;
+mod world_event;
+mod world_map;
+/// ADMIT0: the boot-bound Channel required gameplay capabilities (D1081-D1084).
+pub mod world_required_capabilities;
+mod world_required_field_guard;
+mod world_respawns;
+pub mod world_spatial;
+// End sorted module declarations.
+
+use crate::map::boot::BundleCollisionIndexExt;
+use bundle_map_position::bundle_map_position;
+#[cfg(test)]
+use bundle_map_position::bundle_world_map;
+pub use connection::quest_log;
+pub use last_position::LastPositionFlush;
+pub use npc_talk::NpcTalkBook;
+pub use promotion_login::PremiumSessions;
+pub use seam_rooms::SeamRooms;
 #[allow(
     unused_imports,
     reason = "Retain the original presentation type path during the ADR-0019 carve"
 )]
 pub use spell_presentations::PreparedPresentation as PreparedSpellPresentation;
-mod tcp_tls;
-mod world_event;
-mod world_map;
-
-/// ADMIT0: the boot-bound Channel required gameplay capabilities (D1081-D1084).
-pub mod world_required_capabilities;
-mod world_required_field_guard;
-pub mod world_spatial;
+pub use staff::StaffReply;
 
 use crate::achievement_catalogue::AccountAchievementsRequest;
 use crate::content::NativeEntryMovementCells;
@@ -166,16 +193,6 @@ use oteryn_foundation::CancellationToken;
 use oteryn_protocol_oteryn::item_look::ItemLookResult;
 use oteryn_protocol_oteryn::item_view::ItemHandle;
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
-use {
-    crate::foundation::{
-        AuthenticatedTransportRefV1, ChannelId, ChannelRuntimeV1, CharacterWorldEligibilityClaimV1,
-        ExactActorRef, FirstEntryPosition, GameSessionAuthoritySnapshot, GameSessionId,
-        GameSessionState, PlayerActorReservation, RuntimeScopeRefV1, ScopeOwnershipGeneration,
-        WorldId,
-    },
-    oteryn_gameplay_domain::domain::carrier_values::CarrierError,
-};
-mod condition_snapshots;
 use std::future::{Future, poll_fn};
 use std::pin::{Pin, pin};
 use std::sync::Arc;
@@ -185,6 +202,15 @@ use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::{Mutex, Semaphore};
 use tokio_rustls::rustls;
 use world_spatial::{ActorPosition, StepDirection, StepDisposition, WorldSpatialObservation};
+use {
+    crate::foundation::{
+        AuthenticatedTransportRefV1, ChannelId, ChannelRuntimeV1, CharacterWorldEligibilityClaimV1,
+        ExactActorRef, FirstEntryPosition, GameSessionAuthoritySnapshot, GameSessionId,
+        GameSessionState, PlayerActorReservation, RuntimeScopeRefV1, ScopeOwnershipGeneration,
+        WorldId,
+    },
+    oteryn_gameplay_domain::domain::carrier_values::CarrierError,
+};
 
 /// Registered Server Seam hard maximum of pre-admission connections. Admitted
 /// connections stay inside the same budget: no separate maximum is registered.
@@ -230,12 +256,9 @@ impl ConnectionObserver for () {
     fn ended(&self, _: connection::ConnectionEnd) {}
 }
 
-mod control_loss;
-mod listener;
 pub use listener::serve_listener;
 #[cfg(test)]
 use listener::{LostControl, control_loss_lifecycle};
-pub mod gameplay_drain;
 /// Output of `primary`, or `None` when `stop` completes first.
 async fn first<T>(primary: impl Future<Output = T>, stop: impl Future<Output = ()>) -> Option<T> {
     let mut primary = pin!(primary);
@@ -371,7 +394,6 @@ fn held_step(
     Some(hold_step(until.get().saturating_sub(now.get())).min(limit))
 }
 
-mod serving;
 pub use serving::serve_gameplay;
 /// PREM-1b: the node's Premium pulls. Without configuration, or with an invalid one, there is no
 /// client and every account reads Free; admission is never affected.
@@ -1454,17 +1476,6 @@ fn canonical_uuid(value: &[u8; 16]) -> String {
 }
 
 #[cfg(test)]
-#[allow(clippy::expect_used)]
-mod tests;
-
-pub mod party_command;
-mod party_kill_settlement;
-mod party_spell_feedback;
-mod party_spell_owner;
-mod party_xp;
-mod party_xp_command;
-mod spell_parameter_cast;
-#[cfg(test)]
 pub use actor_spell::ChannelSpellStates;
 #[cfg(test)]
 pub use party_spell_owner::read_source_party_world_in_transaction;
@@ -1479,19 +1490,45 @@ pub use spell_presentations::SpellPresentationOwner;
 
 pub use crate::spell::spell_presentations;
 
-/// DEATH-ML-LOSS-1 (CP D1433, #2193 Codex P1 4304911165) on PostgreSQL 18.6: a trained actor
-/// whose death lowers its build is rebased onto the receipt's post-loss build at respawn, so its
-/// next training save commits on the lowered durable build instead of returning `Unknown`.
-#[cfg(test)]
-#[path = "tests/death_ml_loss_postgres.rs"]
-mod death_ml_loss_postgres;
-
-mod first_vocation_vitals;
-mod vocation_choice;
-
-mod monster_combat_states;
-
 #[cfg(any(test, feature = "test-support"))]
 pub use connection::SERVER_SCHEMA_REVISION;
 #[cfg(any(test, feature = "test-support"))]
 pub use monster_ai_cycle::drive_owner_spawns;
+
+#[cfg(test)]
+#[test]
+fn module_registration_block_is_sorted_and_complete() -> Result<(), &'static str> {
+    let source = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/src/gameplay_transport/mod.rs"
+    ));
+    let (before, rest) = source
+        .split_once("// Keep sorted by module name; insert in order, never append.\n")
+        .ok_or("module registration block header")?;
+    let (block, after) = rest
+        .split_once("// End sorted module declarations.\n")
+        .ok_or("module registration block footer")?;
+
+    fn module_name(line: &str) -> Option<&str> {
+        let line = line.trim();
+        let declaration = if let Some(rest) = line.strip_prefix("pub(") {
+            rest.split_once(')')?.1.trim_start()
+        } else {
+            line.strip_prefix("pub ").unwrap_or(line)
+        };
+        declaration.strip_prefix("mod ").map(|name| {
+            assert!(name.ends_with(';'), "one module declaration per line");
+            name.trim_end_matches(';')
+        })
+    }
+
+    for line in before.lines().chain(after.lines()) {
+        assert!(module_name(line).is_none(), "module outside block: {line}");
+    }
+    let names: Vec<_> = block.lines().filter_map(module_name).collect();
+    assert!(!names.is_empty(), "module registration block is empty");
+    for pair in names.windows(2) {
+        assert!(pair[0] < pair[1], "modules out of order: {pair:?}");
+    }
+    Ok(())
+}
