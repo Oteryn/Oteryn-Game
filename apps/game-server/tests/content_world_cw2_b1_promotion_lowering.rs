@@ -8,6 +8,7 @@
 #![allow(clippy::expect_used, clippy::panic)]
 
 use oteryn_game_server::content::*;
+use oteryn_gameplay_content_promotion::content::*;
 use std::collections::BTreeMap;
 
 const B1_EVIDENCE: &[u8] = include_bytes!(

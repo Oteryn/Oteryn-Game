@@ -1,6 +1,7 @@
 #![allow(clippy::expect_used, clippy::panic)]
 
 use oteryn_game_server::content::*;
+use oteryn_gameplay_content_promotion::content::*;
 
 const B1_EVIDENCE: &[u8] = include_bytes!(
     "../../../docs/agents/evidence/OTV2-20260919-content-world-cw2-b1-item-identity-catalog.json"

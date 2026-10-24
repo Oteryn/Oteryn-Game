@@ -21,6 +21,7 @@ members = [
     "crates/gameplay/world",
     "crates/gameplay/durability",
     "crates/gameplay/content",
+    "crates/gameplay/content-promotion",
     "crates/gameplay/foundation",
     "crates/gameplay/domain",
     "apps/client",

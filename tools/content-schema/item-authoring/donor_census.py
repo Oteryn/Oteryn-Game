@@ -75,7 +75,7 @@ NEW_APPEARANCE_RANGE = range(52977, 55118)
 
 # The live census (task B2: rows carry each id's committed key). The B1a census,
 # `donor-census-crystal-summer-update-00ce02a5.json`, is the frozen B1b epoch-2 input
-# pinned by exact bytes in `crates/gameplay/content/src/content/cw2_b1_import.rs` and
+# pinned by exact bytes in `crates/gameplay/content-promotion/src/content/cw2_b1_import.rs` and
 # `g4_item_crystal_binding_generator.py`: never regenerated or edited.
 DEFAULT_SAMPLE_NAME = "donor-census-crystal-summer-update-00ce02a5-keyed.json"
 SELF_CHECK_ROUTED_ID = (

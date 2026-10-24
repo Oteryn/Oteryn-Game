@@ -42,43 +42,14 @@ mod compiler;
 pub mod creature_attack_geometry;
 pub mod creature_policy;
 pub mod creature_reward;
-mod cw2_b1_import;
-mod cw2_b4_import;
 pub mod daily_reward;
 mod digest;
 pub mod encounter_map_item;
 pub mod field_condition;
 mod fixture;
 pub mod item_abilities;
-pub mod item_admission;
-pub mod item_bed_promotion;
-pub mod item_capacity_promotion;
-pub mod item_consumption_promotion;
-pub mod item_description_promotion;
-pub mod item_description_wiki_promotion;
-pub mod item_document_promotion;
-pub mod item_elemental_magic_modifier_promotion;
-pub mod item_forge289_promotion;
-pub mod item_forge3332_promotion;
-pub mod item_hit_magic_promotion;
-pub mod item_identity;
-pub mod item_mantra_bond_modifier_promotion;
-pub mod item_market_true_promotion;
-pub mod item_movable_promotion;
-pub mod item_name15_promotion;
-pub mod item_name_promotion;
-pub mod item_numeric_modifier_promotion;
-pub mod item_physical_promotion;
-pub mod item_ranged_promotion;
+mod item_family;
 pub mod item_ref;
-pub mod item_stack_default_promotion;
-pub mod item_stack_default_successor8_promotion;
-pub mod item_stack_false_promotion;
-pub mod item_stack_historical_promotion;
-pub mod item_stats_promotion;
-pub mod item_timed_promotion;
-pub mod item_use_observation_promotion;
-pub mod item_weapon_metadata_promotion;
 mod model;
 pub mod native_cell_lookup;
 pub mod native_gameplay;
@@ -113,9 +84,8 @@ pub use activation::*;
 pub use artifact::{ActivationSlot, ActiveContent};
 pub use artifact::{ArtifactExpectation, ProjectionClass, StagedArtifact, StagedContentPair};
 pub use compiler::{CompiledContent, compile, compile_reference_playable};
-pub use cw2_b1_import::*;
-pub use cw2_b4_import::*;
 pub use fixture::synthetic_vsl_fixture;
+pub use item_family::CW2_B1_FULL_ITEM_FAMILY_COUNT;
 pub use model::*;
 pub use npc_catalogue::{
     NpcDataCatalogue, load_data_only_npc_catalogue, npc_catalogue_preproduction_limits,
@@ -199,3 +169,13 @@ pub mod spell_data;
 mod timed_item_definition;
 
 pub mod bosses;
+
+// Private artifact tests need adapters built against this unit-test crate's own types.
+#[cfg(test)]
+#[path = "../../../content-promotion/src/content/cw2_b1_import.rs"]
+mod cw2_b1_import;
+#[cfg(test)]
+pub use cw2_b1_import::*;
+#[cfg(test)]
+#[path = "../../../content-promotion/src/content/item_identity.rs"]
+pub mod item_identity;

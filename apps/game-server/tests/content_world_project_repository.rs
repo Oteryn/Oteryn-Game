@@ -2,6 +2,7 @@
 #![allow(clippy::expect_used, clippy::panic)]
 
 use oteryn_game_server::content::*;
+use oteryn_gameplay_content_promotion::content::*;
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 use std::ffi::OsStr;
@@ -891,15 +892,15 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     let weapon_new_keys: BTreeSet<_> = weapon_keys.difference(&parent_keys).copied().collect();
     assert_eq!(weapon_new_keys.len(), 95);
     let forge289_packet: serde_json::Value = serde_json::from_slice(
-        oteryn_game_server::content::item_forge289_promotion::ITEM_FORGE289_PACKET,
+        oteryn_gameplay_content_promotion::content::item_forge289_promotion::ITEM_FORGE289_PACKET,
     )
     .expect("sealed new Forge source data");
     assert_eq!(
-        Sha256::digest(oteryn_game_server::content::item_forge289_promotion::ITEM_FORGE289_PACKET)
+        Sha256::digest(oteryn_gameplay_content_promotion::content::item_forge289_promotion::ITEM_FORGE289_PACKET)
             .iter()
             .map(|b| format!("{b:02x}"))
             .collect::<String>(),
-        oteryn_game_server::content::item_forge289_promotion::ITEM_FORGE289_PACKET_SHA256
+        oteryn_gameplay_content_promotion::content::item_forge289_promotion::ITEM_FORGE289_PACKET_SHA256
     );
     let forge289_rows = forge289_packet["promotions"].as_array().expect("closed289");
     let forge289_keys: BTreeSet<_> = forge289_rows

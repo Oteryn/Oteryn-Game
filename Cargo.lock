@@ -1985,6 +1985,7 @@ dependencies = [
  "oteryn-gameplay-combat",
  "oteryn-gameplay-combat-rules",
  "oteryn-gameplay-content",
+ "oteryn-gameplay-content-promotion",
  "oteryn-gameplay-dispatch",
  "oteryn-gameplay-domain",
  "oteryn-gameplay-durability",
@@ -2105,6 +2106,15 @@ dependencies = [
  "serde_json",
  "sha2 0.11.1",
  "zstd",
+]
+
+[[package]]
+name = "oteryn-gameplay-content-promotion"
+version = "0.1.0"
+dependencies = [
+ "oteryn-gameplay-content",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -2471,6 +2481,7 @@ dependencies = [
  "oteryn-foundation",
  "oteryn-gameplay-characters",
  "oteryn-gameplay-content",
+ "oteryn-gameplay-content-promotion",
  "oteryn-gameplay-domain",
  "oteryn-gameplay-durability",
  "oteryn-gameplay-entities",

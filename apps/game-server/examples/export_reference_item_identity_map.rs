@@ -3,9 +3,8 @@ use std::env;
 use std::fs;
 use std::path::PathBuf;
 
-use oteryn_game_server::content::{
-    CandidateValue, protected_cw2_b1_full_item_family_import, world_project_sha256,
-};
+use oteryn_game_server::content::{CandidateValue, world_project_sha256};
+use oteryn_gameplay_content_promotion::content::protected_cw2_b1_full_item_family_import;
 use serde::Serialize;
 
 const B1_EVIDENCE: &[u8] = include_bytes!(

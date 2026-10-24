@@ -66,6 +66,7 @@ tokio-rustls.workspace = true
 toml.workspace = true
 
 [dev-dependencies]
+oteryn-gameplay-content-promotion = { version = "=0.1.0", path = "../../crates/gameplay/content-promotion" }
 reqwest.workspace = true
 oteryn-gameplay-dispatch = { version = "=0.1.0", path = "../../crates/gameplay/dispatch", features = ["test-support"] }
 oteryn-gameplay-social = { version = "=0.1.0", path = "../../crates/gameplay/social", features = ["test-support"] }
