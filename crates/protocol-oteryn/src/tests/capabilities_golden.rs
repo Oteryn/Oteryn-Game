@@ -656,6 +656,28 @@
   }
 }"#,
     r#"{
+  "id": 54,
+  "name": "TRAINING_V1",
+  "constant": "loop_training::CAPABILITY_TRAINING_V1",
+  "requires": [
+    4,
+    18,
+    21
+  ],
+  "acceptance_requires": false,
+  "commands": [
+    66,
+    67
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": false
+  }
+}"#,
+    r#"{
   "id": 51,
   "name": "STAFF_V1",
   "constant": "staff::CAPABILITY_STAFF_V1",
