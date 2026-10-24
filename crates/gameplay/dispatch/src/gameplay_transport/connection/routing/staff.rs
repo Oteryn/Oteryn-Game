@@ -19,8 +19,12 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         )
         .await
         {
-            transport::StaffReply::Result(bytes) => Dispatch::Staff(Some(bytes)),
-            transport::StaffReply::Rejected => Dispatch::Staff(None),
+            transport::StaffReply::Result(bytes) => {
+                Dispatch::Reply(crate::foundation::CommandStatus::Accepted, bytes)
+            }
+            transport::StaffReply::Rejected => {
+                Dispatch::Reply(crate::foundation::CommandStatus::Rejected, Vec::new())
+            }
             transport::StaffReply::Unknown => {
                 return None;
             }

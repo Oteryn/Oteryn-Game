@@ -1,0 +1,7 @@
+name=world_event
+commands=64
+[route]
+match routing::world_event::route(authority, &session.admitted, command).await {
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

@@ -14,11 +14,11 @@ use oteryn_protocol_oteryn::world_weather::{
     CAPABILITY_WORLD_WEATHER_V1, CAPABILITY_WORLD_WEATHER_V1_REQUIRES,
 };
 
-/// LOOK-2: capability 28 and its command type 30, offered on a bundle World and dispatched by
+/// LOOK-2: capability 28, offered on a bundle World and dispatched by
 /// the connection.
-pub use oteryn_protocol_oteryn::capability_tables::{
-    CAPABILITY_ITEM_LOOK_V1, COMMAND_TYPE_ITEM_LOOK_INTENT,
-};
+pub use oteryn_protocol_oteryn::capability_tables::CAPABILITY_ITEM_LOOK_V1;
+#[cfg(test)]
+pub use oteryn_protocol_oteryn::capability_tables::COMMAND_TYPE_ITEM_LOOK_INTENT;
 use oteryn_protocol_oteryn::capability_tables::{GATED, SUPERSEDED};
 
 /// One capability the server offers, with the capabilities that must also be selected for it

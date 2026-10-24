@@ -1,0 +1,10 @@
+name=house_move_out
+commands=76,77
+transport=house_move_out
+composed=house_move_out
+authority=house_move_out
+[route]
+match routing::house_move_out::route(authority, &session.admitted, command).await {
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

@@ -13,7 +13,9 @@ use crate::foundation::{CommandId, CommandRef, RuntimeScopeRefV1};
 use oteryn_protocol_oteryn::cyclopedia as wire;
 use sha2::{Digest, Sha256};
 
+#[path = "cyclopedia/content.rs"]
 mod content;
+#[path = "cyclopedia/respawn.rs"]
 mod respawn;
 
 pub(super) fn offered(base: &[OfferedCapability], available: bool) -> Vec<OfferedCapability> {
@@ -251,12 +253,13 @@ macro_rules! authority_methods {
         }
         fn cyclopedia_command(
             &self,
-            _admitted: super::connection::AdmittedSession,
+            _admitted: $crate::gameplay_transport::connection::AdmittedSession,
             _id: u64,
             _kind: u32,
             _payload: &[u8],
-        ) -> impl std::future::Future<Output = super::guild_intent::GuildReply> {
-            async { super::guild_intent::GuildReply::Rejected }
+        ) -> impl std::future::Future<Output = $crate::gameplay_transport::guild_intent::GuildReply>
+        {
+            async { $crate::gameplay_transport::guild_intent::GuildReply::Rejected }
         }
     };
 }

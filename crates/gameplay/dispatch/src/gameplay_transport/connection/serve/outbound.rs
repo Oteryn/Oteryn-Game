@@ -236,17 +236,13 @@ where
         | Dispatch::Look(..)
         | Dispatch::Achievements(_)
         | Dispatch::Highscores(_)
-        | Dispatch::HouseMoveOut(_)
         | Dispatch::Guild(_)
+        | Dispatch::Reply(..)
         | Dispatch::Vip(_)
-        | Dispatch::Party(_)
-        | Dispatch::WorldEvent(_)
         | Dispatch::Appearance(_)
-        | Dispatch::DailyReward(_)
         | Dispatch::Training(_)
         | Dispatch::Logout(_)
         | Dispatch::House(_)
-        | Dispatch::Staff(_)
         | Dispatch::Unregistered => {}
     }
     if training_logged_out {

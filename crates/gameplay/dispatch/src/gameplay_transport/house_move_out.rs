@@ -12,12 +12,6 @@ pub enum HouseMoveOutReply {
     Unavailable,
 }
 
-pub(super) fn owns(kind: u32) -> bool {
-    matches!(
-        kind,
-        wire::COMMAND_TYPE_HOUSE_MOVE_OUT | wire::COMMAND_TYPE_HOUSE_MOVE_OUT_QUERY
-    )
-}
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn house_move_out_wire(
         &self,
@@ -128,12 +122,14 @@ macro_rules! authority_methods {
     () => {
         fn house_move_out_command(
             &self,
-            _admitted: super::connection::AdmittedSession,
+            _admitted: $crate::gameplay_transport::connection::AdmittedSession,
             _id: u64,
             _kind: u32,
             _payload: &[u8],
-        ) -> impl std::future::Future<Output = super::house_move_out::HouseMoveOutReply> {
-            async { super::house_move_out::HouseMoveOutReply::Rejected }
+        ) -> impl std::future::Future<
+            Output = $crate::gameplay_transport::house_move_out::HouseMoveOutReply,
+        > {
+            async { $crate::gameplay_transport::house_move_out::HouseMoveOutReply::Rejected }
         }
     };
 }

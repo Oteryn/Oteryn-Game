@@ -1,0 +1,13 @@
+name=item_look
+commands=30
+[route]
+routing::item_look::route(
+    authority,
+    session.actor,
+    &mut session.admitted,
+    command,
+    session.selected_capabilities,
+    &session.visibility,
+    &session.item_view,
+)
+.await

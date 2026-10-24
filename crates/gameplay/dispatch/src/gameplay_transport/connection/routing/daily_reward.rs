@@ -11,18 +11,18 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     admitted: &AdmittedSession,
     command: ClientCommandView<'_>,
 ) -> Dispatch {
-    Dispatch::DailyReward(
-        transport::daily_reward::dispatch(
-            authority,
-            actor,
-            UseCommand {
-                game_session_id: admitted.game_session_id,
-                command_id: command.command_id,
-                item_fence: admitted.item_fence,
-            },
-            command.command_type,
-            command.payload,
-        )
-        .await,
+    let payload = transport::daily_reward::dispatch(
+        authority,
+        actor,
+        UseCommand {
+            game_session_id: admitted.game_session_id,
+            command_id: command.command_id,
+            item_fence: admitted.item_fence,
+        },
+        command.command_type,
+        command.payload,
     )
+    .await;
+    let (status, payload) = transport::daily_reward::result(command.command_type, payload);
+    Dispatch::Reply(status, payload)
 }
