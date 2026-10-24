@@ -661,6 +661,14 @@ impl ChannelAttackStates {
         }
     }
 
+    pub(super) fn party_attack_state(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<&AttackState<ExactActorRef, CommandRef>> {
+        self.index(actor, session).map(|i| &self.entries[i].state)
+    }
+
     /// The running in-fight deadline of `actor` (`ATTACK0-RL-03`): a logout is refused and a
     /// closed client stays in the world until it ends.
     pub fn in_fight_until(
