@@ -64,7 +64,7 @@ pub struct OneItemCharmUnassignV1 {
 /// The closed `FeeBurnCause`: one variant per admitted fee source.
 #[derive(Clone, PartialEq, Eq, prost::Oneof)]
 pub enum FeeBurnCauseV1 {
-    #[prost(message, tag = "4")]
+    #[prost(message, tag = "5")]
     NpcRepair(Box<OneItemTimedRepairV1>),
     #[prost(message, tag = "1")]
     CharmUnassign(OneItemCharmUnassignV1),
@@ -72,6 +72,8 @@ pub enum FeeBurnCauseV1 {
     PromotionPurchase(OneItemNpcPurchaseV1),
     #[prost(message, tag = "3")]
     BlessingPurchase(OneItemNpcPurchaseV1),
+    #[prost(message, tag = "4")]
+    AreaDonation(OneItemAreaDonationV1),
 }
 
 mod purchase_cause;
@@ -81,7 +83,7 @@ pub use repair_cause::OneItemTimedRepairV1;
 
 #[derive(Clone, PartialEq, Eq, Message)]
 pub struct OneItemFeeBurnCauseV1 {
-    #[prost(oneof = "FeeBurnCauseV1", tags = "1, 2, 3, 4")]
+    #[prost(oneof = "FeeBurnCauseV1", tags = "1, 2, 3, 4, 5")]
     pub cause: Option<FeeBurnCauseV1>,
 }
 
@@ -545,6 +547,16 @@ pub fn encode_fee_burn_event_with(
         return Err(AuditError::InvalidInput);
     }
     Ok(wire)
+}
+
+#[derive(Clone, PartialEq, Eq, Message)]
+pub struct OneItemAreaDonationV1 {
+    #[prost(bytes = "vec", tag = "1")]
+    pub world: Vec<u8>,
+    #[prost(uint32, tag = "2")]
+    pub area: u32,
+    #[prost(bytes = "vec", tag = "3")]
+    pub occurrence: Vec<u8>,
 }
 
 #[cfg(test)]

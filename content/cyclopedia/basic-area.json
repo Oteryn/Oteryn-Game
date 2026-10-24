@@ -1,0 +1,11 @@
+{
+  "revision": "oteryn-cyclopedia-basic-v1",
+  "qualification": "Oteryn default, not Reference-qualified",
+  "area": 1,
+  "subarea": 1,
+  "name": "Entry environs",
+  "radius": 32,
+  "pool_limit": 128,
+  "generated_count": 8,
+  "found_radius": 0
+}

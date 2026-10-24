@@ -54,6 +54,7 @@ pub mod fresh_admission;
 pub mod fresh_admission_composition;
 pub mod ground_cell_limit;
 pub mod highscore_snapshot;
+pub mod house_disposition;
 pub mod house_interior;
 pub mod house_interior_audit;
 pub mod house_ownership;
@@ -3486,3 +3487,5 @@ pub mod house_spell_acl;
 
 pub mod guild;
 pub mod guild_audit;
+
+pub mod character_cyclopedia;

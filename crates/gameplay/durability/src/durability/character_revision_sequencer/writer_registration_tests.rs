@@ -1,7 +1,11 @@
 #![allow(clippy::expect_used)]
 /// Revision-advancing durable writers and the only non-test source files allowed to call
 /// them. Every other writer reaches them through a [`RevisionSlot`].
-const SEQUENCED_WRITERS: [(&str, &str); 14] = [
+const SEQUENCED_WRITERS: [(&str, &str); 15] = [
+    (
+        ".commit_cyclopedia(",
+        "durability/character_revision_sequencer/cyclopedia.rs",
+    ),
     (
         ".commit_character_experience(",
         "durability/character_revision_sequencer.rs",
@@ -54,7 +58,7 @@ const SEQUENCED_WRITERS: [(&str, &str); 14] = [
     // ITEM-TIMED-1 is the accepted item-only exception under the same locked root.
     (
         "burn_fee_in_transaction(",
-        "durability/charm_state.rs|durability/npc_purchase.rs|durability/item_timed_runtime/repair.rs",
+        "durability/charm_state.rs|durability/npc_purchase.rs|durability/character_cyclopedia.rs|durability/item_timed_runtime/repair.rs",
     ),
     (
         ".commit_npc_purchase(",

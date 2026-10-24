@@ -31,7 +31,7 @@ Writes prove current session, lease, scope, root and active content. Receipts sh
 |---|---|---|
 | L3 | Native timed lanes and Soft Boots repair planner | Reused directly by runtime; no duplicate rules |
 | L4 | Fenced checkpoint/expiry and repair planning adapter | Atomic consumption, fee/repair execution, command receipts and equipment expiry custody |
-| Schema | 0054 timed rows, 0058 expiry guards | 0158 receipt table and narrow repair/equipment proofs; prior fee/transform guards preserved |
+| Schema | 0054 timed rows, 0058 expiry guards | 0179 receipt table and narrow repair/equipment proofs; prior fee/transform guards preserved |
 | Protocol | Item move/USE and NPC commands | Bounded request/result codec; append-only capability 39 and command 38 |
 | Offer/content | No native executable timed profiles | Four admitted Item profiles (3081/3549/6529/6530); conditional bundle offer; Aldo placement from existing agreeing source candidates |
 | Runtime | No timed writer consumers | Dedicated handler, ordinary USE, equip stop/start, owner timer and actor-end hooks |
@@ -90,7 +90,7 @@ was weakened and no previously merged protocol allocation was changed.
 main readback matched local `origin/main` exactly:
 `c49d3b6f7fae1750d9f89cae9a915e21a4b4a3ee`. Targeted `git ls-tree` and `git show`
 confirmed DEPOT owns command 36/capability 37. Both sources confirmed command 38,
-capability 39, resource entries 0700–0706 and migration 0158 are unused on main.
+capability 39, resource entries 0700–0706 and migration 0179 are unused on main (renumbered from 0158 after 0176 claimed fee cause 4; repair is cause 5).
 No merge was performed.
 
 Repair validation, through `/home/mole/oteryn-cache/codex-bin/cargo` with
@@ -133,10 +133,10 @@ credentials or protection files were changed.
 
 ## Implementation files (WIP head and continuation)
 
-Placement shard 00026→00027 preserves prior records. Migration: 0158; resources: 0700–0706.
+Placement shard 00026→00027 preserves prior records. Migration: 0179; resources: 0700–0706.
 
 ```text
-apps/game-server/migrations/0158_item_timed_runtime.sql
+apps/game-server/migrations/0179_item_timed_runtime.sql
 apps/game-server/tests/support/item_timed_postgres_cases.rs
 content/content.lock.json
 content/items/definitions/spell-native-profiles.json

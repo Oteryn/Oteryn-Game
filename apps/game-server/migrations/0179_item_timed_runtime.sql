@@ -19,7 +19,7 @@ GRANT SELECT,INSERT ON game_item_timed_commands TO oteryn_game_runtime;
 GRANT SELECT ON game_item_timed_commands TO oteryn_game_control;
 
 ALTER TABLE game_item_fee_burns DROP CONSTRAINT game_item_fee_burns_cause_kind_check,
- ADD CONSTRAINT game_item_fee_burns_cause_kind_check CHECK(cause_kind IN (1,2,3,4));
+ ADD CONSTRAINT game_item_fee_burns_cause_kind_check CHECK(cause_kind IN (1,2,3,4,5));
 -- Preserve the previous closed causes byte-for-byte, with one new fixed service arm.
 DO $$
 DECLARE body TEXT;
@@ -29,11 +29,11 @@ BEGIN
  IF body IS NULL THEN RAISE EXCEPTION 'missing purchase fee constraint'; END IF;
  ALTER TABLE game_item_fee_burns DROP CONSTRAINT game_item_fee_burns_purchase_cause;
  EXECUTE 'ALTER TABLE game_item_fee_burns ADD CONSTRAINT game_item_fee_burns_purchase_cause CHECK (('
-  || substr(body,7) || ') OR (cause_kind=4 AND charm_key IS NULL AND purchase_service_key=''oteryn:service.repair.aldo'' AND fee_gold_units=10000 AND line_count<=19))';
+  || substr(body,7) || ') OR (cause_kind=5 AND charm_key IS NULL AND purchase_service_key=''oteryn:service.repair.aldo'' AND fee_gold_units=10000 AND line_count<=19))';
  -- Item-only fees may commit at CharacterRevision 1. Every older cause retains >=2.
  ALTER TABLE game_item_fee_burns DROP CONSTRAINT game_item_fee_burns_committed_character_revision_check;
  ALTER TABLE game_item_fee_burns ADD CONSTRAINT game_item_fee_burns_committed_character_revision_check
-  CHECK(committed_character_revision BETWEEN 1 AND 18446744073709551615 AND (cause_kind=4 OR committed_character_revision>=2));
+  CHECK(committed_character_revision BETWEEN 1 AND 18446744073709551615 AND (cause_kind=5 OR committed_character_revision>=2));
 END;
 $$;
 
@@ -64,7 +64,7 @@ BEGIN
      ON b.item_instance_id=e.parent_item_instance_id AND b.character_id=e.character_id
      WHERE e.item_instance_id=w.item_instance_id AND e.character_id=w.holder_character_id)
   OR NOT EXISTS(SELECT 1 FROM game_item_fee_burns f JOIN game_item_timed_commands c USING(transaction_id)
-     WHERE f.transaction_id=w.transaction_id AND f.cause_kind=4 AND f.fee_gold_units=10000
+     WHERE f.transaction_id=w.transaction_id AND f.cause_kind=5 AND f.fee_gold_units=10000
        AND f.cause_occurrence_id=w.transaction_id AND f.character_id=w.holder_character_id
        AND c.character_id=w.holder_character_id AND c.item_instance_id=w.item_instance_id
        AND f.created_xact_id=pg_current_xact_id() AND c.created_xact_id=pg_current_xact_id()) THEN
@@ -84,7 +84,7 @@ $$;
 CREATE FUNCTION game_timed_repair_fee_proven() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE w game_item_timed_state_writes%ROWTYPE;
 BEGIN
- IF NEW.cause_kind=4 THEN
+ IF NEW.cause_kind=5 THEN
   SELECT * INTO w FROM game_item_timed_state_writes WHERE transaction_id=NEW.transaction_id;
   IF w.transaction_id IS NULL THEN RAISE EXCEPTION 'repair fee requires timed write' USING ERRCODE='23514'; END IF;
   PERFORM game_timed_repair_complete(w);
@@ -102,7 +102,7 @@ BEGIN
  SELECT pg_get_functiondef('game_item_fee_burn_consistency_guard()'::regprocedure) INTO body;
  IF position('AND cr.xmin = pg_current_xact_id()::xid' IN body)=0 THEN RAISE EXCEPTION 'missing fee root proof'; END IF;
  body:=replace(body,'AND cr.xmin = pg_current_xact_id()::xid',
-   'AND (cr.xmin = pg_current_xact_id()::xid OR (NEW.cause_kind=4 AND EXISTS(SELECT 1 FROM game_item_timed_state_writes w WHERE w.transaction_id=NEW.transaction_id AND w.cause=8 AND w.holder_character_id=NEW.character_id AND w.created_xact_id=pg_current_xact_id())))');
+   'AND (cr.xmin = pg_current_xact_id()::xid OR (NEW.cause_kind=5 AND EXISTS(SELECT 1 FROM game_item_timed_state_writes w WHERE w.transaction_id=NEW.transaction_id AND w.cause=8 AND w.holder_character_id=NEW.character_id AND w.created_xact_id=pg_current_xact_id())))');
  EXECUTE body;
  -- The exact existing transform arm also admits the fixed repair, whose complete
  -- shape is proven by game_timed_repair_complete in this same physical transaction.

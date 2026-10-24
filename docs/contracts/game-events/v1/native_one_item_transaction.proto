@@ -393,7 +393,8 @@ message OneItemFeeBurnCauseV1 {
     OneItemCharmUnassignV1 charm_unassign = 1;
     OneItemNpcPurchaseV1 promotion_purchase = 2;
     OneItemNpcPurchaseV1 blessing_purchase = 3;
-    OneItemTimedRepairV1 npc_repair = 4;
+    OneItemAreaDonationV1 area_donation = 4;
+    OneItemTimedRepairV1 npc_repair = 5;
   }
 }
 message OneItemNpcPurchaseV1 {
@@ -576,7 +577,7 @@ message OneItemNpcTradeV1 {
 // Closed ItemUseCause (decision ITEM-USE-0 §4.2): the variant and the using
 // command's CommandRef, which is the cause's identity.
 message OneItemUseCauseV1 {
-  uint32 kind = 1; // 1 Food, 2 Potion
+  uint32 kind = 1; // 1 Food, 2 Potion, 3 PickRefine (MINING-1; required one-unit output)
   string content_revision = 6;
   string ruleset_revision = 7;
   string sim_revision = 8;
@@ -651,6 +652,12 @@ message OneItemForgeDustLimitV1 {
 message OneItemPlayerTradeV1 {
   bytes request_binding = 1;
   repeated OneItemContainerEntryV1 destinations = 2; // exactly two, source-line order
+}
+
+message OneItemAreaDonationV1 {
+  bytes world = 1;
+  uint32 area = 2;
+  bytes occurrence = 3;
 }
 
 // ITEM-TIMED-1: fixed Aldo repair and coin/bank evidence share one FeeBurn event.

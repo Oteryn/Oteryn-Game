@@ -4,7 +4,7 @@
 task_id: MINING-1
 title: "MINING-1: mining and map-resource gathering"
 mode: IMPLEMENT
-status: waiting   # contract verification and lane allocation pending
+status: in_progress   # basic shiny-stone server USE implemented; other pick actions remain
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 3
@@ -14,108 +14,179 @@ briefs:
   - docs/architecture/reviews/OTERYN_GAME_CRAFT1_DECISION_2026-10-15.md
 class: "hard, persistence and economy review"
 base_branch: main
-branch: null
+branch: claude/happy-davinci-ijz3wy-srv-mining
 pr: null
 needs_migration: true   # allocated at lane start
-needs_registry: true   # resource-limit ranges allocated at lane start
+needs_registry: false   # reuses existing USE codecs and resource ceilings
 needs_content_regeneration: true
 merge_authority: CP_ONLY (builder never marks ready)
 ```
 
-## Goal
+## Current owner scope and result
 
-Use a carried pick on an admitted stone or ore map resource, obtain rule-defined drops, and prevent reuse until its cooldown/respawn permits it. Reuse native item-use, map ownership and mint authority; gathering yields are separate from CRAFT-DIG-1 tile opening.
+Owner decision 2026-10-23 supersedes generic gathering: **generic mining is
+NOT-IN-REFERENCE / out of scope**. Do not invent ore/stone nodes, outputs,
+chances or respawn timings. Implement Reference-backed pick USE on the server;
+client UI and publication remain outside this worker's allocation.
 
-## Dependencies
+The basic **carried shiny-stone refining** path is implemented end to end. A
+logged-in session uses pick 3456 on shiny stone 10310 through command 2 USE.
+One stone becomes one Reference-defined coin or diamond in the main backpack;
+the pick remains intact. Both a carried tool handle and a definition hotkey
+resolve against the fenced carried tree, including closed nested bags.
 
-CRAFT1 C5 explicitly excludes digging yields; accept the gathering-yield contract before implementation. Confirm ITEM-USE-1c, WORLDINT-USE-1, MAP-OVERLAY ownership/reset, native MINT and deterministic RNG seams at lane start.
+This is not completion of every action in Canary's pick handler. Positioned
+obstacle removal, map transformations and quest-specific pick actions remain
+unimplemented by this change, as listed under Unfinished. No ore/stone mining
+or map respawn is claimed.
 
-This is a waiting plan, not a runtime allocation or a new accepted contract. Live
-Issue/PR state and owning contracts must be checked when the lane starts.
+## Server wiring gap list
 
-## owned_paths (proposed; confirm at lane start)
+Initial local HEAD: `151c4bb8372cea1672e4106afd6b1d0b8253445c`.
+Branch: `claude/happy-davinci-ijz3wy-srv-mining`; no frozen SHA or PR.
+Allocated migration: **0167**. Reserved command 54–55, capability 48 and
+resource-limit entries 0780–0786 were not needed.
 
-- `crates/gameplay/items/src/mining/` — pure rules and separate child test files.
-- `crates/gameplay/durability/src/durability/mining/` — own storage submodule, codecs, receipts and separate tests.
-- `crates/gameplay/dispatch/src/gameplay_transport/mining/` — separate later wiring slice and dispatch tests.
-- `apps/game-server/src/lifted_tests/auto/mining_postgres_cases.rs` — auto-mounted PG cases; no shared test mount edits.
-- `docs/agents/tasks/MINING-1.md` — this task record.
+| Layer | Found on this HEAD before implementation | Implemented result / remaining gap |
+| --- | --- | --- |
+| L3 | Reach/capacity helpers; C5 digging content facts; no mining rules | `items/src/mining/` qualifies the normal pick and exact shiny-stone 1/5/45/49 table. No generic mining rule. |
+| L4 | Atomic one-unit item-use TRANSFORM, retained receipts, nested custody proofs | `item_use/mining.rs` checks the unchanged pick, native definitions, current Content, capacity and weight under the existing current session/lease/scope/recovery fences. Source, output, proof, receipt and audit commit together. |
+| Schema | `game_item_use_records`, nested-source proofs (0131) | Migration 0167 admits cause 3 PickRefine with a required output and an immutable tool/wire/draw proof, deferred atomicity checks and runtime-role grants. |
+| Protocol / registry | Existing bounded command 2 USE, carried source, definition hotkey, use-with item/object and result codecs | Existing codec reused unchanged; no command/capability allocation or registry edit. Audit proto documents additive cause 3. |
+| Dispatch | Food/potion owner and USE ingress; map use-with rejected | Mechanic-owned `gameplay_transport/mining/` routes USE, retains original bytes and reconciles replay before stale handles can refuse. Unknown commits disconnect without sequencing a terminal refusal. Unsupported map/quest actions still refuse. |
+| Offer / runtime | Bundle-world production composition and Item index | Existing capabilities 11 and 15 are bundle-world offers in their registry fragments since CAPS-SPLIT-1/CRAFT-1; no mining offer layer. Map-target USE routes a live-instance target to the pick and keeps a committed pick replay before CRAFT-1's station owner. Existing composed production authority forwards to the mechanic; no new game-server runtime owner is needed. |
+| Content | Item identities existed, but native policies for pick, shiny stone and diamond were absent | Exactly three native profiles added from admitted identity/physical facts and pinned Reference stack flags. Native provider now has 457 profiles with CRAFT-1; generated manifest/index/lock digests regenerated. |
+| PG E2E | Auto-mounted dispatch lib tree and production `serve_admitted` | `postgres_tests/mining.rs` exercises command/result bytes, nested custody, wrong tool/target, full backpack, missing capability, stale generation, lost acknowledgement, replay/conflict and reload using the installed runtime role. |
+| Remaining map owner | C5 content validation, base-map overlay and door owner | No new map transformation, positioned obstacle or quest-state writer in this change. |
 
-Migration numbers and resource-limit ranges: **allocated at lane start**; none
-reserved here. Exact migration, content input and protocol paths require an explicit
-lane allocation; shared `mod.rs`/`lib.rs` changes are registration only. No workflow,
-repository-policy or Soul War paths belong to this plan.
+## Reference parity table
 
-## Scope
+Pinned Canary revision: `52550d5e3c0ffe565f4bd1014f4e5575abf1059b`.
+Evidence is bounded to the named handler and its delegated actions; it is not
+an audit of all Canary quests.
 
-Validated tool/resource matching, reach and ownership checks; admitted drop tables; cooldown/depletion and respawn state; atomic reward mint plus receipt and resource transition. Bind resource identity to WorldId and ChannelId separately, with the map owner resolving the stable resource key. Decide persistence and reset semantics before storage authoring; never silently change CRAFT1 volatile digging.
+| Visible behavior | Reference evidence | Oteryn now |
+| --- | --- | --- |
+| Normal pick 3456 stays intact | [pick.lua](https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/data/scripts/actions/tools/pick.lua), delegates to onUsePick without consuming the tool | Implemented, checked in the atomic writer, SQL proof and PG scenario. |
+| Shiny stone 10310 consumes one unit and produces exactly one item: 1% crystal coin 3043, 5% gold coin 3031, 45% platinum coin 3035, 49% small diamond 3028 | [onUsePick](https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/data-otservbr-global/scripts/lib/register_actions.lua), shiny-stone branch | Implemented. Exhaustive 100-draw rule test; retained occurrence draw; fenced atomic conversion; restart and replay proof. Petrologist achievement progress is not implemented. |
+| Pickable ground opens holes; individual ice/stone forms transform and decay | Same handler; [tile_pick.lua](https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/data-otservbr-global/startup/tables/tile_pick.lua); C5 `content/craft/map-facts.json` retains pinned XML return evidence | UNFINISHED: no map-transition dispatch added here. No ore is substituted for these transformations. |
+| Positioned stone 1772 at (32648,32134,10) disappears for 20 seconds without reward | Same onUsePick handler | UNFINISHED: no positioned obstacle transition/respawn added here. |
+| Secret Library crystals, Dream Courts lock, Grimvale silver, Rookie Guard pillars, Ice Islands, Sea of Light and other quest branches have their own state and gates | Same handler and its named delegated quest actions | UNFINISHED: no quest state is fabricated or bypassed. |
+| Generic renewable ore/stone mining | The pinned handler has no generic ore/stone yield table; [TibiaWiki Pick](https://tibia.fandom.com/wiki/Pick) and [Iron Ore](https://tibia.fandom.com/wiki/Iron_Ore) do not establish one | **NOT-IN-REFERENCE / out of scope**, per owner decision. No invented yield or respawn. |
+| Atomic result and receipt survive reconnect/restart; full inventory refuses the entire conversion | Owner's server durability requirement; Reference Lua uses separate add/remove calls | Deliberate stronger Oteryn semantics, documented in `docs/contracts/MINING_PICK_USE_V1.md`. |
 
-## Excluded scope
+The three native profiles use existing Crystal identity bindings and admitted
+World physical facts. `tools/content-schema/native-gameplay/mining-item-facts.json`
+retains only decoded stack/pickup facts from Canary's pinned appearances.dat
+(SHA-256 `aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50`).
+No original binary or sprite asset was added. Provider generation is reproducible
+through `tools/content-migration/register_spell_families.py`.
 
-Ordinary hole opening already owned by CRAFT-DIG-1; terrain editing, new mining skills, speculative crafting economy, client redesign, Soul War files and reference asset redistribution.
+## Validation evidence
 
-## Target layout and slices (ADR-0022)
+Passed so far (2026-10-23):
 
-1. Pure rules in the existing L3 `oteryn-gameplay-items` rules module
-   `items/src/mining/`. Keep policy, plans and arithmetic free of SQL and transport.
-2. Durable state in `crates/gameplay/durability/src/durability/mining/`, as its
-   own submodule. Split transactions, decoding and tests into small child files.
-   Reuse recovery admission, session-generation fencing, revision sequencing and
-   native value receipts. Schema/grants and their writer are inseparable.
-3. Dispatch wiring is a separate later slice in `gameplay_transport/mining/`.
-   Every added public function needs a production caller and a named end-to-end
-   test through real `protocol-oteryn` dispatch before mechanic completion.
+- `cargo check --locked -p oteryn-gameplay-dispatch --quiet`.
+- `cargo clippy --locked -p oteryn-gameplay-items -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch --all-targets --quiet -- -D warnings`.
+- `cargo clippy --locked -p oteryn-game-server --all-targets --quiet -- -D warnings`.
+- Items `mining::`: 1 exhaustive rule test.
+- Durability `item_use_audit::tests`: 8 tests.
+- Dispatch `item_use::tests`: 5 existing item-use gate/rule tests.
+- Dispatch `world_required_capabilities::tests`: 17 boot/negotiation tests.
+- Dispatch `equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes`: 1 consumer test.
+- Content `native_gameplay`: 45 pass; 1 pre-existing ignored test, unchanged.
+- Spell import generator regression tests: 9 pass.
+- Dispatch `mining_pick_refining`: 1 PostgreSQL E2E using the absolute wrapper;
+  runtime role asserted before conversion and after reopening the durability root.
+  Two concurrent live commands competing for the final unit produce exactly one
+  conversion; the source retires at zero and another attempt refuses.
+- Content profile generator: 2 tests, including duplicate identity and substituted
+  Reference revision refusal; `register_spell_families.py --check` passes.
+- Governance: 22 policy documents / 9 lanes pass; governance unit tests: 129 pass.
+- Repository policy: 23 files / 68 workflows pass. `git diff --check` passes.
 
-No giant mechanic files, speculative framework or new dependency fork. Keep
-WorldId and ChannelId distinct and retain Character session-generation fences.
-
-## Reference parity
-
-Canary (`opentibiabr/canary`) source paths to consult as evidence:
-
-- `data/scripts/actions/tools/pick.lua`
-- `data-otservbr-global/startup/tables/tile_pick.lua`
-
-TibiaWiki page names to consult: **Pick, Mining, Iron Ore**.
-
-TODO: which tiles actually support gathering rather than opening; tool consumption; eligible ores, quantities and probabilities; cooldown/respawn duration; reset/restart behaviour. If upstream has no mining-yield rule, record that gap and obtain an accepted rule instead of calling invented drops parity.
-
-Evidence is not runtime authority. Record pinned source revisions and any deliberate
-difference in the implementation packet before content admission.
-
-## Acceptance criteria
-
-- [ ] A second character racing the same node cannot obtain another drop for the same depletion occurrence. Wrong tool, out-of-reach, stale scope/session generation and unavailable inventory refuse without consuming or minting. Exact retries and uncertain commits reconcile the retained original receipt; respawn cannot replay an old reward.
-- [ ] Durable state and retained receipts survive restart, rollback and reconnect.
-- [ ] Bounds and lock order are enforced in the writer; concurrent losers are typed.
-- [ ] Properties cover drop conservation, checked quantity/time arithmetic, deterministic occurrence-bound draws and no double harvest per occurrence.
-- [ ] Rules, storage and dispatch stay separate; tests live in child files.
-- [ ] Production callers and real-dispatch end-to-end tests cover all new public APIs.
-
-## Validation
-
-Planned commands after implementation; these filters must name the actual new tests
-and produce nonzero test counts. Run only this mechanic's PostgreSQL cases. The
-wrapper supplies `OTERYN_TEST_POSTGRES_ADMIN_URL`; absent routing returns `Ok(())`
-without claiming PG qualification. GitHub CI runs the complete registered suites.
+Exact cargo test commands (all use the queued wrapper, PG scope is mechanic-only):
 
 ```sh
-cargo fmt --all --check
-cargo clippy --locked -p oteryn-gameplay-items -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --all-targets --quiet -- -D warnings
-cargo test --locked -p oteryn-gameplay-items --lib mining::
-cargo test --locked -p oteryn-gameplay-items --lib mining::property_
-cargo test --locked -p oteryn-gameplay-durability --lib mining::
-cargo test --locked -p oteryn-gameplay-dispatch --lib mining::
-cargo test --locked -p oteryn-game-server --lib lifted_tests_auto::mining_postgres_cases::
-python3 tools/agents/validate_governance.py
-git diff --check
+/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-items --lib mining:: --quiet
+/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-durability --lib item_use_audit::tests --quiet
+/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --lib item_use::tests --quiet
+/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --lib world_required_capabilities::tests --quiet
+/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --lib mining_pick_refining --quiet -- --nocapture
+/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --lib equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes --quiet
+/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-content --lib native_gameplay --quiet
 ```
 
-PG cases must exercise the installed migrator/runtime role, commit/reload,
-rollback, replay/conflict, stale fences, scope isolation and concurrent writers.
-Add mechanic-specific property tests and an end-to-end dispatch case; include
-restart/unknown-commit reconciliation rather than storage-only success claims.
+Final dispatch clippy and rustfmt verification pass. Rustfmt explicitly covered
+the auto-mounted PG files and child fixtures as well as the workspace roots.
+An initial content test build lost its incremental cache files on the shared PC;
+its retry passed without deleting or changing shared caches. The initial
+equipment module filter matched zero tests; the exact named consumer filter
+above then passed. No absent-PostgreSQL early return is claimed as qualification.
 
-## Risks
+D1462 whole-diff checklist review and workspace match/constructor/impl sweep
+are complete. All ItemUseKind matches, ItemUseRequest constructors and
+FreshAdmissionAuthority implementations in apps/, crates/ and tools/ were
+searched; the production implementation forwards USE and other test authorities
+retain a closed default. Every new public rule/storage API has a production caller
+through USE and is exercised by the named PG dispatch test. Client, credential,
+workflow and repository-policy paths were not changed. No Git mutation or
+publication was performed; independent candidate review remains with the lead.
 
-Shared resource versus Character lock ordering, cross-channel duplication, reset races and conflating volatile digging with durable gathering rewards.
+## Owned / changed paths
+
+- `crates/gameplay/items/src/mining/`, with one registration in `src/lib.rs`.
+- `crates/gameplay/durability/src/durability/item_use/mining.rs`, the existing
+  item-use transaction/ancestry modules and audit cause decoder.
+- `crates/gameplay/dispatch/src/gameplay_transport/mining/`, auto-mounted
+  `postgres_tests/mining.rs` and its child fixtures; minimal USE trait/registration
+  and map-target routing ahead of CRAFT-1; exact native profile count/unknown
+  speed assertions updated in the existing equipment consumer test.
+- `apps/game-server/migrations/0167_pick_refining.sql`.
+- Native profile registration helper/tests, three-item Reference facts, generated
+  native profiles and their manifest/index/lock digests.
+- `docs/contracts/MINING_PICK_USE_V1.md`, the audit proto cause comment and this card.
+
+## Unfinished
+
+- Reference map/tile transformations, the positioned 20-second obstacle and
+  quest-specific pick actions (including Petrologist progress) are not implemented
+  here. The delivered path is carried shiny-stone refining only.
+- No PR, commit, external review or publication: the owner prohibited Git writes.
+- No pending owner question. The earlier generic-yield blocker was resolved by
+  the owner's explicit NOT-IN-REFERENCE decision, not by inventing a mining table.
+
+## Exact changed files
+
+- `apps/game-server/migrations/0167_pick_refining.sql`
+- `content/content.lock.json`
+- `content/items/definitions/spell-native-profiles.json`
+- `content/items/index.json`
+- `content/manifest.json`
+- `content/spells.manifest.json`
+- `crates/gameplay/dispatch/src/gameplay_transport/connection.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/equipment_effects_owner_tests/ability_tests.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/item_use.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/mining/mod.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/mod.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/mining.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/mining/fixture.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/mining/full_backpack.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/mining/restart.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/mining/wire.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/world_required_capabilities.rs`
+- `crates/gameplay/durability/src/durability/item_use.rs`
+- `crates/gameplay/durability/src/durability/item_use/carried_inventory.rs`
+- `crates/gameplay/durability/src/durability/item_use/carried_source.rs`
+- `crates/gameplay/durability/src/durability/item_use/mining.rs`
+- `crates/gameplay/durability/src/durability/item_use_audit.rs`
+- `crates/gameplay/items/src/lib.rs`
+- `crates/gameplay/items/src/mining/mod.rs`
+- `crates/gameplay/items/src/mining/tests.rs`
+- `docs/agents/tasks/MINING-1.md`
+- `docs/contracts/MINING_PICK_USE_V1.md`
+- `docs/contracts/game-events/v1/native_one_item_transaction.proto`
+- `tools/content-migration/mining_item_profiles.py`
+- `tools/content-migration/register_spell_families.py`
+- `tools/content-migration/test_mining_item_profiles.py`
+- `tools/content-schema/native-gameplay/mining-item-facts.json`

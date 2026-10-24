@@ -2538,6 +2538,7 @@ pub mod damage_element;
 pub mod guild;
 pub mod guild_bank;
 pub mod highscores;
+pub mod house_move_out;
 pub mod item_look;
 pub mod item_view;
 pub mod logout;
@@ -4545,5 +4546,7 @@ mod decoder_fuzz_support;
 pub mod house;
 
 pub mod staff;
+
+pub mod cyclopedia;
 
 pub mod timed_item;
