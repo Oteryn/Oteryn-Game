@@ -1,0 +1,17 @@
+{
+  "id": 36,
+  "name": "CHAT_GUILD_ROOM_V1",
+  "constant": "chat::guild_room::CAPABILITY_CHAT_GUILD_ROOM_V1",
+  "requires": [
+    7
+  ],
+  "acceptance_requires": false,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

@@ -684,11 +684,18 @@ include!("capability_connection_2_tests.rs");
 
 // Independent full-set snapshot captured from current main, shared with protocol goldens.
 fn golden_offer_ids(set: &str) -> Result<Vec<u32>, Box<dyn Error>> {
-    let entries: Vec<Value> =
-        include!("../../../../protocol-oteryn/src/tests/capabilities_golden.rs")
-            .iter()
-            .map(|text| serde_json::from_str(text))
-            .collect::<Result<_, _>>()?;
+    let directory = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../protocol-oteryn/src/tests/capabilities_golden");
+    let mut entries: Vec<Value> = Vec::new();
+    for item in std::fs::read_dir(directory)? {
+        let item = item?;
+        if item.path().extension().is_some_and(|ext| ext == "json") {
+            entries.push(serde_json::from_str(&std::fs::read_to_string(
+                item.path(),
+            )?)?);
+        }
+    }
+    entries.sort_by_key(|entry| entry["id"].as_u64());
     entries
         .iter()
         .filter(|entry| entry["offers"][set] == true)
