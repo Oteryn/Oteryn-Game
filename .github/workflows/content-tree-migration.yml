@@ -22,7 +22,7 @@ on:
       - tools/content-migration/**
       - tools/merge-driver/**
       # Pinned by tools/content-migration/source_relocations.py.
-      - crates/gameplay/content/src/content/item_identity.rs
+      - crates/gameplay/content-promotion/src/content/item_identity.rs
       - tools/content-schema/starter-kit-authoring/**
       - tools/content-schema/imbuement-authoring/**
       - imports/tibiawiki/facts/items-stats.json
