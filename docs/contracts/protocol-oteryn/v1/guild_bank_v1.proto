@@ -1,0 +1,38 @@
+syntax = "proto3";
+package oteryn.protocol.v1;
+// GUILD-BANK-1, capability 55, command types 68/69. Every singular field is required
+// except optional fields below. Duplicate/unknown fields, invalid UUIDv7 and mixed actions fail closed.
+// Requests <=160 bytes, replies <=16384 bytes, <=100 ledger entries. No Account/World selectors.
+message GuildBankIntent {
+  bytes guild = 1; // exactly 16 UUIDv7 bytes; a selector, never authority
+  uint32 action = 2; // 1 deposit, 2 withdraw, 3 claim, 4 disband
+  optional uint64 amount = 3; // REQUIRED only for 1/2, 1..999999999999
+  optional string confirmation = 4; // REQUIRED only for 4, exact Guild name, 1..29 Unicode scalars
+}
+// With guild: member ledger or the owner's retained claim; before is ledger-only.
+// Without guild: current Account/World open claims, ascending by GuildId, after_claim is exclusive.
+message GuildBankQuery { optional bytes guild = 1; optional uint64 before = 2; optional bytes after_claim = 3; }
+message GuildBankClaim { bytes guild = 1; uint64 amount = 2; }
+message GuildBankEntry {
+  uint64 ordinal = 1; // positive i64, strictly descending in reply
+  uint32 kind = 2; // 1 deposit, 2 withdraw, 3 payout
+  uint64 amount = 3;
+  uint64 before = 4;
+  uint64 after = 5;
+  bytes actor = 6;
+}
+// 1 OK, 2 NOT_ALLOWED, 3 GUILD_DISBANDING, 4 INSUFFICIENT_BALANCE,
+// 5 BALANCE_LIMIT, 6 JUNIOR, 7 NO_CLAIM. Refusals have zero balances and no entries.
+// Mutation replies retain the original committed balances on replay. A disband OK acknowledges
+// durable DISBANDING; the World scheduler continues bounded cleanup. Query reloads current state.
+// Members read at most 30 days of Guild ledger. A claim owner reads its claim after member cleanup.
+message GuildBankReply {
+  uint32 code = 1;
+  uint64 bank_balance = 2; // <=9000000000000000
+  uint64 guild_balance = 3; // <=999999999999
+  uint64 claim = 4; // <=999999999999
+  repeated GuildBankEntry entries = 5;
+  optional uint64 next = 6; // only on a full 100-entry page, equals its last ordinal
+  repeated GuildBankClaim claims = 7; // up to 100 open own claims, ascending GuildId
+  optional bytes next_claim = 8; // only on a full claims page, equals its last GuildId
+}

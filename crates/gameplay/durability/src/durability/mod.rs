@@ -30,3 +30,5 @@ pub mod raid_schedule;
 pub mod vip;
 
 pub mod house_management;
+
+pub mod staff;

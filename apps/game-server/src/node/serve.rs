@@ -2002,6 +2002,10 @@ async fn audit_expiry_loop(
                 }
             }
         }
+        match root.expire_staff_audit().await {
+            Ok(count) => deleted = deleted.saturating_add(count),
+            Err(_) => failed = true,
+        }
         event(&format!(
             "event=audit_expiry deleted={deleted} result={}",
             if failed { "failed" } else { "ok" }
@@ -2414,6 +2418,15 @@ async fn boot_and_serve(
         return Ok(());
     };
     let proof = proof?;
+    with_retries(
+        root,
+        "staff trust configuration",
+        config.boot_pass_deadline(),
+        boot_step_retryable,
+        || root.configure_staff(config.staff.clone()),
+    )
+    .await
+    .map_err(|_| BootError::Serve)?;
     let evidence = &material.evidence;
     establish_custody(root, &proof, material, evidence).await?;
     // D3 step 5.

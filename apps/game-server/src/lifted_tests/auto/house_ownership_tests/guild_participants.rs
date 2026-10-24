@@ -4,6 +4,15 @@ use super::*;
 #[test]
 fn house_ownership_guild_participants_require_a_guild_owner() -> TestResult {
     run("house_guild_participants", |h| async move {
+        // GUILD-BANK-1 is installed on the current schema, even with no Guild rows.
+        let installed: bool = sqlx::query_scalar("SELECT game_guild_core_participants_installed()")
+            .fetch_one(&h.pool)
+            .await?;
+        assert!(installed);
+        // Reconstruct the existing core-only snapshot for the original House-only checks.
+        // The bank's installed-schema dispatch E2E separately qualifies real payout/cleanup.
+        crate::durability::guild_chat_fixture::prepare(&h.pool).await?;
+        crate::durability::guild_chat_fixture::guard(&h.pool).await?;
         // Neither installation nor a populated ordinary property needs Guild disposition.
         let installed: bool = sqlx::query_scalar("SELECT game_guild_core_participants_installed()")
             .fetch_one(&h.pool)

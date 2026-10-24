@@ -4,7 +4,7 @@
 task_id: GM-1
 title: "GM-1: signed staff requests with atomic STAFF_ACTION audit; mute, kick, inspect, item-text reports, restore replay"
 mode: IMPLEMENT
-status: waiting
+status: in_progress
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 5
@@ -13,7 +13,7 @@ plan_row: "§4 Epic 6 row GM-1 (row 136); App. 7 GM-1; §5 Wave 5"
 brief: "docs/architecture/reviews/OTERYN_GAME_ARCH_LIVE_READINESS_2026-10-06.md §1 (rulings 2, 8, 11; packet table OPS-GM-AUDIT-1 ALPHA first); ALPHA-OPS ruling 8; WRITE0 §6"
 class: "hard (child graph), security, persistence and authority review"
 base_branch: main
-branch: null
+branch: claude/happy-davinci-ijz3wy-srv-gm
 pr: null
 needs_migration: true   # next free number at allocation time (only one migration PR in the queue); draft had two units (staff audit, staff moderation)
 needs_registry: true    # GAME_EVENT_FOUNDATION_REGISTRY STAFF_ACTION (+ retention profile), RESOURCE_LIMITS_REGISTRY staff wire bounds
@@ -25,6 +25,158 @@ Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **OPEN**. T
 Merged evidence: none. Existing logout is reusable; no staff-action owner, sanction/mute store or staff desk from GM-1 is retained on main. Evidence: `crates/gameplay/dispatch/src/gameplay_transport/logout.rs`.
 
 Remaining: Implement staff audit/sanctions and real mute/kick/report consumers within the accepted owner contracts. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
+
+## Server wiring gap list
+
+Resume inspection on `HEAD@1514d8fee402f0245c11ad6e87dda5d396255742`,
+2026-10-23/24. The committed E2E audit (`MECHANICS_STATUS.md`, “GM tools”, **NONE**)
+is confirmed for committed code. The retained worktree supplies a candidate basic
+server path. The rows below describe that uncommitted candidate, not merged delivery.
+
+| Layer | Local candidate now | Remaining server work |
+|---|---|---|
+| L3 rules / authority | Closed Inspect/Mute/Unmute requests, reason taxonomy, canonical decimal/ASCII validation, duration and freshness bounds | Kick and report action vocabulary/consumers |
+| L4 durability | Current session/generation/lease/scope fences; serialized signed chain; atomic sanction, operation, audit and stored result; signed receipts; exact replay without clock | Restore replay and the remaining moderation/report writers |
+| Migrations | Only `0170_staff_actions.sql`: immutable owner roster mirrors, links, outcomes, receipts, sanctions, outbox, reciprocal transaction guards, runtime/control grants and finite audit expiry | Report and restore schema remains absent |
+| Dispatch | Mechanic-owned `staff.rs`, real command dispatch, unknown storage outcome closes without a terminal result | Kick/report dispatch |
+| Protocol | Strict bounded signed envelope/result codec; commands 60–61; cap 51 registered in acceptance and central command gate | No additional protocol ids used |
+| Capability | Default, bundle and item-view worlds offer transport cap 51; no content dependency and no player authority grant | Owner bootstrap and restart-pinned public trust files remain deployment prerequisites |
+| Runtime | Restart-only pinned trust; chat, guild chat and casts consult durable sanctions; combined automatic/staff mute wait; retained links flushed before returning results | Kick desk/target logout consumer; full inspection projections |
+| PostgreSQL E2E | Auto-mounted dispatch `--lib` case: admitted session → command bytes → durable effect/audit → result bytes, replay and restart | Full 18-row qualification, kick/reports/restore and independent review |
+
+### Reference parity table
+
+| Visible behavior | Reference evidence | Oteryn now |
+|---|---|---|
+| A player cannot supply staff authority | Live-readiness §1 rulings 2, 4, 9; D1040–D1044 | OpenSSH verification before closed typed decode, pinned reviewed history and exact canonical bytes; no staff role from session/content |
+| Audit commits before reads or effects become observable | Live-readiness §1 ruling 11; Reference executor | Inspect/Mute/Unmute use the same fenced transaction for result, signed link, operation, effect and audit; injected audit failure rolls back and returns no data/result |
+| Mute holds chat/casts across restart and nodes | Reference Mute/Unmute | Durable sanction read on every chat/guild-chat/cast; reconnect does not clear it; configured nodes scope by environment, nodes without operator trust conservatively honour sanctions in their database |
+| Kick preserves IN_FIGHT via fenced logout | CP 2026-10-19 / D1437 | Existing logout remains the prerequisite; staff Kick is unfinished |
+| Identical expired retries never repeat effects | D1042; Reference executor | Exact retained envelope returns original outcome without trusted time; conflicting bytes refuse; receipts also replay |
+| Historical roster revisions remain verifiable | D1041 / D1412; retained history requirement | Restart pins both roster and activation; the exact revision at signed sequence verifies history, including a retained key reused in a later roster |
+| Retained chain detects restore gaps/forks | Reference signature/chain and restore requirements | Signed links are flushed separately before result exposure; changed retained bytes or a retained tip ahead of DB stop boot; automatic restore replay is unfinished |
+| ReportsList/ReportClose/ReportClearText | Reference Reports / REPORT-3 | Unfinished; unsupported actions fail closed |
+
+### Current implementation boundary
+
+Owner decision 2026-10-23: **A — signed operator requests over the logged-in
+session**. This supersedes only the operator-socket/no-protocol transport
+restriction. Off-host OpenSSH signatures, restart-pinned trust, retained chain,
+receipts and replay protection remain required. No player role, content flag or
+spell privacy field grants staff authority. Local AUTHORING only; no publication.
+The gap table above was rechecked against this HEAD before implementation.
+
+### Validation evidence (local worktree, 2026-10-24)
+
+All cargo invocations use `/home/mole/oteryn-cache/codex-bin/cargo`, `--locked`
+and cached dependencies. No whole PostgreSQL suite is run. No candidate freeze,
+external review, publication or merge is claimed.
+
+| Check | Result |
+|---|---|
+| Protocol unit tests | PASS, 389 |
+| Staff rule tests (`staff_rules_`) | PASS, 2 |
+| Staff JCS tests (`staff_jcs_`) | PASS, 1 |
+| Durability root contract unit tests | PASS, 12 |
+| Capability negotiation/selection unit tests | PASS, 44 |
+| Chat unit tests | PASS, 19 |
+| Node configuration unit tests | PASS, 11 |
+| Focused real-dispatch PostgreSQL case | PASS, 1; `POSTGRES_STARTED` observed |
+| Clippy `--locked --all-targets -- -D warnings` | PASS for protocol, social-rules, durability, dispatch and game-server; existing vendored dependency warnings remain outside the touched packages |
+| `cargo fmt --all -- --check`, explicit rustfmt check of auto-mounted staff tests/modules | PASS |
+| Governance validator and agent unit tests | PASS; 129 Python tests |
+| Repository policy validator | PASS; 23 files / 68 workflows |
+| Protocol/resource fragment validation | PASS |
+| `git diff --check` | PASS |
+
+Intermediate local PG runs also disconnected without a result on a Mute/Inspect;
+focused reruns passed, including the final expanded case. No deadline, fence or
+assertion was relaxed and no test retry was added. This is not an exemption for
+CI: the final candidate still needs its ordinary PostgreSQL lane.
+
+Self-review: re-read the complete task delta, including both new untracked child
+modules, against `/home/mole/oteryn-cache/CODEX-CHECKLIST.md`. Workspace-wide `rg`
+covered added types, enum matches, constructors, fields and the
+`FreshAdmissionAuthority::staff_command` implementations in `apps/`, `crates/`
+and `tools/`. Both DurabilityRoot constructors are updated; NodeConfig has no
+literal constructors. Every new public runtime function has a production caller;
+the codec/storage/dispatch path is exercised by the real-dispatch PG case.
+Capability 51 is registered in both acceptance validation and central command
+ownership. The existing offer-set assertions were expanded to include 51.
+
+Exact test selectors:
+
+```sh
+/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-protocol-oteryn
+/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-social-rules staff_rules_
+/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-durability --lib staff_jcs_
+/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-durability --lib durability::db::wp3_root_contract_tests::
+/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --lib gameplay_transport::capabilities::tests::
+/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --lib gameplay_transport::chat_intent::tests::
+/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --lib staff_pg_signed_wire_mute_receipt_replay_restart_and_fail_closed -- --nocapture
+/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-game-server --lib node::config::tests::
+```
+
+The PostgreSQL case is mounted by `dispatch/build.rs` into
+`gameplay_transport::monk_save::postgres_tests::staff`, so the existing dispatch
+PostgreSQL `--lib` CI lane discovers it. `POSTGRES_STARTED GM-1 staff_pg_signed_wire`
+is required evidence here; a route-less early return is not qualification.
+
+Unfinished: staff Kick and its target consumer; item-text report operations;
+restore-replay/audit-verify/receipt-preparation ops commands; complete 18-row
+qualification and independent authority/persistence review. Inspection currently
+projects sanction expiry only. No client UI is included. Status is `in_progress`,
+`pr: null`; do not close the consolidated card or claim all acceptance criteria.
+
+### Local changed files
+
+```text
+apps/game-server/migrations/0170_staff_actions.sql
+apps/game-server/src/node/config.rs
+apps/game-server/src/node/serve.rs
+crates/gameplay/dispatch/src/gameplay_transport/capabilities.rs
+crates/gameplay/dispatch/src/gameplay_transport/capability_quest_log_tests.rs
+crates/gameplay/dispatch/src/gameplay_transport/chat_intent.rs
+crates/gameplay/dispatch/src/gameplay_transport/connection.rs
+crates/gameplay/dispatch/src/gameplay_transport/guild_chat/send.rs
+crates/gameplay/dispatch/src/gameplay_transport/mod.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/staff.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/staff/evidence_cases.rs
+crates/gameplay/dispatch/src/gameplay_transport/staff.rs
+crates/gameplay/durability/src/durability/db.rs
+crates/gameplay/durability/src/durability/mod.rs
+crates/gameplay/durability/src/durability/staff.rs
+crates/gameplay/durability/src/durability/staff/executor.rs
+crates/gameplay/durability/src/durability/staff/expiry.rs
+crates/gameplay/durability/src/durability/staff/retained.rs
+crates/gameplay/durability/src/durability/staff/trust.rs
+crates/gameplay/durability/src/durability/staff/trust_tests.rs
+crates/gameplay/social-rules/src/lib.rs
+crates/gameplay/social-rules/src/staff.rs
+crates/gameplay/social-rules/src/staff_tests.rs
+crates/protocol-oteryn/src/capability_tables.rs
+crates/protocol-oteryn/src/lib.rs
+crates/protocol-oteryn/src/staff.rs
+crates/protocol-oteryn/src/staff_tests.rs
+docs/agents/tasks/GM-1.md
+docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json
+docs/contracts/game-events/v1/staff_action.proto
+docs/contracts/protocol-oteryn/v1/registry/capabilities/0051-staff-v1.json
+docs/contracts/protocol-oteryn/v1/registry/command_types/0060-staff-request.json
+docs/contracts/protocol-oteryn/v1/registry/command_types/0061-staff-receipt.json
+docs/contracts/resource-limits/entries/0810-GM1-RL-01.json
+docs/contracts/resource-limits/entries/0811-GM1-RL-02.json
+docs/contracts/resource-limits/entries/0812-GM1-RL-03.json
+docs/contracts/resource-limits/entries/0813-GM1-RL-04.json
+docs/contracts/resource-limits/entries/0814-GM1-RL-05.json
+docs/contracts/resource-limits/entries/0815-GM1-RL-06.json
+docs/contracts/resource-limits/entries/0816-GM1-RL-07.json
+```
+
+Next server work: complete the remaining Kick/report/restore boundaries and their
+focused dispatch qualification, then obtain the independent authority/persistence
+review through the control plane. The original acceptance criteria below remain
+binding; a passing basic-path test does not close them.
 
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2181, branch skeleton/gm-1
 

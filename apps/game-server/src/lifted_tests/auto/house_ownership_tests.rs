@@ -205,7 +205,9 @@ fn house_ownership_recovered_bid_escrow_replay_conflict_and_session_fence() -> T
         assert_eq!(amounts(&h).await?, (100, 500, 2));
         let room:i64=sqlx::query_scalar("SELECT game_account_bank_credit_headroom(encode($1,'hex')::uuid,encode($2,'hex')::uuid)")
             .bind(id(40).as_slice()).bind(id(fixture::WORLD).as_slice()).fetch_one(&h.pool).await?;
-        assert_eq!(room, 999_999_999_399);
+        // GUILD-BANK-1's retained payouts use hard headroom; ordinary credits still
+        // enforce BANK0-RL-01 separately. Liquid 100 + held House custody 500 remain reserved.
+        assert_eq!(room, 9_000_000_000_000_000 - 600);
         Ok(())
     })
 }
