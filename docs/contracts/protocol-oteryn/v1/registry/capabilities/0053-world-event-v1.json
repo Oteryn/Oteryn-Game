@@ -1,0 +1,13 @@
+{
+  "id": 53,
+  "name": "WORLD_EVENT_V1",
+  "owner_decision": "EVENTS-WORLD-1 owner-delegated basic server delivery, 2026-10-23; W2\u2013W5 reset-only announcement",
+  "owner": "World reset owner",
+  "requires": [],
+  "command_types": [
+    64
+  ],
+  "state_domains": [],
+  "offered": true,
+  "offer_gate": "Built-in Oteryn gathering announcement, supported by default and bundle Worlds. Epoch zero inactive; missing nonzero-epoch decision fails closed. No map layers or player activation."
+}
