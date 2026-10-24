@@ -2472,59 +2472,8 @@ pub async fn verify_spell_item_chain(
 }
 
 #[cfg(test)]
-mod tests {
-    #![allow(clippy::unwrap_used)]
-    use super::*;
-    fn cost() -> CastCostBinding {
-        CastCostBinding {
-            vitals_revision_before: 9,
-            vitals_revision_after: 10,
-            mana_before: 100,
-            mana_after: 60,
-            soul_before: 5,
-            soul_after: 3,
-            cooldowns_before: vec![("spell:old".into(), 123)],
-            cooldowns_after: vec![("group:attack".into(), 2000), ("spell:old".into(), 123)],
-            caster_digest_before: [1; 32],
-            caster_digest_after: [2; 32],
-        }
-    }
-    #[test]
-    fn costs_bind_all_namespaced_integer_deadlines() {
-        let before = encode_cast_cost(&cost()).unwrap();
-        let mut changed = cost();
-        changed.cooldowns_after[0].1 += 1;
-        assert_ne!(
-            Sha256::digest(&before),
-            Sha256::digest(encode_cast_cost(&changed).unwrap())
-        );
-    }
-    #[test]
-    fn invalid_cost_successors_fail_closed() {
-        let mut c = cost();
-        c.vitals_revision_after = 11;
-        assert!(encode_cast_cost(&c).is_err());
-        c = cost();
-        c.mana_after = 101;
-        assert!(encode_cast_cost(&c).is_err());
-        c = cost();
-        c.soul_after = 6;
-        assert!(encode_cast_cost(&c).is_err());
-        c = cost();
-        c.cooldowns_after.reverse();
-        assert!(encode_cast_cost(&c).is_err());
-        c = cost();
-        c.cooldowns_after
-            .push(c.cooldowns_after.last().unwrap().clone());
-        assert!(encode_cast_cost(&c).is_err());
-        c = cost();
-        c.cooldowns_after[0].0 = "attack".into();
-        assert!(encode_cast_cost(&c).is_err());
-        c = cost();
-        c.caster_digest_after = c.caster_digest_before;
-        assert!(encode_cast_cost(&c).is_err());
-    }
-}
+#[path = "spell_item_transaction/tests/cast_cost.rs"]
+mod tests;
 
 async fn apply_consumption_operation(
     tx: &mut Transaction<'_, Postgres>,
@@ -3182,30 +3131,8 @@ pub fn source_map_protection_tags(attributes: &serde_json::Value) -> Result<(boo
     Ok((tag("5")?, tag("4")?))
 }
 #[cfg(test)]
-mod map_protection_tag_tests {
-    #![allow(clippy::unwrap_used)]
-    use super::*;
-    #[test]
-    fn source_otbm_action_unique_tags_are_not_lost_by_named_codec() {
-        assert_eq!(
-            source_map_protection_tags(&serde_json::json!({"5":42,"4":3,"15":0})).unwrap(),
-            (true, true)
-        );
-        assert_eq!(
-            source_map_protection_tags(&serde_json::json!({"5":0,"4":0})).unwrap(),
-            (false, false)
-        );
-        assert!(source_map_protection_tags(&serde_json::json!({"unique":42})).is_err());
-        for value in [
-            serde_json::json!(-1),
-            serde_json::json!(65536),
-            serde_json::json!("42"),
-            serde_json::json!(true),
-        ] {
-            assert!(source_map_protection_tags(&serde_json::json!({"5":value})).is_err());
-        }
-    }
-}
+#[path = "spell_item_transaction/tests/map_protection_tags.rs"]
+mod map_protection_tag_tests;
 
 // Single physical ItemInstance/ground-custody mutation implementation. Creature writers never
 // manufacture a Player authority, cost, command or inventory destination.
