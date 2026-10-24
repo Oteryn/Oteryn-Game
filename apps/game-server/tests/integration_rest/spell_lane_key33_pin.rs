@@ -42,18 +42,22 @@ const RUST_KEY33_SITES: &[(&str, &str)] = &[
     ("crates/gameplay/durability/src/durability/native_map_items.rs", "initialize_in_transaction"),
     ("crates/gameplay/durability/src/durability/spell_item_temporal.rs", "drain_due_field_chains_in_transaction"),
     ("crates/gameplay/durability/src/durability/spell_item_temporal.rs", "drain_due_items_in_transaction"),
+    ("crates/gameplay/durability/src/durability/spell_item_transaction.rs", "apply_consumption_operation"),
+    ("crates/gameplay/durability/src/durability/spell_item_transaction.rs", "apply_physical_item_line"),
     ("crates/gameplay/durability/src/durability/spell_item_transaction.rs", "assert_spell_item_authority_with_recovery"),
     ("crates/gameplay/durability/src/durability/spell_item_transaction.rs", "assert_spell_item_scope_with_recovery"),
     ("crates/gameplay/durability/src/durability/spell_item_transaction.rs", "expire_due_spell_items_bounded"),
 ];
 
 /// Lane-derived proofs: a permit or window directly, or a scope/item authority that is only
-/// minted by the permit-taking `assert_spell_item_*_with_recovery` functions.
-const LANE_PROOFS: [&str; 4] = [
+/// minted by the permit-taking `assert_spell_item_*_with_recovery` functions, or a
+/// `PhysicalItemOwner`, whose variants only borrow one of those authorities.
+const LANE_PROOFS: [&str; 5] = [
     "SpellLanePermit",
     "SpellCommitWindow",
     "SpellItemScopeAuthority",
     "SpellItemAuthority",
+    "PhysicalItemOwner",
 ];
 
 /// Private helpers without a proof parameter, pinned to the proof-holding caller in the same file.
@@ -287,7 +291,11 @@ fn lane_proof_authorities_are_minted_only_behind_a_permit() {
     for (literal, minters) in [
         (
             "SpellItemScopeAuthority {",
-            &["assert_spell_item_scope_with_recovery", "locked_tile_rows"][..],
+            &[
+                "assert_spell_item_scope_with_recovery",
+                "locked_tile_rows",
+                "apply_physical_item_line",
+            ][..],
         ),
         (
             "SpellItemAuthority {",
@@ -313,6 +321,30 @@ fn lane_proof_authorities_are_minted_only_behind_a_permit() {
             );
         }
     }
+}
+
+/// `PhysicalItemOwner` counts as a lane proof only while each variant borrows a lane authority.
+#[test]
+fn physical_item_owner_only_borrows_lane_authorities() {
+    let text = collapse(
+        &fs::read_to_string(
+            repository()
+                .join("crates/gameplay/durability/src/durability/spell_item_transaction.rs"),
+        )
+        .expect("source"),
+    );
+    let text = production(&text);
+    assert_eq!(
+        find_all(text, "enum PhysicalItemOwner").len(),
+        1,
+        "one PhysicalItemOwner definition"
+    );
+    assert!(
+        text.contains(
+            "pub enum PhysicalItemOwner<'a> { Player(&'a SpellItemAuthority), Creature(&'a SpellItemScopeAuthority), }"
+        ),
+        "PhysicalItemOwner variants must only borrow SpellItemAuthority or SpellItemScopeAuthority"
+    );
 }
 
 /// Fix round 1 (#1907): every committing cast writer reserves its physical batch inside S and

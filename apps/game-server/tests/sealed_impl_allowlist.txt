@@ -85,8 +85,8 @@ crates/gameplay/foundation/src/foundation/post_grace_recovery_tests.rs | recover
 crates/gameplay/foundation/src/foundation/post_grace_recovery_tests.rs | recovery_source_sealed::Sealed | Owner
 crates/gameplay/foundation/src/foundation/post_grace_recovery_tests.rs | recovery_source_sealed::Sealed | RecoveryCompletion
 crates/gameplay/foundation/src/foundation/post_grace_recovery_tests.rs | recovery_source_sealed::Sealed | RecoverySource
-crates/gameplay/entities/src/carrier.rs | owner_cycle_grant_seal::Sealed | CommittedAssignmentOwnerCycle
-crates/gameplay/entities/src/carrier.rs | source_reservation_seal::Sealed | Proof
+crates/gameplay/entities/src/carrier/continuity.rs | owner_cycle_grant_seal::Sealed | CommittedAssignmentOwnerCycle
+crates/gameplay/entities/src/carrier/native_summon_reconciliation_tests.rs | source_reservation_seal::Sealed | Proof
 crates/gameplay/entities/src/carrier/runtime_actor_source_reservation.rs | source_reservation_seal::Sealed | Proof
 crates/gameplay/entities/src/carrier/runtime_actor_spell_tests.rs | relocation_seal::Sealed | Proof
 crates/gameplay/spell/src/spell/companion_lifecycle.rs | companion_source_seal::Sealed | CompanionSpawnReservation
