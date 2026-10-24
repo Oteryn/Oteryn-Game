@@ -105,6 +105,8 @@ pub struct PlayerSpellState {
     pub(super) stance_key: Option<String>,
     pub(super) pending_stance: Option<Box<super::stance_execution::PreparedStance>>,
     pub(super) owned_skills: Option<[u16; 7]>,
+    /// ARMOR-MITIGATION-1: the worn armor the last committed equipment read installed.
+    pub(super) equipped_armor: u32,
     pub(super) training: Option<super::mana_training::LiveManaTraining>,
     pub(super) training_checkpoint: Option<Box<super::mana_training::RetainedTrainingCheckpoint>>,
     pub(super) training_payment: Option<super::mana_training::TrainingPaymentWitness>,
@@ -155,6 +157,7 @@ impl PlayerSpellState {
                 stance_key: None,
                 pending_stance: None,
                 owned_skills: None,
+                equipped_armor: 0,
                 training: None,
                 training_payment: None,
                 field_attack_history: super::field_history::FieldAttackHistory::default(),
@@ -163,6 +166,7 @@ impl PlayerSpellState {
     }
 }
 
+mod equipped_armor;
 mod gate;
 mod level_up_vitals;
 mod live_skill;

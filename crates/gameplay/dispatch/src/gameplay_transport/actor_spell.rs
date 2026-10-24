@@ -987,6 +987,16 @@ impl CreatureBiteVitals for ChannelSpellStates {
     ) -> Option<CreatureHit> {
         self.apply_creature_damage_native(runtime, target, target_session, magnitude, now)
     }
+
+    fn target_armor(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        target: ExactActorRef,
+        target_session: GameSessionId,
+    ) -> u32 {
+        self.get(runtime, target, target_session)
+            .map_or(0, crate::spell::cast::PlayerSpellState::equipped_armor)
+    }
 }
 
 /// `SPELL-RL-01`: cast inputs applied per actor per Channel owner work cycle. [`cast_in_channel`]

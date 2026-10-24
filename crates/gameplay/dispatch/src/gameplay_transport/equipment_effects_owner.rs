@@ -41,7 +41,59 @@ fn equipment_effects_inner(
     if equipment.content_digest != content.source_digest() {
         return None;
     }
-    let inputs = equipment.items.iter().map(|item| {
+    let inputs = equipment
+        .items
+        .iter()
+        .map(|item| {
+            if item.definition.family != "Item" {
+                return None;
+            }
+            let (slot, semantic_slot) = canonical_slot(item.slot)?;
+            let policy = content.item_policy(
+                &item.definition.production_key,
+                &item.definition.revision_ref,
+            )?;
+            let semantics = &policy.record().semantics;
+            let in_own_slot = in_own_slot(semantics, semantic_slot);
+            let input = EquipmentEffectInput {
+                slot,
+                definition_key: (
+                    &policy.record().production_definition.production_key,
+                    &policy.record().production_definition.revision_ref,
+                ),
+                in_own_slot,
+                profile: item_ability_profile(semantics).ok()?,
+            };
+            if require_known_speed && input.contributes_speed() {
+                policy.record().attributes.speed_bonus?;
+            }
+            Some(input)
+        })
+        .collect::<Option<Vec<_>>>()?;
+    derive_equipment_effects(inputs)
+}
+
+fn in_own_slot(
+    semantics: &crate::content::ReferenceItemSemantics,
+    semantic_slot: ReferenceEquipmentSlot,
+) -> bool {
+    matches!(&semantics.equipment, ReferenceItemField::Known(group)
+        if matches!(&group.patterns, ReferenceItemField::Known(patterns)
+            if patterns.iter().any(|pattern| pattern.primary_slot == ReferenceItemField::Known(semantic_slot))))
+}
+
+/// ARMOR-MITIGATION-1 (`Player::getArmor`): the armor of the items worn in their own head,
+/// necklace, torso, legs, feet, ring and ammo slots; the hands and the container never count.
+/// An item whose armor is not known contributes nothing; a negative armor value contributes
+/// nothing. `None` for the same unreadable equipment [`equipment_effects`] refuses.
+pub(in crate::gameplay_transport) fn equipped_armor(
+    equipment: &EquipmentSnapshot,
+    content: &NativeGameplayState,
+) -> Option<u32> {
+    if equipment.content_digest != content.source_digest() {
+        return None;
+    }
+    equipment.items.iter().try_fold(0_u32, |total, item| {
         if item.definition.family != "Item" {
             return None;
         }
@@ -51,24 +103,19 @@ fn equipment_effects_inner(
             &item.definition.revision_ref,
         )?;
         let semantics = &policy.record().semantics;
-        let in_own_slot = matches!(&semantics.equipment, ReferenceItemField::Known(group)
-            if matches!(&group.patterns, ReferenceItemField::Known(patterns)
-                if patterns.iter().any(|pattern| pattern.primary_slot == ReferenceItemField::Known(semantic_slot))));
-        let input = EquipmentEffectInput {
+        let worn = !matches!(
             slot,
-            definition_key: (
-                &policy.record().production_definition.production_key,
-                &policy.record().production_definition.revision_ref,
-            ),
-            in_own_slot,
-            profile: item_ability_profile(semantics).ok()?,
+            EquipmentSlot::RightHand | EquipmentSlot::LeftHand | EquipmentSlot::Container
+        ) && in_own_slot(semantics, semantic_slot);
+        let armor = match &semantics.protection {
+            ReferenceItemField::Known(protection) if worn => match protection.armor {
+                ReferenceItemField::Known(points) => u32::try_from(points.0).unwrap_or(0),
+                _ => 0,
+            },
+            _ => 0,
         };
-        if require_known_speed && input.contributes_speed() {
-            policy.record().attributes.speed_bonus?;
-        }
-        Some(input)
-    }).collect::<Option<Vec<_>>>()?;
-    derive_equipment_effects(inputs)
+        Some(total.saturating_add(armor))
+    })
 }
 
 /// The 413 equippable production profiles have known zero raw speed. The two potion profiles
@@ -86,7 +133,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn read_admission_effects(
         &self,
         session: crate::foundation::GameSessionId,
-    ) -> Result<Option<EquipmentEffects>, ()> {
+    ) -> Result<Option<(EquipmentEffects, u32)>, ()> {
         let Some(native) = self
             .active_generation
             .and_then(|active| active.native_gameplay())
@@ -96,7 +143,9 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         let equipment = super::read_current_equipment(self, session)
             .await
             .ok_or(())?;
-        equipment_effects(&equipment, native).map(Some).ok_or(())
+        let effects = equipment_effects(&equipment, native).ok_or(())?;
+        let armor = equipped_armor(&equipment, native).ok_or(())?;
+        Ok(Some((effects, armor)))
     }
 
     /// The caller holds the spell lane and runtime; lock only spell state here.
@@ -105,12 +154,13 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         runtime: &crate::foundation::ChannelRuntimeV1,
         actor: crate::foundation::ExactActorRef,
         session: crate::foundation::GameSessionId,
-        effects: Option<EquipmentEffects>,
+        effects: Option<(EquipmentEffects, u32)>,
     ) -> Option<()> {
-        if let Some(effects) = effects {
+        if let Some((effects, armor)) = effects {
             let mut states = self.states.spell_states.lock().await;
             let state = states.get_mut(runtime, actor, session)?;
             install_suppressions(state, effects);
+            state.install_equipped_armor(armor);
         }
         Some(())
     }

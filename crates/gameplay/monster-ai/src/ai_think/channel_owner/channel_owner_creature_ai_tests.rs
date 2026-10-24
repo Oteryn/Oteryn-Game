@@ -54,6 +54,10 @@ impl CreatureBiteVitals for Vitals {
             death: None,
         })
     }
+
+    fn target_armor(&self, _: &ChannelRuntimeV1, _: ExactActorRef, _: GameSessionId) -> u32 {
+        0
+    }
 }
 
 fn uuid(tag: u8) -> [u8; 16] {

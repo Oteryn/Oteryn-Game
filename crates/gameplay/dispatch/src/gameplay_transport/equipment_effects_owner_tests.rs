@@ -119,6 +119,8 @@ fn debug(error: impl std::fmt::Debug) -> Box<dyn Error> {
 
 #[path = "equipment_effects_owner_tests/ability_tests.rs"]
 mod ability_tests;
+#[path = "equipment_effects_owner_tests/armor_tests.rs"]
+mod armor_tests;
 #[path = "equipment_effects_owner_tests/committed_moves_tests.rs"]
 mod committed_moves_tests;
 #[path = "equipment_effects_owner_tests/first_entry_tests.rs"]

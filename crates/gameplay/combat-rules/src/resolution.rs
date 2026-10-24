@@ -187,6 +187,22 @@ pub fn creature_mitigated(
     Some(remaining.saturating_sub(reduction).max(0))
 }
 
+/// ARMOR-MITIGATION-1: what a player's worn armor leaves of a creature hit (`creature.cpp`
+/// `Creature::blockHit`, `checkArmor`): `draw` picks the reduction in
+/// [`armor_reduction_bounds`]. A hit is never raised and never goes below 0.
+#[must_use]
+pub fn player_armor_mitigated(
+    constants: &AttackConstants,
+    damage: u32,
+    armor: u32,
+    draw: u64,
+) -> u32 {
+    let (minimum, maximum) = armor_reduction_bounds(constants, armor);
+    let span = u64::from(maximum.saturating_sub(minimum)).saturating_add(1);
+    let reduction = u32::try_from(draw % span).map_or(maximum, |offset| minimum + offset);
+    damage.saturating_sub(reduction)
+}
+
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 mod tests {
@@ -237,5 +253,42 @@ mod tests {
             mitigated(3, 100, true, 10, 10),
             "every draw is a pure function of the swing"
         );
+    }
+
+    #[test]
+    fn player_armor_reduces_a_creature_hit_within_its_bounds() {
+        let constants = AttackConstants::checked_in().expect("constants");
+        for draw in 0..64 {
+            assert_eq!(
+                player_armor_mitigated(constants, 10, 0, draw),
+                10,
+                "no armor"
+            );
+            assert_eq!(
+                player_armor_mitigated(constants, 10, 3, draw),
+                9,
+                "armor 3 takes 1"
+            );
+            let armored = player_armor_mitigated(constants, 100, 10, draw);
+            assert!((91..=95).contains(&armored), "armor 10 takes [5, 9]");
+            let odd = player_armor_mitigated(constants, 100, 11, draw);
+            assert!((90..=95).contains(&odd), "armor 11 takes [5, 9]");
+            assert_eq!(
+                player_armor_mitigated(constants, 4, 10, draw),
+                0,
+                "never below 0"
+            );
+        }
+        assert_eq!(
+            player_armor_mitigated(constants, 100, 10, 0),
+            95,
+            "draw 0 takes the minimum"
+        );
+        assert_eq!(
+            player_armor_mitigated(constants, 100, 10, 4),
+            91,
+            "draw 4 takes the maximum"
+        );
+        assert_eq!(player_armor_mitigated(constants, 100, 10, u64::MAX), 95);
     }
 }

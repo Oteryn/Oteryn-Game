@@ -314,10 +314,13 @@ pub(super) async fn move_equipment(
             }
             // EQUIP-0 §4: only a committed owner move changes suppressions. Keep the lane
             // permit across the fresh read, then obey runtime -> spell_states lock order.
-            let Some(effects) = read_current_equipment(admission, command.game_session_id)
+            let Some((effects, armor)) = read_current_equipment(admission, command.game_session_id)
                 .await
                 .and_then(|equipment| {
-                    equipment_effects_owner::equipment_effects(&equipment, native)
+                    Some((
+                        equipment_effects_owner::equipment_effects(&equipment, native)?,
+                        equipment_effects_owner::equipped_armor(&equipment, native)?,
+                    ))
                 })
             else {
                 return EquipmentMoveResult::Unknown;
@@ -326,6 +329,7 @@ pub(super) async fn move_equipment(
             let mut states = admission.states.spell_states.lock().await;
             if let Some(state) = states.get_mut(&runtime, actor, command.game_session_id) {
                 equipment_effects_owner::install_suppressions(state, effects);
+                state.install_equipped_armor(armor);
             }
             EquipmentMoveResult::Committed
         }

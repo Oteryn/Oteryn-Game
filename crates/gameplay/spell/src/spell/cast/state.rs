@@ -278,6 +278,7 @@ impl PlayerSpellState {
             && self.premium_current == before.premium_current
             && self.premium_valid_until_micros == before.premium_valid_until_micros
             && self.owned_skills == before.owned_skills
+            && self.equipped_armor == before.equipped_armor
             && self.base_speed == before.base_speed
             && anchor.expected_revision == before.revision
             && before.revision.checked_add(1) == Some(anchor.next_revision)
