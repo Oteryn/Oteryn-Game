@@ -106,16 +106,28 @@ pub mod fresh {
                 facts: self.current.clone(),
                 account_publication_revision: self
                     .rows
-                    .first()
-                    .map_or(1, |row| row.publication_revision),
+                    .iter()
+                    .find_map(|row| {
+                        matches!(row.key, AdmissionAuthorityGuardKeyV1::Account { .. })
+                            .then_some(row.publication_revision)
+                    })
+                    .unwrap_or(1),
                 character_publication_revision: self
                     .rows
-                    .get(1)
-                    .map_or(1, |row| row.publication_revision),
+                    .iter()
+                    .find_map(|row| {
+                        matches!(row.key, AdmissionAuthorityGuardKeyV1::Character(_))
+                            .then_some(row.publication_revision)
+                    })
+                    .unwrap_or(1),
                 runtime_publication_revision: self
                     .rows
-                    .get(2)
-                    .map_or(1, |row| row.publication_revision),
+                    .iter()
+                    .find_map(|row| {
+                        matches!(row.key, AdmissionAuthorityGuardKeyV1::Runtime(_))
+                            .then_some(row.publication_revision)
+                    })
+                    .ok_or(Fnd04ConsumerError::FreshAccountCharacterConflict)?,
                 expected_lease_generation: self.current.character_lease_generation,
                 proposed_lease_generation: self
                     .current
@@ -344,6 +356,8 @@ pub mod fresh {
                     .into();
                 payload["attempt_ref"] = "00000000-0000-7000-8000-000000000002".into();
             }
+            payload["scope_ownership_generation"] =
+                self.current.scope_ownership_generation.to_string().into();
             payload["iat"] = now.into();
             payload["nbf"] = now.into();
             payload["exp"] = (now + 10).into();

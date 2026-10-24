@@ -17,6 +17,7 @@ release-role = "production"
 test-support = ["oteryn-gameplay-entities/test-support"]
 
 [dependencies]
+oteryn-gameplay-world-change = { version = "=0.1.0", path = "../../crates/gameplay/world-change" }
 oteryn-gameplay-characters = { version = "=0.1.0", path = "../../crates/gameplay/characters" }
 oteryn-gameplay-progression = { version = "=0.1.0", path = "../../crates/gameplay/progression" }
 oteryn-gameplay-items = { version = "=0.1.0", path = "../../crates/gameplay/items" }

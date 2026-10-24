@@ -115,6 +115,7 @@ mod spell_presentation_publisher;
 )]
 pub use spell_presentations::PreparedPresentation as PreparedSpellPresentation;
 mod tcp_tls;
+mod world_event;
 mod world_map;
 
 /// ADMIT0: the boot-bound Channel required gameplay capabilities (D1081-D1084).
@@ -3282,6 +3283,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             }
             Err(_) => AccountAchievementsReply::Rejected,
         }
+    }
+
+    async fn world_event(&self, command: connection::UseCommand) -> world_event::Reply {
+        world_event::query(self, command).await
     }
 
     async fn highscores(

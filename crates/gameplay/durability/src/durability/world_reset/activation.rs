@@ -67,6 +67,11 @@ async fn activate(
             None => None,
             _ => return Err(DurabilityError::InvalidStoredState),
         };
+        if let Some(epoch) = epoch {
+            // Same transaction as epoch, calendar and content issuance. Historical
+            // replay verifies the immutable decision; it never redraws at channel boot.
+            crate::durability::world_event::record_reset(&mut tx, reset.world, epoch, outcome.as_deref() == Some("NEW_EPOCH")).await?;
+        }
         commit_semantic_transaction(tx, deadline).await?;
         Ok(epoch)
     })).await
