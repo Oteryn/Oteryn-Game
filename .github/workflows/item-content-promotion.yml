@@ -8,7 +8,7 @@ on:
       - tools/reference-world-corridor-census/item_semantic_promotion.py
       - tools/reference-world-corridor-census/item_semantic_promotion_self_test.py
       - docs/agents/evidence/OTV2-20260927-content-world-item-semantic-promotion.json
-      - crates/gameplay/content/src/content/cw2_b1_import.rs
+      - crates/gameplay/content-promotion/src/content/cw2_b1_import.rs
       - apps/game-server/tests/content_world_cw2_b1_import.rs
       - apps/game-server/tests/content_reference_artifact.rs
       - docs/agents/tasks/active/OTV2-20260923-content-world-item-promotion-504.md
