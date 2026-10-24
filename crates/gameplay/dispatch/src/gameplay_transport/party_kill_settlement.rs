@@ -22,6 +22,8 @@ use crate::foundation::RuntimeScopeRefV1;
 pub(super) struct SettledPartyXp {
     pub xp: Result<ExperienceCommitOutcome, CombatDeathRewardXpError>,
     pub slots: Vec<RevisionSlot>,
+    /// LEVELUP-LIVE-1: every member whose award crossed a level boundary.
+    pub leveled: Vec<crate::domain::CharacterId>,
 }
 
 fn rejected() -> CharacterProgressionError {
@@ -294,8 +296,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         };
         let mut principal = None;
+        let mut leveled = Vec::new();
         for award in awards {
             if let Some(xp) = award.xp {
+                leveled.extend(super::level_up_live::leveled_character(&xp));
                 if let Some(slot) = slots
                     .iter_mut()
                     .find(|s| s.character_id() == award.character)
@@ -310,6 +314,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         Ok(SettledPartyXp {
             xp: principal.ok_or(CombatDeathRewardXpError::NoExperienceAward),
             slots,
+            leveled,
         })
     }
 }
