@@ -38,8 +38,9 @@ use crate::charm_wire::{
 /// target and the D85 item handle.
 pub const CAPABILITY_ITEM_VIEW_MOVE_V1: u32 = 4;
 /// Capability 4 requires `WORLD_SPATIAL_ENTITIES`, which carries corpses in domain 1.
-pub const CAPABILITY_ITEM_VIEW_MOVE_V1_REQUIRES: &[u32] =
-    &[crate::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES];
+pub const CAPABILITY_ITEM_VIEW_MOVE_V1_REQUIRES: &[u32] = &[
+    crate::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES, // WORLD_SPATIAL_ENTITIES
+];
 pub const STATE_DOMAIN_CHARACTER_INVENTORY: u32 = 9;
 pub const SNAPSHOT_TYPE_CHARACTER_INVENTORY_V1: u32 = 1;
 pub const DELTA_TYPE_CHARACTER_INVENTORY_V1: u32 = 1;
@@ -50,7 +51,9 @@ pub const COMMAND_TYPE_ITEM_MOVE_INTENT: u32 = 9;
 /// Registered capability `ITEM_EQUIP_DROP_V1` (ITEM-MOVE-WIRE-1 §3): extends command type 9 and
 /// domain 9 of capability 4, so it owns no command type or domain of its own.
 pub const CAPABILITY_ITEM_EQUIP_DROP_V1: u32 = 12;
-pub const CAPABILITY_ITEM_EQUIP_DROP_V1_REQUIRES: &[u32] = &[CAPABILITY_ITEM_VIEW_MOVE_V1];
+pub const CAPABILITY_ITEM_EQUIP_DROP_V1_REQUIRES: &[u32] = &[
+    CAPABILITY_ITEM_VIEW_MOVE_V1, // ITEM_VIEW_MOVE_V1
+];
 
 /// `ITEMV0-RL-01`: items in one domain-9 view, the main backpack included (ITEM-MOVE-WIRE-1 §6.3
 /// supersedes WIRE-0's 21 so the nine equipment slots fit later).
@@ -197,6 +200,39 @@ pub const EQUIPMENT_SLOT_SEMANTIC_KEYS: [(EquipmentSlot, &str); 9] = [
     (EquipmentSlot::Ring, "RING"),
     (EquipmentSlot::Ammo, "EXTRA"),
 ];
+
+/// The durable slot code of a wire slot, by its semantic key (ITEM-MOVE-WIRE-1 §2).
+pub fn durable_slot(slot: EquipmentSlot) -> Option<u8> {
+    Some(match slot.semantic_key() {
+        "HEAD" => 1,
+        "TORSO" => 2,
+        "LEGS" => 3,
+        "FEET" => 4,
+        "WEAPON" => 5,
+        "SHIELD" => 6,
+        "AMULET" => 7,
+        "RING" => 8,
+        "EXTRA" => 10,
+        _ => return None,
+    })
+}
+
+/// The wire slot of a durable slot code; the backpack slot 9 and unknown codes have none.
+pub fn wire_slot(code: u8) -> Option<EquipmentSlot> {
+    [
+        EquipmentSlot::Head,
+        EquipmentSlot::Necklace,
+        EquipmentSlot::Armor,
+        EquipmentSlot::RightHand,
+        EquipmentSlot::LeftHand,
+        EquipmentSlot::Legs,
+        EquipmentSlot::Feet,
+        EquipmentSlot::Ring,
+        EquipmentSlot::Ammo,
+    ]
+    .into_iter()
+    .find(|slot| durable_slot(*slot) == Some(code))
+}
 
 /// `EquippedItemV1`: an occupied slot of domain 9 under capability 12; an empty slot is absent.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

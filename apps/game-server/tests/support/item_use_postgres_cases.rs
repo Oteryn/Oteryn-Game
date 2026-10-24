@@ -29,8 +29,8 @@ const FLASK_STACK: u8 = 110;
 const NEW_FLASK: u8 = 120;
 const FULL_FLASK_STACK: u8 = 130;
 const FOOD_KEY: &str = "oteryn:item.tibia.i3577";
-const POTION_KEY: &str = "oteryn:item.tibia.i7618";
-const FLASK_KEY: &str = "oteryn:item.tibia.i7636";
+const POTION_KEY: &str = "oteryn:item.tibia.i266";
+const FLASK_KEY: &str = "oteryn:item.tibia.i285";
 const SERVER_BUILD: &str = "oteryn-game-server-test";
 
 fn hex(bytes: &[u8]) -> String {
@@ -772,3 +772,6 @@ fn item_use_commit_throughput_is_measured() -> TestResult {
         used.cleanup().await
     })
 }
+
+#[path = "item_use_postgres_cases/item_use_nested_tests.rs"]
+mod item_use_nested_tests;

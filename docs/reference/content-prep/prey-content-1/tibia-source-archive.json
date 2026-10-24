@@ -1,0 +1,359 @@
+{
+  "schema": "OTERYN_GLOBAL_SOURCE_ARCHIVE/v1",
+  "task": "PREY-CONTENT-1",
+  "scope": "ARCHIVED_GLOBAL_EVIDENCE_NOT_ACTIVE_OTERYN_PARAMETER_FIELDS",
+  "reference_only": true,
+  "runtime_switch_authorized": false,
+  "predecessor": "80c55d51b1e5758a1e7bcde0864997f2effb1466",
+  "explanation": "Original Tibia evidence is retained verbatim here. Active target fields now contain explicitly scoped Oteryn working values; no Global fact has been proven by a design choice.",
+  "records": [
+    {
+      "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/reference-evidence.json/records/40/facts/reroll_upgrade",
+      "original_global_fact": {
+        "value": null,
+        "classification": "CONFLICT",
+        "target_cut": "2026-10-18",
+        "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:79924:1168706",
+            "selector": "Conflicting statements identified in note"
+          },
+          {
+            "source": "official:manual:combat:2026-10-18",
+            "selector": "Conflicting statements identified in note"
+          }
+        ],
+        "note": "Current Wiki says wildcard always improves grade except max; official manual says value is at least current. Strict improvement and nondecrease are not equivalent."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/0/facts/selection_pool",
+      "original_global_fact": {
+        "value": null,
+        "classification": "CONFLICT",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:86349:1090711",
+            "selector": "Creatures that can be rolled for free/gold"
+          }
+        ],
+        "note": "The same creature appears in both the free/gold and five-wildcard-exclusive source sections. Do not select either pool until independently resolved.",
+        "observations": [
+          {
+            "value": "free_or_gold",
+            "sources": [
+              {
+                "source": "wiki:86349:1090711",
+                "selector": "Creatures that can be rolled for free/gold"
+              }
+            ]
+          },
+          {
+            "value": "wildcard_only",
+            "sources": [
+              {
+                "source": "wiki:86349:1090711",
+                "selector": "Creatures that are 5-Wildcard Exclusive"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/90/facts/selection_pool",
+      "original_global_fact": {
+        "value": null,
+        "classification": "CONFLICT",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:86349:1090711",
+            "selector": "Creatures that can be rolled for free/gold"
+          }
+        ],
+        "note": "The same creature appears in both the free/gold and five-wildcard-exclusive source sections. Do not select either pool until independently resolved.",
+        "observations": [
+          {
+            "value": "free_or_gold",
+            "sources": [
+              {
+                "source": "wiki:86349:1090711",
+                "selector": "Creatures that can be rolled for free/gold"
+              }
+            ]
+          },
+          {
+            "value": "wildcard_only",
+            "sources": [
+              {
+                "source": "wiki:86349:1090711",
+                "selector": "Creatures that are 5-Wildcard Exclusive"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/157/facts/selection_pool",
+      "original_global_fact": {
+        "value": null,
+        "classification": "CONFLICT",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:86349:1090711",
+            "selector": "Creatures that can be rolled for free/gold"
+          }
+        ],
+        "note": "The same creature appears in both the free/gold and five-wildcard-exclusive source sections. Do not select either pool until independently resolved.",
+        "observations": [
+          {
+            "value": "free_or_gold",
+            "sources": [
+              {
+                "source": "wiki:86349:1090711",
+                "selector": "Creatures that can be rolled for free/gold"
+              }
+            ]
+          },
+          {
+            "value": "wildcard_only",
+            "sources": [
+              {
+                "source": "wiki:86349:1090711",
+                "selector": "Creatures that are 5-Wildcard Exclusive"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/173/facts/selection_pool",
+      "original_global_fact": {
+        "value": null,
+        "classification": "CONFLICT",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:86349:1090711",
+            "selector": "Creatures that can be rolled for free/gold"
+          }
+        ],
+        "note": "The same creature appears in both the free/gold and five-wildcard-exclusive source sections. Do not select either pool until independently resolved.",
+        "observations": [
+          {
+            "value": "free_or_gold",
+            "sources": [
+              {
+                "source": "wiki:86349:1090711",
+                "selector": "Creatures that can be rolled for free/gold"
+              }
+            ]
+          },
+          {
+            "value": "wildcard_only",
+            "sources": [
+              {
+                "source": "wiki:86349:1090711",
+                "selector": "Creatures that are 5-Wildcard Exclusive"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/374/facts/selection_pool",
+      "original_global_fact": {
+        "value": null,
+        "classification": "CONFLICT",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:86349:1090711",
+            "selector": "Creatures that can be rolled for free/gold"
+          }
+        ],
+        "note": "The same creature appears in both the free/gold and five-wildcard-exclusive source sections. Do not select either pool until independently resolved.",
+        "observations": [
+          {
+            "value": "free_or_gold",
+            "sources": [
+              {
+                "source": "wiki:86349:1090711",
+                "selector": "Creatures that can be rolled for free/gold"
+              }
+            ]
+          },
+          {
+            "value": "wildcard_only",
+            "sources": [
+              {
+                "source": "wiki:86349:1090711",
+                "selector": "Creatures that are 5-Wildcard Exclusive"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/480/facts/native_creature_binding",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "NOT_ESTABLISHED",
+        "sources": [],
+        "note": "Full existing 1863-record native creature index checked; no unique supported binding for Berrypest. Source eligibility is retained; no native identity invented."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/488/facts/native_creature_binding",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "NOT_ESTABLISHED",
+        "sources": [],
+        "note": "Full existing 1863-record native creature index checked; no unique supported binding for Cake Golem. Source eligibility is retained; no native identity invented."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/520/facts/native_creature_binding",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "NOT_ESTABLISHED",
+        "sources": [],
+        "note": "Full existing 1863-record native creature index checked; no unique supported binding for Elder Forest Fury. Source eligibility is retained; no native identity invented."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/534/facts/native_creature_binding",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "NOT_ESTABLISHED",
+        "sources": [],
+        "note": "Full existing 1863-record native creature index checked; no unique supported binding for Furious Fire Elemental. Source eligibility is retained; no native identity invented."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/585/facts/native_creature_binding",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "NOT_ESTABLISHED",
+        "sources": [],
+        "note": "Full existing 1863-record native creature index checked; no unique supported binding for Nightslayer. Source eligibility is retained; no native identity invented."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/635/facts/native_creature_binding",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "NOT_ESTABLISHED",
+        "sources": [],
+        "note": "Full existing 1863-record native creature index checked; no unique supported binding for Undead Jester. Source eligibility is retained; no native identity invented."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/evidence-00000-00004.json/records/0/facts/experience_reward",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "NOT_ESTABLISHED",
+        "sources": [],
+        "note": "No exact per-creature current XP reward formula qualified."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/evidence-00000-00004.json/records/1/facts/experience_reward",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "NOT_ESTABLISHED",
+        "sources": [],
+        "note": "No exact per-creature current XP reward formula qualified."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/evidence-00000-00004.json/records/2/facts/experience_reward",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "NOT_ESTABLISHED",
+        "sources": [],
+        "note": "No exact per-creature current XP reward formula qualified."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/evidence-00000-00004.json/records/3/facts/experience_reward",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "NOT_ESTABLISHED",
+        "sources": [],
+        "note": "No exact per-creature current XP reward formula qualified."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/evidence-00000-00004.json/records/4/facts/weekly_experience_candidate",
+      "original_global_fact": {
+        "value": {
+          "delivery_piecewise": [
+            {
+              "level_max": 82,
+              "experience": "25*L^2-75*L+100"
+            },
+            {
+              "level_min_exclusive": 82,
+              "level_max_exclusive": 1000,
+              "experience": "ROUND(1994.008*L)"
+            },
+            {
+              "level_min": 1000,
+              "experience": "2*L^2-6*L+8"
+            }
+          ],
+          "kill_task_caps": {
+            "beginner": 200000,
+            "adept": 800000,
+            "expert": 3000000,
+            "master": null
+          }
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:109860:1187430",
+            "selector": "Weekly Task Rewards / Experience"
+          }
+        ],
+        "note": "Community XP reward formula is fully retained; exact rounding and gameplay formula require official or controlled qualification. Bounty task XP is a different reward and is not equated to this weekly formula."
+      }
+    }
+  ]
+}

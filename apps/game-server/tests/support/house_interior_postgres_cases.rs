@@ -303,7 +303,11 @@ async fn check_database(url: &str) -> TestResult {
     let version: String = sqlx::query_scalar("SHOW server_version_num")
         .fetch_one(&mut connection)
         .await?;
-    assert_eq!(version, "170006", "canonical target is PostgreSQL 17.6");
+    assert_eq!(
+        version,
+        oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
+        "canonical target is PostgreSQL 18.6"
+    );
     sqlx::migrate!("./migrations").run(&mut connection).await?;
     let stub: i64 =
         sqlx::query_scalar("SELECT count(*) FROM game_house_access($1::uuid,$2,$3::uuid)")
@@ -556,6 +560,7 @@ async fn funded(h: &native::Harness) -> TestResult<([u8; 16], [u8; 16])> {
     ));
     let item = h.mint(&a, "fixture:house.item", 1).await?;
     let facts = ItemDefinitionFacts {
+        weight: Some(1),
         definition: crate::durability::item_mint::TypedDefinitionRef {
             family: "Item".into(),
             production_key: "fixture:house.item".into(),
@@ -2110,6 +2115,18 @@ impl crate::durability::character_equipment::EquipmentMoveContent for EquipmentF
     }
     fn is_timed_item(&self, _key: &str, _revision: &str) -> bool {
         false
+    }
+    fn equipment_stack_class(
+        &self,
+        key: &str,
+        revision: &str,
+    ) -> crate::durability::item_transfer::ItemStackClass {
+        use crate::durability::item_transfer::ItemStackClass;
+        if revision == "definition-r1" && key == "fixture:house.item" {
+            ItemStackClass::NonStackable
+        } else {
+            ItemStackClass::Unknown
+        }
     }
 }
 #[test]

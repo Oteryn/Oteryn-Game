@@ -48,7 +48,11 @@ impl Database {
         let version: String = sqlx::query_scalar("SHOW server_version_num")
             .fetch_one(&mut connection)
             .await?;
-        assert_eq!(version, "170006", "canonical target is PostgreSQL 17.6");
+        assert_eq!(
+            version,
+            oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
+            "canonical target is PostgreSQL 18.6"
+        );
         sqlx::migrate!("./migrations").run(&mut connection).await?;
         install_test_caller(&mut connection).await?;
         connection.close().await?;
@@ -556,19 +560,21 @@ fn delivery_refusals_are_typed() -> TestResult {
         ));
 
         // A kind row a delivery record references cannot be deleted or renamed.
+        // The foreign key is ON DELETE/UPDATE RESTRICT, which PostgreSQL 18
+        // reports as restrict_violation (23001), not foreign_key_violation.
         let delete =
             sqlx::query("DELETE FROM game_character_inbox_cause_kinds WHERE cause_kind = $1")
                 .bind(KIND)
                 .execute(&mut *connection)
                 .await;
-        assert_eq!(sqlstate(delete)?, "23503");
+        assert_eq!(sqlstate(delete)?, "23001");
         let rename = sqlx::query(
             "UPDATE game_character_inbox_cause_kinds SET cause_kind = 'RENAMED' WHERE cause_kind = $1",
         )
         .bind(KIND)
         .execute(&mut *connection)
         .await;
-        assert_eq!(sqlstate(rename)?, "23503");
+        assert_eq!(sqlstate(rename)?, "23001");
 
         // Only the delivery writes the Inbox: a bare row, even by the table
         // owner, fails its placement proof at commit.
@@ -727,9 +733,9 @@ fn inbox_rows_are_immutable_and_no_other_writer_touches_them() -> TestResult {
         assert!(message(retired)?.contains("exactly one location"));
         tx.rollback().await?;
 
-        // Death, WorldReset and channel change: no function outside the Inbox's
-        // own, the item location guard and the TRANSFER consistency count names
-        // the Inbox location table, so no existing writer touches it.
+        // Closed inventory: native Inbox delivery and location/TRANSFER guards,
+        // plus the registered read-only custody proofs. Unexpected readers or
+        // writers still fail this exact inventory; every Inbox DML guard stays on.
         let readers: Vec<String> = sqlx::query_scalar(
             "SELECT proname::text FROM pg_proc \
               WHERE prosrc LIKE '%game_item_character_inbox_locations%' \
@@ -743,8 +749,18 @@ fn inbox_rows_are_immutable_and_no_other_writer_touches_them() -> TestResult {
             [
                 "game_character_inbox_deliver",
                 "game_character_inbox_placement_proven",
+                "game_character_inbox_reward_claim_mint_proven",
+                // DAILY-1: SELECT/RAISE custody and atomic-MINT checks only;
+                // neither function inserts, updates or deletes Inbox rows.
+                "game_daily_reward_bound_custody",
+                "game_daily_reward_line_guard",
+                "game_house_disposition_delivery_proven",
+                "game_house_disposition_native_removal_proven",
                 "game_item_location_exclusive",
                 "game_item_transfer_consistency_guard",
+                // TRADE-PLAYER-1: read-only final-custody proof, no Inbox mutation.
+                "game_player_trade_complete",
+                "game_reward_claim_inbox_mint_is_complete",
             ]
         );
         let kept = read_character_inbox(connection, &bytes(&character)?).await?;

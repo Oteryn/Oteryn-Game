@@ -7,10 +7,8 @@ use serde_json::Value;
 use super::*;
 use crate::damage_element::DamageElement;
 
-const PROTOCOL_REGISTRY: &str =
-    include_str!("../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json");
-const RESOURCE_REGISTRY: &str =
-    include_str!("../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json");
+const PROTOCOL_REGISTRY: &str = crate::PROTOCOL_OTERYN_V1_REGISTRY_JSON;
+const RESOURCE_REGISTRY: &str = crate::RESOURCE_LIMITS_REGISTRY_JSON;
 const SCHEMA_PATH: &str = "docs/contracts/protocol-oteryn/v1/analyser_v1.proto";
 const SCHEMA: &str = include_str!("../../../docs/contracts/protocol-oteryn/v1/analyser_v1.proto");
 
@@ -383,5 +381,41 @@ fn registries_bind_the_analyser_ids_and_limits() {
     assert_eq!(
         limit("ANALYSERS0-RL-04"),
         Some(MAX_ANALYSER_PENDING_FACTS as u64)
+    );
+}
+
+// TEST-FUZZ-1: bounded randomized decoder and generated-value round trips.
+
+#[test]
+fn fuzz_decode_analyser_fact() {
+    crate::decoder_fuzz_support::codec(
+        "decode_analyser_fact",
+        |rng| rng.pick(&every_kind()).clone(),
+        decode_analyser_fact,
+        |v| encode_analyser_fact(v).expect("fact"),
+    );
+}
+
+#[test]
+fn fuzz_decode_analyser_facts() {
+    crate::decoder_fuzz_support::codec(
+        "decode_analyser_facts",
+        |rng| {
+            (0..rng.below(4) + 1)
+                .map(|_| rng.pick(&every_kind()).clone())
+                .collect::<Vec<_>>()
+        },
+        decode_analyser_facts,
+        |v| encode_analyser_facts(v).expect("facts"),
+    );
+}
+
+#[test]
+fn fuzz_decode_analyser_snapshot() {
+    crate::decoder_fuzz_support::codec(
+        "decode_analyser_snapshot",
+        |_| (),
+        decode_analyser_snapshot,
+        |_| Vec::new(),
     );
 }

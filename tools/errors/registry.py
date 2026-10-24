@@ -10,8 +10,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 GAME_PATH = "docs/contracts/OTERYN_GAME_ERROR_CODE_REGISTRY.json"
-PROTOCOL_PATH = "docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json"
 BASE_REF = "origin/main"
+
+sys.path.insert(0, str(ROOT / "tools/contracts"))
+import registry_fragments  # noqa: E402
+
+PROTOCOL = registry_fragments.PROTOCOL
 
 CATEGORIES = frozenset(
     {
@@ -82,6 +86,24 @@ def load_base_json(rel_path: str, root: Path = ROOT, ref: str = BASE_REF):
     if shown.returncode != 0:
         return None
     return json.loads(shown.stdout)
+
+
+def load_protocol(root: Path = ROOT) -> dict:
+    """The protocol registry, assembled from its fragment files (REGISTRY-SPLIT-1)."""
+    return registry_fragments.load(PROTOCOL, root)
+
+
+def protocol_source_files(root: Path = ROOT) -> list[str]:
+    return registry_fragments.source_files(PROTOCOL, root)
+
+
+def load_base_protocol(root: Path = ROOT, ref: str = BASE_REF):
+    """`load_base_json` for the protocol registry, before or after its split."""
+    if not _ref_readable(root, ref):
+        _fetch_base(root, ref)
+    if not _ref_readable(root, ref):
+        return False
+    return registry_fragments.load_at_ref(PROTOCOL, root, ref)
 
 
 def derived_progression(entry: dict):
@@ -301,9 +323,9 @@ def validate_files(
 
 def validate(root: Path = ROOT, base_ref: str = BASE_REF) -> list[str]:
     game = load_json(root / GAME_PATH)
-    protocol = load_json(root / PROTOCOL_PATH)
+    protocol = load_protocol(root)
     base_game = load_base_json(GAME_PATH, root, base_ref)
-    base_protocol = load_base_json(PROTOCOL_PATH, root, base_ref)
+    base_protocol = load_base_protocol(root, base_ref)
     errors: list[str] = []
     if base_game is False or base_protocol is False:
         errors.append(

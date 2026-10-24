@@ -133,8 +133,8 @@ assert family_counts['Creature'] == 1863
 assert lock["family_counts"] == {
     "Item": 34043, "Mount": 252,
     **family_counts, "Document": 1609,
-    "NPC": 1282, "Dialogue": 836, "Service.Trade": 324, "Service.Travel": 56, "Encounter": 108, "Charm": 25,
-    "Proficiency": 443, "RewardClaim": source_claim_count, "StarterKit": 1,
+    "NPC": 1282, "Dialogue": 836, "Service.Trade": 324, "Service.Travel": 56, "Service.Bank": 1, "Service.Promotion": 4, "Service.Blessing": 3, "Encounter": 108, "Charm": 25,
+    "Proficiency": 443, "RewardClaim": source_claim_count, "StarterKit": 1, "item_conversion": 125,
     **{family: value["records"] for family, value in quest_families.items()},
 }
 assert lock["source_binding_counts"] == {"Item": 476, "Mount": 252, "Creature": 1863, "Encounter": 108, "NPC": 2747}
@@ -163,6 +163,10 @@ assert manifest["families"]["NPC"] == {"records": 1282, "index": "content/npcs/d
 assert manifest["families"]["Dialogue"] == {"records": 836, "index": "content/dialogues/definitions/index.json"}
 assert manifest["families"]["Service.Trade"] == {"records": 324, "index": "content/services/trade/index.json"}
 assert manifest["families"]["Service.Travel"] == {"records": 56, "index": "content/services/travel/index.json"}
+assert manifest["families"]["Service.Bank"] == {"records": 1, "index": "content/services/bank/index.json"}
+assert manifest["families"]["Service.Promotion"] == {"records": 4, "index": "content/services/promotion/index.json"}
+assert manifest["families"]["Service.Blessing"] == {"records": 3, "index": "content/services/blessings/index.json"}
+assert any(path.startswith("content/services/bank/bank-") for path in paths)
 assert manifest["families"]["Charm"] == {"records": 25, "index": "content/charms/index.json"}
 assert "Charm" in project["migrated_families"] and "Charm" not in project["next_population_families"]
 assert any(path.startswith("content/charms/charms-") for path in paths) and "content/charms/index.json" in paths
@@ -232,4 +236,42 @@ test_closed_weapon_metadata_admission()
 test_relation_rows_route_by_owner()
 subprocess.run([sys.executable, str(ROOT / "tools/content-migration/test_item_taxonomy.py")], check=True)
 subprocess.run([sys.executable, str(ROOT / "tools/content-migration/test_item_official_navigation.py")], check=True)
+def test_closed_bank_admission():
+    spec = importlib.util.spec_from_file_location("bank_migration", ROOT / "tools/content-migration/validate_world_project_v2_to_tree.py")
+    migration = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(migration)
+    declarations = json.loads((ROOT / "content/world/definitions/declarations.json").read_text())
+    migration.validate_native_bank_admission(declarations)
+    mutations = []
+    # Each operator changes one admitted data invariant, leaving all unrelated facts intact.
+    for operation in ("missing_flag", "false_flag", "wrong_provenance", "extra_offer", "duplicate_bank",
+                      "missing_consumer", "other_consumer", "changed_farewell", "generated_greeting"):
+        bad = copy.deepcopy(declarations)
+        service = next(row for row in bad["records"] if row.get("kind") == "Service" and row.get("bank") is True)
+        npc = next(row for row in bad["records"] if row.get("kind") == "NPC" and row["identity"]["key"] == "oteryn:npc.paulie")
+        dialogue = next(row for row in bad["records"] if row.get("kind") == "Dialogue" and row["identity"]["key"] == "oteryn:dialogue.npc.paulie")
+        if operation == "missing_flag": service.pop("bank")
+        elif operation == "false_flag": service["bank"] = False
+        elif operation == "wrong_provenance": service["fields"][0]["value"]["value"] = "profession=banker"
+        elif operation == "extra_offer": service["offers"] = []
+        elif operation == "duplicate_bank": bad["records"].append(copy.deepcopy(service))
+        elif operation == "missing_consumer": npc["services"] = []
+        elif operation == "other_consumer":
+            other = next(row for row in bad["records"] if row.get("kind") == "NPC" and row["identity"]["key"] != "oteryn:npc.paulie")
+            other.setdefault("services", []).append(copy.deepcopy(npc["services"][0]))
+        elif operation == "changed_farewell": dialogue["farewell"] = ["unadmitted replacement"]
+        elif operation == "generated_greeting": dialogue["greet"] = ["unadmitted generated reply"]
+        mutations.append((operation, bad))
+    for operation, bad in mutations:
+        try:
+            migration.validate_native_bank_admission(bad)
+        except migration.ValidationError:
+            pass
+        else:
+            raise AssertionError(f"unqualified Bank admission accepted: {operation}")
+    print("ok test_closed_bank_admission positive +9 closed negatives")
+
+
+test_closed_bank_admission()
+
 print(f"PASS managed_files={len(paths)} item_shards=69")

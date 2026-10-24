@@ -1,0 +1,91 @@
+{
+  "task": "MARKET-CONTENT-1",
+  "review_date": "2026-10-19",
+  "scope": "SOURCE_RECONCILED_MARKET_REFERENCE_WITH_EXPLICIT_VARIANT_AND_TAXONOMY_GAPS",
+  "research_status": "SOURCE_REPAIR_RUNTIME_UNQUALIFIED",
+  "runtime_admission": "BLOCKED",
+  "coverage": "2076item records and324service offers retained.1943item restrictions inherit one explicit shared instance policy, not1943missingmechanics.86item IDs now have paired verified donor metadata/XML observations.85type defaults and148taxonomy fallback fields are source-reconciled; cup2884/dracoyle9034Market identities are explicit pending native checks; Poison Salt Crystal22694retains one admission conflict and two unresolved taxonomy fields. Official fee source resolved; no server listing claim.",
+  "source_registry": "sources.json",
+  "record_counts": {
+    "docs/reference/content-prep/market-content-1/listing-restrictions.json": 1,
+    "docs/reference/content-prep/market-content-1/admission-evidence/evidence-00000-00499.json": 500,
+    "docs/reference/content-prep/market-content-1/admission-evidence/evidence-00500-00999.json": 500,
+    "docs/reference/content-prep/market-content-1/admission-evidence/evidence-01000-01499.json": 500,
+    "docs/reference/content-prep/market-content-1/admission-evidence/evidence-01500-01999.json": 500,
+    "docs/reference/content-prep/market-content-1/admission-evidence/evidence-02000-02075.json": 76,
+    "docs/reference/content-prep/market-content-1/admission-evidence/evidence-00000-00323.json": 324
+  },
+  "evidence_field_counts": {
+    "PROVEN": 5720,
+    "DERIVED": 11549,
+    "CONFLICT": 1,
+    "UNKNOWN": 2
+  },
+  "unresolved_fields": [
+    {
+      "path": "docs/reference/content-prep/market-content-1/admission-evidence/evidence-00000-00499.json/records/455/facts/trade.marketable",
+      "classification": "CONFLICT"
+    },
+    {
+      "path": "docs/reference/content-prep/market-content-1/admission-evidence/evidence-00000-00499.json/records/455/facts/trade.market_category",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/market-content-1/admission-evidence/evidence-00000-00499.json/records/455/facts/trade.market_subcategory",
+      "classification": "UNKNOWN"
+    }
+  ],
+  "limitations_policy": "Unknown values and conflicting source statements remain visible. Positive source observations, inferred projections and server-controlled facts remain distinct; no count is relabeled merely to claim completion.",
+  "wiki_br_followup": {
+    "summary": "Cross-check of93 named unresolved Market identities against Wiki BR:34 pages expose a Market declaration, while59 have no matching declaration at the checked URL or could not be accessed. Fifteen explicit negative declarations have matching own name, weight and a single Fandom item ID;50 formerly UNKNOWN reference fields are now DERIVED. Current positive declarations and multi-ID furniture/quest pages remain research candidates rather than being silently admitted across states. No current official server listing or transaction is claimed. The1958 repeated per-item restriction holds are not globally erased: a general exclusion list does not prove absence of additional item-specific restrictions.",
+    "named_identities_checked": 93,
+    "own_market_declarations_found": 34,
+    "qualified_negative_single_id_bindings": 15,
+    "resolved_unknown_fields": 50,
+    "affected_native_keys": [
+      "oteryn:item.tibia.i17669",
+      "oteryn:item.tibia.i17671",
+      "oteryn:item.tibia.i23460",
+      "oteryn:item.tibia.i25238",
+      "oteryn:item.tibia.i25731",
+      "oteryn:item.tibia.i2812",
+      "oteryn:item.tibia.i39136",
+      "oteryn:item.tibia.i39577",
+      "oteryn:item.tibia.i39578",
+      "oteryn:item.tibia.i406",
+      "oteryn:item.tibia.i5799",
+      "oteryn:item.tibia.i6506",
+      "oteryn:item.tibia.i6507",
+      "oteryn:item.tibia.i6508",
+      "oteryn:item.tibia.i7874"
+    ],
+    "runtime_admission": "BLOCKED"
+  },
+  "filled_parameter_fields": 2177,
+  "remaining_unfilled_parameter_fields": 0,
+  "normalized_companion_fields": 2148,
+  "global_source_archive": "docs/reference/content-prep/market-content-1/tibia-source-archive.json",
+  "global_source_archive_counts": {
+    "CONFLICT": 1,
+    "UNKNOWN": 2176
+  },
+  "counting_scope": "Active fields only; archived original Global evidence is excluded from active-field counts.",
+  "pending_index_metadata": [],
+  "source_reconciliation": {
+    "source_check": "docs/reference/content-prep/market-content-1/market-source-reconciliation.json",
+    "shared_instance_predicate_references": 1943,
+    "individual_source_ids_checked": 86,
+    "donor_metadata_absent": 84,
+    "donor_metadata_present": 2,
+    "type_defaults_reconciled": 85,
+    "others_taxonomy_defaults_withdrawn": 148,
+    "source_variant_or_instance_checks": [
+      2884,
+      9034
+    ],
+    "source_conflict_item": 22694,
+    "remaining_unresolved_source_fields": 3,
+    "native_admission": false
+  },
+  "remaining_unresolved_source_fields": 3
+}

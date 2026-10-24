@@ -1,0 +1,22 @@
+{
+  "id": "PROF1B-RL-02",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_PROFICIENCY1B_PERK_MODIFICATION_VALUE_SHAPES_DECISION_2026-10-03.md",
+  "resource": "Entries of a pending reshape offer",
+  "unit": "entries per offer",
+  "hard_maximum": 3,
+  "configurable_range": {
+    "minimum": 3,
+    "maximum": 3
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "A fixed [u8; 3] in memory and a SMALLINT[] with cardinality 3 in storage; an offer is drawn only when 3 entries other than the current one exist.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=3: an offer stores 3 distinct entries other than the current one",
+    "max+1: a 4th entry cannot be stored (cardinality CHECK); a pool with 2 others is POOL_TOO_SMALL"
+  ],
+  "consumers": [
+    "apps/game-server/src/domain/weapon_proficiency.rs PROFICIENCY_RESHAPE_OFFER_SIZE"
+  ],
+  "notes": "PROFICIENCY-1B \u00a75 and \u00a712; tests: offers_are_three_distinct_others_and_choices_keep_the_rank. Registered by OTV2-20261003-prof-shape-1."
+}

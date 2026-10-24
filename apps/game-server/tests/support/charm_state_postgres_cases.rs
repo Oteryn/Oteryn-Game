@@ -127,7 +127,11 @@ impl Database {
         let version: String = sqlx::query_scalar("SHOW server_version_num")
             .fetch_one(&mut connection)
             .await?;
-        assert_eq!(version, "170006", "canonical target is PostgreSQL 17.6");
+        assert_eq!(
+            version,
+            oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
+            "canonical target is PostgreSQL 18.6"
+        );
         sqlx::migrate!("./migrations").run(&mut connection).await?;
         connection.close().await?;
         Ok(Self {
@@ -486,6 +490,9 @@ fn race(name: &str) -> BestiaryRaceKey {
 }
 
 /// Candidate-catalogue costs (#1293) for three majors and two minors.
+#[path = "charm_state_promotion_fixture.rs"]
+pub(crate) mod promotion_fixture;
+
 fn catalogue() -> CharmCatalogue {
     let major = |name: &str, costs| CharmDefinition {
         key: charm(name),
@@ -511,7 +518,7 @@ fn catalogue() -> CharmCatalogue {
 fn native_content(
     races: Vec<crate::domain::bestiary::BestiaryRace>,
 ) -> TestResult<CharmConnectionContent> {
-    use crate::combat::charm_effects::{
+    use oteryn_gameplay_progression::charm_effects::{
         CharmCatalogueRead, CharmCategory as EffectCategory, CharmDefinition as EffectDefinition,
         CharmEffect, CharmPercent, CharmStageValue,
     };

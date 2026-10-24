@@ -113,9 +113,9 @@ checksum = "f2032f911046de80f0a198e0901378627c33f59ea0ac00e363d481118bd70a53"
 
 [[package]]
 name = "aws-lc-rs"
-version = "1.18.0"
+version = "1.18.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce2b2dcc879c3bae0d371e77c99f2238400ef24ec001394befa67b6e543add9e"
+checksum = "faac5829c2b74c28f830747e7818ccfb684261b5f48a1118b1e2a13d36dfab13"
 dependencies = [
  "aws-lc-sys",
  "untrusted 0.7.1",
@@ -124,9 +124,9 @@ dependencies = [
 
 [[package]]
 name = "aws-lc-sys"
-version = "0.44.0"
+version = "0.46.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f09fae7be8bb3174e05c6afdb34199e6dc0c7c04ba9fa237b1967adfbde27483"
+checksum = "f1622d8446a2d4b2ce0c7eefc73dd43a99779028d5ee5c2dd8073a658ba8a2bc"
 dependencies = [
  "cc",
  "cmake",
@@ -140,6 +140,12 @@ name = "base64"
 version = "0.22.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
+
+[[package]]
+name = "base64"
+version = "0.23.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ac07cdecf99051d9a5238b80f35af32cdeba5b336e55d957b318b50137e18da5"
 
 [[package]]
 name = "bit-set"
@@ -498,9 +504,9 @@ dependencies = [
 
 [[package]]
 name = "ctutils"
-version = "0.4.2"
+version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7d5515a3834141de9eafb9717ad39eea8247b5674e6066c404e8c4b365d2a29e"
+checksum = "12218662ccac37d9714f2191252553d67585b97df8c839cbe49e0bde278dc865"
 dependencies = [
  "cmov",
 ]
@@ -1084,7 +1090,7 @@ version = "0.1.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "96547c2556ec9d12fb1578c4eaf448b04993e7fb79cbaad930a656880a6bdfa0"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "bytes",
  "futures-channel",
  "futures-util",
@@ -1345,9 +1351,9 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
 name = "libc"
-version = "0.2.189"
+version = "0.2.191"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3eaf3ede3fee6db1a4c2ee091bf8a8b4dccdc6d17f656fb07896ee72867612f2"
+checksum = "65cd87c9a6d60536580b316ad985726104730a5151c99845f2490428ef91240a"
 
 [[package]]
 name = "libloading"
@@ -1863,6 +1869,7 @@ name = "oteryn-architecture-check"
 version = "0.1.0"
 dependencies = [
  "serde_json",
+ "syn 2.0.119",
 ]
 
 [[package]]
@@ -1886,7 +1893,7 @@ dependencies = [
  "rustls",
  "serde",
  "serde_json",
- "sha2 0.11.0",
+ "sha2 0.11.1",
  "tokio",
  "tokio-rustls",
  "windows-sys 0.61.2",
@@ -1902,7 +1909,7 @@ dependencies = [
  "prost",
  "serde",
  "serde_json",
- "sha2 0.11.0",
+ "sha2 0.11.1",
 ]
 
 [[package]]
@@ -1967,14 +1974,40 @@ dependencies = [
 name = "oteryn-game-server"
 version = "0.1.0"
 dependencies = [
- "aws-lc-rs",
- "base64",
- "cap-fs-ext",
- "cap-std",
+ "base64 0.22.1",
  "ed25519-dalek",
  "oteryn-dev-client",
  "oteryn-error-codes",
  "oteryn-foundation",
+ "oteryn-gameplay-admission-evidence",
+ "oteryn-gameplay-character-recovery-fence",
+ "oteryn-gameplay-characters",
+ "oteryn-gameplay-combat",
+ "oteryn-gameplay-combat-rules",
+ "oteryn-gameplay-content",
+ "oteryn-gameplay-dispatch",
+ "oteryn-gameplay-domain",
+ "oteryn-gameplay-durability",
+ "oteryn-gameplay-economy",
+ "oteryn-gameplay-encounter-rules",
+ "oteryn-gameplay-encounters",
+ "oteryn-gameplay-entities",
+ "oteryn-gameplay-foundation",
+ "oteryn-gameplay-housing",
+ "oteryn-gameplay-items",
+ "oteryn-gameplay-monster-ai",
+ "oteryn-gameplay-native-admission-source",
+ "oteryn-gameplay-node-files",
+ "oteryn-gameplay-npc",
+ "oteryn-gameplay-progression",
+ "oteryn-gameplay-quests",
+ "oteryn-gameplay-social",
+ "oteryn-gameplay-social-rules",
+ "oteryn-gameplay-source-critical-baseline",
+ "oteryn-gameplay-spell",
+ "oteryn-gameplay-spell-rules",
+ "oteryn-gameplay-weather",
+ "oteryn-gameplay-world",
  "oteryn-ntp-clock",
  "oteryn-protocol-oteryn",
  "oteryn-simulation-determinism",
@@ -1987,13 +2020,478 @@ dependencies = [
  "rustls",
  "serde",
  "serde_json",
- "sha2 0.11.0",
+ "sha2 0.11.1",
  "sqlx",
- "syn 2.0.119",
  "tokio",
  "tokio-rustls",
  "toml",
  "zstd",
+]
+
+[[package]]
+name = "oteryn-gameplay-admission-evidence"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+]
+
+[[package]]
+name = "oteryn-gameplay-character-recovery-fence"
+version = "0.1.0"
+dependencies = [
+ "rustix 1.1.5",
+ "sha2 0.11.1",
+]
+
+[[package]]
+name = "oteryn-gameplay-characters"
+version = "0.1.0"
+dependencies = [
+ "oteryn-gameplay-content",
+ "oteryn-gameplay-domain",
+ "prost",
+ "serde",
+ "serde_json",
+ "sha2 0.11.1",
+]
+
+[[package]]
+name = "oteryn-gameplay-combat"
+version = "0.1.0"
+dependencies = [
+ "oteryn-gameplay-combat-rules",
+ "oteryn-gameplay-content",
+ "oteryn-gameplay-domain",
+ "oteryn-gameplay-durability",
+ "oteryn-gameplay-entities",
+ "oteryn-gameplay-foundation",
+ "oteryn-gameplay-items",
+ "oteryn-gameplay-source-critical-baseline",
+ "oteryn-gameplay-world",
+ "oteryn-simulation-determinism",
+ "serde",
+ "serde_json",
+ "sha2 0.11.1",
+]
+
+[[package]]
+name = "oteryn-gameplay-combat-rules"
+version = "0.1.0"
+dependencies = [
+ "oteryn-gameplay-content",
+ "oteryn-gameplay-progression",
+ "oteryn-protocol-oteryn",
+ "oteryn-simulation-determinism",
+ "oteryn-test-support",
+ "serde",
+ "serde_json",
+ "sha2 0.11.1",
+]
+
+[[package]]
+name = "oteryn-gameplay-content"
+version = "0.1.0"
+dependencies = [
+ "cap-fs-ext",
+ "cap-std",
+ "oteryn-gameplay-domain",
+ "oteryn-protocol-oteryn",
+ "oteryn-simulation-determinism",
+ "oteryn-world-bundle",
+ "oteryn-world-bundle-compiler",
+ "rustix 1.1.5",
+ "serde",
+ "serde_json",
+ "sha2 0.11.1",
+ "zstd",
+]
+
+[[package]]
+name = "oteryn-gameplay-dispatch"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "ed25519-dalek",
+ "oteryn-dev-client",
+ "oteryn-error-codes",
+ "oteryn-foundation",
+ "oteryn-gameplay-admission-evidence",
+ "oteryn-gameplay-character-recovery-fence",
+ "oteryn-gameplay-characters",
+ "oteryn-gameplay-combat",
+ "oteryn-gameplay-combat-rules",
+ "oteryn-gameplay-content",
+ "oteryn-gameplay-domain",
+ "oteryn-gameplay-durability",
+ "oteryn-gameplay-economy",
+ "oteryn-gameplay-encounters",
+ "oteryn-gameplay-entities",
+ "oteryn-gameplay-foundation",
+ "oteryn-gameplay-housing",
+ "oteryn-gameplay-items",
+ "oteryn-gameplay-monster-ai",
+ "oteryn-gameplay-native-admission-source",
+ "oteryn-gameplay-node-files",
+ "oteryn-gameplay-npc",
+ "oteryn-gameplay-progression",
+ "oteryn-gameplay-quests",
+ "oteryn-gameplay-social",
+ "oteryn-gameplay-social-rules",
+ "oteryn-gameplay-spell",
+ "oteryn-gameplay-spell-rules",
+ "oteryn-gameplay-weather",
+ "oteryn-gameplay-world",
+ "oteryn-protocol-oteryn",
+ "oteryn-simulation-determinism",
+ "oteryn-world-bundle",
+ "oteryn-world-bundle-compiler",
+ "rcgen",
+ "rustls",
+ "serde",
+ "serde_json",
+ "sha2 0.11.1",
+ "sqlx",
+ "syn 2.0.119",
+ "tokio",
+ "tokio-rustls",
+]
+
+[[package]]
+name = "oteryn-gameplay-domain"
+version = "0.1.0"
+dependencies = [
+ "oteryn-simulation-determinism",
+ "oteryn-test-support",
+ "serde",
+ "serde_json",
+ "sha2 0.11.1",
+]
+
+[[package]]
+name = "oteryn-gameplay-durability"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "oteryn-error-codes",
+ "oteryn-gameplay-admission-evidence",
+ "oteryn-gameplay-character-recovery-fence",
+ "oteryn-gameplay-characters",
+ "oteryn-gameplay-combat-rules",
+ "oteryn-gameplay-content",
+ "oteryn-gameplay-domain",
+ "oteryn-gameplay-economy",
+ "oteryn-gameplay-encounter-rules",
+ "oteryn-gameplay-entities",
+ "oteryn-gameplay-foundation",
+ "oteryn-gameplay-housing",
+ "oteryn-gameplay-items",
+ "oteryn-gameplay-native-admission-source",
+ "oteryn-gameplay-progression",
+ "oteryn-gameplay-quests",
+ "oteryn-gameplay-social-rules",
+ "oteryn-protocol-oteryn",
+ "oteryn-simulation-determinism",
+ "oteryn-world-bundle",
+ "prost",
+ "serde",
+ "serde_json",
+ "sha2 0.11.1",
+ "sqlx",
+ "tokio",
+]
+
+[[package]]
+name = "oteryn-gameplay-economy"
+version = "0.1.0"
+dependencies = [
+ "oteryn-gameplay-domain",
+ "oteryn-test-support",
+]
+
+[[package]]
+name = "oteryn-gameplay-encounter-rules"
+version = "0.1.0"
+dependencies = [
+ "oteryn-gameplay-content",
+ "oteryn-protocol-oteryn",
+ "oteryn-simulation-determinism",
+ "sha2 0.11.1",
+]
+
+[[package]]
+name = "oteryn-gameplay-encounters"
+version = "0.1.0"
+dependencies = [
+ "oteryn-gameplay-combat",
+ "oteryn-gameplay-content",
+ "oteryn-gameplay-domain",
+ "oteryn-gameplay-durability",
+ "oteryn-gameplay-encounter-rules",
+ "oteryn-gameplay-entities",
+ "oteryn-gameplay-foundation",
+ "oteryn-gameplay-monster-ai",
+ "oteryn-gameplay-quests",
+ "oteryn-gameplay-source-critical-baseline",
+ "oteryn-gameplay-spell",
+ "oteryn-gameplay-world",
+ "oteryn-protocol-oteryn",
+ "oteryn-simulation-determinism",
+ "serde",
+ "serde_json",
+ "sha2 0.11.1",
+ "tokio",
+]
+
+[[package]]
+name = "oteryn-gameplay-entities"
+version = "0.1.0"
+dependencies = [
+ "oteryn-gameplay-content",
+ "oteryn-gameplay-domain",
+ "oteryn-gameplay-foundation",
+ "oteryn-simulation-determinism",
+ "serde",
+ "serde_json",
+ "sha2 0.11.1",
+]
+
+[[package]]
+name = "oteryn-gameplay-foundation"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "ed25519-dalek",
+ "oteryn-gameplay-domain",
+ "oteryn-protocol-oteryn",
+ "oteryn-simulation-determinism",
+ "serde",
+ "serde_json",
+ "sha2 0.11.1",
+]
+
+[[package]]
+name = "oteryn-gameplay-housing"
+version = "0.1.0"
+dependencies = [
+ "oteryn-gameplay-domain",
+ "sha2 0.11.1",
+]
+
+[[package]]
+name = "oteryn-gameplay-items"
+version = "0.1.0"
+dependencies = [
+ "oteryn-gameplay-content",
+ "oteryn-gameplay-domain",
+ "oteryn-test-support",
+ "serde",
+ "serde_json",
+ "sha2 0.11.1",
+]
+
+[[package]]
+name = "oteryn-gameplay-monster-ai"
+version = "0.1.0"
+dependencies = [
+ "oteryn-gameplay-combat",
+ "oteryn-gameplay-content",
+ "oteryn-gameplay-domain",
+ "oteryn-gameplay-durability",
+ "oteryn-gameplay-entities",
+ "oteryn-gameplay-foundation",
+ "oteryn-gameplay-spell",
+ "oteryn-gameplay-world",
+ "oteryn-simulation-determinism",
+ "serde",
+ "serde_json",
+ "sha2 0.11.1",
+]
+
+[[package]]
+name = "oteryn-gameplay-native-admission-source"
+version = "0.1.0"
+dependencies = [
+ "cap-fs-ext",
+ "cap-std",
+ "oteryn-error-codes",
+ "oteryn-gameplay-admission-evidence",
+ "rustix 1.1.5",
+ "rustls",
+ "serde",
+ "serde_json",
+ "sha2 0.11.1",
+ "tokio",
+ "tokio-rustls",
+ "toml",
+]
+
+[[package]]
+name = "oteryn-gameplay-node-files"
+version = "0.1.0"
+dependencies = [
+ "rustix 1.1.5",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "oteryn-gameplay-npc"
+version = "0.1.0"
+dependencies = [
+ "oteryn-gameplay-content",
+ "oteryn-gameplay-domain",
+ "oteryn-gameplay-economy",
+ "oteryn-gameplay-entities",
+ "oteryn-gameplay-world",
+ "oteryn-protocol-oteryn",
+ "oteryn-simulation-determinism",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "oteryn-gameplay-progression"
+version = "0.1.0"
+dependencies = [
+ "oteryn-gameplay-content",
+ "oteryn-gameplay-domain",
+ "oteryn-simulation-determinism",
+ "oteryn-test-support",
+ "serde",
+ "serde_json",
+ "sha2 0.11.1",
+]
+
+[[package]]
+name = "oteryn-gameplay-quests"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "sha2 0.11.1",
+]
+
+[[package]]
+name = "oteryn-gameplay-social"
+version = "0.1.0"
+dependencies = [
+ "aws-lc-rs",
+ "base64 0.22.1",
+ "oteryn-gameplay-combat",
+ "oteryn-gameplay-content",
+ "oteryn-gameplay-domain",
+ "oteryn-gameplay-durability",
+ "oteryn-gameplay-entities",
+ "oteryn-gameplay-foundation",
+ "oteryn-gameplay-progression",
+ "oteryn-gameplay-social-rules",
+ "oteryn-gameplay-world",
+ "oteryn-ntp-clock",
+ "oteryn-protocol-oteryn",
+ "oteryn-simulation-determinism",
+ "rcgen",
+ "reqwest",
+ "rustls",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tokio-rustls",
+]
+
+[[package]]
+name = "oteryn-gameplay-social-rules"
+version = "0.1.0"
+dependencies = [
+ "oteryn-gameplay-domain",
+ "oteryn-protocol-oteryn",
+ "oteryn-simulation-determinism",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "oteryn-gameplay-source-critical-baseline"
+version = "0.1.0"
+dependencies = [
+ "oteryn-simulation-determinism",
+]
+
+[[package]]
+name = "oteryn-gameplay-spell"
+version = "0.1.0"
+dependencies = [
+ "oteryn-gameplay-combat",
+ "oteryn-gameplay-combat-rules",
+ "oteryn-gameplay-content",
+ "oteryn-gameplay-domain",
+ "oteryn-gameplay-durability",
+ "oteryn-gameplay-entities",
+ "oteryn-gameplay-foundation",
+ "oteryn-gameplay-progression",
+ "oteryn-gameplay-source-critical-baseline",
+ "oteryn-gameplay-spell-rules",
+ "oteryn-gameplay-world",
+ "oteryn-protocol-oteryn",
+ "oteryn-simulation-determinism",
+ "oteryn-test-support",
+ "serde",
+ "serde_json",
+ "sha2 0.11.1",
+ "sqlx",
+]
+
+[[package]]
+name = "oteryn-gameplay-spell-rules"
+version = "0.1.0"
+dependencies = [
+ "oteryn-gameplay-combat-rules",
+ "oteryn-gameplay-content",
+ "oteryn-simulation-determinism",
+ "oteryn-test-support",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "oteryn-gameplay-weather"
+version = "0.1.0"
+dependencies = [
+ "oteryn-protocol-oteryn",
+ "serde",
+ "serde_json",
+ "sha2 0.11.1",
+]
+
+[[package]]
+name = "oteryn-gameplay-world"
+version = "0.1.0"
+dependencies = [
+ "oteryn-foundation",
+ "oteryn-gameplay-characters",
+ "oteryn-gameplay-content",
+ "oteryn-gameplay-domain",
+ "oteryn-gameplay-durability",
+ "oteryn-gameplay-entities",
+ "oteryn-gameplay-foundation",
+ "oteryn-gameplay-housing",
+ "oteryn-gameplay-items",
+ "oteryn-gameplay-node-files",
+ "oteryn-protocol-oteryn",
+ "oteryn-simulation-determinism",
+ "oteryn-world-bundle",
+ "serde",
+ "serde_json",
+ "sha2 0.11.1",
+ "sqlx",
+ "tokio",
+]
+
+[[package]]
+name = "oteryn-gameplay-world-change"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -2003,7 +2501,7 @@ dependencies = [
  "oteryn-diagnostics",
  "oteryn-foundation",
  "oteryn-platform-contracts",
- "sha2 0.11.0",
+ "sha2 0.11.1",
  "tokio",
 ]
 
@@ -2071,6 +2569,7 @@ dependencies = [
 name = "oteryn-protocol-oteryn"
 version = "0.1.0"
 dependencies = [
+ "oteryn-test-support",
  "serde_json",
 ]
 
@@ -2118,7 +2617,7 @@ dependencies = [
 name = "oteryn-simulation-determinism"
 version = "0.1.0"
 dependencies = [
- "sha2 0.11.0",
+ "sha2 0.11.1",
 ]
 
 [[package]]
@@ -2135,7 +2634,7 @@ version = "0.1.0"
 dependencies = [
  "oteryn-foundation",
  "serde_json",
- "sha2 0.11.0",
+ "sha2 0.11.1",
 ]
 
 [[package]]
@@ -2170,7 +2669,7 @@ version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",
- "sha2 0.11.0",
+ "sha2 0.11.1",
  "zstd",
 ]
 
@@ -2181,7 +2680,7 @@ dependencies = [
  "oteryn-world-bundle",
  "serde",
  "serde_json",
- "sha2 0.11.0",
+ "sha2 0.11.1",
  "zstd",
 ]
 
@@ -2519,11 +3018,11 @@ checksum = "19b30a45b0cd0bcca8037f3d0dc3421eaf95327a17cad11964fb8179b4fc4832"
 
 [[package]]
 name = "reqwest"
-version = "0.13.4"
+version = "0.13.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "219c5811de6525e5416c7d5d53bb656d3afdbc6c5af816e0802bcfa42dbdc1c3"
+checksum = "16a1cfa75cc186dd73d5818e510e042e40927bccc9c236b061cea97e1eb08029"
 dependencies = [
- "base64",
+ "base64 0.23.1",
  "bytes",
  "futures-core",
  "futures-util",
@@ -2703,9 +3202,9 @@ checksum = "f87165f0995f63a9fbeea62b64d10b4d9d8e78ec6d7d51fb2125fda7bb36788f"
 
 [[package]]
 name = "rustls-webpki"
-version = "0.103.15"
+version = "0.103.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f3c3cf1d8b1e7d4927e2d154c3fcb02979afb9939629c62cd9048d4f07b60ac2"
+checksum = "4443b1b6d39d7c663139942cc4558262562d2c84123bb6282ef177009ca8b281"
 dependencies = [
  "aws-lc-rs",
  "ring",
@@ -2810,9 +3309,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.151"
+version = "1.0.154"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c841b55ecdae098c80dcae9cf767f6f8a0c2cdb3416bbef72181df4d0fe73f14"
+checksum = "e7e9cc8b1b85264074fbcc02a88680c4096b1e47df8f739dceb03bf482f04bd6"
 dependencies = [
  "itoa",
  "memchr",
@@ -2866,9 +3365,9 @@ dependencies = [
 
 [[package]]
 name = "sha2"
-version = "0.11.0"
+version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "446ba717509524cb3f22f17ecc096f10f4822d76ab5c0b9822c5f9c284e825f4"
+checksum = "47d7069beb7d6ac7b9acd1039986e73443f24234f41074da099d6f994ac9ad19"
 dependencies = [
  "cfg-if",
  "cpufeatures 0.3.0",
@@ -2973,7 +3472,7 @@ dependencies = [
 name = "sqlx-core"
 version = "0.9.0"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "bytes",
  "cfg-if",
  "crc",
@@ -3063,7 +3562,7 @@ dependencies = [
  "percent-encoding",
  "serde",
  "sha1",
- "sha2 0.11.0",
+ "sha2 0.11.1",
  "sqlx-core",
  "thiserror 2.0.20",
  "tracing",
@@ -3075,7 +3574,7 @@ name = "sqlx-postgres"
 version = "0.9.0"
 dependencies = [
  "atoi",
- "base64",
+ "base64 0.22.1",
  "bitflags 2.13.1",
  "byteorder",
  "crc",
@@ -3094,7 +3593,7 @@ dependencies = [
  "rand",
  "serde",
  "serde_json",
- "sha2 0.11.0",
+ "sha2 0.11.1",
  "smallvec",
  "sqlx-core",
  "stringprep",
@@ -3697,18 +4196,18 @@ dependencies = [
 
 [[package]]
 name = "webpki-roots"
-version = "1.0.9"
+version = "1.0.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7dcd9d09a39985f5344844e66b0c530a33843579125f23e21e9f0f220850f22a"
+checksum = "1c1c8e20c8a38fc7d65abfe74eb7280e4aa667e8eec8bc84996d2874810748d9"
 dependencies = [
  "rustls-pki-types",
 ]
 
 [[package]]
 name = "wgpu"
-version = "30.0.0"
+version = "30.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6d8f4bd44d92da5270f03409dba9f952dab24f128e05d6a554926101d1bf9114"
+checksum = "527ccdf43dd5b2e8676eed9984ce00e2bbb0a1b85b70c1969dcb6cd2eb55ab9e"
 dependencies = [
  "arrayvec",
  "bitflags 2.13.1",
@@ -4273,27 +4772,27 @@ checksum = "29666d0abbfad1e3dc4dcf6144730dd3a3ab225bbbdac83319345b1b44ccfc1b"
 
 [[package]]
 name = "zstd"
-version = "0.14.0"
+version = "0.14.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bf06bd8162af0734b344780deb55b42a2429ae430870d13fcc12f238e880fe6e"
+checksum = "db3ae9bf90af6e40197bef767eeefc46ad6397420fe873830bd85e5fbbfb3c70"
 dependencies = [
  "zstd-safe",
 ]
 
 [[package]]
 name = "zstd-safe"
-version = "8.0.0"
+version = "8.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ae42c0555055784c70058d19ba8e275528e8a99a706684868ace5da4e716a4ab"
+checksum = "ded520f16b29e1a9b771c722221b2b0a0398c2316d9bb3c42b458a5414d7434b"
 dependencies = [
  "zstd-sys",
 ]
 
 [[package]]
 name = "zstd-sys"
-version = "2.1.0+zstd.1.5.7"
+version = "2.1.2+zstd.1.5.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ef0a8027ec3ee71300ab3bcbcd0393f434aa72b91ca6d635a39941deae8eea0"
+checksum = "481ada9c543b2323cbb7bbdbb5249177fbf0188ed959ed2c15e4b22421c84ed3"
 dependencies = [
  "cc",
  "pkg-config",

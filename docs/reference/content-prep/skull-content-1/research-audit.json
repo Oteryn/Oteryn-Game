@@ -1,0 +1,97 @@
+{
+  "task": "SKULL-CONTENT-1",
+  "review_date": "2026-10-19",
+  "scope": "SOURCE_RECONCILED_SKULL_POLICY_WITH_EXPLICIT_POINT_AND_CLOCK_GAPS",
+  "research_status": "SOURCE_REPAIRED_RUNTIME_UNQUALIFIED",
+  "runtime_admission": "BLOCKED",
+  "coverage": "Official skull behavior, durations, revenge and respawn penalties retained. White timing is source-backed and conditional. Exact point allocation and clock boundary remain explicitly unresolved; donor4hourdecision/24hourwidget mismatch is preserved.",
+  "source_registry": "sources.json",
+  "record_counts": {
+    "docs/reference/content-prep/skull-content-1/admission-evidence/reference-evidence.json": 5,
+    "docs/reference/content-prep/skull-content-1/white-skull-timing.json": 1
+  },
+  "evidence_field_counts": {
+    "PROVEN": 13,
+    "DERIVED": 2,
+    "UNKNOWN": 2,
+    "CONFLICT": 1
+  },
+  "unresolved_fields": [
+    {
+      "path": "docs/reference/content-prep/skull-content-1/admission-evidence/reference-evidence.json/records/1/facts/thresholds",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/skull-content-1/admission-evidence/reference-evidence.json/records/2/facts/thresholds",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/skull-content-1/admission-evidence/reference-evidence.json/records/4/facts/clock_boundaries",
+      "classification": "CONFLICT"
+    }
+  ],
+  "limitations_policy": "UNKNOWN/CONFLICT is the owner-required outcome for unproven values; candidates, selectors and reasons remain inspectable. No unsupported number was supplied to make the packet appear complete.",
+  "complete_source_sweep": {
+    "review_date": "2026-10-18",
+    "scope": "FANDOM_WIKI_BR_AND_PRIMARY_OFFICIAL_CROSS_CHECK",
+    "changes": [
+      "Conditional60/900-second white-skull logout policy qualified in an independent documentation supplement; claimed ruleset/index unchanged."
+    ],
+    "qualification": "Reference only. No unsupported absence→false conversion, invented random distribution, arrival coordinate or architecture decision. Exact source fetches and failed direct primary fetches remain auditable.",
+    "coordinator_only_application": {
+      "qualified_source": "docs/reference/content-prep/skull-content-1/white-skull-timing.json",
+      "unchanged_conflicting_paths": [
+        "docs/reference/content-prep/skull-content-1/admission-evidence/reference-evidence.json",
+        "docs/reference/content-prep/skull-content-1/admission-evidence/index.json"
+      ],
+      "overlap_pr": 2203
+    }
+  },
+  "filled_parameter_fields": 1,
+  "remaining_unfilled_parameter_fields": 0,
+  "normalized_companion_fields": 0,
+  "global_source_archive": "docs/reference/content-prep/skull-content-1/tibia-source-archive.json",
+  "global_source_archive_counts": {
+    "UNKNOWN": 4
+  },
+  "counting_scope": "Active fields only; archived original Global evidence is excluded from active-field counts.",
+  "pending_index_metadata": [
+    {
+      "target_path": "docs/reference/content-prep/skull-content-1/admission-evidence/index.json",
+      "held_by_prs": [
+        2203
+      ],
+      "replacement": {
+        "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
+        "path": "rulesets/pvp/skulls/",
+        "kind": "ruleset",
+        "owner": "PvP",
+        "repository": "Oteryn/Oteryn-Game",
+        "population_state": "POPULATED",
+        "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
+        "notes": "Skull/frag policy.",
+        "runtime_admission": "BLOCKED",
+        "runtime_switch_authorized": false,
+        "evidence_completeness": "SOURCE_RECONCILED_WITH_EXPLICIT_POINT_AND_CLOCK_GAPS",
+        "source_snapshot_target": "current-at-fetch-2026-10-18",
+        "payloads": [
+          {
+            "path": "docs/reference/content-prep/skull-content-1/admission-evidence/reference-evidence.json",
+            "sha256": "9a657f56d6cc53cf378a3146edaf88e43d270435582ed6a24b5bf84b89860fe6"
+          }
+        ]
+      },
+      "reason": "Do not edit overlapping open PR files; coordinator applies metadata only with native qualification."
+    }
+  ],
+  "remaining_unresolved_source_fields": 3,
+  "source_repair": {
+    "source_check": "docs/reference/content-prep/skull-content-1/skull-source-reconciliation.json",
+    "withdrawn_fixed_kill_thresholds": 2,
+    "conditional_white_timing": "SOURCE_BACKED",
+    "exact_unjustified_point_allocation": "UNRESOLVED",
+    "clock_boundary": "CONFLICT_DONOR_VS_OFFICIAL_WINDOW",
+    "remaining_unresolved_source_fields": 3,
+    "selected_for_native_runtime": false
+  }
+}

@@ -1,0 +1,132 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_SOURCE_MANIFEST/v1",
+  "task": "DEATH-LOSS-EVIDENCE-1",
+  "target_cut": "2026-10-18",
+  "owner_cut_override": "Owner explicitly requested fresh current data on 2026-10-18; historical 2026-09-27 programme cut is not changed repository-wide.",
+  "sources": {
+    "repo:docs/reference/tibia-manual/characters.md": {
+      "path": "docs/reference/tibia-manual/characters.md",
+      "url": "https://github.com/Oteryn/Oteryn-Game/blob/64d5e4dab918ed0274dd9b1479b6218887b644bb/docs/reference/tibia-manual/characters.md",
+      "commit": "64d5e4dab918ed0274dd9b1479b6218887b644bb",
+      "sha256": "f3f89885a0850493e737b109e658c35b9a47186c0e1656da64df907b118d5a79",
+      "source_class": "CIPSOFT_OFFICIAL / PRIMARY_OFFICIAL",
+      "fetched_at": "2026-10-18"
+    },
+    "wiki:1628:1140641": {
+      "title": "Death",
+      "url": "https://tibia.fandom.com/wiki/Death",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1140641",
+      "revid": 1140641,
+      "revision_timestamp": "2025-11-07T13:36:07Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "92e62acaa5b6cb3b9f63a10730ddd5d5e636699b765f4f372c8fa20bfcf0402b",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Prey%20System%7CTask%20Board%7CSkull%20System%7CDeath&redirects=1"
+    },
+    "official:manual:characters:2026-10-18": {
+      "title": "Tibia official manual: characters",
+      "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=characters",
+      "source_class": "CIPSOFT_OFFICIAL",
+      "evidence_role": "PRIMARY_OFFICIAL",
+      "fetched_at": "2026-10-18",
+      "response_sha256": "d14ece6c40d0213c0f996b45938ff215cd050404e5d38abf7255bf29e8568026",
+      "capture_method": "Public URL read through owner-authorized connected computer",
+      "retained_scope": "RESPONSE_DIGEST_AND_PARAPHRASED_FACTS",
+      "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH"
+    },
+    "owner:oteryn-data-completion:2026-10-19": {
+      "source_class": "OWNER_AUTHORIZED_OTERYN_WORKING_PARAMETERS",
+      "instruction": "No to uzupełnij te dane bo piszę ci to5raz",
+      "prior_instruction": "Przygotuj propozycje Oteryn z jawnymi założeniami",
+      "parameter_document": "docs/reference/content-prep/death-loss-evidence-1/oteryn-parameters.json",
+      "selection_actor": "assistant completing owner-authorized reference/data task",
+      "scope": "Populate working Oteryn data defaults, keeping evidence limits explicit; no runtime or architectural acceptance is implied."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:death.loss": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/creatures/players/player.cpp",
+      "line": 7281,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/creatures/players/player.cpp#L7281",
+      "file_sha256": "61e9da9c6d14d8b243ec5230f149cbc88b9aed14b5547b96664bc6ce730cc5a0",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "observation": {
+        "level_at_least_24_base_percent": "(tmpLevel+50)*50*(tmpLevel*tmpLevel-5*tmpLevel+8)/experience",
+        "tmpLevel": "level+levelPercent/100",
+        "below_24_base_percent": 10,
+        "blessing_reduction_per_bless_percent": "6.31 retro PvP, 8 otherwise",
+        "promotion_reduction_percentage_points": 30,
+        "override": "DEATH_LOSE_PERCENT != -1 selects a different formula"
+      },
+      "qualification": "Reference implementation adapted as a working Oteryn design choice, not current official Tibia proof."
+    },
+    "ots:gameplay-recheck:canary:52550d5:src/creatures/players/player.cpp": {
+      "repository": "opentibiabr/canary",
+      "commit": "52550d5e3c0ffe565f4bd1014f4e5575abf1059b",
+      "path": "src/creatures/players/player.cpp",
+      "blob_sha": "d1b12e93fdf34598af61c7f69adceac9d977e819",
+      "sha256": "7c572074fd7625f6f3e89626ae4dda6b7acc9296896d7c9521db9becfe14aa4c",
+      "url": "https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/src/creatures/players/player.cpp",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:gameplay-recheck:canary:52550d5:config.lua.dist": {
+      "repository": "opentibiabr/canary",
+      "commit": "52550d5e3c0ffe565f4bd1014f4e5575abf1059b",
+      "path": "config.lua.dist",
+      "blob_sha": "55ccf0802351aa84a98bfe59e176a5f98f94a56b",
+      "sha256": "5ad741b00ff26c0200a9d0c3a4f056801647be5a59a45b0ef687c87887a762d3",
+      "url": "https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/config.lua.dist",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:gameplay-recheck:canary:52550d5:src/config/configmanager.cpp": {
+      "repository": "opentibiabr/canary",
+      "commit": "52550d5e3c0ffe565f4bd1014f4e5575abf1059b",
+      "path": "src/config/configmanager.cpp",
+      "blob_sha": "e5bc946fa5351f4ab8d0613b4869a6c2c9ce04dd",
+      "sha256": "eb89351ee46d52bec947d0bf4dbb4a9af955eb5d492b4b368867cc6087a11ede",
+      "url": "https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/src/config/configmanager.cpp",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/player.cpp": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/creatures/players/player.cpp",
+      "blob_sha": "cd4dd674a64c5839ca6cec565e0772da4b4efacc",
+      "sha256": "61e9da9c6d14d8b243ec5230f149cbc88b9aed14b5547b96664bc6ce730cc5a0",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/creatures/players/player.cpp",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "config.lua.dist",
+      "blob_sha": "f215fa6e4612bd8f500e859c504935ef649e3e00",
+      "sha256": "93f50fc744c9e5f1bc39165ea2ea037f5f56131a3768f1b127ebb23be4b6a544",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/config.lua.dist",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/config/configmanager.cpp": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/config/configmanager.cpp",
+      "blob_sha": "358d5de1c895649732e433a4236c4b08e3e4adc8",
+      "sha256": "1c8e7d973475fb2cd0292054c454f86c43980d4dfdcc7c8dce2095e135f7b09b",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/config/configmanager.cpp",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    "official:death-recheck:characters:20261019": {
+      "url": "https://www.tibia.com/gameguides/?section=characters&subtopic=manual",
+      "source_class": "CIPSOFT_OFFICIAL",
+      "fetched_at": "2026-10-19",
+      "retrieval": "Fresh indexed primary text; exact algorithm not published. Existing direct response digest retained.",
+      "selector": "Death and reduction by blessings"
+    }
+  }
+}

@@ -1,17 +1,20 @@
 // This historical standalone fixture includes Ability's source directly.
 // Its narrow test-only owner shim keeps the typed bridge compiling here;
 // Foundation's focused unit tests exercise the actual carrier and HP slot.
-#[path = "../src/domain/appearance.rs"]
-mod appearance;
+pub use oteryn_gameplay_domain::domain::appearance;
 mod domain {
     pub(crate) use crate::appearance;
 }
+#[allow(dead_code)]
+#[path = "../../../crates/gameplay/foundation/src/foundation/ability_data/mod.rs"]
+pub(crate) mod ability_data;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/ability/condition.rs"]
-mod condition;
+#[path = "../../../crates/gameplay/foundation/src/foundation/condition.rs"]
+pub mod condition;
 #[allow(dead_code)]
 mod foundation {
-    pub(crate) use crate::condition;
+    pub(crate) use crate::ability_data;
+    pub use crate::condition;
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub(crate) struct ExactActorRef(pub(crate) u64);
     impl ExactActorRef {
@@ -163,7 +166,7 @@ mod foundation {
     }
 }
 
-#[path = "../src/ability/mod.rs"]
+#[path = "../../../crates/gameplay/combat/src/ability/mod.rs"]
 mod ability;
 
 use ability::{

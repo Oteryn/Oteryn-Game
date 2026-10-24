@@ -1,0 +1,21 @@
+{
+  "id": "FND02-PROTOBUF-NESTING-DEPTH",
+  "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+  "resource": "Decoded protobuf message nesting",
+  "unit": "levels",
+  "hard_maximum": 32,
+  "configurable_range": {
+    "minimum": 32,
+    "maximum": 32
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Decoder must enforce recursion/nesting depth without stack or heap blowup.",
+  "client_visible": false,
+  "boundary_tests": [
+    "depth 32 accepted",
+    "depth 33 rejected deterministically"
+  ],
+  "consumers": [
+    "all foundation protobuf decoders"
+  ]
+}

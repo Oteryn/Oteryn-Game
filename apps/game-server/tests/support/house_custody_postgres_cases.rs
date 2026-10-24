@@ -43,7 +43,11 @@ impl Database {
         let version: String = sqlx::query_scalar("SHOW server_version_num")
             .fetch_one(&mut connection)
             .await?;
-        assert_eq!(version, "170006", "canonical target is PostgreSQL 17.6");
+        assert_eq!(
+            version,
+            oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
+            "canonical target is PostgreSQL 18.6"
+        );
         sqlx::migrate!("./migrations").run(&mut connection).await?;
         isolate_storage_from_shape_gate(&mut connection).await?;
         connection.close().await?;
@@ -384,8 +388,10 @@ fn house_item_has_exactly_one_location_while_live_and_none_when_retired() -> Tes
         assert!(message(contents)?.contains("cannot have contents"));
         tx.rollback().await?;
 
-        // The guard covers all six current custody locations and the item row.
-        // Migration 0035 adds equipment custody to the original house contract.
+        // The guard covers all eight current custody locations and the item row.
+        // Migration 0035 adds equipment custody to the original house contract;
+        // Migration 0128 adds nested container custody; Migration 0151 adds
+        // character depot custody.
         let guarded: Vec<String> = sqlx::query_scalar(
             "SELECT tgrelid::regclass::text FROM pg_trigger \
               WHERE tgfoid = 'game_item_location_exclusivity_guard'::regproc \
@@ -397,12 +403,14 @@ fn house_item_has_exactly_one_location_while_live_and_none_when_retired() -> Tes
             guarded,
             [
                 "game_character_equipment_slots",
+                "game_item_character_depot_locations",
                 "game_item_container_entries",
                 "game_item_container_slots",
                 "game_item_corpse_container_entries",
                 "game_item_ground_locations",
                 "game_item_house_interior_locations",
                 "game_item_instances",
+                "game_item_nested_entries",
             ]
         );
         Ok(())

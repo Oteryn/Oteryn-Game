@@ -1,0 +1,139 @@
+{
+  "checked_at": "2026-10-19T09:40:56.368607+00:00",
+  "classification": "CONFLICT",
+  "source_scope": "COMMUNITY_WIKI_COMPARISON_NOT_GLOBAL_MEASUREMENT",
+  "sources": [
+    {
+      "id": "fandom-cake-current-indexed",
+      "url": "https://tibia.fandom.com/wiki/Cake_Golem",
+      "access": "Indexed page text; direct page access blocked; exact revision unavailable. Do not treat as immutable wiki snapshot."
+    },
+    {
+      "id": "wikibr-cake-435808",
+      "url": "https://www.tibiawiki.com.br/index.php?title=Cake_Golem&oldid=435808",
+      "access": "Direct rendered page exposes oldid435808."
+    }
+  ],
+  "observations": [
+    {
+      "field": "health",
+      "donor": 444,
+      "fandom": 444,
+      "wikibr": 444,
+      "status": "CORROBORATED"
+    },
+    {
+      "field": "experience",
+      "donor": 100,
+      "fandom": 100,
+      "wikibr": 100,
+      "status": "CORROBORATED"
+    },
+    {
+      "field": "speed",
+      "donor": 95,
+      "fandom": 95,
+      "wikibr": 95,
+      "status": "CORROBORATED"
+    },
+    {
+      "field": "armor",
+      "donor": 8,
+      "fandom": 8,
+      "wikibr": 8,
+      "status": "CORROBORATED"
+    },
+    {
+      "field": "bestiary_kills",
+      "donor": 5,
+      "fandom": 5,
+      "wikibr": 5,
+      "status": "CORROBORATED"
+    },
+    {
+      "field": "charm_points",
+      "donor": 30,
+      "fandom": 30,
+      "wikibr": 30,
+      "status": "CORROBORATED"
+    },
+    {
+      "field": "mitigation_percent",
+      "donor": 0.41,
+      "fandom": 0.41,
+      "wikibr": 0.64,
+      "status": "CONFLICT"
+    },
+    {
+      "field": "self_healing_range",
+      "donor": [
+        180,
+        250
+      ],
+      "fandom": [
+        0,
+        100
+      ],
+      "wikibr": [
+        0,
+        90
+      ],
+      "status": "CONFLICT"
+    },
+    {
+      "field": "ranged_attack",
+      "donor": {
+        "range": 7,
+        "damage": [
+          0,
+          40
+        ],
+        "combat_type": null,
+        "impact_effect": "CONST_ME_POISONAREA",
+        "projectile": "CONST_ANI_CAKE"
+      },
+      "fandom": {
+        "description": "Poisoned cake attack",
+        "reported_range": [
+          0,
+          40
+        ],
+        "range_uncertain": true,
+        "explicit_damage_element_observed": false
+      },
+      "wikibr": {
+        "description": "Liquor cream cake with drunkenness",
+        "reported_range": [
+          0,
+          20
+        ],
+        "explicit_damage_element_observed": false
+      },
+      "status": "UNRESOLVED_MAPPING"
+    },
+    {
+      "field": "prey_exclusive",
+      "donor": false,
+      "existing_reference_pool": "wildcard_only",
+      "status": "CONFLICT",
+      "secondary_source": "https://www.tibiaqa.com/29235/what-creatures-dont-appear-the-prey-creature-list-but-wildcards-select"
+    }
+  ],
+  "engine_witnesses": [
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "src/creatures/monsters/monsters.hpp",
+      "line": 244,
+      "fact": "MonsterSpell.combatType default is COMBAT_UNDEFINEDDAMAGE"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "src/creatures/monsters/monsters.cpp",
+      "line": 131,
+      "fact": "combat branch sends spell.combatType unchanged to Combat"
+    }
+  ],
+  "decision": "Retain donor projection and raw source, preserve conflicts, block admission. No invented element or wiki value is silently applied."
+}

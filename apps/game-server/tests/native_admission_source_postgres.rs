@@ -1,25 +1,33 @@
 // Include the production durability implementation in this dedicated PostgreSQL
 // target. Ordinary workspace runs may skip when the routed PostgreSQL service is
-// absent; only configured PostgreSQL 17.6 runs count as qualification evidence.
+// absent; only configured PostgreSQL 18.6 runs count as qualification evidence.
 extern crate oteryn_game_server as production_server;
 extern crate self as oteryn_game_server;
 pub use production_server::admission_evidence;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/character_bootstrap_intent.rs"]
+#[path = "../../../crates/gameplay/durability/src/character_bootstrap_intent.rs"]
 pub mod character_bootstrap_intent;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/character_recovery_fence.rs"]
-pub mod character_recovery_fence;
-pub use production_server::domain;
+pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
+#[path = "support/domain_shim.rs"]
+pub mod domain;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/durability/mod.rs"]
-mod durability;
+#[path = "../src/durability"]
+mod durability {
+    // Recompile the shared core; native world adapters use the full library Content context.
+    include!("../../../crates/gameplay/durability/src/durability/core_modules.rs");
+}
 #[allow(dead_code, unused_imports)]
-#[path = "../src/foundation/mod.rs"]
-pub mod foundation;
+pub use oteryn_gameplay_entities as foundation;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/native_admission_source/mod.rs"]
-pub mod native_admission_source;
+pub use oteryn_gameplay_native_admission_source as native_admission_source;
+
+#[allow(
+    dead_code,
+    reason = "shared PostgreSQL support; each mount uses a subset"
+)]
+#[path = "support/bestiary_postgres_harness.rs"]
+mod bestiary_postgres_harness;
 
 use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 use durability::native_admission_source::{
@@ -92,14 +100,15 @@ async fn cleanup_database(
     Ok(())
 }
 
-async fn migrate_postgres_17_6(database_url: &str) -> Result<(), Box<dyn std::error::Error>> {
+async fn migrate_canonical_postgres(database_url: &str) -> Result<(), Box<dyn std::error::Error>> {
     let mut connection = sqlx::PgConnection::connect(database_url).await?;
     let version: String = sqlx::query_scalar("SHOW server_version_num")
         .fetch_one(&mut connection)
         .await?;
     assert_eq!(
-        version, "170006",
-        "canonical target requires PostgreSQL 17.6"
+        version,
+        oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
+        "canonical target requires PostgreSQL 18.6"
     );
     sqlx::migrate!("./migrations").run(&mut connection).await?;
     connection.close().await?;
@@ -346,7 +355,7 @@ fn missing_registration_pending_read_fails_closed() -> Result<(), Box<dyn std::e
             let (admin_url, database_name, database_url) =
                 create_database("native_source_missing_registration").await?;
             let result = async {
-                migrate_postgres_17_6(&database_url).await?;
+                migrate_canonical_postgres(&database_url).await?;
                 let root = ready_root(&database_url).await?;
                 let node = register_node(&root, 1).await?;
                 assert!(matches!(
@@ -375,7 +384,7 @@ fn fresh_and_recovery_account_security_share_one_floor_across_restart()
             let (admin_url, database_name, database_url) =
                 create_database("native_source_floor").await?;
             let result = async {
-                migrate_postgres_17_6(&database_url).await?;
+                migrate_canonical_postgres(&database_url).await?;
                 let root = ready_root(&database_url).await?;
                 let node = register_node(&root, 1).await?;
                 issued_initialize(&root, &node, provenance(), descriptor(1, 1, 10)).await?;
@@ -477,7 +486,7 @@ fn wrong_pairings_fail_and_signing_key_switch_cannot_reset_floor()
             let (admin_url, database_name, database_url) =
                 create_database("native_source_signing").await?;
             let result = async {
-                migrate_postgres_17_6(&database_url).await?;
+                migrate_canonical_postgres(&database_url).await?;
                 let root = ready_root(&database_url).await?;
                 let node = register_node(&root, 1).await?;
                 issued_initialize(&root, &node, provenance(), descriptor(1, 1, 10)).await?;
@@ -590,7 +599,7 @@ fn resource_bounds_accept_max_and_reject_max_plus_one_before_retention()
             let (admin_url, database_name, database_url) =
                 create_database("native_source_bounds").await?;
             let result = async {
-                migrate_postgres_17_6(&database_url).await?;
+                migrate_canonical_postgres(&database_url).await?;
                 let root = ready_root(&database_url).await?;
                 let node = register_node(&root, 1).await?;
                 let authority = "a".repeat(128);
@@ -688,7 +697,7 @@ fn descriptor_and_floor_rollback_are_rejected_without_losing_current_truth()
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
         let (admin_url, database_name, database_url) = create_database("native_source_rollback").await?;
         let result = async {
-            migrate_postgres_17_6(&database_url).await?;
+            migrate_canonical_postgres(&database_url).await?;
             let root = ready_root(&database_url).await?;
             let node = register_node(&root, 1).await?;
             issued_initialize(&root, &node, provenance(), descriptor(2, 2, 20)).await?;
@@ -749,7 +758,7 @@ fn lost_response_two_max_slots_exact_clear_and_reuse_survive_restart()
             let (admin_url, database_name, database_url) =
                 create_database("native_source_slots").await?;
             let result = async {
-                migrate_postgres_17_6(&database_url).await?;
+                migrate_canonical_postgres(&database_url).await?;
                 let root = ready_root(&database_url).await?;
                 let node = register_node(&root, 1).await?;
                 issued_initialize(&root, &node, provenance(), descriptor(1, 1, 10)).await?;
@@ -915,7 +924,7 @@ fn replaced_stale_and_unregistered_incarnations_cannot_mutate_or_establish_custo
             let (admin_url, database_name, database_url) =
                 create_database("native_source_custody").await?;
             let result = async {
-                migrate_postgres_17_6(&database_url).await?;
+                migrate_canonical_postgres(&database_url).await?;
                 let first_root = ready_root(&database_url).await?;
                 // An unregistered incarnation cannot initialize custody.
                 let unregistered = NodeIncarnationProof::new(
@@ -1038,7 +1047,7 @@ fn revoke_serializes_with_current_custody_and_later_mutations_fail_atomically()
             let (admin_url, database_name, database_url) =
                 create_database("native_source_revoke").await?;
             let result = async {
-                migrate_postgres_17_6(&database_url).await?;
+                migrate_canonical_postgres(&database_url).await?;
                 let root = ready_root(&database_url).await?;
                 let node = register_node(&root, 1).await?;
                 issued_initialize(&root, &node, provenance(), descriptor(1, 1, 10))
@@ -1176,7 +1185,7 @@ fn recovery_verification_resolves_current_owners_replay_restart_and_purpose_floo
         .block_on(async {
             let (admin_url, name, url) = create_database("recovery_current").await?;
             let result = async {
-                migrate_postgres_17_6(&url).await?;
+                migrate_canonical_postgres(&url).await?;
                 let root = ready_root(&url).await?;
                 let node = register_node(&root, 1).await?;
                 let now = recovery_now()?;
@@ -1389,7 +1398,7 @@ fn recovery_redecode_rejects_independent_body_history_and_time_mutations()
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
         let(admin_url,name,url)=create_database("recovery_provenance").await?;
         let result=async {
-            migrate_postgres_17_6(&url).await?;
+            migrate_canonical_postgres(&url).await?;
             let root=ready_root(&url).await?;let node=register_node(&root,1).await?;
             issued_initialize(&root,&node,provenance(),descriptor(1,1,10)).await?;
             let now=recovery_now()?;let current=recovery_bindings()?;
@@ -1442,7 +1451,7 @@ fn recovery_clock_is_sampled_after_registration_wait() -> Result<(), Box<dyn std
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
         let (admin_url, name, url) = create_database("recovery_clock_wait").await?;
         let result = async {
-            migrate_postgres_17_6(&url).await?;
+            migrate_canonical_postgres(&url).await?;
             let root = ready_root(&url).await?;
             let node = register_node(&root, 1).await?;
             issued_initialize(&root, &node, provenance(), descriptor(1,1,10)).await?;
@@ -1509,7 +1518,7 @@ fn recovery_verification_and_s2_denial_serialize_at_registration()
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
         let (admin_url,name,url)=create_database("recovery_s2_race").await?;
         let result=async {
-            migrate_postgres_17_6(&url).await?;
+            migrate_canonical_postgres(&url).await?;
             let reader=ready_root(&url).await?;let writer=ready_root(&url).await?;
             let node=register_node(&reader,1).await?;
             issued_initialize(&reader,&node,provenance(),descriptor(1,1,10)).await?;
@@ -1549,3 +1558,7 @@ fn recovery_verification_and_s2_denial_serialize_at_registration()
         cleanup_database(&admin_url,&name).await?;result
     })
 }
+
+#[allow(dead_code, unused_imports)]
+#[path = "support/content_spell_data_shim.rs"]
+mod content;

@@ -4,7 +4,8 @@
 task_id: VIP-1
 title: "VIP-1: VIP list store, consent lifecycle and wire"
 mode: IMPLEMENT
-status: waiting
+status: implemented
+pr: null
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 4
@@ -14,16 +15,22 @@ briefs:
   - docs/architecture/reviews/OTERYN_GAME_VIP0_VIP_LIST_DECISION_2026-09-30.md
 base_branch: main
 base_sha: 5742f30f37f5ae4e21b9c03ad25211ec5349eed6
-branch: skeleton/vip-1
+branch: claude/happy-davinci-ijz3wy-srv-vip
 needs_migration: true
 needs_registry: true
 needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
 
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **OPEN**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#2143](https://github.com/Oteryn/Oteryn-Game/pull/2143), [#2280](https://github.com/Oteryn/Oteryn-Game/pull/2280). Historical VIP metadata source merged in #2143 but was removed in the #2280 restructure; no current VIP owner or offered capability is retained. Evidence: `crates/protocol-oteryn/src/capability_tables.rs`.
+
+Remaining: Restore the native VIP owner in the accepted layout, consent lifecycle/migration and complete wire/handle/relay custody; do not count historical source as current backend. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
+
 ## Goal
 
-VIP store, command receipts, add-by-name invitation, accept/reject/revoke/withdraw, `vip_status` setting on PARTY-1's social settings row, groups, Premium switch-over, rate bucket and `VIP_V1` wire (not yet offered).
+VIP store, command receipts, add-by-name invitation, accept/reject/revoke/withdraw, `vip_status` setting on PARTY-1's social settings row, groups, Premium switch-over, rate bucket and `VIP_V1` basic server wire (offered on bundle Worlds by the owner direction of 2026-10-23; presence remains VIP-2).
 
 Children (allocate from the brief's child graph; the plan row is only the family entry gate):
 
@@ -41,11 +48,11 @@ Rows marked BLOCKING must merge (or be accepted) before the builder's slot commi
 
 ## owned_paths (builder edits freely)
 
-- `apps/game-server/src/domain/vip.rs`
-- `apps/game-server/src/durability/vip.rs`
-- `apps/game-server/src/durability/vip_tests.rs`
-- `apps/game-server/src/gameplay_transport/vip.rs`
-- `apps/game-server/src/gameplay_transport/vip_tests.rs`
+- `crates/gameplay/domain/src/domain/vip.rs`
+- `crates/gameplay/durability/src/durability/vip.rs`
+- `apps/game-server/src/lifted_tests/durability_vip_tests.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/vip.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/vip_tests.rs`
 - `crates/protocol-oteryn/src/vip.rs`
 - `crates/protocol-oteryn/src/vip_tests.rs`
 - `apps/game-server/tests/vip_postgres.rs`
@@ -64,9 +71,9 @@ To compile on the branch the builder may add only the module registration lines 
 - Rust pins (pinned registries / fixtures regenerated from content)
 - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json, GAME_EVENT_FOUNDATION_REGISTRY.json, RESOURCE_LIMITS_REGISTRY.json, OTERYN_GAME_ERROR_CODE_REGISTRY.json
 - apps/game-server/migrations/NNNN_*.sql number (next free on main at queue turn; main ends at 0087)
-- apps/game-server/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
+- crates/gameplay/dispatch/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
 - crates/protocol-oteryn/src/lib.rs `pub mod` + registry constants
-- apps/game-server/src/durability/mod.rs, domain/mod.rs, lib.rs module registration
+- crates/gameplay/durability/src/durability/core_modules.rs, domain/mod.rs, lib.rs module registration
 
 ## Wiring points (verified on origin/main 5742f30f3)
 
@@ -81,11 +88,11 @@ To compile on the branch the builder may add only the module registration lines 
 
 ## Acceptance criteria
 
-- [ ] Invitation ids never reused; consent required before status is visible.
-- [ ] Only the inviting character sees status (V2).
-- [ ] Caps and rate bucket from RESOURCE_LIMITS_REGISTRY; `VIP_V1` not offered.
-- [ ] Every concurrent transition serialized (named lock or deterministic order) and losing writer typed.
-- [ ] Durable state sufficient to resume after restart / session-generation change.
+- [x] Invitation ids never reused; consent required before confirmation is visible. No presence is emitted in VIP-1.
+- [x] Only the inviting character gets accepted confirmation (V2); presence remains VIP-2.
+- [x] Caps and persisted rate bucket registered in 0740–0746; basic `VIP_V1` offered on bundle Worlds under the 2026-10-23 owner override.
+- [x] Every concurrent transition serialized by the World VIP owner and ordered roots/lists; stale transitions and binding conflicts return typed results.
+- [x] Durable state sufficient to reload after restart; receipts replay before live-session checks while recovery remains current.
 
 ## Validation commands
 
@@ -587,3 +594,157 @@ global strict pass. Coordinated module/wrapper activation remains a CP slot task
 Canonical shared registration files were not changed. Wire, production grants,
 runtime callers, final socket custody and the contradictory CP replay request remain
 the specific gates recorded above; no ready/merge or full-feature completion is claimed.
+
+## Server wiring gap list (2026-10-23 current HEAD)
+
+Owner task supersedes historical preparation/slot restrictions: local authoring only,
+commands 48–50, capability 43, migration 0163, no client or presence work.
+
+| Layer | Current HEAD | Required server work |
+|---|---|---|
+| L3 rules | `domain/vip.rs` absent | bounded entry metadata, consent/cap/rate rules |
+| L4 storage | `durability/vip.rs` absent | fenced atomic writes, immutable receipts, reload |
+| Migration | no installed VIP tables | install 0163 with runtime privilege boundary |
+| Protocol/registry | no VIP codec/fragments | bounded requests/results, ids 48–50/43 |
+| Dispatch | no VIP handler | admitted wire command to durable owner and result |
+| Capability | no VIP offer | offer basic metadata/consent operations on bundle world |
+| Runtime | no VIP production caller | compose real current session/recovery authority |
+| Tests | retained lifted tests reference private schema/unregistered types | real dispatch PG E2E in auto-mounted existing lib tree |
+
+### Basic server implementation (current local authoring)
+
+All missing layers now have source: domain metadata rules, installed migration 0163,
+native fenced storage, protocol codec, registry fragments 48–50/43, bundle offer and
+real connection dispatch. The owner-directed basic surface uses paged query results
+(25 entries per page) rather than reserving an unallocated state-domain ID. It can
+add/remove/edit entries, manage fixed/custom groups, accept/reject/revoke/withdraw
+consent and change the hide-status setting. No presence is emitted. Other sessions
+read committed changes using command 50; automatic relay/delta publication remains
+with VIP-2. No authored content is required for these social metadata operations.
+
+The retained private-schema test file is historical evidence only and remains
+unmounted. The new test uses the actual production migration and native recovery,
+admission, session, node and scope helpers, through `serve_admitted` command bytes.
+It lives in the auto-mounted dispatch PostgreSQL library tree, not a new target.
+
+### Reference parity table
+
+Reference evidence below is the accepted VIP0 decision's §2 provenance record,
+not a claim of a fresh upstream Reference audit. Oteryn's accepted consent model
+intentionally replaces Reference's unilateral presence visibility.
+
+| Visible behavior | Reference evidence | Oteryn now |
+|---|---|---|
+| Add by name / unknown name | VIP0 §2: Canary `04b83b5`, `game.cpp:7058–7096` | same-World name lookup; identical UNKNOWN_NAME for absent/other-World roots |
+| Shared list | VIP0 §2: `schema.sql:207–262`, `iologindata.cpp:365`; accepted §4 | Account + World entries, current names |
+| Remove | Official manual `controls_communication.md` §4.2.6 via VIP0 §2 | entry/groups/all inviter consents removed atomically |
+| Edit notes, icon, notify, group memberships | Same manual; Canary `protocolgame.cpp:2858` | UTF-8 trimmed description ≤128 characters/512 bytes, icons 0–10, notification preference and distinct groups persisted |
+| Fixed and custom groups | Official manual §4.2.6; Canary `player_vip.cpp:34–39,106–127` | fixed groups 1–3, five Premium/pre-delivery custom groups 4–8 |
+| Free/Premium limits | Official manual §4.2.6 and `interface.md` §3.6.4; accepted VIP0 §6 | 20/100 entries, 0/5 custom groups, no destructive shrink; real Premium owner transaction |
+| Consent and status privacy | Oteryn owner answers V1/V2; accepted VIP0 §§3,5.1 | session-bound never-reused handles, exact invitation transitions, inviter-specific confirmation, shown/hidden setting |
+| Durable retry/restart | Accepted VIP0 §§4,9 | recovery-before-replay; fresh native session/lease/scope/node fencing; immutable atomic outcomes and persisted bucket |
+| Presence/login notifications | Official manual; Canary `player_vip.cpp:41–61`, `player.cpp:4512–4524` | VIP-2, out of scope; no status or channel disclosure |
+| UI sort/filter/message shortcuts | Official manual §4.2.6 | client UI out of scope |
+
+### Validation work log
+
+- The first route-less direct-Cargo result was **not** PostgreSQL qualification.
+  Canonical Cargo runs use the queued wrapper with `login=false`.
+- Routed PostgreSQL installed 0163 successfully. Its initial wire failure was a
+  fixture missing first-entry positions; both actors now use the real runtime
+  initializer before serving, preserving all admission checks.
+- Governance validator, its 129 unit tests, repository policy validator and whitespace
+  checks passed during authoring. Final exact-source Rust/PG evidence follows below.
+
+### Final local validation and handoff (2026-10-23)
+
+Local implementation is complete in the working tree on
+`claude/happy-davinci-ijz3wy-srv-vip`, based on
+`c938f50b4f727cb0dc1adf60ca62f7d63f4f6541`. No commit, push, publication,
+frozen candidate, PR or protected integration was attempted. This is local worker
+qualification, not a statement that the live Issue is closed or the feature merged.
+
+The final codec uses the existing constrained protobuf helpers and canonical
+`vip_v1.proto`. The earlier custom binary sketch was replaced before qualification.
+The production migration additionally hooks PARTY's existing block insertion to
+erase consent in both directions atomically, preserving shared entries and groups.
+Narrow column grants retain PARTY setting writes while denying direct writes to
+`vip_status` and `vip_consent_revision`. The PostgreSQL case tests these grants.
+
+| Check | Evidence |
+|---|---|
+| `cargo fmt --all --check` | PASS; auto-mounted VIP PostgreSQL files are also explicitly included in rustfmt |
+| `cargo clippy --locked -p oteryn-protocol-oteryn -p oteryn-gameplay-domain -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --all-targets --quiet -- -D warnings` | PASS, final repeat completed successfully |
+| `cargo test --locked -p oteryn-protocol-oteryn --lib --quiet` | 388 passed, 0 failed, 0 ignored; includes `vip_codec_bounds_and_strict_decoding` |
+| `cargo test --locked -p oteryn-gameplay-domain --lib --quiet -- vip_` | 1 passed, 0 failed |
+| `cargo test --locked -p oteryn-gameplay-dispatch --lib --quiet -- vip_postgres_real_wire_consent_replay_restart_and_fences --nocapture` | 1 passed, 0 failed, 0 ignored, 997 filtered; routed PostgreSQL 18.6, actual `VIP-PG installed 0163` marker, final scenario 20.32 s |
+| `cargo test --locked -p oteryn-gameplay-dispatch --lib --quiet -- gameplay_transport::capabilities::tests::` | 44 passed, 0 failed |
+| `python3 tools/agents/validate_governance.py` | PASS, 22 documents / 9 lanes |
+| `python3 -m unittest discover -s tools/agents/tests` | 129 passed |
+| `python3 tools/repository/validate_repository_policy.py` | PASS, 23 policy files / 68 workflows |
+| `git diff --check` | PASS |
+
+The PostgreSQL scenario uses actual admitted command/result envelopes on both
+watcher and target connections: add; unconfirmed/confirmed views; accept; hide;
+custom group add/rename/remove; note/icon/notify/membership replacement; revoke;
+block cancellation and blocked-add privacy; stale handle rejection; reject;
+withdraw; typed metadata refusals; cursor and invalid-cursor bounds; durable rate
+exhaustion/replay; concurrent duplicate commands across two native Roots; binding
+conflicts; recovery-before-replay; ended-session replay/refusal; current generation,
+lease, scope, World/Channel, actor/session and node negative checks; reload through
+a new durability Root; removal and non-reused entry number; unnegotiated command
+refusal; runtime grants. CharacterRevision stays unchanged.
+
+The whole tracked diff plus every new mechanic file was re-read against
+`~/oteryn-cache/CODEX-CHECKLIST.md`. Workspace searches cover the new Operation and
+VipPrepared variants, Request/Reader/VipWrite construction, Dispatch::Vip arms and
+all FreshAdmissionAuthority implementations. The default trait method preserves
+non-composed authorities; the production composed implementation is registered.
+Every new public production function has a production caller reached by the named
+wire test. No existing tests were deleted, skipped, ignored or loosened. Only the
+bundle-offer test's expected set/count was extended for capability 43.
+
+### Unfinished / deliberate basic-scope limits
+
+- VIP-2: presence, login/logout notices and automatic relay/delta delivery. Other
+  sessions obtain committed metadata/consent changes by query 50 in this basic path.
+- Client UI is outside this task and untouched.
+- Receipts and immutable handle mappings are retained without expiry; each session
+  can retain at most 4096 mappings. New mapping growth then returns VIP_UNAVAILABLE
+  until a fresh GameSession; existing handles still address their exact invitation.
+- Repository CI and independent integration review remain for the control plane's
+  publication/landing phase. No unrelated load-contention failure was deferred.
+
+### Changed files
+
+- `apps/game-server/migrations/0163_vip.sql`
+- `crates/gameplay/dispatch/src/gameplay_transport/capabilities.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/capabilities_tests.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/connection.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/mod.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/vip.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/vip/negatives.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/vip/scenario.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/vip.rs`
+- `crates/gameplay/domain/src/domain/mod.rs`
+- `crates/gameplay/domain/src/domain/vip.rs`
+- `crates/gameplay/durability/src/durability/mod.rs`
+- `crates/gameplay/durability/src/durability/vip.rs`
+- `crates/protocol-oteryn/src/capability_tables.rs`
+- `crates/protocol-oteryn/src/lib.rs`
+- `crates/protocol-oteryn/src/vip.rs`
+- `crates/protocol-oteryn/src/vip_tests.rs`
+- `docs/agents/tasks/VIP-1.md`
+- `docs/contracts/protocol-oteryn/v1/registry/capabilities/0043-vip-v1.json`
+- `docs/contracts/protocol-oteryn/v1/registry/command_types/0048-vip-list.json`
+- `docs/contracts/protocol-oteryn/v1/registry/command_types/0049-vip-consent.json`
+- `docs/contracts/protocol-oteryn/v1/registry/command_types/0050-vip-query.json`
+- `docs/contracts/protocol-oteryn/v1/vip_v1.md`
+- `docs/contracts/protocol-oteryn/v1/vip_v1.proto`
+- `docs/contracts/resource-limits/entries/0740-VIP1-RL-01.json`
+- `docs/contracts/resource-limits/entries/0741-VIP1-RL-02.json`
+- `docs/contracts/resource-limits/entries/0742-VIP1-RL-03.json`
+- `docs/contracts/resource-limits/entries/0743-VIP1-RL-04.json`
+- `docs/contracts/resource-limits/entries/0744-VIP1-RL-05.json`
+- `docs/contracts/resource-limits/entries/0745-VIP1-RL-06.json`
+- `docs/contracts/resource-limits/entries/0746-VIP1-RL-07.json`

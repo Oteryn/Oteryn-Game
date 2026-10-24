@@ -1,0 +1,22 @@
+{
+  "id": "CHARCMD-INTENT-BYTES",
+  "owner_contract": "OTERYN_GAME_CHARACTER_AUTHORITY_COMMANDS_V1.md",
+  "resource": "Stored command intent bytes returned by ReadCharacterCommandIntentV1",
+  "unit": "bytes",
+  "hard_maximum": 4096,
+  "configurable_range": {
+    "minimum": 4096,
+    "maximum": 4096
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "The response body is read with a 4096-byte cap; a longer intent is refused before decoding and the decision stores CHAR_CMD_INTENT_INVALID.",
+  "client_visible": false,
+  "boundary_tests": [
+    "an intent above 4096 bytes is classified invalid before decoding"
+  ],
+  "consumers": [
+    "apps/game-server/src/native_admission_source/character_commands.rs",
+    "apps/game-server/src/durability/character_command.rs"
+  ],
+  "notes": "Contract sections 3, 5 and 12. Internal Game-to-Platform boundary; no client wire. A refused or failed exchange stores nothing and publishes nothing: the intent stays PENDING and is retried until it expires. The consumer is disabled unless [platform.character_commands] is configured. Registered by CHAR-CMD-CONSUMER-1."
+}

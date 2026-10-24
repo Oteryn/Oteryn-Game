@@ -1,0 +1,37 @@
+#![allow(clippy::expect_used)]
+//! NPC Bank continuation and NPC BUY bank-part qualification through actual native Root APIs.
+//! Fixtures retain every native guard and fund value only by native MINT, TRANSFER and DEPOSIT.
+extern crate oteryn_game_server as production_server;
+extern crate self as oteryn_game_server;
+pub use production_server::admission_evidence;
+#[allow(dead_code, unused_imports)]
+#[path = "support/bestiary_postgres_harness.rs"]
+mod bestiary_postgres_harness;
+#[allow(dead_code, unused_imports)]
+#[path = "../../../crates/gameplay/durability/src/character_bootstrap_intent.rs"]
+pub mod character_bootstrap_intent;
+#[path = "support/domain_shim.rs"]
+pub mod domain;
+#[allow(dead_code, unused_imports)]
+pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
+#[allow(dead_code, unused_imports)]
+#[path = "../src/durability"]
+mod durability {
+    // Recompile the shared core; native world adapters use the full library Content context.
+    include!("../../../crates/gameplay/durability/src/durability/core_modules.rs");
+}
+#[allow(dead_code, unused_imports)]
+pub use oteryn_gameplay_entities as foundation;
+#[allow(dead_code, unused_imports)]
+#[path = "support/item_transfer_postgres_cases.rs"]
+mod item_transfer_postgres_cases;
+#[allow(dead_code, unused_imports)]
+pub use oteryn_gameplay_native_admission_source as native_admission_source;
+
+// The protected PostgreSQL aggregate consumes these same case bodies.
+#[path = "support/npc_econ_bank_postgres_cases.rs"]
+mod npc_econ_bank_postgres_cases;
+
+#[allow(dead_code, unused_imports)]
+#[path = "support/content_spell_data_shim.rs"]
+mod content;

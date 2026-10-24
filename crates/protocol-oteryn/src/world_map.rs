@@ -29,7 +29,10 @@ use crate::world_spatial::ActorPosition;
 pub const CAPABILITY_WORLD_MAP_VIEW_V1: u32 = 18;
 /// Capability 18 requires `WORLD_SPATIAL_ENTITIES` (6) and `ITEM_VIEW_MOVE_V1` (4): item handles
 /// and `ItemTargetV1` are capability-4 types.
-pub const CAPABILITY_WORLD_MAP_VIEW_REQUIRES: [u32; 2] = [4, 6];
+pub const CAPABILITY_WORLD_MAP_VIEW_REQUIRES: [u32; 2] = [
+    4, // ITEM_VIEW_MOVE_V1
+    6, // WORLD_SPATIAL_ENTITIES
+];
 /// Registered state domain `WORLD_MAP_VIEW`, owned by the current ChannelRuntime.
 pub const STATE_DOMAIN_WORLD_MAP_VIEW: u32 = 17;
 pub const SNAPSHOT_TYPE_WORLD_MAP_VIEW_SNAPSHOT_V1: u32 = 1;
@@ -43,6 +46,10 @@ pub const MAX_SNAPSHOT_TILES: usize = 2_016;
 pub const MAX_DELTA_ENTRIES: usize = 248;
 /// `MAPW-RL-04`: handle-bearing entries in one map view.
 pub const MAX_MAP_VIEW_HANDLES: usize = 1_024;
+
+/// The 40-byte placement of a `base_ordinal` entry's `USE`: the bundle digest and the
+/// big-endian bundle placement key (contract §4 Carriage).
+pub const MAP_TARGET_BYTES: usize = 40;
 
 /// Encoded bound of one `MapItemV1`, without its field tag and length.
 pub const MAX_MAP_ITEM_BYTES: usize = 32;
@@ -414,25 +421,33 @@ fn push_item(output: &mut Vec<u8>, item: &MapItem) {
     }
 }
 
-fn tile_len(tile: &MapTile) -> usize {
-    framed(position_len(&tile.position))
-        + tile
-            .items
-            .iter()
-            .map(|item| framed(item_len(item)))
-            .sum::<usize>()
+fn tile_len(tile: &MapTile) -> Result<usize> {
+    let items_len = tile.items.iter().try_fold(0, |len, item| {
+        let item_len = item_len(item);
+        if item_len > MAX_MAP_ITEM_BYTES {
+            return Err(WorldMapWireError::LimitExceeded);
+        }
+        Ok(len + framed(item_len))
+    })?;
+    let len = framed(position_len(&tile.position))
+        + items_len
         + usize::from(tile.more) * 2
-        + field_len(u64::from(tile.ground_speed))
+        + field_len(u64::from(tile.ground_speed));
+    if framed(len) > MAX_MAP_TILE_BYTES {
+        return Err(WorldMapWireError::LimitExceeded);
+    }
+    Ok(len)
 }
 
-fn push_tile(output: &mut Vec<u8>, field: u8, tile: &MapTile) {
-    push_len(output, field, tile_len(tile));
+fn push_tile(output: &mut Vec<u8>, field: u8, tile: &MapTile) -> Result<()> {
+    push_len(output, field, tile_len(tile)?);
     push_position(output, 1, &tile.position);
     for item in &tile.items {
         push_item(output, item);
     }
     push_field(output, 3, u64::from(tile.more));
     push_field(output, 4, u64::from(tile.ground_speed));
+    Ok(())
 }
 
 fn header_len(header: &MapViewHeader) -> usize {
@@ -453,42 +468,35 @@ fn push_header(output: &mut Vec<u8>, header: &MapViewHeader) {
     push_field(output, 5, zigzag(i32::from(header.first_visible_floor)));
 }
 
-fn check_tile_bytes(tile: &MapTile) -> Result<()> {
-    if tile
-        .items
+// Byte-bound validation shares the allocation-sizing pass. Semantic validation still
+// runs first across the whole message, preserving rejection precedence.
+fn encoded_len(
+    header: &MapViewHeader,
+    tiles: &[MapTile],
+    cleared: &[ActorPosition],
+) -> Result<usize> {
+    let tiles_len = tiles
         .iter()
-        .any(|item| item_len(item) > MAX_MAP_ITEM_BYTES)
-        || framed(tile_len(tile)) > MAX_MAP_TILE_BYTES
-    {
-        return Err(WorldMapWireError::LimitExceeded);
-    }
-    Ok(())
-}
-
-fn encoded_len(header: &MapViewHeader, tiles: &[MapTile], cleared: &[ActorPosition]) -> usize {
-    framed(header_len(header))
-        + tiles
-            .iter()
-            .map(|tile| framed(tile_len(tile)))
-            .sum::<usize>()
+        .try_fold(0, |len, tile| Ok(len + framed(tile_len(tile)?)))?;
+    Ok(framed(header_len(header))
+        + tiles_len
         + cleared
             .iter()
             .map(|position| framed(position_len(position)))
-            .sum::<usize>()
+            .sum::<usize>())
 }
 
 /// Encodes a domain-17 snapshot payload; refuses what the decoder refuses.
 pub fn encode_world_map_snapshot(snapshot: &WorldMapViewSnapshot) -> Result<Vec<u8>> {
     check_snapshot(snapshot)?;
-    snapshot.tiles.iter().try_for_each(check_tile_bytes)?;
-    let len = encoded_len(&snapshot.header, &snapshot.tiles, &[]);
+    let len = encoded_len(&snapshot.header, &snapshot.tiles, &[])?;
     if len > MAX_SNAPSHOT_PAYLOAD_BYTES {
         return Err(WorldMapWireError::LimitExceeded);
     }
     let mut output = Vec::with_capacity(len);
     push_header(&mut output, &snapshot.header);
     for tile in &snapshot.tiles {
-        push_tile(&mut output, 2, tile);
+        push_tile(&mut output, 2, tile)?;
     }
     debug_assert_eq!(output.len(), len);
     Ok(output)
@@ -501,15 +509,14 @@ pub fn encode_world_map_delta(view: &MapViewBinding, delta: &WorldMapViewDelta) 
         return Err(WorldMapWireError::BindingMismatch);
     }
     check_delta(view, delta)?;
-    delta.tiles.iter().try_for_each(check_tile_bytes)?;
-    let len = encoded_len(&delta.header, &delta.tiles, &delta.cleared);
+    let len = encoded_len(&delta.header, &delta.tiles, &delta.cleared)?;
     if len > MAX_DELTA_PAYLOAD_BYTES {
         return Err(WorldMapWireError::LimitExceeded);
     }
     let mut output = Vec::with_capacity(len);
     push_header(&mut output, &delta.header);
     for tile in &delta.tiles {
-        push_tile(&mut output, 2, tile);
+        push_tile(&mut output, 2, tile)?;
     }
     for position in &delta.cleared {
         push_position(&mut output, 3, position);

@@ -1,0 +1,15 @@
+{
+  "id": 13,
+  "name": "PACED_MOVEMENT_V1",
+  "constant": "world_spatial::CAPABILITY_PACED_MOVEMENT_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

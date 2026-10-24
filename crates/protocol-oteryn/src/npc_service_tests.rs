@@ -4,10 +4,8 @@ use super::*;
 use crate::charm_wire::push_varint;
 use serde_json::Value;
 
-const PROTOCOL_REGISTRY: &str =
-    include_str!("../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json");
-const RESOURCE_REGISTRY: &str =
-    include_str!("../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json");
+const PROTOCOL_REGISTRY: &str = crate::PROTOCOL_OTERYN_V1_REGISTRY_JSON;
+const RESOURCE_REGISTRY: &str = crate::RESOURCE_LIMITS_REGISTRY_JSON;
 const NPC_PROTO: &str =
     include_str!("../../../docs/contracts/protocol-oteryn/v1/npc_service_v1.proto");
 
@@ -690,7 +688,10 @@ fn the_registries_bind_the_npc_service_constants() {
     );
     assert_eq!(
         capability["command_types"],
-        serde_json::json!([COMMAND_TYPE_NPC_TALK_INTENT, COMMAND_TYPE_NPC_TRADE_INTENT])
+        serde_json::json!([
+            COMMAND_TYPE_NPC_TALK_INTENT,  // NPC_TALK_INTENT
+            COMMAND_TYPE_NPC_TRADE_INTENT, // NPC_TRADE_INTENT
+        ])
     );
     assert_eq!(
         capability["state_domains"],
@@ -863,3 +864,7 @@ fn the_intent_result_matches_the_hand_written_golden_bytes() {
         assert_eq!(decode_npc_intent_result(&[0x08, value]), Ok(disposition));
     }
 }
+
+#[cfg(test)]
+#[path = "npc_service_fuzz_tests.rs"]
+mod fuzz_tests;

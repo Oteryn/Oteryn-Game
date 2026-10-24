@@ -1,4 +1,5 @@
 #![allow(clippy::unwrap_used)]
+#![allow(clippy::expect_used)]
 
 use super::*;
 use std::num::NonZeroU64;
@@ -389,18 +390,20 @@ fn generation_zero_stays_wire_representable_but_is_never_current_admission() {
 }
 
 #[test]
-fn negotiated_capability28_is_registered_without_inferred_requirements_and_29_is_unallocated() {
+fn negotiated_capability28_has_no_inferred_requirements_and_unknown_ids_are_refused() {
     assert_eq!(ITEM_LOOK_CAPABILITY_ID, Some(28));
     assert_eq!(ITEM_LOOK_COMMAND_ID, Some(30));
     // Actual acceptance validator used by native ServerAccepted/ServerResumeAccepted codecs.
+    // DAILY-1 allocated 32; this negative case continues to use an unregistered ID.
+    let unregistered = u32::MAX;
     assert_eq!(crate::validate_acceptance_value(1, 1, 1, &[28]), Ok(()));
     assert_eq!(crate::validate_acceptance_value(1, 1, 1, &[]), Ok(()));
     assert_eq!(
-        crate::validate_acceptance_value(1, 1, 1, &[29]),
+        crate::validate_acceptance_value(1, 1, 1, &[unregistered]),
         Err(crate::FoundationProtocolError::CapabilityMismatch)
     );
     assert_eq!(
-        crate::validate_acceptance_value(1, 1, 1, &[28, 29]),
+        crate::validate_acceptance_value(1, 1, 1, &[28, unregistered]),
         Err(crate::FoundationProtocolError::CapabilityMismatch)
     );
     assert_eq!(
@@ -410,10 +413,8 @@ fn negotiated_capability28_is_registered_without_inferred_requirements_and_29_is
             .map(|entry| entry.1),
         Some(&[][..])
     );
-    let registry: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json"
-    ))
-    .unwrap();
+    let registry: serde_json::Value =
+        serde_json::from_str(crate::PROTOCOL_OTERYN_V1_REGISTRY_JSON).unwrap();
     let entries: Vec<_> = registry["capabilities"]
         .as_array()
         .unwrap()
@@ -429,7 +430,7 @@ fn negotiated_capability28_is_registered_without_inferred_requirements_and_29_is
     assert_eq!(entry["state_domains"], serde_json::json!([]));
     assert_eq!(
         registry["allocation_ranges"]["capability_id"]["next_unallocated"],
-        29
+        37
     );
     // CP D1268/D1292: command 30 is registered once, gated by 28, with the codec's byte bounds.
     let commands: Vec<_> = registry["command_types"]
@@ -455,4 +456,49 @@ fn negotiated_capability28_is_registered_without_inferred_requirements_and_29_is
         command["max_result_payload_bytes"].as_u64(),
         Some(longest.len() as u64)
     );
+}
+
+// TEST-FUZZ-1: bounded randomized decoder and generated-value round trips.
+
+#[test]
+fn fuzz_decode_item_look_intent() {
+    crate::decoder_fuzz_support::codec(
+        "decode_item_look_intent",
+        |rng| ItemLookIntent {
+            target: ItemLookTarget::Item(NonZeroU64::new(rng.u64().max(1)).expect("handle")),
+        },
+        decode_item_look_intent,
+        |v| encode_item_look_intent(*v).expect("intent"),
+    );
+}
+
+#[test]
+fn fuzz_decode_item_look_result() {
+    crate::decoder_fuzz_support::codec(
+        "decode_item_look_result",
+        |rng| ItemLookResult::Text("é".repeat((rng.below(256) + 1) as usize)),
+        decode_item_look_result,
+        |v| encode_item_look_result(v).expect("result"),
+    );
+}
+
+#[test]
+fn fuzz_item_look_selected_codecs() {
+    for extended in [false, true] {
+        let selection = ItemLookSelection { extended };
+        crate::decoder_fuzz_support::codec(
+            "decode_item_look_intent_for",
+            |rng| ItemLookIntent {
+                target: ItemLookTarget::Item(NonZeroU64::new(rng.u64().max(1)).expect("handle")),
+            },
+            |b| decode_item_look_intent_for(b, selection),
+            |v| encode_item_look_intent_for(*v, selection).expect("intent"),
+        );
+        crate::decoder_fuzz_support::codec(
+            "decode_item_look_result_for",
+            |rng| ItemLookResult::Text("é".repeat((rng.below(256) + 1) as usize)),
+            |b| decode_item_look_result_for(b, selection),
+            |v| encode_item_look_result_for(v, selection).expect("result"),
+        );
+    }
 }

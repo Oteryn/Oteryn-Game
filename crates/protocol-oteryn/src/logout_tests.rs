@@ -4,10 +4,8 @@ use super::*;
 use crate::charm_wire::push_varint_field;
 use serde_json::Value;
 
-const PROTOCOL_REGISTRY: &str =
-    include_str!("../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json");
-const RESOURCE_REGISTRY: &str =
-    include_str!("../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json");
+const PROTOCOL_REGISTRY: &str = crate::PROTOCOL_OTERYN_V1_REGISTRY_JSON;
+const RESOURCE_REGISTRY: &str = crate::RESOURCE_LIMITS_REGISTRY_JSON;
 const LOGOUT_PROTO: &str =
     include_str!("../../../docs/contracts/protocol-oteryn/v1/logout_v1.proto");
 
@@ -160,4 +158,32 @@ fn the_registries_bind_the_logout_constants() {
     );
     assert!(LOGOUT_PROTO.contains("LOGOUT-RL-01"));
     assert!(LOGOUT_PROTO.contains("ATTACK0-RL-03"));
+}
+
+// TEST-FUZZ-1: bounded randomized decoder and generated-value round trips.
+
+#[test]
+fn fuzz_decode_logout_intent() {
+    crate::decoder_fuzz_support::codec(
+        "decode_logout_intent",
+        |_| (),
+        decode_logout_intent,
+        |_| encode_logout_intent(),
+    );
+}
+
+#[test]
+fn fuzz_decode_logout_result() {
+    crate::decoder_fuzz_support::codec(
+        "decode_logout_result",
+        |rng| match rng.below(3) {
+            0 => LogoutResult::Accepted,
+            1 => LogoutResult::Busy,
+            _ => LogoutResult::InFight {
+                retry_after_ms: (rng.below(60000) + 1) as u32,
+            },
+        },
+        decode_logout_result,
+        |v| encode_logout_result(*v).expect("result"),
+    );
 }

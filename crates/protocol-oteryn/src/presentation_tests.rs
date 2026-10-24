@@ -4,10 +4,8 @@ use serde_json::Value;
 
 use super::*;
 
-const PROTOCOL_REGISTRY: &str =
-    include_str!("../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json");
-const RESOURCE_REGISTRY: &str =
-    include_str!("../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json");
+const PROTOCOL_REGISTRY: &str = crate::PROTOCOL_OTERYN_V1_REGISTRY_JSON;
+const RESOURCE_REGISTRY: &str = crate::RESOURCE_LIMITS_REGISTRY_JSON;
 const MALFORMED: PresentationWireError = PresentationWireError::Malformed;
 const LIMIT: PresentationWireError = PresentationWireError::LimitExceeded;
 const SCHEMA_PATH: &str = "docs/contracts/protocol-oteryn/v1/presentation_v1.proto";
@@ -843,3 +841,7 @@ fn registry_binds_the_presentation_wire_ids_and_limits() {
         );
     }
 }
+
+#[cfg(test)]
+#[path = "presentation_fuzz_tests.rs"]
+mod fuzz_tests;

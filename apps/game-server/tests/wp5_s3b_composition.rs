@@ -2,7 +2,7 @@
 //
 // Runs only inside the disposable S3-B topology (`tools/qualification/wp5_s3b`):
 // the exact protected Platform native-evidence producer behind TLS 1.3 mTLS
-// (S3-A topology) plus PostgreSQL 17.6 for the Game owners. Every admission
+// (S3-A topology) plus PostgreSQL 18.6 for the Game owners. Every admission
 // fact comes from a real owner:
 // - Platform account security and fresh signing trust: exact S1 transport
 //   responses, stored byte-for-byte in S2 under the #415 custody fence;
@@ -20,20 +20,28 @@ extern crate oteryn_game_server as production_server;
 extern crate self as oteryn_game_server;
 pub use production_server::admission_evidence;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/character_bootstrap_intent.rs"]
+#[path = "../../../crates/gameplay/durability/src/character_bootstrap_intent.rs"]
 pub mod character_bootstrap_intent;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/character_recovery_fence.rs"]
-pub mod character_recovery_fence;
-pub use production_server::domain;
+pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
+#[path = "support/domain_shim.rs"]
+pub mod domain;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/durability/mod.rs"]
-mod durability;
+#[path = "../src/durability"]
+mod durability {
+    // Recompile the shared core; native world adapters use the full library Content context.
+    include!("../../../crates/gameplay/durability/src/durability/core_modules.rs");
+}
 #[allow(dead_code, unused_imports)]
-#[path = "../src/foundation/mod.rs"]
-pub mod foundation;
-#[path = "../src/native_admission_source/mod.rs"]
-pub mod native_admission_source;
+pub use oteryn_gameplay_entities as foundation;
+pub use oteryn_gameplay_native_admission_source as native_admission_source;
+
+#[allow(
+    dead_code,
+    reason = "shared PostgreSQL support; each mount uses a subset"
+)]
+#[path = "support/bestiary_postgres_harness.rs"]
+mod bestiary_postgres_harness;
 
 use admission_evidence::{Facts, Request, Response, decode_response, encode_request};
 use base64::Engine as _;
@@ -444,10 +452,24 @@ async fn authority_snapshot(database_url: &str) -> TestResult<String> {
     Ok(snapshot)
 }
 
+// ADMIT0 §4: the Channel's bound required-capability set, checked again inside the commit.
+// This qualification declares no required capability, so only the binding is checked.
+fn bound_capabilities(
+    scope: RuntimeScopeRefV1,
+    generation: u64,
+) -> durability::fresh_admission::CurrentCapabilityCheck {
+    std::sync::Arc::new(move |current, current_generation, policy| {
+        current == scope && current_generation == generation && policy == "policy-s3b-1"
+    })
+}
+
 // Runtime readiness producer for the holder: the ownership generation is the
 // #415 assignment generation; the revision facts are the runtime's own.
 struct RuntimeReadiness(AdmissionAuthorityPublicationChangeV1);
-impl foundation::fnd04_verifier::fresh_source_sealed::Sealed for RuntimeReadiness {}
+impl oteryn_gameplay_foundation::foundation::fnd04_verifier::fresh_source_sealed::Sealed
+    for RuntimeReadiness
+{
+}
 impl AdmissionAuthorityOwningPublisherV1 for RuntimeReadiness {
     fn resolve_publication(
         &self,
@@ -649,8 +671,8 @@ async fn database() -> TestResult<(String, String)> {
     let version: String = sqlx::query_scalar("SHOW server_version_num")
         .fetch_one(&mut connection)
         .await?;
-    if version != "170006" {
-        return Err(format!("S3-B requires PostgreSQL 17.6, found {version}").into());
+    if version != oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM {
+        return Err(format!("S3-B requires PostgreSQL 18.6, found {version}").into());
     }
     sqlx::migrate!("./migrations").run(&mut connection).await?;
     connection.close().await?;
@@ -683,7 +705,7 @@ fn assignment(tag: u8, command: AssignmentCommand) -> TestResult<AssignmentReque
 }
 
 #[test]
-#[ignore = "requires the disposable S3-B Platform + PostgreSQL 17.6 topology"]
+#[ignore = "requires the disposable S3-B Platform + PostgreSQL 18.6 topology"]
 fn real_owners_compose_fresh_admission_and_fence_replacement() -> TestResult {
     let descriptor = descriptor()?;
     let accounts = [
@@ -882,7 +904,7 @@ fn composition_flow(
                 now,
             )?;
             let store = FreshAdmissionStore::from_root(root.clone());
-            match root.commit_composed_fresh_admission(&authority, &node_a, &composition, &request).await? {
+            match root.commit_composed_fresh_admission(&authority, &node_a, &composition, &request, bound_capabilities(scope, first.assignment.ownership_generation)).await? {
                 FreshAdmissionDurableOutcomeV1::Committed(_) => {}
                 other => return Err(format!("admission 1 not committed: {other:?}").into()),
             }
@@ -962,7 +984,7 @@ fn composition_flow(
             // An owner change between composition and commit (a newer S2 floor)
             // is caught at the commit boundary: the prepared request is stale.
             ingest(&root, &node_b, descriptor, &accounts[1], &key_id).await?;
-            match root.commit_composed_fresh_admission(&authority, &node_b, &composition, &request).await? {
+            match root.commit_composed_fresh_admission(&authority, &node_b, &composition, &request, bound_capabilities(scope, second.assignment.ownership_generation)).await? {
                 FreshAdmissionDurableOutcomeV1::RejectedStaleAuthority => {}
                 other => return Err(format!("owner change not revalidated at commit: {other:?}").into()),
             }
@@ -979,7 +1001,7 @@ fn composition_flow(
                 AuthenticatedTransportRefV1::decode(&[0x53; 16])?,
                 now,
             )?;
-            match root.commit_composed_fresh_admission(&authority, &node_b, &composition, &request).await? {
+            match root.commit_composed_fresh_admission(&authority, &node_b, &composition, &request, bound_capabilities(scope, second.assignment.ownership_generation)).await? {
                 FreshAdmissionDurableOutcomeV1::Committed(_) => {}
                 other => return Err(format!("admission 2 not committed: {other:?}").into()),
             }
@@ -1037,3 +1059,7 @@ fn s3b_pins_are_closed() {
     assert_eq!(uuid_text(&v7(1, 1)).len(), 36);
     let _ = CharacterId::decode;
 }
+
+#[allow(dead_code, unused_imports)]
+#[path = "support/content_spell_data_shim.rs"]
+mod content;

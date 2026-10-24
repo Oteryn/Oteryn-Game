@@ -4,6 +4,8 @@
 // through the real B3-1 TRANSFER path; its definition is the same test-only
 // fixture as the B3-1 cases.
 
+use crate::durability::item_weight_lookup::TEST_WEIGHTS;
+
 use crate::character_recovery_fence::CharacterRecoveryStore;
 use crate::domain::CharacterId;
 use crate::domain::progression::{
@@ -167,11 +169,11 @@ impl Database {
         let version: String = sqlx::query_scalar("SHOW server_version_num")
             .fetch_one(&mut connection)
             .await?;
-        // The protected lane pins PostgreSQL 17.6; any 17.x server runs the
+        // The protected lane pins PostgreSQL 18.6; any 18.x server runs the
         // same schema, and the exact server is recorded as evidence.
         assert!(
-            version.starts_with("17"),
-            "PostgreSQL 17 required: {version}"
+            version.starts_with("18"),
+            "PostgreSQL 18 required: {version}"
         );
         eprintln!("REWARD-CLAIM-MINT-PG: database {name} on server_version_num={version}");
         sqlx::migrate!("./migrations").run(&mut connection).await?;
@@ -495,7 +497,8 @@ impl Harness {
             item: definition("Item", key),
             quantity,
             ground: GroundPlacement {
-                spatial_position: vec![1, 2, 3],
+                // Canonical 10-byte Ground64 address (x=1, y=2, floor=3).
+                spatial_position: vec![0, 0, 0, 1, 0, 0, 0, 2, 0, 3],
                 corpse_ref: id(3).to_vec(),
                 map_revision: "map-1".into(),
                 content_revision: "content-1".into(),
@@ -534,7 +537,7 @@ impl Harness {
     ) -> Result<ItemTransferOutcome, ItemTransferError> {
         let mut candidate = self
             .root
-            .freeze_item_transfer(authority, &self.node, fence, request)
+            .freeze_item_transfer(authority, &self.node, fence, request, &TEST_WEIGHTS)
             .await?;
         self.root
             .commit_item_transfer(
@@ -543,6 +546,7 @@ impl Harness {
                 &self.node,
                 fence,
                 &mut candidate,
+                &TEST_WEIGHTS,
             )
             .await
     }
@@ -717,6 +721,7 @@ fn definition(family: &str, key: &str) -> TypedDefinitionRef {
 
 fn facts(key: &str, stack: ItemStackClass) -> ItemDefinitionFacts {
     ItemDefinitionFacts {
+        weight: Some(1),
         definition: definition("Item", key),
         stack,
         container_capacity: None,
@@ -727,6 +732,7 @@ fn facts(key: &str, stack: ItemStackClass) -> ItemDefinitionFacts {
 /// Test-only backpack: capacity 20 and a complete `container`-slot pattern.
 fn backpack_facts() -> ItemDefinitionFacts {
     ItemDefinitionFacts {
+        weight: Some(1),
         definition: definition("Item", BACKPACK),
         stack: ItemStackClass::NonStackable,
         container_capacity: Some(20),
@@ -747,6 +753,7 @@ fn command(value: u64) -> TestResult<CommandRef> {
 
 fn to_slot(command: CommandRef, item: [u8; 16], facts: ItemDefinitionFacts) -> ItemTransferRequest {
     ItemTransferRequest {
+        weight_generation_digest: [0xD1; 32],
         command,
         source_item_instance_id: item,
         destination: ItemTransferDestination::ContainerSlot,
@@ -2062,6 +2069,7 @@ fn concurrent_claims_mint_once_and_serialize_with_pickup_and_xp() -> TestResult 
                     stone,
                     facts(STONE, ItemStackClass::NonStackable),
                 ),
+                &TEST_WEIGHTS,
             )
             .await
             .map_err(debug)?;
@@ -2083,6 +2091,7 @@ fn concurrent_claims_mint_once_and_serialize_with_pickup_and_xp() -> TestResult 
                 &harness.node,
                 fence()?,
                 &mut pickup,
+                &TEST_WEIGHTS,
             ),
             second_root.commit_reward_claim_mint(&second, &harness.node, fence()?, &mut claim),
         )
@@ -2204,7 +2213,7 @@ impl Harness {
 }
 
 /// Character 44 of the same account takes the account's presence on session
-/// 51; session 50 of Character 41 ends.
+/// 51 with its own progression state; session 50 of Character 41 ends.
 async fn switch_to_second_character(pool: &sqlx::PgPool) -> TestResult {
     sqlx::query(
         "INSERT INTO game_character_roots VALUES \
@@ -2214,6 +2223,16 @@ async fn switch_to_second_character(pool: &sqlx::PgPool) -> TestResult {
     .bind(id(SECOND_CHARACTER).as_slice())
     .bind(id(ACCOUNT).as_slice())
     .bind(id(WORLD).as_slice())
+    .execute(pool)
+    .await?;
+    // Use the same native progression fixture as Character 41. The new incoming
+    // capacity check must read Character 44's own level, not a missing-row fallback.
+    sqlx::query(
+        "INSERT INTO game_character_progression_state VALUES \
+         (encode($1,'hex')::uuid,1,50,1000,'profile-1','ruleset-1','content-1',\
+          'simulation-1','evidence-1','declaration-1','policy-1','reward-1')",
+    )
+    .bind(id(SECOND_CHARACTER).as_slice())
     .execute(pool)
     .await?;
     sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state = 3")
@@ -2741,13 +2760,13 @@ mod quest_obligations {
     use super::*;
     use crate::durability::character_progression::CharacterProgressionError;
     use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
-    use crate::durability::quest_state::quest::{
-        QuestComparison, QuestEffect, QuestEffectKind, QuestRefusal, QuestStateCatalogue,
-        QuestTrack, QuestTransition,
-    };
     use crate::durability::quest_state::{
         QuestAdmission, QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
         admit_character_quest_state,
+    };
+    use oteryn_gameplay_quests::quest::{
+        QuestComparison, QuestEffect, QuestEffectKind, QuestRefusal, QuestStateCatalogue,
+        QuestTrack, QuestTransition,
     };
     use std::sync::Arc;
 

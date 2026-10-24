@@ -1,0 +1,24 @@
+{
+  "id": 24,
+  "name": "DAILY_REWARD",
+  "owner_decision": "DAILY_REWARD0 \u00a7\u00a73\u20137; CP wire allocation 2026-10-22 for DAILY-1",
+  "owner": "Character daily reward owner",
+  "capability": 32,
+  "revision": "per GameSessionId, monotonic and never reused across reconnect; full replacement of the own reward wall",
+  "delta_types": [
+    {
+      "id": 1,
+      "name": "DAILY_REWARD_DELTA_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/daily_reward_v1.proto#DailyRewardWallV1",
+      "max_payload_bytes": 128
+    }
+  ],
+  "snapshot_types": [
+    {
+      "id": 1,
+      "name": "DAILY_REWARD_SNAPSHOT_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/daily_reward_v1.proto#DailyRewardWallV1",
+      "max_payload_bytes": 128
+    }
+  ]
+}

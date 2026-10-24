@@ -1,0 +1,99 @@
+{
+  "schema": "OTERYN_BLESSING_CATALOGUE/v1",
+  "classification": "PROVEN_BY_OWNER",
+  "ruling_date": "2026-10-18",
+  "authority": "PREM-2b+PREM-5 owner pricing ruling 2026-10-18",
+  "promotion_price_effect": "none",
+  "all_seven_store_tibia_coins": 130,
+  "blessings": [
+    {
+      "service": "oteryn:service.blessing.the_spiritual_shielding",
+      "storage_key": "oteryn:blessing.the_spiritual_shielding",
+      "name": "The Spiritual Shielding",
+      "npcs": [
+        "oteryn:npc.norf"
+      ],
+      "price_family": "regular",
+      "premium": false,
+      "store_tibia_coins": 15
+    },
+    {
+      "service": "oteryn:service.blessing.the_embrace_of_tibia",
+      "storage_key": "oteryn:blessing.the_embrace_of_tibia",
+      "name": "The Embrace of Tibia",
+      "npcs": [
+        "oteryn:npc.humphrey"
+      ],
+      "price_family": "regular",
+      "premium": false,
+      "store_tibia_coins": 15
+    },
+    {
+      "service": "oteryn:service.blessing.the_fire_of_the_suns",
+      "storage_key": "oteryn:blessing.the_fire_of_the_suns",
+      "name": "The Fire of the Suns",
+      "npcs": [
+        "oteryn:npc.edala"
+      ],
+      "price_family": "regular",
+      "premium": false,
+      "store_tibia_coins": 15
+    },
+    {
+      "service": "oteryn:service.blessing.the_spark_of_the_phoenix",
+      "storage_key": "oteryn:blessing.the_spark_of_the_phoenix",
+      "name": "The Spark of the Phoenix",
+      "npcs": [
+        "oteryn:npc.kawill",
+        "oteryn:npc.pydar"
+      ],
+      "price_family": "regular",
+      "premium": false,
+      "store_tibia_coins": 20
+    },
+    {
+      "service": "oteryn:service.blessing.the_wisdom_of_solitude",
+      "storage_key": "oteryn:blessing.the_wisdom_of_solitude",
+      "name": "The Wisdom of Solitude",
+      "npcs": [
+        "oteryn:npc.eremo"
+      ],
+      "price_family": "regular",
+      "premium": true,
+      "store_tibia_coins": 15
+    },
+    {
+      "service": "oteryn:service.blessing.blood_of_the_mountain",
+      "storage_key": "oteryn:blessing.blood_of_the_mountain",
+      "name": "Blood of the Mountain",
+      "npcs": [
+        "oteryn:npc.kais"
+      ],
+      "price_family": "enhanced",
+      "premium": true,
+      "store_tibia_coins": 25
+    },
+    {
+      "service": "oteryn:service.blessing.heart_of_the_mountain",
+      "storage_key": "oteryn:blessing.heart_of_the_mountain",
+      "name": "Heart of the Mountain",
+      "npcs": [
+        "oteryn:npc.nomad"
+      ],
+      "price_family": "enhanced",
+      "premium": true,
+      "store_tibia_coins": 25
+    },
+    {
+      "service": "oteryn:service.blessing.twist_of_fate",
+      "storage_key": "oteryn:blessing.twist_of_fate",
+      "name": "Twist of Fate",
+      "npcs": [
+        "oteryn:npc.temple_npc"
+      ],
+      "price_family": "twist",
+      "premium": false,
+      "store_tibia_coins": 8
+    }
+  ]
+}

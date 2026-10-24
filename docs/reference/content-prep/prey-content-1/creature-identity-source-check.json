@@ -1,0 +1,392 @@
+{
+  "task": "PREY-CONTENT-1",
+  "checked_at": "2026-10-19T09:22:11.225974+00:00",
+  "client_manifest": {
+    "path": "imports/cipsoft-staticdata/creatures/manifest.json",
+    "client_version": "15.30",
+    "staticdata_sha256": "62d3f5f761a4c8cab02c89bd1a351770aca3504a74f1b34f457f0a0451dcd128",
+    "source": "repo:cipsoft-staticdata-creatures:466c9142ad41223181f998878fa9b8a633be4b4f"
+  },
+  "native_catalog_scan": {
+    "repository": "Oteryn/Oteryn-Game",
+    "main_sha": "466c9142ad41223181f998878fa9b8a633be4b4f",
+    "native_catalog": [
+      {
+        "path": "content/creatures/definitions/creatures-00000-00499.json",
+        "blob_sha": "4c0b769f2ede17f26bec00f5e8dec339a2314f28",
+        "records": 500
+      },
+      {
+        "path": "content/creatures/definitions/creatures-00500-00999.json",
+        "blob_sha": "bff114daa38179c74e1405f2d974d718b51a6bfe",
+        "records": 500
+      },
+      {
+        "path": "content/creatures/definitions/creatures-01000-01499.json",
+        "blob_sha": "ad782036ca2387559372cfb16e22c1b66b6e78d7",
+        "records": 500
+      },
+      {
+        "path": "content/creatures/definitions/creatures-01500-01862.json",
+        "blob_sha": "59dcf4ae4aac29eed75b141e79ec687cc72709cb",
+        "records": 363
+      }
+    ],
+    "matching_six": []
+  },
+  "complete_binding_audit": {
+    "rows": 649,
+    "bound": 643,
+    "unbound": 6,
+    "dangling": 0,
+    "duplicates": 0,
+    "eligibility_flag_disagreements": 13
+  },
+  "identity_rows": [
+    {
+      "record": 480,
+      "key": "prey.creature.berrypest",
+      "name": "Berrypest",
+      "source_identity": {
+        "namespace": "cipsoft/staticdata/creature_id",
+        "id": 691,
+        "source_name": "berrypest",
+        "client_version": "15.30"
+      },
+      "staticdata": {
+        "path": "imports/cipsoft-staticdata/creatures/creatures-00250-00499.json",
+        "record": 51,
+        "record_sha256": "1026bbbcc3bfe19e2f2c484778b6c10aced97f1aa6b228aa355dc6fb56bdd576"
+      },
+      "wiki": {
+        "url": "https://www.tibiawiki.com.br/index.php?oldid=398928",
+        "path": "imports/tibiawiki/facts/creatures/creatures-00500-00999.json",
+        "record": 264,
+        "revid": 398928
+      },
+      "wiki_reference_facts": {
+        "exp": "0",
+        "hp": "500",
+        "immunities": "Invisibility, Paralysis",
+        "mitigation": "0",
+        "name": "Berrypest",
+        "pushable": "não",
+        "pushobjects": "não",
+        "speed": "105"
+      },
+      "native_status": "ABSENT_FROM_CURRENT1863DEFINITIONS",
+      "source_selection_pool": "wildcard_only",
+      "superseded_exclusion_fact": {
+        "value": {
+          "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+          "source_creature_name": "Berrypest",
+          "create_native_identity": false
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json / field docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/480/facts/native_creature_binding"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json#docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/480/facts/native_creature_binding",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "record": 488,
+      "key": "prey.creature.cake_golem",
+      "name": "Cake Golem",
+      "source_identity": {
+        "namespace": "cipsoft/staticdata/creature_id",
+        "id": 680,
+        "source_name": "cake golem",
+        "client_version": "15.30"
+      },
+      "staticdata": {
+        "path": "imports/cipsoft-staticdata/creatures/creatures-00250-00499.json",
+        "record": 50,
+        "record_sha256": "a41b7c4ea3a6adce9389c4978df7e42114170ca5581c80527c612c635142d46d"
+      },
+      "wiki": {
+        "url": "https://www.tibiawiki.com.br/index.php?oldid=435808",
+        "path": "imports/tibiawiki/facts/creatures/creatures-00000-00499.json",
+        "record": 232,
+        "revid": 435808
+      },
+      "wiki_reference_facts": {
+        "exp": "100",
+        "hp": "444",
+        "immunities": "Paralysis",
+        "mitigation": "0.64",
+        "name": "Cake Golem",
+        "pushable": "sim",
+        "pushobjects": "não",
+        "speed": "95"
+      },
+      "native_status": "ABSENT_FROM_CURRENT1863DEFINITIONS",
+      "source_selection_pool": "wildcard_only",
+      "superseded_exclusion_fact": {
+        "value": {
+          "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+          "source_creature_name": "Cake Golem",
+          "create_native_identity": false
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json / field docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/488/facts/native_creature_binding"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json#docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/488/facts/native_creature_binding",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "record": 520,
+      "key": "prey.creature.elder_forest_fury",
+      "name": "Elder Forest Fury",
+      "source_identity": {
+        "namespace": "cipsoft/staticdata/creature_id",
+        "id": 1157,
+        "source_name": "elder forest fury",
+        "client_version": "15.30"
+      },
+      "staticdata": {
+        "path": "imports/cipsoft-staticdata/creatures/creatures-00250-00499.json",
+        "record": 229,
+        "record_sha256": "d86cb7551987c4ce566ed2993b70b1ce1a0a98200f61c831f29db456c0cab6cf"
+      },
+      "wiki": {
+        "url": "https://www.tibiawiki.com.br/index.php?oldid=441194",
+        "path": "imports/tibiawiki/facts/creatures/creatures-00500-00999.json",
+        "record": 443,
+        "revid": 441194
+      },
+      "wiki_reference_facts": {
+        "exp": "480",
+        "hp": "670",
+        "immunities": "Paralysis",
+        "mitigation": "1.44",
+        "name": "Elder Forest Fury",
+        "pushable": "não",
+        "pushobjects": "sim",
+        "speed": "120"
+      },
+      "native_status": "ABSENT_FROM_CURRENT1863DEFINITIONS",
+      "source_selection_pool": "wildcard_only",
+      "superseded_exclusion_fact": {
+        "value": {
+          "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+          "source_creature_name": "Elder Forest Fury",
+          "create_native_identity": false
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json / field docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/520/facts/native_creature_binding"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json#docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/520/facts/native_creature_binding",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "record": 534,
+      "key": "prey.creature.furious_fire_elemental",
+      "name": "Furious Fire Elemental",
+      "source_identity": {
+        "namespace": "cipsoft/staticdata/creature_id",
+        "id": 1000,
+        "source_name": "furious fire elemental",
+        "client_version": "15.30"
+      },
+      "staticdata": {
+        "path": "imports/cipsoft-staticdata/creatures/creatures-00250-00499.json",
+        "record": 175,
+        "record_sha256": "b263e776b1705dc84a27a0000d10e751759202307c0e6bf618901a19c45c9b2e"
+      },
+      "wiki": {
+        "url": "https://www.tibiawiki.com.br/index.php?oldid=441304",
+        "path": "imports/tibiawiki/facts/creatures/creatures-01000-01499.json",
+        "record": 234,
+        "revid": 441304
+      },
+      "wiki_reference_facts": {
+        "exp": "220",
+        "hp": "280",
+        "immunities": "Invisibility, Paralysis",
+        "mitigation": "0.80",
+        "name": "Furious Fire Elemental",
+        "pushable": "não",
+        "pushobjects": "sim",
+        "speed": "95"
+      },
+      "native_status": "ABSENT_FROM_CURRENT1863DEFINITIONS",
+      "source_selection_pool": "wildcard_only",
+      "superseded_exclusion_fact": {
+        "value": {
+          "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+          "source_creature_name": "Furious Fire Elemental",
+          "create_native_identity": false
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json / field docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/534/facts/native_creature_binding"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json#docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/534/facts/native_creature_binding",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "record": 585,
+      "key": "prey.creature.nightslayer",
+      "name": "Nightslayer",
+      "source_identity": {
+        "namespace": "cipsoft/staticdata/creature_id",
+        "id": 579,
+        "source_name": "nightslayer",
+        "client_version": "15.30"
+      },
+      "staticdata": {
+        "path": "imports/cipsoft-staticdata/creatures/creatures-00250-00499.json",
+        "record": 15,
+        "record_sha256": "a552dd9215df3db70317f2c5645c96e628e34ac691329464f493490bc5fb9135"
+      },
+      "wiki": {
+        "url": "https://www.tibiawiki.com.br/index.php?oldid=441384",
+        "path": "imports/tibiawiki/facts/creatures/creatures-00000-00499.json",
+        "record": 239,
+        "revid": 441384
+      },
+      "wiki_reference_facts": {
+        "exp": "250",
+        "hp": "400",
+        "immunities": "Invisibility, Paralysis",
+        "mitigation": "1.44",
+        "name": "Nightslayer",
+        "pushable": "não",
+        "pushobjects": "sim",
+        "speed": "90"
+      },
+      "native_status": "ABSENT_FROM_CURRENT1863DEFINITIONS",
+      "source_selection_pool": "wildcard_only",
+      "superseded_exclusion_fact": {
+        "value": {
+          "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+          "source_creature_name": "Nightslayer",
+          "create_native_identity": false
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json / field docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/585/facts/native_creature_binding"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json#docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/585/facts/native_creature_binding",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "record": 635,
+      "key": "prey.creature.undead_jester",
+      "name": "Undead Jester",
+      "source_identity": {
+        "namespace": "cipsoft/staticdata/creature_id",
+        "id": 388,
+        "source_name": "undead jester",
+        "client_version": "15.30"
+      },
+      "staticdata": {
+        "path": "imports/cipsoft-staticdata/creatures/creatures-00000-00249.json",
+        "record": 208,
+        "record_sha256": "e1a529cfc99858ef5102235a1ec0226813e4311a2a7b43d902e9611362700ad1"
+      },
+      "wiki": {
+        "url": "https://www.tibiawiki.com.br/index.php?oldid=440797",
+        "path": "imports/tibiawiki/facts/creatures/creatures-00500-00999.json",
+        "record": 67,
+        "revid": 440797
+      },
+      "wiki_reference_facts": {
+        "exp": "5",
+        "hp": "355",
+        "immunities": "Invisibility, Paralysis",
+        "mitigation": "0.20",
+        "name": "Undead Jester",
+        "pushable": "sim",
+        "pushobjects": "sim",
+        "speed": "112"
+      },
+      "native_status": "ABSENT_FROM_CURRENT1863DEFINITIONS",
+      "source_selection_pool": "wildcard_only",
+      "superseded_exclusion_fact": {
+        "value": {
+          "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+          "source_creature_name": "Undead Jester",
+          "create_native_identity": false
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json / field docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/635/facts/native_creature_binding"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json#docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/635/facts/native_creature_binding",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    }
+  ],
+  "source_handoff": "docs/reference/content-prep/prey-content-1/native-prey-handoff.json",
+  "qualification": "Source identities are resolved for all six creatures. Native binding remains pending because their definitions do not exist. Reference-only data does not authorize runtime admission.",
+  "separate_task_scope": "Bounty/Weekly XP formulas in this shared draft remain a separately tracked correction; this Prey identity repair does not claim to resolve them."
+}

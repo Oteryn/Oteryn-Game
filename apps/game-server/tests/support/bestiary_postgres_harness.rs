@@ -1,4 +1,4 @@
-// Shared PostgreSQL 17.6 harness for the CHARM-2 Bestiary cases: one
+// Shared PostgreSQL 18.6 harness for the CHARM-2 Bestiary cases: one
 // bootstrapped Character (41) on a live Channel session (50) in World 42 /
 // Channel 43, held by node 1 at scope ownership generation 1. Every wrapper
 // provides the same path-loaded crate root.
@@ -60,6 +60,7 @@ pub(crate) fn runtime() -> TestResult<tokio::runtime::Runtime> {
         .build()?)
 }
 
+#[derive(Clone)]
 pub(crate) struct Database {
     admin_url: String,
     name: String,
@@ -88,18 +89,34 @@ impl Database {
             .strip_suffix("/postgres")
             .ok_or("invalid admin URL")?;
         let url = format!("{prefix}/{name}");
-        let mut connection = sqlx::PgConnection::connect(&url).await?;
-        let version: String = sqlx::query_scalar("SHOW server_version_num")
-            .fetch_one(&mut connection)
-            .await?;
-        assert_eq!(version, "170006", "canonical target is PostgreSQL 17.6");
-        sqlx::migrate!("./migrations").run(&mut connection).await?;
-        connection.close().await?;
-        Ok(Self {
+        let migration_url = url.clone();
+        let migrated: TestResult = async move {
+            let mut connection = sqlx::PgConnection::connect(&migration_url).await?;
+            let version: String = sqlx::query_scalar("SHOW server_version_num")
+                .fetch_one(&mut connection)
+                .await?;
+            if version != oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM {
+                return Err("canonical target is PostgreSQL 18.6".into());
+            }
+            oteryn_gameplay_durability::GAME_MIGRATOR
+                .run(&mut connection)
+                .await?;
+            connection.close().await?;
+            Ok(())
+        }
+        .await;
+        let database = Self {
             admin_url,
             name,
             url,
-        })
+        };
+        match migrated {
+            Ok(()) => Ok(database),
+            failure => {
+                database.cleanup().await?;
+                Err(format!("PostgreSQL migration setup failed: {failure:?}").into())
+            }
+        }
     }
 
     async fn cleanup(self) -> TestResult {
@@ -170,7 +187,7 @@ impl Harness {
     pub(crate) async fn create_appearance(admin: String, tag: &str) -> TestResult<Self> {
         // Resolve the real migration before constructing any recovery/admission authority.
         // Database::create runs this same embedded migrator before opening the native root.
-        let expected_checksum = sqlx::migrate!("./migrations")
+        let expected_checksum = oteryn_gameplay_durability::GAME_MIGRATOR
             .iter()
             .find(|migration| migration.version == 93)
             .map(|migration| migration.checksum.to_vec())
@@ -190,6 +207,36 @@ impl Harness {
     /// 50, 1000 experience) instead of leaving the Character bootstrap-only.
     pub(crate) async fn create(admin: String, tag: &str, initialized: bool) -> TestResult<Self> {
         let database = Database::create(admin, tag).await?;
+        let cleanup = database.clone();
+        let tag = tag.to_owned();
+        let setup = tokio::task::LocalSet::new()
+            .run_until(async move {
+                tokio::task::spawn_local(async move {
+                    Self::create_on_database(database, &tag, initialized)
+                        .await
+                        .map_err(|error| error.to_string())
+                })
+                .await
+            })
+            .await;
+        match setup {
+            Ok(Ok(harness)) => Ok(harness),
+            Ok(Err(failure)) => {
+                cleanup.cleanup().await?;
+                Err(format!("PostgreSQL native setup failed: {failure}").into())
+            }
+            Err(failure) => {
+                cleanup.cleanup().await?;
+                Err(failure.into())
+            }
+        }
+    }
+
+    async fn create_on_database(
+        database: Database,
+        tag: &str,
+        initialized: bool,
+    ) -> TestResult<Self> {
         let root = DurabilityRoot::connect_test_runtime(&database.url)?;
         assert!(root.maintain_ready_once().await?);
         let pool = sqlx::PgPool::connect(&database.url).await?;
@@ -272,7 +319,7 @@ impl Harness {
 }
 
 fn bootstrap_binding() -> Vec<u8> {
-    let mut binding = vec![2];
+    let mut binding = vec![3];
     binding.extend_from_slice(&id(31));
     binding.extend_from_slice(&1_i64.to_be_bytes());
     binding.extend_from_slice(&id(30));
@@ -285,11 +332,16 @@ fn bootstrap_binding() -> Vec<u8> {
         binding.extend_from_slice(&length.to_be_bytes());
         binding.extend_from_slice(value.as_bytes());
     }
-    // Contract version 2 binds the requested name last (CHAR-NAME-1).
+    // Contract version 3 retains the name binding and appends creation sex (APP-3).
     binding.extend_from_slice(&12_u16.to_be_bytes());
     binding.extend_from_slice(b"Fixture Hero");
+    binding.push(2); // Authenticated creation sex: Male.
     binding
 }
+
+// LOOP-GROUND-1 not-ready writer case and this bootstrap share one genuine issuer.
+#[path = "ground_native_readiness_enforcement.rs"]
+pub(crate) mod ground_native_readiness_enforcement;
 
 struct RuntimeReadiness(AdmissionAuthorityPublicationChangeV1);
 
@@ -343,8 +395,7 @@ async fn publish_readiness(
             offer_revision: "offer-1".into(),
         },
     };
-    let publication =
-        AdmissionAuthorityPublicationV1::prepare(&RuntimeReadiness(change), now).map_err(debug)?;
+    let publication = ground_native_readiness_enforcement::prepare(change, now)?;
     let disposition = root
         .publish_runtime_readiness(node, &publication)
         .await
@@ -367,9 +418,9 @@ async fn seed_character(pool: &sqlx::PgPool, initialized: bool) -> TestResult {
         .execute(pool)
         .await?;
     sqlx::query(
-        "INSERT INTO game_character_roots VALUES \
+        "INSERT INTO game_character_roots(character_id, account_id, world_id, lifecycle, character_revision, profile_revision, ruleset_revision, content_revision, starter_template_revision, name, sex) VALUES \
          (encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,\
-          1,1,'profile-1','ruleset-1','content-1','starter-1','Fixture Hero')",
+          1,1,'profile-1','ruleset-1','content-1','starter-1','Fixture Hero',2)",
     )
     .bind(id(CHARACTER).as_slice())
     .bind(id(40).as_slice())

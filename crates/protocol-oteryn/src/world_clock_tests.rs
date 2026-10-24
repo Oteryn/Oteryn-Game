@@ -4,8 +4,7 @@ use serde_json::Value;
 
 use super::*;
 
-const PROTOCOL_REGISTRY: &str =
-    include_str!("../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json");
+const PROTOCOL_REGISTRY: &str = crate::PROTOCOL_OTERYN_V1_REGISTRY_JSON;
 const SCHEMA_PATH: &str = "docs/contracts/protocol-oteryn/v1/world_clock_v1.proto";
 const SCHEMA: &str =
     include_str!("../../../docs/contracts/protocol-oteryn/v1/world_clock_v1.proto");
@@ -132,4 +131,20 @@ fn registry_binds_the_clock_wire_ids_and_limits() {
 
     assert!(SCHEMA.contains("message WorldClockV1 {"));
     assert!(SCHEMA.contains(&format!("At most\n// {MAX_WORLD_CLOCK_BYTES} bytes")));
+}
+
+// TEST-FUZZ-1: bounded randomized decoder and generated-value round trips.
+
+#[test]
+fn fuzz_decode_world_clock() {
+    crate::decoder_fuzz_support::codec(
+        "decode_world_clock",
+        |rng| WorldClock {
+            tibian_minute: rng.below(1440) as u16,
+            light_level: rng.u64() as u8,
+            light_color: rng.u64() as u8,
+        },
+        decode_world_clock,
+        |v| encode_world_clock(*v).expect("clock"),
+    );
 }

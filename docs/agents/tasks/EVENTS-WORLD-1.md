@@ -4,7 +4,8 @@
 task_id: EVENTS-WORLD-1
 title: "EVENTS-WORLD-1: world changes, Fury Gates, Nightmare Isles, hazard (skeleton)"
 mode: IMPLEMENT
-status: NOT_FULLY_QUALIFIED
+status: waiting
+pr: null
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/events-world-1
@@ -20,7 +21,7 @@ needs_registry: maybe
 needs_content_regeneration: true
 merge_authority: CP_ONLY (builder never marks ready)
 owned_paths:
-  - "apps/game-server/src/world_change/ (new) + tests"
+  - "crates/gameplay/world-change/src/ (new) + tests"
   - "content/encounters/{world-changes,mini-world-changes}/ source inputs"
   - "docs/agents/tasks/EVENTS-WORLD-1.md"
   - "apps/game-server/src/lib.rs (D1287 cfg(test) world_change registration only)"
@@ -32,8 +33,14 @@ slot_only_paths:
   - "regenerate_content.py outputs, content/project.json, manifest.json, content.lock.json, content/world/pins/*, Rust pins"
   - "migration if durable"
   - "docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json"
-  - "Common slot-only set (any that the task touches): tools/content-migration/regenerate_content.py outputs, content/project.json, content/manifest.json, content.lock.json, content/interactions/index.json, content/world/pins/*, Rust pins, docs/contracts/*REGISTRY*.json, migration numbers, wiring in apps/game-server/src/gameplay_transport/{connection.rs,mod.rs,capabilities.rs} and crates/protocol-oteryn/src/lib.rs"
+  - "Common slot-only set (any that the task touches): tools/content-migration/regenerate_content.py outputs, content/project.json, content/manifest.json, content.lock.json, content/interactions/index.json, content/world/pins/*, Rust pins, docs/contracts/*REGISTRY*.json, migration numbers, wiring in crates/gameplay/dispatch/src/gameplay_transport/{connection.rs,mod.rs,capabilities.rs} and crates/protocol-oteryn/src/lib.rs"
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#2178](https://github.com/Oteryn/Oteryn-Game/pull/2178). Fury Gates/Nightmare Isles selection-source compiler is merged and rejects unavailable W1 bindings. Evidence: `crates/gameplay/world-change/src/content.rs`.
+
+Remaining: Executable W1 bindings, layer/activation owners and restart/epoch runtime composition remain; source selection alone activates nothing. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 ## D1287 review repair — source only
 
@@ -82,7 +89,7 @@ Rows marked BLOCKING must merge (or be accepted) before the builder's slot commi
 
 ## Owned paths (builder edits freely)
 
-- apps/game-server/src/world_change/ (new) + tests
+- crates/gameplay/world-change/src/ (new) + tests
 - `content/encounters/{world-changes,mini-world-changes}/ source inputs`
 - `apps/game-server/src/lib.rs` — D1287 test-only registration.
 - `docs/architecture/ADR-0021-world-map-runtime-loading.md` — D1136/D1287 amendments and status.
@@ -98,15 +105,15 @@ Rows marked BLOCKING must merge (or be accepted) before the builder's slot commi
 - tools/content-migration/regenerate_content.py outputs; content/project.json; content/manifest.json, content/world/manifest.json; content/content.lock.json, content/world/content.lock.json; content/interactions/index.json; content/world/pins/*; Rust pins
 - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json, GAME_EVENT_FOUNDATION_REGISTRY.json, RESOURCE_LIMITS_REGISTRY.json, OTERYN_GAME_ERROR_CODE_REGISTRY.json
 - apps/game-server/migrations/NNNN_*.sql number (next free on main at queue turn; main ends at 0087)
-- apps/game-server/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring; crates/protocol-oteryn/src/lib.rs `pub mod` + registry constants; module registration in lib.rs / durability/mod.rs / domain/mod.rs
+- crates/gameplay/dispatch/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring; crates/protocol-oteryn/src/lib.rs `pub mod` + registry constants; module registration in lib.rs / durability/mod.rs / domain/mod.rs
 
 To compile on the branch the builder may add only module registration lines in shared `mod.rs`/`lib.rs`; they are re-applied in the slot commit after merging main.
 
 ## Wiring points (verified on origin/main 5742f30f3)
 
 - raid scheduler (EVENTS-RAID-1)
-- apps/game-server/src/world_object_revert.rs
-- apps/game-server/src/world_clock.rs
+- crates/gameplay/world/src/world_object_revert.rs
+- crates/gameplay/world/src/world_clock.rs
 - connection.rs command dispatch chain `else if command.command_type == COMMAND_TYPE_...` (USE_INTENT l.2481, CHAT_INTENT l.2735, NPC_TRADE_INTENT l.2766)
 - capabilities.rs `GATED` table l.165, offered sets l.76/104/132 (new capability not offered until CP decides)
 

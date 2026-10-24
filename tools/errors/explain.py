@@ -22,7 +22,7 @@ CODE_RE = re.compile(r"\bcode=E(\d{4,})\b")
 def load_entries(root: Path = registry.ROOT) -> dict[int, dict]:
     """Every registered code from both registries, normalised."""
     entries: dict[int, dict] = {}
-    protocol = registry.load_json(root / registry.PROTOCOL_PATH)
+    protocol = registry.load_protocol(root)
     for raw in protocol["error_codes"]:
         derived = registry.derived_progression(raw)
         progression, retry, is_derived = derived if derived else (None, None, False)

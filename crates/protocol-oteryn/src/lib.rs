@@ -1,7 +1,7 @@
 //! FND-02 wire codecs shared by the Oteryn game server and the future native client.
 //!
 //! Extracted from `apps/game-server/src/foundation/protocol.rs` and
-//! `apps/game-server/src/gameplay_transport/{world_spatial,world_object}.rs` per ADR-0011 §2
+//! `crates/gameplay/dispatch/src/gameplay_transport/{world_spatial,world_object}.rs` per ADR-0011 §2
 //! (move exactly the real items that have a consumer, no speculative API) and the #162 A6 owner
 //! acceptance of task `OTV2-20260928-protocol-oteryn-crate-c1a`. This crate is the FND-02 wire
 //! boundary: bounded frame length-prefixing, the top-level envelope message types and their
@@ -12,6 +12,12 @@
 
 use std::collections::BTreeSet;
 pub mod actor_condition_snapshot_candidate;
+pub mod appearance;
+pub mod command_replay;
+mod contract_registries;
+pub mod depot;
+pub mod party;
+pub use contract_registries::{PROTOCOL_OTERYN_V1_REGISTRY_JSON, RESOURCE_LIMITS_REGISTRY_JSON};
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
 
@@ -41,6 +47,11 @@ pub enum FoundationProtocolError {
     /// key the catalogue lacks): an internal integrity fault. The client learns only that its
     /// account data needs support; the diagnostic stays in the operator event.
     AccountDataIntegrity = 1050,
+    /// HIGHSCORES0 §6 (HS-WIRE-1): the query names a category this server does not offer.
+    NotSupported = 1200,
+    /// HIGHSCORES0 §6 (HS-WIRE-1): the echoed snapshot token is no longer retained; the client
+    /// starts the list again at page 1 with token 0.
+    SnapshotExpired = 1201,
     // FND-04A §11 fresh-admission refusal rows (ARCH-LOGIN-FIRST-PACKETS-V1 §1.2, N8): written
     // once before admission with generation 0, then the server closes. `admission_refusal_class`
     // gives each its progression and public class.
@@ -61,6 +72,12 @@ pub enum FoundationProtocolError {
     AdmissionIncumbentProtected = 1114,
     AdmissionCapacityExceeded = 1115,
     AdmissionCapabilityRequired = 1116,
+    /// ADMIT0 §5 (CP D1187): an authenticated same-GameSession reconnect lacks a required
+    /// capability; the candidate ends and current authority is preserved.
+    ReconnectCapabilityRequired = 1117,
+    /// ADMIT0 §5 (CP D1187): an authenticated recovery lacks a required capability; nothing
+    /// is mutated and no recovery grant is consumed.
+    RecoveryCapabilityRequired = 1118,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -112,7 +129,11 @@ impl FoundationProtocolError {
             | Self::InvalidCapabilitySet => ProtocolDisposition::SessionFatal,
             Self::PayloadLimitExceeded
             | Self::TooManyOutstandingCommands
-            | Self::AccountDataIntegrity => ProtocolDisposition::OperationTerminal,
+            | Self::AccountDataIntegrity
+            | Self::NotSupported
+            | Self::SnapshotExpired
+            | Self::ReconnectCapabilityRequired
+            | Self::RecoveryCapabilityRequired => ProtocolDisposition::OperationTerminal,
             Self::CommandOutcomeExpired
             | Self::CommandSequenceGap
             | Self::ServerSequenceGap
@@ -145,6 +166,8 @@ impl Display for FoundationProtocolError {
             Self::BootstrapLimitExceeded => "bootstrap payload exceeds hard limit",
             Self::InvalidCapabilitySet => "invalid capability set",
             Self::AccountDataIntegrity => "account data needs support",
+            Self::NotSupported => "query is not supported",
+            Self::SnapshotExpired => "snapshot is no longer retained",
             Self::AdmissionGrantMalformed => "admission grant is malformed",
             Self::AdmissionGrantAuthenticationFailed => "admission grant authentication failed",
             Self::AdmissionGrantBindingMismatch => "admission grant binding mismatch",
@@ -168,14 +191,17 @@ impl Display for FoundationProtocolError {
             Self::AdmissionIncumbentProtected => "character is already active",
             Self::AdmissionCapacityExceeded => "admission capacity exceeded",
             Self::AdmissionCapabilityRequired => "a required capability is missing",
+            Self::ReconnectCapabilityRequired => "a required reconnect capability is missing",
+            Self::RecoveryCapabilityRequired => "a required recovery capability is missing",
         })
     }
 }
 
 impl Error for FoundationProtocolError {}
 
-/// The codes FND-04A §11 fresh-admission refusals use (ARCH-LOGIN-FIRST-PACKETS-V1 §1.2); 1117..
-/// 1199 are reserved for later admission rows and never reused.
+/// The codes FND-04A §11 fresh-admission refusals use (ARCH-LOGIN-FIRST-PACKETS-V1 §1.2), and
+/// the ADMIT0 §5 reconnect (1117) and recovery (1118) rows; 1119..1199 are reserved for later
+/// admission rows and never reused.
 pub const ADMISSION_REFUSAL_CODES: std::ops::RangeInclusive<u32> = 1100..=1199;
 
 /// FND-04A §11 progression of one admission refusal: what the client may do next on its own.
@@ -205,7 +231,7 @@ const ADMISSION_REFUSAL_ROWS: [(
     FoundationProtocolError,
     AdmissionProgression,
     AdmissionPublicClass,
-); 17] = {
+); 19] = {
     use AdmissionProgression::{Retryable, SecurityTerminal, Terminal};
     use AdmissionPublicClass::{
         AuthenticationRequired, CharacterAlreadyActive, ClientUpdateRequired, RetryLogin,
@@ -279,6 +305,16 @@ const ADMISSION_REFUSAL_ROWS: [(
         ),
         (
             E::AdmissionCapabilityRequired,
+            Terminal,
+            ClientUpdateRequired,
+        ),
+        (
+            E::ReconnectCapabilityRequired,
+            Terminal,
+            ClientUpdateRequired,
+        ),
+        (
+            E::RecoveryCapabilityRequired,
             Terminal,
             ClientUpdateRequired,
         ),
@@ -357,27 +393,8 @@ pub const MAX_SNAPSHOT_CHUNKS: u32 = 256;
 pub const MAX_SNAPSHOT_CHUNK_BYTES: usize = 524_288;
 pub const MAX_SNAPSHOT_ASSEMBLED_BYTES: u64 = 16_777_216;
 
-// The optional capabilities PROTOCOL_OTERYN_V1_REGISTRY.json registers: 1 BESTIARY_CHARMS_V1
-// (CHARM-5, not offered before CHARM-6), 4 ITEM_VIEW_MOVE_V1 (ITEM-VIEW-1a, not offered before
-// ITEM-MOVE-1), 6 WORLD_SPATIAL_ENTITIES (VIS-2, not offered before the
-// server composes it), 7 CHAT_V1 (CHAT-1, not offered before CHAT-1b-2 composes it), 8
-// ACHIEVEMENT_NOTICES_V1 (ACH-NOTIFY-1, not offered before capability negotiation is composed) and
-// 10 ANALYSER_V1 (ANALYSER-WIRE-1, not offered before ANALYSER-EMIT-1) and 12 ITEM_EQUIP_DROP_V1
-// (ITEM-EQUIP-WIRE-1, not offered before ITEM-MOVE-2a) and 14 CONTAINER_TREE_V1 (BAGS-WIRE-1, not
-// offered before BAGS-1) and 15 ITEM_USE_V1 (ITEM-USE-WIRE-1, not offered before ITEM-USE-1) and
-// 16 QUEST_LOG_V1 (QUEST-LOG-WIRE-1, not offered before the quest log
-// content and the production session copy are composed) and 17 ATTACK_V1 (ATTACK-WIRE-1, not
-// offered before ATTACK-1b) and 3 NPC_SERVICE_V1 (NPC-WIRE-1, not offered before NPC-TALK-1) and
-// 22 RUNE_USE_V1 (RUNE-WIRE-1, not offered before RUNE-CAST-1) and 23 PRESENTATION_V1
-// (PRESENT-WIRE-1, not offered before SPELL-PRESENT-1 or COMBAT-PRESENT-1). Registered is not
-// offered. 13 PACED_MOVEMENT_V1 (SPEED-1) is offered: it adds the step result TOO_EARLY. 21
-// LOGOUT_V1 (LOGOUT-WIRE-1) is offered with its command handler.
-// 28 ITEM_LOOK_V1 (CP D1240/D1240a) is registered, not offered; no additional
-// capability requirement was assigned. Next unallocated capability is29.
-// Keep this sorted when a later owning gate allocates an additive capability ID.
-const REGISTERED_CAPABILITY_IDS_V1: &[u32] = &[
-    1, 3, 4, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 28,
-];
+mod registered_capabilities;
+use registered_capabilities::{CAPABILITY_REQUIREMENTS_V1, REGISTERED_CAPABILITY_IDS_V1};
 
 fn decode_uuid_v7(input: &[u8]) -> Result<[u8; 16], FoundationProtocolError> {
     let value: [u8; 16] = input
@@ -670,50 +687,6 @@ fn validate_acceptance_value(
     }
     validate_capability_closure(capabilities)
 }
-
-/// A selected capability whose requirement is not selected with it (ITEM-MOVE-WIRE-0 §4: 4
-/// requires 6; ITEM-EQUIP-DROP: 12 requires 4; BAGS-0 §5: 14 requires 4 and 12; ITEM-USE-0 §3:
-/// 15 requires 4; ATTACK-WIRE-1: 17 requires 6; LOOP-CLOCK-1: 19 requires 6; PRESENT-WIRE-1: 23 requires 6; WORLDINT-WIRE-1: 11 requires 15 and 18; RUNE-WIRE-1: 22 requires 15) is an invalid set, refused on encode and decode of both `ServerAccepted` and `ServerResumeAccepted`.
-const CAPABILITY_REQUIREMENTS_V1: &[(u32, &[u32])] = &[
-    (
-        item_view::CAPABILITY_ITEM_VIEW_MOVE_V1,
-        item_view::CAPABILITY_ITEM_VIEW_MOVE_V1_REQUIRES,
-    ),
-    (
-        item_view::CAPABILITY_ITEM_EQUIP_DROP_V1,
-        item_view::CAPABILITY_ITEM_EQUIP_DROP_V1_REQUIRES,
-    ),
-    (
-        container_tree::CAPABILITY_CONTAINER_TREE_V1,
-        container_tree::CAPABILITY_CONTAINER_TREE_V1_REQUIRES,
-    ),
-    (
-        world_object::CAPABILITY_ITEM_USE_V1,
-        world_object::CAPABILITY_ITEM_USE_V1_REQUIRES,
-    ),
-    (
-        attack::CAPABILITY_ATTACK_V1,
-        &attack::CAPABILITY_ATTACK_V1_REQUIRES,
-    ),
-    (
-        world_clock::CAPABILITY_WORLD_LIGHT_V1,
-        &world_clock::CAPABILITY_WORLD_LIGHT_V1_REQUIRES,
-    ),
-    (
-        world_interaction::CAPABILITY_WORLD_INTERACTION_V1,
-        &world_interaction::CAPABILITY_WORLD_INTERACTION_V1_REQUIRES,
-    ),
-    (
-        world_object::CAPABILITY_RUNE_USE_V1,
-        world_object::CAPABILITY_RUNE_USE_V1_REQUIRES,
-    ),
-    (
-        presentation::CAPABILITY_PRESENTATION_V1,
-        &presentation::CAPABILITY_PRESENTATION_V1_REQUIRES,
-    ),
-    // CP D1240/D1240a assigns no additional requirements for ITEM_LOOK_V1.
-    (28, &[]),
-];
 
 fn validate_capability_closure(selected: &[u32]) -> Result<(), FoundationProtocolError> {
     let missing = CAPABILITY_REQUIREMENTS_V1
@@ -2554,12 +2527,19 @@ pub mod actor_spell_item_v2;
 pub mod actor_spell_v2;
 pub mod analyser;
 pub mod attack;
+pub mod bed;
 pub mod bestiary;
+pub mod capability_tables;
 pub mod charm;
 mod charm_wire;
 pub mod chat;
 pub mod container_tree;
+pub mod daily_reward;
 pub mod damage_element;
+pub mod guild;
+pub mod guild_bank;
+pub mod highscores;
+pub mod house_move_out;
 pub mod item_look;
 pub mod item_view;
 pub mod logout;
@@ -2567,15 +2547,21 @@ pub mod npc_service;
 pub mod presentation;
 pub mod quest_log;
 pub mod spell_presentation_candidate;
+pub mod tutorial_notices;
+pub mod vip;
 pub mod world_clock;
 pub mod world_interaction;
 pub mod world_map;
 pub mod world_object;
 pub mod world_spatial;
 pub mod world_spatial_entities;
+pub mod world_weather;
 
 #[cfg(test)]
 mod tests {
+    #[path = "capability_selection_tests.rs"]
+    mod capability_selection_tests;
+
     use super::*;
 
     #[test]
@@ -2673,111 +2659,6 @@ mod tests {
         let post_admission_error =
             encode_protocol_error(FoundationProtocolError::MalformedEnvelope, 7)?;
         decode_wire_envelope(&post_admission_error)?.validate(Direction::ServerToClient, true)?;
-        Ok(())
-    }
-
-    /// #1703 P2 4175400422 and #1711 P2: a selected set naming 4 without 6, or 12 without 4, is
-    /// refused by the encoder and by ingress decode of both acceptance messages (ITEM-USE-WIRE-1:
-    /// and 15 without 4).
-    #[test]
-    fn acceptance_refuses_a_selected_capability_without_its_requirement()
-    -> Result<(), FoundationProtocolError> {
-        let (session, world, channel) = (test_uuid_v7(1), test_uuid_v7(2), test_uuid_v7(3));
-        let accepted = ServerAcceptedValue {
-            game_session_id: GameSessionId::decode(&session)?,
-            world_id: WorldId::decode(&world)?,
-            channel_id: ChannelId::decode(&channel)?,
-            connection_generation: 1,
-            current_server_sequence: 0,
-            next_command_id: 1,
-            schema_revision: 1,
-            selected_capabilities: &[],
-        };
-        let resumed = ServerResumeAcceptedValue {
-            game_session_id: accepted.game_session_id,
-            connection_generation: 2,
-            current_server_sequence: 0,
-            next_command_id: 1,
-            schema_revision: 1,
-            selected_capabilities: &[],
-        };
-        for (selected, valid) in [
-            (&[4_u32][..], false),
-            (&[4, 12][..], false),
-            (&[6, 12][..], false),
-            (&[12][..], false),
-            (&[4, 6][..], true),
-            (&[4, 6, 12][..], true),
-            (&[14][..], false),
-            (&[4, 6, 14][..], false),
-            (&[6, 12, 14][..], false),
-            (&[4, 6, 12, 14][..], true),
-            (&[15][..], false),
-            (&[6, 15][..], false),
-            (&[4, 6, 15][..], true),
-            (&[17][..], false),
-            (&[4, 17][..], false),
-            (&[6, 17][..], true),
-            (&[4, 6, 17][..], true),
-            (&[19][..], false),
-            (&[4, 19][..], false),
-            (&[6, 19][..], true),
-            (&[4, 6, 19][..], true),
-            (&[11][..], false),
-            (&[4, 6, 11, 15][..], false),
-            (&[4, 6, 11, 15, 18][..], true),
-            (&[22][..], false),
-            (&[4, 6, 22][..], false),
-            (&[4, 6, 15, 22][..], true),
-        ] {
-            let expected = |result: Result<(), FoundationProtocolError>| match valid {
-                true => assert!(result.is_ok(), "{selected:?}"),
-                false => assert_eq!(
-                    result,
-                    Err(FoundationProtocolError::InvalidCapabilitySet),
-                    "{selected:?}"
-                ),
-            };
-            expected(
-                encode_server_accepted(&ServerAcceptedValue {
-                    selected_capabilities: selected,
-                    ..accepted
-                })
-                .map(drop),
-            );
-            expected(
-                encode_server_resume_accepted(&ServerResumeAcceptedValue {
-                    selected_capabilities: selected,
-                    ..resumed
-                })
-                .map(drop),
-            );
-            let wide: Vec<usize> = selected.iter().map(|&c| c as usize).collect();
-            expected(
-                decode_wire_envelope(&test_envelope(
-                    2,
-                    &test_server_accepted_payload(1, 1, 1, [&session, &world, &channel], &wide),
-                ))
-                .map(drop),
-            );
-            expected(
-                decode_wire_envelope(&test_envelope(
-                    4,
-                    &test_server_resume_accepted_payload(2, 1, 1, &session, &wide),
-                ))
-                .map(drop),
-            );
-            expected(
-                decode_server_accepted(&test_server_accepted_payload(
-                    1,
-                    1,
-                    1,
-                    [&session, &world, &channel],
-                    &wide,
-                ))
-                .map(drop),
-            );
-        }
         Ok(())
     }
 
@@ -3052,25 +2933,6 @@ mod tests {
             decode_snapshot_chunk(explicit_zero),
             Err(FoundationProtocolError::MalformedEnvelope)
         );
-    }
-
-    #[test]
-    fn seam_typed_bootstrap_borrows_validated_material() -> Result<(), FoundationProtocolError> {
-        let id = test_uuid_v7(1);
-        let wire = test_envelope(1, &test_client_bootstrap_payload(1, 1, 2, &id, &[7, 9]));
-        let envelope = decode_wire_envelope(&wire)?;
-        let view = envelope.client_bootstrap()?;
-        assert_eq!(view.protocol_major, 1);
-        assert_eq!(view.transport_profile, 1);
-        assert_eq!(view.schema_revision, 2);
-        assert_eq!(view.character_id.as_bytes(), &id);
-        assert_eq!(view.admission_material, &[0xaa]);
-        assert_eq!(view.client_build_id, "test-client");
-        assert_eq!(view.supported_capabilities, &[7, 9]);
-        let start = wire.as_ptr() as usize;
-        assert!((start..start + wire.len()).contains(&(view.admission_material.as_ptr() as usize)));
-        assert!(envelope.client_resume().is_err());
-        Ok(())
     }
 
     #[test]
@@ -3406,75 +3268,6 @@ mod tests {
                 Err(FoundationProtocolError::MalformedEnvelope)
             );
         }
-    }
-
-    #[test]
-    fn selected_capabilities_are_registry_closed_but_supported_unknowns_are_additive() {
-        let session = test_uuid_v7(1);
-        let world = test_uuid_v7(2);
-        let channel = test_uuid_v7(3);
-        assert!(
-            decode_wire_envelope(&test_envelope(
-                1,
-                &test_client_bootstrap_payload(1, 1, 1, &session, &[777])
-            ))
-            .is_ok()
-        );
-        assert!(
-            decode_wire_envelope(&test_envelope(
-                3,
-                &test_client_resume_payload(1, 1, 1, &session, &[777])
-            ))
-            .is_ok()
-        );
-        // 1 BESTIARY_CHARMS_V1, 4 ITEM_VIEW_MOVE_V1, 6 WORLD_SPATIAL_ENTITIES, 7 CHAT_V1, 8
-        // ACHIEVEMENT_NOTICES_V1 and 10 ANALYSER_V1 are registered; 2 is reserved for PROF-WIRE-1
-        // and 1000 is unallocated: a selected capability this build does not know fails.
-        for selected in [
-            &[6_usize][..],
-            &[1, 6][..],
-            &[4, 6][..],
-            &[7][..],
-            &[8][..],
-            &[10][..],
-            &[1, 4, 6, 7, 8, 10][..],
-        ] {
-            assert!(
-                decode_wire_envelope(&test_envelope(
-                    2,
-                    &test_server_accepted_payload(1, 1, 1, [&session, &world, &channel], selected)
-                ))
-                .is_ok()
-            );
-        }
-        assert_eq!(
-            decode_wire_envelope(&test_envelope(
-                2,
-                &test_server_accepted_payload(1, 1, 1, [&session, &world, &channel], &[1000])
-            )),
-            Err(FoundationProtocolError::CapabilityMismatch)
-        );
-        assert!(
-            decode_wire_envelope(&test_envelope(
-                2,
-                &test_server_accepted_payload(1, 1, 1, [&session, &world, &channel], &[1])
-            ))
-            .is_ok()
-        );
-        assert_eq!(
-            decode_wire_envelope(&test_envelope(
-                2,
-                &test_server_accepted_payload(1, 1, 1, [&session, &world, &channel], &[2])
-            )),
-            Err(FoundationProtocolError::CapabilityMismatch)
-        );
-        assert_eq!(
-            decode_wire_envelope(&test_envelope(
-                4,
-                &test_server_resume_accepted_payload(2, 1, 1, &session, &[2])
-            )),
-            Err(FoundationProtocolError::CapabilityMismatch)
-        );
     }
 
     #[test]
@@ -4034,10 +3827,9 @@ mod tests {
     #[allow(clippy::expect_used)]
     fn error_codes_match_the_registry() {
         use FoundationProtocolError as E;
-        let registry: serde_json::Value = serde_json::from_str(include_str!(
-            "../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json"
-        ))
-        .expect("protocol registry");
+        let registry: serde_json::Value =
+            serde_json::from_str(crate::PROTOCOL_OTERYN_V1_REGISTRY_JSON)
+                .expect("protocol registry");
         let registered: Vec<(u64, &str, &str)> = registry["error_codes"]
             .as_array()
             .expect("error_codes")
@@ -4074,6 +3866,8 @@ mod tests {
             (E::BootstrapLimitExceeded, "BOOTSTRAP_LIMIT_EXCEEDED"),
             (E::InvalidCapabilitySet, "INVALID_CAPABILITY_SET"),
             (E::AccountDataIntegrity, "ACCOUNT_DATA_INTEGRITY"),
+            (E::NotSupported, "NOT_SUPPORTED"),
+            (E::SnapshotExpired, "SNAPSHOT_EXPIRED"),
             (E::AdmissionGrantMalformed, "ADMISSION_GRANT_MALFORMED"),
             (
                 E::AdmissionGrantAuthenticationFailed,
@@ -4124,6 +3918,14 @@ mod tests {
                 E::AdmissionCapabilityRequired,
                 "ADMISSION_CAPABILITY_REQUIRED",
             ),
+            (
+                E::ReconnectCapabilityRequired,
+                "RECONNECT_CAPABILITY_REQUIRED",
+            ),
+            (
+                E::RecoveryCapabilityRequired,
+                "RECOVERY_CAPABILITY_REQUIRED",
+            ),
         ]
         .into_iter()
         .map(|(error, name)| {
@@ -4144,10 +3946,9 @@ mod tests {
     #[test]
     #[allow(clippy::expect_used)]
     fn admission_refusal_classes_match_the_registry() {
-        let registry: serde_json::Value = serde_json::from_str(include_str!(
-            "../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json"
-        ))
-        .expect("protocol registry");
+        let registry: serde_json::Value =
+            serde_json::from_str(crate::PROTOCOL_OTERYN_V1_REGISTRY_JSON)
+                .expect("protocol registry");
         let mut admission = Vec::new();
         for entry in registry["error_codes"].as_array().expect("error_codes") {
             let code = u32::try_from(entry["code"].as_u64().expect("code")).expect("u32 code");
@@ -4158,7 +3959,13 @@ mod tests {
                 assert_eq!(admission_refusal_class(code), None, "{code}");
                 continue;
             }
-            assert_eq!(entry["default_disposition"], "TRANSPORT_FATAL");
+            // CP D1187: the ADMIT0 reconnect/recovery rows end the operation, not the transport.
+            let disposition = if matches!(code, 1117 | 1118) {
+                "OPERATION_TERMINAL"
+            } else {
+                "TRANSPORT_FATAL"
+            };
+            assert_eq!(entry["default_disposition"], disposition, "{code}");
             let (crate_progression, crate_class) =
                 admission_refusal_class(code).expect("admission code");
             let crate_progression = match crate_progression {
@@ -4181,7 +3988,7 @@ mod tests {
             );
             admission.push(code);
         }
-        assert_eq!(admission, (1100..=1116).collect::<Vec<_>>());
+        assert_eq!(admission, (1100..=1118).collect::<Vec<_>>());
         assert_eq!(
             ADMISSION_REFUSAL_ROWS
                 .map(|(error, _, _)| error.code())
@@ -4190,7 +3997,7 @@ mod tests {
         );
     }
 
-    /// The 17 rows of §1.2, written out once more so a table edit cannot pass unnoticed.
+    /// The 17 rows of §1.2 and the two ADMIT0 §5 rows, written out once more so a table edit cannot pass unnoticed.
     #[test]
     fn admission_refusal_class_table() {
         use AdmissionProgression::{Retryable as R, SecurityTerminal as S, Terminal as T};
@@ -4213,12 +4020,14 @@ mod tests {
             (1114, T, CharacterAlreadyActive),
             (1115, R, TemporarilyUnavailable),
             (1116, T, ClientUpdateRequired),
+            (1117, T, ClientUpdateRequired),
+            (1118, T, ClientUpdateRequired),
         ];
         for (code, progression, class) in rows {
             assert_eq!(admission_refusal_class(code), Some((progression, class)));
         }
         // Unassigned in range: generic, no retry. Outside the range: not an admission refusal.
-        for code in [1117, 1150, 1199] {
+        for code in [1119, 1150, 1199] {
             assert_eq!(
                 admission_refusal_class(code),
                 Some((T, TemporarilyUnavailable))
@@ -4729,3 +4538,16 @@ mod tests {
         Ok(())
     }
 }
+
+pub mod spectate;
+
+#[cfg(test)]
+mod decoder_fuzz_support;
+
+pub mod house;
+
+pub mod staff;
+
+pub mod cyclopedia;
+
+pub mod timed_item;

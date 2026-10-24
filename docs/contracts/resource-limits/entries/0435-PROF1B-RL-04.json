@@ -1,0 +1,23 @@
+{
+  "id": "PROF1B-RL-04",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_PROFICIENCY1B_PERK_MODIFICATION_VALUE_SHAPES_DECISION_2026-10-03.md",
+  "resource": "Pool entries per ProficiencyShaping definition",
+  "unit": "entries",
+  "hard_maximum": 64,
+  "configurable_range": {
+    "minimum": 64,
+    "maximum": 64
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "A shaping revision with more entries is not well formed and is never active; entry indexes are SMALLINT 0..63.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=64: a 64-entry pool is well formed",
+    "max+1=65: a 65-entry pool is refused"
+  ],
+  "consumers": [
+    "apps/game-server/src/domain/weapon_proficiency.rs PROFICIENCY_SHAPING_POOL_MAX",
+    "tools/content-schema/proficiency-authoring/shaping_authoring.py MAX_POOL"
+  ],
+  "notes": "PROFICIENCY-1B \u00a712; test: weapon_proficiency::modification_tests::limits_hold_at_max_and_refuse_max_plus_one. Registered by OTV2-20261003-prof-shape-1."
+}

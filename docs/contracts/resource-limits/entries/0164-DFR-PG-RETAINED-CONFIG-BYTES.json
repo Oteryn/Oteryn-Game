@@ -1,0 +1,20 @@
+{
+  "id": "DFR-PG-RETAINED-CONFIG-BYTES",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_WP3_V2_SUPERSEDING_ARCHITECTURE_DECISION_2026-09-12.md",
+  "resource": "Aggregate variable input bytes retained by the explicit PostgreSQL root configuration",
+  "unit": "input bytes across tls_server_name + database + username + password + root_ca_pem",
+  "hard_maximum": 24171,
+  "configurable_range": {
+    "minimum": 24171,
+    "maximum": 24171
+  },
+  "failure_category": "UNAVAILABLE",
+  "allocation_impact": "Use checked addition over all five already-length-validated borrowed inputs and reject above 24171 before any retained copy/parse. This input bound creates no allowance: actual owned capacities, fixed config backing and allocator overhead are separately charged to the existing same-root I budget before allocation and for their full lifetime.",
+  "client_visible": false,
+  "boundary_tests": [
+    "24171 aggregate input bytes accepted only when every per-field maximum and semantic rule also passes",
+    "24172 aggregate input bytes rejected as UNAVAILABLE before any retained configuration copy",
+    "Checked-add overflow, any per-field overflow, or inability to reserve actual retained capacity in the existing root ledger rejects before partial root/config construction"
+  ],
+  "notes": "Exact arithmetic is 253 + 63 + 63 + 1024 + 22768 = 24171 input bytes. This is conjunctive with DFR-TOTAL-RESIDENT-BYTES=12582912 and does not change I + max(R,T) + Q + A <= 12 MiB or create a separate configuration budget."
+}

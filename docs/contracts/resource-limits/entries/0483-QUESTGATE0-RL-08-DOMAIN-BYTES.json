@@ -1,0 +1,23 @@
+{
+  "id": "QUESTGATE0-RL-08-DOMAIN-BYTES",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md",
+  "resource": "Encoded QuestLogV1 (domain 16 snapshot and delta payload)",
+  "unit": "bytes",
+  "hard_maximum": 180268,
+  "configurable_range": {
+    "minimum": 180268,
+    "maximum": 180268
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "The view (the list, at most 10,240 bytes, or one line) and 10 tracked lines, each element at most 4 + 16,384 bytes: 11 x 16,388 = 180,268, within the FND-02 delta (262,144) and snapshot chunk (524,288) bounds.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=180268: a worst-case view and ten worst-case tracked lines encode to exactly 180,268 bytes and decode",
+    "max+1=180269: a payload one byte over fails closed before parsing"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/quest_log.rs MAX_QUEST_LOG_BYTES",
+    "docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json state domain 16"
+  ],
+  "notes": "QUEST-GATE-0 \u00a77 and \u00a79; test: quest_log::tests::the_domain_holds_a_view_and_10_tracked_lines_within_its_bound. Registered by OTV2-20261004-quest-log-wire-1."
+}

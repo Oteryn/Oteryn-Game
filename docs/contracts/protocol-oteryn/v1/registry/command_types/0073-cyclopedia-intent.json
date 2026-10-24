@@ -1,0 +1,10 @@
+{
+  "id": 73,
+  "name": "CYCLOPEDIA_INTENT",
+  "owner_decision": "LOOP-MAP-1 owner option A 2026-10-23",
+  "capability": 57,
+  "payload_schema": "cyclopedia-basic-v1.md#request",
+  "result_schema": "cyclopedia-basic-v1.md#result",
+  "max_payload_bytes": 9,
+  "max_result_payload_bytes": 69
+}

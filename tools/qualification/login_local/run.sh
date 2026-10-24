@@ -44,8 +44,8 @@ readonly COMPOSE_NODE_BOOT=tools/qualification/node_boot/compose.override.yml
 readonly COMPOSE_LOCAL=tools/qualification/login_local/compose.override.yml
 readonly COMPOSE_LAN=tools/qualification/login_local/compose.lan.yml
 readonly COMPOSE_PROXY=tools/qualification/login_local/compose.proxy.yml
-readonly RUST_IMAGE=rust:1.94.0-bookworm@sha256:365468470075493dc4583f47387001854321c5a8583ea9604b297e67f01c5a4f
-readonly PG_IMAGE=postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3
+readonly RUST_IMAGE=rust:1.99.1-bookworm@sha256:48b7f435b8fc6378ce43b44f15e3a47fd8919b2825f835c39bd4bd3da50af5b8
+readonly PG_IMAGE=postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc
 readonly SERVICE_USER=oteryn-login-local
 readonly BASE=/srv/oteryn-login-local
 readonly RUNTIME_IDENTITY=oteryn-game-node-runtime-status
@@ -333,7 +333,7 @@ printf '%b' "$(printf '%s' "$ADMISSION_SEED_HEX" | sed 's/\(..\)/\\x\1/g')" | op
 unset ADMISSION_SEED_HEX
 evidence "pins platform=$PLATFORM_SHA topology=$TOPOLOGY_REVISION game=$(git rev-parse HEAD) app_env=preproduction"
 
-# TLS-verified PostgreSQL 17.6 for the Game durability root.
+# TLS-verified PostgreSQL 18.6 for the Game durability root.
 chmod 644 "$WP5_PKI/db.crt" "$WP5_PKI/db.key"
 docker run --detach --name "$PG_CONTAINER" --publish "127.0.0.1:$PG_PORT:5432" \
   --env POSTGRES_USER=oteryn_login_local_admin --env POSTGRES_PASSWORD="$PG_ADMIN_PASSWORD" --env POSTGRES_DB=postgres \
@@ -355,7 +355,7 @@ done
 [[ "$pg_ready" == 1 ]] || { echo "postgres did not accept a TCP query"; docker logs --tail 40 "$PG_CONTAINER" 2>&1; exit 1; }
 psql_admin() { docker exec -i "$PG_CONTAINER" psql -v ON_ERROR_STOP=1 -qAt -U oteryn_login_local_admin -d "$1"; }
 echo "CREATE DATABASE oteryn_login_local" | psql_admin postgres
-[[ "$(echo 'SHOW server_version_num' | psql_admin oteryn_login_local)" == 170006 ]] || blocked postgres_version
+[[ "$(echo 'SHOW server_version_num' | psql_admin oteryn_login_local)" == 180006 ]] || blocked postgres_version
 ADMIN_URL="postgresql://oteryn_login_local_admin:$PG_ADMIN_PASSWORD@127.0.0.1:$PG_PORT/oteryn_login_local"
 
 # Platform (preproduction) + nginx; the first start has no scope identities yet.
@@ -405,7 +405,7 @@ evidence "platform_seed=account=1 admission_trust=published_public_key_only oaut
 
 # Shipped binaries, service user, roles, migration (as node_boot).
 if [[ "$LL_RUST" == host ]]; then
-  cargo +1.94.0 build --locked -p oteryn-game-server -p oteryn-client --bins
+  cargo +1.99.1 build --locked -p oteryn-game-server -p oteryn-client --bins
   TARGET="$GAME_SOURCE/target/debug"
   sudo useradd --system --no-create-home --shell /usr/sbin/nologin "$SERVICE_USER" 2>/dev/null || true
   SERVICE_UID="$(id -u "$SERVICE_USER")"
@@ -414,7 +414,7 @@ else
   mkdir -p "$GAME_SOURCE/target/login-local-container/cargo-home"
   docker run --rm --user "$(id -u):$(id -g)" --volume "$GAME_SOURCE:/src" --workdir /src \
     --env CARGO_HOME=/src/target/login-local-container/cargo-home --env CARGO_TARGET_DIR=/src/target/login-local-container \
-    --env RUSTUP_TOOLCHAIN=1.94.0 "$RUST_IMAGE" cargo build --locked -p oteryn-game-server --bins
+    --env RUSTUP_TOOLCHAIN=1.99.1 "$RUST_IMAGE" cargo build --locked -p oteryn-game-server --bins
   TARGET="$GAME_SOURCE/target/login-local-container/debug"
 fi
 evidence "rust mode=$LL_RUST service_uid=$SERVICE_UID"
@@ -431,7 +431,7 @@ if [[ "${LOGIN_LOCAL_WORLD_BUNDLE:-0}" == 1 ]]; then
   # BUNDLE-BUILD-1: the node boots the pinned World Bundle (content/world/pins) instead of the fixture room.
   PIN="$GAME_SOURCE/content/world/pins/oteryn.json"
   WB_DIGEST="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["digest"])' "$PIN")"
-  (cd "$GAME_SOURCE" && cargo +1.94.0 run --locked --release -p oteryn-world-bundle-compiler -- pin-check . "$WORK/world-bundle" > /dev/null)
+  (cd "$GAME_SOURCE" && cargo +1.99.1 run --locked --release -p oteryn-world-bundle-compiler -- pin-check . "$WORK/world-bundle" > /dev/null)
   sudo install -d -o root -g root -m 0755 "$BASE/world"
   sudo install -o root -g root -m 0644 "$WORK/world-bundle/oteryn-$WB_DIGEST.otwb" "$BASE/world/world.otbundle"
 fi
@@ -522,7 +522,11 @@ sudo install -o root -m 0600 "$WORK/report.toml" "$BASE/ops/report.toml"
 DESCRIPTOR_INSTALLED_AT="$(date +%s)"
 write_node_config() {
   MAP_REVISION=map-ll-1
-  [[ "${LOGIN_LOCAL_WORLD_BUNDLE:-0}" != 1 ]] || MAP_REVISION="$WB_DIGEST"
+  local required_gameplay_capabilities='[]'
+  if [[ "${LOGIN_LOCAL_WORLD_BUNDLE:-0}" == 1 ]]; then
+    MAP_REVISION="$WB_DIGEST"
+    required_gameplay_capabilities='[11, 18]'
+  fi
   cat > "$WORK/node.toml" <<TOML
 [listener]
 address = "$LL_HOST:$GAME_PORT"
@@ -558,6 +562,7 @@ ruleset_revision = "rules-ll-1"
 content_revision = "content-ll-1"
 map_revision = "$MAP_REVISION"
 world_policy_revision = "policy-ll-1"
+required_gameplay_capabilities = $required_gameplay_capabilities
 offer_revision = "offer-ll-1"
 [platform]
 source_authority = "platform"

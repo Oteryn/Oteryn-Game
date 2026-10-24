@@ -21,7 +21,8 @@
     "Proficiency",
     "RewardClaim",
     "StarterKit",
-    "Quest"
+    "Quest",
+    "item_conversion"
   ],
   "next_population_families": [
     "Achievement",

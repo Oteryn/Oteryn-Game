@@ -1,0 +1,24 @@
+{
+  "id": "COMBAT01-REWARD-PRINCIPALS",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_PARTY_PVP0_PARTIES_AND_PVP_DECISION_2026-09-30.md",
+  "resource": "Reward principals (characters eligible for a creature death's XP) settled per death",
+  "unit": "reward principals per death",
+  "hard_maximum": 50,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 50
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "PARTY-XP-1: at most 50 distinct Character principals in CharacterId order. One native sequencer and one XP receipt per awarded Character; all member awards and the kill audit commit in one transaction. Zero stamina removes an award without redistributing it. The compatibility solo composition still admits exactly one principal.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=50 and max+1=51: shared_experience_bound_and_wide_integer_oracle",
+    "same-death concurrent retry and recovered sequencers: party_xp_concurrent_replay_and_recovered_sequencers_do_not_award_twice (canonical PostgreSQL 17.6)"
+  ],
+  "consumers": [
+    "crates/gameplay/social-rules/src/shared_experience_split.rs",
+    "crates/gameplay/durability/src/durability/party_kill_xp.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/party_kill_settlement.rs"
+  ],
+  "notes": "D109/D118 and PARTY_PVP0 \u00a75.1 supersede the single-principal ceiling for the shared-XP owner. One receipt per (death, Character), never another award on retry."
+}

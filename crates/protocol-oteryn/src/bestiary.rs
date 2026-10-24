@@ -424,3 +424,7 @@ mod tests {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "bestiary_fuzz_tests.rs"]
+mod fuzz_tests;

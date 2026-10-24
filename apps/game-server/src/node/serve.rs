@@ -8,6 +8,9 @@
 //! signal or the end of any loop. Events are single stderr lines without
 //! secrets (D6).
 
+mod world_reset;
+
+use super::cancellation::first;
 use super::config::NodeConfig;
 use super::descriptor_facts::{MAX_PEM_BYTES, certificates, descriptor_facts};
 use super::operator_files::{
@@ -54,8 +57,9 @@ use crate::native_admission_source::public_projections::{
 };
 use crate::native_admission_source::runtime_status::{RuntimeStatusDescriptor, SystemClock};
 use crate::native_admission_source::{CHARACTER_BOOTSTRAP_INTENT_ISSUER, TransientCapacity};
-use crate::{GameplayListenerConfig, GameplaySeamOwners, serve_gameplay};
+use crate::{GameplayListenerConfig, GameplaySeamOwners};
 use oteryn_foundation::CancellationToken;
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use rustls::pki_types::pem::PemObject;
 use rustls::pki_types::{CertificateDer, PrivateKeyDer};
 use std::future::{Future, poll_fn};
@@ -345,7 +349,7 @@ pub fn report_boot_failure(error: &BootError) {
 
 /// One structured stderr event line (D6). Only non-secret values are passed: the
 /// `event=<name>` token becomes the `event` field and the rest is `detail`.
-fn event(line: &str) {
+pub(super) fn event(line: &str) {
     event_traced(line, BOOT_TRACE.get().map(String::as_str));
 }
 
@@ -1063,6 +1067,33 @@ async fn public_projections_loop(
     first(publisher.run(), stop.cancelled()).await;
 }
 
+/// RANK-1 (HIGHSCORES0 §4): this World's highscore snapshot job for the serve lifetime. It
+/// never gates serving and its end is not a shutdown reason. The job publishes under its own
+/// group role (migration 0129) and schedules from durable database time, so a restart or a second
+/// Channel of the World never publishes early. Category 10 reads the activated Achievement
+/// catalogue. Category 11 is published only with an activated per-race Charm point source; none
+/// exists yet (CHARM-6), so it is withheld and its query is `NOT_SUPPORTED`. The planned World
+/// reset notification source is not wired yet (WORLD-RESET): the sender is held, unused, for the
+/// job's lifetime.
+async fn highscores_loop(
+    root: &DurabilityRoot,
+    world: crate::foundation::WorldId,
+    achievements: &crate::achievement_catalogue::AchievementCatalogue,
+    stop: &CancellationToken,
+) {
+    use crate::durability::highscore_snapshot::{SnapshotCatalogues, job::HighscoreWorldJob};
+    let points: std::sync::Arc<dyn crate::durability::highscore_snapshot::AchievementPoints> =
+        std::sync::Arc::new(achievements.clone());
+    let Ok(catalogues) = SnapshotCatalogues::activated(points) else {
+        event("event=highscores state=refused reason=catalogues");
+        return;
+    };
+    let job = HighscoreWorldJob::new(std::sync::Arc::new(root.clone()), world, catalogues);
+    let (_planned_resets, receiver) = tokio::sync::mpsc::channel(1);
+    event("event=highscores state=started");
+    first(job.run(receiver), stop.cancelled()).await;
+}
+
 /// Both futures to completion on this task.
 async fn both(a: impl Future<Output = ()>, b: impl Future<Output = ()>) {
     let mut a = pin!(a);
@@ -1173,19 +1204,6 @@ async fn character_commands_loop(
         event,
     );
     first(consumer.run(), stop.cancelled()).await;
-}
-
-/// Output of `primary`, or `None` once `stop` completes first.
-async fn first<T>(primary: impl Future<Output = T>, stop: impl Future<Output = ()>) -> Option<T> {
-    let mut primary = pin!(primary);
-    let mut stop = pin!(stop);
-    poll_fn(|context| {
-        if let Poll::Ready(value) = primary.as_mut().poll(context) {
-            return Poll::Ready(Some(value));
-        }
-        stop.as_mut().poll(context).map(|()| None)
-    })
-    .await
 }
 
 async fn backoff(attempt: &mut u32) {
@@ -1478,7 +1496,7 @@ async fn establish_custody(
 /// can apply, so boot refuses it instead.
 pub(crate) fn check_chest_quest_transitions(
     content: &crate::content::CanonicalReferencePlayableContent,
-    catalogue: &crate::durability::quest_state::quest::QuestStateCatalogue,
+    catalogue: &oteryn_gameplay_quests::quest::QuestStateCatalogue,
 ) -> Result<(), BootError> {
     let unbound = content
         .definitions
@@ -1503,34 +1521,7 @@ pub(crate) fn check_chest_quest_transitions(
 /// Boot passes the node's declared served revision, `readiness.content_revision` (D634; §1.2's
 /// `REVISIONS[0]` is no valid quest or Character revision). Transitions with a `Computed` effect
 /// load and refuse `NOT_SUPPORTED` (§1.3).
-pub(crate) fn load_quest_catalogue(
-    load: impl FnOnce(
-        &str,
-    ) -> Result<
-        crate::durability::quest_state::quest::loader::LoweredQuestState,
-        crate::durability::quest_state::quest::loader::QuestLoadError,
-    >,
-    content_revision: &str,
-) -> Result<
-    (
-        std::sync::Arc<crate::durability::quest_state::quest::QuestStateCatalogue>,
-        String,
-    ),
-    BootError,
-> {
-    let lowered = load(content_revision)
-        .map_err(|_| BootError::ContentActivation("quest state catalogue"))?;
-    let counts = lowered.counts();
-    let line = format!(
-        "event=quest_catalogue state=loaded content_revision={content_revision} quests={} transitions={} not_supported={} not_supported_explicit={} not_supported_inexact={}",
-        counts.quests,
-        counts.transitions,
-        counts.not_supported,
-        counts.explicit_computed,
-        counts.inexact,
-    );
-    Ok((std::sync::Arc::new(lowered.catalogue().clone()), line))
-}
+pub(crate) use super::quest_log_content::load_quest_catalogue;
 
 /// #935 activation issuer: before the Channel runtime, listener or control socket exists, activate
 /// the scope's current control-plane issuance of the committed native entry room. A missing,
@@ -1539,6 +1530,7 @@ async fn activate_content(
     root: &DurabilityRoot,
     world: WorldId,
     channel: ChannelId,
+    reset_epoch: u64,
 ) -> Result<(ContentActivationController, NativeEntryContentPin), BootError> {
     let record = root
         .read_current_content_activation(world, channel)
@@ -1553,7 +1545,11 @@ async fn activate_content(
         frame_binding_digest: record.frame_binding_digest,
     };
     let mut controller = ContentActivationController::new();
-    let gameplay = std::env::var_os("OTERYN_NATIVE_GAMEPLAY_MANIFEST")
+    let manifest = (reset_epoch > 0)
+        .then(|| std::env::var_os("OTERYN_WORLD_RESET_TARGET_MANIFEST"))
+        .flatten()
+        .or_else(|| std::env::var_os("OTERYN_NATIVE_GAMEPLAY_MANIFEST"));
+    let gameplay = manifest
         .map(|path| {
             crate::content::native_gameplay::NativeGameplayInput::from_manifest(
                 std::path::Path::new(&path),
@@ -2006,6 +2002,10 @@ async fn audit_expiry_loop(
                 }
             }
         }
+        match root.expire_staff_audit().await {
+            Ok(count) => deleted = deleted.saturating_add(count),
+            Err(_) => failed = true,
+        }
         event(&format!(
             "event=audit_expiry deleted={deleted} result={}",
             if failed { "failed" } else { "ok" }
@@ -2264,23 +2264,25 @@ fn activate_floor_changes(world: &crate::map::boot::BundleWorld) -> Result<usize
 /// frame binding and map-revision identities and its start (native floor `-z`) as the
 /// first-entry start.
 fn bundle_channel_pin(
-    pin: &crate::foundation::ChannelContentPin,
+    pin: &oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
     world: &crate::map::boot::BundleWorld,
-) -> Result<crate::foundation::ChannelContentPin, BootError> {
+) -> Result<oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin, BootError> {
     let start = world.start();
     let floor = start
         .floor
         .checked_neg()
         .ok_or(BootError::ContentActivation("world bundle start floor"))?;
-    Ok(crate::foundation::ChannelContentPin::from_activation(
-        pin.world_id(),
-        pin.activation_sequence(),
-        pin.server_artifact_digest(),
-        pin.client_artifact_digest(),
-        world.frame_binding_digest(pin.world_id()),
-        world.map_revision_digest(),
-        (i32::from(start.x), i32::from(start.y), i16::from(floor)),
-    ))
+    Ok(
+        oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::from_activation(
+            pin.world_id(),
+            pin.activation_sequence(),
+            pin.server_artifact_digest(),
+            pin.client_artifact_digest(),
+            world.frame_binding_digest(pin.world_id()),
+            world.map_revision_digest(),
+            (i32::from(start.x), i32::from(start.y), i16::from(floor)),
+        ),
+    )
 }
 
 /// BUNDLE-COMBAT-ENABLE-1: the combat room of a bundle World, the qualified room's bundle view
@@ -2416,6 +2418,15 @@ async fn boot_and_serve(
         return Ok(());
     };
     let proof = proof?;
+    with_retries(
+        root,
+        "staff trust configuration",
+        config.boot_pass_deadline(),
+        boot_step_retryable,
+        || root.configure_staff(config.staff.clone()),
+    )
+    .await
+    .map_err(|_| BootError::Serve)?;
     let evidence = &material.evidence;
     establish_custody(root, &proof, material, evidence).await?;
     // D3 step 5.
@@ -2458,8 +2469,18 @@ async fn boot_and_serve(
     let fact = proof.fact();
     // The controller holds the active generation for the whole serve lifetime; the Channel
     // runtime pins exactly that generation.
+    let Some(reset_recovery) = first(
+        world_reset::recover_retiring(root, material, &authority, &proof),
+        signalled.cancelled(),
+    )
+    .await
+    else {
+        stopped_before_ready();
+        return Ok(());
+    };
+    let reset_epoch = reset_recovery?;
     let (active_content, content) =
-        activate_content(root, material.world, material.channel).await?;
+        activate_content(root, material.world, material.channel, reset_epoch).await?;
     let qualified_room = content.qualified_room().clone();
     let (channel_pin, movement_cells, door_content, spawn_source) = content.into_channel_parts();
     // Spell cast §3 (SPELL-D1): the V1 spell book is loaded with the Content activation, before
@@ -2477,6 +2498,20 @@ async fn boot_and_serve(
     if let Some(world) = &bundle {
         activate_floor_changes(world)?;
     }
+    // ADMIT0/D1081: validate the real scope offer before any readiness publication.
+    // The generation is the operator assignment just resolved above, not config.
+    // D1442 registers WORLD_SPATIAL_FIELDS=30 behind a closed offer gate; D1083 keeps
+    // WORLD_INTERACTION's gate closed, so only offered floor members bind (fail closed).
+    let required_capabilities =
+        crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
+            &config.readiness.required_gameplay_capabilities,
+            scope,
+            generation,
+            &config.readiness.world_policy_revision,
+            crate::gameplay_transport::world_required_capabilities::offered_for_scope(
+                bundle.is_some(), active_content.active(),
+            ),
+        ).map_err(|_| BootError::Readiness("required gameplay capabilities"))?;
     let (channel_pin, movement_cells) = match &bundle {
         Some(world) => (
             bundle_channel_pin(&channel_pin, world)?,
@@ -2512,7 +2547,7 @@ async fn boot_and_serve(
     ));
     // Data import only: retain the qualified reference catalogue for this boot. Loading
     // it does not admit Wheel stages, effects, paid Atelier operations or Item definitions.
-    let _wheel_gem_data = crate::wheel_gem_data::WheelGemData::embedded()
+    let _wheel_gem_data = oteryn_gameplay_progression::wheel_gem_data::WheelGemData::embedded()
         .map_err(|_| BootError::ContentActivation("Wheel/Gem reference data"))?;
     event("event=wheel_gem_data state=loaded runtime_admitted=false");
     // ACHIEVEMENT: the Achievement catalogue loads with the Content activation as well; a
@@ -2529,8 +2564,8 @@ async fn boot_and_serve(
             "reward claim achievement not in the catalogue",
         ));
     }
-    let (quest_catalogue, quest_event) = load_quest_catalogue(
-        crate::durability::quest_state::quest::loader::load_embedded_quest_state,
+    let (quest_catalogue, quest_log_content, quest_event) = load_quest_catalogue(
+        oteryn_gameplay_quests::quest::loader::load_embedded_quest_state,
         &config.readiness.content_revision,
     )?;
     event(&quest_event);
@@ -2689,12 +2724,14 @@ async fn boot_and_serve(
     // (§1.2): setting one needs separate owner authority, so Premium is not delivered.
     let premium_reads = production_premium_reads(root);
     let owners = GameplaySeamOwners {
+        emit,
         root,
         character: &authority,
         holder: &proof,
         evidence,
         world_id: material.world,
         channel_id: material.channel,
+        required_capabilities: required_capabilities.clone(),
         runtime: &runtime,
         movement_cells: &movement_cells,
         door: &door,
@@ -2710,14 +2747,18 @@ async fn boot_and_serve(
         imported_charms: &imported_charms,
         npc_talk: bundle_npcs::talk_book(npc_boot.as_ref()),
         quest_catalogue: &quest_catalogue,
+        quest_log_content: &quest_log_content,
         last_position_flush: Some(&last_position_flush),
     };
     let loops_stop = CancellationToken::new();
-    let mut gameplay = pin!(serve_gameplay(
+    let reset_watch = world_reset::ResetWatch::default();
+    let mut gameplay = pin!(world_reset::serve_watching_reset(
         &listener,
         listener_config,
         owners,
-        &shutdown
+        &shutdown,
+        &reset_watch,
+        reset_epoch,
     ));
     let mut control_task = pin!(control_loop(
         &control,
@@ -2732,15 +2773,21 @@ async fn boot_and_serve(
     // Never gates serving; its end is not a shutdown reason. The public
     // projections run beside it, disabled unless configured and enabled.
     let mut projection = pin!(both(
-        account_characters_loop(
-            root,
-            &authority,
-            material
-                .account_characters
-                .lock()
-                .ok()
-                .and_then(|mut projection| projection.take()),
-            &loops_stop
+        both(
+            both(
+                highscores_loop(root, material.world, &achievements, &loops_stop),
+                super::guild_scheduler::run(root, &authority, &proof, material.world, &loops_stop)
+            ),
+            account_characters_loop(
+                root,
+                &authority,
+                material
+                    .account_characters
+                    .lock()
+                    .ok()
+                    .and_then(|mut projection| projection.take()),
+                &loops_stop
+            ),
         ),
         public_projections_loop(
             root,
@@ -2899,10 +2946,7 @@ async fn boot_and_serve(
     }
     let _ = std::fs::remove_file(&config.control.socket_path);
     event("event=shutdown state=complete");
-    if serve_error.is_some() {
-        return Err(BootError::Serve);
-    }
-    Ok(())
+    world_reset::classify_exit(&reset_watch, serve_error)
 }
 
 #[cfg(test)]
@@ -3212,7 +3256,9 @@ mod tests {
                 1,
                 "runtime-scope-assignment:1",
                 8,
-                crate::foundation::ChannelContentPin::test(world),
+                oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::test(
+                    world,
+                ),
             )
             .expect("runtime")
         };
@@ -3257,7 +3303,9 @@ mod tests {
                 1,
                 "runtime-scope-assignment:1",
                 9_000,
-                crate::foundation::ChannelContentPin::test(world),
+                oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::test(
+                    world,
+                ),
             )
             .expect("runtime")
         };
@@ -3375,7 +3423,7 @@ mod tests {
             1,
             "runtime-scope-assignment:1",
             POINTS + 1_000,
-            crate::foundation::ChannelContentPin::test(world),
+            oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::test(world),
         )
         .expect("runtime");
         let executor = tokio::runtime::Builder::new_current_thread()
@@ -3398,7 +3446,8 @@ mod tests {
         // MAP-DOOR-1: the solid entry is the closed door appearance 1629, whose open item 1630
         // the generation also serves.
         let (boxed, coin) = ("oteryn:item.tibia.i1629", "oteryn:item.tibia.i1000");
-        let probe = crate::content::native_gameplay::tests::activated_with_item_keys(Some(KEYS));
+        let probe =
+            crate::content::native_gameplay::test_support::activated_with_item_keys(Some(KEYS));
         let probe_index = probe
             .active()
             .expect("active")
@@ -3434,7 +3483,8 @@ mod tests {
             .expect("world");
         let channel = ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])
             .expect("channel");
-        let with = crate::content::native_gameplay::tests::activated_with_item_keys(Some(KEYS));
+        let with =
+            crate::content::native_gameplay::test_support::activated_with_item_keys(Some(KEYS));
         let gameplay = with.active().expect("active").native_gameplay();
         let index = gameplay
             .and_then(|state| state.item_index())
@@ -3468,14 +3518,15 @@ mod tests {
         }
         // #1916: the Channel pin of the booted World carries the bundle's map-revision and frame
         // identities, never the entry room's, and starts at the bundle start (legacy `z` 7).
-        let entry = crate::foundation::ChannelContentPin::test(world);
+        let entry =
+            oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::test(world);
         let pin = bundle_channel_pin(&entry, &booted).expect("pin");
         let map_revision: [u8; 32] =
             <sha2::Sha256 as sha2::Digest>::digest(boot_pins.map_revision.as_bytes()).into();
         assert_eq!(booted.map_revision_digest(), map_revision);
         assert_eq!(
             pin,
-            crate::foundation::ChannelContentPin::from_activation(
+            oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::from_activation(
                 world,
                 entry.activation_sequence(),
                 entry.server_artifact_digest(),
@@ -3521,7 +3572,7 @@ mod tests {
             ))
         ));
         // A generation without an Item key set names no Item: the same bundle fails closed.
-        let without = crate::content::native_gameplay::tests::activated_with_item_keys(None);
+        let without = crate::content::native_gameplay::test_support::activated_with_item_keys(None);
         let gameplay = without.active().expect("active").native_gameplay();
         assert!(matches!(
             boot_bundle_world(checked(), world, channel, gameplay),
@@ -3583,7 +3634,7 @@ mod tests {
         let mut codes: Vec<_> = BootErrorKind::ALL.iter().map(|kind| kind.code()).collect();
         codes.extend(LogKind::ALL.iter().map(|kind| kind.code()));
         codes.extend(NotDeliveredKind::ALL.iter().map(|kind| kind.code()));
-        crate::durability::sqlstate_codes::tests::assert_in_registry(&codes);
+        crate::durability::sqlstate_codes::test_support::assert_in_registry(&codes);
     }
 
     #[test]

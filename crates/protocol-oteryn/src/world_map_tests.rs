@@ -4,10 +4,8 @@ use super::*;
 use crate::charm_wire::{push_message_field, push_varint_field};
 use serde_json::Value;
 
-const PROTOCOL_REGISTRY: &str =
-    include_str!("../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json");
-const RESOURCE_REGISTRY: &str =
-    include_str!("../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json");
+const PROTOCOL_REGISTRY: &str = crate::PROTOCOL_OTERYN_V1_REGISTRY_JSON;
+const RESOURCE_REGISTRY: &str = crate::RESOURCE_LIMITS_REGISTRY_JSON;
 const WORLD_MAP_PROTO: &str =
     include_str!("../../../docs/contracts/protocol-oteryn/v1/world_map_v1.proto");
 
@@ -202,6 +200,98 @@ fn snapshots_and_deltas_round_trip() {
 }
 
 #[test]
+fn encoded_lengths_match_raw_fields_across_varint_boundaries() {
+    // Raw fields use the existing generic wire helpers, independently of item_len/tile_len.
+    for origin in [position(0, 0, 0), position(-64, 64, -7), far_origin()] {
+        for reference in [127, 128, 16_383, 16_384, u32::MAX] {
+            for entries in 1..=MAX_TILE_ITEMS {
+                let mut full = largest_tile(origin);
+                full.items.truncate(entries);
+                let mut raw = raw_position(origin);
+                for (index, item) in full.items.iter_mut().enumerate() {
+                    item.definition = if index % 2 == 0 {
+                        item_ref(reference)
+                    } else {
+                        MapDefinition::Terrain(NonZeroU32::new(reference).expect("non-zero"))
+                    };
+                    item.sub_type = [0, 127, 128, u32::MAX][index % 4];
+                    item.appearance_id = [0, 127, 128, u16::MAX][index % 4];
+                    item.origin = match index % 4 {
+                        0 => MapOrigin::BaseOrdinal {
+                            ordinal: 0,
+                            object_revision: 0,
+                        },
+                        1 => MapOrigin::BaseOrdinal {
+                            ordinal: MAX_BASE_ORDINAL,
+                            object_revision: u64::MAX,
+                        },
+                        2 => MapOrigin::Handle(NonZeroU64::new(u64::MAX).expect("non-zero")),
+                        _ => MapOrigin::DisplayOnly,
+                    };
+                    let mut fields = Vec::new();
+                    if let MapDefinition::Item(reference) = item.definition {
+                        fields.push((1, u64::from(reference.get())));
+                    }
+                    fields.push((2, u64::from(item.count)));
+                    if item.sub_type != 0 {
+                        fields.push((3, u64::from(item.sub_type)));
+                    }
+                    fields.push(match item.origin {
+                        MapOrigin::BaseOrdinal { ordinal, .. } => (4, u64::from(ordinal)),
+                        MapOrigin::Handle(handle) => (5, handle.get()),
+                        MapOrigin::DisplayOnly => (6, 1),
+                    });
+                    if item.appearance_id != 0 {
+                        fields.push((7, u64::from(item.appearance_id)));
+                    }
+                    if let MapDefinition::Terrain(reference) = item.definition {
+                        fields.push((8, u64::from(reference.get())));
+                    }
+                    if let MapOrigin::BaseOrdinal {
+                        object_revision, ..
+                    } = item.origin
+                        && object_revision != 0
+                    {
+                        fields.push((9, object_revision));
+                    }
+                    let raw_item = raw_item(&fields);
+                    assert_eq!(item_len(item), raw_item.len());
+                    push_message_field(&mut raw, 2, &raw_item);
+                }
+                push_varint_field(&mut raw, 3, 1);
+                push_varint_field(&mut raw, 4, u64::from(full.ground_speed));
+                assert_eq!(tile_len(&full).expect("tile size"), raw.len());
+                let snapshot = WorldMapViewSnapshot {
+                    header: header(origin),
+                    tiles: vec![full],
+                };
+                let expected = snapshot_with_raw_tile(origin, &raw);
+                assert_eq!(snapshot_round_trip(&snapshot), expected);
+                assert_eq!(
+                    encoded_len(&snapshot.header, &snapshot.tiles, &[]).expect("snapshot size"),
+                    expected.len()
+                );
+
+                let delta = WorldMapViewDelta {
+                    header: snapshot.header,
+                    tiles: snapshot.tiles,
+                    cleared: vec![position(origin.x + 1, origin.y, origin.floor)],
+                };
+                let mut expected = expected;
+                push_position(&mut expected, 3, &delta.cleared[0]);
+                let encoded = encode_world_map_delta(&delta.header, &delta).expect("delta");
+                assert_eq!(encoded, expected);
+                assert_eq!(
+                    encoded_len(&delta.header, &delta.tiles, &delta.cleared).expect("delta size"),
+                    encoded.len()
+                );
+                assert_eq!(decode_world_map_delta(&delta.header, &encoded), Ok(delta));
+            }
+        }
+    }
+}
+
+#[test]
 fn ground_speed_round_trips_at_its_bound_and_fails_closed_above_it() {
     let origin = position(100, 100, -7);
     let mut full = tile(origin);
@@ -214,7 +304,10 @@ fn ground_speed_round_trips_at_its_bound_and_fails_closed_above_it() {
             tiles: vec![tile],
         });
     }
-    assert_eq!(tile_len(&absent) + 3, tile_len(&tile(origin)));
+    assert_eq!(
+        tile_len(&absent).expect("tile size") + 3,
+        tile_len(&tile(origin)).expect("tile size")
+    );
 
     let mut over = tile(origin);
     over.ground_speed = MAX_GROUND_SPEED + 1;
@@ -460,7 +553,7 @@ fn every_malformed_tile_and_snapshot_fails_closed() {
         })
         .expect("encode");
         for tile in &tiles {
-            push_tile(&mut payload, 2, tile);
+            push_tile(&mut payload, 2, tile).expect("tile bytes");
         }
         assert_eq!(
             decode_world_map_snapshot(&payload),
@@ -470,7 +563,7 @@ fn every_malformed_tile_and_snapshot_fails_closed() {
 
     // No header, a repeated header, an unknown snapshot field and trailing garbage.
     let mut no_header = Vec::new();
-    push_tile(&mut no_header, 2, &tile(origin));
+    push_tile(&mut no_header, 2, &tile(origin)).expect("tile bytes");
     let base = encode_world_map_snapshot(&WorldMapViewSnapshot {
         header: header(origin),
         tiles: Vec::new(),
@@ -629,7 +722,10 @@ fn encoded_sizes_stay_within_the_bounds() {
 
     let tiles: Vec<MapTile> = window(origin).into_iter().map(largest_tile).collect();
     for tile in &tiles {
-        assert!(framed(tile_len(tile)) <= MAX_MAP_TILE_BYTES, "{tile:?}");
+        assert!(
+            framed(tile_len(tile).expect("tile size")) <= MAX_MAP_TILE_BYTES,
+            "{tile:?}"
+        );
     }
     let mut widest_header = header(origin);
     widest_header.reset_epoch = u64::MAX;
@@ -674,7 +770,7 @@ fn encoded_sizes_stay_within_the_bounds() {
     let mut over = Vec::new();
     push_header(&mut over, &widest_header);
     for _ in 0..=MAX_SNAPSHOT_TILES {
-        push_tile(&mut over, 2, &tile(origin));
+        push_tile(&mut over, 2, &tile(origin)).expect("tile bytes");
     }
     assert_eq!(
         decode_world_map_snapshot(&over),
@@ -725,7 +821,7 @@ fn a_ten_entry_tile_of_base_ordinals_with_the_largest_revisions_fits() {
             ..
         }
     )));
-    assert!(framed(tile_len(&tile)) <= MAX_MAP_TILE_BYTES);
+    assert!(framed(tile_len(&tile).expect("tile size")) <= MAX_MAP_TILE_BYTES);
     let bytes = snapshot_round_trip(&WorldMapViewSnapshot {
         header: header(far_origin()),
         tiles: vec![tile],
@@ -748,7 +844,7 @@ fn deltas_bind_to_the_view_and_follow_the_origin_rule() {
         let mut payload = Vec::new();
         push_header(&mut payload, &delta.header);
         for tile in &delta.tiles {
-            push_tile(&mut payload, 2, tile);
+            push_tile(&mut payload, 2, tile).expect("tile bytes");
         }
         for position in &delta.cleared {
             push_position(&mut payload, 3, position);
@@ -954,3 +1050,7 @@ fn the_registries_bind_the_world_map_constants() {
         assert!(WORLD_MAP_PROTO.contains(row), "{row}");
     }
 }
+
+#[cfg(test)]
+#[path = "world_map_fuzz_tests.rs"]
+mod fuzz_tests;

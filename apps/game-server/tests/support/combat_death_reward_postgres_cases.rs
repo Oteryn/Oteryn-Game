@@ -43,6 +43,9 @@ use crate::foundation::{
 use oteryn_simulation_determinism::{ExactI64, RoundingMode};
 use sqlx::{Connection, Executor};
 
+#[path = "tutorial_corruptor_postgres_cases.rs"]
+mod tutorial_corruptor;
+
 /// SPELL-LOCK-2 §1.2: the settle holds the death Channel's lane; a fresh lane stands in for the
 /// Channel runtime this PostgreSQL case does not own.
 async fn settle_on_fresh_lane<const N: usize>(
@@ -126,8 +129,8 @@ impl Database {
             .fetch_one(&mut connection)
             .await?;
         assert!(
-            version.starts_with("17"),
-            "PostgreSQL 17 required: {version}"
+            version.starts_with("18"),
+            "PostgreSQL 18 required: {version}"
         );
         sqlx::migrate!("./migrations").run(&mut connection).await?;
         connection.close().await?;
@@ -1320,7 +1323,8 @@ fn at_the_corpse_cap_the_death_settles_but_no_corpse_or_loot_is_created() -> Tes
                 item: definition("ItemType", "fixture:seed.corpse", "corpse-r1"),
                 quantity: 1,
                 ground: GroundPlacement {
-                    spatial_position: vec![9, 9, 0],
+                    // Canonical 10-byte Ground64 address (x=9, y=9, floor=0).
+                    spatial_position: vec![0, 0, 0, 9, 0, 0, 0, 9, 0, 0],
                     corpse_ref: id(3).to_vec(),
                     map_revision: "map-1".into(),
                     content_revision: "content-1".into(),

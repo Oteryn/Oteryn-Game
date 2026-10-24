@@ -19,8 +19,8 @@ F_PATHS = {
     "docs/architecture/ANL-03_ECONOMY_INTEGRITY_SECURITY_ANALYTICS_CONTRACT_CANDIDATE.md",
 }
 R_PATHS = {
-    "apps/game-server/src/foundation/admission_recovery_inner.rs",
-    "apps/game-server/src/foundation/fnd04_verifier.rs",
+    "crates/gameplay/foundation/src/foundation/admission_recovery_inner.rs",
+    "crates/gameplay/foundation/src/foundation/fnd04_verifier.rs",
     "docs/agents/tasks/archive/OTV2-20260826-impl-foundation-reconnect-durability.md",
 }
 
@@ -678,8 +678,8 @@ def analytics() -> list[str]:
 def foundation_reconnect() -> list[str]:
     return foundation_reconnect_documents(
         text("docs/agents/tasks/archive/OTV2-20260826-impl-foundation-reconnect-durability.md"),
-        text("apps/game-server/src/foundation/admission_recovery_inner.rs"),
-        text("apps/game-server/src/foundation/fnd04_verifier.rs"),
+        text("crates/gameplay/foundation/src/foundation/admission_recovery_inner.rs"),
+        text("crates/gameplay/foundation/src/foundation/fnd04_verifier.rs"),
     )
 
 

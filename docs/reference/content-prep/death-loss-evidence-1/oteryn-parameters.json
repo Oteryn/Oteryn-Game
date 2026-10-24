@@ -1,0 +1,22 @@
+{
+  "schema": "OTERYN_WORKING_REFERENCE_PARAMETERS/v1",
+  "task": "DEATH-LOSS-EVIDENCE-1",
+  "reference_only": true,
+  "runtime_switch_authorized": false,
+  "status": "SOURCE_RECONCILED_WITH_EXPLICIT_QUALIFICATION_GAPS",
+  "owner_instruction_source": "owner:oteryn-data-completion:2026-10-19",
+  "filled_fields": 1,
+  "normalized_companion_fields": 0,
+  "remaining_unfilled_fields": 0,
+  "originating_proposals": "docs/reference/content-prep/death-loss-evidence-1/oteryn-proposals.json",
+  "source_archive": "docs/reference/content-prep/death-loss-evidence-1/tibia-source-archive.json",
+  "shared_policies": {},
+  "selection_policy": "Source-backed observations/candidates only. Unsupported project defaults withdrawn; no new Global/runtime formula selected.",
+  "remaining_unresolved_source_fields": 4,
+  "source_repair": {
+    "source_check": "docs/reference/content-prep/death-loss-evidence-1/gameplay-source-reconciliation.json",
+    "remaining_unresolved_source_fields": 4,
+    "selected_for_native_runtime": false,
+    "summary": "Source formulas and their consumers are recorded, including percentage/fraction units, XPceil versus skill/magic truncation, and configuration branches. Official6.31RetroHardcore blessing value is resolved; four closed-form/rounding/participant fields remain unqualified for Global."
+  }
+}

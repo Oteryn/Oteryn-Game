@@ -1,0 +1,23 @@
+{
+  "source_url": "https://tibiopedia.pl/articles/22,Exaltation-Forge-Kuznia-Wzniesienia",
+  "source_class": "COMMUNITY_REFERENCE",
+  "fetched_at": "2026-10-19T08:03:12.927399+00:00",
+  "raw_html_sha256": "62d8b1ac946368638cca07a19d627fdd42cdec1afd22ee2ec564925f5ce1856b",
+  "retrieval": "HTTP session; public setup form selects Polish/library presentation, then article fetch",
+  "sections": [
+    "Skladniki ulepszen (Dust, Sliver, Exalted Core)",
+    "Konwersja"
+  ],
+  "observations": {
+    "initial_dust_limit": 100,
+    "maximum_dust_limit": 4600,
+    "limit_increment": 20,
+    "initial_upgrade_cost_dust": 25,
+    "cost_increment_per_upgrade": 1,
+    "last_upgrade_from": 4580,
+    "last_upgrade_to": 4600,
+    "last_upgrade_cost_dust": 249,
+    "total_upgrade_cost_dust": 30825
+  },
+  "qualification": "Secondary source corroborates these dust values. It does not provide exact fusion-bonus probabilities and is not an official or controlled-client measurement."
+}

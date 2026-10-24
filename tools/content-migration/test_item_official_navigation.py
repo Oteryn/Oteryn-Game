@@ -10,6 +10,7 @@ from unittest.mock import patch
 import item_official_navigation as official
 import item_taxonomy as taxonomy
 from engine_items import load_appearance_objects
+from source_relocations import read_text as relocated_text
 
 
 class OfficialNavigationTests(unittest.TestCase):
@@ -63,7 +64,7 @@ class OfficialNavigationTests(unittest.TestCase):
 
     def test_explicit_native_admission_is_required(self):
         admission = self.document["admission_source"]
-        source = (official.ROOT / admission["path"]).read_text()
+        source = relocated_text(official.ROOT, admission["path"])
         ids = official.admission_ids(source, admission)
         self.assertEqual(len(ids), 62)
         self.assertTrue(official.REVIEWED_IDS.issubset(ids))

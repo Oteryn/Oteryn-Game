@@ -11,10 +11,9 @@ on:
       - tools/qualification/wp5_s3b/compose.override.yml
       - tools/qualification/wp5_s3b/nginx.conf
       - apps/game-server/tests/wp5_s3b_composition.rs
-      - apps/game-server/src/durability/fresh_admission_composition.rs
-      - apps/game-server/src/durability/recovery_evidence_composition.rs
-      - apps/game-server/src/durability/native_admission_source.rs
-      - apps/game-server/src/durability/mod.rs
+      - crates/gameplay/durability/src/durability/fresh_admission_composition.rs
+      - crates/gameplay/durability/src/durability/recovery_evidence_composition.rs
+      - crates/gameplay/durability/src/durability/native_admission_source.rs
       - apps/game-server/tests/native_admission_source_postgres.rs
   workflow_dispatch:
 
@@ -32,7 +31,7 @@ jobs:
     timeout-minutes: 60
     services:
       postgres:
-        image: postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3
+        image: postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc
         env:
           POSTGRES_USER: oteryn_test_admin
           POSTGRES_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
@@ -69,14 +68,14 @@ jobs:
         run: test "$(git -C _platform rev-parse HEAD)" = 5d4883acf7079e26fd51e03f460166730de1ada0
 
       - name: Install pinned Rust toolchain
-        run: rustup toolchain install 1.95.0 --profile minimal --component rustfmt
+        run: rustup toolchain install 1.99.1 --profile minimal --component rustfmt
 
       - name: Validate harness
         run: |
           set -euo pipefail
           bash -n tools/qualification/wp5_s3b/run.sh
-          cargo +1.95.0 fmt --all --check
-          cargo +1.95.0 test --locked -p oteryn-game-server --test wp5_s3b_composition --no-run
+          cargo +1.99.1 fmt --all --check
+          cargo +1.99.1 test --locked -p oteryn-game-server --test wp5_s3b_composition --no-run
           echo 'S3B_EVIDENCE static_validation=PASS rust=compiled shell=parsed'
 
       - name: Run real composed qualification

@@ -1,0 +1,23 @@
+{
+  "id": "ITEMV0-RL-03-CONTAINER-TREE",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_BAGS0_CONTAINERS_WITH_CONTENTS_DECISION_2026-09-30.md",
+  "resource": "Live item handles of one GameSession that selected capability 14 CONTAINER_TREE_V1",
+  "unit": "handles per GameSession",
+  "hard_maximum": 637,
+  "configurable_range": {
+    "minimum": 637,
+    "maximum": 637
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Measured as ITEMV0-RL-03 (301) plus, for each of the 16 views (BAGS0-RL-03), its container, which may be visible in no other view, and its 20 entries: 301 + 16 x 21 = 637, above the BAGS-0 floor of 382. The handle table of a capability 14 session is bounded by this value before inserting; a session without capability 14 keeps ITEMV0-RL-03.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=637: the views at their bounds hold 637 live handles",
+    "max+1=638: the table refuses a handle beyond the views' bounds"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/container_tree.rs MAX_LIVE_ITEM_HANDLES_CONTAINER_TREE",
+    "apps/game-server/src/gameplay_transport/item_view.rs ItemHandleTable"
+  ],
+  "notes": "BAGS-0 \u00a75 and \u00a710 (ITEMV0-RL-03 re-measured; D469 2a keeps ITEMV0-RL-03 at 301 for sessions without capability 14). Tests: container_tree::tests::live_handle_bound_adds_16_views_of_21_items, container_view::tests::the_container_tree_bound_holds_637_handles_and_refuses_638. Registered by OTV2-20261003-bags-wire-1."
+}

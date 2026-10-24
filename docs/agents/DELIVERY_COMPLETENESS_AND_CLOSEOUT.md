@@ -33,6 +33,10 @@ Where applicable verify:
 
 For docs-only governance/architecture tasks, runtime layers may be `NOT_APPLICABLE` only with a concrete reason.
 
+## Mechanic cards
+
+Before starting a mechanic, check [MECHANICS_STATUS.md](tasks/MECHANICS_STATUS.md) and the [task archive](tasks/archive/) so existing work is not reimplemented. Every mechanic card must declare `type: mechanic` and include the `Reference parity` table required by [TASK_TEMPLATE.md](tasks/TASK_TEMPLATE.md): `Behaviour | Reference value/source (Tibia wiki, TibiaData, Canary/Crystal path) | Oteryn | Test`. Each behaviour row must be backed by a table-driven test with a cited reference value/source. Before claiming DONE (`status: completed` in lifecycle metadata), complete that evidence and update the mechanic's MECHANICS_STATUS.md row in the same closeout PR, preserving resolving links and describing remaining gaps truthfully.
+
 ## Required outcome evidence
 
 Before readiness:

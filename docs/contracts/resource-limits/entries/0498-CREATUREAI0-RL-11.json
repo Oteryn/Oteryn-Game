@@ -1,0 +1,23 @@
+{
+  "id": "CREATUREAI0-RL-11",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_CREATURE_MOVE1_STEPS_PATHS_AND_GOALS_PACKET_2026-10-04.md",
+  "resource": "Pending AI timers per creature: one think and one DEADLINE_STATE step",
+  "unit": "pending timers per actor",
+  "hard_maximum": 2,
+  "configurable_range": {
+    "minimum": 2,
+    "maximum": 2
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Each family retains its independent hard maximum of one. Idle/refusal cancels the step; no actor can retain a third AI timer.",
+  "client_visible": false,
+  "boundary_tests": [
+    "hard maximum accepted",
+    "hard maximum + 1 waits or is refused without partial mutation"
+  ],
+  "consumers": [
+    "crates/gameplay/world/src/movement/path_budget.rs",
+    "crates/gameplay/monster-ai/src/ai_think/creature_steps.rs"
+  ],
+  "notes": "Each family retains its independent hard maximum of one. Idle/refusal cancels the step; no actor can retain a third AI timer."
+}

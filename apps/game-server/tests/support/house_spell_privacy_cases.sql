@@ -8,7 +8,14 @@ INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,char
 ('019a0000-0000-7000-8000-000000000012','019a0000-0000-7000-8000-000000000001','019a0000-0000-7000-8000-000000000002',1,1,'p1','r1','c1','s1','Guest'),
 ('019a0000-0000-7000-8000-000000000013','019a0000-0000-7000-8000-000000000001','019a0000-0000-7000-8000-000000000003',1,1,'p1','r1','c1','s1','Foreign');
 SET session_replication_role=origin;
+-- Explicit historical storage data, not catalogue/runtime qualification or an
+-- inferred import of legacy tenancy dates.
+BEGIN;
+INSERT INTO game_house_properties(world_id,house_key,kind,state,rent_gold,content_digest,owner_character_id,owner_account_id,acquisition_receipt_ref,paid_until) VALUES
+('019a0000-0000-7000-8000-000000000002','oteryn:content.house.test','private_house',3,0,decode(repeat('11',32),'hex'),'019a0000-0000-7000-8000-000000000011','019a0000-0000-7000-8000-000000000001','019a0000-0000-7000-8000-000000000099','2030-01-01T00:00:00Z');
+INSERT INTO game_account_housing_slots VALUES('019a0000-0000-7000-8000-000000000001','019a0000-0000-7000-8000-000000000002','oteryn:content.house.test');
 INSERT INTO game_house_ownership VALUES('019a0000-0000-7000-8000-000000000002','oteryn:content.house.test','019a0000-0000-7000-8000-000000000011',1,'019a0000-0000-7000-8000-000000000099');
+COMMIT;
 BEGIN;
 INSERT INTO game_character_spell_privacy_receipts(receipt_id,character_id,game_session_id,command_id,revision_before,revision_after,preferences,created_xact_id) VALUES
 ('019a0000-0000-7000-8000-000000000021','019a0000-0000-7000-8000-000000000011','019a0000-0000-7000-8000-000000000030',1,0,1,'{"allow_all":false}','1');
@@ -21,7 +28,9 @@ DO $$ BEGIN
  BEGIN UPDATE game_character_spell_privacy_receipts SET preferences='{}' WHERE receipt_id='019a0000-0000-7000-8000-000000000021'; RAISE EXCEPTION 'receipt mutation accepted'; EXCEPTION WHEN check_violation THEN NULL; END;
 END $$;
 -- A structurally matching historical receipt cannot authorize today's state.
+BEGIN;
 INSERT INTO game_character_spell_privacy_receipts(receipt_id,character_id,game_session_id,command_id,revision_before,revision_after,preferences) VALUES('019a0000-0000-7000-8000-000000000022','019a0000-0000-7000-8000-000000000011','019a0000-0000-7000-8000-000000000030',2,1,2,'{"allow_all":true}');
+COMMIT;
 DO $$ BEGIN
  BEGIN
  UPDATE game_character_spell_privacy SET revision=2,preferences='{"allow_all":true}',last_receipt='019a0000-0000-7000-8000-000000000022' WHERE character_id='019a0000-0000-7000-8000-000000000011';

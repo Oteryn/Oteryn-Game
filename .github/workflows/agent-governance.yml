@@ -11,9 +11,8 @@ on:
       - reopened
       - synchronize
       - edited
-  push:
-    branches:
-      - main
+  # No push trigger: every change reaches main through the Merge Queue, whose
+  # candidate job already runs the governance and repository policy validators.
   workflow_dispatch:
     inputs:
       pull_request_number:
@@ -205,10 +204,15 @@ jobs:
           test "$actual_sha" = "$EXPECTED_SHA"
           echo "Validated exact checkout: $actual_sha"
 
+      # A pull request into main gets validate_governance.py and
+      # validate_repository_policy.py from the required merge-gate governance
+      # job. merge-gate does not run for a stack preflight (another base) or a
+      # manual dispatch, so those still run both validators here.
       - name: Test PR target admission
         run: python tools/repository/test_agent_governance_pr_targets.py
 
       - name: Validate agent governance
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'main' }}
         run: python tools/agents/validate_governance.py
 
       - name: Test governance lifecycle and discovery
@@ -223,4 +227,5 @@ jobs:
         run: python tools/agents/validate_inherited_prompt_policy.py
 
       - name: Validate repository policy
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'main' }}
         run: python tools/repository/validate_repository_policy.py

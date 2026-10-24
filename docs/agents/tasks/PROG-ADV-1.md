@@ -4,7 +4,8 @@
 task_id: PROG-ADV-1
 title: "PROG-ADV-1: advanced progression: proficiency, wheel, gems"
 mode: IMPLEMENT
-status: skeleton
+status: waiting
+pr: null
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 3
@@ -24,6 +25,12 @@ needs_registry: true
 needs_content_regeneration: true
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#1740](https://github.com/Oteryn/Oteryn-Game/pull/1740), [#1685](https://github.com/Oteryn/Oteryn-Game/pull/1685), [#1704](https://github.com/Oteryn/Oteryn-Game/pull/1704). Wheel allocation writer/admission reset and proficiency shaping/dust state are merged. Evidence: `crates/gameplay/durability/src/durability/character_wheel.rs`.
+
+Remaining: Orb consumption, remaining shape/content/wire/parity, Wheel spell/effect gates and gem reveal/vessel/crush/effect pipeline remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 ## Goal
 
@@ -49,14 +56,14 @@ Rows marked BLOCKING must merge (or be accepted/decided) before the builder's sl
 
 ## owned_paths (builder edits freely)
 
-- `apps/game-server/src/durability/character_proficiency.rs`
-- `apps/game-server/src/durability/character_proficiency_codec.rs`
-- `apps/game-server/src/durability/character_proficiency_modification.rs`
-- `apps/game-server/src/durability/character_wheel.rs`
-- `apps/game-server/src/durability/character_wheel_gem.rs`
-- `apps/game-server/src/durability/character_wheel_gem_tests.rs`
-- `apps/game-server/src/gameplay_transport/wheel.rs`
-- `apps/game-server/src/gameplay_transport/wheel_gem.rs`
+- `crates/gameplay/durability/src/durability/character_proficiency.rs`
+- `crates/gameplay/durability/src/durability/character_proficiency/read.rs`
+- `crates/gameplay/durability/src/durability/character_proficiency_modification.rs`
+- `crates/gameplay/durability/src/durability/character_wheel.rs`
+- `crates/gameplay/durability/src/durability/character_wheel_gem.rs`
+- `crates/gameplay/durability/src/durability/character_wheel_gem_tests.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/wheel.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/wheel_gem.rs`
 - `crates/protocol-oteryn/src/wheel_gem.rs`
 - `apps/game-server/tests/prog_adv_postgres.rs`
 - `docs/agents/evidence/PROG-ADV-1-*.md`
@@ -75,9 +82,9 @@ To compile on the branch the builder may add only the module registration lines 
 - Rust pins (pinned registries / fixtures regenerated from content)
 - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json, GAME_EVENT_FOUNDATION_REGISTRY.json, RESOURCE_LIMITS_REGISTRY.json, OTERYN_GAME_ERROR_CODE_REGISTRY.json
 - apps/game-server/migrations/NNNN_*.sql number (next free on main at queue turn; main ends at 0087)
-- apps/game-server/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
+- crates/gameplay/dispatch/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
 - crates/protocol-oteryn/src/lib.rs `pub mod` + registry constants
-- apps/game-server/src/durability/mod.rs, domain/mod.rs, lib.rs module registration
+- crates/gameplay/durability/src/durability/core_modules.rs, domain/mod.rs, lib.rs module registration
 
 ## Wiring points (verified on origin/main 5742f30f3)
 

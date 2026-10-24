@@ -2,6 +2,7 @@
 // same path-loaded crate root.
 
 use crate::character_recovery_fence::CharacterRecoveryStore;
+use crate::durability::admission_authority_guards::GuardPublicationDisposition;
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::item_mint::{
     CORPSE_MATERIALIZATION_PURPOSE_KEY, CommittedItemMint, GroundPlacement, ItemMintCandidate,
@@ -9,18 +10,29 @@ use crate::durability::item_mint::{
 };
 use crate::durability::item_mint_audit as audit;
 use crate::durability::runtime_scope_assignment::{
-    AssignmentCommand, AssignmentOutcome, AssignmentReceipt, AssignmentRequest, BootstrapSecret,
-    ControlActor, LaunchBinding, NodeIncarnationProof, OperationKey, RuntimeScopeAssignmentWriter,
+    AssignmentCommand, AssignmentOutcome, AssignmentPredecessor, AssignmentRequest,
+    BootstrapSecret, ControlActor, LaunchBinding, NodeIncarnationProof, OperationKey,
+    RuntimeScopeAssignmentWriter,
 };
 use crate::durability::{DurabilityError, DurabilityRoot};
-use crate::foundation::{
-    CarrierError, ChannelId, CombatDeathFixture, CreatureDeathOccurrenceKey, MovementLocalPosition,
-    RuntimeScopeRefV1, ScopeOwnershipGeneration, WorldId,
+use crate::foundation::admission_authority_publication::{
+    AdmissionAuthorityGuardKeyV1, AdmissionAuthorityGuardStateV1,
+    AdmissionAuthorityOwningPublisherV1, AdmissionAuthorityPublicationChangeV1,
+    AdmissionAuthorityPublicationErrorV1, AdmissionAuthorityPublicationV1,
+    AdmissionPublicationPreconditionV1, AdmissionPublicationPurposeV1,
+    AdmissionPublicationSourceV1,
 };
 use sqlx::{Connection, Executor, Row};
 use std::future::Future;
 use std::task::Poll;
 use std::time::{Duration, Instant};
+use {
+    crate::foundation::{
+        ChannelId, CombatDeathFixture, CreatureDeathOccurrenceKey, MovementLocalPosition,
+        RuntimeScopeRefV1, ScopeOwnershipGeneration, WorldId,
+    },
+    oteryn_gameplay_domain::domain::carrier_values::CarrierError,
+};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
@@ -119,11 +131,11 @@ impl Database {
         let version: String = sqlx::query_scalar("SHOW server_version_num")
             .fetch_one(&mut connection)
             .await?;
-        // The protected lane pins PostgreSQL 17.6; any 17.x server runs the
+        // The protected lane pins PostgreSQL 18.6; any 18.x server runs the
         // same schema, and the exact server is recorded as evidence.
         assert!(
-            version.starts_with("17"),
-            "PostgreSQL 17 required: {version}"
+            version.starts_with("18"),
+            "PostgreSQL 18 required: {version}"
         );
         eprintln!("ITEM-MINT-PG: database {name} on server_version_num={version}");
         sqlx::migrate!("./migrations").run(&mut connection).await?;
@@ -180,6 +192,95 @@ fn scope() -> TestResult<RuntimeScopeRefV1> {
     ))
 }
 
+// LOOP-GROUND-1 (D1339): a fresh Ground root is admitted only under a ready
+// runtime guard of its Channel; publish it through the shared genuine issuer.
+// Each harness mounts the issuer as its own private child over its own
+// RuntimeReadiness, so the aggregate target loads the file more than once.
+#[allow(clippy::duplicate_mod)]
+#[path = "ground_native_readiness_enforcement.rs"]
+mod ground_native_readiness_enforcement;
+
+struct RuntimeReadiness(AdmissionAuthorityPublicationChangeV1);
+
+impl crate::foundation::fnd04_verifier::fresh_source_sealed::Sealed for RuntimeReadiness {}
+
+impl AdmissionAuthorityOwningPublisherV1 for RuntimeReadiness {
+    fn resolve_publication(
+        &self,
+        _now: i64,
+    ) -> Result<Vec<AdmissionAuthorityPublicationChangeV1>, AdmissionAuthorityPublicationErrorV1>
+    {
+        Ok(vec![self.0.clone()])
+    }
+}
+
+/// Publish a ready runtime guard of `scope` for `ownership_generation` from its
+/// current holder `node`: the first guard (`fenced` = `None`) or the successor
+/// of the `ready = false` fence an assignment change wrote at `fenced`.
+async fn publish_readiness(
+    root: &DurabilityRoot,
+    pool: &sqlx::PgPool,
+    node: &NodeIncarnationProof,
+    scope: RuntimeScopeRefV1,
+    ownership_generation: u64,
+    fenced: Option<u64>,
+    decision_identity: &str,
+) -> TestResult {
+    let now: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM statement_timestamp()))::bigint")
+            .fetch_one(pool)
+            .await?;
+    let (precondition, publication_revision) = match fenced {
+        None => (
+            AdmissionPublicationPreconditionV1::Bootstrap {
+                restored_publication_high_water: Some(0),
+            },
+            1,
+        ),
+        Some(revision) => (
+            AdmissionPublicationPreconditionV1::CompareAndSet {
+                expected_publication_revision: revision,
+            },
+            revision + 1,
+        ),
+    };
+    let change = AdmissionAuthorityPublicationChangeV1 {
+        key: AdmissionAuthorityGuardKeyV1::Runtime(scope),
+        source: AdmissionPublicationSourceV1 {
+            authority: "game-runtime-publisher".into(),
+            purpose: AdmissionPublicationPurposeV1::RuntimeOwnershipAndReadiness,
+            source_revision: publication_revision,
+            decision_identity: decision_identity.into(),
+            source_observed_at: now,
+            clock_uncertainty_seconds: 0,
+        },
+        precondition,
+        publication_revision,
+        state: AdmissionAuthorityGuardStateV1::Runtime {
+            ownership_generation,
+            ready: true,
+            route_revision: "route-1".into(),
+            runtime_observation_revision: "runtime-1".into(),
+            protocol_major: 1,
+            transport_profile: 1,
+            ruleset_revision: "ruleset-1".into(),
+            content_revision: "content-1".into(),
+            map_revision: "map-1".into(),
+            world_policy_revision: "world-policy-1".into(),
+            offer_revision: "offer-1".into(),
+        },
+    };
+    let publication = ground_native_readiness_enforcement::prepare(change, now)?;
+    let disposition = root
+        .publish_runtime_readiness(node, &publication)
+        .await
+        .map_err(debug)?;
+    if disposition != GuardPublicationDisposition::Applied {
+        return Err(format!("unexpected readiness outcome: {disposition:?}").into());
+    }
+    Ok(())
+}
+
 struct Harness {
     database: Database,
     root: DurabilityRoot,
@@ -188,7 +289,8 @@ struct Harness {
     retained: std::path::PathBuf,
     node: NodeIncarnationProof,
     writer: RuntimeScopeAssignmentWriter,
-    assignment: AssignmentReceipt,
+    /// The current owner's CAS predecessor, resolved after readiness publication.
+    predecessor: AssignmentPredecessor,
 }
 
 impl Harness {
@@ -235,6 +337,21 @@ impl Harness {
             return Err(format!("unexpected assignment outcome: {outcome:?}").into());
         };
         assert_eq!(assignment.assignment.ownership_generation, 1);
+        publish_readiness(
+            &root,
+            &pool,
+            &node,
+            scope()?,
+            1,
+            None,
+            "item-mint-runtime-ready-1",
+        )
+        .await?;
+        let predecessor = root
+            .read_runtime_scope_predecessor(scope()?)
+            .await
+            .map_err(debug)?
+            .ok_or("missing predecessor")?;
         Ok(Self {
             database,
             root,
@@ -243,7 +360,7 @@ impl Harness {
             retained,
             node,
             writer,
-            assignment,
+            predecessor,
         })
     }
 
@@ -299,7 +416,10 @@ fn request(generation: u64, actor: u32, draw: u32) -> TestResult<ItemMintRequest
         item: definition("ItemType", "fixture:alpha", "rev-a/1"),
         quantity: 1,
         ground: GroundPlacement {
-            spatial_position: vec![1, 2, 3],
+            // Canonical 10-byte Ground64 address (x = generation, y=2,
+            // floor=3). Each scope generation drops on its own tile: Ground
+            // custody left by an earlier generation is not reconciled here.
+            spatial_position: ground64(i32::try_from(generation)?, 2, 3),
             corpse_ref: id(3).to_vec(),
             map_revision: "map-1".into(),
             content_revision: "content-1".into(),
@@ -309,6 +429,16 @@ fn request(generation: u64, actor: u32, draw: u32) -> TestResult<ItemMintRequest
         ruleset_revision: "ruleset-1".into(),
         sim_revision: "sim-1".into(),
     })
+}
+
+/// A canonical 10-byte Ground64 address: x and y as big-endian i32, then the
+/// floor as big-endian i16.
+fn ground64(x: i32, y: i32, floor: i16) -> Vec<u8> {
+    let mut address = Vec::with_capacity(10);
+    address.extend_from_slice(&x.to_be_bytes());
+    address.extend_from_slice(&y.to_be_bytes());
+    address.extend_from_slice(&floor.to_be_bytes());
+    address
 }
 
 /// Every registered per-field bound at its maximum (DUR03-RL-07).
@@ -329,7 +459,9 @@ fn max_request(actor: u32) -> TestResult<ItemMintRequest> {
         item: definition(&"g".repeat(128), &content("i"), &content("v")),
         quantity: u32::MAX,
         ground: GroundPlacement {
-            spatial_position: technical.clone(),
+            // Ground admission accepts only a 10-byte Ground64 address; its
+            // maximum is x = y = i32::MAX on floor i16::MAX.
+            spatial_position: vec![0x7f, 0xff, 0xff, 0xff, 0x7f, 0xff, 0xff, 0xff, 0x7f, 0xff],
             corpse_ref: technical.clone(),
             map_revision: content("m"),
             content_revision: content("c"),
@@ -728,7 +860,7 @@ fn d52_ended_generation_refuses_and_committed_result_stays() -> TestResult {
                 actor: ControlActor::new("oteryn_test_admin").map_err(debug)?,
                 command: AssignmentCommand::Replace {
                     scope: scope()?,
-                    predecessor: harness.assignment.predecessor(),
+                    predecessor: harness.predecessor,
                     target: node2.fact(),
                 },
             })
@@ -738,6 +870,17 @@ fn d52_ended_generation_refuses_and_committed_result_stays() -> TestResult {
             return Err(format!("unexpected replacement outcome: {moved:?}").into());
         };
         assert_eq!(moved.assignment.ownership_generation, 2);
+        // The new holder publishes its generation-2 readiness over the fence.
+        publish_readiness(
+            &harness.root,
+            &harness.pool,
+            &node2,
+            scope()?,
+            2,
+            moved.fenced_publication_revision,
+            "item-mint-runtime-ready-3",
+        )
+        .await?;
 
         // D52: the uncommitted reservation of generation 1 is refused by the
         // former holder and by the new holder alike, whether it is resumed by
@@ -899,7 +1042,7 @@ fn d52_ended_generation_refuses_and_committed_result_stays() -> TestResult {
 
 /// A deferred trigger holds COMMIT past the client pass deadline, so the
 /// client reports an unknown outcome. Inside COMMIT the server transaction
-/// timeout is disabled (PostgreSQL 17 arms no separate statement timer when it
+/// timeout is disabled (PostgreSQL 18 arms no separate statement timer when it
 /// equals the transaction timeout), so the trigger alone decides the real
 /// outcome: it either fails after the client gave up or lets COMMIT succeed.
 async fn install_slow_commit(pool: &sqlx::PgPool, then_fail: bool) -> TestResult {
@@ -2069,7 +2212,7 @@ fn d1_stale_generation_death_is_refused_after_the_scope_moves() -> TestResult {
                 actor: ControlActor::new("oteryn_test_admin").map_err(debug)?,
                 command: AssignmentCommand::Replace {
                     scope: scope()?,
-                    predecessor: harness.assignment.predecessor(),
+                    predecessor: harness.predecessor,
                     target: node2.fact(),
                 },
             })
@@ -2184,6 +2327,19 @@ fn d1_two_creature_deaths_have_distinct_keys_and_items() -> TestResult {
             return Err(format!("unexpected assignment outcome: {second:?}").into());
         };
         assert_eq!(second.assignment.ownership_generation, 1);
+        publish_readiness(
+            &harness.root,
+            &harness.pool,
+            &harness.node,
+            RuntimeScopeRefV1::channel(
+                WorldId::decode(&id(WORLD)).map_err(debug)?,
+                ChannelId::decode(&id(D1_SECOND_CHANNEL)).map_err(debug)?,
+            ),
+            1,
+            None,
+            "item-mint-runtime-ready-2",
+        )
+        .await?;
 
         let seal = harness.recovery.seal_current().map_err(debug)?;
         let authority = harness
@@ -2296,7 +2452,8 @@ fn corpse_request(actor: u32, top_damage_seed: u8) -> TestResult<(ItemMintReques
             item: definition("ItemType", "fixture:corpse.rat", "corpse-r1"),
             quantity: 1,
             ground: GroundPlacement {
-                spatial_position: vec![9, 9, 0],
+                // Canonical 10-byte Ground64 address (x=9, y=9, floor=0).
+                spatial_position: vec![0, 0, 0, 9, 0, 0, 0, 9, 0, 0],
                 corpse_ref: id(3).to_vec(),
                 map_revision: "map-1".into(),
                 content_revision: "content-1".into(),

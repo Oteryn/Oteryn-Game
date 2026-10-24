@@ -1,0 +1,24 @@
+{
+  "id": 14,
+  "name": "CONTAINER_VIEWS",
+  "owner_decision": "BAGS-0 BAGS0-CONTAINERS-WITH-CONTENTS-V1 \u00a75 (docs/architecture/reviews/OTERYN_GAME_BAGS0_CONTAINERS_WITH_CONTENTS_DECISION_2026-09-30.md); numbers allocated by the #1622 control plane and registered by BAGS-WIRE-1",
+  "owner": "current ChannelRuntime",
+  "capability": 14,
+  "revision": "per GameSessionId, monotonic and never reused (FND-02 \u00a715), carried in resume state across reconnect, resume and channel transfer; every admission, reconnect, resume and transfer sends an empty snapshot above any revision the session has seen (views close, BAGS-0 R3); a delta carries every open view",
+  "delta_types": [
+    {
+      "id": 1,
+      "name": "CONTAINER_VIEWS_DELTA_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/container_tree_v1.proto#ContainerViewsV1",
+      "max_payload_bytes": 10384
+    }
+  ],
+  "snapshot_types": [
+    {
+      "id": 1,
+      "name": "CONTAINER_VIEWS_SNAPSHOT_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/container_tree_v1.proto#ContainerViewsV1",
+      "max_payload_bytes": 10384
+    }
+  ]
+}

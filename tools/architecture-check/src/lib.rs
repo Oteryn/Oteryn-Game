@@ -1,6 +1,11 @@
 //! Machine validation for workspace membership, roles and internal edges.
 
+mod gameplay;
+mod sources;
+
+use gameplay::GameplayPolicy;
 use serde_json::Value;
+use sources::collect_rust_sources;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Component, Path};
@@ -26,6 +31,7 @@ struct Policy {
     /// dev edge is not part of the shipped production closure. Unlisted members default to no
     /// dev edges.
     dev_edges: BTreeMap<String, BTreeSet<String>>,
+    gameplay: GameplayPolicy,
 }
 
 /// One workspace member's internal dependency edges, split by `cargo metadata` dependency
@@ -52,6 +58,7 @@ pub fn validate_workspace(root: &Path) -> Result<(), String> {
     validate_declared_edges(&policy, &actual_edges)?;
     validate_acyclic(&policy.edges)?;
     validate_production_closure(&policy)?;
+    gameplay::validate(root, &policy, &metadata)?;
     validate_restricted_calls(root)?;
     for member in &policy.members {
         if policy
@@ -130,6 +137,9 @@ enum Section {
     None,
     Edges,
     DevEdges,
+    GameplayLayers,
+    GameplaySameLayerEdges,
+    GameplayRules,
 }
 
 fn parse_policy(path: &Path) -> Result<Policy, String> {
@@ -139,6 +149,7 @@ fn parse_policy(path: &Path) -> Result<Policy, String> {
     let mut forbidden_fragments = Vec::new();
     let mut edges = BTreeMap::new();
     let mut dev_edges = BTreeMap::new();
+    let mut gameplay = GameplayPolicy::default();
     let mut section = Section::None;
     for raw_line in content.lines() {
         let line = raw_line.trim();
@@ -153,6 +164,21 @@ fn parse_policy(path: &Path) -> Result<Policy, String> {
             section = Section::DevEdges;
             continue;
         }
+        if line == "[gameplay_layers]" {
+            section = Section::GameplayLayers;
+            continue;
+        }
+        if line == "[gameplay_same_layer_edges]" {
+            section = Section::GameplaySameLayerEdges;
+            continue;
+        }
+        if line == "[gameplay_rules]" {
+            section = Section::GameplayRules;
+            continue;
+        }
+        if line.starts_with('[') {
+            return Err(format!("unknown workspace boundary section {line}"));
+        }
         let Some((key, value)) = line.split_once(" = ") else {
             continue;
         };
@@ -162,9 +188,21 @@ fn parse_policy(path: &Path) -> Result<Policy, String> {
             }
             continue;
         }
+        if section == Section::GameplayRules && key == "boss_identifier_mode" {
+            gameplay.boss_identifier_mode = serde_json::from_str(value)
+                .map_err(|error| format!("invalid boss identifier mode: {error}"))?;
+            continue;
+        }
         let parsed: Vec<String> = serde_json::from_str(value)
             .map_err(|error| format!("invalid array for {key}: {error}"))?;
         match section {
+            Section::GameplayLayers => gameplay.add_layer(key, parsed)?,
+            Section::GameplaySameLayerEdges => {
+                gameplay
+                    .same_layer_edges
+                    .insert(key.to_owned(), parsed.into_iter().collect());
+            }
+            Section::GameplayRules => gameplay.set_rule(key, parsed)?,
             Section::Edges => {
                 edges.insert(key.to_owned(), parsed.into_iter().collect());
             }
@@ -201,6 +239,7 @@ fn parse_policy(path: &Path) -> Result<Policy, String> {
         forbidden_fragments,
         edges,
         dev_edges,
+        gameplay,
     })
 }
 
@@ -304,7 +343,8 @@ fn cargo_metadata(root: &Path) -> Result<Value, String> {
         .current_dir(root)
         .args([
             "metadata",
-            "--locked",
+            "--offline",
+            "--no-deps",
             "--format-version",
             "1",
             "--manifest-path",
@@ -503,20 +543,36 @@ fn validate_production_closure(policy: &Policy) -> Result<(), String> {
     Ok(())
 }
 
-/// Game-server methods that only named files may name (PREM-WIRE-1): the Premium latch read that
+/// Gameplay methods that only named files may name (PREM-WIRE-1): the Premium latch read that
 /// runs a pre-delivery bypass is the Premium gate's own entry, so only its definition, the
-/// coordinator's `settle` and the latch's PostgreSQL qualification may name it.
-const RESTRICTED_CALLS: &[(&str, &[&str])] = &[(
-    "read_premium_activation_with",
-    &[
-        "apps/game-server/src/durability/premium_activation_latch.rs",
-        "apps/game-server/src/gameplay_transport/spell_premium_coordinator.rs",
-        "apps/game-server/tests/support/premium_activation_latch_postgres_cases.rs",
-    ],
-)];
+/// coordinator's `settle` and the latch's PostgreSQL qualification may name it. The empty-latch
+/// witness is minted only by that read once it holds the shared lock: since the witness type
+/// lives in the domain crate, its constructor is public, so only its definition and the latch
+/// read may name it.
+const RESTRICTED_CALLS: &[(&str, &[&str])] = &[
+    (
+        "read_premium_activation_with",
+        &[
+            "crates/gameplay/durability/src/durability/premium_activation_latch.rs",
+            "crates/gameplay/dispatch/src/gameplay_transport/spell_premium_coordinator.rs",
+            "apps/game-server/tests/support/premium_activation_latch_postgres_cases.rs",
+        ],
+    ),
+    (
+        "EmptyLatchHeld::inside_gate",
+        &[
+            "crates/gameplay/domain/src/domain/premium.rs",
+            "crates/gameplay/durability/src/durability/premium_activation_latch.rs",
+        ],
+    ),
+];
 
-/// The game-server source trees scanned for [`RESTRICTED_CALLS`].
-const RESTRICTED_CALL_ROOTS: &[&str] = &["apps/game-server/src", "apps/game-server/tests"];
+/// The game-server and gameplay source trees scanned for [`RESTRICTED_CALLS`].
+const RESTRICTED_CALL_ROOTS: &[&str] = &[
+    "apps/game-server/src",
+    "apps/game-server/tests",
+    "crates/gameplay",
+];
 
 fn validate_restricted_calls(root: &Path) -> Result<(), String> {
     let mut files = Vec::new();
@@ -528,36 +584,10 @@ fn validate_restricted_calls(root: &Path) -> Result<(), String> {
         Ok(())
     } else {
         Err(format!(
-            "restricted game-server calls outside their allowed files: {}",
+            "restricted gameplay calls outside their allowed files: {}",
             violations.join(", ")
         ))
     }
-}
-
-/// Every `.rs` file under `dir` as (portable path relative to `root`, contents).
-fn collect_rust_sources(
-    root: &Path,
-    dir: &Path,
-    files: &mut Vec<(String, String)>,
-) -> Result<(), String> {
-    let entries =
-        fs::read_dir(dir).map_err(|error| format!("cannot read {}: {error}", dir.display()))?;
-    for entry in entries {
-        let path = entry
-            .map_err(|error| format!("cannot read {}: {error}", dir.display()))?
-            .path();
-        if path.is_dir() {
-            collect_rust_sources(root, &path, files)?;
-        } else if path.extension().is_some_and(|extension| extension == "rs") {
-            let relative = path
-                .strip_prefix(root)
-                .map_err(|_| format!("{} is outside the workspace", path.display()))?;
-            let contents = fs::read_to_string(&path)
-                .map_err(|error| format!("cannot read {}: {error}", path.display()))?;
-            files.push((portable_relative_path(relative)?, contents));
-        }
-    }
-    Ok(())
 }
 
 /// `file: symbol` for every restricted symbol named in a file outside its allowed list.
@@ -597,6 +627,7 @@ mod tests {
                 ("foundation".to_owned(), BTreeSet::new()),
             ]),
             dev_edges: BTreeMap::new(),
+            gameplay: GameplayPolicy::default(),
         }
     }
 
@@ -895,8 +926,8 @@ mod tests {
     fn the_premium_bypass_read_is_named_only_by_the_gate_and_its_qualification() {
         let call = "root.read_premium_activation_with(&mut slot).await";
         let allowed = [
-            "apps/game-server/src/durability/premium_activation_latch.rs",
-            "apps/game-server/src/gameplay_transport/spell_premium_coordinator.rs",
+            "crates/gameplay/durability/src/durability/premium_activation_latch.rs",
+            "crates/gameplay/dispatch/src/gameplay_transport/spell_premium_coordinator.rs",
             "apps/game-server/tests/support/premium_activation_latch_postgres_cases.rs",
         ];
         let files: Vec<(String, String)> = allowed
@@ -906,22 +937,52 @@ mod tests {
         assert!(restricted_call_violations(&files).is_empty());
 
         let sibling = vec![(
-            "apps/game-server/src/gameplay_transport/guild_daily.rs".to_owned(),
+            "crates/gameplay/dispatch/src/gameplay_transport/guild_daily.rs".to_owned(),
             call.to_owned(),
         )];
         assert_eq!(
             restricted_call_violations(&sibling),
             vec![
-                "apps/game-server/src/gameplay_transport/guild_daily.rs: \
+                "crates/gameplay/dispatch/src/gameplay_transport/guild_daily.rs: \
                  read_premium_activation_with"
                     .to_owned()
             ]
         );
         let unrelated = vec![(
-            "apps/game-server/src/gameplay_transport/guild_daily.rs".to_owned(),
+            "crates/gameplay/dispatch/src/gameplay_transport/guild_daily.rs".to_owned(),
             "root.read_premium_activation().await".to_owned(),
         )];
         assert!(restricted_call_violations(&unrelated).is_empty());
+    }
+
+    #[test]
+    fn the_empty_latch_witness_is_minted_only_by_the_latch_read() {
+        let mint = "let held = EmptyLatchHeld::inside_gate();";
+        let allowed = vec![(
+            "crates/gameplay/durability/src/durability/premium_activation_latch.rs".to_owned(),
+            mint.to_owned(),
+        )];
+        assert!(restricted_call_violations(&allowed).is_empty());
+
+        let forged = vec![(
+            "crates/gameplay/dispatch/src/gameplay_transport/spell_premium_coordinator.rs"
+                .to_owned(),
+            mint.to_owned(),
+        )];
+        assert_eq!(
+            restricted_call_violations(&forged),
+            vec![
+                "crates/gameplay/dispatch/src/gameplay_transport/spell_premium_coordinator.rs: \
+                 EmptyLatchHeld::inside_gate"
+                    .to_owned()
+            ]
+        );
+        let lent = vec![(
+            "crates/gameplay/dispatch/src/gameplay_transport/spell_premium_coordinator.rs"
+                .to_owned(),
+            "PremiumStatus::NotActivated(PreDelivery::inside_gate(held))".to_owned(),
+        )];
+        assert!(restricted_call_violations(&lent).is_empty());
     }
 
     #[test]

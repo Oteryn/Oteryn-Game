@@ -7,6 +7,7 @@
 
 use crate::character_recovery_fence::CharacterRecoveryStore;
 use crate::durability::DurabilityRoot;
+use crate::durability::admission_authority_guards::GuardPublicationDisposition;
 use crate::durability::item_mint::{
     GroundPlacement, ItemMintCandidate, ItemMintCause, ItemMintOutcome, ItemMintRequest,
     TypedDefinitionRef,
@@ -17,6 +18,13 @@ use crate::durability::item_mint_audit::{
 use crate::durability::runtime_scope_assignment::{
     AssignmentCommand, AssignmentOutcome, AssignmentRequest, BootstrapSecret, ControlActor,
     LaunchBinding, NodeIncarnationProof, OperationKey, RuntimeScopeAssignmentWriter,
+};
+use crate::foundation::admission_authority_publication::{
+    AdmissionAuthorityGuardKeyV1, AdmissionAuthorityGuardStateV1,
+    AdmissionAuthorityOwningPublisherV1, AdmissionAuthorityPublicationChangeV1,
+    AdmissionAuthorityPublicationErrorV1, AdmissionAuthorityPublicationV1,
+    AdmissionPublicationPreconditionV1, AdmissionPublicationPurposeV1,
+    AdmissionPublicationSourceV1,
 };
 use crate::foundation::{ChannelId, RuntimeScopeRefV1, ScopeOwnershipGeneration, WorldId};
 use sqlx::{Connection, Executor, PgPool, Row};
@@ -121,8 +129,8 @@ impl Database {
             .fetch_one(&mut connection)
             .await?;
         assert!(
-            version.starts_with("17"),
-            "PostgreSQL 17 required: {version}"
+            version.starts_with("18"),
+            "PostgreSQL 18 required: {version}"
         );
         let migrator = sqlx::migrate!("./migrations");
         match upto {
@@ -160,6 +168,80 @@ impl Database {
         admin.close().await?;
         Ok(())
     }
+}
+
+// LOOP-GROUND-1 (D1339): a fresh Ground root is admitted only under a ready
+// runtime guard of its Channel; publish it through the shared genuine issuer.
+// Each harness mounts the issuer as its own private child over its own
+// RuntimeReadiness, so the aggregate target loads the file more than once.
+#[allow(clippy::duplicate_mod)]
+#[path = "ground_native_readiness_enforcement.rs"]
+mod ground_native_readiness_enforcement;
+
+struct RuntimeReadiness(AdmissionAuthorityPublicationChangeV1);
+
+impl crate::foundation::fnd04_verifier::fresh_source_sealed::Sealed for RuntimeReadiness {}
+
+impl AdmissionAuthorityOwningPublisherV1 for RuntimeReadiness {
+    fn resolve_publication(
+        &self,
+        _now: i64,
+    ) -> Result<Vec<AdmissionAuthorityPublicationChangeV1>, AdmissionAuthorityPublicationErrorV1>
+    {
+        Ok(vec![self.0.clone()])
+    }
+}
+
+/// Publish the first ready runtime guard of the fixture Channel at generation 1.
+async fn publish_readiness(
+    root: &DurabilityRoot,
+    pool: &PgPool,
+    node: &NodeIncarnationProof,
+) -> TestResult {
+    let now: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM statement_timestamp()))::bigint")
+            .fetch_one(pool)
+            .await?;
+    let change = AdmissionAuthorityPublicationChangeV1 {
+        key: AdmissionAuthorityGuardKeyV1::Runtime(RuntimeScopeRefV1::channel(
+            WorldId::decode(&id(WORLD)).map_err(debug)?,
+            ChannelId::decode(&id(CHANNEL)).map_err(debug)?,
+        )),
+        source: AdmissionPublicationSourceV1 {
+            authority: "game-runtime-publisher".into(),
+            purpose: AdmissionPublicationPurposeV1::RuntimeOwnershipAndReadiness,
+            source_revision: 1,
+            decision_identity: "type2-activation-runtime-ready-1".into(),
+            source_observed_at: now,
+            clock_uncertainty_seconds: 0,
+        },
+        precondition: AdmissionPublicationPreconditionV1::Bootstrap {
+            restored_publication_high_water: Some(0),
+        },
+        publication_revision: 1,
+        state: AdmissionAuthorityGuardStateV1::Runtime {
+            ownership_generation: 1,
+            ready: true,
+            route_revision: "route-1".into(),
+            runtime_observation_revision: "runtime-1".into(),
+            protocol_major: 1,
+            transport_profile: 1,
+            ruleset_revision: "ruleset-1".into(),
+            content_revision: "content-1".into(),
+            map_revision: "map-1".into(),
+            world_policy_revision: "world-policy-1".into(),
+            offer_revision: "offer-1".into(),
+        },
+    };
+    let publication = ground_native_readiness_enforcement::prepare(change, now)?;
+    let disposition = root
+        .publish_runtime_readiness(node, &publication)
+        .await
+        .map_err(debug)?;
+    if disposition != GuardPublicationDisposition::Applied {
+        return Err(format!("unexpected readiness outcome: {disposition:?}").into());
+    }
+    Ok(())
 }
 
 /// The DUR-03 Ground MINT writer on a fully migrated database: the reference type-2 writer whose
@@ -224,6 +306,7 @@ impl Harness {
         let AssignmentOutcome::Committed(_) = outcome else {
             return Err(format!("unexpected assignment outcome: {outcome:?}").into());
         };
+        publish_readiness(&root, &pool, &node).await?;
         Ok(Self {
             database,
             root,
@@ -414,7 +497,8 @@ fn request(actor: u32) -> TestResult<ItemMintRequest> {
         item: definition("ItemType", "fixture:alpha", "rev-a/1"),
         quantity: 1,
         ground: GroundPlacement {
-            spatial_position: vec![1, 2, 3],
+            // Canonical 10-byte Ground64 address (x=1, y=2, floor=3).
+            spatial_position: vec![0, 0, 0, 1, 0, 0, 0, 2, 0, 3],
             corpse_ref: id(3).to_vec(),
             map_revision: "map-1".into(),
             content_revision: "content-1".into(),

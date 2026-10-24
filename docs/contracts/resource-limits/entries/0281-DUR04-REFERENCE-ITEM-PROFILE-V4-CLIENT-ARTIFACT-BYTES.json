@@ -1,0 +1,19 @@
+{
+  "id": "DUR04-REFERENCE-ITEM-PROFILE-V4-CLIENT-ARTIFACT-BYTES",
+  "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V4.md",
+  "resource": "One encoded artifact v7 client-safe Reference Item artifact",
+  "unit": "bytes",
+  "hard_maximum": 172591815,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 172591815
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Reject the artifact length before section parsing, copying or digest work beyond the header.",
+  "client_visible": true,
+  "boundary_tests": [
+    "172,591,815 bytes accepted",
+    "172,591,816 bytes rejected before parsing",
+    "checked arithmetic overflow rejected"
+  ]
+}

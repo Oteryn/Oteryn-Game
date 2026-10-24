@@ -1,4 +1,4 @@
-//! Candidate FAMILIAR-1 actual writer and restored-state admission cases on PostgreSQL17.6.
+//! Candidate FAMILIAR-1 actual writer and restored-state admission cases on PostgreSQL 18.6.
 #![allow(clippy::panic)]
 use crate::bestiary_postgres_harness::{
     CHARACTER, Harness, SESSION, TestResult, configured_admin, debug, fence, id, runtime,
@@ -26,8 +26,9 @@ where
         result
     })
 }
-fn state() -> DurableFamiliarState {
-    DurableFamiliarState {
+fn state() -> TestResult<DurableFamiliarState> {
+    let state = DurableFamiliarState {
+        lifecycle: None,
         selected_look: 991,
         granted_looks: vec![991],
         saved_expiry_unix: 1_800_001_800,
@@ -37,8 +38,15 @@ fn state() -> DurableFamiliarState {
         familiar_revision: Some("r20".into()),
         profile_revision: "spell-p2-r20".into(),
         cooldowns: Vec::new(),
-    }
+    };
+    let writer =
+        crate::durability::character_familiar::FamiliarLifecycleWriter::from_fence(&fence(1)?)
+            .map_err(debug)?;
+    Ok(state
+        .for_next_write(Some(1_800_000_000_000), &writer)
+        .map_err(debug)?)
 }
+
 fn save(
     tag: u8,
     before: DurableFamiliarState,
@@ -85,7 +93,7 @@ fn familiar_writer_commits_before_runtime_and_replays_with_stale_session() -> Te
                 .map_err(debug)?,
             DurableFamiliarProjection::default()
         );
-        let first = save(110, DurableFamiliarState::default(), state())?;
+        let first = save(110, DurableFamiliarState::default(), state()?)?;
         let result = h
             .root
             .commit_character_familiar_state(&authority, &h.node, fence(1)?, first.clone())
@@ -95,7 +103,7 @@ fn familiar_writer_commits_before_runtime_and_replays_with_stale_session() -> Te
             return Err(format!("first:{result:?}").into());
         };
         assert_eq!(receipt.committed_character_revision().get(), 2);
-        assert_eq!(receipt.after(), &state());
+        assert_eq!(receipt.after(), &state()?);
         assert!(receipt.matches_request(&fence(1)?, &first));
         assert_eq!(snapshot(h).await?, ("2".into(), "2".into(), 50, 1000, 1));
         sqlx::query("UPDATE game_durability_reconnect_sessions SET current_generation=2 WHERE game_session_id=encode($1,'hex')::uuid").bind(id(SESSION).as_slice()).execute(&h.pool).await?;
@@ -115,7 +123,7 @@ fn familiar_writer_commits_before_runtime_and_replays_with_stale_session() -> Te
                 .map_err(debug)?,
             Some(receipt)
         );
-        let mut logout = state();
+        let mut logout = state()?;
         logout.last_logout_unix = 1_800_000_010;
         let stale = h
             .root
@@ -123,7 +131,7 @@ fn familiar_writer_commits_before_runtime_and_replays_with_stale_session() -> Te
                 &authority,
                 &h.node,
                 fence(2)?,
-                save(111, state(), logout.clone())?,
+                save(111, state()?, logout.clone())?,
             )
             .await;
         assert!(
@@ -154,7 +162,7 @@ fn familiar_writer_commits_before_runtime_and_replays_with_stale_session() -> Te
                 &authority,
                 &h.node,
                 fence(3)?,
-                save(111, state(), logout.clone())?,
+                save(111, state()?, logout.clone())?,
             )
             .await
             .map_err(debug)?;
@@ -232,7 +240,7 @@ fn familiar_writer_rejects_changed_binding_wrong_before_and_stale_generation() -
                 &authority,
                 &h.node,
                 stale,
-                save(120, DurableFamiliarState::default(), state())?,
+                save(120, DurableFamiliarState::default(), state()?)?,
             )
             .await;
         assert!(
@@ -240,7 +248,7 @@ fn familiar_writer_rejects_changed_binding_wrong_before_and_stale_generation() -
             "{result:?}"
         );
         assert_eq!(snapshot(h).await?, before);
-        let mut bad = state();
+        let mut bad = state()?;
         bad.saved_expiry_unix += 1;
         let result = h
             .root
@@ -248,7 +256,7 @@ fn familiar_writer_rejects_changed_binding_wrong_before_and_stale_generation() -
                 &authority,
                 &h.node,
                 fence(1)?,
-                save(120, state(), bad)?,
+                save(120, state()?, bad)?,
             )
             .await;
         assert!(
@@ -259,7 +267,7 @@ fn familiar_writer_rejects_changed_binding_wrong_before_and_stale_generation() -
             "{result:?}"
         );
         assert_eq!(snapshot(h).await?, before);
-        let first = save(120, DurableFamiliarState::default(), state())?;
+        let first = save(120, DurableFamiliarState::default(), state()?)?;
         h.root
             .commit_character_familiar_state(&authority, &h.node, fence(1)?, first.clone())
             .await
@@ -305,7 +313,7 @@ fn familiar_writer_rejects_changed_binding_wrong_before_and_stale_generation() -
             );
             assert_eq!(snapshot(h).await?, before);
         }
-        let same = save(121, state(), state())?;
+        let same = save(121, state()?, state()?)?;
         let result = h
             .root
             .commit_character_familiar_state(&authority, &h.node, fence(2)?, same)
@@ -333,7 +341,7 @@ fn familiar_admission_rejects_semantically_corrupt_snapshot_with_preserved_recei
                 &authority,
                 &h.node,
                 fence(1)?,
-                save(130, DurableFamiliarState::default(), state())?,
+                save(130, DurableFamiliarState::default(), state()?)?,
             )
             .await
             .map_err(debug)?;
@@ -371,24 +379,43 @@ fn familiar_offline_cooldown_extends_legacy_chain_without_reencoding_old_receipt
             .open_character_authority(&seal)
             .await
             .map_err(debug)?;
-        let legacy = save(116, DurableFamiliarState::default(), state())?;
-        let first = h
+        let mut legacy_state = state()?;
+        legacy_state.lifecycle = None;
+        let legacy = save(116, DurableFamiliarState::default(), legacy_state.clone())?;
+        crate::familiar_versioned_lifecycle_postgres_cases::seed_historical_legacy(h, &legacy)
+            .await?;
+        let first_receipt = h
             .root
-            .commit_character_familiar_state(&authority, &h.node, fence(1)?, legacy.clone())
+            .reconcile_character_familiar_state(&authority, legacy.occurrence)
             .await
-            .map_err(debug)?;
-        let FamiliarStateOutcome::Committed(first_receipt) = first else {
-            return Err(format!("legacy familiar did not commit: {first:?}").into());
-        };
+            .map_err(debug)?
+            .ok_or("missing historical legacy receipt")?;
         let old_binding:Vec<u8>=sqlx::query_scalar("SELECT command_binding FROM game_character_familiar_receipts WHERE familiar_occurrence_id=encode($1,'hex')::uuid")
             .bind(legacy.occurrence.as_bytes().as_slice()).fetch_one(&h.pool).await?;
-        let mut logout = state();
+        let loaded = h
+            .root
+            .read_character_familiar_state(
+                &authority,
+                CharacterId::from_bytes(id(CHARACTER)).map_err(debug)?,
+            )
+            .await
+            .map_err(debug)?;
+        let mut logout = loaded
+            .state()
+            .for_next_write(
+                loaded.checkpoint_committed_at_ms(),
+                &crate::durability::character_familiar::FamiliarLifecycleWriter::from_fence(
+                    &fence(2)?,
+                )
+                .map_err(debug)?,
+            )
+            .map_err(debug)?;
         logout.last_logout_unix = 1_800_000_010;
         logout.cooldowns = vec![FamiliarCooldownSnapshot {
             reference_spell_id: 194,
             remaining_micros: 123_456_789,
         }];
-        let next = save(117, state(), logout.clone())?;
+        let next = save(117, legacy_state, logout.clone())?;
         let committed = h
             .root
             .commit_character_familiar_state(&authority, &h.node, fence(2)?, next.clone())
@@ -458,7 +485,7 @@ fn familiar_and_complete_cost_commit_in_one_real_transaction_and_replay_as_histo
             .open_character_authority(&seal)
             .await
             .map_err(debug)?;
-        let request = save(118, DurableFamiliarState::default(), state())?;
+        let request = save(118, DurableFamiliarState::default(), state()?)?;
         // Explicit cost-writer input fixture, not a runtime payment capability. The actual
         // Channel compositor separately derives and checks this projection from its held owner.
         let mut cost = SpellItemTransactionRequest {
@@ -653,7 +680,7 @@ fn familiar_cost_and_real_training_receipt_share_commit_and_legacy_null_proof_re
             .open_character_authority(&seal)
             .await
             .map_err(debug)?;
-        let familiar = save(121, DurableFamiliarState::default(), state())?;
+        let familiar = save(121, DurableFamiliarState::default(), state()?)?;
         let training = BuildChangeRequest {
             occurrence: BuildOccurrence::from_bytes(id(122)).map_err(debug)?,
             cause: BuildCause::Training,

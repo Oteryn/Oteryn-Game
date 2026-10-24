@@ -16,16 +16,14 @@ use crate::world_object::{
     encode_use_intent, encode_use_item_intent,
 };
 
-const PROTOCOL_REGISTRY: &str =
-    include_str!("../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json");
+const PROTOCOL_REGISTRY: &str = crate::PROTOCOL_OTERYN_V1_REGISTRY_JSON;
 const SCHEMA: &str =
     include_str!("../../../docs/contracts/protocol-oteryn/v1/world_interaction_v1.proto");
 const USE_SCHEMA: &str =
     include_str!("../../../docs/contracts/protocol-oteryn/v1/world_object_v1.proto");
 const ITEM_SCHEMA: &str =
     include_str!("../../../docs/contracts/protocol-oteryn/v1/item_view_v1.proto");
-const RESOURCE_REGISTRY: &str =
-    include_str!("../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json");
+const RESOURCE_REGISTRY: &str = crate::RESOURCE_LIMITS_REGISTRY_JSON;
 
 fn push(generation: u64, to_x: i32, to_y: i32) -> PushIntent {
     PushIntent {
@@ -198,11 +196,36 @@ fn use_with_map_item_arm_needs_capability_11_and_excludes_the_entity_arm() {
     assert!(bytes.len() <= crate::world_object::MAX_USE_INTENT_BYTES);
     // Capabilities 4, 15 and 11 select the arm; without 11 or without 15 it fails closed.
     assert_eq!(
-        decode_use_intent_target(&[4, 15, 11], &bytes),
+        decode_use_intent_target(
+            &[
+                4,  // ITEM_VIEW_MOVE_V1
+                15, // ITEM_USE_V1
+                11, // WORLD_INTERACTION_V1
+            ],
+            &bytes
+        ),
         Ok(intent.clone())
     );
-    assert!(decode_use_intent_target(&[4, 15], &bytes).is_err());
-    assert!(decode_use_intent_target(&[4, 11], &bytes).is_err());
+    assert!(
+        decode_use_intent_target(
+            &[
+                4,  // ITEM_VIEW_MOVE_V1
+                15, // ITEM_USE_V1
+            ],
+            &bytes
+        )
+        .is_err()
+    );
+    assert!(
+        decode_use_intent_target(
+            &[
+                4,  // ITEM_VIEW_MOVE_V1
+                11, // WORLD_INTERACTION_V1
+            ],
+            &bytes
+        )
+        .is_err()
+    );
     // The entity arm is unchanged and still decodes without capability 11.
     let creature = UseIntent {
         target: UseTarget::Item(handle),
@@ -215,11 +238,24 @@ fn use_with_map_item_arm_needs_capability_11_and_excludes_the_entity_arm() {
     };
     let creature_bytes = encode_item_use_intent(&creature).expect("encode");
     assert_eq!(
-        decode_use_intent_target(&[4, 15], &creature_bytes),
+        decode_use_intent_target(
+            &[
+                4,  // ITEM_VIEW_MOVE_V1
+                15, // ITEM_USE_V1
+            ],
+            &creature_bytes
+        ),
         Ok(creature.clone())
     );
     assert_eq!(
-        decode_use_intent_target(&[4, 15, 11], &creature_bytes),
+        decode_use_intent_target(
+            &[
+                4,  // ITEM_VIEW_MOVE_V1
+                15, // ITEM_USE_V1
+                11, // WORLD_INTERACTION_V1
+            ],
+            &creature_bytes
+        ),
         Ok(creature.clone())
     );
     // The arm alone (no field 2 or 5), with a world object target, twice, mixed with the entity
@@ -262,7 +298,15 @@ fn use_with_map_item_arm_needs_capability_11_and_excludes_the_entity_arm() {
         retired_7,
     ] {
         assert!(
-            decode_use_intent_target(&[4, 15, 11], &payload).is_err(),
+            decode_use_intent_target(
+                &[
+                    4,  // ITEM_VIEW_MOVE_V1
+                    15, // ITEM_USE_V1
+                    11, // WORLD_INTERACTION_V1
+                ],
+                &payload
+            )
+            .is_err(),
             "{payload:?}"
         );
     }
@@ -308,9 +352,37 @@ fn use_with_map_object_arm_names_a_handleless_base_object_within_529_bytes() {
         key_on(hotkey.clone(), door(40, 3)),
     ] {
         let bytes = encode_item_use_intent(&intent).expect("encode");
-        assert_eq!(decode_use_intent_target(&[4, 15, 11], &bytes), Ok(intent));
-        assert!(decode_use_intent_target(&[4, 15], &bytes).is_err());
-        assert!(decode_use_intent_target(&[4, 11], &bytes).is_err());
+        assert_eq!(
+            decode_use_intent_target(
+                &[
+                    4,  // ITEM_VIEW_MOVE_V1
+                    15, // ITEM_USE_V1
+                    11, // WORLD_INTERACTION_V1
+                ],
+                &bytes
+            ),
+            Ok(intent)
+        );
+        assert!(
+            decode_use_intent_target(
+                &[
+                    4,  // ITEM_VIEW_MOVE_V1
+                    15, // ITEM_USE_V1
+                ],
+                &bytes
+            )
+            .is_err()
+        );
+        assert!(
+            decode_use_intent_target(
+                &[
+                    4,  // ITEM_VIEW_MOVE_V1
+                    11, // WORLD_INTERACTION_V1
+                ],
+                &bytes
+            )
+            .is_err()
+        );
     }
     // The largest: a u64::MAX tool handle, a 496-byte placement and a u64::MAX revision.
     let largest = key_on(
@@ -319,13 +391,30 @@ fn use_with_map_object_arm_names_a_handleless_base_object_within_529_bytes() {
     );
     let bytes = encode_item_use_intent(&largest).expect("encode");
     assert_eq!(bytes.len(), MAX_USE_INTENT_BYTES);
-    assert_eq!(decode_use_intent_target(&[4, 15, 11], &bytes), Ok(largest));
+    assert_eq!(
+        decode_use_intent_target(
+            &[
+                4,  // ITEM_VIEW_MOVE_V1
+                15, // ITEM_USE_V1
+                11, // WORLD_INTERACTION_V1
+            ],
+            &bytes
+        ),
+        Ok(largest)
+    );
     assert_eq!(MAX_USE_WITH_PLACEMENT_BYTES, 496);
     // One byte over the WORLDINT0-RL-22 bound fails closed before any field is read.
     let mut one_over = bytes;
     one_over.push(0);
     assert_eq!(
-        decode_use_intent_target(&[4, 15, 11], &one_over),
+        decode_use_intent_target(
+            &[
+                4,  // ITEM_VIEW_MOVE_V1
+                15, // ITEM_USE_V1
+                11, // WORLD_INTERACTION_V1
+            ],
+            &one_over
+        ),
         Err(WorldObjectError::LimitExceeded)
     );
     // The encoder refuses an empty or over-long placement and a map object with the entity arm.
@@ -401,7 +490,14 @@ fn use_with_map_object_arm_names_a_handleless_base_object_within_529_bytes() {
         (on_world_object, WorldObjectError::Malformed),
     ] {
         assert_eq!(
-            decode_use_intent_target(&[4, 15, 11], &payload),
+            decode_use_intent_target(
+                &[
+                    4,  // ITEM_VIEW_MOVE_V1
+                    15, // ITEM_USE_V1
+                    11, // WORLD_INTERACTION_V1
+                ],
+                &payload
+            ),
             Err(error),
             "{payload:?}"
         );
@@ -488,7 +584,10 @@ fn registry_binds_the_world_interaction_ids_and_limits() {
     );
     assert_eq!(
         capability["command_types"],
-        serde_json::json!([COMMAND_TYPE_PUSH_INTENT])
+        serde_json::json!([
+            COMMAND_TYPE_PUSH_INTENT,                  // PUSH_INTENT
+            crate::bed::COMMAND_TYPE_BED_SLEEP_INTENT, // BED_SLEEP_INTENT
+        ])
     );
     assert_eq!(capability["state_domains"], serde_json::json!([]));
     let command = only("command_types", COMMAND_TYPE_PUSH_INTENT);
@@ -527,4 +626,33 @@ fn registry_binds_the_world_interaction_ids_and_limits() {
     };
     assert_eq!(limit("WORLDINT0-RL-21"), MAX_PUSH_INTENT_BYTES);
     assert_eq!(limit("WORLDINT0-RL-22"), MAX_USE_INTENT_BYTES);
+}
+
+#[test]
+fn fuzz_decode_push_intent() {
+    crate::decoder_fuzz_support::codec(
+        "decode_push_intent",
+        |rng| push(rng.u64().max(1), rng.u64() as i32, rng.u64() as i32),
+        decode_push_intent,
+        |v| encode_push_intent(v).expect("push"),
+    );
+}
+
+#[test]
+fn fuzz_decode_push_result() {
+    crate::decoder_fuzz_support::codec(
+        "decode_push_result",
+        |rng| {
+            (
+                if rng.bool() {
+                    UseDisposition::Committed
+                } else {
+                    UseDisposition::Rejected
+                },
+                None,
+            )
+        },
+        decode_push_result,
+        |v| encode_push_result(v.0, v.1).expect("result"),
+    );
 }

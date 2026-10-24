@@ -20,6 +20,9 @@ on:
       - imports/tibiawiki/facts/items-family-alias26-20261001.json
       - imports/tibiawiki/facts/items-external-family18-20261001.json
       - tools/content-migration/**
+      - tools/merge-driver/**
+      # Pinned by tools/content-migration/source_relocations.py.
+      - crates/gameplay/content/src/content/item_identity.rs
       - tools/content-schema/starter-kit-authoring/**
       - tools/content-schema/imbuement-authoring/**
       - imports/tibiawiki/facts/items-stats.json
@@ -152,6 +155,9 @@ jobs:
           python -m py_compile \
             tools/content-migration/test_world_project_v2_to_tree.py \
             tools/content-migration/validate_world_project_v2_to_tree.py
+          python tools/content-migration/test_source_relocations.py
+          python tools/content-migration/test_regenerate_content.py
+          python tools/merge-driver/test_oteryn_additive_driver.py
           python tools/content-migration/test_world_project_v2_to_tree.py
           python tools/content-migration/test_npc_presence_stage.py
           python tools/content-migration/test_item_taxonomy.py

@@ -40,7 +40,7 @@ function Invoke-CargoBuild {
         Remove-Item -Recurse -Force $TargetDir
     }
     $watch = [System.Diagnostics.Stopwatch]::StartNew()
-    & cargo +1.95.0 build --manifest-path $Manifest --release -p $Package --target-dir $TargetDir
+    & cargo +1.99.1 build --manifest-path $Manifest --release -p $Package --target-dir $TargetDir
     $exit = $LASTEXITCODE
     $watch.Stop()
     if ($exit -ne 0) {
@@ -173,7 +173,7 @@ $buildEvidence = [ordered]@{
     git_head = $GitHead
     cargo_lock_sha256 = $LockSha256
     hardware = $Machine
-    rust = (& rustc +1.95.0 --version | Out-String).Trim()
+    rust = (& rustc +1.99.1 --version | Out-String).Trim()
     build_skipped = [bool]$SkipBuild
     wgpu_clean_build_seconds = $WgpuBuildSeconds
     bevy_clean_build_seconds = $BevyBuildSeconds

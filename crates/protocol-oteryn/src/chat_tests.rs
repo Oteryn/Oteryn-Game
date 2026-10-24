@@ -6,10 +6,8 @@ use std::num::NonZeroU64;
 
 use super::*;
 
-const PROTOCOL_REGISTRY: &str =
-    include_str!("../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json");
-const RESOURCE_REGISTRY: &str =
-    include_str!("../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json");
+const PROTOCOL_REGISTRY: &str = crate::PROTOCOL_OTERYN_V1_REGISTRY_JSON;
+const RESOURCE_REGISTRY: &str = crate::RESOURCE_LIMITS_REGISTRY_JSON;
 const SCHEMA_PATH: &str = "docs/contracts/protocol-oteryn/v1/chat_v1.proto";
 const SCHEMA: &str = include_str!("../../../docs/contracts/protocol-oteryn/v1/chat_v1.proto");
 
@@ -196,7 +194,7 @@ fn results_carry_a_wait_only_with_muted_and_exhausted() {
     for payload in [
         &[][..],
         &[0x08, 0x00],
-        &[0x08, 0x0a],
+        &[0x08, 0x0b],
         &[0x08, 0x02],
         &[0x08, 0x01, 0x10, 0x01],
         &[0x08, 0x01, 0x18, 0x01],
@@ -433,12 +431,20 @@ fn registries_bind_the_chat_wire_ids_and_limits() {
     );
     assert_eq!(
         types("snapshot_types"),
-        [(
-            u64::from(SNAPSHOT_TYPE_CHAT_V1),
-            "CHAT_SNAPSHOT_V1".to_owned(),
-            schema("ChatRoomsV1"),
-            MAX_CHAT_ROOMS_BYTES as u64
-        )]
+        [
+            (
+                u64::from(SNAPSHOT_TYPE_CHAT_V1),
+                "CHAT_SNAPSHOT_V1".to_owned(),
+                schema("ChatRoomsV1"),
+                MAX_CHAT_ROOMS_BYTES as u64
+            ),
+            (
+                u64::from(guild_room::SNAPSHOT_TYPE_GUILD_CHAT_V1),
+                "GUILD_CHAT_SNAPSHOT_V1".to_owned(),
+                schema("GuildChatSnapshotV1"),
+                guild_room::MAX_GUILD_CHAT_SNAPSHOT_BYTES as u64
+            )
+        ]
     );
 
     for message in [
@@ -483,4 +489,88 @@ fn registries_bind_the_chat_wire_ids_and_limits() {
     assert_eq!(limit("CHAT0-RL-01A"), Some(255));
     assert_eq!(limit("CHAT1-RL-01"), Some(MAX_CHAT_NAME_BYTES as u64));
     assert_eq!(limit("CHAT0-RL-07"), Some(MAX_CHAT_OPEN_ROOMS as u64));
+}
+
+#[test]
+fn fuzz_decode_chat_intent() {
+    crate::decoder_fuzz_support::codec(
+        "decode_chat_intent",
+        |rng| {
+            let text = "é".repeat((rng.below(100) + 1) as usize);
+            match rng.below(5) {
+                0 => ChatIntent::Say {
+                    mode: *rng.pick(&[
+                        ChatSpeechMode::Say,
+                        ChatSpeechMode::Whisper,
+                        ChatSpeechMode::Yell,
+                    ]),
+                    text,
+                },
+                1 => ChatIntent::Private {
+                    recipient_name: "Al".into(),
+                    text,
+                },
+                2 => ChatIntent::Room {
+                    room: *rng.pick(&ChatRoom::ALL),
+                    text,
+                },
+                3 => ChatIntent::OpenRoom(*rng.pick(&ChatRoom::ALL)),
+                _ => ChatIntent::CloseRoom(*rng.pick(&ChatRoom::ALL)),
+            }
+        },
+        decode_chat_intent,
+        |v| encode_chat_intent(v).expect("intent"),
+    );
+}
+
+#[test]
+fn fuzz_decode_chat_intent_result() {
+    crate::decoder_fuzz_support::codec(
+        "decode_chat_intent_result",
+        |rng| {
+            let disposition = *rng.pick(&ChatDisposition::ALL);
+            ChatIntentResult {
+                disposition,
+                wait_seconds: if disposition.waits() {
+                    (rng.below(1280) + 1) as u32
+                } else {
+                    0
+                },
+            }
+        },
+        decode_chat_intent_result,
+        |v| encode_chat_intent_result(v).expect("result"),
+    );
+}
+
+#[test]
+fn fuzz_decode_chat_rooms() {
+    crate::decoder_fuzz_support::codec(
+        "decode_chat_rooms",
+        |rng| ChatRoomSet(rng.below(16) as u8),
+        decode_chat_rooms,
+        |v| encode_chat_rooms(*v),
+    );
+}
+
+#[test]
+fn fuzz_decode_chat_line() {
+    crate::decoder_fuzz_support::codec(
+        "decode_chat_line",
+        |rng| match rng.below(4) {
+            0 => local_line((rng.below(120) + 1) as usize, (rng.below(100) + 1) as usize),
+            1 => ChatLine::Private {
+                speaker_name: "Al".into(),
+                text: "é".repeat((rng.below(100) + 1) as usize),
+            },
+            2 => ChatLine::Room {
+                room: *rng.pick(&ChatRoom::ALL),
+                speaker_name: "Al".into(),
+                text: "hi".into(),
+            },
+            _ => ChatLine::Dropped,
+        },
+        decode_chat_line,
+        |v| encode_chat_line(v).expect("line"),
+    );
 }

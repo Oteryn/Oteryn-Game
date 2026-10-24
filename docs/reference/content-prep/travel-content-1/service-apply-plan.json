@@ -1,0 +1,60 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_APPLY_PLAN/v1",
+  "task": "TRAVEL-CONTENT-1",
+  "target_cut": "2026-10-18",
+  "status": "STAGED_FOR_COORDINATOR",
+  "reason": "Every tracked content/services/ file participates in the World Bundle input fingerprint. Owner forbids content/world/pins/* mutation and regeneration; coordinator applies these data packets together with separately qualified pin regeneration.",
+  "target_files": [
+    {
+      "target_path": "content/services/travel/admission-evidence/evidence-00000-00194.json",
+      "staged_path": "docs/reference/content-prep/travel-content-1/admission-evidence/evidence-00000-00194.json",
+      "sha256": "b2be9010ecaef9616c9550571d9d40b9009d34221945032b51ee17fe7712596f"
+    },
+    {
+      "target_path": "content/services/travel/admission-evidence/index.json",
+      "staged_path": "docs/reference/content-prep/travel-content-1/admission-evidence/index.json",
+      "sha256": "832e795a0e90113ceda5f4c31218029d8ceea8aca3a73f04a2a04db84a371fce"
+    },
+    {
+      "target_path": "content/services/travel/admission-evidence/service-evidence-00000-00055.json",
+      "staged_path": "docs/reference/content-prep/travel-content-1/admission-evidence/service-evidence-00000-00055.json",
+      "sha256": "31d6e00b639f1d642c9023abf6c85eed4d47c0822f8598a685355cb940f5cd82"
+    },
+    {
+      "target_path": "content/services/travel/admission-evidence/service-index.json",
+      "staged_path": "docs/reference/content-prep/travel-content-1/admission-evidence/service-index.json",
+      "sha256": "d3450007065b9e56d9f1d6b97ded0d9e0578d154623ed98df81d0e931777fd14"
+    }
+  ],
+  "generated_service_declarations_changed": false,
+  "runtime_switch_authorized": false,
+  "coordinator_must_verify": [
+    "current task target ownership",
+    "target-source conflicts and UNKNOWN fields",
+    "approved native/runtime schema wiring",
+    "generated catalogue equivalence",
+    "World Bundle pins and deterministic bundle",
+    "required exact-head validators"
+  ],
+  "data_completeness": "SOURCE_RECONCILED_REFERENCE_WITH_EXPLICIT_DONOR_AND_NATIVE_MAPPING_LIMITS",
+  "route_source_correction": {
+    "source_check": "docs/reference/content-prep/travel-content-1/source-correction-check.json",
+    "record_count": 195,
+    "npc_scripts": 56,
+    "correction_counts": {
+      "minimum_level": 195,
+      "destination_coordinates": 195,
+      "premium_required": 195,
+      "quest_requirements": 195,
+      "origin": 24,
+      "travel_guard_conditions": 7,
+      "fare_gold": 5
+    },
+    "route_evidence_counts": {
+      "PROVEN": 589,
+      "DERIVED": 1253
+    },
+    "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+    "universal_level8_removed": true
+  }
+}

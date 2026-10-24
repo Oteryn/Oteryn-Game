@@ -1,0 +1,20 @@
+{
+  "id": "SESSION-INGRESS-RESULT-BYTES",
+  "owner_contract": "../architecture/FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+  "resource": "latest terminal command result frame retained by one GameSession",
+  "unit": "bytes",
+  "hard_maximum": 65664,
+  "configurable_range": { "minimum": 65664, "maximum": 65664 },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "One result frame per admitted GameSession, evicted only by the next terminal result or session retirement. At most 65536 typed payload bytes plus 128 bytes of protobuf overhead. Foundation separately charges its bounded semantic terminal record. Reservation and terminal state belong to the Channel session directory, never a process-global cache. No command request payload is retained here.",
+  "client_visible": true,
+  "boundary_tests": [
+    "command_replay_preserves_results_and_enforces_bounds",
+    "session_ingress_postgres_real_dispatch_replay_and_recovery"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/command_replay.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/session_ingress.rs"
+  ],
+  "notes": "SESSION-INGRESS-1. Existing FND-02 outstanding-command and semantic-retention limits remain binding; this consumer executes commands serially. Pending uncertain work refuses same-session resume. Restart without retained command truth cannot resume the old logical GameSession. D1377 physical exclusion is separate."
+}

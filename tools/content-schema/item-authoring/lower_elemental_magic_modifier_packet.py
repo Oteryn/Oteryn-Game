@@ -24,7 +24,7 @@ OUTPUT = (
     ROOT
     / "docs/agents/evidence/OTV2-20261002-item-elemental-magic-modifier-promotion-v1.json"
 )
-ENUM = "apps/game-server/src/content/reference_playable.rs"
+ENUM = "crates/gameplay/content/src/content/reference_playable.rs"
 IDS = frozenset(
     {
         36664,

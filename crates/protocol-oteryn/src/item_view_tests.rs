@@ -4,10 +4,8 @@ use super::*;
 use crate::world_spatial_entities::{CAPABILITY_WORLD_SPATIAL_ENTITIES, MAX_SNAPSHOT_ENTITIES};
 use serde_json::Value;
 
-const PROTOCOL_REGISTRY: &str =
-    include_str!("../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json");
-const RESOURCE_REGISTRY: &str =
-    include_str!("../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json");
+const PROTOCOL_REGISTRY: &str = crate::PROTOCOL_OTERYN_V1_REGISTRY_JSON;
+const RESOURCE_REGISTRY: &str = crate::RESOURCE_LIMITS_REGISTRY_JSON;
 
 fn handle(value: u64) -> ItemHandle {
     ItemHandle::new(value).expect("non-zero")
@@ -840,3 +838,36 @@ fn registry_binds_capability_12() {
     assert_eq!(capability["state_domains"], serde_json::json!([]));
     assert!(crate::REGISTERED_CAPABILITY_IDS_V1.contains(&CAPABILITY_ITEM_EQUIP_DROP_V1));
 }
+
+const SLOTS: [EquipmentSlot; 9] = [
+    EquipmentSlot::Head,
+    EquipmentSlot::Necklace,
+    EquipmentSlot::Armor,
+    EquipmentSlot::RightHand,
+    EquipmentSlot::LeftHand,
+    EquipmentSlot::Legs,
+    EquipmentSlot::Feet,
+    EquipmentSlot::Ring,
+    EquipmentSlot::Ammo,
+];
+
+#[test]
+fn every_wire_slot_maps_to_its_durable_code_and_back() {
+    let codes: Vec<Option<u8>> = SLOTS.into_iter().map(durable_slot).collect();
+    assert_eq!(
+        codes,
+        [1, 7, 2, 5, 6, 3, 4, 8, 10].map(Some).to_vec(),
+        "HEAD AMULET TORSO WEAPON SHIELD LEGS FEET RING EXTRA"
+    );
+    for slot in SLOTS {
+        assert_eq!(durable_slot(slot).and_then(wire_slot), Some(slot));
+    }
+    // The backpack slot is never an equipment destination.
+    assert_eq!(wire_slot(9), None);
+    assert_eq!(wire_slot(0), None);
+    assert_eq!(wire_slot(11), None);
+}
+
+#[cfg(test)]
+#[path = "item_view_fuzz_tests.rs"]
+mod fuzz_tests;

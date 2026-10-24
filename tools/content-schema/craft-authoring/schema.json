@@ -1,0 +1,451 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "family",
+        "key",
+        "revision"
+      ],
+      "properties": {
+        "family": {
+          "enum": [
+            "Item",
+            "Terrain",
+            "WorldObject",
+            "LocalObject"
+          ]
+        },
+        "key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "item_id",
+        "count"
+      ],
+      "properties": {
+        "item_id": {
+          "$ref": "#/$defs/ref"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        }
+      }
+    }
+  },
+  "type": "array",
+  "minItems": 1,
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "kind",
+      "identity",
+      "recipe",
+      "fields"
+    ],
+    "properties": {
+      "kind": {
+        "const": "item_conversion"
+      },
+      "identity": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "revision"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^oteryn:item-conversion\\.[a-z0-9-]+$"
+          },
+          "revision": {
+            "const": "craft-r1"
+          }
+        }
+      },
+      "recipe": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "input_item",
+          "target",
+          "operands",
+          "outputs",
+          "tool",
+          "capacity_check",
+          "source",
+          "result_message"
+        ],
+        "properties": {
+          "input_item": {
+            "$ref": "#/$defs/ref"
+          },
+          "target": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind"
+                ],
+                "properties": {
+                  "kind": {
+                    "enum": [
+                      "none",
+                      "carried"
+                    ]
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "definition"
+                ],
+                "properties": {
+                  "kind": {
+                    "enum": [
+                      "map_item",
+                      "map_object",
+                      "tile_kind"
+                    ]
+                  },
+                  "definition": {
+                    "$ref": "#/$defs/ref"
+                  }
+                }
+              }
+            ]
+          },
+          "operands": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 4,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "role",
+                "item_id",
+                "count",
+                "effect"
+              ],
+              "properties": {
+                "role": {
+                  "enum": [
+                    "USED",
+                    "TARGET",
+                    "INGREDIENT"
+                  ]
+                },
+                "item_id": {
+                  "$ref": "#/$defs/ref"
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100
+                },
+                "effect": {
+                  "enum": [
+                    "CONSUME",
+                    "TRANSFORM_TO",
+                    "KEEP"
+                  ]
+                },
+                "sub_type": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 65535
+                },
+                "output_sub_type": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 65535
+                },
+                "output_item_id": {
+                  "$ref": "#/$defs/ref"
+                },
+                "lifecycle": {
+                  "enum": [
+                    "PRESERVE_INSTANCE",
+                    "REPLACE_INSTANCE"
+                  ]
+                },
+                "consume_on": {
+                  "enum": [
+                    "ALWAYS",
+                    "SUCCESS"
+                  ]
+                }
+              }
+            }
+          },
+          "outputs": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "entries"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "fixed"
+                  },
+                  "entries": {
+                    "type": "array",
+                    "maxItems": 3,
+                    "items": {
+                      "$ref": "#/$defs/output"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "alternatives"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "weighted"
+                  },
+                  "alternatives": {
+                    "type": "array",
+                    "minItems": 2,
+                    "maxItems": 24,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "weight",
+                        "entries"
+                      ],
+                      "properties": {
+                        "weight": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 4294967295
+                        },
+                        "entries": {
+                          "type": "array",
+                          "maxItems": 1,
+                          "items": {
+                            "$ref": "#/$defs/output"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "tool": {
+            "enum": [
+              "none",
+              "rod",
+              "shovel",
+              "pick"
+            ]
+          },
+          "capacity_check": {
+            "const": true
+          },
+          "source": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "repository",
+              "revision",
+              "path",
+              "sha256",
+              "lines",
+              "line_start",
+              "line_end",
+              "evidence",
+              "differences"
+            ],
+            "properties": {
+              "repository": {
+                "type": "string"
+              },
+              "revision": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              },
+              "sha256": {
+                "type": "string"
+              },
+              "evidence": {
+                "type": "string"
+              },
+              "lines": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "line_start": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "line_end": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "differences": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "result_message": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "success",
+              "no_room",
+              "too_heavy",
+              "no_fish",
+              "not_owner",
+              "empty"
+            ],
+            "properties": {
+              "success": {
+                "type": "string"
+              },
+              "no_room": {
+                "type": "string"
+              },
+              "too_heavy": {
+                "type": "string"
+              },
+              "no_fish": {
+                "type": "string"
+              },
+              "not_owner": {
+                "type": "string"
+              },
+              "empty": {
+                "type": "string"
+              }
+            }
+          },
+          "skill": {
+            "const": "Fishing"
+          },
+          "chance_curve": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "base",
+              "per_skill",
+              "skill_offset",
+              "minimum",
+              "maximum",
+              "roll_scale",
+              "roll_max"
+            ],
+            "properties": {
+              "base": {
+                "const": 10000
+              },
+              "per_skill": {
+                "const": 597
+              },
+              "skill_offset": {
+                "const": 10
+              },
+              "minimum": {
+                "const": 10000
+              },
+              "maximum": {
+                "const": 50000
+              },
+              "roll_scale": {
+                "const": 1000
+              },
+              "roll_max": {
+                "const": 100
+              }
+            }
+          },
+          "tile_cooldown_ms": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3600000
+          },
+          "revert_ms": {
+            "type": "integer",
+            "minimum": 1000,
+            "maximum": 3600000
+          },
+          "opened_target": {
+            "$ref": "#/$defs/ref"
+          },
+          "target_effect": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "effect"
+                ],
+                "properties": {
+                  "effect": {
+                    "const": "RETIRE"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "effect",
+                  "output_item_id"
+                ],
+                "properties": {
+                  "effect": {
+                    "const": "TRANSFORM_TO"
+                  },
+                  "output_item_id": {
+                    "$ref": "#/$defs/ref"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "fields": {
+        "const": []
+      }
+    }
+  }
+}

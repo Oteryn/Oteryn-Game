@@ -44,8 +44,20 @@ const GOLD: &str = "oteryn:item.tibia.i3031";
 const PLATINUM: &str = "oteryn:item.tibia.i3035";
 const CRYSTAL: &str = "oteryn:item.tibia.i3043";
 const BACKPACK_KEY: &str = "oteryn:item.tibia.i2854";
-const OCCURRED_AT: i64 = 1_790_000_000_000;
 const BALANCE_MAX: u64 = 999_999_999_999;
+/// The test run's wall clock, read once so every occurrence (and its replay) shares one
+/// `occurred_at`. Audit expiry and its delete guard compare `expires_at` (P30D after it) with
+/// `clock_timestamp()`, so a fixed past instant would expire the rows before the case ages them.
+static OCCURRED_AT: std::sync::OnceLock<i64> = std::sync::OnceLock::new();
+
+fn occurred_at() -> TestResult<i64> {
+    if let Some(occurred_at) = OCCURRED_AT.get() {
+        return Ok(*occurred_at);
+    }
+    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?;
+    let now = i64::try_from(now.as_millis())?;
+    Ok(*OCCURRED_AT.get_or_init(|| now))
+}
 
 /// A UUIDv7 distinct per (seed, salt).
 fn salted(seed: u8, salt: u8) -> [u8; 16] {
@@ -83,6 +95,7 @@ fn coins() -> BankCoinFacts {
         platinum: definition(PLATINUM),
         crystal: definition(CRYSTAL),
         backpack: ItemDefinitionFacts {
+            weight: None,
             definition: definition(BACKPACK_KEY),
             stack: ItemStackClass::NonStackable,
             container_capacity: Some(20),
@@ -111,7 +124,7 @@ fn identity(n: u8) -> TestResult<BankOperationIdentity> {
         occurrence: BankOperationOccurrence::from_bytes(salted(n, 7)).map_err(debug)?,
         transaction_id: salted(n, 1),
         event_id: salted(n, 2),
-        occurred_at_unix_ms: OCCURRED_AT,
+        occurred_at_unix_ms: occurred_at()?,
         server_build_id: "oteryn-game-server-test".into(),
     })
 }

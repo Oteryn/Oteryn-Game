@@ -46,6 +46,8 @@ pub(super) enum NpcBoot {
     /// Place the table; an NPC outside `admitted` refuses (production) or is skipped.
     Place {
         table: NpcPlacementTable,
+        /// The bundle catalogue digest already matched by `bind`, retained for native boot.
+        catalogue_sha256: String,
         admitted: BTreeSet<String>,
         production: bool,
         talk: Arc<NpcTalkBook>,
@@ -169,6 +171,7 @@ pub(super) fn bind(
         }
         Some(loaded) => Ok(NpcBoot::Place {
             table: frame.table,
+            catalogue_sha256: frame.catalogue_sha256,
             admitted: loaded.admitted.clone(),
             production,
             talk: Arc::clone(&loaded.talk),
@@ -191,6 +194,20 @@ pub(super) fn prepare(
     bind(frame, loaded.as_ref(), production).map(Some)
 }
 
+/// The verified bundle catalogue digest retained by a successful NPC boot binding.
+///
+/// This is the NPC-LOAD-1 digest over the compiler's catalogue files. It does not establish
+/// membership in an active Content generation or substitute for the World Project tree digest.
+/// Skipped or absent NPC boot state carries no verified catalogue binding.
+pub(super) fn catalogue_sha256(boot: Option<&NpcBoot>) -> Option<&str> {
+    match boot {
+        Some(NpcBoot::Place {
+            catalogue_sha256, ..
+        }) => Some(catalogue_sha256.as_str()),
+        _ => None,
+    }
+}
+
 /// The conversation book of the placed NPCs, for the gameplay listener.
 pub(super) fn talk_book(boot: Option<&NpcBoot>) -> Option<Arc<NpcTalkBook>> {
     match boot {
@@ -205,6 +222,11 @@ pub(super) fn place(
     runtime: &mut ChannelRuntimeV1,
     boot: Option<&NpcBoot>,
 ) -> Result<usize, BootError> {
+    if let Some(catalogue_sha256) = catalogue_sha256(boot) {
+        event(&format!(
+            "event=npc_catalogue state=bound catalogue_sha256={catalogue_sha256}"
+        ));
+    }
     match boot {
         None => Ok(0),
         Some(NpcBoot::Skip {
@@ -377,7 +399,7 @@ mod tests {
             1,
             "runtime-scope-assignment:1",
             8,
-            crate::foundation::ChannelContentPin::test(world),
+            oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::test(world),
         )
         .expect("runtime")
     }
@@ -389,8 +411,10 @@ mod tests {
         let catalogue = digest("v1");
         let frame = read(&bundle_with_npcs(&two_npcs(), &catalogue)).expect("frame");
         let boot = bind(frame, Some(&loaded(&[SMITH, TRADER], &catalogue)), true).expect("bind");
+        assert_eq!(catalogue_sha256(Some(&boot)), Some(catalogue.as_str()));
         let mut runtime = channel_runtime();
         assert_eq!(place(&mut runtime, Some(&boot)).expect("placed"), 2);
+        assert_eq!(catalogue_sha256(Some(&boot)), Some(catalogue.as_str()));
         let binding = runtime.binding();
         let visible = runtime.visible_entities();
         assert_eq!(visible.npcs.len(), 2);
@@ -439,6 +463,8 @@ mod tests {
             ))
         ));
         assert!(runtime.visible_entities().npcs.is_empty());
+        // The read-only digest proves the catalogue binding, not admission or placement.
+        assert_eq!(catalogue_sha256(Some(&boot)), Some(catalogue.as_str()));
 
         let boot = bind(read(&bytes).expect("frame"), Some(&only_smith), false).expect("bind");
         let mut runtime = channel_runtime();
@@ -454,12 +480,14 @@ mod tests {
     fn a_missing_or_mismatched_catalogue_refuses_production_and_places_nothing_outside_it() {
         let bytes = bundle_with_npcs(&two_npcs(), &digest("v1"));
         let other = loaded(&[SMITH, TRADER], &digest("v2"));
+        assert_eq!(catalogue_sha256(None), None);
         for catalogue in [None, Some(&other)] {
             assert!(matches!(
                 bind(read(&bytes).expect("frame"), catalogue, true),
                 Err(BootError::ContentActivation("NPC catalogue"))
             ));
             let boot = bind(read(&bytes).expect("frame"), catalogue, false).expect("bind");
+            assert_eq!(catalogue_sha256(Some(&boot)), None);
             assert!(matches!(
                 boot,
                 NpcBoot::Skip {
@@ -474,12 +502,14 @@ mod tests {
         }
         // A bundle without NPCs needs no catalogue, in production too.
         let empty = bundle_with_npcs(&npc::Table::default(), &digest("v1"));
+        let boot = bind(read(&empty).expect("frame"), None, true).expect("empty boot");
+        assert_eq!(catalogue_sha256(Some(&boot)), None);
         assert!(matches!(
-            bind(read(&empty).expect("frame"), None, true),
-            Ok(NpcBoot::Skip {
+            boot,
+            NpcBoot::Skip {
                 reason: "no_npcs",
                 ..
-            })
+            }
         ));
     }
 

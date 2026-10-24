@@ -12,8 +12,15 @@
 //! `oteryn-world-bundle-compiler pin-check <repository root> <out directory>`: checks every
 //! World pin under `content/world/pins/` against the tree, builds each bundle twice, and writes
 //! it to `<out directory>` with `artifact-name.txt`.
+//!
+//! `oteryn-world-bundle-compiler pin-refresh <repository root>`: rewrites every World pin, its
+//! identity file and the preproduction manifest to the tree's staged inputs (`pin_refresh`).
 
-use std::collections::BTreeSet;
+mod cargo_inputs;
+mod entry_start;
+mod pin_refresh;
+
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
@@ -28,7 +35,7 @@ use oteryn_world_bundle_compiler::compile::{
 };
 use oteryn_world_bundle_compiler::project::{self, Families};
 use oteryn_world_bundle_compiler::resolve::Registry;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
@@ -330,7 +337,8 @@ fn run_compile(root: &Path, identity: &Path, out: &Path, class: &str) -> Result<
 /// The repository paths the compiler reads or builds from: a path is a directory prefix when it
 /// ends with `/`. `tools/repository/classify_pr_test_lanes.py` lists the same paths
 /// (`WORLD_BUNDLE_INPUT_PATHS`); a test keeps the two equal. A PR that adds a build input adds
-/// its path to both lists.
+/// its path to both lists. The root `Cargo.toml` and `Cargo.lock` enter the `inputs_digest` in
+/// the World-scoped form of `cargo_inputs`; the lane still runs on any change to them.
 const INPUT_PATHS: &[&str] = &[
     "content/world/",
     "content/houses/",
@@ -346,7 +354,7 @@ const INPUT_PATHS: &[&str] = &[
     "rust-toolchain.toml",
     ".cargo/",
 ];
-const INPUTS_DOMAIN: &str = "oteryn:world-bundle/inputs/v1";
+const INPUTS_DOMAIN: &str = "oteryn:world-bundle/inputs/v2";
 const PINS: &str = "content/world/pins";
 const PIN_SCHEMA: &str = "OTERYN_WORLD_PIN/v1";
 
@@ -367,7 +375,7 @@ fn is_pin_file(name: &str) -> bool {
 }
 
 /// The reviewed pin of one World (`content/world/pins/<world slug>.json`).
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 struct Pin {
     schema: String,
@@ -380,7 +388,7 @@ struct Pin {
     inputs_digest: String,
 }
 
-#[derive(Deserialize, Clone, Copy)]
+#[derive(Deserialize, Serialize, Clone, Copy)]
 #[serde(deny_unknown_fields)]
 struct EntryStart {
     x: u16,
@@ -466,8 +474,52 @@ fn identity_text(identity: &Identity) -> Result<String, Error> {
         .map_err(|e| Error::Format(e.to_string()))
 }
 
+/// The indexed bytes of the blob `blob`.
+fn blob_text(root: &Path, blob: &str) -> Result<String, Error> {
+    let output = Command::new("git")
+        .arg("-C")
+        .arg(root)
+        .args(["cat-file", "blob", blob])
+        .output()
+        .map_err(|e| Error::Format(format!("git cat-file: {e}")))?;
+    if !output.status.success() {
+        return Err(Error::Format(format!("git cat-file {blob} failed")));
+    }
+    String::from_utf8(output.stdout).map_err(|_| Error::Format(format!("blob {blob} is not UTF-8")))
+}
+
+/// Replaces the blob ids of the root `Cargo.toml` and `Cargo.lock` with the SHA-256 of their
+/// World-scoped forms (`cargo_inputs`), after checking that each World crate is a listed
+/// input directory whose indexed manifest names it.
+fn scope_cargo_inputs(root: &Path, lines: &mut BTreeMap<String, String>) -> Result<(), Error> {
+    let indexed = |lines: &BTreeMap<String, String>, path: &str| {
+        let blob = lines
+            .get(path)
+            .ok_or_else(|| Error::Format(format!("{path} is not a tracked input")))?;
+        blob_text(root, blob)
+    };
+    for (name, directory) in cargo_inputs::WORLD_PACKAGES {
+        let manifest = format!("{directory}Cargo.toml");
+        if !INPUT_PATHS.contains(directory)
+            || cargo_inputs::package_name(&indexed(lines, &manifest)?).as_deref() != Some(*name)
+        {
+            return Err(Error::Format(format!(
+                "the World crate `{name}` is not the package of the input {manifest}"
+            )));
+        }
+    }
+    let (lock, closure) = cargo_inputs::lock_closure(&indexed(lines, "Cargo.lock")?)?;
+    let manifest = cargo_inputs::workspace_manifest(&indexed(lines, "Cargo.toml")?, &closure)?;
+    for (path, canonical) in [("Cargo.lock", lock), ("Cargo.toml", manifest)] {
+        lines.insert(path.to_owned(), hex(&Sha256::digest(canonical.as_bytes())));
+    }
+    Ok(())
+}
+
 /// The squash-stable identity of the compiler inputs: SHA-256 over the domain tag and one
-/// `<git blob id> <path>` line per tracked input file, ascending by path, without the pin files.
+/// `<id> <path>` line per tracked input file, ascending by path, without the pin files. The id
+/// is the git blob id, except for the root `Cargo.toml` and `Cargo.lock`, whose id is the
+/// SHA-256 of their World-scoped form (`scope_cargo_inputs`).
 fn inputs_digest(root: &Path) -> Result<String, Error> {
     let output = Command::new("git")
         .arg("-C")
@@ -481,7 +533,7 @@ fn inputs_digest(root: &Path) -> Result<String, Error> {
     }
     let listing = String::from_utf8(output.stdout)
         .map_err(|_| Error::Format("git ls-files: path is not UTF-8".into()))?;
-    let mut lines = BTreeSet::new();
+    let mut lines = BTreeMap::new();
     for row in listing.split('\0').filter(|row| !row.is_empty()) {
         let (meta, path) = row
             .split_once('\t')
@@ -494,10 +546,12 @@ fn inputs_digest(root: &Path) -> Result<String, Error> {
             .strip_prefix(PINS)
             .and_then(|rest| rest.strip_prefix('/'))
             .is_some_and(|name| !name.contains('/') && is_pin_file(name));
-        if !in_pins {
-            lines.insert((path.to_owned(), blob.to_owned()));
+        // An unmerged path lists one row per stage; it has no single content to hash.
+        if !in_pins && lines.insert(path.to_owned(), blob.to_owned()).is_some() {
+            return Err(Error::Format(format!("git ls-files: {path} is unmerged")));
         }
     }
+    scope_cargo_inputs(root, &mut lines)?;
     let mut hash = Sha256::new();
     hash.update(INPUTS_DOMAIN.as_bytes());
     hash.update(b"\n");
@@ -531,58 +585,13 @@ fn build_twice(root: &Path, identity: &Identity) -> Result<Vec<u8>, Error> {
     Ok(first.bytes)
 }
 
-/// `entry_start` must be a walkable, non-blocking base cell inside the World bounds: the first
-/// ground of its top-level entries is a walkable Terrain ground, none of them is a wall and none
-/// is a plain Item (an Item entry without a Terrain record). The node decides a plain Item's
-/// solidity from the served Item definitions, where one without a stated `blocks_movement`
-/// blocks (`map::facts`), so the compiler cannot prove a plain Item there walkable and refuses
-/// it; an Item key routed to a `ground` or `border` Terrain record does not block.
-fn check_entry_start(bytes: &[u8], at: EntryStart) -> Result<(), Error> {
-    let bad = |what: &str| Error::Format(format!("entry_start: {what}"));
-    let mut found = None;
-    let visited = bundle::visit(bytes, |manifest: &Manifest, sector| {
-        if sector.floor == at.floor
-            && sector.sx == at.x / oteryn_world_bundle_compiler::sector::SECTOR_SIZE
-            && sector.sy == at.y / oteryn_world_bundle_compiler::sector::SECTOR_SIZE
-            && let Some(tile) = sector.tiles.iter().find(|t| (t.x, t.y) == (at.x, at.y))
-        {
-            let (mut ground, mut wall, mut item_entry) = (None, false, false);
-            for item in tile.items.iter().filter(|item| item.depth == 0) {
-                let entry = &manifest.palette[item.palette as usize];
-                let terrain = entry.terrain;
-                if ground.is_none()
-                    && let Some(t) = terrain.filter(|t| t.kind == TerrainKind::Ground)
-                {
-                    ground = t.walkable;
-                }
-                wall |= terrain.is_some_and(|t| t.kind == TerrainKind::Wall);
-                item_entry |= entry.family == Family::Item && terrain.is_none();
-            }
-            found = Some((ground == Some(true), wall, item_entry));
-        }
-        Ok(())
-    })?;
-    if !visited.manifest.world.contains(at.x, at.y, at.floor) {
-        return Err(bad("outside the World bounds"));
-    }
-    match found {
-        None => Err(bad("the bundle has no tile there")),
-        Some((false, ..)) => Err(bad("the cell has no walkable ground")),
-        Some((true, true, _)) => Err(bad("the cell holds a blocking wall")),
-        Some((true, false, true)) => Err(bad("the cell holds a plain Item")),
-        Some((true, false, false)) => Ok(()),
-    }
-}
-
 fn run_derive_identity(root: &Path, slug: &str) -> Result<String, Error> {
     identity_text(&derive_identity(root, slug)?)
 }
 
-/// Checks every pin and writes each bundle to `out`. Returns the JSON summary.
-fn run_pin_check(root: &Path, out: &Path) -> Result<Value, Error> {
-    let io = |e: std::io::Error| Error::Format(format!("{}: {e}", out.display()));
-    let pins = root.join(PINS);
-    let mut slugs: Vec<String> = fs::read_dir(&pins)
+/// The World slugs pinned under `pins`, in name order; at least one.
+fn pin_slugs(pins: &Path) -> Result<Vec<String>, Error> {
+    let mut slugs: Vec<String> = fs::read_dir(pins)
         .map_err(|e| Error::Format(format!("{}: {e}", pins.display())))?
         .filter_map(|entry| entry.ok()?.file_name().into_string().ok())
         .filter(|name| is_pin_file(name))
@@ -594,6 +603,14 @@ fn run_pin_check(root: &Path, out: &Path) -> Result<Value, Error> {
             "no World pin under content/world/pins".into(),
         ));
     }
+    Ok(slugs)
+}
+
+/// Checks every pin and writes each bundle to `out`. Returns the JSON summary.
+fn run_pin_check(root: &Path, out: &Path) -> Result<Value, Error> {
+    let io = |e: std::io::Error| Error::Format(format!("{}: {e}", out.display()));
+    let pins = root.join(PINS);
+    let slugs = pin_slugs(&pins)?;
     let tree = inputs_digest(root)?;
     fs::create_dir_all(out).map_err(io)?;
     let (mut reports, mut names) = (Vec::new(), Vec::new());
@@ -648,7 +665,7 @@ fn run_pin_check(root: &Path, out: &Path) -> Result<Value, Error> {
                 pin.digest
             )));
         }
-        check_entry_start(&bytes, pin.entry_start)?;
+        entry_start::check(&bytes, pin.entry_start, &registry(root, &project(root)?)?.0)?;
         fs::write(out.join(format!("{slug}-{digest}.otwb")), &bytes).map_err(io)?;
         names.push(digest.clone());
         reports.push(json!({"world": slug, "digest": digest, "bytes": bytes.len()}));
@@ -683,13 +700,15 @@ fn main() -> ExitCode {
         [_, command, root, out] if command == "pin-check" => {
             run_pin_check(Path::new(root), Path::new(out))
         }
+        [_, command, root] if command == "pin-refresh" => pin_refresh::run(Path::new(root)),
         _ => {
             eprintln!(
                 "usage: oteryn-world-bundle-compiler parity <repository root>\n       \
                  oteryn-world-bundle-compiler compile <repository root> <identity.json> <out> \
                  <production|non-production>\n       \
                  oteryn-world-bundle-compiler derive-identity <repository root> <world slug>\n       \
-                 oteryn-world-bundle-compiler pin-check <repository root> <out directory>"
+                 oteryn-world-bundle-compiler pin-check <repository root> <out directory>\n       \
+                 oteryn-world-bundle-compiler pin-refresh <repository root>"
             );
             return ExitCode::from(2);
         }

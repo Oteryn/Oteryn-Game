@@ -1,0 +1,20 @@
+{
+  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
+  "path": "rulesets/items/exaltation-forge/",
+  "kind": "ruleset",
+  "owner": "Item/Economy",
+  "repository": "Oteryn/Oteryn-Game",
+  "population_state": "POPULATED",
+  "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
+  "notes": "Forge classes, tier rules, fusion/transfer costs/chances; current tier on ItemInstance.",
+  "runtime_admission": "BLOCKED",
+  "runtime_switch_authorized": false,
+  "evidence_completeness": "SOURCE_REFERENCE_WITH_EXPLICIT_GLOBAL_DISTRIBUTION_GAP",
+  "source_snapshot_target": "current-at-fetch-2026-10-18",
+  "payloads": [
+    {
+      "path": "rulesets/items/exaltation-forge/reference-evidence.json",
+      "sha256": "2dab16a8adec85755ab95ae6dbc0f991352af51d2cb50a41165267ecd4f44462"
+    }
+  ]
+}
