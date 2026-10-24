@@ -1,21 +1,35 @@
 use super::*;
 
+/// The item profiles before any mechanic added its own; all of them are unchanged.
+const ORIGINAL_PROFILES: usize = 432;
+
+/// The item profiles each mechanic adds, one row per mechanic in name order, so a new mechanic
+/// adds its own row instead of rewriting a shared total.
+const PROFILE_ADDITIONS: &[(&str, usize)] = &[
+    // 22 cooking profiles from Canary items.xml/appearances.dat at
+    // 99902524e052f37574194466c2949c576e4ab269 (content/craft/runtime-item-profiles.json):
+    // millstones 1943..=1946; ovens 2535/2537/2539/2541; reed 30975/31686;
+    // trays 3464/8198; flour/dough/wheat 3603..=3605; cake 6276/6277;
+    // chocolate 8018/8019; garlic 8194/8196/8199. All have speed_bonus=0.
+    ("CRAFT-1", 22),
+    // 4 timed-item profiles.
+    ("ITEM-TIMED-1", 4),
+    // 23 training/exercise weapon profiles (tools/content-migration/loop_training_profiles.py):
+    // 28552..=28557, 35279..=35290, 44065..=44067, 50294/50295. All have speed_bonus=0.
+    ("LOOP-TRAIN-1", 23),
+    // The pick 3456, shiny stone 10310 and small diamond 3028.
+    ("MINING-1", 3),
+];
+
 #[test]
 fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() -> TestResult {
     let input = input()?;
     let profiles: ItemProfilesDocument =
         serde_json::from_slice(&input.item_profiles.as_ref().ok_or("profiles")?.bytes)?;
-    // CRAFT-1 adds 22 cooking profiles from Canary items.xml/appearances.dat at
-    // 99902524e052f37574194466c2949c576e4ab269 (content/craft/runtime-item-profiles.json):
-    // millstones 1943..=1946; ovens 2535/2537/2539/2541; reed 30975/31686;
-    // trays 3464/8198; flour/dough/wheat 3603..=3605; cake 6276/6277;
-    // chocolate 8018/8019; garlic 8194/8196/8199. All have speed_bonus=0;
-    // the original 432 profiles are unchanged. ITEM-TIMED-1 adds 4 timed-item profiles.
-    // MINING-1 adds the pick 3456, shiny stone 10310 and small diamond 3028.
-    // LOOP-TRAIN-1 adds 23 training/exercise weapon profiles
-    // (tools/content-migration/loop_training_profiles.py): 28552..=28557, 35279..=35290,
-    // 44065..=44067, 50294/50295. All have speed_bonus=0.
-    assert_eq!(profiles.records.len(), 484);
+    assert_eq!(
+        profiles.records.len(),
+        ORIGINAL_PROFILES + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
+    );
     let content = native(&input)?;
     let mut unknown_speed = std::collections::BTreeSet::new();
     for record in profiles.records {
