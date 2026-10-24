@@ -13,9 +13,9 @@ pub enum LogoutReply {
     /// Write this result. `Accepted` only once the terminal release has committed and the actor
     /// has left the Channel; the connection then stops reading and closes.
     Result(LogoutResult),
-    /// The release outcome is unknown: no result is written, the transport closes, and the
-    /// session enters the control-loss lifecycle with its fence kept, which reconciles it from
-    /// the durable row (`ControlLossResult::Terminal`).
+    /// The combat state or release outcome is unknown: no result is written and the transport
+    /// closes. The control-loss lifecycle reconciles from the durable row, keeping any release
+    /// fence until the outcome is known (`ControlLossResult::Terminal`).
     Unknown,
 }
 /// `retry_after_ms` of an in-fight refusal: the time left until `until`, rounded up to whole
@@ -47,6 +47,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return LogoutReply::Result(LogoutResult::Busy);
         }
+        if !self.refresh_pvp_locks(actor, session).await {
+            // An unreadable fence or PvP row proves no fight deadline. Close through the
+            // ordinary unknown/control-loss path without authorizing a terminal release.
+            return LogoutReply::Unknown;
+        }
         if let Some(retry_after_ms) = self.logout_in_fight(actor, session).await {
             return LogoutReply::Result(LogoutResult::InFight { retry_after_ms });
         }
@@ -58,6 +63,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let fact = self.combat_lock_fact(actor, session).await;
         match fact.pvp {
             super::combat_lock_fact::PvpLockSource::NotWiredInRuntime => {}
+            super::combat_lock_fact::PvpLockSource::LiveBlocked => return Some(1000),
         }
         let until = fact.pve_in_fight_until?;
         Some(in_fight_retry_after_ms(

@@ -22,6 +22,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             StepDirection::South => CardinalStep::South,
             StepDirection::West => CardinalStep::West,
         };
+        if !self.refresh_pvp_locks(actor, session).await {
+            return (StepOutcome::rejected(), None);
+        }
         let equipment = self.read_movement_equipment(actor, session).await;
         let now = self.owner_now().get();
         // Lock order (§1.2): the lane before any Channel guard.
@@ -50,6 +53,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             legacy = self.door.lock().await.blocking_cells().clone();
             &legacy
         };
+        let pvp_blocking = super::pvp_live::PvpBlocker {
+            inner: blocking,
+            cells: self.movement_cells,
+            blocked: super::pvp_live::pz_blocked(&states, actor, session, self.owner_now()),
+        };
+        let blocking: &dyn crate::map::floor::CellBlocker = &pvp_blocking;
         let equipped_speed_delta = equipment
             .as_ref()
             .and_then(|read| read.current_delta(&runtime, &states, actor, session));

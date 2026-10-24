@@ -578,6 +578,52 @@ pub mod tests {
     }
 
     #[test]
+    fn bundle_spell_tiles_pvp_zone_precedence() {
+        use oteryn_world_bundle::sector::{Attrs, Item, Tile};
+        use oteryn_world_bundle::writer::Sector;
+
+        // Keep zone-specific cells out of the shared World's boundary fixture.
+        let cases = [
+            (1, 0, false, false, false),
+            (2, 4, false, true, false),
+            (3, 16, false, false, true),
+            (4, 5, true, false, false),
+            (5, 17, true, false, false),
+            (6, 20, false, true, false),
+        ];
+        let world = world_from_bundle(bundle(Some(vec![Sector {
+            floor: -7,
+            sx: 0,
+            sy: 0,
+            tiles: cases
+                .iter()
+                .map(|&(x, flags, _, _, _)| Tile {
+                    x,
+                    y: 0,
+                    flags,
+                    house: 0,
+                    zones: Vec::new(),
+                    items: vec![Item {
+                        palette: 0,
+                        depth: 0,
+                        attrs: Attrs::default(),
+                    }],
+                })
+                .collect(),
+        }])));
+        let (_, cells) = cells(&world);
+        for (x, _, protection, no_pvp, pvp) in cases {
+            let tile = cells
+                .spell_tiles()
+                .lookup(cells.scope(), at(i32::from(x)))
+                .expect("zone tile");
+            assert_eq!(tile.flags().protection_zone, protection, "x {x}");
+            assert_eq!(tile.no_pvp_zone(), Some(no_pvp), "x {x}");
+            assert_eq!(tile.pvp_zone(), Some(pvp), "x {x}");
+        }
+    }
+
+    #[test]
     fn bundle_tiles_without_a_source_are_unknown_and_outside_the_map_absent() {
         let world = world();
         let (entry, cells) = cells(&world);
