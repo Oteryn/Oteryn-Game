@@ -918,6 +918,101 @@ fn item_loop_drop_is_blocked_at_the_channel_cap_until_a_pickup_frees_room() -> T
     })
 }
 
+/// `n` more live loop-dropped roots on the Ground cell of the dropped item `template`, each with
+/// its own loop drop reference and Ground ordinal.
+async fn seed_cell_drops(harness: &Harness, template: [u8; 16], n: i64) -> TestResult {
+    seed_copies(
+        harness,
+        template,
+        n,
+        ITEM_LOOP_DROP_REF_PREFIX,
+        "INSERT INTO game_item_ground_locations \
+         SELECT (jsonb_populate_record(NULL::game_item_ground_locations, \
+                 to_jsonb(g) || jsonb_build_object( \
+                   'item_instance_id', ids.item, \
+                   'corpse_ref', \
+                     '\\x' || encode($3::bytea || uuid_send(game_character_uuid_v7()), 'hex'), \
+                   'stack_ordinal', nextval('game_item_ground_stack_ordinal_seq')))).* \
+           FROM game_item_ground_locations g, ids \
+          WHERE g.item_instance_id = encode($1,'hex')::uuid",
+    )
+    .await
+}
+
+#[test]
+fn item_loop_drop_fills_a_cell_to_64_roots_and_refuses_the_65th() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "itemloop_cell").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        equip_backpack(&harness, &authority, fence()?, SESSION).await?;
+        let stone = carry(&harness, &authority, 2, STONE, 1).await?;
+        let last = carry(&harness, &authority, 3, STONE, 1).await?;
+        let over = carry(&harness, &authority, 4, STONE, 1).await?;
+        activate_and_initialize(&harness, &authority).await?;
+        let light = Content(Stone::Light);
+
+        // ACCEPT-BATCH-2026-10-15 §2: one drop and 62 seeded roots leave room for one more.
+        moved(
+            &harness,
+            &authority,
+            10,
+            &light,
+            request(stone, LoopDestination::Ground(ground())),
+        )
+        .await?;
+        seed_cell_drops(&harness, stone, 62).await?;
+        moved(
+            &harness,
+            &authority,
+            11,
+            &light,
+            request(last, LoopDestination::Ground(ground())),
+        )
+        .await?;
+        assert!(harness.on_ground(last).await?);
+
+        // The 65th root has no room and writes nothing.
+        let committed = footprint(&harness).await?;
+        assert_eq!(
+            loop_move(
+                &harness,
+                &authority,
+                12,
+                &light,
+                request(over, LoopDestination::Ground(ground())),
+            )
+            .await?
+            .err(),
+            Some(LoopMoveRefusal::NoRoom)
+        );
+        assert_eq!(footprint(&harness).await?, committed);
+        assert!(!harness.on_ground(over).await?);
+
+        // A pickup from the cell frees one root; the same item then drops.
+        moved(&harness, &authority, 13, &light, pickup(stone, &CELL)).await?;
+        moved(
+            &harness,
+            &authority,
+            14,
+            &light,
+            request(over, LoopDestination::Ground(ground())),
+        )
+        .await?;
+        assert!(harness.on_ground(over).await?);
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
 #[test]
 fn item_loop_full_merge_passes_at_the_tree_ceiling_where_a_placement_has_no_room() -> TestResult {
     let Some(admin) = configured_admin() else {
