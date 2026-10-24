@@ -35,7 +35,7 @@ async fn assert_command_fails(
     }
     assert!(matches!(
         session.step(StepDirection::East).await,
-        Err(DevClientError::SessionUnusable)
+        Err(DevClientError::Session(SessionError::SessionUnusable))
     ));
     drop(session);
     server.await??;
@@ -50,10 +50,10 @@ fn a_command_result_for_another_command_id_is_rejected() -> Result<(), BoxError>
         |error| {
             matches!(
                 error,
-                DevClientError::CommandIdMismatch {
+                DevClientError::Session(SessionError::CommandIdMismatch {
                     expected: 7,
                     actual: 8
-                }
+                })
             )
         },
     ))?
@@ -69,10 +69,10 @@ fn a_server_sequence_gap_or_replay_is_rejected() -> Result<(), BoxError> {
             move |error| {
                 matches!(
                     error,
-                    DevClientError::ServerSequenceMismatch {
+                    DevClientError::Session(SessionError::ServerSequenceMismatch {
                         expected: 41,
                         actual
-                    } if *actual == wrong
+                    }) if *actual == wrong
                 )
             },
         ))??;
@@ -92,10 +92,10 @@ fn a_frame_for_another_connection_generation_is_rejected() -> Result<(), BoxErro
     block_on(assert_command_fails(Action::Step, vec![stale], |error| {
         matches!(
             error,
-            DevClientError::ConnectionGenerationMismatch {
+            DevClientError::Session(SessionError::ConnectionGenerationMismatch {
                 expected: 1,
                 actual: 2
-            }
+            })
         )
     }))?
 }
@@ -116,7 +116,9 @@ fn an_unsequenced_command_result_is_rejected_by_envelope_validation() -> Result<
         |error| {
             matches!(
                 error,
-                DevClientError::Protocol(FoundationProtocolError::MalformedEnvelope)
+                DevClientError::Session(SessionError::Protocol(
+                    FoundationProtocolError::MalformedEnvelope
+                ))
             )
         },
     ))?
@@ -133,10 +135,10 @@ fn a_protocol_error_in_place_of_a_command_result_is_reported() -> Result<(), Box
     block_on(assert_command_fails(Action::Step, vec![gap], |error| {
         matches!(
             error,
-            DevClientError::UnexpectedMessage {
+            DevClientError::Session(SessionError::UnexpectedMessage {
                 expected: MessageType::CommandResult,
                 actual: MessageType::ProtocolError
-            }
+            })
         )
     }))?
 }
@@ -152,10 +154,10 @@ fn a_moved_step_without_its_delta_is_rejected() -> Result<(), BoxError> {
         |error| {
             matches!(
                 error,
-                DevClientError::UnexpectedMessage {
+                DevClientError::Session(SessionError::UnexpectedMessage {
                     expected: MessageType::StateDelta,
                     actual: MessageType::CommandResult
-                }
+                })
             )
         },
     ))?
@@ -172,7 +174,7 @@ fn a_spatial_delta_naming_the_wrong_domain_or_type_or_base_is_rejected() -> Resu
         |error| {
             matches!(
                 error,
-                DevClientError::UnsupportedPushedDomain { domain_id: 4242 }
+                DevClientError::Session(SessionError::UnsupportedPushedDomain { domain_id: 4242 })
             )
         },
     ))??;
@@ -183,10 +185,10 @@ fn a_spatial_delta_naming_the_wrong_domain_or_type_or_base_is_rejected() -> Resu
         |error| {
             matches!(
                 error,
-                DevClientError::UnregisteredDeltaType {
+                DevClientError::Session(SessionError::UnregisteredDeltaType {
                     domain_id: 1,
                     delta_type: 2
-                }
+                })
             )
         },
     ))??;
@@ -197,11 +199,11 @@ fn a_spatial_delta_naming_the_wrong_domain_or_type_or_base_is_rejected() -> Resu
         |error| {
             matches!(
                 error,
-                DevClientError::StateRevisionMismatch {
+                DevClientError::Session(SessionError::StateRevisionMismatch {
                     domain_id: 1,
                     expected_base: 5,
                     actual_base: 6
-                }
+                })
             )
         },
     ))??;
@@ -215,7 +217,7 @@ fn a_spatial_delta_naming_the_wrong_domain_or_type_or_base_is_rejected() -> Resu
         |error| {
             matches!(
                 error,
-                DevClientError::ContentGenerationMismatch { domain_id: 1 }
+                DevClientError::Session(SessionError::ContentGenerationMismatch { domain_id: 1 })
             )
         },
     ))??;
@@ -226,10 +228,10 @@ fn a_spatial_delta_naming_the_wrong_domain_or_type_or_base_is_rejected() -> Resu
         |error| {
             matches!(
                 error,
-                DevClientError::ServerSequenceMismatch {
+                DevClientError::Session(SessionError::ServerSequenceMismatch {
                     expected: 42,
                     actual: 43
-                }
+                })
             )
         },
     ))?
@@ -246,11 +248,11 @@ fn an_overlay_delta_naming_the_wrong_domain_or_base_or_generation_is_rejected()
         |error| {
             matches!(
                 error,
-                DevClientError::StateRevisionMismatch {
+                DevClientError::Session(SessionError::StateRevisionMismatch {
                     domain_id: 1,
                     expected_base: 5,
                     actual_base: 4
-                }
+                })
             )
         },
     ))??;
@@ -264,11 +266,11 @@ fn an_overlay_delta_naming_the_wrong_domain_or_base_or_generation_is_rejected()
         |error| {
             matches!(
                 error,
-                DevClientError::StateRevisionMismatch {
+                DevClientError::Session(SessionError::StateRevisionMismatch {
                     domain_id: 2,
                     expected_base: 2,
                     actual_base: 1
-                }
+                })
             )
         },
     ))??;
@@ -295,7 +297,7 @@ fn an_overlay_delta_naming_the_wrong_domain_or_base_or_generation_is_rejected()
         |error| {
             matches!(
                 error,
-                DevClientError::ContentGenerationMismatch { domain_id: 2 }
+                DevClientError::Session(SessionError::ContentGenerationMismatch { domain_id: 2 })
             )
         },
     ))?
@@ -318,11 +320,13 @@ async fn run_command_stall_case() -> Result<(), BoxError> {
         .await?;
     assert!(matches!(
         session.step(StepDirection::East).await,
-        Err(DevClientError::Timeout("CommandResult"))
+        Err(DevClientError::Session(SessionError::Timeout(
+            "CommandResult"
+        )))
     ));
     assert!(matches!(
         session.step(StepDirection::East).await,
-        Err(DevClientError::SessionUnusable)
+        Err(DevClientError::Session(SessionError::SessionUnusable))
     ));
     drop(session);
     server.await??;
@@ -369,10 +373,12 @@ async fn run_overlay_entry_revision_case() -> Result<(), BoxError> {
     let result = session.service_liveness(Duration::from_millis(200)).await;
     assert!(matches!(
         result,
-        Err(DevClientError::OverlayEntryRevisionMismatch {
-            new_revision: 3,
-            entry_revision: 4
-        })
+        Err(DevClientError::Session(
+            SessionError::OverlayEntryRevisionMismatch {
+                new_revision: 3,
+                entry_revision: 4
+            }
+        ))
     ));
     assert_eq!(
         session.world_object_overlay(),
@@ -384,7 +390,7 @@ async fn run_overlay_entry_revision_case() -> Result<(), BoxError> {
     );
     assert!(matches!(
         session.step(StepDirection::East).await,
-        Err(DevClientError::SessionUnusable)
+        Err(DevClientError::Session(SessionError::SessionUnusable))
     ));
     drop(session);
     server.await??;
@@ -435,7 +441,7 @@ fn an_inconsistent_status_and_disposition_pairing_is_rejected() -> Result<(), Bo
             move |error| {
                 matches!(
                     error,
-                    DevClientError::InconsistentCommandResult { command_id: 7, status: actual }
+                    DevClientError::Session(SessionError::InconsistentCommandResult { command_id: 7, status: actual })
                         if *actual == status
                 )
             },

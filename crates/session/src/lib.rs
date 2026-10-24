@@ -84,19 +84,10 @@ use oteryn_protocol_oteryn::{
     encode_client_bootstrap, encode_client_command, encode_liveness_ack,
 };
 use oteryn_protocol_oteryn::{
-    achievement_notices::{
-        CAPABILITY_ACHIEVEMENT_NOTICES_V1, STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES,
-    },
-    analyser::{CAPABILITY_ANALYSER_V1, STATE_DOMAIN_ACTOR_ANALYSER},
-    bestiary::STATE_DOMAIN_CHARACTER_BESTIARY,
-    charm::{
-        CAPABILITY_BESTIARY_CHARMS_V1, COMMAND_TYPE_CHARM_ASSIGN_INTENT,
-        COMMAND_TYPE_CHARM_UNLOCK_STAGE_INTENT, STATE_DOMAIN_CHARACTER_CHARMS,
-    },
-    container_tree::{
-        CAPABILITY_CONTAINER_TREE_V1, COMMAND_TYPE_CONTAINER_VIEW_INTENT,
-        STATE_DOMAIN_CONTAINER_VIEWS,
-    },
+    achievement_notices::CAPABILITY_ACHIEVEMENT_NOTICES_V1,
+    analyser::CAPABILITY_ANALYSER_V1,
+    charm::CAPABILITY_BESTIARY_CHARMS_V1,
+    container_tree::CAPABILITY_CONTAINER_TREE_V1,
     item_view::{
         self, CAPABILITY_ITEM_VIEW_MOVE_V1, COMMAND_TYPE_ITEM_MOVE_INTENT, ItemViewWireError,
         STATE_DOMAIN_CHARACTER_INVENTORY, STATE_DOMAIN_OPEN_CONTAINER,
@@ -152,57 +143,30 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::depot::CAPABILITY_DEPOT_V1,
 ];
 
-/// Capability-owned command types and state domains (`PROTOCOL_OTERYN_V1_REGISTRY.json`;
-/// mirrors the server's gate table). Capabilities 6, 12 and 13 own none: they extend the core
-/// domain 1 and command types 1 and 9, whose codecs gate the extension on the selected set.
-/// Capabilities 4 and 7 are routed by typed code (`Session::use_item`, `Session::move_item`, the
-/// item stores; `Session::chat`, the chat log), not through this table.
-const GATED_ROUTES: &[(u32, &[u32], &[u32])] = &[
-    (
-        oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1,
-        &[],
-        &[oteryn_protocol_oteryn::world_map::STATE_DOMAIN_WORLD_MAP_VIEW],
-    ),
-    (
-        oteryn_protocol_oteryn::depot::CAPABILITY_DEPOT_V1,
-        &[oteryn_protocol_oteryn::depot::COMMAND_TYPE_DEPOT_INTENT],
-        &[],
-    ),
-    (31, &[], &[23]),
-    (
-        oteryn_protocol_oteryn::appearance::CAPABILITY_APPEARANCE_V1,
-        &[oteryn_protocol_oteryn::appearance::COMMAND_TYPE_APPEARANCE_CHANGE],
-        &[oteryn_protocol_oteryn::appearance::STATE_DOMAIN_APPEARANCE],
-    ),
-    (
-        CAPABILITY_BESTIARY_CHARMS_V1,
-        &[
-            COMMAND_TYPE_CHARM_UNLOCK_STAGE_INTENT,
-            COMMAND_TYPE_CHARM_ASSIGN_INTENT,
-        ],
-        &[
-            STATE_DOMAIN_CHARACTER_BESTIARY,
-            STATE_DOMAIN_CHARACTER_CHARMS,
-        ],
-    ),
-    (
-        CAPABILITY_ACHIEVEMENT_NOTICES_V1,
-        &[],
-        &[STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES],
-    ),
-    (CAPABILITY_ANALYSER_V1, &[], &[STATE_DOMAIN_ACTOR_ANALYSER]),
-    (
-        CAPABILITY_CONTAINER_TREE_V1,
-        &[COMMAND_TYPE_CONTAINER_VIEW_INTENT],
-        &[STATE_DOMAIN_CONTAINER_VIEWS],
-    ),
+/// Capabilities supported by the raw command/snapshot/delta routes, including opt-in
+/// capabilities absent from `CLIENT_SUPPORTED_CAPABILITIES`. Typed routes stay separate.
+const CLIENT_GATED_CAPABILITIES: &[u32] = &[
+    oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1,
+    oteryn_protocol_oteryn::depot::CAPABILITY_DEPOT_V1,
+    oteryn_protocol_oteryn::tutorial_notices::CAPABILITY_TUTORIAL_NOTICES_V1,
+    oteryn_protocol_oteryn::appearance::CAPABILITY_APPEARANCE_V1,
+    CAPABILITY_BESTIARY_CHARMS_V1,
+    CAPABILITY_ACHIEVEMENT_NOTICES_V1,
+    CAPABILITY_ANALYSER_V1,
+    CAPABILITY_CONTAINER_TREE_V1,
 ];
 
-fn capability_of_domain(domain_id: u32) -> Option<u32> {
-    GATED_ROUTES
+fn gated_routes() -> impl Iterator<Item = (u32, &'static [u32], &'static [u32])> {
+    oteryn_protocol_oteryn::capability_tables::GATED
         .iter()
+        .copied()
+        .filter(|(capability, _, _)| CLIENT_GATED_CAPABILITIES.contains(capability))
+}
+
+fn capability_of_domain(domain_id: u32) -> Option<u32> {
+    gated_routes()
         .find(|(_, _, domains)| domains.contains(&domain_id))
-        .map(|(capability, _, _)| *capability)
+        .map(|(capability, _, _)| capability)
 }
 
 /// Total `step_retrying` attempts and the first backoff (doubled after each `TOO_EARLY`).
