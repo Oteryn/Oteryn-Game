@@ -2,9 +2,9 @@
 
 ```yaml
 task_id: PARTY-1
-title: "PARTY-1: party membership and state (skeleton)"
+title: "PARTY-1: basic server party membership ingress"
 mode: IMPLEMENT
-status: waiting
+status: in_progress
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/party-1
@@ -18,7 +18,7 @@ registry: yes
 owner: family worker /root/party_owner (sole author)
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
-updated_at: 2026-10-17
+updated_at: 2026-10-23
 execution_policy: continuous_progress
 owned_paths:
   - crates/gameplay/durability/src/durability/world_party.rs
@@ -43,6 +43,59 @@ blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
 ```
+
+## Server wiring gap list (2026-10-23 HEAD audit)
+
+| Layer | On this HEAD | Missing server work |
+|---|---|---|
+| L3 | `social-rules/src/party.rs`, `social/src/party/view.rs`; membership validation/cache | Reuse existing membership shape validation; no duplicate model |
+| L4 | `durability/world_party.rs`, migration 0046; durable invite/accept/leave/pass, receipts, expiry/presence | Kick and a genuine same-transaction combat-lock proof for voluntary leave |
+| Protocol | No party codec or registry fragments | Bounded dedicated intents/query/results, session-local invitation/member handles; allocated commands 45–47, capability 42 only |
+| Dispatch | `party_spell_owner.rs` refreshes membership; `party_xp_command.rs` serves `/sharedxp` only | Admitted command dispatch, target qualification, result encoding and capability gate |
+| Runtime | Production `ComposedFreshAdmission` already owns party SQL/read/cache path | Compose missing command/query caller in existing connection; no client changes |
+| Qualification | World storage/cache and shared-XP tests exist | Real admitted-session command bytes → durable receipt/rows → result bytes; reconnect/reload and refusals |
+
+Workspace: `claude/happy-davinci-ijz3wy-srv-party`, base HEAD `c938f50b4`; no frozen candidate or PR.
+
+Current implementation status: AUTHORING, basic server wiring implemented under owner instruction 2026-10-23; PostgreSQL execution qualification pending. Local edits only; no publication. The owner instruction supersedes the historical skeleton's slot-only and dependency waiting notes for this local server task. No client paths, migration, workflow, repository policy or tooling paths changed.
+
+### Reference parity table (basic server scope)
+
+| Visible behavior | Reference evidence | Oteryn now |
+|---|---|---|
+| Invite a visible player; inviter leads; only leader invites | Accepted PARTY_PVP0 decision §2 official Tibia manual evidence, §4.1 | Dedicated command 45 resolves current actor generation, canonical session and same-channel viewport; existing consent/cap/rate/expiry writer retained |
+| Join a party from an invitation | Same decision §3/§4.1/§11 | Command 46 lists own live invitations with opaque handles, inviter name and expiry; command 45 accepts a handle; durable one-party membership |
+| Pass leadership | Official party evidence in §2; owner operation §4.1 | Query gives own member handles; command 45 invokes existing strongly ordered leadership writer |
+| Leave and deterministic succession | Official §2, accepted §4.1 | Physical attack owner stays borrowed through transaction; all three durable PvP deadlines checked under writer's absence lock; earliest eligible invitation sequence succeeds |
+| Leader kicks a member | Explicit owner task 2026-10-23 | New Kick action reuses durable membership removal and revision/receipt/audit path; self-kick and nonleader rejected |
+| Reload membership after owner/connection restart | Accepted strong World membership §3/§4.2 | Query re-reads PostgreSQL; handles reconstructed for that connection; no cached membership authorizes mutations |
+| Basic wire availability in shipped/default world | Owner server-first direction 2026-10-23 | Capability 42 offered in all Channel offer sets, requires existing entity capability 6; no new content needed; command 47 unused |
+
+### Current validation evidence (2026-10-23)
+
+- Initial `cargo check --locked -p oteryn-gameplay-dispatch --all-targets --quiet`: passed.
+- `cargo test --locked -p oteryn-protocol-oteryn --quiet party_`: 2 passed.
+- Final `cargo clippy --locked -p oteryn-protocol-oteryn -p oteryn-gameplay-entities -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch --all-targets --quiet -- -D warnings`: passed.
+- Final `cargo fmt --all --check -- crates/gameplay/durability/src/durability/world_party.rs crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_membership.rs`: passed. Explicit roots cover the existing include!-mounted durability and generated PostgreSQL modules too.
+- `cargo test --locked -p oteryn-protocol-oteryn --quiet`: 389 passed after adding 42 to the acceptance allowlist and keeping GATED sorted.
+- `cargo test --locked -p oteryn-gameplay-dispatch --lib --quiet gameplay_transport::capabilities::tests`: 44 passed; exact offer assertions extended to include 42, none removed or relaxed.
+- `cargo test --locked -p oteryn-gameplay-entities --features test-support --lib --quiet party`: 1 passed. The crate's existing tests require its test-support feature (plain isolated invocation failed on pre-existing fixture-only Content APIs); no unrelated source repair or manifest change.
+- Handle filter `party_membership_handles_are_bounded_and_session_scoped` passes; checks handle kind, connection generation, empty-session lookup and the 4096-entry cap, including reuse at capacity.
+- `python3 -m unittest discover -s tools/agents/tests`: 129 passed.
+- `python3 tools/agents/validate_governance.py`: passed.
+- `python3 tools/repository/validate_repository_policy.py`: passed.
+- `git diff --check`: passed.
+- PostgreSQL filter: `cargo test --locked -p oteryn-gameplay-dispatch --lib --quiet party_membership_real_dispatch_postgres_end_to_end -- --nocapture`. Initial invocation compiled and returned success via the required route-less early return, with explicit `OTERYN_TEST_POSTGRES_ADMIN_URL is not configured`; **this is not PostgreSQL qualification**. The session's plain `cargo` resolves to rustup, not the D1466 queued wrapper. Wrapper route requested from owner; no credential files or Docker accessed.
+- New case auto-mounted by dispatch `build.rs` into its existing `--lib` PostgreSQL tree; no new integration target. Scenario uses genuinely committed fresh sessions, real `serve_admitted` envelopes/results, durable invite/accept/pass/kick/leave, succession, owner rebuild/query, capability/malformed/invisible/stale-lease refusals, combat blocks and native receipt replay.
+
+Self-review: whole tracked diff and new mechanic files reviewed against `/home/mole/oteryn-cache/CODEX-CHECKLIST.md`. Workspace `apps/`, `crates/`, `tools/` searches covered new enum matches, struct constructors and authority implementations. The only production authority implementation delegates the new method; fixture authorities intentionally retain the rejecting default. All new server ports have production callers and the named real-dispatch scenario; the wire result decoder is consumed by its receiving test peer, with client UI explicitly excluded. Kick is serialized inside the existing unrestricted JSON intent, so no SQL enum CHECK or migration changes are needed. Bounded source reads invoke existing L3 `validate_memberships` inside the transaction; no cache grants mutation authority.
+
+### Unfinished (current server task)
+
+- Execute and repair the filtered PostgreSQL scenario through the intended D1466 wrapper. All local lint/format/unit checks above passed; PostgreSQL remains unqualified because the wrapper/admin route is absent.
+- Full PARTY/PVP state domains, shields, remote presence presentation, party chat and client UI are outside this basic server membership slice; existing presence/expiry and shared-XP owners are reused unchanged.
+- No commit, push, external review trigger, candidate freeze or PR created by this worker.
+
 
 Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
 
