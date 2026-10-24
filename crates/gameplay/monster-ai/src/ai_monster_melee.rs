@@ -153,6 +153,14 @@ impl MonsterMeleeOwner {
                     0,
                 )
                 .map_err(|_| BiteRejection::InvalidPlan)?;
+                // SHIELD-DEFENCE-1: and the target's blocked-hit defence.
+                let defence_draw = deterministic_decision_u64(
+                    &input.decision_root,
+                    input.occurrence,
+                    "ai.monster.melee.defence",
+                    0,
+                )
+                .map_err(|_| BiteRejection::InvalidPlan)?;
                 let width = u64::from(definition.maximum) - u64::from(definition.minimum) + 1;
                 let magnitude = definition.minimum
                     + u32::try_from(draw % width).map_err(|_| BiteRejection::InvalidPlan)?;
@@ -165,7 +173,14 @@ impl MonsterMeleeOwner {
                         &mut self.bites,
                         runtime,
                         vitals,
-                        AiAbilityAdapter::bite(issuer, sequence, target, session, armor_draw),
+                        AiAbilityAdapter::bite(
+                            issuer,
+                            sequence,
+                            target,
+                            session,
+                            armor_draw,
+                            defence_draw,
+                        ),
                         bite,
                         revisions,
                         protection,
@@ -250,6 +265,7 @@ mod tests {
         health: u32,
         revision: u64,
         armor: u32,
+        defence: Option<(u32, u32)>,
     }
     impl CreatureBiteVitals for Vitals {
         fn apply_creature_damage(
@@ -276,6 +292,15 @@ mod tests {
         }
         fn target_armor(&self, _: &ChannelRuntimeV1, _: ExactActorRef, _: GameSessionId) -> u32 {
             self.armor
+        }
+        fn target_defence(
+            &mut self,
+            _: &ChannelRuntimeV1,
+            _: ExactActorRef,
+            _: GameSessionId,
+            _: SemanticTimeMicros,
+        ) -> Option<(u32, u32)> {
+            self.defence
         }
     }
     fn uuid(tag: u8) -> [u8; 16] {
@@ -382,6 +407,7 @@ mod tests {
             health: 20,
             revision: 0,
             armor: 0,
+            defence: None,
         };
         let def = definition(&runtime, 1_000_000)?;
         let resolve = |_| {
@@ -500,6 +526,7 @@ mod tests {
                 health: 20,
                 revision: 0,
                 armor,
+                defence: None,
             };
             let result = owner
                 .think(
@@ -536,6 +563,56 @@ mod tests {
         Ok(())
     }
     #[test]
+    fn a_blocked_hit_meets_the_targets_defence_before_its_armor() -> Result<(), String> {
+        let (mut runtime, issuer, target, session) = fixture()?;
+        let def = definition(&runtime, 1_000_000)?;
+        let resolve = |_| {
+            Some((
+                target,
+                session,
+                ReentryProtection {
+                    protected_until: None,
+                },
+            ))
+        };
+        let bite = |armor, defence, runtime: &mut ChannelRuntimeV1| {
+            let mut owner = MonsterMeleeOwner::default();
+            let mut vitals = Vitals {
+                health: 20,
+                revision: 0,
+                armor,
+                defence,
+            };
+            let result = owner
+                .think(
+                    runtime,
+                    &mut vitals,
+                    issuer,
+                    1,
+                    def,
+                    input(1),
+                    &perceived(),
+                    resolve,
+                    revisions()?,
+                    SemanticTimeMicros::from_micros(0),
+                )
+                .map_err(|error| format!("{error:?}"))?;
+            Ok::<_, String>((result, vitals.health))
+        };
+        let (result, health) = bite(2, Some((3, 3)), &mut runtime)?;
+        let Dispatch::Bite(Ok(applied)) = result else {
+            return Err(format!("defended bite: {result:?}"));
+        };
+        assert_eq!((applied.requested, applied.damage.applied), (8, 4));
+        assert_eq!(health, 16, "defence takes 3, then armor 2 one point");
+        let (result, health) = bite(2, Some((8, 8)), &mut runtime)?;
+        let Dispatch::Bite(Ok(applied)) = result else {
+            return Err(format!("fully defended bite: {result:?}"));
+        };
+        assert_eq!((applied.damage.applied, health), (0, 20));
+        Ok(())
+    }
+    #[test]
     fn failed_chance_and_protected_targets_never_damage_or_retry_later() -> Result<(), String> {
         let (mut runtime, issuer, target, session) = fixture()?;
         let mut owner = MonsterMeleeOwner::default();
@@ -543,6 +620,7 @@ mod tests {
             health: 20,
             revision: 0,
             armor: 0,
+            defence: None,
         };
         let def = definition(&runtime, 0)?;
         let result = owner
@@ -632,6 +710,7 @@ mod tests {
             health: 20,
             revision: 0,
             armor: 0,
+            defence: None,
         };
         let mut def = definition(&runtime, 1_000_000)?;
         def.content_digest[0] ^= 1;
@@ -709,6 +788,7 @@ mod tests {
             health: 1_000,
             revision: 0,
             armor: 0,
+            defence: None,
         };
         let def = definition(&runtime, 1_000_000)?;
         let resolve = |_| {

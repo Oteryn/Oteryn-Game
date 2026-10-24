@@ -125,13 +125,6 @@ pub fn creature_melee_formula(constants: &AttackConstants) -> Formula {
 
 /// What the defender defends with; it selects the defence scaling (`player.cpp:776-818`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[cfg_attr(
-    not(test),
-    allow(
-        dead_code,
-        reason = "ATTACK-2 composes weapon melee and creature block, defence and armor; player defence, distance and the scaled defence formula are follow-ups"
-    )
-)]
 pub enum DefenceSource {
     Shield,
     Weapon,
@@ -141,13 +134,6 @@ pub enum DefenceSource {
 
 /// The defence mode factor (`getDefenseFactor`, `player.cpp:853-872`): the fight mode's factor
 /// while the defender swung within its attack interval, 1.0 otherwise. Creatures use 1.0.
-#[cfg_attr(
-    not(test),
-    allow(
-        dead_code,
-        reason = "ATTACK-2 composes weapon melee and creature block, defence and armor; player defence, distance and the scaled defence formula are follow-ups"
-    )
-)]
 pub fn defence_mode_factor(
     constants: &AttackConstants,
     mode: FightMode,
@@ -164,13 +150,6 @@ pub fn defence_mode_factor(
 /// `defence = trunc((skill / 4 + 2.23) * value * scaling * mode_factor * vocation_multiplier)`,
 /// reading the defending skill from `shielding_skill` and the defence value from
 /// `shield_defense`. A defending skill of 0 uses [`zero_skill_defence_bounds`] instead.
-#[cfg_attr(
-    not(test),
-    allow(
-        dead_code,
-        reason = "ATTACK-2 composes weapon melee and creature block, defence and armor; player defence, distance and the scaled defence formula are follow-ups"
-    )
-)]
 pub fn defence_formula(
     constants: &AttackConstants,
     source: DefenceSource,
@@ -214,13 +193,6 @@ pub fn defence_formula(
 
 /// Defence draw range when the defending skill is 0 (`player.cpp:776-818`): the fight mode's
 /// fixed defence value `v`, drawn from `[v / 2, v]`.
-#[cfg_attr(
-    not(test),
-    allow(
-        dead_code,
-        reason = "ATTACK-2 composes weapon melee and creature block, defence and armor; player defence, distance and the scaled defence formula are follow-ups"
-    )
-)]
 pub fn zero_skill_defence_bounds(constants: &AttackConstants, mode: FightMode) -> (u32, u32) {
     let value = constants.fight_mode(mode).zero_skill_defence;
     (value / 2, value)

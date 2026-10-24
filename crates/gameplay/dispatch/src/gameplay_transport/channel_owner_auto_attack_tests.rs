@@ -5,6 +5,7 @@
 #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
 
 mod attack_chase_budget_tests;
+mod attack_player_block_tests;
 
 use super::*;
 use crate::content::native_gameplay::{

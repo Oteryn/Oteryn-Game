@@ -107,6 +107,9 @@ pub struct PlayerSpellState {
     pub(super) owned_skills: Option<[u16; 7]>,
     /// ARMOR-MITIGATION-1: the worn armor the last committed equipment read installed.
     pub(super) equipped_armor: u32,
+    /// SHIELD-DEFENCE-1: what the hands of the last committed equipment read defend with.
+    pub(super) equipped_defence:
+        Option<oteryn_gameplay_combat_rules::resolution::player_defence::HandDefence>,
     pub(super) training: Option<super::mana_training::LiveManaTraining>,
     pub(super) training_checkpoint: Option<Box<super::mana_training::RetainedTrainingCheckpoint>>,
     pub(super) training_payment: Option<super::mana_training::TrainingPaymentWitness>,
@@ -158,6 +161,7 @@ impl PlayerSpellState {
                 pending_stance: None,
                 owned_skills: None,
                 equipped_armor: 0,
+                equipped_defence: None,
                 training: None,
                 training_payment: None,
                 field_attack_history: super::field_history::FieldAttackHistory::default(),
