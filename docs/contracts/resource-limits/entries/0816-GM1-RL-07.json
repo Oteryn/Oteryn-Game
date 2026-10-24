@@ -1,0 +1,22 @@
+{
+  "id": "GM1-RL-07",
+  "owner_contract": "../agents/tasks/GM-1.md",
+  "resource": "Control-chain verification rows per page",
+  "unit": "rows",
+  "hard_maximum": 64,
+  "configurable_range": {
+    "minimum": 64,
+    "maximum": 64
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Validate before allocation or execution; reject rather than truncate. CANDIDATE until exact-bound qualification; no capability or content grants operator authority.",
+  "client_visible": false,
+  "boundary_tests": [
+    "staff_pg_signed_wire_mute_receipt_replay_restart_and_fail_closed"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/staff.rs",
+    "crates/gameplay/durability/src/durability/staff.rs",
+    "crates/gameplay/durability/src/durability/staff/trust.rs"
+  ]
+}

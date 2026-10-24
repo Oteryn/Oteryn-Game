@@ -17,6 +17,9 @@ pub enum PartyAction {
         target: [u8; 16],
     },
     Leave,
+    Kick {
+        target: [u8; 16],
+    },
     TransferLeader {
         target: [u8; 16],
     },

@@ -1,0 +1,21 @@
+{
+  "id": "PARTY1-WIRE-INTENT",
+  "owner_contract": "protocol-oteryn/v1/party_v1.proto",
+  "resource": "Party intent payload",
+  "unit": "bytes",
+  "hard_maximum": 48,
+  "configurable_range": {
+    "minimum": 48,
+    "maximum": 48
+  },
+  "failure_category": "REJECTED",
+  "allocation_impact": "Bounded basic party command/query; existing PARTYPVP0 bounds remain unchanged.",
+  "client_visible": true,
+  "boundary_tests": [
+    "party_wire_bounds_and_malformed_inputs"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/party.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/party_command.rs"
+  ]
+}
