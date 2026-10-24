@@ -17,6 +17,7 @@ owned_paths:
   - .github/workflows/merge-gate.yml
   - tools/repository/test_validate_pr_gate_pg_sim.py
   - docs/agents/tasks/CI-RUNNER-C.md
+  - .github/workflows/merge-authority-audit.yml (EXPECTED_MERGE_GATE_BLOB rotation only)
 public_contracts: []
 depends_on: []
 blocks: []
@@ -57,6 +58,13 @@ Self-hosted runs retain warm artifacts instead of restoring the protected-main
 Cargo cache or normalizing checkout mtimes. Cargo validates source fingerprints
 against the fresh checkout. Setup removes the previous nextest JUnit report, and
 the result ledger reads the report from the selected target directory.
+
+## Merge-authority pin
+
+`merge-authority-audit.yml` pins the approved `merge-gate.yml` blob. As in earlier
+CI changes (#2312, #2319), this PR rotates exactly `EXPECTED_MERGE_GATE_BLOB` to the
+new blob; nothing else in the audit changes. The protected-base audit run on this PR
+still reads the old pin from `main` and fails by design until the change lands.
 
 ## Security and excluded scope
 
