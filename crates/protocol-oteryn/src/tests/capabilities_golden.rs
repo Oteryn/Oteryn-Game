@@ -637,6 +637,24 @@
   }
 }"#,
     r#"{
+  "id": 51,
+  "name": "STAFF_V1",
+  "constant": "staff::CAPABILITY_STAFF_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [
+    60,
+    61
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}"#,
+    r#"{
   "id": 55,
   "name": "GUILD_BANK_V1",
   "constant": "guild_bank::CAPABILITY_GUILD_BANK_V1",
