@@ -110,7 +110,7 @@ ALTER TABLE game_character_build_receipts DROP CONSTRAINT game_character_build_r
                  axe_level_before, axe_tries_before, distance_level_before, distance_tries_before,
                  shielding_level_before, shielding_tries_before, fishing_level_before,
                  fishing_tries_before)
-        WHEN 'offline_settlement' THEN 
+        WHEN 'offline_settlement' THEN
             vocation_after = vocation_before
             AND (magic_level_after, mana_spent_after) >= (magic_level_before, mana_spent_before)
             AND (fist_level_after, fist_tries_after) >= (fist_level_before, fist_tries_before)
