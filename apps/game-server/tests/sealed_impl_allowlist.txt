@@ -10,6 +10,7 @@ crates/gameplay/dispatch/src/gameplay_transport/resume.rs | recovery_source_seal
 crates/gameplay/dispatch/src/gameplay_transport/spell_premium_coordinator.rs | PremiumGateOwner | SpellPremiumCoordinator
 crates/gameplay/dispatch/src/gameplay_transport/spell_timer_callbacks.rs | due_read_seal::Sealed | DueEvidence<'_>
 crates/gameplay/dispatch/src/lifted_tests/durability_world_party_tests.rs | fresh_source_sealed::Sealed | Source
+crates/gameplay/durability/src/durability/world_party/ingress.rs | logout_owner_seal::Sealed | CurrentLogoutProof
 apps/game-server/src/lifted_tests/party_shared_xp_postgres_tests.rs | fresh_source_sealed::Sealed | Source
 apps/game-server/src/node/runtime_status.rs | fresh_source_sealed::Sealed | Committed
 apps/game-server/src/node/serve.rs | fresh_source_sealed::Sealed | RuntimeReadiness

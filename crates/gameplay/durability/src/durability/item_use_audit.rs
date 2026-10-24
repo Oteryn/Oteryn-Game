@@ -279,8 +279,10 @@ pub fn check_item_use(value: &OneItemUseV1) -> Result<ItemUseShape, AuditError> 
     check_uuid_v7(&value.world_id)?;
     check_uuid_v7(&value.channel_id)?;
     check_uuid_v7(&value.expected_game_session_id)?;
-    if !matches!(cause.kind, ITEM_USE_CAUSE_FOOD | ITEM_USE_CAUSE_POTION)
-        || command.command_id == 0
+    if !matches!(
+        cause.kind,
+        ITEM_USE_CAUSE_FOOD | ITEM_USE_CAUSE_POTION | super::item_use::mining::PICK_REFINE_CAUSE
+    ) || command.command_id == 0
         || command.game_session_id != value.expected_game_session_id
         || value.expected_session_generation == 0
         || value.runtime_scope_ownership_generation == 0
@@ -310,7 +312,11 @@ pub fn check_item_use(value: &OneItemUseV1) -> Result<ItemUseShape, AuditError> 
             ItemUseShape::Burn
         }
         (ITEM_USE_CAUSE_POTION, None, true) => ItemUseShape::BurnFlaskMissing,
-        (ITEM_USE_CAUSE_POTION, Some(flask), false) => check_flask(flask, before, entry)?,
+        (
+            ITEM_USE_CAUSE_POTION | super::item_use::mining::PICK_REFINE_CAUSE,
+            Some(flask),
+            false,
+        ) => check_flask(flask, before, entry)?,
         _ => return Err(AuditError::InvalidInput),
     };
     shape.usage(source_retires).check()?;
@@ -448,8 +454,7 @@ mod tests {
     use super::*;
     use serde_json::Value;
 
-    const RESOURCE_REGISTRY: &str =
-        oteryn_protocol_oteryn::RESOURCE_LIMITS_REGISTRY_JSON;
+    const RESOURCE_REGISTRY: &str = oteryn_protocol_oteryn::RESOURCE_LIMITS_REGISTRY_JSON;
 
     fn registered(id: &str) -> u64 {
         let registry: Value = serde_json::from_str(RESOURCE_REGISTRY).unwrap();

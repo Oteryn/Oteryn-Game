@@ -37,6 +37,7 @@ mod guild_bank;
 mod guild_chat;
 mod guild_intent;
 mod highscores;
+mod house_move_out;
 mod input_gate;
 mod item_craft;
 mod item_look;
@@ -50,6 +51,7 @@ mod logout;
 #[cfg(test)]
 mod logout_tests;
 mod loop_move;
+mod mining;
 pub mod spectate_session;
 mod staff;
 mod vip;
@@ -2554,6 +2556,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     house_intent::composed_methods!();
     daily_reward::composed_methods!();
     staff::composed_methods!();
+    house_move_out::composed_methods!();
     async fn observe_quest_log(
         &self,
         actor: ExactActorRef,
@@ -2959,6 +2962,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         item: item_view::ItemKey,
     ) -> UseOutcome {
         self.use_backpack_item(actor, command, item).await
+    }
+
+    async fn use_pick(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<item_view::ItemKey>,
+        target: Option<item_view::ItemKey>,
+    ) -> Option<UseOutcome> {
+        self.use_pick_impl(actor, command, intent, source, target)
+            .await
     }
 
     async fn use_item_by_definition(
