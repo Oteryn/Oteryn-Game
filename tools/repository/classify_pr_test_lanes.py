@@ -104,6 +104,8 @@ SERVER_QUALIFICATION_EXCLUDED_PREFIXES = (
     "apps/game-server/src/content/",
     # The Content module carved into the gameplay content crate keeps its routing.
     "crates/gameplay/content/src/content/",
+    # The item promotion and CW2 import modules carved into content-promotion keep it too.
+    "crates/gameplay/content-promotion/src/content/",
     # The ability, AI and interaction modules carved into the L3 gameplay crates keep theirs.
     "crates/gameplay/combat/src/ability/",
     "crates/gameplay/monster-ai/src/ai/",

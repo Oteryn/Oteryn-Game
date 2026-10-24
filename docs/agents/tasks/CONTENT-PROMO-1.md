@@ -3,12 +3,12 @@
 ```yaml
 task_id: CONTENT-PROMO-1
 mode: IMPLEMENT
-status: local_validation_incomplete
+status: ready_for_review
 repository: Oteryn/Oteryn-Game
 pr: null
-publication: uncommitted (owner instruction)
+publication: branch claude/happy-davinci-ijz3wy-contentpromo (owner-authorized)
 base_sha: 6d090defd24f72d9bc6bfd3f9273fb2f758b189d
-branch: detached worktree
+branch: claude/happy-davinci-ijz3wy-contentpromo
 frozen_sha: null
 ```
 
@@ -108,8 +108,10 @@ No gameplay, persistence, PostgreSQL, protocol, identity, admission or authority
 semantics change. No content regeneration, evidence-packet edits, third-party
 dependencies, Git mutations, publication, credentials or external writes.
 `Cargo.lock` adds only the new workspace package and its two consumer edges;
-all third-party entries are unchanged. Protected workflow and
-`tools/repository/` files are not edited.
+all third-party entries are unchanged. Workflows and the repository policy are
+not edited. One routing prefix is added to
+`tools/repository/classify_pr_test_lanes.py` with explicit owner consent (see
+Validation).
 
 ## Validation
 
@@ -158,7 +160,9 @@ crates. No PostgreSQL code is touched and no PostgreSQL suite is run.
   actual: 202, limit: 201 }`. The unchanged fixture helpers hard-code 201;
   `git diff` / status show no changes to `content/` or `npc_materializer/`.
   Therefore this is an existing fixture/tree-bound mismatch, independent of
-  relocating imports (DERIVED). Tests and bounds remain unchanged.
+  relocating imports. The same command on unmodified `origin/main`
+  (`e9f3d1e8a`) fails the same 8 tests with 78 passed (VERIFIED). Tests and
+  bounds remain unchanged.
 - Final clean build measurement, without concurrent local Cargo checks: PASS.
 - Whole-diff review against `/home/mole/oteryn-cache/CODEX-CHECKLIST.md`: PASS
   for this extraction. All relocated tokens match after the two necessary
@@ -166,6 +170,13 @@ crates. No PostgreSQL code is touched and no PostgreSQL suite is run.
   variants, struct fields, trait methods or public functions require caller
   updates beyond the symbol-user sweep and import changes already recorded.
 - `git diff --check`: PASS.
+- Routing: `crates/gameplay/content-promotion/src/content/` is added to
+  `SERVER_QUALIFICATION_EXCLUDED_PREFIXES` next to the existing
+  `crates/gameplay/content/src/content/` entry, so the relocated modules keep
+  the routing they had before the move. The owner explicitly approved this
+  one-line edit to the otherwise excluded classifier.
+  `python3 tools/repository/test_classify_pr_test_lanes.py` and
+  `python3 tools/repository/test_classify_content_routing.py`: PASS.
 
 Clean build measurements (requested dev build, separate fresh target directories):
 
@@ -200,7 +211,8 @@ Reports:
 - Whole-build improvement was not demonstrated; content itself measured faster
   in the final run, as recorded above.
 - Eight unchanged materializer NPC fixture tests fail with the 201-entry bound
-  described above. Full names (same command/filter selects all of them):
+  described above. They fail identically on `origin/main` `e9f3d1e8a`, so they
+  predate this change and are left for a separate fixture task. Full names (same command/filter selects all of them):
   - `npc_bulk_enrichment::tests::enrichment_cannot_activate_services_or_change_actor_identity`
   - `npc_bulk_enrichment::tests::enrichment_preserves_disabled_features_and_rejects_duplicate_replacements`
   - `npc_bulk_enrichment::tests::packet_and_complete_predecessor_fences_are_atomic`
@@ -209,14 +221,8 @@ Reports:
   - `npc_bulk_provisional::tests::duplicate_source_binding_fails_late_native_validation_atomically`
   - `npc_bulk_provisional::tests::injected_service_reference_rejects_without_mutation`
   - `npc_bulk_provisional::tests::packet_and_predecessor_fences_reject_without_mutation`
-- `tools/repository/classify_pr_test_lanes.py` has a content-specific routing
-  prefix for the old content directory, which should also cover the new
-  `crates/gameplay/content-promotion/src/content/` directory in a separately
-  authorized policy change. This file is owner-excluded. Existing generic
-  gameplay routing and the manifests still select Rust qualification here.
 - Optional Python lowering-packet tests could not load because the environment
   lacks `rfc3339-validator`; no dependency was downloaded.
-- Publication remains excluded by the owner; all changes stay uncommitted.
 
 ## Changed files
 
@@ -246,6 +252,7 @@ The 30 module rows above each map
 - `tools/content-schema/item-authoring/donor_census.py`
 - `tools/content-schema/item-authoring/lower_promotion_packet.py`
 - `tools/content-schema/item-authoring/test_lower_promotion_packet.py`
+- `tools/repository/classify_pr_test_lanes.py`
 - `workspace-boundaries.toml`
 - `crates/gameplay/content/src/content/item_family.rs`
 - `crates/gameplay/content-promotion/Cargo.toml`
