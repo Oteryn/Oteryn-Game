@@ -124,7 +124,11 @@ pub fn offered_for_scope_with(
     weather_bound: bool,
 ) -> &'static [OfferedCapability] {
     let base = if bundle {
-        super::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES
+        if super::timed_item_content::supported(active) {
+            super::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES
+        } else {
+            super::capabilities::BUNDLE_WORLD_UNTIMED_OFFERED_CAPABILITIES
+        }
     } else {
         super::item_ref_admission::offered_capabilities(active)
     };

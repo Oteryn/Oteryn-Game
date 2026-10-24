@@ -71,6 +71,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     gate.begin_turn();
                 }
             }
+            self.tick_timed_items().await;
             if !self.ensure_source_map_initialized().await {
                 continue;
             }
