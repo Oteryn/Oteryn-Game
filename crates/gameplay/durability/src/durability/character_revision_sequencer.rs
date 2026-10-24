@@ -27,6 +27,7 @@ use std::future::Future;
 use std::sync::Arc;
 
 use tokio::sync::{Mutex as SlotQueue, OwnedMutexGuard};
+mod cyclopedia;
 mod death_promotion;
 mod npc_purchase;
 #[cfg(test)]

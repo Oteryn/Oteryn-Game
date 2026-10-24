@@ -504,7 +504,11 @@ fn registries_bind_capability_14_and_its_limits() {
         capability["requires"],
         serde_json::json!(CAPABILITY_CONTAINER_TREE_V1_REQUIRES)
     );
-    assert_eq!(CAPABILITY_CONTAINER_TREE_V1_REQUIRES, [4, 12]);
+    let expected = [
+        4,  // ITEM_VIEW_MOVE_V1
+        12, // ITEM_EQUIP_DROP_V1
+    ];
+    assert_eq!(CAPABILITY_CONTAINER_TREE_V1_REQUIRES, expected);
     assert_eq!(
         capability["command_types"],
         serde_json::json!([COMMAND_TYPE_CONTAINER_VIEW_INTENT])

@@ -203,6 +203,8 @@ pub struct OneItemTimedExpiryV1 {
     pub container_entry: Option<OneItemContainerEntryV1>,
     #[prost(bool, tag = "8")]
     pub equipment_container_slot: bool,
+    #[prost(uint32, optional, tag = "12")]
+    pub equipment_slot: Option<u32>,
     #[prost(uint32, tag = "9")]
     pub reason: u32,
     #[prost(message, optional, tag = "10")]
@@ -247,8 +249,9 @@ pub fn check_timed_expiry(value: &OneItemTimedExpiryV1) -> Result<TimedShape, Au
     match (
         value.container_entry.as_ref(),
         value.equipment_container_slot,
+        value.equipment_slot,
     ) {
-        (Some(entry), false) => {
+        (Some(entry), false, None) => {
             check_uuid_v7(&entry.parent_item_instance_id)?;
             if entry.placement_ordinal == 0
                 || entry.parent_item_instance_id == before.item_instance_id
@@ -256,7 +259,8 @@ pub fn check_timed_expiry(value: &OneItemTimedExpiryV1) -> Result<TimedShape, Au
                 return Err(AuditError::InvalidInput);
             }
         }
-        (None, true) => {}
+        (None, true, None) => {}
+        (None, false, Some(1..=8 | 10)) => {}
         _ => return Err(AuditError::InvalidInput),
     }
     let reason_value = match value.reason {
@@ -281,7 +285,7 @@ pub fn check_timed_expiry(value: &OneItemTimedExpiryV1) -> Result<TimedShape, Au
         // before values.
         if after.lifecycle != ITEM_LIFECYCLE_RETIRED
             || after.quantity != 0
-            || value.container_entry.is_none()
+            || (value.container_entry.is_none() && value.equipment_slot.is_none())
             || row_after != row_before
         {
             return Err(AuditError::InvalidInput);
@@ -408,8 +412,7 @@ mod tests {
     use super::*;
     use serde_json::Value;
 
-    const RESOURCE_REGISTRY: &str =
-        oteryn_protocol_oteryn::RESOURCE_LIMITS_REGISTRY_JSON;
+    const RESOURCE_REGISTRY: &str = oteryn_protocol_oteryn::RESOURCE_LIMITS_REGISTRY_JSON;
 
     fn registered(id: &str) -> u64 {
         let registry: Value = serde_json::from_str(RESOURCE_REGISTRY).unwrap();
@@ -598,6 +601,7 @@ mod tests {
             runtime_scope_ownership_generation: 1,
             container_entry: None,
             equipment_container_slot: true,
+            equipment_slot: None,
             reason: TIMED_EXPIRY_REASON_TIME_EXHAUSTED,
             row_before: Some(row(None, Some(60_000), 4)),
             row_after: Some(row(None, None, 5)),
@@ -614,6 +618,7 @@ mod tests {
                 placement_ordinal: 3,
             }),
             equipment_container_slot: false,
+            equipment_slot: None,
             reason: TIMED_EXPIRY_REASON_CHARGES_EXHAUSTED,
             row_before: Some(row(Some(5), None, 0)),
             row_after: Some(row(Some(5), None, 0)),

@@ -10,9 +10,12 @@ use super::db::{
 use super::offline_training_state::{self, OfflineChange, OfflineTrainingState};
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
-use crate::content::training_formula::CompiledTrainingFormula;
 use crate::domain::character_build::BuildFormula;
 use crate::domain::{CharacterId, CharacterRevision};
+use oteryn_gameplay_content::content::{
+    character_progression_content::CharacterProgressionContent,
+    training_formula::CompiledTrainingFormula,
+};
 use oteryn_gameplay_progression::loop_training::{TrainingRates, add_gain, plan_offline};
 use sha2::{Digest, Sha256};
 use sqlx::{Postgres, Row, Transaction};
@@ -22,8 +25,7 @@ use std::sync::Arc;
 pub struct TrainingContext {
     pub rates: Arc<TrainingRates>,
     pub formula: CompiledTrainingFormula,
-    pub progression:
-        Option<crate::content::character_progression_content::CharacterProgressionContent>,
+    pub progression: Option<CharacterProgressionContent>,
 }
 
 /// Only the current fenced logout owner supplies this participant to terminal release.

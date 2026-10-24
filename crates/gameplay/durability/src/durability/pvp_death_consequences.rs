@@ -1,8 +1,6 @@
 //! Consequences in the existing fenced victim death transaction, never a second commit.
 use super::character_authority::ReconciledCharacterAuthority;
-use super::character_death::{
-    CharacterDeathRequest, CommittedCharacterDeath,
-};
+use super::character_death::{CharacterDeathRequest, CommittedCharacterDeath};
 use super::character_progression::{CharacterProgressionError, CurrentCharacterGameplayFence};
 use super::character_revision_sequencer::CharacterRevisionSequencer;
 pub use super::pvp_death_request::{PvpContributorKind, PvpDeathContributor};
@@ -43,6 +41,13 @@ pub(super) async fn apply_pvp_death_in_transaction(
     occurrence: &[u8; 16],
     contributors: &[PvpDeathContributor],
 ) -> Result<()> {
+    let live_contributors;
+    let contributors = if contributors.is_empty() {
+        live_contributors = super::pvp_live::death_contributors_in_transaction(tx, victim).await?;
+        live_contributors.as_slice()
+    } else {
+        contributors
+    };
     let mut characters = contributors
         .iter()
         .map(|c| c.character_id)

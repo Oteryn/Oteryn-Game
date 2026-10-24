@@ -119,3 +119,6 @@ fn loop_training_postgres_missing_progression_is_atomic_with_settlement() -> Tes
     }).map_err(|e|e.to_string()))?.join().map_err(|_|"training initializer panic")??;
     Ok(())
 }
+
+#[path = "loop_training/stamina.rs"]
+mod stamina;

@@ -5,10 +5,8 @@
 //! transaction through `apply_equipment_in_transaction`, keyed by the command's CommandRef, under
 //! the spell lane (key-33 writer) and with the Channel content pin of the active generation.
 //!
-//! Timed items (TIMED-RT-1b, ITEM-MOVE-WIRE-1 §4 slot wiring): the Game node runs no
-//! `TimedItemHost` yet, so no equipped item has a live lane. An equip of a timed definition is
-//! refused (`NOT_SUPPORTED`) before any write instead of entering a slot non-live; an unequip
-//! moves an item that has no lane, so there is no accrued state to stop, checkpoint or drain.
+//! Timed items checkpoint under the same spell lane before a move. The owner clock
+//! starts newly equipped supported definitions and pauses items leaving equipment.
 //!
 //! Domain 9 shows the occupied slots under capability 12, read through the same current-fence
 //! reader movement uses, and names each item by the pinned generation's Item definition index.
@@ -80,8 +78,8 @@ impl EquipmentMoveContent for NativeItemWeights<'_> {
             })
     }
 
-    /// The hosting runtime's own reading of a timed definition (TIMED-RT-1b): a definition it
-    /// would run, or one whose timed content conflicts, is timed.
+    /// Refuse timed forms the owner cannot host. Supported carried/equipped budgets
+    /// are checkpointed by the production move path below.
     fn is_timed_item(&self, production_key: &str, revision_ref: &str) -> bool {
         let Some(policy) = self.0.item_policy(production_key, revision_ref) else {
             return true;
@@ -89,10 +87,27 @@ impl EquipmentMoveContent for NativeItemWeights<'_> {
         let Ok(definition) = ReferenceItemTarget::new(production_key, revision_ref) else {
             return true;
         };
-        !matches!(
-            resolve_timed_definition(&definition, &policy.record().semantics),
-            Ok(None)
-        )
+        let typed = crate::durability::item_mint::TypedDefinitionRef {
+            family: "Item".into(),
+            production_key: production_key.into(),
+            revision_ref: revision_ref.into(),
+        };
+        if super::timed_item::facts(self.0, &typed).is_some() {
+            return false;
+        }
+        if matches!(&policy.record().semantics.temporal, ReferenceItemField::Known(temporal)
+            if temporal.consumption_mode == ReferenceItemField::Known(crate::content::ReferenceTemporalMode::DurableAbsoluteDeadline))
+        {
+            return true;
+        }
+        let paired = matches!(&policy.record().semantics.use_transform, ReferenceItemField::Known(transforms)
+            if transforms.targets.iter().any(|target| target.kind == crate::content::ReferenceTransformKind::Equip
+                && matches!(target.target, ReferenceItemField::Known(_))));
+        paired
+            || !matches!(
+                resolve_timed_definition(&definition, &policy.record().semantics),
+                Ok(None)
+            )
     }
 }
 
@@ -245,6 +260,12 @@ pub(super) async fn move_equipment(
     let Some(_permit) = admission.spell_lane_permit().await else {
         return EquipmentMoveResult::Unknown;
     };
+    if !admission
+        .checkpoint_timed_equipment(actor, command.game_session_id, true)
+        .await
+    {
+        return EquipmentMoveResult::Unknown;
+    }
     let native = {
         let runtime = admission.runtime.lock().await;
         let states = admission.states.spell_states.lock().await;
@@ -285,6 +306,12 @@ pub(super) async fn move_equipment(
         .forget_weapon(actor, command.game_session_id);
     match committed {
         Ok(Ok(_receipt)) => {
+            if !admission
+                .checkpoint_timed_equipment(actor, command.game_session_id, true)
+                .await
+            {
+                return EquipmentMoveResult::Unknown;
+            }
             // EQUIP-0 §4: only a committed owner move changes suppressions. Keep the lane
             // permit across the fresh read, then obey runtime -> spell_states lock order.
             let Some(effects) = read_current_equipment(admission, command.game_session_id)

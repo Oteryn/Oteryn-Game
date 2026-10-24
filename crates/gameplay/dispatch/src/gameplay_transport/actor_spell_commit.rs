@@ -25,6 +25,9 @@ pub struct PlayerBatchPreflight {
     batch: OwnerCombatBatch,
     replacements: Vec<Replacement>,
     health_receipts: Vec<crate::foundation::runtime_actor_spell_types::EffectReceipt>,
+    pub(in crate::gameplay_transport) deaths:
+        Vec<(ExactActorRef, GameSessionId, super::PlayerDeath)>,
+    pub(in crate::gameplay_transport) pvp_locks: Vec<(ExactActorRef, GameSessionId, bool)>,
 }
 
 impl crate::foundation::runtime_actor_spell_types::player_proof_seal::Sealed
@@ -130,6 +133,22 @@ impl PlayerBatchPreflight {
     // Only the compositor below calls this, after the unchanged exclusive owner borrow
     // has validated every index. No allocation, lookup, callback or fallible step follows.
     fn install(self, states: &mut ChannelSpellStates) {
+        states.deaths.extend(self.deaths);
+        states.pvp_locks.retain(|(actor, session, _)| {
+            states
+                .actors
+                .iter()
+                .any(|(a, s, _)| a == actor && s == session)
+        });
+        if let Some(now) = self.batch.now_us {
+            for (actor, session, aggression) in self.pvp_locks {
+                let lock = super::super::pvp_live::lock_mut(states, actor, session);
+                lock.on_pvp_hit(now);
+                if aggression {
+                    lock.on_aggression(now);
+                }
+            }
+        }
         for replacement in self.replacements {
             states.actors[replacement.index].2 = replacement.next;
         }
@@ -142,6 +161,7 @@ pub fn stage_player_batch(
     batch: &OwnerCombatBatch,
     caster_successor: Option<PlayerSpellState>,
 ) -> Result<PlayerBatchPreflight, SpellCastDisposition> {
+    let mut deaths = Vec::new();
     let mut health_receipts = Vec::new();
     health_receipts
         .try_reserve(batch.effects.len())
@@ -200,6 +220,54 @@ pub fn stage_player_batch(
             .find(|r| r.index == index)
             .ok_or(SpellCastDisposition::Rejected)?;
         match &effect.change {
+            OwnerCombatChange::Damage {
+                target_atom,
+                magnitude,
+            } => {
+                if *target_atom != crate::spell::combat_execution::actor_atom(*actor)
+                    || states.is_dead(*actor)
+                    || batch.caster == *actor
+                {
+                    return Err(SpellCastDisposition::TargetIllegal);
+                }
+                let magnitude =
+                    u32::try_from(*magnitude).map_err(|_| SpellCastDisposition::Rejected)?;
+                let health_before = replacement.next.vitals().health;
+                let (next, damage) = crate::spell::actor_conditions::stage_creature_hit(
+                    &replacement.next,
+                    magnitude,
+                    batch
+                        .now_ms
+                        .checked_mul(1000)
+                        .ok_or(SpellCastDisposition::Rejected)?,
+                )?;
+                replacement.next = next;
+                health_receipts.push(
+                    crate::foundation::runtime_actor_spell_types::EffectReceipt {
+                        target: *actor,
+                        sub_ordinal: effect.sub_ordinal,
+                        health: Some(crate::foundation::OwnerDamageResult {
+                            applied: true,
+                            health_before: i64::from(health_before),
+                            health_after: i64::from(damage.health_after),
+                        }),
+                    },
+                );
+                if damage.health_after == 0 && !deaths.iter().any(|(a, _, _)| a == actor) {
+                    deaths.push((
+                        *actor,
+                        *session,
+                        super::PlayerDeath {
+                            occurrence: (states.mint_death)()
+                                .ok_or(SpellCastDisposition::Rejected)?,
+                            cell: runtime
+                                .read_actor_position(*actor)
+                                .map_err(|_| SpellCastDisposition::Rejected)?
+                                .position(),
+                        },
+                    ));
+                }
+            }
             OwnerCombatChange::Heal {
                 target_atom,
                 magnitude,
@@ -240,6 +308,8 @@ pub fn stage_player_batch(
         batch: batch.clone(),
         replacements,
         health_receipts,
+        deaths,
+        pvp_locks: Vec::new(),
     };
     preflight.validate_current(runtime, states)?;
     Ok(preflight)
@@ -280,6 +350,16 @@ pub fn check_owner_batch(
     preflight
         .validate_current(runtime, states)
         .map_err(|_| Error::SnapshotChanged)?;
+    if staged.batch().effects.iter().any(|effect| {
+        !runtime.contains_live_creature(effect.target)
+            && matches!(effect.change, OwnerCombatChange::Damage { .. })
+            && !preflight
+                .pvp_locks
+                .iter()
+                .any(|(target, _, _)| *target == effect.target)
+    }) {
+        return Err(Error::PlayerVitalsOwnerRequired);
+    }
     if !preflight.matches_batch(staged.batch()) {
         return Err(Error::InvalidBatch);
     }

@@ -209,7 +209,7 @@ fn ground_error(error: GroundCellAdmissionError) -> LoopError {
             LoopError::Refused(LoopMoveRefusal::NoRoom)
         }
         GroundCellAdmissionError::Limit(GroundCellLimitError::IncompatibleInput)
-        | GroundCellAdmissionError::Source(SpellItemError::Rejected(_)) => {
+        | GroundCellAdmissionError::Source(SpellItemError::FieldCapabilityRefused | SpellItemError::Rejected(_)) => {
             LoopError::Refused(LoopMoveRefusal::Blocked)
         }
         GroundCellAdmissionError::Source(SpellItemError::Durability(error)) => {

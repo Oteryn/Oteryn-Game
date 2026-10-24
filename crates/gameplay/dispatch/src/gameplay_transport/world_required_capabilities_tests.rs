@@ -369,28 +369,28 @@ fn real_scope_offer_enforces_the_registered_d1083_floor() {
             BUNDLE_WORLD_OFFERED_CAPABILITIES
         )
         .unwrap_err(),
-        BootCapabilityError::MissingFloor(vec![18]),
+        BootCapabilityError::MissingFloor(vec![11, 18]),
     );
     let required = BoundRequiredCapabilities::for_channel_boot(
-        &[18],
+        &[11, 18],
         scope,
         7,
         "policy-7",
         BUNDLE_WORLD_OFFERED_CAPABILITIES,
     )
     .unwrap();
-    assert_eq!(required.required.as_slice(), &[4, 6, 18]);
-    // 11 is registered but its actual scope offer remains closed. 6 never aliases FIELD.
+    assert_eq!(required.required.as_slice(), &[4, 6, 11, 15, 18]);
+    // A bundle policy that still omits map USE fails closed after CRAFT-1 opens its offer.
     assert_eq!(
         BoundRequiredCapabilities::for_channel_boot(
-            &[11, 18],
+            &[18],
             scope,
             7,
             "policy-7",
-            BUNDLE_WORLD_OFFERED_CAPABILITIES
+            BUNDLE_WORLD_OFFERED_CAPABILITIES,
         )
         .unwrap_err(),
-        BootCapabilityError::Unoffered(11)
+        BootCapabilityError::MissingFloor(vec![11])
     );
     // D1442: 29 MAP_STATE_V1 and 30 WORLD_SPATIAL_FIELDS are registered, require 6 and are
     // offered by no scope, so neither joins the floor and declaring either fails boot closed.
@@ -415,7 +415,7 @@ fn real_scope_offer_enforces_the_registered_d1083_floor() {
     }
     assert_eq!(
         build_floor(&registry.rows, BUNDLE_WORLD_OFFERED_CAPABILITIES).unwrap(),
-        [18]
+        [11, 18]
     );
     assert!(
         BoundRequiredCapabilities::for_channel_boot(
@@ -431,9 +431,7 @@ fn real_scope_offer_enforces_the_registered_d1083_floor() {
 
 #[test]
 fn invalid_weather_documents_leave_capability_26_unoffered_and_a_required_26_refuses_boot() {
-    use super::super::capabilities::{
-        BUNDLE_WORLD_OFFERED_CAPABILITIES, PRODUCTION_OFFERED_CAPABILITIES,
-    };
+    use super::super::capabilities::PRODUCTION_OFFERED_CAPABILITIES;
     const WEATHER: u32 = oteryn_protocol_oteryn::world_weather::CAPABILITY_WORLD_WEATHER_V1;
     // Invalid documents: the loader fails, so no source is bound.
     let index = include_str!("../../../../../content/weather/index.json");
@@ -451,7 +449,7 @@ fn invalid_weather_documents_leave_capability_26_unoffered_and_a_required_26_ref
             unbound,
             offered_for_scope_with(bundle, None, false)
         ));
-        let floor: &[u32] = if bundle { &[18] } else { &[] };
+        let floor: &[u32] = if bundle { &[11, 18] } else { &[] };
         let declared: Vec<u32> = floor.iter().copied().chain([WEATHER]).collect();
         // A required 26 with no source refuses boot; with a bound source it binds 26 and 6.
         assert_eq!(
@@ -469,7 +467,7 @@ fn invalid_weather_documents_leave_capability_26_unoffered_and_a_required_26_ref
             BoundRequiredCapabilities::for_channel_boot(floor, scope, 7, "policy-7", unbound)
                 .unwrap();
         let supported: &[u32] = if bundle {
-            &[4, 6, 18, WEATHER]
+            &[4, 6, 11, 15, 18, WEATHER]
         } else {
             &[6, WEATHER]
         };
@@ -480,11 +478,11 @@ fn invalid_weather_documents_leave_capability_26_unoffered_and_a_required_26_ref
     // The default sets are the bound sets: the shipped data loads in this build.
     assert_eq!(
         offered_for_scope_with(true, None, true),
-        BUNDLE_WORLD_OFFERED_CAPABILITIES
+        super::super::capabilities::BUNDLE_WORLD_UNTIMED_OFFERED_CAPABILITIES
     );
     assert_eq!(
         offered_for_scope(true, None),
-        BUNDLE_WORLD_OFFERED_CAPABILITIES
+        super::super::capabilities::BUNDLE_WORLD_UNTIMED_OFFERED_CAPABILITIES
     );
     assert_eq!(
         offered_for_scope_with(false, None, true),
@@ -495,16 +493,19 @@ fn invalid_weather_documents_leave_capability_26_unoffered_and_a_required_26_ref
 #[test]
 fn real_required_members_are_forced_and_each_missing_member_refuses() {
     let required = BoundRequiredCapabilities::for_channel_boot(
-        &[18],
+        &[11, 18],
         channel_scope(1, 2),
         7,
         "policy-7",
         super::super::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
     )
     .unwrap();
-    assert_eq!(required.effective(), &[4, 6, 18]);
-    for missing in [4, 6, 18] {
-        let support: Vec<_> = [4, 6, 18].into_iter().filter(|id| *id != missing).collect();
+    assert_eq!(required.effective(), &[4, 6, 11, 15, 18]);
+    for missing in [4, 6, 11, 15, 18] {
+        let support: Vec<_> = [4, 6, 11, 15, 18]
+            .into_iter()
+            .filter(|id| *id != missing)
+            .collect();
         assert!(
             matches!(required.authenticate_support(&support), Err(SessionCapabilityError::MissingSupport(ids)) if ids == [missing])
         );
@@ -514,20 +515,20 @@ fn real_required_members_are_forced_and_each_missing_member_refuses() {
     }
     assert_eq!(
         required
-            .authenticate_support(&[4, 6, 18])
+            .authenticate_support(&[4, 6, 11, 15, 18])
             .unwrap()
             .selected()
             .as_slice(),
-        &[4, 6, 18]
+        &[4, 6, 11, 15, 18]
     );
     // Required additions get a replacement baseline; optional negotiation never widens a resume.
     assert_eq!(
         required
-            .authenticate_resume_support(&[3, 4, 6, 7, 18], SelectedCapabilities::NONE)
+            .authenticate_resume_support(&[3, 4, 6, 7, 11, 15, 18], SelectedCapabilities::NONE)
             .unwrap()
             .selected()
             .as_slice(),
-        &[4, 6, 18]
+        &[4, 6, 11, 15, 18]
     );
 }
 
@@ -535,14 +536,14 @@ fn real_required_members_are_forced_and_each_missing_member_refuses() {
 fn independently_current_binding_is_required_by_the_durable_callback() {
     let scope = channel_scope(1, 2);
     let required = BoundRequiredCapabilities::for_channel_boot(
-        &[18],
+        &[11, 18],
         scope,
         7,
         "policy-7",
         super::super::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
     )
     .unwrap();
-    let authenticated = required.authenticate_support(&[4, 6, 18]).unwrap();
+    let authenticated = required.authenticate_support(&[4, 6, 11, 15, 18]).unwrap();
     let check = authenticated.current_check();
     assert!(check(scope, 7, "policy-7"));
     for (current, generation, policy) in [

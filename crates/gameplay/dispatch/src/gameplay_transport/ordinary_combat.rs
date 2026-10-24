@@ -164,6 +164,7 @@ pub(super) async fn prepare(
     rune: Option<&oteryn_protocol_oteryn::actor_spell_item_v2::ItemSpellCastIntent>,
     legacy: Option<&super::super::super::rune_use_bridge::LegacyRuneUse>,
     attack_target: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
+    pvp_secure: bool,
     draw: &mut (dyn FnMut(i64, i64) -> i64 + Send),
 ) -> Result<PreparedNativeCombatCast, SpellCastDisposition> {
     prepare_inner(
@@ -187,6 +188,7 @@ pub(super) async fn prepare(
         legacy,
         None,
         attack_target,
+        pvp_secure,
         draw,
     )
     .await
@@ -267,6 +269,7 @@ pub(super) async fn prepare_named(
         None,
         Some((named_target, parameter)),
         None,
+        true,
         draw,
     )
     .await
@@ -297,6 +300,7 @@ async fn prepare_inner(
         &oteryn_protocol_oteryn::actor_spell_v2::ParameterSpellCastIntent,
     )>,
     attack_target: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
+    pvp_secure: bool,
     draw: &mut (dyn FnMut(i64, i64) -> i64 + Send),
 ) -> Result<PreparedNativeCombatCast, SpellCastDisposition> {
     if !applicable(spell)
@@ -567,6 +571,34 @@ async fn prepare_inner(
                 .then_some(pair)
         })
         .collect::<BTreeSet<_>>();
+    let mut pvp_targets = Vec::new();
+    // Basic direct damage only: delayed/chain/condition/field effects retain their refusals.
+    let basic_pvp = spell.aggressive
+        && spell.chain.is_none()
+        && profile
+            .dependencies
+            .effects
+            .iter()
+            .all(|e| e.operation == "damage")
+        && profile
+            .dependencies
+            .abilities
+            .iter()
+            .all(|a| a.chain.is_none());
+    if basic_pvp {
+        for (target, _, _) in &players {
+            if *target == actor {
+                continue;
+            }
+            if let Ok(facts) = crate::gameplay_transport::pvp_live::legal_player(
+                tx, root, authority, runtime, states, room, objects, actor, *target, pvp_secure,
+            )
+            .await
+            {
+                pvp_targets.push((*target, facts.target_black));
+            }
+        }
+    }
     let legal = chain_creatures
         .iter()
         .filter(|c| {
@@ -587,6 +619,9 @@ async fn prepare_inner(
                             && !t.protection
                             && !caster_tile.protection
                     })
+                    || pvp_targets
+                        .iter()
+                        .any(|(a, _)| u64::from(a.actor_local_id()) == c.id)
             } else {
                 true
             }
@@ -749,6 +784,7 @@ async fn prepare_inner(
         &bindings,
         &world,
         &party,
+        &pvp_targets,
         command,
         &occurrence,
         now,
@@ -837,6 +873,7 @@ async fn prepare_inner(
         &bindings,
         &world,
         &party,
+        &pvp_targets,
         command,
         &occurrence,
         now,
@@ -929,6 +966,7 @@ fn lower(
     bindings: &[LiveActorBinding],
     world: &World<Direction>,
     party: &Option<crate::gameplay_transport::party_spell_owner::SourcePartyWorld>,
+    pvp_targets: &[(ExactActorRef, bool)],
     command: CommandRef,
     occurrence: &AbilityOccurrence,
     now: SemanticTimeMicros,
@@ -997,6 +1035,17 @@ fn lower(
         for id in targets {
             applications.push((id, 0, paid.resolution.effects.clone()));
         }
+    }
+    if applications.iter().any(|(id, delay, effects)| {
+        pvp_targets
+            .iter()
+            .any(|(a, _)| u64::from(a.actor_local_id()) == *id)
+            && (*delay != 0
+                || effects
+                    .iter()
+                    .any(|e| !matches!(e, ResolvedEffect::Damage { .. })))
+    }) {
+        return Err(SpellCastDisposition::TargetIllegal);
     }
     if applications.len() > crate::spell::combat_batch::MAX_EFFECTS {
         return reject();
@@ -1128,7 +1177,7 @@ fn lower(
         && matches!(&plan,NativeCombatPlan::Combat(p) if !p.hits.is_empty());
     let mut magnitude = if has_magnitude {
         Some(
-            PreparedMagnitudeOwner::qualify(
+            PreparedMagnitudeOwner::qualify_pvp(
                 runtime,
                 before,
                 owned.binding().actor,
@@ -1138,6 +1187,7 @@ fn lower(
                 bindings,
                 &players,
                 now.get() / 1000,
+                pvp_targets,
             )
             .map_err(|_| SpellCastDisposition::Rejected)?,
         )
@@ -1147,7 +1197,7 @@ fn lower(
     let mut batch=OwnerCombatBatch{caster:owned.binding().actor,attacker:CharacterId::decode(&owned.binding().character).map_err(|_|SpellCastDisposition::Rejected)?,
         current_lease_generation:owned.binding().lease_generation,command,occurrence:occurrence.clone().into(),anchor:Some(paid.anchor.clone()),now_us:Some(now),now_ms:now.get()/1000,
         effects:Vec::new(),deferred:None,binding:serde_json::to_vec(&json!({"intent":match named {Some((_,parameter))=>source_parameter_intent(&parameter.intent,parameter)?,None=>source_cast_intent(intent,rune)},"source_named_target":named.map(|(a,_)|format!("{a:?}")),"parameter_result":if named.is_some(){Some(oteryn_protocol_oteryn::actor_spell_v2::encode_parameter_spell_cast_result(&oteryn_protocol_oteryn::actor_spell_v2::ParameterSpellCastResult{disposition:SpellCastDisposition::Cast,feedback:None,editor:None}).map_err(|_|SpellCastDisposition::Rejected)?)}else{None},"source_definition":format!("{spell:?}"),
-            "capture_format":"ordinary-owner-r21","source_world_capture_digest":sha2::Sha256::digest(format!("{world:?}").as_bytes()).to_vec(),"source_hit_delays":source_delays,"source_chain_origins":paid.resolution.chain.iter().map(|hit|json!([hit.hit.creature,hit.hit.step,hit.hit.from.x,hit.hit.from.y,hit.hit.from.floor])).collect::<Vec<_>>(),"equipment_facts":format!("{:?}",owned.equipment()),
+            "capture_format":"ordinary-owner-r21","pvp_targets":pvp_targets.iter().map(|(actor,black)|json!([crate::spell::combat_execution::actor_atom(*actor),black])).collect::<Vec<_>>(),"source_world_capture_digest":sha2::Sha256::digest(format!("{world:?}").as_bytes()).to_vec(),"source_hit_delays":source_delays,"source_chain_origins":paid.resolution.chain.iter().map(|hit|json!([hit.hit.creature,hit.hit.step,hit.hit.from.x,hit.hit.from.y,hit.hit.from.floor])).collect::<Vec<_>>(),"equipment_facts":format!("{:?}",owned.equipment()),
             "magnitude_facts":format!("{:?}",owned.magnitude()),"selected_variant":format!("{:?}",paid.resolution.ability_variant),
             "harmony_gained":paid.harmony_gained,"harmony_gain_healing_profile":if paid.harmony_gain_healing.is_some(){Some(crate::spell::actor_execution::harmony_gain_profile()?)}else{None},
             "source_party":party.as_ref().map(|p|format!("{:?}",p.source()))})).map_err(|_|SpellCastDisposition::Rejected)?};

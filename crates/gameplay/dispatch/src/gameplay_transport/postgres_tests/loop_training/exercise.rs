@@ -110,8 +110,63 @@ fn scenario() -> TestResult {
             SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 18, 21, 54])
                 .ok_or("selection")?;
         assert!(admitted.continuity.selected_capabilities.contains(54));
+        // A pre-training build may already have non-default 0141 stamina. Establish
+        // its ordinary build through the real writer before seeding that legacy value.
+        let gameplay = crate::durability::character_progression::CurrentCharacterGameplayFence {
+            character_id: fence.character_id,
+            game_session_id: fence.game_session_id,
+            connection_generation: fence.connection_generation,
+            character_lease_generation: fence.character_lease_generation,
+            runtime_scope: fence.runtime_scope,
+            scope_ownership_generation: fence.scope_ownership_generation,
+            expected_character_revision: h
+                .root
+                .read_current_character(&authority, fence.character_id)
+                .await
+                .map_err(debug)?
+                .revision,
+        };
+        let before = h
+            .root
+            .read_character_build_state(&authority, fence.character_id)
+            .await
+            .map_err(debug)?;
+        let formula = native.training_formula().ok_or("training formula")?;
+        let after =
+            crate::durability::character_build::convert_vocation(formula, &before, "knight")
+                .map_err(debug)?;
+        let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+        slot.commit_build(
+            &h.root,
+            &authority,
+            &h.node,
+            gameplay,
+            crate::durability::character_build::BuildChangeRequest {
+                occurrence: crate::durability::character_build::BuildOccurrence::from_bytes(id(78))
+                    .map_err(debug)?,
+                cause: crate::durability::character_build::BuildCause::VocationChoice,
+                before,
+                after,
+                pruned_stance: None,
+            },
+            formula,
+            None,
+        )
+        .await
+        .map_err(debug)?;
+        drop(slot);
+        sqlx::query("UPDATE game_character_build_state SET stamina_minutes=2339 WHERE character_id=encode($1,'hex')::uuid")
+            .bind(fence.character_id.as_bytes().as_slice()).execute(&h.pool).await?;
         owner.admit_loop_training(&mut admitted).await;
         assert_eq!(admitted.first_entry, FirstEntryOutcome::Positioned);
+        let stamina: i32 =
+            sqlx::query_scalar("SELECT stamina_minutes FROM game_character_build_state")
+                .fetch_one(&h.pool)
+                .await?;
+        assert_eq!(
+            stamina, 2339,
+            "first training marker preserves legacy stamina"
+        );
         // Existing fixture builders provision custody; production dispatch owns every tested write.
         let mut tx = h.pool.begin().await?;
         sqlx::query("SET LOCAL session_replication_role=replica")
@@ -521,7 +576,7 @@ fn scenario() -> TestResult {
             .execute(&mut *tx)
             .await?;
         sqlx::query("UPDATE game_durability_reconnect_sessions SET training_created_at_us=training_created_at_us-2000000000 WHERE game_session_id=encode($1,'hex')::uuid").bind(id(50).as_slice()).execute(&mut *tx).await?;
-        sqlx::query("UPDATE game_character_training_markers SET committed_at_us=committed_at_us-600000000,as_of_us=as_of_us-600000000 WHERE cause='logout'").execute(&mut *tx).await?;
+        sqlx::query("UPDATE game_character_training_markers SET committed_at_us=committed_at_us-1140000000,as_of_us=as_of_us-1140000000 WHERE cause='logout'").execute(&mut *tx).await?;
         sqlx::query("UPDATE game_character_build_receipts b SET committed_at=m.committed_at_us/1000 FROM game_character_training_markers m WHERE b.build_occurrence_id=m.build_occurrence_id AND m.cause='logout'").execute(&mut *tx).await?;
         tx.commit().await?;
         let now: i64 =
@@ -629,6 +684,14 @@ fn scenario() -> TestResult {
             .fetch_one(&h.pool)
             .await?;
         assert_eq!(skill, -1);
+        let stamina: i32 =
+            sqlx::query_scalar("SELECT stamina_minutes FROM game_character_build_state")
+                .fetch_one(&h.pool)
+                .await?;
+        assert_eq!(
+            stamina, 2341,
+            "real successor admission crosses the 39h stamina boundary"
+        );
         owner.admit_loop_training(&mut next_admitted).await;
         assert_eq!(
             h.root
@@ -654,6 +717,7 @@ fn scenario() -> TestResult {
         assert_eq!(build, after);
         drop(reopened);
         drop(seal);
+        super::stamina::qualify(&h.pool).await?;
         h.cleanup().await
     })
 }

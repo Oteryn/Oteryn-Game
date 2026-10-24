@@ -2,13 +2,13 @@ syntax = "proto3";
 package oteryn.events.v2;
 
 // Foundation event 8, schema 1; ECONOMY_LEDGER_RETENTION_V1. Each operation
-// carries at most three ledger lines plus one changed bid custody line.
+// carries bounded value lines or at most 100 disposition item transfers.
 message HouseOperationV1 {
   bytes auction = 1;
   string house = 2;
   bytes account = 3;
   bytes character = 4;
-  uint32 kind = 5; // 1 bid edit, 2 winner, 3 refund
+  uint32 kind = 5; // 1 bid edit, 2 winner, 3 refund, 4 disposition
   uint64 maximum = 6;
   uint64 first_rent = 7;
   uint64 price = 8;
@@ -24,6 +24,11 @@ message HouseOperationV1 {
   optional uint64 ownership_before = 18;
   optional uint64 ownership_after = 19;
   optional int64 paid_until_unix_us = 20;
+  bytes disposition = 21; // kind 4: canonical operation UUIDv7
+  uint32 disposition_state = 22; // 1 notice, 2 frozen, 3 drained, 4 cancelled
+  int64 due_at_unix_ms = 23;
+  optional bytes census_digest = 24;
+  repeated HouseDispositionTransferV1 transfers = 25; // <=100; immutable reclaim subject
 }
 message HouseEligibilityV1 {
   bytes account = 1;
@@ -47,4 +52,10 @@ message HouseValueLineV1 {
   uint64 balance_after = 4;
   uint64 escrow_before = 5;
   uint64 escrow_after = 6;
+}
+
+message HouseDispositionTransferV1 {
+  bytes item = 1;
+  bytes reclaim_subject = 2;
+  uint64 ordinal = 3;
 }

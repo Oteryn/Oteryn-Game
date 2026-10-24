@@ -8,6 +8,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         admitted: AdmittedSession,
         text: String,
     ) -> ChatIntentResult {
+        if let Some(wait_seconds) = self.staff_mute_wait(admitted.game_session_id).await {
+            return ChatIntentResult {
+                disposition: ChatDisposition::Muted,
+                wait_seconds,
+            };
+        }
         if !self.states.chat.guild.matches(&admitted) {
             return result(ChatDisposition::Rejected);
         }

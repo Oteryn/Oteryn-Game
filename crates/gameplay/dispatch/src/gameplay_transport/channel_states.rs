@@ -18,6 +18,7 @@ pub struct ChannelSessionStates {
     pub attack: Mutex<attack::ChannelAttackStates>,
     /// CHAT-WIRE-1: speaker name, spam limiter and queued lines of each chatting session.
     pub chat: chat_intent::ChatRuntime,
+    pub(super) daily_rewards: super::daily_reward::DailyRewardSessions,
     /// The releases holding each write fence of the slot (CHARM-DESC-FENCE-LEASE step c).
     pub fence_holders: FenceHolders,
     /// OPS-SAVE-2: closed by the shutdown flush; admissions and commands run under its permits.
@@ -49,6 +50,7 @@ pub struct ChannelSessionStates {
     /// The Channel owner's player vitals and cooldowns (spell cast §4). Always locked after
     /// `runtime`, never before, like `door`.
     pub spell_states: Mutex<actor_spell::ChannelSpellStates>,
+    pub(super) timed_items: super::timed_item::TimedRuntime,
     pub(super) training: super::loop_training::TrainingRuntime,
     pub(super) tutorial_sessions: tutorial_session::TutorialSessions,
     /// The Wheel allocation of each admitted session (WHEEL-0 §4 "Load"), after the admission

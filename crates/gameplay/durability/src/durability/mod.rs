@@ -6,6 +6,8 @@ pub mod bed_regen;
 pub mod bed_sleep;
 pub mod daily_reward;
 pub mod daily_reward_claim;
+pub mod daily_reward_delivery;
+mod daily_reward_jokers;
 
 pub mod creature_source_items;
 pub mod mail_text_policy;
@@ -29,6 +31,6 @@ pub mod vip;
 
 pub mod house_management;
 
+pub mod staff;
+
 pub mod exercise_training;
-pub mod loop_training;
-pub mod offline_training_state;

@@ -24,6 +24,31 @@ def hunk(ours: str, base: str, theirs: str) -> str:
 
 
 class CombineTest(unittest.TestCase):
+    def test_parallel_capability_id_appends_merge_cleanly(self) -> None:
+        base = "const IDS: &[u32] = &[\n    36, // CHAT_GUILD_ROOM_V1\n];\n"
+        ours = base.replace("\n];", "\n    40, // GUILD_V1 (GUILD-WIRE-1)\n];")
+        theirs = base.replace("\n];", "\n    37, // DEPOT_V1\n];")
+        # Exercise the real driver on two branch snapshots, without creating branches or commits.
+        with tempfile.TemporaryDirectory(dir=HERE) as directory:
+            paths = [Path(directory) / name for name in ("base.rs", "ours.rs", "theirs.rs")]
+            for path, content in zip(paths, (base, ours, theirs)):
+                path.write_text(content)
+            result = subprocess.run(
+                [sys.executable, str(HERE / "oteryn_additive_driver.py"),
+                 *map(str, paths), "7", "lib.rs"],
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertEqual(
+                paths[1].read_text(),
+                "const IDS: &[u32] = &[\n"
+                "    36, // CHAT_GUILD_ROOM_V1\n"
+                "    37, // DEPOT_V1\n"
+                "    40, // GUILD_V1 (GUILD-WIRE-1)\n"
+                "];\n",
+            )
+
     def test_insert_only_hunk_keeps_incoming_then_ours(self) -> None:
         text, combined, remaining = combine("mod a;\n" + hunk("mod b;\n", "", "mod c;\n") + "mod z;\n", 7)
         self.assertEqual(text, "mod a;\nmod c;\nmod b;\nmod z;\n")

@@ -628,17 +628,17 @@ pub(super) async fn apply_build_in_transaction(
     let row = sqlx::query(concat!(
         "INSERT INTO game_character_build_state(character_id, vocation, ",
         family_columns!("", ""),
-        ", committed_character_revision, last_build_occurrence_id, stamina_minutes, offline_pool_s, offline_skill) \
+        ", committed_character_revision, last_build_occurrence_id, offline_pool_s, offline_skill) \
                          VALUES (encode($1,'hex')::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10, \
                            $11, $12, $13, $14, $15, $16, $17, $18, $19::text::numeric(20,0), \
-                           encode($20,'hex')::uuid, $21,$22,$23) \
+                           encode($20,'hex')::uuid, $21,$22) \
                          ON CONFLICT (character_id) DO UPDATE SET (vocation, ",
         family_columns!("", ""),
-        ", committed_character_revision, last_build_occurrence_id, stamina_minutes, offline_pool_s, offline_skill) = \
+        ", committed_character_revision, last_build_occurrence_id, offline_pool_s, offline_skill) = \
                            (EXCLUDED.vocation, ",
         family_columns!("EXCLUDED.", ""),
         ", EXCLUDED.committed_character_revision, \
-                           EXCLUDED.last_build_occurrence_id, EXCLUDED.stamina_minutes, EXCLUDED.offline_pool_s, EXCLUDED.offline_skill)"
+                           EXCLUDED.last_build_occurrence_id, EXCLUDED.offline_pool_s, EXCLUDED.offline_skill)"
     ))
     .bind(character);
     let row = request
@@ -646,7 +646,6 @@ pub(super) async fn apply_build_in_transaction(
         .bind(row)
         .bind(&committed)
         .bind(request.occurrence.0.as_slice())
-        .bind(i32::from(offline.after.stamina_minutes))
         .bind(
             i32::try_from(offline.after.pool_seconds)
                 .map_err(|_| DurabilityError::InvalidStoredState)?,
@@ -656,6 +655,14 @@ pub(super) async fn apply_build_in_transaction(
         .await?;
     if row.rows_affected() != 1 {
         return Err(DurabilityError::InvalidStoredState);
+    }
+    if request.cause == BuildCause::OfflineSettlement {
+        sqlx::query("SELECT game_training_set_stamina(encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3)")
+            .bind(character)
+            .bind(request.occurrence.0.as_slice())
+            .bind(i32::from(offline.after.stamina_minutes))
+            .execute(&mut **tx)
+            .await?;
     }
     if request.pruned_stance.is_some() {
         let pruned = sqlx::query(

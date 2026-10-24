@@ -164,10 +164,16 @@ CREATE TRIGGER game_training_marker_no_truncate BEFORE TRUNCATE ON game_characte
 -- Independent deferred chain validation covers ordinary build and death writers as well as
 -- markers. Direct row edits and forged no-op marker causes cannot bypass the chain.
 CREATE FUNCTION game_verify_training_integrity(p_character UUID) RETURNS void LANGUAGE plpgsql AS $$
-DECLARE v_state game_character_build_state%ROWTYPE; v_last RECORD;
+DECLARE v_state game_character_build_state%ROWTYPE; v_last RECORD; v_first_training NUMERIC;
 BEGIN
  SELECT * INTO v_state FROM game_character_build_state WHERE character_id=p_character;
  IF NOT FOUND THEN RETURN; END IF;
+ -- 0141 stamina predates this receipt chain. Its current value is the baseline
+ -- at the first training marker; historical receipt defaults are not evidence
+ -- of an earlier stamina value. Pool/skill are new here and always chain-owned.
+ SELECT min(b.committed_character_revision) INTO v_first_training
+  FROM game_character_training_markers m JOIN game_character_build_receipts b USING(build_occurrence_id)
+  WHERE m.character_id=p_character;
  SELECT * INTO v_last FROM (
   SELECT committed_character_revision r,stamina_minutes_after stamina,offline_pool_s_after pool,offline_skill_after skill
    FROM game_character_build_receipts WHERE character_id=p_character
@@ -175,7 +181,8 @@ BEGIN
   SELECT committed_character_revision,stamina_minutes_after,offline_pool_s_after,offline_skill_after
    FROM game_character_death_receipts WHERE character_id=p_character AND vocation IS NOT NULL
  ) x ORDER BY r DESC LIMIT 1;
- IF NOT FOUND OR (v_state.stamina_minutes,v_state.offline_pool_s,v_state.offline_skill) IS DISTINCT FROM (v_last.stamina,v_last.pool,v_last.skill) THEN
+ IF NOT FOUND OR (v_state.offline_pool_s,v_state.offline_skill) IS DISTINCT FROM (v_last.pool,v_last.skill)
+    OR (v_first_training IS NOT NULL AND v_state.stamina_minutes<>v_last.stamina) THEN
   RAISE EXCEPTION 'offline build projection mismatch';
  END IF;
  IF EXISTS (SELECT 1 FROM (
@@ -186,7 +193,8 @@ BEGIN
    UNION ALL SELECT committed_character_revision,stamina_minutes_before,offline_pool_s_before,offline_skill_before,
     stamina_minutes_after,offline_pool_s_after,offline_skill_after FROM game_character_death_receipts WHERE character_id=p_character AND vocation IS NOT NULL
   ) receipts
- ) chain WHERE (stamina,pool,skill) IS DISTINCT FROM (prev_stamina,prev_pool,prev_skill)) THEN
+ ) chain WHERE (pool,skill) IS DISTINCT FROM (prev_pool,prev_skill)
+    OR (r>v_first_training AND stamina<>prev_stamina)) THEN
   RAISE EXCEPTION 'offline receipt chain mismatch';
  END IF;
  IF EXISTS (SELECT 1 FROM game_character_build_receipts b LEFT JOIN game_character_training_markers m USING(build_occurrence_id)
@@ -231,7 +239,71 @@ REVOKE ALL ON game_character_exercise_receipts FROM PUBLIC;
 GRANT SELECT,INSERT ON game_character_exercise_receipts TO oteryn_game_runtime;
 GRANT SELECT ON game_character_exercise_receipts TO oteryn_game_control;
 
-GRANT INSERT(stamina_minutes,offline_pool_s,offline_skill),UPDATE(stamina_minutes,offline_pool_s,offline_skill) ON game_character_build_state TO oteryn_game_runtime;
+GRANT INSERT(offline_pool_s,offline_skill),UPDATE(offline_pool_s,offline_skill) ON game_character_build_state TO oteryn_game_runtime;
+
+-- Stamina remains outside runtime INSERT/UPDATE privileges (0141). This seam only
+-- applies the exact offline recovery of a same-transaction settlement receipt.
+CREATE FUNCTION game_training_set_stamina(p_character UUID,p_occurrence UUID,p_target INTEGER)
+RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public AS $$
+DECLARE
+ v_state game_character_build_state%ROWTYPE;
+ v_receipt game_character_build_receipts%ROWTYPE;
+ v_elapsed BIGINT;
+ v_recoverable BIGINT;
+ v_missing INTEGER;
+ v_expected INTEGER;
+BEGIN
+ IF p_character IS NULL OR p_occurrence IS NULL OR p_target IS NULL
+    OR p_target NOT BETWEEN 0 AND 2520 THEN
+  RAISE EXCEPTION 'invalid training stamina inputs';
+ END IF;
+ -- Match the writer's root -> build lock order.
+ PERFORM 1 FROM game_character_roots WHERE character_id=p_character FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'training character missing'; END IF;
+ SELECT * INTO v_state FROM game_character_build_state WHERE character_id=p_character FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'training build missing'; END IF;
+ SELECT b.* INTO v_receipt FROM game_character_build_receipts b
+  JOIN game_character_training_markers m USING(build_occurrence_id)
+  WHERE b.build_occurrence_id=p_occurrence AND b.character_id=p_character
+   AND b.cause='offline_settlement' AND m.cause=b.cause AND m.character_id=b.character_id
+   AND b.created_xact_id=pg_current_xact_id()
+   AND v_state.last_build_occurrence_id=b.build_occurrence_id
+   AND v_state.committed_character_revision=b.committed_character_revision;
+ IF NOT FOUND OR v_state.stamina_minutes<>v_receipt.stamina_minutes_before
+    OR p_target<>v_receipt.stamina_minutes_after THEN
+  RAISE EXCEPTION 'training stamina settlement mismatch';
+ END IF;
+ -- Same immutable predecessor and latest-build condition as the native planner.
+ -- A crash, missing predecessor or intervening death/build grants no recovery.
+ SELECT greatest(0,(s.training_created_at_us-m.committed_at_us)/1000000)::bigint INTO v_elapsed
+  FROM game_character_training_markers current_marker
+  JOIN game_durability_reconnect_sessions s ON s.game_session_id=current_marker.game_session_id
+  JOIN game_durability_reconnect_sessions p ON p.game_session_id=s.training_predecessor_session
+  JOIN game_character_training_markers m ON m.game_session_id=p.game_session_id
+   AND m.character_id=p.character_id AND m.lease_generation=p.character_lease_generation AND m.cause='logout'
+  JOIN game_character_build_receipts b ON b.build_occurrence_id=m.build_occurrence_id
+   AND b.committed_character_revision=v_receipt.original_character_revision
+  WHERE current_marker.build_occurrence_id=p_occurrence AND s.character_id=p_character
+   AND s.training_created_at_us IS NOT NULL AND p.session_state=3 AND p.world_id=s.world_id
+   AND m.committed_at_us<=s.training_created_at_us;
+ -- OFFLINE0: 21-day cap, 600s delay, 180s/min below 39h, then 360s/min to 42h.
+ v_recoverable:=greatest(0,least(coalesce(v_elapsed,0),1814400)-600);
+ v_missing:=2340-least(v_state.stamina_minutes,2340);
+ IF v_recoverable/180<=v_missing THEN
+  v_expected:=v_state.stamina_minutes+(v_recoverable/180)::integer;
+ ELSE
+  v_expected:=least(2520,greatest(v_state.stamina_minutes,2340)
+    +((v_recoverable-180*v_missing)/360)::integer);
+ END IF;
+ IF p_target<>v_expected THEN RAISE EXCEPTION 'training stamina exceeds offline recovery'; END IF;
+ UPDATE game_character_build_state SET stamina_minutes=p_target WHERE character_id=p_character;
+END $$;
+-- Tests and deployments may install the ledger into a dedicated schema.
+DO $$ BEGIN
+ EXECUTE format('ALTER FUNCTION game_training_set_stamina(UUID,UUID,INTEGER) SET search_path=pg_catalog,%I,pg_temp',current_schema());
+END $$;
+REVOKE ALL ON FUNCTION game_training_set_stamina(UUID,UUID,INTEGER) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION game_training_set_stamina(UUID,UUID,INTEGER) TO oteryn_game_runtime;
 
 DO $$ BEGIN EXECUTE format('GRANT USAGE ON SEQUENCE %s TO oteryn_game_runtime',pg_get_serial_sequence('game_durability_reconnect_sessions','training_session_sequence')); END $$;
 -- The marker's single post-lock DB clock is also the build receipt clock.

@@ -1,255 +1,203 @@
-# ITEM-TIMED-1 — timed items: charges, duration, repair (skeleton task record)
+# ITEM-TIMED-1 — basic server charges, duration and repair
 
 ```yaml
 task_id: ITEM-TIMED-1
-title: "ITEM-TIMED-1: timed items: charges, duration, repair"
+title: "ITEM-TIMED-1: basic server charges, duration and repair"
 mode: IMPLEMENT
 status: waiting
 repository: Oteryn/Oteryn-Game
 issue: 1622
 pr: null
-wave: 3
-plan: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md"
-plan_row: "§4 row ITEM-TIMED-1; §7 'ITEM-TIMED-1' (TIMED_ITEM0/0B child graph)"
-briefs:
-  - docs/architecture/reviews/OTERYN_GAME_TIMED_ITEM0_CHARGES_DURATION_AND_REPAIR_DECISION_2026-10-01.md
-  - docs/architecture/reviews/OTERYN_GAME_TIMED_ITEM0B_RUNTIME_CHARGES_AND_DURATION_DECISION_2026-10-03.md
 base_branch: main
-base_sha: 5742f30f37f5ae4e21b9c03ad25211ec5349eed6
-branch: skeleton/item-timed-1
+base_sha: c938f50b4f727cb0dc1adf60ca62f7d63f4f6541
+branch: claude/happy-davinci-ijz3wy-timed
 needs_migration: true
 needs_registry: true
 needs_content_regeneration: true
-merge_authority: CP_ONLY (builder never marks ready)
+merge_authority: CP_ONLY
 ```
 
-Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+## Current result (2026-10-23)
 
-Merged evidence: [#1681](https://github.com/Oteryn/Oteryn-Game/pull/1681), [#2155](https://github.com/Oteryn/Oteryn-Game/pull/2155). Timed-state checkpoint foundations and native Soft Boots repair planning are merged. Evidence: `crates/gameplay/items/src/item_timed_repair.rs`.
+The owner's server-first direction supersedes the historical preparation-only allocation. Basic server implementation is locally validated; awaiting control-plane integration, review and CI. The implementation is preserved in local WIP head `ce68889e5`; this continuation performs no staging, commit, publication, deployment or paid review. The broader family remains partial.
 
-Remaining: Atomic repair fee/transform/audit execution, full ticking/expiry integration, placed-house consumers and parity qualification remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
+A session negotiating capability 39 sends command 38 to inspect/use charges or confirm Aldo's repair. Existing capability-15 USE also consumes carried charges. Equip starts the owner clock, unequip pauses it, and expiry needs no client packet. Repair preserves the instance and commits payment, restoration and audit together.
 
-## Goal
+Writes prove current session, lease, scope, root and active content. Receipts share the value transaction; ambiguous requests retain command/elapsed identity until reconciliation. Checkpoints follow the accepted 60-second cadence, with one-second expiry scans and forced saves before unequip/actor end/death. Restart resumes the stored budget; downtime consumes none.
 
-Items with charges and duration behave end to end: runtime consumption on move/equip/use, house placement, condition effects, client wire, reference parity and NPC repair.
+## Server wiring gap list
 
-Children (allocate from the brief's child graph; the plan row is only the family entry gate; no child of a CANDIDATE brief is allocated before the brief is ACCEPTED):
+| Layer | Existing on starting HEAD | This change |
+|---|---|---|
+| L3 | Native timed lanes and Soft Boots repair planner | Reused directly by runtime; no duplicate rules |
+| L4 | Fenced checkpoint/expiry and repair planning adapter | Atomic consumption, fee/repair execution, command receipts and equipment expiry custody |
+| Schema | 0054 timed rows, 0058 expiry guards | 0179 receipt table and narrow repair/equipment proofs; prior fee/transform guards preserved |
+| Protocol | Item move/USE and NPC commands | Bounded request/result codec; append-only capability 39 and command 38 |
+| Offer/content | No native executable timed profiles | Four admitted Item profiles (3081/3549/6529/6530); conditional bundle offer; Aldo placement from existing agreeing source candidates |
+| Runtime | No timed writer consumers | Dedicated handler, ordinary USE, equip stop/start, owner timer and actor-end hooks |
+| Qualification | Rules/storage/planning tests | Real framed admitted dispatch PG scenario: durable rows, results, rollback, replay, reload, authority refusals and concurrent revision CAS |
 
-TIMED-RT-1c (ITEM-MOVE-2a/2b) -> TIMED-HOUSE-1 (HOUSE-RUNTIME-1a) -> TIMED-FX-1 (COND-1) -> TIMED-WIRE-1 (Reg) -> TIMED-PARITY-1 -> TIMED-REPAIR-1 (NPC-TRADE-1 fee path). IMBUE/FORGE are Wave 4 and excluded.
+## Reference parity table
 
-## Dependencies (state on main@5742f30f3, 2026-10-15)
+Normalized OTS evidence; no official Tibia parity qualification. Accepted decisions: TIMED_ITEM0 (2026-10-01), TIMED_ITEM0B (2026-10-03), BANK-FEE-0. Prior foundations: #1681, #2155.
 
-| Dependency | State |
-|---|---|
-| ITEM-LOOP-1 (family entry gate) | BLOCKING (Wave 1, not merged) |
-| acceptance of TIMED_ITEM0 / TIMED_ITEM0B (plan §7 gate) | ACCEPTED on primary `e2da9805`, ACCEPT-BATCH §1 item 5 |
-| TIMED-CONTENT-1, TIMED-RT-1a, TIMED-RT-1b | MERGED (#1699, #1681, archive timed-rt-1b) |
-| ITEM-MOVE-2a / ITEM-MOVE-2b (TIMED-RT-1c) | BLOCKING (ITEM-LOOP-1 children; only the #2009 equip slice is on main) |
-| ITEM-USE-1c | MERGED (#2082) |
-| EQUIP-RT-1 | BLOCKING (no record on main) |
-| COND-1 (TIMED-FX-1) | MERGED (MAGIC-COND-1 #2086, #2122) |
-| NPC-TRADE-1 gold fee path (TIMED-REPAIR-1) | MERGED (#2040) |
-| HOUSE-RUNTIME-1a house placement (TIMED-HOUSE-1) | BLOCKING (Wave 3, not merged) |
+| Visible behavior | Reference evidence | Oteryn now |
+|---|---|---|
+| Five charges, final exhaustion | [Pinned Canary items.xml](https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/items/items.xml), Item 3081 | Inspect/use returns remaining charges; fifth use durably burns the item. Automatic protection-on-hit is unfinished. |
+| Four-hour Soft Boots; spent form 6530 | Same pinned items.xml, 3549/6529/6530; accepted TIMED_ITEM0B | Equipped budget advances, bag budget pauses, owner expires to 6530. Active/inactive definition swaps on equip/unequip are unfinished. |
+| Repair costs 10,000 and restores Soft Boots | [Pinned Aldo Lua](https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/aldo.lua); accepted repair decision | Explicit repair action near live Aldo; direct main-bag B3 selection; same-instance 6530→6529, full budget and coin/bank fee in one transaction. Dialogue repair/yes is unfinished. |
+| Aldo exists in the World | Committed promotion-candidates-v1.json, agreeing Canary/Crystal cell (32952,32110,6) | Added to placement scope and regenerated; actual compiler admits Aldo (24 written/28 candidates; four pre-existing held NPCs unchanged). |
+| Coins first, bank shortfall only under V2/non-junior rules | Accepted BANK-FEE-0 and native fee/planner | Reuses native bank fee path; coin repair proven in PG, bank split/maxima in planning/audit tests. Dedicated repair-bank PG scenario remains. |
 
-Rows marked BLOCKING must merge (or be accepted/decided) before the builder's slot commit; code in owned_paths may be drafted earlier but must not assume unmerged schemas.
+## Validation evidence
 
-## owned_paths (exclusive root allocation for this preparation)
-
-- `crates/gameplay/items/src/item_timed_repair.rs` (new)
-- `apps/game-server/tests/item_timed_postgres.rs` (new; planning tests only here)
-- `docs/agents/tasks/ITEM-TIMED-1.md` (packet/notes)
-- `apps/game-server/Cargo.toml` (target registration; added per CP D1280 (https://github.com/Oteryn/Oteryn-Game/issues/2131#issuecomment-6227727089))
-- `apps/game-server/tests/durability_postgres.rs` (includes the support cases in a CI-run target; added per CP D1280 (https://github.com/Oteryn/Oteryn-Game/issues/2131#issuecomment-6227727089))
-- `apps/game-server/tests/support/item_timed_postgres_cases.rs` (Postgres cases moved here; added per CP D1280 (https://github.com/Oteryn/Oteryn-Game/issues/2131#issuecomment-6227727089))
-
-This narrower root allocation supersedes the skeleton family's broad suggestions.
-No module registration is permitted in this local preparation.
-
-## slot_only_paths (ONLY in the final commit at the merge-queue turn, after merging main)
-
-- tools/content-migration/regenerate_content.py outputs
-- content/project.json
-- content/manifest.json, content/world/manifest.json
-- content/content.lock.json, content/world/content.lock.json
-- content/interactions/index.json
-- content/world/pins/*
-- Rust pins (pinned registries / fixtures regenerated from content)
-- docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json, GAME_EVENT_FOUNDATION_REGISTRY.json, RESOURCE_LIMITS_REGISTRY.json, OTERYN_GAME_ERROR_CODE_REGISTRY.json
-- apps/game-server/migrations/NNNN_*.sql number (next free on main at queue turn; main ends at 0087)
-- crates/gameplay/dispatch/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
-- crates/protocol-oteryn/src/lib.rs `pub mod` + registry constants
-- crates/gameplay/durability/src/durability/core_modules.rs, domain/mod.rs, lib.rs module registration
-
-## Wiring points (verified on origin/main 5742f30f3)
-
-- durability/item_timed_state.rs (existing, TIMED-RT-1a/1b) extension points
-- connection.rs dispatch chain (NPC_TRADE_INTENT l.2766 for repair)
-- capabilities.rs `GATED` l.165
-- crates/protocol-oteryn/src/lib.rs `pub mod` l.2545-2568
-
-## Inseparable bundles (never split across PRs)
-
-- TIMED-RT-1c: charge/duration deltas inside the ITEM-MOVE-2 transaction
-- TIMED-REPAIR-1: gold fee debit + item state restore + audit in one transaction
-- TIMED-WIRE-1: wire + registry + capability + tests
-
-## Acceptance criteria
-
-- [ ] Charge/duration consumption is exactly-once across move, equip, use and restart.
-- [ ] Expired items transition deterministically (tick-independent of client).
-- [ ] Repair debits gold and restores state atomically; concurrent repair serializes.
-- [ ] Placed house items keep their timed state.
-- [ ] Parity evidence against reference values recorded.
-- [ ] Every concurrent transition serialized (named lock or deterministic order) and losing writer typed.
-- [ ] Durable state sufficient to resume after restart / session-generation change.
-
-## Validation commands
+Cargo uses the queued wrapper, repository toolchain and `--locked`. Initial login-shell PG attempts skipped without routing and are excluded. Routed tests create private databases; only this mechanic's filtered PG tests ran.
 
 ```bash
+cargo test --locked -p oteryn-protocol-oteryn --quiet
+cargo test --locked -p oteryn-gameplay-domain --lib timed --quiet
+cargo test --locked -p oteryn-gameplay-durability --lib item_timed --quiet
+cargo test --locked -p oteryn-gameplay-durability --lib item_fee_burn --quiet
+cargo test --locked -p oteryn-gameplay-durability --lib writer_registration --quiet
+cargo test --locked -p oteryn-gameplay-content --lib native_gameplay --quiet
+cargo test --locked -p oteryn-gameplay-dispatch --lib capabilities --quiet
+cargo test --locked -p oteryn-gameplay-dispatch --lib timed_item_postgres_wire_charges --quiet
+cargo test --locked -p oteryn-game-server --test item_timed_postgres item_timed_postgres_cases --quiet
+cargo test --locked -p oteryn-game-server --test item_timed_state_postgres timed_ --quiet
+cargo clippy --locked -p oteryn-gameplay-dispatch -p oteryn-gameplay-durability -p oteryn-gameplay-content -p oteryn-protocol-oteryn -p oteryn-game-server --all-targets --quiet -- -D warnings
 cargo fmt --all -- --check
-cargo clippy -p oteryn-game-server -p oteryn-protocol-oteryn --all-targets -- -D warnings
-cargo test -p oteryn-game-server item_timed
-cargo test -p oteryn-game-server timed
-cargo test -p oteryn-game-server item_transfer
-cargo test -p oteryn-protocol-oteryn && cargo test -p oteryn-game-server capabilities
-python3 tools/content-migration/regenerate_content.py --check   # slot commit only
-cargo test -p oteryn-game-server --test <task>_postgres   # needs DATABASE_URL
 ```
 
-## Reference evidence pointers
+Protocol: 388 passed. Domain: 22 passed. Durability: 9 timed, 20 fee/audit and 2 writer-registration tests passed. Content/native: 45 passed, one pre-existing ignored test. Capability tests: 63 passed. Existing repair planning: 13 passed; filtered timed-state PG: 23 passed (27.43 seconds). New routed PG scenario: one passed (final behavioral run 17.74 seconds). All five touched crates passed all-target Clippy; existing vendor deprecation/documentation warnings are outside these crates.
 
-- docs/architecture/reviews/OTERYN_GAME_TIMED_ITEM0_CHARGES_DURATION_AND_REPAIR_DECISION_2026-10-01.md
-- docs/architecture/reviews/OTERYN_GAME_TIMED_ITEM0B_RUNTIME_CHARGES_AND_DURATION_DECISION_2026-10-03.md
-- PRs #1699, #1681, #2082, #2086, #2122, #2040
-- docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4, §5 (Wave 3), §7
-- docs/agents/cp/CP_WAVES.md (branch claude/beautiful-franklin-1tp8kj), 'Model pracy równoległej'
+PG scenario name: `gameplay_transport::monk_save::postgres_tests::timed_item::timed_item_postgres_wire_charges_replay_repair_and_owner_expiry`. Auto-mounted in dispatch `--lib` CI. Covers wire results, capability/stale refusals, exhaustion, restart, repair rollback/replay, USE unknown/retry/replay, retained-burn reconciliation, bag pause/equipped expiry, authority/content fences and concurrent charge CAS.
 
-## Builder instructions
+Also passed: rustfmt for include-mounted files; `python3 tools/content-migration/register_spell_families.py --check`; spell-import tests (9); NPC converter `--check` and converter tests (6); actual world compiler `parity .` (no tile mismatches; Aldo admitted); governance; repository policy; agent tests (129); `git diff --check`. Reviewed the full diff against the owner CODEX-CHECKLIST.md; searched apps/, crates/, tools/ for all new fields/variants/trait methods and their matches/constructors/impls. Public APIs have production callers and real-dispatch coverage; tests remain intact.
 
-- Work only in owned_paths until CP gives the queue-turn GO; then merge main, run regeneration/registry/migration numbering/wiring in ONE final slot commit.
-- Push rarely and batched: one push per fix round (heavy builds per push). No status-only commits.
-- Never mark the PR ready and never post `@codex review`; CP marks ready (Codex auto-reviews each push).
-- Max 2 repair rounds on the PR; then CP closes and splits.
-- A required edit outside owned_paths is a `cross_domain_finding` (REPORT_ONLY), not an edit.
+## Registry collision repair (2026-10-23)
 
-## Bounded TIMED-REPAIR-1 packet (2026-10-15, draft #2155)
+The unmerged timed-item allocation now uses command **38** and capability **39**.
+Registry fragment filenames, IDs, command/capability links, protocol constants,
+registered capability IDs, proto and this card agree. Capability tables, dispatch
+selection and World offer/boot validation already consume the constants. The two
+PG fixture selections now use `CAPABILITY_TIMED_ITEM_V1` instead of numeric 37.
+The existing capability test exposed an incomplete registry `offer_gate`; its
+text now names the actual `BUNDLE_WORLD_OFFERED_CAPABILITIES` gate. No assertion
+was weakened and no previously merged protocol allocation was changed.
 
-Exclusive branch `skeleton/item-timed-1`, initial HEAD
-`fa5ae83d3bca7ed927b437cadef622eccf9b2682`. Root supplied META 3.1.0 and the
-three-file allocation. Worker does not commit, push, freeze, mark ready, merge,
-trigger review or edit shared code/content/migration/registry/pins.
+`git fetch -q origin main` failed because the worktree Git metadata, including
+`FETCH_HEAD`, is mounted read-only outside this directory. Read-only GitHub API
+main readback matched local `origin/main` exactly:
+`c49d3b6f7fae1750d9f89cae9a915e21a4b4a3ee`. Targeted `git ls-tree` and `git show`
+confirmed DEPOT owns command 36/capability 37. Both sources confirmed command 38,
+capability 39, resource entries 0700–0706 and migration 0179 are unused on main (renumbered from 0158 after 0176 claimed fee cause 4; repair is cause 5).
+No merge was performed.
 
-### Accepted source and actual residue before implementation
+Repair validation, through `/home/mole/oteryn-cache/codex-bin/cargo` with
+`CARGO_NET_OFFLINE=true` and `--locked`:
 
-Primary main `e2da9805d296a27b06b32335bf67394509d4910b` ACCEPT-BATCH §1 item 5
-accepts TIMED-ITEM-0/0B and BANK-FEE-0; this branch's CANDIDATE headers are
-historical. TIMED-ITEM-0 §7 owns exactly Aldo's worn-soft-boots → soft-boots offer
-for 10,000 gold. A future admitted-content adapter must resolve its existing
-identities/pinned revision; no offer key, fee source or audit tag is guessed here.
-The selected item is the first live exact-definition match in B3 order (highest
-placement ordinal first) among direct entries of the equipped main backpack,
-never equipped or nested. Preserve its instance and location. Reset the timed
-row to the admitted target's full values (paired active full values for an
-inactive target), revision +1, or absent row → revision1. Worn rows are spent.
+- `test -p oteryn-protocol-oteryn --quiet`: **388 passed** after the registry repair.
+- `test -p oteryn-gameplay-dispatch --lib capabilities --quiet`: **63 passed**.
+- `test -p oteryn-gameplay-dispatch --lib timed_item_postgres_wire_charges --quiet -- --nocapture`:
+  **1 passed**, real PG, 22.87 seconds; no missing-route message or early return.
+- `clippy -p oteryn-protocol-oteryn -p oteryn-gameplay-dispatch --all-targets --quiet -- -D warnings`:
+  **PASS**; existing warnings are confined to vendored dependencies.
+- `fmt --all --check`: **PASS**.
+- Governance and repository-policy validators: **PASS**; governance tests: **129 passed**.
+- `python3 tools/content-migration/register_spell_families.py --check`: **PASS**, 36 files.
 
-Native domain currency already implements denomination/order/change planning;
-reuse `plan_fee_within` and real `CoinStack`/`FeePlan`. Native `TimedValues`,
-`TimedDefinitionFacts`, `StoredTimedState`, `FeeChangeFacts`, TypedDefinitionRef
-and Type2EventTuple exist and are reused. GOLD-FEE-2 and activation machinery
-already exist: V1 refuses short coins; V2 permits the bank shortfall for a
-non-junior payer, coins first, all eligible coins burned whole with no change.
-Junior stays coins only. Native runtime/persistence code is not duplicated.
+The WIP `content/content.lock.json`, manifest and Item/NPC inputs require a World
+bundle repin; the old pin would fail CI. The inputs are already committed in the
+WIP index, so no staging is necessary for this repair. Ran the repository tool
+`cargo run --locked --quiet -p oteryn-world-bundle-compiler -- pin-refresh .`:
+it regenerated `content/world/pins/oteryn.json` and
+`deploy/synology-game/preprod-topology.toml` to bundle digest
+`0b037a2ad2ff44aef4c8bb9fdd590947ff4a3f5114717028de4b6233a9d551dd`.
+The identity file did not change.
+`cargo run --locked --quiet -p oteryn-world-bundle-compiler -- pin-check . target/item-timed-1-pin-check`
+**PASS**: two deterministic builds, 25,089,845 bytes, matching digest/input identity
+and accepted entry cell. The repin is complete locally; no additional control-plane
+repin is needed for this unchanged content input set.
 
-### Approved executable subset
+Whole repair diff reviewed against the owner CODEX-CHECKLIST.md; workspace-wide
+reference searches found no stale timed-item allocation. This repair adds no
+enum variants, struct fields, trait methods or public functions. No CI routing,
+credentials or protection files were changed.
 
-Prepare deterministic planning from unqualified snapshots: direct-entry selection,
-compatible native coin planning with 19-input maximum, activation/junior/balance
-split, same-instance timed reset with checked revision, and derived participant/
-work bounds (22 touched/participants, 68 work units). Inputs and output carry no
-current authority and mint no occurrence, permission, transaction or audit event.
-The target facts must already come from admitted content, including paired-form
-resolution; the planner cannot certify that provenance. The private planner is
-specific to the fixed 10,000 fee, not a generic new repair framework or offer store.
+## Unfinished
 
-### cross_domain_findings / required owning hooks
+- Control plane integration, independent review and CI remain required before publication. The repository tool regenerated the bundle pin/topology and `pin-check` passed. No content deployment is claimed.
+- Broader parity: equip form swaps, passive effects/combat charges, continuous clocks and ground/house hosts.
+- Repair/yes dialogue and a dedicated repair-bank PG case remain; explicit wire confirmation and the native bank fee writer are implemented.
+- Client UI excluded. No unrelated PG contention failures. Broader family acceptance remains open.
 
-1. `FeeBurnCause` and its audit union still contain only CharmUnassign. The native
-   fee writer requires a CharacterRevision advance and emits a fee-only event;
-   it cannot be called as an item-only repair or combined repair event today.
-   CP must add the accepted NpcRepair cause, item-only branch/guard composition,
-   record/binding and one combined audit arm with transform/timed before/after.
-2. TimedWriteCause::NpcRepair and migration0054's cause8 already exist. Native
-   timed helpers are checkpoint/expiry transactions, not an in-transaction repair
-   hook. CP must compose timed record/revision CAS, item transform and fee/bank
-   debit under the same native fence/root/item/backpack/balance locks, with exact
-   occurrence replay/conflict and rollback. Calling separate commit methods is
-   forbidden; this preparation provides no dead writer that cannot commit.
-3. Current content/NPC readers expose no admitted repair offer adapter. Resolve
-   Aldo/offer/content and inactive→active full facts at the owner boundary; do
-   prompt confirmation/current eligibility independently. Do not infer them from
-   raw plan/request snapshots or introduce a new offer identity here.
-4. Registry rows, exact combined event encoding/payload measurement, numbered
-   migration/guards, current session-generation scope fences, runtime sequencing,
-   unknown outcomes and PostgreSQL restart/concurrency qualification remain CP
-   integration work. No authority, durable mutation or success stub is introduced.
+## Implementation files (WIP head and continuation)
 
-The existing `item_timed_postgres.rs` allocation is a filename only: its new tests
-will be pure native planning tests; no PostgreSQL result is claimed without a
-committable storage component. Full-task acceptance checkboxes remain open.
-Durable evidence/config/native-source hashes/logs are written directly to
-`/workspace/oteryn-prep/item-timed-1-evidence/`.
+Placement shard 00026→00027 preserves prior records. Migration: 0179; resources: 0700–0706.
 
-### Source-bound validation design and review limits
-
-The small dependency-free Cargo harness compiles both complete, unchanged native
-`domain/currency.rs` and `domain/timed_item.rs`, including their existing unit
-tests, and the exact owned root test/planner source. Seven supporting public data
-declarations are literal native excerpts with complete-source and excerpt hashes;
-no function, validator, writer, authority implementation or fee policy is replaced.
-The exact copied declarations are TypedDefinitionRef, ItemStackClass,
-ItemDefinitionFacts, FeeChangeFacts, Type2EventTuple, TimedDefinitionFacts and
-StoredTimedState. The real library publicly exports their modules/types/fields;
-the owned root test reexports actual library domain/durability modules, so its
-`crate::domain`/`crate::durability` planner imports resolve in the real auto-
-discovered integration-test crate too. Complete original-server compilation is
-not established by the harness. The source comparator confirms currency, timed
-state, fee, audit and native trade files are byte-identical to accepted main.
-
-Twelve new cases cover B3 ordering and coin-index/instance mapping after reorder,
-nested/equipped/retired/wrong-revision exclusion, native full target reset for an
-inactive target from both absent and spent rows, invalid/overflowing timed rows,
-19/20 consumed coin inputs, the 22 touched/participant and 68 work boundaries,
-V1/V2/junior and exact bank shortfall, wholly-bank payment, incompatible/nondefault/
-invalid coins, malformed entries/capacity, invalid targets and new-change ordinal
-overflow. Fixture keys are explicitly synthetic raw facts, not admitted offers or
-current authority. The source and result never certify paired-form provenance.
-
-The private usage checker enforces accepted numeric ceilings on derived native
-burn/change work, but combined repair envelope encoding and exact payload byte
-measurement are not implemented or qualified. The repair's 1-in/1-out transform
-and zero ancestors are inherent to its selected one direct item; no transform
-I/O/audit/registry arm is invented. Whole-diff self-review keeps every shared fee,
-timed storage, enum, registry, migration and registration root untouched. Only
-this planner, its allocated test and this card change. No known incapable writer,
-SQL no-op or success placeholder is included.
-
-### Actual execution checkpoint
-
-The exact source-bound harness passed **40 tests, 0 failed**: 12 new repair
-planning cases, 8 existing native currency cases and 20 existing native timed
-lane cases; 0 ignored or filtered. Harness all-target Clippy passed with the
-workspace deny list and `--locked --offline --all-targets --quiet -- -D warnings`.
-All Rust jobs use the shared lock/target, two jobs and `CARGO_INCREMENTAL=0`.
-Before/after verification confirms exact owned/native source and seven literal
-native-data excerpt hashes. No Rust source was changed after these tests; no
-repeat tests or behavioral RED are claimed. The no-storage scope has no
-production authority-consuming mutation boundary to qualify.
-
-Direct owned-file rustfmt and `cargo fmt --all --check` passed. Governance passed
-(22 required policy documents, 9 lanes) and 124/124 agent tests passed.
-Unchanged-registration-root checks, source hashes,
-restoration instructions and the local patch are preserved in
-`/workspace/oteryn-prep/item-timed-1-evidence/`. Full original-server tests/Clippy,
-PostgreSQL17.6, combined audit-byte maxima and fenced atomic repair/restart/
-replay/concurrency remain unqualified pending CP owning-hook integration.
-This preparation is not full ITEM-TIMED completion or an architect acceptance.
+```text
+apps/game-server/migrations/0179_item_timed_runtime.sql
+apps/game-server/tests/support/item_timed_postgres_cases.rs
+content/content.lock.json
+content/items/definitions/spell-native-profiles.json
+content/items/index.json
+content/manifest.json
+content/spells.manifest.json
+content/world/npc-placements/index.json
+content/world/npc-placements/placements-00000-00026.json
+content/world/npc-placements/placements-00000-00027.json
+content/world/pins/oteryn.json
+crates/gameplay/content/src/content/native_gameplay.rs
+crates/gameplay/dispatch/src/gameplay_transport/capabilities.rs
+crates/gameplay/dispatch/src/gameplay_transport/capabilities_tests.rs
+crates/gameplay/dispatch/src/gameplay_transport/channel_states.rs
+crates/gameplay/dispatch/src/gameplay_transport/connection.rs
+crates/gameplay/dispatch/src/gameplay_transport/equipment_move.rs
+crates/gameplay/dispatch/src/gameplay_transport/mod.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/timed_item.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/timed_item/authority.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/timed_item/duration.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/timed_item/recovery.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/timed_item/repair.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/timed_item/standard_use.rs
+crates/gameplay/dispatch/src/gameplay_transport/source_item_cycle.rs
+crates/gameplay/dispatch/src/gameplay_transport/timed_item.rs
+crates/gameplay/dispatch/src/gameplay_transport/timed_item_clock.rs
+crates/gameplay/dispatch/src/gameplay_transport/timed_item_content.rs
+crates/gameplay/dispatch/src/gameplay_transport/timed_item_use.rs
+crates/gameplay/dispatch/src/gameplay_transport/timed_item_wire.rs
+crates/gameplay/dispatch/src/gameplay_transport/world_required_capabilities.rs
+crates/gameplay/dispatch/src/gameplay_transport/world_required_capabilities_tests.rs
+crates/gameplay/durability/src/durability/character_revision_sequencer/writer_registration_tests.rs
+crates/gameplay/durability/src/durability/core_modules.rs
+crates/gameplay/durability/src/durability/item_fee_burn.rs
+crates/gameplay/durability/src/durability/item_fee_burn/purchase_cause.rs
+crates/gameplay/durability/src/durability/item_fee_burn_audit.rs
+crates/gameplay/durability/src/durability/item_fee_burn_audit/purchase_cause.rs
+crates/gameplay/durability/src/durability/item_fee_burn_audit/repair_cause.rs
+crates/gameplay/durability/src/durability/item_fee_burn_audit/tests/timed_repair_tests.rs
+crates/gameplay/durability/src/durability/item_timed_runtime.rs
+crates/gameplay/durability/src/durability/item_timed_runtime/execute.rs
+crates/gameplay/durability/src/durability/item_timed_runtime/repair.rs
+crates/gameplay/durability/src/durability/item_timed_state.rs
+crates/gameplay/durability/src/durability/item_timed_state_audit.rs
+crates/protocol-oteryn/src/capability_tables.rs
+crates/protocol-oteryn/src/lib.rs
+crates/protocol-oteryn/src/timed_item.rs
+deploy/synology-game/preprod-topology.toml
+docs/agents/tasks/ITEM-TIMED-1.md
+docs/contracts/game-events/v1/native_one_item_transaction.proto
+docs/contracts/protocol-oteryn/v1/registry/capabilities/0039-timed-item-v1.json
+docs/contracts/protocol-oteryn/v1/registry/command_types/0038-timed-item-intent.json
+docs/contracts/protocol-oteryn/v1/timed_item_v1.proto
+docs/contracts/resource-limits/entries/0700-ITEMTIMED1-INTENT-BYTES.json
+docs/contracts/resource-limits/entries/0701-ITEMTIMED1-RESULT-BYTES.json
+docs/contracts/resource-limits/entries/0702-DUR03-RL-04-NPC-REPAIR.json
+docs/contracts/resource-limits/entries/0703-DUR03-RL-06-NPC-REPAIR-PARTICIPANTS.json
+docs/contracts/resource-limits/entries/0704-DUR03-RL-06-NPC-REPAIR-WORK.json
+docs/contracts/resource-limits/entries/0705-ITEMTIMED1-REPAIR-COIN-INPUTS.json
+docs/contracts/resource-limits/entries/0706-ITEMTIMED1-COMMANDS-PER-SECOND.json
+tools/content-migration/register_spell_families.py
+tools/content-migration/timed_item_profiles.py
+tools/content-schema/npc-authoring/npc_placement_scope.json
+```

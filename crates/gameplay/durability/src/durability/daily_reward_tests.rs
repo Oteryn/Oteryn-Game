@@ -60,7 +60,7 @@ async fn claim_on(
 ) -> TestResult<DailyRewardClaimOutcome> {
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = root.open_character_authority(&seal).await.map_err(debug)?;
-    root.commit_daily_reward_claim(&authority, &h.node, harness::item_fence()?, request)
+    root.commit_daily_reward_core(&authority, &h.node, harness::item_fence()?, request)
         .await
         .map_err(|e| debug(e).into())
 }
@@ -107,7 +107,7 @@ fn daily_reward_postgres_claim_replay_gap_and_restart() -> TestResult {
             .map_err(debug)?;
         assert_eq!(
             reopened
-                .commit_daily_reward_claim(&authority, &h.node, harness::item_fence()?, retry)
+                .commit_daily_reward_core(&authority, &h.node, harness::item_fence()?, retry)
                 .await
                 .map_err(debug)?,
             DailyRewardClaimOutcome::AlreadyClaimed(receipt)
@@ -149,7 +149,7 @@ fn daily_reward_postgres_refusals_write_nothing() -> TestResult {
         // No history: restart or session generation cannot invent a window.
         assert!(matches!(
             h.root
-                .commit_daily_reward_claim(&authority, &h.node, valid, request(1, 61)?)
+                .commit_daily_reward_core(&authority, &h.node, valid, request(1, 61)?)
                 .await,
             Err(DailyRewardClaimError::ResetWindowUnavailable)
         ));
@@ -157,7 +157,7 @@ fn daily_reward_postgres_refusals_write_nothing() -> TestResult {
         for epoch in [1, 3, u64::MAX] {
             assert!(matches!(
                 h.root
-                    .commit_daily_reward_claim(&authority, &h.node, valid, request(epoch, 61)?)
+                    .commit_daily_reward_core(&authority, &h.node, valid, request(epoch, 61)?)
                     .await,
                 Err(DailyRewardClaimError::ResetWindowUnavailable)
             ));
@@ -166,7 +166,7 @@ fn daily_reward_postgres_refusals_write_nothing() -> TestResult {
         stale.connection_generation = ConnectionGeneration::new(2).map_err(debug)?;
         assert!(matches!(
             h.root
-                .commit_daily_reward_claim(&authority, &h.node, stale, request(2, 61)?)
+                .commit_daily_reward_core(&authority, &h.node, stale, request(2, 61)?)
                 .await,
             Err(DailyRewardClaimError::AuthorityRejected)
         ));
@@ -177,7 +177,7 @@ fn daily_reward_postgres_refusals_write_nothing() -> TestResult {
         );
         assert!(matches!(
             h.root
-                .commit_daily_reward_claim(&authority, &h.node, valid, wrong_session)
+                .commit_daily_reward_core(&authority, &h.node, valid, wrong_session)
                 .await,
             Err(DailyRewardClaimError::AuthorityRejected)
         ));
@@ -190,13 +190,13 @@ fn daily_reward_postgres_refusals_write_nothing() -> TestResult {
         different.request_binding[0] ^= 1;
         assert!(matches!(
             h.root
-                .commit_daily_reward_claim(&authority, &h.node, valid, different)
+                .commit_daily_reward_core(&authority, &h.node, valid, different)
                 .await,
             Err(DailyRewardClaimError::BindingMismatch)
         ));
         assert!(matches!(
             h.root
-                .commit_daily_reward_claim(&authority, &h.node, stale, first)
+                .commit_daily_reward_core(&authority, &h.node, stale, first)
                 .await,
             Err(DailyRewardClaimError::AuthorityRejected)
         ));
@@ -209,7 +209,7 @@ fn daily_reward_postgres_refusals_write_nothing() -> TestResult {
         for candidate in [first, request(3, 62)?] {
             assert!(matches!(
                 h.root
-                    .commit_daily_reward_claim(&authority, &h.node, valid, candidate)
+                    .commit_daily_reward_core(&authority, &h.node, valid, candidate)
                     .await,
                 Err(DailyRewardClaimError::AuthorityRejected)
             ));

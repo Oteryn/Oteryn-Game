@@ -173,8 +173,8 @@ pub enum TimedWriteError {
     NotAStoreableChange,
     /// The key was committed by another write; nothing was written.
     ConflictingWrite,
-    /// An expiry burn of an item in the equipment `container` slot or with contents (§8: the
-    /// slot is immutable; a container is never burned with its entries).
+    /// An expiry burn of the immutable equipment `container` slot or of an item with contents.
+    /// Ordinary equipment slots are removed by the timed expiry proof.
     NotBurnable,
     Unavailable(DurabilityError),
 }
@@ -393,6 +393,9 @@ pub(super) async fn write_checkpoint(
                 (EXISTS (SELECT 1 FROM game_item_container_slots s \
                           WHERE s.item_instance_id = i.item_instance_id \
                             AND s.character_id = encode($2,'hex')::uuid) \
+                 OR EXISTS (SELECT 1 FROM game_character_equipment_slots e \
+                             WHERE e.item_instance_id = i.item_instance_id \
+                               AND e.character_id = encode($2,'hex')::uuid) \
                  OR EXISTS (SELECT 1 FROM game_item_container_entries e \
                              WHERE e.item_instance_id = i.item_instance_id \
                                AND e.character_id = encode($2,'hex')::uuid)) AS held \
@@ -688,6 +691,8 @@ pub(super) async fn write_expiry(
                 EXISTS (SELECT 1 FROM game_item_container_slots s \
                          WHERE s.item_instance_id = i.item_instance_id \
                            AND s.character_id = encode($2,'hex')::uuid) AS in_slot, \
+                (SELECT slot FROM game_character_equipment_slots s \
+                  WHERE s.item_instance_id=i.item_instance_id AND s.character_id=encode($2,'hex')::uuid) AS equipment_slot, \
                 e.parent_item_instance_id::text AS parent, \
                 e.placement_ordinal::text AS ordinal, \
                 (EXISTS (SELECT 1 FROM game_item_container_entries c \
@@ -709,6 +714,7 @@ pub(super) async fn write_expiry(
         return Err(TimedWriteError::NotHeld);
     };
     let in_slot: bool = item.try_get("in_slot")?;
+    let equipment_slot: Option<i16> = item.try_get("equipment_slot")?;
     let entry = match item.try_get::<Option<String>, _>("parent")? {
         Some(parent) => Some(OneItemContainerEntryV1 {
             parent_item_instance_id: uuid_text(&parent)?.to_vec(),
@@ -719,7 +725,10 @@ pub(super) async fn write_expiry(
     let quantity = u32::try_from(item.try_get::<i64, _>("quantity")?)
         .map_err(|_| DurabilityError::InvalidStoredState)?;
     if item.try_get::<i16, _>("lifecycle")? != 1
-        || in_slot == entry.is_some()
+        || usize::from(in_slot)
+            + usize::from(entry.is_some())
+            + usize::from(equipment_slot.is_some())
+            != 1
         || uuid_text(&item.try_get::<String, _>("world_id")?)? != *world_id.as_bytes()
         || item.try_get::<String, _>("definition_family")? != definition.family
         || item.try_get::<String, _>("definition_production_key")? != definition.production_key
@@ -727,7 +736,10 @@ pub(super) async fn write_expiry(
     {
         return Err(TimedWriteError::NotHeld);
     }
-    if request.target.is_none() && (entry.is_none() || item.try_get::<bool, _>("has_contents")?) {
+    if request.target.is_none()
+        && ((entry.is_none() && equipment_slot.is_none())
+            || item.try_get::<bool, _>("has_contents")?)
+    {
         return Err(TimedWriteError::NotBurnable);
     }
 
@@ -809,6 +821,7 @@ pub(super) async fn write_expiry(
             runtime_scope_ownership_generation: fence.scope_ownership_generation.get(),
             container_entry: entry.clone(),
             equipment_container_slot: in_slot,
+            equipment_slot: equipment_slot.and_then(|slot| u32::try_from(slot).ok()),
             reason: match request.reason {
                 ExpireReason::TimeExhausted => TIMED_EXPIRY_REASON_TIME_EXHAUSTED,
                 ExpireReason::ChargesExhausted => TIMED_EXPIRY_REASON_CHARGES_EXHAUSTED,
@@ -915,9 +928,10 @@ pub(super) async fn write_expiry(
         .rows_affected()
             == 1
             && sqlx::query(
+                if equipment_slot.is_some() { "DELETE FROM game_character_equipment_slots WHERE item_instance_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid" } else {
                 "DELETE FROM game_item_container_entries \
                   WHERE item_instance_id = encode($1,'hex')::uuid \
-                    AND character_id = encode($2,'hex')::uuid",
+                    AND character_id = encode($2,'hex')::uuid" },
             )
             .bind(request.item_instance_id.as_slice())
             .bind(holder.as_bytes().as_slice())
@@ -928,6 +942,10 @@ pub(super) async fn write_expiry(
     };
     if !changed {
         return Err(DurabilityError::InvalidStoredState.into());
+    }
+    if request.target.is_none() && equipment_slot.is_some() {
+        sqlx::query("UPDATE game_character_equipment_state SET revision=revision+1,last_transaction_id=encode($2,'hex')::uuid WHERE character_id=encode($1,'hex')::uuid")
+            .bind(holder.as_bytes().as_slice()).bind(request.transaction_id.as_slice()).execute(&mut *connection).await?;
     }
 
     sqlx::query(

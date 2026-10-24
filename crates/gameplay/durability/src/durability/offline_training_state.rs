@@ -1,4 +1,4 @@
-//! OFFLINE0 fields carried by the existing build/death receipt chain (0173).
+//! OFFLINE0 fields carried by the existing build/death receipt chain (0180).
 use super::{DurabilityError, character_build::BuildCause};
 use sqlx::{Postgres, Row, Transaction};
 

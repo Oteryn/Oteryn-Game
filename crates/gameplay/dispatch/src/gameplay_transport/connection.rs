@@ -385,6 +385,9 @@ pub trait FreshAdmissionAuthority {
     super::house_intent::authority_methods!();
     super::appearance_change::authority_methods!();
     super::guild_intent::authority_methods!();
+    super::daily_reward::authority_methods!();
+    super::house_move_out::authority_methods!();
+    super::cyclopedia::authority_methods!();
     fn admit(
         &self,
         attempt: FreshAdmissionAttempt<'_>,
@@ -570,6 +573,24 @@ pub trait FreshAdmissionAuthority {
         None
     }
 
+    /// ITEM-TIMED-1: one bounded timed-item payload; None preserves an unknown commit.
+    fn timed_item(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _payload: &[u8],
+        _target: Option<ItemKey>,
+    ) -> impl Future<Output = Option<Vec<u8>>> {
+        async {
+            oteryn_protocol_oteryn::timed_item::encode_timed_item_result(
+                oteryn_protocol_oteryn::timed_item::TimedItemResult::refused(
+                    oteryn_protocol_oteryn::timed_item::TimedDisposition::Rejected,
+                ),
+            )
+            .ok()
+        }
+    }
+
     /// One `USE_INTENT` for the admitted actor against a world-object placement (USE-WIRE-V1,
     /// #162 5868482467), applied by the Channel owner.
     ///
@@ -595,6 +616,16 @@ pub trait FreshAdmissionAuthority {
         async { UseOutcome::rejected() }
     }
 
+    /// A timed USE keeps an ambiguous commit open for receipt reconciliation.
+    fn use_item_completion(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        item: ItemKey,
+    ) -> impl Future<Output = Option<UseOutcome>> {
+        async move { Some(self.use_item(actor, command, item).await) }
+    }
+
     /// BAGS-USE-1: field 5, resolved by the owner against the complete carried tree.
     fn use_item_by_definition(
         &self,
@@ -608,6 +639,18 @@ pub trait FreshAdmissionAuthority {
                 ..UseOutcome::rejected()
             }
         }
+    }
+
+    /// MINING-1: original USE is retained for replay before either handle is resolved.
+    fn use_pick(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _intent: UseIntent,
+        _source: Option<ItemKey>,
+        _target: Option<ItemKey>,
+    ) -> impl Future<Output = Option<UseOutcome>> {
+        async { Some(UseOutcome::rejected()) }
     }
 
     fn offline_training(
@@ -658,6 +701,18 @@ pub trait FreshAdmissionAuthority {
         _target: ItemKey,
     ) -> impl Future<Output = Option<crate::durability::bed_sleep::BedSleepOwner<'_, '_, '_>>> {
         async { None }
+    }
+
+    /// CRAFT-1: use-with a map cooking station. Replay resolves before current handles.
+    fn use_craft(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _intent: UseIntent,
+        _source: Option<ItemKey>,
+        _target: Option<ItemKey>,
+    ) -> impl Future<Output = Option<UseOutcome>> {
+        async { Some(UseOutcome::rejected()) }
     }
 
     /// Capability 22's exact direct-entry Rune adapter. Unknown commits keep the command open.
@@ -822,6 +877,27 @@ pub trait FreshAdmissionAuthority {
         _target: ItemKey,
     ) -> impl Future<Output = Option<ContainerObservation>> {
         async { None }
+    }
+
+    /// PARTY-1: basic session-fenced membership commands and own-state query.
+    fn party_command(
+        &self,
+        _admitted: AdmittedSession,
+        _command_id: u64,
+        _command_type: u32,
+        _payload: &[u8],
+        _view: &mut super::party_command::SessionPartyView,
+    ) -> impl Future<Output = Option<Vec<u8>>> {
+        std::future::ready(None)
+    }
+
+    fn staff_command(
+        &self,
+        _admitted: AdmittedSession,
+        _receipt: bool,
+        _payload: &[u8],
+    ) -> impl Future<Output = super::StaffReply> {
+        async { super::StaffReply::Rejected }
     }
 
     /// QUEST-LOG-WIRE-1: the session's quest copy with the quest log content, unless the copy
@@ -1478,6 +1554,8 @@ where
     );
     let offered =
         super::appearance_change::offer::offered(&offered, authority.appearance_available());
+    let offered = super::daily_reward::offered(&offered, authority.daily_reward_available());
+    let offered = super::cyclopedia::offered(&offered, authority.cyclopedia_available());
     let Some(selected) = SelectedCapabilities::select(&offered, bootstrap.supported_capabilities)
     else {
         return Err(ConnectionEnd::AdmissionRefused(
@@ -1846,6 +1924,7 @@ where
     // ITEM-VIEW-1b: with capability 4, domains 9 and 11 above every revision the session has
     // seen, with fresh handles. The revisions advance before the write. An unreadable backpack
     // fails closed; the carried open corpse is shown again only while it is in reach.
+    let mut party_view = super::party_command::SessionPartyView::default();
     let mut item_view = None;
     let item_snapshot;
     if admitted
@@ -2814,7 +2893,11 @@ where
             /// RANK-1 (HS-WIRE-1): command 14, a read of the session's World snapshots.
             Highscores(HighscoresReply),
             Guild(Vec<u8>),
+            Party(Vec<u8>),
+            HouseMoveOut(Vec<u8>),
+            Timed(Vec<u8>, Vec<ItemViewDelta>),
             Appearance(Option<oteryn_protocol_oteryn::appearance::ChangeResult>),
+            DailyReward(Option<Vec<u8>>),
             Training(oteryn_protocol_oteryn::loop_training::TrainingResult),
             /// ITEM-VIEW-1b: `USE` with an item target; the domain 11 delta follows the result.
             UseItem(OpenDecision, Option<ItemViewDelta>),
@@ -2825,6 +2908,7 @@ where
             Depot(oteryn_protocol_oteryn::depot::DepotReply),
             /// QUEST-LOG-WIRE-1: an accepted command 22; the domain 16 delta follows the result.
             QuestLog(QuestLogDomain),
+            Staff(Option<Vec<u8>>),
             Look(ItemLookResult, ItemLookSelection),
             /// ATTACK-1b: commands 11 and 12; the domain 10 delta follows the result.
             Attack(AttackIntentDisposition),
@@ -2983,6 +3067,16 @@ where
                 admitted.continuity.selected_capabilities.as_slice(),
                 command.payload,
             ) {
+                Ok(intent) if intent.use_with_map_item.is_some() => {
+                    match super::mining::dispatch_map_use(authority, actor, UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: command.command_id,
+                        item_fence: admitted.item_fence,
+                    }, intent, item_view.as_ref()).await {
+                        Some(outcome) => Dispatch::Use(outcome),
+                        None => return ConnectionEnd::AdmittedThenDisconnected(admitted),
+                    }
+                }
                 Ok(intent) if super::rune_use_bridge::routes(
                     &intent, &admitted.continuity.selected_capabilities,
                 ) => match super::rune_use_bridge::dispatch(
@@ -2998,12 +3092,12 @@ where
                     None => return ConnectionEnd::AdmittedThenDisconnected(admitted),
                 },
                 // ITEM-USE-WIRE-1: fields 4 and 5 decode only under capability 15.
-                // Creature, map-item and position targets still fail closed here.
+                // Creature and unrouted position targets still fail closed here.
                 Ok(UseIntent {
                     use_with: Some(_), ..
                 })
-                // WORLDINT-WIRE-1: the map_item arm of field 4 decodes only under capability 11, which is not offered
-                // before WORLDINT-USE-1 composes the interaction gate.
+                // WORLDINT-WIRE-1: map targets decode only under capability 11; the
+                // mechanic owner above keeps unsupported tool actions closed.
                 | Ok(UseIntent {
                     use_with_map_item: Some(_),
                     ..
@@ -3064,9 +3158,10 @@ where
                         None => None,
                     };
                     match (item_view.as_mut(), key, observation) {
-                        (_, Some(key), _) if consumable => Dispatch::Use(
-                            authority
-                                .use_item(
+                        (_, Some(key), _) if consumable => {
+                            let Some(outcome) = tokio::time::timeout(
+                                std::time::Duration::from_secs(10),
+                                authority.use_item_completion(
                                     actor,
                                     UseCommand {
                                         game_session_id: admitted.game_session_id,
@@ -3074,9 +3169,12 @@ where
                                         item_fence: admitted.item_fence,
                                     },
                                     key,
-                                )
-                                .await,
-                        ),
+                                ),
+                            ).await.ok().flatten() else {
+                                return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                            };
+                            Dispatch::Use(outcome)
+                        },
                         (Some(view), Some(key), _) if container.is_some() => {
                             let Some(views) = container_views.as_mut() else {
                                 return ConnectionEnd::AdmittedThenDisconnected(admitted);
@@ -3214,6 +3312,28 @@ where
             } else {
                 Dispatch::Unregistered
             }
+        } else if command.command_type
+            == oteryn_protocol_oteryn::timed_item::COMMAND_TYPE_TIMED_ITEM_INTENT
+        {
+            let Some((payload, deltas)) = super::timed_item_wire::dispatch(
+                authority,
+                actor,
+                UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: command.command_id,
+                    item_fence: admitted.item_fence,
+                },
+                command.payload,
+                item_view.as_mut(),
+            )
+            .await
+            else {
+                return ConnectionEnd::AdmittedThenDisconnected(admitted);
+            };
+            if let Some(view) = item_view.as_ref() {
+                admitted.continuity.item_view = view.continuity();
+            }
+            Dispatch::Timed(payload, deltas)
         } else if command.command_type == COMMAND_TYPE_ITEM_MOVE_INTENT {
             // ITEM-MOVE-1 (WIRE-0 §5): replay first, then an entry of the open corpse into the
             // main backpack. An unknown outcome ends the connection before the CommandId is
@@ -3323,6 +3443,40 @@ where
                     ),
                 }
             }
+        } else if super::house_move_out::owns(command.command_type) {
+            match authority
+                .house_move_out_command(
+                    admitted,
+                    command.command_id,
+                    command.command_type,
+                    command.payload,
+                )
+                .await
+            {
+                super::house_move_out::HouseMoveOutReply::Payload(bytes) => {
+                    Dispatch::HouseMoveOut(bytes)
+                }
+                super::house_move_out::HouseMoveOutReply::Rejected => Dispatch::Unregistered,
+                super::house_move_out::HouseMoveOutReply::Unavailable => {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                }
+            }
+        } else if matches!(command.command_type, 72 | 73) {
+            match authority
+                .cyclopedia_command(
+                    admitted,
+                    command.command_id,
+                    command.command_type,
+                    command.payload,
+                )
+                .await
+            {
+                super::guild_intent::GuildReply::Payload(bytes) => Dispatch::Guild(bytes),
+                super::guild_intent::GuildReply::Rejected => Dispatch::Unregistered,
+                super::guild_intent::GuildReply::Unavailable => {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                }
+            }
         } else if super::guild_intent::owns(command.command_type) {
             match authority
                 .guild_command(
@@ -3336,6 +3490,20 @@ where
                 super::guild_intent::GuildReply::Payload(bytes) => Dispatch::Guild(bytes),
                 super::guild_intent::GuildReply::Rejected => Dispatch::Unregistered,
                 super::guild_intent::GuildReply::Unavailable => {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                }
+            }
+        } else if matches!(
+            command.command_type,
+            oteryn_protocol_oteryn::staff::COMMAND_TYPE_STAFF_REQUEST
+                | oteryn_protocol_oteryn::staff::COMMAND_TYPE_STAFF_RECEIPT
+        ) {
+            match super::staff::dispatch(authority, admitted, command.command_type, command.payload)
+                .await
+            {
+                super::StaffReply::Result(bytes) => Dispatch::Staff(Some(bytes)),
+                super::StaffReply::Rejected => Dispatch::Staff(None),
+                super::StaffReply::Unknown => {
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 }
             }
@@ -3377,6 +3545,24 @@ where
                 )
                 .await,
             )
+        } else if matches!(
+            command.command_type,
+            oteryn_protocol_oteryn::party::COMMAND_TYPE_PARTY_INTENT
+                | oteryn_protocol_oteryn::party::COMMAND_TYPE_PARTY_QUERY
+        ) {
+            match authority
+                .party_command(
+                    admitted,
+                    command.command_id,
+                    command.command_type,
+                    command.payload,
+                    &mut party_view,
+                )
+                .await
+            {
+                Some(payload) => Dispatch::Party(payload),
+                None => Dispatch::Unregistered,
+            }
         } else if command.command_type == COMMAND_TYPE_CHAT_INTENT {
             // CHAT-WIRE-1: spam control is the speaker's limiter inside the authority; a
             // malformed intent is REJECTED with an empty payload like any unregistered command.
@@ -3610,6 +3796,25 @@ where
                 )
                 .await,
             )
+        } else if matches!(
+            command.command_type,
+            oteryn_protocol_oteryn::daily_reward::COMMAND_TYPE_DAILY_REWARD_CLAIM
+                | oteryn_protocol_oteryn::daily_reward::COMMAND_TYPE_DAILY_REWARD_QUERY
+        ) {
+            Dispatch::DailyReward(
+                super::daily_reward::dispatch(
+                    authority,
+                    actor,
+                    UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: command.command_id,
+                        item_fence: admitted.item_fence,
+                    },
+                    command.command_type,
+                    command.payload,
+                )
+                .await,
+            )
         } else if command.command_type == COMMAND_TYPE_HIGHSCORES_QUERY_V1 {
             // HIGHSCORES0 §6: the World and the asking Character are the admitted session's.
             match decode_highscores_query(command.payload) {
@@ -3672,6 +3877,9 @@ where
             Dispatch::Vip(None) => return ConnectionEnd::AdmittedThenDisconnected(admitted),
             Dispatch::House(Some(payload)) => (CommandStatus::Accepted, payload.clone()),
             Dispatch::House(None) => return ConnectionEnd::AdmittedThenDisconnected(admitted),
+            Dispatch::DailyReward(payload) => {
+                super::daily_reward::result(command.command_type, payload.take())
+            }
             Dispatch::Training(result) => {
                 let Ok(payload) =
                     oteryn_protocol_oteryn::loop_training::encode_training_result(*result)
@@ -3777,7 +3985,12 @@ where
                 };
                 (CommandStatus::Accepted, payload)
             }
+            Dispatch::Party(payload) => (CommandStatus::Accepted, payload.clone()),
             Dispatch::QuestLog(_) => (CommandStatus::Accepted, Vec::new()),
+            Dispatch::Staff(result) => match result {
+                Some(bytes) => (CommandStatus::Accepted, bytes.clone()),
+                None => (CommandStatus::Rejected, Vec::new()),
+            },
             Dispatch::Chat(result) => {
                 let Ok(payload) = encode_chat_intent_result(result) else {
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
@@ -3825,7 +4038,17 @@ where
                 // The page is written once; move it out instead of copying up to 32 KiB.
                 (CommandStatus::Accepted, std::mem::take(payload))
             }
-            Dispatch::Guild(payload) | Dispatch::Highscores(HighscoresReply::Result(payload)) => {
+            Dispatch::Timed(payload, _) => (
+                if super::timed_item_wire::accepted(payload) {
+                    CommandStatus::Accepted
+                } else {
+                    CommandStatus::Rejected
+                },
+                std::mem::take(payload),
+            ),
+            Dispatch::HouseMoveOut(payload)
+            | Dispatch::Guild(payload)
+            | Dispatch::Highscores(HighscoresReply::Result(payload)) => {
                 (CommandStatus::Accepted, std::mem::take(payload))
             }
             Dispatch::Unregistered
@@ -4097,6 +4320,20 @@ where
                     admitted.continuity.vitals_revision = to;
                 }
             }
+            Dispatch::Timed(_, deltas) => {
+                for delta in deltas {
+                    let Some((delta_sequence, frame)) =
+                        item_view_delta(generation, sequence, &delta)
+                    else {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    };
+                    sequence = delta_sequence;
+                    admitted.continuity.server_sequence = sequence;
+                    if write_frame(stream, &frame).await.is_err() {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    }
+                }
+            }
             Dispatch::UseItem(_, Some(delta)) | Dispatch::ContainerView(_, Some(delta)) => {
                 let Some((delta_sequence, frame)) = item_view_delta(generation, sequence, &delta)
                 else {
@@ -4265,17 +4502,40 @@ where
                     }
                 }
             }
+            Dispatch::Guild(_)
+                if command.command_type == 73 && command.payload.first() == Some(&4) =>
+            {
+                if let Some(view) = item_view.as_mut()
+                    && item_use_view_refresh::refresh(
+                        stream,
+                        authority,
+                        actor,
+                        &mut admitted,
+                        view,
+                        container_views.as_mut(),
+                        &mut sequence,
+                    )
+                    .await
+                    .is_none()
+                {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                }
+            }
             Dispatch::UseItem(_, None)
             | Dispatch::ContainerView(_, None)
             | Dispatch::Look(..)
             | Dispatch::Achievements(_)
             | Dispatch::Highscores(_)
+            | Dispatch::HouseMoveOut(_)
             | Dispatch::Guild(_)
             | Dispatch::Vip(_)
+            | Dispatch::Party(_)
             | Dispatch::Appearance(_)
+            | Dispatch::DailyReward(_)
             | Dispatch::Training(_)
             | Dispatch::Logout(_)
             | Dispatch::House(_)
+            | Dispatch::Staff(_)
             | Dispatch::Unregistered => {}
         }
         if training_logged_out {
@@ -4629,6 +4889,9 @@ async fn send_error<S: AsyncWrite + Unpin>(
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 mod tests {
+    #[path = "capability_tests.rs"]
+    mod capability_tests;
+
     mod bed_sleep_dispatch_tests {
         include!("bed_sleep_dispatch_tests.rs");
     }
@@ -6772,78 +7035,6 @@ mod tests {
             assert_eq!(frames, expected);
             // The unregistered type never reached `use_object`.
             assert_eq!(authority.uses.borrow().len(), 1);
-            Ok(())
-        })
-    }
-
-    /// WORLDINT-WIRE-1: a `SEALED` authority outcome carries its gate message id through the
-    /// server to the result under capability 11, and is refused as plain `Rejected` without it.
-    #[test]
-    fn a_sealed_use_carries_its_gate_message_id_only_under_capability_11()
-    -> Result<(), Box<dyn Error>> {
-        run(async {
-            let authority = UseAuthority {
-                uses: RefCell::new(Vec::new()),
-                commands: RefCell::new(Vec::new()),
-                overlay: None,
-                watermark: None,
-                outcome: UseOutcome {
-                    disposition: UseDisposition::Sealed,
-                    committed: None,
-                    earned: EarnedNotice::NoneEarned,
-                    gate_message_id: Some(42),
-                },
-            };
-            let use_type = u64::from(COMMAND_TYPE_USE_INTENT);
-            let frames_with = |capabilities: &'static [u32]| {
-                let offered = [
-                    OfferedCapability {
-                        id: CAPABILITY_ITEM_USE_V1,
-                        requires: &[],
-                    },
-                    OfferedCapability {
-                        id: 18,
-                        requires: &[],
-                    },
-                    OfferedCapability {
-                        id: CAPABILITY_WORLD_INTERACTION_V1,
-                        requires: &[CAPABILITY_ITEM_USE_V1, 18],
-                    },
-                ];
-                let selected =
-                    SelectedCapabilities::select(&offered, capabilities).expect("selection");
-                let admitted = AdmittedSession {
-                    continuity: SessionContinuity {
-                        selected_capabilities: selected,
-                        ..SessionContinuity::FRESH
-                    },
-                    ..positioned().expect("session")
-                };
-                (
-                    admitted,
-                    use_command(1, 1, use_type, b"oteryn:cell/entry-door", 0),
-                )
-            };
-            let result_present = |frames: &[Vec<u8>], status, payload: &[u8]| {
-                (0..64u64).any(|sequence| {
-                    encode_command_result(1, 1, sequence, status, payload)
-                        .is_ok_and(|expected| frames.contains(&expected))
-                })
-            };
-            let (admitted, command) =
-                frames_with(&[CAPABILITY_ITEM_USE_V1, 18, CAPABILITY_WORLD_INTERACTION_V1]);
-            let (_end, frames) = drive_session(&authority, admitted, &[command]).await?;
-            let sealed =
-                encode_use_result_with_gate(UseDisposition::Sealed, Some(42)).expect("sealed");
-            assert!(result_present(&frames, CommandStatus::Accepted, &sealed));
-
-            let (admitted, command) = frames_with(&[CAPABILITY_ITEM_USE_V1]);
-            let (_end, frames) = drive_session(&authority, admitted, &[command]).await?;
-            assert!(result_present(
-                &frames,
-                CommandStatus::Rejected,
-                &encode_use_result(UseDisposition::Rejected).unwrap_or_default()
-            ));
             Ok(())
         })
     }
