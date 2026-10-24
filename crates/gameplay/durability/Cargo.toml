@@ -23,6 +23,7 @@ oteryn-gameplay-progression = { version = "=0.1.0", path = "../progression" }
 oteryn-gameplay-items = { version = "=0.1.0", path = "../items" }
 oteryn-gameplay-economy = { version = "=0.1.0", path = "../economy" }
 oteryn-gameplay-quests = { version = "=0.1.0", path = "../quests" }
+oteryn-gameplay-world-change = { version = "=0.1.0", path = "../world-change" }
 oteryn-gameplay-housing = { version = "=0.1.0", path = "../housing" }
 base64.workspace = true
 oteryn-error-codes = { version = "=0.1.0", path = "../../error-codes" }

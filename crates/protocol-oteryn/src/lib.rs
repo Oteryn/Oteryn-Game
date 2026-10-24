@@ -2550,6 +2550,7 @@ pub mod spell_presentation_candidate;
 pub mod tutorial_notices;
 pub mod vip;
 pub mod world_clock;
+pub mod world_event;
 pub mod world_interaction;
 pub mod world_map;
 pub mod world_object;

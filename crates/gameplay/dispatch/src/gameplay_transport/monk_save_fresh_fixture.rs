@@ -95,7 +95,14 @@ pub mod fresh {
                 facts: self.current.clone(),
                 account_publication_revision: 1,
                 character_publication_revision: 1,
-                runtime_publication_revision: 1,
+                runtime_publication_revision: self
+                    .rows
+                    .iter()
+                    .find_map(|row| {
+                        matches!(row.key, AdmissionAuthorityGuardKeyV1::Runtime(_))
+                            .then_some(row.publication_revision)
+                    })
+                    .ok_or(Fnd04ConsumerError::FreshAccountCharacterConflict)?,
                 expected_lease_generation: 1,
                 proposed_lease_generation: 2,
                 account_presence_available: true,
@@ -317,6 +324,8 @@ pub mod fresh {
                     .into();
                 payload["attempt_ref"] = "00000000-0000-7000-8000-000000000002".into();
             }
+            payload["scope_ownership_generation"] =
+                self.current.scope_ownership_generation.to_string().into();
             payload["iat"] = now.into();
             payload["nbf"] = now.into();
             payload["exp"] = (now + 10).into();

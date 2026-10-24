@@ -1067,6 +1067,12 @@ pub trait FreshAdmissionAuthority {
         async { AccountAchievementsReply::Rejected }
     }
 
+    /// Persist a fenced observation of the reset-selected World announcement.
+    /// None leaves a possibly committed result outstanding for reconciliation.
+    fn world_event(&self, _command: UseCommand) -> impl Future<Output = super::world_event::Reply> {
+        async { Some(Err(())) }
+    }
+
     /// RANK-1 (HS-WIRE-1): one `HIGHSCORES_QUERY_V1` page of `world`'s persisted snapshot for
     /// the Character the admitted `session` controls. The transport passes the session's World
     /// and GameSession, never values from the payload.
@@ -2887,6 +2893,7 @@ where
             Timed(Vec<u8>, Vec<ItemViewDelta>),
             Appearance(Option<oteryn_protocol_oteryn::appearance::ChangeResult>),
             DailyReward(Option<Vec<u8>>),
+            WorldEvent(Result<Vec<u8>, ()>),
             /// ITEM-VIEW-1b: `USE` with an item target; the domain 11 delta follows the result.
             UseItem(OpenDecision, Option<ItemViewDelta>),
             /// BAGS-WIRE-1: command 21; the domain 14 delta follows the result.
@@ -3778,6 +3785,23 @@ where
                 )
                 .await,
             )
+        } else if command.command_type
+            == oteryn_protocol_oteryn::world_event::COMMAND_TYPE_WORLD_EVENT_QUERY
+        {
+            match super::world_event::dispatch(
+                authority,
+                UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: command.command_id,
+                    item_fence: admitted.item_fence,
+                },
+                command.payload,
+            )
+            .await
+            {
+                Some(reply) => Dispatch::WorldEvent(reply),
+                None => return ConnectionEnd::AdmittedThenDisconnected(admitted),
+            }
         } else if command.command_type == COMMAND_TYPE_HIGHSCORES_QUERY_V1 {
             // HIGHSCORES0 §6: the World and the asking Character are the admitted session's.
             match decode_highscores_query(command.payload) {
@@ -3980,6 +4004,8 @@ where
                 // The page is written once; move it out instead of copying up to 32 KiB.
                 (CommandStatus::Accepted, std::mem::take(payload))
             }
+            Dispatch::WorldEvent(Ok(payload)) => (CommandStatus::Accepted, std::mem::take(payload)),
+            Dispatch::WorldEvent(Err(())) => (CommandStatus::Rejected, Vec::new()),
             Dispatch::Timed(payload, _) => (
                 if super::timed_item_wire::accepted(payload) {
                     CommandStatus::Accepted
@@ -4476,6 +4502,7 @@ where
             | Dispatch::Guild(_)
             | Dispatch::Vip(_)
             | Dispatch::Party(_)
+            | Dispatch::WorldEvent(_)
             | Dispatch::Appearance(_)
             | Dispatch::DailyReward(_)
             | Dispatch::Logout(_)
