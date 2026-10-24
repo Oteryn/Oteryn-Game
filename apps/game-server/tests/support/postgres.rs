@@ -821,6 +821,9 @@ mod durability_contract_tests {
 
     #[test]
     fn migration_lock_interruption_releases_before_any_ddl_and_allows_fresh_retry() -> TestResult {
+        const MIGRATION_RETRY_BASE_BUDGET: Duration = Duration::from_secs(5);
+        const MIGRATION_RETRY_PER_MIGRATION_BUDGET: Duration = Duration::from_millis(50);
+
         run_postgres_test(async {
             let database = IsolatedPostgres::create("migration_lock_interrupt").await?;
             let database_url = database.database_url()?;
@@ -844,7 +847,12 @@ mod durability_contract_tests {
             assert!(migration_table.is_none());
             observer.close().await?;
             lock_holder.close().await?;
-            tokio::time::timeout(Duration::from_secs(5), executor.apply_embedded_ledger())
+            // Allow the full-ledger retry budget to grow as migrations accumulate on loaded CI runners.
+            let migration_count =
+                u32::try_from(oteryn_gameplay_durability::GAME_MIGRATOR.iter().count())?;
+            let migration_retry_budget = MIGRATION_RETRY_BASE_BUDGET
+                + MIGRATION_RETRY_PER_MIGRATION_BUDGET * migration_count;
+            tokio::time::timeout(migration_retry_budget, executor.apply_embedded_ledger())
                 .await??;
             assert_eq!(executor.inspect().await?, SchemaCompatibility::Compatible);
             database.cleanup().await?;
