@@ -70,14 +70,14 @@ async fn run_idle_reused_probe_case() -> Result<(), BoxError> {
     .await?;
     assert!(matches!(
         session.service_liveness(Duration::from_secs(2)).await,
-        Err(DevClientError::ProbeIdNotAdvancing {
+        Err(DevClientError::Session(SessionError::ProbeIdNotAdvancing {
             last: 5,
             received: 5
-        })
+        }))
     ));
     assert!(matches!(
         session.service_liveness(Duration::from_millis(10)).await,
-        Err(DevClientError::SessionUnusable)
+        Err(DevClientError::Session(SessionError::SessionUnusable))
     ));
     drop(session);
     server.await??;
@@ -102,14 +102,14 @@ async fn run_idle_unexpected_frame_case() -> Result<(), BoxError> {
     .await?;
     assert!(matches!(
         session.service_liveness(Duration::from_secs(2)).await,
-        Err(DevClientError::UnexpectedMessage {
+        Err(DevClientError::Session(SessionError::UnexpectedMessage {
             expected: MessageType::LivenessProbe,
             actual: MessageType::CommandResult
-        })
+        }))
     ));
     assert!(matches!(
         session.service_liveness(Duration::from_millis(10)).await,
-        Err(DevClientError::SessionUnusable)
+        Err(DevClientError::Session(SessionError::SessionUnusable))
     ));
     drop(session);
     server.await??;
@@ -205,7 +205,7 @@ fn a_duplicate_for_an_unsent_command_id_fails_closed() -> Result<(), BoxError> {
             move |error| {
                 matches!(
                     error,
-                    DevClientError::DuplicateForUnsentCommand { command_id }
+                    DevClientError::Session(SessionError::DuplicateForUnsentCommand { command_id })
                         if *command_id == unsent
                 )
             },
@@ -222,10 +222,10 @@ fn a_duplicate_for_an_unsent_command_id_fails_closed() -> Result<(), BoxError> {
         |error| {
             matches!(
                 error,
-                DevClientError::InconsistentCommandResult {
+                DevClientError::Session(SessionError::InconsistentCommandResult {
                     command_id: 7,
                     status: CommandStatus::DuplicateOutcomeExpired
-                }
+                })
             )
         },
     ))?

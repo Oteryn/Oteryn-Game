@@ -626,10 +626,6 @@ impl RenderModel {
                     next.overlay_revision = delta.new_revision;
                 }
                 SessionEvent::ActorVitals(delta) => next.vitals = Some(delta.value),
-                // The harness model does not track combat state.
-                SessionEvent::ActorCombatState(_)
-                | SessionEvent::TutorialNotice(_)
-                | SessionEvent::WorldMap(_) => {}
                 SessionEvent::ChatLine(delta) => {
                     if let Some(chat) = next.chat.as_mut() {
                         chat.push(delta.value.clone());
@@ -640,7 +636,6 @@ impl RenderModel {
                         chat.rooms = delta.value;
                     }
                 }
-                SessionEvent::Appearance(_) => {}
                 SessionEvent::Inventory(delta) => {
                     if let Some(items) = next.items.as_mut() {
                         items.backpack = delta.value.clone();
@@ -651,6 +646,7 @@ impl RenderModel {
                         items.corpse = delta.value.clone();
                     }
                 }
+                _ => {}
             }
         }
         next

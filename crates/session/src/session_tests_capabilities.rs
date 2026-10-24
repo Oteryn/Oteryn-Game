@@ -1,3 +1,26 @@
+use oteryn_protocol_oteryn::charm::{
+    COMMAND_TYPE_CHARM_ASSIGN_INTENT, STATE_DOMAIN_CHARACTER_CHARMS,
+};
+
+#[test]
+fn derived_gated_routes_match_previous_table() {
+    // Frozen contents of the former GATED_ROUTES table. Compare sets because the
+    // protocol registry generates its entries in capability order.
+    let expected: &[(u32, &[u32], &[u32])] = &[
+        (18, &[], &[17]),
+        (37, &[36], &[]),
+        (31, &[], &[23]),
+        (25, &[25], &[21]),
+        (1, &[4, 5], &[4, 5]),
+        (8, &[], &[13]),
+        (10, &[], &[15]),
+        (14, &[21], &[14]),
+    ];
+    let expected: std::collections::BTreeSet<_> = expected.iter().copied().collect();
+    let derived: std::collections::BTreeSet<_> = gated_routes().collect();
+    assert_eq!(derived, expected);
+}
+
 /// A peer that closes before `ServerAccepted` fails admission closed: no session.
 #[test]
 fn a_stream_closed_before_admission_fails_closed() -> Result<(), BoxError> {
