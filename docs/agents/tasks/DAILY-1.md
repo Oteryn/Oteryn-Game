@@ -4,7 +4,7 @@
 task_id: DAILY-1
 title: "DAILY-1: daily reward"
 mode: IMPLEMENT
-status: waiting
+status: implemented_basic_server
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 4
@@ -13,13 +13,277 @@ plan_row: "§4 Epic 6 row DAILY-1 (row 47); §7 'DAILY-1'"
 briefs:
   - docs/architecture/reviews/OTERYN_GAME_DAILY_REWARD0_DAILY_REWARD_SYSTEM_DECISION_2026-10-03.md
 base_branch: main
-branch: w5/daily-1
-pr: null
+branch: claude/happy-davinci-ijz3wy-daily
+pr: 2345
 needs_migration: true
 needs_registry: true
 needs_content_regeneration: true
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+## PR #2345 CI repair — 2026-10-23
+
+Returned to **AUTHORING** for the owner's local-only repair of
+`claude/happy-davinci-ijz3wy-daily`, starting at `0f2bbcbd1` (reported CI head
+`0f2bbcb`). The coordinator owns publication, successor freeze, independent
+review and CI; this worker does not commit or push. Bound META 3.1.0 at
+`1bfb5ff98c8aa156e73669a14e083a1d464c29fb` was refreshed read-only.
+
+Initial PostgreSQL 18.6 / `180006` reproduction, before production edits:
+
+- Inbox inventory **FAIL**, exactly the two new DAILY-1 reader functions.
+  `game_daily_reward_bound_custody` and `game_daily_reward_line_guard` only
+  SELECT/RAISE; neither writes Inbox rows. Retain the closed inventory and every
+  Inbox mutation assertion; explicitly register the two readers.
+- Corpse boundary **PASS**, 1 test, 9.45 s; database
+  `it_corpseboundary_1792788658471164962`.
+- Native admission resource bounds **PASS**, 1 test, 5.23 s.
+- Guild membership payload guard **PASS**, 1 test, 32.73 s; five real isolated
+  `it_guild_event_whole_*` databases reported `180006`.
+
+No PostgreSQL exception occurred in the three reported shard-5 cases, so their
+CI failure cannot honestly be attributed to a constraint exception locally.
+The native admission case writes no item locations. `from_commit_error` maps
+database exceptions to `CommitRejected`; `CommitOutcomeUnknown` also represents
+deadline/connection failures, and `RootUnavailable` is a readiness refusal.
+The reported shard-5 failures remain CI-only pending successor CI evidence.
+
+The custody guard did perform unnecessary work: every item/location event
+walked its tree and called the binding proof even when no item was bound. The
+repair skips empty binding sets and invokes the proof only for bound affected
+tree members. The original depth-eight/501-node traversal stays bounded before
+the primary-key binding join. No index is missing from these lookups: bindings
+has its item primary key and nested entries has its parent index. Deferred
+final-state validation stays necessary because binding follows native MINT;
+an immediate binding predicate would miss those newly bound items.
+
+The real-dispatch regression keeps the original custody proof and rejects any
+call for an unbound item. With the original migration it fails at COMMIT with
+the instrumented PostgreSQL exception `DAILY custody proof visited an unbound
+item` (`crs_daily_dispatch_1792788898904681392`, `180006`). This proves unnecessary
+proof invocation, **not** the cause of the three CI timing/readiness failures.
+The fixed scenario checks an unrelated deferred event both before and after a
+real daily binding exists, and retains the original seven-day/replay/rollback
+assertions and production custody proof. A positive probe also requires a real
+bound MINT to invoke that original proof; disabling the guard cannot satisfy the
+regression.
+
+Repair-owned paths:
+
+- `apps/game-server/migrations/0159_daily_reward_delivery.sql`
+- `apps/game-server/tests/support/character_inbox_postgres_cases.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/daily_reward.rs`
+- `docs/agents/tasks/DAILY-1.md`
+
+### CI-repair commands
+
+The qualification commands below use the absolute wrapper, `--locked` and
+offline dependency resolution. Each PostgreSQL command has a mechanic/module
+filter; no complete PostgreSQL target or guild suite is run. The guild batch is
+the two-case event-guard module containing the reported failure.
+
+```bash
+export CARGO_NET_OFFLINE=true
+/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --lib --quiet -- daily --test-threads=1 --nocapture
+/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-durability --lib --quiet -- daily --test-threads=1 --nocapture
+/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-game-server --test character_authority_postgres --quiet -- character_inbox_postgres_cases:: --test-threads=1 --nocapture
+/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-game-server --test character_authority_postgres --quiet -- corpse_transfer_postgres_cases:: --test-threads=1 --nocapture
+/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-game-server --test native_admission_source_postgres --quiet -- resource_bounds_accept_max_and_reject_max_plus_one_before_retention --nocapture
+/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-game-server --lib --quiet -- durability_guild_tests::event_guard_tests:: --test-threads=1 --nocapture
+/home/mole/oteryn-cache/codex-bin/cargo clippy --locked -p oteryn-game-server -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch --all-targets --quiet -- -D warnings
+/home/mole/oteryn-cache/codex-bin/cargo fmt --all
+/home/mole/oteryn-cache/codex-bin/cargo fmt --all --check
+rustfmt --edition 2024 --check crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/daily_reward.rs
+python3 tools/agents/validate_governance.py
+python3 tools/repository/validate_repository_policy.py
+python3 -m unittest discover -s tools/agents/tests
+git diff --check
+```
+
+### CI-repair results
+
+After resuming from the auth outage, preserved and reviewed the existing repair
+and repeated qualification on the unchanged code. All **22 tests passed**,
+including all four originally reported cases and the strengthened real-dispatch
+regression. PostgreSQL cases ran with the real wrapper-provided route, not the
+unconfigured early return. The results below are from this resumed run; the
+original-HEAD reproduction evidence above is retained from the earlier run.
+
+| Filter/batch | Passed | Duration |
+|---|---:|---:|
+| dispatch `daily` (including positive proof probe) | 3 | 22.65 s |
+| durability `daily` | 5 | 37.36 s |
+| `character_inbox_postgres_cases::` | 6 | 153.61 s |
+| `corpse_transfer_postgres_cases::` | 5 | 35.67 s |
+| native admission resource bounds | 1 | 5.04 s |
+| `durability_guild_tests::event_guard_tests::` | 2 | 56.89 s |
+
+Final dispatch evidence: `crs_daily_dispatch_1792790530787903992`, `180006`,
+start and cleanup markers. DAILY durability reported five `bp_daily_*`
+databases with `180006` and cleanup markers. Corpse and guild likewise emitted
+their real database/version markers; the inbox and native admission harnesses
+assert the canonical server version. The formerly failing corpse boundary case
+used `it_corpseboundary_1792790819151422875`; the guild membership case reported
+five `it_guild_event_whole_*` databases.
+
+Clippy **PASS** for all targets of game-server, durability and dispatch with
+`-D warnings` (existing vendored Tokio/SQLx warnings only). Cargo fmt, the explicit
+auto-mounted-file rustfmt check, both Python validators and `git diff --check`
+**PASS**. No crate manifest or lockfile changed, so workspace clippy was not run.
+Governance unit tests also **PASS**, 129 tests.
+
+Re-read the complete repair diff against
+`/home/mole/oteryn-cache/CODEX-CHECKLIST.md`. Searched `apps/`, `crates/`, `tools/`
+for the affected SQL functions and the new private test helper. No enum variant,
+Rust struct field, trait method or public Rust function was added, so no
+constructor/exhaustive-match/implementation migration is required. The real
+custody proof stays enabled; no test assertion or timeout was weakened. No Git
+index, commit, push, branch switch, reset, stash, credential, Docker, workflow or
+repository-routing mutation occurred.
+
+### CI-repair Unfinished
+
+- CI-only: `two_players_at_the_window_boundary_transfer_the_entry_once`,
+  `resource_bounds_accept_max_and_reject_max_plus_one_before_retention`, and
+  `guild_event_guard_membership_payload_has_complete_binding` passed alone on
+  the original HEAD. Their reported CI exceptions could not be reproduced or
+  captured. No deadline was increased; successor PostgreSQL shards 4/5 remain
+  coordinator CI qualification.
+- Coordinator-owned successor publication, independent review and CI. The
+  earlier mechanic/content parity limitations below are unchanged.
+
+## Server wiring gap list — 2026-10-23
+
+Local authoring only, under the owner's server-first allocation; no publication.
+
+| Layer | This HEAD | Missing server work |
+|---|---|---|
+| L3 | `progression/daily_reward.rs`: lane/streak/reset arithmetic | Compose canonical reward planning and joker balance |
+| L4 | `daily_reward_claim.rs`: fenced state/receipt transaction, no runtime caller | Complete ordered lines, Account/World joker ledger, available Inbox sink and bindings atomically |
+| Migrations | 0140 state/receipts/history; 0148 native World reset epochs | Bridge native committed epochs; new schema only in 0159 |
+| Protocol | Reserved module/proto and capability 32, commands 32/33, domain 24 | Bounded request/result/wall codecs and decode tests; reuse allocated IDs |
+| Dispatch | `daily_reward_tests.rs` proves temporary reservation refusal | Mechanic-owned handler through admitted connection, shrine reach and replay |
+| Content/offer | No DAILY shrine/catalogue; capability unoffered | Small admitted shrine/catalogue binding and conditional offer |
+| Server/runtime | Native reset owner and Inbox mint bridge exist | Connect composed admission to claims and real-dispatch PostgreSQL tests |
+
+Historical checkpoints below describe earlier incomplete slices, not the current outcome.
+
+## Basic server checkpoint — 2026-10-23
+
+**PROVEN: a currently admitted session can query the wall, USE an adjacent
+shrine, claim over commands 32/33, receive a durable result, and replay after
+rebuilding the database owner. Full reference/content parity is still incomplete.**
+Local branch: `claude/happy-davinci-ijz3wy-daily`, base HEAD
+`c938f50b4f727cb0dc1adf60ca62f7d63f4f6541`. Uncommitted authoring only; no frozen
+candidate, PR, CI result, external review trigger or readiness claim.
+
+Resolved server gaps:
+
+- Bounded protobuf-subset claim/result/wall codecs use the already allocated
+  capability 32, commands 32/33 and domain reservation 24; no wire IDs changed.
+  Query returns the wall in its reserved result payload. Capability selection
+  remains absent for uncomposed authorities; the composed native content offers it.
+- `daily_reward.rs` owns dispatch and the shrine wall. The original entry shrine
+  is `oteryn:placement/daily-reward-shrine` at `(0,0,0)` on the qualified entry cell in `oteryn:entry.frame`;
+  bundle Worlds recognize the authored shrine source IDs on adjacent map tiles.
+  The entry address must resolve to a qualified walkable cell. Claim rechecks
+  same-floor Chebyshev-one reach under the spell lane and uses
+  the native current session/lease/scope/Character fence for every DB pass.
+- The production `commit_daily_reward_claim` now composes state, receipt,
+  Account+World joker ledger, complete ordered lines, native Inbox MINT/audit
+  and item bindings. The former receipt-only entrypoint is private/test-only;
+  all its existing assertions remain. Items use MAIL's frozen mint reservation
+  and borrowed native transaction; a source refusal rolls everything back.
+- Migration **0159** connects committed native reset epochs to DAILY history,
+  backfills existing initialized Worlds in bounded steps, and installs the line,
+  command, joker and binding constraints/guards. DAILY's positive window label is
+  native epoch + 1, including initial native epoch zero. Runtime still cannot
+  initialize or publish reset authority. An uninitialized World returns
+  UNAVAILABLE; its existing owner-only initialization must run first.
+- Claims, command receipts and ordered outputs survive reconnect/reload; a replay
+  of an old command after later epochs cannot claim another day. The epoch view
+  explicitly sorts the numeric source column, including epochs 9 → 10 → 11.
+- The small Content document is embedded and checked against the admitted native
+  potion profile; it does not modify world/compiler inputs or hand-edit pins.
+  Resource rows **0710/0711** register the existing streak/output ceilings.
+
+### Reference parity table
+
+| Visible behavior | Reference evidence | Oteryn now |
+|---|---|---|
+| Shrine proximity and anywhere wall | DAILY_REWARD0 §3.1, §7; official/manual and Wiki evidence retained there | USE opens the session wall; query returns bounded wall bytes; claim independently rechecks reach |
+| One claim/window and restart stability | DAILY_REWARD0 §3.2, ADR-0021 | Committed World-owner history only; unique Character+World+window receipt and durable command replay |
+| Lane wrap, streak and jokers | DAILY_REWARD0 §3.3; UTC month parity remains pending | Seven positions; 100,000 ceiling; Account+World capped-three grant/spend ledger; gap coverage tested over real dispatch |
+| Free item quantities | DAILY_REWARD0 §4.2, Wiki rev 905700 cited there | Basic admitted health-potion choice: 5/5/10 on days 1/2/4; the larger vocation rune/potion catalogue is unfinished |
+| Converter and training rewards | DAILY_REWARD0 §4.3–4.4; Exercise Weapons rev 1126820 cited there | Original converter/training reward definitions mint to Inbox; ordered line retains 100/50 charges. Normal catalogue/exercise consumption of the new training definitions remains unfinished |
+| Inbox and item binding | DAILY_REWARD0 §4.5, §6; R1/R2 | Atomic native Inbox MINT, permanent Character+World binding, custody/NPC/loop-stack SQL guards; no unbound reward delivery |
+| Wildcard and XP rewards | DAILY_REWARD0 §4.5, R4 | Durable PENDING lines (one wildcard / ten XP minutes); absent sink owners receive no invented balance or XP effect |
+| Premium and resting bonuses | DAILY_REWARD0 §3.3 and later-child graph | Free lane only; no Premium or resting-area effects asserted |
+
+### Validation evidence — basic server
+
+All qualifying Cargo commands use `/home/mole/oteryn-cache/codex-bin/cargo`
+and `--locked`. Initial bare-PATH Cargo runs skipped PostgreSQL and are **not**
+database evidence. Routed runs use PostgreSQL **18.6 / 180006** and isolated
+databases; only DAILY filters were executed.
+
+```bash
+cargo test --locked -p oteryn-gameplay-dispatch --lib daily_reward --quiet -- --test-threads=1 --nocapture
+cargo test --locked -p oteryn-gameplay-durability --lib daily_reward --quiet -- --test-threads=1 --nocapture
+cargo test --locked -p oteryn-protocol-oteryn --lib daily_reward --quiet
+cargo test --locked -p oteryn-gameplay-progression --lib daily_reward --quiet
+cargo clippy --locked -p oteryn-gameplay-content -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-protocol-oteryn -p oteryn-game-server --all-targets --quiet -- -D warnings
+cargo fmt --all --check
+rustfmt --edition 2024 --check crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/daily_reward.rs
+python3 tools/agents/validate_governance.py
+python3 -m unittest discover -s tools/agents/tests
+python3 tools/repository/validate_repository_policy.py
+git diff --check
+```
+
+Passing DAILY counts: dispatch **3** (including the auto-mounted real-dispatch
+PostgreSQL case), durability **5** PostgreSQL cases, protocol **3**, progression
+**4**. The dispatch case covers all seven days, exact durable item quantities,
+pending lines, wrap, gap/joker spend, missing capability, malformed/invalid picks,
+stale generation, rollback at deferred commit after native MINT, frozen-plan retry, old-command replay
+across reset windows and database-owner restart. Existing uncomposed-authority
+refusals remain tested. No assertion was removed or loosened.
+
+Successful routed evidence includes `crs_daily_dispatch_1792784224804218040`
+(start and cleanup), and durability databases
+`bp_daily_claim_1792783268415071805`, `bp_daily_race_1792783279826955852`,
+`bp_daily_rollback_1792783284326631551`, `bp_daily_refusals_1792783293666042263`,
+`bp_daily_schema_1792783300158861679` (all start/cleanup, `180006`).
+Strict clippy passed; pre-existing vendored Tokio/SQLx warnings remain outside
+the changed packages. Governance unit tests: **129 passed**.
+
+Re-read the whole tracked diff and every new file against
+`/home/mole/oteryn-cache/CODEX-CHECKLIST.md`; swept `apps/`, `crates/`, `tools/`
+for every added type/field constructor, trait implementation and exhaustive
+dispatch match. Every added public Rust function has a production caller exercised
+by the real-dispatch case. No client, workflow, repository-routing, credential,
+Git index, commit, push, checkout, reset or stash mutation occurred.
+
+### Unfinished
+
+- Full vocation rune/potion catalogue and normal item/exercise resolution of the
+  original training reward definitions; the basic health-potion/Inbox path is live.
+- PREY wildcard and XP-boost delivery/activation owners; lines remain PENDING as
+  the accepted decision requires. Premium, resting bonuses and UI remain later scope.
+- A real World must already have its separately authorized native reset-owner
+  initialization. DAILY does not bypass that authority or manufacture a reset.
+- Full binding-site integration/qualification beyond the currently reachable
+  Inbox path, and independent exact-candidate review/CI/publication by the lead.
+  No unrelated contention failure is deferred as CI-only in this run.
+
+Changed files: `apps/game-server/migrations/0159_daily_reward_delivery.sql`;
+`content/interactions/daily-rewards.json`;
+`crates/gameplay/content/src/content/{daily_reward.rs,mod.rs}`;
+`crates/gameplay/dispatch/src/gameplay_transport/{channel_states.rs,connection.rs,daily_reward.rs,daily_reward_tests.rs,mod.rs,postgres_tests/daily_reward.rs}`;
+`crates/gameplay/durability/src/durability/{daily_reward_claim.rs,daily_reward_delivery.rs,daily_reward_jokers.rs,daily_reward_tests.rs,mod.rs}`;
+`crates/protocol-oteryn/src/{daily_reward.rs,daily_reward_codec_tests.rs}`;
+`docs/contracts/resource-limits/entries/{0710-DAILYREWARD0-RL-01.json,0711-DAILYREWARD0-RL-02.json}`;
+this card.
 
 Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
 

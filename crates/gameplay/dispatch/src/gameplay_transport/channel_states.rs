@@ -18,6 +18,7 @@ pub struct ChannelSessionStates {
     pub attack: Mutex<attack::ChannelAttackStates>,
     /// CHAT-WIRE-1: speaker name, spam limiter and queued lines of each chatting session.
     pub chat: chat_intent::ChatRuntime,
+    pub(super) daily_rewards: super::daily_reward::DailyRewardSessions,
     /// The releases holding each write fence of the slot (CHARM-DESC-FENCE-LEASE step c).
     pub fence_holders: FenceHolders,
     /// OPS-SAVE-2: closed by the shutdown flush; admissions and commands run under its permits.

@@ -9,12 +9,6 @@ use crate::foundation::{CommandId, CommandRef, ExactActorRef};
 use oteryn_gameplay_housing::house_management::{HouseManagementAction, HouseManagementList};
 use oteryn_protocol_oteryn::house::{self as wire, HouseDisposition as D};
 
-pub(super) const OFFERED: super::capabilities::OfferedCapability =
-    super::capabilities::OfferedCapability {
-        id: wire::CAPABILITY_HOUSE_V1,
-        requires: &[],
-    };
-
 pub(super) async fn dispatch(
     authority: &impl FreshAdmissionAuthority,
     actor: ExactActorRef,
