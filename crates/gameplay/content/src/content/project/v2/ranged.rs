@@ -109,6 +109,39 @@ impl ProjectV2RangedWeapon {
     }
 }
 
+// The source profile is separate from the sealed Item authoring map. Resolve only
+// fields explicitly owned there; missing unowned facts still fail strict decoding.
+impl TryFrom<(&serde_json::Value, &ProjectV2ItemAuthoring)> for ProjectV2RangedWeapon {
+    type Error = ProjectError;
+
+    fn try_from(
+        (profile, authoring): (&serde_json::Value, &ProjectV2ItemAuthoring),
+    ) -> Result<Self, Self::Error> {
+        let invalid = || ProjectError::InvalidProject("invalid ranged Item profile owners");
+        let mut profile = profile.clone();
+        let fields = profile.as_object_mut().ok_or_else(invalid)?;
+        if let Some(attack) = authoring.weapon_attack_modifier_points
+            && fields.insert("attack".into(), attack.0.into()).is_some()
+        {
+            return Err(invalid());
+        }
+        if let Some(hit) = authoring.weapon_absolute_hit_chance_percent {
+            let numerator = i128::from(hit.numerator);
+            let denominator = i128::from(hit.denominator);
+            if denominator == 0 || numerator % denominator != 0 {
+                return Err(invalid());
+            }
+            let hit = i64::try_from(numerator / denominator).map_err(|_| invalid())?;
+            if fields.insert("hit_chance".into(), hit.into()).is_some() {
+                return Err(invalid());
+            }
+        }
+        let weapon: Self = serde_json::from_value(profile).map_err(|_| invalid())?;
+        weapon.validate()?;
+        Ok(weapon)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
@@ -122,17 +155,35 @@ mod tests {
             serde_json::from_slice(&std::fs::read(root.join("content/items/index.json")).unwrap())
                 .unwrap();
         let mut result = BTreeMap::new();
+        let profiles: Value = serde_json::from_slice(
+            &std::fs::read(root.join("content/items/ranged-profiles.json")).unwrap(),
+        )
+        .unwrap();
+        let profiles: BTreeMap<_, _> = profiles["records"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|record| (record["item"]["key"].as_str().unwrap(), record))
+            .collect();
         for path in index["shards"].as_array().unwrap() {
             let shard: Value =
                 serde_json::from_slice(&std::fs::read(root.join(path.as_str().unwrap())).unwrap())
                     .unwrap();
             for row in shard["records"].as_array().unwrap() {
-                if row["authoring"]["ranged"].is_null() {
+                let key = row["definition"]["identity"]["key"].as_str().unwrap();
+                let Some(profile) = profiles.get(key) else {
                     continue;
-                }
-                let mut authoring = row["authoring"].clone();
+                };
+                // The profile moved out of sealed authoring; resolve its existing owners.
+                assert!(row["authoring"].get("ranged").is_none());
+                let mut authoring = row.get("authoring").cloned().unwrap_or(json!({}));
                 authoring["item"] = row["definition"]["identity"].clone();
-                let authoring: ProjectV2ItemAuthoring = serde_json::from_value(authoring).unwrap();
+                assert_eq!(profile["item"], authoring["item"]);
+                let mut authoring: ProjectV2ItemAuthoring =
+                    serde_json::from_value(authoring).unwrap();
+                authoring.ranged = Some(
+                    ProjectV2RangedWeapon::try_from((&profile["profile"], &authoring)).unwrap(),
+                );
                 validate_native_gameplay_item(&authoring).unwrap();
                 assert!(
                     result
@@ -178,11 +229,13 @@ mod tests {
                 elemental_attack: 0,
             })
         );
-        for (id, ammunition, attack, max_hit_chance, element, elemental_attack) in [
+        // Absolute hit chance comes from the sealed Item owner, replacing Canary's zero default.
+        for (id, ammunition, attack, hit_chance, max_hit_chance, element, elemental_attack) in [
             (
                 3447,
                 ReferenceAmmoType::Arrow,
                 25,
+                90,
                 91,
                 ProjectV2RangedElement::Physical,
                 0,
@@ -191,6 +244,7 @@ mod tests {
                 3446,
                 ReferenceAmmoType::Bolt,
                 30,
+                86,
                 87,
                 ProjectV2RangedElement::Physical,
                 0,
@@ -199,6 +253,7 @@ mod tests {
                 761,
                 ReferenceAmmoType::Arrow,
                 14,
+                90,
                 91,
                 ProjectV2RangedElement::Energy,
                 14,
@@ -209,7 +264,7 @@ mod tests {
                 Some(ProjectV2RangedWeapon::Ammunition {
                     attack,
                     ammunition,
-                    hit_chance: 0,
+                    hit_chance,
                     max_hit_chance,
                     element,
                     elemental_attack,

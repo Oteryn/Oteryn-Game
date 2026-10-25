@@ -12,6 +12,8 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // trays 3464/8198; flour/dough/wheat 3603..=3605; cake 6276/6277;
     // chocolate 8018/8019; garlic 8194/8196/8199. All have speed_bonus=0.
     ("CRAFT-1", 22),
+    // ENERGY-RING-1 admits the inactive 3051 and active 3088 through the timed pipeline.
+    ("ENERGY-RING-1", 2),
     // 4 timed-item profiles.
     ("ITEM-TIMED-1", 4),
     // 23 training/exercise weapon profiles (tools/content-migration/loop_training_profiles.py):

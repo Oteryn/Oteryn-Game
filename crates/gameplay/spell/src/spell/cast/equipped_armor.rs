@@ -6,6 +6,11 @@ use oteryn_gameplay_combat_rules::resolution::player_defence::HandDefence;
 use oteryn_gameplay_content::content::ReferenceRationalPercent;
 
 impl PlayerSpellState {
+    /// Install the equipment owner's current active-form mana shield contribution.
+    pub fn install_equipped_mana_shield(&mut self, active: bool) {
+        self.equipped_mana_shield = active;
+    }
+
     /// The armor of the worn equipment (`Player::getArmor`), installed at admission and after
     /// every committed equipment move; 0 before any install.
     #[must_use]

@@ -1,4 +1,4 @@
-"""ITEM-TIMED-1: carry four admitted timed definitions into the native server provider.
+"""Carry admitted timed definitions into the native server provider.
 
 Values/transform pairs are already owned by TIMED-CONTENT-1. The small admission
 completion uses Canary 47dfd51 items.xml: nonstackable wearable boots/amulet, no
@@ -8,7 +8,7 @@ import copy
 import hashlib
 import json
 
-IDS = {3081, 3549, 6529, 6530}
+IDS = {3051, 3081, 3088, 3549, 6529, 6530}
 
 
 def admit(root, generated, profile_path, manifest_path, order, canonical):
@@ -29,12 +29,32 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         if binding['disposition'] != 'EXACT':
             raise ValueError('TIMED_PROFILE_BINDING')
         semantics = copy.deepcopy(source['semantics'])
+        # ENERGY-RING-1: the active form inherits the wiki's existing wearable facts,
+        # including KNIGHT/MONK/PALADIN (never Canary's older vocation list).
+        # Pinned Canary 04b83b51 data/items/items.xml: 3051 -> 3088, manashield=1,
+        # duration=600, deequip=3051, decayTo=0. Timed promotion already carries
+        # the duration and pair; only complete the active form's equipment facts.
+        # Global's 2:1 rule is domain logic, not a new content/schema attribute:
+        # https://www.tibia.com/news/?subtopic=newsarchive&id=8833
+        if key == 'oteryn:item.tibia.i3088':
+            base = definitions['oteryn:item.tibia.i3051']['semantics']
+            for group in ('equipment', 'stack', 'physical'):
+                semantics[group] = copy.deepcopy(base[group])
+            semantics['skill_modifiers'] = {'state': 'KNOWN', 'value': {
+                'modifiers': {'state': 'KNOWN', 'value': [{
+                    'kind': 'MANA_SHIELD',
+                    'parameter': {'state': 'KNOWN', 'value': {'kind': 'BOOLEAN', 'value': True}},
+                    'evaluation_phase': {'state': 'UNKNOWN'},
+                    'priority': {'state': 'UNKNOWN'},
+                    'target_domain': {'state': 'UNKNOWN'},
+                }]}}}
         semantics['container'] = {'state': 'NOT_APPLICABLE'}
         semantics['stack'] = {'state': 'KNOWN', 'value': {
             'stackable': {'state': 'KNOWN', 'value': False}, 'stack_max': {'state': 'NOT_APPLICABLE'}}}
         if key != 'oteryn:item.tibia.i6530':
             for pattern in semantics['equipment']['value']['patterns']['value']:
-                pattern['vocations'] = {'state': 'KNOWN', 'value': []}
+                if key not in ('oteryn:item.tibia.i3051', 'oteryn:item.tibia.i3088'):
+                    pattern['vocations'] = {'state': 'KNOWN', 'value': []}
                 pattern['level'] = {'state': 'KNOWN', 'value': 0}
         document['records'].append({
             'authoring': {'item': source['identity']}, 'semantics': semantics,

@@ -14255,6 +14255,249 @@
       "authoring": {
         "item": {
           "family": "Item",
+          "key": "oteryn:item.tibia.i3051",
+          "revision": "definition-r1"
+        }
+      },
+      "semantics": {
+        "charges": {
+          "state": "UNKNOWN"
+        },
+        "classification": {
+          "state": "UNKNOWN"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "equipment": {
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 0
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "RING"
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "KNIGHT",
+                      "MONK",
+                      "PALADIN"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "weight": {
+              "state": "KNOWN",
+              "value": 80
+            }
+          }
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "UNKNOWN"
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "energy ring"
+            }
+          }
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "UNKNOWN"
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "temporal": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "KNOWN",
+          "value": {
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "use_transform": {
+          "state": "KNOWN",
+          "value": {
+            "targets": [
+              {
+                "kind": "ROTATE",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "WRAP",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "USE",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "EQUIP",
+                "target": {
+                  "state": "KNOWN",
+                  "value": {
+                    "key": "oteryn:item.tibia.i3088",
+                    "revision": "definition-r1"
+                  }
+                }
+              },
+              {
+                "kind": "DEEQUIP",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "MALE",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "FEMALE",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "DESTROY",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "DECAY",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "WRITE_ONCE",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              }
+            ]
+          }
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "speed_bonus": 0
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3051",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "3051",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3051",
+          "revision": "definition-r1"
+        }
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
           "key": "oteryn:item.tibia.i3081",
           "revision": "definition-r1"
         }
@@ -14453,6 +14696,274 @@
         "target": {
           "family": "Item",
           "key": "oteryn:item.tibia.i3081",
+          "revision": "definition-r1"
+        }
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3088",
+          "revision": "definition-r1"
+        }
+      },
+      "semantics": {
+        "charges": {
+          "state": "UNKNOWN"
+        },
+        "classification": {
+          "state": "UNKNOWN"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "equipment": {
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 0
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "RING"
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "KNIGHT",
+                      "MONK",
+                      "PALADIN"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "weight": {
+              "state": "KNOWN",
+              "value": 80
+            }
+          }
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "UNKNOWN"
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "energy ring"
+            }
+          }
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "kind": "MANA_SHIELD",
+                  "parameter": {
+                    "state": "KNOWN",
+                    "value": {
+                      "kind": "BOOLEAN",
+                      "value": true
+                    }
+                  },
+                  "evaluation_phase": {
+                    "state": "UNKNOWN"
+                  },
+                  "priority": {
+                    "state": "UNKNOWN"
+                  },
+                  "target_domain": {
+                    "state": "UNKNOWN"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "temporal": {
+          "state": "KNOWN",
+          "value": {
+            "consumption_mode": {
+              "state": "KNOWN",
+              "value": "AUTHORITATIVE_ACTIVE_TIME_BUDGET"
+            },
+            "decay_target": {
+              "state": "UNKNOWN"
+            },
+            "duration": {
+              "state": "KNOWN",
+              "value": 600000
+            },
+            "stop_duration": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "KNOWN",
+          "value": {
+            "targets": [
+              {
+                "kind": "ROTATE",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "WRAP",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "USE",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "EQUIP",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "DEEQUIP",
+                "target": {
+                  "state": "KNOWN",
+                  "value": {
+                    "key": "oteryn:item.tibia.i3051",
+                    "revision": "definition-r1"
+                  }
+                }
+              },
+              {
+                "kind": "MALE",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "FEMALE",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "DESTROY",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "DECAY",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "WRITE_ONCE",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              }
+            ]
+          }
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "speed_bonus": 0
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3088",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "3088",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3088",
           "revision": "definition-r1"
         }
       },
@@ -19770,12 +20281,12 @@
           "revision": "spell-p2-r21"
         },
         "ranged": {
-          "kind": "THROWING",
           "attack": 25,
-          "hit_chance": 0,
-          "max_hit_chance": 76,
           "element": "PHYSICAL",
           "elemental_attack": 0,
+          "hit_chance": 0,
+          "kind": "THROWING",
+          "max_hit_chance": 76,
           "range_cells": 3
         }
       },
@@ -19994,12 +20505,12 @@
           "revision": "spell-p2-r21"
         },
         "ranged": {
-          "kind": "THROWING",
           "attack": 30,
-          "hit_chance": 0,
-          "max_hit_chance": 76,
           "element": "PHYSICAL",
           "elemental_attack": 0,
+          "hit_chance": 0,
+          "kind": "THROWING",
+          "max_hit_chance": 76,
           "range_cells": 4
         }
       },
@@ -20628,11 +21139,11 @@
           "revision": "spell-p2-r21"
         },
         "ranged": {
-          "kind": "DISTANCE",
+          "ammunition": "BOLT",
           "attack": 0,
           "hit_chance": 0,
+          "kind": "DISTANCE",
           "max_hit_chance": 90,
-          "ammunition": "BOLT",
           "range_cells": 5
         }
       },
@@ -20814,11 +21325,11 @@
           "revision": "spell-p2-r21"
         },
         "ranged": {
-          "kind": "DISTANCE",
+          "ammunition": "ARROW",
           "attack": 0,
           "hit_chance": 0,
+          "kind": "DISTANCE",
           "max_hit_chance": 90,
-          "ammunition": "ARROW",
           "range_cells": 6
         }
       },
@@ -21210,13 +21721,13 @@
           "revision": "spell-p2-r21"
         },
         "ranged": {
-          "kind": "AMMUNITION",
-          "attack": 30,
-          "hit_chance": 0,
-          "max_hit_chance": 87,
           "ammunition": "BOLT",
+          "attack": 30,
           "element": "PHYSICAL",
-          "elemental_attack": 0
+          "elemental_attack": 0,
+          "kind": "AMMUNITION",
+          "max_hit_chance": 87,
+          "hit_chance": 86
         }
       },
       "semantics": {
@@ -21435,13 +21946,13 @@
           "revision": "spell-p2-r21"
         },
         "ranged": {
-          "kind": "AMMUNITION",
-          "attack": 25,
-          "hit_chance": 0,
-          "max_hit_chance": 91,
           "ammunition": "ARROW",
+          "attack": 25,
           "element": "PHYSICAL",
-          "elemental_attack": 0
+          "elemental_attack": 0,
+          "kind": "AMMUNITION",
+          "max_hit_chance": 91,
+          "hit_chance": 90
         }
       },
       "semantics": {
@@ -21660,13 +22171,13 @@
           "revision": "spell-p2-r21"
         },
         "ranged": {
-          "kind": "AMMUNITION",
-          "attack": 23,
-          "hit_chance": 0,
-          "max_hit_chance": 91,
           "ammunition": "ARROW",
+          "attack": 23,
           "element": "PHYSICAL",
-          "elemental_attack": 0
+          "elemental_attack": 0,
+          "kind": "AMMUNITION",
+          "max_hit_chance": 91,
+          "hit_chance": 90
         }
       },
       "semantics": {
@@ -21852,13 +22363,13 @@
           "revision": "spell-p2-r21"
         },
         "ranged": {
-          "kind": "AMMUNITION",
-          "attack": 27,
-          "hit_chance": 0,
-          "max_hit_chance": 100,
           "ammunition": "ARROW",
+          "attack": 27,
           "element": "PHYSICAL",
-          "elemental_attack": 0
+          "elemental_attack": 0,
+          "kind": "AMMUNITION",
+          "max_hit_chance": 100,
+          "hit_chance": 100
         }
       },
       "semantics": {
@@ -22044,13 +22555,13 @@
           "revision": "spell-p2-r21"
         },
         "ranged": {
-          "kind": "AMMUNITION",
-          "attack": 40,
-          "hit_chance": 0,
-          "max_hit_chance": 91,
           "ammunition": "BOLT",
+          "attack": 40,
           "element": "PHYSICAL",
-          "elemental_attack": 0
+          "elemental_attack": 0,
+          "kind": "AMMUNITION",
+          "max_hit_chance": 91,
+          "hit_chance": 90
         }
       },
       "semantics": {
@@ -42818,13 +43329,13 @@
           "revision": "spell-p2-r21"
         },
         "ranged": {
-          "kind": "AMMUNITION",
-          "attack": 33,
-          "hit_chance": 0,
-          "max_hit_chance": 87,
           "ammunition": "BOLT",
+          "attack": 33,
           "element": "PHYSICAL",
-          "elemental_attack": 0
+          "elemental_attack": 0,
+          "kind": "AMMUNITION",
+          "max_hit_chance": 87,
+          "hit_chance": 86
         }
       },
       "semantics": {
@@ -43043,13 +43554,13 @@
           "revision": "spell-p2-r21"
         },
         "ranged": {
-          "kind": "AMMUNITION",
-          "attack": 28,
-          "hit_chance": 0,
-          "max_hit_chance": 100,
           "ammunition": "ARROW",
+          "attack": 28,
           "element": "PHYSICAL",
-          "elemental_attack": 0
+          "elemental_attack": 0,
+          "kind": "AMMUNITION",
+          "max_hit_chance": 100,
+          "hit_chance": 99
         }
       },
       "semantics": {
@@ -43268,13 +43779,13 @@
           "revision": "spell-p2-r21"
         },
         "ranged": {
-          "kind": "AMMUNITION",
-          "attack": 38,
-          "hit_chance": 0,
-          "max_hit_chance": 94,
           "ammunition": "ARROW",
+          "attack": 38,
           "element": "PHYSICAL",
-          "elemental_attack": 0
+          "elemental_attack": 0,
+          "kind": "AMMUNITION",
+          "max_hit_chance": 94,
+          "hit_chance": 92
         }
       },
       "semantics": {
@@ -43493,12 +44004,12 @@
           "revision": "spell-p2-r21"
         },
         "ranged": {
-          "kind": "THROWING",
           "attack": 28,
-          "hit_chance": 80,
-          "max_hit_chance": 76,
           "element": "PHYSICAL",
           "elemental_attack": 0,
+          "hit_chance": 80,
+          "kind": "THROWING",
+          "max_hit_chance": 76,
           "range_cells": 4
         }
       },
@@ -43721,12 +44232,12 @@
           "revision": "spell-p2-r21"
         },
         "ranged": {
-          "kind": "THROWING",
           "attack": 38,
-          "hit_chance": 0,
-          "max_hit_chance": 80,
           "element": "PHYSICAL",
           "elemental_attack": 0,
+          "hit_chance": 0,
+          "kind": "THROWING",
+          "max_hit_chance": 80,
           "range_cells": 4
         }
       },
@@ -43945,12 +44456,12 @@
           "revision": "spell-p2-r21"
         },
         "ranged": {
-          "kind": "THROWING",
           "attack": 65,
-          "hit_chance": 0,
-          "max_hit_chance": 96,
           "element": "PHYSICAL",
           "elemental_attack": 0,
+          "hit_chance": 0,
+          "kind": "THROWING",
+          "max_hit_chance": 96,
           "range_cells": 4
         }
       },
@@ -44169,12 +44680,12 @@
           "revision": "spell-p2-r21"
         },
         "ranged": {
-          "kind": "THROWING",
           "attack": 35,
-          "hit_chance": 0,
-          "max_hit_chance": 80,
           "element": "PHYSICAL",
           "elemental_attack": 0,
+          "hit_chance": 0,
+          "kind": "THROWING",
+          "max_hit_chance": 80,
           "range_cells": 3
         }
       },
@@ -60565,13 +61076,13 @@
           "revision": "spell-p2-r21"
         },
         "ranged": {
-          "kind": "AMMUNITION",
-          "attack": 20,
-          "hit_chance": 0,
-          "max_hit_chance": 40,
           "ammunition": "ARROW",
+          "attack": 20,
           "element": "PHYSICAL",
-          "elemental_attack": 0
+          "elemental_attack": 0,
+          "kind": "AMMUNITION",
+          "max_hit_chance": 40,
+          "hit_chance": 90
         }
       },
       "semantics": {
@@ -62140,11 +62651,11 @@
           "revision": "spell-p2-r21"
         },
         "ranged": {
-          "kind": "WAND",
-          "damage_min": 80,
           "damage_max": 100,
-          "mana_per_shot": 15,
+          "damage_min": 80,
           "element": "DEATH",
+          "kind": "WAND",
+          "mana_per_shot": 15,
           "range_cells": 4
         }
       },

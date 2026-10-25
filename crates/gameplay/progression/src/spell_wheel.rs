@@ -10,7 +10,7 @@ pub fn project_wheel_stages(
     level: u32,
     promoted: bool,
 ) -> Option<BTreeMap<String, u8>> {
-    let rules = crate::wheel::eligibility(ruleset, vocation, level, promoted).ok()?;
+    let rules = crate::wheel::character_eligibility(ruleset, vocation, level, promoted).ok()?;
     let stages = crate::wheel::WheelStages::derive(ruleset, allocation, vocation, level, promoted);
     let mut value: BTreeMap<_, _> = rules
         .revelations

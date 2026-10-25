@@ -78,6 +78,37 @@ class RangedItemProfilesTest(unittest.TestCase):
         report = json.loads((ranged.ROOT / ranged.REPORT).read_bytes())
         self.assertEqual(report['undefined_items'], [15792])
 
+    def test_separate_profiles_preserve_sealed_owners_and_resolve_existing_values(self):
+        rows = {row['definition']['identity']['key']: row for row in ranged.item_rows(ranged.ROOT)}
+        records = json.loads((ranged.ROOT / ranged.RANGED_PROFILES).read_bytes())['records']
+        self.assertEqual(len(records), 162)
+        for row in rows.values():
+            self.assertNotIn('ranged', row.get('authoring', {}))
+        seen = set()
+        for record in records:
+            key = record['item']['key']
+            self.assertNotIn(key, seen)
+            seen.add(key)
+            row = rows[key]
+            self.assertEqual(record['item'], row['definition']['identity'])
+            owner = row.get('authoring', {})
+            profile = record['profile']
+            resolved = ranged.resolved_profile(profile, owner)
+            for field, canonical in [('attack', 'weapon_attack_modifier_points'),
+                                     ('hit_chance', 'weapon_absolute_hit_chance_percent')]:
+                if canonical in owner:
+                    self.assertNotIn(field, profile)
+                    duplicate = {**profile, field: resolved[field]}
+                    with self.assertRaisesRegex(ValueError, 'RANGED_DUPLICATE_OWNER'):
+                        ranged.resolved_profile(duplicate, owner)
+            if key == 'oteryn:item.tibia.i3446':
+                self.assertEqual(resolved['hit_chance'], 86)
+            if key == 'oteryn:item.tibia.i16163':
+                self.assertEqual(resolved['attack'], 4)
+        for ratio in [dict(numerator=1, denominator=0), dict(numerator=1, denominator=2)]:
+            with self.assertRaisesRegex(ValueError, 'RANGED_HIT_CHANCE_NOT_INTEGER'):
+                ranged.resolved_profile({}, {'weapon_absolute_hit_chance_percent': ratio})
+
     def test_native_overlay_preserves_admission_and_rebuilds_digest(self):
         original = (ranged.ROOT / ranged.PROFILES).read_bytes()
         document = json.loads(original)
@@ -89,6 +120,28 @@ class RangedItemProfilesTest(unittest.TestCase):
         self.assertEqual(generated[ranged.PROFILES], original)
         self.assertEqual(json.loads(generated[ranged.MANIFEST])['item_profiles']['sha256'], hashlib.sha256(original).hexdigest())
         self.assertEqual(len(document['records']), len(clean['records']))
+
+    def test_native_overlay_rejects_separate_source_drift_atomically(self):
+        original_read = Path.read_bytes
+        path = ranged.ROOT / ranged.RANGED_PROFILES
+        source = json.loads(path.read_bytes())
+        generated = {ranged.PROFILES: (ranged.ROOT / ranged.PROFILES).read_bytes(),
+                     ranged.MANIFEST: (ranged.ROOT / ranged.MANIFEST).read_bytes()}
+        for mutation in ['missing', 'duplicate', 'changed']:
+            changed = copy.deepcopy(source)
+            if mutation == 'missing':
+                changed['records'].pop()
+            elif mutation == 'duplicate':
+                changed['records'].append(changed['records'][0])
+            else:
+                changed['records'][0]['profile']['range_cells'] = 7
+            def read(current):
+                return ranged.encode(changed) if current == path else original_read(current)
+            with self.subTest(mutation=mutation), patch.object(Path, 'read_bytes', read):
+                candidate = dict(generated)
+                with self.assertRaisesRegex(ValueError, 'RANGED_PROFILE_SOURCE_DRIFT'):
+                    ranged.apply_native(ranged.ROOT, candidate)
+                self.assertEqual(candidate, generated)
 
 
 if __name__ == '__main__':

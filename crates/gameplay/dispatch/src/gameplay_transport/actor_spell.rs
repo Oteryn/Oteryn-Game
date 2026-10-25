@@ -587,8 +587,8 @@ impl ChannelSpellStates {
         let has_dot = crate::spell::actor_conditions::has_periodic_damage(state);
         let facts = in_pz.map(|in_protection_zone| TickFacts {
             in_protection_zone,
-            // Dynamic field cannot suppress a non-damage tick. PZ DOT is
-            // consumed without damage, independent of standing-field facts.
+            // Dynamic fields cannot suppress non-damage ticks; every PZ
+            // damage tick is consumed independently of standing-field facts.
             standing_on_field: None,
         });
         let cycle = if has_dot && facts.is_some_and(|facts| !facts.in_protection_zone) {
@@ -599,6 +599,21 @@ impl ChannelSpellStates {
             crate::spell::actor_conditions::stage_source_owner_cycle(state, now, facts, None)
         }
         .ok()??;
+        // NIGHT-W1 #1: permitted PZ damage needs the same damage/death owner
+        // as ticks outside PZ. Refused ticks keep the existing consumption path.
+        if in_pz == Some(true)
+            && cycle.combat_ticks.iter().any(|tick| {
+                matches!(
+                    tick.kind,
+                    TickKind::Damage { refused: false, .. }
+                        | TickKind::Agony { refused: false, .. }
+                )
+            })
+        {
+            return self
+                .tick_current_creature_field_damage(runtime, actor, session, now, facts?, None)
+                .flatten();
+        }
         if cycle.combat_ticks.iter().any(|tick| {
             !matches!(
                 tick.kind,
@@ -1637,7 +1652,7 @@ impl ChannelSpellStates {
                     suppressed: false, ..
                 } => return None,
                 // CONDITIONS-0 §3.5: the creature provenance of `Damage`; the mana shield never
-                // absorbs agony. A refused occurrence was used up in the protection zone.
+                // absorbs agony. NIGHT-W1 #1 permits agony in protection zones too.
                 TickKind::Agony { amount, refused } => {
                     if !refused {
                         if tick.provenance.source_kind != ConditionSourceKind::Creature

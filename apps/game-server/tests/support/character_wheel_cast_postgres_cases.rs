@@ -361,6 +361,15 @@ async fn allocate(
             points[index] = slot.capacity;
         }
     }
+    // Amended 2026-10-25 by owner decision NIGHT-W1 #3: allocation uses the same
+    // sealed pre-delivery gate as promotion; the cast's live Premium checks stay separate.
+    let coordinator =
+        crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator::new(
+            Default::default(),
+            None,
+            None,
+            Some(h.root.clone()),
+        );
     let outcome = h
         .root
         .commit_character_wheel(
@@ -374,6 +383,7 @@ async fn allocate(
             },
             Arc::clone(rules),
             WheelChangeFacts { at_temple: false },
+            &coordinator,
         )
         .await
         .map_err(debug)?;
