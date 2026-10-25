@@ -263,6 +263,8 @@ pub struct DurableTileItems {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SpellItemTransactionRequest {
+    /// Auto-attack ordinal within the held target command; absent for spell casts.
+    pub swing_ordinal: Option<u16>,
     pub command: crate::foundation::CommandRef,
     pub spell: TypedDefinitionRef,
     pub catalog_digest: [u8; 32],

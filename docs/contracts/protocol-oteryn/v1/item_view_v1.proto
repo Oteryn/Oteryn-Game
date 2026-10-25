@@ -112,8 +112,8 @@ message ContainerDestinationV1 {
   uint64 handle = 1;
 }
 
-// ClientCommand.payload of command type 9. The whole item moves; there is no count field. At most 13
-// bytes, or 29 under capability 12 (the container destination is at most 24).
+// ClientCommand.payload of command type 9. At most 13 bytes, 29 under capability 12,
+// or 31 under capability 61 ITEM_STACK_COUNT_V1. Without count the whole item moves.
 message ItemMoveIntentV1 {
   uint64 source_handle = 1;
   oneof destination {
@@ -125,6 +125,11 @@ message ItemMoveIntentV1 {
     // Capability 14 only.
     ContainerDestinationV1 container = 5;
   }
+  // Capability 61 only, requires 12 and 14. Explicit presence; 1..=100 and no greater
+  // than the source quantity/definition maximum. First server slice supports carried
+  // entries into the carried tree or onto Ground; unsupported sources/slots refuse.
+  // A destination must accept all requested units; partial destination fits are deferred.
+  optional uint32 count = 6;
 }
 
 enum ItemMoveOutcomeV1 {

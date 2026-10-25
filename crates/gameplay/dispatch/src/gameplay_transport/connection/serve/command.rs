@@ -143,6 +143,12 @@ where
         npc_relocation,
         training_logged_out: false,
     };
+    let mut before_use =
+        if command.command_type == oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT {
+            authority.observe(session.actor).await
+        } else {
+            None
+        };
     if command.command_type != oteryn_protocol_oteryn::stash::COMMAND_TYPE_STASH_INTENT {
         session.stash_rows = None;
     }
@@ -193,6 +199,11 @@ where
         input_permit = authority.enter_input().await;
         match walked {
             autowalk::WalkOutcome::Arrived if input_permit.is_some() => {
+                // The walk already published its steps. Only relocation by the retried USE
+                // needs another spatial update after its result.
+                if before_use.is_some() {
+                    before_use = authority.observe(session.actor).await;
+                }
                 // Exactly one retry of the original CommandId and bytes. Source identity,
                 // custody, reach, capacity and fences are read by the existing route.
                 dispatch = Box::pin(route::execute(
@@ -207,6 +218,17 @@ where
             autowalk::WalkOutcome::Arrived | autowalk::WalkOutcome::Cancelled => {}
             autowalk::WalkOutcome::NoPath => no_path = true,
         }
+    }
+    if before_use.is_some()
+        && matches!(&dispatch, Dispatch::Use(outcome) if outcome.disposition == UseDisposition::Committed)
+    {
+        outcome.npc_relocation = newhaven_travel_transport::retire_buffer(
+            authority,
+            session.actor,
+            before_use,
+            &mut session.buffered,
+        )
+        .await;
     }
     dispatch = bank_inventory(authority, session, dispatch).await?;
     drop(input_permit);
