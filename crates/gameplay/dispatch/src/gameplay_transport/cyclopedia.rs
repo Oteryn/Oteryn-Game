@@ -83,7 +83,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(id) = CommandId::new(id) else {
             return GuildReply::Rejected;
         };
-        let _trade_permit = if intent.operation == 4 {
+        let trade_permit = if intent.operation == 4 {
             let Some(permit) = self.spell_lane_permit().await else {
                 return GuildReply::Rejected;
             };
@@ -246,6 +246,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(bytes) if wire::decode_result(&bytes).is_ok() => {
                 drop(runtime);
                 drop(slot);
+                // The donation is complete; respawn initialization acquires its own lane.
+                drop(trade_permit);
                 if self.initialize_cyclopedia_respawn().await.is_err() {
                     return GuildReply::Unavailable;
                 }
