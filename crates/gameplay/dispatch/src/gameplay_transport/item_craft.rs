@@ -62,11 +62,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut request = ItemCraftRequest {
             command: CommandRef::new(command.game_session_id, id),
             source: [0; 16],
-            station: TypedDefinitionRef {
-                family: String::new(),
-                production_key: String::new(),
-                revision_ref: String::new(),
-            },
+            station: None,
             intent: oteryn_protocol_oteryn::world_object::encode_item_use_intent(&intent).ok()?,
         };
         // Replay precedes current handles and custody, including input retirement and reconnect.
@@ -91,7 +87,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return disposition(UseDisposition::StaleState);
         };
         request.source = source;
-        request.station = {
+        request.station = Some({
             let mut runtime = self.runtime.lock().await;
             let states = self.states.spell_states.lock().await;
             if states.is_dead(actor) || !states.spell_idle(&runtime, actor, command.game_session_id)
@@ -138,7 +134,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return disposition(UseDisposition::NothingToUse);
             };
             super::item_look::typed_definition(index, reference)?
-        };
+        });
         if !self
             .states
             .player_trades

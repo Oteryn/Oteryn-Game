@@ -263,7 +263,7 @@ fn scenario() -> TestResult {
     })
 }
 
-async fn exchange(
+pub(super) async fn exchange(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
     command_id: u64,
