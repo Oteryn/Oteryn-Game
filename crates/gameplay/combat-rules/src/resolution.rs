@@ -1,6 +1,9 @@
 //! Pure weapon selection, deterministic swing draws and creature mitigation.
 
 use crate::attack::{AttackConstants, armor_reduction_bounds};
+use oteryn_gameplay_content::content::creature_policy::{
+    CompiledCreaturePolicy, CreatureExactRatio,
+};
 use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
 use oteryn_gameplay_content::content::{ReferenceItemField, ReferenceWeaponType};
 use oteryn_simulation_determinism::{
@@ -189,6 +192,48 @@ pub fn creature_mitigated(
     Some(remaining.saturating_sub(reduction).max(0))
 }
 
+/// The damage key a melee swing deals (`COMBAT_PHYSICALDAMAGE`).
+const PHYSICAL: &str = "physical";
+
+/// CREATURE-RESIST-MELEE-1 (`Creature::blockHit` `isImmune`): a creature immune to physical
+/// damage takes nothing from a swing, before its block budget or defence is reached.
+#[must_use]
+pub fn creature_physically_immune(policy: &CompiledCreaturePolicy) -> bool {
+    policy.damage_immunities.iter().any(|v| v == PHYSICAL)
+}
+
+/// CREATURE-RESIST-MELEE-1: what a creature's mitigation and physical response leave of a swing
+/// that passed its defence and armor (`Creature::mitigateDamage`, then `Monster::blockHit`'s
+/// elementMap), by the arithmetic the creature spell path uses: mitigation (capped at 30%)
+/// truncates, the response rounds and never goes below 0. A creature without mitigation
+/// mitigates nothing (a monster type's mitigation defaults to 0); `None` when a ratio is
+/// malformed (fail closed).
+#[must_use]
+pub fn creature_physical_response(policy: &CompiledCreaturePolicy, damage: i64) -> Option<i64> {
+    let ratio = |r: CreatureExactRatio| {
+        (r.denominator != 0).then(|| r.numerator as f64 / r.denominator as f64)
+    };
+    let mitigation = match policy.mitigation {
+        Some(m) => ratio(m)?.min(30.0),
+        None => 0.0,
+    };
+    let resistance = match policy
+        .resistances
+        .iter()
+        .find(|v| v.damage_type == PHYSICAL)
+    {
+        Some(v) => ratio(v.percent)?,
+        None => 0.0,
+    };
+    let damage = damage as f64;
+    let mitigated = (damage - damage * mitigation / 100.0).trunc();
+    let landed = (mitigated * (100.0 - resistance) / 100.0).round();
+    if !landed.is_finite() || landed > f64::from(i32::MAX) || landed < f64::from(i32::MIN) {
+        return None;
+    }
+    Some((landed as i64).max(0))
+}
+
 /// ARMOR-MITIGATION-1: what a player's worn armor leaves of a creature hit (`creature.cpp`
 /// `Creature::blockHit`, `checkArmor`): `draw` picks the reduction in
 /// [`armor_reduction_bounds`]. A hit is never raised and never goes below 0.
@@ -292,5 +337,112 @@ mod tests {
             "draw 4 takes the maximum"
         );
         assert_eq!(player_armor_mitigated(constants, 100, 10, u64::MAX), 95);
+    }
+
+    fn policy(
+        mitigation: Option<(i64, u64)>,
+        physical: Option<(i64, u64)>,
+    ) -> CompiledCreaturePolicy {
+        use oteryn_gameplay_content::content::creature_policy::{
+            CreatureFlags, CreatureResistance,
+        };
+        let ratio = |(numerator, denominator)| CreatureExactRatio {
+            numerator,
+            denominator,
+        };
+        CompiledCreaturePolicy {
+            definition_key: "creature".into(),
+            definition_revision: "1".into(),
+            display_name: "creature".into(),
+            maximum_health: 100,
+            base_speed: 100,
+            outfit_look_type: 1,
+            object_look_type: None,
+            summonable: false,
+            convinceable: false,
+            mana_cost: None,
+            is_familiar: false,
+            condition_immunities: vec![],
+            defense: Some(0),
+            armor: Some(0),
+            mitigation: mitigation.map(ratio),
+            resistances: physical
+                .map(|p| CreatureResistance {
+                    damage_type: PHYSICAL.into(),
+                    percent: ratio(p),
+                })
+                .into_iter()
+                .collect(),
+            damage_immunities: vec![],
+            healing_from_damage: vec![],
+            flags: CreatureFlags {
+                attackable: true,
+                illusionable: false,
+                health_hidden: false,
+            },
+            preferred_distance: None,
+            reward_boss: None,
+        }
+    }
+
+    #[test]
+    fn a_creatures_mitigation_and_physical_response_shape_a_landed_swing() {
+        let response = |m, p, damage| creature_physical_response(&policy(m, p), damage);
+        assert_eq!(
+            response(Some((0, 1)), None, 15),
+            Some(15),
+            "nothing to mitigate"
+        );
+        assert_eq!(
+            response(Some((10, 1)), None, 15),
+            Some(13),
+            "10% truncates 13.5"
+        );
+        assert_eq!(
+            response(Some((50, 1)), None, 10),
+            Some(7),
+            "mitigation caps at 30%"
+        );
+        assert_eq!(
+            response(Some((0, 1)), Some((100, 1)), 40),
+            Some(0),
+            "100% physical stops it"
+        );
+        assert_eq!(
+            response(Some((0, 1)), Some((25, 1)), 10),
+            Some(8),
+            "25% rounds 7.5 up"
+        );
+        assert_eq!(
+            response(Some((10, 1)), Some((-10, 1)), 15),
+            Some(14),
+            "weakness raises 13"
+        );
+        assert_eq!(
+            response(Some((3, 2)), None, 200),
+            Some(197),
+            "an exact ratio of 1.5%"
+        );
+        assert_eq!(
+            response(None, None, 15),
+            Some(15),
+            "no mitigation mitigates nothing"
+        );
+        assert_eq!(
+            response(Some((1, 0)), None, 15),
+            None,
+            "a 0 denominator fails closed"
+        );
+        assert_eq!(response(Some((0, 1)), Some((1, 0)), 15), None);
+    }
+
+    #[test]
+    fn only_a_physical_immunity_stops_a_swing() {
+        let mut immune = policy(Some((0, 1)), None);
+        assert!(!creature_physically_immune(&immune));
+        immune.damage_immunities = vec!["fire".into()];
+        assert!(!creature_physically_immune(&immune));
+        immune.damage_immunities.push(PHYSICAL.into());
+        assert!(creature_physically_immune(&immune));
     }
 }
