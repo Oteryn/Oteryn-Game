@@ -1,0 +1,18 @@
+{
+  "id": "REPORT1-RL-03",
+  "owner_contract": "protocol-oteryn/v1/player_report_v1.proto",
+  "resource": "Player report burst per character",
+  "unit": "reports",
+  "hard_maximum": 3,
+  "configurable_range": {
+    "minimum": 3,
+    "maximum": 3
+  },
+  "failure_category": "REJECTED",
+  "allocation_impact": "One durable token row per reporting character; no queue row or receipt beyond the replayable refusal.",
+  "client_visible": true,
+  "boundary_tests": [
+    "player_report_postgres_real_wire_queue_replay_refusals_and_fences"
+  ],
+  "notes": "Token bucket held in game_player_report_rate_buckets. An exhausted bucket is the typed RATE_LIMITED reply with wait_seconds."
+}

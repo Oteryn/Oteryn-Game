@@ -140,6 +140,23 @@ pub fn measured_route(
     exact: bool,
     tile_cost: impl FnMut(MovementLocalPosition) -> Option<u32>,
 ) -> (Option<Vec<CardinalStep>>, usize) {
+    measured_route_with_distance(
+        start,
+        target,
+        exact,
+        if exact { 50 } else { CHASE_SEARCH_DISTANCE },
+        tile_cost,
+    )
+}
+
+/// The shared measured search with an explicit caller-owned radius (TARGET-MOVE-1).
+pub fn measured_route_with_distance(
+    start: MovementLocalPosition,
+    target: MovementLocalPosition,
+    exact: bool,
+    distance: i32,
+    tile_cost: impl FnMut(MovementLocalPosition) -> Option<u32>,
+) -> (Option<Vec<CardinalStep>>, usize) {
     let mut work = 0;
     let route = measured_search(
         start,
@@ -147,7 +164,7 @@ pub fn measured_route(
         SearchBounds {
             work: PATH_SEARCH_WORK,
             route_steps: ROUTE_STEPS,
-            distance: if exact { 50 } else { CHASE_SEARCH_DISTANCE },
+            distance,
         },
         exact,
         &mut work,
@@ -211,6 +228,18 @@ mod tests {
                 floor: at.floor,
             }
         })
+    }
+
+    #[test]
+    fn target_move_search_uses_explicit_radius() {
+        let (route, work) = measured_route_with_distance(at(0, 0), at(12, 0), true, 12, |cell| {
+            assert!(chebyshev(at(0, 0), cell) <= 12);
+            Some(0)
+        });
+        assert_eq!(route.as_ref().map(Vec::len), Some(12));
+        assert!(work <= PATH_SEARCH_WORK);
+        let (outside, _) = measured_route_with_distance(at(0, 0), at(13, 0), true, 12, open);
+        assert!(outside.is_none());
     }
 
     #[test]

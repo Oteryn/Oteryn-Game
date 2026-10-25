@@ -17,7 +17,7 @@ pub(super) fn too_far(dispatch: &Dispatch) -> bool {
             disposition: UseDisposition::TooFar,
             ..
         }) | Dispatch::UseItem(OpenDecision::TooFar, _)
-            | Dispatch::ItemMove(ItemMoveOutcome::TooFar, _)
+            | Dispatch::ItemMove(ItemMoveOutcome::TooFar, _, _)
     )
 }
 
@@ -153,6 +153,7 @@ where
                 session.admitted.game_session_id,
                 queue.expected,
                 direction,
+                None,
             ),
         )
         .await

@@ -116,6 +116,32 @@ impl PlayerSpellState {
         Some((next, applied))
     }
 
+    /// PARITY-EQUIP-MODIFIERS-1: the life and mana an attacker's hit leeches (`game.cpp:8760-8764`),
+    /// each capped at its maximum. `None` for a dead actor or when nothing changes, so a leech
+    /// that restores nothing is no vitals write.
+    #[must_use]
+    pub fn after_leech(&self, health_gain: u32, mana_gain: u32) -> Option<Self> {
+        if self.health == 0 {
+            return None;
+        }
+        let health = self.health.max(
+            self.health
+                .saturating_add(health_gain)
+                .min(self.facts.max_health),
+        );
+        let mana = self
+            .mana
+            .max(self.mana.saturating_add(mana_gain).min(self.facts.max_mana));
+        if health == self.health && mana == self.mana {
+            return None;
+        }
+        let mut next = self.clone();
+        next.health = health;
+        next.mana = mana;
+        next.revision = next.revision.checked_add(1)?;
+        Some(next)
+    }
+
     /// The Serene initialization evaluation (§8.2), in the owner step that makes the actor
     /// playable: a fresh admission, a same-GameSession reconnect or FND-04B §21 recovery. No
     /// command of a monk is accepted before it.
@@ -281,6 +307,7 @@ impl PlayerSpellState {
             && self.equipped_armor == before.equipped_armor
             && self.equipped_mana_shield == before.equipped_mana_shield
             && self.equipped_defence == before.equipped_defence
+            && self.equipped_offence == before.equipped_offence
             && self.base_speed == before.base_speed
             && anchor.expected_revision == before.revision
             && before.revision.checked_add(1) == Some(anchor.next_revision)

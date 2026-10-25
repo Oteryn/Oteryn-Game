@@ -2,19 +2,24 @@
 use super::*;
 use crate::foundation::{MovementLocalPosition, MovementPositionSnapshot};
 use crate::movement::path_search::{
-    CHASE_SEARCH_DISTANCE, PathOccupancy, ROUTE_STEPS, chebyshev, route_next_to,
+    CHASE_SEARCH_DISTANCE, PathOccupancy, ROUTE_STEPS, chebyshev, measured_route_with_distance,
+    route_next_to,
 };
 use std::collections::VecDeque;
 
 /// Server-resolved action target; coordinates from map views are converted before searching.
 #[derive(Debug, Clone)]
 pub enum AutoWalkTarget {
+    Cell(oteryn_protocol_oteryn::world_spatial::ActorPosition),
+    Follow(oteryn_protocol_oteryn::world_spatial_entities::EntityRef),
     Item(item_view::ItemKey),
     Object(oteryn_protocol_oteryn::world_object::WorldObjectTarget),
 }
 
 /// Ephemeral queue owned by the running connection's Movement pacer, never resumed or persisted.
 pub struct AutoWalkRoute {
+    pub(in crate::gameplay_transport) deferred: bool,
+    pub(in crate::gameplay_transport) follow: Option<(ExactActorRef, MovementPositionSnapshot)>,
     pub(in crate::gameplay_transport) expected: MovementPositionSnapshot,
     pub(in crate::gameplay_transport) steps: VecDeque<StepDirection>,
 }
@@ -63,7 +68,53 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 floor: -i16::from(pos.floor),
             }
         };
+        let explicit = matches!(target, AutoWalkTarget::Cell(_) | AutoWalkTarget::Follow(_));
+        let exact = matches!(target, AutoWalkTarget::Cell(_));
+        let mut follow = None;
         let position = match target {
+            AutoWalkTarget::Cell(at) => MovementLocalPosition {
+                x: at.x,
+                y: at.y,
+                floor: at.floor,
+            },
+            AutoWalkTarget::Follow(target) => {
+                let census = runtime.visible_entities();
+                let named = |other: ExactActorRef, generation| {
+                    other != actor
+                        && other.placement_identity() == target.identity
+                        && generation == target.generation
+                };
+                let other = census
+                    .players
+                    .iter()
+                    .find(|p| named(p.actor, p.generation))
+                    .map(|p| p.actor)
+                    .or_else(|| {
+                        census
+                            .creatures
+                            .iter()
+                            .find(|p| named(p.actor, p.generation))
+                            .map(|p| p.actor)
+                    });
+                let Some(other) = other else {
+                    return Ok(None);
+                };
+                if states.is_dead(other) {
+                    return Ok(None);
+                }
+                let Ok(at) = runtime.borrow_movement_position().read(other) else {
+                    return Ok(None);
+                };
+                if at.context() != expected.context()
+                    || at.position().floor != expected.position().floor
+                    || !super::super::attack::sees(expected.position(), at.position())
+                {
+                    return Ok(None);
+                }
+                follow = Some((other, at));
+                at.position()
+            }
+
             AutoWalkTarget::Item(item_view::ItemKey::Entity(identity)) => {
                 let Some(corpse) = runtime.bound_corpse(identity) else {
                     return Ok(None);
@@ -95,6 +146,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 ) => pos,
                                 Err(_) => return Ok(None),
                             }
+                        }
+                        AutoWalkTarget::Cell(_) | AutoWalkTarget::Follow(_) => {
+                            unreachable!("explicit targets resolved above")
                         }
                         AutoWalkTarget::Object(target) => {
                             match world_map::resolve_map_target(&source, &target, |_| Some(())) {
@@ -145,7 +199,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         // A move may be TooFar because of its destination. Only a distant source starts a
         // walk; in particular, do not step away from an item under the player's own feet.
-        if expected.position().floor == position.floor
+        if !explicit
+            && expected.position().floor == position.floor
             && chebyshev(expected.position(), position) <= 1
         {
             return Ok(None);
@@ -171,7 +226,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             blocked: pvp_live::pz_blocked(&states, actor, session, self.owner_now()),
         };
         let occupancy = PathOccupancy::current(&runtime);
-        let steps = route_next_to(expected.position(), position, CHASE_SEARCH_DISTANCE, |at| {
+        if explicit
+            && (expected.position().floor != position.floor
+                || chebyshev(expected.position(), position) > i64::from(CHASE_SEARCH_DISTANCE))
+        {
+            return Err(());
+        }
+        let mut attack = self.states.attack.lock().await;
+        if explicit
+            && !attack
+                .path_budget
+                .admits(self.owner_now().get(), true, true)
+        {
+            // Capacity is a retryable wait, never a false no-path or target loss.
+            return Ok(Some(AutoWalkRoute {
+                expected,
+                steps: VecDeque::new(),
+                follow,
+                deferred: true,
+            }));
+        }
+        let tile_cost = |at: MovementLocalPosition| {
             use crate::map::floor::CellBlocker as _;
             let cell = crate::content::LogicalCell {
                 x: at.x,
@@ -205,10 +280,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 && !pvp_blocking.blocks(cell)
                 && !crate::map::floor::is_teleport(cells, cell))
             .then(|| occupancy.extra_cost(at, expected.position()))
-        })
+        };
+        let steps = if explicit {
+            let (route, work) = measured_route_with_distance(
+                expected.position(),
+                position,
+                exact,
+                CHASE_SEARCH_DISTANCE,
+                tile_cost,
+            );
+            attack.path_budget.charge(true, work);
+            route
+        } else {
+            route_next_to(
+                expected.position(),
+                position,
+                CHASE_SEARCH_DISTANCE,
+                tile_cost,
+            )
+        }
         .ok_or(())?;
         debug_assert!(steps.len() <= ROUTE_STEPS);
         Ok(Some(AutoWalkRoute {
+            deferred: false,
+            follow,
             expected,
             steps: steps
                 .into_iter()
@@ -228,13 +323,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         expected: MovementPositionSnapshot,
         direction: StepDirection,
+        follow: Option<(ExactActorRef, MovementPositionSnapshot)>,
     ) -> (
         StepOutcome,
         Option<Duration>,
         Option<MovementPositionSnapshot>,
     ) {
         let (outcome, duration) = self
-            .tutorial_paced_step_from(actor, session, direction, Some(expected))
+            .tutorial_paced_step_from(actor, session, direction, Some(expected), follow)
             .await;
         let mut runtime = self.runtime.lock().await;
         let current = runtime

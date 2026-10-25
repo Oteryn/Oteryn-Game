@@ -1,6 +1,19 @@
 //! Encode the command result without changing dispositions or payload bytes.
+//! PARITY-REFUSAL-DETAIL-1: under capability 66 a refused step, use or item move appends its
+//! refusal detail (field 15); without it every payload keeps its bytes.
 
 use super::*;
+use oteryn_protocol_oteryn::refusal_detail::{RefusalDetail, append_refusal_detail};
+
+/// `payload` with the refusal detail the session selected capability 66 for.
+fn detailed(session: &ServeState, mut payload: Vec<u8>, detail: Option<RefusalDetail>) -> Vec<u8> {
+    append_refusal_detail(
+        &mut payload,
+        session.selected_capabilities.as_slice(),
+        detail,
+    );
+    payload
+}
 
 pub(super) fn encode(
     session: &mut ServeState,
@@ -47,14 +60,18 @@ pub(super) fn encode(
             } else {
                 CommandStatus::Accepted
             },
-            encode_step_outcome(
-                session.selected_capabilities.as_slice(),
-                outcome.disposition,
-                if session.step_wait_receipts {
-                    *step_wait_ms
-                } else {
-                    0
-                },
+            detailed(
+                session,
+                encode_step_outcome(
+                    session.selected_capabilities.as_slice(),
+                    outcome.disposition,
+                    if session.step_wait_receipts {
+                        *step_wait_ms
+                    } else {
+                        0
+                    },
+                ),
+                RefusalDetail::of_step(outcome.disposition),
             ),
         ),
         Dispatch::Use(outcome) => {
@@ -79,9 +96,15 @@ pub(super) fn encode(
                 } else {
                     CommandStatus::Accepted
                 },
-                encode_use_result_with_gate(disposition, gate_message_id).unwrap_or_else(|_| {
-                    encode_use_result(UseDisposition::Rejected).unwrap_or_default()
-                }),
+                detailed(
+                    session,
+                    encode_use_result_with_gate(disposition, gate_message_id).unwrap_or_else(
+                        |_| encode_use_result(UseDisposition::Rejected).unwrap_or_default(),
+                    ),
+                    outcome
+                        .refusal_detail
+                        .or(RefusalDetail::of_use(outcome.disposition)),
+                ),
             )
         }
         Dispatch::Spell(outcome) => (
@@ -92,16 +115,22 @@ pub(super) fn encode(
             },
             encode_spell_cast_result(outcome.disposition),
         ),
-        Dispatch::UseItem(decision, _) => (
-            CommandStatus::Accepted,
-            encode_use_result(match decision {
+        Dispatch::UseItem(decision, _) => {
+            let disposition = match decision {
                 OpenDecision::Open => UseDisposition::Committed,
                 OpenDecision::TooFar => UseDisposition::TooFar,
                 OpenDecision::StaleState => UseDisposition::StaleState,
                 OpenDecision::NothingToUse => UseDisposition::NothingToUse,
-            })
-            .unwrap_or_default(),
-        ),
+            };
+            (
+                CommandStatus::Accepted,
+                detailed(
+                    session,
+                    encode_use_result(disposition).unwrap_or_default(),
+                    RefusalDetail::of_use(disposition),
+                ),
+            )
+        }
         Dispatch::ContainerView(outcome, _) => (
             CommandStatus::Accepted,
             encode_container_view_result(*outcome),
@@ -125,7 +154,7 @@ pub(super) fn encode(
             };
             (CommandStatus::Accepted, payload)
         }
-        Dispatch::ItemMove(outcome, _) => {
+        Dispatch::ItemMove(outcome, _, detail) => {
             let Ok(payload) = encode_item_move_result_for(
                 *outcome,
                 ItemMoveSelection {
@@ -140,7 +169,14 @@ pub(super) fn encode(
             ) else {
                 return Err(ServeEnd::Disconnected);
             };
-            (CommandStatus::Accepted, payload)
+            (
+                CommandStatus::Accepted,
+                detailed(
+                    session,
+                    payload,
+                    detail.or(RefusalDetail::of_item_move(*outcome)),
+                ),
+            )
         }
         Dispatch::Look(result, selection) => {
             let Ok(payload) = encode_item_look_result_for(result, *selection) else {

@@ -4,6 +4,7 @@ use super::*;
 use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::durability::{DurabilityError, spell_item_transaction as item_tx};
 use crate::foundation::RuntimeScopeRefV1;
+use oteryn_protocol_oteryn::world_spatial::StepDirection;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn trade_open(
@@ -121,6 +122,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .chain(visible.creatures.iter().map(|e| (VisibleKind::Creature, e)))
             .chain(visible.npcs.iter().map(|e| (VisibleKind::Npc, e)))
             .map(|(kind, e)| super::super::world_spatial::ChannelEntity {
+                direction: match runtime
+                    .read_actor_position(e.actor)
+                    .ok()
+                    .and_then(|at| at.facing())
+                {
+                    Some(crate::foundation::MovementFacing::North) => StepDirection::North,
+                    Some(crate::foundation::MovementFacing::East) => StepDirection::East,
+                    Some(crate::foundation::MovementFacing::West) => StepDirection::West,
+                    Some(crate::foundation::MovementFacing::South) | None => StepDirection::South,
+                },
                 kind,
                 identity: e.actor.placement_identity(),
                 generation: e.generation,
