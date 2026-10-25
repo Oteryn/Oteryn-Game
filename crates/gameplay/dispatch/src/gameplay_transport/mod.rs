@@ -53,6 +53,7 @@ mod item_craft;
 mod item_look;
 mod item_move;
 mod item_ref_admission;
+mod item_transform;
 mod item_use;
 mod item_view;
 mod kill_reward;

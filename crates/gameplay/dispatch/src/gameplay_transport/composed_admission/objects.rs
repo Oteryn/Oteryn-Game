@@ -84,6 +84,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(actor_tile) = native(expected.position()) else {
             return UseOutcome::rejected();
         };
+        if item_ref_admission::pinned_index(&runtime, self.active_generation).is_some()
+            && let Some(native) = self
+                .active_generation
+                .and_then(crate::content::ActiveGeneration::native_gameplay)
+            && let Some(disposition) = item_transform::rotate(
+                map,
+                native,
+                runtime.content_pin().client_artifact_digest(),
+                actor_tile,
+                target,
+            )
+        {
+            return UseOutcome {
+                disposition,
+                ..UseOutcome::rejected()
+            };
+        }
         map_door::use_door(
             &map.overlay,
             &map.facts,
