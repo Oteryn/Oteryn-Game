@@ -52,6 +52,7 @@ pub mod presentation;
 pub mod quest_log;
 pub mod refusal_detail;
 mod registered_capabilities;
+pub mod server_save_countdown;
 pub mod spectate;
 pub mod spell_presentation_candidate;
 pub mod staff;

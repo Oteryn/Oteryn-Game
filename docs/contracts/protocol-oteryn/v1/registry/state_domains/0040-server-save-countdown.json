@@ -1,0 +1,24 @@
+{
+  "id": 40,
+  "name": "SERVER_SAVE_COUNTDOWN",
+  "owner_decision": "PARITY-EVENT-CALLBACKS-1 coordinator decision, NIGHT-W1",
+  "owner": "current ChannelRuntime",
+  "capability": 75,
+  "revision": "per GameSessionId, monotonic; retained across reconnect; snapshots never replay notices",
+  "delta_types": [
+    {
+      "id": 1,
+      "name": "SERVER_SAVE_COUNTDOWN_DELTA_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/server_save_countdown_v1.proto#ServerSaveCountdownV1",
+      "max_payload_bytes": 16
+    }
+  ],
+  "snapshot_types": [
+    {
+      "id": 1,
+      "name": "SERVER_SAVE_COUNTDOWN_SNAPSHOT_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/server_save_countdown_v1.proto#ServerSaveCountdownSnapshotV1",
+      "max_payload_bytes": 2
+    }
+  ]
+}

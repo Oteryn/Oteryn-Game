@@ -247,6 +247,8 @@ struct NegotiatingAuthority {
     weather_bound: Cell<bool>,
     clock_ms: Cell<u64>,
     position: Cell<ActorPosition>,
+    /// PARITY-EVENT-CALLBACKS-1: the Channel's due server-save countdown minute.
+    server_save: Cell<Option<super::super::server_save_countdown::DueServerSaveCountdown>>,
 }
 
 impl NegotiatingAuthority {
@@ -266,6 +268,7 @@ impl NegotiatingAuthority {
                 y: 0,
                 floor: 0,
             }),
+            server_save: Cell::new(None),
         }
     }
 }
@@ -338,6 +341,12 @@ impl FreshAdmissionAuthority for NegotiatingAuthority {
 
     fn world_weather(&self) -> Option<&crate::world_weather::WorldWeatherSource> {
         crate::world_weather::shipped().filter(|_| self.weather_bound.get())
+    }
+
+    fn server_save_countdown(
+        &self,
+    ) -> Option<super::super::server_save_countdown::DueServerSaveCountdown> {
+        self.server_save.get()
     }
 
     async fn observe(&self, _actor: ExactActorRef) -> Option<WorldSpatialObservation> {

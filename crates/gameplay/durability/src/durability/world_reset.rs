@@ -16,6 +16,28 @@ pub struct RetiringWorldReset {
     pub(super) target: [u8; 32],
 }
 
+/// PARITY-EVENT-CALLBACKS-1: the next calendar reset Control publishes, read only.
+/// Holding it grants nothing; it cannot trigger, move or cancel a reset.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct PlannedWorldReset {
+    /// The active epoch the planned reset ends.
+    pub ending_epoch: u64,
+    /// The next 10:00 Europe/Berlin strictly after `database_now_unix_ms`.
+    pub reset_at_unix_ms: i64,
+    pub database_now_unix_ms: i64,
+}
+
+impl PlannedWorldReset {
+    /// The countdown minute due now (`world-change::scheduled::server_save_warning_due`).
+    pub fn warning_due(&self, serve_started_unix_ms: i64) -> Option<u8> {
+        oteryn_gameplay_world_change::scheduled::server_save_warning_due(
+            self.reset_at_unix_ms,
+            self.database_now_unix_ms,
+            serve_started_unix_ms,
+        )
+    }
+}
+
 pub(super) mod census;
 mod activation;
 mod content_preflight;

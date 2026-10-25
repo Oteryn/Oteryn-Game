@@ -66,6 +66,8 @@ fn admitted_steps_are_sequenced_and_a_replayed_id_expires() -> Result<(), Box<dy
                 world_clock_revision: 0,
                 world_weather_revision: 0,
                 tutorial_revision: 0,
+                server_save_revision: 0,
+                server_save_sent: None,
             }
         );
         // The unregistered type and the replayed ID never reached Movement.
