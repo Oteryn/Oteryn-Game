@@ -183,6 +183,7 @@ const INVENTORY: &[Entry] = &[
             ("gameplay_transport/attack.rs", 1),
             ("gameplay_transport/composed_admission/objects.rs", 2),
             ("gameplay_transport/paced_movement.rs", 1),
+            ("gameplay_transport/paced_movement/autowalk.rs", 1),
         ],
     },
 ];
