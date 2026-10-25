@@ -489,6 +489,7 @@ fn familiar_and_complete_cost_commit_in_one_real_transaction_and_replay_as_histo
         // Explicit cost-writer input fixture, not a runtime payment capability. The actual
         // Channel compositor separately derives and checks this projection from its held owner.
         let mut cost = SpellItemTransactionRequest {
+            swing_ordinal: None,
             command: CommandRef::new(
                 GameSessionId::decode(&id(SESSION)).map_err(debug)?,
                 CommandId::new(1).map_err(debug)?,
@@ -691,6 +692,7 @@ fn familiar_cost_and_real_training_receipt_share_commit_and_legacy_null_proof_re
         // Input binds a source payment of1000 plus600 already accumulated live; this case
         // verifies only the genuine shared durable boundary, not a fabricated runtime witness.
         let mut cost = SpellItemTransactionRequest {
+            swing_ordinal: None,
             command: CommandRef::new(
                 GameSessionId::decode(&id(SESSION)).map_err(debug)?,
                 CommandId::new(1).map_err(debug)?,

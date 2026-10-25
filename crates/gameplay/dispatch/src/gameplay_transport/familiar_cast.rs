@@ -1235,6 +1235,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             keep!();
         };
         let cost = SpellItemTransactionRequest {
+            swing_ordinal: None,
             command: binding.command,
             spell: TypedDefinitionRef {
                 family: "Spell".into(),

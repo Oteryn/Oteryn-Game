@@ -177,6 +177,18 @@ impl ChannelRuntimeV1 {
             .bound_corpses(Some(self.pinned_position_context()))
     }
 
+    /// Forget corpse Item bindings absent from the owner's complete durable live-corpse read.
+    /// The caller holds the Channel's item writer lane through that read and this update, so
+    /// a new MINT cannot race the snapshot. Keep bounded death/projection evidence for reward
+    /// retries; without an Item binding the corpse is neither visible nor usable.
+    pub fn retain_live_corpse_items(&mut self, live: &[[u8; 16]]) -> Result<(), CarrierError> {
+        self.owner_fence()?;
+        self.carrier
+            .corpse_item_bindings
+            .retain(|binding| live.contains(&binding.item.item_instance_id));
+        Ok(())
+    }
+
     /// MAP-ITEM-REF-1 Part B: the bound corpse whose [`ExactActorRef::corpse_identity`] is
     /// `identity`, as [`Self::visible_corpses`] shows it. Read-only.
     pub fn bound_corpse(&self, identity: [u8; 16]) -> Option<VisibleRuntimeCorpse> {

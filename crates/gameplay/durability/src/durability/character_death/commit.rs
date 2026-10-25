@@ -18,6 +18,7 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         let node = node.clone();
+        let durability = self.clone();
 
         self.try_issue_semantic_pass()?
             .run_with_context(&mut formula, move |holder, deadline, formula| {
@@ -122,6 +123,21 @@ impl DurabilityRoot {
 
                     let level = u32::try_from(state.try_get::<i64, _>("level")?)
                         .map_err(|_| DurabilityError::InvalidStoredState)?;
+                    let live_contributors;
+                    let contributors = if request.pvp_contributors.is_empty() {
+                        live_contributors = match super::super::pvp_live::death_contributors_in_transaction(
+                            &mut tx, fence.character_id,
+                        ).await {
+                            Ok(contributors) => contributors,
+                            Err(error) => return Ok(Err(error)),
+                        };
+                        live_contributors.as_slice()
+                    } else {
+                        request.pvp_contributors.as_slice()
+                    };
+                    let adventurer_applied = adventurer::applies(
+                        &mut tx, &durability, fence, level, !contributors.is_empty(),
+                    ).await?;
                     let snapshot = CurrentProgressionSnapshot {
                         level,
                         total_experience: ExactI64::new(state.try_get("total_experience")?),
@@ -143,7 +159,7 @@ impl DurabilityRoot {
                         regular_blessings,
                         promoted_with_current_premium: promotion::benefit(&mut tx, fence.character_id, premium).await?,
                     };
-                    let staged = match calculate_progression(
+                    let mut staged = match calculate_progression(
                         &snapshot,
                         &request.context,
                         &request.policy_revision,
@@ -155,6 +171,11 @@ impl DurabilityRoot {
                             return Ok(Err(CharacterProgressionError::Calculation(error)));
                         }
                     };
+                    if adventurer_applied {
+                        staged.level_after = staged.level_before;
+                        staged.experience_after = staged.experience_before;
+                        staged.death_experience_lost = ExactI64::new(0);
+                    }
                     let committed_revision = root_revision
                         .checked_add(1)
                         .ok_or(DurabilityError::InvalidStoredState)?;
@@ -219,7 +240,7 @@ impl DurabilityRoot {
                     )
                     .fetch_one(&mut *tx)
                     .await?;
-                    let blessings_after: Vec<String> = Vec::new();
+                    let blessings_after = if adventurer_applied { held.clone() } else { Vec::new() };
                     let receipt = sqlx::query(
                         "INSERT INTO game_character_death_receipts(\
                            death_occurrence_id, command_binding, policy_digest, character_id, \
@@ -276,7 +297,7 @@ impl DurabilityRoot {
                             fence.character_id,
                             request.death_cell.world_id,
                             request.occurrence.as_bytes(),
-                            &request.pvp_contributors,
+                            contributors,
                         )
                         .await
                     {
@@ -284,12 +305,13 @@ impl DurabilityRoot {
                     }
                     let consumed = sqlx::query(
                         "DELETE FROM game_character_blessings \
-                          WHERE character_id = encode($1,'hex')::uuid",
+                          WHERE character_id = encode($1,'hex')::uuid AND NOT $2",
                     )
                     .bind(fence.character_id.as_bytes().as_slice())
+                    .bind(adventurer_applied)
                     .execute(&mut *tx)
                     .await?;
-                    if usize::try_from(consumed.rows_affected()).ok() != Some(held.len()) {
+                    if usize::try_from(consumed.rows_affected()).ok() != Some(held.len() - blessings_after.len()) {
                         return Err(DurabilityError::InvalidStoredState);
                     }
                     sqlx::query(

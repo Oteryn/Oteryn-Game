@@ -1,0 +1,18 @@
+{
+  "id": 61,
+  "name": "ITEM_STACK_COUNT_V1",
+  "constant": "item_view::CAPABILITY_ITEM_STACK_COUNT_V1",
+  "requires": [
+    12,
+    14
+  ],
+  "acceptance_requires": true,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

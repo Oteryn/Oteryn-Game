@@ -133,6 +133,7 @@ pub(super) fn use_door(
     let occupied = occupied(resolved.pos);
     match doors.toggle(resolved.placement_key, target.expected_revision, occupied) {
         Some(DoorUse::Toggled { .. }) => outcome(UseDisposition::Committed),
+        Some(DoorUse::Locked) => outcome(UseDisposition::Locked),
         Some(DoorUse::Stale) => outcome(UseDisposition::StaleState),
         Some(DoorUse::Occupied) => outcome(UseDisposition::Occupied),
         None => outcome(UseDisposition::NothingToUse),
