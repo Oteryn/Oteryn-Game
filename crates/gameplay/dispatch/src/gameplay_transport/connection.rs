@@ -13,6 +13,8 @@ use routing::Dispatch;
 use serve::serve_admitted_actor;
 #[path = "newhaven_travel_transport.rs"]
 mod newhaven_travel_transport;
+#[path = "server_save_countdown_transport.rs"]
+mod server_save_countdown_transport;
 #[path = "tutorial_notices_transport.rs"]
 mod tutorial_notices_transport;
 use crate::durability::item_transfer::{
@@ -266,6 +268,11 @@ pub struct SessionContinuity {
     /// snapshot follows it.
     pub world_weather_revision: u64,
     pub tutorial_revision: u64,
+    /// PARITY-EVENT-CALLBACKS-1: the last domain 40 revision and the (planned reset instant,
+    /// minute) of the last countdown notice sent. Used only with capability 75; a resume or
+    /// channel transfer carries them, so a reconnect never repeats a minute.
+    pub server_save_revision: u64,
+    pub server_save_sent: Option<(i64, u8)>,
 }
 
 impl SessionContinuity {
@@ -302,6 +309,8 @@ impl SessionContinuity {
         world_clock_revision: 0,
         world_weather_revision: 0,
         tutorial_revision: 0,
+        server_save_revision: 0,
+        server_save_sent: None,
     };
 }
 

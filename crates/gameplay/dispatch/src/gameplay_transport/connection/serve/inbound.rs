@@ -97,12 +97,27 @@ where
             // A peer that does not consume even one small probe within a cadence is not
             // in control; an unbounded write would also stall the cadence itself.
             match tokio::time::timeout(session.policy.interval, write_frame(stream, &probe)).await {
-                Ok(Ok(())) => return Ok(None),
+                Ok(Ok(())) => {}
                 Ok(Err(_)) => {
                     return Err(ServeEnd::Disconnected);
                 }
                 Err(_) => return Err(ServeEnd::ControlLost),
             }
+            // PARITY-EVENT-CALLBACKS-1: the server-save countdown rides the liveness cadence.
+            let countdown = tokio::time::timeout(
+                session.policy.interval,
+                server_save_countdown_transport::emit(
+                    stream,
+                    authority,
+                    &mut session.admitted,
+                    &mut session.sequence,
+                ),
+            );
+            return match countdown.await {
+                Ok(Some(())) => Ok(None),
+                Ok(None) => Err(ServeEnd::Disconnected),
+                Err(_) => Err(ServeEnd::ControlLost),
+            };
         }
     };
     Ok(Some(Input {

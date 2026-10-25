@@ -50,6 +50,7 @@ pub mod player_trade;
 pub mod presentation;
 pub mod quest_log;
 mod registered_capabilities;
+pub mod server_save_countdown;
 pub mod spectate;
 pub mod spell_presentation_candidate;
 pub mod staff;

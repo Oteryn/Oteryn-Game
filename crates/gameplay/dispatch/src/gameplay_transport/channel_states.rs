@@ -53,6 +53,8 @@ pub struct ChannelSessionStates {
     /// The quest copy of each admitted session (QUEST-STATE-0 §7), loaded at fresh admission
     /// and resume. Never held across an await.
     pub quest_sessions: std::sync::Mutex<std::collections::HashMap<GameSessionId, QuestSession>>,
+    /// PARITY-EVENT-CALLBACKS-1: the currently due server-save countdown minute.
+    pub(super) server_save: super::server_save_countdown::ServerSaveCountdownHub,
     /// VITALS-SOUL-1: the soul hook of each settled kill, applied on the killer's cadence.
     pub(super) soul_kills: super::soul_kill_live::SoulKills,
     /// The Channel owner's player vitals and cooldowns (spell cast §4). Always locked after

@@ -1,0 +1,20 @@
+// PARITY-EVENT-CALLBACKS-1, coordinator decision, NIGHT-W1: capability 75, domain 40.
+// Server side of Canary data/scripts/globalevents/global_server_save.lua:29,48 and
+// save_interval.lua:11,35: a typed countdown before the planned server save. The Channel only
+// reads the reset Control publishes (calendar TIBIA_SERVER_SAVE_BERLIN_10 on the active epoch)
+// and never triggers, moves or cancels it. No command type. Envelopes own revisions.
+// Snapshot type 1 is exactly [0x08,0x01]. Delta type 1 contains exactly one notice, at most
+// once per World, ending epoch and minute in one serve lifetime; a minute whose window opened
+// before the serve started is never sent, so a restart cannot repeat one. Unknown, missing or
+// repeated fields and minutes outside 1..=5 refuse. A delta is at most 16 bytes (13 emitted).
+// The client chooses the wording; Canary's is "Server is saving the game in N minute(s).
+// Please logout."
+syntax = "proto3";
+package oteryn.protocol.v1.server_save_countdown;
+message ServerSaveCountdownSnapshotV1 { uint32 empty = 1; }
+message ServerSaveCountdownV1 {
+  // The active reset epoch the planned server save ends. Written even when 0.
+  uint64 ending_epoch = 1;
+  // Whole minutes until the planned server save, 1..=5.
+  uint32 minutes_remaining = 2;
+}

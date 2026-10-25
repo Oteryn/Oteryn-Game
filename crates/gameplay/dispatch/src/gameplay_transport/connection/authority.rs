@@ -231,6 +231,13 @@ pub trait FreshAdmissionAuthority {
         None
     }
 
+    /// PARITY-EVENT-CALLBACKS-1: the Channel's currently due server-save countdown minute.
+    fn server_save_countdown(
+        &self,
+    ) -> Option<crate::gameplay_transport::server_save_countdown::DueServerSaveCountdown> {
+        None
+    }
+
     fn take_tutorial_notice(
         &self,
         _session: GameSessionId,
