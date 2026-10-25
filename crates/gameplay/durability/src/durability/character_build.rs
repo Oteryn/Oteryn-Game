@@ -449,7 +449,12 @@ pub(super) async fn apply_build_in_transaction(
     binding: Vec<u8>,
     offline: Option<super::offline_training_state::OfflineChange>,
 ) -> std::result::Result<Result<BuildCommitOutcome>, DurabilityError> {
-    if !request.cause.admits(&request.before, &request.after)
+    let stamina_training = offline.is_some_and(|change| {
+        request.cause == BuildCause::Training
+            && request.before == request.after
+            && change.after.stamina_minutes < change.before.stamina_minutes
+    });
+    if (!request.cause.admits(&request.before, &request.after) && !stamina_training)
         || binding.is_empty()
         || binding.len() > 1024
     {
@@ -655,6 +660,11 @@ pub(super) async fn apply_build_in_transaction(
         .await?;
     if row.rows_affected() != 1 {
         return Err(DurabilityError::InvalidStoredState);
+    }
+    if request.cause == BuildCause::Training && offline.after.stamina_minutes < offline.before.stamina_minutes {
+        sqlx::query("SELECT game_hunting_set_stamina(encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3)")
+            .bind(character).bind(request.occurrence.0.as_slice())
+            .bind(i32::from(offline.after.stamina_minutes)).execute(&mut **tx).await?;
     }
     if request.cause == BuildCause::OfflineSettlement {
         sqlx::query("SELECT game_training_set_stamina(encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3)")

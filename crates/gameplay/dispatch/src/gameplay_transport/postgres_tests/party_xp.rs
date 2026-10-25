@@ -22,7 +22,8 @@ use tokio::sync::Mutex;
 const REAL_SWING_PASSES: u32 = 256;
 
 #[derive(Clone, Copy)]
-enum Case {
+pub(super) enum Case {
+    Stamina,
     Shared,
     Modifiers,
     Inactive,
@@ -91,7 +92,7 @@ fn party_xp_real_dispatch_contended_absent_pz_row_defers_without_awards() -> Tes
     run(Case::PzContention)
 }
 
-fn run(case: Case) -> TestResult {
+pub(super) fn run(case: Case) -> TestResult {
     // Without the PostgreSQL route the case skips, as the other dispatch PostgreSQL tests do.
     if fixture::configured_admin().is_none() {
         return Ok(());
@@ -415,6 +416,9 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     }
     for (actor, session) in &players {
         assert!(owner.refresh_source_party_presence(*actor, *session).await);
+    }
+    if matches!(case, Case::Stamina) {
+        return super::hunting_stamina::qualify(&mut owner, h, &players).await;
     }
     owner
         .states

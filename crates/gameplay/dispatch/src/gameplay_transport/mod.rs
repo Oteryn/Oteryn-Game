@@ -47,6 +47,7 @@ mod guild_bank;
 mod guild_chat;
 mod highscores;
 mod house_query;
+mod hunting_stamina;
 mod input_gate;
 mod item_craft;
 mod item_look;
