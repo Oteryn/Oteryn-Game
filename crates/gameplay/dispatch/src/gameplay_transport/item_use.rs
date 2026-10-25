@@ -274,6 +274,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     })?
             }
         };
+        if !self.states.player_trades.physical(session, Some(source)) {
+            return Err(UseDisposition::Rejected);
+        }
         let backpack = inventory
             .backpack
             .as_ref()

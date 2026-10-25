@@ -318,7 +318,10 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 Ok(permit) => permit,
                 Err(unresolved) => self.resolve_unresolved_spell_commit(unresolved).await,
             };
-            (!permit.has_unresolved()).then_some(permit)
+            if permit.has_unresolved() || !self.resolve_player_trades(&permit).await {
+                return None;
+            }
+            Some(permit)
         })
     }
     /// Resumes the parked writer's own retained retry path under the lane (§1.6): it installs a
