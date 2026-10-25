@@ -1738,7 +1738,8 @@ fn item_look_resolves_map_definition_and_count_only_in_the_reference_view() {
                 production_key: "item:coin".into(),
                 revision_ref: "r1".into()
             },
-            nz(1)
+            nz(1),
+            1,
         ))
     );
     assert_eq!(
@@ -1758,6 +1759,7 @@ fn item_look_resolves_map_definition_and_count_only_in_the_reference_view() {
             revision_ref: "r1".into(),
         },
         nz(1),
+        1,
     );
     assert_eq!(
         map_look_target(
@@ -1805,5 +1807,90 @@ fn item_look_resolves_map_definition_and_count_only_in_the_reference_view() {
     assert_eq!(
         map_look_target(&fixture.source(), at(ACTOR), hidden, &index),
         Err(ItemLookRefusal::NotAvailable)
+    );
+}
+
+#[test]
+fn item_look_far_ground_stack_top_is_visible_and_out_of_view_is_typed() {
+    use crate::content::item_ref::ItemDefinitionIndex;
+    use crate::gameplay_transport::item_look::map_look_target;
+    use oteryn_protocol_oteryn::item_look::ItemLookRefusal;
+    // This case observes a stack quantity, unlike the older scalar Facts fixture.
+    struct GroundCounts<'a>(&'a Facts);
+    impl MapFacts for GroundCounts<'_> {
+        fn base_entry(&self, pos: TilePos, ordinal: u8, id: u32) -> Option<EntryFacts> {
+            self.0.base_entry(pos, ordinal, id)
+        }
+        fn added_entry(&self, item: &AddedItem) -> Option<EntryFacts> {
+            let mut facts = self.0.added_entry(item)?;
+            if let AddedItem::Ground(ground) = item {
+                facts.count = ground.quantity;
+            }
+            Some(facts)
+        }
+        fn house_tile(&self, pos: TilePos) -> bool {
+            self.0.house_tile(pos)
+        }
+        fn object_revision(&self, key: u64) -> u64 {
+            self.0.object_revision(key)
+        }
+    }
+    let pos = tp(29, 20, -7);
+    let mut fixture = Fixture::new(vec![(pos, vec![item(GRASS), item(COIN)])]);
+    let index = ItemDefinitionIndex::decode(
+        &serde_json::to_vec(&serde_json::json!({
+            "schema": "OTERYN_NATIVE_ITEM_KEYS/v1",
+            "records": [["item:a", "r1"], ["item:b", "r1"], ["item:c", "r1"], ["item:coin", "r1"]]
+        }))
+        .unwrap(),
+    )
+    .unwrap();
+    let ground = uuid(9);
+    let mut spatial = Vec::new();
+    spatial.extend_from_slice(&i32::from(pos.x).to_be_bytes());
+    spatial.extend_from_slice(&i32::from(pos.y).to_be_bytes());
+    spatial.extend_from_slice(&i16::from(pos.floor).to_be_bytes());
+    let definition = TypedDefinitionRef {
+        family: "Item".into(),
+        production_key: "item:coin".into(),
+        revision_ref: "r1".into(),
+    };
+    fixture
+        .overlay
+        .add_ground(GroundItemInstance {
+            item_instance_id: ground,
+            world_id: world(),
+            channel_id: channel(),
+            definition: definition.clone(),
+            quantity: 3,
+            runtime_scope_ownership_generation: 1,
+            ground: GroundPlacement {
+                spatial_position: spatial,
+                corpse_ref: Vec::new(),
+                map_revision: map_revision(fixture.overlay.base()),
+                content_revision: "rev-1".into(),
+                native_room_placement_context: Vec::new(),
+            },
+            minted_transaction_id: uuid(10),
+        })
+        .unwrap();
+    let key = ItemKey::Instance(ground);
+    // This is the top of the composed stack and carries a real map-view handle.
+    fixture.join(ACTOR);
+    assert!(fixture.items.table().handle(&key).is_some());
+    let facts = GroundCounts(&fixture.facts);
+    let source = MapViewSource {
+        overlay: &fixture.overlay,
+        facts: &facts,
+        content_generation: [7; 32],
+        reset_epoch: 1,
+    };
+    assert_eq!(
+        map_look_target(&source, at(ACTOR), key, &index),
+        Ok((definition, nz(3), 9))
+    );
+    assert_eq!(
+        map_look_target(&source, at(tp(19, 20, -7)), key, &index),
+        Err(ItemLookRefusal::NotVisible)
     );
 }

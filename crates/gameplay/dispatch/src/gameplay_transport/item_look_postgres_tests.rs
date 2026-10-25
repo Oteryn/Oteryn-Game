@@ -21,6 +21,7 @@ use crate::map::boot::tests::bundle_with_item_ids;
 use crate::map::boot::{BootPins, boot};
 use crate::map::facts::ItemDefinition;
 use crate::map::overlay::TilePos;
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_protocol_oteryn::item_look::{
     ItemLookIntent, ItemLookRefusal, ItemLookResult, ItemLookSelection, ItemLookTarget,
     decode_item_look_result_for, encode_item_look_intent_for,
@@ -51,9 +52,10 @@ pub(super) async fn read_frame(client: &mut DuplexStream) -> TestResult<Vec<u8>>
     Ok(frame)
 }
 
-async fn client_looks(client: &mut DuplexStream, own: EntityRef) -> TestResult {
+async fn client_looks(client: &mut DuplexStream, own: EntityRef, rat: EntityRef) -> TestResult {
     let mut backpack = None;
     let mut map_item = None;
+    let mut near_item = None;
     loop {
         let frame = read_frame(client).await?;
         let envelope = decode_wire_envelope(&frame).map_err(debug)?;
@@ -65,17 +67,18 @@ async fn client_looks(client: &mut DuplexStream, own: EntityRef) -> TestResult {
                     backpack = inventory.main_backpack.map(|item| item.handle);
                 } else if domain.domain_id == STATE_DOMAIN_WORLD_MAP_VIEW {
                     let map = decode_world_map_snapshot(domain.payload).map_err(debug)?;
-                    map_item = map
-                        .tiles
-                        .iter()
-                        .flat_map(|tile| &tile.items)
-                        .find_map(|item| {
+                    for tile in &map.tiles {
+                        for item in &tile.items {
                             if let MapOrigin::Handle(handle) = item.origin {
-                                Some(handle)
-                            } else {
-                                None
+                                if tile.position.x == 7 {
+                                    map_item = Some(handle);
+                                }
+                                if tile.position.x == 3 {
+                                    near_item = Some(handle);
+                                }
                             }
-                        });
+                        }
+                    }
                 }
             }
         }
@@ -84,7 +87,8 @@ async fn client_looks(client: &mut DuplexStream, own: EntityRef) -> TestResult {
         }
     }
     let backpack = backpack.ok_or("domain 9 carries the main backpack handle")?;
-    let map_item = map_item.ok_or("domain 17 carries a map item handle")?;
+    let map_item = map_item.ok_or("domain 17 carries a far map item handle")?;
+    let near_item = near_item.ok_or("domain 17 carries an adjacent map item handle")?;
     for (offset, target) in [
         ItemLookTarget::Creature(own),
         ItemLookTarget::Item(backpack),
@@ -93,6 +97,8 @@ async fn client_looks(client: &mut DuplexStream, own: EntityRef) -> TestResult {
             generation: 1,
         }),
         ItemLookTarget::Item(map_item),
+        ItemLookTarget::Item(near_item),
+        ItemLookTarget::Creature(rat),
     ]
     .into_iter()
     .enumerate()
@@ -130,9 +136,22 @@ async fn client_looks(client: &mut DuplexStream, own: EntityRef) -> TestResult {
                     matches!(looked, ItemLookResult::Text(text) if text.starts_with("You see "))
                 ),
                 2 => assert_eq!(looked, ItemLookResult::Refused(ItemLookRefusal::NotVisible)),
-                3 => assert!(
-                    matches!(looked, ItemLookResult::Text(text) if text.starts_with("You see "))
-                ),
+                3 => match looked {
+                    ItemLookResult::Text(text) => {
+                        assert!(text.starts_with("You see "));
+                        assert!(!text.contains(" oz."), "far item: {text}");
+                    }
+                    other => return Err(format!("far map look failed: {other:?}").into()),
+                },
+                4 => match looked {
+                    ItemLookResult::Text(text) => {
+                        assert!(text.starts_with("You see "));
+                        assert!(text.contains("It weighs "), "adjacent item: {text}");
+                        assert!(text.contains(" oz."));
+                    }
+                    other => return Err(format!("adjacent map look failed: {other:?}").into()),
+                },
+                5 => assert_eq!(looked, ItemLookResult::Text("You see a rat.".into())),
                 _ => unreachable!(),
             }
             break;
@@ -148,6 +167,7 @@ async fn serve_looks(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
     own: EntityRef,
+    rat: EntityRef,
 ) -> TestResult {
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let serving = async {
@@ -159,7 +179,7 @@ async fn serve_looks(
         drop(server);
     };
     let mut serving = std::pin::pin!(serving);
-    let mut looking = std::pin::pin!(client_looks(&mut client, own));
+    let mut looking = std::pin::pin!(client_looks(&mut client, own, rat));
     let mut served = false;
     let mut result = None;
     std::future::poll_fn(|context| {
@@ -182,7 +202,8 @@ async fn serve_looks(
 }
 
 #[test]
-fn item_look_postgres_composed_owner_serves_self_backpack_and_hidden_creature() -> TestResult {
+fn item_look_postgres_composed_owner_serves_near_far_items_creature_player_and_hidden_target()
+-> TestResult {
     large_stack(scenario)
 }
 
@@ -217,7 +238,7 @@ fn scenario() -> TestResult {
                 .definition_ref("Item", key, "definition-r1")
                 .ok_or("fixture item belongs to the activated index")
         };
-        let (bytes, pins) = bundle_with_item_ids(
+        let (bytes, mut pins) = bundle_with_item_ids(
             (
                 "oteryn:item.tibia.i2854",
                 reference("oteryn:item.tibia.i2854")?.get() - 1,
@@ -227,6 +248,26 @@ fn scenario() -> TestResult {
                 reference("oteryn:item.tibia.i3607")?.get() - 1,
             ),
         );
+        // Add a neighboring instance of the same item as the far stack top at x 7.
+        // The owner must vary only the near-only fields, never admission by reach.
+        let mut decoded = oteryn_world_bundle::bundle::read(&bytes)?;
+        let mut near = decoded.sectors[0]
+            .tiles
+            .iter()
+            .find(|tile| tile.x == 7)
+            .ok_or("far item tile")?
+            .clone();
+        near.x = 3;
+        let tiles = &mut decoded.sectors[0].tiles;
+        tiles.retain(|tile| tile.x != 3);
+        tiles.push(near);
+        tiles.sort_by_key(|tile| (tile.y, tile.x));
+        let bytes = oteryn_world_bundle_compiler::bundle::write(
+            &decoded.manifest,
+            &decoded.sectors,
+            &decoded.spawns,
+        )?;
+        pins.digest = oteryn_world_bundle::bundle::read(&bytes)?.digest;
         let mut map_revision = String::from("sha256:");
         for byte in &pins.digest {
             write!(&mut map_revision, "{byte:02x}")?;
@@ -279,7 +320,7 @@ fn scenario() -> TestResult {
             1,
             "runtime-scope-assignment:1",
             2,
-            channel_pin,
+            channel_pin.clone(),
         )
         .map_err(debug)?;
         let reservation = runtime
@@ -293,6 +334,25 @@ fn scenario() -> TestResult {
         let own = EntityRef {
             identity: actor.placement_identity(),
             generation: player.generation,
+        };
+        native
+            .install_companion_policies(&mut runtime)
+            .map_err(debug)?;
+        runtime
+            .realize_native_qualification_spawn(
+                channel_pin,
+                "oteryn:creature.rat",
+                crate::foundation::MovementLocalPosition {
+                    x: 9,
+                    y: 0,
+                    floor: 7,
+                },
+            )
+            .map_err(debug)?;
+        let creature = runtime.visible_entities().creatures[0];
+        let rat = EntityRef {
+            identity: creature.actor.placement_identity(),
+            generation: creature.generation,
         };
         let runtime = Mutex::new(runtime);
         let mut owner = dependencies.owner(&harness, &authority);
@@ -319,7 +379,7 @@ fn scenario() -> TestResult {
         seed_main_backpack(&harness, &[]).await?;
         tokio::time::timeout(
             std::time::Duration::from_secs(30),
-            serve_looks(&owner, admitted, own),
+            serve_looks(&owner, admitted, own, rat),
         )
         .await??;
         drop(owner);
