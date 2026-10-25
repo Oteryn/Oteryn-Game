@@ -25,6 +25,7 @@ const SEQUENCED_WRITERS: &[(&str, &str)] = &[
 const FEE_WRITERS: &[&str] = &[
     "durability/character_cyclopedia.rs",
     "durability/charm_state.rs",
+    "durability/item_imbuement.rs",
     "durability/item_timed_runtime/repair.rs",
     "durability/npc_purchase.rs",
 ];

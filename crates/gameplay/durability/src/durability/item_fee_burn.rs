@@ -77,6 +77,11 @@ pub enum FeeBurnCause {
         occurrence: [u8; 16],
         repair: Box<super::item_fee_burn_audit::OneItemTimedRepairV1>,
     },
+    /// Item-only: the shrine command leaves the Character root at its revision.
+    Imbuement {
+        occurrence: [u8; 16],
+        imbuement: Box<super::item_fee_burn_audit::OneItemImbuementV1>,
+    },
     CharmUnassign {
         charm: CharmKey,
         occurrence: CharmCommandOccurrence,
@@ -284,7 +289,7 @@ async fn burn_fee(
         .get()
         .checked_add(u64::from(!matches!(
             request.cause,
-            FeeBurnCause::NpcRepair { .. }
+            FeeBurnCause::NpcRepair { .. } | FeeBurnCause::Imbuement { .. }
         )))
         .and_then(|value| CharacterRevision::new(value).ok())
         .ok_or(FeeBurnError::InvalidInput)?;
