@@ -52,6 +52,10 @@ fn auto_attack_kill_settles_xp_and_a_linked_corpse_with_loot_on_postgres() -> Te
 }
 
 fn scenario() -> TestResult {
+    scenario_with_decay(None)
+}
+
+pub(super) fn scenario_with_decay(reconcile: Option<bool>) -> TestResult {
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "kill_reward_e2e", false, false).await?;
@@ -353,10 +357,20 @@ fn scenario() -> TestResult {
         .await?;
         assert!(children >= 1, "the corpse carries the rat's loot");
 
+        let decay = match reconcile {
+            Some(reconcile) => {
+                super::corpse_decay::qualify(&mut owner, &harness, children, reconcile)
+                    .await
+                    .map_err(|error| format!("corpse decay qualification: {error}").into())
+            }
+            None => Ok(()),
+        };
+
         drop(owner);
         drop(authority);
         drop(seal);
-        harness.cleanup().await
+        harness.cleanup().await?;
+        decay
     })
 }
 
