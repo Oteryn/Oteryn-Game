@@ -100,6 +100,7 @@ mod pvp_live;
 mod quest_admission;
 mod quest_log_source;
 mod resume;
+mod reward_bag_use;
 mod rune_use_bridge;
 mod seam_rooms;
 mod serving;

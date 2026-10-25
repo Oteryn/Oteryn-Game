@@ -113,7 +113,7 @@ fn cooking_row(
     })
 }
 
-fn output_definition(
+pub(crate) fn output_definition(
     native: &NativeGameplayState,
     reference: &ProjectV2DefinitionRef,
 ) -> Option<TypedDefinitionRef> {
