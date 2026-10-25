@@ -32,12 +32,7 @@ fn admitted_steps_are_sequenced_and_a_replayed_id_expires() -> Result<(), Box<dy
             )?,
             encode_command_result(1, 3, 2, CommandStatus::Accepted, &blocked)?,
             encode_command_result(1, 4, 3, CommandStatus::Rejected, &[])?,
-            encode_command_protocol_error(
-                FoundationProtocolError::CommandOutcomeExpired,
-                1,
-                2,
-                0,
-            )?,
+            encode_command_protocol_error(FoundationProtocolError::CommandOutcomeExpired, 1, 2, 0)?,
         ]);
         assert_eq!(frames, expected);
         let ConnectionEnd::AdmittedThenClosed(
@@ -56,6 +51,7 @@ fn admitted_steps_are_sequenced_and_a_replayed_id_expires() -> Result<(), Box<dy
                 next_command_id: 4,
                 server_sequence: 4,
                 spatial_revision: 2,
+                player_trade_revision: 0, // This peer did not select PLAYER_TRADE_V1.
                 overlay_revision: 0,
                 vitals_revision: 0,
                 achievement_notice_revision: None,
@@ -199,8 +195,8 @@ async fn drive_open<A: FreshAdmissionAuthority>(
 }
 
 #[test]
-fn a_buffered_step_runs_when_due_and_a_second_early_step_is_refused()
--> Result<(), Box<dyn Error>> {
+fn a_buffered_step_runs_when_due_and_a_second_early_step_is_refused() -> Result<(), Box<dyn Error>>
+{
     run(async {
         let step = u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT);
         let delta = |sequence: u64, from: u64| {
@@ -254,8 +250,8 @@ fn a_buffered_step_runs_when_due_and_a_second_early_step_is_refused()
             assert_eq!(frames, expected, "{capabilities:?} {receipts}");
             let mut matched = false;
             for payload in refusals {
-                matched |= *refusal
-                    == encode_command_result(1, 5, 3, CommandStatus::Rejected, &payload)?;
+                matched |=
+                    *refusal == encode_command_result(1, 5, 3, CommandStatus::Rejected, &payload)?;
             }
             assert!(matched, "{capabilities:?} {receipts} {refusal:?}");
             assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
@@ -275,8 +271,7 @@ fn a_buffered_step_runs_when_due_and_a_second_early_step_is_refused()
 }
 
 #[test]
-fn a_slow_owner_turn_does_not_shorten_the_wait_for_the_next_step() -> Result<(), Box<dyn Error>>
-{
+fn a_slow_owner_turn_does_not_shorten_the_wait_for_the_next_step() -> Result<(), Box<dyn Error>> {
     run(async {
         let step = u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT);
         // The owner turn takes a whole step duration: the next step still waits a full

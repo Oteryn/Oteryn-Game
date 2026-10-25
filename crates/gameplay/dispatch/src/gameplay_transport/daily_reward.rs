@@ -264,6 +264,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .encode()
             .ok();
         };
+        if !self
+            .states
+            .player_trades
+            .physical(command.game_session_id, None)
+        {
+            return refusal(5);
+        }
         // The canonical pick binding survives reconnect and is independent of
         // random output identities. The native mint reservation binds those too.
         let mut digest = Sha256::new()

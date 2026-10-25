@@ -176,7 +176,9 @@ fn validate(entries: &[Value], registry: &Value) -> Result<(), String> {
         if flag(&entry["offers"]["item_view"])? != flag(&contract["offered"])? {
             return Err(format!("Item view offer differs from registry for {id}"));
         }
-        if flag(&entry["offers"]["production"])? != (flag(&contract["offered"])? && id != 4) {
+        if flag(&entry["offers"]["production"])?
+            != (flag(&contract["offered"])? && id != 4 && !requires.contains(&4))
+        {
             return Err(format!("production fallback offer differs for {id}"));
         }
         if flag(&entry["offers"]["item_view"])? && !flag(&entry["offers"]["bundle_world"])? {
