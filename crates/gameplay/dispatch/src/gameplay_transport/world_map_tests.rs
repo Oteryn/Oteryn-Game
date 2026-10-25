@@ -92,6 +92,9 @@ struct Facts {
 }
 
 impl MapFacts for Facts {
+    fn base_text(&self, _: u64) -> Option<&str> {
+        None
+    }
     fn base_entry(&self, _: TilePos, _: u8, id: u32) -> Option<EntryFacts> {
         Some(facts_of(id))
     }
@@ -1818,6 +1821,9 @@ fn item_look_far_ground_stack_top_is_visible_and_out_of_view_is_typed() {
     // This case observes a stack quantity, unlike the older scalar Facts fixture.
     struct GroundCounts<'a>(&'a Facts);
     impl MapFacts for GroundCounts<'_> {
+        fn base_text(&self, key: u64) -> Option<&str> {
+            self.0.base_text(key)
+        }
         fn base_entry(&self, pos: TilePos, ordinal: u8, id: u32) -> Option<EntryFacts> {
             self.0.base_entry(pos, ordinal, id)
         }

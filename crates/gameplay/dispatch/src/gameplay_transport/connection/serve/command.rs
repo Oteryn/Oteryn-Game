@@ -149,6 +149,9 @@ where
         } else {
             None
         };
+    if command.command_type != oteryn_protocol_oteryn::stash::COMMAND_TYPE_STASH_INTENT {
+        session.stash_rows = None;
+    }
     let walk_target = autowalk::target(session, command);
     if input_permit.is_some()
         && session

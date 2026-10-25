@@ -31,6 +31,7 @@ pub(super) enum Dispatch {
     /// ITEM-MOVE-1: command 9; the domain 11 and domain 9 deltas follow the result.
     ItemMove(ItemMoveOutcome, Vec<ItemViewDelta>),
     Depot(oteryn_protocol_oteryn::depot::DepotReply),
+    Stash(oteryn_protocol_oteryn::stash::StashReply),
     /// QUEST-LOG-WIRE-1: an accepted command 22; the domain 16 delta follows the result.
     QuestLog(QuestLogDomain),
     Look(ItemLookResult, ItemLookSelection),
