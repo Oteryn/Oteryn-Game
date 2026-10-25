@@ -7,6 +7,7 @@ use crate::spell::chain::TilePosition;
 use crate::spell::{OperationalCastFacts, SpellDefinition};
 use oteryn_gameplay_domain::domain::condition::ConditionGate;
 use oteryn_gameplay_domain::domain::condition::ConditionValues;
+use oteryn_gameplay_domain::domain::condition::StatusKind;
 use oteryn_gameplay_foundation::foundation::condition::ApplicationFacts;
 use oteryn_gameplay_foundation::foundation::condition::ConditionDefinition;
 use oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind;
@@ -58,7 +59,17 @@ fn druid() -> PlayerSpellState {
 }
 
 /// `state` with each named gate for 10 s from time 0.
-fn gated(mut state: PlayerSpellState, gates: &[&str]) -> PlayerSpellState {
+fn gated(state: PlayerSpellState, gates: &[&str]) -> PlayerSpellState {
+    let values = gates
+        .iter()
+        .map(|gate| ConditionValues::gate(gate, 10_000).expect("gate family"));
+    conditioned(state, values)
+}
+
+fn conditioned(
+    mut state: PlayerSpellState,
+    values: impl IntoIterator<Item = ConditionValues>,
+) -> PlayerSpellState {
     let root = GameplayDecisionRoot::from_bytes([5; 32]);
     let facts = ApplicationFacts {
         now: 0,
@@ -70,8 +81,7 @@ fn gated(mut state: PlayerSpellState, gates: &[&str]) -> PlayerSpellState {
         decision_root: &root,
         occurrence: DecisionOccurrenceId::from_bytes([6; 16]),
     };
-    for gate in gates {
-        let values = ConditionValues::gate(gate, 10_000).expect("gate family");
+    for values in values {
         let definition = ConditionDefinition::new("cond.gate", 1, values).expect("definition");
         state
             .conditions
@@ -249,6 +259,56 @@ fn the_gate_answers_before_cost_and_spends_nothing() {
         .expect("Terra Wave");
     assert_eq!(condition_gate(&state, spell, at(10_000)), Ok(()));
     assert!(ordinary(&book, &druid(), "Terra Wave", &open).is_ok());
+}
+
+#[test]
+fn a_feared_player_casts_no_spell_and_uses_no_rune_and_spends_nothing() {
+    let book = book();
+    let open = operational(false);
+    let feared = conditioned(
+        druid(),
+        [ConditionValues::TimedStatus {
+            kind: StatusKind::Feared,
+            duration_ms: 10_000,
+        }],
+    );
+    // Canary Spell::playerSpellCheck refuses a feared player first, aggressive or not.
+    for name in ["Terra Wave", "Light Healing"] {
+        assert_eq!(
+            ordinary(&book, &feared, name, &open).map(|_| ()),
+            Err(SpellCastDisposition::Rejected)
+        );
+        assert!(ordinary(&book, &druid(), name, &open).is_ok());
+    }
+    let broke = PlayerSpellState {
+        mana: 0,
+        ..feared.clone()
+    };
+    assert_eq!(
+        ordinary(&book, &broke, "Terra Wave", &open).map(|_| ()),
+        Err(SpellCastDisposition::Rejected)
+    );
+    let wave = book
+        .spells
+        .iter()
+        .find(|s| s.name == "Terra Wave")
+        .expect("Terra Wave");
+    for aggressive in [true, false] {
+        let rune = SpellDefinition {
+            carrier: crate::spell::Carrier::Rune {
+                item: 1,
+                charges: 1,
+                magic_level: 0,
+            },
+            aggressive,
+            ..wave.clone()
+        };
+        assert_eq!(
+            admit_condition_gates(&feared, &rune, at(1)),
+            Err(SpellCastDisposition::Rejected)
+        );
+        assert_eq!(admit_condition_gates(&feared, &rune, at(10_000)), Ok(()));
+    }
 }
 
 #[test]
