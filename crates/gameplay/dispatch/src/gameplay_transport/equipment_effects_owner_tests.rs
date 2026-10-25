@@ -127,5 +127,7 @@ mod committed_moves_tests;
 mod defence_tests;
 #[path = "equipment_effects_owner_tests/first_entry_tests.rs"]
 mod first_entry_tests;
+#[path = "equipment_effects_owner_tests/offence_tests.rs"]
+mod offence_tests;
 #[path = "equipment_effects_owner_tests/postgres_scenario.rs"]
 mod postgres_scenario;

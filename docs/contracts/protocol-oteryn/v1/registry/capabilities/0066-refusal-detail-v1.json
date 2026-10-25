@@ -1,0 +1,11 @@
+{
+  "id": 66,
+  "name": "REFUSAL_DETAIL_V1",
+  "owner_decision": "PARITY-REFUSAL-DETAIL-1 (parity inventory §7 rank 17)",
+  "owner": "Existing result encoders; an optional trailing refusal detail on step, use and item move results. Level and quest doors are follow-up codes.",
+  "requires": [],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "PARITY-REFUSAL-DETAIL-1: only a node serving a World booted from a bundle offers this capability (BUNDLE_WORLD_OFFERED_CAPABILITIES), matching capability 61; a fixture World never offers it."
+}

@@ -50,11 +50,13 @@ pub mod party;
 pub mod player_trade;
 pub mod presentation;
 pub mod quest_log;
+pub mod refusal_detail;
 mod registered_capabilities;
 pub mod spectate;
 pub mod spell_presentation_candidate;
 pub mod staff;
 pub mod stash;
+pub mod task_board;
 #[cfg(test)]
 #[path = "tests/lib_tests.rs"]
 mod tests;

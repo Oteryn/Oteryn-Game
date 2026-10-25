@@ -1,0 +1,12 @@
+{
+  "id": 72,
+  "name": "TASK_BOARD_V1",
+  "owner_decision": "TASKBOARD-1 scope decision 2026-10-25",
+  "owner": "Weekly Task Board kill tasks on the quest state store; no loaded content beyond the boot quest catalogue. Every world including BUNDLE_WORLD_OFFERED_CAPABILITIES offers it; the session's quest copy and the revision-slot writer decide each action.",
+  "requires": [],
+  "command_types": [
+    89
+  ],
+  "state_domains": [],
+  "offered": true
+}

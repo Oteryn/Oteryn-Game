@@ -11,6 +11,7 @@ use oteryn_simulation_determinism::{
 };
 use sha2::{Digest, Sha256};
 
+pub mod equipped_offence;
 pub mod player_defence;
 
 /// How often the attacker's own connection re-reads its swing weapon while it holds a target.
