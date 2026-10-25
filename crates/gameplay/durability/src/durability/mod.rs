@@ -23,6 +23,7 @@ pub mod native_world_items;
 #[allow(dead_code)]
 pub mod native_world_read;
 pub mod party_kill_xp;
+pub mod player_report;
 pub mod prey;
 pub mod raid_schedule;
 pub mod staff;
