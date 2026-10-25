@@ -1,0 +1,21 @@
+{
+  "id": "IMBUEWIRE1-RL-01",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_IMBUE_FORGE0_IMBUEMENTS_AND_EXALTATION_FORGE_DECISION_2026-09-30.md",
+  "resource": "Imbuement command request payload",
+  "unit": "bytes",
+  "hard_maximum": 32,
+  "configurable_range": {
+    "minimum": 32,
+    "maximum": 32
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "Checked before decoding; an oversized or non-canonical request is refused with no read or write.",
+  "client_visible": false,
+  "boundary_tests": [
+    "imbuement_request_strict_codec"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/imbuement.rs"
+  ],
+  "notes": "IMBUE-WIRE-1. Action, item handle, slot and offer index varints."
+}

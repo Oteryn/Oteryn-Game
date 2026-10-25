@@ -15617,7 +15617,26 @@
           }
         },
         "imbuement": {
-          "state": "UNKNOWN"
+          "state": "KNOWN",
+          "value": {
+            "slot_count": {
+              "state": "KNOWN",
+              "value": 1
+            },
+            "allowed_family_tiers": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "family": "INCREASE_CAPACITY",
+                  "tier": "Three"
+                }
+              ]
+            },
+            "excluded_families": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
         },
         "use_transform": {
           "state": "UNKNOWN"
@@ -22631,7 +22650,42 @@
           "state": "NOT_APPLICABLE"
         },
         "imbuement": {
-          "state": "UNKNOWN"
+          "state": "KNOWN",
+          "value": {
+            "slot_count": {
+              "state": "KNOWN",
+              "value": 2
+            },
+            "allowed_family_tiers": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "family": "CRITICAL_HIT",
+                  "tier": "Three"
+                },
+                {
+                  "family": "ELEMENTAL_DAMAGE",
+                  "tier": "Three"
+                },
+                {
+                  "family": "LIFE_LEECH",
+                  "tier": "Three"
+                },
+                {
+                  "family": "MANA_LEECH",
+                  "tier": "Three"
+                },
+                {
+                  "family": "SKILL_SWORD",
+                  "tier": "Three"
+                }
+              ]
+            },
+            "excluded_families": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
         },
         "use_transform": {
           "state": "UNKNOWN"
@@ -23675,7 +23729,42 @@
           "state": "NOT_APPLICABLE"
         },
         "imbuement": {
-          "state": "UNKNOWN"
+          "state": "KNOWN",
+          "value": {
+            "slot_count": {
+              "state": "KNOWN",
+              "value": 3
+            },
+            "allowed_family_tiers": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "family": "CRITICAL_HIT",
+                  "tier": "Three"
+                },
+                {
+                  "family": "ELEMENTAL_DAMAGE",
+                  "tier": "Three"
+                },
+                {
+                  "family": "LIFE_LEECH",
+                  "tier": "Three"
+                },
+                {
+                  "family": "MANA_LEECH",
+                  "tier": "Three"
+                },
+                {
+                  "family": "SKILL_DISTANCE",
+                  "tier": "Three"
+                }
+              ]
+            },
+            "excluded_families": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
         },
         "use_transform": {
           "state": "UNKNOWN"
