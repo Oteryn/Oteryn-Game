@@ -159,7 +159,7 @@ fn the_cycle_hands_lethal_or_non_creature_agony_to_the_combat_owner() {
 }
 
 #[test]
-fn the_cycle_uses_up_a_refused_agony_tick_in_a_protection_zone() {
+fn the_cycle_deals_and_uses_up_an_agony_tick_in_a_protection_zone() {
     let mut state = with_agony("creature:test", ConditionSourceKind::Creature, 100);
     let health = state.health;
     let pz = TickFacts {
@@ -167,7 +167,8 @@ fn the_cycle_uses_up_a_refused_agony_tick_in_a_protection_zone() {
         standing_on_field: Some(DotElement::Fire),
     };
     assert!(tick(&mut state, 0, pz).unwrap().is_empty());
-    assert_eq!(state.health, health);
+    // NIGHT-W1 #1 permits agony in PZ, bypassing the shield as outside PZ.
+    assert_eq!(state.health, health - 100);
     assert!(
         state
             .conditions

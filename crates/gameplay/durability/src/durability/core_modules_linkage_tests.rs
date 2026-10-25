@@ -242,6 +242,17 @@ mod character_wheel_linkage {
         WheelResetOutcome, WheelRuleset, WheelSlots, WheelStages, admit_character_wheel,
     };
 
+    struct ClosedPremium;
+    impl crate::durability::character_wheel::WheelPremiumGate for ClosedPremium {
+        async fn allocation_permitted(
+            &self,
+            _tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+            _account: [u8; 16],
+        ) -> Result<bool, crate::durability::DurabilityError> {
+            Ok(false)
+        }
+    }
+
     #[test]
     fn character_wheel_api_is_linked() {
         let _ = std::mem::size_of::<CommittedWheelChange>();
@@ -256,7 +267,7 @@ mod character_wheel_linkage {
         let _ = WheelOccurrence::as_bytes;
         let _ = WheelRuleset::from_catalogue;
         let _ = WheelStages::derive;
-        let _ = DurabilityRoot::commit_character_wheel;
+        let _ = DurabilityRoot::commit_character_wheel::<ClosedPremium>;
         let _ = DurabilityRoot::reset_character_wheel;
         let _ = DurabilityRoot::reconcile_character_wheel;
         let _ = DurabilityRoot::read_character_wheel;

@@ -410,13 +410,28 @@ pub enum WheelIneligibility {
     NoVocation,
     Level,
     NotPromoted,
-    /// Not applied until PREM-1 delivers `premium_current` (owner answer W1 a, §6.2).
+    /// Allocation requires current Premium or the sealed pre-delivery exception (§6.2).
     NotPremium,
 }
 
-/// §6.1 at one use: a vocation, level above 50 and promotion. The Premium condition is not
-/// applied until Premium is delivered (W1 a).
+/// Allocation eligibility (§6.1). `premium_permitted` is resolved by the Premium owner
+/// inside the allocation transaction, including the sealed pre-delivery exception.
 pub fn eligibility<'r>(
+    ruleset: &'r WheelRuleset,
+    vocation: &str,
+    level: u32,
+    promoted: bool,
+    premium_permitted: bool,
+) -> std::result::Result<&'r WheelVocationRules, WheelIneligibility> {
+    let rules = character_eligibility(ruleset, vocation, level, promoted)?;
+    if !premium_permitted {
+        return Err(WheelIneligibility::NotPremium);
+    }
+    Ok(rules)
+}
+
+// Cast Premium authority is supplied separately by the live spell access owner.
+pub(crate) fn character_eligibility<'r>(
     ruleset: &'r WheelRuleset,
     vocation: &str,
     level: u32,
@@ -472,7 +487,7 @@ impl WheelStages {
         if !allocation.current {
             return Self::default();
         }
-        let Ok(rules) = eligibility(ruleset, vocation, level, promoted) else {
+        let Ok(rules) = character_eligibility(ruleset, vocation, level, promoted) else {
             return Self::default();
         };
         let mut domains = [0_u32; 4];
@@ -729,19 +744,31 @@ mod tests {
             WheelStages::derive(&ruleset, &WheelAllocation::default(), "druid", 1050, true),
             WheelStages::default()
         );
+        // Amended 2026-10-25 by owner decision NIGHT-W1 #3: allocation eligibility
+        // now receives Premium permission from the native gate.
         assert_eq!(
-            eligibility(&ruleset, "none", 100, true),
+            eligibility(&ruleset, "none", 100, true, true),
             Err(WheelIneligibility::NoVocation)
         );
         assert_eq!(
-            eligibility(&ruleset, "knight", 50, true),
+            eligibility(&ruleset, "knight", 50, true, true),
             Err(WheelIneligibility::Level)
         );
         assert_eq!(
-            eligibility(&ruleset, "knight", 51, false),
+            eligibility(&ruleset, "knight", 51, false, true),
             Err(WheelIneligibility::NotPromoted)
         );
-        assert!(eligibility(&ruleset, "elite_knight", 51, true).is_ok());
+        assert!(eligibility(&ruleset, "elite_knight", 51, true, true).is_ok());
+    }
+
+    #[test]
+    fn allocation_eligibility_requires_premium_permission() {
+        let ruleset = ruleset();
+        assert_eq!(
+            eligibility(&ruleset, "elite_knight", 60, true, false),
+            Err(WheelIneligibility::NotPremium)
+        );
+        assert!(eligibility(&ruleset, "elite_knight", 60, true, true).is_ok());
     }
 
     #[test]
