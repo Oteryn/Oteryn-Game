@@ -11,8 +11,21 @@ use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellCastIntent,
 use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
 use std::num::NonZeroU32;
 
+/// The composed session scenario outgrows the default test thread stack.
+const SCENARIO_STACK_BYTES: usize = 64 << 20;
+
 #[test]
 fn floor_exhaust_postgres_real_session_step_then_aggressive_cast() -> TestResult {
+    std::thread::Builder::new()
+        .name("floor-exhaust-postgres".into())
+        .stack_size(SCENARIO_STACK_BYTES)
+        .spawn(|| scenario().map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "floor exhaust scenario thread panicked")?
+        .map_err(Into::into)
+}
+
+fn scenario() -> TestResult {
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "floor_exhaust", true, false).await?;
         eprintln!("POSTGRES_STARTED FLOOR-EXHAUST-1");
