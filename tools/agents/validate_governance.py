@@ -10,12 +10,12 @@ import os
 import re
 import sys
 from pathlib import Path
+from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[2]
 CONTRACT_PATH = ROOT / "docs/agents/GOVERNANCE_CONTRACT.json"
 LANES_PATH = ROOT / "docs/agents/PROJECT_LANES.json"
 CONTRACT_LOCK_PATH = ROOT / "docs/contracts/CROSS_REPOSITORY_CONTRACT_LOCK.json"
-LIMITS_REGISTRY_PATH = ROOT / "docs/contracts/RESOURCE_LIMITS_REGISTRY.json"
 PROMPT_LIFECYCLE_PATH = ROOT / "docs/agents/PROMPT_LIFECYCLE.json"
 HANDOVER_LIFECYCLE_PATH = ROOT / "docs/agents/HANDOVER_LIFECYCLE.json"
 PROGRAM_LIFECYCLE_PATH = ROOT / "docs/agents/PROGRAM_LIFECYCLE.json"
@@ -504,6 +504,40 @@ def validate_archived_task_closeout(errors: list[str]) -> None:
                 )
 
 
+def validate_mechanic_cards(errors: list[str]) -> None:
+    tasks_dir = ROOT / "docs/agents/tasks"
+    for path in sorted(tasks_dir.rglob("*.md")):
+        text = path.read_text(encoding="utf-8")
+        card_type = re.search(r"(?m)^type:[ \t]*([^\n#]+?)[ \t]*$", text)
+        status = re.search(r"(?m)^status:[ \t]*([^\n#]+?)[ \t]*$", text)
+        if card_type is None or status is None:
+            continue
+        if card_type.group(1).strip().strip("\"'").lower() != "mechanic":
+            continue
+        if status.group(1).strip().strip("\"'").lower() not in {"done", "completed"}:
+            continue
+        # An example inside a fenced block is not a card section.
+        prose = re.sub(r"(?ms)^(`{3,}|~{3,})[^\n]*\n.*?^\1\s*$", "", text)
+        if re.search(r"(?m)^## Reference parity[ \t]*$", prose) is None:
+            errors.append(
+                f"completed mechanic card {path.relative_to(ROOT).as_posix()} "
+                "must contain a Reference parity heading"
+            )
+
+    index = tasks_dir / "MECHANICS_STATUS.md"
+    if not index.is_file():
+        errors.append("missing mechanic index: docs/agents/tasks/MECHANICS_STATUS.md")
+        return
+    # The index uses inline Markdown links, relative to its own directory.
+    for target in re.findall(r"\[[^\]\n]*\]\(([^\s)]+)\)", index.read_text(encoding="utf-8")):
+        link = urlsplit(target)
+        if link.scheme or link.netloc or not link.path:
+            continue
+        destination = (index.parent / unquote(link.path)).resolve()
+        if not destination.is_relative_to(ROOT.resolve()) or not destination.is_file():
+            errors.append(f"MECHANICS_STATUS.md has unresolved local file link: {target}")
+
+
 def _markdown_section(text: str, heading: str) -> str:
     marker = f"## {heading}\n"
     start = text.find(marker)
@@ -599,12 +633,30 @@ def validate_current_state_hygiene(errors: list[str]) -> None:
                 )
 
 
+def load_fragment_registry(name: str, errors: list[str]) -> dict:
+    """A registry stored as one file per entry (REGISTRY-SPLIT-1), with its fragment checks.
+
+    `name` is `PROTOCOL` or `RESOURCE_LIMITS` of `tools/contracts/registry_fragments.py`,
+    imported here so the validator module also loads on its own.
+    """
+    sys.path.insert(0, str(ROOT / "tools/contracts"))
+    import registry_fragments
+
+    registry = getattr(registry_fragments, name)
+    problems = registry_fragments.validate(registry, ROOT)
+    errors.extend(problems)
+    if problems:
+        return {}
+    return registry_fragments.load(registry, ROOT)
+
+
 def main() -> int:
     errors: list[str] = []
     contract = load_json(CONTRACT_PATH, errors)
     lanes = load_json(LANES_PATH, errors)
     contract_lock = load_json(CONTRACT_LOCK_PATH, errors)
-    limits_registry = load_json(LIMITS_REGISTRY_PATH, errors)
+    limits_registry = load_fragment_registry("RESOURCE_LIMITS", errors)
+    load_fragment_registry("PROTOCOL", errors)
     prompt_lifecycle = load_json(PROMPT_LIFECYCLE_PATH, errors)
     handover_lifecycle = load_json(HANDOVER_LIFECYCLE_PATH, errors)
     program_lifecycle = load_json(PROGRAM_LIFECYCLE_PATH, errors)
@@ -619,6 +671,7 @@ def main() -> int:
         limits=contract.get("active_task_limits"),
     )
     validate_archived_task_closeout(errors)
+    validate_mechanic_cards(errors)
     validate_context_economy(errors)
     validate_current_state_hygiene(errors)
 

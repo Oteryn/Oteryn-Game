@@ -152,7 +152,11 @@ impl Harness {
         let version: String = sqlx::query_scalar("SHOW server_version_num")
             .fetch_one(&mut connection)
             .await?;
-        assert_eq!(version, "170006", "canonical target is PostgreSQL 17.6");
+        assert_eq!(
+            version,
+            oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
+            "canonical target is PostgreSQL 18.6"
+        );
         let migrator = sqlx::migrate!("./migrations");
         match upto {
             Some(version) => migrator.run_to(version, &mut connection).await?,
@@ -419,7 +423,9 @@ async fn compose_with(
     tuple: Type2EventTuple,
     abort: bool,
 ) -> TestResult<Composed> {
-    let FeeBurnCause::CharmUnassign { occurrence, .. } = &request.cause;
+    let FeeBurnCause::CharmUnassign { occurrence, .. } = &request.cause else {
+        return Err("expected Charm fee".into());
+    };
     let mut tx = Type2Transaction::open(harness.runtime.begin().await?).await?;
     assert_eq!(
         tx.tuple().tuple(),

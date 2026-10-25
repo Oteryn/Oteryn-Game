@@ -33,7 +33,7 @@ Read the nearest `AGENTS.md` for a touched path. Editing only your own task reco
 
 Do not write outside the current task's repository, branch and owned paths. Preserve unrelated work. Changes to protocol, identities, authority, persistence, public contracts or production trust require their accepted owning contract and applicable independent review. Production, protected-environment, live-account, credential and external-repository mutations require separate explicit authority.
 
-Run the checks selected by changed paths and preserve `game-gate`, repository protection and Merge Queue. Never weaken authorization, tests, provenance, compatibility or protection to make work pass. Do not expose secrets or private data. Third-party and proprietary materials may be used as reference evidence for compatibility research, reverse engineering, data extraction, comparison and faithful reimplementation. Reference use does not automatically grant the right to redistribute original third-party asset files.
+Run the checks selected by changed paths and preserve `game-gate` and repository protection. Never weaken authorization, tests, provenance, compatibility or protection to make work pass. Do not expose secrets or private data. Third-party and proprietary materials may be used as reference evidence for compatibility research, reverse engineering, data extraction, comparison and faithful reimplementation. Reference use does not automatically grant the right to redistribute original third-party asset files.
 
 ## Context economy and live-state reads
 
@@ -46,6 +46,33 @@ Run the checks selected by changed paths and preserve `game-gate`, repository pr
 - **Review:** request review on the final frozen head with every known fix in, not on intermediate heads. Answer all findings of a review round in one push; later non-blocking findings go to the next batch. This never removes a review or re-review that the bound review policy requires, including after a materially risk-bearing repair.
 - **CI:** run the local checks for every changed path before pushing and fix all failures of a run in one push. Push and CI economy: `docs/agents/CONTEXT_ROUTING.md`, *Push and CI economy*.
 - **Task records:** archive the task record in the final authoring commit of the PR that completes the task (`docs/agents/tasks/archive/README.md`). An archive-only PR is opened only under that README's exception, for records that could not close in their own PR.
+
+## Landing a mechanic without shared-file conflicts
+
+These rules supersede any task card that says to add a mount line to a shared target.
+
+Keep registration blocks sorted by name; insert in order and never append registrations at the end of a file.
+
+- **PostgreSQL and lifted test files go into a mounted directory:** `apps/game-server/tests/support/authority_cases/` (the `character_authority_postgres` target), `apps/game-server/src/lifted_tests/auto/` (game-server lib tests) or `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/` (dispatch). Their build scripts mount every snake_case `.rs` file, so nobody edits the shared target files. Each directory's README states the convention.
+- **A case runs in route-less lanes too:** it returns `Ok(())` when `OTERYN_TEST_POSTGRES_ADMIN_URL` is absent. `route_less_case_guard` rejects a case that errors instead.
+- **World pins are regenerated, never hand-edited:** stage the inputs, run `cargo fmt`, then `oteryn-world-bundle-compiler pin-refresh .`. `tools/content-migration/regenerate_content.py --resolve` does this on a conflicted pin unless the entry start moved; `pin-check` stays the gate.
+- **Merge `origin/main` locally with the merge drivers registered** (`tools/merge-driver/install.sh`, once per clone): `oteryn-additive` combines insert-only hunks in Rust, TOML, Markdown, workflow and `docs/contracts/*.json` files (two `mod` lines, fields, methods, dependencies or registry entries at one place), `oteryn-regen` takes the incoming derived registry. Then run `cargo fmt` and `tools/merge-driver/regen.sh`. Only a real edit-versus-edit conflict stops for a person.
+- **Merge only a head whose own CI is green**, the PostgreSQL legs included.
+
+## Review guidelines
+
+These rules bind automated pull-request reviewers (Codex, Claude review) and the authors who answer them. `docs/agents/review/CODEX-CHECKLIST.md` lists the defect classes to check.
+
+- **One complete pass.** Report every finding on the reviewed head in one review. Do not hold findings back for a later round.
+- **Re-review covers the delta.** A review of a head that only answers earlier findings reviews the commits since the last reviewed head. It raises no new finding on unchanged code unless it is a P0.
+- **P0 and P1 need a concrete path.** Name the input or state, the caller that reaches it and the wrong result. A hypothetical without a reachable caller is at most P2. P0: security, data loss, broken `main`. P1: wrong behaviour that a real caller reaches.
+- **P2 and lower never block.** Style, naming, refactor suggestions, missing optional tests and speculative hardening are P2 or lower. The author may fix them in the same push if it is cheap; otherwise they go to the next batch of that module. A P2 never starts a new push or review round on its own.
+- **No repeat findings.** A finding the author answered on its thread (fixed, or declined with the traced reason) is not raised again unless the code it names changed.
+- **Whole class in round one.** A finding names its defect class and lists every instance of it in the diff. A later round does not report a sibling instance that the first round could have seen.
+- **A clean review is a clean review.** A thumbs-up reaction or "Didn't find any major issues" on the reviewed head counts as a clean review. Nobody re-triggers a review on an unchanged head.
+- **Request review once per frozen head.** Keep the PR in draft until the head is frozen. Only the coordinator (or the standalone task owner) posts `@codex review`: once per head, and only when the head changes non-evidence code since the last reviewed head.
+- **Narrow repair pushes.** A push that answers findings changes only what those findings need. It adds no new feature or refactor that would open a new review surface.
+- **Converge.** After two review rounds with findings, a further round is requested only for a P0 or P1 fixed in the last push. P2 threads may be resolved with `deferred: #<issue>`.
 
 ## Silent operation
 

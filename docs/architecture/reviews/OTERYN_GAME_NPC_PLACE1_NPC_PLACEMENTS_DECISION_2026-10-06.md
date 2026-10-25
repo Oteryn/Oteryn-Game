@@ -1,5 +1,9 @@
 # NPC-PLACE-1 NPC placements: World Project family and World Bundle frame
 
+PIN-V2-1 update: references below to a persisted pin `inputs_digest` describe v1.
+The current [World pin format](../../../content/world/pins/README.md) is v2 and reports
+the input digest only; the rebuilt bundle digest and identity checks remain required.
+
 - Decision: `NPC-PLACE-1`
 - Status: **ACCEPTED WHEN THIS DECISION MERGES**, after exact-head validation, the independent
   review on the frozen head and protected integration.

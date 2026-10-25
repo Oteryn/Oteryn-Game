@@ -2,6 +2,7 @@
 #![allow(clippy::expect_used, clippy::panic)]
 
 use oteryn_game_server::content::*;
+use oteryn_gameplay_content_promotion::content::*;
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 use std::ffi::OsStr;
@@ -16,13 +17,13 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        382,
-        "d97c31a937d0df0bdbb018b3085677790145b9bfe22057ee5bf1c9f0073e26a4",
+        412,
+        "06201a8f693ef231059f18c099a85a39e5c44515447b836ac2c17fa572684d1a",
     ),
     (
         "definitions/declarations.json",
-        27_598_545,
-        "5dff8d3fb6d6fcaea45b77491e68431950d4451e06433e1ab2ace7aca090f87b",
+        27_600_059,
+        "0ec892e05a7c93137ecf00a5c144ecaaa162118ce746e5a2e905bdff6f85789e",
     ),
     (
         "definitions/reference.json",
@@ -36,8 +37,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1945,
-        "664e127424ebb43b2606120490329502b0a29a1be97c6af3dd7af2cd4d1117ab",
+        1955,
+        "c7333bf00a0b7fa8397f4465b85f46049bc8c054e4d0f82c94563beaa57d4edf",
     ),
     (
         "presentations/bindings.json",
@@ -46,8 +47,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        396,
-        "1b212ef0f57a73eb8b12d83920f9ecc64dad863028bf18bc6214169c4674dff2",
+        406,
+        "48e0c34573b5813975cb6ee02af3df769e4c918a5b1221c9c2c12010dcdfdd68",
     ),
     (
         "provenance/imports.json",
@@ -137,7 +138,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "3c82124d7271e2e1ec42dce8be29900322e19771515363f622155d98df044f17";
+const TREE_SHA256: &str = "79dc93e72d80018ba7eb246f05984683baa0ab55dd9361158bd4db199f7f1e3b";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450).
 const ITEMS: usize = 34_043;
@@ -152,7 +153,7 @@ const CREATURE_PROFILES: usize = 25_052;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
 const NPCS: usize = 1282;
 const NPC_RECORDS: usize = 2564;
-const NPC_DECLARATIONS: usize = 2499;
+const NPC_DECLARATIONS: usize = 2506;
 const NPC_DIALOGUES: usize = 836;
 const NPC_BINDINGS: usize = 2747;
 /// Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 §5 slice 4).
@@ -205,7 +206,8 @@ fn filesystem_limits() -> ProjectFilesystemLimits {
         // root, seen by each of the 11 locator lookups: 11 more, measured.
         // LOOP-MAP-1 (#2152) adds the `content/cyclopedia/` sibling of `world` under `content/`: +1 (measured, 230).
         // WEATHER-1 adds the `content/weather/` sibling of `world` under `content/`: +1 (measured, 231).
-        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11 + 11 + 1 + 1,
+        // CRAFT-CONTENT-1 adds content/craft/: +1 (measured, 232).
+        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11 + 11 + 1 + 1 + 1,
     }
 }
 
@@ -385,7 +387,10 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         filesystem_limits(),
     )
     .expect("capture tracked canonical package");
-    assert_eq!(project.project_revision(), "npc-bank-1-20261015-r1");
+    assert_eq!(
+        project.project_revision(),
+        "npc-premium-services-20261022-r1"
+    );
     assert_eq!(project.imports().len(), 31);
     let legacy_imports: Vec<_> = project
         .imports()
@@ -887,15 +892,15 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     let weapon_new_keys: BTreeSet<_> = weapon_keys.difference(&parent_keys).copied().collect();
     assert_eq!(weapon_new_keys.len(), 95);
     let forge289_packet: serde_json::Value = serde_json::from_slice(
-        oteryn_game_server::content::item_forge289_promotion::ITEM_FORGE289_PACKET,
+        oteryn_gameplay_content_promotion::content::item_forge289_promotion::ITEM_FORGE289_PACKET,
     )
     .expect("sealed new Forge source data");
     assert_eq!(
-        Sha256::digest(oteryn_game_server::content::item_forge289_promotion::ITEM_FORGE289_PACKET)
+        Sha256::digest(oteryn_gameplay_content_promotion::content::item_forge289_promotion::ITEM_FORGE289_PACKET)
             .iter()
             .map(|b| format!("{b:02x}"))
             .collect::<String>(),
-        oteryn_game_server::content::item_forge289_promotion::ITEM_FORGE289_PACKET_SHA256
+        oteryn_gameplay_content_promotion::content::item_forge289_promotion::ITEM_FORGE289_PACKET_SHA256
     );
     let forge289_rows = forge289_packet["promotions"].as_array().expect("closed289");
     let forge289_keys: BTreeSet<_> = forge289_rows

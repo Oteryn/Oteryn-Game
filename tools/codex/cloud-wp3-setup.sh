@@ -7,7 +7,7 @@ set -euo pipefail
 # and repository CI; this phase only prepares the dependency cache needed by
 # the active WP3 crates.
 
-readonly RUST_TOOLCHAIN="${OTERYN_CODEX_RUST_TOOLCHAIN:-1.94.0}"
+readonly RUST_TOOLCHAIN="${OTERYN_CODEX_RUST_TOOLCHAIN:-1.99.1}"
 readonly TARGET="${OTERYN_CODEX_TARGET:-x86_64-unknown-linux-gnu}"
 
 manifests=(

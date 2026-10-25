@@ -1,8 +1,8 @@
 #![allow(clippy::expect_used)]
 // D1112 APP-1 native authority target. Every case requires an explicitly routed
-// PostgreSQL 17.6 service and the installed migration 0093; absence is a failure.
-// Shared cases: included by the CI-run character_authority_postgres target and the thin standalone
-// wrapper, both of which provide the path-loaded crate root and the Bestiary harness.
+// PostgreSQL 18.6 service and the installed migration 0093; absence is a failure.
+// Mounted once by the CI-run character_authority_postgres target, which provides
+// the path-loaded crate root and the existing Bestiary harness.
 
 use crate::bestiary_postgres_harness::{
     CHARACTER, Harness, SESSION, TestResult, configured_admin, debug, fence, id, runtime,
@@ -57,6 +57,7 @@ fn request(
     key: &str,
 ) -> TestResult<AppearanceChangeRequest> {
     Ok(AppearanceChangeRequest {
+        transport_binding: None,
         occurrence: AppearanceChangeOccurrence::from_bytes(id(tag)).map_err(debug)?,
         before,
         after: selection(key),

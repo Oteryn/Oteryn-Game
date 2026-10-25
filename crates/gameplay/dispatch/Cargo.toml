@@ -1,0 +1,77 @@
+[package]
+name = "oteryn-gameplay-dispatch"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[package.metadata.oteryn]
+category = "gameplay"
+release-role = "production"
+
+[features]
+test-support = ["oteryn-gameplay-encounters/test-support", "oteryn-gameplay-entities/test-support"]
+
+[dependencies]
+oteryn-gameplay-characters = { version = "=0.1.0", path = "../characters" }
+oteryn-gameplay-progression = { version = "=0.1.0", path = "../progression" }
+oteryn-gameplay-items = { version = "=0.1.0", path = "../items" }
+oteryn-gameplay-economy = { version = "=0.1.0", path = "../economy" }
+oteryn-gameplay-quests = { version = "=0.1.0", path = "../quests" }
+oteryn-gameplay-housing = { version = "=0.1.0", path = "../housing" }
+oteryn-gameplay-combat-rules = { version = "=0.1.0", path = "../combat-rules" }
+oteryn-gameplay-spell-rules = { version = "=0.1.0", path = "../spell-rules" }
+oteryn-gameplay-social-rules = { version = "=0.1.0", path = "../social-rules" }
+oteryn-gameplay-npc = { version = "=0.1.0", path = "../npc" }
+base64.workspace = true
+oteryn-error-codes = { version = "=0.1.0", path = "../../error-codes" }
+oteryn-foundation = { version = "=0.1.0", path = "../../foundation" }
+oteryn-gameplay-admission-evidence = { version = "=0.1.0", path = "../admission-evidence" }
+oteryn-gameplay-character-recovery-fence = { version = "=0.1.0", path = "../character-recovery-fence" }
+oteryn-gameplay-combat = { version = "=0.1.0", path = "../combat" }
+oteryn-gameplay-content = { version = "=0.1.0", path = "../content" }
+oteryn-gameplay-domain = { version = "=0.1.0", path = "../domain" }
+oteryn-gameplay-durability = { version = "=0.1.0", path = "../durability" }
+oteryn-gameplay-encounters = { version = "=0.1.0", path = "../encounters" }
+oteryn-gameplay-entities = { version = "=0.1.0", path = "../entities" }
+oteryn-gameplay-foundation = { version = "=0.1.0", path = "../foundation" }
+oteryn-gameplay-monster-ai = { version = "=0.1.0", path = "../monster-ai" }
+oteryn-gameplay-native-admission-source = { version = "=0.1.0", path = "../native-admission-source" }
+oteryn-gameplay-node-files = { version = "=0.1.0", path = "../node-files" }
+oteryn-gameplay-social = { version = "=0.1.0", path = "../social" }
+oteryn-gameplay-spell = { version = "=0.1.0", path = "../spell" }
+oteryn-gameplay-weather = { version = "=0.1.0", path = "../weather" }
+oteryn-gameplay-world = { version = "=0.1.0", path = "../world" }
+oteryn-protocol-oteryn = { version = "=0.1.0", path = "../../protocol-oteryn" }
+oteryn-simulation-determinism = { version = "=0.1.0", path = "../../simulation-determinism" }
+oteryn-world-bundle = { version = "=0.1.0", path = "../../world-bundle" }
+rustls.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true, features = ["raw_value"] }
+sha2.workspace = true
+sqlx.workspace = true
+tokio.workspace = true
+tokio-rustls.workspace = true
+
+[dev-dependencies]
+oteryn-gameplay-encounters = { version = "=0.1.0", path = "../encounters", features = ["test-support"] }
+ed25519-dalek.workspace = true
+oteryn-dev-client = { version = "=0.1.0", path = "../../../tools/dev-client" }
+oteryn-gameplay-combat = { version = "=0.1.0", path = "../../gameplay/combat", features = ["test-support"] }
+oteryn-gameplay-content = { version = "=0.1.0", path = "../../gameplay/content", features = ["test-support"] }
+oteryn-gameplay-durability = { version = "=0.1.0", path = "../../gameplay/durability", features = ["test-support"] }
+oteryn-gameplay-entities = { version = "=0.1.0", path = "../entities", features = ["test-support"] }
+oteryn-gameplay-foundation = { version = "=0.1.0", path = "../../gameplay/foundation", features = ["test-support"] }
+oteryn-gameplay-monster-ai = { version = "=0.1.0", path = "../../gameplay/monster-ai", features = ["test-support"] }
+oteryn-gameplay-social = { version = "=0.1.0", path = "../../gameplay/social", features = ["test-support"] }
+oteryn-gameplay-spell = { version = "=0.1.0", path = "../../gameplay/spell", features = ["test-support"] }
+oteryn-gameplay-world = { version = "=0.1.0", path = "../../gameplay/world", features = ["test-support"] }
+oteryn-world-bundle-compiler = { version = "=0.1.0", path = "../../../tools/world-bundle-compiler" }
+rcgen.workspace = true
+rustls = { workspace = true, features = ["tls12"] }
+syn.workspace = true
+
+[lints]
+workspace = true

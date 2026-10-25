@@ -2,7 +2,7 @@
 # OPS-NODE-BOOT-01 §4: physical qualification with the shipped binaries.
 #
 # The real Platform producer (S3-A/S3-B topology, one client identity for
-# evidence and intents), a TLS-verified PostgreSQL 17.6, a system service
+# evidence and intents), a TLS-verified PostgreSQL 18.6, a system service
 # user running `oteryn-game-server serve`, and root running
 # `oteryn-game-ops` on a separate control-plane login. The node boots,
 # waits for the operator's assignment, bootstraps Characters from real
@@ -26,7 +26,7 @@ readonly INTERPRETATION=(nb-profile-1 nb-ruleset-1 nb-content-1 nb-starter-1)
 readonly COMPOSE_FILE=tools/qualification/wp5_s3a/compose.yml
 readonly COMPOSE_S3B=tools/qualification/wp5_s3b/compose.override.yml
 readonly COMPOSE_OVERLAY=tools/qualification/node_boot/compose.override.yml
-readonly PG_IMAGE=postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3
+readonly PG_IMAGE=postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc
 readonly SERVICE_USER=oteryn-node-boot
 readonly BASE=/srv/oteryn-node-boot
 
@@ -148,7 +148,7 @@ RECOVERY_SEED_HEX="$(openssl pkey -in "$WP5_PKI/recovery-signing.pem" -outform D
 [[ ${#RECOVERY_PUBLIC_HEX} == 64 && ${#RECOVERY_SEED_HEX} == 64 ]]
 evidence "pins platform=$PLATFORM_SHA topology=$TOPOLOGY_REVISION game=$(git rev-parse HEAD)"
 
-# TLS-verified PostgreSQL 17.6 for the Game durability root.
+# TLS-verified PostgreSQL 18.6 for the Game durability root.
 chmod 644 "$WP5_PKI/db.crt" "$WP5_PKI/db.key"
 docker run --detach --name "$PG_CONTAINER" --publish "127.0.0.1:$PG_PORT:5432" \
   --env POSTGRES_USER=oteryn_node_boot_admin --env POSTGRES_PASSWORD="$PG_ADMIN_PASSWORD" \
@@ -166,7 +166,7 @@ done
 [[ $pg_ready == 1 ]] || fail "postgres_ready"
 psql_admin() { docker exec -i "$PG_CONTAINER" psql -v ON_ERROR_STOP=1 -qAt -U oteryn_node_boot_admin -d "$1"; }
 echo "CREATE DATABASE oteryn_node_boot" | psql_admin postgres
-[[ "$(echo 'SHOW server_version_num' | psql_admin oteryn_node_boot)" == 170006 ]] || fail "postgres_version"
+[[ "$(echo 'SHOW server_version_num' | psql_admin oteryn_node_boot)" == 180006 ]] || fail "postgres_version"
 [[ "$(echo 'SHOW ssl' | psql_admin oteryn_node_boot)" == on ]] || fail "postgres_tls"
 ADMIN_URL="postgresql://oteryn_node_boot_admin:$PG_ADMIN_PASSWORD@127.0.0.1:$PG_PORT/oteryn_node_boot"
 
@@ -180,8 +180,8 @@ php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app-
 evidence "platform_seed=synthetic_accounts=2 fresh_trust=published_public_key_only client_identities=1"
 
 # Shipped binaries and the SEAM client harness.
-cargo +1.95.0 build --locked -p oteryn-game-server --bins
-cargo +1.95.0 test --locked -p oteryn-game-server --lib --no-run
+cargo +1.99.1 build --locked -p oteryn-game-server --bins
+cargo +1.99.1 test --locked -p oteryn-game-server --lib --no-run
 TARGET="$GAME_SOURCE/target/debug"
 
 # Deployment administration: service user, directories, roles, migration.
@@ -514,8 +514,8 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   WP5_S3A_ACCOUNT_ID="$ACCOUNT_ID" WP5_S3B_SECOND_ACCOUNT_ID="$SECOND_ACCOUNT_ID" \
   WP5_S3B_FRESH_KEY_ID="$FRESH_KEY_ID" WP5_S3B_FRESH_KEY_SEED="$FRESH_SEED_HEX" \
   WP5_S3B_RECOVERY_KEY_ID="$RECOVERY_KEY_ID" WP5_S3B_RECOVERY_KEY_SEED="$RECOVERY_SEED_HEX" \
-    cargo +1.95.0 test --locked -p oteryn-game-server --lib \
-    "gameplay_transport::qualification::$qualification" -- --ignored --exact --nocapture
+    cargo +1.99.1 test --locked -p oteryn-game-server --lib \
+    "qualification::$qualification" -- --ignored --exact --nocapture
 }
 
 graceful_shutdown() { # ready=false first, socket removed

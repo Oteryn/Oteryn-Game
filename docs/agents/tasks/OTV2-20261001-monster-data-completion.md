@@ -4,7 +4,7 @@
 task_id: OTV2-20261001-monster-data-completion
 title: Audit and complete monster data under accepted source decisions
 mode: IMPLEMENT
-status: implementing
+status: waiting
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/monster-completion-round3-20261001
@@ -19,14 +19,14 @@ updated_at: 2026-10-01T16:58:10Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/examples/materialize_content_world_project_v2.rs
-  - apps/game-server/src/ai_think.rs
-  - apps/game-server/src/ai_think/profile_schedule.rs
-  - apps/game-server/src/ai_think/profile_schedule_tests.rs
-  - apps/game-server/src/content/item_identity.rs
-  - apps/game-server/src/content/project/v2.rs
-  - apps/game-server/src/content/project/v2/creature.rs
-  - apps/game-server/src/content/project/v2/encounter.rs
-  - apps/game-server/src/spell/tests.rs
+  - crates/gameplay/monster-ai/src/ai_think.rs
+  - crates/gameplay/monster-ai/src/ai_think/profile_schedule.rs
+  - crates/gameplay/monster-ai/src/ai_think/profile_schedule/tests.rs
+  - crates/gameplay/content/src/content/item_identity.rs
+  - crates/gameplay/content/src/content/project/v2.rs
+  - crates/gameplay/content/src/content/project/v2/creature.rs
+  - crates/gameplay/content/src/content/project/v2/encounter.rs
+  - crates/gameplay/spell/src/spell/tests.rs
   - apps/game-server/tests/content_item_identity.rs
   - apps/game-server/tests/content_world_project_v2.rs
   - apps/game-server/tests/content_world_project_v2_creature_admission.rs
@@ -97,6 +97,12 @@ blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#1675](https://github.com/Oteryn/Oteryn-Game/pull/1675). Monster source/data completion packet and native admission/source-boundary tools were retained by the cumulative content carrier. Evidence: `tools/content-migration/verify_spyrat_corpse_source_boundaries.py`.
+
+Remaining: Recorded unresolved creature/Encounter/reference identities and broader gameplay/probability qualification remain; retained candidate data is not full runtime completion. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 ## Continuation scope and authority
 

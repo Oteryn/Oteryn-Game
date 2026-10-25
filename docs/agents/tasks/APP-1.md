@@ -4,10 +4,10 @@
 task_id: APP-1
 title: "Durable selected appearance and AccountUnlock set"
 mode: IMPLEMENT
-status: partial
+status: waiting
 repository: Oteryn/Oteryn-Game
 issue: 1622
-pr: 2170
+pr: null
 wave: 4
 branch: skeleton/app-1
 base_branch: main
@@ -24,6 +24,12 @@ needs_content_regeneration: false
 merge_authority: CP_ONLY
 ```
 
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#2170](https://github.com/Oteryn/Oteryn-Game/pull/2170). Migration 0093, fenced appearance selection, stored reads and recovery are merged. Evidence: `crates/gameplay/durability/src/durability/character_appearance.rs`.
+
+Remaining: Admitted cosmetics/sex/unlock resolvers, earned grant consumer, APP-3 runtime publication and real client relog remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
+
 ## Authority and base
 
 CHARACTER_APPEARANCE is ACCEPTED through protected #2209, read at
@@ -39,14 +45,14 @@ merging main after #2163, never by rebase; this repair does not claim a newer an
 
 ## owned_paths
 
-- `apps/game-server/src/durability/character_appearance.rs`
-- `apps/game-server/src/durability/character_appearance_stored.rs` (D1112 production-reader rename)
-- `apps/game-server/src/durability/character_appearance_tests.rs` (focused pure tests only)
+- `crates/gameplay/durability/src/durability/character_appearance.rs`
+- `crates/gameplay/durability/src/durability/character_appearance/stored.rs` (D1112 production-reader rename)
+- `crates/gameplay/durability/src/durability/character_appearance/stored/tests.rs` (focused pure tests only)
 - `apps/game-server/tests/character_appearance_postgres.rs`
 - `apps/game-server/tests/character_appearance_native_postgres.rs` (D1092 nine native cases)
 - `apps/game-server/tests/support/bestiary_postgres_harness.rs` (D1092 additive helper only)
-- `apps/game-server/src/durability/character_authority.rs` (appearance recovery hunk only)
-- `apps/game-server/src/durability/mod.rs` (D1112 appearance registration only)
+- `crates/gameplay/durability/src/durability/character_authority.rs` (appearance recovery hunk only)
+- `crates/gameplay/durability/src/durability/core_modules.rs` (D1112 appearance registration only)
 - `apps/game-server/migrations/0093_character_appearance.sql` (D1112 installed migration)
 - `docs/agents/tasks/APP-1.md`
 - `apps/game-server/Cargo.toml` (target registration; added per CP D1280 (https://github.com/Oteryn/Oteryn-Game/issues/2131#issuecomment-6227727089))

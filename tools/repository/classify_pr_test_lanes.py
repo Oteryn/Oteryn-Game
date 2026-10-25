@@ -84,6 +84,8 @@ SERVER_QUALIFICATION_PREFIXES = (
     "crates/foundation/",
     "crates/protocol-oteryn/",
     "crates/simulation-determinism/",
+    # Gameplay crates carved out of apps/game-server/src keep the routing they had there.
+    "crates/gameplay/",
     "tools/qualification/",
     "vendor/",
 )
@@ -100,9 +102,19 @@ SERVER_QUALIFICATION_EXCLUDED_PREFIXES = (
     "apps/game-server/src/ai/",
     "apps/game-server/src/interaction/",
     "apps/game-server/src/content/",
+    # The Content module carved into the gameplay content crate keeps its routing.
+    "crates/gameplay/content/src/content/",
+    # The item promotion and CW2 import modules carved into content-promotion keep it too.
+    "crates/gameplay/content-promotion/src/content/",
+    # The ability, AI and interaction modules carved into the L3 gameplay crates keep theirs.
+    "crates/gameplay/combat/src/ability/",
+    "crates/gameplay/monster-ai/src/ai/",
+    "crates/gameplay/social/src/interaction/",
 )
 SERVER_QUALIFICATION_EXCLUDED_FILES = {
     "apps/game-server/src/combat.rs",
+    "apps/game-server/src/combat/mod.rs",
+    "crates/gameplay/combat/src/combat/mod.rs",
 }
 # The native entry room and its activation are the Content the qualifications serve.
 SERVER_QUALIFICATION_CONTENT = (
@@ -117,6 +129,17 @@ SERVER_QUALIFICATION_CONTENT = (
     "apps/game-server/src/content/project/native_entry",
     # The native entry room parses and validates through the WorldProject/v2 model.
     "apps/game-server/src/content/project/v2",
+    # The same Content at its carved gameplay content crate path.
+    "crates/gameplay/content/src/content/mod.rs",
+    "crates/gameplay/content/src/content/activation.rs",
+    "crates/gameplay/content/src/content/digest.rs",
+    "crates/gameplay/content/src/content/model.rs",
+    "crates/gameplay/content/src/content/production.rs",
+    "crates/gameplay/content/src/content/project.rs",
+    "crates/gameplay/content/src/content/static_cell_engine.rs",
+    "crates/gameplay/content/src/content/reference_static_cell.rs",
+    "crates/gameplay/content/src/content/project/native_entry",
+    "crates/gameplay/content/src/content/project/v2",
 )
 DEGRADED_ROUTING_REASONS = {
     "classifier-input-failure",

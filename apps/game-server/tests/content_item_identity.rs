@@ -7,12 +7,12 @@ use oteryn_game_server::content::{
     DefinitionIdentityDocument, ItemStackDocument, ProjectDraft, ProjectReferenceRecord,
     ProjectV2DefinitionRef, ProjectV2Draft, ProjectV2EditorEntry, ProjectV2Family, ProjectV2State,
     ProjectionDocument, ReferenceItemField,
-    item_identity::{
-        APPEARANCE_ONLY_ITEM_IDS, ItemIdentityError, ItemKeyAliasTable, RetiredItemKey,
-        apply_tibia_id_key_rule, apply_tibia_id_key_rule_with_appearance_items,
-        apply_tibia_id_key_rule_with_current_source_items, is_canonical_item_key, semantic,
-        tibia_item_key,
-    },
+};
+use oteryn_gameplay_content_promotion::content::item_identity::{
+    APPEARANCE_ONLY_ITEM_IDS, ItemIdentityError, ItemKeyAliasTable, RetiredItemKey,
+    apply_tibia_id_key_rule, apply_tibia_id_key_rule_with_appearance_items,
+    apply_tibia_id_key_rule_with_current_source_items, is_canonical_item_key, semantic,
+    tibia_item_key,
 };
 use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};

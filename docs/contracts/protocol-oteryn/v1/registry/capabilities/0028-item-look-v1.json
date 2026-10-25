@@ -1,0 +1,11 @@
+{
+  "id": 28,
+  "name": "ITEM_LOOK_V1",
+  "owner_decision": "CP D1240 comment6226466175 (#2182 payload and capability allocation); D1240a comment6226563247 (sole-writer registry/list/closure and next ledger29)",
+  "owner": "ITEM-LOOK-1; LOOK-2 runtime handler",
+  "requires": [],
+  "command_types": [30],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "LOOK-2 (CP D1143): only a node serving a World booted from a bundle offers this capability (BUNDLE_WORLD_OFFERED_CAPABILITIES); a fixture World never offers it, so this entry stays offered false. Command type 30 ITEM_LOOK_INTENT is handled by gameplay_transport::connection under ITEMLOOK1-RL-01 (10 commands per sliding second per GameSession, preserved across resume and transfer). The rate slot is spent before decoding; over-rate commands return Accepted Refused(RateLimited). Malformed payloads and commands without capability 28 are Rejected with an empty payload. Creature targets require an exact shown identity and generation and current REFERENCE visibility; item handles require current owner facts. Only a session selecting capability 28 may send Creature field 2 EntityRef or receive extended refusals NotVisible, NotReachable and RateLimited. Text is nonempty UTF-8 at most 512 bytes. Generation 0 means unknown and returns NotVisible. D1240 assigns no additional capability dependency; requires stays empty. READ-WRITE-1a adds Look field 3 WorldObject under the same selection: exact bundle digest, unhidden base placement, current object revision and current session visibility; read-only definition admission does not require materializable. No new capability, command number or client implementation."
+}

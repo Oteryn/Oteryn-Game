@@ -101,7 +101,11 @@ impl Database {
         let version: String = sqlx::query_scalar("SHOW server_version_num")
             .fetch_one(&mut connection)
             .await?;
-        assert_eq!(version, "170006", "canonical target is PostgreSQL 17.6");
+        assert_eq!(
+            version,
+            oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
+            "canonical target is PostgreSQL 18.6"
+        );
         sqlx::migrate!("./migrations").run(&mut connection).await?;
         connection.close().await?;
         Ok(Self {
@@ -1276,3 +1280,9 @@ mod character_death_writer_postgres_cases;
 // wrappers.
 #[path = "character_progression_admission_postgres_cases.rs"]
 mod character_progression_admission_postgres_cases;
+
+#[allow(
+    unused_imports,
+    reason = "shared fixture re-export for the character-authority PvP cases"
+)]
+pub(crate) use character_death_writer_postgres_cases::{join_pvp_writers, pvp_death_request};

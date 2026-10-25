@@ -280,11 +280,14 @@ keeps the allocation.
   from then on they cast only while Premium is current. PREM-4 keeps its PREM-1 dependency for
   every other Premium spell, which stays refused until then. PREMIUM-ACTIVATION §4.6 carries this as
   a pending amendment (§13).
-- **Premium** (owner answer W1 a, a supersession of D70's Premium condition until delivery): until PREM-1 delivers `premium_current`, the
-  Premium requirement of promotion (D70) and of the Wheel is not applied; from then on both apply,
-  and a promotion bought before then is kept under the lapse rules of D73 and D76. The same applies
-  to the cast Premium check of the revelation spells (WHEEL0-PS-1). This mirrors H2a for houses and
-  G1 for guilds.
+- **Premium. Amended 2026-10-25 by owner decision NIGHT-W1 #3.** PREM-1 has delivered
+  `premium_current`. Wheel allocation and point changes require current Premium, resolved by the
+  same native coordinator as promotion inside the allocation transaction. Unknown, expired or
+  unavailable authority refuses with `NotPremium`. The only exception is promotion's sealed
+  pre-delivery witness under PREMIUM-ACTIVATION-0, held under the shared activation latch lock
+  until the allocation transaction ends; delivery ends that exception. Read-only Wheel access
+  stays allowed and a lapse keeps the allocation and permanent promotion (D73/D76). Revelation
+  casts retain their per-use Premium check (WHEEL0-PS-1).
 - Until PREM-2 and the promotion NPC (PREM-5) exist, no character is promoted, so no character is
   eligible: W-1 and W-2 can land first and store allocations that count from then on.
 

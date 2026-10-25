@@ -1,0 +1,30 @@
+{
+  "id": "DUR03-RL-07-PAYLOAD-BYTES",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
+  "resource": "One exact OneItemTransactionV1 payload (event type 2) inside EventEnvelope.payload",
+  "unit": "bytes",
+  "hard_maximum": 7936,
+  "configurable_range": {
+    "minimum": 7936,
+    "maximum": 7936
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Check the encoded or borrowed payload length before decoding or copying; ANL01-EVENT-PAYLOAD-BYTES still applies on top.",
+  "client_visible": false,
+  "boundary_tests": [
+    "7,936-byte payload passes the size gate",
+    "7,937 bytes rejected before decode",
+    "worst-case MINT payload of the final schema (6,129 B) accepted",
+    "worst-case B3 top-up TRANSFER payload of the final schema (5,778 B; B3 §4.5 bound 7,821 B) accepted",
+    "worst-case map-item MINT payload (4,514 B) accepted",
+    "House tile-move with admitted maximal fields: 5,543 B accepted; 7,937 B rejected before decode"
+  ],
+  "consumers": [
+    "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
+    "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: encoded_len and wire length checked before allocation/decode; migration 0010 caps the stored envelope)",
+    "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)",
+    "apps/game-server/src/durability/map_item_mint_audit.rs (MAP-OVERLAY-1b map-item MINT, operation tag 8)",
+    "apps/game-server/src/durability/house_interior_audit.rs and house_interior.rs (HOUSE-RUNTIME-1a: closed one-item House place/take/tile-move, same-transaction custody/receipt/event)"
+  ],
+  "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513."
+}

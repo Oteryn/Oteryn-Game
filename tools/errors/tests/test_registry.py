@@ -10,7 +10,7 @@ import explain  # noqa: E402
 import registry  # noqa: E402
 
 GAME = registry.load_json(registry.ROOT / registry.GAME_PATH)
-PROTOCOL = registry.load_json(registry.ROOT / registry.PROTOCOL_PATH)
+PROTOCOL = registry.load_protocol()
 
 
 def check(game=None, protocol=None, base_game=None, base_protocol=None):
@@ -145,8 +145,8 @@ class BaseGuardTests(unittest.TestCase):
         import tempfile
 
         with tempfile.TemporaryDirectory() as tmp:
-            Path(tmp, "docs/contracts").mkdir(parents=True)
-            for rel in (registry.GAME_PATH, registry.PROTOCOL_PATH):
+            for rel in (registry.GAME_PATH, *registry.protocol_source_files()):
+                Path(tmp, rel).parent.mkdir(parents=True, exist_ok=True)
                 Path(tmp, rel).write_bytes((registry.ROOT / rel).read_bytes())
             errors = registry.validate(Path(tmp), "origin/main")
         self.assertTrue(any("not readable" in e for e in errors))

@@ -8,22 +8,23 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use oteryn_game_server::content::{
+    CW2_B1_FULL_ITEM_FAMILY_COUNT, CandidateValue, CanonicalProjectDocuments,
+    DefinitionIdentityDocument, ImportBatch, ItemStackDocument, ProjectDraft,
+    ProjectEvidenceLimits, ProjectFilesystemLimits, ProjectReferenceRecord,
+    ProjectV2AuthoringProfile, ProjectV2CandidateField, ProjectV2CandidateValue,
+    ProjectV2Declaration, ProjectV2DefinitionRef, ProjectV2Draft, ProjectV2EditorEntry,
+    ProjectV2EvidenceClass, ProjectV2Family, ProjectV2Identity, ProjectV2ItemAuthoring,
+    ProjectV2ItemForgeProfile, ProjectV2ItemLifecycle, ProjectV2ItemSourceLifecycle,
+    ProjectV2ItemTaxonomy, ProjectV2RangedWeapon, ProjectV2Source, ProjectV2SourceIdentityBinding,
+    ProjectV2SourceIdentityDisposition, ProjectV2State, ProjectionDocument, ReferenceCells,
+    ReferenceItemField, ReferenceItemImbuement, ReferenceItemPresentation, ReferenceItemSemantics,
+    ReferenceItemStack, ReferenceItemTradeRestrictions, ReferenceItemWeapon,
+    ReferenceRationalPercent, ReferenceSignedPoints, ReferenceWeaponType, ReimportDecision,
+    ReimportFieldState, capture_world_project, item_abilities::apply_equip_abilities_v1,
+};
+use oteryn_gameplay_content_promotion::content::{
     CW2_B1_DONOR_EPOCH2_ALLOCATION_DIGEST_SHA256, CW2_B1_DONOR_EPOCH2_MINTED_COUNT,
-    CW2_B1_DONOR_EPOCH2_REVISION, CW2_B1_FULL_ITEM_FAMILY_COUNT, CW2_B1_FULL_ITEM_REVISION,
-    CandidateValue, CanonicalProjectDocuments, DefinitionIdentityDocument, ImportBatch,
-    ItemStackDocument, ProjectDraft, ProjectEvidenceLimits, ProjectFilesystemLimits,
-    ProjectReferenceRecord, ProjectV2AuthoringProfile, ProjectV2CandidateField,
-    ProjectV2CandidateValue, ProjectV2Declaration, ProjectV2DefinitionRef, ProjectV2Draft,
-    ProjectV2EditorEntry, ProjectV2EvidenceClass, ProjectV2Family, ProjectV2Identity,
-    ProjectV2ItemAuthoring, ProjectV2ItemForgeProfile, ProjectV2ItemLifecycle,
-    ProjectV2ItemSourceLifecycle, ProjectV2ItemTaxonomy, ProjectV2Source,
-    ProjectV2SourceIdentityBinding, ProjectV2SourceIdentityDisposition, ProjectV2State,
-    ProjectionDocument, R7_P04_GOLD_COIN_EVIDENCE_PACKET, ReferenceCells, ReferenceItemField,
-    ReferenceItemImbuement, ReferenceItemPresentation, ReferenceItemSemantics, ReferenceItemStack,
-    ReferenceItemTradeRestrictions, ReferenceItemWeapon, ReferenceRationalPercent,
-    ReferenceSignedPoints, ReferenceWeaponType, ReimportDecision, ReimportFieldState,
-    capture_world_project,
-    item_abilities::apply_equip_abilities_v1,
+    CW2_B1_DONOR_EPOCH2_REVISION, CW2_B1_FULL_ITEM_REVISION, R7_P04_GOLD_COIN_EVIDENCE_PACKET,
     item_admission::{
         apply_item_admission_v1, apply_item_admission_v2, apply_item_admission_v2_cheese,
         apply_item_admission_v3,
@@ -709,6 +710,7 @@ fn admit_npc_presence_on_ranged_admitted(
     let npcs = npc_presence::apply(&mut draft, NPC_PRESENCE, NPC_PRESENCE_SHA256)?;
     // NPC-ECON-1 admits the one Bank service on top of the NPC presence package (DUR-04).
     npc_bank_services::apply(&mut draft)?;
+    oteryn_game_server::content::npc_catalogue::premium_services::install(&mut draft)?;
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, reconciled_limits())?;
     let tree_sha256 = write_documents(output, &documents)?;
     println!("npc_presence={npcs} tree_sha256={tree_sha256} predecessor_mode=true");
@@ -1518,6 +1520,7 @@ fn wave1_authoring(
     };
     Ok(ProjectV2ItemAuthoring {
         item,
+        ranged: None,
         presentation: None,
         document: None,
         taxonomy,
@@ -2735,8 +2738,57 @@ fn apply_npc_r5_native_repairs(
     Ok(count)
 }
 
+/// Validate the separate ranged owner without inserting it into sealed legacy declarations.
+fn validate_ranged_profiles() -> Result<(), Box<dyn std::error::Error>> {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let profiles: Value =
+        serde_json::from_slice(&fs::read(root.join("content/items/ranged-profiles.json"))?)?;
+    if profiles["schema"] != "OTERYN_RANGED_ITEM_PROFILES/v1" {
+        return Err("unexpected ranged profile schema".into());
+    }
+    let mut pending = BTreeMap::new();
+    for record in profiles["records"]
+        .as_array()
+        .ok_or("missing ranged profiles")?
+    {
+        let item: ProjectV2DefinitionRef = serde_json::from_value(record["item"].clone())?;
+        if item.family != ProjectV2Family::Item
+            || pending.insert(item, &record["profile"]).is_some()
+        {
+            return Err("unexpected or duplicate ranged profile target".into());
+        }
+    }
+    let index: Value = serde_json::from_slice(&fs::read(root.join("content/items/index.json"))?)?;
+    for path in index["shards"].as_array().ok_or("missing Item shards")? {
+        let shard: Value = serde_json::from_slice(&fs::read(
+            root.join(path.as_str().ok_or("invalid Item shard path")?),
+        )?)?;
+        for row in shard["records"].as_array().ok_or("missing Item records")? {
+            let item: ProjectV2DefinitionRef =
+                serde_json::from_value(row["definition"]["identity"].clone())?;
+            if let Some(profile) = pending.remove(&item) {
+                let mut authoring = row
+                    .get("authoring")
+                    .cloned()
+                    .unwrap_or(serde_json::json!({}));
+                if authoring.get("ranged").is_some() {
+                    return Err("ranged profile duplicates sealed authoring".into());
+                }
+                authoring["item"] = serde_json::to_value(item)?;
+                let authoring: ProjectV2ItemAuthoring = serde_json::from_value(authoring)?;
+                ProjectV2RangedWeapon::try_from((profile, &authoring))?;
+            }
+        }
+    }
+    if !pending.is_empty() {
+        return Err("unresolved ranged profile target".into());
+    }
+    Ok(())
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (root, predecessor) = authoring_roots()?;
+    validate_ranged_profiles()?;
     if let Some(source) = predecessor {
         return materialize_from_predecessor(&source, &root);
     }
@@ -3143,6 +3195,11 @@ mod consumables_admission_revision_tests {
 
 #[cfg(test)]
 mod ranged_revision_tests {
+    #[test]
+    fn ranged_separate_profiles_resolve_against_sealed_item_owners() {
+        super::validate_ranged_profiles().expect("separate ranged source owner");
+    }
+
     /// DUR-04: changed content is never serialized under an existing revision. The ranged weapon
     /// promotion runs only in `promote_ranged_on_consumables_admitted`, which mints its own.
     #[test]

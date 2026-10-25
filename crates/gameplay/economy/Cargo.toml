@@ -1,0 +1,21 @@
+[package]
+name = "oteryn-gameplay-economy"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[package.metadata.oteryn]
+category = "gameplay"
+release-role = "production"
+
+[dependencies]
+oteryn-gameplay-domain = { version = "=0.1.0", path = "../domain" }
+
+[dev-dependencies]
+oteryn-test-support = { version = "=0.1.0", path = "../../test-support" }
+
+[lints]
+workspace = true

@@ -1,0 +1,727 @@
+{
+  "name": "Undead Jester",
+  "source_identity": {
+    "namespace": "cipsoft/staticdata/creature_id",
+    "id": 388,
+    "client_version": "15.30"
+  },
+  "classification": "DERIVED",
+  "target_cut": "2026-10-19",
+  "continuity": "SOURCE_RECONCILIATION_NATIVE_ADMISSION_PENDING",
+  "native_identity_assigned": false,
+  "native_admission_authorized": false,
+  "sources": [
+    {
+      "id": "wikibr-current",
+      "url": "https://www.tibiawiki.com.br/index.php?title=Undead_Jester&oldid=440797",
+      "revision_id": 440797,
+      "representation": "rendered HTML",
+      "response_sha256": "b89b5b545a217ce8f8ae483cf8f8d6fdc8dd20bacb023f07e7b3aa8125b68154",
+      "checked_at": "2026-10-19T09:55:30.829137+00:00",
+      "scope": "COMMUNITY_WIKI_OBSERVATION"
+    },
+    {
+      "id": "fandom-indexed",
+      "url": "https://tibia.fandom.com/wiki/Undead_Jester",
+      "representation": "Indexed page text; direct access blocked",
+      "revision_id": null,
+      "checked_at": "2026-10-19T09:55:30.829137+00:00",
+      "scope": "COMMUNITY_WIKI_OBSERVATION_UNPINNED_REVISION"
+    },
+    {
+      "id": "tfs16",
+      "repository": "otland/forgottenserver",
+      "revision": "098641981400f8ff89959f427f0e8718d9dd22e2",
+      "path": "data/monster/monsters/undead_jester.xml",
+      "git_blob": "f99e241a3e63cafc7a64230d6c8c41113e76544f",
+      "sha256": "1e33b008388746ac601882ab7e439ff39bdb876ab54f41abcbdc5db66baba328",
+      "url": "https://raw.githubusercontent.com/otland/forgottenserver/098641981400f8ff89959f427f0e8718d9dd22e2/data/monster/monsters/undead_jester.xml",
+      "scope": "OTS_HYPOTHESIS_ONLY"
+    }
+  ],
+  "wikibr_observations": {
+    "classification": "PROVEN",
+    "evidence_scope": "OBSERVED_COMMUNITY_PAGE_NOT_OFFICIAL_GLOBAL",
+    "source": "wikibr-current",
+    "fields": {
+      "hp": 355,
+      "xp": 5,
+      "speed": 112,
+      "armor": 3,
+      "mitigation_percent": 0.2,
+      "bestiary_kills": 5,
+      "charm_points": 10,
+      "pushable": true,
+      "push_objects": true,
+      "damage_taken_percent": {
+        "physical": 100,
+        "earth": 0,
+        "fire": 80,
+        "death": 0,
+        "energy": 90,
+        "holy": 120,
+        "ice": 70
+      },
+      "abilities": [
+        {
+          "name": "melee",
+          "damage": [
+            0,
+            3
+          ],
+          "element": "physical"
+        },
+        {
+          "name": "healing",
+          "healing": [
+            35,
+            60
+          ]
+        },
+        {
+          "name": "invisibility"
+        },
+        {
+          "name": "summon",
+          "creature": "Rat",
+          "maximum": 4
+        },
+        {
+          "name": "drunkenness"
+        },
+        {
+          "name": "paralyze"
+        }
+      ],
+      "behaviour": "ranged; flees at low health",
+      "event": "April Fools raids"
+    }
+  },
+  "discrepancies": {
+    "classification": "CONFLICT",
+    "sources": [
+      "wikibr-current",
+      "fandom-indexed"
+    ],
+    "rows": [
+      {
+        "field": "mitigation_percent",
+        "wikibr": 0.2,
+        "fandom": 0.13
+      },
+      {
+        "field": "summoned_creature",
+        "wikibr": "Rat",
+        "fandom": "Cave Rat",
+        "tfs": "cave rat",
+        "crystal_script": "Cave Rat"
+      },
+      {
+        "field": "charm_points",
+        "wikibr": 10,
+        "fandom": 10,
+        "tfs": 25
+      },
+      {
+        "field": "pushable",
+        "wikibr": true,
+        "fandom": true,
+        "tfs": false
+      },
+      {
+        "field": "speed_encoding",
+        "wiki": 112,
+        "tfs_raw": 224,
+        "qualification": "Different engine/display scales; no direct native normalization is applied."
+      },
+      {
+        "field": "stone_skin_amulet_loot",
+        "wikibr": true,
+        "fandom": true,
+        "tfs": false,
+        "qualification": "Current wiki reports a2025 addition; TFS profile omits it. Old table is not a current complete loot authority."
+      }
+    ]
+  },
+  "unresolved_native_authoring": [
+    "Authoritative attack schedules, probabilities, exact condition magnitudes/durations, loot chance/count bounds and world/encounter registration must be sourced or explicitly qualified before native admission. Wiki summaries alone do not specify those fields.",
+    "Native Creature/Behavior/Presentation/Ability/Effect/Item bindings and assets remain implementation-owned; no placeholder or borrowed creature identity is assigned."
+  ],
+  "tfs16_source_definition": {
+    "classification": "PROVEN",
+    "evidence_scope": "PINNED_OTS_SOURCE_OBSERVATION_ONLY",
+    "source": "tfs16",
+    "representation": "Lossless XML element/attribute tree; values remain source strings, not native semantics",
+    "root": {
+      "tag": "monster",
+      "attributes": {
+        "name": "Undead Jester",
+        "nameDescription": "an undead jester",
+        "race": "blood",
+        "experience": "5",
+        "speed": "224",
+        "raceId": "388"
+      },
+      "children": [
+        {
+          "tag": "health",
+          "attributes": {
+            "now": "355",
+            "max": "355"
+          },
+          "children": []
+        },
+        {
+          "tag": "look",
+          "attributes": {
+            "type": "273",
+            "head": "0",
+            "body": "0",
+            "legs": "114",
+            "feet": "0",
+            "addons": "2",
+            "corpse": "20522"
+          },
+          "children": []
+        },
+        {
+          "tag": "targetchange",
+          "attributes": {
+            "interval": "2000",
+            "chance": "5"
+          },
+          "children": []
+        },
+        {
+          "tag": "flags",
+          "attributes": {},
+          "children": [
+            {
+              "tag": "flag",
+              "attributes": {
+                "pushable": "0"
+              },
+              "children": []
+            },
+            {
+              "tag": "flag",
+              "attributes": {
+                "canpushitems": "1"
+              },
+              "children": []
+            },
+            {
+              "tag": "flag",
+              "attributes": {
+                "canpushcreatures": "1"
+              },
+              "children": []
+            },
+            {
+              "tag": "flag",
+              "attributes": {
+                "staticattack": "90"
+              },
+              "children": []
+            },
+            {
+              "tag": "flag",
+              "attributes": {
+                "targetdistance": "4"
+              },
+              "children": []
+            },
+            {
+              "tag": "flag",
+              "attributes": {
+                "canwalkonenergy": "0"
+              },
+              "children": []
+            },
+            {
+              "tag": "flag",
+              "attributes": {
+                "canwalkonfire": "0"
+              },
+              "children": []
+            },
+            {
+              "tag": "flag",
+              "attributes": {
+                "canwalkonpoison": "0"
+              },
+              "children": []
+            }
+          ]
+        },
+        {
+          "tag": "bestiary",
+          "attributes": {
+            "class": "Undead",
+            "prowess": "2",
+            "expertise": "3",
+            "mastery": "5",
+            "charmPoints": "25",
+            "difficulty": "trivial",
+            "occurrence": "very rare",
+            "locations": "Undead Jester Locations..."
+          },
+          "children": []
+        },
+        {
+          "tag": "attacks",
+          "attributes": {},
+          "children": [
+            {
+              "tag": "attack",
+              "attributes": {
+                "name": "melee",
+                "interval": "2000",
+                "min": "0",
+                "max": "-3"
+              },
+              "children": []
+            },
+            {
+              "tag": "attack",
+              "attributes": {
+                "name": "drunk",
+                "interval": "1000",
+                "chance": "20",
+                "range": "7"
+              },
+              "children": [
+                {
+                  "tag": "attribute",
+                  "attributes": {
+                    "key": "shootEffect",
+                    "value": "energy"
+                  },
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tag": "defenses",
+          "attributes": {
+            "armor": "3",
+            "defense": "3"
+          },
+          "children": [
+            {
+              "tag": "defense",
+              "attributes": {
+                "name": "invisible",
+                "interval": "4000",
+                "chance": "30",
+                "duration": "2000"
+              },
+              "children": [
+                {
+                  "tag": "attribute",
+                  "attributes": {
+                    "key": "areaEffect",
+                    "value": "mortarea"
+                  },
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tag": "summons",
+          "attributes": {
+            "maxSummons": "4"
+          },
+          "children": [
+            {
+              "tag": "summon",
+              "attributes": {
+                "name": "cave rat",
+                "interval": "2000",
+                "chance": "10"
+              },
+              "children": []
+            }
+          ]
+        },
+        {
+          "tag": "immunities",
+          "attributes": {},
+          "children": [
+            {
+              "tag": "immunity",
+              "attributes": {
+                "paralyze": "1"
+              },
+              "children": []
+            },
+            {
+              "tag": "immunity",
+              "attributes": {
+                "invisible": "1"
+              },
+              "children": []
+            },
+            {
+              "tag": "immunity",
+              "attributes": {
+                "drunk": "1"
+              },
+              "children": []
+            }
+          ]
+        },
+        {
+          "tag": "elements",
+          "attributes": {},
+          "children": [
+            {
+              "tag": "element",
+              "attributes": {
+                "energyPercent": "10"
+              },
+              "children": []
+            },
+            {
+              "tag": "element",
+              "attributes": {
+                "earthPercent": "100"
+              },
+              "children": []
+            },
+            {
+              "tag": "element",
+              "attributes": {
+                "firePercent": "20"
+              },
+              "children": []
+            },
+            {
+              "tag": "element",
+              "attributes": {
+                "lifedrainPercent": "100"
+              },
+              "children": []
+            },
+            {
+              "tag": "element",
+              "attributes": {
+                "icePercent": "30"
+              },
+              "children": []
+            },
+            {
+              "tag": "element",
+              "attributes": {
+                "holyPercent": "-20"
+              },
+              "children": []
+            },
+            {
+              "tag": "element",
+              "attributes": {
+                "deathPercent": "100"
+              },
+              "children": []
+            }
+          ]
+        },
+        {
+          "tag": "voices",
+          "attributes": {
+            "interval": "1000",
+            "chance": "5"
+          },
+          "children": [
+            {
+              "tag": "voice",
+              "attributes": {
+                "sentence": "Who's bad?"
+              },
+              "children": []
+            },
+            {
+              "tag": "voice",
+              "attributes": {
+                "sentence": "I have a cunning plan!"
+              },
+              "children": []
+            },
+            {
+              "tag": "voice",
+              "attributes": {
+                "sentence": "Resistance is futile! You will be amused!"
+              },
+              "children": []
+            },
+            {
+              "tag": "voice",
+              "attributes": {
+                "sentence": "Pull my finger!"
+              },
+              "children": []
+            },
+            {
+              "tag": "voice",
+              "attributes": {
+                "sentence": "Why did the chicken cross the road? TO KILL YOU!!!"
+              },
+              "children": []
+            },
+            {
+              "tag": "voice",
+              "attributes": {
+                "sentence": "I will teach you all to mock me!"
+              },
+              "children": []
+            },
+            {
+              "tag": "voice",
+              "attributes": {
+                "sentence": "He who laughs last, Laughs best!"
+              },
+              "children": []
+            },
+            {
+              "tag": "voice",
+              "attributes": {
+                "sentence": "Th-Th-Th-That's all, folks!"
+              },
+              "children": []
+            },
+            {
+              "tag": "voice",
+              "attributes": {
+                "sentence": "A zathroth priest, a druid and a paladin walk into a bar ..."
+              },
+              "children": []
+            },
+            {
+              "tag": "voice",
+              "attributes": {
+                "sentence": "Ha Ha!"
+              },
+              "children": []
+            },
+            {
+              "tag": "voice",
+              "attributes": {
+                "sentence": "Doh!"
+              },
+              "children": []
+            },
+            {
+              "tag": "voice",
+              "attributes": {
+                "sentence": "Zathroth made me do it!"
+              },
+              "children": []
+            },
+            {
+              "tag": "voice",
+              "attributes": {
+                "sentence": "And now for something completely different!"
+              },
+              "children": []
+            },
+            {
+              "tag": "voice",
+              "attributes": {
+                "sentence": "You think this is funny now?"
+              },
+              "children": []
+            },
+            {
+              "tag": "voice",
+              "attributes": {
+                "sentence": "Are we having fun yet?"
+              },
+              "children": []
+            },
+            {
+              "tag": "voice",
+              "attributes": {
+                "sentence": "Did I do that?"
+              },
+              "children": []
+            }
+          ]
+        },
+        {
+          "tag": "loot",
+          "attributes": {},
+          "children": [
+            {
+              "tag": "item",
+              "attributes": {
+                "id": "2667",
+                "name": "fish",
+                "chance": "59315"
+              },
+              "children": []
+            },
+            {
+              "tag": "item",
+              "attributes": {
+                "id": "9108",
+                "name": "suspicious surprise bag",
+                "chance": "40147"
+              },
+              "children": []
+            },
+            {
+              "tag": "item",
+              "attributes": {
+                "id": "9696",
+                "name": "part of a jester doll",
+                "chance": "3814"
+              },
+              "children": []
+            },
+            {
+              "tag": "item",
+              "attributes": {
+                "id": "9697",
+                "name": "part of a jester doll",
+                "chance": "3814"
+              },
+              "children": []
+            },
+            {
+              "tag": "item",
+              "attributes": {
+                "id": "9698",
+                "name": "part of a jester doll",
+                "chance": "3814"
+              },
+              "children": []
+            },
+            {
+              "tag": "item",
+              "attributes": {
+                "id": "9699",
+                "name": "part of a jester doll",
+                "chance": "3814"
+              },
+              "children": []
+            },
+            {
+              "tag": "item",
+              "attributes": {
+                "id": "5909",
+                "name": "white piece of cloth",
+                "chance": "1320"
+              },
+              "children": []
+            },
+            {
+              "tag": "item",
+              "attributes": {
+                "id": "5913",
+                "name": "brown piece of cloth",
+                "chance": "1125"
+              },
+              "children": []
+            },
+            {
+              "tag": "item",
+              "attributes": {
+                "id": "5910",
+                "name": "green piece of cloth",
+                "chance": "1027"
+              },
+              "children": []
+            },
+            {
+              "tag": "item",
+              "attributes": {
+                "id": "7158",
+                "name": "rainbow trout",
+                "chance": "1027"
+              },
+              "children": []
+            },
+            {
+              "tag": "item",
+              "attributes": {
+                "id": "9695",
+                "name": "the torso of a jester doll",
+                "chance": "978"
+              },
+              "children": []
+            },
+            {
+              "tag": "item",
+              "attributes": {
+                "id": "7159",
+                "name": "green perch",
+                "chance": "880"
+              },
+              "children": []
+            },
+            {
+              "tag": "item",
+              "attributes": {
+                "id": "5912",
+                "name": "blue piece of cloth",
+                "chance": "831"
+              },
+              "children": []
+            },
+            {
+              "tag": "item",
+              "attributes": {
+                "id": "5914",
+                "name": "yellow piece of cloth",
+                "chance": "782"
+              },
+              "children": []
+            },
+            {
+              "tag": "item",
+              "attributes": {
+                "id": "5911",
+                "name": "red piece of cloth",
+                "chance": "440"
+              },
+              "children": []
+            },
+            {
+              "tag": "item",
+              "attributes": {
+                "id": "9694",
+                "name": "the head of a jester doll",
+                "chance": "342"
+              },
+              "children": []
+            },
+            {
+              "tag": "item",
+              "attributes": {
+                "id": "7963",
+                "name": "marlin",
+                "chance": "196"
+              },
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    "runtime_activation_authorized": false
+  },
+  "summon_script_witness": {
+    "repository": "zimbadev/crystalserver",
+    "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+    "path": "data-global/scripts/spells/monster/undead_jester_summon.lua",
+    "sha256": "7bdf18175c9bbc7bb35d60ca7df764e9a1f3f04e422407d902d6a258468c1a6b",
+    "source_scope": "OTS_HYPOTHESIS_ONLY",
+    "summon": "Cave Rat",
+    "max_total_summons": 4,
+    "qualification": "Standalone registered spell corroborates summon identity; does not establish monster cast frequency or source-registration presence."
+  }
+}

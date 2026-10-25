@@ -1,5 +1,11 @@
 # Architect batch: serving the imported world content on a node
 
+PIN-V2-1 update: the pin and input-digest requirements below describe v1. The current
+[World pin format](../../../content/world/pins/README.md) is `OTERYN_WORLD_PIN/v2`:
+`inputs_digest` is reported by the compiler, without being stored or compared in the pin.
+The two-build byte equality, equivalence, exact bundle digest, identity and entry-cell
+checks remain required. `pin-refresh` migrates v1; `pin-check` rejects it.
+
 - Batch: `ARCH-WORLD-CONTENT-SERVE-1` (owner `1a`)
 - Status: **ACCEPTED WHEN THIS DECISION MERGES** for the rulings, leases and packets below.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
@@ -104,12 +110,29 @@ No packet here takes a migration lease (§1.7) or changes a protocol registry ro
   - `inputs_digest`, the squash-stable content identity of the compiler inputs (below). It
     replaces a commit SHA, which a squash merge and a branch deletion would orphan.
 - **Inputs digest.** `inputs_digest` is SHA-256 over the domain tag
-  `oteryn:world-bundle/inputs/v1`, then one line `<git blob id> <path>\n` per tracked file under
+  `oteryn:world-bundle/inputs/v2`, then one line `<git blob id> <path>\n` per tracked file under
   the compiler input paths below, ascending by path. It is what `git ls-files -s` lists for those
   paths, so it depends only on file contents and paths: the same tree gives the same digest on a
   feature branch, after a squash merge and after the branch is deleted, and it never names a
   `main` SHA. The pin files `content/world/pins/<world slug>.json` are left out, so the digest
   never covers itself. The identity files below are compiler inputs and are included.
+  - **Cargo scope (PIN-SCOPE-1, domain tag `oteryn:world-bundle/inputs/v2`).** The root
+    `Cargo.toml` and `Cargo.lock` lines carry, in place of the blob id, the SHA-256 of their
+    World-scoped form (`tools/world-bundle-compiler/src/cargo_inputs.rs`), so a PR that adds an
+    unrelated workspace crate or bumps an unrelated dependency leaves the pin alone:
+    - `Cargo.lock`: the lock format version and one line per package in the dependency closure
+      of `oteryn-world-bundle-compiler` and `oteryn-world-bundle` (name, version, source,
+      checksum and resolved dependencies), walked over every `dependencies` edge of the lock.
+      Those edges include build, dev, optional and target-specific dependencies, so the closure
+      is a superset of what a locked build of the compiler compiles. A path package in the
+      closure other than the two World crates fails the check; its directory must first be
+      added to the input paths.
+    - root `Cargo.toml`: every statement except comments, the `[workspace]` `members` and
+      `exclude` lists, and the `[workspace.dependencies]` entries whose key names no package of
+      the closure (an entry with a `package` rename is kept). Profiles, patches, lints,
+      `[workspace.package]` and every other table count as written.
+    - A lock form the reader does not know fails the check; a manifest form it does not know is
+      kept. The lane (`world_bundle_required`) still runs on any change to either file.
 - **Identity file.** The compiler's whole `Identity` (`crates/world-bundle/src/bundle.rs`, the
   bundle format §2 `identity` row) is one committed file per World,
   `content/world/pins/<world slug>.identity.json`, passed as the compiler's `<identity.json>`.

@@ -1,0 +1,17 @@
+{
+  "id": 62,
+  "name": "STASH_V1",
+  "owner_decision": "SUPPLYSTASH0-SUPPLY-STASH-V1; PARITY-DEPOT-SEARCH-STASH-1",
+  "owner": "Character + World stash value",
+  "requires": [
+    37
+  ],
+  "command_types": [
+    79
+  ],
+  "state_domains": [
+    27
+  ],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES: bundle Worlds with native item Content and depot capability. Per-operation reachable locker and current Character item fence; stow requires current Premium."
+}

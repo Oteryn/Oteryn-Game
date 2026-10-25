@@ -1,0 +1,23 @@
+{
+  "id": "DUR03-RL-06-NPC-TRADE-BUY-EFFECT-WORK-UNITS",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md",
+  "resource": "Effect work units in one DUR-03 NPC BUY transaction",
+  "unit": "work units per logical transaction",
+  "hard_maximum": 66,
+  "configurable_range": {
+    "minimum": 4,
+    "maximum": 66
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Checked before any write; never truncated. Whole burn 3 (participant, removal, retirement), partial burn 2, MINT 2; worst case 20 whole coin burns x 3 + 3 MINTs x 2.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=66 admitted",
+    "max+1=67 rejected (CAPACITY_EXCEEDED)"
+  ],
+  "consumers": [
+    "apps/game-server/src/durability/npc_trade_audit.rs",
+    "apps/game-server/src/durability/npc_trade.rs (in-transaction NPC trade: plan and usage checked before any write; migration 0082 re-proves the lines at commit)"
+  ],
+  "notes": "NPC-0 \u00a74 command 8 NPC_TRADE_INTENT and \u00a75.5 (NPC_SINGLE_TRADE_COMMIT_V1); NPC trade shape only, the one-item DUR03-RL-01..08 and fee DUR03-RL-*-FEE-BURN rows are unchanged; registered by OTV2-20261013-npc-trade-1. BUY: up to 20 coin BURN lines of the gold fee plan (FeeBurnCause::NpcTrade), up to 2 change MINTs and the item MINT; SELL: one item BURN and up to 3 coin MINTs."
+}

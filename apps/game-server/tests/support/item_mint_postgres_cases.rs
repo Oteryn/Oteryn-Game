@@ -22,14 +22,17 @@ use crate::foundation::admission_authority_publication::{
     AdmissionPublicationPreconditionV1, AdmissionPublicationPurposeV1,
     AdmissionPublicationSourceV1,
 };
-use crate::foundation::{
-    CarrierError, ChannelId, CombatDeathFixture, CreatureDeathOccurrenceKey, MovementLocalPosition,
-    RuntimeScopeRefV1, ScopeOwnershipGeneration, WorldId,
-};
 use sqlx::{Connection, Executor, Row};
 use std::future::Future;
 use std::task::Poll;
 use std::time::{Duration, Instant};
+use {
+    crate::foundation::{
+        ChannelId, CombatDeathFixture, CreatureDeathOccurrenceKey, MovementLocalPosition,
+        RuntimeScopeRefV1, ScopeOwnershipGeneration, WorldId,
+    },
+    oteryn_gameplay_domain::domain::carrier_values::CarrierError,
+};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
@@ -128,11 +131,11 @@ impl Database {
         let version: String = sqlx::query_scalar("SHOW server_version_num")
             .fetch_one(&mut connection)
             .await?;
-        // The protected lane pins PostgreSQL 17.6; any 17.x server runs the
+        // The protected lane pins PostgreSQL 18.6; any 18.x server runs the
         // same schema, and the exact server is recorded as evidence.
         assert!(
-            version.starts_with("17"),
-            "PostgreSQL 17 required: {version}"
+            version.starts_with("18"),
+            "PostgreSQL 18 required: {version}"
         );
         eprintln!("ITEM-MINT-PG: database {name} on server_version_num={version}");
         sqlx::migrate!("./migrations").run(&mut connection).await?;
@@ -1039,7 +1042,7 @@ fn d52_ended_generation_refuses_and_committed_result_stays() -> TestResult {
 
 /// A deferred trigger holds COMMIT past the client pass deadline, so the
 /// client reports an unknown outcome. Inside COMMIT the server transaction
-/// timeout is disabled (PostgreSQL 17 arms no separate statement timer when it
+/// timeout is disabled (PostgreSQL 18 arms no separate statement timer when it
 /// equals the transaction timeout), so the trigger alone decides the real
 /// outcome: it either fails after the client gave up or lets COMMIT succeed.
 async fn install_slow_commit(pool: &sqlx::PgPool, then_fail: bool) -> TestResult {

@@ -21,30 +21,41 @@ import re
 import sys
 from pathlib import Path
 
-# (package, test target) -> (source path prefix it may duplicate, reason). Only shrinks.
-GAME_SERVER_COPY = (
-    "apps/game-server/src/",
-    "path-includes crate-private game-server modules whose unit tests also compile here until "
-    "those modules gate their test modules to the library target",
+# (package, test target) -> (source path prefixes it may duplicate, reason). Only shrinks.
+GAME_SERVER_SRC = "apps/game-server/src/"
+CARVED_GAMEPLAY_SRC = (
+    "crates/gameplay/combat/src/",
+    "crates/gameplay/content/src/",
+    "crates/gameplay/dispatch/src/",
+    "crates/gameplay/domain/src/",
+    "crates/gameplay/durability/src/",
+    "crates/gameplay/encounters/src/",
+    "crates/gameplay/foundation/src/",
+    "crates/gameplay/monster-ai/src/",
+    "crates/gameplay/social/src/",
+    "crates/gameplay/spell/src/",
+    "crates/gameplay/world/src/",
 )
-ALLOWED_DUPLICATING_TARGETS: dict[tuple[str, str], tuple[str, str]] = {
+COPY_REASON = (
+    "path-includes crate-private game-server modules (including the gameplay modules carved out "
+    "of apps/game-server/src into crates/gameplay) whose unit tests also compile here until those "
+    "modules gate their test modules to their library target"
+)
+ALLOWED_DUPLICATING_TARGETS: dict[tuple[str, str], tuple[tuple[str, ...], str]] = {
     **{
-        ("oteryn-game-server", target): GAME_SERVER_COPY
-        for target in (
-            "ability_engine",
-            "ai_bootstrap",
-            "character_authority_postgres",
-            "durability_postgres",
-            "interaction_workflow",
-            "native_admission_source_postgres",
-            "native_admission_source_real_interop",
-            "native_admission_source_transport",
-            "runtime_scope_assignment_postgres",
-            "wp5_s3b_composition",
+        ("oteryn-game-server", target): (prefixes, COPY_REASON)
+        for target, prefixes in (
+            ("ability_engine", (GAME_SERVER_SRC, *CARVED_GAMEPLAY_SRC)),
+            ("ai_bootstrap", ("crates/gameplay/monster-ai/src/",)),
+            ("character_authority_postgres", (GAME_SERVER_SRC, *CARVED_GAMEPLAY_SRC)),
+            ("durability_postgres", CARVED_GAMEPLAY_SRC),
+            ("native_admission_source_postgres", CARVED_GAMEPLAY_SRC),
+            ("runtime_scope_assignment_postgres", CARVED_GAMEPLAY_SRC),
+            ("wp5_s3b_composition", CARVED_GAMEPLAY_SRC),
         )
     },
-    ("oteryn-game-server", "oteryn_game_server"): (
-        "apps/game-server/tests/support/character_revision_sequencer_postgres_cases.rs",
+    ("oteryn-gameplay-dispatch", "oteryn_gameplay_dispatch"): (
+        ("apps/game-server/tests/support/character_revision_sequencer_postgres_cases.rs",),
         "the library's monk-save PostgreSQL tests reuse this case file as their fixture; "
         "durability_postgres runs its cases against PostgreSQL",
     ),

@@ -4,7 +4,8 @@
 task_id: HOUSE-RUNTIME-1a
 title: "HOUSE-RUNTIME-1a: house interior shapes and item placement"
 mode: IMPLEMENT
-status: NOT_FULLY_QUALIFIED
+status: waiting
+pr: null
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 3
@@ -21,6 +22,12 @@ needs_registry: true
 needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#2163](https://github.com/Oteryn/Oteryn-Game/pull/2163). Native house interior reservation, atomic item shape/audit writer and recovery are merged. Evidence: `crates/gameplay/durability/src/durability/house_interior.rs`.
+
+Remaining: Production property/tile/access grant admission and live placement composition remain fail-closed; do not replace the existing storage owner. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 ## D1168 loader authoring — NOT_FULLY_QUALIFIED
 
@@ -70,8 +77,8 @@ Rows marked BLOCKING must merge (or be accepted/decided) before the builder's sl
 
 ## owned_paths (builder edits freely)
 
-- `apps/game-server/src/durability/house_interior.rs`
-- `apps/game-server/src/durability/house_interior_audit.rs`
+- `crates/gameplay/durability/src/durability/house_interior.rs`
+- `crates/gameplay/durability/src/durability/house_interior_audit.rs`
 - `apps/game-server/tests/house_interior_postgres.rs`
 - `apps/game-server/tests/support/house_interior_postgres_cases.rs`
 - `apps/game-server/tests/support/house_test_fixture.rs`
@@ -94,9 +101,9 @@ To compile on the branch the builder may add only the module registration lines 
 - Rust pins (pinned registries / fixtures regenerated from content)
 - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json, GAME_EVENT_FOUNDATION_REGISTRY.json, RESOURCE_LIMITS_REGISTRY.json, OTERYN_GAME_ERROR_CODE_REGISTRY.json
 - apps/game-server/migrations/NNNN_*.sql number (next free on main at queue turn; main ends at 0091)
-- apps/game-server/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
+- crates/gameplay/dispatch/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
 - crates/protocol-oteryn/src/lib.rs `pub mod` + registry constants
-- apps/game-server/src/durability/mod.rs, domain/mod.rs, lib.rs module registration
+- crates/gameplay/durability/src/durability/core_modules.rs, domain/mod.rs, lib.rs module registration
 
 ## Wiring points (verified on origin/main 5742f30f3)
 

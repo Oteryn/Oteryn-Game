@@ -5,9 +5,10 @@
 #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
 
 #[allow(dead_code)]
-#[path = "../src/premium/test_producer.rs"]
+#[path = "../../../crates/gameplay/social/src/premium/test_producer.rs"]
 mod test_producer;
 
+use oteryn_game_server::premium;
 use oteryn_game_server::premium::client::{
     PULL_TIMEOUT, PremiumClientConfig, PremiumSnapshotClient, PullFailure, fresh_nonce,
 };

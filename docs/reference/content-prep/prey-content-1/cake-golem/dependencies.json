@@ -1,0 +1,165 @@
+{
+  "abilities": [
+    {
+      "identity": {
+        "key": "canary:ability/cake_golem/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "melee",
+      "range_tiles": 1,
+      "needs_target": true,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/cake_golem/attack-1",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/cake_golem/attack-3",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 7,
+      "needs_target": true,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/cake_golem/attack-3",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/cake_golem/defense-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/cake_golem/defense-1",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "effects": [
+    {
+      "identity": {
+        "key": "canary:effect/cake_golem/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "physical",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/cake_golem/attack-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "mitigated_by": [
+        "armor",
+        "shield"
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:effect/cake_golem/attack-3",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "condition",
+      "duration_ms": 8000,
+      "condition": {
+        "type": "drunk",
+        "lifetime": "fixed_duration"
+      },
+      "presentation": {
+        "projectile_asset_binding": "canary.appearance:missile/cake"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/cake_golem/defense-1",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "heal",
+      "damage_type": "healing",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/cake_golem/defense-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  ],
+  "formulas": [
+    {
+      "identity": {
+        "key": "canary:formula/cake_golem/attack-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 0,
+        "maximum": 45
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/cake_golem/defense-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 180,
+        "maximum": 250
+      }
+    }
+  ],
+  "documents": [],
+  "items": [
+    {
+      "identity": {
+        "key": "canary:item/12141",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "dead cake golem",
+        "asset_binding": "canary.appearance:object/12141",
+        "article": "a"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 4000,
+        "movable": false,
+        "pickupable": false
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "remove",
+        "stop_duration": false,
+        "duration_ms": 60000
+      },
+      "container": {
+        "capacity": 10
+      }
+    }
+  ],
+  "loot_tables": []
+}

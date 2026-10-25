@@ -199,6 +199,7 @@ fn render_entry(entry: &ItemEntry) -> String {
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct ChatPane {
     pub rooms: ChatRoomSet,
+    pub guild: oteryn_dev_client::GuildRoomState,
     pub lines: Vec<ChatLine>,
 }
 
@@ -208,6 +209,7 @@ impl ChatPane {
     pub fn from_log(log: &ChatLog) -> Self {
         Self {
             rooms: log.rooms(),
+            guild: log.guild_room().clone(),
             lines: log.lines().cloned().collect(),
         }
     }
@@ -257,6 +259,7 @@ pub fn render_chat_line(line: &ChatLine) -> String {
             speaker_name,
             text,
         } => format!("[{}] {speaker_name}: {text}", room_name(*room)),
+        ChatLine::Guild(line) => super::guild_chat::render_line(line),
         ChatLine::Dropped => "-- DROPPED: chat lines were lost --".to_owned(),
     }
 }
@@ -391,7 +394,11 @@ impl RenderModel {
             | UseDisposition::NotPossible
             // RUNE-WIRE-1: capability 22 dispositions; the harness selects no capability 22.
             | UseDisposition::TargetIllegal
-            | UseDisposition::ProtectionZone => Notice::DoorRejected,
+            | UseDisposition::ProtectionZone
+            | UseDisposition::BedChooseSkill
+            | UseDisposition::BedOccupied
+            | UseDisposition::BedWoken
+            | UseDisposition::OfflineTraining => Notice::DoorRejected,
         };
         next
     }
@@ -619,8 +626,6 @@ impl RenderModel {
                     next.overlay_revision = delta.new_revision;
                 }
                 SessionEvent::ActorVitals(delta) => next.vitals = Some(delta.value),
-                // The harness model does not track combat state.
-                SessionEvent::ActorCombatState(_) => {}
                 SessionEvent::ChatLine(delta) => {
                     if let Some(chat) = next.chat.as_mut() {
                         chat.push(delta.value.clone());
@@ -641,6 +646,7 @@ impl RenderModel {
                         items.corpse = delta.value.clone();
                     }
                 }
+                _ => {}
             }
         }
         next
@@ -837,6 +843,7 @@ pub fn render_text(view: Viewport, model: &RenderModel) -> String {
             .map(room_name)
             .collect();
         out.push_str(&format!("chat [{}]\n", rooms.join(", ")));
+        super::guild_chat::render_room(&mut out, &chat.guild);
         for line in &chat.lines {
             out.push_str(&render_chat_line(line));
             out.push('\n');

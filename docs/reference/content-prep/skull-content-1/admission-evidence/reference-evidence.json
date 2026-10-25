@@ -1,0 +1,386 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_EVIDENCE/v1",
+  "task": "SKULL-CONTENT-1",
+  "target_cut": "2026-10-18",
+  "runtime_admission": "BLOCKED_PENDING_CP_QUALIFICATION",
+  "runtime_switch_authorized": false,
+  "reference_only": true,
+  "records": [
+    {
+      "key": "skull.white",
+      "facts": {
+        "rule": {
+          "value": "Attacking an unmarked character marks the attacker. White mark persists with linked logout block and is extended by further offenses.",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:combat:2026-10-18",
+              "selector": "5.3.12.b"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        },
+        "duration_seconds": {
+          "value": {
+            "ordinary_attack": 60,
+            "after_player_kill_minimum": 900,
+            "further_combat_refresh_seconds": 60,
+            "expiry": "linked_logout_block_expires",
+            "qualification": "Conditional policy for an attacker marked white; not every assist receives the killer minimum."
+          },
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "SOURCE_RECONCILIATION_DEFAULT_WITHDRAWN",
+          "evidence_scope": "PRIMARY_OFFICIAL_POLICY_WITH_EXPLICIT_SOURCE_QUALIFICATION",
+          "sources": [
+            {
+              "source": "official:manual:combat:indexed:20261019",
+              "selector": "5.3 logout/PZ blocks and5.3.12.b White Skulls"
+            }
+          ],
+          "note": "Combines explicit official logout-block timings with the official rule that white skull follows the linked block. Combat during the final minute extends the block; it does not restart a new15-minute minimum for every ordinary offense. No fixed duration for every participant is implied.",
+          "assumptions": [],
+          "global_evidence_archive": "docs/reference/content-prep/skull-content-1/tibia-source-archive.json#rulesets/pvp/skulls/reference-evidence.json/records/0/facts/duration_seconds",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+        }
+      }
+    },
+    {
+      "key": "skull.red",
+      "facts": {
+        "duration_days": {
+          "value": 30,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:combat:2026-10-18",
+              "selector": "5.3.12.b"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        },
+        "reset": {
+          "value": "New unjustified points reset to a fresh 30-day duration.",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:combat:2026-10-18",
+              "selector": "5.3.12.b"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        },
+        "thresholds": {
+          "value": {
+            "status": "EXACT_POINT_ALLOCATION_UNRESOLVED",
+            "official_trigger": "unjustified_points_bar_filled",
+            "official_kill_count_guidance": {
+              "hours24": [
+                3,
+                5
+              ],
+              "days7": [
+                5,
+                9
+              ],
+              "days30": [
+                10,
+                19
+              ]
+            },
+            "kill_count_is_deterministic_threshold": false,
+            "point_shares_depend_on_participation": true,
+            "selected_for_native_runtime": false
+          },
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-19",
+          "continuity": "SOURCE_RECONCILIATION_DEFAULT_WITHDRAWN",
+          "evidence_scope": "PRIMARY_OFFICIAL_POLICY_WITH_EXPLICIT_SOURCE_QUALIFICATION",
+          "sources": [
+            {
+              "source": "official:manual:combat:indexed:20261019",
+              "selector": "5.3.12.a-b Unjustified Points and skull marks"
+            },
+            {
+              "source": "wiki:2850:1013215",
+              "selector": "Red/Black Skull community tables"
+            },
+            {
+              "source": "wiki-br:skull:indexed:20261019",
+              "selector": "Red/Black Skull community tables"
+            }
+          ],
+          "note": "The primary source supplies qualified kill-count guidance and a point-bar trigger. Community3/5/10or6/10/20tables do not establish exact point allocation for all combat situations. Withdraw the fixed-kill project default; no replacement allocation algorithm is selected.",
+          "assumptions": [],
+          "global_evidence_archive": "docs/reference/content-prep/skull-content-1/tibia-source-archive.json#rulesets/pvp/skulls/reference-evidence.json/records/1/facts/thresholds",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+        },
+        "official_threshold_guidance": {
+          "value": {
+            "24_hours": [
+              3,
+              5
+            ],
+            "7_days": [
+              5,
+              9
+            ],
+            "30_days": [
+              10,
+              19
+            ],
+            "qualification": "RULE_OF_THUMB_NOT_EXACT_KILL_THRESHOLD",
+            "trigger": "unjustified points bar filled"
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:combat:2026-10-18",
+              "selector": "5.3.12.b / Red Skulls"
+            }
+          ],
+          "note": "Current source observation; native/runtime qualification remains separate."
+        }
+      }
+    },
+    {
+      "key": "skull.black",
+      "facts": {
+        "duration_days": {
+          "value": 45,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:combat:2026-10-18",
+              "selector": "5.3.12.b"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        },
+        "respawn_hp": {
+          "value": 40,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:combat:2026-10-18",
+              "selector": "5.3.12.b"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        },
+        "respawn_mana": {
+          "value": 0,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:combat:2026-10-18",
+              "selector": "5.3.12.b"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        },
+        "restrictions": {
+          "value": [
+            "cannot_attack_unmarked",
+            "no_red_fist_mode",
+            "full_equipment_loss"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:combat:2026-10-18",
+              "selector": "5.3.12.b"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        },
+        "thresholds": {
+          "value": {
+            "status": "EXACT_POINT_ALLOCATION_UNRESOLVED",
+            "official_trigger": "unjustified_points_bar_filled",
+            "official_kill_count_guidance": {
+              "hours24_minimum": 6,
+              "days7_minimum": 10,
+              "days30_minimum": 20
+            },
+            "kill_count_is_deterministic_threshold": false,
+            "point_shares_depend_on_participation": true,
+            "selected_for_native_runtime": false
+          },
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-19",
+          "continuity": "SOURCE_RECONCILIATION_DEFAULT_WITHDRAWN",
+          "evidence_scope": "PRIMARY_OFFICIAL_POLICY_WITH_EXPLICIT_SOURCE_QUALIFICATION",
+          "sources": [
+            {
+              "source": "official:manual:combat:indexed:20261019",
+              "selector": "5.3.12.a-b Unjustified Points and skull marks"
+            },
+            {
+              "source": "wiki:2850:1013215",
+              "selector": "Red/Black Skull community tables"
+            },
+            {
+              "source": "wiki-br:skull:indexed:20261019",
+              "selector": "Red/Black Skull community tables"
+            }
+          ],
+          "note": "The primary source supplies qualified kill-count guidance and a point-bar trigger. Community3/5/10or6/10/20tables do not establish exact point allocation for all combat situations. Withdraw the fixed-kill project default; no replacement allocation algorithm is selected.",
+          "assumptions": [],
+          "global_evidence_archive": "docs/reference/content-prep/skull-content-1/tibia-source-archive.json#rulesets/pvp/skulls/reference-evidence.json/records/2/facts/thresholds",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+        },
+        "official_threshold_guidance": {
+          "value": {
+            "24_hours": 6,
+            "7_days": 10,
+            "30_days": 20,
+            "comparison": "at_least",
+            "qualification": "RULE_OF_THUMB_NOT_EXACT_KILL_THRESHOLD",
+            "trigger": "unjustified points bar filled"
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:combat:2026-10-18",
+              "selector": "5.3.12.b / Black Skulls"
+            }
+          ],
+          "note": "Current source observation; native/runtime qualification remains separate."
+        },
+        "incoming_pvp_damage_percent": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:combat:2026-10-18",
+              "selector": "5.3.12.b / Black Skulls"
+            }
+          ],
+          "note": "Black-skull victim receives 100% PvP damage; ordinary victim receives 50%. This is incoming damage, not an outgoing damage bonus."
+        }
+      }
+    },
+    {
+      "key": "skull.orange",
+      "facts": {
+        "duration_days": {
+          "value": 7,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:combat:2026-10-18",
+              "selector": "5.3.12.b"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        },
+        "revenge": {
+          "value": "Private per-kill revenge mark, expires on revenge or after seven days; multiple unavenged kills keep it alive.",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:combat:2026-10-18",
+              "selector": "5.3.12.b"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        }
+      }
+    },
+    {
+      "key": "skull.frag_windows",
+      "facts": {
+        "windows": {
+          "value": [
+            "24 hours",
+            "7 days",
+            "30 days"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:combat:2026-10-18",
+              "selector": "5.3.12.b"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        },
+        "clock_boundaries": {
+          "value": {
+            "status": "GLOBAL_CLOCK_BOUNDARY_UNRESOLVED",
+            "official_windows_seconds": [
+              86400,
+              604800,
+              2592000
+            ],
+            "donor_skull_decision_windows_seconds": [
+              14400,
+              604800,
+              2592000
+            ],
+            "donor_widget_windows_seconds": [
+              86400,
+              604800,
+              2592000
+            ],
+            "donor_comparison": "elapsed_seconds <= window",
+            "donor_clock": "time(nullptr) wall-clock epoch seconds",
+            "global_inclusive_endpoint": "NOT_ESTABLISHED",
+            "global_calendar_or_rolling_implementation": "NOT_ESTABLISHED_BY_INSPECTED_PRIMARY_TEXT",
+            "selected_for_native_runtime": false
+          },
+          "classification": "CONFLICT",
+          "target_cut": "2026-10-19",
+          "continuity": "SOURCE_RECONCILIATION_DEFAULT_WITHDRAWN",
+          "evidence_scope": "PRIMARY_OFFICIAL_POLICY_WITH_EXPLICIT_SOURCE_QUALIFICATION",
+          "sources": [
+            {
+              "source": "official:manual:combat:indexed:20261019",
+              "selector": "5.3.12.b 24hours/7days/30days"
+            },
+            {
+              "source": "ots:skull:canary:player:52550d5",
+              "selector": "addUnjustifiedDead and sendUnjustifiedPoints"
+            },
+            {
+              "source": "ots:skull:crystalserver-summer:player:ddb4930",
+              "selector": "addUnjustifiedDead and sendUnjustifiedPoints"
+            }
+          ],
+          "note": "Both pinned donors use4hours for the skull-decision day counter but24hours for the client widget. Their inclusive wall-clock test is known; it does not prove Global endpoint or clock semantics. Withdraw the invented UTC-monotonic/inclusive project clock. No code change is made.",
+          "assumptions": [],
+          "global_evidence_archive": "docs/reference/content-prep/skull-content-1/tibia-source-archive.json#rulesets/pvp/skulls/reference-evidence.json/records/4/facts/clock_boundaries",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+        }
+      }
+    }
+  ],
+  "evidence_scope": "SOURCE_OBSERVATIONS_WITH_EXPLICIT_OTERYN_WORKING_DEFAULTS"
+}

@@ -4,7 +4,8 @@
 task_id: CRAFT-1
 title: "CRAFT-1: item conversion crafting"
 mode: IMPLEMENT
-status: skeleton
+status: ci_repair_locally_validated
+pr: 2349
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 3
@@ -14,20 +15,157 @@ briefs:
   - (none on main; CRAFT brief required)
 base_branch: main
 base_sha: 5742f30f37f5ae4e21b9c03ad25211ec5349eed6
-branch: skeleton/craft-1
+branch: claude/happy-davinci-ijz3wy-srv-craft
 needs_migration: true
 needs_registry: false
 needs_content_regeneration: true
 merge_authority: CP_ONLY (builder never marks ready)
 ```
 
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#2298](https://github.com/Oteryn/Oteryn-Game/pull/2298). CRAFT-CONTENT-1 supplies 125 validated authored conversion recipes and lowering. Evidence: `crates/gameplay/content/src/content/project/v2/item_conversion.rs`.
+
+At that audit, atomic consume/mint/audit execution, NPC/tool runtime and unresolved digging activation remained; the content compiler is not a crafting writer. PR #2349 now supplies the basic server cooking slice described below; the larger mechanic scope remains open.
+
+## CI repair (#2349, 2026-10-23)
+
+Returned to **AUTHORING** for the owner-requested local repair of `e20b368b6`.
+The coordinator owns publication, successor freeze, CI and review; this worker does
+not commit, push or change remote lifecycle state.
+
+The Type2 outbox audit requires the transaction-selected tuple to be bound through
+the same named `tuple` used by other writers, and its complete writer list must
+include cooking. The equipment failure is the profile-count assertion (454 versus
+432), not a changed speed sum. A semantic comparison against `origin/main` found
+all 432 existing profiles unchanged and exactly 22 new cooking profiles, each with
+zero speed bonus. Their pinned source is `content/craft/runtime-item-profiles.json`
+(Canary `99902524e052f37574194466c2949c576e4ab269`, `data/items/items.xml` and
+`data/items/appearances.dat`); no content rollback or regeneration is needed.
+The resumed semantic check also verified that `items/index.json`, `content.lock.json`
+and `manifest.json` change only the Item overlay count and digest;
+`spells.manifest.json` changes only that provider digest, and the World pin changes
+only its input digest. No unrelated item attributes were imported.
+
+The required `equipment_effects` run also exposed two repeatable PostgreSQL
+failures, both `Unavailable(CommitRejected)`, including individual reruns. These
+are not classified as contention. Migration 0165 injected an entry-only query into
+the placement trigger shared by container entries and slots. A combined SQL
+`TG_TABLE_NAME = ... AND EXISTS(...)` does not guard record-field resolution for
+slot rows, which lack `placement_ordinal` and `parent_item_instance_id`. A separate
+PL/pgSQL table-type `IF` now guards that query, matching migration 0131's existing
+pattern. Existing equipment dispatch tests cover the affected ordinary slot path;
+the craft dispatch E2E covers the cooking entry path. No test is weakened.
+
+### Repair validation
+
+Every Cargo command below uses `/home/mole/oteryn-cache/codex-bin/cargo` with
+`CARGO_NET_OFFLINE=true`; PostgreSQL routing is supplied only by that wrapper.
+Commands in the tables are the arguments after that absolute executable.
+
+| Command | Result |
+|---|---|
+| `test --locked -p oteryn-gameplay-durability --lib every_type2_insert_takes_its_tuple_from_a_type2_transaction --quiet` | PASS on resume: 1 test, 0.11 s |
+| `test --locked -p oteryn-gameplay-dispatch --lib equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes --quiet` | PASS on resume: 1 test, 16.25 s |
+| `test --locked -p oteryn-gameplay-dispatch --lib equipment_effects --quiet -- --nocapture` | PASS on resume: 7 tests, including both PostgreSQL cases, 84.29 s |
+| `test --locked -p oteryn-gameplay-durability --lib item_mint_audit --quiet` | PASS on resume: 24 tests, 0.59 s |
+| `test --locked -p oteryn-gameplay-dispatch --lib craft --quiet -- --nocapture` | PASS on resume: 1 PostgreSQL real-dispatch E2E, 34.74 s; no route-less early return |
+| `clippy --locked -p oteryn-gameplay-items -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --all-targets --quiet -- -D warnings` | PASS on resume after the migration repair |
+| `fmt --all` and `fmt --all --check` | PASS after the migration repair |
+| `run --locked -p oteryn-world-bundle-compiler --quiet -- pin-check . .craft-ci-pin-check` | PASS: inputs digest `1d5973811d00d6beaffdbc888949682f68e3b016b9adc8c396246e46f4631294`, World digest `52a827a27e07e1ac36b480110542f630d9ace980a16f4be2f68d8332d7b7222e`; temporary output removed |
+
+Additional checks passed:
+
+- `python3 tools/agents/validate_governance.py`
+- `python3 tools/repository/validate_repository_policy.py`
+- `python3 -m unittest discover -s tools/agents/tests`: 129 tests.
+- `python3 tools/content-migration/test_craft_runtime_profiles.py`: 3 tests.
+- `python3 tools/content-migration/register_spell_families.py --check`: 36 registered files.
+- `git diff --check`.
+
+D1462: reread the complete repair diff and branch changes against
+`/home/mole/oteryn-cache/CODEX-CHECKLIST.md`, including the semantic content delta;
+swept every trigger arm added by migration 0165 and its mounted table types.
+Workspace-wide searches across `apps/`, `crates/` and `tools/` verified the original
+CRAFT symbols, constructors, operation uses and authority implementations. This
+repair adds no enum variant, struct field, trait method or public function.
+The original `cooking_conversion` and `craft_item` production callers and the
+real-dispatch E2E remain in place. No content, protected CI or repository-policy
+file was changed by this repair. No failed test is deferred as contention.
+
+Unfinished: coordinator publication, successor-head CI and independent review.
+The previously recorded full content-regeneration check still needs the existing
+`rfc3339-validator` Python dependency (confirmed absent); this repair changes no
+content and its requested pin-check passed. No dependency was downloaded. No
+commit or push made; local HEAD remains `e20b368b69c07e6dd1fd26c1e24bea10049d97fb`.
+
+Repair changed files:
+
+- `apps/game-server/migrations/0165_item_craft.sql`
+- `crates/gameplay/dispatch/src/gameplay_transport/equipment_effects_owner_tests/ability_tests.rs`
+- `crates/gameplay/durability/src/durability/item_craft.rs`
+- `crates/gameplay/durability/src/durability/item_mint_audit.rs`
+- `docs/agents/tasks/CRAFT-1.md`
+
 ## Goal
 
 Use-with conversions (e.g. tools on items) produce output items through a data-driven conversion table, atomically and deterministically.
 
+## Server wiring gap list
+
+Audit of the allocated HEAD, 2026-10-23 (local AUTHORING; owner forbids publication):
+
+| Layer | Present | Missing / action |
+|---|---|---|
+| L3 | 125 validated `item_conversion` declarations, pinned cooking provenance | Execute the basic fixed cooking shapes; refuse unsupported shapes |
+| L4 | Current item fence, root serialization, existing item and container rows | Atomic consume/mint, immutable command receipt and audit; migration 0165 for proofs |
+| Wire / registry | Bounded USE command 2, map use-with under capabilities 11 + 15, existing typed results | Reuse codec and IDs; no new command |
+| Dispatch | Food/potion USE and map-handle resolution | Mechanic-owned conversion handler and production authority forwarding |
+| Capability | Bundle item/map views | Offer existing 11 + 15 for bundle cooking |
+| Runtime | Native bundle map, qualified item facts, admitted character/session | Resolve current reachable cooking station and invoke fenced writer |
+| Validation | Registered dispatch library PG lane | Filtered admitted-session bytes → database → result/reload E2E |
+
 Children (allocate from the brief's child graph; the plan row is only the family entry gate; no child of a CANDIDATE brief is allocated before the brief is ACCEPTED):
 
 Single row; children allocated after the architect writes the CRAFT brief.
+
+## Basic server implementation (owner direction 2026-10-23)
+
+The production `FreshAdmissionAuthority` now routes existing command 2 map use-with to
+`gameplay_transport/item_craft.rs`. The item owner re-resolves the authored fixed cooking
+row against the admitted native item policies inside the fenced transaction. The server
+binary compiles the existing `content/craft/recipes.json` catalogue; no client-selected
+recipe, output, quantity or definition is trusted. Supported sources are plain direct
+entries of the main backpack. Each output is a fresh stack (C3a v1: no implicit merge).
+Migration 0165 adds only the immutable command/audit receipt and narrow proof arms;
+existing ItemInstance/container rows hold all value. The recipe-owned native profile
+overlay supplies 22 previously absent cooking inputs/stations/outputs using the existing
+pinned importer and normalized facts; existing native policies retain precedence. Existing audit operation tags are
+preserved; native type-2 operation 15 records the cooking proof.
+
+Bundle worlds offer existing capabilities 11 and 15. Under the unchanged mandatory
+admission-floor rule, bundle policies declare `[11, 18]` and clients support the closure
+`[4, 6, 11, 15, 18]`. The local-login bundle configuration is updated accordingly.
+Fixture worlds without a bundle retain their previous offer.
+
+### Reference parity table
+
+| Visible behavior | Reference evidence | Oteryn now |
+|---|---|---|
+| Dough on an oven produces bread and other authored baked foods | Pinned Canary `baking.lua` lines 35–48, `content/craft/recipes.json` provenance | Fixed single-USED replacement cooking rows execute through USE/use-with |
+| Wheat on a millstone produces flour | Same pinned script, lines 52–59 | Same content-driven executor; no hard-coded recipe pairs |
+| Cookie baking returns the tray and twelve cookies | Same pinned script, lines 42–44 | Fixed secondary outputs are minted in the same transaction when their native facts are admitted |
+| No room or insufficient carrying capacity changes nothing | Accepted CRAFT1 C3/C3a | Main-container capacity, the 500-item tree bound and locked carried-weight projection checked before writes |
+| Unknown pair or absent/stale input refuses | Accepted CRAFT1 C1/C3 | Existing typed USE refusals; no receipt or audit for a refused attempt |
+| Retry/restart cannot consume twice | Accepted CRAFT1 C2/C3; existing item-use receipt pattern | Immutable `(GameSessionId, CommandId)` receipt compares original bounded USE bytes before current handle/custody resolution |
+
+### Unfinished
+
+- Carried-target/fluid ingredient combinations, fishing/random outcomes, digging, NPC
+  exchanges, timed outputs, nested/equipped sources and definition-hotkey crafting remain
+  outside this basic server execution. Those shapes fail closed. No client UI changes.
+- No commit, push, PR, paid external review, integration or task archive is performed in
+  this worker workspace. Full CRAFT-1 acceptance remains broader than this basic form.
 
 ## Dependencies (state on main@5742f30f3, 2026-10-15)
 
@@ -42,9 +180,9 @@ Rows marked BLOCKING must merge (or be accepted/decided) before the builder's sl
 ## owned_paths (builder edits freely)
 
 - `content/craft/** (sources only)`
-- `apps/game-server/src/durability/item_craft.rs`
-- `apps/game-server/src/durability/item_craft_tests.rs`
-- `apps/game-server/src/gameplay_transport/item_craft.rs`
+- `crates/gameplay/durability/src/durability/item_craft.rs`
+- `crates/gameplay/durability/src/durability/item_craft_tests.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/item_craft.rs`
 - `apps/game-server/tests/item_craft_postgres.rs`
 - `docs/agents/evidence/CRAFT-1-*.md`
 - `docs/agents/tasks/CRAFT-1.md` (this record: status and notes only)
@@ -62,9 +200,9 @@ To compile on the branch the builder may add only the module registration lines 
 - Rust pins (pinned registries / fixtures regenerated from content)
 - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json, GAME_EVENT_FOUNDATION_REGISTRY.json, RESOURCE_LIMITS_REGISTRY.json, OTERYN_GAME_ERROR_CODE_REGISTRY.json
 - apps/game-server/migrations/NNNN_*.sql number (next free on main at queue turn; main ends at 0087)
-- apps/game-server/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
+- crates/gameplay/dispatch/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
 - crates/protocol-oteryn/src/lib.rs `pub mod` + registry constants
-- apps/game-server/src/durability/mod.rs, domain/mod.rs, lib.rs module registration
+- crates/gameplay/durability/src/durability/core_modules.rs, domain/mod.rs, lib.rs module registration
 
 ## Wiring points (verified on origin/main 5742f30f3)
 
@@ -83,16 +221,28 @@ To compile on the branch the builder may add only the module registration lines 
 - [ ] Every concurrent transition serialized (named lock or deterministic order) and losing writer typed.
 - [ ] Durable state sufficient to resume after restart / session-generation change.
 
-## Validation commands
+## Validation evidence (2026-10-23, PROVEN unless noted)
 
-```bash
-cargo fmt --all -- --check
-cargo clippy -p oteryn-game-server -p oteryn-protocol-oteryn --all-targets -- -D warnings
-cargo test -p oteryn-game-server item_craft
-cargo test -p oteryn-game-server item_use
-python3 tools/content-migration/regenerate_content.py --check   # slot commit only
-cargo test -p oteryn-game-server --test <task>_postgres   # needs DATABASE_URL
-```
+- `cargo fmt --all -- --check`: passed.
+- `cargo clippy --locked -p oteryn-gameplay-items -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch --all-targets --quiet -- -D warnings`: passed. The vendored upstream deprecation warnings are unchanged.
+- `cargo test --locked -p oteryn-gameplay-dispatch --lib item_craft --quiet`: **1 passed on PostgreSQL**, 20.67 s. Real admitted-session wire snapshot/USE/result, partial-stack consume/mint, durable receipt/outbox and reload, owner restart replay, unknown pair, full-container refusal, final-unit retirement and slot reuse, stale handle; also admitted milling/cookie plans. Mounted by dispatch's existing library PG test tree.
+- `cargo test --locked -p oteryn-gameplay-dispatch --lib world_required_capabilities --quiet`: **17 passed**.
+- `cargo test --locked -p oteryn-gameplay-dispatch --lib gameplay_transport::capabilities::tests --quiet`: **44 passed**.
+- `cargo test --locked -p oteryn-protocol-oteryn --lib world_object --quiet`: **21 passed**, including the existing bounded use-with codecs.
+- `cargo test --locked -p oteryn-game-server --test content_world_project_repository --quiet`: **5 passed** (content-only target, no PostgreSQL suite).
+- `python3 tools/content-migration/test_craft_runtime_profiles.py`: **3 passed**.
+- `python3 tools/content-migration/register_spell_families.py --check`: passed; all 432 existing native policies remain identical, 22 cooking policies added, provider digest verified.
+- `python3 tools/content-census/g4_item_crystal_binding_generator.py --check`: passed.
+- `python3 tools/agents/validate_governance.py`, `python3 tools/repository/validate_repository_policy.py`, `python3 -m unittest discover -s tools/agents/tests` (**129 tests**), `bash -n tools/qualification/login_local/run.sh`, `git diff --check`: passed.
+- Full `python3 tools/content-migration/regenerate_content.py --check`: registration, import, World/tree, materialized content, craft/imbuement/charm/proficiency/reward/starter validators passed; stopped at unchanged `tools/content-schema/item-authoring/test_engine_items.py` because the environment lacks `rfc3339-validator`. No dependency downloaded and no validator weakened. The remaining binding and content-repository checks were run separately and passed.
+- D1462 self-review: complete diff/checklist reread; workspace-wide constructor/implementation/match searches for `CookingConversion`, `ItemCraftRequest`, `OneItemCraftV1`, `OneItemOperationV1` and `FreshAdmissionAuthority::use_craft`. Both new public Rust functions have production callers and coverage through the real dispatch. No request/result variant, command ID or capability ID added. No client or protected CI/policy paths changed.
+
+### Unfinished validation
+
+The full content regeneration check needs the existing `rfc3339-validator` dependency
+available in its Python environment before `test_engine_items.py` can run. No unrelated
+PostgreSQL suite was run. Integration/review and the larger mechanic scope remain as
+listed above.
 
 ## Reference evidence pointers
 
@@ -108,3 +258,35 @@ cargo test -p oteryn-game-server --test <task>_postgres   # needs DATABASE_URL
 - Never mark the PR ready and never post `@codex review`; CP marks ready (Codex auto-reviews each push).
 - Max 2 repair rounds on the PR; then CP closes and splits.
 - A required edit outside owned_paths is a `cross_domain_finding` (REPORT_ONLY), not an edit.
+
+## Changed files in this worker
+
+- `apps/game-server/migrations/0165_item_craft.sql`
+- `content/content.lock.json`
+- `content/craft/runtime-item-profiles.json`
+- `content/items/definitions/spell-native-profiles.json`
+- `content/items/index.json`
+- `content/manifest.json`
+- `content/spells.manifest.json`
+- `crates/gameplay/dispatch/src/gameplay_transport/capabilities.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/capabilities_tests.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/connection.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/item_craft.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/map_bundle_domain_postgres_tests.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/mod.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_craft.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/world_required_capabilities_tests.rs`
+- `crates/gameplay/durability/src/durability/core_modules.rs`
+- `crates/gameplay/durability/src/durability/item_craft.rs`
+- `crates/gameplay/durability/src/durability/item_craft/audit.rs`
+- `crates/gameplay/durability/src/durability/item_mint_audit.rs`
+- `crates/gameplay/items/src/item_craft.rs`
+- `crates/gameplay/items/src/lib.rs`
+- `docs/agents/tasks/CRAFT-1.md`
+- `docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json`
+- `docs/contracts/game-events/v1/native_one_item_transaction.proto`
+- `tools/content-migration/craft_runtime_profiles.py`
+- `tools/content-migration/register_spell_families.py`
+- `tools/content-migration/test_craft_runtime_profiles.py`
+- `tools/content-schema/craft-authoring/build_runtime_profiles.py`
+- `tools/qualification/login_local/run.sh`

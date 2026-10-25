@@ -32,7 +32,7 @@ owned_paths:
   - tools/content-schema/monster-authoring/build_formal_schema.py
   - tools/content-schema/monster-authoring/monster.schema.json
   - tools/content-schema/monster-authoring/verify_formal_schema.py
-  - apps/game-server/src/content/project/v2/creature.rs
+  - crates/gameplay/content/src/content/project/v2/creature.rs
   - apps/game-server/tests/content_world_project_v2_creature_admission.rs
   - tools/content-schema/monster-authoring/crystal_batch.py
   - tools/content-schema/monster-authoring/samples/wiki-only-candidates-2026-09-30.json

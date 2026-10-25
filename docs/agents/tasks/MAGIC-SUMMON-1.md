@@ -4,12 +4,12 @@
 task_id: MAGIC-SUMMON-1
 title: "MAGIC-SUMMON-1: fenced familiar lifecycle and clean logout"
 mode: IMPLEMENT
-status: OPEN
+status: waiting
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/magic-summon-1
 issue: 1622
-pr: 2199
+pr: null
 base_sha: efecd2209e71e209878ac543cd70966c6300e8dd
 plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4 Epic 3 MAGIC-SUMMON-1 (rows 57, 58); App. 7 LOOP-MONSTER-1, MAGIC-SUMMON-1; wave 2"
 class: "hard (child graph)"
@@ -21,16 +21,16 @@ created_at: 2026-10-15
 updated_at: 2026-10-17
 execution_policy: continuous_progress
 owned_paths:
-  - apps/game-server/src/monster_summon.rs
-  - apps/game-server/src/gameplay_transport/familiar_cast*.rs
-  - apps/game-server/src/gameplay_transport/world_item_cast.rs
+  - crates/gameplay/monster-ai/src/monster_summon.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/familiar_cast*.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/world_item_cast.rs
   - apps/game-server/tests/summon_*.rs (new)
   - apps/game-server/migrations/0107_familiar_state_versioned_lifecycle.sql
-  - apps/game-server/src/durability/character_familiar.rs
-  - apps/game-server/src/gameplay_transport/familiar_cast.rs
-  - apps/game-server/src/spell/companion_lifecycle.rs
-  - apps/game-server/src/spell/delayed_execution.rs
-  - apps/game-server/src/spell/delayed_execution_tests.rs
+  - crates/gameplay/durability/src/durability/character_familiar.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/familiar_cast.rs
+  - crates/gameplay/spell/src/spell/companion_lifecycle.rs
+  - crates/gameplay/spell/src/spell/delayed_execution.rs
+  - crates/gameplay/dispatch/src/lifted_tests/spell_delayed_execution_tests.rs
   - apps/game-server/tests/character_authority_postgres.rs
   - apps/game-server/tests/support/character_familiar_writer_postgres_cases.rs
   - apps/game-server/tests/support/character_proficiency_postgres_cases.rs
@@ -57,6 +57,12 @@ cross_repository_coordination_id: null
 external_repositories: []
 ```
 
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#2199](https://github.com/Oteryn/Oteryn-Game/pull/2199), [#2323](https://github.com/Oteryn/Oteryn-Game/pull/2323). Versioned familiar lifetime/clean-end persistence and native monster summon realization are merged. Evidence: `crates/gameplay/durability/src/durability/character_familiar.rs`.
+
+Remaining: Remaining summon/familiar acquisition/parity and world/house/vertical/item-cast gates remain; the existing lifecycle owner must be reused. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
+
 Skeleton task record (parallel work model, owner-approved 2026-10-15). The builder fills `owned_paths`;
 `slot_only_paths` are touched only in the final commit at this PR's merge-queue turn, after merging main.
 CP and architect do the final review.
@@ -80,19 +86,19 @@ Summons, familiars and magic fields; children MONSTER-SUMMON-1, SUMMON-1, SUMMON
 
 ## Owned paths (builder edits freely)
 
-- `apps/game-server/src/monster_summon.rs`
-- `apps/game-server/src/gameplay_transport/familiar_cast*.rs`
-- `apps/game-server/src/gameplay_transport/world_item_cast.rs`
+- `crates/gameplay/monster-ai/src/monster_summon.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/familiar_cast*.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/world_item_cast.rs`
 - apps/game-server/tests/summon_*.rs (new)
 
 Current D1296 PR-owned paths (in addition to the historical skeleton allocation):
 
 - `apps/game-server/migrations/0107_familiar_state_versioned_lifecycle.sql`
-- `apps/game-server/src/durability/character_familiar.rs`
-- `apps/game-server/src/gameplay_transport/familiar_cast.rs`
-- `apps/game-server/src/spell/companion_lifecycle.rs`
-- `apps/game-server/src/spell/delayed_execution.rs`
-- `apps/game-server/src/spell/delayed_execution_tests.rs`
+- `crates/gameplay/durability/src/durability/character_familiar.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/familiar_cast.rs`
+- `crates/gameplay/spell/src/spell/companion_lifecycle.rs`
+- `crates/gameplay/spell/src/spell/delayed_execution.rs`
+- `crates/gameplay/dispatch/src/lifted_tests/spell_delayed_execution_tests.rs`
 - `apps/game-server/tests/character_authority_postgres.rs`
 - `apps/game-server/tests/support/character_familiar_writer_postgres_cases.rs`
 - `apps/game-server/tests/support/character_proficiency_postgres_cases.rs`
@@ -147,7 +153,7 @@ CREATURE_AI0; FAMILIARS0; SPELL_NPC_MAP0 §2-§3. Plan: `docs/architecture/revie
 
 ```yaml
 last_progress: round-eight repair (Codex P2 4302737307) on source head 454adf6bf3cb2312edf1876e08f871a2cf1e238d
-status: OPEN
+status: waiting
 branch: skeleton/magic-summon-1
 blocker: CREATURE_AI0 ACCEPTED (summon children); FAMILIARS0 ACCEPTED; CREATURE-MOVE-1 residue (SUMMON-1); HOUSE-1b (`house_access`)
 next_action: new-head CI, then CP-owned external and final review

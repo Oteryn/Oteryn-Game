@@ -12,9 +12,9 @@ import lower_wiki_movable_packet as frame
 shared, base, ROOT = prior.shared, prior.base, prior.ROOT
 COMPILER = "tools/content-schema/item-authoring/lower_numeric_modifier17_packet.py"
 RECEIPT = (
-    "docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-current-receipt-v3.json"
+    "docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-current-receipt-v5.json"
 )
-RECEIPT_SHA = "bca34ff4d99c927b368a922bc4ecd7a2b69c290e494d50b427f725eaff0a28ad"
+RECEIPT_SHA = "9334db5a93ce03b7627908ba82a0485f859fcdf5adb8f4253d008b91fb27b592"
 OUTPUT = (
     ROOT
     / "docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-promotion-v1.json"

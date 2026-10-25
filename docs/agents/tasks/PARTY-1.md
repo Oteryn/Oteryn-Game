@@ -2,14 +2,14 @@
 
 ```yaml
 task_id: PARTY-1
-title: "PARTY-1: party membership and state (skeleton)"
+title: "PARTY-1: basic server party membership ingress"
 mode: IMPLEMENT
-status: waiting
+status: in_progress
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/party-1
 issue: 1622
-pr: 2201
+pr: null
 base_sha: 5742f30f3
 plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4 Epic 5 PARTY-1 (row 112); App. 7 PARTY/PVP; wave 2"
 class: "hard (shared state)"
@@ -18,13 +18,13 @@ registry: yes
 owner: family worker /root/party_owner (sole author)
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
-updated_at: 2026-10-17
+updated_at: 2026-10-23
 execution_policy: continuous_progress
 owned_paths:
-  - apps/game-server/src/durability/world_party.rs
-  - apps/game-server/src/durability/world_party_tests.rs # ROOT-HELP-D-PARTY-20261016: first-policy fixture only; sole author /root/party_owner
-  - apps/game-server/src/foundation/runtime_actor_party.rs
-  - apps/game-server/src/party/ (new)
+  - crates/gameplay/durability/src/durability/world_party.rs
+  - crates/gameplay/dispatch/src/lifted_tests/durability_world_party_tests.rs # ROOT-HELP-D-PARTY-20261016: first-policy fixture only; sole author /root/party_owner
+  - crates/gameplay/entities/src/carrier/runtime_actor_party.rs
+  - crates/gameplay/social/src/party/ (new)
   - crates/protocol-oteryn/src/party*.rs (new)
   - apps/game-server/tests/party_*.rs (new)
 slot_only_paths:
@@ -43,6 +43,65 @@ blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
 ```
+
+## Server wiring gap list (2026-10-23 HEAD audit)
+
+| Layer | On this HEAD | Missing server work |
+|---|---|---|
+| L3 | `social-rules/src/party.rs`, `social/src/party/view.rs`; membership validation/cache | Reuse existing membership shape validation; no duplicate model |
+| L4 | `durability/world_party.rs`, migration 0046; durable invite/accept/leave/pass, receipts, expiry/presence | Kick and a genuine same-transaction combat-lock proof for voluntary leave |
+| Protocol | No party codec or registry fragments | Bounded dedicated intents/query/results, session-local invitation/member handles; allocated commands 45–47, capability 42 only |
+| Dispatch | `party_spell_owner.rs` refreshes membership; `party_xp_command.rs` serves `/sharedxp` only | Admitted command dispatch, target qualification, result encoding and capability gate |
+| Runtime | Production `ComposedFreshAdmission` already owns party SQL/read/cache path | Compose missing command/query caller in existing connection; no client changes |
+| Qualification | World storage/cache and shared-XP tests exist | Real admitted-session command bytes → durable receipt/rows → result bytes; reconnect/reload and refusals |
+
+Workspace: `claude/happy-davinci-ijz3wy-srv-party`, base HEAD `c938f50b4`; no frozen candidate or PR.
+
+Current implementation status: AUTHORING, basic server wiring implemented under owner instruction 2026-10-23; PostgreSQL execution qualification pending. Local edits only; no publication. The owner instruction supersedes the historical skeleton's slot-only and dependency waiting notes for this local server task. No client paths, migration, workflow, repository policy or tooling paths changed.
+
+### Reference parity table (basic server scope)
+
+| Visible behavior | Reference evidence | Oteryn now |
+|---|---|---|
+| Invite a visible player; inviter leads; only leader invites | Accepted PARTY_PVP0 decision §2 official Tibia manual evidence, §4.1 | Dedicated command 45 resolves current actor generation, canonical session and same-channel viewport; existing consent/cap/rate/expiry writer retained |
+| Join a party from an invitation | Same decision §3/§4.1/§11 | Command 46 lists own live invitations with opaque handles, inviter name and expiry; command 45 accepts a handle; durable one-party membership |
+| Pass leadership | Official party evidence in §2; owner operation §4.1 | Query gives own member handles; command 45 invokes existing strongly ordered leadership writer |
+| Leave and deterministic succession | Official §2, accepted §4.1 | Physical attack owner stays borrowed through transaction; all three durable PvP deadlines checked under writer's absence lock; earliest eligible invitation sequence succeeds |
+| Leader kicks a member | Explicit owner task 2026-10-23 | New Kick action reuses durable membership removal and revision/receipt/audit path; self-kick and nonleader rejected |
+| Reload membership after owner/connection restart | Accepted strong World membership §3/§4.2 | Query re-reads PostgreSQL; handles reconstructed for that connection; no cached membership authorizes mutations |
+| Basic wire availability in shipped/default world | Owner server-first direction 2026-10-23 | Capability 42 offered in all Channel offer sets, requires existing entity capability 6; no new content needed; command 47 unused |
+
+### Current validation evidence (2026-10-23)
+
+- Initial `cargo check --locked -p oteryn-gameplay-dispatch --all-targets --quiet`: passed.
+- `cargo test --locked -p oteryn-protocol-oteryn --quiet party_`: 2 passed.
+- Final `cargo clippy --locked -p oteryn-protocol-oteryn -p oteryn-gameplay-entities -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch --all-targets --quiet -- -D warnings`: passed.
+- Final `cargo fmt --all --check -- crates/gameplay/durability/src/durability/world_party.rs crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_membership.rs`: passed. Explicit roots cover the existing include!-mounted durability and generated PostgreSQL modules too.
+- `cargo test --locked -p oteryn-protocol-oteryn --quiet`: 389 passed after adding 42 to the acceptance allowlist and keeping GATED sorted.
+- `cargo test --locked -p oteryn-gameplay-dispatch --lib --quiet gameplay_transport::capabilities::tests`: 44 passed; exact offer assertions extended to include 42, none removed or relaxed.
+- `cargo test --locked -p oteryn-gameplay-entities --features test-support --lib --quiet party`: 1 passed. The crate's existing tests require its test-support feature (plain isolated invocation failed on pre-existing fixture-only Content APIs); no unrelated source repair or manifest change.
+- Handle filter `party_membership_handles_are_bounded_and_session_scoped` passes; checks handle kind, connection generation, empty-session lookup and the 4096-entry cap, including reuse at capacity.
+- `python3 -m unittest discover -s tools/agents/tests`: 129 passed.
+- `python3 tools/agents/validate_governance.py`: passed.
+- `python3 tools/repository/validate_repository_policy.py`: passed.
+- `git diff --check`: passed.
+- PostgreSQL filter: `cargo test --locked -p oteryn-gameplay-dispatch --lib --quiet party_membership_real_dispatch_postgres_end_to_end -- --nocapture`. Initial invocation compiled and returned success via the required route-less early return, with explicit `OTERYN_TEST_POSTGRES_ADMIN_URL is not configured`; **this is not PostgreSQL qualification**. The session's plain `cargo` resolves to rustup, not the D1466 queued wrapper. Wrapper route requested from owner; no credential files or Docker accessed.
+- New case auto-mounted by dispatch `build.rs` into its existing `--lib` PostgreSQL tree; no new integration target. Scenario uses genuinely committed fresh sessions, real `serve_admitted` envelopes/results, durable invite/accept/pass/kick/leave, succession, owner rebuild/query, capability/malformed/invisible/stale-lease refusals, combat blocks and native receipt replay.
+
+Self-review: whole tracked diff and new mechanic files reviewed against `/home/mole/oteryn-cache/CODEX-CHECKLIST.md`. Workspace `apps/`, `crates/`, `tools/` searches covered new enum matches, struct constructors and authority implementations. The only production authority implementation delegates the new method; fixture authorities intentionally retain the rejecting default. All new server ports have production callers and the named real-dispatch scenario; the wire result decoder is consumed by its receiving test peer, with client UI explicitly excluded. Kick is serialized inside the existing unrestricted JSON intent, so no SQL enum CHECK or migration changes are needed. Bounded source reads invoke existing L3 `validate_memberships` inside the transaction; no cache grants mutation authority.
+
+### Unfinished (current server task)
+
+- Execute and repair the filtered PostgreSQL scenario through the intended D1466 wrapper. All local lint/format/unit checks above passed; PostgreSQL remains unqualified because the wrapper/admin route is absent.
+- Full PARTY/PVP state domains, shields, remote presence presentation, party chat and client UI are outside this basic server membership slice; existing presence/expiry and shared-XP owners are reused unchanged.
+- No commit, push, external review trigger, candidate freeze or PR created by this worker.
+
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#2201](https://github.com/Oteryn/Oteryn-Game/pull/2201). World party membership/consent/shared-XP flag ports and local view cleanup are merged. Evidence: `crates/gameplay/durability/src/durability/world_party.rs`.
+
+Remaining: Full wire/ingress, current cross-node observers/admission and family end-to-end membership/succession qualification remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 Skeleton task record (parallel work model, owner-approved 2026-10-15). The builder fills `owned_paths`;
 `slot_only_paths` are touched only in the final commit at this PR's merge-queue turn, after merging main.
@@ -63,10 +122,10 @@ Party invite/join/leave, succession, shared-XP toggle, `PartyView` cache (member
 
 ## Owned paths (builder edits freely)
 
-- `apps/game-server/src/durability/world_party.rs`
-- `apps/game-server/src/durability/world_party_tests.rs` — ROOT-HELP-D-PARTY-20261016; only the first-policy fixture correction, sole author `/root/party_owner`.
-- `apps/game-server/src/foundation/runtime_actor_party.rs`
-- apps/game-server/src/party/ (new)
+- `crates/gameplay/durability/src/durability/world_party.rs`
+- `crates/gameplay/dispatch/src/lifted_tests/durability_world_party_tests.rs` — ROOT-HELP-D-PARTY-20261016; only the first-policy fixture correction, sole author `/root/party_owner`.
+- `crates/gameplay/entities/src/carrier/runtime_actor_party.rs`
+- crates/gameplay/social/src/party/ (new)
 - crates/protocol-oteryn/src/party*.rs (new)
 - apps/game-server/tests/party_*.rs (new)
 
@@ -156,13 +215,13 @@ World writer, rather than an empty party skeleton:
 
 | Requested semantics | Existing source at the allocated head |
 |---|---|
-| Visible invite target, target consent, leader requirement and 10/20/50 limits | `apps/game-server/src/durability/world_party.rs:251` invite branch; target-root lock before consent/cap reads |
+| Visible invite target, target consent, leader requirement and 10/20/50 limits | `crates/gameplay/durability/src/durability/world_party.rs:251` invite branch; target-root lock before consent/cap reads |
 | Valid unexpired invitation, one-party membership and 50-member bound | `world_party.rs:311` accept branch; it deletes only the accepted invitation |
 | Decline, leader revoke, transfer to a member, combat-qualified leave | `world_party.rs:330` through the leave branch at line 354 |
 | Leader-only party lifetime and last-member deletion | `world_party.rs:383` and `remove_member_with_succession` at line 391 |
 | Online-first, lowest-invitation-sequence successor | `world_party.rs:402`: independently queried session state 1/2, then `m.seq` |
 | Expired invitation cleanup, one party and at most 100 rows per pass | `world_party.rs:427` |
-| Read-only actor snapshot cache, explicitly no authority grants | `apps/game-server/src/foundation/runtime_actor_party.rs:1` |
+| Read-only actor snapshot cache, explicitly no authority grants | `crates/gameplay/entities/src/carrier/runtime_actor_party.rs:1` |
 
 The existing writer is registered in `durability/mod.rs:81`; the actor cache is
 re-exported through `foundation/mod.rs:1535`. These are private source ports; source
@@ -184,9 +243,9 @@ Source SHA-256 evidence:
 
 | Input | SHA-256 |
 |---|---|
-| `apps/game-server/src/durability/world_party.rs` | `7ff6285716deb6bb7af5404695eb10ecc39cfabcdf4890457036e067328914d3` |
-| `apps/game-server/src/durability/world_party_tests.rs` | `70812f10a1731852d0d040e5a3fe38bc7e5cac3afbd04610d102eb41925b3740` |
-| `apps/game-server/src/foundation/runtime_actor_party.rs` | `0185148f0df3b11c578a220ca92164141c6a674495e8958c17a2673390ae4a1a` |
+| `crates/gameplay/durability/src/durability/world_party.rs` | `7ff6285716deb6bb7af5404695eb10ecc39cfabcdf4890457036e067328914d3` |
+| `crates/gameplay/dispatch/src/lifted_tests/durability_world_party_tests.rs` | `70812f10a1731852d0d040e5a3fe38bc7e5cac3afbd04610d102eb41925b3740` |
+| `crates/gameplay/entities/src/carrier/runtime_actor_party.rs` | `0185148f0df3b11c578a220ca92164141c6a674495e8958c17a2673390ae4a1a` |
 
 ### Validation and remaining boundaries
 
@@ -512,7 +571,7 @@ remains held on the inherited default-test constraint and final native/review ga
 
 This current entry supersedes the earlier unresolved literal-test/path hold only.
 The user's explicit ROOT-HELP-D-PARTY-20261016 instruction allocates
-`apps/game-server/src/durability/world_party_tests.rs` on `skeleton/party-1` to sole
+`crates/gameplay/dispatch/src/lifted_tests/durability_world_party_tests.rs` on `skeleton/party-1` to sole
 source author `/root/party_owner` exclusively for this contract-fixture repair.
 The task returns to AUTHORING from local `1538cd2bcac320a64507d1a0fee579171189a72c`;
 remote draft #2201's expected predecessor remains `5b46fefaa424fabc754239c8d7dc987ba1766ed4`.
@@ -585,7 +644,7 @@ shrinks, and the only other option, a `test = false` manifest entry, is a shared
 `Cargo.toml` hunk that would keep it out of CI anyway.
 
 **Fix within owned paths.** The 18 `shared_xp_cases` bodies are moved verbatim to
-`apps/game-server/src/party/shared_xp_postgres_tests.rs`, mounted under `cfg(test)` from
+`apps/game-server/src/lifted_tests/party_shared_xp_postgres_tests.rs`, mounted under `cfg(test)` from
 `party/mod.rs`. The only change is the PRE-ROUTING / NONCANONICAL early return
 (repository harness convention) in place of a hard failure when
 `OTERYN_TEST_POSTGRES_ADMIN_URL` is absent. The crate-copy wrapper is deleted. No

@@ -83,16 +83,17 @@ class SyntheticTree(unittest.TestCase):
     def test_hostile_file_name_cannot_inject_github_output(self):
         import json, os
         from unittest import mock
-        name = f"{TOOL}/x\nfull=false\n.md"
+        name = f"{TOOL}/x\nfull=false\ndonor=false\n.md"
         records = self.root / "records.json"
         records.write_text(json.dumps([rec(name)]), encoding="utf-8")
         out = self.root / "out.txt"
         with mock.patch.dict(os.environ, {"GITHUB_OUTPUT": str(out)}):
             scope.main(["--root", str(self.root), "--records", str(records)])
         lines = out.read_text(encoding="utf-8").splitlines()
-        self.assertEqual(len(lines), 2, lines)
+        self.assertEqual(len(lines), 3, lines)
         self.assertEqual(lines[0], "full=true")
-        self.assertTrue(lines[1].startswith("reason="))
+        self.assertEqual(lines[1], "donor=true")
+        self.assertTrue(lines[2].startswith("reason="))
 
     def test_dot_slash_and_dotdot_references_take_full_path(self):
         self.write(f"{TOOL}/dots/README.md", "d\n")
@@ -247,6 +248,54 @@ class SyntheticTree(unittest.TestCase):
         self.assertEqual(self.verdict([rec(f"{TOOL}/README.md")] * scope.MAX_ENUMERATED), "full")
 
 
+class DonorScope(unittest.TestCase):
+    def runs(self, records, **kw):
+        return scope.donor_check(records, **kw)[0]
+
+    def test_content_outside_the_donor_inputs_skips_the_donor_check(self):
+        for path in ("content/items/definitions/items-00000-00099.json", "content/interactions/index.json",
+                     "content/project.json", "content/manifest.json", "content/content.lock.json",
+                     "content/world/pins/oteryn.json", "apps/game-server/src/lib.rs", "docs/note.md"):
+            self.assertFalse(self.runs([rec(path)]), path)
+        self.assertFalse(self.runs([rec("content/items/a.json"), rec("content/interactions/b.json", "removed")]))
+
+    def test_any_donor_input_runs_the_donor_check(self):
+        for path in (f"{TOOL}/README.md", f"{TOOL}/run_checks.py", f"{TOOL}/samples/donor-source/corpus-input.json",
+                     "tools/content-schema/npc-authoring/samples/census-canary-47dfd51f.json",
+                     "tools/content-schema/monster-authoring/requirements.txt",
+                     "content/quests/definitions/index.json", ".github/workflows/quest-authoring-schema.yml"):
+            self.assertTrue(self.runs([rec(path)]), path)
+            self.assertTrue(self.runs([rec("content/items/a.json"), rec(path)]), path)
+        # A rename out of a donor input still changes it.
+        self.assertTrue(self.runs([rec("content/items/a.json", "renamed", "content/quests/a.json")]))
+
+    def test_unknown_or_malformed_input_runs_the_donor_check(self):
+        for records in (None, [], {}, ["x"], [{"status": "modified"}], [{"filename": ""}],
+                        [rec("content/items/../quests/index.json")], [rec("/content/quests/index.json")],
+                        [rec("content/items/a.json", "renamed", None) | {"previous_filename": None}]):
+            self.assertTrue(self.runs(records), records)
+        self.assertTrue(self.runs([rec("content/items/a.json")], complete=False))
+        self.assertTrue(self.runs([rec("content/items/a.json")] * scope.MAX_ENUMERATED))
+
+    def test_output_names_the_donor_verdict_and_fails_closed(self):
+        import os
+        from unittest import mock
+        with tempfile.TemporaryDirectory() as tmp:
+            root, out = Path(tmp), Path(tmp) / "out.txt"
+            records = root / "records.json"
+            with mock.patch.dict(os.environ, {"GITHUB_OUTPUT": str(out)}):
+                records.write_text(json.dumps([rec("content/items/a.json")]))
+                scope.main(["--root", str(root), "--records", str(records)])
+                self.assertIn("full=true\ndonor=false\n", out.read_text())
+                out.write_text("")
+                records.write_text(json.dumps([rec("content/quests/a.json")]))
+                scope.main(["--root", str(root), "--records", str(records)])
+                self.assertIn("donor=true\n", out.read_text())
+                out.write_text("")
+                scope.main(["--root", str(root), "--records", str(root / "missing.json")])
+                self.assertIn("full=true\ndonor=true\n", out.read_text())
+
+
 class RealTree(unittest.TestCase):
     """Run the classifier on the committed tree, where README pins are real."""
 
@@ -298,6 +347,22 @@ class WorkflowWiring(unittest.TestCase):
                 name in {"Set up Python", "Install pinned schema requirements", "Validate all offline Quest data"},
                 name,
             )
+
+    def test_donor_check_is_left_out_only_on_an_explicit_false(self):
+        self.assertIn("QUEST_DONOR: ${{ steps.scope.outputs.donor }}", self.text)
+        self.assertIn('if [ "$QUEST_DONOR" = "false" ]; then', self.text)
+        self.assertEqual(self.text.count("--skip-donor-source"), 1)
+        self.assertNotIn("donor=false\n", self.text)  # only the protected-base classifier writes it
+        checks = (REPO / TOOL / "run_checks.py").read_text(encoding="utf-8")
+        self.assertIn("DONOR_SOURCE_CHECK = ['quest_donor_source_authoring.py', '--check']", checks)
+        self.assertIn("if args.skip_donor_source and DONOR_SOURCE_CHECK in commands:", checks)
+
+    def test_matrix_runs_every_part_once(self):
+        self.assertIn("        part: [checks, donor, unit-tests]\n", self.text)
+        self.assertIn("      fail-fast: false\n", self.text)
+        self.assertEqual(self.text.count('--part "$QUEST_PART"'), 2)
+        checks = (REPO / TOOL / "run_checks.py").read_text(encoding="utf-8")
+        self.assertIn("PARTS = ('all', 'checks', 'donor', 'unit-tests')", checks)
 
     def test_job_name_and_triggers_are_unchanged(self):
         self.assertIn("\n  quest-authoring:\n", self.text)

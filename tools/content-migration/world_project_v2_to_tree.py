@@ -50,6 +50,8 @@ CREATURE_FAMILIES = {
 SERVICE_FAMILIES = {
     "Service.Trade": ("content/services/trade/", "trade", "offers"),
     "Service.Bank": ("content/services/bank/", "bank", "bank"),
+    "Service.Promotion": ("content/services/promotion/", "promotion", "promotion"),
+    "Service.Blessing": ("content/services/blessings/", "blessing", "blessing"),
     "Service.Travel": ("content/services/travel/", "travel", "routes"),
 }
 # Canonical capability relations: a known typed fact names the ruleset that governs it.
@@ -194,6 +196,10 @@ def main() -> int:
             "shard": {"index": start // ITEM_SHARD_SIZE, "start": start, "end": end, "count": len(rows)},
             "records": rows,
         })
+
+    from ranged_item_profiles import outputs as ranged_outputs, RANGED_PROFILES
+    ranged_generated = ranged_outputs(ROOT)
+    (ROOT / RANGED_PROFILES).write_bytes(ranged_generated[RANGED_PROFILES])
 
     declarations_blob_sha = git_blob_sha(LEGACY / "definitions" / "declarations.json")
 
@@ -500,7 +506,7 @@ def main() -> int:
                             "schema": declarations["schema"]}})
 
     service_records = [row for row in declarations["records"] if row.get("kind") == "Service"]
-    if len(service_records) != 381:
+    if len(service_records) != 388:
         raise RuntimeError(f"SERVICE_SOURCE_COUNT_MISMATCH:{len(service_records)}")
 
     service_shards: dict[str, list[str]] = {}
@@ -565,7 +571,7 @@ def main() -> int:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(data)
     managed = sorted([*cosmetics_outputs, *(["content/cosmetics/outfits/authoring.json"] if cosmetics_outputs else []),
-                      *item_shards, mount_relative, "content/items/index.json", "content/cosmetics/mounts/index.json",
+                      *item_shards, RANGED_PROFILES, mount_relative, "content/items/index.json", "content/cosmetics/mounts/index.json",
                       *creature_managed, *npc_shards, "content/npcs/definitions/index.json",
                       *encounter_shards, "content/encounters/definitions/index.json",
                       *dialogue_shards, "content/dialogues/definitions/index.json",
@@ -656,6 +662,9 @@ def main() -> int:
     # their separately qualified registration after rebuilding the legacy tree.
     subprocess.run([sys.executable,
                     str(ROOT / "tools/content-schema/imbuement-authoring/imbuement_content.py"),
+                    "content"], cwd=ROOT, check=True)
+    subprocess.run([sys.executable,
+                    str(ROOT / "tools/content-schema/craft-authoring/craft_authoring.py"),
                     "content"], cwd=ROOT, check=True)
     return 0
 

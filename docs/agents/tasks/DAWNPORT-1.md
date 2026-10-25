@@ -4,12 +4,12 @@
 task_id: DAWNPORT-1
 title: "DAWNPORT-1: Dawnport start and native vocation choice"
 mode: IMPLEMENT
-status: NOT_FULLY_QUALIFIED
+status: waiting
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/dawnport-1
 issue: 1622
-pr: 2191
+pr: null
 base_sha: 5742f30f3
 plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4 Epic 1 DAWNPORT-1 (row 38); App. 7 Supporting (A13); wave 1 (migration chain #2)"
 class: "impl (content)"
@@ -24,8 +24,8 @@ merge_authority: CP_ONLY
 owned_paths:
   - content/world/ Dawnport inputs (new family files only)
   - content/npcs/ Dawnport vocation NPC dialogue (new files)
-  - apps/game-server/src/interaction/vocation_choice.rs
-  - apps/game-server/src/gameplay_transport/npc_command.rs (D1103 SessionNpc and choice ingress hunk only)
+  - crates/gameplay/dispatch/src/gameplay_transport/vocation_choice.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs (D1103 SessionNpc and choice ingress hunk only)
   - apps/game-server/tests/dawnport_*.rs (existing owned request test)
   - apps/game-server/tests/private/dawnport_native_*.rs (new native-owner fixtures)
 slot_only_paths:
@@ -41,6 +41,12 @@ blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#2191](https://github.com/Oteryn/Oteryn-Game/pull/2191), [#2308](https://github.com/Oteryn/Oteryn-Game/pull/2308). NPC vocation confirmation/build writer is merged; tutorial work adds first-vocation vitals handling. Evidence: `crates/gameplay/dispatch/src/gameplay_transport/vocation_choice.rs`.
+
+Remaining: Dawnport start content/pins, actual NPC caller, departure and fresh-admission acceptance remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 Skeleton task record (parallel work model, owner-approved 2026-10-15). The builder fills `owned_paths`;
 `slot_only_paths` are touched only in the final commit at this PR's merge-queue turn, after merging main.
@@ -65,8 +71,8 @@ D1103: Dawnport content and a native vocation choice without a vocation start; T
 
 - content/world/ Dawnport inputs (new family files only)
 - content/npcs/ Dawnport vocation NPC dialogue (new files)
-- apps/game-server/src/interaction/vocation_choice.rs
-- apps/game-server/src/gameplay_transport/npc_command.rs (D1103 SessionNpc and choice ingress hunk only)
+- crates/gameplay/dispatch/src/gameplay_transport/vocation_choice.rs
+- crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs (D1103 SessionNpc and choice ingress hunk only)
 - apps/game-server/tests/dawnport_*.rs (new)
 
 ## Slot-only paths (final commit only, at the merge-queue turn, after merging main)
@@ -114,7 +120,7 @@ A13 §; SKILLS-0 §3.3; Reference Dawnport map/NPC data. Plan: `docs/architectur
 
 ```yaml
 last_progress: D1103 native NPC caller and five-file test/source bundle applied locally; no build or publication
-status: authoring
+status: waiting
 branch: skeleton/dawnport-1
 blocker: coordinated live None build installation; separate A2/native-test registration; qualified caps, nonempty stance and departure
 next_action: compose exact source snapshot privately with progression owner handoff, then scheduled native validation

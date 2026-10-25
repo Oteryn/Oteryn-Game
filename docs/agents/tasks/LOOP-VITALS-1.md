@@ -4,12 +4,12 @@
 task_id: LOOP-VITALS-1
 title: "LOOP-VITALS-1: regeneration accumulator, food time, soul, stamina (skeleton)"
 mode: IMPLEMENT
-status: in_progress
+status: waiting
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/loop-vitals-1
 issue: 1622
-pr: 2196
+pr: null
 base_sha: 5742f30f3
 plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4 Epic 1 LOOP-VITALS-1 (rows 30, 32, 33); wave 2"
 class: "hard (Character state)"
@@ -21,9 +21,9 @@ created_at: 2026-10-15
 updated_at: 2026-10-17
 execution_policy: continuous_progress
 owned_paths:
-  - apps/game-server/src/durability/character_vitals_soul.rs
-  - apps/game-server/src/durability/character_vitals_stamina.rs
-  - apps/game-server/src/durability/character_vitals_stamina_math.rs
+  - crates/gameplay/characters/src/soul.rs
+  - crates/gameplay/durability/src/durability/character_vitals_stamina.rs
+  - crates/gameplay/durability/src/durability/character_vitals_stamina_math.rs
   - apps/game-server/tests/loop_vitals_stamina.rs
   - docs/agents/tasks/LOOP-VITALS-1.md
 slot_only_paths:
@@ -40,6 +40,12 @@ blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#2196](https://github.com/Oteryn/Oteryn-Game/pull/2196). Soul schedule policy and checked offline stamina arithmetic are merged. Evidence: `crates/gameplay/characters/src/soul.rs`.
+
+Remaining: Durable regeneration accumulator/food/Soul lifecycle, kill hook and soul-orb integration plus runtime/offline settlement remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 Skeleton task record (parallel work model, owner-approved 2026-10-15). The builder fills `owned_paths`;
 `slot_only_paths` are touched only in the final commit at this PR's merge-queue turn, after merging main.
@@ -62,9 +68,9 @@ Durable regeneration accumulator, food-time ingress, soul regen and soul orb, st
 
 ## Owned paths (builder edits freely)
 
-- apps/game-server/src/durability/character_vitals_soul.rs (CP-authorized bounded rebuild below)
-- apps/game-server/src/durability/character_vitals_stamina.rs
-- apps/game-server/src/durability/character_vitals_stamina_math.rs
+- crates/gameplay/characters/src/soul.rs (CP-authorized bounded rebuild below)
+- crates/gameplay/durability/src/durability/character_vitals_stamina.rs
+- crates/gameplay/durability/src/durability/character_vitals_stamina_math.rs
 - apps/game-server/tests/loop_vitals_stamina.rs
 - docs/agents/tasks/LOOP-VITALS-1.md
 
@@ -113,7 +119,7 @@ DUR-02; CHAR-VITALS-0; Reference regen tables. Plan: `docs/architecture/reviews/
 
 ```yaml
 last_progress: CP bounded checkpoint; stamina arithmetic and Soul policy registered and tested
-status: bounded_checkpoint
+status: waiting
 branch: skeleton/loop-vitals-1
 merge_authority: CP_ONLY
 blocker: none for the checkpoint; full task held on the 0094-class residual bundle, OFFLINE-1 settlement, Soul window writer

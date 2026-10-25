@@ -1,0 +1,23 @@
+{
+  "id": "TASKBOARD1-RL-03",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_TASKBOARD1_SCOPE_DECISION_2026-10-25.md",
+  "resource": "Task Board kill tasks per board",
+  "unit": "items",
+  "hard_maximum": 5,
+  "configurable_range": {
+    "minimum": 5,
+    "maximum": 5
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "A fixed code-built board; the codec refuses a sixth task.",
+  "client_visible": true,
+  "boundary_tests": [
+    "the_board_is_five_valid_kill_tasks_with_three_transitions_each",
+    "task_board_reply_strict_codec"
+  ],
+  "consumers": [
+    "crates/gameplay/quests/src/quest/task_board.rs",
+    "crates/protocol-oteryn/src/task_board.rs"
+  ],
+  "notes": "TASKBOARD-1: five kill slots, as both references without expansion."
+}

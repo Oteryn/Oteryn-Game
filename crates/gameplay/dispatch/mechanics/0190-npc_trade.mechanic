@@ -1,0 +1,15 @@
+name=npc_trade
+commands=8
+[route]
+match routing::npc_trade::route(
+    authority,
+    session.actor,
+    &mut session.admitted,
+    command,
+    &mut session.item_view,
+)
+.await
+{
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

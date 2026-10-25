@@ -1,4 +1,4 @@
-//! PVP-1 PvP state on PostgreSQL 17.6 (PARTY-PVP-0 §6.2, §8.1; migration 0081).
+//! PVP-1 PvP state on PostgreSQL 18.6 (PARTY-PVP-0 §6.2, §8.1; migration 0081).
 //! The parent harness provides the migrations and an independently seeded current session.
 use crate::bestiary_postgres_harness::{
     CHANNEL, CHARACTER, Harness, TestResult, WORLD, configured_admin, debug, fence, id, runtime,
@@ -19,11 +19,18 @@ fn run<F>(tag: &'static str, body: F) -> TestResult
 where
     F: AsyncFnOnce(&Harness) -> TestResult,
 {
+    run_with_initialization(tag, true, body)
+}
+
+fn run_with_initialization<F>(tag: &'static str, initialized: bool, body: F) -> TestResult
+where
+    F: AsyncFnOnce(&Harness) -> TestResult,
+{
     let Some(admin) = configured_admin() else {
         return Ok(());
     };
     runtime()?.block_on(async move {
-        let harness = Harness::create(admin, tag, true).await?;
+        let harness = Harness::create(admin, tag, initialized).await?;
         let outcome = body(&harness).await;
         harness.cleanup().await?;
         outcome
@@ -36,23 +43,7 @@ fn character(seed: u8) -> TestResult<CharacterId> {
 
 /// A new Character root copied from the harness Character, in `world`.
 async fn seed_root(h: &Harness, seed: u8, world: u8) -> TestResult {
-    sqlx::query(
-        "INSERT INTO game_character_roots (character_id, account_id, world_id, lifecycle, \
-            character_revision, profile_revision, ruleset_revision, content_revision, \
-            starter_template_revision, name) \
-         SELECT encode($2,'hex')::uuid, account_id, encode($3,'hex')::uuid, lifecycle, \
-                character_revision, profile_revision, ruleset_revision, content_revision, \
-                starter_template_revision, \
-                'Pvp' || chr(97 + $4::int / 26) || chr(97 + $4::int % 26) \
-           FROM game_character_roots WHERE character_id = encode($1,'hex')::uuid",
-    )
-    .bind(id(CHARACTER).as_slice())
-    .bind(id(seed).as_slice())
-    .bind(id(world).as_slice())
-    .bind(i32::from(seed))
-    .execute(&h.pool)
-    .await?;
-    Ok(())
+    pvp_character_fixture::seed_root(&h.pool, CHARACTER, seed, world).await
 }
 
 fn kinds(logout_block: bool, pz_block: bool, white_skull: bool) -> PvpDeadlineKinds {
@@ -225,7 +216,7 @@ fn the_database_never_lowers_a_deadline() -> TestResult {
             sqlx::query("UPDATE game_character_pvp_state SET kill_block_until = clock_timestamp(), revision = revision + 1")
                 .execute(&h.pool)
                 .await
-                .is_ok()
+                .is_err()
         );
         // A row of another World than its Character's, and a skull without an end, are refused.
         seed_root(h, FOREIGN, FOREIGN_WORLD).await?;
@@ -245,12 +236,13 @@ fn the_database_never_lowers_a_deadline() -> TestResult {
         );
         // An unexpired skull is not cleared, shortened or downgraded; forfeiture is permanent.
         assert!(
-            sqlx::query("UPDATE game_character_pvp_state SET skull = 2, skull_until = clock_timestamp() + interval '1 hour', adventurer_forfeited = TRUE, revision = revision + 1 WHERE character_id = encode($1,'hex')::uuid")
+            sqlx::query("UPDATE game_character_pvp_state SET skull = 2, skull_until = clock_timestamp() + interval '1 hour', revision = revision + 1 WHERE character_id = encode($1,'hex')::uuid")
                 .bind(id(CHARACTER).as_slice())
                 .execute(&h.pool)
                 .await
-                .is_ok()
+                .is_err()
         );
+        pvp_death_postgres_cases::seed_skull_fixture(h, CHARACTER, "1 hour").await?;
         for change in [
             "skull = 0, skull_until = NULL",
             "skull = 1",
@@ -363,18 +355,7 @@ fn ledger_caps_hold_and_the_world_job_is_bounded() -> TestResult {
             seed_root(h, seed, WORLD).await?;
         }
         let insert = async |seed: u8, compact: bool, age: &str| {
-            let sql = format!(
-                "INSERT INTO game_character_pvp_ledger (victim_character_id, contributor_character_id, \
-                    buckets, last_at, compact, compact_kind) \
-                 VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, '[]', \
-                    clock_timestamp() - interval '{age}', $3, CASE WHEN $3 THEN 1 END)"
-            );
-            sqlx::query(sqlx::AssertSqlSafe(sql))
-                .bind(id(CHARACTER).as_slice())
-                .bind(id(seed).as_slice())
-                .bind(compact)
-                .execute(&h.pool)
-                .await
+            pvp_ledger_fixture::insert(&h.pool, CHARACTER, seed, compact, Some(1), age).await
         };
         for seed in 100..116u8 {
             insert(seed, false, "10 minutes").await?;
@@ -680,3 +661,12 @@ fn ledger_caps_hold_and_the_world_job_is_bounded() -> TestResult {
         Ok(())
     })
 }
+
+#[path = "pvp_death_postgres_cases.rs"]
+mod pvp_death_postgres_cases;
+
+#[path = "pvp_ledger_fixture.rs"]
+mod pvp_ledger_fixture;
+
+#[path = "pvp_character_fixture.rs"]
+mod pvp_character_fixture;

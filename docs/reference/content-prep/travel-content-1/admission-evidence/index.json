@@ -1,0 +1,14 @@
+{
+  "schema": "OTERYN_FAMILY_INDEX/v1",
+  "family": "Travel.RouteEvidence",
+  "record_count": 195,
+  "shard_size": 500,
+  "shards": [
+    "content/services/travel/admission-evidence/evidence-00000-00194.json"
+  ],
+  "population_state": "POPULATED",
+  "runtime_admission": "BLOCKED",
+  "runtime_switch_authorized": false,
+  "evidence_completeness": "COMPLETE_OTERYN_WORKING_PARAMETERS_GLOBAL_SOURCE_ARCHIVED",
+  "service_evidence_index": "content/services/travel/admission-evidence/service-index.json"
+}

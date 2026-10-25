@@ -1,0 +1,1113 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_PROPOSALS/v1",
+  "task": "PREY-CONTENT-1",
+  "reference_only": true,
+  "runtime_switch_authorized": false,
+  "status": "SOURCE_RECONCILED_WITH_XP_CANDIDATES_NOT_NATIVE_SELECTED",
+  "global_evidence_policy": "Original Global UNKNOWN/CONFLICT facts are retained in the source archive. Target fields now contain scoped DERIVED Oteryn working parameters.",
+  "owner_authorization": {
+    "quote": "Przygotuj propozycje Oteryn z jawnymi założeniami",
+    "scope": "Authorize preparing proposals only; individual new values are not yet accepted."
+  },
+  "predecessor_sha": "8c4dd321dc85a30048e42aab56d920a80eb4cad0",
+  "original_field_list_sha256": "f33088986a34ade507a2648d9a54c2688b730bf0753b114f6533ba93da1b9e62",
+  "coverage": {
+    "held_fields": 17,
+    "proposals": 17,
+    "uncovered": 0,
+    "original_classifications": {
+      "CONFLICT": 6,
+      "UNKNOWN": 11
+    }
+  },
+  "shared_policies": {},
+  "source_observations": [
+    {
+      "source_id": "crystalserver-summer",
+      "key": "prey.reroll_upgrade",
+      "value": {
+        "star_update": "rarity>=9 -> 10; otherwise uniform integer in [rarity+1,10]",
+        "max_rarity_bonus_type_reroll": "repeat uniform bonus-type roll until type differs from previous"
+      },
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+        "path": "src/io/ioprey.cpp",
+        "line": 49,
+        "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/io/ioprey.cpp#L49",
+        "file_sha256": "33189a28e0e354773b183fe885dfbeb0c38a6f69e65bb7d9556522b2a9fe372d"
+      },
+      "evidence_scope": "UPSTREAM_IMPLEMENTATION_ONLY",
+      "limitation": "OTS algorithm; source distribution is not official probability evidence."
+    }
+  ],
+  "proposals": [
+    {
+      "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/reference-evidence.json/records/40/facts/reroll_upgrade",
+      "subject": "prey.costs",
+      "original_classification": "CONFLICT",
+      "proposed_value": {
+        "star_update": "rarity>=9 -> 10; otherwise uniform integer in [rarity+1,10]",
+        "max_rarity_bonus_type_reroll": "repeat uniform bonus-type roll until type differs from previous"
+      },
+      "basis": {
+        "kind": "UPSTREAM_ADAPTATION",
+        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "original_source_urls": [
+          "https://tibia.fandom.com/w/index.php?oldid=1168706",
+          "https://www.tibia.com/gameguides/?subtopic=manual&section=combat"
+        ],
+        "observation_refs": [
+          {
+            "source_id": "crystalserver-summer",
+            "observation_key": "prey.reroll_upgrade"
+          }
+        ],
+        "donor_selection": null
+      },
+      "assumptions": [
+        "Select this documented value for Oteryn; not a claim of current official server behavior."
+      ],
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/0/facts/selection_pool",
+      "subject": "prey.creature.acid_blob",
+      "original_classification": "CONFLICT",
+      "proposed_value": "wildcard_only",
+      "basis": {
+        "kind": "PINNED_DONOR_SOURCE_CORRECTION",
+        "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:prey-exclusive:slimes/acid_blob.lua",
+        "original_source_urls": [
+          "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/monster/slimes/acid_blob.lua#L66"
+        ],
+        "rationale": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed."
+      },
+      "assumptions": [
+        "Use the explicit exclusive flag from the pinned donor, replacing the unsourced normal-pool override. Current Global continuity remains unmeasured."
+      ],
+      "acceptance_status": "MATERIALIZED_DERIVED_DONOR_REFERENCE_RUNTIME_UNQUALIFIED",
+      "superseded_decision": {
+        "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/0/facts/selection_pool",
+        "subject": "prey.creature.acid_blob",
+        "original_classification": "CONFLICT",
+        "proposed_value": "free_or_gold",
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1090711"
+          ],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/90/facts/selection_pool",
+      "subject": "prey.creature.damaged_worker_golem",
+      "original_classification": "CONFLICT",
+      "proposed_value": "wildcard_only",
+      "basis": {
+        "kind": "PINNED_DONOR_SOURCE_CORRECTION",
+        "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:prey-exclusive:constructs/damaged_worker_golem.lua",
+        "original_source_urls": [
+          "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/monster/constructs/damaged_worker_golem.lua#L63"
+        ],
+        "rationale": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed."
+      },
+      "assumptions": [
+        "Use the explicit exclusive flag from the pinned donor, replacing the unsourced normal-pool override. Current Global continuity remains unmeasured."
+      ],
+      "acceptance_status": "MATERIALIZED_DERIVED_DONOR_REFERENCE_RUNTIME_UNQUALIFIED",
+      "superseded_decision": {
+        "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/90/facts/selection_pool",
+        "subject": "prey.creature.damaged_worker_golem",
+        "original_classification": "CONFLICT",
+        "proposed_value": "free_or_gold",
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1090711"
+          ],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/157/facts/selection_pool",
+      "subject": "prey.creature.flamingo",
+      "original_classification": "CONFLICT",
+      "proposed_value": "wildcard_only",
+      "basis": {
+        "kind": "PINNED_DONOR_SOURCE_CORRECTION",
+        "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:prey-exclusive:birds/flamingo.lua",
+        "original_source_urls": [
+          "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/monster/birds/flamingo.lua#L63"
+        ],
+        "rationale": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed."
+      },
+      "assumptions": [
+        "Use the explicit exclusive flag from the pinned donor, replacing the unsourced normal-pool override. Current Global continuity remains unmeasured."
+      ],
+      "acceptance_status": "MATERIALIZED_DERIVED_DONOR_REFERENCE_RUNTIME_UNQUALIFIED",
+      "superseded_decision": {
+        "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/157/facts/selection_pool",
+        "subject": "prey.creature.flamingo",
+        "original_classification": "CONFLICT",
+        "proposed_value": "free_or_gold",
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1090711"
+          ],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/173/facts/selection_pool",
+      "subject": "prey.creature.gazer",
+      "original_classification": "CONFLICT",
+      "proposed_value": "wildcard_only",
+      "basis": {
+        "kind": "PINNED_DONOR_SOURCE_CORRECTION",
+        "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:prey-exclusive:magicals/gazer.lua",
+        "original_source_urls": [
+          "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/monster/magicals/gazer.lua#L63"
+        ],
+        "rationale": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed."
+      },
+      "assumptions": [
+        "Use the explicit exclusive flag from the pinned donor, replacing the unsourced normal-pool override. Current Global continuity remains unmeasured."
+      ],
+      "acceptance_status": "MATERIALIZED_DERIVED_DONOR_REFERENCE_RUNTIME_UNQUALIFIED",
+      "superseded_decision": {
+        "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/173/facts/selection_pool",
+        "subject": "prey.creature.gazer",
+        "original_classification": "CONFLICT",
+        "proposed_value": "free_or_gold",
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1090711"
+          ],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/374/facts/selection_pool",
+      "subject": "prey.creature.silver_rabbit",
+      "original_classification": "CONFLICT",
+      "proposed_value": "wildcard_only",
+      "basis": {
+        "kind": "PINNED_DONOR_SOURCE_CORRECTION",
+        "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:prey-exclusive:mammals/silver_rabbit.lua",
+        "original_source_urls": [
+          "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/monster/mammals/silver_rabbit.lua#L63"
+        ],
+        "rationale": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed."
+      },
+      "assumptions": [
+        "Use the explicit exclusive flag from the pinned donor, replacing the unsourced normal-pool override. Current Global continuity remains unmeasured."
+      ],
+      "acceptance_status": "MATERIALIZED_DERIVED_DONOR_REFERENCE_RUNTIME_UNQUALIFIED",
+      "superseded_decision": {
+        "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/374/facts/selection_pool",
+        "subject": "prey.creature.silver_rabbit",
+        "original_classification": "CONFLICT",
+        "proposed_value": "free_or_gold",
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1090711"
+          ],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/480/facts/native_creature_binding",
+      "subject": "prey.creature.berrypest",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "status": "PENDING_NATIVE_CREATURE_ADMISSION",
+        "source_creature_name": "Berrypest",
+        "source_identity": {
+          "namespace": "cipsoft/staticdata/creature_id",
+          "id": 691,
+          "source_name": "berrypest",
+          "client_version": "15.30"
+        },
+        "native_identity_assigned": false,
+        "preserve_source_prey_membership": true,
+        "requires_native_creature_definition": true
+      },
+      "basis": {
+        "kind": "SOURCE_IDENTITY_AND_NATIVE_CATALOG_RECONCILIATION",
+        "source_refs": [
+          {
+            "source": "repo:prey-native-catalog:466c9142ad41223181f998878fa9b8a633be4b4f",
+            "selector": "No matching definition in1863native Creature records"
+          },
+          {
+            "source": "repo:cipsoft-creature-source:691:466c9142ad41223181f998878fa9b8a633be4b4f",
+            "selector": "/records/51"
+          },
+          {
+            "source": "wiki-br:prey-identity:27061:398928",
+            "selector": "Creature identity"
+          }
+        ],
+        "rationale": "The invented launch-exclusion decision is withdrawn. Source identity and wildcard membership are retained; an actual native Creature definition must be admitted before a binding can exist."
+      },
+      "assumptions": [
+        "No native ID, replacement creature or permanent exclusion is invented. Pending native admission is an implementation dependency, not missing source identity."
+      ],
+      "acceptance_status": "SOURCE_RESOLVED_PENDING_NATIVE_CREATURE_ADMISSION",
+      "superseded_exclusion_decision": {
+        "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/480/facts/native_creature_binding",
+        "subject": "prey.creature.berrypest",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+          "source_creature_name": "Berrypest",
+          "create_native_identity": false
+        },
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/488/facts/native_creature_binding",
+      "subject": "prey.creature.cake_golem",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "status": "PENDING_NATIVE_CREATURE_ADMISSION",
+        "source_creature_name": "Cake Golem",
+        "source_identity": {
+          "namespace": "cipsoft/staticdata/creature_id",
+          "id": 680,
+          "source_name": "cake golem",
+          "client_version": "15.30"
+        },
+        "native_identity_assigned": false,
+        "preserve_source_prey_membership": true,
+        "requires_native_creature_definition": true
+      },
+      "basis": {
+        "kind": "SOURCE_IDENTITY_AND_NATIVE_CATALOG_RECONCILIATION",
+        "source_refs": [
+          {
+            "source": "repo:prey-native-catalog:466c9142ad41223181f998878fa9b8a633be4b4f",
+            "selector": "No matching definition in1863native Creature records"
+          },
+          {
+            "source": "repo:cipsoft-creature-source:680:466c9142ad41223181f998878fa9b8a633be4b4f",
+            "selector": "/records/50"
+          },
+          {
+            "source": "wiki-br:prey-identity:4010:435808",
+            "selector": "Creature identity"
+          }
+        ],
+        "rationale": "The invented launch-exclusion decision is withdrawn. Source identity and wildcard membership are retained; an actual native Creature definition must be admitted before a binding can exist."
+      },
+      "assumptions": [
+        "No native ID, replacement creature or permanent exclusion is invented. Pending native admission is an implementation dependency, not missing source identity."
+      ],
+      "acceptance_status": "SOURCE_RESOLVED_PENDING_NATIVE_CREATURE_ADMISSION",
+      "superseded_exclusion_decision": {
+        "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/488/facts/native_creature_binding",
+        "subject": "prey.creature.cake_golem",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+          "source_creature_name": "Cake Golem",
+          "create_native_identity": false
+        },
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/520/facts/native_creature_binding",
+      "subject": "prey.creature.elder_forest_fury",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "status": "PENDING_NATIVE_CREATURE_ADMISSION",
+        "source_creature_name": "Elder Forest Fury",
+        "source_identity": {
+          "namespace": "cipsoft/staticdata/creature_id",
+          "id": 1157,
+          "source_name": "elder forest fury",
+          "client_version": "15.30"
+        },
+        "native_identity_assigned": false,
+        "preserve_source_prey_membership": true,
+        "requires_native_creature_definition": true
+      },
+      "basis": {
+        "kind": "SOURCE_IDENTITY_AND_NATIVE_CATALOG_RECONCILIATION",
+        "source_refs": [
+          {
+            "source": "repo:prey-native-catalog:466c9142ad41223181f998878fa9b8a633be4b4f",
+            "selector": "No matching definition in1863native Creature records"
+          },
+          {
+            "source": "repo:cipsoft-creature-source:1157:466c9142ad41223181f998878fa9b8a633be4b4f",
+            "selector": "/records/229"
+          },
+          {
+            "source": "wiki-br:prey-identity:36633:441194",
+            "selector": "Creature identity"
+          }
+        ],
+        "rationale": "The invented launch-exclusion decision is withdrawn. Source identity and wildcard membership are retained; an actual native Creature definition must be admitted before a binding can exist."
+      },
+      "assumptions": [
+        "No native ID, replacement creature or permanent exclusion is invented. Pending native admission is an implementation dependency, not missing source identity."
+      ],
+      "acceptance_status": "SOURCE_RESOLVED_PENDING_NATIVE_CREATURE_ADMISSION",
+      "superseded_exclusion_decision": {
+        "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/520/facts/native_creature_binding",
+        "subject": "prey.creature.elder_forest_fury",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+          "source_creature_name": "Elder Forest Fury",
+          "create_native_identity": false
+        },
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/534/facts/native_creature_binding",
+      "subject": "prey.creature.furious_fire_elemental",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "status": "PENDING_NATIVE_CREATURE_ADMISSION",
+        "source_creature_name": "Furious Fire Elemental",
+        "source_identity": {
+          "namespace": "cipsoft/staticdata/creature_id",
+          "id": 1000,
+          "source_name": "furious fire elemental",
+          "client_version": "15.30"
+        },
+        "native_identity_assigned": false,
+        "preserve_source_prey_membership": true,
+        "requires_native_creature_definition": true
+      },
+      "basis": {
+        "kind": "SOURCE_IDENTITY_AND_NATIVE_CATALOG_RECONCILIATION",
+        "source_refs": [
+          {
+            "source": "repo:prey-native-catalog:466c9142ad41223181f998878fa9b8a633be4b4f",
+            "selector": "No matching definition in1863native Creature records"
+          },
+          {
+            "source": "repo:cipsoft-creature-source:1000:466c9142ad41223181f998878fa9b8a633be4b4f",
+            "selector": "/records/175"
+          },
+          {
+            "source": "wiki-br:prey-identity:43902:441304",
+            "selector": "Creature identity"
+          }
+        ],
+        "rationale": "The invented launch-exclusion decision is withdrawn. Source identity and wildcard membership are retained; an actual native Creature definition must be admitted before a binding can exist."
+      },
+      "assumptions": [
+        "No native ID, replacement creature or permanent exclusion is invented. Pending native admission is an implementation dependency, not missing source identity."
+      ],
+      "acceptance_status": "SOURCE_RESOLVED_PENDING_NATIVE_CREATURE_ADMISSION",
+      "superseded_exclusion_decision": {
+        "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/534/facts/native_creature_binding",
+        "subject": "prey.creature.furious_fire_elemental",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+          "source_creature_name": "Furious Fire Elemental",
+          "create_native_identity": false
+        },
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/585/facts/native_creature_binding",
+      "subject": "prey.creature.nightslayer",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "status": "PENDING_NATIVE_CREATURE_ADMISSION",
+        "source_creature_name": "Nightslayer",
+        "source_identity": {
+          "namespace": "cipsoft/staticdata/creature_id",
+          "id": 579,
+          "source_name": "nightslayer",
+          "client_version": "15.30"
+        },
+        "native_identity_assigned": false,
+        "preserve_source_prey_membership": true,
+        "requires_native_creature_definition": true
+      },
+      "basis": {
+        "kind": "SOURCE_IDENTITY_AND_NATIVE_CATALOG_RECONCILIATION",
+        "source_refs": [
+          {
+            "source": "repo:prey-native-catalog:466c9142ad41223181f998878fa9b8a633be4b4f",
+            "selector": "No matching definition in1863native Creature records"
+          },
+          {
+            "source": "repo:cipsoft-creature-source:579:466c9142ad41223181f998878fa9b8a633be4b4f",
+            "selector": "/records/15"
+          },
+          {
+            "source": "wiki-br:prey-identity:4023:441384",
+            "selector": "Creature identity"
+          }
+        ],
+        "rationale": "The invented launch-exclusion decision is withdrawn. Source identity and wildcard membership are retained; an actual native Creature definition must be admitted before a binding can exist."
+      },
+      "assumptions": [
+        "No native ID, replacement creature or permanent exclusion is invented. Pending native admission is an implementation dependency, not missing source identity."
+      ],
+      "acceptance_status": "SOURCE_RESOLVED_PENDING_NATIVE_CREATURE_ADMISSION",
+      "superseded_exclusion_decision": {
+        "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/585/facts/native_creature_binding",
+        "subject": "prey.creature.nightslayer",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+          "source_creature_name": "Nightslayer",
+          "create_native_identity": false
+        },
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/635/facts/native_creature_binding",
+      "subject": "prey.creature.undead_jester",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "status": "PENDING_NATIVE_CREATURE_ADMISSION",
+        "source_creature_name": "Undead Jester",
+        "source_identity": {
+          "namespace": "cipsoft/staticdata/creature_id",
+          "id": 388,
+          "source_name": "undead jester",
+          "client_version": "15.30"
+        },
+        "native_identity_assigned": false,
+        "preserve_source_prey_membership": true,
+        "requires_native_creature_definition": true
+      },
+      "basis": {
+        "kind": "SOURCE_IDENTITY_AND_NATIVE_CATALOG_RECONCILIATION",
+        "source_refs": [
+          {
+            "source": "repo:prey-native-catalog:466c9142ad41223181f998878fa9b8a633be4b4f",
+            "selector": "No matching definition in1863native Creature records"
+          },
+          {
+            "source": "repo:cipsoft-creature-source:388:466c9142ad41223181f998878fa9b8a633be4b4f",
+            "selector": "/records/208"
+          },
+          {
+            "source": "wiki-br:prey-identity:5908:440797",
+            "selector": "Creature identity"
+          }
+        ],
+        "rationale": "The invented launch-exclusion decision is withdrawn. Source identity and wildcard membership are retained; an actual native Creature definition must be admitted before a binding can exist."
+      },
+      "assumptions": [
+        "No native ID, replacement creature or permanent exclusion is invented. Pending native admission is an implementation dependency, not missing source identity."
+      ],
+      "acceptance_status": "SOURCE_RESOLVED_PENDING_NATIVE_CREATURE_ADMISSION",
+      "superseded_exclusion_decision": {
+        "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/635/facts/native_creature_binding",
+        "subject": "prey.creature.undead_jester",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+          "source_creature_name": "Undead Jester",
+          "create_native_identity": false
+        },
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/evidence-00000-00004.json/records/0/facts/experience_reward",
+      "subject": "task_board.beginner",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "status": "PINNED_DONOR_CANDIDATE_GLOBAL_FORMULA_UNRESOLVED",
+        "expression": "creature_base_xp * sampled_tier_multiplier * grade_multiplier * max(config_exp_multiplier,1)",
+        "sampled_tier_multiplier": {
+          "distribution": "uniform_integer_inclusive",
+          "minimum": 30,
+          "maximum": 50,
+          "sampled_when": "offer_created",
+          "independent_of_assigned_kill_count": true
+        },
+        "grade_multipliers": {
+          "normal": 1,
+          "silver": 2,
+          "gold": 4
+        },
+        "donor_config_default": 1,
+        "award_on": "completed_task_claim_once",
+        "award_stage": "raw reward passed to player experience processing; downstream callbacks are not modeled here",
+        "selected_for_native_runtime": false
+      },
+      "basis": {
+        "kind": "PINNED_SOURCE_CANDIDATE_NOT_ADOPTED_AS_GLOBAL",
+        "source_refs": [
+          {
+            "source": "ots:crystal-summer:task-xp:bounty:ddb4930",
+            "selector": "getExpReward L628-652; offer generation L139-155; claim L547-556"
+          },
+          {
+            "source": "ots:crystal-summer:task-xp:rng:ddb4930",
+            "selector": "uniform_random L431-440"
+          },
+          {
+            "source": "ots:crystal-summer:task-xp:config:ddb4930",
+            "selector": "bountyTasksExpMultiplier=1 L174"
+          },
+          {
+            "source": "community:tibiopedia:task-xp:bounty:retained",
+            "selector": "Retained guide says task XP depends on difficulty, creature and required kill count; no exact equation"
+          },
+          {
+            "source": "official:tibia:manual:task-board:indexed:20261019",
+            "selector": "Task Board Bounty rewards; exact XP equation not published"
+          }
+        ],
+        "rationale": "Withdraws invented10%rule. Crystal uses a tier-specific random multiplier of creature base XP, sampled separately from required kills. Retained community prose names kill-count dependence; current Global equality is unconfirmed. No executable Global or native formula is selected."
+      },
+      "assumptions": [],
+      "acceptance_status": "SOURCE_BACKED_CANDIDATE_GLOBAL_UNRESOLVED_NOT_NATIVE_ADMITTED",
+      "superseded_unsupported_proposal": {
+        "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/evidence-00000-00004.json/records/0/facts/experience_reward",
+        "subject": "task_board.beginner",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "expression": "floor(assigned_kill_count*creature_base_xp*0.10)",
+          "rate_multiplier": 1,
+          "award_on": "completed_task_claim_once"
+        },
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Bonus10% of assigned baseline kill XP; unmodified baseXP; zero-XP creatures yield0. This is a bounty-task proposal, not Hunting Task Points or a Global XP formula."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/evidence-00000-00004.json/records/1/facts/experience_reward",
+      "subject": "task_board.adept",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "status": "PINNED_DONOR_CANDIDATE_GLOBAL_FORMULA_UNRESOLVED",
+        "expression": "creature_base_xp * sampled_tier_multiplier * grade_multiplier * max(config_exp_multiplier,1)",
+        "sampled_tier_multiplier": {
+          "distribution": "uniform_integer_inclusive",
+          "minimum": 70,
+          "maximum": 100,
+          "sampled_when": "offer_created",
+          "independent_of_assigned_kill_count": true
+        },
+        "grade_multipliers": {
+          "normal": 1,
+          "silver": 2,
+          "gold": 4
+        },
+        "donor_config_default": 1,
+        "award_on": "completed_task_claim_once",
+        "award_stage": "raw reward passed to player experience processing; downstream callbacks are not modeled here",
+        "selected_for_native_runtime": false
+      },
+      "basis": {
+        "kind": "PINNED_SOURCE_CANDIDATE_NOT_ADOPTED_AS_GLOBAL",
+        "source_refs": [
+          {
+            "source": "ots:crystal-summer:task-xp:bounty:ddb4930",
+            "selector": "getExpReward L628-652; offer generation L139-155; claim L547-556"
+          },
+          {
+            "source": "ots:crystal-summer:task-xp:rng:ddb4930",
+            "selector": "uniform_random L431-440"
+          },
+          {
+            "source": "ots:crystal-summer:task-xp:config:ddb4930",
+            "selector": "bountyTasksExpMultiplier=1 L174"
+          },
+          {
+            "source": "community:tibiopedia:task-xp:bounty:retained",
+            "selector": "Retained guide says task XP depends on difficulty, creature and required kill count; no exact equation"
+          },
+          {
+            "source": "official:tibia:manual:task-board:indexed:20261019",
+            "selector": "Task Board Bounty rewards; exact XP equation not published"
+          }
+        ],
+        "rationale": "Withdraws invented10%rule. Crystal uses a tier-specific random multiplier of creature base XP, sampled separately from required kills. Retained community prose names kill-count dependence; current Global equality is unconfirmed. No executable Global or native formula is selected."
+      },
+      "assumptions": [],
+      "acceptance_status": "SOURCE_BACKED_CANDIDATE_GLOBAL_UNRESOLVED_NOT_NATIVE_ADMITTED",
+      "superseded_unsupported_proposal": {
+        "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/evidence-00000-00004.json/records/1/facts/experience_reward",
+        "subject": "task_board.adept",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "expression": "floor(assigned_kill_count*creature_base_xp*0.10)",
+          "rate_multiplier": 1,
+          "award_on": "completed_task_claim_once"
+        },
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Bonus10% of assigned baseline kill XP; unmodified baseXP; zero-XP creatures yield0. This is a bounty-task proposal, not Hunting Task Points or a Global XP formula."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/evidence-00000-00004.json/records/2/facts/experience_reward",
+      "subject": "task_board.expert",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "status": "PINNED_DONOR_CANDIDATE_GLOBAL_FORMULA_UNRESOLVED",
+        "expression": "creature_base_xp * sampled_tier_multiplier * grade_multiplier * max(config_exp_multiplier,1)",
+        "sampled_tier_multiplier": {
+          "distribution": "uniform_integer_inclusive",
+          "minimum": 150,
+          "maximum": 200,
+          "sampled_when": "offer_created",
+          "independent_of_assigned_kill_count": true
+        },
+        "grade_multipliers": {
+          "normal": 1,
+          "silver": 2,
+          "gold": 4
+        },
+        "donor_config_default": 1,
+        "award_on": "completed_task_claim_once",
+        "award_stage": "raw reward passed to player experience processing; downstream callbacks are not modeled here",
+        "selected_for_native_runtime": false
+      },
+      "basis": {
+        "kind": "PINNED_SOURCE_CANDIDATE_NOT_ADOPTED_AS_GLOBAL",
+        "source_refs": [
+          {
+            "source": "ots:crystal-summer:task-xp:bounty:ddb4930",
+            "selector": "getExpReward L628-652; offer generation L139-155; claim L547-556"
+          },
+          {
+            "source": "ots:crystal-summer:task-xp:rng:ddb4930",
+            "selector": "uniform_random L431-440"
+          },
+          {
+            "source": "ots:crystal-summer:task-xp:config:ddb4930",
+            "selector": "bountyTasksExpMultiplier=1 L174"
+          },
+          {
+            "source": "community:tibiopedia:task-xp:bounty:retained",
+            "selector": "Retained guide says task XP depends on difficulty, creature and required kill count; no exact equation"
+          },
+          {
+            "source": "official:tibia:manual:task-board:indexed:20261019",
+            "selector": "Task Board Bounty rewards; exact XP equation not published"
+          }
+        ],
+        "rationale": "Withdraws invented10%rule. Crystal uses a tier-specific random multiplier of creature base XP, sampled separately from required kills. Retained community prose names kill-count dependence; current Global equality is unconfirmed. No executable Global or native formula is selected."
+      },
+      "assumptions": [],
+      "acceptance_status": "SOURCE_BACKED_CANDIDATE_GLOBAL_UNRESOLVED_NOT_NATIVE_ADMITTED",
+      "superseded_unsupported_proposal": {
+        "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/evidence-00000-00004.json/records/2/facts/experience_reward",
+        "subject": "task_board.expert",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "expression": "floor(assigned_kill_count*creature_base_xp*0.10)",
+          "rate_multiplier": 1,
+          "award_on": "completed_task_claim_once"
+        },
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Bonus10% of assigned baseline kill XP; unmodified baseXP; zero-XP creatures yield0. This is a bounty-task proposal, not Hunting Task Points or a Global XP formula."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/evidence-00000-00004.json/records/3/facts/experience_reward",
+      "subject": "task_board.master",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "status": "PINNED_DONOR_CANDIDATE_GLOBAL_FORMULA_UNRESOLVED",
+        "expression": "creature_base_xp * sampled_tier_multiplier * grade_multiplier * max(config_exp_multiplier,1)",
+        "sampled_tier_multiplier": {
+          "distribution": "uniform_integer_inclusive",
+          "minimum": 300,
+          "maximum": 400,
+          "sampled_when": "offer_created",
+          "independent_of_assigned_kill_count": true
+        },
+        "grade_multipliers": {
+          "normal": 1,
+          "silver": 2,
+          "gold": 4
+        },
+        "donor_config_default": 1,
+        "award_on": "completed_task_claim_once",
+        "award_stage": "raw reward passed to player experience processing; downstream callbacks are not modeled here",
+        "selected_for_native_runtime": false
+      },
+      "basis": {
+        "kind": "PINNED_SOURCE_CANDIDATE_NOT_ADOPTED_AS_GLOBAL",
+        "source_refs": [
+          {
+            "source": "ots:crystal-summer:task-xp:bounty:ddb4930",
+            "selector": "getExpReward L628-652; offer generation L139-155; claim L547-556"
+          },
+          {
+            "source": "ots:crystal-summer:task-xp:rng:ddb4930",
+            "selector": "uniform_random L431-440"
+          },
+          {
+            "source": "ots:crystal-summer:task-xp:config:ddb4930",
+            "selector": "bountyTasksExpMultiplier=1 L174"
+          },
+          {
+            "source": "community:tibiopedia:task-xp:bounty:retained",
+            "selector": "Retained guide says task XP depends on difficulty, creature and required kill count; no exact equation"
+          },
+          {
+            "source": "official:tibia:manual:task-board:indexed:20261019",
+            "selector": "Task Board Bounty rewards; exact XP equation not published"
+          }
+        ],
+        "rationale": "Withdraws invented10%rule. Crystal uses a tier-specific random multiplier of creature base XP, sampled separately from required kills. Retained community prose names kill-count dependence; current Global equality is unconfirmed. No executable Global or native formula is selected."
+      },
+      "assumptions": [],
+      "acceptance_status": "SOURCE_BACKED_CANDIDATE_GLOBAL_UNRESOLVED_NOT_NATIVE_ADMITTED",
+      "superseded_unsupported_proposal": {
+        "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/evidence-00000-00004.json/records/3/facts/experience_reward",
+        "subject": "task_board.master",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "expression": "floor(assigned_kill_count*creature_base_xp*0.10)",
+          "rate_multiplier": 1,
+          "award_on": "completed_task_claim_once"
+        },
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Bonus10% of assigned baseline kill XP; unmodified baseXP; zero-XP creatures yield0. This is a bounty-task proposal, not Hunting Task Points or a Global XP formula."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/evidence-00000-00004.json/records/4/facts/weekly_experience_candidate",
+      "subject": "task_board.current_system",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "status": "SOURCE_CONFLICT_NO_CURRENT_GLOBAL_FORMULA_SELECTED",
+        "fandom_revision_1187430": {
+          "delivery_base_piecewise": [
+            {
+              "level_max": 82,
+              "expression": "25*L^2-75*L+100"
+            },
+            {
+              "level_min": 83,
+              "level_max": 999,
+              "expression": "ROUND_POSITIVE(1994.008*L)"
+            },
+            {
+              "level_min": 1000,
+              "expression": "2*L^2-6*L+8"
+            }
+          ],
+          "delivery_difficulty_cap": "NONE_STATED_BY_THIS_MODEL",
+          "kill_task_caps": {
+            "beginner": 200000,
+            "adept": 800000,
+            "expert": 3000000,
+            "master": "NO_CAP"
+          },
+          "rounding": "positive nearest integer; retained ROUND matches donor std::lround on these positive values"
+        },
+        "wiki_br_revision_443622": {
+          "base_expression": "1995*L",
+          "per_task_caps": {
+            "beginner": 200000,
+            "adept": 800000,
+            "expert": 3000000,
+            "master": "NO_CAP"
+          },
+          "delivery_cap_scope": "Article applies limits generally; does not preserve Fandom kill-only distinction"
+        },
+        "crystal_revision_ddb4930": {
+          "base_piecewise": [
+            {
+              "level_max": 82,
+              "expression": "25*L^2-75*L+100"
+            },
+            {
+              "level_min": 83,
+              "level_max": 999,
+              "expression": "ROUND_POSITIVE(1994.008*L)"
+            },
+            {
+              "level_min": 1000,
+              "expression": "2*L^2-6*L+8"
+            }
+          ],
+          "kill_task_caps": {
+            "beginner": 200000,
+            "adept": 800000,
+            "expert": 3000000,
+            "master": "NO_CAP"
+          },
+          "delivery_task_caps": {
+            "beginner": 200000,
+            "adept": 800000,
+            "expert": 3000000,
+            "master": "NO_CAP"
+          },
+          "configuration": "same calculateRewardExp(level,difficulty) called for both kinds"
+        },
+        "master_cap_source_status": "NO_CAP corroborated by both wiki descriptions, retained Tibiopedia and pinned donor; not an invented project choice",
+        "selected_for_native_runtime": false
+      },
+      "basis": {
+        "kind": "SOURCE_FORMULA_CONFLICT_NOT_RUNTIME_SELECTION",
+        "source_refs": [
+          {
+            "source": "wiki:109860:1187430",
+            "selector": "Weekly Task Rewards / Experience: piecewise delivery formula; extra caps apply only to kill tasks"
+          },
+          {
+            "source": "wiki-br:task-xp:443622",
+            "selector": "Experience:1995*level and per-task difficulty caps"
+          },
+          {
+            "source": "ots:crystal-summer:task-xp:weekly:ddb4930",
+            "selector": "calculateRewardExp L989-1028; generateWeeklyTasks L207-209; recalculation L1074-1076"
+          },
+          {
+            "source": "community:tibiopedia:task-xp:weekly:retained",
+            "selector": "Retained article states caps only for Kill Tasks and no Master cap"
+          },
+          {
+            "source": "official:tibia:manual:task-board:indexed:20261019",
+            "selector": "Weekly rewards/limits; exact XP formula not supplied"
+          }
+        ],
+        "rationale": "Both source-backed formulas are retained without choosing a Global value. Master no-cap is sourced. Crystal also caps delivery tasks; Fandom and retained Tibiopedia describe the added caps as kill-only. No standalone Oteryn rounding/cap assumption remains."
+      },
+      "assumptions": [],
+      "acceptance_status": "SOURCE_BACKED_ALTERNATIVES_GLOBAL_UNRESOLVED_NOT_NATIVE_ADMITTED",
+      "superseded_formula_selection": {
+        "original_field_path": "docs/reference/content-prep/prey-content-1/admission-evidence/evidence-00000-00004.json/records/4/facts/weekly_experience_candidate",
+        "subject": "task_board.current_system",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "delivery_piecewise": [
+            {
+              "level_max": 82,
+              "experience": "25*L^2-75*L+100"
+            },
+            {
+              "level_min_exclusive": 82,
+              "level_max_exclusive": 1000,
+              "experience": "ROUND(1994.008*L)"
+            },
+            {
+              "level_min": 1000,
+              "experience": "2*L^2-6*L+8"
+            }
+          ],
+          "kill_task_caps": {
+            "beginner": 200000,
+            "adept": 800000,
+            "expert": 3000000,
+            "master": null
+          }
+        },
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1187430"
+          ],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Adopt retained community weekly-delivery model as a project choice; use floor(x+0.5) for positive ROUND and do not conflate delivery XP with creature bounty rewards."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
+    }
+  ],
+  "materialization": {
+    "parameter_document": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json",
+    "source_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json",
+    "filled_field_count": 12,
+    "not_runtime_activation": true,
+    "source_backed_unselected_candidate_fields": 5,
+    "remaining_unresolved_source_fields": 6
+  },
+  "native_binding_source_correction": {
+    "source_check": "docs/reference/content-prep/prey-content-1/creature-identity-source-check.json",
+    "native_handoff": "docs/reference/content-prep/prey-content-1/native-prey-handoff.json",
+    "source_creatures": 649,
+    "existing_native_bindings": 643,
+    "source_identities_resolved": 6,
+    "pending_native_creature_admissions": 6,
+    "native_flag_disagreements": 13,
+    "invented_launch_exclusions_removed": 6,
+    "runtime_admission": "BLOCKED"
+  },
+  "five_creature_source_reconciliation": {
+    "profiles": 5,
+    "full_supplementary_tfs_definitions": 2,
+    "partial_profiles": 3,
+    "profile_index": "docs/reference/content-prep/prey-content-1/creature-source-profiles/README.md",
+    "source_scope": "REFERENCE_ONLY_NO_NATIVE_ADMISSION",
+    "pool_source_reconciliation": "docs/reference/content-prep/prey-content-1/native-pool-source-reconciliation.json",
+    "pool_conflicts": 13,
+    "proven_native_import_errors": 0,
+    "supersedes_automatic_thirteen_flag_change_plan": true
+  },
+  "task_reward_source_repair": {
+    "source_check": "docs/reference/content-prep/prey-content-1/task-reward-source-check.json",
+    "withdrawn_ten_percent_defaults": 4,
+    "bounty_source_candidates": 4,
+    "weekly_formula_alternatives": 3,
+    "expert_kill_range_conflict": true,
+    "unresolved_active_source_fields": 6,
+    "current_global_numeric_xp_formula_selected": false,
+    "primary_official_htp_thresholds": [
+      4,
+      8,
+      12,
+      16
+    ],
+    "soulseals_per_task": 1,
+    "soulseal_weekly_multiplier": false,
+    "master_no_cap": "SOURCE_CORROBORATED"
+  }
+}

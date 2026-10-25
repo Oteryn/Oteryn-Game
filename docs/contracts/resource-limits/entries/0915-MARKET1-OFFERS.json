@@ -1,0 +1,21 @@
+{
+  "id": "MARKET1-OFFERS",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_MARKET0_WORLD_MARKET_DECISION_2026-09-30.md",
+  "resource": "Open Character offers",
+  "unit": "offers",
+  "hard_maximum": 100,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 100
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Bounded Market writer and query projection.",
+  "client_visible": true,
+  "boundary_tests": [
+    "market_postgres_settlement_replay_and_conservation"
+  ],
+  "consumers": [
+    "crates/gameplay/dispatch/src/gameplay_transport/market.rs",
+    "apps/game-server/migrations/0191_market_settlement.sql"
+  ]
+}

@@ -1,0 +1,1191 @@
+//! One revision-advancing write in flight per Character (CHAR-REV-SEQ-1, QUEST-STATE-0 §5.2).
+//!
+//! The owning Channel runtime holds one [`CharacterRevisionSequencer`]. Every write that advances
+//! a CharacterRevision (XP, death, Bestiary, charm with its in-transaction fee burn, monk state
+//! save, build, proficiency, quest transition, quest XP award, Wheel change and Wheel reset) runs through a [`RevisionSlot`] of that Character: the slot is an asynchronous FIFO
+//! queue per Character, and the holder is the only writer of that Character's revision until it
+//! drops the slot. A composition (a creature death's XP, then Bestiary) holds one slot for its
+//! whole chain, so each step takes the revision the previous one committed and no other request
+//! can commit between them.
+//!
+//! The slot holds the revision cursor: loaded from the Character root when the slot has none,
+//! advanced only to the committed revision of a receipt, and dropped (reloaded on next use) when
+//! an outcome is unknown or a mismatch proves another writer bypassed the sequencer.
+//!
+//! On a `CharacterRevisionMismatch`, a write whose binding excludes the revision (Bestiary,
+//! quest transition, Wheel change and reset) reloads the cursor and is retried once; a write whose binding includes it (XP, death, charm,
+//! monk, build, proficiency) is not retried: it fails closed and is reported as a defect.
+//!
+//! The slot is not the runtime lock and adds no fence: callers never hold the runtime lock while
+//! they wait for a slot or across the durable write, and every write is still refused by the
+//! existing session-generation gameplay fence in its own transaction.
+
+mod appearance_revision;
+
+use std::collections::HashMap;
+use std::future::Future;
+use std::sync::Arc;
+
+use tokio::sync::{Mutex as SlotQueue, OwnedMutexGuard};
+mod cyclopedia;
+mod death_promotion;
+mod npc_purchase;
+#[cfg(test)]
+mod writer_registration_tests;
+
+use super::DurabilityError;
+use super::DurabilityRoot;
+use super::bestiary_progress::{BestiaryKillOutcome, BestiaryKillRequest, BestiaryProgressError};
+use super::character_authority::{CharacterAuthorityError, ReconciledCharacterAuthority};
+use super::character_build::{BuildChangeRequest, BuildCommitOutcome, BuildFormula};
+use super::character_death::{CharacterDeathOutcome, CharacterDeathRequest};
+use super::character_proficiency::{
+    ProficiencyChangeRequest, ProficiencyCommitOutcome, ProficiencyDefinitions,
+};
+use super::character_proficiency_modification::{
+    ProficiencyModificationCommand, ProficiencyModificationContext, ProficiencyModificationOutcome,
+    ProficiencyShapingSource,
+};
+use super::character_progression::{
+    CharacterProgressionError, CurrentCharacterGameplayFence, ExperienceAwardRequest,
+    ExperienceCommitOutcome,
+};
+use super::character_wheel::{
+    WheelChangeFacts, WheelChangeRequest, WheelCommitOutcome, WheelResetOutcome, WheelRuleset,
+};
+use super::charm_state::{CharmCommandOutcome, CharmCommandRequest, CharmFacts, CharmStateError};
+use super::monk_state::{MonkStateSaveOutcome, MonkStateSaveRequest};
+use super::quest_state::{
+    QuestTransitionAward, QuestTransitionOutcome, QuestTransitionRequest, QuestXpObligation,
+    report_refused_experience,
+};
+use super::runtime_scope_assignment::NodeIncarnationProof;
+use crate::domain::progression::FiniteProgressionPolicy;
+use crate::domain::{CharacterId, CharacterRevision};
+use oteryn_gameplay_quests::quest::QuestStateCatalogue;
+
+/// The per-Character slots of one Channel runtime. Idle slots are dropped, so the map holds at
+/// most the Characters with a write queued or in flight, plus the one being acquired.
+#[derive(Debug, Default)]
+pub struct CharacterRevisionSequencer {
+    slots: std::sync::Mutex<HashMap<CharacterId, Arc<SlotQueue<Option<CharacterRevision>>>>>,
+}
+
+impl CharacterRevisionSequencer {
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Wait for the slot of `character_id`. Requests are granted in arrival order. The caller
+    /// must not hold the runtime lock while it waits.
+    pub async fn acquire(&self, character_id: CharacterId) -> RevisionSlot {
+        let queue = {
+            let mut slots = self
+                .slots
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            // A slot nobody holds or waits for keeps only a cursor the Character root restores.
+            slots.retain(|_, queue| Arc::strong_count(queue) > 1);
+            Arc::clone(slots.entry(character_id).or_default())
+        };
+        RevisionSlot {
+            character_id,
+            cursor: queue.lock_owned().await,
+        }
+    }
+}
+
+/// The exclusive right to advance one Character's revision, with its cursor.
+#[derive(Debug)]
+pub struct RevisionSlot {
+    character_id: CharacterId,
+    cursor: OwnedMutexGuard<Option<CharacterRevision>>,
+}
+
+/// How a mismatch is handled (§5.2): by whether the request's binding includes the revision.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum OnMismatch {
+    FailClosed,
+    RetryOnce,
+}
+
+/// The revision a write expects: the cursor for a new request, or the original revision of a
+/// retained receipt for its exact replay, which returns that receipt and is never retried.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Expect {
+    Cursor(OnMismatch),
+    Replay(CharacterRevision),
+}
+
+impl Expect {
+    fn from(original: Option<CharacterRevision>, on_mismatch: OnMismatch) -> Self {
+        original.map_or(Self::Cursor(on_mismatch), Self::Replay)
+    }
+}
+
+impl RevisionSlot {
+    /// A composed loop-training transaction (or an unknown outcome) changed the root.
+    /// The next queued writer reloads it; no historical receipt grants a current cursor.
+    pub fn observe_loop_training(&mut self) {
+        *self.cursor = None;
+    }
+
+    #[must_use]
+    pub fn character_id(&self) -> CharacterId {
+        self.character_id
+    }
+
+    /// The revision the next write of this slot expects, read from the Character root when the
+    /// slot holds none.
+    pub async fn cursor(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+    ) -> Result<CharacterRevision, CharacterAuthorityError> {
+        self.load_cursor(root_revision(root, authority)).await
+    }
+
+    async fn load_cursor<L, LFut>(
+        &mut self,
+        mut load: L,
+    ) -> Result<CharacterRevision, CharacterAuthorityError>
+    where
+        L: FnMut(CharacterId) -> LFut,
+        LFut: Future<Output = Result<CharacterRevision, CharacterAuthorityError>>,
+    {
+        if let Some(revision) = *self.cursor {
+            return Ok(revision);
+        }
+        let revision = load(self.character_id).await?;
+        *self.cursor = Some(revision);
+        Ok(revision)
+    }
+
+    /// An atomic multi-Character XP transaction has ended. Unknown outcomes invalidate the
+    /// cursor, and replayed older receipts cannot move it backwards.
+    pub fn observe_party_experience(
+        &mut self,
+        outcome: &Result<ExperienceCommitOutcome, CharacterProgressionError>,
+    ) {
+        self.settle(outcome);
+    }
+
+    /// One XP award at the cursor, or the exact replay of a retained receipt at its `original`
+    /// revision. A mismatch fails closed.
+    pub async fn commit_experience<const N: usize>(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: ExperienceAwardRequest<N>,
+        original: Option<CharacterRevision>,
+    ) -> Result<ExperienceCommitOutcome, CharacterProgressionError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::from(original, OnMismatch::FailClosed),
+            |fence| root.commit_character_experience(authority, node, fence, request.clone()),
+        )
+        .await
+    }
+
+    /// One player death at the cursor, or the exact replay of a retained receipt at its
+    /// `original` revision. A mismatch fails closed.
+    pub async fn commit_death<const N: usize>(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: CharacterDeathRequest<N>,
+        original: Option<CharacterRevision>,
+    ) -> Result<CharacterDeathOutcome, CharacterProgressionError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::from(original, OnMismatch::FailClosed),
+            |fence| root.commit_character_death(authority, node, fence, request.clone()),
+        )
+        .await
+    }
+
+    /// Build-aware death uses the same sequencer cursor and retained-receipt
+    /// original revision as the compatibility death method. The writer resolves
+    /// current fences and build before-state in its transaction.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "existing sequenced death inputs plus the current build formula"
+    )]
+    pub async fn commit_death_with_build<const N: usize>(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: CharacterDeathRequest<N>,
+        formula: &dyn BuildFormula,
+        original: Option<CharacterRevision>,
+    ) -> Result<CharacterDeathOutcome, CharacterProgressionError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::from(original, OnMismatch::FailClosed),
+            |fence| {
+                root.commit_character_death_with_build(
+                    authority,
+                    node,
+                    fence,
+                    request.clone(),
+                    formula,
+                )
+            },
+        )
+        .await
+    }
+
+    /// One Bestiary kill at the cursor. Its binding excludes the revision, so a mismatch reloads
+    /// the cursor and retries once.
+    pub async fn commit_bestiary(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: BestiaryKillRequest,
+    ) -> Result<BestiaryKillOutcome, BestiaryProgressError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::Cursor(OnMismatch::RetryOnce),
+            |fence| root.commit_bestiary_kill(authority, node, fence, request.clone()),
+        )
+        .await
+    }
+
+    /// One Charm command (with any fee burn it runs in its transaction) at the cursor, or the
+    /// exact replay of a retained receipt at its `original` revision. A mismatch fails closed.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the Charm writer's own arguments plus the replay revision"
+    )]
+    pub async fn commit_charm<F: CharmFacts + Clone>(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: CharmCommandRequest,
+        facts: F,
+        original: Option<CharacterRevision>,
+    ) -> Result<CharmCommandOutcome, CharmStateError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::from(original, OnMismatch::FailClosed),
+            |fence| {
+                root.commit_charm_command(authority, node, fence, request.clone(), facts.clone())
+            },
+        )
+        .await
+    }
+
+    /// One monk state save at the cursor. A mismatch fails closed.
+    pub async fn commit_monk_state_save(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: MonkStateSaveRequest,
+    ) -> Result<MonkStateSaveOutcome, CharacterProgressionError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::Cursor(OnMismatch::FailClosed),
+            |fence| root.commit_character_monk_state_save(authority, node, fence, request),
+        )
+        .await
+    }
+
+    /// One build change at the cursor, or the exact replay of a retained receipt at its
+    /// `original` revision. A mismatch fails closed.
+    #[allow(
+        clippy::too_many_arguments,
+        dead_code,
+        reason = "the build writer's own arguments plus the replay revision; standalone durability \
+                  suites path-load this module without build cases"
+    )]
+    pub async fn commit_build(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: BuildChangeRequest,
+        formula: &dyn BuildFormula,
+        original: Option<CharacterRevision>,
+    ) -> Result<BuildCommitOutcome, CharacterProgressionError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::from(original, OnMismatch::FailClosed),
+            |fence| root.commit_character_build(authority, node, fence, request.clone(), formula),
+        )
+        .await
+    }
+
+    /// One proficiency change at the cursor, or the exact replay of a retained receipt at its
+    /// `original` revision. A mismatch fails closed; a refusal writes nothing.
+    #[allow(
+        clippy::too_many_arguments,
+        dead_code,
+        reason = "the proficiency writer's own arguments plus the replay revision; standalone durability \
+                  suites path-load this module without proficiency cases"
+    )]
+    pub async fn commit_proficiency(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: ProficiencyChangeRequest,
+        policy: std::sync::Arc<dyn ProficiencyDefinitions>,
+        original: Option<CharacterRevision>,
+    ) -> Result<ProficiencyCommitOutcome, CharacterProgressionError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::from(original, OnMismatch::FailClosed),
+            |fence| {
+                root.commit_character_proficiency(
+                    authority,
+                    node,
+                    fence,
+                    request.clone(),
+                    std::sync::Arc::clone(&policy),
+                )
+            },
+        )
+        .await
+    }
+
+    /// One quest transition at the cursor (QUEST-STATE-0 §5.2). Its binding excludes the
+    /// revision, so a mismatch reloads the cursor and retries once (replay or one commit); a
+    /// refusal writes nothing.
+    #[allow(
+        dead_code,
+        reason = "standalone durability suites path-load this module without quest cases"
+    )]
+    pub async fn commit_quest_transition(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: std::sync::Arc<QuestStateCatalogue>,
+    ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::Cursor(OnMismatch::RetryOnce),
+            |fence| {
+                root.commit_character_quest_transition(
+                    authority,
+                    node,
+                    fence,
+                    request.clone(),
+                    std::sync::Arc::clone(&catalogue),
+                )
+            },
+        )
+        .await
+    }
+
+    /// The XP award of one pending quest XP obligation at the cursor (QUEST-GATE-0 §5.5), under
+    /// the active progression `policy` (its `reward_revision`, never the quest content
+    /// revision). The XP binding includes the revision, so a mismatch fails closed.
+    #[allow(
+        dead_code,
+        reason = "standalone durability suites path-load this module without quest XP cases"
+    )]
+    pub async fn commit_quest_experience<const N: usize>(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        obligation: &QuestXpObligation,
+        policy: &FiniteProgressionPolicy<String, N>,
+    ) -> Result<ExperienceCommitOutcome, CharacterProgressionError> {
+        let request = obligation.award(policy);
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::Cursor(OnMismatch::FailClosed),
+            |fence| root.commit_character_quest_experience(authority, node, fence, request.clone()),
+        )
+        .await
+    }
+
+    /// One quest transition and, when it committed a pending quest XP obligation (or replayed
+    /// one still pending), that obligation's XP award, both in this slot (QUEST-GATE-0 §5.5). A
+    /// refused award keeps the obligation and is reported as a defect.
+    #[allow(
+        clippy::too_many_arguments,
+        dead_code,
+        reason = "the transition's and the award's arguments; standalone durability suites \
+                  path-load this module without quest XP cases"
+    )]
+    pub async fn commit_quest_transition_with_experience<const N: usize>(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: std::sync::Arc<QuestStateCatalogue>,
+        policy: &FiniteProgressionPolicy<String, N>,
+    ) -> Result<QuestTransitionAward, CharacterProgressionError> {
+        let transition = self
+            .commit_quest_transition(root, authority, node, fence, request, catalogue)
+            .await?;
+        let pending = match &transition {
+            QuestTransitionOutcome::Committed(receipt)
+            | QuestTransitionOutcome::AlreadyCommitted(receipt) => receipt.experience,
+            QuestTransitionOutcome::Refused(_) | QuestTransitionOutcome::ObligationClosed => None,
+        };
+        let experience = match pending {
+            Some(obligation) => {
+                let outcome = self
+                    .commit_quest_experience(root, authority, node, fence, &obligation, policy)
+                    .await;
+                report_refused_experience(&outcome);
+                Some(outcome)
+            }
+            None => None,
+        };
+        Ok(QuestTransitionAward {
+            transition,
+            experience,
+        })
+    }
+
+    /// One perk modification at the cursor (PROFICIENCY-1B §6.4). Its binding excludes the
+    /// CharacterRevision, so a lost race reloads the cursor and retries once under the same
+    /// occurrence and draw; a later duplicate finds that receipt and never pays twice.
+    #[allow(
+        clippy::too_many_arguments,
+        dead_code,
+        reason = "the modification writer's own arguments; standalone durability suites path-load \
+                  this module without modification cases"
+    )]
+    pub async fn commit_proficiency_modification(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        command: ProficiencyModificationCommand,
+        context: ProficiencyModificationContext,
+        definitions: std::sync::Arc<dyn ProficiencyDefinitions>,
+        shaping: std::sync::Arc<dyn ProficiencyShapingSource>,
+    ) -> Result<ProficiencyModificationOutcome, CharacterProgressionError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::Cursor(OnMismatch::RetryOnce),
+            |fence| {
+                root.commit_character_proficiency_modification(
+                    authority,
+                    node,
+                    fence,
+                    command.clone(),
+                    context,
+                    std::sync::Arc::clone(&definitions),
+                    std::sync::Arc::clone(&shaping),
+                )
+            },
+        )
+        .await
+    }
+
+    /// One Wheel allocation change at the cursor (WHEEL-0 §4). Its binding excludes the
+    /// CharacterRevision (the request carries the expected `wheel_revision`), so a mismatch
+    /// reloads the cursor and retries once; a refusal writes nothing.
+    #[allow(
+        clippy::too_many_arguments,
+        dead_code,
+        reason = "the Wheel writer's own arguments; standalone durability suites path-load this \
+                  module without Wheel cases"
+    )]
+    pub async fn commit_wheel<G: super::character_wheel::WheelPremiumGate>(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: WheelChangeRequest,
+        ruleset: std::sync::Arc<WheelRuleset>,
+        facts: WheelChangeFacts,
+        gate: &G,
+    ) -> Result<WheelCommitOutcome, CharacterProgressionError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::Cursor(OnMismatch::RetryOnce),
+            |fence| {
+                root.commit_character_wheel(
+                    authority,
+                    node,
+                    fence,
+                    request,
+                    std::sync::Arc::clone(&ruleset),
+                    facts,
+                    gate,
+                )
+            },
+        )
+        .await
+    }
+
+    /// The admission Wheel reset at the cursor (WHEEL0-RST-1). Its occurrence and binding exclude
+    /// the CharacterRevision, so a mismatch reloads the cursor and retries once.
+    #[allow(
+        dead_code,
+        reason = "standalone durability suites path-load this module without Wheel cases"
+    )]
+    pub async fn reset_wheel(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        ruleset: std::sync::Arc<WheelRuleset>,
+    ) -> Result<WheelResetOutcome, CharacterProgressionError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::Cursor(OnMismatch::RetryOnce),
+            |fence| {
+                root.reset_character_wheel(authority, node, fence, std::sync::Arc::clone(&ruleset))
+            },
+        )
+        .await
+    }
+
+    async fn sequenced<T, E, L, LFut, W, Fut>(
+        &mut self,
+        mut load: L,
+        fence: CurrentCharacterGameplayFence,
+        expect: Expect,
+        mut write: W,
+    ) -> Result<T, E>
+    where
+        T: SequencedOutcome,
+        E: SequencedError,
+        L: FnMut(CharacterId) -> LFut,
+        LFut: Future<Output = Result<CharacterRevision, CharacterAuthorityError>>,
+        W: FnMut(CurrentCharacterGameplayFence) -> Fut,
+        Fut: Future<Output = Result<T, E>>,
+    {
+        if fence.character_id != self.character_id {
+            return Err(E::rejected());
+        }
+        let mut retry = expect == Expect::Cursor(OnMismatch::RetryOnce);
+        loop {
+            let expected = match expect {
+                Expect::Cursor(_) => self
+                    .load_cursor(&mut load)
+                    .await
+                    .map_err(E::from_authority)?,
+                Expect::Replay(original) => original,
+            };
+            let result = write(CurrentCharacterGameplayFence {
+                expected_character_revision: expected,
+                ..fence
+            })
+            .await;
+            self.settle(&result);
+            if retry && result.as_ref().is_err_and(SequencedError::is_mismatch) {
+                retry = false;
+                continue;
+            }
+            return result;
+        }
+    }
+
+    /// Move the cursor by one write's result: to a receipt's committed revision (never back),
+    /// or unknown after an unknown outcome or a mismatch. A refusal that wrote nothing keeps it.
+    fn settle<T: SequencedOutcome, E: SequencedError>(&mut self, result: &Result<T, E>) {
+        match result {
+            Ok(outcome) => {
+                if let Some(committed) = outcome.committed_revision() {
+                    let cursor = self
+                        .cursor
+                        .map_or(committed, |cursor| cursor.max(committed));
+                    *self.cursor = Some(cursor);
+                }
+            }
+            Err(error) if error.is_mismatch() => {
+                // With the sequencer in place only a writer that bypassed it can move the
+                // revision under a held slot.
+                eprintln!(
+                    "oteryn-game-server defect: CharacterRevisionMismatch under a held revision \
+                     slot; a revision-advancing writer bypassed the sequencer"
+                );
+                *self.cursor = None;
+            }
+            Err(error) if error.is_unknown() => *self.cursor = None,
+            Err(_) => {}
+        }
+    }
+}
+
+/// The current revision of the Character root, the cursor's source.
+fn root_revision<'r>(
+    root: &'r DurabilityRoot,
+    authority: &'r ReconciledCharacterAuthority<'_, '_>,
+) -> impl FnMut(
+    CharacterId,
+) -> std::pin::Pin<
+    Box<dyn Future<Output = Result<CharacterRevision, CharacterAuthorityError>> + Send + 'r>,
+> + 'r {
+    move |character_id| {
+        Box::pin(async move {
+            Ok(root
+                .read_current_character(authority, character_id)
+                .await?
+                .revision)
+        })
+    }
+}
+
+/// A sequenced write's success: the revision it committed or replayed, if any.
+trait SequencedOutcome {
+    fn committed_revision(&self) -> Option<CharacterRevision>;
+}
+
+impl SequencedOutcome for ExperienceCommitOutcome {
+    fn committed_revision(&self) -> Option<CharacterRevision> {
+        let (Self::Committed(receipt) | Self::AlreadyCommitted(receipt)) = self;
+        Some(receipt.committed_character_revision)
+    }
+}
+
+impl SequencedOutcome for CharacterDeathOutcome {
+    fn committed_revision(&self) -> Option<CharacterRevision> {
+        let (Self::Committed(receipt) | Self::AlreadyCommitted(receipt)) = self;
+        Some(receipt.committed_character_revision)
+    }
+}
+
+impl SequencedOutcome for BestiaryKillOutcome {
+    fn committed_revision(&self) -> Option<CharacterRevision> {
+        match self {
+            Self::Committed(receipt) | Self::AlreadyCommitted(receipt) => {
+                Some(receipt.committed_character_revision)
+            }
+            Self::Saturated { .. } => None,
+        }
+    }
+}
+
+impl SequencedOutcome for CharmCommandOutcome {
+    fn committed_revision(&self) -> Option<CharacterRevision> {
+        let (Self::Committed(receipt) | Self::AlreadyCommitted(receipt)) = self;
+        Some(receipt.committed_character_revision)
+    }
+}
+
+impl SequencedOutcome for BuildCommitOutcome {
+    fn committed_revision(&self) -> Option<CharacterRevision> {
+        let (Self::Committed(receipt) | Self::AlreadyCommitted(receipt)) = self;
+        Some(receipt.committed_character_revision)
+    }
+}
+
+impl SequencedOutcome for ProficiencyCommitOutcome {
+    fn committed_revision(&self) -> Option<CharacterRevision> {
+        match self {
+            Self::Committed(receipt) | Self::AlreadyCommitted(receipt) => {
+                Some(receipt.committed_character_revision)
+            }
+            Self::Refused(_) => None,
+        }
+    }
+}
+
+impl SequencedOutcome for QuestTransitionOutcome {
+    fn committed_revision(&self) -> Option<CharacterRevision> {
+        match self {
+            Self::Committed(receipt) | Self::AlreadyCommitted(receipt) => {
+                Some(receipt.committed_character_revision)
+            }
+            Self::Refused(_) | Self::ObligationClosed => None,
+        }
+    }
+}
+
+impl SequencedOutcome for ProficiencyModificationOutcome {
+    fn committed_revision(&self) -> Option<CharacterRevision> {
+        match self {
+            Self::Committed(receipt) | Self::AlreadyCommitted(receipt) => {
+                Some(receipt.committed_character_revision)
+            }
+            Self::RevisionChanged | Self::Refused(_) => None,
+        }
+    }
+}
+
+impl SequencedOutcome for WheelCommitOutcome {
+    fn committed_revision(&self) -> Option<CharacterRevision> {
+        match self {
+            Self::Committed(receipt) | Self::AlreadyCommitted(receipt) => {
+                Some(receipt.committed_character_revision)
+            }
+            Self::Refused(_) => None,
+        }
+    }
+}
+
+impl SequencedOutcome for WheelResetOutcome {
+    fn committed_revision(&self) -> Option<CharacterRevision> {
+        match self {
+            Self::Reset(receipt) => Some(receipt.committed_character_revision),
+            Self::Current | Self::Unresolved => None,
+        }
+    }
+}
+
+impl SequencedOutcome for MonkStateSaveOutcome {
+    fn committed_revision(&self) -> Option<CharacterRevision> {
+        match self {
+            Self::Committed(receipt) | Self::AlreadyCommitted(receipt) => {
+                Some(receipt.committed_character_revision)
+            }
+            Self::Unchanged => None,
+        }
+    }
+}
+
+/// A sequenced write's error, as the slot classifies it.
+trait SequencedError {
+    fn is_mismatch(&self) -> bool;
+    /// The write may or may not have committed.
+    fn is_unknown(&self) -> bool;
+    fn rejected() -> Self;
+    fn unavailable(error: DurabilityError) -> Self;
+
+    fn from_authority(error: CharacterAuthorityError) -> Self
+    where
+        Self: Sized,
+    {
+        match error {
+            CharacterAuthorityError::Unavailable(error) => Self::unavailable(error),
+            CharacterAuthorityError::Rejected
+            | CharacterAuthorityError::Conflict
+            | CharacterAuthorityError::NameUnavailable => Self::rejected(),
+        }
+    }
+}
+
+impl SequencedError for CharacterProgressionError {
+    fn is_mismatch(&self) -> bool {
+        matches!(self, Self::CharacterRevisionMismatch)
+    }
+    fn is_unknown(&self) -> bool {
+        matches!(self, Self::Unavailable(_))
+    }
+    fn rejected() -> Self {
+        Self::AuthorityRejected
+    }
+    fn unavailable(error: DurabilityError) -> Self {
+        Self::Unavailable(error)
+    }
+}
+
+impl SequencedError for BestiaryProgressError {
+    fn is_mismatch(&self) -> bool {
+        matches!(self, Self::CharacterRevisionMismatch)
+    }
+    fn is_unknown(&self) -> bool {
+        matches!(self, Self::Unavailable(_))
+    }
+    fn rejected() -> Self {
+        Self::AuthorityRejected
+    }
+    fn unavailable(error: DurabilityError) -> Self {
+        Self::Unavailable(error)
+    }
+}
+
+impl SequencedError for CharmStateError {
+    fn is_mismatch(&self) -> bool {
+        matches!(self, Self::CharacterRevisionMismatch)
+    }
+    fn is_unknown(&self) -> bool {
+        matches!(self, Self::Unavailable(_))
+    }
+    fn rejected() -> Self {
+        Self::AuthorityRejected
+    }
+    fn unavailable(error: DurabilityError) -> Self {
+        Self::Unavailable(error)
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+mod tests {
+    use super::*;
+    use std::cell::Cell;
+    use std::rc::Rc;
+    use std::sync::atomic::{AtomicU64, Ordering};
+
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    struct Receipt(Option<CharacterRevision>);
+
+    impl SequencedOutcome for Receipt {
+        fn committed_revision(&self) -> Option<CharacterRevision> {
+            self.0
+        }
+    }
+
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    enum Failure {
+        Mismatch,
+        Unknown,
+        Refused,
+    }
+
+    impl SequencedError for Failure {
+        fn is_mismatch(&self) -> bool {
+            *self == Self::Mismatch
+        }
+        fn is_unknown(&self) -> bool {
+            *self == Self::Unknown
+        }
+        fn rejected() -> Self {
+            Self::Refused
+        }
+        fn unavailable(_: DurabilityError) -> Self {
+            Self::Unknown
+        }
+    }
+
+    fn character(seed: u8) -> CharacterId {
+        let mut bytes = [seed; 16];
+        bytes[6] = 0x70;
+        bytes[8] = 0x80;
+        CharacterId::from_bytes(bytes).expect("UUIDv7 bytes")
+    }
+
+    fn revision(value: u64) -> CharacterRevision {
+        CharacterRevision::new(value).expect("non-zero revision")
+    }
+
+    fn fence(character_id: CharacterId) -> CurrentCharacterGameplayFence {
+        use crate::foundation::{
+            ChannelId, ConnectionGeneration, GameSessionId, RuntimeScopeRefV1,
+            ScopeOwnershipGeneration, WorldId,
+        };
+        let bytes = character_id.as_bytes();
+        CurrentCharacterGameplayFence {
+            character_id,
+            game_session_id: GameSessionId::decode(bytes).expect("session"),
+            connection_generation: ConnectionGeneration::new(1).expect("generation"),
+            character_lease_generation: 1,
+            runtime_scope: RuntimeScopeRefV1::channel(
+                WorldId::decode(bytes).expect("world"),
+                ChannelId::decode(bytes).expect("channel"),
+            ),
+            scope_ownership_generation: ScopeOwnershipGeneration::new(1).expect("generation"),
+            expected_character_revision: revision(1),
+        }
+    }
+
+    /// Both futures to completion, polled in turn on one task (no `tokio::join!` here).
+    async fn join<A: Future, B: Future>(a: A, b: B) -> (A::Output, B::Output) {
+        use std::task::Poll;
+        let (mut a, mut b) = (std::pin::pin!(a), std::pin::pin!(b));
+        let (mut left, mut right) = (None, None);
+        std::future::poll_fn(|context| {
+            if left.is_none()
+                && let Poll::Ready(output) = a.as_mut().poll(context)
+            {
+                left = Some(output);
+            }
+            if right.is_none()
+                && let Poll::Ready(output) = b.as_mut().poll(context)
+            {
+                right = Some(output);
+            }
+            match (left.take(), right.take()) {
+                (Some(l), Some(r)) => Poll::Ready((l, r)),
+                (l, r) => {
+                    (left, right) = (l, r);
+                    Poll::Pending
+                }
+            }
+        })
+        .await
+    }
+
+    /// The Character root of one test: the durable revision a write is fenced against.
+    struct Durable(AtomicU64);
+
+    impl Durable {
+        fn load(
+            &self,
+        ) -> impl FnMut(
+            CharacterId,
+        )
+            -> std::future::Ready<Result<CharacterRevision, CharacterAuthorityError>>
+        + '_ {
+            |_| std::future::ready(Ok(revision(self.0.load(Ordering::SeqCst))))
+        }
+
+        /// A revision-advancing write: commits one revision when `expected` is current, as the
+        /// root row lock does.
+        async fn write(&self, expected: CharacterRevision) -> Result<Receipt, Failure> {
+            tokio::task::yield_now().await;
+            let next = expected.get() + 1;
+            self.0
+                .compare_exchange(expected.get(), next, Ordering::SeqCst, Ordering::SeqCst)
+                .map_err(|_| Failure::Mismatch)?;
+            tokio::task::yield_now().await;
+            Ok(Receipt(Some(revision(next))))
+        }
+    }
+
+    fn block_on<F: Future>(future: F) -> F::Output {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("test runtime")
+            .block_on(future)
+    }
+
+    #[test]
+    fn concurrent_writers_of_one_character_commit_in_sequence_without_mismatch() {
+        let durable = Durable(AtomicU64::new(7));
+        let sequencer = CharacterRevisionSequencer::new();
+        let id = character(1);
+        let writer = || async {
+            let mut slot = sequencer.acquire(id).await;
+            slot.sequenced(
+                durable.load(),
+                fence(id),
+                Expect::Cursor(OnMismatch::FailClosed),
+                |fence| durable.write(fence.expected_character_revision),
+            )
+            .await
+        };
+        // An XP award and a charm command arriving together, interleaved at every await.
+        let (xp, charm) = block_on(join(writer(), writer()));
+        let mut committed = [xp.expect("XP commits"), charm.expect("charm commits")]
+            .map(|receipt| receipt.0.expect("revision").get());
+        committed.sort_unstable();
+        assert_eq!(committed, [8, 9]);
+        assert_eq!(durable.0.load(Ordering::SeqCst), 9);
+    }
+
+    #[test]
+    fn unsequenced_writers_race_into_a_mismatch() {
+        // The defect class the sequencer removes: both read revision 7, one loses.
+        let durable = Durable(AtomicU64::new(7));
+        let (first, second) =
+            block_on(join(durable.write(revision(7)), durable.write(revision(7))));
+        assert!(first.is_ok() != second.is_ok());
+    }
+
+    #[test]
+    fn a_composition_holds_the_slot_for_its_chain() {
+        let durable = Durable(AtomicU64::new(3));
+        let sequencer = CharacterRevisionSequencer::new();
+        let id = character(2);
+        let interloper_saw = Rc::new(Cell::new(0));
+        block_on(async {
+            let chain = async {
+                let mut slot = sequencer.acquire(id).await;
+                let xp = slot
+                    .sequenced(
+                        durable.load(),
+                        fence(id),
+                        Expect::Cursor(OnMismatch::FailClosed),
+                        |fence| durable.write(fence.expected_character_revision),
+                    )
+                    .await
+                    .expect("XP commits");
+                tokio::task::yield_now().await;
+                let bestiary_expected = Cell::new(None);
+                slot.sequenced(
+                    durable.load(),
+                    fence(id),
+                    Expect::Cursor(OnMismatch::RetryOnce),
+                    |fence| {
+                        bestiary_expected.set(Some(fence.expected_character_revision));
+                        durable.write(fence.expected_character_revision)
+                    },
+                )
+                .await
+                .expect("Bestiary commits");
+                // Bestiary takes the revision XP committed.
+                assert_eq!(bestiary_expected.get(), xp.0);
+            };
+            let interloper = async {
+                tokio::task::yield_now().await;
+                let _slot = sequencer.acquire(id).await;
+                interloper_saw.set(durable.0.load(Ordering::SeqCst));
+            };
+            join(chain, interloper).await;
+        });
+        // The waiting request ran only after the whole chain.
+        assert_eq!(interloper_saw.get(), 5);
+    }
+
+    #[test]
+    fn a_bestiary_mismatch_reloads_the_cursor_and_retries_once() {
+        let id = character(3);
+        let sequencer = CharacterRevisionSequencer::new();
+        let durable = Durable(AtomicU64::new(10));
+        let attempts = Cell::new(0);
+        let result = block_on(async {
+            let mut slot = sequencer.acquire(id).await;
+            *slot.cursor = Some(revision(9)); // a bypass moved the root under the cursor
+            slot.sequenced(
+                durable.load(),
+                fence(id),
+                Expect::Cursor(OnMismatch::RetryOnce),
+                |fence| {
+                    attempts.set(attempts.get() + 1);
+                    durable.write(fence.expected_character_revision)
+                },
+            )
+            .await
+        });
+        assert_eq!(attempts.get(), 2);
+        assert_eq!(result, Ok(Receipt(Some(revision(11)))));
+
+        // A second mismatch is not retried again.
+        let attempts = Cell::new(0);
+        let result = block_on(async {
+            let mut slot = sequencer.acquire(id).await;
+            slot.sequenced(
+                durable.load(),
+                fence(id),
+                Expect::Cursor(OnMismatch::RetryOnce),
+                |_| {
+                    attempts.set(attempts.get() + 1);
+                    std::future::ready(Err::<Receipt, _>(Failure::Mismatch))
+                },
+            )
+            .await
+        });
+        assert_eq!((attempts.get(), result), (2, Err(Failure::Mismatch)));
+    }
+
+    #[test]
+    fn a_revision_bound_mismatch_fails_closed_without_retry() {
+        let id = character(4);
+        let sequencer = CharacterRevisionSequencer::new();
+        let durable = Durable(AtomicU64::new(10));
+        let attempts = Cell::new(0);
+        block_on(async {
+            let mut slot = sequencer.acquire(id).await;
+            *slot.cursor = Some(revision(9));
+            let result = slot
+                .sequenced(
+                    durable.load(),
+                    fence(id),
+                    Expect::Cursor(OnMismatch::FailClosed),
+                    |fence| {
+                        attempts.set(attempts.get() + 1);
+                        durable.write(fence.expected_character_revision)
+                    },
+                )
+                .await;
+            assert_eq!(result, Err(Failure::Mismatch));
+            // The cursor is dropped, so the next write reloads it from the root.
+            assert_eq!(*slot.cursor, None);
+        });
+        assert_eq!(attempts.get(), 1);
+        assert_eq!(durable.0.load(Ordering::SeqCst), 10);
+    }
+
+    #[test]
+    fn a_replay_uses_its_original_revision_once() {
+        let id = character(11);
+        let sequencer = CharacterRevisionSequencer::new();
+        let seen = Cell::new(None);
+        let attempts = Cell::new(0);
+        let result = block_on(async {
+            let mut slot = sequencer.acquire(id).await;
+            *slot.cursor = Some(revision(9));
+            slot.sequenced(
+                |_| std::future::ready(Ok(revision(9))),
+                fence(id),
+                Expect::Replay(revision(4)),
+                |fence| {
+                    attempts.set(attempts.get() + 1);
+                    seen.set(Some(fence.expected_character_revision));
+                    std::future::ready(Ok::<_, Failure>(Receipt(Some(revision(5)))))
+                },
+            )
+            .await
+        });
+        assert_eq!(result, Ok(Receipt(Some(revision(5)))));
+        assert_eq!((attempts.get(), seen.get()), (1, Some(revision(4))));
+    }
+
+    #[test]
+    fn the_cursor_moves_only_on_receipts_and_never_back() {
+        let id = character(5);
+        let sequencer = CharacterRevisionSequencer::new();
+        block_on(async {
+            let mut slot = sequencer.acquire(id).await;
+            *slot.cursor = Some(revision(6));
+            slot.settle::<Receipt, Failure>(&Ok(Receipt(Some(revision(4)))));
+            assert_eq!(*slot.cursor, Some(revision(6)), "a replayed older receipt");
+            slot.settle::<Receipt, Failure>(&Ok(Receipt(None)));
+            assert_eq!(*slot.cursor, Some(revision(6)), "nothing written");
+            slot.settle::<Receipt, Failure>(&Err(Failure::Refused));
+            assert_eq!(*slot.cursor, Some(revision(6)), "a refusal wrote nothing");
+            slot.settle::<Receipt, Failure>(&Ok(Receipt(Some(revision(7)))));
+            assert_eq!(*slot.cursor, Some(revision(7)));
+            slot.settle::<Receipt, Failure>(&Err(Failure::Unknown));
+            assert_eq!(*slot.cursor, None, "an unknown outcome");
+        });
+    }
+
+    #[test]
+    fn a_slot_refuses_another_characters_fence() {
+        let sequencer = CharacterRevisionSequencer::new();
+        let result = block_on(async {
+            let mut slot = sequencer.acquire(character(6)).await;
+            slot.sequenced(
+                |_| std::future::ready(Ok(revision(1))),
+                fence(character(7)),
+                Expect::Cursor(OnMismatch::FailClosed),
+                |_| std::future::ready(Ok::<_, Failure>(Receipt(None))),
+            )
+            .await
+        });
+        assert_eq!(result, Err(Failure::Refused));
+    }
+
+    #[test]
+    fn idle_slots_are_dropped() {
+        let sequencer = CharacterRevisionSequencer::new();
+        block_on(async {
+            drop(sequencer.acquire(character(8)).await);
+            let _held = sequencer.acquire(character(9)).await;
+            drop(sequencer.acquire(character(10)).await);
+        });
+        let slots = sequencer.slots.lock().expect("slots");
+        assert!(slots.contains_key(&character(9)) && slots.len() <= 2);
+    }
+}

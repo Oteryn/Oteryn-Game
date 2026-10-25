@@ -1,0 +1,18 @@
+{
+  "id": 27,
+  "name": "STASH",
+  "owner_decision": "SUPPLYSTASH0-SUPPLY-STASH-V1; PARITY-DEPOT-SEARCH-STASH-1",
+  "owner": "Character + World stash page view",
+  "capability": 62,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/stash_v1.proto#StashReplyV1",
+  "revision": "Connection-local, starts at zero and advances once per stash command reply. Each delta fully replaces the open page. Browse reopens and refreshes after reconnect/resync.",
+  "delta_types": [
+    {
+      "id": 1,
+      "name": "STASH_PAGE_REPLACE_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/stash_v1.proto#StashReplyV1",
+      "max_payload_bytes": 36000
+    }
+  ],
+  "snapshot_types": []
+}

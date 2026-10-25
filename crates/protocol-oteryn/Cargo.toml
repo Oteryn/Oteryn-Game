@@ -7,12 +7,17 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 publish.workspace = true
+build = "build.rs"
 
 [package.metadata.oteryn]
 category = "protocol-oteryn"
 release-role = "production"
 
+[build-dependencies]
+serde_json.workspace = true
+
 [dev-dependencies]
+oteryn-test-support = { version = "=0.1.0", path = "../test-support" }
 serde_json.workspace = true
 
 [lints]

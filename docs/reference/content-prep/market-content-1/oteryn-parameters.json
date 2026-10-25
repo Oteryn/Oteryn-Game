@@ -1,0 +1,51 @@
+{
+  "schema": "OTERYN_WORKING_REFERENCE_PARAMETERS/v1",
+  "task": "MARKET-CONTENT-1",
+  "reference_only": true,
+  "runtime_switch_authorized": false,
+  "status": "SOURCE_RECONCILED_DIRECT_TYPES_AND_SHARED_INSTANCE_POLICY",
+  "owner_instruction_source": "owner:oteryn-data-completion:2026-10-19",
+  "filled_fields": 2177,
+  "normalized_companion_fields": 2148,
+  "remaining_unfilled_fields": 0,
+  "originating_proposals": "docs/reference/content-prep/market-content-1/oteryn-proposals.json",
+  "source_archive": "docs/reference/content-prep/market-content-1/tibia-source-archive.json",
+  "shared_policies": {
+    "oteryn.market.instance_policy.v1": {
+      "require_explicit_type_allowlist": true,
+      "reject": [
+        "nonempty_container",
+        "inscribed_document_or_custom_writable_text",
+        "filled_fluid_container",
+        "nonportable",
+        "bound_owner",
+        "store_nontransferable",
+        "active_imbuement",
+        "nondefault_charges",
+        "nondefault_remaining_duration"
+      ],
+      "tier": "separate_offer_key; do not reject tiered items solely for tier",
+      "default_additional_item_exceptions": [],
+      "assumption": "Owner-authorized composite reference proposal, distinct from donor control flow. The exact early return and following checks are recorded in the source check; no reachable bypass or donor defect is asserted.",
+      "selected_for_native_runtime": false
+    }
+  },
+  "selection_policy": "Source-backed observations where available; explicit Oteryn working choices otherwise. Native activation and accepted architecture remain outside this data task.",
+  "source_reconciliation": {
+    "source_check": "docs/reference/content-prep/market-content-1/market-source-reconciliation.json",
+    "shared_instance_predicate_references": 1943,
+    "individual_source_ids_checked": 86,
+    "donor_metadata_absent": 84,
+    "donor_metadata_present": 2,
+    "type_defaults_reconciled": 85,
+    "others_taxonomy_defaults_withdrawn": 148,
+    "source_variant_or_instance_checks": [
+      2884,
+      9034
+    ],
+    "source_conflict_item": 22694,
+    "remaining_unresolved_source_fields": 3,
+    "native_admission": false
+  },
+  "remaining_unresolved_source_fields": 3
+}

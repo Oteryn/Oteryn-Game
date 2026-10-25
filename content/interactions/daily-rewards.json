@@ -1,0 +1,69 @@
+{
+  "schema": "OTERYN_DAILY_REWARDS/v1",
+  "revision": "oteryn:daily-rewards.r1",
+  "entry_shrine": {
+    "placement": "oteryn:placement/daily-reward-shrine",
+    "coordinate_frame": "oteryn:entry.frame",
+    "x": 0,
+    "y": 0,
+    "floor": 0
+  },
+  "shrine_source_ids": [
+    25720,
+    25721,
+    25722,
+    25723,
+    25802,
+    25803
+  ],
+  "potion_source_ids": [
+    266
+  ],
+  "items": [
+    {
+      "key": "oteryn:item.tibia.i25719",
+      "charges": 100,
+      "kind": "converter"
+    },
+    {
+      "key": "oteryn:item.tibia.i28540",
+      "charges": 50,
+      "kind": "training"
+    },
+    {
+      "key": "oteryn:item.tibia.i28541",
+      "charges": 50,
+      "kind": "training"
+    },
+    {
+      "key": "oteryn:item.tibia.i28542",
+      "charges": 50,
+      "kind": "training"
+    },
+    {
+      "key": "oteryn:item.tibia.i50292",
+      "charges": 50,
+      "kind": "training"
+    },
+    {
+      "key": "oteryn:item.tibia.i28543",
+      "charges": 50,
+      "kind": "training"
+    },
+    {
+      "key": "oteryn:item.tibia.i28545",
+      "charges": 50,
+      "kind": "training"
+    },
+    {
+      "key": "oteryn:item.tibia.i28544",
+      "charges": 50,
+      "kind": "training"
+    },
+    {
+      "key": "oteryn:item.tibia.i44064",
+      "charges": 50,
+      "kind": "training"
+    }
+  ]
+}

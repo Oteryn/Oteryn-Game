@@ -30,7 +30,15 @@ if ! git merge-base --is-ancestor "$GAME_ADMISSION_SHA" HEAD; then
   exit 2
 fi
 for path in apps/game-server/src/admission_evidence.rs apps/game-server/src/native_admission_source/mod.rs apps/game-server/src/native_admission_source/descriptor.rs apps/game-server/src/native_admission_source/http1_mtls.rs; do
-  [[ "$(git rev-parse "$GAME_ADMISSION_SHA:$path")" == "$(git rev-parse "HEAD:$path")" ]] || {
+  current_path="$path"
+  if [[ "$path" == apps/game-server/src/admission_evidence.rs ]]; then
+    current_path=crates/gameplay/admission-evidence/src/lib.rs
+  elif [[ "$path" == apps/game-server/src/native_admission_source/mod.rs ]]; then
+    current_path=crates/gameplay/native-admission-source/src/lib.rs
+  elif [[ "$path" == apps/game-server/src/native_admission_source/* ]]; then
+    current_path="crates/gameplay/native-admission-source/src/${path##*/}"
+  fi
+  [[ "$(git rev-parse "$GAME_ADMISSION_SHA:$path")" == "$(git rev-parse "HEAD:$current_path")" ]] || {
     echo "S3_RESULT=BLOCKED reason=protected_game_source_moved path=$path"
     exit 2
   }
@@ -378,14 +386,14 @@ export WP5_S3A_FRESH_KEY_ID="$FRESH_KEY_ID"
 export WP5_S3A_RECOVERY_KEY_ID="$RECOVERY_KEY_ID"
 export WP5_S3A_FRESH_KEY_BYTE="$FRESH_KEY_BYTE"
 export WP5_S3A_RECOVERY_KEY_BYTE="$RECOVERY_KEY_BYTE"
-cargo +1.95.0 test --locked -p oteryn-game-server --test native_admission_source_real_interop real_platform_producer_decodes_all_four_operations -- --ignored --exact --nocapture
+cargo +1.99.1 test --locked -p oteryn-game-server --test native_admission_source_real_interop real_platform_producer_decodes_all_four_operations -- --ignored --exact --nocapture
 
 # Keep the Game-side two-active proof separate from the producer-side boundary.
 compose exec --no-TTY -e MYSQL_PWD="$WP5_DB_ROOT_PASSWORD" db \
   mariadb -uroot oteryn_s3a -e 'LOCK TABLES identities WRITE; DO SLEEP(2); UNLOCK TABLES' >/dev/null &
 locker=$!
 sleep 0.2
-cargo +1.95.0 test --locked -p oteryn-game-server --test native_admission_source_real_interop real_capacity_two_inflight_rejects_third -- --ignored --exact --nocapture
+cargo +1.99.1 test --locked -p oteryn-game-server --test native_admission_source_real_interop real_capacity_two_inflight_rejects_third -- --ignored --exact --nocapture
 wait "$locker"
 evidence 'game_capacity=two_active third=immediate_reject client_profile=two_active_eight_queued'
 
@@ -587,9 +595,9 @@ compose exec --no-TTY --user www-data platform php artisan game-auth:native-evid
 expect_observed_trust "$fresh_trust_payload" "$WP5_SCRATCH/trust-reconciled-response" \
   false "$FRESH_KEY_BYTE" "$trust_before_fault_revision" greater
 trust_reconciled_revision="$(observed_revision "$WP5_SCRATCH/trust-reconciled-response")"
-cargo +1.95.0 test --locked -p oteryn-game-server --test native_admission_source_real_interop real_platform_producer_reports_revoked_fresh_key -- --ignored --exact --nocapture
+cargo +1.99.1 test --locked -p oteryn-game-server --test native_admission_source_real_interop real_platform_producer_reports_revoked_fresh_key -- --ignored --exact --nocapture
 php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class)->publishNextProfileVersion(App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_ISSUER,App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_PROFILE,"fresh_admission","fresh-key-2",str_repeat(chr('"$SUCCESSOR_FRESH_KEY_BYTE"'),32));'
-WP5_S3A_FRESH_KEY_ID=fresh-key-2 WP5_S3A_FRESH_KEY_BYTE="$SUCCESSOR_FRESH_KEY_BYTE" cargo +1.95.0 test --locked -p oteryn-game-server --test native_admission_source_real_interop real_platform_producer_decodes_all_four_operations -- --ignored --exact --nocapture
+WP5_S3A_FRESH_KEY_ID=fresh-key-2 WP5_S3A_FRESH_KEY_BYTE="$SUCCESSOR_FRESH_KEY_BYTE" cargo +1.99.1 test --locked -p oteryn-game-server --test native_admission_source_real_interop real_platform_producer_decodes_all_four_operations -- --ignored --exact --nocapture
 evidence "trust_rollback=unavailable_after_restart witness_ahead=retained trust_reconcile=revoked revision=${trust_before_fault_revision}->${trust_reconciled_revision} successor_profile=fresh_key"
 
 # The path-scoped interposer runs in the exact PHP ABI and distinguishes file and directory fsync.

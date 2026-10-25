@@ -1,28 +1,33 @@
 #![allow(clippy::expect_used)]
-// Dedicated PostgreSQL 17.6 qualification for GOLD-FEE-1a (migration 0023). Ordinary workspace runs
+// Dedicated PostgreSQL 18.6 qualification for GOLD-FEE-1a (migration 0023). Ordinary workspace runs
 // report PRE-ROUTING/NONCANONICAL when the routed database is absent.
 extern crate oteryn_game_server as production_server;
 extern crate self as oteryn_game_server;
 
 pub use production_server::admission_evidence;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/character_bootstrap_intent.rs"]
+#[path = "../../../crates/gameplay/durability/src/character_bootstrap_intent.rs"]
 pub mod character_bootstrap_intent;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/character_recovery_fence.rs"]
-pub mod character_recovery_fence;
-pub use production_server::domain;
+pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
+#[path = "support/domain_shim.rs"]
+pub mod domain;
+use oteryn_gameplay_durability::durability;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/durability/mod.rs"]
-mod durability;
+pub use oteryn_gameplay_entities as foundation;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/foundation/mod.rs"]
-pub mod foundation;
-#[allow(dead_code, unused_imports)]
-#[path = "../src/native_admission_source/mod.rs"]
-pub mod native_admission_source;
+pub use oteryn_gameplay_native_admission_source as native_admission_source;
 
 // Standalone target for local focused runs. The cases need only the path-loaded crate root
 // above, so a protected PostgreSQL wrapper can include the same file.
 #[path = "support/item_fee_burn_postgres_cases.rs"]
 mod item_fee_burn_postgres_cases;
+
+#[allow(dead_code, unused_imports)]
+#[path = "support/content_spell_data_shim.rs"]
+mod content;
+
+// Shared PostgreSQL harness for this target's integration cases.
+#[allow(dead_code)] // Each standalone target uses only part of the shared fixture API.
+#[path = "support/bestiary_postgres_harness.rs"]
+mod bestiary_postgres_harness;

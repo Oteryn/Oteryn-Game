@@ -1,0 +1,13 @@
+{
+  "schema": "OTERYN_FAMILY_INDEX/v1",
+  "family": "Cosmetic.OutfitEvidence",
+  "record_count": 136,
+  "shard_size": 500,
+  "shards": [
+    "content/cosmetics/outfits/evidence-00000-00135.json"
+  ],
+  "population_state": "POPULATED",
+  "runtime_admission": "BLOCKED",
+  "runtime_switch_authorized": false,
+  "evidence_completeness": "COMPLETE_OTERYN_WORKING_PARAMETERS_GLOBAL_SOURCE_ARCHIVED"
+}

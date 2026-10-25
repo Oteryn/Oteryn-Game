@@ -3,54 +3,13 @@
 use oteryn_game_server::content::*;
 use serde_json::{Value, json};
 
-fn limits() -> ProjectEvidenceLimits {
-    ProjectEvidenceLimits {
-        max_documents: 12,
-        max_document_bytes: 16_384,
-        max_total_bytes: 65_536,
-        max_json_depth: 20,
-        max_decoded_fields: 1_024,
-        max_string_bytes: 32_768,
-        max_locator_bytes: 160,
-        max_locator_segments: 8,
-        max_reference_records: 32,
-        max_import_records: 8,
-        max_reimport_states: 8,
-    }
-}
-
-fn core() -> ProjectDraft {
-    ProjectDraft {
-        project_revision: "project-r1".into(),
-        package_key: "oteryn:content.world-project".into(),
-        semantic_schema_version: "reference-schema-v1".into(),
-        licensing_metadata: "license:project-owned-v1".into(),
-        world_id: "0123456789ab70cd8ef0123456789abc".into(),
-        coordinate_frame: "global-target-2026-09-27".into(),
-        records: vec![ProjectReferenceRecord::Generic {
-            identity: DefinitionIdentityDocument {
-                family: "Presentation".into(),
-                key: "oteryn:reference.presentation.courier".into(),
-                revision: "definition-r1".into(),
-            },
-            client_projection: ProjectionDocument::ClientSafe,
-        }],
-        imports: vec![],
-        metadata: vec![],
-    }
-}
+#[path = "support/content_world_project_v2_fixture.rs"]
+mod content_world_project_v2_fixture;
+use content_world_project_v2_fixture::*;
 
 fn identity(key: &str) -> ProjectV2Identity {
     ProjectV2Identity {
         key: format!("oteryn:content.{key}"),
-        revision: "definition-r1".into(),
-    }
-}
-
-fn reference(family: ProjectV2Family, key: &str) -> ProjectV2DefinitionRef {
-    ProjectV2DefinitionRef {
-        family,
-        key: key.into(),
         revision: "definition-r1".into(),
     }
 }
@@ -230,54 +189,6 @@ fn source_identity_binding(
         target,
         disposition,
     }
-}
-
-fn canonical(value: &Value) -> Vec<u8> {
-    let mut bytes = serde_json::to_vec(value).expect("encode JSON");
-    bytes.push(b'\n');
-    bytes
-}
-
-fn rebind_manifest_and_lock(
-    documents: &mut std::collections::BTreeMap<String, Vec<u8>>,
-    manifest: &Value,
-) {
-    let manifest_bytes = canonical(manifest);
-    let package = PackageManifestBinding::new(
-        ProductionKey::new(manifest["package_key"].as_str().expect("package key")).expect("key"),
-        ProductionAtom::new(
-            "revision",
-            manifest["package_revision"].as_str().expect("revision"),
-        )
-        .expect("revision"),
-        ProductionAtom::new(
-            "schema",
-            manifest["semantic_schema_version"]
-                .as_str()
-                .expect("schema"),
-        )
-        .expect("schema"),
-        ProductionAtom::new(
-            "license",
-            manifest["licensing_metadata"].as_str().expect("license"),
-        )
-        .expect("license"),
-        Sha256HexDigest::new(&world_project_sha256(&manifest_bytes)).expect("digest"),
-    );
-    let mut lock: Value = serde_json::from_slice(&documents["content.lock.json"]).expect("lock");
-    lock["entries"][0]["package_provenance_digest"] = json!(
-        package
-            .package_provenance_digest()
-            .expect("provenance")
-            .as_str()
-    );
-    let lock_bytes = canonical(&lock);
-    let mut root: Value = serde_json::from_slice(&documents["project.json"]).expect("root");
-    root["manifest_sha256"] = json!(world_project_sha256(&manifest_bytes));
-    root["content_lock_sha256"] = json!(world_project_sha256(&lock_bytes));
-    documents.insert("manifest.json".into(), manifest_bytes);
-    documents.insert("content.lock.json".into(), lock_bytes);
-    documents.insert("project.json".into(), canonical(&root));
 }
 
 #[test]
@@ -784,6 +695,7 @@ fn item_candidate() -> ProjectV2Draft {
         });
     draft.state.item_authoring.push(ProjectV2ItemAuthoring {
         item: reference(ProjectV2Family::Item, "oteryn:reference.item.weapon-alpha"),
+        ranged: None,
         presentation: Some(reference(
             ProjectV2Family::Presentation,
             "oteryn:reference.presentation.courier",
@@ -1645,6 +1557,103 @@ fn committed_proficiency_content_lowers_to_valid_v2_declarations() {
         ..limits()
     };
     CanonicalProjectDocuments::from_v2_draft(draft, wide).expect("443 definitions validate");
+}
+
+#[test]
+fn ranged_separate_profile_owners_survive_world_project_roundtrip() {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let read = |path: &std::path::Path| -> Value {
+        serde_json::from_slice(&std::fs::read(path).expect("content input")).expect("content JSON")
+    };
+    let profiles = read(&root.join("content/items/ranged-profiles.json"));
+    let index = read(&root.join("content/items/index.json"));
+    let rows: Vec<Value> = index["shards"]
+        .as_array()
+        .expect("shards")
+        .iter()
+        .flat_map(|path| {
+            read(&root.join(path.as_str().expect("shard path")))["records"]
+                .as_array()
+                .expect("records")
+                .clone()
+        })
+        .collect();
+    for (id, expected_attack, expected_hit) in [
+        (16163, Some(4), None),
+        (3446, None, Some(86)),
+        (3074, None, None),
+    ] {
+        let key = format!("oteryn:item.tibia.i{id}");
+        let row = rows
+            .iter()
+            .find(|row| row["definition"]["identity"]["key"] == key)
+            .expect("Item");
+        assert!(row["authoring"].get("ranged").is_none());
+        let profile = profiles["records"]
+            .as_array()
+            .expect("profiles")
+            .iter()
+            .find(|record| record["item"]["key"] == key)
+            .expect("profile");
+        let mut owner = row.get("authoring").cloned().unwrap_or(json!({}));
+        owner["item"] = row["definition"]["identity"].clone();
+        let owner: ProjectV2ItemAuthoring = serde_json::from_value(owner).expect("sealed owner");
+        assert_eq!(
+            owner.weapon_attack_modifier_points.map(|points| points.0),
+            expected_attack
+        );
+        assert_eq!(
+            owner
+                .weapon_absolute_hit_chance_percent
+                .map(|ratio| ratio.numerator),
+            expected_hit
+        );
+        let resolved = ProjectV2RangedWeapon::try_from((&profile["profile"], &owner))
+            .expect("resolved ranged profile");
+        for field in ["attack", "hit_chance", "range_cells", "mana_per_shot"] {
+            let mut missing = profile["profile"].clone();
+            if missing
+                .as_object_mut()
+                .expect("profile object")
+                .remove(field)
+                .is_some()
+            {
+                assert!(ProjectV2RangedWeapon::try_from((&missing, &owner)).is_err());
+            }
+        }
+        for (field, present) in [
+            ("attack", expected_attack.is_some()),
+            ("hit_chance", expected_hit.is_some()),
+        ] {
+            if present {
+                let mut duplicate = profile["profile"].clone();
+                duplicate[field] = json!(0);
+                assert!(ProjectV2RangedWeapon::try_from((&duplicate, &owner)).is_err());
+            }
+        }
+        let mut draft = item_candidate();
+        let authoring = &mut draft.state.item_authoring[0];
+        authoring.weapon_attack_modifier_points = owner.weapon_attack_modifier_points;
+        authoring.weapon_absolute_hit_chance_percent = owner.weapon_absolute_hit_chance_percent;
+        authoring.ranged = Some(resolved.clone());
+        let documents =
+            CanonicalProjectDocuments::from_v2_draft(draft, limits()).expect("ranged documents");
+        let parsed = ProjectSnapshot::new(documents.documents().clone(), limits())
+            .expect("admit")
+            .parse(limits())
+            .expect("parse");
+        assert_eq!(
+            parsed.v2().expect("v2 state").item_authoring[0].ranged,
+            Some(resolved)
+        );
+        assert_eq!(
+            parsed
+                .canonical_documents(limits())
+                .expect("rewrite")
+                .documents(),
+            documents.documents()
+        );
+    }
 }
 
 #[test]

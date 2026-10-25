@@ -9,6 +9,7 @@
 
 pub mod cli;
 pub mod controller;
+mod guild_chat;
 pub mod input;
 pub mod model;
 

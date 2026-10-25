@@ -3,16 +3,15 @@
 use super::*;
 use crate::item_view::{
     COMMAND_TYPE_ITEM_MOVE_INTENT, ItemMoveDestination, ItemMoveIntent, ItemMoveSelection,
-    MAX_ITEM_MOVE_INTENT_BYTES, MAX_ITEM_MOVE_INTENT_EQUIP_DROP_BYTES, decode_item_move_intent_for,
+    MAX_ITEM_MOVE_INTENT_BYTES, MAX_ITEM_MOVE_INTENT_EQUIP_DROP_BYTES,
+    MAX_ITEM_MOVE_INTENT_STACK_COUNT_BYTES, decode_item_move_intent_for,
     decode_item_move_intent_with_equip_drop, encode_item_move_intent_for,
 };
 use serde_json::Value;
 use std::num::NonZeroU32;
 
-const PROTOCOL_REGISTRY: &str =
-    include_str!("../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json");
-const RESOURCE_REGISTRY: &str =
-    include_str!("../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json");
+const PROTOCOL_REGISTRY: &str = crate::PROTOCOL_OTERYN_V1_REGISTRY_JSON;
+const RESOURCE_REGISTRY: &str = crate::RESOURCE_LIMITS_REGISTRY_JSON;
 
 fn handle(value: u64) -> ItemHandle {
     ItemHandle::new(value).expect("non-zero")
@@ -506,7 +505,11 @@ fn registries_bind_capability_14_and_its_limits() {
         capability["requires"],
         serde_json::json!(CAPABILITY_CONTAINER_TREE_V1_REQUIRES)
     );
-    assert_eq!(CAPABILITY_CONTAINER_TREE_V1_REQUIRES, [4, 12]);
+    let expected = [
+        4,  // ITEM_VIEW_MOVE_V1
+        12, // ITEM_EQUIP_DROP_V1
+    ];
+    assert_eq!(CAPABILITY_CONTAINER_TREE_V1_REQUIRES, expected);
     assert_eq!(
         capability["command_types"],
         serde_json::json!([COMMAND_TYPE_CONTAINER_VIEW_INTENT])
@@ -528,12 +531,12 @@ fn registries_bind_capability_14_and_its_limits() {
         command["max_result_payload_bytes"].as_u64(),
         Some(MAX_CONTAINER_VIEW_RESULT_BYTES as u64)
     );
-    // Command 9 keeps its owner and its bound: the container destination fits within it.
+    // Command 9 keeps its owner; its aggregate bound now includes capability 61 count.
     let move_command = find("command_types", COMMAND_TYPE_ITEM_MOVE_INTENT);
     assert_eq!(move_command["capability"], 4);
     assert_eq!(
         move_command["max_payload_bytes"].as_u64(),
-        Some(MAX_ITEM_MOVE_INTENT_EQUIP_DROP_BYTES as u64)
+        Some(MAX_ITEM_MOVE_INTENT_STACK_COUNT_BYTES as u64)
     );
 
     let domain = find("state_domains", STATE_DOMAIN_CONTAINER_VIEWS);
@@ -585,3 +588,7 @@ fn registries_bind_capability_14_and_its_limits() {
     // Sessions without capability 14 keep ITEMV0-RL-03.
     assert_eq!(limit("ITEMV0-RL-03"), Some(MAX_LIVE_ITEM_HANDLES as u64));
 }
+
+#[cfg(test)]
+#[path = "container_tree_fuzz_tests.rs"]
+mod fuzz_tests;

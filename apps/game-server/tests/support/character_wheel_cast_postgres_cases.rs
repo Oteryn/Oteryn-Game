@@ -1,4 +1,4 @@
-//! The cast's real SQL Wheel reader and access adapter, on the existing PostgreSQL 17.6 harness.
+//! The cast's real SQL Wheel reader and access adapter, on the existing PostgreSQL 18.6 harness.
 //! SQL fixtures advance the actual receipt chains; current authority comes from independent
 //! recovery/node/session/lease/Content owners, never from an allocation row or admission cache.
 use super::*;
@@ -14,16 +14,19 @@ use crate::durability::character_wheel::{
     WHEEL_SLOTS, WheelChangeFacts, WheelChangeRequest, WheelCommitOutcome, WheelDomain,
     WheelOccurrence, WheelRuleset, WheelSlots, read_current_allocation_in_transaction,
 };
-use crate::foundation::{
-    ChannelContentPin, ChannelId, CommandId, ConnectionGeneration, GameSessionId,
-    ScopeOwnershipGeneration, WorldId,
-};
 use std::sync::Arc;
+use {
+    crate::foundation::{
+        ChannelId, CommandId, ConnectionGeneration, GameSessionId, ScopeOwnershipGeneration,
+        WorldId,
+    },
+    oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+};
 
 const DIGEST: [u8; 32] = [1; 32];
 const LEVEL: i64 = 1050;
 const EXPERIENCE: i64 = 5000;
-const READY_CHARACTER_REVISION: u64 = 4;
+const READY_CHARACTER_REVISION: u64 = 5;
 
 fn run<F>(tag: &'static str, body: F) -> TestResult
 where
@@ -143,6 +146,7 @@ async fn prepare_current_owners(h: &Harness) -> TestResult {
             .await?;
         tx.commit().await?;
     }
+    crate::character_promotion_fixture::purchase(h, 4).await?;
     sqlx::query("INSERT INTO game_control_scope_grants VALUES (session_user, encode($1,'hex')::uuid, encode($2,'hex')::uuid, 4)")
         .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice()).execute(&h.pool).await?;
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid, encode($2,'hex')::uuid, 1, NULL, $3, $4, $5)")
@@ -201,7 +205,7 @@ fn command(value: u64) -> TestResult<CommandRef> {
 }
 fn ruleset() -> TestResult<Arc<WheelRuleset>> {
     Ok(Arc::new(
-        crate::wheel_gem_data::WheelGemData::embedded()
+        oteryn_gameplay_progression::wheel_gem_data::WheelGemData::embedded()
             .map_err(debug)?
             .wheel_ruleset()
             .map_err(debug)?,
@@ -357,6 +361,15 @@ async fn allocate(
             points[index] = slot.capacity;
         }
     }
+    // Amended 2026-10-25 by owner decision NIGHT-W1 #3: allocation uses the same
+    // sealed pre-delivery gate as promotion; the cast's live Premium checks stay separate.
+    let coordinator =
+        crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator::new(
+            Default::default(),
+            None,
+            None,
+            Some(h.root.clone()),
+        );
     let outcome = h
         .root
         .commit_character_wheel(
@@ -369,10 +382,8 @@ async fn allocate(
                 slots: WheelSlots::new(points).map_err(debug)?,
             },
             Arc::clone(rules),
-            WheelChangeFacts {
-                promoted: true,
-                at_temple: false,
-            },
+            WheelChangeFacts { at_temple: false },
+            &coordinator,
         )
         .await
         .map_err(debug)?;

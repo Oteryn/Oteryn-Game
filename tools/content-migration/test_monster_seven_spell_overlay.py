@@ -7,6 +7,7 @@ from pathlib import Path
 from unittest.mock import patch
 import import_spell_families as producer
 import monster_seven_spell_overlay as overlay
+import register_spell_families as registration
 
 ROOT=Path(__file__).resolve().parents[2]
 class AcceptedOverlayTests(unittest.TestCase):
@@ -31,11 +32,97 @@ class AcceptedOverlayTests(unittest.TestCase):
         self.assertEqual(len(looks['records']),334)
         self.assertEqual(len(looks['item_appearances']),6)
     def test_registration_replays_all_current_outputs(self):
-        import register_spell_families
-        actual=register_spell_families.outputs(ROOT)
-        self.assertEqual(len(actual),36)
+        actual=registration.outputs(ROOT)
+        self.assertEqual(len(actual),37)
+        self.assertIn('content/items/readable-profiles.json',actual)
         for path,data in actual.items():
             self.assertEqual(data,(ROOT/path).read_bytes(),path)
+    def test_consumable_overlay_carries_only_the_selected_source_fact(self):
+        planned = dict(self.base)
+        path = producer.PROVIDER_DESTINATIONS["item_profiles"]
+        before = json.loads(planned[path])
+        facts = json.loads((ROOT / registration.CONSUMPTION_FACTS).read_bytes())
+        fact = next(row for row in facts["rows"]
+                    if row["target"]["key"] == registration.CONSUMABLE_KEY)
+        self.assertEqual(fact["consumption"], {"kind": "FOOD", "value": {"regeneration_seconds": 180}})
+        registration.admit_consumable_profiles(ROOT, planned)
+        after = json.loads(planned[path])
+        retained = [r for r in after["records"]
+                    if r["production_definition"]["production_key"] not in registration.POTION_KEYS]
+        for old, new in zip(before["records"], retained, strict=True):
+            if old["production_definition"]["production_key"] == registration.CONSUMABLE_KEY:
+                self.assertEqual(new["semantics"].pop("consumption"),
+                                 {"state": "KNOWN", "value": fact["consumption"]})
+            self.assertEqual(new, old)
+        added = [r for r in after["records"]
+                 if r["production_definition"]["production_key"] in registration.POTION_KEYS]
+        self.assertEqual(len(added), 2)
+        world = json.loads((ROOT / 'content/world/definitions/reference.json').read_bytes())
+        for record in added:
+            source = next(r for r in world["records"] if r["identity"] == record["authoring"]["item"])
+            self.assertEqual(record["semantics"], source["semantics"])
+            self.assertEqual(record["production_binding"]["target"], source["identity"])
+            self.assertEqual(record["attributes"], {})
+            self.assertEqual(record["admission"]["stack_class"], source["stack_class"])
+        manifest = json.loads(planned[registration.NATIVE_MANIFEST])
+        self.assertEqual(manifest["item_profiles"]["sha256"], overlay.digest(planned[path]))
+        for unchanged in self.base.keys() - {path, registration.NATIVE_MANIFEST}:
+            self.assertEqual(planned[unchanged], self.base[unchanged])
+    def test_consumable_evidence_tamper_is_refused(self):
+        actual_read = Path.read_bytes
+        wanted = ROOT / registration.CONSUMPTION_FACTS
+        with patch.object(Path, 'read_bytes', lambda path: actual_read(path) + (b' ' if path == wanted else b'')):
+            with self.assertRaisesRegex(ValueError, 'CONSUMPTION_FACTS_DIGEST'):
+                registration.admit_consumable_profiles(ROOT, dict(self.base))
+    def test_consumable_missing_duplicate_revision_and_semantic_conflict_are_refused(self):
+        path = producer.PROVIDER_DESTINATIONS["item_profiles"]
+        for operator in ("missing", "duplicate", "revision", "semantics"):
+            document = json.loads(self.base[path])
+            record = next(r for r in document["records"]
+                          if r["production_definition"]["production_key"] == registration.CONSUMABLE_KEY)
+            if operator == "missing":
+                document["records"].remove(record)
+            elif operator == "duplicate":
+                document["records"].append(copy.deepcopy(record))
+            elif operator == "revision":
+                record["production_definition"]["revision_ref"] = "unqualified"
+            else:
+                record["semantics"]["consumption"] = {"state": "UNKNOWN"}
+            planned = self.base | {path: producer.canonical_bytes(document)}
+            before = dict(planned)
+            with self.subTest(operator=operator), self.assertRaisesRegex(ValueError, 'CONSUMPTION_PROFILE_'):
+                registration.admit_consumable_profiles(ROOT, planned)
+            self.assertEqual(planned, before)
+    def test_world_potion_and_flask_identity_admission_and_consumption_conflicts_are_refused(self):
+        actual_read = Path.read_bytes
+        world_path = ROOT / 'content/world/definitions/reference.json'
+        bindings_path = ROOT / 'imports/crystalserver/bindings/items.json'
+        sources = [r for r in json.loads(actual_read(world_path))["records"]
+                   if r["identity"]["key"] in registration.POTION_KEYS]
+        bindings = [b for b in json.loads(actual_read(bindings_path))["bindings"]
+                    if b["target"]["key"] in registration.POTION_KEYS]
+        for operator in ("missing", "duplicate", "binding", "physical", "consumption"):
+            world = {"records": copy.deepcopy(sources)}
+            admitted = {"bindings": copy.deepcopy(bindings)}
+            potion = next(r for r in world["records"] if r["identity"]["key"] == 'oteryn:item.tibia.i266')
+            if operator == "missing":
+                world["records"].remove(potion)
+            elif operator == "duplicate":
+                world["records"].append(copy.deepcopy(potion))
+            elif operator == "binding":
+                admitted["bindings"][0]["target"]["revision"] = "unqualified"
+            elif operator == "physical":
+                potion["semantics"]["physical"]["value"]["movable"] = {"state": "UNKNOWN"}
+            else:
+                potion["semantics"]["consumption"]["value"]["value"]["restores"][0]["min"] = 1
+            replacements = {world_path: producer.canonical_bytes(world),
+                            bindings_path: producer.canonical_bytes(admitted)}
+            planned = dict(self.base)
+            with self.subTest(operator=operator), patch.object(
+                Path, 'read_bytes', lambda path: replacements[path] if path in replacements else actual_read(path)
+            ), self.assertRaisesRegex(ValueError, 'CONSUMPTION_PROFILE_'):
+                registration.admit_consumable_profiles(ROOT, planned)
+            self.assertEqual(planned, self.base)
     def test_adopted_qualification_tamper_is_refused(self):
         actual_read=Path.read_bytes
         wanted=ROOT/'imports/spells/monster-seven/adopted-qualification.json'

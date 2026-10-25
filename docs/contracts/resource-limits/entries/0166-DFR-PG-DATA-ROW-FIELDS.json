@@ -1,0 +1,20 @@
+{
+  "id": "DFR-PG-DATA-ROW-FIELDS",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_WP3_V2_SUPERSEDING_ARCHITECTURE_DECISION_2026-09-12.md",
+  "resource": "Fields announced by one PostgreSQL DataRow on the first-slice production root profile",
+  "unit": "fields",
+  "hard_maximum": 32,
+  "configurable_range": {
+    "minimum": 32,
+    "maximum": 32
+  },
+  "failure_category": "UNAVAILABLE",
+  "allocation_impact": "Validate peer count <=32 and complete DataRow body structure before Vec::with_capacity or retained range metadata allocation. The existing row/result byte guards and same-root R/T charge remain conjunctive.",
+  "client_visible": false,
+  "boundary_tests": [
+    "32 fields accepted when body structure, prepared/binary path, logical row/result limits and root funding all pass",
+    "33 fields rejected as UNAVAILABLE before DataRow vector allocation",
+    "NULL/mixed-value and malformed/truncated bodies prove count validation does not permit unchecked range/value retention"
+  ],
+  "notes": "Compatibility/safety ceiling for the selected first slice. The current composed WP3/WP4 corpus is below this maximum; protocol u16 width is not authority for a larger product cap."
+}

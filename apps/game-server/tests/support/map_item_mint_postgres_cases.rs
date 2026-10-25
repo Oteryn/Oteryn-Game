@@ -45,6 +45,9 @@ use sqlx::{Connection, Executor, Row};
 use std::future::Future;
 use std::task::Poll;
 
+#[path = "map_item_mint_world_reset_cases.rs"]
+mod world_reset;
+
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 const WORLD: u8 = 42;
@@ -164,11 +167,11 @@ impl Database {
         let version: String = sqlx::query_scalar("SHOW server_version_num")
             .fetch_one(&mut connection)
             .await?;
-        // The protected lane pins PostgreSQL 17.6; any 17.x server runs the
+        // The protected lane pins PostgreSQL 18.6; any 18.x server runs the
         // same schema, and the exact server is recorded as evidence.
         assert!(
-            version.starts_with("17"),
-            "PostgreSQL 17 required: {version}"
+            version.starts_with("18"),
+            "PostgreSQL 18 required: {version}"
         );
         eprintln!("MAP-ITEM-MINT-PG: database {name} on server_version_num={version}");
         sqlx::migrate!("./migrations").run(&mut connection).await?;
@@ -1051,9 +1054,18 @@ fn map_item_mint_takes_an_entry_into_ground_then_transfers_it_once_per_channel_a
         harness
             .taken(&authority, fence()?, pickup(command(13)?, sibling, 0, 1))
             .await?;
-        harness
+        // Model boot after activation: the request epoch must match the
+        // durable World pointer. The activation writer has its own PG cases.
+        let mut tx = harness.pool.begin().await?;
+        sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,1,$2,$3,$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_10',1,clock_timestamp(),to_char((clock_timestamp() AT TIME ZONE 'Europe/Berlin')-interval '10 hours','YYYY-MM'))")
+            .bind(id(WORLD).as_slice()).bind(DIGEST.as_slice()).bind(audit::map_revision_of(&DIGEST)).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_world_reset_active(world_id,reset_epoch) VALUES(encode($1,'hex')::uuid,1)")
+            .bind(id(WORLD).as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
+        let epoch_one = harness
             .taken(&authority, fence()?, pickup(command(14)?, key, 1, 5))
             .await?;
+        assert_ne!(epoch_one.item_instance_id, first.item_instance_id);
         refused(
             harness
                 .take(&authority, fence()?, pickup(command(15)?, key, 1, 5))
@@ -1096,10 +1108,11 @@ fn map_item_mint_takes_an_entry_into_ground_then_transfers_it_once_per_channel_a
             .taken(
                 &authority,
                 fence_in(SECOND_SESSION, SECOND_CHANNEL)?,
-                pickup(command_in(SECOND_SESSION, 1)?, key, 0, 5),
+                pickup(command_in(SECOND_SESSION, 1)?, key, 1, 5),
             )
             .await?;
         assert_ne!(second.item_instance_id, first.item_instance_id);
+        assert_ne!(second.item_instance_id, epoch_one.item_instance_id);
         assert_eq!(
             harness
                 .ground_of(second.item_instance_id)
@@ -1112,7 +1125,7 @@ fn map_item_mint_takes_an_entry_into_ground_then_transfers_it_once_per_channel_a
                 .take(
                     &authority,
                     fence_in(SECOND_SESSION, SECOND_CHANNEL)?,
-                    pickup(command_in(SECOND_SESSION, 2)?, key, 0, 5),
+                    pickup(command_in(SECOND_SESSION, 2)?, key, 1, 5),
                 )
                 .await,
             MapItemMintRefusal::AlreadyTaken,
@@ -1121,7 +1134,7 @@ fn map_item_mint_takes_an_entry_into_ground_then_transfers_it_once_per_channel_a
         assert_eq!(
             harness
                 .root
-                .read_map_item_mint_placements(world, second_channel, DIGEST, 0, 8)
+                .read_map_item_mint_placements(world, second_channel, DIGEST, 1, 8)
                 .await
                 .map_err(debug)?,
             vec![key]
@@ -1635,7 +1648,7 @@ mod map_overlay_pickup {
 
     /// The fixture base: (1, 1) holds 64 top-level entries, (2, 1) a grass ground under one coin,
     /// and every other tile of the sector a grass ground.
-    fn base() -> Result<Arc<WorldBase>, Box<dyn StdError>> {
+    pub(super) fn base() -> Result<Arc<WorldBase>, Box<dyn StdError>> {
         let mut tiles = Vec::new();
         for y in 0..32 {
             for x in 0..32 {
@@ -1671,7 +1684,7 @@ mod map_overlay_pickup {
     }
 
     /// The (2, 1) coin: top-level entry 1 of its tile on floor -7.
-    fn coin_key() -> Result<u64, Box<dyn StdError>> {
+    pub(super) fn coin_key() -> Result<u64, Box<dyn StdError>> {
         Ok(placement_key(-7, 2, 1, 1).ok_or("key")?)
     }
 
@@ -1806,3 +1819,7 @@ async fn stale_fence_lane(stale: CurrentCharacterItemFence) -> TestResult<SpellL
         .await
         .map_err(debug)?)
 }
+
+// MAP-PICKUP-1: MINT followed by the carried-tree loop move, in its own file.
+#[path = "map_item_mint_loop_postgres_cases.rs"]
+mod map_item_mint_loop;

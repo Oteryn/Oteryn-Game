@@ -1,5 +1,5 @@
 """Focused, no-network checks for `lower_promotion_packet.py`: the encode/decode
-mirror of `apps/game-server/src/content/cw2_b1_import.rs`'s
+mirror of `crates/gameplay/content-promotion/src/content/cw2_b1_import.rs`'s
 `decode_item_semantic_promotion_value`, and the end-to-end
 `build_packet`/`validate_packet` wiring against synthetic engine sources (the same
 `synthetic_sources`/`convert` fixtures `test_engine_items.py` uses: a real identity

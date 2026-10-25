@@ -1,0 +1,20 @@
+{
+  "allocation_impact": "Stock rustls owns finite native predecode backing. At the configured verifier boundary, use checked arithmetic to enforce the coupled limits of 4 peer certificates, 4,096 DER bytes per certificate and 16,384 aggregate peer-chain DER bytes before delegating or accepting trust; reject over-limit input as UNAVAILABLE without truncation.",
+  "boundary_tests": [
+    "4096 DER bytes accepted where semantically valid and every coupled peer-chain limit passes at the configured verifier boundary",
+    "4097 DER bytes rejected as UNAVAILABLE at the configured verifier boundary before delegating or accepting trust, without truncation",
+    "Checked arithmetic overflow and violation of any coupled peer count, per-certificate or aggregate-chain limit rejected before delegating or accepting trust"
+  ],
+  "client_visible": false,
+  "configurable_range": {
+    "minimum": 4096,
+    "maximum": 4096
+  },
+  "failure_category": "UNAVAILABLE",
+  "hard_maximum": 4096,
+  "id": "NSRC-TLS-PEER-CERTIFICATE-BYTES",
+  "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Stock rustls owns finite native predecode backing; Oteryn enforces coupled peer-chain limits at the configured verifier boundary before delegating or accepting trust. No network AIA/CRL or unbounded alternate-chain search. Exceeding the transport/PKI envelope makes the source unavailable; no chain truncation. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+  "resource": "Each peer certificate",
+  "unit": "DER bytes"
+}

@@ -1,0 +1,22 @@
+{
+  "id": "ITEMTIMED1-COMMANDS-PER-SECOND",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_TIMED_ITEM0_CHARGES_DURATION_AND_REPAIR_DECISION_2026-10-01.md",
+  "resource": "Fresh timed item commands per admitted session",
+  "unit": "commands per second",
+  "hard_maximum": 5,
+  "configurable_range": {
+    "minimum": 5,
+    "maximum": 5
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Bounded codec, session gate or native repair planner; no client-supplied authority.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=5: admitted",
+    "max+1=6: rejected"
+  ],
+  "consumers": [
+    "ITEM-TIMED-1 gameplay_transport/timed_item.rs; item_timed_runtime/repair.rs"
+  ],
+  "notes": "ITEM-TIMED-1 server-first owner direction 2026-10-23. Existing timed/fee payload and envelope ceilings also apply."
+}

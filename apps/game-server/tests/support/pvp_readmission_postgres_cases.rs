@@ -1,7 +1,7 @@
 //! PvP readmission cases routed through the existing canonical authority PostgreSQL root.
 #![allow(clippy::expect_used)]
 #[allow(dead_code)]
-#[path = "../../src/combat/pvp/lock.rs"]
+#[path = "../../../../crates/gameplay/combat/src/combat/pvp/lock.rs"]
 mod pvp_readmission_lock;
 
 mod readmission_cases {
@@ -29,7 +29,10 @@ mod readmission_cases {
             let version: String = sqlx::query_scalar("SHOW server_version_num")
                 .fetch_one(&h.pool)
                 .await?;
-            assert_eq!(version, "170006");
+            assert_eq!(
+                version,
+                oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM
+            );
             eprintln!("PVP-READMISSION-NATIVE-PG fixture={tag} server_version_num={version}");
             let result = body(&h).await;
             h.cleanup().await?;

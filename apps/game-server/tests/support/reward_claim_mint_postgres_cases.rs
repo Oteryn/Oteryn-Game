@@ -169,11 +169,11 @@ impl Database {
         let version: String = sqlx::query_scalar("SHOW server_version_num")
             .fetch_one(&mut connection)
             .await?;
-        // The protected lane pins PostgreSQL 17.6; any 17.x server runs the
+        // The protected lane pins PostgreSQL 18.6; any 18.x server runs the
         // same schema, and the exact server is recorded as evidence.
         assert!(
-            version.starts_with("17"),
-            "PostgreSQL 17 required: {version}"
+            version.starts_with("18"),
+            "PostgreSQL 18 required: {version}"
         );
         eprintln!("REWARD-CLAIM-MINT-PG: database {name} on server_version_num={version}");
         sqlx::migrate!("./migrations").run(&mut connection).await?;
@@ -2760,13 +2760,13 @@ mod quest_obligations {
     use super::*;
     use crate::durability::character_progression::CharacterProgressionError;
     use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
-    use crate::durability::quest_state::quest::{
-        QuestComparison, QuestEffect, QuestEffectKind, QuestRefusal, QuestStateCatalogue,
-        QuestTrack, QuestTransition,
-    };
     use crate::durability::quest_state::{
         QuestAdmission, QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
         admit_character_quest_state,
+    };
+    use oteryn_gameplay_quests::quest::{
+        QuestComparison, QuestEffect, QuestEffectKind, QuestRefusal, QuestStateCatalogue,
+        QuestTrack, QuestTransition,
     };
     use std::sync::Arc;
 

@@ -1,0 +1,12 @@
+{
+  "schema": "OTERYN_FAMILY_INDEX/v1",
+  "family": "Service.EvidenceLink",
+  "record_count": 324,
+  "shard_size": 500,
+  "shards": [
+    "content/services/trade/market-evidence/services/evidence-00000-00323.json"
+  ],
+  "population_state": "POPULATED",
+  "runtime_admission": "BLOCKED",
+  "runtime_switch_authorized": false
+}

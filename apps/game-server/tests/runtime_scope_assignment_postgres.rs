@@ -1,26 +1,22 @@
 // Dedicated PostgreSQL target for GameNode process-incarnation registration and
 // the Channel-only runtime-scope assignment writer. Ordinary workspace runs skip
-// when the routed PostgreSQL service is absent; only configured PostgreSQL 17.6
+// when the routed PostgreSQL service is absent; only configured PostgreSQL 18.6
 // runs count as qualification evidence.
 extern crate oteryn_game_server as production_server;
 extern crate self as oteryn_game_server;
 pub use production_server::admission_evidence;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/character_bootstrap_intent.rs"]
+#[path = "../../../crates/gameplay/durability/src/character_bootstrap_intent.rs"]
 pub mod character_bootstrap_intent;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/character_recovery_fence.rs"]
-pub mod character_recovery_fence;
-pub use production_server::domain;
+pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
+#[path = "support/domain_shim.rs"]
+pub mod domain;
+use oteryn_gameplay_durability::durability;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/durability/mod.rs"]
-mod durability;
+pub use oteryn_gameplay_entities as foundation;
 #[allow(dead_code, unused_imports)]
-#[path = "../src/foundation/mod.rs"]
-pub mod foundation;
-#[allow(dead_code, unused_imports)]
-#[path = "../src/native_admission_source/mod.rs"]
-pub mod native_admission_source;
+pub use oteryn_gameplay_native_admission_source as native_admission_source;
 
 #[allow(
     dead_code,
@@ -93,8 +89,9 @@ impl Database {
             .fetch_one(&mut connection)
             .await?;
         assert_eq!(
-            version, "170006",
-            "canonical target requires PostgreSQL 17.6"
+            version,
+            oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
+            "canonical target requires PostgreSQL 18.6"
         );
         sqlx::migrate!("./migrations").run(&mut connection).await?;
         // Deployment administration (OPS-NODE-BOOT-01 D2): the owner grants
@@ -298,7 +295,10 @@ async fn db_now(pool: &sqlx::PgPool) -> TestResult<i64> {
 
 // Test-only independently controlled Runtime publication owner.
 struct RuntimePublisher(AdmissionAuthorityPublicationChangeV1);
-impl foundation::fnd04_verifier::fresh_source_sealed::Sealed for RuntimePublisher {}
+impl oteryn_gameplay_foundation::foundation::fnd04_verifier::fresh_source_sealed::Sealed
+    for RuntimePublisher
+{
+}
 impl AdmissionAuthorityOwningPublisherV1 for RuntimePublisher {
     fn resolve_publication(
         &self,
@@ -3567,3 +3567,7 @@ fn s2_rotation_waits_for_fresh_store_initialization() -> TestResult {
         })
     })
 }
+
+#[allow(dead_code, unused_imports)]
+#[path = "support/content_spell_data_shim.rs"]
+mod content;

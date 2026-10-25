@@ -344,3 +344,20 @@ message WorldMapViewDeltaV1 {
 - Houses: the World-scoped house interior runtime serves owned house tiles (ADR-0021 §4.4), and
   its wire is a later child.
 - Changing the per-tile cut of 10 entries or the viewport size: each is a schema revision.
+
+### READ-WRITE-1a additive Look target
+
+Owner round-2 decision: Look command 30 under selected capability 28 also accepts
+field 3 `WorldObjectTargetV1`, with the same placement and revision encoding as
+Use (512-byte placement maximum, 529-byte framed request maximum). Item field 1
+and Creature field 2 retain their bytes and their individual 11/31-byte bounds.
+The oneof remains strict; default selection rejects fields 2 and 3.
+
+The base ordinal in domain 17 identifies the exact 40-byte bundle target described
+in §4. Look validates that digest, current revision, unhidden placement and current
+session view before reading the definition and original placement text. It neither
+allocates a handle nor materializes the placement. Handle admission is unchanged.
+Replies retain the 512-byte UTF-8 text bound and fact-free refusals. Text is bounded
+before copying; distance-readable base items read at distance <=4 (XY Chebyshev
+plus 15 for another visible floor). IDs 7369–7371 retain Canary's raw-text exception
+when distance-readable. No client change is part of this server-only slice.

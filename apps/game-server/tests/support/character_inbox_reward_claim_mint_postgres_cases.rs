@@ -1,4 +1,4 @@
-//! Native PostgreSQL 17.6 fresh reward MINT -> Inbox qualification.
+//! Native PostgreSQL 18.6 fresh reward MINT -> Inbox qualification.
 //!
 //! The real Root, fences, runtime role, fresh instances, key rows, Inbox writer,
 //! immutable receipts, registered tag-4 encoding and all deferred guards execute.

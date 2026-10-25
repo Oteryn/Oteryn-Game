@@ -1,7 +1,4 @@
-#[path = "../src/interaction/mod.rs"]
-mod interaction;
-
-use interaction::{
+use oteryn_gameplay_domain::domain::interaction::{
     AuthorityFenceEvidence, ChildLifecycle, ChildLifecycleBook, ChildOccurrenceRef,
     DelegatedOperation, ForeignOwner, InteractionDispatcher, InteractionError, InteractionPlan,
     ProposalAdapter, ProposalResult, ReconciliationOutcome, RetainedChildLifecycles,

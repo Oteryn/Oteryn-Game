@@ -1,0 +1,21 @@
+{
+  "id": "PREY0-RL-05",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_PREY0_PREY_AND_HUNTING_TASKS_DECISION_2026-09-30.md",
+  "resource": "Account and World wildcard balance",
+  "unit": "wildcards",
+  "hard_maximum": 52,
+  "configurable_range": {
+    "minimum": 0,
+    "maximum": 52
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "Pure debit and option-check bounds only; balance and immutable ledger writes are not activated in this storage pass.",
+  "client_visible": true,
+  "boundary_tests": [
+    "prey_reference_wildcard_costs_and_option_checks"
+  ],
+  "consumers": [
+    "crates/gameplay/progression/src/prey.rs"
+  ],
+  "notes": "HUNT-1 bounded rules/storage checkpoint; PREY0 section 12. Pure debit and option-check bounds only; balance and immutable ledger writes are not activated in this storage pass."
+}

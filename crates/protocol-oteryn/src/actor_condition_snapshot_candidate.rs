@@ -277,3 +277,7 @@ mod tests {
         assert_eq!(encode(&foreign), Err(Error::Malformed));
     }
 }
+
+#[cfg(test)]
+#[path = "actor_condition_snapshot_candidate_fuzz_tests.rs"]
+mod fuzz_tests;

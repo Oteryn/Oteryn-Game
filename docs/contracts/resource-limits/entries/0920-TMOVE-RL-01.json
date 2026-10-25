@@ -1,0 +1,22 @@
+{
+  "id": "TMOVE-RL-01",
+  "owner_contract": "TARGET_MOVE_V1.md",
+  "resource": "command bytes",
+  "unit": "bytes",
+  "hard_maximum": 48,
+  "configurable_range": {
+    "minimum": 48,
+    "maximum": 48
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Bounded before search or retention. Shared ChannelPathBudget admits and charges explicit searches; capacity waits, never becomes no-path.",
+  "client_visible": true,
+  "boundary_tests": [
+    "target_move_strict_oneof_and_bounds"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/target_move.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/connection/serve/target_move.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/paced_movement/autowalk.rs"
+  ]
+}

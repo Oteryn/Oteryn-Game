@@ -4,7 +4,8 @@
 task_id: MAIL-1
 title: "MAIL-1: mail and parcels"
 mode: IMPLEMENT
-status: NOT_FULLY_QUALIFIED
+status: IN_PROGRESS
+pr: 2338
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 4
@@ -21,6 +22,12 @@ needs_content_regeneration: true
 merge_authority: CP_ONLY (builder never marks ready)
 ```
 
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#2133](https://github.com/Oteryn/Oteryn-Game/pull/2133). Native Inbox reward bridge, recipient resolver and direct-backpack text storage/cleanup are merged (migration 0101). Evidence: `crates/gameplay/durability/src/durability/mail.rs`.
+
+Remaining: Atomic mail posting/value transfer, recipient/posting limits, qualified content and real text/mail command composition remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
+
 ## Goal
 
 Letters and parcels between characters of one World, delivered to the CharacterInbox: mail operations, letter posting, stamp transform, mail event, Inbox mail ceiling and posting rate (MAIL-1), with its content, text store, wire, parcel and system-letter children.
@@ -29,31 +36,39 @@ Children (allocate from the brief's child graph; the plan row is only the family
 
 MAIL-CONTENT-1 (content) -> MAIL-TEXT-1 (hard) -> MAIL-1 (hard) -> MAIL-WIRE-1 (Reg) / MAIL-PARCEL-1 / MAIL-SYSTEM-1 (after HOUSE-1b, Wave 5). WRITE-WIRE-1 completes with this family.
 
-## Dependencies (state on main@5742f30f3, 2026-10-15)
+## Dependencies (rechecked on origin/main@43914f183, 2026-10-23)
 
 | Dependency | State |
 |---|---|
-| ITEM-LOOP-1 (family entry gate) | BLOCKING |
-| ITEM-MOVE-2a | BLOCKING |
-| MAIL-CONTENT-1, MAIL-TEXT-1 (own children) | BLOCKING (not started) |
+| ITEM-LOOP-1 (family entry gate) | MERGED (#2190, a43c37f12); live dispatch and migration 0128 |
+| ITEM-MOVE-2a | MERGED with ITEM-LOOP-1; `item_loop_move.rs`, `loop_move.rs`, migration 0128 |
+| MAIL-CONTENT-1, MAIL-TEXT-1 (own children) | PARTIAL / BLOCKING: #2133 (5b814baa1) merged bounded text storage/recipient owner; qualified native mail profiles, stamp rule, mailbox binding and text transport remain absent |
 | INBOX-1a | MERGED (#1785) |
 | ITEM-MOVE-1 | MERGED |
 | MAP-LOAD-1 | MERGED (archive MAP-LOAD-1) |
 | MAP-WIRE-2 | MERGED |
-| BAGS-1, BAGS-DEPOT-1 (MAIL-PARCEL-1) | BLOCKING |
-| HOUSE-1b (MAIL-SYSTEM-1) | BLOCKING (Wave 5) |
-| acceptance of MAIL0 (brief CANDIDATE; plan §7 acceptance gate) | BLOCKING |
+| BAGS-1, BAGS-DEPOT-1 (MAIL-PARCEL-1) | BAGS-1 MERGED with #2190 (0128 nested carried tree); BAGS-DEPOT-1 genuinely BLOCKING: existing Inbox and DEPOT-1 reject containers with contents |
+| HOUSE-1b (MAIL-SYSTEM-1) | UNMERGED for system-letter source; outside this pass. No implementation merge found by dependency-ID log/search |
+| acceptance of MAIL0 (plan §7 acceptance gate) | ACCEPTED: current MAIL-0 heading and ACCEPT-BATCH-2026-10-15; initial decision #1404 (3d87943f6), parcel-tree amendment #1427 (edad9408b) |
+| DEPOT-1 | MERGED #2334 (43914f183), migration 0151; dormant town-partitioned depot storage, existing shared CharacterInbox remains delivery target |
+| ITEM-IMBUE-1 | MERGED #2333 (3bb98bcbc), migration 0150; dormant imbuement storage, no mail overlap |
+
+Every original dependency row was checked with `git log --oneline origin/main
+--grep=<ID>` plus targeted searches in `crates/` and `apps/`; inherited task
+statuses were not treated as merge evidence. ITEM-MOVE-2a and BAGS-1 are
+components of #2190, not missing independent schema owners. INBOX-1a #1785,
+ITEM-MOVE-1 #1827, MAP-LOAD-1 #1783 and MAP-WIRE-2 #1810 remain merged.
 
 Rows marked BLOCKING must merge (or be accepted) before the builder's slot commit; code in owned_paths may be drafted earlier but must not assume unmerged schemas.
 
 ## owned_paths (builder edits freely)
 
-- `apps/game-server/src/domain/mail.rs`
-- `apps/game-server/src/durability/mail.rs`
-- `apps/game-server/src/durability/mail_tests.rs`
-- `apps/game-server/src/durability/item_text.rs`
-- `apps/game-server/src/gameplay_transport/mail.rs`
-- `apps/game-server/src/gameplay_transport/mail_tests.rs`
+- `crates/gameplay/domain/src/domain/mail.rs`
+- `crates/gameplay/durability/src/durability/mail.rs`
+- `crates/gameplay/durability/src/durability/mail/tests.rs`
+- `crates/gameplay/durability/src/durability/item_text.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/mail.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/mail_tests.rs`
 - `crates/protocol-oteryn/src/mail.rs`
 - `crates/protocol-oteryn/src/mail_tests.rs`
 - `apps/game-server/tests/mail_postgres.rs`
@@ -70,11 +85,11 @@ migration number; production activation remains after #2197. Owned additions:
 
 - `apps/game-server/migrations/0101_mail.sql` — existing TEXT schema plus the
   complete D1318 sink and fresh reward-mint/receipt/audit guards and grants.
-- `apps/game-server/src/durability/character_inbox.rs` and
+- `crates/gameplay/durability/src/durability/character_inbox.rs` and
   `character_inbox_reward_claim.rs` — actual native seam and bridge exports.
-- `apps/game-server/src/durability/character_inbox_reward_claim.sql` — remove
+- `crates/gameplay/durability/src/durability/character_inbox_reward_claim.sql` — remove
   the former private SQL copy after moving its full body into migration 0101.
-- `apps/game-server/src/durability/character_inbox_reward_claim_mint.rs` and
+- `crates/gameplay/durability/src/durability/character_inbox/reward_claim/mint.rs` and
   `character_inbox_reward_claim_mint_tests.rs` — native bridge and source tests.
 - `apps/game-server/tests/support/mail_postgres_cases.rs`,
   `character_inbox_reward_claim_postgres_cases.rs` and
@@ -83,13 +98,13 @@ migration number; production activation remains after #2197. Owned additions:
 
 The same D1356 commit includes only these **eight granted shared file scopes**:
 
-- `apps/game-server/src/durability/reward_claim_mint_audit.rs` — optional Inbox
+- `crates/gameplay/durability/src/durability/reward_claim_mint_audit.rs` — optional Inbox
   field 5 and its native encode/decode dispatch within existing operation tag 4.
-- `apps/game-server/src/durability/reward_claim_inbox_mint_audit.rs` and
+- `crates/gameplay/durability/src/durability/reward_claim_mint_audit/inbox.rs` and
   `reward_claim_inbox_mint_audit_tests.rs` — that field's native codec and tests.
-- `apps/game-server/src/durability/reward_claim_mint.rs` — only `inbox: None`
+- `crates/gameplay/durability/src/durability/reward_claim_mint.rs` — only `inbox: None`
   at existing CHEST struct construction sites; no legacy behavior change.
-- `apps/game-server/src/durability/item_mint_audit.rs` — only the real Inbox
+- `crates/gameplay/durability/src/durability/item_mint_audit.rs` — only the real Inbox
   outbox writer leaf in the existing insert-site inventory; retain TRADE's line
   when the second PR integrates main.
 - `docs/contracts/game-events/v1/native_one_item_transaction.proto` — optional
@@ -117,9 +132,9 @@ To compile on the branch the builder may add only the module registration lines 
 - Rust pins (pinned registries / fixtures regenerated from content)
 - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json, GAME_EVENT_FOUNDATION_REGISTRY.json, RESOURCE_LIMITS_REGISTRY.json, OTERYN_GAME_ERROR_CODE_REGISTRY.json
 - apps/game-server/migrations/NNNN_*.sql number (next free on main at queue turn; main ends at 0087)
-- apps/game-server/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
+- crates/gameplay/dispatch/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
 - crates/protocol-oteryn/src/lib.rs `pub mod` + registry constants
-- apps/game-server/src/durability/mod.rs, domain/mod.rs, lib.rs module registration
+- crates/gameplay/durability/src/durability/core_modules.rs, domain/mod.rs, lib.rs module registration
 
 ## Wiring points (verified on origin/main 5742f30f3)
 
@@ -160,7 +175,7 @@ python3 tools/content-migration/regenerate_content.py   # slot commit only; runs
 
 - docs/architecture/reviews/OTERYN_GAME_MAIL0_PARCELS_AND_LETTERS_DECISION_2026-09-30.md §3-§10, §14
 - docs/architecture/reviews/OTERYN_GAME_MARKET0_WORLD_MARKET_DECISION_2026-09-30.md §5 (CharacterInbox)
-- apps/game-server/src/durability/character_inbox.rs
+- crates/gameplay/durability/src/durability/character_inbox.rs
 - docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4, §5 (Wave 4), §7
 - docs/agents/cp/CP_WAVES.md (branch claude/beautiful-franklin-1tp8kj), 'Model pracy równoległej'
 
@@ -417,7 +432,7 @@ comprising **8 pure + 6 PostgreSQL** cases, with actual canonical server probe
 The broader gates remain **failed**: strict all-target Clippy and ordinary
 full-package `cargo test --locked --offline -p oteryn-game-server --no-run`
 both exited **101**. Actual diagnostics are **E0432/E0433**, at
-`apps/game-server/src/durability/item_text.rs:20–21`: integration crates that
+`crates/gameplay/durability/src/durability/item_text.rs:20–21`: integration crates that
 locally include Durability cannot resolve `crate::content` or its
 `native_gameplay` module. Logs identify `runtime_scope_assignment_postgres`,
 `wp5_s3b_composition`, `durability_postgres`, `character_authority_postgres`, and
@@ -1154,3 +1169,156 @@ performance qualification has been performed for this successor. Root handles
 independent review, final current-head readback and any authorized publication.
 D1377/SESSION and the actual #2132 offered-item consumer remain required before
 physical TEXT activation; this reader installs no runtime consumer or peer hook.
+
+## 2026-10-23 independent L3 rules pass — AUTHORING / IN_PROGRESS
+
+The current owner packet supersedes historical slot-only paths for this local
+pass. No commit, publication, candidate freeze or production activation occurs.
+The Step 0 audit found and reused `domain/mail.rs` (bounded private text and
+canonical first-line address), `durability/mail.rs` (same-World recipient hint
+and locked root recheck), migration 0101 (text and reward-mint/Inbox bridge),
+and `character_inbox.rs`/0076 (the sole Inbox). Migration 0151 is the existing
+town-partitioned depot owner; 0150 owns imbuements. Neither is duplicated.
+
+`items/mail.rs` is an L3 checked value projection (`TryFrom<MailPostingInput>`),
+with sibling ordinary/property tests. It checks unstamped letter/parcel roots,
+Store ownership, junior parcel refusals, exact item/facts bindings, stack
+quantities, known checked centi-ounce totals, a connected unique acyclic tree,
+per-parent capacity/ordinals, ten direct parcel children, height seven and 499
+total members. It selects the first nonempty **direct** label by ordinal,
+reuses the existing private text/name parser, and ignores town/body lines.
+Letters/labels retain the existing 1,999/79 scalar bounds; a Letter-class text
+cannot bypass the bound when attached to a label. Output records sorted native
+identities, expected stamp key, whole-tree weight and post-delivery Inbox count.
+It moves no item and never creates current authority from prepared facts.
+
+Canary has no postal weight ceiling. Weight is the sum of the root and every
+descendant, multiplied by stack quantities in centi-ounces; no arbitrary parcel
+weight cap or recipient carry-capacity test is invented. The 50,000 mail ceiling
+counts **every member**, with checked addition. New registry fragments use
+0660–0665, within the owner's 0660–0666 allocation, and remain CANDIDATE for
+runtime activation. No capability, command, domain ID or migration is added.
+The highest existing main migration is 0152; a future mail migration must use
+0154 or higher and then-current free numbering, as the current packet requires.
+
+The sole new PG mount is
+`apps/game-server/src/lifted_tests/auto/mail_rules_postgres_cases.rs`. It feeds
+the checked letter address into the existing native recipient hint/root-lock
+owner, proving town independence and foreign-World privacy against actual
+migrations. Its separate registry test binds all six limits to the L0/L3
+constants. It returns `Ok(())` without admin routing, per the canonical guard.
+No duplicate mount or standalone PostgreSQL target is created.
+
+The main `crates/test-support/src/property.rs` exists and is reused for seeded
+properties: whole-tree item/quantity conservation, order-independent checked
+weight against a u128 oracle, and Inbox ceiling/overflow boundaries. There is
+no new dependency or supporting crate. `MECHANICS_STATUS.md` does not exist on
+this main; no replacement index is created.
+
+### Unfinished
+
+- **BAGS-DEPOT-1 is genuinely unmerged.** `game_character_inbox_deliver` in
+  migration 0076 rejects a parent with contents. The current exclusivity union
+  in 0151 also rejects Inbox trees, and the existing counter counts roots only.
+  DEPOT-1 itself deliberately rejects contents and is dormant. An audited parcel
+  transfer needs the owning Inbox-tree admission/counting contract and API;
+  removing these guards in MAIL or delivering loose replacements would violate
+  the accepted dependency and conservation rules.
+- **MAIL-CONTENT-1 remains blocking.** Existing catalog/import references to
+  i3503–i3507 are reference data, not qualified native gameplay profiles or a
+  current versioned stamp mapping. The production fixture profiles and candidate
+  bindings have none of these mail profiles; no live mailbox interaction binding
+  or MAILBOX destination exists. ITEM-USE dispatch is merged, but its current
+  food/potion path supplies no mailbox use semantics. Accepted MAIL-0 §5 posts
+  through item move command 9, not a food/potion use. No fabricated item-use
+  request or hardcoded admitted-content adapter is introduced.
+- Accordingly, **L4 player-mail atomic transfer/stamp/audit, command replay and
+  reconciliation, rate enforcement and L5 mailbox posting remain undelivered**.
+  The owner packet explicitly permits independent pure rules when blocking
+  dependencies are unmerged. No production posting entrypoint or dispatch E2E
+  is claimed; those must accompany the eventual real writer. The existing reward
+  Inbox mint bridge is not a posting writer and is not repurposed as one.
+- Full MAIL acceptance, source text-write activation, parcel Inbox views/out
+  shapes, relay notices, system letters and independent exact-head persistence
+  review remain open. This task stays IN_PROGRESS.
+- Additional Python contract test
+  `RegistryFragmentsTests.test_split_of_the_aggregate_is_the_committed_tree`
+  fails on pre-existing resource-limit ordinal gaps. A HEAD-only reconstruction
+  excluding every new MAIL fragment reproduces its first mismatch:
+  `0598-PARTYPVP0-RL-04.json` versus committed `0609-PARTYPVP0-RL-04.json`.
+  The current registry's structural validator reports zero errors. No existing
+  fragment is renumbered and no test is weakened to conceal this baseline issue.
+
+## Reference parity
+
+Read-only reference: Canary commit
+`04b83b512114bfd888000d6e1433ed8ecaec7c5b`, fetched 2026-10-23. These are
+compatibility observations; accepted MAIL-0 owns Oteryn behavior. All rows are
+table-driven in the L3 tests; source URLs are also comments beside those tests.
+
+| Row | Reference rule / value | Source | L3 assertion |
+|---|---|---|---|
+| R1 | Unstamped letter posts; stamped letter cannot be reposted; stamp preserves identity | [mailbox], `canSend`/`sendItem` | `mail_reference_parity_table`, R1 |
+| R2 | Unstamped parcel posts; stamped parcel cannot be reposted; stamp preserves identity | [mailbox], `canSend`/`sendItem` | `mail_reference_parity_table`, R2 |
+| R3 | Store-owned root cannot be mailed | [mailbox], `canSend` | `mail_reference_parity_table`, R3 |
+| R4 | Parcel holds 10 direct entries, including its label | [items], i3503/i3504 | `mail_reference_parity_table`, R4 (10/11 controls) |
+| R5 | Trim recipient first line; ignore town and later lines | [mailbox], `getReceiver` | `mail_reference_parity_table`, R5 |
+| R6 | Nested labels do not address the outer parcel | [mailbox], `getReceiver` | `mail_reference_parity_table`, R6 |
+| R7 | First eligible direct label in entry order supplies recipient | [mailbox], `getReceiver` | `mail_reference_parity_table`, R7 |
+| R8 | Empty-text labels are skipped | [mailbox], `getReceiver` | `mail_reference_parity_table`, R8 |
+| R9 | Nonempty label with blank first line stops search; no address | [mailbox], `getReceiver`/`sendItem` | `mail_reference_parity_table`, R9 |
+| R10 | No separate postal weight ceiling; weights count whole contents | [mailbox], `queryAdd`/`canSend`; [container], `getWeight` | `mail_reference_parity_table`, R10 (u32::MAX weight control) |
+| R11 | Letter text maximum 1,999 | [items], i3505 | `mail_reference_text_limits_table`, R11 (ASCII/four-byte max/max+1) |
+| R12 | Label text maximum 79 | [items], i3507 | `mail_reference_text_limits_table`, R12 (ASCII/four-byte max/max+1) |
+| R13 | Parcel carries nested bags with contents without flattening | [mailbox], `canSend`/`sendItem` | `mail_reference_parity_table`, R13 |
+
+[mailbox]: https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/src/items/containers/mailbox/mailbox.cpp
+[items]: https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data/items/items.xml
+[container]: https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/src/items/containers/container.cpp
+
+Oteryn's canonical name grammar, Unicode/control safety, junior parcel
+restriction, 50,000-item mail ceiling and bounded parcel trees are accepted
+MAIL-0 rules, not claims about upstream limits. Their named tests are
+`mail_addresses_and_diagnostics_never_leak_player_text`,
+`mail_juniors_and_inbox_ceiling_are_owner_differences`,
+`mail_rejects_disconnected_cyclic_duplicate_and_overdeep_trees`,
+`mail_tree_item_limit_is_inclusive` and the two `mail_property_*` tests.
+
+### This pass validation
+
+Final Rust checks used the queued cargo wrapper via a **non-login shell**
+(`exec_command login=false`). A login shell had shadowed it with rustup's cargo;
+the initial PG attempt only exercised the route-less guard. The corrected
+wrapper invocation actually completed the new database body and cleanup, with
+its explicit completion marker and 14.10-second test execution. No PostgreSQL
+suite or unrelated mechanic's PostgreSQL filter was run.
+
+```bash
+cargo fmt --all -- --check
+cargo clippy --locked --offline -p oteryn-gameplay-items -p oteryn-game-server -p oteryn-protocol-oteryn --all-targets --quiet -- -D warnings
+cargo test --locked --offline -p oteryn-gameplay-items --lib --quiet
+cargo test --locked --offline -p oteryn-game-server --lib mail_rules_postgres --quiet -- --nocapture
+cargo test --locked --offline -p oteryn-protocol-oteryn --lib contract_registries --quiet
+python3 tools/repository/validate_repository_policy.py
+python3 tools/agents/validate_governance.py
+python3 -m unittest discover -s tools/agents/tests
+```
+
+Results: **PASS** format, strict all-target Clippy, all **52** items library
+tests (including **9** new mail ordinary/property tests), both server-filter
+tests (**one actual PostgreSQL case + one registry binding case**), both protocol
+registry tests, repository policy validation, governance validation and all
+**124** governance tests. Existing vendored Tokio/SQLx warnings are unchanged;
+the selected packages' strict Clippy exits zero. The extra Python contract suite
+is **4 PASS / 1 baseline FAIL**, as disclosed under Unfinished above.
+
+The auto-mounted source was also explicitly rustfmt-checked, since generated
+module includes are not traversed by ordinary `cargo fmt`. Whole tracked diff
+and all added files were re-read against the owner's CODEX-CHECKLIST.md. A
+workspace `rg` sweep across `apps/`, `crates/`, `tools/` covered all new value,
+enum, constructor and impl sites; no existing persisted/wire enum was extended.
+No public posting function, fake production caller or dispatch test is supplied
+in place of the genuinely blocked owners. The production caller and dispatch
+E2E checklist items remain open with the L4/L5 work, under the current packet's
+explicit blocking-dependency exception. `git diff --check` passes; every new
+Rust file is below 600 lines. Earlier 2026-10-17 evidence remains historical.

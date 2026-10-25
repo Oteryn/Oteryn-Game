@@ -4,7 +4,7 @@
 task_id: LOOP-WORLD-1
 title: "LOOP-WORLD-1: teleports, keyed/level/quest doors, levers and tile damage on the bundle node (mechanics plan row 65)"
 mode: IMPLEMENT
-status: implementing
+status: waiting
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/loop-world-1-20261014
@@ -23,10 +23,10 @@ owned_paths:
   - docs/agents/tasks/active/LOOP-WORLD-1.md
   - apps/game-server/migrations/0086_item_keys.sql
   - docs/contracts/game-events/v1/native_one_item_transaction.proto
-  - apps/game-server/src/durability/
-  - apps/game-server/src/content/reference_playable.rs
-  - apps/game-server/src/content/world_reward_claims.rs
-  - apps/game-server/src/interaction/chest_use.rs
+  - crates/gameplay/durability/src/durability/
+  - crates/gameplay/content/src/content/reference_playable.rs
+  - crates/gameplay/content/src/content/world_reward_claims.rs
+  - crates/gameplay/social/src/interaction/chest_use.rs
   - apps/game-server/tests/content_reference_playable.rs
   - apps/game-server/tests/world_reward_claims_binding.rs
   - apps/game-server/tests/support/chest_use_postgres_cases.rs
@@ -37,6 +37,12 @@ blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#1966](https://github.com/Oteryn/Oteryn-Game/pull/1966), [#2018](https://github.com/Oteryn/Oteryn-Game/pull/2018), [#2094](https://github.com/Oteryn/Oteryn-Game/pull/2094), [#2120](https://github.com/Oteryn/Oteryn-Game/pull/2120). Normal bundle doors, floor/teleport paths, World interaction wire and immutable key-MINT half are merged. Evidence: `crates/gameplay/dispatch/src/gameplay_transport/map_door.rs`.
+
+Remaining: Key USE-WITH/level/quest door gates, levers, fields/hazards and Encounter/world integration children remain; existing doors/teleports are not missing. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 ## Outcome
 

@@ -56,7 +56,7 @@ TERMINAL
 
 `CONTROL_SUSPECTED` is not loss authority: it permits no bearer-proof preemption, no `ControlLossEpoch`, no same-session grace and no protection.
 
-`RECONNECTABLE` begins only after authoritative unexpected playable-control loss. `TERMINAL` is irreversible for that GameSessionId; later control requires a new GameSessionId.
+`RECONNECTABLE` begins after authoritative unexpected playable-control loss or the narrowly authorized sealed planned World reset in §5. `TERMINAL` is irreversible for that GameSessionId; later control requires a new GameSessionId.
 
 ## 4. Server-authoritative liveness
 
@@ -91,7 +91,17 @@ Only the ack of the current outstanding probe, received at the authoritative ser
 
 `ControlLossEpoch` is logical server-authoritative continuity state, not a new public foundation identity.
 
-It begins only when the current game authority proves unexpected playable-control loss for a previously controlled actor/session.
+It begins when the current game authority proves unexpected playable-control loss for a previously controlled actor/session, or under the following owner-approved exception.
+
+**Owner decision 2026-10-22 — planned World reset.** A sealed, RETIRING-bound
+planned World reset is a second authorized cause that may open a loss epoch and
+start the existing grace release for a healthy session. It is a distinct,
+explicitly typed cause bound to the sealed durable RETIRING record. Foundation
+authorization and the durable loss codec admit it only with that binding; it is
+never inferred from unexpected loss, transport closure, ordinary shutdown or a
+caller boolean. The durable owner revalidates the World, reset epoch, target and
+RETIRING phase at the deciding transaction. Unexpected-loss behavior stays
+unchanged, and ordinary shutdown semantics are not reused.
 
 It does not begin from graceful logout, fresh login, healthy migration, socket close alone, PREPARE, failed reconnect/recovery, client crash report alone or process restart alone.
 

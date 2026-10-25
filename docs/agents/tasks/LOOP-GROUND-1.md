@@ -10,7 +10,8 @@ integration and DEATH-DUR-1 are blocking, not deferred slot-only work.
 task_id: LOOP-GROUND-1
 title: "LOOP-GROUND-1: ground loop: dropped item decay and cell limit"
 mode: IMPLEMENT
-status: NOT_FULLY_QUALIFIED
+status: waiting
+pr: null
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 3
@@ -26,6 +27,12 @@ needs_registry: true
 needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#2158](https://github.com/Oteryn/Oteryn-Game/pull/2158). Same-transaction Ground-root census and 64-root admission policy are merged. Evidence: `crates/gameplay/durability/src/durability/ground_cell_limit.rs`.
+
+Remaining: Ensure every death/drop/mint/transfer producer composes this owner; the helper alone does not prove complete gameplay refusal coverage. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 ## Goal
 
@@ -48,10 +55,10 @@ Rows marked BLOCKING must merge (or be accepted/decided) before the builder's sl
 
 ## owned_paths (builder edits freely)
 
-- `apps/game-server/src/durability/item_decay_retire.rs`
-- `apps/game-server/src/durability/item_decay_retire_audit.rs`
-- `apps/game-server/src/durability/ground_cell_limit.rs`
-- `apps/game-server/src/durability/ground_cell_limit_tests.rs`
+- `crates/gameplay/durability/src/durability/item_decay_retire.rs`
+- `crates/gameplay/durability/src/durability/item_decay_retire_audit.rs`
+- `crates/gameplay/durability/src/durability/ground_cell_limit.rs`
+- `crates/gameplay/durability/src/durability/ground_cell_limit_tests.rs`
 - `docs/agents/evidence/LOOP-GROUND-1-*.md`
 - `docs/agents/tasks/LOOP-GROUND-1.md` (this record: status and notes only)
 
@@ -83,9 +90,9 @@ To compile on the branch the builder may add only the module registration lines 
 - Rust pins (pinned registries / fixtures regenerated from content)
 - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json, GAME_EVENT_FOUNDATION_REGISTRY.json, RESOURCE_LIMITS_REGISTRY.json, OTERYN_GAME_ERROR_CODE_REGISTRY.json
 - apps/game-server/migrations/NNNN_*.sql number (next free on main at queue turn; main ends at 0087)
-- apps/game-server/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
+- crates/gameplay/dispatch/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
 - crates/protocol-oteryn/src/lib.rs `pub mod` + registry constants
-- apps/game-server/src/durability/mod.rs, domain/mod.rs, lib.rs module registration
+- crates/gameplay/durability/src/durability/core_modules.rs, domain/mod.rs, lib.rs module registration
 
 ## Wiring points (verified on origin/main 5742f30f3)
 

@@ -1,0 +1,512 @@
+//! LOOK-2 through the real composed owner, PostgreSQL admission and `serve_admitted`.
+//! Nested under monk-save tests to share their fresh-admission/recovery fixture.
+
+use super::fixture::{Harness, debug, id, run};
+use super::{Dependencies, TestResult, prepare_current_session, reset};
+use crate::content::ReferenceItemField;
+use crate::content::native_gameplay::test_support::activated_with_loot_tables;
+use crate::durability::fresh_admission::FreshAdmissionStore;
+use crate::foundation::{
+    ChannelContentPin, ChannelRuntimeV1, MessageType, NodeId, decode_wire_envelope,
+};
+use crate::gameplay_transport::capabilities::{
+    COMMAND_TYPE_ITEM_LOOK_INTENT, SelectedCapabilities,
+};
+use crate::gameplay_transport::connection::{
+    AdmittedSession, ConnectionEnd, FirstEntryOutcome, FreshAdmissionAuthority, IDLE_LIVENESS,
+    serve_admitted,
+};
+use crate::gameplay_transport::{ComposedFreshAdmission, item_fence_of};
+use crate::map::boot::tests::bundle_with_item_ids;
+use crate::map::boot::{BootPins, boot};
+use crate::map::facts::ItemDefinition;
+use crate::map::overlay::TilePos;
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+use oteryn_protocol_oteryn::item_look::{
+    ItemLookIntent, ItemLookRefusal, ItemLookResult, ItemLookSelection, ItemLookTarget,
+    decode_item_look_result_for, encode_item_look_intent_for,
+};
+use oteryn_protocol_oteryn::item_view::{
+    STATE_DOMAIN_CHARACTER_INVENTORY, decode_character_inventory,
+};
+use oteryn_protocol_oteryn::world_map::{
+    MapOrigin, STATE_DOMAIN_WORLD_MAP_VIEW, decode_world_map_snapshot,
+};
+use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
+use oteryn_protocol_oteryn::{
+    ClientCommandValue, CommandStatus, decode_command_result, decode_snapshot_chunk,
+    encode_client_command,
+};
+use std::fmt::Write;
+use std::future::Future;
+use std::task::Poll;
+use tokio::io::{AsyncReadExt, AsyncWriteExt, DuplexStream};
+use tokio::sync::Mutex;
+
+const EXTENDED: ItemLookSelection = ItemLookSelection { extended: true };
+
+pub(super) async fn read_frame(client: &mut DuplexStream) -> TestResult<Vec<u8>> {
+    let length = client.read_u32().await?;
+    let mut frame = vec![0; usize::try_from(length)?];
+    client.read_exact(&mut frame).await?;
+    Ok(frame)
+}
+
+async fn client_looks(client: &mut DuplexStream, own: EntityRef, rat: EntityRef) -> TestResult {
+    let mut backpack = None;
+    let mut map_item = None;
+    let mut near_item = None;
+    let (mut near_sign, mut far_sign) = (None, None);
+    loop {
+        let frame = read_frame(client).await?;
+        let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+        if envelope.message_type() == MessageType::SnapshotChunk {
+            let (_, domains) = decode_snapshot_chunk(envelope.payload()).map_err(debug)?;
+            for domain in domains {
+                if domain.domain_id == STATE_DOMAIN_CHARACTER_INVENTORY {
+                    let inventory = decode_character_inventory(domain.payload).map_err(debug)?;
+                    backpack = inventory.main_backpack.map(|item| item.handle);
+                } else if domain.domain_id == STATE_DOMAIN_WORLD_MAP_VIEW {
+                    let map = decode_world_map_snapshot(domain.payload).map_err(debug)?;
+                    for tile in &map.tiles {
+                        for item in &tile.items {
+                            if item.appearance_id == 2012 {
+                                let MapOrigin::BaseOrdinal {
+                                    ordinal,
+                                    object_revision,
+                                } = item.origin
+                                else {
+                                    return Err("sign must have no handle".into());
+                                };
+                                let pos = TilePos {
+                                    x: u16::try_from(tile.position.x)?,
+                                    y: u16::try_from(tile.position.y)?,
+                                    floor: i8::try_from(tile.position.floor)?,
+                                };
+                                let key = crate::map::view::placement_key(pos, ordinal)
+                                    .ok_or("placement key")?;
+                                let mut placement = map.header.bundle_digest.to_vec();
+                                placement.extend_from_slice(&key.to_be_bytes());
+                                let target =
+                                    oteryn_protocol_oteryn::world_object::WorldObjectTarget {
+                                        placement,
+                                        expected_revision: object_revision,
+                                    };
+                                if pos.x == 6 {
+                                    near_sign = Some(target);
+                                } else if pos.x == 7 {
+                                    far_sign = Some(target);
+                                }
+                            }
+
+                            if let MapOrigin::Handle(handle) = item.origin {
+                                if tile.position.x == 7 {
+                                    map_item = Some(handle);
+                                }
+                                if tile.position.x == 3 {
+                                    near_item = Some(handle);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if envelope.message_type() == MessageType::SnapshotCommit {
+            break;
+        }
+    }
+    let backpack = backpack.ok_or("domain 9 carries the main backpack handle")?;
+    let map_item = map_item.ok_or("domain 17 carries a far map item handle")?;
+    let near_item = near_item.ok_or("domain 17 carries an adjacent map item handle")?;
+    let near_sign = near_sign.ok_or("snapshot shows a real sign at distance 4")?;
+    let far_sign = far_sign.ok_or("snapshot shows a real sign at distance 5")?;
+    let mut forged = near_sign.clone();
+    forged.placement[0] ^= 1;
+    let mut stale = near_sign.clone();
+    stale.expected_revision += 1;
+    for (offset, target) in [
+        ItemLookTarget::Creature(own),
+        ItemLookTarget::Item(backpack),
+        ItemLookTarget::Creature(EntityRef {
+            identity: id(99),
+            generation: 1,
+        }),
+        ItemLookTarget::Item(map_item),
+        ItemLookTarget::Item(near_item),
+        ItemLookTarget::Creature(rat),
+        ItemLookTarget::WorldObject(near_sign),
+        ItemLookTarget::WorldObject(far_sign),
+        ItemLookTarget::WorldObject(forged),
+        ItemLookTarget::WorldObject(stale),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let command_id = u64::try_from(offset)? + 1;
+        let payload =
+            encode_item_look_intent_for(ItemLookIntent { target }, EXTENDED).map_err(debug)?;
+        let frame = encode_client_command(
+            1,
+            &ClientCommandValue {
+                command_id,
+                command_type: COMMAND_TYPE_ITEM_LOOK_INTENT,
+                payload: &payload,
+            },
+        )
+        .map_err(debug)?;
+        client.write_u32(u32::try_from(frame.len())?).await?;
+        client.write_all(&frame).await?;
+        loop {
+            let frame = read_frame(client).await?;
+            let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+            if envelope.message_type() != MessageType::CommandResult {
+                continue;
+            }
+            let result = decode_command_result(envelope.payload()).map_err(debug)?;
+            assert_eq!(result.command_id, command_id);
+            assert_eq!(result.status, CommandStatus::Accepted);
+            let looked = decode_item_look_result_for(result.payload, EXTENDED).map_err(debug)?;
+            match offset {
+                0 => assert_eq!(
+                    looked,
+                    ItemLookResult::Text("You see yourself (Level 50, monk).".into())
+                ),
+                1 => assert!(
+                    matches!(looked, ItemLookResult::Text(text) if text.starts_with("You see "))
+                ),
+                2 => assert_eq!(looked, ItemLookResult::Refused(ItemLookRefusal::NotVisible)),
+                3 => match looked {
+                    ItemLookResult::Text(text) => {
+                        assert!(text.starts_with("You see "));
+                        assert!(!text.contains(" oz."), "far item: {text}");
+                    }
+                    other => return Err(format!("far map look failed: {other:?}").into()),
+                },
+                4 => match looked {
+                    ItemLookResult::Text(text) => {
+                        assert!(text.starts_with("You see "));
+                        assert!(text.contains("It weighs "), "adjacent item: {text}");
+                        assert!(text.contains(" oz."));
+                    }
+                    other => return Err(format!("adjacent map look failed: {other:?}").into()),
+                },
+                5 => assert_eq!(looked, ItemLookResult::Text("You see a rat.".into())),
+                6 => assert_eq!(
+                    looked,
+                    ItemLookResult::Text("You see sign.\nYou read: Welcome to Oteryn!".into())
+                ),
+                7 => assert_eq!(
+                    looked,
+                    ItemLookResult::Text("You see sign.\nYou are too far away to read it".into())
+                ),
+                8 | 9 => assert_eq!(
+                    looked,
+                    ItemLookResult::Refused(ItemLookRefusal::NotAvailable)
+                ),
+                _ => unreachable!(),
+            }
+            break;
+        }
+    }
+    client.shutdown().await?;
+    let mut output = Vec::new();
+    client.read_to_end(&mut output).await?;
+    Ok(())
+}
+
+async fn serve_looks(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    own: EntityRef,
+    rat: EntityRef,
+) -> TestResult {
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let serving = async {
+        let end = serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await;
+        assert!(
+            matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)),
+            "{end:?}"
+        );
+        drop(server);
+    };
+    let mut serving = std::pin::pin!(serving);
+    let mut looking = std::pin::pin!(client_looks(&mut client, own, rat));
+    let mut served = false;
+    let mut result = None;
+    std::future::poll_fn(|context| {
+        if !served && serving.as_mut().poll(context).is_ready() {
+            served = true;
+        }
+        if result.is_none()
+            && let Poll::Ready(value) = looking.as_mut().poll(context)
+        {
+            result = Some(value);
+        }
+        if served && result.is_some() {
+            Poll::Ready(())
+        } else {
+            Poll::Pending
+        }
+    })
+    .await;
+    result.ok_or("LOOK client did not finish")?
+}
+
+#[test]
+fn item_look_postgres_composed_owner_serves_near_far_items_creature_player_and_hidden_target()
+-> TestResult {
+    large_stack(scenario)
+}
+
+pub(super) fn large_stack(scenario: fn() -> TestResult) -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(move || scenario().map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "the LOOK PostgreSQL e2e thread panicked")??;
+    Ok(())
+}
+
+fn scenario() -> TestResult {
+    run(async |admin| {
+        reset();
+        let harness = Harness::create_with_admission_seed(admin, "item_look", true, false).await?;
+        prepare_current_session(&harness).await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let dependencies = Dependencies::new()?;
+        let mut admitted = dependencies.admitted;
+        let (controller, pin) = activated_with_loot_tables(admitted.world_id, None);
+        let active = controller.active().ok_or("activated generation")?;
+        let native = active.native_gameplay().ok_or("native gameplay")?;
+        let index = native.item_index().ok_or("item index")?;
+        let reference = |key: &str| {
+            index
+                .definition_ref("Item", key, "definition-r1")
+                .ok_or("fixture item belongs to the activated index")
+        };
+        let (bytes, mut pins) = bundle_with_item_ids(
+            (
+                "oteryn:item.tibia.i2854",
+                reference("oteryn:item.tibia.i2854")?.get() - 1,
+            ),
+            (
+                "oteryn:item.tibia.i3607",
+                reference("oteryn:item.tibia.i3607")?.get() - 1,
+            ),
+        );
+        // Add a neighboring instance of the same item as the far stack top at x 7.
+        // The owner must vary only the near-only fields, never admission by reach.
+        let mut decoded = oteryn_world_bundle::bundle::read(&bytes)?;
+        let mut near = decoded.sectors[0]
+            .tiles
+            .iter()
+            .find(|tile| tile.x == 7)
+            .ok_or("far item tile")?
+            .clone();
+        near.x = 3;
+        let tiles = &mut decoded.sectors[0].tiles;
+        tiles.retain(|tile| tile.x != 3);
+        tiles.push(near);
+        tiles.sort_by_key(|tile| (tile.y, tile.x));
+        // READ-WRITE-1a: real sign definitions, bound original TEXT, base ordinal
+        // targets taken from the domain-17 snapshot. No synthetic handle admission.
+        let sign_ref = reference("oteryn:item.tibia.i2012")?;
+        assert!(
+            !native
+                .item_policy("oteryn:item.tibia.i2012", "definition-r1")
+                .ok_or("sign policy")?
+                .record()
+                .admission
+                .materializable
+        );
+        let sign_palette = u32::try_from(decoded.manifest.palette.len())?;
+        decoded
+            .manifest
+            .palette
+            .push(oteryn_world_bundle::bundle::PaletteEntry {
+                family: oteryn_world_bundle::bundle::Family::Item,
+                key: "oteryn:item.tibia.i2012".into(),
+                id: sign_ref.get() - 1,
+                terrain: None,
+            });
+        for tile in &mut decoded.sectors[0].tiles {
+            if tile.x == 6 || tile.x == 7 {
+                tile.items.push(oteryn_world_bundle::sector::Item {
+                    palette: sign_palette,
+                    depth: 0,
+                    attrs: oteryn_world_bundle::sector::Attrs {
+                        text: Some("Welcome to Oteryn!".into()),
+                        ..Default::default()
+                    },
+                });
+            }
+        }
+        let bytes = oteryn_world_bundle_compiler::bundle::write(
+            &decoded.manifest,
+            &decoded.sectors,
+            &decoded.spawns,
+        )?;
+        pins.digest = oteryn_world_bundle::bundle::read(&bytes)?.digest;
+        let mut map_revision = String::from("sha256:");
+        for byte in &pins.digest {
+            write!(&mut map_revision, "{byte:02x}")?;
+        }
+        let bundle = boot(
+            &bytes,
+            &BootPins {
+                bundle: pins,
+                map_revision,
+                start: TilePos {
+                    x: 2,
+                    y: 0,
+                    floor: -7,
+                },
+            },
+            admitted.world_id,
+            admitted.channel_id,
+            |key| {
+                let profile = native.item_policy(key, "definition-r1")?.record();
+                let pickupable = matches!(&profile.semantics.physical, ReferenceItemField::Known(physical) if physical.pickupable == ReferenceItemField::Known(true));
+                Some(ItemDefinition {
+                    reference: reference(key).ok()?,
+                    solid: profile.attributes.blocks_movement,
+                    blocks_projectile: profile.attributes.blocks_projectile.unwrap_or(true),
+                    pickupable,
+                    door: false,
+                })
+            },
+        )?;
+        let cells = bundle
+            .movement_cells(pin.qualified_room().movement_cells())
+            .map_err(debug)?;
+        let channel_pin = ChannelContentPin::from_activation(
+            admitted.world_id,
+            pin.activation_sequence(),
+            pin.identity().server_artifact_digest(),
+            pin.identity().client_artifact_digest(),
+            pin.frame_binding().digest(),
+            pin.qualified_room().map_revision_digest(),
+            (2, 0, 7),
+        );
+        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+            admitted.world_id,
+            admitted.channel_id,
+            NodeId::decode(&id(1)).map_err(debug)?,
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            2,
+            channel_pin.clone(),
+        )
+        .map_err(debug)?;
+        let reservation = runtime
+            .reserve_fresh_session(admitted.game_session_id)
+            .map_err(debug)?;
+        let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+        runtime
+            .initialize_first_entry_position(actor)
+            .map_err(debug)?;
+        let player = runtime.visible_entities().players[0];
+        let own = EntityRef {
+            identity: actor.placement_identity(),
+            generation: player.generation,
+        };
+        native
+            .install_companion_policies(&mut runtime)
+            .map_err(debug)?;
+        runtime
+            .realize_native_qualification_spawn(
+                channel_pin,
+                "oteryn:creature.rat",
+                crate::foundation::MovementLocalPosition {
+                    x: 9,
+                    y: 0,
+                    floor: 7,
+                },
+            )
+            .map_err(debug)?;
+        let creature = runtime.visible_entities().creatures[0];
+        let rat = EntityRef {
+            identity: creature.actor.placement_identity(),
+            generation: creature.generation,
+        };
+        let runtime = Mutex::new(runtime);
+        let mut owner = dependencies.owner(&harness, &authority);
+        owner.runtime = &runtime;
+        owner.movement_cells = &cells;
+        owner.active_generation = Some(active);
+        dependencies.initialize(&owner).await;
+        assert!(
+            owner
+                .offered_capabilities()
+                .iter()
+                .any(|capability| capability.id == 28)
+        );
+        admitted.runtime_actor = Some(actor);
+        admitted.first_entry = FirstEntryOutcome::Positioned;
+        admitted.continuity.selected_capabilities =
+            SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 18, 28])
+                .ok_or("4, 6, 18 and 28 are selectable")?;
+        let (current, _) = FreshAdmissionStore::from_root(harness.root.clone())
+            .current_session_at(admitted.game_session_id)
+            .await?;
+        admitted.item_fence = item_fence_of(current);
+
+        seed_main_backpack(&harness, &[]).await?;
+        tokio::time::timeout(
+            std::time::Duration::from_secs(30),
+            serve_looks(&owner, admitted, own, rat),
+        )
+        .await??;
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+/// The existing LOOK backpack fixture, optionally populated with direct entries.
+pub(super) async fn seed_main_backpack(harness: &Harness, entries: &[(&str, i64)]) -> TestResult {
+    // Seed the migration-owned fixture as the existing item PostgreSQL harnesses do.
+    // All observations below use the real durable owner under its recovery fence.
+    let mut tx = harness.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("INSERT INTO game_item_instances(item_instance_id, world_id, definition_family, \
+        definition_production_key, definition_revision_ref, quantity, lifecycle, minted_transaction_id) \
+        VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, 'Item', 'oteryn:item.tibia.i2854', \
+        'definition-r1', 1, 1, encode($3,'hex')::uuid)")
+        .bind(id(70).as_slice()).bind(id(42).as_slice()).bind(id(71).as_slice())
+        .execute(&mut *tx).await?;
+    sqlx::query(
+        "INSERT INTO game_item_container_slots(character_id, item_instance_id, world_id, \
+        placed_transaction_id) VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, \
+        encode($3,'hex')::uuid, encode($4,'hex')::uuid)",
+    )
+    .bind(id(41).as_slice())
+    .bind(id(70).as_slice())
+    .bind(id(42).as_slice())
+    .bind(id(72).as_slice())
+    .execute(&mut *tx)
+    .await?;
+    for (offset, (key, quantity)) in entries.iter().enumerate() {
+        let seed = 71_u8
+            .checked_add(u8::try_from(offset)?)
+            .ok_or("fixture item id")?;
+        let ordinal = i64::try_from(offset)? + 1;
+        sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,'definition-r1',$4,1,encode($5,'hex')::uuid)")
+            .bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(key).bind(quantity).bind(id(72).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_item_container_entries(character_id,world_id,parent_item_instance_id,item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,encode($6,'hex')::uuid)")
+            .bind(id(41).as_slice()).bind(id(42).as_slice()).bind(id(70).as_slice()).bind(id(seed).as_slice()).bind(ordinal).bind(id(72).as_slice()).execute(&mut *tx).await?;
+    }
+    tx.commit().await?;
+    Ok(())
+}

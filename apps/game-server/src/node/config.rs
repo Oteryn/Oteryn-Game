@@ -228,7 +228,7 @@ impl WorldBundleConfig {
             _ => None,
         };
         let mut digest = [0; 32];
-        for (index, pair) in hex.chunks_exact(2).enumerate() {
+        for (index, pair) in hex.as_chunks::<2>().0.iter().enumerate() {
             digest[index] = (nibble(pair[0])? << 4) | nibble(pair[1])?;
         }
         Some(digest)
@@ -248,6 +248,7 @@ pub struct BootConfig {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct NodeConfig {
+    pub staff: Option<crate::durability::staff::StaffConfig>,
     pub listener: ListenerConfig,
     pub scope: ScopeConfig,
     pub database: DatabaseConfig,

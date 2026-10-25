@@ -485,10 +485,8 @@ fn all_declared_field_bounds_fit_the_fnd02_parent() {
     assert_eq!(decode_highscores_result(&bytes), Ok(result));
 }
 
-const PROTOCOL_REGISTRY: &str =
-    include_str!("../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json");
-const RESOURCE_REGISTRY: &str =
-    include_str!("../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json");
+const PROTOCOL_REGISTRY: &str = crate::PROTOCOL_OTERYN_V1_REGISTRY_JSON;
+const RESOURCE_REGISTRY: &str = crate::RESOURCE_LIMITS_REGISTRY_JSON;
 const HIGHSCORES_PROTO: &str =
     include_str!("../../../docs/contracts/protocol-oteryn/v1/highscores_v1.proto");
 
@@ -592,3 +590,7 @@ fn the_registries_bind_the_highscores_constants() {
     assert!(HIGHSCORES_PROTO.contains("HIGHSCORES0-RL-02"));
     assert!(HIGHSCORES_PROTO.contains("HIGHSCORES0-RL-03"));
 }
+
+#[cfg(test)]
+#[path = "highscores_fuzz_tests.rs"]
+mod fuzz_tests;

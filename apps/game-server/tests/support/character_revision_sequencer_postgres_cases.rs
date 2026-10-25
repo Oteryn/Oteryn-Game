@@ -4,6 +4,10 @@
 // crate root of `durability_postgres.rs` can include this file. The harness follows the CHARM-3
 // cases (one live session, lease, scope assignment and readiness for Character 41).
 
+#[path = "character_revision_node_registration.rs"]
+mod node_registration;
+pub(super) use node_registration::registered_node;
+
 use crate::character_recovery_fence::CharacterRecoveryStore;
 use crate::domain::charm::{
     BestiaryRaceKey, BestiaryStage, CharmCatalogue, CharmCategory, CharmDefinition, CharmKey,
@@ -127,8 +131,14 @@ impl Database {
         let version: String = sqlx::query_scalar("SHOW server_version_num")
             .fetch_one(&mut connection)
             .await?;
-        assert_eq!(version, "170006", "canonical target is PostgreSQL 17.6");
-        sqlx::migrate!("./migrations").run(&mut connection).await?;
+        assert_eq!(
+            version,
+            oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
+            "canonical target is PostgreSQL 18.6"
+        );
+        oteryn_gameplay_durability::GAME_MIGRATOR
+            .run(&mut connection)
+            .await?;
         connection.close().await?;
         Ok(Self {
             admin_url,
@@ -186,6 +196,10 @@ pub(super) struct Harness {
     pub(super) node: NodeIncarnationProof,
 }
 
+#[path = "character_revision_sequencer_postgres_cases/appearance_fixture.rs"]
+mod appearance_fixture;
+use appearance_fixture::CreationFixture;
+
 impl Harness {
     pub(super) async fn create(admin: String, tag: &str, initialized: bool) -> TestResult<Self> {
         Self::create_with_admission_seed(admin, tag, initialized, true).await
@@ -196,11 +210,21 @@ impl Harness {
         initialized: bool,
         seed_session: bool,
     ) -> TestResult<Self> {
+        Self::create_seeded(admin, tag, initialized, seed_session, false).await
+    }
+    async fn create_seeded(
+        admin: String,
+        tag: &str,
+        initialized: bool,
+        seed_session: bool,
+        appearance: bool,
+    ) -> TestResult<Self> {
         let database = Database::create(admin, tag).await?;
         let root = DurabilityRoot::connect_test_runtime(&database.url)?;
         assert!(root.maintain_ready_once().await?);
         let pool = sqlx::PgPool::connect(&database.url).await?;
-        let retained = fence_parent(tag)?;
+        // Scenarios may share a tag, but each database owns its recovery fence.
+        let retained = fence_parent(&database.name)?;
         let recovery = CharacterRecoveryStore::open(&retained, "character-primary", "game-ops")
             .map_err(debug)?;
         {
@@ -209,8 +233,20 @@ impl Harness {
                 .await
                 .map_err(debug)?;
         }
-        let node = register(&root, 1).await?;
-        seed_character(&pool, &root, &node, initialized, seed_session).await?;
+        let node = registered_node(&root, 1).await?;
+        seed_character(
+            &pool,
+            &root,
+            &node,
+            initialized,
+            seed_session,
+            if appearance {
+                CreationFixture::Own
+            } else {
+                CreationFixture::Historical
+            },
+        )
+        .await?;
         Ok(Self {
             database,
             root,
@@ -229,10 +265,23 @@ impl Harness {
     }
 }
 
-fn bootstrap_binding() -> Vec<u8> {
-    let mut binding = vec![2];
+fn bootstrap_binding(appearance: bool, observer: bool) -> Vec<u8> {
+    let original_id = id;
+    let id = |tag| {
+        original_id(if observer && ![42, 43].contains(&tag) {
+            tag + 60
+        } else {
+            tag
+        })
+    };
+    let name = if observer {
+        "Fixture Watcher"
+    } else {
+        "Fixture Hero"
+    };
+    let mut binding = vec![if appearance { 3 } else { 2 }];
     binding.extend_from_slice(&id(31));
-    binding.extend_from_slice(&1_i64.to_be_bytes());
+    binding.extend_from_slice(&(if observer { 2_i64 } else { 1_i64 }).to_be_bytes());
     binding.extend_from_slice(&id(30));
     binding.extend_from_slice(&id(40));
     binding.extend_from_slice(&id(42));
@@ -243,8 +292,15 @@ fn bootstrap_binding() -> Vec<u8> {
         binding.extend_from_slice(value.as_bytes());
     }
     // Contract version 2 binds the requested name last (CHAR-NAME-1).
-    binding.extend_from_slice(&12_u16.to_be_bytes());
-    binding.extend_from_slice(b"Fixture Hero");
+    binding.extend_from_slice(
+        &u16::try_from(name.len())
+            .expect("name length")
+            .to_be_bytes(),
+    );
+    binding.extend_from_slice(name.as_bytes());
+    if appearance {
+        binding.push(2);
+    }
     binding
 }
 
@@ -321,25 +377,45 @@ async fn seed_character(
     node: &NodeIncarnationProof,
     initialized: bool,
     seed_session: bool,
+    creation: CreationFixture,
 ) -> TestResult {
-    sqlx::query(
-        "INSERT INTO game_character_interpretations VALUES \
+    let appearance = creation != CreationFixture::Historical;
+    let observer = creation == CreationFixture::Observer;
+    let original_id = id;
+    let id = |tag| {
+        original_id(if observer && ![42, 43].contains(&tag) {
+            tag + 60
+        } else {
+            tag
+        })
+    };
+    let name = if observer {
+        "Fixture Watcher"
+    } else {
+        "Fixture Hero"
+    };
+    if !observer {
+        sqlx::query(
+            "INSERT INTO game_character_interpretations VALUES \
          (1,'profile-1','ruleset-1','content-1','starter-1',1)",
-    )
-    .execute(pool)
-    .await?;
+        )
+        .execute(pool)
+        .await?;
+    }
     sqlx::query("INSERT INTO game_character_account_guards VALUES (encode($1,'hex')::uuid)")
         .bind(id(40).as_slice())
         .execute(pool)
         .await?;
     sqlx::query(
-        "INSERT INTO game_character_roots VALUES \
+        "INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name,sex) VALUES \
          (encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,\
-          1,1,'profile-1','ruleset-1','content-1','starter-1','Fixture Hero')",
+          1,1,'profile-1','ruleset-1','content-1','starter-1',$5,$4)",
     )
     .bind(id(41).as_slice())
     .bind(id(40).as_slice())
     .bind(id(42).as_slice())
+    .bind(if appearance { Some(2_i16) } else { None })
+    .bind(name)
     .execute(pool)
     .await?;
     sqlx::query(
@@ -349,24 +425,26 @@ async fn seed_character(
            intent_source_revision,issued_at_source,expires_at_source) \
          VALUES (encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,encode($4,'hex')::uuid,\
            encode($5,'hex')::uuid,1,encode($6,'hex')::uuid,1,'test/1',\
-           encode($7,'hex')::uuid,encode($8,'hex')::uuid,1,1,120)",
+           encode($7,'hex')::uuid,encode($8,'hex')::uuid,$9,1,120)",
     )
     .bind(id(30).as_slice())
-    .bind(bootstrap_binding())
+    .bind(bootstrap_binding(appearance, observer))
     .bind(id(40).as_slice())
     .bind(id(41).as_slice())
     .bind(id(42).as_slice())
     .bind(id(32).as_slice())
     .bind(id(33).as_slice())
     .bind(id(31).as_slice())
+    .bind(if observer { 2_i64 } else { 1_i64 })
     .execute(pool)
     .await?;
     sqlx::query(
         "INSERT INTO game_character_bootstrap_intent_floors VALUES \
-         (1,1,encode($1,'hex')::uuid,$2)",
+         (1,$3,encode($1,'hex')::uuid,$2) ON CONFLICT(issuer_scope) DO UPDATE SET source_revision=EXCLUDED.source_revision,issuer_decision_id=EXCLUDED.issuer_decision_id,intent_binding=EXCLUDED.intent_binding",
     )
     .bind(id(31).as_slice())
-    .bind(bootstrap_binding())
+    .bind(bootstrap_binding(appearance, observer))
+    .bind(if observer { 2_i64 } else { 1_i64 })
     .execute(pool)
     .await?;
     if initialized {
@@ -420,6 +498,9 @@ async fn seed_character(
         .bind(id(50).as_slice())
         .execute(pool)
         .await?;
+    }
+    if observer {
+        return Ok(());
     }
     let fact = node.fact();
     sqlx::query(
@@ -675,6 +756,7 @@ fn kill(tag: u8) -> TestResult<BestiaryKillRequest> {
 fn death(tag: u8) -> TestResult<CharacterDeathRequest<2>> {
     let xp = xp_request(tag)?;
     Ok(CharacterDeathRequest {
+        pvp_contributors: Vec::new(),
         occurrence: PlayerDeathOccurrence::from_bytes(id(tag)).map_err(debug)?,
         context: xp.context,
         policy_revision: "policy-1".into(),
@@ -1236,3 +1318,13 @@ fn durable_death_clears_harmony_and_serene_and_receipt_readback_cannot_restore_t
         harness.cleanup().await
     })
 }
+
+#[allow(
+    dead_code,
+    unused_imports,
+    reason = "test-only wrapper consumed by the composed dispatch tests"
+)]
+#[path = "pvp_source_death_fixture.rs"]
+pub(super) mod pvp_source_death_fixture;
+#[path = "character_revision_sequencer_postgres_cases/tutorial_vitals_fixture.rs"]
+pub(super) mod tutorial_vitals_fixture;

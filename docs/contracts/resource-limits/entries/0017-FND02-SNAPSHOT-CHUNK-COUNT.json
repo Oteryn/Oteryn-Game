@@ -1,0 +1,22 @@
+{
+  "id": "FND02-SNAPSHOT-CHUNK-COUNT",
+  "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+  "resource": "Chunks in one SnapshotBody transfer",
+  "unit": "chunks",
+  "hard_maximum": 256,
+  "configurable_range": {
+    "minimum": 256,
+    "maximum": 256
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Validate SnapshotBegin before allocating chunk tracking structures.",
+  "client_visible": true,
+  "boundary_tests": [
+    "256 accepted",
+    "257 rejected before assembler allocation",
+    "chunk_index >= chunk_count rejected"
+  ],
+  "consumers": [
+    "client snapshot assembler"
+  ]
+}

@@ -17,13 +17,13 @@ use crate::durability::character_progression::{
     CharacterProgressionError, ExperienceCommitOutcome, ExperienceRewardOccurrence,
 };
 use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
-use crate::durability::quest_state::quest::{
-    QUESTGATE0_RL_10, QuestComparison, QuestEffect, QuestEffectKind, QuestRefusal,
-    QuestStateCatalogue, QuestTrack, QuestTransition,
-};
 use crate::durability::quest_state::{
     CommittedQuestTransition, QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
     QuestXpObligation, request_pending_quest_experience,
+};
+use oteryn_gameplay_quests::quest::{
+    QUESTGATE0_RL_10, QuestComparison, QuestEffect, QuestEffectKind, QuestRefusal,
+    QuestStateCatalogue, QuestTrack, QuestTransition,
 };
 use oteryn_simulation_determinism::{ExactI64, RoundingMode};
 

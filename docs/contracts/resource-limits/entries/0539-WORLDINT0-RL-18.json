@@ -1,0 +1,25 @@
+{
+  "id": "WORLDINT0-RL-18",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_WORLD_INTERACTION0_DOORS_LEVERS_FIELDS_AND_WORLD_CLOCK_DECISION_2026-10-01.md",
+  "resource": "WORLD_CLOCK deltas (state domain 18, capability 19 WORLD_LIGHT_V1) per session per 10,000 ms",
+  "unit": "deltas per session per 10,000 ms",
+  "hard_maximum": 1,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 1
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "A change of light level or Tibian hour earlier than 10,000 ms after the last delta is held, not queued: the next due check sends only the current clock. Each WorldClockV1 payload is at most 9 bytes and the decoder refuses a longer one on length before reading any field. Non-durable; nothing is allocated past the bound.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=1 per 10,000 ms: apps/game-server/src/world_clock.rs deltas_follow_light_changes_and_hours_at_most_every_ten_seconds (a change inside the interval sends nothing; the first check after it sends one delta)",
+    "payload max=9: crates/protocol-oteryn/src/world_clock_tests.rs the_clock_round_trips_within_its_bound (the largest clock is exactly 9 bytes)",
+    "payload max+1=10: crates/protocol-oteryn/src/world_clock_tests.rs malformed_clocks_fail_closed (10 bytes are refused LimitExceeded)"
+  ],
+  "consumers": [
+    "apps/game-server/src/world_clock.rs MIN_DELTA_INTERVAL_MS",
+    "crates/protocol-oteryn/src/world_clock.rs MAX_WORLD_CLOCK_BYTES",
+    "apps/game-server/src/gameplay_transport/connection.rs world_clock_delta"
+  ],
+  "notes": "WORLD-INTERACTION-0 \u00a710 and \u00a712. Mirrors max_payload_bytes of the domain 18 snapshot and delta types. Registered by CLOCK-1 (#2053, #2114)."
+}

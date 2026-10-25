@@ -1,0 +1,10 @@
+{
+  "id": 56,
+  "name": "HOUSE_INTENT",
+  "owner_decision": "HOUSE-WIRE-1 owner allocation 2026-10-23; OWN0 \u00a711",
+  "capability": 49,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/house_v1.proto#HouseIntentV1",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/house_v1.proto#HouseResultV1",
+  "max_payload_bytes": 4168,
+  "max_result_payload_bytes": 32768
+}

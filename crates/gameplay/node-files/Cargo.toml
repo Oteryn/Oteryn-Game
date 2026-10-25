@@ -1,0 +1,20 @@
+[package]
+name = "oteryn-gameplay-node-files"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[package.metadata.oteryn]
+category = "gameplay"
+release-role = "production"
+
+[dependencies]
+rustix = { workspace = true, features = ["process", "std"] }
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+
+[lints]
+workspace = true

@@ -159,21 +159,28 @@ A new gameplay system MUST NOT:
 
 When a change would otherwise violate one of these rules, the owning architecture must define the shared contract or explicitly justify and review a boundary change.
 
-## Physical layout remains intentionally open
+## Current physical layout
 
-This decision does not freeze a tree such as:
+ADR-0022 now records the implemented `crates/gameplay/*` layering:
 
 ```text
-crates/gameplay/bestiary
-crates/gameplay/forge
-crates/gameplay/wheel
+L0  domain (and supporting leaf crates)
+L1  content, native-admission-source
+L2  foundation, entities
+L3  characters, progression, items, economy, quests, housing,
+    combat-rules, spell-rules, encounter-rules, social-rules
+L4  durability, world, combat, spell, monster-ai, npc, encounters, social
+L5  dispatch
 ```
 
-That layout is permitted when implementation evidence shows a crate boundary is useful, but ADR-0015 still governs physical decomposition.
+The complete current map and allowed dependency direction are in
+[ADR-0022](ADR-0022-gameplay-crate-layering.md). This replaces the earlier illustrative
+Bestiary/Forge/Wheel directory tree; those features still follow their canonical
+owners rather than requiring a crate per feature.
 
 A small feature can remain an internal module. A reusable or independently testable capability can become a crate when it has an immediate consumer and a real dependency boundary. A separately deployed service requires the stronger evidence already demanded by ADR-0015 and does not become part of one GameNode process identity.
 
-The architecture therefore freezes **coupling rules**, not folders.
+The coupling rules remain binding within the current layered implementation.
 
 ## Change-impact objective
 
@@ -203,17 +210,21 @@ Before a material gameplay system is considered implementation-ready, its task/c
 - focused unit/component tests;
 - required integration/E2E scenarios.
 
-Architecture checks may later enforce dependency rules once real module/crate boundaries exist. This ADR does not create speculative enforcement machinery before there is code to protect.
+The architecture checker now enforces the dependency rules for the real crate
+boundaries described in ADR-0022.
 
 ## Relationship to ADR-0015
 
-ADR-0015 remains fully in force.
+ADR-0015's process and deployment boundaries remain in force. ADR-0022 refines its
+open physical decomposition for the current gameplay implementation.
 
-This ADR does **not** freeze a modular-monolith crate graph. It narrows a different question: regardless of whether future implementation uses modules, crates or justified adjacent services, gameplay semantics must preserve explicit domain ownership and avoid uncontrolled cross-feature coupling.
+Regardless of whether a feature uses modules or crates within the current layout,
+gameplay semantics must preserve explicit domain ownership and avoid uncontrolled
+cross-feature coupling.
 
 Thus:
 
-- ADR-0015 keeps physical decomposition open;
+- ADR-0022 records the current gameplay crate layers;
 - ADR-0019 fixes the logical anti-monolith boundary.
 
 ## Consequences

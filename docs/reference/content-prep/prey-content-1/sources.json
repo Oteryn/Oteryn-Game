@@ -1,0 +1,462 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_SOURCE_MANIFEST/v1",
+  "task": "PREY-CONTENT-1",
+  "target_cut": "2026-10-18",
+  "owner_cut_override": "Owner explicitly requested fresh current data on 2026-10-18; historical 2026-09-27 programme cut is not changed repository-wide.",
+  "sources": {
+    "wiki:79924:1168706": {
+      "title": "Prey System",
+      "url": "https://tibia.fandom.com/wiki/Prey_System",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1168706",
+      "revid": 1168706,
+      "revision_timestamp": "2026-03-20T15:43:27Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "9c5cb60809a288b17ee01847ae87d6ee58c480c7873070d2778d9bff0ba5ff0a",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Prey%20System%7CTask%20Board%7CSkull%20System%7CDeath&redirects=1"
+    },
+    "repo:docs/reference/tibia-manual/combat.md": {
+      "path": "docs/reference/tibia-manual/combat.md",
+      "url": "https://github.com/Oteryn/Oteryn-Game/blob/64d5e4dab918ed0274dd9b1479b6218887b644bb/docs/reference/tibia-manual/combat.md",
+      "commit": "64d5e4dab918ed0274dd9b1479b6218887b644bb",
+      "sha256": "ef518113d52cc089185c6472b23556d7aba74b714a74d3ef1d529f6dc03d1d62",
+      "source_class": "CIPSOFT_OFFICIAL / PRIMARY_OFFICIAL",
+      "fetched_at": "2026-10-18"
+    },
+    "wiki:86349:1090711": {
+      "title": "Prey System/Creature List",
+      "url": "https://tibia.fandom.com/wiki/Prey_System%2FCreature_List",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1090711",
+      "revid": 1090711,
+      "revision_timestamp": "2025-02-11T11:04:18Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "327fd4fc2650e3961dd8549f872a0b7670e7082da737648cae5a5062ccd66aad",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Prey%20System%2FCreature%20List%7CCitizen%20Outfits%7CFood%7CKnight%7CElite%20Knight%7CPaladin%7CRoyal%20Paladin%7CDruid%7CElder%20Druid%7CSorcerer%7CMaster%20Sorcerer%7CMonk%7CExalted%20Monk%7CDuelling%20Arena%7CArenas&redirects=1"
+    },
+    "wiki:109860:1187430": {
+      "title": "Task Board",
+      "url": "https://tibia.fandom.com/wiki/Task_Board",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1187430",
+      "revid": 1187430,
+      "revision_timestamp": "2026-05-26T22:45:44Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "54bb6e7c8d0702f68ea0b0c90b8dbdcb652b86bbe4127cb449059800b6518661",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Prey%20System%7CTask%20Board%7CSkull%20System%7CDeath&redirects=1"
+    },
+    "repo:content/creatures/definitions/creatures-00000-00499.json": {
+      "url": "https://github.com/Oteryn/Oteryn-Game/blob/64d5e4dab918ed0274dd9b1479b6218887b644bb/content/creatures/definitions/creatures-00000-00499.json",
+      "source_class": "NATIVE_IDENTITY_SNAPSHOT",
+      "commit": "64d5e4dab918ed0274dd9b1479b6218887b644bb",
+      "sha256": "790bf6b275f52977026e243f3405a2ae7cd7d1c9fd6180d74670c73aff5a2234",
+      "fetched_at": "2026-10-18"
+    },
+    "repo:content/creatures/definitions/creatures-00500-00999.json": {
+      "url": "https://github.com/Oteryn/Oteryn-Game/blob/64d5e4dab918ed0274dd9b1479b6218887b644bb/content/creatures/definitions/creatures-00500-00999.json",
+      "source_class": "NATIVE_IDENTITY_SNAPSHOT",
+      "commit": "64d5e4dab918ed0274dd9b1479b6218887b644bb",
+      "sha256": "a450f654319808f39dac810b936c20154672a795549fdddb0e4aab5ac12ea246",
+      "fetched_at": "2026-10-18"
+    },
+    "repo:content/creatures/definitions/creatures-01000-01499.json": {
+      "url": "https://github.com/Oteryn/Oteryn-Game/blob/64d5e4dab918ed0274dd9b1479b6218887b644bb/content/creatures/definitions/creatures-01000-01499.json",
+      "source_class": "NATIVE_IDENTITY_SNAPSHOT",
+      "commit": "64d5e4dab918ed0274dd9b1479b6218887b644bb",
+      "sha256": "d39b9f8a970826f424332d99c1812befa972dd2ad552ade9e328e341eba7555a",
+      "fetched_at": "2026-10-18"
+    },
+    "repo:content/creatures/definitions/creatures-01500-01862.json": {
+      "url": "https://github.com/Oteryn/Oteryn-Game/blob/64d5e4dab918ed0274dd9b1479b6218887b644bb/content/creatures/definitions/creatures-01500-01862.json",
+      "source_class": "NATIVE_IDENTITY_SNAPSHOT",
+      "commit": "64d5e4dab918ed0274dd9b1479b6218887b644bb",
+      "sha256": "6cc26f42b45a939f72198451e884f2062f746cab4e0d930ed8470dbadecd8461",
+      "fetched_at": "2026-10-18"
+    },
+    "wiki-render:task-board:1187430:2026-10-18": {
+      "title": "Task Board rendered creature eligibility tables",
+      "url": "https://tibia.fandom.com/api.php?action=parse&page=Task%20Board&prop=text%7Crevid&format=json&formatversion=2",
+      "revid": 1187430,
+      "source_class": "COMMUNITY_WIKI_RENDERED_SNAPSHOT",
+      "fetched_at": "2026-10-18",
+      "rendered_html_sha256": "9d1f48c583b7cea5113cda4a6384918d591c841050abe19597cde43ec85139ab",
+      "continuity": "RENDERED_AT_FETCH_INCLUDES_UNPINNED_CATEGORY_TEMPLATE_DEPENDENCIES"
+    },
+    "official:manual:combat:2026-10-18": {
+      "title": "Tibia official manual: combat",
+      "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=combat",
+      "source_class": "CIPSOFT_OFFICIAL",
+      "evidence_role": "PRIMARY_OFFICIAL",
+      "fetched_at": "2026-10-18",
+      "response_sha256": "62b54782e78348ea1cfc720dbddeea48564ab0c54934cec4ce8480eb9a06d58f",
+      "capture_method": "Public URL read through owner-authorized connected computer",
+      "retained_scope": "RESPONSE_DIGEST_AND_PARAPHRASED_FACTS",
+      "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH"
+    },
+    "tibiadata:v4:creature:rat:2026-10-18": {
+      "title": "TibiaData v4 creature: Rats",
+      "url": "https://api.tibiadata.com/v4/creature/rat",
+      "source_class": "TIBIADATA_V4_CROSSCHECK",
+      "fetched_at": "2026-10-18",
+      "api_timestamp": "2026-10-18T10:30:36Z",
+      "api_version": {
+        "version": 4,
+        "release": "4.10.0",
+        "commit": "d53b603c7e235c45268bcf878ef2921b2356cf75"
+      },
+      "official_upstream_urls": [
+        "https://www.tibia.com/library/?subtopic=creatures&race=rat"
+      ],
+      "response_sha256": "aaabc5b3785798511f4602faff3a84f831842a4c5823af14874260be6e598bcd",
+      "qualification": "Secondary static creature-attribute cross-check, not proof of prey eligibility, raid membership or spawn counts."
+    },
+    "owner:oteryn-data-completion:2026-10-19": {
+      "source_class": "OWNER_AUTHORIZED_OTERYN_WORKING_PARAMETERS",
+      "instruction": "No to uzupełnij te dane bo piszę ci to5raz",
+      "prior_instruction": "Przygotuj propozycje Oteryn z jawnymi założeniami",
+      "parameter_document": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json",
+      "selection_actor": "assistant completing owner-authorized reference/data task",
+      "scope": "Populate working Oteryn data defaults, keeping evidence limits explicit; no runtime or architectural acceptance is implied."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:prey.reroll_upgrade": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/io/ioprey.cpp",
+      "line": 49,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/io/ioprey.cpp#L49",
+      "file_sha256": "33189a28e0e354773b183fe885dfbeb0c38a6f69e65bb7d9556522b2a9fe372d",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "observation": {
+        "star_update": "rarity>=9 -> 10; otherwise uniform integer in [rarity+1,10]",
+        "max_rarity_bonus_type_reroll": "repeat uniform bonus-type roll until type differs from previous"
+      },
+      "qualification": "Reference implementation adapted as a working Oteryn design choice, not current official Tibia proof."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:prey-exclusive:slimes/acid_blob.lua": {
+      "title": "slimes/acid_blob.lua",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/monster/slimes/acid_blob.lua#L66",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/monster/slimes/acid_blob.lua",
+      "line": 66,
+      "sha256": "f99c93ff21dd2b8deba10da50820b9507e76bfd1322dfab9870f5d68d69b5742",
+      "supported_claim": "isPreyExclusive = true",
+      "qualification": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:prey-exclusive:constructs/damaged_worker_golem.lua": {
+      "title": "constructs/damaged_worker_golem.lua",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/monster/constructs/damaged_worker_golem.lua#L63",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/monster/constructs/damaged_worker_golem.lua",
+      "line": 63,
+      "sha256": "18dc5cf87b95fff7523c85ad277c8c93451ae486a3c2d54ea585b6a785cd514e",
+      "supported_claim": "isPreyExclusive = true",
+      "qualification": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:prey-exclusive:birds/flamingo.lua": {
+      "title": "birds/flamingo.lua",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/monster/birds/flamingo.lua#L63",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/monster/birds/flamingo.lua",
+      "line": 63,
+      "sha256": "44825e4a07597790fddfdf911d81afcbe753c6d48f4e5fe6338e175e17e9acc0",
+      "supported_claim": "isPreyExclusive = true",
+      "qualification": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:prey-exclusive:magicals/gazer.lua": {
+      "title": "magicals/gazer.lua",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/monster/magicals/gazer.lua#L63",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/monster/magicals/gazer.lua",
+      "line": 63,
+      "sha256": "a22430e5afeafee859ef2a51e47344adcee855aa948a496bcdeaad31f6628c2f",
+      "supported_claim": "isPreyExclusive = true",
+      "qualification": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:prey-exclusive:mammals/silver_rabbit.lua": {
+      "title": "mammals/silver_rabbit.lua",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/monster/mammals/silver_rabbit.lua#L63",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/monster/mammals/silver_rabbit.lua",
+      "line": 63,
+      "sha256": "619d02cc7518f2cb7fa5b0371beecaf8499fd4e6954730a5f3ab9a54e935d5c6",
+      "supported_claim": "isPreyExclusive = true",
+      "qualification": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed."
+    },
+    "repo:prey-native-catalog:466c9142ad41223181f998878fa9b8a633be4b4f": {
+      "title": "Current Oteryn native Creature catalogue",
+      "url": "https://github.com/Oteryn/Oteryn-Game/tree/466c9142ad41223181f998878fa9b8a633be4b4f/content/creatures/definitions",
+      "repository": "Oteryn/Oteryn-Game",
+      "commit": "466c9142ad41223181f998878fa9b8a633be4b4f",
+      "source_class": "NATIVE_CATALOG_OBSERVATION",
+      "retained_observations": "docs/reference/content-prep/prey-content-1/creature-identity-source-check.json",
+      "qualification": "1863native definitions scanned; no definition/name binding for the six source creatures. Snapshot absence is not absence from Tibia or an exclusion decision."
+    },
+    "community:tibiaqa:prey-wildcard:29235:20261019": {
+      "title": "Prey creatures selectable with five wildcards",
+      "url": "https://www.tibiaqa.com/29235/what-creatures-dont-appear-the-prey-creature-list-but-wildcards-select",
+      "answer_date": "2022-02-14",
+      "edited_date": "2022-04-21",
+      "fetched_at": "2026-10-19T09:22:11.225974+00:00",
+      "source_class": "COMMUNITY_REFERENCE",
+      "qualification": "Historical community list corroborates the inspected five and six names and13native-flag discrepancies; not an independent current Global measurement. The page also has a comment disputing Chicken availability, so it is not promoted wholesale as authoritative."
+    },
+    "repo:cipsoft-staticdata-creatures:466c9142ad41223181f998878fa9b8a633be4b4f": {
+      "title": "CipSoft15.30 client staticdata creature manifest",
+      "url": "https://github.com/Oteryn/Oteryn-Game/blob/466c9142ad41223181f998878fa9b8a633be4b4f/imports/cipsoft-staticdata/creatures/manifest.json",
+      "source_class": "CIPSOFT_CLIENT_STATICDATA",
+      "repository": "Oteryn/Oteryn-Game",
+      "commit": "466c9142ad41223181f998878fa9b8a633be4b4f",
+      "path": "imports/cipsoft-staticdata/creatures/manifest.json",
+      "sha256": "a6b5aed22da5d5dd3bc6549a2856e670471cb6979d9649c5e0a6e0bb206ddacd",
+      "client_version": "15.30",
+      "staticdata_sha256": "62d3f5f761a4c8cab02c89bd1a351770aca3504a74f1b34f457f0a0451dcd128",
+      "qualification": "Official client source observations. External creature IDs are not Oteryn ProductionKeys. Opaque f4..f7 fields are not interpreted as Prey eligibility."
+    },
+    "repo:cipsoft-creature-source:691:466c9142ad41223181f998878fa9b8a633be4b4f": {
+      "title": "Berrypest / client creature identity",
+      "url": "https://github.com/Oteryn/Oteryn-Game/blob/466c9142ad41223181f998878fa9b8a633be4b4f/imports/cipsoft-staticdata/creatures/creatures-00250-00499.json",
+      "repository": "Oteryn/Oteryn-Game",
+      "commit": "466c9142ad41223181f998878fa9b8a633be4b4f",
+      "path": "imports/cipsoft-staticdata/creatures/creatures-00250-00499.json",
+      "selector": "/records/51",
+      "source_class": "CIPSOFT_CLIENT_STATICDATA",
+      "client_version": "15.30",
+      "source_id": 691,
+      "staticdata_record_sha256": "1026bbbcc3bfe19e2f2c484778b6c10aced97f1aa6b228aa355dc6fb56bdd576",
+      "manifest_source": "repo:cipsoft-staticdata-creatures:466c9142ad41223181f998878fa9b8a633be4b4f",
+      "qualification": "Exact source name and external ID. No gameplay flags inferred from opaque fields."
+    },
+    "wiki-br:prey-identity:27061:398928": {
+      "title": "Berrypest",
+      "url": "https://www.tibiawiki.com.br/wiki/Berrypest",
+      "revision_url": "https://www.tibiawiki.com.br/index.php?oldid=398928",
+      "revid": 398928,
+      "revision_timestamp": "2023-07-21T01:41:10Z",
+      "retained_text_sha256": "b62d66879cb163807abc0697ac31851a228b8f10192fa279df14c207cef3a576",
+      "retained_observation_path": "imports/tibiawiki/facts/creatures/creatures-00500-00999.json",
+      "retained_selector": "/records/264",
+      "source_class": "COMMUNITY_WIKI",
+      "qualification": "Stored wiki observations corroborate creature identity and named attributes, not a native Oteryn definition."
+    },
+    "repo:cipsoft-creature-source:680:466c9142ad41223181f998878fa9b8a633be4b4f": {
+      "title": "Cake Golem / client creature identity",
+      "url": "https://github.com/Oteryn/Oteryn-Game/blob/466c9142ad41223181f998878fa9b8a633be4b4f/imports/cipsoft-staticdata/creatures/creatures-00250-00499.json",
+      "repository": "Oteryn/Oteryn-Game",
+      "commit": "466c9142ad41223181f998878fa9b8a633be4b4f",
+      "path": "imports/cipsoft-staticdata/creatures/creatures-00250-00499.json",
+      "selector": "/records/50",
+      "source_class": "CIPSOFT_CLIENT_STATICDATA",
+      "client_version": "15.30",
+      "source_id": 680,
+      "staticdata_record_sha256": "a41b7c4ea3a6adce9389c4978df7e42114170ca5581c80527c612c635142d46d",
+      "manifest_source": "repo:cipsoft-staticdata-creatures:466c9142ad41223181f998878fa9b8a633be4b4f",
+      "qualification": "Exact source name and external ID. No gameplay flags inferred from opaque fields."
+    },
+    "wiki-br:prey-identity:4010:435808": {
+      "title": "Cake Golem",
+      "url": "https://www.tibiawiki.com.br/wiki/Cake_Golem",
+      "revision_url": "https://www.tibiawiki.com.br/index.php?oldid=435808",
+      "revid": 435808,
+      "revision_timestamp": "2026-06-11T00:20:55Z",
+      "retained_text_sha256": "b5353ef61a4ab33a9f48983c585c1639c7c6f18059344c407545ce69c1e0f852",
+      "retained_observation_path": "imports/tibiawiki/facts/creatures/creatures-00000-00499.json",
+      "retained_selector": "/records/232",
+      "source_class": "COMMUNITY_WIKI",
+      "qualification": "Stored wiki observations corroborate creature identity and named attributes, not a native Oteryn definition."
+    },
+    "repo:cipsoft-creature-source:1157:466c9142ad41223181f998878fa9b8a633be4b4f": {
+      "title": "Elder Forest Fury / client creature identity",
+      "url": "https://github.com/Oteryn/Oteryn-Game/blob/466c9142ad41223181f998878fa9b8a633be4b4f/imports/cipsoft-staticdata/creatures/creatures-00250-00499.json",
+      "repository": "Oteryn/Oteryn-Game",
+      "commit": "466c9142ad41223181f998878fa9b8a633be4b4f",
+      "path": "imports/cipsoft-staticdata/creatures/creatures-00250-00499.json",
+      "selector": "/records/229",
+      "source_class": "CIPSOFT_CLIENT_STATICDATA",
+      "client_version": "15.30",
+      "source_id": 1157,
+      "staticdata_record_sha256": "d86cb7551987c4ce566ed2993b70b1ce1a0a98200f61c831f29db456c0cab6cf",
+      "manifest_source": "repo:cipsoft-staticdata-creatures:466c9142ad41223181f998878fa9b8a633be4b4f",
+      "qualification": "Exact source name and external ID. No gameplay flags inferred from opaque fields."
+    },
+    "wiki-br:prey-identity:36633:441194": {
+      "title": "Elder Forest Fury",
+      "url": "https://www.tibiawiki.com.br/wiki/Elder_Forest_Fury",
+      "revision_url": "https://www.tibiawiki.com.br/index.php?oldid=441194",
+      "revid": 441194,
+      "revision_timestamp": "2026-07-25T09:41:16Z",
+      "retained_text_sha256": "aa050bf5e2333514515d1f943ed3d8a688e324cae356dd27db830405c2837b37",
+      "retained_observation_path": "imports/tibiawiki/facts/creatures/creatures-00500-00999.json",
+      "retained_selector": "/records/443",
+      "source_class": "COMMUNITY_WIKI",
+      "qualification": "Stored wiki observations corroborate creature identity and named attributes, not a native Oteryn definition."
+    },
+    "repo:cipsoft-creature-source:1000:466c9142ad41223181f998878fa9b8a633be4b4f": {
+      "title": "Furious Fire Elemental / client creature identity",
+      "url": "https://github.com/Oteryn/Oteryn-Game/blob/466c9142ad41223181f998878fa9b8a633be4b4f/imports/cipsoft-staticdata/creatures/creatures-00250-00499.json",
+      "repository": "Oteryn/Oteryn-Game",
+      "commit": "466c9142ad41223181f998878fa9b8a633be4b4f",
+      "path": "imports/cipsoft-staticdata/creatures/creatures-00250-00499.json",
+      "selector": "/records/175",
+      "source_class": "CIPSOFT_CLIENT_STATICDATA",
+      "client_version": "15.30",
+      "source_id": 1000,
+      "staticdata_record_sha256": "b263e776b1705dc84a27a0000d10e751759202307c0e6bf618901a19c45c9b2e",
+      "manifest_source": "repo:cipsoft-staticdata-creatures:466c9142ad41223181f998878fa9b8a633be4b4f",
+      "qualification": "Exact source name and external ID. No gameplay flags inferred from opaque fields."
+    },
+    "wiki-br:prey-identity:43902:441304": {
+      "title": "Furious Fire Elemental",
+      "url": "https://www.tibiawiki.com.br/wiki/Furious_Fire_Elemental",
+      "revision_url": "https://www.tibiawiki.com.br/index.php?oldid=441304",
+      "revid": 441304,
+      "revision_timestamp": "2026-07-25T11:50:09Z",
+      "retained_text_sha256": "93c0352cf00cc7b62c13dcca32d3db43b951d729704d7a560f77ef59ddd5e1de",
+      "retained_observation_path": "imports/tibiawiki/facts/creatures/creatures-01000-01499.json",
+      "retained_selector": "/records/234",
+      "source_class": "COMMUNITY_WIKI",
+      "qualification": "Stored wiki observations corroborate creature identity and named attributes, not a native Oteryn definition."
+    },
+    "repo:cipsoft-creature-source:579:466c9142ad41223181f998878fa9b8a633be4b4f": {
+      "title": "Nightslayer / client creature identity",
+      "url": "https://github.com/Oteryn/Oteryn-Game/blob/466c9142ad41223181f998878fa9b8a633be4b4f/imports/cipsoft-staticdata/creatures/creatures-00250-00499.json",
+      "repository": "Oteryn/Oteryn-Game",
+      "commit": "466c9142ad41223181f998878fa9b8a633be4b4f",
+      "path": "imports/cipsoft-staticdata/creatures/creatures-00250-00499.json",
+      "selector": "/records/15",
+      "source_class": "CIPSOFT_CLIENT_STATICDATA",
+      "client_version": "15.30",
+      "source_id": 579,
+      "staticdata_record_sha256": "a552dd9215df3db70317f2c5645c96e628e34ac691329464f493490bc5fb9135",
+      "manifest_source": "repo:cipsoft-staticdata-creatures:466c9142ad41223181f998878fa9b8a633be4b4f",
+      "qualification": "Exact source name and external ID. No gameplay flags inferred from opaque fields."
+    },
+    "wiki-br:prey-identity:4023:441384": {
+      "title": "Nightslayer",
+      "url": "https://www.tibiawiki.com.br/wiki/Nightslayer",
+      "revision_url": "https://www.tibiawiki.com.br/index.php?oldid=441384",
+      "revid": 441384,
+      "revision_timestamp": "2026-07-25T13:02:17Z",
+      "retained_text_sha256": "d263c28f6a9862bf6e2ed60be9a1e5ab13460c04e08701172f73e9e96f5ff7b6",
+      "retained_observation_path": "imports/tibiawiki/facts/creatures/creatures-00000-00499.json",
+      "retained_selector": "/records/239",
+      "source_class": "COMMUNITY_WIKI",
+      "qualification": "Stored wiki observations corroborate creature identity and named attributes, not a native Oteryn definition."
+    },
+    "repo:cipsoft-creature-source:388:466c9142ad41223181f998878fa9b8a633be4b4f": {
+      "title": "Undead Jester / client creature identity",
+      "url": "https://github.com/Oteryn/Oteryn-Game/blob/466c9142ad41223181f998878fa9b8a633be4b4f/imports/cipsoft-staticdata/creatures/creatures-00000-00249.json",
+      "repository": "Oteryn/Oteryn-Game",
+      "commit": "466c9142ad41223181f998878fa9b8a633be4b4f",
+      "path": "imports/cipsoft-staticdata/creatures/creatures-00000-00249.json",
+      "selector": "/records/208",
+      "source_class": "CIPSOFT_CLIENT_STATICDATA",
+      "client_version": "15.30",
+      "source_id": 388,
+      "staticdata_record_sha256": "e1a529cfc99858ef5102235a1ec0226813e4311a2a7b43d902e9611362700ad1",
+      "manifest_source": "repo:cipsoft-staticdata-creatures:466c9142ad41223181f998878fa9b8a633be4b4f",
+      "qualification": "Exact source name and external ID. No gameplay flags inferred from opaque fields."
+    },
+    "wiki-br:prey-identity:5908:440797": {
+      "title": "Undead Jester",
+      "url": "https://www.tibiawiki.com.br/wiki/Undead_Jester",
+      "revision_url": "https://www.tibiawiki.com.br/index.php?oldid=440797",
+      "revid": 440797,
+      "revision_timestamp": "2026-07-25T06:21:43Z",
+      "retained_text_sha256": "f0e6f6df781e0d43c975cf64dab145f174d1465360980be9c894203bc19e81ff",
+      "retained_observation_path": "imports/tibiawiki/facts/creatures/creatures-00500-00999.json",
+      "retained_selector": "/records/67",
+      "source_class": "COMMUNITY_WIKI",
+      "qualification": "Stored wiki observations corroborate creature identity and named attributes, not a native Oteryn definition."
+    },
+    "ots:crystal-summer:task-xp:bounty:ddb4930": {
+      "title": "CrystalServer bounty reward generation and claim",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/io/iobountytasks.cpp",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "repository": "zimbadev/crystalserver",
+      "revision": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/io/iobountytasks.cpp",
+      "sha256": "ba1a02f0f15fd392f1f7d9b6fbf1dfe202e1e62aa680ea9bf8db6fb4c21f03d3",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:crystal-summer:task-xp:weekly:ddb4930": {
+      "title": "CrystalServer weekly task rewards",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/io/ioweeklytasks.cpp",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "repository": "zimbadev/crystalserver",
+      "revision": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/io/ioweeklytasks.cpp",
+      "sha256": "1666824a53e86c0c3e6b88e2ee4c4e0e6b38572e22e5471a0cada9ea2440a1c8",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:crystal-summer:task-xp:config:ddb4930": {
+      "title": "CrystalServer distributed bounty XP multiplier",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/config.lua.dist#L174",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "revision": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "config.lua.dist",
+      "sha256": "93f50fc744c9e5f1bc39165ea2ea037f5f56131a3768f1b127ebb23be4b6a544",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:crystal-summer:task-xp:rng:ddb4930": {
+      "title": "CrystalServer uniform integer generator",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/utils/tools.cpp#L431",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "revision": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/utils/tools.cpp",
+      "sha256": "61f1649fce6cae87905f9619cc1b6cd8b76c3066ce349ae2f4bc92072caed070",
+      "fetched_at": "2026-10-19"
+    },
+    "wiki-br:task-xp:443622": {
+      "title": "Weekly Tasks",
+      "url": "https://www.tibiawiki.com.br/wiki/Weekly_Tasks",
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Weekly_Tasks&oldid=443622",
+      "revid": 443622,
+      "source_class": "COMMUNITY_WIKI",
+      "fetched_at": "2026-10-19",
+      "response_html_sha256": "a7a90bde7b6374ca814e59f22dd36a92367941167804605f706c41ec8af68dd6",
+      "retained_scope": "RENDERED_HTML_OBSERVATION"
+    },
+    "wiki-br:task-xp:436933": {
+      "title": "Bounty Tasks",
+      "url": "https://www.tibiawiki.com.br/wiki/Bounty_Tasks",
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Bounty_Tasks&oldid=436933",
+      "revid": 436933,
+      "source_class": "COMMUNITY_WIKI",
+      "fetched_at": "2026-10-19",
+      "response_html_sha256": "9aa2b79a92782c62574d60bbb748b064bf50de688b0a8e1e155bf5b6f643cbf2",
+      "retained_scope": "RENDERED_HTML_OBSERVATION"
+    },
+    "community:tibiopedia:task-xp:bounty:retained": {
+      "title": "Bounty Tasks",
+      "url": "https://tibiopedia.pl/articles/30,Bounty-Tasks",
+      "source_class": "COMMUNITY_GUIDE_RETAINED_CACHE",
+      "retained_html_sha256": "67f2c88e78216fb3f1fa792280e1f2087eb178cf317ea710e163e12f64144fc8",
+      "fresh_access": "Current request returned Setup page, not article; retained article cache used explicitly. No fresh article revision is claimed.",
+      "retained_before_current_recheck": true
+    },
+    "community:tibiopedia:task-xp:weekly:retained": {
+      "title": "Weekly Tasks",
+      "url": "https://tibiopedia.pl/articles/31,Weekly-Tasks",
+      "source_class": "COMMUNITY_GUIDE_RETAINED_CACHE",
+      "retained_html_sha256": "a109e5c47459401450fb67e57cd3394c1b207ee2468af0c6ab830d23ce08c8f2",
+      "fresh_access": "Current request returned Setup page, not article; retained article cache used explicitly. No fresh article revision is claimed.",
+      "retained_before_current_recheck": true
+    },
+    "official:tibia:manual:task-board:indexed:20261019": {
+      "title": "Tibia Manual5.3.10 Task Board",
+      "url": "https://www.tibia.com/gameguides/?section=combat&subtopic=manual",
+      "source_class": "CIPSOFT_OFFICIAL",
+      "fetched_at": "2026-10-19",
+      "retrieval": "Indexed official page text; direct news article8598 returned403. No numeric XP formula appears in the inspected Task Board section.",
+      "retained_scope": "Task Board parameter observations only"
+    }
+  }
+}

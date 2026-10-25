@@ -1,6 +1,7 @@
 #![allow(clippy::expect_used, clippy::panic)]
 
 use oteryn_game_server::content::*;
+use oteryn_gameplay_content_promotion::content::*;
 
 const B1_EVIDENCE: &[u8] = include_bytes!(
     "../../../docs/agents/evidence/OTV2-20260919-content-world-cw2-b1-item-identity-catalog.json"
@@ -712,7 +713,7 @@ fn decode_digest(value: &str) -> [u8; 32] {
     }
 
     let mut decoded = [0_u8; 32];
-    for (index, pair) in value.as_bytes().chunks_exact(2).enumerate() {
+    for (index, pair) in value.as_bytes().as_chunks::<2>().0.iter().enumerate() {
         decoded[index] = (nibble(pair[0]) << 4) | nibble(pair[1]);
     }
     decoded

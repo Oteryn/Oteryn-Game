@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/loop-progress-1
 issue: 1622
-pr: 2192
+pr: null
 base_sha: 5742f30f3
 plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4 Epic 1 LOOP-PROGRESS-1 (rows 37, 38, 40, 41); wave 1 (migration chain #3)"
 class: "hard (Character writes)"
@@ -21,10 +21,10 @@ created_at: 2026-10-15
 updated_at: 2026-10-16
 execution_policy: continuous_progress
 owned_paths:
-  - apps/game-server/src/gameplay_transport/attack.rs
-  - apps/game-server/src/domain/progression.rs
-  - apps/game-server/src/durability/character_progression.rs
-  - apps/game-server/src/gameplay_transport/character_progression_binding.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/attack.rs
+  - crates/gameplay/domain/src/domain/progression.rs
+  - crates/gameplay/durability/src/durability/character_progression.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/character_progression_binding.rs
   - apps/game-server/tests/loop_progress_*.rs (new)
 slot_only_paths:
   - migration number (chain #3)
@@ -40,6 +40,12 @@ blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
 ```
+
+Tracking audit (CARDS-AUDIT-1, 2026-10-23, `origin/main@ac3f7fbc6`): **PARTIAL**. This supersedes historical status/PR-wait notes below; acceptance and scope are unchanged.
+
+Merged evidence: [#2192](https://github.com/Oteryn/Oteryn-Game/pull/2192), [#2193](https://github.com/Oteryn/Oteryn-Game/pull/2193). Level-up maxima planning/build helpers, attack activity facts and death/training persistence are merged. Evidence: `crates/gameplay/dispatch/src/gameplay_transport/character_progression_binding.rs`.
+
+Remaining: Whole-kill level-up HP/mana/capacity effect installation and full production progression/training activation remain; the maxima plan is not an installed effect. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
 Skeleton task record (parallel work model, owner-approved 2026-10-15). The builder fills `owned_paths`;
 `slot_only_paths` are touched only in the final commit at this PR's merge-queue turn, after merging main.
@@ -62,9 +68,9 @@ Level-up updates vitals and capacity per vocation; vocations end to end; skill g
 
 ## Owned paths (builder edits freely)
 
-- `apps/game-server/src/domain/progression.rs`
-- `apps/game-server/src/durability/character_progression.rs`
-- `apps/game-server/src/gameplay_transport/character_progression_binding.rs`
+- `crates/gameplay/domain/src/domain/progression.rs`
+- `crates/gameplay/durability/src/durability/character_progression.rs`
+- `crates/gameplay/dispatch/src/gameplay_transport/character_progression_binding.rs`
 - apps/game-server/tests/loop_progress_*.rs (new)
 
 ## Slot-only paths (final commit only, at the merge-queue turn, after merging main)

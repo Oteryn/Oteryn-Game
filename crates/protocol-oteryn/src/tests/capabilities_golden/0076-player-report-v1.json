@@ -1,0 +1,17 @@
+{
+  "id": 76,
+  "name": "PLAYER_REPORT_V1",
+  "constant": "player_report::CAPABILITY_PLAYER_REPORT_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [
+    93
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

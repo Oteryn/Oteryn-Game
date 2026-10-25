@@ -6,7 +6,7 @@ on:
       - .github/workflows/native-entry-room-qualification.yml
       - tools/qualification/native_entry_room/**
       - tools/qualification/wp5_s3a/platform-fpm.Dockerfile
-      - apps/game-server/src/content/**
+      - crates/gameplay/content/**
       - apps/game-server/tests/content_native_entry_room.rs
   workflow_dispatch:
 
@@ -46,7 +46,7 @@ jobs:
         run: test "$(git -C _platform rev-parse HEAD)" = eb65ce453949a352fdc0e3ed0132d2cde0084fb7
 
       - name: Install pinned Rust toolchain
-        run: rustup toolchain install 1.95.0 --profile minimal
+        run: rustup toolchain install 1.99.1 --profile minimal
 
       - name: Issue WorldId and qualify the committed room
         env:

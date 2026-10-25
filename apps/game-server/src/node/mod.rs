@@ -4,10 +4,11 @@
 
 pub mod config;
 pub mod descriptor_facts;
-pub mod operator_files;
+mod quest_log_content;
 mod runtime_status;
-pub mod secure_file;
 pub mod serve;
+
+pub use oteryn_gameplay_node_files::{operator_files, secure_file};
 
 use crate::durability::{DurabilityError, DurabilityRoot, DurabilityRootConfig};
 use config::DatabaseConfig;
@@ -116,3 +117,8 @@ pub fn uuid_text(bytes: &[u8; 16]) -> String {
         &hex[20..32]
     )
 }
+
+mod cancellation;
+pub mod guild_jobs;
+mod guild_scheduler;
+mod market_scheduler;

@@ -1,0 +1,23 @@
+{
+  "id": "MAPW-RL-04",
+  "owner_contract": "../contracts/protocol-oteryn/candidates/MAP_WIRE_1_WORLD_MAP_VIEW_CANDIDATE_V1.md",
+  "resource": "Handle-bearing entries of one map view (overlay-added items, Ground items and movable base entries)",
+  "unit": "entries per map view",
+  "hard_maximum": 1024,
+  "configurable_range": {
+    "minimum": 1024,
+    "maximum": 1024
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Handles are given nearest first: the actor's floor, then floor distance, Chebyshev distance, (y, x) and stack order. An entry past the budget is display_only and holds no handle.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=1024: the 1,024 nearest handle-bearing entries carry handles",
+    "max+1=1025: the farthest entry is display_only"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/world_map.rs MAX_MAP_VIEW_HANDLES",
+    "apps/game-server/src/map/view.rs"
+  ],
+  "notes": "MAP-WIRE-1 \u00a73 Handle budget. Test: gameplay_transport::world_map::tests. Registered by OTV2-20261004-map-wire-2."
+}

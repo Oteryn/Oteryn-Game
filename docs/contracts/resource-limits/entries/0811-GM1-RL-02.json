@@ -1,0 +1,23 @@
+{
+  "id": "GM1-RL-02",
+  "owner_contract": "../agents/tasks/GM-1.md",
+  "resource": "Detached OpenSSH signature bytes",
+  "unit": "bytes",
+  "hard_maximum": 4096,
+  "configurable_range": {
+    "minimum": 4096,
+    "maximum": 4096
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Validate before allocation or execution; reject rather than truncate. CANDIDATE until exact-bound qualification; no capability or content grants operator authority.",
+  "client_visible": true,
+  "boundary_tests": [
+    "staff_wire_roundtrip_and_exact_limits",
+    "staff_pg_signed_wire_mute_receipt_replay_restart_and_fail_closed"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/staff.rs",
+    "crates/gameplay/durability/src/durability/staff.rs",
+    "crates/gameplay/durability/src/durability/staff/trust.rs"
+  ]
+}
