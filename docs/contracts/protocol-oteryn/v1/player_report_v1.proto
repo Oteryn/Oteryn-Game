@@ -1,0 +1,22 @@
+syntax = "proto3";
+package oteryn.protocol.v1;
+// Capability 76, command 93 (PARITY-REPORT-1). Strict bounded codec: every field explicitly
+// present, duplicate/unknown fields refused, at most 1088 request bytes.
+// The server supplies reporter identity, reporter position and time; no client identity input.
+// Canary ordinals: BUG_CATEGORY_* 0..3, REPORT_REASON_* 0..20, REPORT_TYPE_* 0..2.
+message PlayerReportRequestV1 {
+  uint32 kind = 1; // 1 bug, 2 rule violation; any other value is refused (code 2)
+  uint32 category = 2; // bug: 0 map, 1 typo, 2 technical, 3 other; 0 for a rule violation
+  uint32 reason = 3; // rule violation: REPORT_REASON 0..20; 0 for a bug
+  uint32 action = 4; // rule violation: REPORT_TYPE 0 name, 1 statement, 2 bot; 0 for a bug
+  string target = 5; // rule violation: character name, 29 bytes maximum; empty for a bug
+  string comment = 6; // UTF-8, 1024 bytes maximum (REPORT1-RL-01)
+  uint32 map_x = 7; // map bug only, <= 65535; 0 otherwise
+  uint32 map_y = 8; // map bug only, <= 65535; 0 otherwise
+  uint32 map_floor = 9; // map bug only, <= 255; 0 otherwise
+}
+message PlayerReportReplyV1 {
+  uint32 code = 1; // 1 accepted, 2 invalid, 3 self report, 4 already pending, 5 rate limited
+  uint64 report = 2; // server queue number; nonzero exactly when accepted
+  uint32 wait_seconds = 3; // nonzero exactly when rate limited
+}

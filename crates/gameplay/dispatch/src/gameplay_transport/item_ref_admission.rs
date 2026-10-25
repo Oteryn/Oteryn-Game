@@ -99,6 +99,7 @@ pub(super) fn visible_corpses(
                 &corpse.item.revision_ref,
             )?;
             Some(ChannelEntity {
+                direction: oteryn_protocol_oteryn::world_spatial::StepDirection::South,
                 kind: VisibleKind::Corpse {
                     item_definition_ref,
                 },

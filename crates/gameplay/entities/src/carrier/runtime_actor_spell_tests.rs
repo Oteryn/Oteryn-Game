@@ -1382,3 +1382,33 @@ fn due_authority_binds_submillisecond_time_and_presence() {
     changed.now_us = None;
     assert!(!token.matches(&changed, scope, binding.scope_generation()));
 }
+
+#[test]
+fn target_move_turn_is_in_place_and_stale_snapshot_cannot_turn() {
+    let mut f = fixture_with_position(1, true);
+    let (_, original) = f
+        .runtime
+        .positioned_player_for_session(f.session)
+        .expect("owner roster")
+        .expect("pinned entry");
+    let current = f
+        .runtime
+        .borrow_movement_position()
+        .commit_turn(original, MovementFacing::West)
+        .expect("owner turn");
+    assert_eq!(current.position(), original.position());
+    assert_eq!(current.revision(), original.revision() + 1);
+    assert_eq!(current.facing(), Some(MovementFacing::West));
+    assert!(
+        f.runtime
+            .borrow_movement_position()
+            .commit_turn(original, MovementFacing::North)
+            .is_err()
+    );
+    let (_, after) = f
+        .runtime
+        .positioned_player_for_session(f.session)
+        .expect("roster")
+        .expect("entry");
+    assert_eq!(after, current);
+}
