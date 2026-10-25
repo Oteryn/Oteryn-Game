@@ -26,22 +26,22 @@ pub(super) fn in_fight_retry_after_ms(until_micros: u64, now_micros: u64) -> u32
         .unwrap_or(u32::MAX)
         .clamp(1, MAX_LOGOUT_RETRY_AFTER_MS)
 }
-/// The `retry_after_ms` of a logout refused for a fight, or `None`. A live PvP block always
-/// refuses. The PvE in-fight deadline refuses unless the actor's cell is a qualified protection
-/// zone, as Canary's `ProtocolGame::logout` (`protocolgame.cpp:1159`) checks
-/// `CONDITION_INFIGHT` only outside `TILESTATE_PROTECTIONZONE`. An unknown cell keeps the
-/// refusal.
+/// The `retry_after_ms` of a logout refused for a fight, or `None`. An actor whose cell is a
+/// qualified protection zone is not refused, PvP block or not, as Canary's
+/// `ProtocolGame::logout` (`protocolgame.cpp:1158`) checks `CONDITION_INFIGHT` (which carries
+/// the pz lock) only outside `TILESTATE_PROTECTIONZONE`. Elsewhere, and on an unknown cell, a
+/// live PvP block refuses, then the PvE in-fight deadline.
 pub(super) fn in_fight_logout_retry(
     pvp_blocked: bool,
     pve_in_fight_until_micros: Option<u64>,
     now_micros: u64,
     in_protection_zone: Option<bool>,
 ) -> Option<u32> {
-    if pvp_blocked {
-        return Some(1000);
-    }
     if in_protection_zone == Some(true) {
         return None;
+    }
+    if pvp_blocked {
+        return Some(1000);
     }
     pve_in_fight_until_micros.map(|until| in_fight_retry_after_ms(until, now_micros))
 }
@@ -78,7 +78,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
     /// The `retry_after_ms` of a running in-fight deadline (ATTACK-0 §4), or `None`. A dead
     /// actor is not held, as at a closed client's release (`held_step`). The PvE deadline
-    /// does not hold an actor standing in a protection zone (`in_fight_logout_retry`).
+    /// and the PvP block do not hold an actor standing in a protection zone
+    /// (`in_fight_logout_retry`).
     async fn logout_in_fight(&self, actor: ExactActorRef, session: GameSessionId) -> Option<u32> {
         let in_protection_zone = super::actor_spell::qualified_protection_zone(
             &mut *self.runtime.lock().await,

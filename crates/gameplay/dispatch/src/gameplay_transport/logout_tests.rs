@@ -14,10 +14,10 @@ fn the_in_fight_retry_rounds_up_to_whole_milliseconds_within_1_to_60000() {
     assert_eq!(in_fight_retry_after_ms(1_000_000, 1_000_000), 1);
 }
 
-/// Canary `protocolgame.cpp:1159`: the PvE in-fight refusal applies only outside a protection
-/// zone; a PvP block and an unknown cell still refuse.
+/// Canary `protocolgame.cpp:1158`: the in-fight refusal, pz lock included, applies only outside
+/// a protection zone; elsewhere and on an unknown cell a PvP block still refuses.
 #[test]
-fn a_protection_zone_lifts_only_the_pve_in_fight_refusal() {
+fn a_protection_zone_lifts_the_in_fight_and_pvp_refusals() {
     let (until, now) = (31_000_000, 1_000_000);
     assert_eq!(
         in_fight_logout_retry(false, Some(until), now, Some(false)),
@@ -33,8 +33,14 @@ fn a_protection_zone_lifts_only_the_pve_in_fight_refusal() {
     );
     assert_eq!(
         in_fight_logout_retry(true, Some(until), now, Some(true)),
+        None
+    );
+    assert_eq!(in_fight_logout_retry(true, None, now, Some(true)), None);
+    assert_eq!(
+        in_fight_logout_retry(true, Some(until), now, None),
         Some(1000)
     );
+    assert_eq!(in_fight_logout_retry(true, None, now, None), Some(1000));
     assert_eq!(
         in_fight_logout_retry(true, None, now, Some(false)),
         Some(1000)
