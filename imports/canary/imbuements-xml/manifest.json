@@ -1,0 +1,26 @@
+{
+  "authority": "OTS_HYPOTHESIS_ONLY; reference evidence for compatibility research, never value evidence where a decision requires official or TibiaWiki sources, and never an Oteryn identity",
+  "decision": "PARITY-IMBUE-FORGE-WIRE-1 coordinator decision 2 (imbuement material catalogue)",
+  "files": [
+    {
+      "path": "imbuements.xml",
+      "role": "Canary imbuement definitions (data/XML/imbuements.xml), byte-identical",
+      "sha256": "82ea7b6c28b47b1b3d631ecff6d0015d5019d41327656945609d84340bf95d63",
+      "imbuement_elements": 72
+    },
+    {
+      "path": "LICENSE",
+      "role": "Canary repository licence (GNU GPL v2), byte-identical",
+      "sha256": "8177f97513213526df2cf6184d8ff986c675afb514d4e68a404010521b880643"
+    }
+  ],
+  "licence": "GPL-2.0 (see LICENSE); redistributed unmodified with its licence",
+  "schema": "OTERYN_IMPORT_PINNED_SOURCE/v1",
+  "source": {
+    "evidence": "OtsHypothesisOnly",
+    "key": "oteryn:source.canary",
+    "path": "data/XML/imbuements.xml",
+    "repository": "https://github.com/opentibiabr/canary",
+    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+  }
+}
