@@ -123,7 +123,7 @@ pub(super) async fn npc_trade(
 ) -> NpcTradeStep {
     match trade(admission, actor, command, intent, false).await {
         Ok(_) => NpcTradeStep::Traded,
-        Err(step) => step,
+        Err(step) => *step,
     }
 }
 
@@ -136,15 +136,15 @@ pub(super) async fn trade(
     command: UseCommand,
     intent: NpcTradeIntent,
     sell_all: bool,
-) -> Result<SoldUnits, NpcTradeStep> {
+) -> Result<SoldUnits, Box<NpcTradeStep>> {
     let session = command.game_session_id;
     // Without an item fence no trade can commit or have committed for the session.
     let (Some(fence), Ok(command_id)) = (command.item_fence, CommandId::new(command.command_id))
     else {
-        return Err(NpcTradeStep::rejected());
+        return Err(Box::new(NpcTradeStep::rejected()));
     };
     let Some(_permit) = admission.spell_lane_permit().await else {
-        return Err(NpcTradeStep::Unknown);
+        return Err(Box::new(NpcTradeStep::Unknown));
     };
     let command_ref = CommandRef::new(session, command_id);
     let occurrence = occurrence(session, command.command_id, intent.npc_actor);
@@ -165,12 +165,12 @@ pub(super) async fn trade(
             });
         }
         Ok(None) => {}
-        Err(NpcTradeError::Unavailable(_)) => return Err(NpcTradeStep::Unknown),
-        Ok(Some(_)) | Err(_) => return Err(NpcTradeStep::rejected()),
+        Err(NpcTradeError::Unavailable(_)) => return Err(Box::new(NpcTradeStep::Unknown)),
+        Ok(Some(_)) | Err(_) => return Err(Box::new(NpcTradeStep::rejected())),
     }
 
     if !admission.states.player_trades.physical_service(session) {
-        return Err(NpcTradeStep::rejected());
+        return Err(Box::new(NpcTradeStep::rejected()));
     }
     let (offer, coins) = {
         let runtime = admission.runtime.lock().await;
@@ -184,7 +184,7 @@ pub(super) async fn trade(
             index,
         ) {
             Ok(offer) => offer,
-            Err(refusal) => return Err(NpcTradeStep::Refused(*refusal)),
+            Err(refusal) => return Err(Box::new(NpcTradeStep::Refused(*refusal))),
         };
         let coin = |coin: Coin| {
             let production_key = coin.production_key();
@@ -199,7 +199,7 @@ pub(super) async fn trade(
         let (Some(gold), Some(platinum), Some(crystal)) =
             (coin(Coin::Gold), coin(Coin::Platinum), coin(Coin::Crystal))
         else {
-            return Err(NpcTradeStep::rejected());
+            return Err(Box::new(NpcTradeStep::rejected()));
         };
         (
             offer,
@@ -214,7 +214,7 @@ pub(super) async fn trade(
         .active_generation
         .and_then(ActiveGeneration::native_gameplay)
     else {
-        return Err(NpcTradeStep::rejected());
+        return Err(Box::new(NpcTradeStep::rejected()));
     };
     let Ok(item) = generation_item_facts(
         native,
@@ -224,7 +224,7 @@ pub(super) async fn trade(
             revision_ref: offer.item_revision.clone(),
         },
     ) else {
-        return Err(NpcTradeStep::rejected());
+        return Err(Box::new(NpcTradeStep::rejected()));
     };
     let backpack = match admission
         .root
@@ -233,11 +233,11 @@ pub(super) async fn trade(
     {
         Ok(Some(current)) => match generation_item_facts(native, &current.backpack.definition) {
             Ok(facts) => facts,
-            Err(_) => return Err(NpcTradeStep::rejected()),
+            Err(_) => return Err(Box::new(NpcTradeStep::rejected())),
         },
-        Ok(None) => return Err(NpcTradeStep::rejected()),
-        Err(ItemTransferError::Unavailable(_)) => return Err(NpcTradeStep::Unknown),
-        Err(_) => return Err(NpcTradeStep::rejected()),
+        Ok(None) => return Err(Box::new(NpcTradeStep::rejected())),
+        Err(ItemTransferError::Unavailable(_)) => return Err(Box::new(NpcTradeStep::Unknown)),
+        Err(_) => return Err(Box::new(NpcTradeStep::rejected())),
     };
     let id = |tag: &[u8]| derived(tag, session, command.command_id);
     let request = NpcTradeRequest {
@@ -282,7 +282,7 @@ pub(super) async fn trade(
 /// refusal wrote nothing and is `REJECTED`.
 fn step_of(
     result: Result<npc_trade::NpcTradeOutcome, NpcTradeError>,
-) -> Result<SoldUnits, NpcTradeStep> {
+) -> Result<SoldUnits, Box<NpcTradeStep>> {
     match result {
         Ok(
             npc_trade::NpcTradeOutcome::Committed(trade)
@@ -296,8 +296,8 @@ fn step_of(
                 .sum(),
             gold: trade.total_gold_units,
         }),
-        Err(NpcTradeError::Unavailable(_)) => Err(NpcTradeStep::Unknown),
-        Err(_) => Err(NpcTradeStep::rejected()),
+        Err(NpcTradeError::Unavailable(_)) => Err(Box::new(NpcTradeStep::Unknown)),
+        Err(_) => Err(Box::new(NpcTradeStep::rejected())),
     }
 }
 

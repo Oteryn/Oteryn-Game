@@ -97,7 +97,10 @@ pub(super) async fn npc_shop(
             if intent.side != NpcTradeSide::Sell {
                 return NpcShopStep::rejected();
             }
-            match npc_trade_command::trade(admission, actor, command, trade, true).await {
+            match npc_trade_command::trade(admission, actor, command, trade, true)
+                .await
+                .map_err(|step| *step)
+            {
                 Ok(sold) => NpcShopStep::Sold {
                     units: sold.units,
                     gold: sold.gold,

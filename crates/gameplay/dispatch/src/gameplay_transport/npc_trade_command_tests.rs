@@ -128,7 +128,8 @@ fn only_a_storage_failure_leaves_the_outcome_unknown() {
     assert!(matches!(
         step_of(Err(NpcTradeError::Unavailable(
             DurabilityError::Unavailable
-        ))),
+        )))
+        .map_err(|step| *step),
         Err(NpcTradeStep::Unknown)
     ));
     for refusal in [
@@ -142,7 +143,8 @@ fn only_a_storage_failure_leaves_the_outcome_unknown() {
         NpcTradeError::ConflictingOccurrence,
         NpcTradeError::ConflictingCandidate,
     ] {
-        let Err(NpcTradeStep::Refused(refusal)) = step_of(Err(refusal)) else {
+        let Err(NpcTradeStep::Refused(refusal)) = step_of(Err(refusal)).map_err(|step| *step)
+        else {
             panic!("a refusal wrote nothing");
         };
         assert_eq!(refusal.disposition, NpcIntentDisposition::Rejected);
