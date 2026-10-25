@@ -19,6 +19,34 @@ mod observation;
 #[path = "player_trade/ports.rs"]
 mod ports;
 
+// A busy durability holder proves neither a stale session nor a trade refusal.
+// Commands still fail closed; observations retain the last projection until a read succeeds.
+enum CheckError {
+    Refused(ResultCode),
+    Unavailable,
+}
+impl From<ResultCode> for CheckError {
+    fn from(code: ResultCode) -> Self {
+        Self::Refused(code)
+    }
+}
+impl From<crate::durability::DurabilityError> for CheckError {
+    fn from(error: crate::durability::DurabilityError) -> Self {
+        match error {
+            crate::durability::DurabilityError::RootUnavailable => Self::Unavailable,
+            _ => Self::Refused(ResultCode::Rejected),
+        }
+    }
+}
+impl From<CheckError> for ResultCode {
+    fn from(error: CheckError) -> Self {
+        match error {
+            CheckError::Refused(code) => code,
+            CheckError::Unavailable => Self::Rejected,
+        }
+    }
+}
+
 const MAX_TRADES: usize = 512;
 const COMMANDS_PER_SECOND: u32 = 8;
 #[derive(Clone)]
@@ -126,6 +154,13 @@ impl Book {
         Some(())
     }
     fn close(&mut self, record: &Record, result: ResultCode) -> Option<()> {
+        // A disconnect may close a copied record while its observation awaits I/O.
+        // The first closure wins; an old snapshot also cannot close a successor trade.
+        if !self.records.get(&record.sessions[0]).is_some_and(|current| {
+            current.sessions == record.sessions && current.commands[0] == record.commands[0]
+        }) {
+            return Some(());
+        }
         #[cfg(test)]
         if result == ResultCode::Completed {
             self.completed = record.request.clone();

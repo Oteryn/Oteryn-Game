@@ -86,11 +86,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else if record.request.is_some() {
                 None
             } else {
-                let check = async {
+                let check: Result<(), CheckError> = async {
                     if record.binding != runtime.binding()
                         || record.digest != runtime.content_pin().server_artifact_digest()
                     {
-                        return Err(ResultCode::Stale);
+                        return Err(ResultCode::Stale.into());
                     }
                     let lives = self.trade_lives(&record).ok_or(ResultCode::Stale)?;
                     let side = usize::from(session == record.sessions[1]);
@@ -111,10 +111,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                     record.digest,
                                 )
                                 .await
-                                .map_err(|_| ResultCode::Rejected)?
+                                .map_err(CheckError::from)?
                                 .map_err(result)?;
                             if record.offers[side].as_ref() != Some(&leaf) {
-                                return Err(ResultCode::Stale);
+                                return Err(ResultCode::Stale.into());
                             }
                             self.trade_projection(&runtime, &leaf)?;
                         }
@@ -122,7 +122,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     Ok(())
                 }
                 .await;
-                check.err()
+                match check {
+                    // No new authority is granted by retaining an observation. In particular,
+                    // a logout can be using the root before it reaches its runtime fence;
+                    // let that fence cancel the trade with the contracted logout reason.
+                    Ok(()) | Err(CheckError::Unavailable) => None,
+                    Err(CheckError::Refused(reason)) => Some(reason),
+                }
             };
             if let Some(reason) = reason {
                 self.states

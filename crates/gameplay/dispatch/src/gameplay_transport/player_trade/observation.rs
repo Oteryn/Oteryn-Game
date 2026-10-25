@@ -43,24 +43,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn trade_fences(
         &self,
         lives: &[Live; 2],
-    ) -> Result<[CurrentCharacterItemFence; 2], ResultCode> {
+    ) -> Result<[CurrentCharacterItemFence; 2], CheckError> {
         let mut fences = Vec::new();
         for live in lives {
             let current = super::super::FreshAdmissionStore::from_root(self.root.clone())
                 .current_session_at(live.admitted.game_session_id)
                 .await
-                .map_err(|_| ResultCode::Rejected)?
+                .map_err(CheckError::from)?
                 .0;
             if current.session_state() != super::super::GameSessionState::Active {
-                return Err(ResultCode::Stale);
+                return Err(ResultCode::Stale.into());
             }
             let fence = super::super::item_fence_of(current).ok_or(ResultCode::Rejected)?;
             if Some(fence) != live.admitted.item_fence {
-                return Err(ResultCode::Stale);
+                return Err(ResultCode::Stale.into());
             }
             fences.push(fence);
         }
-        fences.try_into().map_err(|_| ResultCode::Rejected)
+        fences.try_into().map_err(|_| ResultCode::Rejected.into())
     }
 
     pub(super) async fn trade_pair(
@@ -69,7 +69,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         runtime: &ChannelRuntimeV1,
         lives: &[Live; 2],
         command: CommandRef,
-    ) -> Result<(), ResultCode> {
+    ) -> Result<(), CheckError> {
         let states = self.states.spell_states.lock().await;
         for live in lives {
             let facts = runtime
@@ -79,7 +79,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 || states.is_dead(live.actor)
                 || states.has_pending_spell_commit(live.actor, live.admitted.game_session_id)
             {
-                return Err(ResultCode::Stale);
+                return Err(ResultCode::Stale.into());
             }
         }
         drop(states);
@@ -93,24 +93,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             binding.source_revision(),
             &format!("runtime-scope-assignment:{}", binding.source_revision()),
         ) {
-            return Err(ResultCode::Rejected);
+            return Err(ResultCode::Rejected.into());
         }
         runtime.owner_fence().map_err(|_| ResultCode::Rejected)?;
         let positions = lives
             .each_ref()
             .map(|l| runtime.read_actor_position(l.actor).map(|p| p.position()));
         let [Ok(a), Ok(b)] = positions else {
-            return Err(ResultCode::Stale);
+            return Err(ResultCode::Stale.into());
         };
         if a.floor != b.floor || a.x.abs_diff(b.x).max(a.y.abs_diff(b.y)) > 2 {
-            return Err(ResultCode::TooFar);
+            return Err(ResultCode::TooFar.into());
         }
         if lives[0].actor == lives[1].actor
             || lives[0].admitted.controller.is_none()
             || lives[0].admitted.controller.map(|c| c.account_id)
                 == lives[1].admitted.controller.map(|c| c.account_id)
         {
-            return Err(ResultCode::Rejected);
+            return Err(ResultCode::Rejected.into());
         }
         // Use the same bounded interest selection as domain 1, including its 256-result cut.
         let visible = runtime.visible_entities();
@@ -148,7 +148,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             view.snapshot(&channel, &mut |_| Ok(()))
                 .map_err(|_| ResultCode::Rejected)?;
             if !view.shows(entity(lives[1 - side].actor)) {
-                return Err(ResultCode::Rejected);
+                return Err(ResultCode::Rejected.into());
             }
         }
         let fences = self.trade_fences(lives).await?;
@@ -160,7 +160,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 || fence.scope_ownership_generation != runtime.binding().scope_generation()
             {
-                return Err(ResultCode::Stale);
+                return Err(ResultCode::Stale.into());
             }
         }
         let digest = runtime.content_pin().server_artifact_digest();
@@ -174,7 +174,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let sight = self
             .root
             .try_issue_semantic_pass()
-            .map_err(|_| ResultCode::Rejected)?
+            .map_err(CheckError::from)?
             .run_with_context(&mut context, move |holder, deadline, ctx| {
                 Box::pin(async move {
                     let (owner, permit, runtime, objects, room) = ctx;
@@ -232,9 +232,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 })
             })
             .await
-            .map_err(|_| ResultCode::Rejected)?;
+            .map_err(CheckError::from)?;
         if !sight {
-            return Err(ResultCode::TooFar);
+            return Err(ResultCode::TooFar.into());
         }
         Ok(())
     }
@@ -250,15 +250,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         record: &Record,
         fences: [CurrentCharacterItemFence; 2],
-    ) -> Result<(), ResultCode> {
+    ) -> Result<(), CheckError> {
         for (side, fence) in fences.iter().enumerate() {
             let current = self
                 .root
                 .read_character_backpack(self.character, fence.character_id)
                 .await
-                .map_err(|_| ResultCode::Rejected)?;
+                .map_err(|error| match error {
+                    crate::durability::item_transfer::ItemTransferError::Unavailable(error) => {
+                        CheckError::from(error)
+                    }
+                    _ => ResultCode::Rejected.into(),
+                })?;
             if current != record.backpacks[side] {
-                return Err(ResultCode::Stale);
+                return Err(ResultCode::Stale.into());
             }
         }
         Ok(())
