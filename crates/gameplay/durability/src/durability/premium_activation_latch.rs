@@ -99,18 +99,18 @@ pub enum PremiumActivationRead<T> {
 
 pub use crate::domain::premium::EmptyLatchHeld;
 
-/// The purchase participant has already opened its Type2 transaction. Lend an empty-latch
+/// The participant has already opened its transaction. Lend an empty-latch
 /// witness only while its shared latch lock is held, without a savepoint or second transaction.
 pub async fn with_purchase_latch<T>(
-    tx: &mut super::item_mint_audit::Type2Transaction<'_>,
+    tx: &mut PremiumGateTx<'_>,
     operation: impl FnOnce(Option<PremiumActivationLatch>, Option<&EmptyLatchHeld>) -> T,
 ) -> Result<T, DurabilityError> {
     sqlx::query("SELECT pg_advisory_xact_lock_shared($1)")
         .bind(PREMIUM_ACTIVATION_LOCK_KEY)
-        .execute(&mut ***tx)
+        .execute(&mut **tx)
         .await?;
     let row = sqlx::query("SELECT activation_id,switch_over_us,latched_at_us FROM game_premium_activation_latch WHERE id=1")
-        .fetch_optional(&mut ***tx).await?;
+        .fetch_optional(&mut **tx).await?;
     match row {
         Some(row) => Ok(operation(
             Some(PremiumActivationLatch {
