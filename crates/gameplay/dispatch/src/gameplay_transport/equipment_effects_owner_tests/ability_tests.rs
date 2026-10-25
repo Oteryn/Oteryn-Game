@@ -94,6 +94,22 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
 }
 
 #[test]
+fn equipment_effects_owner_reward_boots_grant_speed_only_in_feet() -> TestResult {
+    let content = native(&input()?)?;
+    for key in ["oteryn:item.tibia.i43884", "oteryn:item.tibia.i43887"] {
+        for slot in 1..=10 {
+            let equipment = snapshot(&content, key, slot);
+            assert_eq!(
+                speed_term(&equipment, &content),
+                Some(if slot == 4 { 10 } else { 0 }),
+                "{key} in durable slot {slot}"
+            );
+        }
+    }
+    Ok(())
+}
+
+#[test]
 fn equipment_effects_owner_potions_in_ammo_and_hands_preserve_contributing_speed() -> TestResult {
     let boosted = fixture_input(
         serde_json::json!([

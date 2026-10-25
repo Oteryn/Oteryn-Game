@@ -18,6 +18,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools/content-schema/native-gameplay'))
 import build_source_item_profiles as source
 from build_spell_item_identities import BINDINGS, binding_index, bind_profiles
+from lower_equip_abilities_packet import canary_modifiers, canary_points
+from lower_elemental_magic_modifier_packet import ALIASES
 
 PATH = 'tools/content-schema/native-gameplay/reward-bag-profiles.json'
 SCRIPT = 'data/scripts/actions/items/reward_bags.lua'
@@ -25,6 +27,8 @@ CONSTANTS = 'data/libs/functions/constants.lua'
 BAGS = ('BAG_YOU_DESIRE', 'PRIMAL_BAG', 'BAG_YOU_COVET')
 EXCLUDED = {'BAG_YOU_DESIRE': 'SOUL_WAR_LANE'}
 WEIGHT_SCALE = Decimal(100000)
+ELEMENTAL_MODIFIER_POINTS = {name.replace(' magic level', 'magiclevelpoints'): kind
+                            for name, kind in ALIASES.items()}
 
 
 def bag_lists(raw):
@@ -70,6 +74,26 @@ def capture(canary, crystal):
     physical = {r['server_item_id']: r for r in source.policies(appearance_raw, xml_raw, candidates)}
     bindings = binding_index(BINDINGS.read_bytes())
     profiles = {i: source.profile(i, xml[i], objects[i], physical[i], bindings, None) for i in sorted(candidates)}
+    for i, record in profiles.items():
+        attrs = source.attrs(xml[i])
+        # Reuse the equipment lowering's signed points, suppressions and whole-group
+        # holds. Its elemental successor also supports these seven magic bonuses.
+        elemental = {k: attrs[k] for k in ELEMENTAL_MODIFIER_POINTS if k in attrs}
+        _, modifiers = canary_modifiers({k: v for k, v in attrs.items() if k not in elemental})
+        if modifiers is None and elemental:
+            modifiers = []
+        if not isinstance(modifiers, list):
+            continue
+        for attr_name, raw in elemental.items():
+            points = canary_points(raw)
+            if points is None:
+                break
+            modifiers.append({'kind': ELEMENTAL_MODIFIER_POINTS[attr_name],
+                              'parameter': source.K({'kind': 'SIGNED_POINTS', 'value': points}),
+                              'evaluation_phase': source.U, 'priority': source.U, 'target_domain': source.U})
+        else:
+            record['semantics']['skill_modifiers'] = source.K({
+                'modifiers': source.K(sorted(modifiers, key=lambda m: m['kind']))})
 
     def leaf(i):
         # The CRAFT-1 owner mints exactly one non-stackable, non-container leaf per Use.
