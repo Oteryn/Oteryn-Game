@@ -20281,12 +20281,12 @@
           "revision": "spell-p2-r21"
         },
         "ranged": {
-          "kind": "THROWING",
           "attack": 25,
-          "hit_chance": 0,
-          "max_hit_chance": 76,
           "element": "PHYSICAL",
           "elemental_attack": 0,
+          "hit_chance": 0,
+          "kind": "THROWING",
+          "max_hit_chance": 76,
           "range_cells": 3
         }
       },
@@ -20505,12 +20505,12 @@
           "revision": "spell-p2-r21"
         },
         "ranged": {
-          "kind": "THROWING",
           "attack": 30,
-          "hit_chance": 0,
-          "max_hit_chance": 76,
           "element": "PHYSICAL",
           "elemental_attack": 0,
+          "hit_chance": 0,
+          "kind": "THROWING",
+          "max_hit_chance": 76,
           "range_cells": 4
         }
       },
@@ -21139,11 +21139,11 @@
           "revision": "spell-p2-r21"
         },
         "ranged": {
-          "kind": "DISTANCE",
+          "ammunition": "BOLT",
           "attack": 0,
           "hit_chance": 0,
+          "kind": "DISTANCE",
           "max_hit_chance": 90,
-          "ammunition": "BOLT",
           "range_cells": 5
         }
       },
@@ -21325,11 +21325,11 @@
           "revision": "spell-p2-r21"
         },
         "ranged": {
-          "kind": "DISTANCE",
+          "ammunition": "ARROW",
           "attack": 0,
           "hit_chance": 0,
+          "kind": "DISTANCE",
           "max_hit_chance": 90,
-          "ammunition": "ARROW",
           "range_cells": 6
         }
       },
@@ -21721,13 +21721,13 @@
           "revision": "spell-p2-r21"
         },
         "ranged": {
-          "kind": "AMMUNITION",
-          "attack": 30,
-          "hit_chance": 0,
-          "max_hit_chance": 87,
           "ammunition": "BOLT",
+          "attack": 30,
           "element": "PHYSICAL",
-          "elemental_attack": 0
+          "elemental_attack": 0,
+          "kind": "AMMUNITION",
+          "max_hit_chance": 87,
+          "hit_chance": 86
         }
       },
       "semantics": {
@@ -21946,13 +21946,13 @@
           "revision": "spell-p2-r21"
         },
         "ranged": {
-          "kind": "AMMUNITION",
-          "attack": 25,
-          "hit_chance": 0,
-          "max_hit_chance": 91,
           "ammunition": "ARROW",
+          "attack": 25,
           "element": "PHYSICAL",
-          "elemental_attack": 0
+          "elemental_attack": 0,
+          "kind": "AMMUNITION",
+          "max_hit_chance": 91,
+          "hit_chance": 90
         }
       },
       "semantics": {
@@ -22171,13 +22171,13 @@
           "revision": "spell-p2-r21"
         },
         "ranged": {
-          "kind": "AMMUNITION",
-          "attack": 23,
-          "hit_chance": 0,
-          "max_hit_chance": 91,
           "ammunition": "ARROW",
+          "attack": 23,
           "element": "PHYSICAL",
-          "elemental_attack": 0
+          "elemental_attack": 0,
+          "kind": "AMMUNITION",
+          "max_hit_chance": 91,
+          "hit_chance": 90
         }
       },
       "semantics": {
@@ -22363,13 +22363,13 @@
           "revision": "spell-p2-r21"
         },
         "ranged": {
-          "kind": "AMMUNITION",
-          "attack": 27,
-          "hit_chance": 0,
-          "max_hit_chance": 100,
           "ammunition": "ARROW",
+          "attack": 27,
           "element": "PHYSICAL",
-          "elemental_attack": 0
+          "elemental_attack": 0,
+          "kind": "AMMUNITION",
+          "max_hit_chance": 100,
+          "hit_chance": 100
         }
       },
       "semantics": {
@@ -22555,13 +22555,13 @@
           "revision": "spell-p2-r21"
         },
         "ranged": {
-          "kind": "AMMUNITION",
-          "attack": 40,
-          "hit_chance": 0,
-          "max_hit_chance": 91,
           "ammunition": "BOLT",
+          "attack": 40,
           "element": "PHYSICAL",
-          "elemental_attack": 0
+          "elemental_attack": 0,
+          "kind": "AMMUNITION",
+          "max_hit_chance": 91,
+          "hit_chance": 90
         }
       },
       "semantics": {
@@ -43329,13 +43329,13 @@
           "revision": "spell-p2-r21"
         },
         "ranged": {
-          "kind": "AMMUNITION",
-          "attack": 33,
-          "hit_chance": 0,
-          "max_hit_chance": 87,
           "ammunition": "BOLT",
+          "attack": 33,
           "element": "PHYSICAL",
-          "elemental_attack": 0
+          "elemental_attack": 0,
+          "kind": "AMMUNITION",
+          "max_hit_chance": 87,
+          "hit_chance": 86
         }
       },
       "semantics": {
@@ -43554,13 +43554,13 @@
           "revision": "spell-p2-r21"
         },
         "ranged": {
-          "kind": "AMMUNITION",
-          "attack": 28,
-          "hit_chance": 0,
-          "max_hit_chance": 100,
           "ammunition": "ARROW",
+          "attack": 28,
           "element": "PHYSICAL",
-          "elemental_attack": 0
+          "elemental_attack": 0,
+          "kind": "AMMUNITION",
+          "max_hit_chance": 100,
+          "hit_chance": 99
         }
       },
       "semantics": {
@@ -43779,13 +43779,13 @@
           "revision": "spell-p2-r21"
         },
         "ranged": {
-          "kind": "AMMUNITION",
-          "attack": 38,
-          "hit_chance": 0,
-          "max_hit_chance": 94,
           "ammunition": "ARROW",
+          "attack": 38,
           "element": "PHYSICAL",
-          "elemental_attack": 0
+          "elemental_attack": 0,
+          "kind": "AMMUNITION",
+          "max_hit_chance": 94,
+          "hit_chance": 92
         }
       },
       "semantics": {
@@ -44004,12 +44004,12 @@
           "revision": "spell-p2-r21"
         },
         "ranged": {
-          "kind": "THROWING",
           "attack": 28,
-          "hit_chance": 80,
-          "max_hit_chance": 76,
           "element": "PHYSICAL",
           "elemental_attack": 0,
+          "hit_chance": 80,
+          "kind": "THROWING",
+          "max_hit_chance": 76,
           "range_cells": 4
         }
       },
@@ -44232,12 +44232,12 @@
           "revision": "spell-p2-r21"
         },
         "ranged": {
-          "kind": "THROWING",
           "attack": 38,
-          "hit_chance": 0,
-          "max_hit_chance": 80,
           "element": "PHYSICAL",
           "elemental_attack": 0,
+          "hit_chance": 0,
+          "kind": "THROWING",
+          "max_hit_chance": 80,
           "range_cells": 4
         }
       },
@@ -44456,12 +44456,12 @@
           "revision": "spell-p2-r21"
         },
         "ranged": {
-          "kind": "THROWING",
           "attack": 65,
-          "hit_chance": 0,
-          "max_hit_chance": 96,
           "element": "PHYSICAL",
           "elemental_attack": 0,
+          "hit_chance": 0,
+          "kind": "THROWING",
+          "max_hit_chance": 96,
           "range_cells": 4
         }
       },
@@ -44680,12 +44680,12 @@
           "revision": "spell-p2-r21"
         },
         "ranged": {
-          "kind": "THROWING",
           "attack": 35,
-          "hit_chance": 0,
-          "max_hit_chance": 80,
           "element": "PHYSICAL",
           "elemental_attack": 0,
+          "hit_chance": 0,
+          "kind": "THROWING",
+          "max_hit_chance": 80,
           "range_cells": 3
         }
       },
@@ -61076,13 +61076,13 @@
           "revision": "spell-p2-r21"
         },
         "ranged": {
-          "kind": "AMMUNITION",
-          "attack": 20,
-          "hit_chance": 0,
-          "max_hit_chance": 40,
           "ammunition": "ARROW",
+          "attack": 20,
           "element": "PHYSICAL",
-          "elemental_attack": 0
+          "elemental_attack": 0,
+          "kind": "AMMUNITION",
+          "max_hit_chance": 40,
+          "hit_chance": 90
         }
       },
       "semantics": {
@@ -62651,11 +62651,11 @@
           "revision": "spell-p2-r21"
         },
         "ranged": {
-          "kind": "WAND",
-          "damage_min": 80,
           "damage_max": 100,
-          "mana_per_shot": 15,
+          "damage_min": 80,
           "element": "DEATH",
+          "kind": "WAND",
+          "mana_per_shot": 15,
           "range_cells": 4
         }
       },

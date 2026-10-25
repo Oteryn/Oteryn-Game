@@ -173,8 +173,6 @@ def main() -> int:
     from quest_reward_item_semantics import apply_admissions
     apply_admissions(item_records, ROOT)
     item_shards: list[str] = []
-    from ranged_item_profiles import source_profiles, tree_profile
-    ranged_profiles, _, _ = source_profiles(ROOT)
     for start in range(0, len(item_records), ITEM_SHARD_SIZE):
         rows = []
         for definition in item_records[start:start + ITEM_SHARD_SIZE]:
@@ -187,7 +185,6 @@ def main() -> int:
             authoring = {field: value for field, value in authoring_by_target.get(key, {}).items() if field not in {"item", "taxonomy"}}
             if authoring:
                 row["authoring"] = authoring
-            tree_profile(row, ranged_profiles)
             rows.append(row)
         end = start + len(rows) - 1
         relative = f"content/items/definitions/items-{start:05d}-{end:05d}.json"
@@ -199,6 +196,10 @@ def main() -> int:
             "shard": {"index": start // ITEM_SHARD_SIZE, "start": start, "end": end, "count": len(rows)},
             "records": rows,
         })
+
+    from ranged_item_profiles import outputs as ranged_outputs, RANGED_PROFILES
+    ranged_generated = ranged_outputs(ROOT)
+    (ROOT / RANGED_PROFILES).write_bytes(ranged_generated[RANGED_PROFILES])
 
     declarations_blob_sha = git_blob_sha(LEGACY / "definitions" / "declarations.json")
 
@@ -570,7 +571,7 @@ def main() -> int:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(data)
     managed = sorted([*cosmetics_outputs, *(["content/cosmetics/outfits/authoring.json"] if cosmetics_outputs else []),
-                      *item_shards, mount_relative, "content/items/index.json", "content/cosmetics/mounts/index.json",
+                      *item_shards, RANGED_PROFILES, mount_relative, "content/items/index.json", "content/cosmetics/mounts/index.json",
                       *creature_managed, *npc_shards, "content/npcs/definitions/index.json",
                       *encounter_shards, "content/encounters/definitions/index.json",
                       *dialogue_shards, "content/dialogues/definitions/index.json",

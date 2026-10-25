@@ -21,6 +21,7 @@ SOURCE = "imports/canary/items-xml/items.xml"
 REVISION = "47dfd51f45280a59a1d3e50ba7edd573d7234446"
 SOURCE_SHA256 = "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
 PROFILES = "content/items/definitions/spell-native-profiles.json"
+RANGED_PROFILES = "content/items/ranged-profiles.json"
 MANIFEST = "content/spells.manifest.json"
 REPORT = "tools/content-migration/samples/ranged-content-source.json"
 ELEMENTS = {"PHYSICAL", "DEATH", "EARTH", "ENERGY", "FIRE", "ICE"}
@@ -120,21 +121,64 @@ def source_profiles(root):
     return build(raw)
 
 
-def tree_profile(row, profiles):
-    key = row["definition"]["identity"]["key"]
-    profile = profiles.get(int(key.rsplit(".i", 1)[1]))
-    if profile is not None:
-        row.setdefault("authoring", {})["ranged"] = copy.deepcopy(profile)
+def item_rows(root):
+    return [row for path in sorted((root / "content/items/definitions").glob("items-*.json"))
+            for row in json.loads(path.read_bytes())["records"]]
+
+
+def profile_record(row, profile):
+    """Keep sealed authoring owners intact; the separate profile only owns new facts."""
+    profile = copy.deepcopy(profile)
+    authoring = row.get("authoring", {})
+    if "weapon_attack_modifier_points" in authoring:
+        del profile["attack"]
+    if "weapon_absolute_hit_chance_percent" in authoring:
+        del profile["hit_chance"]
+    return {"item": row["definition"]["identity"], "profile": profile}
+
+
+def resolved_profile(profile, authoring):
+    """Compile the native value from the existing owners, never a duplicated default."""
+    profile = copy.deepcopy(profile)
+    for field, owner in (("attack", "weapon_attack_modifier_points"),
+                         ("hit_chance", "weapon_absolute_hit_chance_percent")):
+        if owner not in authoring:
+            continue
+        if field in profile:
+            raise ValueError(f"RANGED_DUPLICATE_OWNER:{field}")
+        value = authoring[owner]
+        if field == "hit_chance":
+            numerator, denominator = value["numerator"], value["denominator"]
+            if denominator <= 0 or numerator % denominator:
+                raise ValueError("RANGED_HIT_CHANCE_NOT_INTEGER")
+            value = numerator // denominator
+        profile[field] = value
+    return profile
 
 
 def apply_native(root, generated):
     """Annotate existing admitted policies; never expand native admission."""
-    profiles, _, _ = source_profiles(root)
+    raw = (root / RANGED_PROFILES).read_bytes()
+    if raw != outputs(root)[RANGED_PROFILES]:
+        raise ValueError("RANGED_PROFILE_SOURCE_DRIFT")
+    rows = {row["definition"]["identity"]["key"]: row for row in item_rows(root)}
+    profiles = json.loads(raw)
+    if profiles["schema"] != "OTERYN_RANGED_ITEM_PROFILES/v1":
+        raise ValueError("RANGED_PROFILE_SCHEMA")
+    records = profiles["records"]
+    profiles = {record["item"]["key"]: record for record in records}
+    if len(profiles) != len(records):
+        raise ValueError("RANGED_DUPLICATE_ITEM")
+    for key, record in profiles.items():
+        if key not in rows or record["item"] != rows[key]["definition"]["identity"]:
+            raise ValueError("RANGED_PROFILE_TARGET")
     document = json.loads(generated[PROFILES])
     for record in document["records"]:
-        item_id = int(record["production_binding"]["external_id"])
-        if item_id in profiles:
-            record["authoring"]["ranged"] = copy.deepcopy(profiles[item_id])
+        key = record["production_binding"]["target"]["key"]
+        if key in profiles:
+            row = rows[key]
+            owner = row.get("authoring", {})
+            record["authoring"]["ranged"] = resolved_profile(profiles[key]["profile"], owner)
     # Preserve the established native profile file's pretty-print convention.
     generated[PROFILES] = (json.dumps(document, ensure_ascii=False, indent=2) + "\n").encode()
     manifest = json.loads(generated[MANIFEST])
@@ -144,13 +188,24 @@ def apply_native(root, generated):
 
 def outputs(root=ROOT):
     profiles, held, counts = source_profiles(root)
-    result, defined = {}, set()
+    result, defined, records = {}, set(), []
     for path in sorted((root / "content/items/definitions").glob("items-*.json")):
         document = json.loads(path.read_bytes())
         for row in document["records"]:
-            defined.add(int(row["definition"]["identity"]["key"].rsplit(".i", 1)[1]))
-            tree_profile(row, profiles)
+            item_id = int(row["definition"]["identity"]["key"].rsplit(".i", 1)[1])
+            defined.add(item_id)
+            # Remove the former overlay, restoring the sealed authoring siblings exactly.
+            authoring = row.get("authoring", {})
+            authoring.pop("ranged", None)
+            if "authoring" in row and not authoring:
+                del row["authoring"]
+            if item_id in profiles:
+                records.append(profile_record(row, profiles[item_id]))
         result[path.relative_to(root).as_posix()] = encode(document)
+    result[RANGED_PROFILES] = encode({
+        "schema": "OTERYN_RANGED_ITEM_PROFILES/v1",
+        "records": sorted(records, key=lambda record: record["item"]["key"]),
+    })
     result[REPORT] = encode({
         "schema": "OTERYN_RANGED_CONTENT_SOURCE/v1",
         "source": {"repository": "opentibiabr/canary", "revision": REVISION,
