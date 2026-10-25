@@ -224,9 +224,12 @@ pub struct NpcReply<K> {
     pub text: String,
 }
 
+/// Words that open the trade window (Canary modules.lua `FOCUS_TRADE_MESSAGE`).
+const TRADE_WORDS: [&str; 2] = ["trade", "offers"];
+
 /// Whether `text` asks the NPC to trade: the topic that opens the trade window.
 pub fn asks_to_trade(text: &str) -> bool {
-    contains_words(&words(text), &["trade".to_owned()])
+    says_any(&words(text), &TRADE_WORDS)
 }
 
 fn says_any(said: &[String], list: &[&str]) -> bool {
@@ -285,6 +288,9 @@ pub fn talk<K: Copy + PartialEq>(
                 text: line,
             });
         }
+        // NPC-REGREET-1 (Canary npc_handler.lua `greet`): the NPC already talking to the speaker
+        // does not greet it again; a greeting that reaches another NPC still starts there.
+        return start(speaker, text, npcs, engaged).filter(|reply| reply.id != current);
     }
     start(speaker, text, npcs, engaged)
 }
@@ -383,6 +389,43 @@ mod tests {
         talk(at(100), &say("hi"), &npcs, &mut engaged).expect("greeted");
         let reply = talk(at(100), &say("offer"), &npcs, &mut engaged).expect("topic");
         assert_eq!(reply.text, "Bob has nothing to offer right now.");
+    }
+
+    #[test]
+    fn a_greeting_while_engaged_is_not_answered_again() {
+        let (alice, bob) = (entry("Alice", None), entry("Bob", None));
+        let alice_only = [TalkNpc {
+            id: 1_u8,
+            position: at(101),
+            entry: &alice,
+        }];
+        let mut engaged = None;
+        talk(at(100), &say("hi"), &alice_only, &mut engaged).expect("greeted");
+        assert!(talk(at(100), &say("hello"), &alice_only, &mut engaged).is_none());
+        assert_eq!(engaged, Some(1));
+        // A greeting that reaches another NPC still moves the conversation there.
+        let both = [
+            TalkNpc {
+                id: 1_u8,
+                position: at(104),
+                entry: &alice,
+            },
+            TalkNpc {
+                id: 2_u8,
+                position: at(101),
+                entry: &bob,
+            },
+        ];
+        let reply = talk(at(100), &say("hi"), &both, &mut engaged).expect("greeted");
+        assert_eq!((reply.id, engaged), (2, Some(2)));
+    }
+
+    #[test]
+    fn trade_and_offers_ask_to_trade() {
+        assert!(asks_to_trade("trade"));
+        assert!(asks_to_trade("what are your offers?"));
+        assert!(!asks_to_trade("offer"));
+        assert!(!asks_to_trade("hi"));
     }
 
     #[test]
