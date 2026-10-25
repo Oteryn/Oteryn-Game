@@ -142,7 +142,15 @@ fn market_native_escrow_reads_real_items_bounded_and_offer_bound() -> TestResult
         let extra = offer(61, Side::Sell, 40, now(h).await? - 1000);
         seed(h, &extra).await?;
         seed_escrow(h, &extra, 1).await?;
-        sqlx::query("UPDATE game_item_market_escrow_locations SET offer_id=encode($1,'hex')::uuid,ordinal=101 WHERE offer_id=encode($2,'hex')::uuid").bind(o.id.as_bytes().as_slice()).bind(extra.id.as_bytes().as_slice()).execute(&h.pool).await?;
+        // This is deliberately corrupt retained input for the bounded reader,
+        // not a runtime transfer. 0191 now admits escrow mutations only with a
+        // complete writer receipt, so keep the admin corruption in fixture loading.
+        let mut corrupt = h.pool.begin().await?;
+        corrupt
+            .execute("SET LOCAL session_replication_role=replica")
+            .await?;
+        sqlx::query("UPDATE game_item_market_escrow_locations SET offer_id=encode($1,'hex')::uuid,ordinal=101 WHERE offer_id=encode($2,'hex')::uuid").bind(o.id.as_bytes().as_slice()).bind(extra.id.as_bytes().as_slice()).execute(&mut *corrupt).await?;
+        corrupt.commit().await?;
         let mut tx = h.pool.begin().await?;
         let mut book = lock_book(&mut tx, o.book()).await?;
         let actual = book.offer(o.id).await?.ok_or("offer")?;

@@ -395,7 +395,12 @@ message OneItemFeeBurnCauseV1 {
     OneItemNpcPurchaseV1 blessing_purchase = 3;
     OneItemAreaDonationV1 area_donation = 4;
     OneItemTimedRepairV1 npc_repair = 5;
+    OneItemMarketFeeV1 market_fee = 6;
   }
+}
+message OneItemMarketFeeV1 {
+  bytes offer = 1;
+  bytes occurrence = 2;
 }
 message OneItemNpcPurchaseV1 {
   string service_key = 1;

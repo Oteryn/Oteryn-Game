@@ -758,6 +758,9 @@ fn inbox_rows_are_immutable_and_no_other_writer_touches_them() -> TestResult {
                 "game_house_disposition_native_removal_proven",
                 "game_item_location_exclusive",
                 "game_item_transfer_consistency_guard",
+                // MARKET-1: read-only final-custody proof of the Inbox output;
+                // delivery goes through game_character_inbox_deliver.
+                "game_market_complete",
                 // TRADE-PLAYER-1: read-only final-custody proof, no Inbox mutation.
                 "game_player_trade_complete",
                 "game_reward_claim_inbox_mint_is_complete",

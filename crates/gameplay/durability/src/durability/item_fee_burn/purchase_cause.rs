@@ -5,6 +5,7 @@ use crate::durability::item_fee_burn_audit::OneItemNpcPurchaseV1;
 impl FeeBurnCause {
     pub(super) fn kind(&self) -> i16 {
         match self {
+            Self::MarketFee { .. } => 6,
             Self::AreaDonation { .. } => 4,
             Self::CharmUnassign { .. } => CAUSE_CHARM_UNASSIGN,
             Self::NpcRepair { .. } => 5,
@@ -14,7 +15,9 @@ impl FeeBurnCause {
     }
     pub(super) fn occurrence(&self) -> &[u8; 16] {
         match self {
-            Self::AreaDonation { occurrence, .. } => occurrence,
+            Self::MarketFee { occurrence, .. } | Self::AreaDonation { occurrence, .. } => {
+                occurrence
+            }
             Self::CharmUnassign { occurrence, .. } => occurrence.as_bytes(),
             Self::NpcRepair { occurrence, .. } => occurrence,
             Self::PromotionPurchase { occurrence, .. }
@@ -23,6 +26,7 @@ impl FeeBurnCause {
     }
     pub(super) fn key(&self) -> &str {
         match self {
+            Self::MarketFee { .. } => "oteryn:market.offer",
             Self::AreaDonation { .. } => "oteryn:area.entry_environs",
             Self::CharmUnassign { charm, .. } => charm.as_str(),
             Self::NpcRepair { .. } => "oteryn:service.repair.aldo",
@@ -40,6 +44,9 @@ impl FeeBurnCause {
     pub(super) fn validate(&self) -> Result<()> {
         check_uuid_v7(self.occurrence()).map_err(|_| FeeBurnError::InvalidInput)?;
         match self {
+            Self::MarketFee { offer, .. } => {
+                check_uuid_v7(offer).map_err(|_| FeeBurnError::InvalidInput)
+            }
             Self::CharmUnassign { .. } => Ok(()),
             Self::AreaDonation { area: 1, .. } => Ok(()),
             Self::NpcRepair { occurrence, repair }
@@ -61,8 +68,14 @@ impl FeeBurnCause {
             _ => Err(FeeBurnError::InvalidInput),
         }
     }
-    pub(super) fn audit(&self) -> FeeBurnCauseV1 {
+    pub(in super::super) fn audit(&self) -> FeeBurnCauseV1 {
         match self {
+            Self::MarketFee { offer, occurrence } => {
+                FeeBurnCauseV1::MarketFee(super::super::item_fee_burn_audit::OneItemMarketFeeV1 {
+                    offer: offer.to_vec(),
+                    occurrence: occurrence.to_vec(),
+                })
+            }
             Self::AreaDonation {
                 world,
                 area,

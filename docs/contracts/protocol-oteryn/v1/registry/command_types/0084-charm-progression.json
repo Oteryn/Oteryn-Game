@@ -1,0 +1,10 @@
+{
+  "id": 84,
+  "name": "CHARM_PROGRESSION",
+  "owner_decision": "PARITY-PROGRESSION-QUERIES-1 parity inventory rank 15 2026-10-25",
+  "capability": 67,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/charm_progression_v1.proto#CharmProgressionRequestV1",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/charm_progression_v1.proto#CharmProgressionReplyV1",
+  "max_payload_bytes": 12,
+  "max_result_payload_bytes": 22080
+}

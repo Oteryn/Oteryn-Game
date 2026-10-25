@@ -64,6 +64,10 @@ pub mod test_support;
 /// The closed `FeeBurnCause` (decision §4.4): one variant per admitted fee source.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FeeBurnCause {
+    MarketFee {
+        offer: [u8; 16],
+        occurrence: [u8; 16],
+    },
     AreaDonation {
         world: WorldId,
         area: u32,
