@@ -24,8 +24,8 @@ use oteryn_protocol_oteryn::{
 use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt, DuplexStream};
 
-const DOOR: &str = "oteryn:item.tibia.i1629";
-const COIN: &str = "oteryn:item.tibia.i3031";
+pub(super) const DOOR: &str = "oteryn:item.tibia.i1629";
+pub(super) const COIN: &str = "oteryn:item.tibia.i3031";
 const BAG: &str = "oteryn:item.tibia.i2854";
 const MOVE_SELECTION: ItemMoveSelection = ItemMoveSelection {
     equip_drop: false,
@@ -33,14 +33,14 @@ const MOVE_SELECTION: ItemMoveSelection = ItemMoveSelection {
     world_interaction: true,
 };
 
-fn pos(x: u16, y: u16) -> TilePos {
+pub(super) fn pos(x: u16, y: u16) -> TilePos {
     TilePos { x, y, floor: -7 }
 }
 pub(super) fn at(x: i32, y: i32) -> MovementLocalPosition {
     MovementLocalPosition { x, y, floor: 7 }
 }
 
-fn bundle(door: u32, coin: u32) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
+pub(super) fn bundle(door: u32, coin: u32) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
     use oteryn_world_bundle::sector::{Attrs, Item, Tile};
     use oteryn_world_bundle::writer::{
         self as writer, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector,
@@ -545,7 +545,7 @@ async fn seed_backpack(
     Ok(())
 }
 
-fn object(digest: [u8; 32], pos: TilePos, revision: u64) -> TestResult<WorldObjectTarget> {
+pub(super) fn object(digest: [u8; 32], pos: TilePos, revision: u64) -> TestResult<WorldObjectTarget> {
     let mut placement = digest.to_vec();
     placement.extend_from_slice(
         &crate::map::view::placement_key(pos, 1)
@@ -983,7 +983,7 @@ async fn result_at_rest(
     }
 }
 
-async fn result(client: &mut DuplexStream, id: u64) -> TestResult<(Vec<u8>, usize)> {
+pub(super) async fn result(client: &mut DuplexStream, id: u64) -> TestResult<(Vec<u8>, usize)> {
     let mut steps = 0;
     loop {
         let frame = read(client).await?;

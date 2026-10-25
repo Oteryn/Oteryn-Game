@@ -1293,6 +1293,14 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 .soul_kills
                 .mark(super::soul_kill_live::soul_hook(xp));
         }
+        // TASKBOARD-1 §2.4: the settled kill credits the principal's active Task Board task.
+        if outcome.is_ok()
+            && let Some(race) = &entry.row.race
+        {
+            admission
+                .credit_task_board_kill(self.fence, race.key(), entry.facts.occurrence)
+                .await;
+        }
         let mut runtime = admission.runtime.lock().await;
         if let Ok(outcome) = &outcome
             && let CorpseBind::Refused(error) =
