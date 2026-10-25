@@ -12,8 +12,8 @@ use crate::durability::spell_privacy::{
     ExivaDecision, read_exiva_decision_with_current_groups_in_transaction,
 };
 use crate::foundation::{
-    ChannelRuntimeV1, ExactActorRef, GameSessionId, GameSessionState, MovementPositionSnapshot,
-    RuntimeScopeRefV1,
+    ChannelRuntimeV1, ExactActorRef, GameSessionId, GameSessionState, MovementLocalPosition,
+    MovementPositionSnapshot, RuntimeScopeRefV1,
 };
 use sqlx::{Postgres, Row, Transaction};
 #[derive(Debug)]
@@ -192,13 +192,7 @@ pub async fn plan_find_person_in_transaction(
         }
         unknown => return Err(Error::PrivacyUnavailable(unknown)),
     }
-    let source = expected.position();
-    let target = target_position.position();
-    let located = oteryn_gameplay_spell_rules::locate::locate(
-        source.x.checked_sub(target.x).ok_or(Error::Overflow)?,
-        source.y.checked_sub(target.y).ok_or(Error::Overflow)?,
-        i32::from(target.floor) - i32::from(source.floor),
-    );
+    let located = locate_target(expected.position(), target_position.position())?;
     check_transaction(tx, authority)
         .await
         .map_err(Error::Items)?;
@@ -206,6 +200,18 @@ pub async fn plan_find_person_in_transaction(
         text: format!("{} {}.", target_name.as_str(), located.phrase()),
         effect: "magic_blue",
     })
+}
+/// P7 offsets are caster minus target on every axis, the floor included (Canary find_person.lua
+/// `creature.z - target.z`): a target on a smaller floor number is on a higher level.
+fn locate_target(
+    source: MovementLocalPosition,
+    target: MovementLocalPosition,
+) -> Result<oteryn_gameplay_spell_rules::locate::Located, Error> {
+    Ok(oteryn_gameplay_spell_rules::locate::locate(
+        source.x.checked_sub(target.x).ok_or(Error::Overflow)?,
+        source.y.checked_sub(target.y).ok_or(Error::Overflow)?,
+        i32::from(source.floor) - i32::from(target.floor),
+    ))
 }
 #[cfg(test)]
 mod tests {
@@ -229,6 +235,25 @@ mod tests {
                 assert!(!supports_player_location(&native.unwrap()));
             }
         }
+    }
+    #[test]
+    fn a_target_on_a_smaller_floor_number_is_on_a_higher_level() {
+        let at = |x, y, floor| MovementLocalPosition { x, y, floor };
+        let phrase = |source, target| locate_target(source, target).unwrap().phrase();
+        assert_eq!(
+            phrase(at(100, 100, 7), at(100, 90, 6)),
+            "is on a higher level to the north"
+        );
+        assert_eq!(
+            phrase(at(100, 100, 7), at(100, 90, 8)),
+            "is on a lower level to the north"
+        );
+        assert_eq!(phrase(at(100, 100, 7), at(101, 100, 6)), "is above you");
+        assert_eq!(phrase(at(100, 100, 7), at(101, 100, 8)), "is below you");
+        assert!(matches!(
+            locate_target(at(i32::MIN, 0, 7), at(1, 0, 7)),
+            Err(Error::Overflow)
+        ));
     }
     #[test]
     fn exact_names_and_unique_prefix_are_distinct_resolutions() {
