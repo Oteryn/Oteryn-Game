@@ -191,12 +191,24 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         if let Some((effects, armor, defence)) = effects {
             let mut states = self.states.spell_states.lock().await;
             let state = states.get_mut(runtime, actor, session)?;
+            state.install_equipped_physical_protection(physical_protection(&effects));
             install_suppressions(state, effects);
             state.install_equipped_armor(armor);
             state.install_equipped_defence(defence);
         }
         Some(())
     }
+}
+
+/// EQUIP-PROTECTION-1: the summed physical protection of `effects`, installed on admission and
+/// committed moves; field-only protections never meet a physical hit.
+pub(in crate::gameplay_transport) fn physical_protection(
+    effects: &EquipmentEffects,
+) -> Option<crate::content::ReferenceRationalPercent> {
+    effects
+        .protections
+        .get(&crate::content::ReferenceResistanceKind::Physical)
+        .copied()
 }
 
 /// EQUIP-0 §4: share the same suppression mapping on admission and committed moves.

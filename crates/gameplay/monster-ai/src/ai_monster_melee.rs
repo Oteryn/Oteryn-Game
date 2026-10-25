@@ -281,6 +281,7 @@ mod tests {
         revision: u64,
         armor: u32,
         defence: Option<(u32, u32)>,
+        protection: Option<oteryn_gameplay_content::content::ReferenceRationalPercent>,
     }
     impl CreatureBiteVitals for Vitals {
         fn apply_creature_damage(
@@ -316,6 +317,14 @@ mod tests {
             _: SemanticTimeMicros,
         ) -> Option<(u32, u32)> {
             self.defence
+        }
+        fn target_physical_protection(
+            &self,
+            _: &ChannelRuntimeV1,
+            _: ExactActorRef,
+            _: GameSessionId,
+        ) -> Option<oteryn_gameplay_content::content::ReferenceRationalPercent> {
+            self.protection
         }
     }
     fn uuid(tag: u8) -> [u8; 16] {
@@ -423,6 +432,7 @@ mod tests {
             revision: 0,
             armor: 0,
             defence: None,
+            protection: None,
         };
         let def = definition(&runtime, 1_000_000)?;
         let resolve = |_| {
@@ -542,6 +552,7 @@ mod tests {
                 revision: 0,
                 armor,
                 defence: None,
+                protection: None,
             };
             let result = owner
                 .think(
@@ -578,6 +589,55 @@ mod tests {
         Ok(())
     }
     #[test]
+    fn the_targets_worn_physical_protection_scales_the_hit_after_armor() -> Result<(), String> {
+        let (mut runtime, issuer, target, session) = fixture()?;
+        let def = definition(&runtime, 1_000_000)?;
+        let resolve = |_| {
+            Some((
+                target,
+                session,
+                ReentryProtection {
+                    protected_until: None,
+                },
+            ))
+        };
+        let mut owner = MonsterMeleeOwner::default();
+        let mut vitals = Vitals {
+            health: 20,
+            revision: 0,
+            armor: 2,
+            defence: None,
+            protection: Some(oteryn_gameplay_content::content::ReferenceRationalPercent {
+                numerator: 50,
+                denominator: 1,
+            }),
+        };
+        let result = owner
+            .think(
+                &mut runtime,
+                &mut vitals,
+                issuer,
+                1,
+                def,
+                input(1),
+                &perceived(),
+                resolve,
+                revisions()?,
+                SemanticTimeMicros::from_micros(0),
+            )
+            .map_err(|error| format!("{error:?}"))?;
+        let Dispatch::Bite(Ok(applied)) = result else {
+            return Err(format!("protected bite: {result:?}"));
+        };
+        assert_eq!(
+            (applied.requested, applied.damage.applied),
+            (8, 4),
+            "armor takes 8 to 7, then 50% truncates 3.5 off"
+        );
+        assert_eq!((vitals.health, vitals.revision), (16, 1));
+        Ok(())
+    }
+    #[test]
     fn a_blocked_hit_meets_the_targets_defence_before_its_armor() -> Result<(), String> {
         let (mut runtime, issuer, target, session) = fixture()?;
         let def = definition(&runtime, 1_000_000)?;
@@ -597,6 +657,7 @@ mod tests {
                 revision: 0,
                 armor,
                 defence,
+                protection: None,
             };
             let result = owner
                 .think(
@@ -636,6 +697,7 @@ mod tests {
             revision: 0,
             armor: 0,
             defence: None,
+            protection: None,
         };
         let def = definition(&runtime, 0)?;
         let result = owner
@@ -726,6 +788,7 @@ mod tests {
             revision: 0,
             armor: 0,
             defence: None,
+            protection: None,
         };
         let mut def = definition(&runtime, 1_000_000)?;
         def.content_digest[0] ^= 1;
@@ -804,6 +867,7 @@ mod tests {
             revision: 0,
             armor: 0,
             defence: None,
+            protection: None,
         };
         let def = definition(&runtime, 1_000_000)?;
         let resolve = |_| {

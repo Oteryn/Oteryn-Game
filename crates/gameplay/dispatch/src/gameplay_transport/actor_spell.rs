@@ -997,6 +997,16 @@ impl CreatureBiteVitals for ChannelSpellStates {
         self.get(runtime, target, target_session)
             .map_or(0, crate::spell::cast::PlayerSpellState::equipped_armor)
     }
+
+    fn target_physical_protection(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        target: ExactActorRef,
+        target_session: GameSessionId,
+    ) -> Option<crate::content::ReferenceRationalPercent> {
+        self.get(runtime, target, target_session)?
+            .equipped_physical_protection()
+    }
 }
 
 /// `SPELL-RL-01`: cast inputs applied per actor per Channel owner work cycle. [`cast_in_channel`]

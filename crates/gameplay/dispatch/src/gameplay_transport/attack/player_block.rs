@@ -71,6 +71,16 @@ impl CreatureBiteVitals for PlayerBiteVitals<'_> {
         self.states.target_armor(runtime, target, target_session)
     }
 
+    fn target_physical_protection(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        target: ExactActorRef,
+        target_session: GameSessionId,
+    ) -> Option<crate::content::ReferenceRationalPercent> {
+        self.states
+            .target_physical_protection(runtime, target, target_session)
+    }
+
     fn target_defence(
         &mut self,
         runtime: &ChannelRuntimeV1,

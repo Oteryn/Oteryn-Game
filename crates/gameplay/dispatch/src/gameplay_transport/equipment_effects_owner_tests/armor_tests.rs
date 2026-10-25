@@ -1,23 +1,36 @@
 //! ARMOR-MITIGATION-1: the worn armor total over the pinned production item profiles.
+//! EQUIP-PROTECTION-1: the worn physical protection sum over the same profiles.
 
 use super::*;
 
 /// The pinned profiles with `armor` written into each named record's protection.
 fn armored_input(armor: &[(&str, serde_json::Value)]) -> TestResult<NativeGameplayInput> {
+    let protections: Vec<_> = armor
+        .iter()
+        .map(|(key, value)| {
+            let protection = serde_json::json!({
+                "state": "KNOWN",
+                "value": {"armor": value, "resistances": {"state": "UNKNOWN"}},
+            });
+            (*key, protection)
+        })
+        .collect();
+    protected_input(&protections)
+}
+
+/// The pinned profiles with each named record's whole protection replaced.
+fn protected_input(protections: &[(&str, serde_json::Value)]) -> TestResult<NativeGameplayInput> {
     let mut input = input()?;
     let pin = input.item_profiles.as_mut().ok_or("profiles")?;
     let mut profiles: serde_json::Value = serde_json::from_slice(&pin.bytes)?;
-    for (key, value) in armor {
+    for (key, protection) in protections {
         let record = profiles["records"]
             .as_array_mut()
             .ok_or("records")?
             .iter_mut()
             .find(|r| r["production_definition"]["production_key"] == *key)
             .ok_or("record")?;
-        record["semantics"]["protection"] = serde_json::json!({
-            "state": "KNOWN",
-            "value": {"armor": value, "resistances": {"state": "UNKNOWN"}},
-        });
+        record["semantics"]["protection"] = protection.clone();
     }
     pin.bytes = serde_json::to_vec(&profiles)?;
     use sha2::{Digest, Sha256};
@@ -87,6 +100,74 @@ fn unknown_or_negative_armor_adds_nothing() -> TestResult {
         equipped_armor(&worn(&pinned, &[(FEET, 4), (AMULET, 7)]), &pinned),
         Some(0),
         "the pinned profiles carry armor 0 or unknown"
+    );
+    Ok(())
+}
+
+/// A Known protection with no armor and these `(kind, percent)` resistances.
+fn resisting(resistances: &[(&str, i64)]) -> serde_json::Value {
+    let entries: Vec<_> = resistances
+        .iter()
+        .map(|(kind, percent)| {
+            serde_json::json!({
+                "kind": kind,
+                "percent": {"state": "KNOWN", "value": {"denominator": 1, "numerator": percent}},
+            })
+        })
+        .collect();
+    serde_json::json!({
+        "state": "KNOWN",
+        "value": {
+            "armor": {"state": "KNOWN", "value": 0},
+            "resistances": {"state": "KNOWN", "value": entries},
+        },
+    })
+}
+
+/// Untimed feet: the pinned FEET and AMULET carry charges or a duration (EQUIP-0 §3.2).
+const UNTIMED_FEET: &str = "oteryn:item.tibia.i6529";
+
+#[test]
+fn worn_physical_protection_counts_untimed_own_slot_items_without_field_protection() -> TestResult {
+    let input = protected_input(&[
+        (
+            UNTIMED_FEET,
+            resisting(&[("PHYSICAL", 4), ("FIRE_FIELD", 50)]),
+        ),
+        (AMULET, resisting(&[("PHYSICAL", 6)])),
+    ])?;
+    let content = native(&input)?;
+    let sum = |items: &[(&str, u8)]| {
+        equipment_effects(&worn(&content, items), &content)
+            .as_ref()
+            .and_then(physical_protection)
+    };
+    let four = Some(crate::content::ReferenceRationalPercent {
+        numerator: 4,
+        denominator: 1,
+    });
+    assert_eq!(
+        sum(&[(UNTIMED_FEET, 4)]),
+        four,
+        "a field protection is not physical"
+    );
+    assert_eq!(
+        sum(&[(UNTIMED_FEET, 4), (AMULET, 7)]),
+        four,
+        "a timed item adds nothing"
+    );
+    assert_eq!(
+        sum(&[(UNTIMED_FEET, 8)]),
+        None,
+        "an item outside its own slot adds nothing"
+    );
+    let pinned = native(&super::input()?)?;
+    assert_eq!(
+        equipment_effects(&worn(&pinned, &[(UNTIMED_FEET, 4)]), &pinned)
+            .as_ref()
+            .and_then(physical_protection),
+        None,
+        "the pinned profiles carry no physical protection on these feet"
     );
     Ok(())
 }

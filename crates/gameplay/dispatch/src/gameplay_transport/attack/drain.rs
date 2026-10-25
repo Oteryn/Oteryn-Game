@@ -20,6 +20,7 @@ use oteryn_gameplay_combat_rules::attack::target::Swing;
 use oteryn_gameplay_combat_rules::resolution::{
     creature_physical_response, creature_physically_immune, swing_mitigated,
 };
+use oteryn_gameplay_items::equipment_effects::apply_protection;
 use oteryn_gameplay_progression::charm_effects::{
     CharmAttackerFacts, CharmHitSource, CharmHookEvent,
 };
@@ -399,7 +400,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             OwnerTime::from_micros(now.get()),
         );
         let armor = vitals.target_armor(runtime, hit.target, target_session);
-        let Some(magnitude) = swing_mitigated(
+        let protection = vitals.target_physical_protection(runtime, hit.target, target_session);
+        let Some(mitigated) = swing_mitigated(
             root,
             constants,
             hit.actor.placement_identity(),
@@ -413,6 +415,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             armor,
         ) else {
             return;
+        };
+        // EQUIP-PROTECTION-1 (`Player::blockHit`): what defence and armor left meets the
+        // target's worn physical protection, summed and applied once (EQUIP-0 §3.3).
+        let magnitude = match protection {
+            Some(sum) if mitigated > 0 => apply_protection(mitigated, sum).unwrap_or(mitigated),
+            _ => mitigated,
         };
         if magnitude <= 0 {
             train_pvp_swing(states, runtime, content, &hit, magnitude, now, trained);
