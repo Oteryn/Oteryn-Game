@@ -490,6 +490,9 @@ attack, the mode is locked to Red Fist. A black skull cannot select Red Fist.
   outlast it.
 - **Combat lock** (the scope matrix row) is the union of the three. It blocks logout (FND-ID-01
   sees the blocker), leaving a party and a voluntary channel switch (GAME-CHANNEL-01 §8).
+  Owner decision 2026-10-25 (LOGOUT-PZ-PVP-1): logout is not blocked on a qualified
+  protection-zone tile, as Canary `ProtocolGame::logout` (`protocolgame.cpp:1158`) checks
+  `CONDITION_INFIGHT` only outside `TILESTATE_PROTECTIONZONE`; an unknown cell keeps the block.
 - **Durable PvP deadlines** (architect ruling; the scope matrix makes the combat lock Character +
   World, strong, and GAME-CHANNEL-01 §8 and §25 forbid reducing a PvP consequence). A PvP-sourced
   logout block (a hit dealt to or taken from a character or its summon), a PZ block and a white
