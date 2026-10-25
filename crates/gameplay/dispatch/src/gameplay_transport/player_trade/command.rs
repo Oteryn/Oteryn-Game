@@ -141,6 +141,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 let lives = self.trade_lives(&record)?;
                 if let Err(reason) = self.trade_pair(&permit, &runtime, &lives, command).await {
+                    let reason = ResultCode::from(reason);
                     self.states
                         .player_trades
                         .0
@@ -252,8 +253,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             [own, other]
         };
-        self.trade_pair(permit, runtime, &lives, command).await?;
-        let fences = self.trade_fences(&lives).await?;
+        self.trade_pair(permit, runtime, &lives, command)
+            .await
+            .map_err(ResultCode::from)?;
+        let fences = self.trade_fences(&lives).await.map_err(ResultCode::from)?;
         // A new offer after READY retires the old pair and both accepts. Its id can
         // never authorize a later exchange (PLAYER-TRADE0 changes-cancel rule).
         if let Some(old) = &prior {
@@ -307,7 +310,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             backpacks.push(Some(backpack));
         }
         let record = if let Some(mut old) = prior {
-            self.trade_unchanged(&old, [fences[1], fences[0]]).await?;
+            self.trade_unchanged(&old, [fences[1], fences[0]])
+                .await
+                .map_err(ResultCode::from)?;
             old.lifecycle
                 .counter_offer(command, command, now)
                 .map_err(result)?;
@@ -374,9 +379,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return Err(ResultCode::Stale);
             }
-            self.trade_pair(permit, runtime, &lives, command).await?;
-            let fences = self.trade_fences(&lives).await?;
-            self.trade_unchanged(&record, fences).await?;
+            self.trade_pair(permit, runtime, &lives, command)
+                .await
+                .map_err(ResultCode::from)?;
+            let fences = self.trade_fences(&lives).await.map_err(ResultCode::from)?;
+            self.trade_unchanged(&record, fences)
+                .await
+                .map_err(ResultCode::from)?;
             let pair = record.pair.ok_or(ResultCode::Stale)?;
             let native = self
                 .active_generation
