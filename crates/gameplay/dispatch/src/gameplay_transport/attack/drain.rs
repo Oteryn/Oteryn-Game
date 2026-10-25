@@ -284,6 +284,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 now,
                 &mut trained,
             );
+            if result.applied
+                && result.health_after < result.health_before
+                && snapshot.state.master.is_none()
+                && !snapshot.state.policy.is_familiar
+            {
+                states.hunting_activity(&runtime, entry.actor, entry.session, now.get());
+            }
             record_hit_activity(
                 entry,
                 &runtime,

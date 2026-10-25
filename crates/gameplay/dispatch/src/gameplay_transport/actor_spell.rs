@@ -94,6 +94,7 @@ use crate::spell::cast::{CastContext, CharacterCastFacts, PlayerSpellState, cast
 /// command, no damage and no credit, and its death record goes with its entry.
 #[derive(Debug)]
 pub struct ChannelSpellStates {
+    pub(super) hunting_stamina: Vec<super::hunting_stamina::LiveStamina>,
     pub(in crate::gameplay_transport) owner_wake: std::sync::Arc<tokio::sync::Notify>,
     pub(in crate::gameplay_transport) actors: Vec<(ExactActorRef, GameSessionId, PlayerSpellState)>,
     /// One real Channel-owner lane; no timer is restored from client intent.
@@ -257,6 +258,7 @@ impl<I, T> PendingSpellMarker<I, T> {
 impl Default for ChannelSpellStates {
     fn default() -> Self {
         Self {
+            hunting_stamina: Vec::new(),
             owner_wake: Default::default(),
             actors: Vec::new(),
             spell_timers: Default::default(),
@@ -695,6 +697,7 @@ impl ChannelSpellStates {
     ) -> bool {
         self.get(runtime, actor, game_session_id)
             .is_some_and(|state| state.has_training_to_flush())
+            || self.stamina_to_flush(actor, game_session_id)
     }
 
     /// Commit a resolved health credit under the Channel owner's runtime lock.
@@ -1278,7 +1281,11 @@ impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
                 crate::foundation::owner_timer::SemanticTimeMicros::from_micros(facts.now),
             );
         }
-        self.native_composite_conditions(
+        let replayed = self.source_secondary_memos.iter().any(|memo| {
+            memo.actor == target && memo.session == session && memo.occurrence == occurrence
+        });
+        let before = self.get(runtime, target, session)?.vitals().health;
+        let receipt = self.native_composite_conditions(
             runtime,
             target,
             session,
@@ -1290,7 +1297,15 @@ impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
             Some(magnitude),
             fence,
             stamp,
-        )?
+        )??;
+        if !replayed
+            && receipt.applied > 0
+            && receipt.health_after < before
+            && runtime.contains_live_creature(source)
+        {
+            self.hunting_activity(runtime, target, session, facts.now);
+        }
+        Some(receipt)
     }
     fn remove_attack_invisibility(
         &mut self,
@@ -1382,6 +1397,11 @@ impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
         let hit = CreatureBiteVitals::apply_creature_damage(
             self, runtime, target, session, magnitude, now,
         )?;
+        // Source-attack callers are monster attacks (including native monster spells).
+        // Replayed occurrences returned above do not renew the hunting clock.
+        if hit.damage.applied > 0 {
+            self.hunting_activity(runtime, target, session, now.get());
+        }
         let death = hit.death.map(|bytes| {
             PlayerLethalReceipt::from_native_commit(
                 runtime,
