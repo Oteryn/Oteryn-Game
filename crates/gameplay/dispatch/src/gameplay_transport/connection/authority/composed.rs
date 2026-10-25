@@ -237,6 +237,17 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         equipment_move::move_equipment(self, actor, command, request).await
     }
 
+    async fn stash(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::stash::StashIntent,
+        item: Option<item_view::ItemKey>,
+        row_open: bool,
+    ) -> Option<oteryn_protocol_oteryn::stash::StashReply> {
+        stash::execute(self, actor, command, intent, item, row_open).await
+    }
+
     async fn depot(
         &self,
         actor: ExactActorRef,
@@ -671,6 +682,16 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         crate::durability::item_transfer::ItemTransferError,
     > {
         self.read_committed_item_move(_actor, command).await
+    }
+
+    /// READ-WRITE-1a: read a visible base placement without materializing it.
+    async fn look_world_object(
+        &self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        target: &oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ) -> ItemLookResult {
+        item_look::look_world_object(self, actor, game_session_id, target).await
     }
 
     /// LOOK-2: examine a freshly observed item admitted by the session's handle table.

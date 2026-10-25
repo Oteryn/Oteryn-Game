@@ -439,6 +439,18 @@ pub trait FreshAdmissionAuthority {
         async { EquipmentMoveResult::Refused(EquipmentMoveRefusal::Rejected) }
     }
 
+    /// Native stash conversion; test doubles fail closed unless they expose this owner.
+    fn stash(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _intent: oteryn_protocol_oteryn::stash::StashIntent,
+        _item: Option<ItemKey>,
+        _row_open: bool,
+    ) -> impl Future<Output = Option<oteryn_protocol_oteryn::stash::StashReply>> {
+        async { None }
+    }
+
     /// Depot requests are resolved by the live Channel and fenced native item owner.
     fn depot(
         &self,
@@ -490,6 +502,15 @@ pub trait FreshAdmissionAuthority {
         _fence: Option<CurrentCharacterItemFence>,
         _views: &SessionItemView,
         _target: oteryn_protocol_oteryn::item_view::ItemHandle,
+    ) -> impl Future<Output = ItemLookResult> {
+        async { ItemLookResult::Refused(ItemLookRefusal::NotAvailable) }
+    }
+
+    fn look_world_object(
+        &self,
+        _actor: ExactActorRef,
+        _game_session_id: GameSessionId,
+        _target: &oteryn_protocol_oteryn::world_object::WorldObjectTarget,
     ) -> impl Future<Output = ItemLookResult> {
         async { ItemLookResult::Refused(ItemLookRefusal::NotAvailable) }
     }

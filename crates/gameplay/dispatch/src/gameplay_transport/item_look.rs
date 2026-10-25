@@ -427,6 +427,120 @@ async fn observe_look_item(
         ItemLookOutcome::Unavailable => Err(unavailable),
     }
 }
+/// Read-only placement admission: exact bundle target, current revision, visible composed
+/// base entry and known definition. Never passes through materializable handle admission.
+fn examine_world_object<F: MapFacts>(
+    source: &super::world_map::MapViewSource<'_, F>,
+    at: ActorPosition,
+    target: &oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    generation: &ActiveGeneration,
+    index: &ItemDefinitionIndex,
+) -> Result<ItemLookResult, ItemLookRefusal> {
+    use oteryn_protocol_oteryn::world_map::MapDefinition;
+    let unavailable = ItemLookRefusal::NotAvailable;
+    let resolved = super::world_map::resolve_map_target(source, target, |_| None::<()>)
+        .map_err(|_| unavailable)?;
+    let position = ActorPosition {
+        x: i32::from(resolved.pos.x),
+        y: i32::from(resolved.pos.y),
+        floor: i16::from(resolved.pos.floor),
+    };
+    if !in_view(at, position) {
+        return Err(ItemLookRefusal::NotVisible);
+    }
+    let tile = view::compose_tile(source.overlay, source.facts, resolved.pos)
+        .map_err(|_| unavailable)?
+        .ok_or(unavailable)?;
+    let (stack_index, entry) = tile
+        .entries
+        .iter()
+        .enumerate()
+        .find(|(_, entry)| entry.source.key() == MapEntryKey::Base(resolved.placement_key))
+        .ok_or(unavailable)?;
+    // Only a published base ordinal can select this branch, including the stack cut.
+    // Handle-bearing entries retain their separate materializable admission.
+    if entry.source.handle_bearing() {
+        return Err(unavailable);
+    }
+    if !view::cut_indices(tile.entries.len())
+        .0
+        .any(|index| index == stack_index)
+    {
+        return Err(ItemLookRefusal::NotVisible);
+    }
+    let MapDefinition::Item(reference) = entry.facts.definition else {
+        return Err(unavailable);
+    };
+    let definition = typed_definition(index, reference).ok_or(unavailable)?;
+    let policy = generation
+        .native_gameplay()
+        .and_then(|native| native.item_policy(&definition.production_key, &definition.revision_ref))
+        .ok_or(unavailable)?;
+    let record = policy.record();
+    let actual = &record.production_definition;
+    if actual.family != definition.family
+        || actual.production_key != definition.production_key
+        || actual.revision_ref != definition.revision_ref
+    {
+        return Err(unavailable);
+    }
+    let id = definition
+        .production_key
+        .strip_prefix("oteryn:item.tibia.i")
+        .and_then(|id| id.parse().ok());
+    let text = oteryn_gameplay_items::look::item_text_with_reading(
+        &record.semantics,
+        NonZeroU32::new(entry.facts.count).ok_or(unavailable)?,
+        look_distance(at, position),
+        id,
+        source.facts.base_text(resolved.placement_key).unwrap_or(""),
+        MAX_ITEM_LOOK_TEXT_BYTES,
+    )
+    .ok_or(unavailable)?;
+    Ok(ItemLookResult::Text(bounded_text(text)))
+}
+
+pub(super) async fn look_world_object(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    target: &oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+) -> ItemLookResult {
+    let refused = ItemLookResult::Refused(ItemLookRefusal::NotAvailable);
+    let mut runtime = admission.runtime.lock().await;
+    if runtime.owner_fence().is_err()
+        || !runtime
+            .player_control_facts(actor, session)
+            .is_ok_and(|facts| facts.control_loss.is_none())
+    {
+        return refused;
+    }
+    let Some(position) = super::bundle_map_position(&mut runtime, admission.movement_cells, actor)
+    else {
+        return refused;
+    };
+    let Some(index) = pinned_index(&runtime, admission.active_generation) else {
+        return refused;
+    };
+    let Some(generation) = admission.active_generation else {
+        return refused;
+    };
+    if runtime.content_pin().world_id() != generation.identity().world_id()
+        || runtime.content_pin().activation_sequence() != generation.activation_sequence()
+    {
+        return refused;
+    }
+    let facts = position.map.facts.pinned();
+    let source = super::world_map::MapViewSource {
+        overlay: &position.map.overlay,
+        facts: &facts,
+        content_generation: position.content_generation,
+        reset_epoch: admission.reset_epoch,
+    };
+    examine_world_object(&source, position.at, target, generation, index)
+        .unwrap_or_else(ItemLookResult::Refused)
+}
+
 /// Resolve a current map entry using native floors for both observer and target.
 pub(super) fn map_look_target<F: MapFacts>(
     source: &super::world_map::MapViewSource<'_, F>,
