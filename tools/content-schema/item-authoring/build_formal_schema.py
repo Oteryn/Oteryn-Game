@@ -597,6 +597,7 @@ def build_item_schema():
             "max_hit_chance_percent": use("percent"),
             "damage_range": use("damageRange"),
             "damage_type": use("damageType"),
+            "mana_per_shot": integer(1, 65535),
             "elemental_attack": array(use("elementalAttack")),
             "consumption_mode": enum(
                 "none",
