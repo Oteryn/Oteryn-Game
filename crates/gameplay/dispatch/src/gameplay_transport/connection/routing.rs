@@ -29,7 +29,12 @@ pub(super) enum Dispatch {
     /// BAGS-WIRE-1: command 21; the domain 14 delta follows the result.
     ContainerView(ContainerViewOutcome, Option<ItemViewDelta>),
     /// ITEM-MOVE-1: command 9; the domain 11 and domain 9 deltas follow the result.
-    ItemMove(ItemMoveOutcome, Vec<ItemViewDelta>),
+    /// PARITY-REFUSAL-DETAIL-1: the refusal detail a folded outcome hides, if any.
+    ItemMove(
+        ItemMoveOutcome,
+        Vec<ItemViewDelta>,
+        Option<oteryn_protocol_oteryn::refusal_detail::RefusalDetail>,
+    ),
     Depot(oteryn_protocol_oteryn::depot::DepotReply),
     /// QUEST-LOG-WIRE-1: an accepted command 22; the domain 16 delta follows the result.
     QuestLog(QuestLogDomain),

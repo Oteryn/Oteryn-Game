@@ -27,6 +27,7 @@ use oteryn_protocol_oteryn::item_view::{
     ItemHandle, ItemMoveIntent, decode_open_container, encode_item_move_intent,
     encode_item_move_intent_for, encode_item_move_result, encode_item_move_result_with_equip_drop,
 };
+use oteryn_protocol_oteryn::refusal_detail::CAPABILITY_REFUSAL_DETAIL_V1;
 use oteryn_protocol_oteryn::world_object::{
     COMMAND_TYPE_USE_INTENT, UseDisposition, encode_use_item_intent, encode_use_result,
 };
@@ -207,6 +208,29 @@ fn not_supported_is_a_non_empty_container() {
         vec![refused(ItemTransferRefusal::ContainerNotEmpty)],
         ItemMoveOutcome::NotSupported,
     );
+}
+
+/// PARITY-REFUSAL-DETAIL-1: of the corpse refusals folded into `REJECTED`, only `Overweight`
+/// names its Canary cause (`RETURNVALUE_NOTENOUGHCAPACITY`).
+#[test]
+fn an_overweight_corpse_pickup_details_not_enough_capacity() {
+    assert_eq!(
+        detail_of(&refused(ItemTransferRefusal::Overweight)),
+        Some(RefusalDetail::NotEnoughCapacity)
+    );
+    for other in [
+        refused(ItemTransferRefusal::WeightUnknown),
+        refused(ItemTransferRefusal::MainBackpackFull),
+        transfer(ItemTransferError::CapacityExceeded),
+        Ok(ItemTransferOutcome::Committed(committed())),
+    ] {
+        assert_eq!(detail_of(&other), None, "{other:?}");
+    }
+    assert_eq!(
+        loop_detail(LoopMoveRefusal::Overweight),
+        Some(RefusalDetail::NotEnoughCapacity)
+    );
+    assert_eq!(loop_detail(LoopMoveRefusal::WeightUnknown), None);
 }
 
 #[test]
@@ -1237,6 +1261,8 @@ fn the_main_backpack_itself_or_a_stale_container_never_reaches_the_loop_owner() 
 /// Every refusal of the loop owner answers its section 4 outcome without deltas: the wire has
 /// no weight result, so an over-capacity or unknown-weight pickup is `REJECTED`; `BLOCKED` needs
 /// capability 12 or 11; a cell out of reach is `TOO_FAR`; an unknown outcome disconnects.
+/// PARITY-REFUSAL-DETAIL-1: the over-capacity `REJECTED` alone carries the
+/// `NOT_ENOUGH_CAPACITY` detail.
 #[test]
 fn a_refused_loop_move_answers_its_outcome_without_deltas() -> TestResult {
     run(async {
@@ -1295,7 +1321,12 @@ fn a_refused_loop_move_answers_its_outcome_without_deltas() -> TestResult {
             let authority =
                 MoveAuthority::new(Replay::Nothing, Vec::new()).looping(shown, answer, None);
             let payload = into_backpack(entry(&view, 1));
-            let expected = outcome.map_or(ItemMoveStep::Disconnect, result);
+            let expected = match (answer, outcome) {
+                (LoopMoveResult::Refused(Refusal::Overweight), Some(outcome)) => {
+                    ItemMoveStep::Refused(outcome, RefusalDetail::NotEnoughCapacity)
+                }
+                (_, outcome) => outcome.map_or(ItemMoveStep::Disconnect, result),
+            };
             assert_eq!(
                 step(&authority, &mut view, &payload, selection).await,
                 expected,
@@ -1845,6 +1876,69 @@ fn capabilities_12_and_14_nest_drop_and_refuse_by_command_9() -> TestResult {
                 assert_eq!(ended.item_view, mirror.continuity());
             }
         }
+        Ok(())
+    })
+}
+
+/// PARITY-REFUSAL-DETAIL-1 through the live dispatch: an overweight drop answers `REJECTED`;
+/// with capability 66 field 15 names `NOT_ENOUGH_CAPACITY`, without it the bytes are unchanged.
+#[test]
+fn capability_66_details_an_overweight_move_and_its_absence_keeps_the_bytes() -> TestResult {
+    run(async {
+        const OFFERED: &[OfferedCapability] = &[
+            OfferedCapability {
+                id: CAPABILITY_ITEM_VIEW_MOVE_V1,
+                requires: CAPABILITY_ITEM_VIEW_MOVE_V1_REQUIRES,
+            },
+            OfferedCapability {
+                id: CAPABILITY_WORLD_SPATIAL_ENTITIES,
+                requires: &[],
+            },
+            OfferedCapability {
+                id: CAPABILITY_ITEM_EQUIP_DROP_V1,
+                requires: &[CAPABILITY_ITEM_VIEW_MOVE_V1],
+            },
+            OfferedCapability {
+                id: CAPABILITY_CONTAINER_TREE_V1,
+                requires: CAPABILITY_CONTAINER_TREE_V1_REQUIRES,
+            },
+            OfferedCapability {
+                id: CAPABILITY_REFUSAL_DETAIL_V1,
+                requires: &[],
+            },
+        ];
+        let plain = encode_item_move_result_with_equip_drop(ItemMoveOutcome::Rejected, true)
+            .map_err(fault)?;
+        for (requested, suffix) in [
+            (&[4, 6, 12, 14][..], &[][..]),
+            (&[4, 6, 12, 14, 66][..], &[0x78, 0x04][..]),
+        ] {
+            let selected = SelectedCapabilities::select(OFFERED, requested).expect("select");
+            assert_eq!(selected.as_slice(), requested);
+            let shown = inventory(&[1, 2]);
+            let mut mirror = wearing(shown.clone());
+            mirror.views_snapshot().map_err(fault)?;
+            let payload = onto_ground(entry(&mirror, 1), TREE);
+            let authority = MoveAuthority::new(Replay::Nothing, Vec::new()).looping(
+                shown,
+                LoopMoveResult::Refused(LoopMoveRefusal::Overweight),
+                None,
+            );
+            let mut admitted = session(ItemViewContinuity::default())?;
+            admitted.continuity.selected_capabilities = selected;
+            let (end, frames) = serve(
+                &authority,
+                admitted,
+                &[command(1, COMMAND_TYPE_ITEM_MOVE_INTENT, &payload)?],
+            )
+            .await?;
+            let mut result = plain.clone();
+            result.extend_from_slice(suffix);
+            let expected = encode_command_result(1, 1, 1, CommandStatus::Accepted, &result)?;
+            assert_eq!(frames.last(), Some(&expected));
+            assert_eq!(ended(end)?.next_command_id, 2);
+        }
+        assert_eq!(plain, [0x08, 0x09]);
         Ok(())
     })
 }

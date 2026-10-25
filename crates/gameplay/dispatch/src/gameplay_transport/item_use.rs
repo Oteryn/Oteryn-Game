@@ -200,6 +200,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             committed: None,
             earned: EarnedNotice::NoneEarned,
             gate_message_id: None,
+            refusal_detail: None,
         }
     }
 

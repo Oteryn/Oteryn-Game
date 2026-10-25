@@ -144,7 +144,7 @@ where
                 }
             }
         }
-        Dispatch::ItemMove(outcome, deltas) => {
+        Dispatch::ItemMove(outcome, deltas, _) => {
             effects::item_move(stream, authority, session, outcome, deltas).await?;
         }
         Dispatch::QuestLog(domain) => {

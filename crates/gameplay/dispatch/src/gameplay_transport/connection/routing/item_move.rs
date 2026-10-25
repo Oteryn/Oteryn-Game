@@ -68,7 +68,10 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                             };
                             deltas.extend(delta);
                         }
-                        Dispatch::ItemMove(outcome, deltas)
+                        Dispatch::ItemMove(outcome, deltas, None)
+                    }
+                    ItemMoveStep::Refused(outcome, detail) => {
+                        Dispatch::ItemMove(outcome, Vec::new(), Some(detail))
                     }
                     ItemMoveStep::Disconnect => {
                         return None;
