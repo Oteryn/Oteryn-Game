@@ -97,7 +97,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             item_fence: Some(run.fence),
         };
         let qualified = self
-            .training_target(run.actor, command, run.dummy)
+            .training_target(
+                run.actor,
+                command,
+                run.dummy,
+                if matches!(run.family, 0 | 5) { 7 } else { 1 },
+            )
             .await
             .is_some_and(|key| context.rates.dummies.contains(&key));
         let current = self.training_fence(run.fence).await;
@@ -259,12 +264,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let (Some(ItemKey::Instance(weapon)), Some(dummy)) = (weapon, dummy) else {
                 return Some(TrainingResult::REFUSED);
             };
-            let Some(key) = self.training_target(actor, command, dummy).await else {
-                return Some(TrainingResult::REFUSED);
-            };
-            if !context.rates.dummies.contains(&key) {
-                return Some(TrainingResult::REFUSED);
-            }
             let now = self.owner_now().get();
             let mut sessions = self.states.training.sessions.lock().await;
             let state = sessions.entry(admitted.game_session_id).or_default();
@@ -296,6 +295,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return Some(TrainingResult::REFUSED);
             };
+            let Some(key) = self
+                .training_target(
+                    actor,
+                    command,
+                    dummy,
+                    if matches!(family, 0 | 5) { 7 } else { 1 },
+                )
+                .await
+            else {
+                return Some(TrainingResult::REFUSED);
+            };
+            if !context.rates.dummies.contains(&key) {
+                return Some(TrainingResult::REFUSED);
+            }
             let native = self.active_generation?.native_gameplay()?;
             let record = native
                 .item_policy(&definition.production_key, &definition.revision_ref)?

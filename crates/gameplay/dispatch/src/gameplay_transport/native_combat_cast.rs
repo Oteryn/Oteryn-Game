@@ -200,6 +200,7 @@ pub type NativeMarkerIntent = (
 /// variant holds its install fields by value.
 #[derive(Debug)]
 pub enum UnresolvedSpellCommit {
+    Ranged(Box<super::super::attack::ranged::PendingShot>),
     Pvp(Box<super::super::pvp_live::PendingPvpHit>),
     Native(Box<PendingNativeCast>),
     WorldItem(Box<super::world_item_cast::PreparedWorldItemCast>),
@@ -341,6 +342,11 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             }
         };
         let marker = match attempt {
+            UnresolvedSpellCommit::Ranged(attempt) => {
+                drop(states);
+                self.resolve_ranged_shot(&mut permit, *attempt).await;
+                return permit;
+            }
             UnresolvedSpellCommit::Pvp(hit) => {
                 drop(states);
                 self.resolve_pvp_hit(&mut permit, *hit).await;
@@ -1562,7 +1568,7 @@ pub(in crate::gameplay_transport) fn replay_with_rune(
 
 pub use oteryn_gameplay_spell_rules::dispatch_plans::geometry::TileFlags;
 /// Only this constructor reads the flags: source tile metadata plus locked actual Item rows.
-async fn read_tile(
+pub(in crate::gameplay_transport) async fn read_tile(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemAuthority,
     room: &QualifiedNativeEntryRoom,
@@ -1618,7 +1624,7 @@ async fn read_tile(
 
 /// Canary 99902524 map.cpp 845–949: endpoint-exclusive u16 Wu accumulator.
 /// The third tuple member is the source last-diagonal-step obstruction exemption.
-fn sight_steps(
+pub(in crate::gameplay_transport) fn sight_steps(
     a: TilePosition,
     b: TilePosition,
 ) -> Result<Vec<(TilePosition, bool)>, SpellCastDisposition> {
@@ -1948,6 +1954,7 @@ fn source_cost_request(
         &[],
     );
     Ok(SpellItemTransactionRequest {
+        swing_ordinal: None,
         command: b.command,
         spell: crate::durability::item_mint::TypedDefinitionRef {
             family: "Spell".into(),

@@ -183,7 +183,11 @@ impl BundleFacts {
                 // A dropped teleport is a bound, non-materialized placement, never a door.
                 let dropped =
                     key.is_some_and(|key| manifest.dropped_teleports.binary_search(&key).is_ok());
-                let door = if dropped || bound(&item.attrs) {
+                // Only source key doors may use an action number without a quest binding.
+                // All other attributes retain their existing owner and remain sealed here.
+                let key_action = matches!(door, PaletteDoor::Pair { key_door: true, .. })
+                    && !bound_without_action(&item.attrs);
+                let door = if dropped || (bound(&item.attrs) && !key_action) {
                     PaletteDoor::No
                 } else if tile.house != 0 && matches!(door, PaletteDoor::Pair { .. }) {
                     // A house door belongs to the house runtime, never to the channel DoorBook.
@@ -199,8 +203,14 @@ impl BundleFacts {
                     continue;
                 };
                 match door {
-                    PaletteDoor::Pair { open, open_solid } => {
-                        self.doors.push(key, closed_solid, open_solid, open);
+                    PaletteDoor::Pair {
+                        open,
+                        open_solid,
+                        locked,
+                        ..
+                    } => {
+                        let locked = locked || matches!(item.attrs.action, Some(101 | 1001));
+                        self.doors.push(key, closed_solid, open_solid, open, locked);
                     }
                     PaletteDoor::Sealed => {
                         self.doors.push_sealed();
@@ -451,8 +461,11 @@ impl BundleFacts {
 
 /// A placement attribute that binds the entry or that a pickup cannot represent.
 fn bound(attrs: &Attrs) -> bool {
-    attrs.action.is_some()
-        || attrs.unique.is_some()
+    attrs.action.is_some() || bound_without_action(attrs)
+}
+
+fn bound_without_action(attrs: &Attrs) -> bool {
+    attrs.unique.is_some()
         || attrs.door.is_some()
         || attrs.depot.is_some()
         || attrs.teleport.is_some()
@@ -564,7 +577,7 @@ fn palette_facts(
     })
 }
 
-/// Whether the Item palette key `key` is a plain closed door (MAP-DOOR-1), and the facts of its
+/// Whether the Item palette key `key` is a qualified closed/locked door, and the facts of its
 /// open counterpart, which `item` must serve. The content profile decides doorhood
 /// (`item_type` Door); the Game-owned registry only pairs a door with its open item.
 fn palette_door(key: &str, item: &impl Fn(&str) -> Option<ItemDefinition>) -> PaletteDoor {
@@ -574,7 +587,11 @@ fn palette_door(key: &str, item: &impl Fn(&str) -> Option<ItemDefinition>) -> Pa
     let Some(closed) = palette_appearance(key).map(u32::from) else {
         return PaletteDoor::Sealed;
     };
-    let Some(open) = door::open_of(closed) else {
+    let key_door = super::door_registry::key_door_of(closed);
+    let Some(open) = key_door
+        .map(|(open, _)| open)
+        .or_else(|| door::open_of(closed))
+    else {
         return PaletteDoor::Sealed;
     };
     let Some(open_key) = door::open_key(key, closed, open) else {
@@ -594,6 +611,8 @@ fn palette_door(key: &str, item: &impl Fn(&str) -> Option<ItemDefinition>) -> Pa
         return PaletteDoor::Sealed;
     }
     PaletteDoor::Pair {
+        key_door: key_door.is_some(),
+        locked: key_door.is_some_and(|(_, locked)| locked),
         open: EntryFacts {
             definition: MapDefinition::Item(definition.reference),
             terrain_kind: None,

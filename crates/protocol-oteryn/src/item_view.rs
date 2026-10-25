@@ -51,6 +51,10 @@ pub const COMMAND_TYPE_ITEM_MOVE_INTENT: u32 = 9;
 /// Registered capability `ITEM_EQUIP_DROP_V1` (ITEM-MOVE-WIRE-1 §3): extends command type 9 and
 /// domain 9 of capability 4, so it owns no command type or domain of its own.
 pub const CAPABILITY_ITEM_EQUIP_DROP_V1: u32 = 12;
+/// STACK-QUANTITY-1: optional command-9 count for carried-tree moves and drops.
+pub const CAPABILITY_ITEM_STACK_COUNT_V1: u32 = 61;
+/// The largest existing destination plus field 6 (count 1..=100).
+pub const MAX_ITEM_MOVE_INTENT_STACK_COUNT_BYTES: usize = MAX_ITEM_MOVE_INTENT_EQUIP_DROP_BYTES + 2;
 pub const CAPABILITY_ITEM_EQUIP_DROP_V1_REQUIRES: &[u32] = &[
     CAPABILITY_ITEM_VIEW_MOVE_V1, // ITEM_VIEW_MOVE_V1
 ];
@@ -701,12 +705,32 @@ pub fn decode_item_move_intent_for(
     payload: &[u8],
     selection: ItemMoveSelection,
 ) -> WireResult<ItemMoveIntent> {
+    decode_move_intent(payload, selection, false).map(|(intent, _)| intent)
+}
+
+/// Command 9 with negotiated `ITEM_STACK_COUNT_V1`. Absence still means the whole item;
+/// present zero, counts above 100, duplicates and unknown fields fail closed. The owner
+/// checks the current source quantity and definition before committing.
+pub fn decode_item_move_intent_with_count_for(
+    payload: &[u8],
+    selection: ItemMoveSelection,
+) -> WireResult<(ItemMoveIntent, Option<u32>)> {
+    decode_move_intent(payload, selection, true)
+}
+
+fn decode_move_intent(
+    payload: &[u8],
+    selection: ItemMoveSelection,
+    stack_count: bool,
+) -> WireResult<(ItemMoveIntent, Option<u32>)> {
     let ItemMoveSelection {
         equip_drop,
         container_tree,
         world_interaction,
     } = selection;
-    let bound = if equip_drop || container_tree || world_interaction {
+    let bound = if stack_count {
+        MAX_ITEM_MOVE_INTENT_STACK_COUNT_BYTES
+    } else if equip_drop || container_tree || world_interaction {
         MAX_ITEM_MOVE_INTENT_EQUIP_DROP_BYTES
     } else {
         MAX_ITEM_MOVE_INTENT_BYTES
@@ -715,7 +739,7 @@ pub fn decode_item_move_intent_for(
         return Err(ItemViewWireError::LimitExceeded);
     }
     let mut cursor = 0;
-    let (mut source, mut destination) = (None, None);
+    let (mut source, mut destination, mut count) = (None, None, None);
     while cursor < payload.len() {
         match read_varint(payload, &mut cursor)? {
             0x08 => set_once(&mut source, read_varint(payload, &mut cursor)?)?,
@@ -737,13 +761,23 @@ pub fn decode_item_move_intent_for(
                 let handle = decode_item_target(read_bytes(payload, &mut cursor)?)?;
                 set_once(&mut destination, ItemMoveDestination::Container(handle))?;
             }
+            0x30 if stack_count => {
+                let value = read_uint32(payload, &mut cursor)?;
+                if !(1..=100).contains(&value) {
+                    return malformed();
+                }
+                set_once(&mut count, value)?;
+            }
             _ => return malformed(),
         }
     }
-    Ok(ItemMoveIntent {
-        source: nonzero_u64(source.unwrap_or(0))?,
-        destination: destination.ok_or(ItemViewWireError::Malformed)?,
-    })
+    Ok((
+        ItemMoveIntent {
+            source: nonzero_u64(source.unwrap_or(0))?,
+            destination: destination.ok_or(ItemViewWireError::Malformed)?,
+        },
+        count,
+    ))
 }
 
 /// `CommandResult.payload` of command type 9, without capability 12.

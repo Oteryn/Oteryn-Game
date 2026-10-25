@@ -3,7 +3,7 @@
 //! Which Item appearances are plain doors is, in the end, Game-owned LocalObject behavior data
 //! (`WORLD_INTERACTION0` §3.1/§4) served by the item-profile packet. Until that packet lands, this
 //! registry is the one place that answers it; it is to be superseded by that data. Recognition
-//! goes through [`open_of`] only, so replacing the source touches nothing else.
+//! goes through [`open_of`] and [`key_door_of`], so replacing the source touches nothing else.
 
 /// `(closed id, open id)` of every plain door appearance: ascending by closed id, the open id
 /// always the next one.
@@ -183,6 +183,91 @@ const DOOR_PAIRS: &[(u32, u32)] = &[
     (50284, 50285),
 ];
 
+// Canary data/libs/tables/doors.lua:8-76. Keep the explicit triples: several families
+// have nonconsecutive ids, and some locked ids also appear in the legacy plain registry.
+const KEY_DOORS: &[(u32, u32, u32)] = &[
+    (1628, 1629, 1630),
+    (1631, 1632, 1633),
+    (1650, 1651, 1652),
+    (1653, 1654, 1655),
+    (1668, 1669, 1670),
+    (1671, 1672, 1673),
+    (1682, 1683, 1684),
+    (1691, 1692, 1693),
+    (4912, 5007, 4911),
+    (4913, 5006, 4914),
+    (5097, 5098, 5099),
+    (5106, 5107, 5108),
+    (5115, 5116, 5117),
+    (5124, 5125, 5126),
+    (5133, 5134, 5135),
+    (5136, 5137, 5138),
+    (5139, 5140, 5141),
+    (5142, 5143, 5144),
+    (5277, 5278, 5279),
+    (5280, 5281, 5282),
+    (5732, 5733, 5734),
+    (5735, 5736, 5737),
+    (6191, 6192, 6193),
+    (6194, 6195, 6196),
+    (6248, 6249, 6250),
+    (6251, 6252, 6253),
+    (6799, 6795, 6796),
+    (6801, 6797, 6798),
+    (6891, 6892, 6893),
+    (6900, 6901, 6902),
+    (7033, 7034, 7035),
+    (7042, 7043, 7044),
+    (7711, 7712, 7713),
+    (7714, 7715, 7716),
+    (8249, 8250, 8251),
+    (8252, 8253, 8254),
+    (8351, 8352, 8353),
+    (8354, 8355, 8356),
+    (9351, 9352, 9353),
+    (9354, 9355, 9356),
+    (9551, 9552, 9553),
+    (9560, 9561, 9562),
+    (9858, 9859, 9860),
+    (9867, 9868, 9869),
+    (11136, 11137, 11138),
+    (11143, 11144, 11145),
+    (11232, 11233, 11234),
+    (11241, 11242, 11243),
+    (13135, 13136, 13137),
+    (17560, 17561, 17562),
+    (17569, 17570, 17571),
+    (17700, 17701, 17702),
+    (17709, 17710, 17711),
+    (17993, 17994, 17995),
+    (18002, 18003, 18004),
+    (20444, 20443, 20445),
+    (20453, 20452, 20454),
+    (23873, 23874, 23877),
+    (23875, 23876, 23878),
+    (28364, 28365, 28368),
+    (28366, 28367, 28369),
+    (30772, 30773, 30776),
+    (30774, 30775, 30777),
+    (37982, 37981, 37985),
+    (37984, 37983, 37986),
+    (44914, 44913, 44917),
+    (44916, 44915, 44918),
+];
+
+/// The open appearance and initial lock predicate of a source locked/closed key door.
+pub(super) fn key_door_of(appearance: u32) -> Option<(u32, bool)> {
+    KEY_DOORS.iter().find_map(|&(locked, closed, open)| {
+        if appearance == locked {
+            Some((open, true))
+        } else if appearance == closed {
+            Some((open, false))
+        } else {
+            None
+        }
+    })
+}
+
 /// The open id of closed door item `closed`, if it is a plain door.
 pub fn open_of(closed: u32) -> Option<u32> {
     let found = DOOR_PAIRS
@@ -194,6 +279,22 @@ pub fn open_of(closed: u32) -> Option<u32> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn key_door_predicates_cover_every_source_triple() {
+        let mut appearances = std::collections::BTreeSet::new();
+        for &(locked, closed, open) in KEY_DOORS {
+            assert!(appearances.insert(locked));
+            assert!(appearances.insert(closed));
+            assert_eq!(key_door_of(locked), Some((open, true)));
+            assert_eq!(key_door_of(closed), Some((open, false)));
+            assert_eq!(key_door_of(open), None);
+        }
+        // Source irregular triples must win over the old consecutive pair registry.
+        assert_eq!(key_door_of(20444), Some((20445, true)));
+        assert_eq!(key_door_of(5007), Some((4911, false)));
+        assert_eq!(key_door_of(1638), None);
+    }
 
     #[test]
     fn pairs_are_ascending_and_consecutive() {
