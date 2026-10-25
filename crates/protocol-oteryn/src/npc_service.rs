@@ -73,7 +73,7 @@ const MAX_OFFER_ELEMENT_BYTES: usize = 2 + MAX_OFFER_BYTES;
 pub const MAX_NPC_TRADE_WINDOW_BYTES: usize =
     MAX_NPC_FIELD_BYTES + 11 + MAX_OFFERS * MAX_OFFER_ELEMENT_BYTES;
 
-fn malformed<T>() -> WireResult<T> {
+pub(crate) fn malformed<T>() -> WireResult<T> {
     Err(NpcServiceWireError::Malformed)
 }
 
@@ -85,7 +85,7 @@ pub enum NpcTradeSide {
 }
 
 impl NpcTradeSide {
-    fn from_wire(value: u32) -> WireResult<Self> {
+    pub(crate) fn from_wire(value: u32) -> WireResult<Self> {
         match value {
             1 => Ok(Self::Buy),
             2 => Ok(Self::Sell),
@@ -190,14 +190,14 @@ fn check_npc(npc: &EntityRef) -> WireResult<()> {
     Ok(())
 }
 
-fn check_size(payload: &[u8], maximum: usize) -> WireResult<()> {
+pub(crate) fn check_size(payload: &[u8], maximum: usize) -> WireResult<()> {
     if payload.len() > maximum {
         return Err(NpcServiceWireError::LimitExceeded);
     }
     Ok(())
 }
 
-fn encode_npc(output: &mut Vec<u8>, field: u64, npc: &EntityRef) -> WireResult<()> {
+pub(crate) fn encode_npc(output: &mut Vec<u8>, field: u64, npc: &EntityRef) -> WireResult<()> {
     check_npc(npc)?;
     let mut inner = Vec::with_capacity(MAX_NPC_REF_BYTES);
     push_message_field(&mut inner, 1, &npc.identity);
@@ -206,7 +206,7 @@ fn encode_npc(output: &mut Vec<u8>, field: u64, npc: &EntityRef) -> WireResult<(
     Ok(())
 }
 
-fn decode_npc(input: &[u8]) -> WireResult<EntityRef> {
+pub(crate) fn decode_npc(input: &[u8]) -> WireResult<EntityRef> {
     let (mut identity, mut generation) = (None, None);
     read_fields(input, |number, wire, input, cursor| match (number, wire) {
         (1, 2) => {
@@ -228,7 +228,7 @@ fn decode_npc(input: &[u8]) -> WireResult<EntityRef> {
 
 /// Reads the fields of a message: `field(number, wire_type, input, cursor)` consumes one value
 /// or refuses the key.
-fn read_fields(
+pub(crate) fn read_fields(
     input: &[u8],
     mut field: impl FnMut(u64, u64, &[u8], &mut usize) -> WireResult<()>,
 ) -> WireResult<()> {
@@ -261,7 +261,7 @@ fn read_text(input: &[u8], cursor: &mut usize, maximum: usize) -> WireResult<Str
     Ok(text.to_owned())
 }
 
-fn check_offer_index(index: u32) -> WireResult<()> {
+pub(crate) fn check_offer_index(index: u32) -> WireResult<()> {
     if usize::try_from(index).map_or(true, |index| index >= MAX_OFFERS) {
         return Err(NpcServiceWireError::LimitExceeded);
     }
