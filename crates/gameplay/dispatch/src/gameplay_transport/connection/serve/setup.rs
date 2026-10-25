@@ -286,6 +286,8 @@ async fn live<A: FreshAdmissionAuthority>(
     Ok(ServeState {
         stash_rows: None,
         stash_revision: 0,
+        target_walk: None,
+        target_move_window: crate::gameplay_transport::attack::IntentWindow::EMPTY,
         admitted: *admitted,
         generation,
         actor,

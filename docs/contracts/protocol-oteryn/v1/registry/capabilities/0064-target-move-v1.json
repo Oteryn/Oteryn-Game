@@ -1,0 +1,15 @@
+{
+  "id": 64,
+  "name": "TARGET_MOVE_V1",
+  "owner_decision": "PARITY-TARGET-MOVE-1 owner slice 2026-10-25",
+  "owner": "Channel Movement owner; ephemeral target routes and facing; ordinary paced step admission",
+  "requires": [
+    6,
+    13
+  ],
+  "command_types": [
+    81
+  ],
+  "state_domains": [],
+  "offered": true
+}

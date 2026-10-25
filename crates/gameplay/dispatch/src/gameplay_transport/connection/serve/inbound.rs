@@ -49,6 +49,10 @@ where
             refresh::combat(stream, authority, session).await?;
             return Ok(None);
         }
+        Next::TargetMove => {
+            target_move::tick(stream, authority, session).await?;
+            return Ok(None);
+        }
         Next::Chase => {
             refresh::chase(stream, authority, session).await?;
             return Ok(None);

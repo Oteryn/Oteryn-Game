@@ -106,7 +106,7 @@ pub fn encode_visibility_delta_lit(
     }
 }
 
-/// VIS-3 known gap: the runtime carries no facing yet, so every actor faces south.
+/// Default direction until an actor has committed a movement or an explicit turn.
 pub const PLACEHOLDER_ACTOR_DIRECTION: StepDirection = StepDirection::South;
 /// VIS-3 known gap: the runtime carries no appearance yet.
 pub const PLACEHOLDER_APPEARANCE_REF: u32 = 0;
@@ -135,6 +135,7 @@ pub enum VisibleKind {
 /// VIS-3: one entity of the session's Channel, before the interest query.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ChannelEntity {
+    pub direction: StepDirection,
     pub kind: VisibleKind,
     pub identity: [u8; ENTITY_IDENTITY_BYTES],
     /// The actor generation.
@@ -159,7 +160,7 @@ pub struct ChannelEntities {
 
 fn wire_entity(entity: &ChannelEntity) -> WorldSpatialEntity {
     let actor = EntityDetail::Actor {
-        direction: PLACEHOLDER_ACTOR_DIRECTION,
+        direction: entity.direction,
         appearance_ref: PLACEHOLDER_APPEARANCE_REF,
         health_percent: PLACEHOLDER_HEALTH_PERCENT,
     };
@@ -169,7 +170,7 @@ fn wire_entity(entity: &ChannelEntity) -> WorldSpatialEntity {
         VisibleKind::Npc => (
             EntityKind::Npc,
             EntityDetail::Actor {
-                direction: PLACEHOLDER_ACTOR_DIRECTION,
+                direction: entity.direction,
                 appearance_ref: PLACEHOLDER_APPEARANCE_REF,
                 health_percent: NPC_HEALTH_PERCENT,
             },
@@ -798,6 +799,7 @@ mod tests {
 
     fn at(n: u32, kind: VisibleKind, x: i32, y: i32, floor: i16) -> ChannelEntity {
         ChannelEntity {
+            direction: oteryn_protocol_oteryn::world_spatial::StepDirection::South,
             kind,
             identity: id(n),
             generation: 1,

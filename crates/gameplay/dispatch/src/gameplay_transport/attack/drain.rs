@@ -1,5 +1,6 @@
 //! Ordered phases of the Channel owner's auto-attack pass.
 
+use super::equipped_offence;
 use super::player_block::PlayerBiteVitals;
 use super::shared_experience::aggressive_monster;
 use super::skill_training::{TrainingDue, swing_block, swing_family, train_hit};
@@ -190,6 +191,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 );
                 continue;
             }
+            let offence =
+                equipped_offence::attacker_offence(&states, &runtime, entry.actor, entry.session);
+            let Some(damage) = equipped_offence::critical_swing(
+                offence,
+                &root,
+                entry.actor,
+                swing.lineage,
+                ordinal,
+                damage,
+            ) else {
+                continue;
+            };
             if !runtime.contains_live_creature(target) {
                 let Some(black) = pvp_black else {
                     continue;
@@ -372,6 +385,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 magnitude,
                 now,
                 &mut trained,
+            );
+            equipped_offence::leech_hit(
+                &mut states,
+                &runtime,
+                entry.actor,
+                entry.session,
+                offence,
+                &result,
             );
             if result.applied
                 && result.health_after < result.health_before

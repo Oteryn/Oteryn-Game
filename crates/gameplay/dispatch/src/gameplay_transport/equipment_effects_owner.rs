@@ -4,8 +4,11 @@ use crate::content::native_gameplay::NativeGameplayState;
 use crate::content::{ReferenceEquipmentSlot, ReferenceItemField};
 use crate::durability::character_equipment::EquipmentSnapshot;
 use oteryn_gameplay_combat_rules::attack::AttackConstants;
+use oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence;
 use oteryn_gameplay_combat_rules::resolution::player_defence::{HandDefence, hand_defence};
-use oteryn_gameplay_content::content::item_abilities::item_ability_profile;
+use oteryn_gameplay_content::content::item_abilities::{
+    item_ability_profile, item_offence_modifiers,
+};
 use oteryn_gameplay_domain::domain::death::EquipmentSlot;
 use oteryn_gameplay_items::equipment_effects::{
     EquipmentEffectInput, EquipmentEffects, derive_equipment_effects,
@@ -175,6 +178,51 @@ pub(in crate::gameplay_transport) fn equipped_defence(
     }))
 }
 
+/// PARITY-EQUIP-MODIFIERS-1 (`Player::getSkillLevel` over `abilities.skills`): the critical hit
+/// and leech skills of the items in their own slot, summed per skill and clamped to the skill
+/// range. A timed item and the ammo slot contribute nothing, as for every EQUIP-0 ability. `None`
+/// for the same unreadable equipment [`equipment_effects`] refuses.
+pub(in crate::gameplay_transport) fn equipped_offence(
+    equipment: &EquipmentSnapshot,
+    content: &NativeGameplayState,
+) -> Option<EquippedOffence> {
+    if equipment.content_digest != content.source_digest() {
+        return None;
+    }
+    let sums = equipment
+        .items
+        .iter()
+        .try_fold([0_i64; 4], |mut sums, item| {
+            if item.definition.family != "Item" {
+                return None;
+            }
+            let (slot, semantic_slot) = canonical_slot(item.slot)?;
+            let policy = content.item_policy(
+                &item.definition.production_key,
+                &item.definition.revision_ref,
+            )?;
+            let semantics = &policy.record().semantics;
+            let contributes = !item_ability_profile(semantics).ok()?.timed
+                && slot != EquipmentSlot::Ammo
+                && in_own_slot(semantics, semantic_slot);
+            if contributes {
+                let offence = item_offence_modifiers(semantics);
+                for (sum, value) in sums.iter_mut().zip([
+                    offence.critical_chance,
+                    offence.critical_damage,
+                    offence.life_leech,
+                    offence.mana_leech,
+                ]) {
+                    *sum = sum.saturating_add(value);
+                }
+            }
+            Some(sums)
+        })?;
+    Some(EquippedOffence::from_sums(
+        sums[0], sums[1], sums[2], sums[3],
+    ))
+}
+
 /// The 413 equippable production profiles have known zero raw speed. The two potion profiles
 /// (i266, i285) have unknown native attributes and are never equippable, so never contribute.
 /// Preserve unavailable speed on contributors; the raw value never supplies a sum.
@@ -185,9 +233,14 @@ pub(in crate::gameplay_transport) fn speed_term(
     i32::try_from(equipment_effects_inner(equipment, content, true)?.speed).ok()
 }
 
-/// The suppressions, worn armor and hands' defence one admission installs.
-pub(in crate::gameplay_transport) type AdmissionEffects =
-    (EquipmentEffects, u32, Option<HandDefence>, bool);
+/// The suppressions, worn armor, hands' defence, mana shield and offence one admission installs.
+pub(in crate::gameplay_transport) type AdmissionEffects = (
+    EquipmentEffects,
+    u32,
+    Option<HandDefence>,
+    bool,
+    EquippedOffence,
+);
 
 /// EQUIP-0 §4: read under the caller's spell lane, before its runtime lock.
 impl super::super::ComposedFreshAdmission<'_, '_, '_> {
@@ -208,7 +261,8 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         let armor = equipped_armor(&equipment, native).ok_or(())?;
         let defence = equipped_defence(&equipment, native).ok_or(())?;
         let mana_shield = equipped_mana_shield(&equipment, native).ok_or(())?;
-        Ok(Some((effects, armor, defence, mana_shield)))
+        let offence = equipped_offence(&equipment, native).ok_or(())?;
+        Ok(Some((effects, armor, defence, mana_shield, offence)))
     }
 
     /// The caller holds the spell lane and runtime; lock only spell state here.
@@ -219,7 +273,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         session: crate::foundation::GameSessionId,
         effects: Option<AdmissionEffects>,
     ) -> Option<()> {
-        if let Some((effects, armor, defence, mana_shield)) = effects {
+        if let Some((effects, armor, defence, mana_shield, offence)) = effects {
             let mut states = self.states.spell_states.lock().await;
             let state = states.get_mut(runtime, actor, session)?;
             state.install_equipped_physical_protection(physical_protection(&effects));
@@ -227,6 +281,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             state.install_equipped_armor(armor);
             state.install_equipped_defence(defence);
             state.install_equipped_mana_shield(mana_shield);
+            state.install_equipped_offence(offence);
         }
         Some(())
     }

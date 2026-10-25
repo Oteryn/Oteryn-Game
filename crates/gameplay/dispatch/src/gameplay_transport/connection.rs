@@ -462,6 +462,10 @@ pub struct UseOutcome {
     /// The gate message id of a `SEALED` outcome (1 to 127): carried to the result under
     /// capability 11, required by the codec for `SEALED` and absent for every other disposition.
     pub gate_message_id: Option<u8>,
+    /// PARITY-REFUSAL-DETAIL-1: the refusal detail the disposition alone does not name (the
+    /// floor of a target out of reach). `None` sends the disposition's own detail under
+    /// capability 66; nothing is sent without it.
+    pub refusal_detail: Option<oteryn_protocol_oteryn::refusal_detail::RefusalDetail>,
 }
 
 impl UseOutcome {
@@ -471,6 +475,7 @@ impl UseOutcome {
             committed: None,
             earned: EarnedNotice::NoneEarned,
             gate_message_id: None,
+            refusal_detail: None,
         }
     }
 }

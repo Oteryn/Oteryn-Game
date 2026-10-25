@@ -68,6 +68,7 @@ pub trait FreshAdmissionAuthority {
                 content_generation: own.content_generation,
                 observer: identity,
                 entities: vec![ChannelEntity {
+                    direction: oteryn_protocol_oteryn::world_spatial::StepDirection::South,
                     kind: VisibleKind::Player,
                     identity,
                     generation: 0,
@@ -111,6 +112,24 @@ pub trait FreshAdmissionAuthority {
         async move { (self.step(actor, direction).await, None) }
     }
 
+    fn turn_actor_valid(
+        &self,
+        _actor: ExactActorRef,
+        _session: GameSessionId,
+    ) -> impl Future<Output = bool> {
+        async { false }
+    }
+
+    /// An in-place turn in the admitted actor's current owner context.
+    fn turn_actor(
+        &self,
+        _actor: ExactActorRef,
+        _session: GameSessionId,
+        _direction: StepDirection,
+    ) -> impl Future<Output = bool> {
+        async { false }
+    }
+
     /// USE-AUTOWALK-1: resolve an action's current target and find one bounded adjacent route.
     /// `Ok(None)` leaves unsupported/stale targets to their normal handler; `Err` is no path.
     fn item_walk_route(
@@ -129,6 +148,7 @@ pub trait FreshAdmissionAuthority {
         _session: GameSessionId,
         _expected: crate::foundation::MovementPositionSnapshot,
         _direction: StepDirection,
+        _follow: Option<(ExactActorRef, crate::foundation::MovementPositionSnapshot)>,
     ) -> impl Future<
         Output = (
             StepOutcome,

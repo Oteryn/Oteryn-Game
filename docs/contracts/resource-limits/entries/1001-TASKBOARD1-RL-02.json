@@ -1,0 +1,22 @@
+{
+  "id": "TASKBOARD1-RL-02",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_TASKBOARD1_SCOPE_DECISION_2026-10-25.md",
+  "resource": "Task Board reply payload",
+  "unit": "bytes",
+  "hard_maximum": 1024,
+  "configurable_range": {
+    "minimum": 1024,
+    "maximum": 1024
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "The reply is built from at most RL-03 tasks with race keys of at most 128 bytes; an encoding over the bound is refused, never truncated.",
+  "client_visible": true,
+  "boundary_tests": [
+    "task_board_reply_strict_codec"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/task_board.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/task_board.rs"
+  ],
+  "notes": "TASKBOARD-1 command 89 reply: the whole board."
+}
