@@ -28,6 +28,11 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // 2012..=2017, 2021..=2024, 2597, 2598, 2602, 2605, 6121, 6122, 10322, 12782, 12783.
     // None of them is equipment.
     ("READ-WRITE-1", 19),
+    // 27 reward-bag profiles (tools/content-migration/reward_bag_profiles.py):
+    // Bag You Covet 43895 and rewards 43864..=43887, 50146/50157 from Canary 47dfd51f
+    // reward_bags.lua/items.xml/appearances.dat, with reward ids checked against Crystal ff7ede59.
+    // 43884/43887 have speed_bonus=10; the other 25 profiles have speed_bonus=0.
+    ("REWARD-BAG-1", 27),
 ];
 
 #[test]
