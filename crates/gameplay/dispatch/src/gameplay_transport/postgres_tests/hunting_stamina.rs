@@ -72,8 +72,11 @@ pub(super) async fn qualify(
         );
     }
     // Keep the content-owned rat alive between genuine swings; health is fixture setup,
-    // while damage, hit qualification and the hunting signal use production dispatch.
-    for _ in 0..66 {
+    // while damage, hit qualification and the hunting signal use production dispatch. The
+    // swings are 3 s apart and the rolls follow the content digest, so the fixture swings
+    // until its damaging swings span three minutes instead of a digest-tuned swing count.
+    let (mut first, mut last) = (None, 0_u64);
+    for swing in 0..200_u64 {
         owner
             .runtime
             .lock()
@@ -82,11 +85,28 @@ pub(super) async fn qualify(
             .map_err(debug)?;
         owner.refresh_attack_weapon(actor, session).await;
         owner.drain_auto_attacks().await;
+        if owner
+            .runtime
+            .lock()
+            .await
+            .live_creature_health(creature)
+            .is_none_or(|health| health < 20)
+        {
+            first.get_or_insert(swing);
+            last = swing;
+        }
         owner.clock_origin = owner
             .clock_origin
             .checked_sub(Duration::from_secs(3))
             .ok_or("clock")?;
+        if first.is_some_and(|first| (last - first) * 3 >= 180) {
+            break;
+        }
     }
+    assert!(
+        first.is_some_and(|first| (last - first) * 3 >= 180),
+        "real monster damage over three minutes"
+    );
     let live = owner
         .states
         .spell_states

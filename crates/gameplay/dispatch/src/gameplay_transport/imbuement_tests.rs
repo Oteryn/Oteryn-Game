@@ -127,10 +127,11 @@ fn imbuement_offers_every_tier_of_each_admitted_family_at_canary_prices() {
             (11, 3, 200_000, true),
         ]
     );
-    let Decision::Reply(reply) = decide(ImbuementAction::Query, Some(&allowance), &[row(1, 10)])
-    else {
-        panic!("a query is answered at once");
-    };
+    let reply = match decide(ImbuementAction::Query, Some(&allowance), &[row(1, 10)]) {
+        Decision::Reply(reply) => Some(reply),
+        _ => None,
+    }
+    .expect("a query is answered at once");
     assert_eq!(reply.result, ImbuementResult::Ok);
     let window = reply.window.expect("query window");
     assert_eq!((window.slot_count, window.clear_gold), (2, 15_000));
