@@ -558,7 +558,7 @@ fn tick_inner(
                     super::food_regeneration::credit_fed_second(&mut staged);
                 }
             }
-            // §3.5: a refused agony occurrence is used up in the protection zone.
+            // Retain the generic refusal handling; NIGHT-W1 #1 permits agony in PZ.
             TickKind::Agony { refused: true, .. } => {}
             TickKind::Agony {
                 amount,

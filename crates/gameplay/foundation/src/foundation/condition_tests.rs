@@ -324,7 +324,7 @@ fn damage_ticks_run_each_bounded_by_cond0_rl_03_and_none_is_dropped() {
 }
 
 #[test]
-fn a_field_of_the_same_element_does_not_use_ticks_up_and_a_protection_zone_refuses_them() {
+fn a_field_retains_fire_ticks_but_a_protection_zone_deals_and_uses_them() {
     let root = root();
     let mut store = ConditionStore::new();
     apply(
@@ -352,7 +352,8 @@ fn a_field_of_the_same_element_does_not_use_ticks_up_and_a_protection_zone_refus
         standing_on_field: None,
     };
     let tick = store.take_due(4_000 * MS, pz);
-    assert_eq!(damage_amount(&tick[0]), (10, true));
+    // NIGHT-W1 #1 permits fire damage in a PZ and still consumes the tick.
+    assert_eq!(damage_amount(&tick[0]), (10, false));
     assert_eq!(
         store
             .get(ConflictKey::Element(DotElement::Fire))
@@ -894,7 +895,11 @@ fn source_field_sequence_keeps_variable_damage_and_real_field_pause_clock() {
         in_protection_zone: true,
         standing_on_field: Some(DotElement::Poison),
     };
-    assert_eq!(damage_amount(&store.take_due(15000 * MS, pz)[0]), (2, true));
+    // NIGHT-W1 #1 permits poison in a PZ, even on its own field.
+    assert_eq!(
+        damage_amount(&store.take_due(15000 * MS, pz)[0]),
+        (2, false)
+    );
     assert!(store.instances().is_empty());
 }
 
@@ -1586,4 +1591,89 @@ fn non_ticking_expiry_preserves_overdue_dot_regeneration_and_tick_budget() {
         store.take_due(now + 1, TickFacts::default()),
         before.take_due(now + 1, TickFacts::default()),
     );
+}
+
+#[test]
+fn protection_zone_element_policy_deals_permitted_ticks_and_consumes_all_damage_shapes() {
+    let root = root();
+    // NIGHT-W1 #1: the expected policy is independent of the production predicate.
+    for (element, refused) in [
+        (DotElement::Poison, false),
+        (DotElement::Fire, false),
+        (DotElement::Energy, false),
+        (DotElement::Bleeding, false),
+        (DotElement::Dazzled, false),
+        (DotElement::Cursed, false),
+        (DotElement::Drown, true),
+        (DotElement::Freezing, true),
+    ] {
+        let mut steps = [DotSequenceStep::default(); MAX_DOT_SEQUENCE_STEPS];
+        steps[0] = DotSequenceStep {
+            amount: 10,
+            interval_ms: 2_000,
+            repetitions: 2,
+        };
+        let definitions = [
+            dot(element, 20, 20, true),
+            def(
+                "cond.sequence",
+                ConditionValues::DamageSequence {
+                    element,
+                    steps,
+                    len: 1,
+                    delayed: true,
+                },
+            ),
+            ConditionDefinition::new_damage_schedule(
+                "cond.schedule",
+                1,
+                element,
+                DamageSchedule::Fixed {
+                    delayed: true,
+                    segments: vec![DamageSegment {
+                        count: 2,
+                        interval_ms: 2_000,
+                        amount: 10,
+                    }],
+                },
+            )
+            .unwrap(),
+        ];
+        for definition in definitions {
+            for standing_on_field in [None, Some(element)] {
+                let mut store = ConditionStore::new();
+                apply(
+                    &mut store,
+                    &definition,
+                    ConditionSourceKind::Creature,
+                    &facts(0, &root),
+                )
+                .unwrap();
+                let pz = TickFacts {
+                    in_protection_zone: true,
+                    standing_on_field,
+                };
+                let first = store.take_due(2_000 * MS, pz);
+                assert_eq!(first.len(), 1, "{element:?} {definition:?}");
+                assert_eq!(
+                    damage_amount(&first[0]),
+                    (10, refused),
+                    "{element:?} {definition:?}"
+                );
+                assert_eq!(
+                    store
+                        .get(ConflictKey::Element(element))
+                        .unwrap()
+                        .remaining_total(),
+                    10
+                );
+                assert!(store.take_due(2_000 * MS, pz).is_empty());
+                let last = store.take_due(4_000 * MS, pz);
+                assert_eq!(last.len(), 1);
+                assert_eq!(damage_amount(&last[0]), (10, refused));
+                assert!(store.instances().is_empty());
+                assert!(store.take_due(6_000 * MS, pz).is_empty());
+            }
+        }
+    }
 }

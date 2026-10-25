@@ -394,7 +394,7 @@ fn delayed_agony_waits_one_interval() {
 }
 
 #[test]
-fn agony_is_refused_but_used_up_in_a_protection_zone_and_no_field_keeps_it() {
+fn agony_deals_damage_and_is_used_up_in_a_protection_zone_and_no_field_keeps_it() {
     let mut store = ConditionStore::new();
     apply_at(&mut store, &agony(30, 30, false), 1, 0).unwrap();
     let pz = TickFacts {
@@ -403,10 +403,8 @@ fn agony_is_refused_but_used_up_in_a_protection_zone_and_no_field_keeps_it() {
     };
     assert_eq!(
         agony_kinds(&store.take_due(0, pz)),
-        [TickKind::Agony {
-            amount: 10,
-            refused: true,
-        }]
+        // Amended by NIGHT-W1 #1: agony is always permitted in PZ.
+        [AGONY_10]
     );
     assert_eq!(store.get(ConflictKey::Agony).unwrap().remaining_total(), 20);
     // An element field keeps only its own damage over time; agony has no element.
