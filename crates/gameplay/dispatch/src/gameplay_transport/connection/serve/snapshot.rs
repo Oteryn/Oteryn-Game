@@ -107,6 +107,27 @@ pub(super) async fn initial<A: FreshAdmissionAuthority>(
             payload: vitals_payload,
         });
     }
+    if admitted
+        .continuity
+        .selected_capabilities
+        .domain_selected(oteryn_protocol_oteryn::market::STATE_DOMAIN_MARKET)
+    {
+        let payload = oteryn_protocol_oteryn::market::encode_reply(
+            &oteryn_protocol_oteryn::market::MarketReply {
+                action: 0,
+                code: 11,
+                offer: [0; 16],
+                rows: Vec::new(),
+            },
+        )
+        .map_err(|_| ServeEnd::Disconnected)?;
+        domains.push(OwnedDomain {
+            domain_id: oteryn_protocol_oteryn::market::STATE_DOMAIN_MARKET,
+            revision: 1,
+            snapshot_type: 1,
+            payload,
+        });
+    }
     Ok(InitialSnapshot {
         overlay_served,
         overlay_revision,
