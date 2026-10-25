@@ -1,7 +1,7 @@
 //! PARITY-IMBUE-FORGE-WIRE-1 shrine apply and clear (IMBUE-FORGE0 §4.1, migration 0196).
 //!
 //! One fenced Type 2 transaction per accepted command: the CommandRef record, the consumed
-//! backpack materials, the item-only fee (cause 6) and the one `game_item_imbuements` row the
+//! backpack materials, the item-only fee (cause 7) and the one `game_item_imbuements` row the
 //! record's trigger writes or removes. A refusal writes nothing and is not replayed; a replay of
 //! the same `(session, command)` with the same binding answers OK, another binding
 //! `REVISION_CHANGED`.

@@ -1,6 +1,6 @@
 -- PARITY-IMBUE-FORGE-WIRE-1: the imbuing shrine's apply and clear writers (IMBUE-FORGE0 §4.1).
 -- One immutable CommandRef record per accepted command proves, in the same physical
--- transaction: the consumed backpack materials, the item-only fee (cause 6) and the one
+-- transaction: the consumed backpack materials, the item-only fee (cause 7) and the one
 -- game_item_imbuements row written or removed. The runtime still holds no direct
 -- INSERT/UPDATE/DELETE grant on game_item_imbuements: the record's own SECURITY DEFINER
 -- trigger writes the row, and the row guard admits a delete only for a same-transaction clear.
@@ -103,7 +103,7 @@ DECLARE r game_item_imbuement_records%ROWTYPE; i game_item_instances%ROWTYPE; m 
 BEGIN
  SELECT * INTO r FROM game_item_imbuement_records WHERE transaction_id=p_transaction;
  SELECT f.line_count INTO lines FROM game_item_fee_burns f
-  WHERE f.transaction_id=r.transaction_id AND f.cause_kind=6 AND f.cause_occurrence_id=r.transaction_id
+  WHERE f.transaction_id=r.transaction_id AND f.cause_kind=7 AND f.cause_occurrence_id=r.transaction_id
     AND f.event_id=r.event_id AND f.character_id=r.character_id AND f.world_id=r.world_id
     AND f.fee_gold_units=r.fee_gold_units AND f.created_xact_id=pg_current_xact_id();
  IF r.transaction_id IS NULL OR r.created_xact_id<>pg_current_xact_id() OR lines IS NULL
@@ -139,7 +139,7 @@ CREATE CONSTRAINT TRIGGER game_item_imbuement_records_consistent AFTER INSERT ON
  DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_item_imbuement_consistent();
 CREATE FUNCTION game_item_imbuement_fee_proven() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
- IF NEW.cause_kind=6 THEN
+ IF NEW.cause_kind=7 THEN
   IF NOT EXISTS(SELECT 1 FROM game_item_imbuement_records WHERE transaction_id=NEW.transaction_id) THEN
    RAISE EXCEPTION 'imbuement fee requires its imbuement record' USING ERRCODE='23514'; END IF;
   PERFORM game_item_imbuement_complete(NEW.transaction_id);
@@ -157,20 +157,25 @@ GRANT SELECT,INSERT ON game_item_imbuement_records TO oteryn_game_runtime;
 GRANT SELECT ON game_item_imbuement_records TO oteryn_game_control;
 
 -- Item-only fee: 5000/30000/200000 apply by tier, 15000 clear (Canary imbuements.xml).
-ALTER TABLE game_item_fee_burns DROP CONSTRAINT game_item_fee_burns_cause_kind_check,
- ADD CONSTRAINT game_item_fee_burns_cause_kind_check CHECK(cause_kind IN (1,2,3,4,5,6));
 DO $$
 DECLARE body TEXT;
 BEGIN
+ -- Extend the existing causes so an earlier Market migration keeps its own kind.
+ SELECT pg_get_constraintdef(oid) INTO body FROM pg_constraint
+  WHERE conrelid='game_item_fee_burns'::regclass AND conname='game_item_fee_burns_cause_kind_check';
+ IF body IS NULL THEN RAISE EXCEPTION 'missing fee cause kind constraint'; END IF;
+ ALTER TABLE game_item_fee_burns DROP CONSTRAINT game_item_fee_burns_cause_kind_check;
+ EXECUTE 'ALTER TABLE game_item_fee_burns ADD CONSTRAINT game_item_fee_burns_cause_kind_check CHECK (('
+  || substr(body,7) || ') OR cause_kind=7)';
  SELECT pg_get_constraintdef(oid) INTO body FROM pg_constraint
   WHERE conrelid='game_item_fee_burns'::regclass AND conname='game_item_fee_burns_purchase_cause';
  IF body IS NULL THEN RAISE EXCEPTION 'missing purchase fee constraint'; END IF;
  ALTER TABLE game_item_fee_burns DROP CONSTRAINT game_item_fee_burns_purchase_cause;
  EXECUTE 'ALTER TABLE game_item_fee_burns ADD CONSTRAINT game_item_fee_burns_purchase_cause CHECK (('
-  || substr(body,7) || ') OR (cause_kind=6 AND charm_key IS NULL AND purchase_service_key=''oteryn:service.imbuement'' AND fee_gold_units IN (5000,30000,200000,15000) AND line_count<=15))';
+  || substr(body,7) || ') OR (cause_kind=7 AND charm_key IS NULL AND purchase_service_key=''oteryn:service.imbuement'' AND fee_gold_units IN (5000,30000,200000,15000) AND line_count<=15))';
  ALTER TABLE game_item_fee_burns DROP CONSTRAINT game_item_fee_burns_committed_character_revision_check;
  ALTER TABLE game_item_fee_burns ADD CONSTRAINT game_item_fee_burns_committed_character_revision_check
-  CHECK(committed_character_revision BETWEEN 1 AND 18446744073709551615 AND (cause_kind IN (5,6) OR committed_character_revision>=2));
+  CHECK(committed_character_revision BETWEEN 1 AND 18446744073709551615 AND (cause_kind IN (5,7) OR committed_character_revision>=2));
 END;
 $$;
 
@@ -181,7 +186,7 @@ BEGIN
  SELECT pg_get_functiondef('game_item_fee_burn_consistency_guard()'::regprocedure) INTO body;
  IF position('(NEW.cause_kind=5 AND EXISTS' IN body)=0 THEN RAISE EXCEPTION 'missing item-only fee root proof'; END IF;
  EXECUTE replace(body,'(NEW.cause_kind=5 AND EXISTS',
-   '(NEW.cause_kind=6 AND EXISTS(SELECT 1 FROM game_item_imbuement_records r WHERE r.transaction_id=NEW.transaction_id AND r.character_id=NEW.character_id AND r.created_xact_id=pg_current_xact_id())) OR (NEW.cause_kind=5 AND EXISTS');
+   '(NEW.cause_kind=7 AND EXISTS(SELECT 1 FROM game_item_imbuement_records r WHERE r.transaction_id=NEW.transaction_id AND r.character_id=NEW.character_id AND r.created_xact_id=pg_current_xact_id())) OR (NEW.cause_kind=5 AND EXISTS');
  -- Material decrements pass the generic quantity arm of game_item_instance_guard; only their
  -- change and whole-consumption entry removal need this record's proof. Older arms unchanged.
  FOREACH n IN ARRAY ARRAY['game_item_instance_change_proven','game_item_container_entry_removal_proven'] LOOP

@@ -8,7 +8,7 @@ impl FeeBurnCause {
             Self::AreaDonation { .. } => 4,
             Self::CharmUnassign { .. } => CAUSE_CHARM_UNASSIGN,
             Self::NpcRepair { .. } => 5,
-            Self::Imbuement { .. } => 6,
+            Self::Imbuement { .. } => 7,
             Self::PromotionPurchase { .. } => 2,
             Self::BlessingPurchase { .. } => 3,
         }

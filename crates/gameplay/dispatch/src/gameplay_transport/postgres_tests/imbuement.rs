@@ -355,6 +355,12 @@ async fn at_the_shrine(
     .fetch_one(&harness.pool)
     .await?;
     assert_eq!((records, burns), (2, 2));
+    let cause_kinds: Vec<i16> = sqlx::query_scalar(
+        "SELECT cause_kind FROM game_item_fee_burns ORDER BY transaction_id LIMIT 3",
+    )
+    .fetch_all(&harness.pool)
+    .await?;
+    assert_eq!(cause_kinds, [7, 7], "apply and clear both use Imbuement cause 7");
     Ok(())
 }
 

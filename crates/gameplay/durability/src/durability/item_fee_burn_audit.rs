@@ -75,7 +75,7 @@ pub enum FeeBurnCauseV1 {
     AreaDonation(OneItemAreaDonationV1),
     #[prost(message, tag = "5")]
     NpcRepair(Box<OneItemTimedRepairV1>),
-    #[prost(message, tag = "6")]
+    #[prost(message, tag = "7")]
     Imbuement(Box<OneItemImbuementV1>),
     // End tag-sorted variants.
 }
@@ -98,7 +98,7 @@ pub struct OneItemFeeBurnCauseV1 {
             3, // BlessingPurchase
             4, // AreaDonation
             5, // NpcRepair
-            6, // Imbuement
+            7, // Imbuement
         )
     )]
     pub cause: Option<FeeBurnCauseV1>,

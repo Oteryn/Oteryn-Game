@@ -395,11 +395,31 @@ message OneItemFeeBurnCauseV1 {
     OneItemNpcPurchaseV1 blessing_purchase = 3;
     OneItemAreaDonationV1 area_donation = 4;
     OneItemTimedRepairV1 npc_repair = 5;
+    OneItemImbuementV1 imbuement = 7;
   }
 }
 message OneItemNpcPurchaseV1 {
   string service_key = 1;
   bytes occurrence = 2;
+}
+
+// Shrine apply or clear, combined with its item-only fee in one transaction.
+message OneItemImbuementMaterialV1 {
+  OneItemStateV1 before = 1;
+  OneItemStateV1 after = 2;
+  uint64 placement_ordinal = 3;
+}
+message OneItemImbuementV1 {
+  bytes occurrence = 1;
+  uint32 action = 2; // 1 apply, 2 clear
+  OneItemStateV1 item = 3; // the imbued item, unchanged by the command
+  uint64 placement_ordinal = 4;
+  uint32 slot = 5;
+  uint32 category = 6;
+  string imbuement_key = 7;
+  string imbuement_revision = 8;
+  uint32 tier = 9;
+  repeated OneItemImbuementMaterialV1 materials = 10;
 }
 
 // One BURN line: a live coin stack in a direct entry of the main backpack.
