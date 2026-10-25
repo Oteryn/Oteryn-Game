@@ -1,11 +1,15 @@
 //! SHIELD-DEFENCE-1 (`Creature::blockHit`, `Player::getDefense`): a creature hit on a player
 //! spends one of the player's blocks and meets the defence of what the player's hands hold.
 
+use super::skill_training::{TrainingDue, train_hit};
 use super::*;
 use crate::ability::creature_bite::{CreatureBiteVitals, CreatureHit};
 use crate::foundation::owner_timer::SemanticTimeMicros as OwnerTime;
 use crate::gameplay_transport::actor_spell::ChannelSpellStates;
+use crate::spell::mana_training::CompiledTrainingFormula;
+use oteryn_gameplay_combat_rules::attack::formulas::DefenceSource;
 use oteryn_gameplay_combat_rules::resolution::player_defence::player_defence_bounds;
+use oteryn_gameplay_progression::hit_training::SkillFamily;
 
 impl ChannelAttackStates {
     /// Spend one of `actor`'s blocks on a creature hit at `now`; the budget is created settled
@@ -36,10 +40,13 @@ impl ChannelAttackStates {
 }
 
 /// The vitals a monster bite reaches with the player's defence: the spell states' vitals and
-/// armor, with the block budget and fight mode of the attack states.
+/// armor, with the block budget and fight mode of the attack states. A block trains shielding
+/// (SKILL-TRAIN-1) by `formula`; players whose tries reach a level go to `trained`.
 pub(in crate::gameplay_transport) struct PlayerBiteVitals<'a> {
     pub(in crate::gameplay_transport) states: &'a mut ChannelSpellStates,
     pub(in crate::gameplay_transport) attack: &'a mut ChannelAttackStates,
+    pub(in crate::gameplay_transport) formula: Option<&'a CompiledTrainingFormula>,
+    pub(in crate::gameplay_transport) trained: &'a mut TrainingDue,
 }
 
 impl CreatureBiteVitals for PlayerBiteVitals<'_> {
@@ -86,6 +93,19 @@ impl CreatureBiteVitals for PlayerBiteVitals<'_> {
             target_session,
             SemanticTimeMicros::from_micros(now.get()),
         )?;
+        // `Player::onBlockHit`: a block trains shielding only with a shield in hand.
+        let shield = hand.source == DefenceSource::Shield;
+        train_hit(
+            self.states,
+            runtime,
+            self.formula,
+            target,
+            target_session,
+            SkillFamily::Shielding,
+            now.get(),
+            |hits| hits.block_hit(shield),
+            self.trained,
+        );
         player_defence_bounds(constants, hand, skill, mode, swung)
     }
 }

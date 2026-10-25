@@ -1,6 +1,7 @@
 //! Ordered phases of the Channel owner's auto-attack pass.
 
 use super::shared_experience::aggressive_monster;
+use super::skill_training::{TrainingDue, swing_block, swing_family, train_hit};
 use super::*;
 use crate::ability::exact_actor_resolution::{ExactActorProposal, resolve_exact_actor};
 use crate::combat_attack::{SwingPoll, player_fist_formula, player_melee_formula};
@@ -66,6 +67,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .filter_map(|e| e.shared_experience_activity)
             .collect();
         let root = GameplayDecisionRoot::from_bytes(digest);
+        let mut trained = TrainingDue::new();
         for entry in entries.iter_mut() {
             let Some(selected) =
                 select_swing(entry, &runtime, &states, room, digest, now, constants)
@@ -215,6 +217,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 continue;
             };
             if magnitude <= 0 {
+                train_swing(
+                    &mut states,
+                    &runtime,
+                    content,
+                    entry,
+                    selected.weapon.weapon,
+                    magnitude,
+                    now,
+                    &mut trained,
+                );
                 continue;
             }
             let Some(plan) = swing_plan(
@@ -250,6 +262,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 entry.clear_target();
                 continue;
             };
+            train_swing(
+                &mut states,
+                &runtime,
+                content,
+                entry,
+                selected.weapon.weapon,
+                magnitude,
+                now,
+                &mut trained,
+            );
             record_hit_activity(
                 entry,
                 &runtime,
@@ -295,7 +317,39 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 );
             }
         }
+        drop(attack);
+        drop(objects);
+        drop(states);
+        drop(runtime);
+        drop(pvp_permit);
+        self.save_trained_levels(trained).await;
     }
+}
+
+/// SKILL-TRAIN-1: the swing at a creature trains the swing's skill by how its block met it.
+#[allow(clippy::too_many_arguments)]
+fn train_swing(
+    states: &mut ChannelSpellStates,
+    runtime: &ChannelRuntimeV1,
+    content: &NativeGameplayState,
+    entry: &ActorAttack,
+    weapon: SwingWeapon,
+    magnitude: i64,
+    now: SemanticTimeMicros,
+    trained: &mut TrainingDue,
+) {
+    let block = swing_block(magnitude);
+    train_hit(
+        states,
+        runtime,
+        content.training_formula(),
+        entry.actor,
+        entry.session,
+        swing_family(weapon),
+        now.get(),
+        |hits| hits.melee_hit(block),
+        trained,
+    );
 }
 
 fn select_swing(
