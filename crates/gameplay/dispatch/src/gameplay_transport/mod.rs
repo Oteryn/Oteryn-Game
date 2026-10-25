@@ -139,6 +139,7 @@ use bundle_map_position::bundle_world_map;
 pub use connection::quest_log;
 pub use last_position::LastPositionFlush;
 pub use npc_talk::NpcTalkBook;
+pub use paced_movement::{AutoWalkRoute, AutoWalkTarget};
 pub use promotion_login::PremiumSessions;
 pub use seam_rooms::SeamRooms;
 #[allow(

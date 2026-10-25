@@ -2,6 +2,7 @@
 
 use super::*;
 
+mod autowalk;
 mod command;
 mod inbound;
 mod poll;

@@ -111,6 +111,44 @@ pub trait FreshAdmissionAuthority {
         async move { (self.step(actor, direction).await, None) }
     }
 
+    /// USE-AUTOWALK-1: resolve an action's current target and find one bounded adjacent route.
+    /// `Ok(None)` leaves unsupported/stale targets to their normal handler; `Err` is no path.
+    fn item_walk_route(
+        &self,
+        _actor: ExactActorRef,
+        _session: GameSessionId,
+        _target: super::super::AutoWalkTarget,
+    ) -> impl Future<Output = Result<Option<super::super::AutoWalkRoute>, ()>> {
+        async { Ok(None) }
+    }
+
+    /// One ordinary paced step, atomically refusing a queue whose position revision changed.
+    fn item_walk_step(
+        &self,
+        _actor: ExactActorRef,
+        _session: GameSessionId,
+        _expected: crate::foundation::MovementPositionSnapshot,
+        _direction: StepDirection,
+    ) -> impl Future<
+        Output = (
+            StepOutcome,
+            Option<std::time::Duration>,
+            Option<crate::foundation::MovementPositionSnapshot>,
+        ),
+    > {
+        async { (StepOutcome::rejected(), None, None) }
+    }
+
+    /// Recheck the queue after its last pacing wait, before retrying the item action.
+    fn item_walk_valid(
+        &self,
+        _actor: ExactActorRef,
+        _session: GameSessionId,
+        _expected: crate::foundation::MovementPositionSnapshot,
+    ) -> impl Future<Output = bool> {
+        async { false }
+    }
+
     /// CHASE-1 (RANGED-0 §8): the server-driven chase step of `actor` due now, taken like
     /// [`Self::paced_step`] and answered the same way; `None` when the chase takes no step.
     /// Fixtures without a chase keep this default.
