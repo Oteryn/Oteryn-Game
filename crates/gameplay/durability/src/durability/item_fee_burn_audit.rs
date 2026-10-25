@@ -85,6 +85,8 @@ pub enum FeeBurnCauseV1 {
     NpcRepair(Box<OneItemTimedRepairV1>),
     #[prost(message, tag = "6")]
     MarketFee(OneItemMarketFeeV1),
+    #[prost(message, tag = "6")]
+    MarketFee(OneItemMarketFeeV1),
     #[prost(message, tag = "7")]
     Imbuement(Box<OneItemImbuementV1>),
     // End tag-sorted variants.
@@ -108,6 +110,7 @@ pub struct OneItemFeeBurnCauseV1 {
             3, // BlessingPurchase
             4, // AreaDonation
             5, // NpcRepair
+            6, // MarketFee
             6, // MarketFee
             7, // Imbuement
         )
