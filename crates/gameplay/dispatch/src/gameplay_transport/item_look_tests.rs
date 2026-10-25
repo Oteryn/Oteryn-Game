@@ -615,3 +615,410 @@ fn item_look_details_stay_within_the_wire_bound_on_a_utf8_boundary() {
         .is_ok()
     );
 }
+
+fn with_reading_map(
+    text: &str,
+    test: impl FnOnce(
+        &ActiveGeneration,
+        crate::map::boot::BundleWorld,
+        oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ),
+) {
+    with_reading_map_entries(text, 0, test);
+}
+
+fn with_reading_map_entries(
+    text: &str,
+    extra_entries: usize,
+    test: impl FnOnce(
+        &ActiveGeneration,
+        crate::map::boot::BundleWorld,
+        oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ),
+) {
+    use crate::map::boot::{BootPins, boot, tests::bundle_with_item_ids};
+    use crate::map::facts::ItemDefinition;
+    use crate::map::overlay::TilePos;
+    let world = WorldId::decode(&id(42)).unwrap();
+    let (controller, _) = activated_with_loot_tables(world, None);
+    let generation = controller.active().unwrap();
+    let index = generation.native_gameplay().unwrap().item_index().unwrap();
+    let reference = |key: &str| index.definition_ref("Item", key, "definition-r1").unwrap();
+    let (bytes, mut pins) = bundle_with_item_ids(
+        (
+            "oteryn:item.tibia.i2854",
+            reference("oteryn:item.tibia.i2854").get() - 1,
+        ),
+        (
+            "oteryn:item.tibia.i2012",
+            reference("oteryn:item.tibia.i2012").get() - 1,
+        ),
+    );
+    let mut decoded = oteryn_world_bundle::bundle::read(&bytes).unwrap();
+    // The non-distance-readable box is also text-bound, so it is a genuine
+    // base-ordinal target despite the definition being pickupable.
+    decoded.sectors[0]
+        .tiles
+        .iter_mut()
+        .find(|tile| tile.x == 6)
+        .unwrap()
+        .items
+        .last_mut()
+        .unwrap()
+        .attrs
+        .text = Some(text.into());
+    let sign = decoded.sectors[0]
+        .tiles
+        .iter_mut()
+        .find(|tile| tile.x == 7)
+        .unwrap();
+    sign.items.last_mut().unwrap().attrs.text = Some(text.into());
+    sign.items.extend(std::iter::repeat_n(
+        sign.items.last().unwrap().clone(),
+        extra_entries,
+    ));
+    let bytes = oteryn_world_bundle_compiler::bundle::write(
+        &decoded.manifest,
+        &decoded.sectors,
+        &decoded.spawns,
+    )
+    .unwrap();
+    pins.digest = oteryn_world_bundle::bundle::read(&bytes).unwrap().digest;
+    let map_revision = format!(
+        "sha256:{}",
+        pins.digest
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>()
+    );
+    let map = boot(
+        &bytes,
+        &BootPins {
+            bundle: pins,
+            map_revision,
+            start: TilePos {
+                x: 2,
+                y: 0,
+                floor: -7,
+            },
+        },
+        world,
+        ChannelId::decode(&id(1)).unwrap(),
+        |key| {
+            let record = generation.native_gameplay()?.item_policy(key, "definition-r1")?.record();
+            Some(ItemDefinition {
+                reference: reference(key),
+                solid: record.attributes.blocks_movement,
+                blocks_projectile: record.attributes.blocks_projectile.unwrap_or(true),
+                pickupable: matches!(&record.semantics.physical, crate::content::ReferenceItemField::Known(physical) if physical.pickupable == crate::content::ReferenceItemField::Known(true)),
+                door: false,
+            })
+        },
+    )
+    .unwrap();
+    let key = view::placement_key(
+        TilePos {
+            x: 7,
+            y: 0,
+            floor: -7,
+        },
+        1,
+    )
+    .unwrap();
+    let mut placement = map.overlay().base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    test(
+        generation,
+        map,
+        oteryn_protocol_oteryn::world_object::WorldObjectTarget {
+            placement,
+            expected_revision: 0,
+        },
+    );
+}
+
+fn read_map_sign(
+    generation: &ActiveGeneration,
+    map: &crate::map::boot::BundleWorld,
+    target: &oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    actor: ActorPosition,
+) -> Result<ItemLookResult, ItemLookRefusal> {
+    let facts = map.facts().pinned();
+    let source = super::super::world_map::MapViewSource {
+        overlay: map.overlay(),
+        facts: &facts,
+        content_generation: generation.identity().client_artifact_digest(),
+        reset_epoch: 0,
+    };
+    examine_world_object(
+        &source,
+        actor,
+        target,
+        generation,
+        generation.native_gameplay().unwrap().item_index().unwrap(),
+    )
+}
+
+#[test]
+fn reading_map_base_is_readable_without_materialization_or_a_handle() {
+    with_reading_map("North!", |generation, map, target| {
+        let policy = generation
+            .native_gameplay()
+            .unwrap()
+            .item_policy("oteryn:item.tibia.i2012", "definition-r1")
+            .unwrap();
+        assert!(!policy.record().admission.materializable);
+        let facts = map.facts().pinned();
+        let tile = view::compose_tile(
+            map.overlay(),
+            &facts,
+            crate::map::overlay::TilePos {
+                x: 7,
+                y: 0,
+                floor: -7,
+            },
+        )
+        .unwrap()
+        .unwrap();
+        assert!(!tile.entries[1].source.handle_bearing());
+        assert_eq!(
+            facts.base_text(view::placement_key(tile.pos, 1).unwrap()),
+            Some("North!")
+        );
+        for distance in 0..=4 {
+            let at = ActorPosition {
+                x: 7 - distance,
+                y: 0,
+                floor: -7,
+            };
+            assert_eq!(
+                read_map_sign(generation, &map, &target, at),
+                Ok(ItemLookResult::Text(
+                    "You see sign.\nYou read: North!".into()
+                ))
+            );
+        }
+        let index = generation.native_gameplay().unwrap().item_index().unwrap();
+        let reference = index
+            .definition_ref("Item", "oteryn:item.tibia.i2012", "definition-r1")
+            .unwrap();
+        let definition = typed_definition(index, reference).unwrap();
+        assert_eq!(
+            examine_qualified_item(
+                policy,
+                ObservedLookItem {
+                    item: ViewItem {
+                        key: ItemKey::Instance(id(3)),
+                        item_definition_ref: reference,
+                        count: NonZeroU32::MIN,
+                        sub_type: 0
+                    },
+                    definition: &definition,
+                    look_distance: -1
+                }
+            ),
+            ItemLookOutcome::Unavailable
+        );
+    });
+}
+
+#[test]
+fn reading_map_five_and_visible_other_floor_are_too_far() {
+    with_reading_map("North!", |generation, map, target| {
+        for at in [
+            ActorPosition {
+                x: 2,
+                y: 0,
+                floor: -7,
+            },
+            ActorPosition {
+                x: 7,
+                y: 0,
+                floor: -6,
+            },
+        ] {
+            assert_eq!(
+                read_map_sign(generation, &map, &target, at),
+                Ok(ItemLookResult::Text(
+                    "You see sign.\nYou are too far away to read it".into()
+                ))
+            );
+        }
+    });
+}
+
+#[test]
+fn reading_map_empty_and_final_utf8_wire_bound() {
+    for text in [String::new(), "界".repeat(200)] {
+        with_reading_map(&text, |generation, map, target| {
+            let Ok(ItemLookResult::Text(result)) = read_map_sign(
+                generation,
+                &map,
+                &target,
+                ActorPosition {
+                    x: 7,
+                    y: 0,
+                    floor: -7,
+                },
+            ) else {
+                panic!("visible sign");
+            };
+            if text.is_empty() {
+                assert_eq!(result, "You see sign.\nNothing is written on it.");
+            } else {
+                let prefix = "You see sign.\nYou read: ";
+                assert_eq!(
+                    result,
+                    format!(
+                        "{prefix}{}",
+                        "界".repeat((MAX_ITEM_LOOK_TEXT_BYTES - prefix.len()) / 3)
+                    )
+                );
+                assert!(result.len() <= MAX_ITEM_LOOK_TEXT_BYTES);
+                assert!(
+                    oteryn_protocol_oteryn::item_look::encode_item_look_result(
+                        &ItemLookResult::Text(result)
+                    )
+                    .is_ok()
+                );
+            }
+        });
+    }
+}
+
+#[test]
+fn reading_map_forged_stale_hidden_and_not_visible_are_refused() {
+    use crate::map::overlay::{Admission, TilePos};
+    with_reading_map("North!", |generation, map, target| {
+        let at = ActorPosition {
+            x: 7,
+            y: 0,
+            floor: -7,
+        };
+        let mut forged = target.clone();
+        forged.placement[0] ^= 1;
+        assert_eq!(
+            read_map_sign(generation, &map, &forged, at),
+            Err(ItemLookRefusal::NotAvailable)
+        );
+        let mut stale = target.clone();
+        stale.expected_revision = 1;
+        assert_eq!(
+            read_map_sign(generation, &map, &stale, at),
+            Err(ItemLookRefusal::NotAvailable)
+        );
+        let mut missing = target.clone();
+        missing.placement[39] = 63;
+        assert_eq!(
+            read_map_sign(generation, &map, &missing, at),
+            Err(ItemLookRefusal::NotAvailable)
+        );
+        assert_eq!(
+            read_map_sign(generation, &map, &target, ActorPosition { x: 30, ..at }),
+            Err(ItemLookRefusal::NotVisible)
+        );
+        let mut overlay = crate::map::overlay::ChannelOverlay::new(
+            std::sync::Arc::clone(map.base()),
+            map.overlay().world_id(),
+            map.overlay().channel_id(),
+        );
+        overlay
+            .hide(
+                TilePos {
+                    x: 7,
+                    y: 0,
+                    floor: -7,
+                },
+                1,
+                Admission::Durable,
+            )
+            .unwrap();
+        let source = super::super::world_map::MapViewSource {
+            overlay: &overlay,
+            facts: map.facts(),
+            content_generation: generation.identity().client_artifact_digest(),
+            reset_epoch: 0,
+        };
+        assert_eq!(
+            examine_world_object(
+                &source,
+                at,
+                &target,
+                generation,
+                generation.native_gameplay().unwrap().item_index().unwrap()
+            ),
+            Err(ItemLookRefusal::NotAvailable)
+        );
+    });
+}
+
+#[test]
+fn reading_map_placement_outside_the_published_stack_cut_is_not_visible() {
+    with_reading_map_entries("North!", 10, |generation, map, target| {
+        assert_eq!(
+            read_map_sign(
+                generation,
+                &map,
+                &target,
+                ActorPosition {
+                    x: 7,
+                    y: 0,
+                    floor: -7
+                }
+            ),
+            Err(ItemLookRefusal::NotVisible)
+        );
+    });
+}
+
+#[test]
+fn reading_map_non_distance_item_keeps_existing_look() {
+    with_reading_map("North!", |generation, map, mut target| {
+        let key = view::placement_key(
+            crate::map::overlay::TilePos {
+                x: 6,
+                y: 0,
+                floor: -7,
+            },
+            1,
+        )
+        .unwrap();
+        target.placement[32..].copy_from_slice(&key.to_be_bytes());
+        let record = generation
+            .native_gameplay()
+            .unwrap()
+            .item_policy("oteryn:item.tibia.i2854", "definition-r1")
+            .unwrap()
+            .record();
+        let expected =
+            oteryn_gameplay_items::look::item_text(&record.semantics, NonZeroU32::MIN, 1).unwrap();
+        assert_eq!(
+            read_map_sign(
+                generation,
+                &map,
+                &target,
+                ActorPosition {
+                    x: 7,
+                    y: 0,
+                    floor: -7
+                }
+            ),
+            Ok(ItemLookResult::Text(expected))
+        );
+        // A base ordinal naming a Terrain definition is not admitted as an Item.
+        target.placement[39] = 0;
+        assert_eq!(
+            read_map_sign(
+                generation,
+                &map,
+                &target,
+                ActorPosition {
+                    x: 7,
+                    y: 0,
+                    floor: -7
+                }
+            ),
+            Err(ItemLookRefusal::NotAvailable)
+        );
+    });
+}
