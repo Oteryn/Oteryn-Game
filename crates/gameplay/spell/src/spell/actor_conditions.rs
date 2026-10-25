@@ -552,7 +552,9 @@ fn tick_inner(
                 key: oteryn_gameplay_domain::domain::condition::ConflictKey::FoodRegeneration,
                 suppressed,
             } => {
-                if !suppressed {
+                if suppressed {
+                    super::food_regeneration::hold_fed_second(&mut staged);
+                } else {
                     super::food_regeneration::credit_fed_second(&mut staged);
                 }
             }

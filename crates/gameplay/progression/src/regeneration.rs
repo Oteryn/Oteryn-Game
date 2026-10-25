@@ -58,7 +58,7 @@ pub struct RegenerationState {
     pub regen_mana_ms: u32,
 }
 
-/// Credits one fed tick to a living actor. Dead actors accumulate and gain nothing.
+/// Credits one fed tick to a living actor. Dead actors neither accumulate nor gain.
 pub fn credit_fed_second(
     state: &mut RegenerationState,
     rate: RegenerationRate,
@@ -81,6 +81,23 @@ pub fn credit_fed_second(
         state.regen_mana_ms -= rate.mana_period_ms;
         state.mana = state.mana.saturating_add(rate.mana_amount).min(max_mana);
     }
+}
+
+/// Holds one fed tick inside a protection zone (Canary `ConditionRegeneration`): the fed time
+/// accumulates but credits nothing, and stops one tick short of each period so the first
+/// tick outside credits the due period once and starts the next one from zero.
+pub fn hold_fed_second(state: &mut RegenerationState, rate: RegenerationRate) {
+    if state.health == 0 {
+        return;
+    }
+    let hold = |progress: u32, period: u32| {
+        progress
+            .saturating_add(FOOD_TICK_MS)
+            .min(period.saturating_sub(FOOD_TICK_MS))
+            .max(progress)
+    };
+    state.regen_health_ms = hold(state.regen_health_ms, rate.health_period_ms);
+    state.regen_mana_ms = hold(state.regen_mana_ms, rate.mana_period_ms);
 }
 
 #[cfg(test)]

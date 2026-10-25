@@ -1,7 +1,8 @@
 //! FOOD-REGEN-1: fed-time regeneration of a player's health and mana. While the
 //! `FoodRegeneration` condition runs, each one-second tick credits fed time toward the
 //! vocation's health and mana periods; a completed period credits its amount once.
-//! Protection-zone ticks are suppressed upstream and credit nothing.
+//! Protection-zone ticks accumulate fed time but credit nothing; the first tick outside
+//! credits the due period once (Canary `ConditionRegeneration`).
 #[cfg(test)]
 use super::Vocation;
 use super::cast::PlayerSpellState;
@@ -10,15 +11,36 @@ pub use oteryn_gameplay_progression::regeneration::{
     FOOD_TICK_MS, RegenerationRate, RegenerationState, effective, rate,
 };
 
-/// Credits one fed tick to a living actor. Dead actors accumulate and gain nothing.
+/// Credits one fed tick to a living actor. Dead actors neither accumulate nor gain.
 pub fn credit_fed_second(state: &mut PlayerSpellState) {
+    apply(state, |regeneration, rate, max_health, max_mana| {
+        oteryn_gameplay_progression::regeneration::credit_fed_second(
+            regeneration,
+            rate,
+            max_health,
+            max_mana,
+        );
+    });
+}
+
+/// Holds one fed tick of a living actor standing in a protection zone.
+pub fn hold_fed_second(state: &mut PlayerSpellState) {
+    apply(state, |regeneration, rate, _, _| {
+        oteryn_gameplay_progression::regeneration::hold_fed_second(regeneration, rate);
+    });
+}
+
+fn apply(
+    state: &mut PlayerSpellState,
+    step: impl FnOnce(&mut RegenerationState, RegenerationRate, u32, u32),
+) {
     let mut regeneration = RegenerationState {
         health: state.health,
         mana: state.mana,
         regen_health_ms: state.regen_health_ms,
         regen_mana_ms: state.regen_mana_ms,
     };
-    oteryn_gameplay_progression::regeneration::credit_fed_second(
+    step(
         &mut regeneration,
         rate(effective(state.facts.vocation, state.premium_current)),
         state.facts.max_health,
@@ -142,6 +164,45 @@ mod tests {
     }
 
     #[test]
+    fn a_protection_zone_holds_the_due_period_until_the_first_tick_outside() {
+        let mut state = actor(Vocation::Knight);
+        eat_food(&mut state, 30, 0).expect("eat");
+        let pz = TickFacts {
+            in_protection_zone: true,
+            standing_on_field: None,
+        };
+        // Knight: health and mana every 6 s. Ten seconds in the zone hold one tick short.
+        run(&mut state, 0, 10, pz);
+        assert_eq!((state.health, state.mana), (100, 100));
+        assert_eq!((state.regen_health_ms, state.regen_mana_ms), (5_000, 5_000));
+        // The first tick outside credits once and starts the next period from zero.
+        run(&mut state, 10, 11, TickFacts::default());
+        assert_eq!((state.health, state.mana), (101, 102));
+        assert_eq!((state.regen_health_ms, state.regen_mana_ms), (0, 0));
+        run(&mut state, 11, 16, TickFacts::default());
+        assert_eq!((state.health, state.mana), (101, 102));
+        run(&mut state, 16, 17, TickFacts::default());
+        assert_eq!((state.health, state.mana), (102, 104));
+    }
+
+    #[test]
+    fn a_short_protection_zone_stay_keeps_the_fed_time() {
+        let mut state = actor(Vocation::Knight);
+        eat_food(&mut state, 30, 0).expect("eat");
+        let pz = TickFacts {
+            in_protection_zone: true,
+            standing_on_field: None,
+        };
+        run(&mut state, 0, 2, TickFacts::default());
+        run(&mut state, 2, 4, pz);
+        assert_eq!(state.regen_health_ms, 4_000);
+        run(&mut state, 4, 5, TickFacts::default());
+        assert_eq!(state.health, 100);
+        run(&mut state, 5, 6, TickFacts::default());
+        assert_eq!(state.health, 101);
+    }
+
+    #[test]
     fn credits_clamp_at_the_maxima_and_dead_actors_gain_nothing() {
         let mut full = actor(Vocation::Sorcerer);
         full.health = full.facts.max_health;
@@ -152,6 +213,7 @@ mod tests {
         let mut dead = actor(Vocation::Sorcerer);
         dead.health = 0;
         credit_fed_second(&mut dead);
+        hold_fed_second(&mut dead);
         assert_eq!((dead.health, dead.regen_health_ms), (0, 0));
     }
 
