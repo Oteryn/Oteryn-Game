@@ -41,11 +41,14 @@ impl PlayerSpellState {
         u64::from(seconds) * MICROS_PER_SECOND
     }
 
-    /// Applies one kill's change at `now_us`. A dead actor keeps no window.
+    /// Applies one kill's change at `now_us`. A dead actor keeps no window. An actor at its
+    /// maximum soul neither opens nor replaces one: a running window keeps its end and cadence,
+    /// as Canary's `onGainExperience` adds `CONDITION_SOUL` only below `getMaxSoul()`.
     pub fn change_soul_window(&mut self, change: SoulWindowChange, now_us: u64) {
         self.soul_window = match change {
             SoulWindowChange::Close => None,
             SoulWindowChange::Open { .. } if self.health == 0 => None,
+            SoulWindowChange::Open { .. } if self.soul >= self.facts.max_soul => self.soul_window,
             SoulWindowChange::Open { seconds, promoted } => {
                 let ends_at_us = now_us.saturating_add(u64::from(seconds) * MICROS_PER_SECOND);
                 let (next_gain_us, held) = match self.soul_window {
@@ -207,6 +210,27 @@ mod tests {
         dead.health = 0;
         dead.change_soul_window(open(false), 0);
         assert_eq!(dead.soul_window(), None);
+    }
+
+    /// SOUL-FULL-1: a kill at the maximum soul opens nothing and leaves a running window as
+    /// it was, so soul spent afterwards regains only until that window's own end.
+    #[test]
+    fn a_kill_at_the_maximum_soul_neither_opens_nor_replaces_a_window() {
+        let mut full = actor(100);
+        full.change_soul_window(open(false), 0);
+        assert_eq!(full.soul_window(), None);
+
+        let mut state = actor(99);
+        state.change_soul_window(open(false), 0);
+        assert_eq!(cycle(&mut state, 120), 100);
+        let running = state.soul_window();
+        state.change_soul_window(open(false), 200);
+        assert_eq!(state.soul_window(), running);
+        state.soul = 50;
+        assert_eq!(cycle(&mut state, 239), 50);
+        assert_eq!(cycle(&mut state, 240), 51);
+        assert_eq!(state.soul_window(), None);
+        assert_eq!(cycle(&mut state, 600), 51);
     }
 
     #[test]
