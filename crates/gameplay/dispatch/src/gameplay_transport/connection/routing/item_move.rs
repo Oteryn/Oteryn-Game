@@ -48,7 +48,11 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                     )
                     .await?
                 {
-                    return Some(Dispatch::ItemMove(ItemMoveOutcome::Rejected, Vec::new()));
+                    return Some(Dispatch::ItemMove(
+                        ItemMoveOutcome::Rejected,
+                        Vec::new(),
+                        None,
+                    ));
                 }
                 let step = item_move::item_move(
                     authority,
