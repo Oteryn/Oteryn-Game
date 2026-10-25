@@ -244,6 +244,13 @@ pub(super) async fn take_corpse_entry(
             crate::durability::DurabilityError::Unavailable,
         )));
     };
+    if !admission
+        .states
+        .player_trades
+        .physical(command.game_session_id, None)
+    {
+        return Err(rejected());
+    }
     let (corpse, entry_id, native) = {
         let runtime = admission.runtime.lock().await;
         let dead = admission.states.spell_states.lock().await.is_dead(actor);

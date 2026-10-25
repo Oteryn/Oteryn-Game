@@ -64,6 +64,29 @@ where
         baseline,
     )
     .await?;
+    if admitted
+        .continuity
+        .selected_capabilities
+        .contains(oteryn_protocol_oteryn::player_trade::CAPABILITY_PLAYER_TRADE_V1)
+    {
+        authority
+            .player_trade_open(*admitted)
+            .await
+            .ok_or(ServeEnd::Disconnected)?;
+        let (revision, state, _) = authority
+            .player_trade_observation(admitted.game_session_id)
+            .await
+            .ok_or(ServeEnd::Disconnected)?;
+        payloads.push(
+            crate::gameplay_transport::item_view::ItemViewSnapshotDomain {
+                domain_id: oteryn_protocol_oteryn::player_trade::STATE_DOMAIN_PLAYER_TRADE,
+                revision,
+                snapshot_type: 1,
+                payload: oteryn_protocol_oteryn::player_trade::encode_state(&state)
+                    .map_err(|_| ServeEnd::Disconnected)?,
+            },
+        );
+    }
     let mut domains = payloads
         .iter()
         .map(|domain| DomainSnapshot {
@@ -84,6 +107,13 @@ where
         if write_frame(stream, frame).await.is_err() {
             return Err(ServeEnd::Disconnected);
         }
+    }
+    if let Some(trade) = payloads
+        .iter()
+        .find(|p| p.domain_id == oteryn_protocol_oteryn::player_trade::STATE_DOMAIN_PLAYER_TRADE)
+    {
+        admitted.continuity.player_trade_revision = trade.revision;
+        authority.player_trade_delivered(admitted.game_session_id, trade.revision);
     }
     // r4122508665: only a fully, successfully transmitted snapshot (every frame, including
     // `SnapshotCommit`, above) may update continuity. The overlay is Channel-global (unlike

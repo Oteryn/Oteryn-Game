@@ -127,16 +127,17 @@ pub(super) async fn fence_pair(
     Ok(distinct)
 }
 
-pub(super) async fn read_pair(
+pub(super) async fn read_leaves<const N: usize>(
     tx: &mut Transaction<'_, Postgres>,
-    fences: &[CurrentCharacterItemFence; 2],
-    items: [[u8; 16]; 2],
-) -> Pass<[TradeLeaf; 2]> {
-    if items[0] == items[1] {
+    fences: &[CurrentCharacterItemFence; N],
+    items: [[u8; 16]; N],
+) -> Pass<[TradeLeaf; N]> {
+    if N == 2 && items[0] == items[1] {
         return Ok(Err(Refusal::NotTradeable));
     }
-    let mut leaves = [None, None];
-    let order = if items[0] < items[1] { [0, 1] } else { [1, 0] };
+    let mut leaves: [Option<TradeLeaf>; N] = std::array::from_fn(|_| None);
+    let mut order: Vec<_> = (0..N).collect();
+    order.sort_by_key(|index| items[*index]);
     for index in order {
         let row=sqlx::query(
             "SELECT to_jsonb(i) AS item,to_jsonb(e) AS entry, \
@@ -165,10 +166,21 @@ pub(super) async fn read_pair(
             text_revision: row.try_get("text_revision")?,
         });
     }
-    match leaves {
-        [Some(a), Some(b)] => Ok(Ok([a, b])),
-        _ => Err(DurabilityError::InvalidStoredState),
-    }
+    let leaves = leaves
+        .into_iter()
+        .collect::<Option<Vec<_>>>()
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    Ok(Ok(leaves
+        .try_into()
+        .map_err(|_| DurabilityError::InvalidStoredState)?))
+}
+
+pub(super) async fn read_pair(
+    tx: &mut Transaction<'_, Postgres>,
+    fences: &[CurrentCharacterItemFence; 2],
+    items: [[u8; 16]; 2],
+) -> Pass<[TradeLeaf; 2]> {
+    read_leaves(tx, fences, items).await
 }
 
 pub(super) async fn destinations<C: PlayerTradeContent>(
