@@ -187,3 +187,28 @@ fn generation_binding_rejects_missing_effects_duplicate_races_and_wire_limits() 
     );
     assert!(CharmConnectionContent::new("r1".into(), catalogue(), vec![], &wrong).is_err());
 }
+
+#[test]
+fn remove_dispositions_map_each_refusal_and_name_the_fee_only_when_removed() {
+    let refusal = |error| remove_disposition(Err(error));
+    assert_eq!(
+        refusal(CharmStateError::NotAssigned),
+        (CharmRemoveDisposition::NotAssigned, 0)
+    );
+    assert_eq!(
+        refusal(CharmStateError::InsufficientGold),
+        (CharmRemoveDisposition::NotEnoughGold, 0)
+    );
+    assert_eq!(
+        refusal(CharmStateError::FeeChangeDoesNotFit),
+        (CharmRemoveDisposition::ChangeDoesNotFit, 0)
+    );
+    assert_eq!(
+        refusal(CharmStateError::Rule(CharmRuleError::UnknownCharm)),
+        (CharmRemoveDisposition::UnknownCharm, 0)
+    );
+    assert_eq!(
+        refusal(CharmStateError::InvalidInput),
+        (CharmRemoveDisposition::Rejected, 0)
+    );
+}

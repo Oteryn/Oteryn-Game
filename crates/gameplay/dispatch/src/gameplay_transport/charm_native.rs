@@ -14,6 +14,7 @@ use oteryn_protocol_oteryn::charm::{
     CharmUnlockStageIntent, CharmView, MAX_CHARM_BALANCE, MAX_CHARM_STAGE_COST, MAX_CHARMS,
     encode_charm_assign_result, encode_charm_unlock_stage_result, encode_charm_view,
 };
+use oteryn_protocol_oteryn::charm_progression::CharmRemoveDisposition;
 
 use super::{
     CharmCommandIdentity, CharmCommandReply, CharmPortUnavailable, CharmProgressionPort,
@@ -31,7 +32,7 @@ use crate::durability::character_revision_sequencer::{CharacterRevisionSequencer
 use crate::durability::charm_state::{
     CharacterCharmProgressionSnapshot, CharmCommand, CharmCommandEffect, CharmCommandOccurrence,
     CharmCommandOutcome, CharmCommandRequest, CharmFacts, CharmProgressionReadRequest,
-    CharmStateError, CommittedCharmCommand,
+    CharmRemoveFee, CharmStateError, CommittedCharmCommand,
 };
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 use oteryn_gameplay_progression::charm_effects::{
@@ -42,8 +43,6 @@ use oteryn_gameplay_progression::charm_effects::{
 /// Comparing its revision with the Character root checks expected binding only. Content-owner
 /// loader/digest integration must establish provenance before claiming a qualified generation.
 pub struct CharmConnectionContent {
-    // The standalone PostgreSQL suites exercise the native reader; lib tests cover projection.
-    #[cfg_attr(test, allow(dead_code))]
     revision: String,
     catalogue: CharmCatalogue,
     charms: Vec<CharmKey>,
@@ -108,7 +107,6 @@ impl CharmConnectionContent {
         })
     }
 
-    #[cfg_attr(test, allow(dead_code))] // Used by the native PostgreSQL reader, not lib projection.
     fn request(&self) -> CharmProgressionReadRequest {
         CharmProgressionReadRequest {
             catalogue_revision: self.revision.clone(),
@@ -255,7 +253,6 @@ pub struct CharmConnectionViews {
 /// The runtime independently supplies live session/lease/scope evidence and its Character
 /// revision sequencer. A fresh command commits at the sequencer's cursor; a receipt's revision is
 /// used solely to replay its original semantic binding.
-#[cfg_attr(test, allow(dead_code))] // Constructed by the standalone PostgreSQL suites.
 pub struct NativeCharmProgressionPort<'a, 'f, 's, F> {
     root: &'a DurabilityRoot,
     authority: &'a ReconciledCharacterAuthority<'f, 's>,
@@ -266,7 +263,6 @@ pub struct NativeCharmProgressionPort<'a, 'f, 's, F> {
     facts: F,
 }
 
-#[cfg_attr(test, allow(dead_code))] // Real DB bind/views run in the standalone PostgreSQL suites.
 impl<'a, 'f, 's, F: CharmFacts + Clone> NativeCharmProgressionPort<'a, 'f, 's, F> {
     pub async fn bind(
         root: &'a DurabilityRoot,
@@ -352,6 +348,38 @@ impl<'a, 'f, 's, F: CharmFacts + Clone> NativeCharmProgressionPort<'a, 'f, 's, F
             });
         }
         dispatch_charm_command(self, identity, command_type, payload).await
+    }
+
+    /// Remove `charm` from its race for the `level * 100` gold fee (Canary `sendBuyCharmRune`
+    /// action 2). Returns the disposition and the fee paid, 0 unless removed.
+    pub async fn remove(
+        &mut self,
+        occurrence: CharmCommandOccurrence,
+        charm: NonZeroU32,
+        fee: CharmRemoveFee,
+    ) -> (CharmRemoveDisposition, u64) {
+        let Some(charm) = indexed(&self.content.charms, charm).cloned() else {
+            return (CharmRemoveDisposition::UnknownCharm, 0);
+        };
+        let mut slot = self.sequencer.acquire(self.fence.character_id).await;
+        let original = match self.retained(occurrence).await {
+            Ok(Some(receipt)) => Some(receipt.original_character_revision),
+            Ok(None) => None,
+            Err(_) => return (CharmRemoveDisposition::Rejected, 0),
+        };
+        remove_disposition(
+            self.commit(
+                &mut slot,
+                occurrence,
+                CharmCommand::Remove {
+                    charm,
+                    fee: Box::new(fee),
+                },
+                original,
+                None,
+            )
+            .await,
+        )
     }
 
     async fn retained(
@@ -579,6 +607,29 @@ fn assign_disposition(
             _ => CharmAssignDisposition::Rejected,
         },
         _ => CharmAssignDisposition::Rejected,
+    }
+}
+
+fn remove_disposition(
+    result: Result<CharmCommandOutcome, CharmStateError>,
+) -> (CharmRemoveDisposition, u64) {
+    match result {
+        Ok(
+            CharmCommandOutcome::Committed(receipt)
+            | CharmCommandOutcome::AlreadyCommitted(receipt),
+        ) => match receipt.effect {
+            CharmCommandEffect::Removed { fee_gold_units, .. } => {
+                (CharmRemoveDisposition::Removed, fee_gold_units)
+            }
+            _ => (CharmRemoveDisposition::Rejected, 0),
+        },
+        Err(CharmStateError::NotAssigned) => (CharmRemoveDisposition::NotAssigned, 0),
+        Err(CharmStateError::InsufficientGold) => (CharmRemoveDisposition::NotEnoughGold, 0),
+        Err(CharmStateError::FeeChangeDoesNotFit) => (CharmRemoveDisposition::ChangeDoesNotFit, 0),
+        Err(CharmStateError::Rule(CharmRuleError::UnknownCharm)) => {
+            (CharmRemoveDisposition::UnknownCharm, 0)
+        }
+        _ => (CharmRemoveDisposition::Rejected, 0),
     }
 }
 

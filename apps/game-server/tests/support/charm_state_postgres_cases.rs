@@ -600,6 +600,34 @@ async fn native_assign<F: CharmFacts + Clone>(
     Ok(disposition)
 }
 
+/// A remove fee whose coin facts are never read: the remove it pays refuses first.
+fn unassigned_remove_fee(tag: u8) -> crate::durability::charm_state::CharmRemoveFee {
+    use crate::durability::item_transfer::{ItemDefinitionFacts, ItemStackClass};
+    let definition = |key: &str| crate::durability::item_mint::TypedDefinitionRef {
+        family: "Item".into(),
+        production_key: key.into(),
+        revision_ref: "rev-1".into(),
+    };
+    crate::durability::charm_state::CharmRemoveFee {
+        transaction_id: id(tag.wrapping_add(100)),
+        event_id: id(tag.wrapping_add(130)),
+        occurred_at_unix_ms: 1_700_000_000_000,
+        change: crate::durability::item_fee_burn::FeeChangeFacts {
+            item_instance_ids: [id(tag.wrapping_add(150)), id(tag.wrapping_add(170))],
+            gold: definition("oteryn:item.tibia.i3031"),
+            platinum: definition("oteryn:item.tibia.i3035"),
+            crystal: definition("oteryn:item.tibia.i3043"),
+            backpack: ItemDefinitionFacts {
+                weight: None,
+                definition: definition("oteryn:item.tibia.i2854"),
+                stack: ItemStackClass::NonStackable,
+                container_capacity: Some(20),
+                container_slot_equip_pattern: true,
+            },
+        },
+    }
+}
+
 fn occurrence(tag: u8) -> CharmCommandOccurrence {
     CharmCommandOccurrence::from_bytes(id(tag)).expect("occurrence")
 }
@@ -1106,6 +1134,21 @@ fn bestiary_kill_counters_earn_points_and_admit_assignments() -> TestResult {
         .fetch_one(&harness.pool)
         .await?;
         assert_eq!(committed_unlock, (1, Some(1), Some(240)));
+        // A remove of a charm that holds no race refuses before its fee is composed: nothing is
+        // written and the revision stays.
+        assert_eq!(
+            port.remove(
+                occurrence(62),
+                std::num::NonZeroU32::new(4).ok_or("charm index")?,
+                unassigned_remove_fee(62),
+            )
+            .await,
+            (
+                oteryn_protocol_oteryn::charm_progression::CharmRemoveDisposition::NotAssigned,
+                0
+            )
+        );
+        assert_eq!(revision(&harness.pool).await?, "7");
         let short = harness
             .root
             .commit_charm_command(
@@ -2158,6 +2201,23 @@ fn sql_unlock(occurrence: u8, original: u64, name: &str, before: i16) -> String 
     )
 }
 
+/// A remove receipt (0195 kind 3) of a major charm freeing `race`, linked to fee `fee`.
+fn remove_receipt(occurrence: u8, original: u64, name: &str, race: &str, fee: u8) -> String {
+    receipt(occurrence, original, name, 1, None, Some(race))
+        .replace(
+            "race_key, profile_revision",
+            "race_key, fee_transaction_id, fee_gold_units, profile_revision",
+        )
+        .replace(
+            &format!("1000, 1000, 2, 'oteryn:charm.{name}'"),
+            &format!("1000, 1000, 3, 'oteryn:charm.{name}'"),
+        )
+        .replace(
+            &format!("'oteryn:creature.{race}', 'profile-1'"),
+            &format!("'oteryn:creature.{race}', {}, 5000, 'profile-1'", uuid(fee)),
+        )
+}
+
 /// A complete assign transaction of a major charm (category 1).
 fn sql_assign(occurrence: u8, original: u64, name: &str, race: &str) -> String {
     format!(
@@ -2408,6 +2468,31 @@ fn the_database_binds_charm_rows_to_one_receipt_chain() -> TestResult {
             "23514",
         )
         .await?;
+        let delete = format!(
+            "DELETE FROM game_character_charm_assignments WHERE character_id = {character};"
+        );
+        expect_rejected(
+            pool,
+            "remove without its fee burn",
+            &format!(
+                "{}{}{delete}",
+                advance(5),
+                remove_receipt(65, 5, "wound", "rat", 90)
+            ),
+            "23503",
+        )
+        .await?;
+        expect_rejected(
+            pool,
+            "remove naming another race than its assign",
+            &format!(
+                "{}{}{delete}",
+                advance(5),
+                remove_receipt(65, 5, "wound", "wolf", 90)
+            ),
+            "23514",
+        )
+        .await?;
         expect_rejected(
             pool,
             "reassign in place",
@@ -2474,7 +2559,8 @@ fn the_database_binds_charm_rows_to_one_receipt_chain() -> TestResult {
                     "game_character_charm_assignments".to_owned(),
                     true,
                     false,
-                    false,
+                    // 0195: a remove deletes the row; the deferred guard proves its receipt.
+                    true,
                     false
                 ),
                 (
