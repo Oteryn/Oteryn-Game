@@ -19768,6 +19768,15 @@
           "family": "Item",
           "key": "candidate:item/3277",
           "revision": "spell-p2-r21"
+        },
+        "ranged": {
+          "kind": "THROWING",
+          "attack": 25,
+          "hit_chance": 0,
+          "max_hit_chance": 76,
+          "element": "PHYSICAL",
+          "elemental_attack": 0,
+          "range_cells": 3
         }
       },
       "semantics": {
@@ -19983,6 +19992,15 @@
           "family": "Item",
           "key": "candidate:item/3287",
           "revision": "spell-p2-r21"
+        },
+        "ranged": {
+          "kind": "THROWING",
+          "attack": 30,
+          "hit_chance": 0,
+          "max_hit_chance": 76,
+          "element": "PHYSICAL",
+          "elemental_attack": 0,
+          "range_cells": 4
         }
       },
       "semantics": {
@@ -20608,6 +20626,14 @@
           "family": "Item",
           "key": "candidate:item/3349",
           "revision": "spell-p2-r21"
+        },
+        "ranged": {
+          "kind": "DISTANCE",
+          "attack": 0,
+          "hit_chance": 0,
+          "max_hit_chance": 90,
+          "ammunition": "BOLT",
+          "range_cells": 5
         }
       },
       "semantics": {
@@ -20786,6 +20812,14 @@
           "family": "Item",
           "key": "candidate:item/3350",
           "revision": "spell-p2-r21"
+        },
+        "ranged": {
+          "kind": "DISTANCE",
+          "attack": 0,
+          "hit_chance": 0,
+          "max_hit_chance": 90,
+          "ammunition": "ARROW",
+          "range_cells": 6
         }
       },
       "semantics": {
@@ -21174,6 +21208,15 @@
           "family": "Item",
           "key": "candidate:item/3446",
           "revision": "spell-p2-r21"
+        },
+        "ranged": {
+          "kind": "AMMUNITION",
+          "attack": 30,
+          "hit_chance": 0,
+          "max_hit_chance": 87,
+          "ammunition": "BOLT",
+          "element": "PHYSICAL",
+          "elemental_attack": 0
         }
       },
       "semantics": {
@@ -21390,6 +21433,15 @@
           "family": "Item",
           "key": "candidate:item/3447",
           "revision": "spell-p2-r21"
+        },
+        "ranged": {
+          "kind": "AMMUNITION",
+          "attack": 25,
+          "hit_chance": 0,
+          "max_hit_chance": 91,
+          "ammunition": "ARROW",
+          "element": "PHYSICAL",
+          "elemental_attack": 0
         }
       },
       "semantics": {
@@ -21606,6 +21658,15 @@
           "family": "Item",
           "key": "candidate:item/3448",
           "revision": "spell-p2-r21"
+        },
+        "ranged": {
+          "kind": "AMMUNITION",
+          "attack": 23,
+          "hit_chance": 0,
+          "max_hit_chance": 91,
+          "ammunition": "ARROW",
+          "element": "PHYSICAL",
+          "elemental_attack": 0
         }
       },
       "semantics": {
@@ -21789,6 +21850,15 @@
           "family": "Item",
           "key": "candidate:item/3449",
           "revision": "spell-p2-r21"
+        },
+        "ranged": {
+          "kind": "AMMUNITION",
+          "attack": 27,
+          "hit_chance": 0,
+          "max_hit_chance": 100,
+          "ammunition": "ARROW",
+          "element": "PHYSICAL",
+          "elemental_attack": 0
         }
       },
       "semantics": {
@@ -21972,6 +22042,15 @@
           "family": "Item",
           "key": "candidate:item/3450",
           "revision": "spell-p2-r21"
+        },
+        "ranged": {
+          "kind": "AMMUNITION",
+          "attack": 40,
+          "hit_chance": 0,
+          "max_hit_chance": 91,
+          "ammunition": "BOLT",
+          "element": "PHYSICAL",
+          "elemental_attack": 0
         }
       },
       "semantics": {
@@ -42737,6 +42816,15 @@
           "family": "Item",
           "key": "candidate:item/7363",
           "revision": "spell-p2-r21"
+        },
+        "ranged": {
+          "kind": "AMMUNITION",
+          "attack": 33,
+          "hit_chance": 0,
+          "max_hit_chance": 87,
+          "ammunition": "BOLT",
+          "element": "PHYSICAL",
+          "elemental_attack": 0
         }
       },
       "semantics": {
@@ -42953,6 +43041,15 @@
           "family": "Item",
           "key": "candidate:item/7364",
           "revision": "spell-p2-r21"
+        },
+        "ranged": {
+          "kind": "AMMUNITION",
+          "attack": 28,
+          "hit_chance": 0,
+          "max_hit_chance": 100,
+          "ammunition": "ARROW",
+          "element": "PHYSICAL",
+          "elemental_attack": 0
         }
       },
       "semantics": {
@@ -43169,6 +43266,15 @@
           "family": "Item",
           "key": "candidate:item/7365",
           "revision": "spell-p2-r21"
+        },
+        "ranged": {
+          "kind": "AMMUNITION",
+          "attack": 38,
+          "hit_chance": 0,
+          "max_hit_chance": 94,
+          "ammunition": "ARROW",
+          "element": "PHYSICAL",
+          "elemental_attack": 0
         }
       },
       "semantics": {
@@ -43385,6 +43491,15 @@
           "family": "Item",
           "key": "candidate:item/7366",
           "revision": "spell-p2-r21"
+        },
+        "ranged": {
+          "kind": "THROWING",
+          "attack": 28,
+          "hit_chance": 80,
+          "max_hit_chance": 76,
+          "element": "PHYSICAL",
+          "elemental_attack": 0,
+          "range_cells": 4
         }
       },
       "semantics": {
@@ -43604,6 +43719,15 @@
           "family": "Item",
           "key": "candidate:item/7367",
           "revision": "spell-p2-r21"
+        },
+        "ranged": {
+          "kind": "THROWING",
+          "attack": 38,
+          "hit_chance": 0,
+          "max_hit_chance": 80,
+          "element": "PHYSICAL",
+          "elemental_attack": 0,
+          "range_cells": 4
         }
       },
       "semantics": {
@@ -43819,6 +43943,15 @@
           "family": "Item",
           "key": "candidate:item/7368",
           "revision": "spell-p2-r21"
+        },
+        "ranged": {
+          "kind": "THROWING",
+          "attack": 65,
+          "hit_chance": 0,
+          "max_hit_chance": 96,
+          "element": "PHYSICAL",
+          "elemental_attack": 0,
+          "range_cells": 4
         }
       },
       "semantics": {
@@ -44034,6 +44167,15 @@
           "family": "Item",
           "key": "candidate:item/7378",
           "revision": "spell-p2-r21"
+        },
+        "ranged": {
+          "kind": "THROWING",
+          "attack": 35,
+          "hit_chance": 0,
+          "max_hit_chance": 80,
+          "element": "PHYSICAL",
+          "elemental_attack": 0,
+          "range_cells": 3
         }
       },
       "semantics": {
@@ -60421,6 +60563,15 @@
           "family": "Item",
           "key": "candidate:item/21470",
           "revision": "spell-p2-r21"
+        },
+        "ranged": {
+          "kind": "AMMUNITION",
+          "attack": 20,
+          "hit_chance": 0,
+          "max_hit_chance": 40,
+          "ammunition": "ARROW",
+          "element": "PHYSICAL",
+          "elemental_attack": 0
         }
       },
       "semantics": {
@@ -61987,6 +62138,14 @@
           "family": "Item",
           "key": "candidate:item/25760",
           "revision": "spell-p2-r21"
+        },
+        "ranged": {
+          "kind": "WAND",
+          "damage_min": 80,
+          "damage_max": 100,
+          "mana_per_shot": 15,
+          "element": "DEATH",
+          "range_cells": 4
         }
       },
       "semantics": {

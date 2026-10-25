@@ -1520,6 +1520,7 @@ fn wave1_authoring(
     };
     Ok(ProjectV2ItemAuthoring {
         item,
+        ranged: None,
         presentation: None,
         document: None,
         taxonomy,

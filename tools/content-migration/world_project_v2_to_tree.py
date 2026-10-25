@@ -173,6 +173,8 @@ def main() -> int:
     from quest_reward_item_semantics import apply_admissions
     apply_admissions(item_records, ROOT)
     item_shards: list[str] = []
+    from ranged_item_profiles import source_profiles, tree_profile
+    ranged_profiles, _, _ = source_profiles(ROOT)
     for start in range(0, len(item_records), ITEM_SHARD_SIZE):
         rows = []
         for definition in item_records[start:start + ITEM_SHARD_SIZE]:
@@ -185,6 +187,7 @@ def main() -> int:
             authoring = {field: value for field, value in authoring_by_target.get(key, {}).items() if field not in {"item", "taxonomy"}}
             if authoring:
                 row["authoring"] = authoring
+            tree_profile(row, ranged_profiles)
             rows.append(row)
         end = start + len(rows) - 1
         relative = f"content/items/definitions/items-{start:05d}-{end:05d}.json"

@@ -695,6 +695,7 @@ fn item_candidate() -> ProjectV2Draft {
         });
     draft.state.item_authoring.push(ProjectV2ItemAuthoring {
         item: reference(ProjectV2Family::Item, "oteryn:reference.item.weapon-alpha"),
+        ranged: None,
         presentation: Some(reference(
             ProjectV2Family::Presentation,
             "oteryn:reference.presentation.courier",

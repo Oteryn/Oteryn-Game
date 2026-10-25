@@ -305,7 +305,17 @@ def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, ba
         require(row["family_profile"] == legacy_profile(row["source_taxonomy"]["primary"], assignments), "TAXONOMY_FAMILY_PROFILE")
         require(row["family_profile"] is None or row["family_profile"] in set(assignments.values()), "TAXONOMY_PROFILE_UNKNOWN")
         rebuilt.setdefault(key, {"item": row["target"]})["taxonomy"] = row["source_taxonomy"]
-    require(canonical_sorted(list(rebuilt.values())) == canonical_sorted(list(legacy_authoring.values())), "ITEM_AUTHORING_ROUNDTRIP")
+    # RANGED-CONTENT-1 adds tree-first Item authoring without mutating the legacy
+    # package. Require the complete digest-qualified overlay, not a legacy-only roundtrip.
+    from ranged_item_profiles import source_profiles
+    ranged, _, _ = source_profiles(ROOT)
+    expected_authoring = {key: dict(value) for key, value in legacy_authoring.items()}
+    for key, definition in definitions.items():
+        if key[0] == "Item":
+            profile = ranged.get(int(key[1].rsplit(".i", 1)[1]))
+            if profile is not None:
+                expected_authoring.setdefault(key, {"item": definition["identity"]})["ranged"] = profile
+    require(canonical_sorted(list(rebuilt.values())) == canonical_sorted(list(expected_authoring.values())), "ITEM_AUTHORING_ROUNDTRIP")
 
     aliases = item_alias_targets()
     staged_items = {staged_item_target(item["target"], aliases): item for item in staged["items"]}
