@@ -11,6 +11,9 @@ use crate::spell::cast::{CharacterCastFacts, SwingSkills};
 use crate::spell::combat_execution::actor_atom;
 use crate::spell::formula::FormulaInputs;
 use oteryn_gameplay_combat_rules::attack::target::Swing;
+use oteryn_gameplay_combat_rules::resolution::{
+    creature_physical_response, creature_physically_immune,
+};
 use oteryn_gameplay_progression::charm_effects::{
     CharmAttackerFacts, CharmHitSource, CharmHookEvent,
 };
@@ -180,6 +183,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 continue;
             };
+            // CREATURE-RESIST-MELEE-1: a creature immune to physical damage meets the swing
+            // before its block (`Creature::blockHit` `isImmune`): no block, no training, no hit.
+            if creature_physically_immune(&snapshot.state.policy) {
+                continue;
+            }
             let creature_max_health = u64::try_from(snapshot.maximum_health).unwrap_or(0);
             run_charm_hook(
                 self.imported_charms,
@@ -216,7 +224,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             ) else {
                 continue;
             };
-            if magnitude <= 0 {
+            // CREATURE-RESIST-MELEE-1: the creature's mitigation and physical response shape
+            // what passed its defence and armor (`Creature::mitigateDamage`, `Monster::blockHit`).
+            // Training already counted the swing by its block, so it trains by `magnitude`.
+            let landed = if magnitude > 0 {
+                let Some(landed) = creature_physical_response(&snapshot.state.policy, magnitude)
+                else {
+                    continue;
+                };
+                landed
+            } else {
+                magnitude
+            };
+            if landed <= 0 {
                 train_swing(
                     &mut states,
                     &runtime,
@@ -233,7 +253,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 entry.actor,
                 swing.lineage,
                 ordinal,
-                magnitude,
+                landed,
                 &digest,
                 &race_key,
                 revision,
