@@ -52,6 +52,45 @@ impl crate::foundation::runtime_actor_spell_types::PlayerBatchProof for PlayerBa
 }
 
 impl PlayerBatchPreflight {
+    /// Stage teleport pacification beside the existing paid/victim successors. Installation
+    /// remains atomic with the sealed relocation, including unknown-COMMIT reconciliation.
+    pub(super) fn stage_stairhop(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        states: &ChannelSpellStates,
+        actor: ExactActorRef,
+        now: oteryn_simulation_determinism::SemanticTimeMicros,
+    ) -> Result<(), SpellCastDisposition> {
+        use oteryn_gameplay_spell_rules::cast::{STAIRHOP_COOLDOWN_KEY, STAIRHOP_MICROS};
+        let Some(index) = states.actors.iter().position(|(held, session, _)| {
+            *held == actor && states.get(runtime, *held, *session).is_some()
+        }) else {
+            // No cast state means no spell or auto-attack can execute for this actor.
+            return Ok(());
+        };
+        let until = now
+            .checked_add(STAIRHOP_MICROS)
+            .map_err(|_| SpellCastDisposition::Rejected)?;
+        if !self.replacements.iter().any(|r| r.index == index) {
+            let (_, session, before) = &states.actors[index];
+            self.replacements.push(Replacement {
+                index,
+                actor,
+                session: *session,
+                before: before.clone(),
+                next: before.clone(),
+            });
+        }
+        if let Some(replacement) = self.replacements.iter_mut().find(|r| r.index == index) {
+            replacement
+                .next
+                .cooldowns
+                .groups
+                .insert(STAIRHOP_COOLDOWN_KEY.into(), until);
+        }
+        Ok(())
+    }
+
     pub fn matches_batch(&self, batch: &OwnerCombatBatch) -> bool {
         &self.batch == batch
     }

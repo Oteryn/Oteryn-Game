@@ -88,6 +88,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             ));
             return Some(actor_spell::SpellCastOutcome::rejected());
         }
+        {
+            let runtime = self.runtime.lock().await;
+            let states = self.states.spell_states.lock().await;
+            if self
+                .spells
+                .source_indexed(intent.spell)
+                .is_some_and(|(spell, _)| spell.aggressive)
+                && states
+                    .get(&runtime, actor, game_session_id)
+                    .is_some_and(|state| {
+                        state
+                            .cooldowns
+                            .group_ready_at(
+                                oteryn_gameplay_spell_rules::cast::STAIRHOP_COOLDOWN_KEY,
+                            )
+                            .is_some_and(|until| self.owner_now() < until)
+                    })
+            {
+                return Some(actor_spell::SpellCastOutcome {
+                    disposition:
+                        oteryn_protocol_oteryn::actor_spell::SpellCastDisposition::CoolingDown,
+                    vitals: None,
+                });
+            }
+        }
         if !self.ensure_source_map_initialized().await {
             return None;
         }

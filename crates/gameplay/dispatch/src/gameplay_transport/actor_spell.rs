@@ -1896,7 +1896,7 @@ impl ChannelSpellStates {
             decision_root: &root,
             occurrence: DecisionOccurrenceId::from_bytes(occurrence_bytes),
         };
-        let (next, _damage) = before
+        let (mut next, _damage) = before
             .stage_creature_field_contact(
                 contact.source,
                 &contact.definition,
@@ -1928,6 +1928,11 @@ impl ChannelSpellStates {
             proof,
         )?;
         if changed {
+            // The committed step may have started stair-hop exhaustion in the same cooldown
+            // owner. Preserve it when publishing the staged field contact.
+            if death.is_none() {
+                next.cooldowns = self.actors[index].2.cooldowns.clone();
+            }
             self.actors[index].2 = next;
         }
         if let Some(occurrence) = death {

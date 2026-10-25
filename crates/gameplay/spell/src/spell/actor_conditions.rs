@@ -629,6 +629,12 @@ pub fn eat_food(
     Ok(())
 }
 pub fn clear_on_lifecycle(state: &mut PlayerSpellState) {
+    // Movement pacification is a removable-on-death condition in Canary, rather than a
+    // spell cooldown that survives death. Keep the other spell/group timers unchanged.
+    state
+        .cooldowns
+        .groups
+        .remove(oteryn_gameplay_spell_rules::cast::STAIRHOP_COOLDOWN_KEY);
     state.field_attack_history.clear_on_lifecycle();
     state.conditions.clear_on_death();
     if let Some(monk) = state.monk.as_mut() {

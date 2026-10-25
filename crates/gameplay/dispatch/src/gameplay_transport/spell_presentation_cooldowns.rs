@@ -57,6 +57,11 @@ fn map_owned(
         .ok_or(Error::Source)?;
     let mut mapped = BTreeMap::new();
     for (key, micros) in state.source_cooldown_deadlines() {
+        if key.strip_prefix("group:")
+            == Some(oteryn_gameplay_spell_rules::cast::STAIRHOP_COOLDOWN_KEY)
+        {
+            continue;
+        }
         let entry = if let Some(key) = key.strip_prefix("spell:") {
             let index = (1..=book.source_len())
                 .find(|index| {

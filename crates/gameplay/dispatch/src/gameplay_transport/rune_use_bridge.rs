@@ -319,6 +319,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ));
                 return Some(outcome(UseDisposition::RequirementNotMet));
             }
+            if spell.aggressive
+                && state
+                    .cooldowns
+                    .group_ready_at(oteryn_gameplay_spell_rules::cast::STAIRHOP_COOLDOWN_KEY)
+                    .is_some_and(|until| self.owner_now() < until)
+            {
+                return Some(outcome(UseDisposition::Exhausted));
+            }
             if !visible {
                 return Some(outcome(UseDisposition::TargetIllegal));
             }
