@@ -269,3 +269,40 @@ mod reference_tests;
 #[cfg(test)]
 #[path = "market_property_tests.rs"]
 mod property_tests;
+
+/// Value plan passed to the fenced Market owner; fee is burned at placement.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Placement {
+    pub total: u64,
+    pub fee: u64,
+    pub escrow: u64,
+}
+pub fn plan_placement(side: Side, amount: u32, price: u64) -> Result<Placement, PlanError> {
+    let total = offer_total(amount, price)?;
+    Ok(Placement {
+        total,
+        fee: placement_fee(amount, price)?,
+        escrow: if side == Side::Buy { total } else { 0 },
+    })
+}
+
+#[cfg(test)]
+mod settlement_tests {
+    use super::*;
+    #[test]
+    fn market_placement_conserves_bank_escrow_and_fee() -> Result<(), PlanError> {
+        for side in [Side::Buy, Side::Sell] {
+            let plan = plan_placement(side, 100, 25)?;
+            assert_eq!(plan.total, 2500);
+            assert_eq!(plan.fee, 50);
+            let bank_delta = -i128::from(plan.escrow + plan.fee);
+            assert_eq!(
+                bank_delta + i128::from(plan.escrow) + i128::from(plan.fee),
+                0
+            );
+        }
+        assert!(plan_placement(Side::Buy, 0, 10).is_err());
+        assert!(plan_placement(Side::Buy, 64_000, u64::MAX).is_err());
+        Ok(())
+    }
+}

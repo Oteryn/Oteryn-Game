@@ -1,0 +1,25 @@
+{
+  "id": 28,
+  "name": "MARKET",
+  "owner_decision": "MARKET-1 staged settlement and wire",
+  "owner": "World Market",
+  "capability": 63,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/market_v1.proto#MarketReplyV1",
+  "revision": "Connection snapshot begins CLOSED at revision 1; every command 80 result replaces the view at revision +1. Resync/reconnect closes the view.",
+  "delta_types": [
+    {
+      "id": 1,
+      "name": "MARKET_VIEW_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/market_v1.proto#MarketReplyV1",
+      "max_payload_bytes": 4096
+    }
+  ],
+  "snapshot_types": [
+    {
+      "id": 1,
+      "name": "MARKET_VIEW_SNAPSHOT_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/market_v1.proto#MarketReplyV1",
+      "max_payload_bytes": 4096
+    }
+  ]
+}

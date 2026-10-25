@@ -61,6 +61,14 @@ pub struct OneItemCharmUnassignV1 {
     pub occurrence: Vec<u8>,
 }
 
+#[derive(Clone, PartialEq, Eq, Message)]
+pub struct OneItemMarketFeeV1 {
+    #[prost(bytes = "vec", tag = "1")]
+    pub offer: Vec<u8>,
+    #[prost(bytes = "vec", tag = "2")]
+    pub occurrence: Vec<u8>,
+}
+
 /// The closed `FeeBurnCause`: one variant per admitted fee source.
 #[derive(Clone, PartialEq, Eq, prost::Oneof)]
 pub enum FeeBurnCauseV1 {
@@ -75,6 +83,8 @@ pub enum FeeBurnCauseV1 {
     AreaDonation(OneItemAreaDonationV1),
     #[prost(message, tag = "5")]
     NpcRepair(Box<OneItemTimedRepairV1>),
+    #[prost(message, tag = "6")]
+    MarketFee(OneItemMarketFeeV1),
     // End tag-sorted variants.
 }
 
@@ -94,6 +104,7 @@ pub struct OneItemFeeBurnCauseV1 {
             3, // BlessingPurchase
             4, // AreaDonation
             5, // NpcRepair
+            6, // MarketFee
         )
     )]
     pub cause: Option<FeeBurnCauseV1>,

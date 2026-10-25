@@ -1,18 +1,14 @@
 //! MARKET0 §§4/6/7: native private storage reads and transaction-bound book selection.
 //!
-//! Migration 0155 installs the dormant offer book. The missing Market ledger owner,
-//! reserved Inbox delivery and conservation/audit arms must commit with the value writer. A locked book or
+//! Migration 0191 composes the offer book with fenced Bank/depot/Inbox settlement. A locked book or
 //! historical outcome is not actor authority. The eventual owner must acquire real recovery,
 //! admission and (for commands) current session/root fences BEFORE this book boundary.
-#![allow(
-    dead_code,
-    reason = "Market atomic writer awaits content, fenced custody and audit integration"
-)]
 
 use oteryn_gameplay_economy::market as rules;
 pub use oteryn_gameplay_economy::market::{
-    EndReason, EndState, HARD_CREDIT_CEILING, LIFETIME_US, MAX_TOTAL, MAX_TOUCHED_ITEMS, MAX_OPEN_OFFERS, OfferState, PlanError, Side,
-    has_nonproduction_marker, offer_total, placement_fee, valid_key_bytes,
+    EndReason, EndState, HARD_CREDIT_CEILING, LIFETIME_US, MAX_OPEN_OFFERS, MAX_TOTAL,
+    MAX_TOUCHED_ITEMS, OfferState, PlanError, Side, has_nonproduction_marker, offer_total,
+    placement_fee, valid_key_bytes,
 };
 
 use super::DurabilityError;
@@ -250,10 +246,10 @@ fn decode(row: &sqlx::postgres::PgRow) -> Result<Offer> {
     Ok(offer)
 }
 
-
 mod book;
 mod operations;
 mod reads;
+mod settlement;
 
 pub use book::*;
 pub use operations::*;
