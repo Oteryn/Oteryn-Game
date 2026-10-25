@@ -1,0 +1,10 @@
+name=market
+commands=80
+transport=market
+composed=market
+authority=market
+[route]
+match routing::market::route(authority, &session.admitted, command).await {
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

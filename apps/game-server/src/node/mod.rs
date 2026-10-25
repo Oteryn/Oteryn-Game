@@ -121,3 +121,4 @@ pub fn uuid_text(bytes: &[u8; 16]) -> String {
 mod cancellation;
 pub mod guild_jobs;
 mod guild_scheduler;
+mod market_scheduler;

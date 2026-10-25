@@ -50,6 +50,7 @@ struct ServeState {
     selected_capabilities: SelectedCapabilities,
     item_view: Option<SessionItemView>,
     party_view: crate::gameplay_transport::party_command::SessionPartyView,
+    market_revision: u64,
     notices_selected: bool,
     overlay_served: bool,
     revision: u64,

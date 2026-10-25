@@ -44,6 +44,7 @@ pub mod item_look;
 pub mod item_view;
 pub mod logout;
 pub mod loop_training;
+pub mod market;
 pub mod npc_service;
 pub mod party;
 pub mod presentation;

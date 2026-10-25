@@ -11,6 +11,15 @@ pub struct OneItemNpcPurchaseV1 {
 
 pub(super) fn check(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
     match value.cause.as_ref().and_then(|value| value.cause.as_ref()) {
+        Some(FeeBurnCauseV1::MarketFee(cause))
+            if (20..=1_000_000).contains(&value.fee_gold_units)
+                && value.lines.is_empty()
+                && value.change.is_empty()
+                && value.bank_debit.is_some() =>
+        {
+            check_uuid_v7(&cause.offer)?;
+            check_uuid_v7(&cause.occurrence)
+        }
         Some(FeeBurnCauseV1::AreaDonation(cause))
             if cause.area == 1
                 && cause.world == value.world_id

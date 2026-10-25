@@ -135,6 +135,11 @@ pub(super) fn encode(
             };
             (CommandStatus::Accepted, payload)
         }
+        Dispatch::Reply(status, payload)
+            if command.command_type == oteryn_protocol_oteryn::market::COMMAND_TYPE_MARKET =>
+        {
+            (*status, payload.clone())
+        }
         Dispatch::Reply(status, payload) => (*status, std::mem::take(payload)),
         Dispatch::QuestLog(_) => (CommandStatus::Accepted, Vec::new()),
         Dispatch::Chat(result, _) => {

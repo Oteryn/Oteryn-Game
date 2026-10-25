@@ -1,0 +1,27 @@
+syntax = "proto3";
+package oteryn.protocol.v1;
+// Every query and mutation re-resolves the current session and reachable depot.
+message MarketRequestV1 {
+  uint32 action = 1; // 1 wares, 2 book, 3 own offers, 4 history, 5 buy, 6 sell, 7 cancel, 8 accept
+  uint32 definition = 2;
+  bytes offer = 3; // UUIDv7, exactly 16 bytes; only cancel/accept
+  uint32 amount = 4;
+  uint64 price = 5;
+  bool anonymous = 6;
+  uint32 page = 7;
+}
+message MarketRowV1 {
+  bytes offer = 1;
+  uint32 definition = 2;
+  uint32 side = 3;
+  uint32 amount = 4;
+  uint64 price = 5;
+  uint32 state = 6;
+  bool anonymous = 7;
+}
+message MarketReplyV1 {
+  uint32 code = 1;
+  bytes offer = 2;
+  repeated MarketRowV1 rows = 3; // at most 32
+  uint32 action = 4; // 0 CLOSED; otherwise the request action identifying this projection
+}

@@ -521,6 +521,7 @@ pub(super) async fn assert_gameplay_fence(
         &fence.item_fence(),
         Some(fence.expected_character_revision.get()),
         node,
+        false,
     )
     .await
 }
@@ -536,7 +537,21 @@ pub(super) async fn assert_item_only_fence(
     std::result::Result<FencedCharacterRoot, CharacterProgressionError>,
     DurabilityError,
 > {
-    assert_fenced_root(tx, fence, None, node).await
+    assert_fenced_root(tx, fence, None, node, false).await
+}
+
+/// The identical item fence with a non-key root lock. Market updates no root
+/// fields; NO KEY UPDATE still serializes writers while allowing Inbox's
+/// recipient FK/KEY SHARE lock, preventing maker-cancel versus buy-accept cycles.
+pub(super) async fn assert_market_item_fence(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: &CurrentCharacterItemFence,
+    node: &NodeIncarnationProof,
+) -> std::result::Result<
+    std::result::Result<FencedCharacterRoot, CharacterProgressionError>,
+    DurabilityError,
+> {
+    assert_fenced_root(tx, fence, None, node, true).await
 }
 
 async fn assert_fenced_root(
@@ -544,6 +559,7 @@ async fn assert_fenced_root(
     fence: &CurrentCharacterItemFence,
     expected_revision: Option<u64>,
     node: &NodeIncarnationProof,
+    no_key_update: bool,
 ) -> std::result::Result<
     std::result::Result<FencedCharacterRoot, CharacterProgressionError>,
     DurabilityError,
@@ -556,14 +572,21 @@ async fn assert_fenced_root(
         return Ok(Err(CharacterProgressionError::AuthorityRejected));
     };
 
-    let root = sqlx::query(
+    let root = sqlx::query(if no_key_update {
         "SELECT account_id::text, world_id::text, character_revision::text, \
                 profile_revision, ruleset_revision, content_revision, \
                 starter_template_revision \
            FROM game_character_roots \
           WHERE character_id = encode($1,'hex')::uuid AND lifecycle = 1 \
-          FOR UPDATE",
-    )
+          FOR NO KEY UPDATE"
+    } else {
+        "SELECT account_id::text, world_id::text, character_revision::text, \
+                profile_revision, ruleset_revision, content_revision, \
+                starter_template_revision \
+           FROM game_character_roots \
+          WHERE character_id = encode($1,'hex')::uuid AND lifecycle = 1 \
+          FOR UPDATE"
+    })
     .bind(fence.character_id.as_bytes().as_slice())
     .fetch_optional(&mut **tx)
     .await?;
