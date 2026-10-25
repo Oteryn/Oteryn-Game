@@ -873,10 +873,15 @@ pub fn prepare_named_player_failure_owner_cast_with_caster(
     if caster.soul < spell.soul {
         return Err(SpellCastDisposition::NotEnoughSoul);
     }
+    // Canary playerSpellCheck runs before the name lookup, so an unlearned, wrong-vocation or
+    // premium spell answers NotAvailable as on the found-target path (gate.rs `disposition`).
     if (spell.learning_required && !caster.learned.contains(&spell.key))
         || (!spell.learning_required && !spell.vocations.contains(&caster.vocation))
-        || (spell.needs_weapon && !caster.melee_weapon)
         || !caster.premium.admits(spell)
+    {
+        return Err(SpellCastDisposition::NotAvailable);
+    }
+    if (spell.needs_weapon && !caster.melee_weapon)
         || (spell.needs_shield && caster.shield_defense.is_none())
     {
         return Err(SpellCastDisposition::Rejected);
