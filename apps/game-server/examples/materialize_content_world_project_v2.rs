@@ -15,7 +15,7 @@ use oteryn_game_server::content::{
     ProjectV2Declaration, ProjectV2DefinitionRef, ProjectV2Draft, ProjectV2EditorEntry,
     ProjectV2EvidenceClass, ProjectV2Family, ProjectV2Identity, ProjectV2ItemAuthoring,
     ProjectV2ItemForgeProfile, ProjectV2ItemLifecycle, ProjectV2ItemSourceLifecycle,
-    ProjectV2ItemTaxonomy, ProjectV2Source, ProjectV2SourceIdentityBinding,
+    ProjectV2ItemTaxonomy, ProjectV2RangedWeapon, ProjectV2Source, ProjectV2SourceIdentityBinding,
     ProjectV2SourceIdentityDisposition, ProjectV2State, ProjectionDocument, ReferenceCells,
     ReferenceItemField, ReferenceItemImbuement, ReferenceItemPresentation, ReferenceItemSemantics,
     ReferenceItemStack, ReferenceItemTradeRestrictions, ReferenceItemWeapon,
@@ -1520,6 +1520,7 @@ fn wave1_authoring(
     };
     Ok(ProjectV2ItemAuthoring {
         item,
+        ranged: None,
         presentation: None,
         document: None,
         taxonomy,
@@ -2737,8 +2738,57 @@ fn apply_npc_r5_native_repairs(
     Ok(count)
 }
 
+/// Validate the separate ranged owner without inserting it into sealed legacy declarations.
+fn validate_ranged_profiles() -> Result<(), Box<dyn std::error::Error>> {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let profiles: Value =
+        serde_json::from_slice(&fs::read(root.join("content/items/ranged-profiles.json"))?)?;
+    if profiles["schema"] != "OTERYN_RANGED_ITEM_PROFILES/v1" {
+        return Err("unexpected ranged profile schema".into());
+    }
+    let mut pending = BTreeMap::new();
+    for record in profiles["records"]
+        .as_array()
+        .ok_or("missing ranged profiles")?
+    {
+        let item: ProjectV2DefinitionRef = serde_json::from_value(record["item"].clone())?;
+        if item.family != ProjectV2Family::Item
+            || pending.insert(item, &record["profile"]).is_some()
+        {
+            return Err("unexpected or duplicate ranged profile target".into());
+        }
+    }
+    let index: Value = serde_json::from_slice(&fs::read(root.join("content/items/index.json"))?)?;
+    for path in index["shards"].as_array().ok_or("missing Item shards")? {
+        let shard: Value = serde_json::from_slice(&fs::read(
+            root.join(path.as_str().ok_or("invalid Item shard path")?),
+        )?)?;
+        for row in shard["records"].as_array().ok_or("missing Item records")? {
+            let item: ProjectV2DefinitionRef =
+                serde_json::from_value(row["definition"]["identity"].clone())?;
+            if let Some(profile) = pending.remove(&item) {
+                let mut authoring = row
+                    .get("authoring")
+                    .cloned()
+                    .unwrap_or(serde_json::json!({}));
+                if authoring.get("ranged").is_some() {
+                    return Err("ranged profile duplicates sealed authoring".into());
+                }
+                authoring["item"] = serde_json::to_value(item)?;
+                let authoring: ProjectV2ItemAuthoring = serde_json::from_value(authoring)?;
+                ProjectV2RangedWeapon::try_from((profile, &authoring))?;
+            }
+        }
+    }
+    if !pending.is_empty() {
+        return Err("unresolved ranged profile target".into());
+    }
+    Ok(())
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (root, predecessor) = authoring_roots()?;
+    validate_ranged_profiles()?;
     if let Some(source) = predecessor {
         return materialize_from_predecessor(&source, &root);
     }
@@ -3145,6 +3195,11 @@ mod consumables_admission_revision_tests {
 
 #[cfg(test)]
 mod ranged_revision_tests {
+    #[test]
+    fn ranged_separate_profiles_resolve_against_sealed_item_owners() {
+        super::validate_ranged_profiles().expect("separate ranged source owner");
+    }
+
     /// DUR-04: changed content is never serialized under an existing revision. The ranged weapon
     /// promotion runs only in `promote_ranged_on_consumables_admitted`, which mints its own.
     #[test]
