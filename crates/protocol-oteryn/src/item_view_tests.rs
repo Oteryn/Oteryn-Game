@@ -373,10 +373,10 @@ fn registries_bind_the_item_view_ids_and_limits() {
     let command = find("command_types", COMMAND_TYPE_ITEM_MOVE_INTENT);
     assert_eq!(command["name"], "ITEM_MOVE_INTENT");
     assert_eq!(command["capability"], CAPABILITY_ITEM_VIEW_MOVE_V1);
-    // The registered bound is the capability 12 worst case; capability 4 alone keeps 13.
+    // The registered bound includes the capability 61 count; legacy bounds stay unchanged.
     assert_eq!(
         command["max_payload_bytes"].as_u64(),
-        Some(MAX_ITEM_MOVE_INTENT_EQUIP_DROP_BYTES as u64)
+        Some(MAX_ITEM_MOVE_INTENT_STACK_COUNT_BYTES as u64)
     );
     assert_eq!(
         command["max_result_payload_bytes"].as_u64(),
@@ -871,3 +871,65 @@ fn every_wire_slot_maps_to_its_durable_code_and_back() {
 #[cfg(test)]
 #[path = "item_view_fuzz_tests.rs"]
 mod fuzz_tests;
+
+#[test]
+fn stack_quantity_count_is_explicit_bounded_and_negotiated()
+-> Result<(), Box<dyn std::error::Error>> {
+    let selection = ItemMoveSelection {
+        equip_drop: true,
+        container_tree: true,
+        ..ItemMoveSelection::default()
+    };
+    for destination in [
+        ItemMoveDestination::MainBackpack,
+        ItemMoveDestination::Container(std::num::NonZeroU64::MAX),
+        ItemMoveDestination::Ground(WorldTilePosition {
+            x: i32::MAX,
+            y: i32::MIN,
+            floor: i16::MIN,
+        }),
+    ] {
+        let intent = ItemMoveIntent {
+            source: std::num::NonZeroU64::MAX,
+            destination,
+        };
+        let legacy =
+            encode_item_move_intent_for(&intent, selection).map_err(|e| format!("{e:?}"))?;
+        assert_eq!(
+            decode_item_move_intent_with_count_for(&legacy, selection),
+            Ok((intent, None))
+        );
+        for count in [1, 30, 100] {
+            let mut payload = legacy.clone();
+            payload.extend([0x30, count]);
+            assert!(payload.len() <= MAX_ITEM_MOVE_INTENT_STACK_COUNT_BYTES);
+            assert_eq!(
+                decode_item_move_intent_with_count_for(&payload, selection),
+                Ok((intent, Some(u32::from(count))))
+            );
+            assert!(decode_item_move_intent_for(&payload, selection).is_err());
+            // The count may precede the required source and destination.
+            let mut reordered = vec![0x30, count];
+            reordered.extend(&legacy);
+            assert_eq!(
+                decode_item_move_intent_with_count_for(&reordered, selection),
+                Ok((intent, Some(u32::from(count))))
+            );
+            payload.extend([0x30, count]);
+            assert!(decode_item_move_intent_with_count_for(&payload, selection).is_err());
+        }
+        for suffix in [
+            &[0x30, 0][..],
+            &[0x30, 101],
+            &[0x30, 0x80],
+            &[0x38, 1],
+            &[0x32, 0],
+            &[0x30, 0xff, 0xff, 0xff, 0xff, 0x1f],
+        ] {
+            let mut payload = legacy.clone();
+            payload.extend(suffix);
+            assert!(decode_item_move_intent_with_count_for(&payload, selection).is_err());
+        }
+    }
+    Ok(())
+}

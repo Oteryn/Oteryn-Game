@@ -38,7 +38,7 @@ use crate::durability::item_transfer::{
 use crate::foundation::{ExactActorRef, GameSessionId};
 use oteryn_protocol_oteryn::item_view::{
     EquipmentSlot, ItemMoveDestination, ItemMoveOutcome, ItemMoveSelection, WorldTilePosition,
-    decode_item_move_intent_for,
+    decode_item_move_intent_for, decode_item_move_intent_with_count_for,
 };
 
 /// One equipment move of command 9 (ITEM-MOVE-WIRE-1 §4), by the item's server-internal key.
@@ -62,10 +62,12 @@ pub enum LoopTarget {
 }
 
 /// One item loop move of command 9 (ITEM-LOOP-1), by the source's server-internal key. The whole
-/// stack moves: the wire carries no count.
+/// stack moves when `count` is absent.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct LoopMove {
     pub item: ItemKey,
+    /// Explicit requested quantity, bound into the existing durable receipt.
+    pub count: Option<u32>,
     pub target: LoopTarget,
 }
 
@@ -224,9 +226,15 @@ pub(super) async fn item_move<A: FreshAdmissionAuthority>(
     command: UseCommand,
     payload: &[u8],
     selection: ItemMoveSelection,
+    stack_count: bool,
     view: &mut SessionItemView,
 ) -> ItemMoveStep {
-    let Ok(intent) = decode_item_move_intent_for(payload, selection) else {
+    let decoded = if stack_count {
+        decode_item_move_intent_with_count_for(payload, selection)
+    } else {
+        decode_item_move_intent_for(payload, selection).map(|intent| (intent, None))
+    };
+    let Ok((intent, count)) = decoded else {
         return ItemMoveStep::Result(ItemMoveOutcome::Rejected, Vec::new());
     };
     match authority.committed_item_move(actor, command).await {
@@ -254,6 +262,14 @@ pub(super) async fn item_move<A: FreshAdmissionAuthority>(
     let Some(source) = view.resolve(intent.source) else {
         return ItemMoveStep::Result(ItemMoveOutcome::Stale, Vec::new());
     };
+    if count.is_some()
+        && (matches!(intent.destination, ItemMoveDestination::Equipment(_))
+            || !matches!(source, ItemKey::Instance(_))
+            || view.equipped_slot(&source).is_some()
+            || view.open_corpse_of(&source).is_some())
+    {
+        return ItemMoveStep::Result(ItemMoveOutcome::NotSupported, Vec::new());
+    }
     let request = match intent.destination {
         ItemMoveDestination::Equipment(to) => {
             if view.is_main_backpack(&source) {
@@ -273,7 +289,10 @@ pub(super) async fn item_move<A: FreshAdmissionAuthority>(
             }
             None => {
                 let target = LoopTarget::MainBackpack;
-                return loop_move(authority, actor, command, selection, source, target, view).await;
+                return loop_move(
+                    authority, actor, command, selection, source, target, count, view,
+                )
+                .await;
             }
         },
         ItemMoveDestination::Container(handle) => {
@@ -285,11 +304,17 @@ pub(super) async fn item_move<A: FreshAdmissionAuthority>(
             } else {
                 LoopTarget::Container(container)
             };
-            return loop_move(authority, actor, command, selection, source, target, view).await;
+            return loop_move(
+                authority, actor, command, selection, source, target, count, view,
+            )
+            .await;
         }
         ItemMoveDestination::Ground(at) => {
             let target = LoopTarget::Ground(at);
-            return loop_move(authority, actor, command, selection, source, target, view).await;
+            return loop_move(
+                authority, actor, command, selection, source, target, count, view,
+            )
+            .await;
         }
     };
     match authority.move_equipment(actor, command, request).await {
@@ -319,6 +344,7 @@ fn admitted(outcome: ItemMoveOutcome, selection: ItemMoveSelection) -> ItemMoveO
 /// ITEM-LOOP-1 / MAP-PICKUP-1: a durable item or eligible base-map entry into the carried
 /// tree through the loop owner. Base-to-Ground, MapAdded, equipped sources and the main
 /// backpack itself remain unsupported.
+#[allow(clippy::too_many_arguments)]
 async fn loop_move<A: FreshAdmissionAuthority>(
     authority: &A,
     actor: ExactActorRef,
@@ -326,6 +352,7 @@ async fn loop_move<A: FreshAdmissionAuthority>(
     selection: ItemMoveSelection,
     source: ItemKey,
     target: LoopTarget,
+    count: Option<u32>,
     view: &mut SessionItemView,
 ) -> ItemMoveStep {
     let supported = matches!(source, ItemKey::Instance(_))
@@ -341,6 +368,7 @@ async fn loop_move<A: FreshAdmissionAuthority>(
     }
     let request = LoopMove {
         item: source,
+        count,
         target,
     };
     match authority.move_loop_item(actor, command, request).await {

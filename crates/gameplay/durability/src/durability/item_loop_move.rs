@@ -641,10 +641,21 @@ async fn plan_loop_destination<C: ItemLoopContent>(
         return Err(DurabilityError::InvalidStoredState.into());
     }
 
+    // An explicit split inside its own container creates an entry, without autostacking
+    // into a sibling (STACK-0 §4.1, Canary Container::queryDestination).
+    let split_in_place = partial && match &target {
+        Target::Container { parent, .. } => match source {
+            SourceKind::Main => *parent == slot.item_instance_id,
+            SourceKind::Nested { parent: from } => from == *parent,
+            SourceKind::Ground | SourceKind::Depot => false,
+        },
+        Target::Ground(_) | Target::Depot { .. } => false,
+    };
     // STACK-1: the newest compatible stack with room receives first; never on the Ground.
     let mut receiver = None;
     if let Target::Container { entries, .. } = &target
         && stackable
+        && !split_in_place
         && let Some(entry) = entries.iter().find(|entry| {
             Some(entry.item.item_instance_id) != item
                 && entry.item.definition == *definition
