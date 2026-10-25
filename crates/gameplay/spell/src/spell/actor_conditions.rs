@@ -1208,7 +1208,7 @@ fn stage_cycle(
     world: Option<&dyn super::harmony::SereneWorld>,
 ) -> Result<Option<ConditionCycle>, SpellCastDisposition> {
     let mut next = state.clone();
-    next.credit_soul_window(now.get());
+    next.credit_soul_window(now.get(), facts.map(|facts| facts.in_protection_zone));
     if let Some(world) = world {
         next.tick_with_world(now, world)
             .map_err(|_| SpellCastDisposition::Rejected)?;

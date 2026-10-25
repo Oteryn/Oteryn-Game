@@ -3,7 +3,11 @@
 //! positive experience below the level closes it. While it runs, the actor gains one soul point
 //! every 120 s, or every 15 s for a promoted Premium Character, up to its maximum. The gain
 //! cadence survives a replaced window, as Canary's `ConditionSoul::addCondition` keeps its
-//! internal ticks. Runtime-only: a fresh actor and a dead one have no window.
+//! internal ticks. Inside a protection zone no soul is gained: a gain that falls due there is
+//! held, and the first owner cycle outside credits it once and restarts the cadence from that
+//! cycle, as Canary's `ConditionSoul::executeCondition` keeps counting ticks in the zone and
+//! resets them on its first gain outside. Runtime-only: a fresh actor and a dead one have no
+//! window.
 use super::cast::PlayerSpellState;
 
 const MICROS_PER_SECOND: u64 = 1_000_000;
@@ -16,6 +20,8 @@ pub struct SoulWindow {
     ends_at_us: u64,
     next_gain_us: u64,
     promoted: bool,
+    /// A gain fell due inside a protection zone and waits for the first cycle outside.
+    held: bool,
 }
 
 /// What a settled kill does to the killer's window (`SoulKillHook` without `NoHook`).
@@ -42,31 +48,49 @@ impl PlayerSpellState {
             SoulWindowChange::Open { .. } if self.health == 0 => None,
             SoulWindowChange::Open { seconds, promoted } => {
                 let ends_at_us = now_us.saturating_add(u64::from(seconds) * MICROS_PER_SECOND);
-                let next_gain_us = match self.soul_window {
-                    Some(window) if window.ends_at_us >= now_us => window.next_gain_us,
-                    _ => now_us.saturating_add(self.soul_gain_us(promoted)),
+                let (next_gain_us, held) = match self.soul_window {
+                    Some(window) if window.ends_at_us >= now_us => {
+                        (window.next_gain_us, window.held)
+                    }
+                    _ => (now_us.saturating_add(self.soul_gain_us(promoted)), false),
                 };
                 Some(SoulWindow {
                     ends_at_us,
                     next_gain_us,
                     promoted,
+                    held,
                 })
             }
         };
     }
 
+    fn gain_soul(&mut self) {
+        if self.health > 0 {
+            self.soul = self.soul.saturating_add(1).min(self.facts.max_soul);
+        }
+    }
+
     /// Credits every gain due by `now_us` inside the window, then drops an ended window.
-    pub(super) fn credit_soul_window(&mut self, now_us: u64) {
+    /// Inside a protection zone a due gain is held instead; an unknown zone credits as outside.
+    pub(super) fn credit_soul_window(&mut self, now_us: u64, in_protection_zone: Option<bool>) {
         let Some(mut window) = self.soul_window else {
             return;
         };
-        while window.next_gain_us <= now_us.min(window.ends_at_us) {
-            if self.health > 0 {
-                self.soul = self.soul.saturating_add(1).min(self.facts.max_soul);
+        let until = now_us.min(window.ends_at_us);
+        if in_protection_zone == Some(true) {
+            window.held |= window.next_gain_us <= until;
+        } else {
+            if window.held && now_us <= window.ends_at_us {
+                self.gain_soul();
+                window.next_gain_us = now_us.saturating_add(self.soul_gain_us(window.promoted));
             }
-            window.next_gain_us = window
-                .next_gain_us
-                .saturating_add(self.soul_gain_us(window.promoted));
+            window.held = false;
+            while window.next_gain_us <= until {
+                self.gain_soul();
+                window.next_gain_us = window
+                    .next_gain_us
+                    .saturating_add(self.soul_gain_us(window.promoted));
+            }
         }
         self.soul_window = (window.ends_at_us > now_us).then_some(window);
     }
@@ -122,6 +146,20 @@ mod tests {
         state.soul
     }
 
+    /// One owner cycle at `second` with a known zone; the soul it leaves.
+    fn zoned(state: &mut PlayerSpellState, second: u64, in_protection_zone: bool) -> u32 {
+        let now = SemanticTimeMicros::from_micros(second * S);
+        let facts = oteryn_gameplay_foundation::foundation::condition::TickFacts {
+            in_protection_zone,
+            standing_on_field: None,
+        };
+        if let Some(cycle) = stage_source_owner_cycle(state, now, Some(facts), None).expect("cycle")
+        {
+            *state = cycle.next;
+        }
+        state.soul
+    }
+
     #[test]
     fn a_window_gains_one_soul_every_120_seconds_until_it_ends() {
         let mut state = actor(10);
@@ -169,5 +207,40 @@ mod tests {
         dead.health = 0;
         dead.change_soul_window(open(false), 0);
         assert_eq!(dead.soul_window(), None);
+    }
+
+    #[test]
+    fn a_protection_zone_holds_the_due_gain_until_the_first_cycle_outside() {
+        let mut state = actor(10);
+        state.change_soul_window(
+            SoulWindowChange::Open {
+                seconds: 600,
+                promoted: false,
+            },
+            0,
+        );
+        assert_eq!(zoned(&mut state, 120, true), 10);
+        assert_eq!(zoned(&mut state, 150, true), 10);
+        // One gain on leaving, and the cadence restarts from that cycle.
+        assert_eq!(zoned(&mut state, 200, false), 11);
+        assert_eq!(zoned(&mut state, 319, false), 11);
+        assert_eq!(zoned(&mut state, 320, false), 12);
+        assert_eq!(zoned(&mut state, 440, false), 13);
+    }
+
+    #[test]
+    fn a_held_gain_survives_a_replaced_window_and_is_lost_when_the_window_ends() {
+        let mut replaced = actor(0);
+        replaced.change_soul_window(open(false), 0);
+        assert_eq!(zoned(&mut replaced, 130, true), 0);
+        replaced.change_soul_window(open(false), 135);
+        assert_eq!(zoned(&mut replaced, 140, false), 1);
+
+        let mut ended = actor(0);
+        ended.change_soul_window(open(false), 0);
+        assert_eq!(zoned(&mut ended, 120, true), 0);
+        assert_eq!(zoned(&mut ended, 240, true), 0);
+        assert_eq!(ended.soul_window(), None);
+        assert_eq!(zoned(&mut ended, 241, false), 0);
     }
 }
