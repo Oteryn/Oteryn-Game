@@ -84,6 +84,36 @@ fn in_own_slot(
             if patterns.iter().any(|pattern| pattern.primary_slot == ReferenceItemField::Known(semantic_slot))))
 }
 
+/// ENERGY-RING-1: only a mana-shield marker on the active form of a worn ring counts.
+/// Backpack custody, another slot and inactive forms never grant the contribution.
+pub(in crate::gameplay_transport) fn equipped_mana_shield(
+    equipment: &EquipmentSnapshot,
+    content: &NativeGameplayState,
+) -> Option<bool> {
+    use crate::content::{ReferenceModifierParameter, ReferenceSkillModifierKind};
+    if equipment.content_digest != content.source_digest() {
+        return None;
+    }
+    let Some(item) = equipment.items.iter().find(|item| item.slot == 8) else {
+        return Some(false);
+    };
+    if item.definition.family != "Item" {
+        return None;
+    }
+    let active = super::super::timed_item_content::equipped_definition(content, &item.definition)?;
+    let policy = content.item_policy(&active.production_key, &active.revision_ref)?;
+    let semantics = &policy.record().semantics;
+    if !in_own_slot(semantics, ReferenceEquipmentSlot::Ring) {
+        return Some(false);
+    }
+    Some(
+        matches!(&semantics.skill_modifiers, ReferenceItemField::Known(group)
+        if matches!(&group.modifiers, ReferenceItemField::Known(modifiers)
+            if modifiers.iter().any(|modifier| modifier.kind == ReferenceSkillModifierKind::ManaShield
+                && modifier.parameter == ReferenceItemField::Known(ReferenceModifierParameter::Boolean(true))))),
+    )
+}
+
 /// ARMOR-MITIGATION-1 (`Player::getArmor`): the armor of the items worn in their own head,
 /// necklace, torso, legs, feet, ring and ammo slots; the hands and the container never count.
 /// An item whose armor is not known contributes nothing; a negative armor value contributes
@@ -157,7 +187,7 @@ pub(in crate::gameplay_transport) fn speed_term(
 
 /// The suppressions, worn armor and hands' defence one admission installs.
 pub(in crate::gameplay_transport) type AdmissionEffects =
-    (EquipmentEffects, u32, Option<HandDefence>);
+    (EquipmentEffects, u32, Option<HandDefence>, bool);
 
 /// EQUIP-0 §4: read under the caller's spell lane, before its runtime lock.
 impl super::super::ComposedFreshAdmission<'_, '_, '_> {
@@ -177,7 +207,8 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         let effects = equipment_effects(&equipment, native).ok_or(())?;
         let armor = equipped_armor(&equipment, native).ok_or(())?;
         let defence = equipped_defence(&equipment, native).ok_or(())?;
-        Ok(Some((effects, armor, defence)))
+        let mana_shield = equipped_mana_shield(&equipment, native).ok_or(())?;
+        Ok(Some((effects, armor, defence, mana_shield)))
     }
 
     /// The caller holds the spell lane and runtime; lock only spell state here.
@@ -188,13 +219,14 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         session: crate::foundation::GameSessionId,
         effects: Option<AdmissionEffects>,
     ) -> Option<()> {
-        if let Some((effects, armor, defence)) = effects {
+        if let Some((effects, armor, defence, mana_shield)) = effects {
             let mut states = self.states.spell_states.lock().await;
             let state = states.get_mut(runtime, actor, session)?;
             state.install_equipped_physical_protection(physical_protection(&effects));
             install_suppressions(state, effects);
             state.install_equipped_armor(armor);
             state.install_equipped_defence(defence);
+            state.install_equipped_mana_shield(mana_shield);
         }
         Some(())
     }

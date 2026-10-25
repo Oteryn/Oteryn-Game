@@ -138,6 +138,16 @@ pub struct WheelChangeFacts {
     pub at_temple: bool,
 }
 
+/// The native Premium owner resolves permission in the allocation's physical transaction.
+/// The pre-delivery exception must hold the shared activation latch lock until commit.
+pub trait WheelPremiumGate: Sync {
+    fn allocation_permitted(
+        &self,
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        account: [u8; 16],
+    ) -> impl std::future::Future<Output = std::result::Result<bool, DurabilityError>> + Send;
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WheelReceiptKind {
     Allocation,
@@ -196,7 +206,8 @@ impl DurabilityRoot {
     /// the occurrence conflicts. A refusal writes nothing and consumes no occurrence.
     /// Runtime callers reach it only through a
     /// [`RevisionSlot`](super::character_revision_sequencer::RevisionSlot) (CHAR-REV-SEQ-1).
-    pub async fn commit_character_wheel(
+    #[allow(clippy::too_many_arguments)]
+    pub async fn commit_character_wheel<G: WheelPremiumGate>(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
@@ -204,6 +215,7 @@ impl DurabilityRoot {
         request: WheelChangeRequest,
         ruleset: std::sync::Arc<WheelRuleset>,
         facts: WheelChangeFacts,
+        gate: &G,
     ) -> Result<WheelCommitOutcome> {
         if fence.character_lease_generation == 0
             || !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
@@ -216,8 +228,9 @@ impl DurabilityRoot {
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         let node = node.clone();
 
+        let mut gate = gate;
         self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
+            .run_with_context(&mut gate, move |holder, deadline, gate| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
@@ -236,10 +249,37 @@ impl DurabilityRoot {
                         return Ok(Ok(WheelCommitOutcome::AlreadyCommitted(committed)));
                     }
 
+                    // Match promotion's lock order: the Premium latch precedes the
+                    // Character root, so activation cannot deadlock with a purchase that
+                    // already holds the shared latch and is waiting for this Character.
+                    let Some(account) = sqlx::query_scalar::<_, String>(
+                        "SELECT account_id::text FROM game_character_roots \
+                         WHERE character_id = encode($1,'hex')::uuid",
+                    )
+                    .bind(fence.character_id.as_bytes().as_slice())
+                    .fetch_optional(&mut *tx)
+                    .await? else {
+                        return Ok(Err(CharacterProgressionError::AuthorityRejected));
+                    };
+                    let premium_permitted = gate
+                        .allocation_permitted(&mut tx, uuid_text(&account)?)
+                        .await?;
                     let root = match assert_gameplay_fence(&mut tx, &fence, &node).await? {
                         Ok(root) => root,
                         Err(error) => return Ok(Err(error)),
                     };
+                    // The Premium read cannot authorize a different Account if ownership
+                    // changed before the current fence acquired the root lock.
+                    let current_account: String = sqlx::query_scalar(
+                        "SELECT account_id::text FROM game_character_roots \
+                         WHERE character_id = encode($1,'hex')::uuid",
+                    )
+                    .bind(fence.character_id.as_bytes().as_slice())
+                    .fetch_one(&mut *tx)
+                    .await?;
+                    if current_account != account {
+                        return Ok(Err(CharacterProgressionError::AuthorityRejected));
+                    }
                     let state = match lock_progression_state(&mut tx, fence.character_id).await? {
                         Some(state) => state,
                         None => {
@@ -289,6 +329,7 @@ impl DurabilityRoot {
                             fence.character_id,
                         )
                         .await?,
+                        premium_permitted,
                     ) {
                         return refuse(WheelRefusal::NotEligible(reason));
                     }
