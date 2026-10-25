@@ -28,6 +28,11 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // 2012..=2017, 2021..=2024, 2597, 2598, 2602, 2605, 6121, 6122, 10322, 12782, 12783.
     // None of them is equipment.
     ("READ-WRITE-1", 19),
+    // 27 reward-bag profiles (tools/content-migration/reward_bag_profiles.py):
+    // Bag You Covet 43895 and rewards 43864..=43887, 50146/50157 from Canary 47dfd51f
+    // reward_bags.lua/items.xml/appearances.dat, with reward ids checked against Crystal ff7ede59.
+    // 43884/43887 have speed_bonus=10; the other 25 profiles have speed_bonus=0.
+    ("REWARD-BAG-1", 27),
 ];
 
 #[test]
@@ -85,6 +90,22 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         )
         .collect()
     );
+    Ok(())
+}
+
+#[test]
+fn equipment_effects_owner_reward_boots_grant_speed_only_in_feet() -> TestResult {
+    let content = native(&input()?)?;
+    for key in ["oteryn:item.tibia.i43884", "oteryn:item.tibia.i43887"] {
+        for slot in 1..=10 {
+            let equipment = snapshot(&content, key, slot);
+            assert_eq!(
+                speed_term(&equipment, &content),
+                Some(if slot == 4 { 10 } else { 0 }),
+                "{key} in durable slot {slot}"
+            );
+        }
+    }
     Ok(())
 }
 

@@ -47,6 +47,27 @@ pub(super) fn check(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
         {
             super::repair_cause::check(repair)
         }
+        Some(FeeBurnCauseV1::Imbuement(imbuement))
+            if imbuement.fee_gold_units() == Some(value.fee_gold_units)
+                && value.lines.len() <= super::imbuement_cause::IMBUEMENT_FEE_INPUTS_MAX
+                && imbuement
+                    .item
+                    .as_ref()
+                    .is_some_and(|item| item.world_id == value.world_id)
+                && imbuement.item_ids().all(|id| {
+                    value.lines.iter().all(|line| {
+                        line.before
+                            .as_ref()
+                            .is_none_or(|coin| coin.item_instance_id != id)
+                    }) && value.change.iter().all(|line| {
+                        line.after
+                            .as_ref()
+                            .is_none_or(|coin| coin.item_instance_id != id)
+                    })
+                }) =>
+        {
+            super::imbuement_cause::check(imbuement)
+        }
         Some(FeeBurnCauseV1::CharmUnassign(cause)) => {
             CharmKey::new(cause.charm_key.clone()).map_err(|_| AuditError::InvalidInput)?;
             check_uuid_v7(&cause.occurrence)

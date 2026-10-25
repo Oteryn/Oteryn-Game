@@ -970,7 +970,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 509,
+          "record_count": 536,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -978,7 +978,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "0f8af1828a1f2064cc28a232949f079901a72bb70f92fb4271a9cd6b00c98691"
+          "sha256": "f3c94d77a58825284b27820f87f25c5d4289302ade3736343846eb1ecf144eb7"
         }
       ],
       "Presentation": [

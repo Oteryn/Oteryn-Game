@@ -39,3 +39,38 @@ fn imbuement_reference_parity() {
         }
     }
 }
+
+#[test]
+fn imbuement_catalogue_matches_tier_rules_and_covers_every_single_family() {
+    let mut expected = Vec::new();
+    for family in (1..=20).filter(|family| *family != 2) {
+        for tier in 1..=3 {
+            expected.push((family, tier));
+        }
+    }
+    assert_eq!(
+        IMBUEMENT_RECIPES
+            .iter()
+            .map(|recipe| (recipe.family, recipe.tier))
+            .collect::<Vec<_>>(),
+        expected
+    );
+    for recipe in &IMBUEMENT_RECIPES {
+        let rules = &IMBUEMENT_TIER_RULES[usize::from(recipe.tier) - 1];
+        assert_eq!(rules.tier as u8, recipe.tier);
+        assert_eq!(rules.apply_gold, recipe.apply_gold);
+        assert_eq!(rules.requires_premium, recipe.requires_premium);
+        assert_eq!(
+            recipe.materials.len(),
+            usize::from(recipe.tier),
+            "{recipe:?}"
+        );
+        assert!(recipe.key.starts_with("oteryn:imbuement."));
+        assert!(recipe.materials.iter().all(|(key, count)| {
+            key.starts_with("oteryn:item.tibia.i") && (1..=100).contains(count)
+        }));
+        assert_eq!(imbuement_recipe(recipe.family, recipe.tier), Some(recipe));
+    }
+    assert_eq!(imbuement_recipe(2, 1), None);
+    assert_eq!(IMBUEMENT_CATALOGUE_REVISION.len(), 64);
+}

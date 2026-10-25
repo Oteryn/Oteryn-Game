@@ -33,6 +33,14 @@ pub(super) async fn qualify(
         .await
         .map_err(debug)?;
     assert_eq!(minutes, 841);
+    let equipment =
+        crate::gameplay_transport::equipment_move::read_current_equipment(owner, session)
+            .await
+            .ok_or("equipment")?;
+    assert!(
+        equipment.items.is_empty(),
+        "the stamina fixture fights with bare fists"
+    );
     let creature;
     {
         let runtime = owner.runtime.lock().await;
@@ -54,6 +62,15 @@ pub(super) async fn qualify(
         let visible = runtime.visible_entities();
         let row = visible.creatures.first().ok_or("rat")?;
         creature = row.actor;
+        assert_eq!(
+            runtime
+                .companion_snapshot(creature)
+                .map_err(debug)?
+                .state
+                .policy
+                .definition_key,
+            "oteryn:creature.rat"
+        );
         let target = oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
             identity: creature.placement_identity(),
             generation: row.generation,
@@ -73,7 +90,15 @@ pub(super) async fn qualify(
     }
     // Keep the content-owned rat alive between genuine swings; health is fixture setup,
     // while damage, hit qualification and the hunting signal use production dispatch.
-    for _ in 0..66 {
+    // The content digest seeds swing damage and mitigation. Count three minutes between
+    // landed hits, rather than assuming a fixed number of passes contains those hits.
+    // This budget bounds setup/edge misses; neither the stop condition nor the elapsed
+    // checks consult stamina. Every hit gap must remain inside HuntingClock's idle cutoff.
+    const MINUTE_MICROS: u64 = 60_000_000;
+    let mut first_hit = None;
+    let mut last_hit_at = None;
+    let mut qualified_three_minutes = false;
+    for pass in 0..128 {
         owner
             .runtime
             .lock()
@@ -82,11 +107,42 @@ pub(super) async fn qualify(
             .map_err(debug)?;
         owner.refresh_attack_weapon(actor, session).await;
         owner.drain_auto_attacks().await;
+        if owner
+            .runtime
+            .lock()
+            .await
+            .live_creature_health(creature)
+            .ok_or("living rat")?
+            < 20
+        {
+            let now = owner.owner_now().get();
+            let (first_pass, first_at) = *first_hit.get_or_insert((pass, now));
+            if let Some(last) = last_hit_at {
+                assert!(
+                    now - last <= MINUTE_MICROS,
+                    "real damage must keep hunting active"
+                );
+            }
+            last_hit_at = Some(now);
+            // Sixty 3-second clock advances prove at least three minutes between hits.
+            if pass - first_pass >= 60 {
+                assert!(
+                    now - first_at < 4 * MINUTE_MICROS,
+                    "the fixture must not hunt a fourth minute"
+                );
+                qualified_three_minutes = true;
+                break;
+            }
+        }
         owner.clock_origin = owner
             .clock_origin
             .checked_sub(Duration::from_secs(3))
             .ok_or("clock")?;
     }
+    assert!(
+        qualified_three_minutes,
+        "three minutes of real monster damage within the pass budget"
+    );
     let live = owner
         .states
         .spell_states
