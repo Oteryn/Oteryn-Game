@@ -40,6 +40,7 @@ pub struct ChannelSessionStates {
     pub(super) newhaven_travel: newhaven_travel::NewhavenTravel,
     /// NPC-CMD-1a: the NPC conversation and talk limit of each session with capability 3.
     pub npc_conversations: npc_command::NpcConversations,
+    pub(super) player_trades: super::player_trade::TradeBook,
     /// PREM-1b (D476): the sessions holding each account's Premium registration, so a late
     /// release of one session never cancels another's pulls.
     pub premium_sessions: std::sync::Mutex<PremiumSessions>,
@@ -81,6 +82,7 @@ impl ChannelSessionStates {
         self.appearance_commands.forget(session);
         self.chat.forget(session);
         self.command_ingress.forget(session);
+        self.player_trades.forget(session);
         self.npc_conversations.forget(session);
         if let Ok(mut sessions) = self.quest_sessions.lock() {
             sessions.remove(&session);
