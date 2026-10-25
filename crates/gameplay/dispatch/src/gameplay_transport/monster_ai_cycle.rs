@@ -201,6 +201,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             next_think,
         );
         let mut melee_owner = std::mem::take(&mut states.monster_melee);
+        let mut trained = super::attack::skill_training::TrainingDue::new();
         // §2.1: only a monster whose think holds a target swings, in census order from the
         // cursor and at most `CREATUREAI0-RL-05` per pass. A creature that stepped swings from,
         // and is perceived at, its new cell.
@@ -317,6 +318,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 &mut super::attack::player_block::PlayerBiteVitals {
                     states: &mut states,
                     attack: &mut attack,
+                    formula: content.training_formula(),
+                    trained: &mut trained,
                 },
                 *actor,
                 sequence,
@@ -382,6 +385,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !swinging.is_empty() {
             states.monster_ai_cursor = (cursor + count) % swinging.len();
         }
+        drop(attack);
+        drop(states);
+        drop(runtime);
+        drop(permit);
+        self.save_trained_levels(trained).await;
     }
 }
 

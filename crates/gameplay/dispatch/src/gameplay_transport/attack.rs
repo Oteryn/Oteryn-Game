@@ -20,6 +20,7 @@ mod attack_chase_search;
 mod drain;
 pub(super) mod player_block;
 mod shared_experience;
+pub(super) mod skill_training;
 
 use crate::foundation::encode_state_delta;
 use oteryn_protocol_oteryn::attack::{
