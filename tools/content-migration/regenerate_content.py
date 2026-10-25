@@ -73,6 +73,7 @@ AUTHORING_TOOLS = (
 )
 
 CHECKS = (
+    ["python3", "tools/content-migration/imbuement_catalogue.py", "--check"],
     ["python3", "tools/content-migration/register_spell_families.py", "--check"],
     ["python3", "tools/content-migration/test_import_spell_families.py"],
     ["python3", "tools/content-migration/validate_world_project_v2_to_tree.py"],
